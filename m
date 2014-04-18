@@ -1,224 +1,465 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629AbaDRMnz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:43:55 -0400
-Received: from mail-by2on0131.outbound.protection.outlook.com ([207.46.100.131]:45143
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1753593AbaDRMoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:44:11 -0400
+Received: from mail-bn1bon0136.outbound.protection.outlook.com ([157.56.111.136]:63915
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751159AbaDRMnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:43:41 -0400
+	id S1752546AbaDRMn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:43:58 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH 16/28] nios2: System calls handling
-Date: Fri, 18 Apr 2014 20:26:59 +0800
-Message-ID: <1397824031-4892-13-git-send-email-lftan@altera.com>
+Subject: [PATCH 19/28] nios2: Device tree support
+Date: Fri, 18 Apr 2014 20:27:02 +0800
+Message-ID: <1397824031-4892-16-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
 References: <1397824031-4892-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(22564002)(189002)(199002)(2201001)(92566001)(80022001)(92726001)(575784001)(86362001)(80976001)(93916002)(62966002)(2009001)(81342001)(88136002)(87286001)(50226001)(4396001)(81542001)(83072002)(85852003)(84676001)(89996001)(99396002)(50986999)(97736001)(50466002)(87936001)(48376002)(47776003)(76176999)(42186004)(31966008)(16796002)(74502001)(74662001)(20776003)(83322001)(19580405001)(19580395003)(44976005)(6806004)(76482001)(77156001)(46102001)(77982001)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB044;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:3C9AF9D6.ACC2BEC9.40FD5A90.CFD5E25A.204DE;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(22564002)(62966002)(4396001)(19580405001)(83322001)(46102001)(44976005)(80976001)(19580395003)(81542001)(50226001)(80022001)(85852003)(6806004)(83072002)(84676001)(81342001)(89996001)(575784001)(92566001)(2201001)(92726001)(93916002)(86362001)(88136002)(87936001)(87286001)(20776003)(50986999)(48376002)(99396002)(2009001)(76176999)(50466002)(97736001)(74502001)(77982001)(74662001)(47776003)(16796002)(77156001)(31966008)(76482001)(36756003)(42186004);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB020;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:F0ABFD59.BD69501.41FA9997.70BBAC1.207BA;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-OriginatorOrg: altera.onmicrosoft.com
 X-Forefront-PRVS: 018577E36E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for system calls from userspaces. It uses the
-asm-generic/unistd.h definitions with architecture spcific syscall. The sys_call_table
-is just an array defined in a C file and it contains pointers to the syscall functions.
+Add device tree support to arch/nios2.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/syscalls.h    | 25 +++++++++++++
- arch/nios2/include/uapi/asm/unistd.h | 25 +++++++++++++
- arch/nios2/kernel/sys_nios2.c        | 72 ++++++++++++++++++++++++++++++++++++
- arch/nios2/kernel/syscall_table.c    | 29 +++++++++++++++
- 4 files changed, 151 insertions(+)
- create mode 100644 arch/nios2/include/asm/syscalls.h
- create mode 100644 arch/nios2/include/uapi/asm/unistd.h
- create mode 100644 arch/nios2/kernel/sys_nios2.c
- create mode 100644 arch/nios2/kernel/syscall_table.c
+ arch/nios2/boot/dts/3c120_devboard.dts | 205 +++++++++++++++++++++++++++++++++
+ arch/nios2/boot/linked_dtb.S           |  19 +++
+ arch/nios2/include/asm/prom.h          |  26 +++++
+ arch/nios2/kernel/prom.c               |  67 +++++++++++
+ arch/nios2/platform/platform.c         |  69 +++++++++++
+ 5 files changed, 386 insertions(+)
+ create mode 100644 arch/nios2/boot/dts/3c120_devboard.dts
+ create mode 100644 arch/nios2/boot/linked_dtb.S
+ create mode 100644 arch/nios2/include/asm/prom.h
+ create mode 100644 arch/nios2/kernel/prom.c
+ create mode 100644 arch/nios2/platform/platform.c
 
-diff --git a/arch/nios2/include/asm/syscalls.h b/arch/nios2/include/asm/syscalls.h
+diff --git a/arch/nios2/boot/dts/3c120_devboard.dts b/arch/nios2/boot/dts/3c120_devboard.dts
 new file mode 100644
-index 0000000..0245d780351b35a11bfe132377c9f5230cbebd8e
+index 0000000..cad29a9
 --- /dev/null
-+++ b/arch/nios2/include/asm/syscalls.h
-@@ -0,0 +1,25 @@
++++ b/arch/nios2/boot/dts/3c120_devboard.dts
+@@ -0,0 +1,205 @@
 +/*
-+ * Copyright Altera Corporation (C) 2013. All rights reserved
++ *  Copyright (C) 2013 Altera Corporation
 + *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
 + *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ * This file is generated by sopc2dts.
++ */
++
++/dts-v1/;
++
++/ {
++	model = "ALTR,qsys_ghrd_3c120";
++	compatible = "ALTR,qsys_ghrd_3c120";
++	#address-cells = < 1 >;
++	#size-cells = < 1 >;
++
++	cpus {
++		#address-cells = < 1 >;
++		#size-cells = < 0 >;
++
++		cpu: cpu@0x0 {
++			device_type = "cpu";
++			compatible = "ALTR,nios2-1.0";
++			reg = < 0x00000000 >;
++			interrupt-controller;
++			#interrupt-cells = < 1 >;
++			clock-frequency = < 125000000 >;
++			dcache-line-size = < 32 >;
++			icache-line-size = < 32 >;
++			dcache-size = < 32768 >;
++			icache-size = < 32768 >;
++			ALTR,implementation = "fast";
++			ALTR,pid-num-bits = < 8 >;
++			ALTR,tlb-num-ways = < 16 >;
++			ALTR,tlb-num-entries = < 128 >;
++			ALTR,tlb-ptr-sz = < 7 >;
++			ALTR,has-div = < 1 >;
++			ALTR,has-mul = < 1 >;
++			ALTR,reset-addr = < 0xc2800000 >;
++			ALTR,fast-tlb-miss-addr = < 0xc7fff400 >;
++			ALTR,exception-addr = < 0xd0000020 >;
++			ALTR,has-initda = < 1 >;
++			ALTR,has-mmu = < 1 >;
++		}; //end cpu@0x0 (cpu)
++	}; //end cpus
++
++	memory@0 {
++		device_type = "memory";
++		reg = < 0x10000000 0x08000000
++			0x07FFF400 0x00000400 >;
++	}; //end memory@0
++
++	sopc@0 {
++		device_type = "soc";
++		ranges;
++		#address-cells = < 1 >;
++		#size-cells = < 1 >;
++		compatible = "ALTR,avalon", "simple-bus";
++		bus-frequency = < 125000000 >;
++
++		pb_cpu_to_io: bridge@0x8000000 {
++			compatible = "simple-bus";
++			reg = < 0x08000000 0x00800000 >;
++			#address-cells = < 1 >;
++			#size-cells = < 1 >;
++			ranges = < 0x00400000 0x08400000 0x00000020
++				0x00004D40 0x08004D40 0x00000008
++				0x00004D50 0x08004D50 0x00000008
++				0x00004000 0x08004000 0x00000400
++				0x00004400 0x08004400 0x00000040
++				0x00004800 0x08004800 0x00000040
++				0x00002000 0x08002000 0x00002000
++				0x00004C80 0x08004C80 0x00000020
++				0x00004CC0 0x08004CC0 0x00000010
++				0x00004CE0 0x08004CE0 0x00000010
++				0x00004D00 0x08004D00 0x00000010 >;
++
++			timer_1ms: timer@0x400000 {
++				compatible = "ALTR,timer-1.0";
++				reg = < 0x00400000 0x00000020 >;
++				interrupt-parent = < &cpu >;
++				interrupts = < 11 >;
++				clock-frequency = < 125000000 >;
++			}; //end timer@0x400000 (timer_1ms)
++
++			sysid: sysid@0x4d40 {
++				compatible = "ALTR,sysid-1.0";
++				reg = < 0x00004D40 0x00000008 >;
++				id = < 0 >;
++				timestamp = < 1364882880 >;
++			}; //end sysid@0x4d40 (sysid)
++
++			jtag_uart: serial@0x4d50 {
++				compatible = "ALTR,juart-1.0";
++				reg = < 0x00004D50 0x00000008 >;
++				interrupt-parent = < &cpu >;
++				interrupts = < 1 >;
++			}; //end serial@0x4d50 (jtag_uart)
++
++			tse_mac: ethernet@0x4000 {
++				compatible = "ALTR,tse-1.0";
++				reg = < 0x00004000 0x00000400
++					0x00004400 0x00000040
++					0x00004800 0x00000040
++					0x00002000 0x00002000 >;
++                                reg-names = "control_port", "rx_csr", "tx_csr", "s1";
++				interrupt-parent = < &cpu >;
++				interrupts = < 2 3 >;
++				interrupt-names = "rx_irq", "tx_irq";
++				rx-fifo-depth = < 8192 >;
++				tx-fifo-depth = < 8192 >;
++				address-bits = < 48 >;
++				max-frame-size = < 1518 >;
++				local-mac-address = [ 02 00 00 00 00 00 ];
++				phy-mode = "rgmii-id";
++				ALTR,mii-id = < 0 >;
++				phy-handle = < &phy0 >;
++				tse_mac_mdio: mdio {
++					compatible = "altr,tse-mdio";
++					#address-cells = < 1 >;
++					#size-cells = < 0 >;
++					phy0: ethernet-phy@18 {
++						reg = < 18 >;
++						device_type = "ethernet-phy";
++					};
++				};
++			}; //end ethernet@0x4000 (tse_mac)
++
++			uart: serial@0x4c80 {
++				compatible = "ALTR,uart-1.0";
++				reg = < 0x00004C80 0x00000020 >;
++				interrupt-parent = < &cpu >;
++				interrupts = < 10 >;
++				current-speed = < 115200 >;
++				clock-frequency = < 62500000 >;
++			}; //end serial@0x4c80 (uart)
++
++			user_led_pio_8out: gpio@0x4cc0 {
++				compatible = "ALTR,pio-1.0";
++				reg = < 0x00004CC0 0x00000010 >;
++				width = < 8 >;
++				resetvalue = < 255 >;
++				#gpio-cells = < 2 >;
++				gpio-controller;
++			}; //end gpio@0x4cc0 (user_led_pio_8out)
++
++			user_dipsw_pio_8in: gpio@0x4ce0 {
++				compatible = "ALTR,pio-1.0";
++				reg = < 0x00004CE0 0x00000010 >;
++				interrupt-parent = < &cpu >;
++				interrupts = < 8 >;
++				width = < 8 >;
++				resetvalue = < 0 >;
++				edge_type = < 2 >;
++				level_trigger = < 0 >;
++				altr,interrupt_type = < 3 >;
++				#gpio-cells = < 2 >;
++				gpio-controller;
++			}; //end gpio@0x4ce0 (user_dipsw_pio_8in)
++
++			user_pb_pio_4in: gpio@0x4d00 {
++				compatible = "ALTR,pio-1.0";
++				reg = < 0x00004D00 0x00000010 >;
++				interrupt-parent = < &cpu >;
++				interrupts = < 9 >;
++				width = < 4 >;
++				resetvalue = < 0 >;
++				edge_type = < 2 >;
++				level_trigger = < 0 >;
++				altr,interrupt_type = < 3 >;
++				#gpio-cells = < 2 >;
++				gpio-controller;
++			}; //end gpio@0x4d00 (user_pb_pio_4in)
++		}; //end bridge@0x8000000 (pb_cpu_to_io)
++
++		cfi_flash_64m: flash@0x0 {
++			compatible = "cfi-flash";
++			reg = < 0x00000000 0x04000000 >;
++			bank-width = < 2 >;
++			device-width = < 1 >;
++			#address-cells = < 1 >;
++			#size-cells = < 1 >;
++
++			partition@800000 {
++				reg = < 0x00800000 0x01E00000 >;
++				label = "JFFS2 Filesystem";
++			}; //end partition@800000
++		}; //end flash@0x0 (cfi_flash_64m)
++	}; //end sopc@0
++
++	chosen {
++		bootargs = "debug console=ttyJ0,115200";
++	}; //end chosen
++}; //end /
+diff --git a/arch/nios2/boot/linked_dtb.S b/arch/nios2/boot/linked_dtb.S
+new file mode 100644
+index 0000000..071f922db338e2cb4064bc77bf346f50e584d04f
+--- /dev/null
++++ b/arch/nios2/boot/linked_dtb.S
+@@ -0,0 +1,19 @@
++/*
++ * Copyright (C) 2011 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + *
 + */
-+#ifndef __ASM_NIOS2_SYSCALLS_H
-+#define __ASM_NIOS2_SYSCALLS_H
-+
-+int sys_cacheflush(unsigned long addr, unsigned long len,
-+				unsigned int op);
-+
-+#include <asm-generic/syscalls.h>
-+
-+#endif /* __ASM_NIOS2_SYSCALLS_H */
-diff --git a/arch/nios2/include/uapi/asm/unistd.h b/arch/nios2/include/uapi/asm/unistd.h
++.section .dtb.init.rodata,"a"
++.incbin "arch/nios2/boot/system.dtb"
+diff --git a/arch/nios2/include/asm/prom.h b/arch/nios2/include/asm/prom.h
 new file mode 100644
-index 0000000..c4bf7951046153b3a39f5c11a21dadfe3de0f74a
+index 0000000..7a71e4c50a42134ffceabd233f83b5d1c48917c1
 --- /dev/null
-+++ b/arch/nios2/include/uapi/asm/unistd.h
-@@ -0,0 +1,25 @@
++++ b/arch/nios2/include/asm/prom.h
+@@ -0,0 +1,26 @@
 +/*
++ *  Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#ifndef _ASM_NIOS2_PROM_H
++#define _ASM_NIOS2_PROM_H
++
++extern int __dtb_start;
++
++extern unsigned long early_altera_uart_or_juart_console(void);
++
++#endif /* _ASM_NIOS2_PROM_H */
+diff --git a/arch/nios2/kernel/prom.c b/arch/nios2/kernel/prom.c
+new file mode 100644
+index 0000000..a2d8308b939c33496e1416253b37c018d88c0c7f
+--- /dev/null
++++ b/arch/nios2/kernel/prom.c
+@@ -0,0 +1,67 @@
++/*
++ * Device tree support
++ *
 + * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
 + *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
++ * Based on MIPS support for CONFIG_OF device tree support
 + *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
++ * Copyright (C) 2010 Cisco Systems Inc. <dediao@cisco.com>
 + *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
 + *
 + */
 +
-+ #define sys_mmap2 sys_mmap_pgoff
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/bootmem.h>
++#include <linux/of.h>
++#include <linux/of_fdt.h>
++#include <linux/io.h>
 +
-+/* Use the standard ABI for syscalls */
-+#include <asm-generic/unistd.h>
++#include <asm/prom.h>
++#include <asm/sections.h>
 +
-+/* Additional Nios II specific syscalls. */
-+#define __NR_cacheflush (__NR_arch_specific_syscall)
-+__SYSCALL(__NR_cacheflush, sys_cacheflush)
-diff --git a/arch/nios2/kernel/sys_nios2.c b/arch/nios2/kernel/sys_nios2.c
-new file mode 100644
-index 0000000..994bf8ad53c4a1c68a658bc936a44812235e46c3
---- /dev/null
-+++ b/arch/nios2/kernel/sys_nios2.c
-@@ -0,0 +1,72 @@
-+/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2011-2012 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/file.h>
-+#include <linux/fs.h>
-+#include <linux/slab.h>
-+#include <linux/syscalls.h>
-+
-+#include <asm/cacheflush.h>
-+#include <asm/traps.h>
-+
-+asmlinkage long sys_mmap(unsigned long addr, unsigned long len,
-+			unsigned long prot, unsigned long flags,
-+			unsigned long fd, unsigned long offset)
++void __init early_init_dt_add_memory_arch(u64 base, u64 size)
 +{
-+	if (offset & ~PAGE_MASK)
-+		return -EINVAL;
++	u64 kernel_start = (u64)virt_to_phys(_text);
 +
-+	return sys_mmap_pgoff(addr, len, prot, flags, fd, offset >> PAGE_SHIFT);
++	if (!memory_size &&
++	    (kernel_start >= base) && (kernel_start < (base + size)))
++		memory_size = size;
++
++	return;
 +}
 +
-+/* sys_cacheflush -- flush the processor cache. */
-+asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len,
-+				unsigned int op)
++void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
 +{
-+	struct vm_area_struct *vma;
++	return __alloc_bootmem(size, align, __pa(MAX_DMA_ADDRESS));
++}
 +
-+	if (len == 0)
-+		return 0;
++void __init early_init_devtree(void *params)
++{
++	if (params && be32_to_cpup((__be32 *)params) == OF_DT_HEADER)
++		initial_boot_params = params;
++#if defined(CONFIG_NIOS2_DTB_AT_PHYS_ADDR)
++	else if (be32_to_cpup((__be32 *)CONFIG_NIOS2_DTB_PHYS_ADDR) ==
++		 OF_DT_HEADER)
++		initial_boot_params = (void *)CONFIG_NIOS2_DTB_PHYS_ADDR;
++#endif
++	else if (be32_to_cpu((__be32)__dtb_start) == OF_DT_HEADER)
++		initial_boot_params = (void *)&__dtb_start;
++	else
++		return;
 +
-+	/* Check for overflow */
-+	if (addr + len < addr)
-+		return -EFAULT;
++	early_init_dt_scan(initial_boot_params);
++}
+diff --git a/arch/nios2/platform/platform.c b/arch/nios2/platform/platform.c
+new file mode 100644
+index 0000000..2e5b8f624f4d593a2d9bf544ea7cc06b076b44b4
+--- /dev/null
++++ b/arch/nios2/platform/platform.c
+@@ -0,0 +1,69 @@
++/*
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2011 Thomas Chou
++ * Copyright (C) 2011 Walter Goossens
++ *
++ * This file is subject to the terms and conditions of the GNU General
++ * Public License. See the file COPYING in the main directory of this
++ * archive for more details.
++ */
 +
-+	/*
-+	 * Verify that the specified address region actually belongs
-+	 * to this process.
-+	 */
-+	vma = find_vma(current->mm, addr);
-+	if (vma == NULL || addr < vma->vm_start || addr + len > vma->vm_end)
-+		return -EFAULT;
++#include <linux/init.h>
++#include <linux/of_platform.h>
++#include <linux/of_address.h>
++#include <linux/of_fdt.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++#include <linux/sys_soc.h>
++#include <linux/io.h>
 +
-+	/* Ignore the scope and cache arguments. */
-+	flush_cache_range(vma, addr, addr + len);
++#define NIOS2_ID_DEFAULT		(0x1)
++#define NIOS2_REVISION_DEFAULT		(0x1)
 +
++static struct of_device_id altera_of_bus_ids[] __initdata = {
++	{ .compatible = "simple-bus", },
++	{ .compatible = "altr,avalon", },
++	{}
++};
++
++static void __init nios2_soc_device_init(void)
++{
++	struct soc_device *soc_dev;
++	struct soc_device_attribute *soc_dev_attr;
++	const char *machine;
++
++	machine = of_flat_dt_get_machine_name();
++	if (!machine)
++		return;
++
++	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
++	if (!soc_dev_attr)
++		return;
++
++	soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%u", NIOS2_ID_DEFAULT);
++	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d",
++		NIOS2_REVISION_DEFAULT);
++	soc_dev_attr->machine = kasprintf(GFP_KERNEL, "%s", machine);
++	soc_dev_attr->family = "Nios II";
++
++	soc_dev = soc_device_register(soc_dev_attr);
++	if (IS_ERR_OR_NULL(soc_dev)) {
++		kfree(soc_dev_attr->soc_id);
++		kfree(soc_dev_attr->machine);
++		kfree(soc_dev_attr->revision);
++		kfree(soc_dev_attr);
++		return;
++	}
++
++	return;
++}
++
++static int __init nios2_device_probe(void)
++{
++	nios2_soc_device_init();
++
++	of_platform_bus_probe(NULL, altera_of_bus_ids, NULL);
 +	return 0;
 +}
 +
-+asmlinkage int sys_getpagesize(void)
-+{
-+	return PAGE_SIZE;
-+}
-+
-+#if defined(CONFIG_FB) || defined(CONFIG_FB_MODULE)
-+#include <linux/fb.h>
-+unsigned long get_fb_unmapped_area(struct file *filp, unsigned long orig_addr,
-+		unsigned long len, unsigned long pgoff, unsigned long flags)
-+{
-+
-+	struct fb_info *info = filp->private_data;
-+	return info->screen_base;
-+}
-+EXPORT_SYMBOL(get_fb_unmapped_area);
-+#endif /* CONFIG_FB */
-diff --git a/arch/nios2/kernel/syscall_table.c b/arch/nios2/kernel/syscall_table.c
-new file mode 100644
-index 0000000..06e6ac1835b2ed93f420a4ab0d1e06911144486b
---- /dev/null
-+++ b/arch/nios2/kernel/syscall_table.c
-@@ -0,0 +1,29 @@
-+/*
-+ * Copyright Altera Corporation (C) 2013. All rights reserved
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#include <linux/syscalls.h>
-+#include <linux/signal.h>
-+#include <linux/unistd.h>
-+
-+#include <asm/syscalls.h>
-+
-+#undef __SYSCALL
-+#define __SYSCALL(nr, call) [nr] = (call),
-+
-+void *sys_call_table[__NR_syscalls] = {
-+#include <asm/unistd.h>
-+};
++device_initcall(nios2_device_probe);
 -- 
 1.8.3.2
 
