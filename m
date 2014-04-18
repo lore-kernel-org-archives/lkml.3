@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753961AbaDRQdi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 12:33:38 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:31060 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbaDRQde (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 12:33:34 -0400
-Message-ID: <1397838812.19331.3.camel@buesod1.americas.hpqcorp.net>
-Subject: Re: [PATCH v3] ipc,shm: disable shmmax and shmall by default
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, linux-api@vger.kernel.org
-Date: Fri, 18 Apr 2014 09:33:32 -0700
-In-Reply-To: <5350EFAA.2030607@colorfullife.com>
-References: <1397784345.2556.26.camel@buesod1.americas.hpqcorp.net>
-	 <5350EFAA.2030607@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754375AbaDRQeY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 12:34:24 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:41717 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754252AbaDRQeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 12:34:15 -0400
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+To: Florian Fainelli <f.fainelli@gmail.com>, <netdev@vger.kernel.org>
+CC: Randy Dunlap <rdunlap@infradead.org>, Jonathan Cameron <jic23@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <prabhakar.csengg@gmail.com>,
+        <santosh.shilimkar@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        <sergei.shtylyov@cogentembedded.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH v2 3/4] net: davinci_mdio: drop pinctrl_pm_select_default_state from probe
+Date: Fri, 18 Apr 2014 20:24:56 +0300
+Message-ID: <1397841897-9170-4-git-send-email-grygorii.strashko@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397841897-9170-1-git-send-email-grygorii.strashko@ti.com>
+References: <1397841897-9170-1-git-send-email-grygorii.strashko@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-18 at 11:26 +0200, Manfred Spraul wrote:
-> Hi Davidlohr,
-> 
-> On 04/18/2014 03:25 AM, Davidlohr Bueso wrote:
-> > So a value of 0 bytes or pages, for shmmax and shmall, respectively,
-> > implies unlimited memory, as opposed to disabling sysv shared memory.
-> That might be a second risk:
-> Right now, a sysadmin can prevent sysv memory allocations with
-> 
->      # sysctl kernel.shmall=0
+The "default" pinctrl state is set by Drivers core now before
+calling the driver's probe.
+Hence, it's safe to drop pinctrl_pm_select_default_state() call
+from Davinci mdio driver probe.
 
-Yeah, I had pointed this out previously, and it is addressed in the
-changelog. shmall = 0 directly contradicts size < shmmin = 1, so I don't
-know who's wrong there...
+Cc: Florian Fainelli <f.fainelli@gmail.com>
+Cs: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+ drivers/net/ethernet/ti/davinci_mdio.c |    3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index eda4946..98d53a3 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -348,9 +348,6 @@ static int davinci_mdio_probe(struct platform_device *pdev)
+ 	data->bus->parent	= dev;
+ 	data->bus->priv		= data;
+ 
+-	/* Select default pin state */
+-	pinctrl_pm_select_default_state(&pdev->dev);
+-
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_get_sync(&pdev->dev);
+ 	data->clk = devm_clk_get(dev, "fck");
+-- 
+1.7.9.5
 
