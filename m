@@ -1,87 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584AbaDRXYT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 19:24:19 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:34865 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752254AbaDRXYO (ORCPT
+	id S1754446AbaDRX2N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 19:28:13 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:38371 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947AbaDRX2J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 19:24:14 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 99.127.230.128
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18fpVPWOe/WBp+6+DmUk98L
-Date: Fri, 18 Apr 2014 16:24:07 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robh+dt@kernel.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 2/2] dt: platform driver: Fill the resources before
- probe and defer if needed
-Message-ID: <20140418232407.GQ21823@atomide.com>
-References: <20140320161118.B7075C4067A@trevor.secretlab.ca>
- <1395413185-29763-1-git-send-email-jjhiblot@traphandler.com>
- <1395413185-29763-3-git-send-email-jjhiblot@traphandler.com>
- <CAL_Jsq+aU+rs28gV=Gesb_-Dy6Ht7zuKrRA6_hmqp94Uun23Yg@mail.gmail.com>
- <20140418205213.GA21823@atomide.com>
- <CAL_JsqJvVvo6R-qNXxur7wiZERKbi52xyKoWnmzJTfKS2iKK7A@mail.gmail.com>
- <20140418215848.GD21823@atomide.com>
- <20140418230335.GI24070@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140418230335.GI24070@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Fri, 18 Apr 2014 19:28:09 -0400
+Date: Fri, 18 Apr 2014 19:30:17 -0400 (EDT)
+Message-Id: <20140418.193017.695468666239255075.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.4 on Emacs 23.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 18 Apr 2014 16:28:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Russell King - ARM Linux <linux@arm.linux.org.uk> [140418 16:04]:
-> On Fri, Apr 18, 2014 at 02:58:48PM -0700, Tony Lindgren wrote:
-> > Oh come on, let's stop pretending it's not broken. And it's way worse with
-> > device tree as there's nothing making sure the resources for a driver
-> > are set up before the driver probes. And we've been unable to fix just
-> > this issue alone for about six months now. It's also broken beyond that.
-> > It's called of_platform_bus yet it won't even pass the platform_data
-> > as auxdata to the devices on a sub-bus instantatiated like I2C.
-> 
-> Isn't there a much simpler solution to the platform device IRQ problem?
-> 
-> Rather than trying to fix it at the point where the resources are
-> created, why not just *not* have DT create the IRQ resources in the
-> first place, and instead have platform_get_irq() (which is the function
-> which should be used to get an IRQ) be the actor to do whatever is
-> necessary to return the IRQ(s) ?
 
-Yeah why not. I don't see why we would need to do all this of_* special
-trickery for much anything beyond parsing the binding.
- 
-> Yes, I know we have some drivers which use platform_get_resources() with
-> IORESOURCE_IRQ, but they should really use the right accessor.  And those
-> who just dereference the resource array directly... get what's coming
-> (though of course they have to be fixed.)
+1) Fix mlx4_en_netpoll implementation, it needs to schedule a NAPI
+   context, not synchronize it.  From Chris Mason.
 
-$ git grep IORESOURCE_IRQ drivers/ | grep platform_get_resource | wc -l
-179
+2) Ipv4 flow input interface should never be zero, it should be
+   LOOPBACK_IFINDEX instead.  From Cong Wang and Julian
+   Anastasov.
 
-But might be scriptable to some extent..
- 
-> It has the benefit that you're in a path where you /can/ return
-> -EPROBE_DEFER too and not have to mess around with notifiers or other
-> silly stuff like that.
+3) Properly configure MAC to PHY connection in mvneta devices, from
+   Thomas Petazzoni.
 
-And then maybe we can make of_platform_probe() or some bus function
-do the most of the -EPROBE_DEFER ping pong before the driver even
-probes?
+4) sys_recv should use SYSCALL_DEFINE.  From Jan Glauber.
 
-Regards,
+5) Tunnel driver ioctls do not use the correct namespace, fix
+   from Nicolas Dichtel.
 
-Tony
+6) Fix memory leak on seccomp filter attach, from Kees Cook.
+
+7) Fix lockdep warning for nested vlans, from Ding Tianhong.
+
+8) Crashes can happen in SCTP due to how the auth_enable value
+   is managed, fix from Vlad Yasevich.
+
+9) Wireless fixes from John W. Linville and co.
+
+Please pull, thanks a lot!
+
+The following changes since commit 10ec34fcb100412ab186c141a9c3557d1270effd:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2014-04-15 20:30:30 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to b14878ccb7fac0242db82720b784ab62c467c0dc:
+
+  net: sctp: cache auth_enable per endpoint (2014-04-18 18:32:00 -0400)
+
+----------------------------------------------------------------
+Amitkumar Karwar (2):
+      mwifiex: process event before command response
+      mwifiex: fix hung task on command timeout
+
+Chris Mason (1):
+      mlx4_en: don't use napi_synchronize inside mlx4_en_netpoll
+
+Christian Engelmayer (2):
+      rsi: Fix a potential memory leak in rsi_set_channel()
+      rsi: Fix a potential memory leak in rsi_send_auto_rate_request()
+
+Chun-Yeow Yeoh (1):
+      mac80211: update last_tx_rate only for data frame
+
+Cong Wang (2):
+      ipv4, fib: pass LOOPBACK_IFINDEX instead of 0 to flowi4_iif
+      ipv4, route: pass 0 instead of LOOPBACK_IFINDEX to fib_validate_source()
+
+Dan Carpenter (1):
+      isdn: icn: buffer overflow in icn_command()
+
+David S. Miller (4):
+      Merge branch 'mvneta_qsgmii'
+      Merge branch 'fib_validate_loopback'
+      Merge branch 'mdio-gpio'
+      Merge branch 'for-davem' of git://git.kernel.org/.../linville/wireless
+
+Edward Cree (1):
+      sfc:On MCDI timeout, issue an FLR (and mark MCDI to fail-fast)
+
+Eliad Peller (1):
+      wl18xx: align event mailbox with current fw
+
+Emmanuel Grumbach (4):
+      iwlwifi: mvm: BT Coex - send the new LUT upon antenna coupling change
+      iwlwifi: 7000: bump API to 9
+      iwlwifi: add MODULE_FIRMWARE for 7265
+      iwlwifi: mvm: BT Coex - fix Look Up Table
+
+Eyal Shapira (7):
+      iwlwifi: mvm: rs: fix mimo delimiter in LQ cmd
+      iwlwifi: mvm: rs: use correct max expected throughput figures
+      iwlwifi: mvm: rs: fix and cleanup rs_get_rate_action
+      iwlwifi: mvm: rs: reinit rs if no tx for a long time
+      iwlwifi: mvm: rs: fallback to legacy Tx columns
+      iwlwifi: mvm: avoid searching unnecessary columns
+      iwlwifi: mvm: rs: clear per rate stats when aggregation changes
+
+Felix Fietkau (2):
+      mac80211: suppress BSS info change notifications for AP_VLAN
+      mac80211: exclude AP_VLAN interfaces from tx power calculation
+
+Frederic Danis (1):
+      cw1200: Fix cw1200_debug_link_id
+
+Geert Uytterhoeven (1):
+      rsi: Add missing initialization of ii
+
+Guenter Roeck (3):
+      net: mdio-gpio: Use devm_ functions where possible
+      net: mdio-gpio: Add support for active low gpio pins
+      net: mdio-gpio: Add support for separate MDI and MDO gpio pins
+
+Ido Yariv (1):
+      mac80211: Disable SMPS for the monitor interface
+
+Ivan Vecera (1):
+      tg3: update rx_jumbo_pending ring param only when jumbo frames are enabled
+
+Jan Glauber (1):
+      net: use SYSCALL_DEFINEx for sys_recv
+
+Johannes Berg (2):
+      mac80211: fix software remain-on-channel implementation
+      iwlwifi: mvm: delay enabling smart FIFO until after beacon RX
+
+John W. Linville (3):
+      Merge branch 'for-john' of git://git.kernel.org/.../jberg/mac80211
+      Merge branch 'for-john' of git://git.kernel.org/.../iwlwifi/iwlwifi-fixes
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless into for-davem
+
+Kees Cook (1):
+      seccomp: fix memory leak on filter attach
+
+Luciano Coelho (1):
+      wlcore: ignore dummy packet events in PLT mode
+
+Michal Kazior (1):
+      mac80211: fix radar_enabled propagation
+
+Nicolas Dichtel (3):
+      ip_tunnel: use the right netns in ioctl handler
+      sit: use the right netns in ioctl handler
+      ip6_tunnel: use the right netns in ioctl handler
+
+Oren Givon (1):
+      iwlwifi: add new 7265 HW IDs
+
+Thomas Petazzoni (2):
+      net: phy: add minimal support for QSGMII PHY
+      net: mvneta: properly configure the MAC <-> PHY connection in all situations
+
+Vlad Yasevich (1):
+      net: sctp: cache auth_enable per endpoint
+
+dingtianhong (1):
+      vlan: Fix lockdep warning when vlan dev handle notification
+
+ Documentation/devicetree/bindings/net/ethernet.txt |    2 +-
+ drivers/isdn/icn/icn.c                             |   11 ++-
+ drivers/net/ethernet/broadcom/tg3.c                |    4 +-
+ drivers/net/ethernet/marvell/mvneta.c              |   73 +++++++++---------
+ drivers/net/ethernet/mellanox/mlx4/en_cq.c         |    1 -
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c     |    6 +-
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h       |    1 -
+ drivers/net/ethernet/sfc/ef10.c                    |   12 ++-
+ drivers/net/ethernet/sfc/efx.c                     |   19 ++++-
+ drivers/net/ethernet/sfc/enum.h                    |   23 ++++--
+ drivers/net/ethernet/sfc/falcon.c                  |    4 +
+ drivers/net/ethernet/sfc/farch.c                   |   22 ++++++
+ drivers/net/ethernet/sfc/mcdi.c                    |   55 +++++++++++---
+ drivers/net/ethernet/sfc/mcdi.h                    |   13 ++++
+ drivers/net/ethernet/sfc/net_driver.h              |    4 +
+ drivers/net/ethernet/sfc/nic.h                     |    1 +
+ drivers/net/ethernet/sfc/siena.c                   |    2 +
+ drivers/net/phy/mdio-gpio.c                        |   68 +++++++++++------
+ drivers/net/wireless/cw1200/debug.c                |    2 +
+ drivers/net/wireless/iwlwifi/iwl-7000.c            |    5 +-
+ drivers/net/wireless/iwlwifi/mvm/coex.c            |   18 +++--
+ drivers/net/wireless/iwlwifi/mvm/mac80211.c        |    1 +
+ drivers/net/wireless/iwlwifi/mvm/rs.c              |  261 ++++++++++++++++++++++++++++++++++++++++------------------------
+ drivers/net/wireless/iwlwifi/mvm/rs.h              |   14 +++-
+ drivers/net/wireless/iwlwifi/mvm/sf.c              |    3 +-
+ drivers/net/wireless/iwlwifi/pcie/drv.c            |    2 +
+ drivers/net/wireless/mwifiex/main.c                |   12 +--
+ drivers/net/wireless/mwifiex/sta_ioctl.c           |    7 +-
+ drivers/net/wireless/rsi/rsi_91x_core.c            |    2 +-
+ drivers/net/wireless/rsi/rsi_91x_mgmt.c            |   21 +++---
+ drivers/net/wireless/ti/wl18xx/event.h             |   20 +++++
+ drivers/net/wireless/ti/wlcore/event.c             |    5 ++
+ include/linux/mdio-gpio.h                          |    5 ++
+ include/linux/phy.h                                |    3 +
+ include/net/flow.h                                 |   10 ++-
+ include/net/net_namespace.h                        |    9 +--
+ include/net/sctp/structs.h                         |    4 +-
+ kernel/seccomp.c                                   |    2 +
+ net/8021q/vlan_dev.c                               |   46 ++++++++++--
+ net/core/dev.c                                     |    1 +
+ net/ipv4/fib_frontend.c                            |    2 +-
+ net/ipv4/fib_semantics.c                           |    1 +
+ net/ipv4/ip_tunnel.c                               |   15 ++--
+ net/ipv4/ipmr.c                                    |    2 +-
+ net/ipv4/netfilter/ipt_rpfilter.c                  |    5 +-
+ net/ipv4/route.c                                   |    3 +-
+ net/ipv6/ip6_tunnel.c                              |    8 +-
+ net/ipv6/ip6mr.c                                   |    2 +-
+ net/ipv6/sit.c                                     |   17 +----
+ net/mac80211/chan.c                                |   11 ++-
+ net/mac80211/main.c                                |    4 +-
+ net/mac80211/offchannel.c                          |    1 +
+ net/mac80211/status.c                              |    1 +
+ net/sctp/auth.c                                    |   17 ++---
+ net/sctp/endpointola.c                             |    3 +-
+ net/sctp/sm_make_chunk.c                           |   32 ++++----
+ net/sctp/sm_statefuns.c                            |    6 +-
+ net/sctp/socket.c                                  |   54 +++++++-------
+ net/sctp/sysctl.c                                  |   36 ++++++++-
+ net/socket.c                                       |    4 +-
+ 60 files changed, 659 insertions(+), 339 deletions(-)
