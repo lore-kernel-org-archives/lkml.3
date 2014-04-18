@@ -1,48 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165AbaDRPZG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 11:25:06 -0400
-Received: from imap.thunk.org ([74.207.234.97]:48324 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751352AbaDRPZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 11:25:00 -0400
-Date: Fri, 18 Apr 2014 11:24:56 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Linux Ext4 <linux-ext4@vger.kernel.org>
-Subject: Re: [ext4] BUG: sleeping function called from invalid context at
- fs/ext4/ext4_jbd2.c:252
-Message-ID: <20140418152456.GA31301@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	Fengguang Wu <fengguang.wu@intel.com>,
-	LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-	Linux Ext4 <linux-ext4@vger.kernel.org>
-References: <20140417033346.GA8702@localhost>
+	id S1752291AbaDRPbg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 11:31:36 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:23905 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496AbaDRPbc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 11:31:32 -0400
+Message-ID: <53514551.8030601@atmel.com>
+Date: Fri, 18 Apr 2014 17:31:29 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140417033346.GA8702@localhost>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+To: Bo Shen <voice.shen@atmel.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] ARM: at91: fix spi cs on sama5d3 Xplained board
+References: <1396336363-13709-1-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1396336363-13709-1-git-send-email-voice.shen@atmel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 11:33:46AM +0800, Fengguang Wu wrote:
+On 01/04/2014 09:12, Bo Shen :
+> The PD16 is the CS3 for SPI0 while not SPI1.
 > 
-> FYI, we noticed that simple dd write can trigger the below BUG in
-> commit 208b9cc3a32f29b8a9bba682b5bfbb962bc9892d ("ext4: add a new
-> spinlock i_raw_lock to protect the ext4's raw inode")
+> Signed-off-by: Bo Shen <voice.shen@atmel.com>
 
-Yes, that was a buggy version of the patch that I thought was fairly
-quickly replaced with a new version; something must have gone wrong
-with how I pushed out my git branches.  Anyway I'm pretty sure it's
-not there on ext4.git any more.  Let me know if you're still seeing
-it, and from which branch.
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-Cheers,
+Okay, queued in at91-3.15-fixes. Thanks
 
-					- Ted
+
+
+> ---
+> This patch is based on v3.14-rc8
+> 
+>  arch/arm/boot/dts/at91-sama5d3_xplained.dts | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/at91-sama5d3_xplained.dts b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
+> index ce13755..4537259 100644
+> --- a/arch/arm/boot/dts/at91-sama5d3_xplained.dts
+> +++ b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
+> @@ -34,7 +34,7 @@
+>  			};
+>  
+>  			spi0: spi@f0004000 {
+> -				cs-gpios = <&pioD 13 0>;
+> +				cs-gpios = <&pioD 13 0>, <0>, <0>, <&pioD 16 0>;
+>  				status = "okay";
+>  			};
+>  
+> @@ -79,7 +79,7 @@
+>  			};
+>  
+>  			spi1: spi@f8008000 {
+> -				cs-gpios = <&pioC 25 0>, <0>, <0>, <&pioD 16 0>;
+> +				cs-gpios = <&pioC 25 0>;
+>  				status = "okay";
+>  			};
+>  
+> 
+
+
+-- 
+Nicolas Ferre
