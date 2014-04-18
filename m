@@ -1,68 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaDRM3g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:29:36 -0400
-Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:52581
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752746AbaDRM3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:29:32 -0400
-From: Ley Foon Tan <lftan@altera.com>
-To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>
-CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
-        <cltang@codesourcery.com>
-Subject: [PATCH 28/28] Documentation: Add documentation for Nios2 architecture
-Date: Fri, 18 Apr 2014 20:27:11 +0800
-Message-ID: <1397824031-4892-25-git-send-email-lftan@altera.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	id S1751566AbaDRMkO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:40:14 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41196 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750857AbaDRMkJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:40:09 -0400
+Date: Fri, 18 Apr 2014 14:40:04 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Matthias Graf <matthias.graf@st.ovgu.de>,
+        Christian =?utf-8?B?S8O2bmln?= <christian.koenig@amd.com>,
+        alexander.deucher@amd.com
+Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>
+Subject: Re: PROBLEM: Fatal Machine Check >= 3.13.5-101.fc19.x86_64
+Message-ID: <20140418124004.GF4385@pd.tnic>
+References: <532C97DF.9010201@st.ovgu.de>
+ <20140321201352.GC1338@pd.tnic>
+ <533069E4.10002@st.ovgu.de>
+ <533C1B47.8080709@st.ovgu.de>
+ <20140416142232.GF16741@pd.tnic>
+ <534F73F6.7050804@st.ovgu.de>
+ <20140417130207.GB4321@pd.tnic>
+ <5350EDAE.8020101@st.ovgu.de>
+ <20140418094523.GB4385@pd.tnic>
+ <53511066.70005@st.ovgu.de>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(76176999)(99396002)(6806004)(50986999)(80022001)(87286001)(93916002)(88136002)(86362001)(50466002)(19580405001)(62966002)(2201001)(92566001)(92726001)(77982001)(2009001)(47776003)(20776003)(80976001)(44976005)(48376002)(83322001)(15975445006)(19580395003)(15202345003)(84676001)(81542001)(97736001)(76482001)(81342001)(77156001)(83072002)(85852003)(42186004)(36756003)(4396001)(87936001)(89996001)(50226001)(46102001)(16796002)(74502001)(31966008)(74662001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB029;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:A8F875D6.AF058619.BD71E8F.9445B66D.201D5;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 018577E36E
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <53511066.70005@st.ovgu.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Ley Foon Tan <lftan@altera.com>
----
- Documentation/nios2/README | 23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
- create mode 100644 Documentation/nios2/README
+On Fri, Apr 18, 2014 at 01:45:42PM +0200, Matthias Graf wrote:
+> I applied your patch to linus' current master (3.15.0-rc1+) and indeed
+> it does solve the issue for me!
+> 
+> Thanks for your help.
+> 
+> I would appreciated if you keep me posted on updates.
 
-diff --git a/Documentation/nios2/README b/Documentation/nios2/README
-new file mode 100644
-index 0000000..33eec4d
---- /dev/null
-+++ b/Documentation/nios2/README
-@@ -0,0 +1,23 @@
-+Linux on the Nios II architecture
-+=================================
-+
-+This is a port of Linux to Nios II (nios2) processor.
-+
-+In order to compile for Nios II, you need a version of GCC with support for the generic
-+system call ABI. Please see this link for more information on how compiling and booting
-+software for the Nios II platform:
-+http://www.rocketboards.org/foswiki/Documentation/NiosIILinuxUserManual
-+
-+For reference, please see the following link:
-+http://www.altera.com/literature/lit-nio2.jsp
-+
-+What is Nios II?
-+================
-+Nios II is a 32-bit embedded-processor architecture designed specifically for the
-+Altera family of FPGAs. In order to support Linux system, Nios II needs to configure
-+with MMU and hardware multiplier enabled.
-+
-+Nios II ABI
-+===========
-+Please refer to chapter "Application Binary Interface" in Nios II Processor Reference
-+Handbook.
+Ok, goodie, so this one really causes problems.
+
+Btw, please try not to top-post:
+
+A: Because it messes up the order in which people normally read text.
+Q: Why is top-posting such a bad thing?
+A: Top-posting.
+Q: What is the most annoying thing in e-mail?
+
+Thanks.
+
+Btw, you could check whether your BIOS has an update, who knows, it
+could be addressing this issue too. Simply look at the first couple of
+lines of dmidecode output to check your current BIOS version and then go
+and check, I think your board is Gigabyte, their site for updates.
+
+Alex, Christian, guys, it looks like this commit below is causing some
+sort of a core stall/livelock on Matthias' machine:
+
+Hardware event. This is not a software error.
+CPU 0 BANK 0
+MCG status:RIPV MCIP
+MCi status:
+Uncorrected error
+Error enabled
+Processor context corrupt
+MCA: BUS Level-0 Local-CPU-originated-request Generic Memory-access Request-did-not-timeout Error
+BQ_DCU_READ_TYPE BQ_ERR_HARD_TYPE BQ_ERR_HARD_TYPE
+timeout BINIT (ROB timeout). No micro-instruction retired for some time
+STATUS b200004000000800 MCGSTATUS 5
+
+Reverting it fixes the issue so it must be something DPM-related on
+RV770 in conjunction with his platform. I'm leaving in the rest for
+reference, if you need more info, the thread starts here:
+
+http://lkml.kernel.org/r/532C727F.1080803@st.ovgu.de
+
+Thanks.
+
+> >> Fine-grained bisection result:
+> >>
+> >> ab70b1dde73ff4525c3cd51090c233482c50f217 is the first bad commit
+> >> commit ab70b1dde73ff4525c3cd51090c233482c50f217
+> >> Author: Alex Deucher <alexander.deucher@amd.com>
+> >> Date:   Fri Nov 1 15:16:02 2013 -0400
+> >>
+> >>     drm/radeon: enable DPM by default on r7xx asics
+> >>
+> >>     Seems to be stable on them.
+> >>
+> >>     Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+> >>
+> >> :040000 040000 f3262029b868df4d882f64b4deba6b9230e307ea
+> >> 1f1dfca42763703a56e3cc82bb103608a24be94e M	drivers
+> >>
+> >>
+> >> Result is reasonable: I have a RV770 chip.
+> > 
+> > Yes it is.
+> > 
+> >> (Additional) Bug Report for Reference:
+> >> https://bugzilla.redhat.com/show_bug.cgi?id=1085785
+> >>
+> >> Thanks for the instructions Borislav! At first, I was not completely
+> >> sure what you expected me to do (this is my first kernel bug report :)).
+> > 
+> > And you're doing good so far! :-)
+> > 
+> >> If there is anymore more I can help you with, let me know.
+> > 
+> > Ok, now we want to confirm that this patch is *actually* the culprit by
+> > reverting it. Simply pull Linus' master branch to have the latest tree,
+> > and then do:
+> > 
+> > $ git checkout -b radeon-revert master
+> > 
+> > so that you land on a throwaway branch where we can play. Then normally you
+> > would do
+> > 
+> > $ git revert ab70b1dde73ff4525c3cd51090c233482c50f217
+> > 
+> > but that causes conflicts so I did it for you, see below. Simply apply
+> > this patch ontop *without* doing the revert with git. Then build, boot
+> > and test. We want to see whether it still generates those ROB timeout
+> > machine checks. If all looks ok, then we're pretty sure we need to talk
+> > about DPM with your GPU on your platform with Alex. :-)
+> > 
+> > Feel free to ask any questions should something be not clear.
+> > 
+> > Thanks.
+> > 
+> > ---
+> > From 0790e872f6d3c986d9ed36b850fd9d799dc422f9 Mon Sep 17 00:00:00 2001
+> > From: Borislav Petkov <bp@suse.de>
+> > Date: Fri, 18 Apr 2014 11:43:12 +0200
+> > Subject: [PATCH] Revert "drm/radeon: enable DPM by default on r7xx asics"
+> > 
+> > This reverts commit ab70b1dde73ff4525c3cd51090c233482c50f217.
+> > 
+> > Conflicts:
+> > 	drivers/gpu/drm/radeon/radeon_pm.c
+> > ---
+> >  drivers/gpu/drm/radeon/radeon_pm.c | 8 ++++----
+> >  1 file changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
+> > index ee738a524639..af693c4746da 100644
+> > --- a/drivers/gpu/drm/radeon/radeon_pm.c
+> > +++ b/drivers/gpu/drm/radeon/radeon_pm.c
+> > @@ -1257,6 +1257,10 @@ int radeon_pm_init(struct radeon_device *rdev)
+> >  	case CHIP_RV670:
+> >  	case CHIP_RS780:
+> >  	case CHIP_RS880:
+> > +	case CHIP_RV770:
+> > +	case CHIP_RV730:
+> > +	case CHIP_RV710:
+> > +	case CHIP_RV740:
+> >  	case CHIP_BARTS:
+> >  	case CHIP_TURKS:
+> >  	case CHIP_CAICOS:
+> > @@ -1273,10 +1277,6 @@ int radeon_pm_init(struct radeon_device *rdev)
+> >  		else
+> >  			rdev->pm.pm_method = PM_METHOD_PROFILE;
+> >  		break;
+> > -	case CHIP_RV770:
+> > -	case CHIP_RV730:
+> > -	case CHIP_RV710:
+> > -	case CHIP_RV740:
+> >  	case CHIP_CEDAR:
+> >  	case CHIP_REDWOOD:
+> >  	case CHIP_JUNIPER:
+> > 
+
+> diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
+> index ee738a524639..af693c4746da 100644
+> --- a/drivers/gpu/drm/radeon/radeon_pm.c
+> +++ b/drivers/gpu/drm/radeon/radeon_pm.c
+> @@ -1257,6 +1257,10 @@ int radeon_pm_init(struct radeon_device *rdev)
+>  	case CHIP_RV670:
+>  	case CHIP_RS780:
+>  	case CHIP_RS880:
+> +	case CHIP_RV770:
+> +	case CHIP_RV730:
+> +	case CHIP_RV710:
+> +	case CHIP_RV740:
+>  	case CHIP_BARTS:
+>  	case CHIP_TURKS:
+>  	case CHIP_CAICOS:
+> @@ -1273,10 +1277,6 @@ int radeon_pm_init(struct radeon_device *rdev)
+>  		else
+>  			rdev->pm.pm_method = PM_METHOD_PROFILE;
+>  		break;
+> -	case CHIP_RV770:
+> -	case CHIP_RV730:
+> -	case CHIP_RV710:
+> -	case CHIP_RV740:
+>  	case CHIP_CEDAR:
+>  	case CHIP_REDWOOD:
+>  	case CHIP_JUNIPER:
+
+
+
+
 -- 
-1.8.3.2
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
