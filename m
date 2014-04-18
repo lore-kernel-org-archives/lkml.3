@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaDRJfh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:35:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48639 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163AbaDRJfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 05:35:24 -0400
-Date: Fri, 18 Apr 2014 11:35:07 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Jean Pihet <jean.pihet@linaro.org>
-Subject: Re: [PATCH 0/3] perf tools: Speedup DWARF unwind
-Message-ID: <20140418093506.GA1914@krava.brq.redhat.com>
-References: <1397756352-26694-1-git-send-email-jolsa@redhat.com>
- <20140418075148.GA13793@gmail.com>
- <20140418075525.GA14243@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140418075525.GA14243@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754346AbaDRJbk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:31:40 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45990 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752355AbaDRJWs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 05:22:48 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Li RongQing <roy.qing.li@gmail.com>,
+        WANG Cong <amwang@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 54/72] netpoll: fix the skb check in pkt_is_ns
+Date: Fri, 18 Apr 2014 11:22:27 +0200
+Message-Id: <d40390bf12065bb1c228e4e8becc4ea62c307b48.1397812482.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
+References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
+In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
+References: <cover.1397812482.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 09:55:25AM +0200, Ingo Molnar wrote:
-> 
-> * Ingo Molnar <mingo@kernel.org> wrote:
-> 
-> > 
-> > * Jiri Olsa <jolsa@redhat.com> wrote:
-> > 
-> > > hi,
-> > > trying to speedup DWARF unwind report code by factoring
-> > > related code:
-> > >   - caching sample's registers access
-> > >   - keep dso data file descriptor open for the
-> > >     life of the dso object
-> > >   - replace dso cache code by mapping dso data file
-> > >     directly for the life of the dso object
-> > > 
-> > > The speedup is mainly for libunwind unwind. The libdw will benefit
-> > > mainly from cached registers access, because it handles dso data
-> > > accesses by itself.. and anyway it's still faster ;-).
-> > 
-> > Just curious: do you have any numbers about how much faster it got in 
-> > practice?
-> 
-> Oh, the numbers are all in the changelogs, never mind!
-> 
-> So in your test workload it went from 54.6 seconds to 36.7, a 48% 
-> speedup :-)
-> 
+From: Li RongQing <roy.qing.li@gmail.com>
 
-yep, I should have put it in here as well.. also the current
-libdw unwind time on this workload is 26 seconds.. 10 more
-seconds to go ;-)
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-jirka
+===============
+
+[ Not applicable upstream commit, the code here has been removed
+  upstream. ]
+
+Neighbor Solicitation is ipv6 protocol, so we should check
+skb->protocol with ETH_P_IPV6
+
+Signed-off-by: Li RongQing <roy.qing.li@gmail.com>
+Cc: WANG Cong <amwang@redhat.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ net/core/netpoll.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 462cdc97fad8..9b40f234b802 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -740,7 +740,7 @@ static bool pkt_is_ns(struct sk_buff *skb)
+ 	struct nd_msg *msg;
+ 	struct ipv6hdr *hdr;
+ 
+-	if (skb->protocol != htons(ETH_P_ARP))
++	if (skb->protocol != htons(ETH_P_IPV6))
+ 		return false;
+ 	if (!pskb_may_pull(skb, sizeof(struct ipv6hdr) + sizeof(struct nd_msg)))
+ 		return false;
+-- 
+1.9.2
+
