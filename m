@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763AbaDRWVr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 18:21:47 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:64146 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590AbaDRWUU (ORCPT
+	id S1754811AbaDRWWl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 18:22:41 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:36189 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752007AbaDRWUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 18:20:20 -0400
+	Fri, 18 Apr 2014 18:20:18 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         linux-serial@vger.kernel.org
@@ -15,9 +15,9 @@ Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Russell King <linux@arm.linux.org.uk>,
         Will Deacon <will.deacon@arm.com>, Arnd Bergmann <arnd@arndb.de>,
         Rob Herring <robh@kernel.org>
-Subject: [PATCH v2 3/7] tty/serial: convert 8250 to generic earlycon
-Date: Fri, 18 Apr 2014 17:19:56 -0500
-Message-Id: <1397859600-11507-4-git-send-email-robherring2@gmail.com>
+Subject: [PATCH v2 2/7] tty/serial: add generic serial earlycon
+Date: Fri, 18 Apr 2014 17:19:55 -0500
+Message-Id: <1397859600-11507-3-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
 References: <1397859600-11507-1-git-send-email-robherring2@gmail.com>
@@ -27,218 +27,246 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <robh@kernel.org>
 
-With the generic earlycon infrastructure in place, convert the 8250
-early console to use it.
+This introduces generic earlycon infrastructure for serial devices
+based on the 8250 earlycon. This allows for supporting earlycon option
+with other serial devices. The earlycon output is enabled at the time
+early_params are processed.
+
+Only architectures that have fixmap support or have functional ioremap
+when early_params are processed are supported. This is the same
+restriction that the 8250 driver had.
 
 Signed-off-by: Rob Herring <robh@kernel.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/tty/serial/8250/8250_early.c | 138 ++++-------------------------------
- drivers/tty/serial/8250/Kconfig      |   1 +
- 2 files changed, 16 insertions(+), 123 deletions(-)
+v2:
+- Use set_fixmap_io/ioremap instead of set_fixmap_nocache/ioremap_nocache.
+- Do the mapping outside of option parsing function.
+  
+ drivers/tty/serial/Kconfig    |   7 ++
+ drivers/tty/serial/Makefile   |   2 +
+ drivers/tty/serial/earlycon.c | 152 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/serial_core.h   |  16 +++++
+ 4 files changed, 177 insertions(+)
+ create mode 100644 drivers/tty/serial/earlycon.c
 
-diff --git a/drivers/tty/serial/8250/8250_early.c b/drivers/tty/serial/8250/8250_early.c
-index c100d63..e83c9db 100644
---- a/drivers/tty/serial/8250/8250_early.c
-+++ b/drivers/tty/serial/8250/8250_early.c
-@@ -35,18 +35,8 @@
- #include <linux/serial_8250.h>
- #include <asm/io.h>
- #include <asm/serial.h>
--#ifdef CONFIG_FIX_EARLYCON_MEM
--#include <asm/pgtable.h>
--#include <asm/fixmap.h>
--#endif
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 2e6d8dd..3b7c19b 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -7,6 +7,13 @@ if TTY
+ menu "Serial drivers"
+ 	depends on HAS_IOMEM
  
--struct early_serial8250_device {
--	struct uart_port port;
--	char options[16];		/* e.g., 115200n8 */
--	unsigned int baud;
--};
--
--static struct early_serial8250_device early_device;
-+static struct earlycon_device *early_device;
++config SERIAL_EARLYCON
++	bool
++	help
++	  Support for early consoles with the earlycon parameter. This enables
++	  the console before standard serial driver is probed. The console is
++	  enabled when early_param is processed.
++
+ source "drivers/tty/serial/8250/Kconfig"
  
- unsigned int __weak __init serial8250_early_in(struct uart_port *port, int offset)
- {
-@@ -100,7 +90,7 @@ static void __init serial_putc(struct uart_port *port, int c)
- static void __init early_serial8250_write(struct console *console,
- 					const char *s, unsigned int count)
- {
--	struct uart_port *port = &early_device.port;
-+	struct uart_port *port = &early_device->port;
- 	unsigned int ier;
+ comment "Non-8250 serial port support"
+diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+index 3680854..8af1415 100644
+--- a/drivers/tty/serial/Makefile
++++ b/drivers/tty/serial/Makefile
+@@ -5,6 +5,8 @@
+ obj-$(CONFIG_SERIAL_CORE) += serial_core.o
+ obj-$(CONFIG_SERIAL_21285) += 21285.o
  
- 	/* Save the IER and disable interrupts */
-@@ -129,7 +119,7 @@ static unsigned int __init probe_baud(struct uart_port *port)
- 	return (port->uartclk / 16) / quot;
- }
- 
--static void __init init_port(struct early_serial8250_device *device)
-+static void __init init_port(struct earlycon_device *device)
- {
- 	struct uart_port *port = &device->port;
- 	unsigned int divisor;
-@@ -148,128 +138,32 @@ static void __init init_port(struct early_serial8250_device *device)
- 	serial8250_early_out(port, UART_LCR, c & ~UART_LCR_DLAB);
- }
- 
--static int __init parse_options(struct early_serial8250_device *device,
--								char *options)
--{
--	struct uart_port *port = &device->port;
--	int mmio, mmio32, length;
--
--	if (!options)
--		return -ENODEV;
--
--	port->uartclk = BASE_BAUD * 16;
--
--	mmio = !strncmp(options, "mmio,", 5);
--	mmio32 = !strncmp(options, "mmio32,", 7);
--	if (mmio || mmio32) {
--		port->iotype = (mmio ? UPIO_MEM : UPIO_MEM32);
--		port->mapbase = simple_strtoul(options + (mmio ? 5 : 7),
--					       &options, 0);
--		if (mmio32)
--			port->regshift = 2;
--#ifdef CONFIG_FIX_EARLYCON_MEM
--		set_fixmap_nocache(FIX_EARLYCON_MEM_BASE,
--					port->mapbase & PAGE_MASK);
--		port->membase =
--			(void __iomem *)__fix_to_virt(FIX_EARLYCON_MEM_BASE);
--		port->membase += port->mapbase & ~PAGE_MASK;
--#else
--		port->membase = ioremap_nocache(port->mapbase, 64);
--		if (!port->membase) {
--			printk(KERN_ERR "%s: Couldn't ioremap 0x%llx\n",
--				__func__,
--			       (unsigned long long) port->mapbase);
--			return -ENOMEM;
--		}
--#endif
--	} else if (!strncmp(options, "io,", 3)) {
--		port->iotype = UPIO_PORT;
--		port->iobase = simple_strtoul(options + 3, &options, 0);
--		mmio = 0;
--	} else
--		return -EINVAL;
--
--	options = strchr(options, ',');
--	if (options) {
--		options++;
--		device->baud = simple_strtoul(options, NULL, 0);
--		length = min(strcspn(options, " ") + 1,
--			     (size_t)(sizeof(device->options)));
--		strlcpy(device->options, options, length);
--	} else {
--		device->baud = probe_baud(port);
--		snprintf(device->options, sizeof(device->options), "%u",
--			device->baud);
--	}
--
--	if (mmio || mmio32)
--		printk(KERN_INFO
--		       "Early serial console at MMIO%s 0x%llx (options '%s')\n",
--			mmio32 ? "32" : "",
--			(unsigned long long)port->mapbase,
--			device->options);
--	else
--		printk(KERN_INFO
--		      "Early serial console at I/O port 0x%lx (options '%s')\n",
--			port->iobase,
--			device->options);
--
--	return 0;
--}
--
--static struct console early_serial8250_console __initdata = {
--	.name	= "uart",
--	.write	= early_serial8250_write,
--	.flags	= CON_PRINTBUFFER | CON_BOOT,
--	.index	= -1,
--};
--
--static int __init early_serial8250_setup(char *options)
-+static int __init early_serial8250_setup(struct earlycon_device *device,
-+					 const char *options)
- {
--	struct early_serial8250_device *device = &early_device;
--	int err;
--
--	if (device->port.membase || device->port.iobase)
-+	if (!(device->port.membase || device->port.iobase))
- 		return 0;
- 
--	err = parse_options(device, options);
--	if (err < 0)
--		return err;
-+	if (!device->baud)
-+		device->baud = probe_baud(&device->port);
- 
- 	init_port(device);
--	return 0;
--}
--
--int __init setup_early_serial8250_console(char *cmdline)
--{
--	char *options;
--	int err;
--
--	options = strstr(cmdline, "uart8250,");
--	if (!options) {
--		options = strstr(cmdline, "uart,");
--		if (!options)
--			return 0;
--	}
--
--	options = strchr(cmdline, ',') + 1;
--	err = early_serial8250_setup(options);
--	if (err < 0)
--		return err;
--
--	register_console(&early_serial8250_console);
- 
-+	early_device = device;
-+	device->con->write = early_serial8250_write;
- 	return 0;
- }
-+EARLYCON_DECLARE(uart8250, early_serial8250_setup);
-+EARLYCON_DECLARE(uart, early_serial8250_setup);
- 
- int serial8250_find_port_for_earlycon(void)
- {
--	struct early_serial8250_device *device = &early_device;
--	struct uart_port *port = &device->port;
-+	struct earlycon_device *device = early_device;
-+	struct uart_port *port = device ? &device->port : NULL;
- 	int line;
- 	int ret;
- 
--	if (!device->port.membase && !device->port.iobase)
-+	if (!port || (!port->membase && !port->iobase))
- 		return -ENODEV;
- 
- 	line = serial8250_find_port(port);
-@@ -284,5 +178,3 @@ int serial8250_find_port_for_earlycon(void)
- 
- 	return ret;
- }
--
--early_param("earlycon", setup_early_serial8250_console);
-diff --git a/drivers/tty/serial/8250/Kconfig b/drivers/tty/serial/8250/Kconfig
-index 91f1d83..349ee59 100644
---- a/drivers/tty/serial/8250/Kconfig
-+++ b/drivers/tty/serial/8250/Kconfig
-@@ -61,6 +61,7 @@ config SERIAL_8250_CONSOLE
- 	bool "Console on 8250/16550 and compatible serial port"
- 	depends on SERIAL_8250=y
- 	select SERIAL_CORE_CONSOLE
-+	select SERIAL_EARLYCON
- 	---help---
- 	  If you say Y here, it will be possible to use a serial port as the
- 	  system console (the system console is the device which receives all
++obj-$(CONFIG_SERIAL_EARLYCON) += earlycon.o
++
+ # These Sparc drivers have to appear before others such as 8250
+ # which share ttySx minor node space.  Otherwise console device
+ # names change and other unplesantries.
+diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
+new file mode 100644
+index 0000000..73bf1e2
+--- /dev/null
++++ b/drivers/tty/serial/earlycon.c
+@@ -0,0 +1,152 @@
++/*
++ * Copyright (C) 2014 Linaro Ltd.
++ * Author: Rob Herring <robh@kernel.org>
++ *
++ * Based on 8250 earlycon:
++ * (c) Copyright 2004 Hewlett-Packard Development Company, L.P.
++ *	Bjorn Helgaas <bjorn.helgaas@hp.com>
++ *
++ * This program is free software: you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/console.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/io.h>
++#include <linux/serial_core.h>
++
++#ifdef CONFIG_FIX_EARLYCON_MEM
++#include <asm/fixmap.h>
++#endif
++
++#include <asm/serial.h>
++
++static struct console early_con = {
++	.name =		"earlycon",
++	.flags =	CON_PRINTBUFFER | CON_BOOT,
++	.index =	-1,
++};
++
++static struct earlycon_device early_console_dev = {
++	.con = &early_con,
++};
++
++static void __iomem * __init earlycon_map(unsigned long paddr, size_t size)
++{
++	void __iomem *base;
++#ifdef CONFIG_FIX_EARLYCON_MEM
++	set_fixmap_io(FIX_EARLYCON_MEM_BASE, paddr & PAGE_MASK);
++	base = (void __iomem *)__fix_to_virt(FIX_EARLYCON_MEM_BASE);
++	base += paddr & ~PAGE_MASK;
++#else
++	base = ioremap(paddr, size);
++#endif
++	if (!base)
++		pr_err("%s: Couldn't map 0x%llx\n", __func__,
++		       (unsigned long long)paddr);
++
++	return base;
++}
++
++static int __init parse_options(struct earlycon_device *device,
++				char *options)
++{
++	struct uart_port *port = &device->port;
++	int mmio, mmio32, length, ret;
++	unsigned long addr;
++
++	if (!options)
++		return -ENODEV;
++
++	mmio = !strncmp(options, "mmio,", 5);
++	mmio32 = !strncmp(options, "mmio32,", 7);
++	if (mmio || mmio32) {
++		port->iotype = (mmio ? UPIO_MEM : UPIO_MEM32);
++		options += mmio ? 5 : 7;
++		ret = kstrtoul(options, 0, &addr);
++		if (ret)
++			return ret;
++		port->mapbase = addr;
++		if (mmio32)
++			port->regshift = 2;
++	} else if (!strncmp(options, "io,", 3)) {
++		port->iotype = UPIO_PORT;
++		options += 3;
++		ret = kstrtoul(options, 0, &addr);
++		if (ret)
++			return ret;
++		port->iobase = addr;
++		mmio = 0;
++	} else if (!strncmp(options, "0x", 2)) {
++		port->iotype = UPIO_MEM;
++		ret = kstrtoul(options, 0, &addr);
++		if (ret)
++			return ret;
++		port->mapbase = addr;
++	} else {
++		return -EINVAL;
++	}
++
++	port->uartclk = BASE_BAUD * 16;
++
++	options = strchr(options, ',');
++	if (options) {
++		options++;
++		ret = kstrtouint(options, 0, &device->baud);
++		if (ret)
++			return ret;
++		length = min(strcspn(options, " ") + 1,
++			     (size_t)(sizeof(device->options)));
++		strlcpy(device->options, options, length);
++	}
++
++	if (mmio || mmio32)
++		pr_info("Early serial console at MMIO%s 0x%llx (options '%s')\n",
++			mmio32 ? "32" : "",
++			(unsigned long long)port->mapbase,
++			device->options);
++	else
++		pr_info("Early serial console at I/O port 0x%lx (options '%s')\n",
++			port->iobase,
++			device->options);
++
++	return 0;
++}
++
++int __init setup_earlycon(char *buf, const char *match,
++			  int (*setup)(struct earlycon_device *, const char *))
++{
++	int err;
++	size_t len;
++	struct uart_port *port = &early_console_dev.port;
++
++	if (!buf || !match || !setup)
++		return 0;
++
++	len = strlen(match);
++	if (strncmp(buf, match, len))
++		return 0;
++	if (buf[len] && (buf[len] != ','))
++		return 0;
++
++	buf += len + 1;
++
++	err = parse_options(&early_console_dev, buf);
++	/* On parsing error, pass the options buf to the setup function */
++	if (!err)
++		buf = NULL;
++
++	if (port->mapbase)
++		port->membase = earlycon_map(port->mapbase, 64);
++
++	early_console_dev.con->data = &early_console_dev;
++	err = setup(&early_console_dev, buf);
++	if (err < 0)
++		return err;
++	if (!early_console_dev.con->write)
++		return -ENODEV;
++
++	register_console(early_console_dev.con);
++	return 0;
++}
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index f729be9..7a15b5b 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -285,6 +285,22 @@ static inline int uart_poll_timeout(struct uart_port *port)
+ /*
+  * Console helpers.
+  */
++struct earlycon_device {
++	struct console *con;
++	struct uart_port port;
++	char options[16];		/* e.g., 115200n8 */
++	unsigned int baud;
++};
++int setup_earlycon(char *buf, const char *match,
++		   int (*setup)(struct earlycon_device *, const char *));
++
++#define EARLYCON_DECLARE(name, func) \
++static int __init name ## _setup_earlycon(char *buf) \
++{ \
++	return setup_earlycon(buf, __stringify(name), func); \
++} \
++early_param("earlycon", name ## _setup_earlycon);
++
+ struct uart_port *uart_get_console(struct uart_port *ports, int nr,
+ 				   struct console *c);
+ void uart_parse_options(char *options, int *baud, int *parity, int *bits,
 -- 
 1.9.1
 
