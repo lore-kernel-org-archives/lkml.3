@@ -1,76 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161002AbaDRVjl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 17:39:41 -0400
-Received: from mail-ve0-f179.google.com ([209.85.128.179]:39763 "EHLO
-	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008AbaDRVje (ORCPT
+	id S1754801AbaDRViL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 17:38:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:42779 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728AbaDRVhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 17:39:34 -0400
+	Fri, 18 Apr 2014 17:37:35 -0400
+Date: Fri, 18 Apr 2014 14:37:44 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: [GIT PULL] TTY/Serial fixes for 3.15-rc2
+Message-ID: <20140418213744.GA3605@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20140418205213.GA21823@atomide.com>
-References: <20140320161118.B7075C4067A@trevor.secretlab.ca>
-	<1395413185-29763-1-git-send-email-jjhiblot@traphandler.com>
-	<1395413185-29763-3-git-send-email-jjhiblot@traphandler.com>
-	<CAL_Jsq+aU+rs28gV=Gesb_-Dy6Ht7zuKrRA6_hmqp94Uun23Yg@mail.gmail.com>
-	<20140418205213.GA21823@atomide.com>
-Date: Fri, 18 Apr 2014 16:39:33 -0500
-Message-ID: <CAL_JsqJvVvo6R-qNXxur7wiZERKbi52xyKoWnmzJTfKS2iKK7A@mail.gmail.com>
-Subject: Re: [PATCH v3 2/2] dt: platform driver: Fill the resources before
- probe and defer if needed
-From: Rob Herring <robherring2@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 3:52 PM, Tony Lindgren <tony@atomide.com> wrote:
-> * Rob Herring <robherring2@gmail.com> [140411 10:33]:
->> On Fri, Mar 21, 2014 at 9:46 AM, Jean-Jacques Hiblot
->> <jjhiblot@traphandler.com> wrote:
->> > The goal of this patch is to allow drivers to be probed even if at the time of
->> > the DT parsing some of their IRQ ressources are not available yet.
->> >
->> > In the current situation, the IRQ resources of a platform device are filled from
->> > the DT at the time the device is created (of_device_alloc()). The drawback of
->> > this is that a device sitting close to the top of the DT (ahb for example) but
->> > depending on ressources that are initialized later (IRQ domain dynamically
->> > created for example) will fail to probe because the ressources don't exist
->> > at this time.
->>
->> s/ressources/resources/
->
-> While I've tested these two patches and they fix the issue for me. I have
-> some serious doubts again about this whole ------ up string parsing
-> pile of ---- called device tree.
->
-> Do we really need to sprinkle more of_* hacks to the irq subsystem?
->
-> There's nothing wrong with with the irq subsystem. Platform bus is just
-> calling the irq subsystem at the wrong time with uninitialized data.
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
 
-This patch doesn't even touch the irq subsystem.
+  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
 
-> It seems that we're again papering over the fact that there's nothing
-> coordinating the setting up of various resources with device tree.
-> That seems to be the repeating never ending pattern as we've already
-> seen with GPIOs, pinctrl, and IRQchips. We end up adding all kinds of
-> cross subsystem calls that were never needed earlier.
+are available in the git repository at:
 
-This problem may be made worse with DT, but this problem has existed
-for as long as I have worked on the kernel. It is worse with DT since
-platforms have less control over the init ordering and loose some
-ability to do tricks like changing the initcall levels. We didn't even
-try to do pinctrl in any generic way before DT.
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/tty.git/ tags/tty-3.15-rc2
 
-Rob
+for you to fetch changes up to 12de375ec493ab1767d4a07dde823e63ae5edc21:
+
+  Revert "serial: 8250, disable "too much work" messages" (2014-04-17 09:33:19 -0700)
+
+----------------------------------------------------------------
+TTY/Serial driver fixes for 3.15-rc2
+
+Here are a number of small tty/serial driver fixes for 3.15-rc2.  Also
+in here are some Documentation file removals for drivers that we removed
+a long time ago, no need to keep it around any longer.
+
+All of these have been in linux-next for a bit.
+
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+----------------------------------------------------------------
+Alexander Shiyan (1):
+      Revert "serial: clps711x: Give a chance to perform useful tasks during wait loop"
+
+Chen Tingjie (1):
+      tty: fix memleak in alloc_pid
+
+Daniel Thompson (1):
+      serial: st-asc: Fix SysRq char handling
+
+Geert Uytterhoeven (1):
+      serial_core: Fix pm imbalance on unbind
+
+Greg Kroah-Hartman (1):
+      Revert "serial: 8250, disable "too much work" messages"
+
+Guennadi Liakhovetski (2):
+      serial: pl011: change Rx burst size to half of trigger level
+      serial: amba-pl011: fix regression, causing an Oops on rmmod
+
+Jean Delvare (3):
+      serial: timberdale: Depend on X86_32
+      Documentation/serial: Delete obsolete driver documentation
+      tty: Fix help text of SYNCLINK_CS
+
+Jiri Slaby (1):
+      serial: 8250, disable "too much work" messages
+
+Sanjay Singh Rawat (1):
+      serial: omap: free the wakeup settings in remove
+
+Seth Bollinger (1):
+      serial_core: Fix conditional start_tx on ring buffer not empty
+
+Takashi Iwai (2):
+      ttyprintk: Fix wrong tty_unregister_driver() call in the error path
+      ttyprintk: Allow built as a module
+
+Tony Lindgren (1):
+      serial: omap: Fix missing pm_runtime_resume handling by simplifying code
+
+Uwe Kleine-König (1):
+      serial: efm32: use $vendor,$device scheme for compatible string
+
+ .../devicetree/bindings/serial/efm32-uart.txt      |   4 +-
+ Documentation/kernel-parameters.txt                |  13 -
+ Documentation/magic-number.txt                     |  12 -
+ Documentation/serial/00-INDEX                      |   8 -
+ Documentation/serial/digiepca.txt                  |  98 ------
+ Documentation/serial/riscom8.txt                   |  36 --
+ Documentation/serial/specialix.txt                 | 383 ---------------------
+ Documentation/serial/sx.txt                        | 294 ----------------
+ Documentation/zh_CN/magic-number.txt               |  12 -
+ drivers/char/Kconfig                               |   2 +-
+ drivers/char/pcmcia/Kconfig                        |   2 +-
+ drivers/char/ttyprintk.c                           |  15 +-
+ drivers/tty/serial/Kconfig                         |   1 +
+ drivers/tty/serial/amba-pl011.c                    |   8 +-
+ drivers/tty/serial/clps711x.c                      |  20 +-
+ drivers/tty/serial/efm32-uart.c                    |   3 +
+ drivers/tty/serial/omap-serial.c                   |  30 +-
+ drivers/tty/serial/serial_core.c                   |   5 +-
+ drivers/tty/serial/st-asc.c                        |   4 +-
+ drivers/tty/tty_io.c                               |   4 +-
+ firmware/WHENCE                                    |  10 -
+ 21 files changed, 57 insertions(+), 907 deletions(-)
+ delete mode 100644 Documentation/serial/digiepca.txt
+ delete mode 100644 Documentation/serial/riscom8.txt
+ delete mode 100644 Documentation/serial/specialix.txt
+ delete mode 100644 Documentation/serial/sx.txt
