@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754371AbaDRJmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:42:50 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45939 "EHLO
+	id S1754393AbaDRJmm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:42:42 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45938 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752203AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752197AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Anton Nayshtut <anton@swortex.com>,
+Cc: linux-kernel@vger.kernel.org, Sabrina Dubroca <sd@queasysnail.net>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 34/72] ipv6: Fix exthdrs offload registration.
-Date: Fri, 18 Apr 2014 11:22:07 +0200
-Message-Id: <38de8fd06b3d36b66cbd5093db17c36714f130da.1397812482.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 35/72] ipv6: don't set DST_NOCOUNT for remotely added routes
+Date: Fri, 18 Apr 2014 11:22:08 +0200
+Message-Id: <50fb0fafd1546f2dc6bf931f3a44f63704ce78ac.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -23,49 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Nayshtut <anton@swortex.com>
+From: Sabrina Dubroca <sd@queasysnail.net>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit d2d273ffabd315eecefce21a4391d44b6e156b73 ]
+[ Upstream commit c88507fbad8055297c1d1e21e599f46960cbee39 ]
 
-Without this fix, ipv6_exthdrs_offload_init doesn't register IPPROTO_DSTOPTS
-offload, but returns 0 (as the IPPROTO_ROUTING registration actually succeeds).
+DST_NOCOUNT should only be used if an authorized user adds routes
+locally. In case of routes which are added on behalf of router
+advertisments this flag must not get used as it allows an unlimited
+number of routes getting added remotely.
 
-This then causes the ipv6_gso_segment to drop IPv6 packets with IPPROTO_DSTOPTS
-header.
-
-The issue detected and the fix verified by running MS HCK Offload LSO test on
-top of QEMU Windows guests, as this test sends IPv6 packets with
-IPPROTO_DSTOPTS.
-
-Signed-off-by: Anton Nayshtut <anton@swortex.com>
+Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv6/exthdrs_offload.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ net/ipv6/route.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/ipv6/exthdrs_offload.c b/net/ipv6/exthdrs_offload.c
-index cf77f3abfd06..447a7fbd1bb6 100644
---- a/net/ipv6/exthdrs_offload.c
-+++ b/net/ipv6/exthdrs_offload.c
-@@ -25,11 +25,11 @@ int __init ipv6_exthdrs_offload_init(void)
- 	int ret;
- 
- 	ret = inet6_add_offload(&rthdr_offload, IPPROTO_ROUTING);
--	if (!ret)
-+	if (ret)
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index 0accb1321dd6..77f81beabbd3 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1500,7 +1500,7 @@ int ip6_route_add(struct fib6_config *cfg)
+ 	if (!table)
  		goto out;
  
- 	ret = inet6_add_offload(&dstopt_offload, IPPROTO_DSTOPTS);
--	if (!ret)
-+	if (ret)
- 		goto out_rt;
+-	rt = ip6_dst_alloc(net, NULL, DST_NOCOUNT, table);
++	rt = ip6_dst_alloc(net, NULL, (cfg->fc_flags & RTF_ADDRCONF) ? 0 : DST_NOCOUNT, table);
  
- out:
+ 	if (!rt) {
+ 		err = -ENOMEM;
 -- 
 1.9.2
 
