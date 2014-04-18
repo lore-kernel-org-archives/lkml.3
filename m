@@ -1,96 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754130AbaDRMq7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:46:59 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:45782 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753350AbaDRMqy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:46:54 -0400
-X-IronPort-AV: E=Sophos;i="4.97,883,1389715200"; 
-   d="scan'208";a="29445278"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, <stable@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Andreas Gruenbacher <agruen@linbit.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-Subject: [PATCH 1/8] idr: fix overflow bug for the max-high layer
-Date: Fri, 18 Apr 2014 20:49:48 +0800
-Message-ID: <1397825404-12039-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
+	id S1753800AbaDRMvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:51:14 -0400
+Received: from mail-bn1bon0132.outbound.protection.outlook.com ([157.56.111.132]:7334
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753123AbaDRMnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:43:15 -0400
+From: Ley Foon Tan <lftan@altera.com>
+To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
+        <cltang@codesourcery.com>
+Subject: [PATCH 27/28] MAINTAINERS: Add nios2 maintainer
+Date: Fri, 18 Apr 2014 20:27:10 +0800
+Message-ID: <1397824031-4892-24-git-send-email-lftan@altera.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(189002)(199002)(83072002)(76482001)(74502001)(85852003)(20776003)(47776003)(42186004)(77156001)(84676001)(99396002)(2009001)(87286001)(88136002)(16796002)(31966008)(74662001)(89996001)(19580395003)(44976005)(36756003)(6806004)(2201001)(87936001)(77982001)(92566001)(19580405001)(83322001)(92726001)(4396001)(46102001)(50466002)(80022001)(97736001)(86362001)(93916002)(50226001)(81342001)(50986999)(48376002)(81542001)(76176999)(80976001)(62966002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB032;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:2BFE1066.824AA8C.4FD7B7EB.8BC59A80.2012D;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 018577E36E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In idr_replace(), when the top layer is the max-high layer(p->layer == 3),
-The "(1 << n)" will overflow and the result is 0, it causes idr_replace()
-return -EINVAL even the id is actually valid.
-
-The following test code shows it fails to replace the value for id=((1<<27)+42):
-
-static void test5(void)
-{
-	int id;
-	DEFINE_IDR(test_idr);
-#define TEST5_START ((1<<27)+42) /* use the highest layer */
-
-	printk(KERN_INFO "Start test5\n");
-	id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
-	BUG_ON(id != TEST5_START);
-	TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
-	idr_destroy(&test_idr);
-	printk(KERN_INFO "End of test5\n");
-}
-
-Fixed the bug by using idr_max() instead of the incorrect open code.
-
-There is the same problem in sub_alloc(). The overflow causes sub_alloc()
-returns -EAGAIN unexpectedly. But the idr_get_empty_slot() will call it
-again with increased @id. So the bug is hided.
-
-CC: stable@vger.kernel.org
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- lib/idr.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+ MAINTAINERS | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-diff --git a/lib/idr.c b/lib/idr.c
-index 2642fa8..4df6792 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -249,7 +249,7 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa,
- 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 80399ff..389f3d5315b69660060f34617df402e27323c543 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6247,6 +6247,13 @@ S:	Maintained
+ F:	Documentation/scsi/NinjaSCSI.txt
+ F:	drivers/scsi/nsp32*
  
- 			/* if already at the top layer, we need to grow */
--			if (id >= 1 << (idp->layers * IDR_BITS)) {
-+			if (id > idr_max(idp->layers)) {
- 				*starting_id = id;
- 				return -EAGAIN;
- 			}
-@@ -811,12 +811,10 @@ void *idr_replace(struct idr *idp, void *ptr, int id)
- 	if (!p)
- 		return ERR_PTR(-EINVAL);
- 
--	n = (p->layer+1) * IDR_BITS;
--
--	if (id >= (1 << n))
-+	if (id > idr_max(p->layer + 1))
- 		return ERR_PTR(-EINVAL);
- 
--	n -= IDR_BITS;
-+	n = p->layer * IDR_BITS;
- 	while ((n > 0) && p) {
- 		p = p->ary[(id >> n) & IDR_MASK];
- 		n -= IDR_BITS;
++NIOS2 ARCHITECTURE
++M:	Ley Foon Tan <lftan@altera.com>
++L:	nios2-dev@lists.rocketboards.org (moderated for non-subscribers)
++T:	git://git.rocketboards.org/linux-socfpga.git
++S:	Maintained
++F:	arch/nios2/
++
+ NTB DRIVER
+ M:	Jon Mason <jon.mason@intel.com>
+ S:	Supported
 -- 
-1.7.4.4
+1.8.3.2
 
