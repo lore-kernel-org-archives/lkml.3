@@ -1,543 +1,756 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbaDRMnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:43:18 -0400
-Received: from mail-by2on0103.outbound.protection.outlook.com ([207.46.100.103]:11823
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1753335AbaDRMnd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:43:33 -0400
+Received: from mail-bn1blp0186.outbound.protection.outlook.com ([207.46.163.186]:47996
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752139AbaDRMmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:42:55 -0400
+	id S1753240AbaDRMn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:43:28 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH 18/28] nios2: Library functions
-Date: Fri, 18 Apr 2014 20:27:01 +0800
-Message-ID: <1397824031-4892-15-git-send-email-lftan@altera.com>
+Subject: [PATCH 06/28] nios2: Memory management
+Date: Fri, 18 Apr 2014 20:26:51 +0800
+Message-ID: <1397824031-4892-5-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
 References: <1397824031-4892-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(979002)(6009001)(458001)(22564002)(189002)(199002)(2201001)(92566001)(80022001)(92726001)(575784001)(86362001)(80976001)(93916002)(62966002)(2009001)(81342001)(88136002)(87286001)(50226001)(4396001)(33646001)(81542001)(83072002)(85852003)(84676001)(89996001)(99396002)(50986999)(97736001)(50466002)(87936001)(48376002)(47776003)(76176999)(42186004)(31966008)(16796002)(74502001)(74662001)(20776003)(79102001)(83322001)(19580405001)(19580395003)(44976005)(6806004)(76482001)(77156001)(46102001)(77982001)(36756003)(2004002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB044;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:EA8FFD14.83E15E7B.DEFD71AF.42E7C251.208AC;MLV:ovrnspm;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(22564002)(76176999)(99396002)(6806004)(50986999)(80022001)(87286001)(93916002)(88136002)(86362001)(575784001)(50466002)(19580405001)(62966002)(2201001)(92566001)(92726001)(77982001)(2009001)(47776003)(20776003)(80976001)(44976005)(48376002)(83322001)(19580395003)(84676001)(81542001)(97736001)(76482001)(81342001)(77156001)(83072002)(85852003)(42186004)(36756003)(4396001)(87936001)(89996001)(50226001)(46102001)(16796002)(74502001)(31966008)(74662001)(21314002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB029;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:FEADDC58.A0CEDFCC.80F9518F.C317BC7B.20A5E;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-OriginatorOrg: altera.onmicrosoft.com
 X-Forefront-PRVS: 018577E36E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add optimised library functions for nios2.
+This patch contains the initialisation of the memory blocks, MMU
+attributes and the memory map.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/checksum.h |  78 +++++++++++++++
- arch/nios2/include/asm/string.h   |  24 +++++
- arch/nios2/lib/memcpy.c           | 199 ++++++++++++++++++++++++++++++++++++++
- arch/nios2/lib/memmove.c          |  82 ++++++++++++++++
- arch/nios2/lib/memset.c           |  81 ++++++++++++++++
- 5 files changed, 464 insertions(+)
- create mode 100644 arch/nios2/include/asm/checksum.h
- create mode 100644 arch/nios2/include/asm/string.h
- create mode 100644 arch/nios2/lib/memcpy.c
- create mode 100644 arch/nios2/lib/memmove.c
- create mode 100644 arch/nios2/lib/memset.c
+ arch/nios2/include/asm/mmu.h     |  18 +++
+ arch/nios2/include/asm/page.h    | 111 +++++++++++++++++++
+ arch/nios2/include/asm/uaccess.h | 233 +++++++++++++++++++++++++++++++++++++++
+ arch/nios2/mm/init.c             | 152 +++++++++++++++++++++++++
+ arch/nios2/mm/uaccess.c          | 162 +++++++++++++++++++++++++++
+ 5 files changed, 676 insertions(+)
+ create mode 100644 arch/nios2/include/asm/mmu.h
+ create mode 100644 arch/nios2/include/asm/page.h
+ create mode 100644 arch/nios2/include/asm/uaccess.h
+ create mode 100644 arch/nios2/mm/init.c
+ create mode 100644 arch/nios2/mm/uaccess.c
 
-diff --git a/arch/nios2/include/asm/checksum.h b/arch/nios2/include/asm/checksum.h
+diff --git a/arch/nios2/include/asm/mmu.h b/arch/nios2/include/asm/mmu.h
 new file mode 100644
-index 0000000..6bc1f0d
+index 0000000..96ab052
 --- /dev/null
-+++ b/arch/nios2/include/asm/checksum.h
-@@ -0,0 +1,78 @@
++++ b/arch/nios2/include/asm/mmu.h
+@@ -0,0 +1,18 @@
 +/*
 + * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
 + * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * Taken from m68knommu.
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License. See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#ifndef _ASM_NIOS_CHECKSUM_H
-+#define _ASM_NIOS_CHECKSUM_H
++#ifndef _ASM_NIOS2_MMU_H
++#define _ASM_NIOS2_MMU_H
 +
-+/* Take these from lib/checksum.c */
-+extern __wsum csum_partial(const void *buff, int len, __wsum sum);
-+extern __wsum csum_partial_copy(const void *src, void *dst, int len,
-+				__wsum sum);
-+extern __wsum csum_partial_copy_from_user(const void __user *src, void *dst,
-+					int len, __wsum sum, int *csum_err);
-+#define csum_partial_copy_nocheck(src, dst, len, sum)	\
-+	csum_partial_copy((src), (dst), (len), (sum))
++/* Default "unsigned long" context */
++typedef unsigned long mm_context_t;
 +
-+extern __sum16 ip_fast_csum(const void *iph, unsigned int ihl);
-+extern __sum16 ip_compute_csum(const void *buff, int len);
-+
-+/*
-+ * Fold a partial checksum
-+ */
-+static inline __sum16 csum_fold(__wsum sum)
-+{
-+	__asm__ __volatile__(
-+		"add	%0, %1, %0\n"
-+		"cmpltu	r8, %0, %1\n"
-+		"srli	%0, %0, 16\n"
-+		"add	%0, %0, r8\n"
-+		"nor	%0, %0, %0\n"
-+		: "=r" (sum)
-+		: "r" (sum << 16), "0" (sum)
-+		: "r8");
-+	return (__force __sum16) sum;
-+}
-+
-+/*
-+ * computes the checksum of the TCP/UDP pseudo-header
-+ * returns a 16-bit checksum, already complemented
-+ */
-+#define csum_tcpudp_nofold csum_tcpudp_nofold
-+static inline __wsum csum_tcpudp_nofold(__be32 saddr, __be32 daddr,
-+					unsigned short len,
-+					unsigned short proto,
-+					__wsum sum)
-+{
-+	__asm__ __volatile__(
-+		"add	%0, %1, %0\n"
-+		"cmpltu	r8, %0, %1\n"
-+		"add	%0, %0, r8\n"	/* add carry */
-+		"add	%0, %2, %0\n"
-+		"cmpltu	r8, %0, %2\n"
-+		"add	%0, %0, r8\n"	/* add carry */
-+		"add	%0, %3, %0\n"
-+		"cmpltu	r8, %0, %3\n"
-+		"add	%0, %0, r8\n"	/* add carry */
-+		: "=r" (sum), "=r" (saddr)
-+		: "r" (daddr), "r" ((ntohs(len) << 16) + (proto * 256)),
-+		  "0" (sum),
-+		  "1" (saddr)
-+		: "r8");
-+
-+	return sum;
-+}
-+
-+static inline __sum16 csum_tcpudp_magic(__be32 saddr, __be32 daddr,
-+					unsigned short len,
-+					unsigned short proto, __wsum sum)
-+{
-+	return csum_fold(csum_tcpudp_nofold(saddr, daddr, len, proto, sum));
-+}
-+
-+#endif /* _ASM_NIOS_CHECKSUM_H */
-diff --git a/arch/nios2/include/asm/string.h b/arch/nios2/include/asm/string.h
++#endif /* _ASM_NIOS2_MMU_H */
+diff --git a/arch/nios2/include/asm/page.h b/arch/nios2/include/asm/page.h
 new file mode 100644
-index 0000000..14dd570d64f70bfd19e62fe373650fd32cdf88a9
+index 0000000..4f25e0fe6cb9666a713dd2738871915f73f9a1d7
 --- /dev/null
-+++ b/arch/nios2/include/asm/string.h
-@@ -0,0 +1,24 @@
++++ b/arch/nios2/include/asm/page.h
+@@ -0,0 +1,111 @@
 +/*
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * MMU support based on asm/page.h from mips which is:
++ *
++ * Copyright (C) 1994 - 1999, 2000, 03 Ralf Baechle
++ * Copyright (C) 1999, 2000 Silicon Graphics, Inc.
++ *
++ * NOMMU support based on asm/page.h from m68knommu.
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_STRING_H
-+#define _ASM_NIOS2_STRING_H
++#ifndef _ASM_NIOS2_PAGE_H
++#define _ASM_NIOS2_PAGE_H
 +
-+#ifdef __KERNEL__
++#include <linux/pfn.h>
 +
-+#define __HAVE_ARCH_MEMSET
-+#define __HAVE_ARCH_MEMCPY
-+#define __HAVE_ARCH_MEMMOVE
++/*
++ * PAGE_SHIFT determines the page size
++ */
++#define PAGE_SHIFT	12
++#define PAGE_SIZE	4096
++#define PAGE_MASK	(~(PAGE_SIZE - 1))
 +
-+extern void *memset(void *s, int c, size_t count);
-+extern void *memcpy(void *d, const void *s, size_t count);
-+extern void *memmove(void *d, const void *s, size_t count);
++/*
++ * PAGE_OFFSET -- the first address of the first page of memory.
++ */
++#define PAGE_OFFSET	(CONFIG_MEM_BASE + CONFIG_KERNEL_REGION_BASE)
 +
-+#endif /* __KERNEL__ */
++#ifndef __ASSEMBLY__
 +
-+#endif /* _ASM_NIOS2_STRING_H */
-diff --git a/arch/nios2/lib/memcpy.c b/arch/nios2/lib/memcpy.c
++/*
++ * This gives the physical RAM offset.
++ */
++#define PHYS_OFFSET		CONFIG_MEM_BASE
++
++/*
++ * It's normally defined only for FLATMEM config but it's
++ * used in our early mem init code for all memory models.
++ * So always define it.
++ */
++#define ARCH_PFN_OFFSET		PFN_UP(PHYS_OFFSET)
++
++#define clear_page(page)	memset((page), 0, PAGE_SIZE)
++#define copy_page(to, from)	memcpy((to), (from), PAGE_SIZE)
++
++struct page;
++
++extern void clear_user_page(void *addr, unsigned long vaddr, struct page *page);
++extern void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
++				struct page *to);
++
++extern unsigned long shm_align_mask;
++
++/*
++ * These are used to make use of C type-checking.
++ */
++typedef struct page *pgtable_t;
++typedef struct { unsigned long pte; } pte_t;
++typedef struct { unsigned long pgd; } pgd_t;
++typedef struct { unsigned long pgprot; } pgprot_t;
++
++#define pte_val(x)	((x).pte)
++#define pgd_val(x)	((x).pgd)
++#define pgprot_val(x)	((x).pgprot)
++
++#define __pte(x)	((pte_t) { (x) })
++#define __pgd(x)	((pgd_t) { (x) })
++#define __pgprot(x)	((pgprot_t) { (x) })
++
++extern unsigned long memory_start;
++extern unsigned long memory_end;
++extern unsigned long memory_size;
++
++extern struct page *mem_map;
++
++#endif /* !__ASSEMBLY__ */
++
++# define __pa(x)		\
++	((unsigned long)(x) - PAGE_OFFSET + PHYS_OFFSET)
++# define __va(x)		\
++	((void *)((unsigned long)(x) + PAGE_OFFSET - PHYS_OFFSET))
++
++#define page_to_virt(page)	\
++	((((page) - mem_map) << PAGE_SHIFT) + PAGE_OFFSET)
++
++# define pfn_to_kaddr(pfn)	__va((pfn) << PAGE_SHIFT)
++# define pfn_valid(pfn)		((pfn) >= ARCH_PFN_OFFSET &&	\
++					(pfn) < (max_mapnr + ARCH_PFN_OFFSET))
++
++# define virt_to_page(vaddr)	pfn_to_page(PFN_DOWN(virt_to_phys(vaddr)))
++# define virt_addr_valid(vaddr)	pfn_valid(PFN_DOWN(virt_to_phys(vaddr)))
++
++# define VM_DATA_DEFAULT_FLAGS	(VM_READ | VM_WRITE | VM_EXEC | \
++				 VM_MAYREAD | VM_MAYWRITE | VM_MAYEXEC)
++
++# define UNCAC_ADDR(addr)	\
++	((void *)((unsigned)(addr) | CONFIG_IO_REGION_BASE))
++# define CAC_ADDR(addr)		\
++	((void *)(((unsigned)(addr) & ~CONFIG_IO_REGION_BASE) |		\
++		CONFIG_KERNEL_REGION_BASE))
++
++#include <asm-generic/memory_model.h>
++
++#include <asm-generic/getorder.h>
++
++#endif /* _ASM_NIOS2_PAGE_H */
+diff --git a/arch/nios2/include/asm/uaccess.h b/arch/nios2/include/asm/uaccess.h
 new file mode 100644
-index 0000000..ac7eec4
+index 0000000..3e36f536afaba24c308a8416a66b8a2573e042a5
 --- /dev/null
-+++ b/arch/nios2/lib/memcpy.c
-@@ -0,0 +1,199 @@
-+/* Extracted from GLIBC memcpy.c and memcopy.h, which is:
-+   Copyright (C) 1991, 1992, 1993, 1997, 2004 Free Software Foundation, Inc.
-+   This file is part of the GNU C Library.
-+   Contributed by Torbjorn Granlund (tege@sics.se).
++++ b/arch/nios2/include/asm/uaccess.h
+@@ -0,0 +1,233 @@
++/*
++ * User space memory access functions for Nios II
++ *
++ * Copyright (C) 2010-2011, Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009, Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
++ * Based on asm/uaccess.h from m68knommu
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
 +
-+   The GNU C Library is free software; you can redistribute it and/or
-+   modify it under the terms of the GNU Lesser General Public
-+   License as published by the Free Software Foundation; either
-+   version 2.1 of the License, or (at your option) any later version.
++#ifndef _ASM_NIOS2_UACCESS_H
++#define _ASM_NIOS2_UACCESS_H
 +
-+   The GNU C Library is distributed in the hope that it will be useful,
-+   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+   Lesser General Public License for more details.
++#include <linux/errno.h>
++#include <linux/thread_info.h>
++#include <linux/string.h>
 +
-+   You should have received a copy of the GNU Lesser General Public
-+   License along with the GNU C Library; if not, see
-+   <http://www.gnu.org/licenses/>.  */
++#include <asm/page.h>
 +
-+#include <linux/types.h>
++#define VERIFY_READ	0
++#define VERIFY_WRITE	1
 +
-+/* Type to use for aligned memory operations.
-+   This should normally be the biggest type supported by a single load
-+   and store.  */
-+#define	op_t	unsigned long int
-+#define OPSIZ	(sizeof(op_t))
++/*
++ * The exception table consists of pairs of addresses: the first is the
++ * address of an instruction that is allowed to fault, and the second is
++ * the address at which the program should continue.  No registers are
++ * modified, so it is entirely up to the continuation code to figure out
++ * what to do.
++ *
++ * All the routines below use bits of fixup code that are out of line
++ * with the main instruction path.  This means when everything is well,
++ * we don't even have to jump over them.  Further, they do not intrude
++ * on our cache or tlb entries.
++ */
++struct exception_table_entry {
++	unsigned long insn;
++	unsigned long fixup;
++};
 +
-+/* Optimal type for storing bytes in registers.  */
-+#define	reg_char	char
++extern int fixup_exception(struct pt_regs *regs);
 +
-+#define MERGE(w0, sh_1, w1, sh_2) (((w0) >> (sh_1)) | ((w1) << (sh_2)))
++/*
++ * Segment stuff
++ */
++#define MAKE_MM_SEG(s)		((mm_segment_t) { (s) })
++#define USER_DS			MAKE_MM_SEG(0x80000000UL)
++#define KERNEL_DS		MAKE_MM_SEG(0)
 +
-+/* Copy exactly NBYTES bytes from SRC_BP to DST_BP,
-+   without any assumptions about alignment of the pointers.  */
-+#define BYTE_COPY_FWD(dst_bp, src_bp, nbytes)				\
++#define get_ds()		(KERNEL_DS)
++
++#define get_fs()		(current_thread_info()->addr_limit)
++#define set_fs(seg)		(current_thread_info()->addr_limit = (seg))
++
++#define segment_eq(a, b)	((a).seg == (b).seg)
++
++#define __access_ok(addr, len)			\
++	(((signed long)(((long)get_fs().seg) &	\
++		((long)(addr) | (((long)(addr)) + (len)) | (len)))) == 0)
++
++#define access_ok(type, addr, len)		\
++	likely(__access_ok((unsigned long)(addr), (unsigned long)(len)))
++
++# define __EX_TABLE_SECTION	".section __ex_table,\"a\"\n"
++
++/*
++ * Zero Userspace
++ */
++
++static inline unsigned long __must_check __clear_user(void __user *to,
++						      unsigned long n)
++{
++	__asm__ __volatile__ (
++		"1:     stb     zero, 0(%1)\n"
++		"       addi    %0, %0, -1\n"
++		"       addi    %1, %1, 1\n"
++		"       bne     %0, zero, 1b\n"
++		"2:\n"
++		__EX_TABLE_SECTION
++		".word  1b, 2b\n"
++		".previous\n"
++		: "=r" (n), "=r" (to)
++		: "0" (n), "1" (to)
++	);
++
++	return n;
++}
++
++static inline unsigned long __must_check clear_user(void __user *to,
++						    unsigned long n)
++{
++	if (!access_ok(VERIFY_WRITE, to, n))
++		return n;
++	return __clear_user(to, n);
++}
++
++extern long __copy_from_user(void *to, const void __user *from,
++				unsigned long n);
++extern long __copy_to_user(void __user *to, const void *from, unsigned long n);
++
++static inline long copy_from_user(void *to, const void __user *from,
++				unsigned long n)
++{
++	if (!access_ok(VERIFY_READ, from, n))
++		return n;
++	return __copy_from_user(to, from, n);
++}
++
++static inline long copy_to_user(void __user *to, const void *from,
++				unsigned long n)
++{
++	if (!access_ok(VERIFY_WRITE, to, n))
++		return n;
++	return __copy_to_user(to, from, n);
++}
++
++extern long strncpy_from_user(char *__to, const char __user *__from,
++				long __len);
++extern long strnlen_user(const char __user *s, long n);
++
++#define __copy_from_user_inatomic	__copy_from_user
++#define __copy_to_user_inatomic		__copy_to_user
++
++/* Optimized macros */
++#define __get_user_asm(val, insn, addr, err)				\
++{									\
++	__asm__ __volatile__(						\
++	"       movi    %0, %3\n"					\
++	"1:   " insn " %1, 0(%2)\n"					\
++	"       movi     %0, 0\n"					\
++	"2:\n"								\
++	"       .section __ex_table,\"a\"\n"				\
++	"       .word 1b, 2b\n"						\
++	"       .previous"						\
++	: "=&r" (err), "=r" (val)					\
++	: "r" (addr), "i" (-EFAULT));					\
++}
++
++#define __get_user_unknown(val, size, ptr, err) do {			\
++	err = 0;							\
++	if (copy_from_user(&(val), ptr, size)) {			\
++		err = -EFAULT;						\
++	}								\
++	} while (0)
++
++#define __get_user_common(val, size, ptr, err)				\
 +do {									\
-+	size_t __nbytes = (nbytes);					\
-+	while (__nbytes > 0) {						\
-+		unsigned char __x = ((unsigned char *) src_bp)[0];	\
-+		src_bp += 1;						\
-+		__nbytes -= 1;						\
-+		((unsigned char *) dst_bp)[0] = __x;			\
-+		dst_bp += 1;						\
++	switch (size) {							\
++	case 1:								\
++		__get_user_asm(val, "ldbu", ptr, err);			\
++		break;							\
++	case 2:								\
++		__get_user_asm(val, "ldhu", ptr, err);			\
++		break;							\
++	case 4:								\
++		__get_user_asm(val, "ldw", ptr, err);			\
++		break;							\
++	default:							\
++		__get_user_unknown(val, size, ptr, err);		\
++		break;							\
 +	}								\
 +} while (0)
 +
-+/* Copy *up to* NBYTES bytes from SRC_BP to DST_BP, with
-+   the assumption that DST_BP is aligned on an OPSIZ multiple.  If
-+   not all bytes could be easily copied, store remaining number of bytes
-+   in NBYTES_LEFT, otherwise store 0.  */
-+/* extern void _wordcopy_fwd_aligned __P ((long int, long int, size_t)); */
-+/* extern void _wordcopy_fwd_dest_aligned __P ((long int, long int, size_t)); */
-+#define WORD_COPY_FWD(dst_bp, src_bp, nbytes_left, nbytes)		\
-+do {									\
-+	if (src_bp % OPSIZ == 0)					\
-+		_wordcopy_fwd_aligned(dst_bp, src_bp, (nbytes) / OPSIZ);\
-+	else								\
-+		_wordcopy_fwd_dest_aligned(dst_bp, src_bp, (nbytes) / OPSIZ);\
-+	src_bp += (nbytes) & -OPSIZ;					\
-+	dst_bp += (nbytes) & -OPSIZ;					\
-+	(nbytes_left) = (nbytes) % OPSIZ;				\
-+} while (0)
++#define __get_user(x, ptr)						\
++	({								\
++	long __gu_err = -EFAULT;					\
++	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);		\
++	unsigned long __gu_val;						\
++	__get_user_common(__gu_val, sizeof(*(ptr)), __gu_ptr, __gu_err);\
++	(x) = (__typeof__(x))__gu_val;					\
++	__gu_err;							\
++	})
 +
++#define get_user(x, ptr)						\
++({									\
++	long __gu_err = -EFAULT;					\
++	const __typeof__(*(ptr)) __user *__gu_ptr = (ptr);		\
++	unsigned long __gu_val = 0;					\
++	if (access_ok(VERIFY_READ,  __gu_ptr, sizeof(*__gu_ptr)))	\
++		__get_user_common(__gu_val, sizeof(*__gu_ptr),		\
++			__gu_ptr, __gu_err);				\
++	(x) = (__typeof__(x))__gu_val;					\
++	__gu_err;							\
++})
 +
-+/* Threshold value for when to enter the unrolled loops.  */
-+#define	OP_T_THRES	16
-+
-+/* _wordcopy_fwd_aligned -- Copy block beginning at SRCP to
-+   block beginning at DSTP with LEN `op_t' words (not LEN bytes!).
-+   Both SRCP and DSTP should be aligned for memory operations on `op_t's.  */
-+/* stream-lined (read x8 + write x8) */
-+static void _wordcopy_fwd_aligned(long int dstp, long int srcp, size_t len)
-+{
-+	while (len > 7) {
-+		register op_t a0, a1, a2, a3, a4, a5, a6, a7;
-+		a0 = ((op_t *) srcp)[0];
-+		a1 = ((op_t *) srcp)[1];
-+		a2 = ((op_t *) srcp)[2];
-+		a3 = ((op_t *) srcp)[3];
-+		a4 = ((op_t *) srcp)[4];
-+		a5 = ((op_t *) srcp)[5];
-+		a6 = ((op_t *) srcp)[6];
-+		a7 = ((op_t *) srcp)[7];
-+		((op_t *) dstp)[0] = a0;
-+		((op_t *) dstp)[1] = a1;
-+		((op_t *) dstp)[2] = a2;
-+		((op_t *) dstp)[3] = a3;
-+		((op_t *) dstp)[4] = a4;
-+		((op_t *) dstp)[5] = a5;
-+		((op_t *) dstp)[6] = a6;
-+		((op_t *) dstp)[7] = a7;
-+
-+		srcp += 8 * OPSIZ;
-+		dstp += 8 * OPSIZ;
-+		len -= 8;
-+	}
-+	while (len > 0) {
-+		*(op_t *)dstp = *(op_t *)srcp;
-+
-+		srcp += OPSIZ;
-+		dstp += OPSIZ;
-+		len -= 1;
-+	}
++#define __put_user_asm(val, insn, ptr, err)				\
++{									\
++	__asm__ __volatile__(						\
++	"       movi    %0, %3\n"					\
++	"1:   " insn " %1, 0(%2)\n"					\
++	"       movi     %0, 0\n"					\
++	"2:\n"								\
++	"       .section __ex_table,\"a\"\n"				\
++	"       .word 1b, 2b\n"						\
++	"       .previous\n"						\
++	: "=&r" (err)							\
++	: "r" (val), "r" (ptr), "i" (-EFAULT));				\
 +}
 +
-+/* _wordcopy_fwd_dest_aligned -- Copy block beginning at SRCP to
-+   block beginning at DSTP with LEN `op_t' words (not LEN bytes!).
-+   DSTP should be aligned for memory operations on `op_t's, but SRCP must
-+   *not* be aligned.  */
-+/* stream-lined (read x4 + write x4) */
-+static void _wordcopy_fwd_dest_aligned(long int dstp, long int srcp,
-+					size_t len)
-+{
-+	op_t ap;
-+	int sh_1, sh_2;
++#define put_user(x, ptr)						\
++({									\
++	long __pu_err = -EFAULT;					\
++	__typeof__(*(ptr)) __user *__pu_ptr = (ptr);			\
++	__typeof__(*(ptr)) __pu_val = (__typeof(*ptr))(x);		\
++	if (access_ok(VERIFY_WRITE, __pu_ptr, sizeof(*__pu_ptr))) {	\
++		switch (sizeof(*__pu_ptr)) {				\
++		case 1:							\
++			__put_user_asm(__pu_val, "stb", __pu_ptr, __pu_err); \
++			break;						\
++		case 2:							\
++			__put_user_asm(__pu_val, "sth", __pu_ptr, __pu_err); \
++			break;						\
++		case 4:							\
++			__put_user_asm(__pu_val, "stw", __pu_ptr, __pu_err); \
++			break;						\
++		default:						\
++			/* XXX: This looks wrong... */			\
++			__pu_err = 0;					\
++			if (copy_to_user(__pu_ptr, &(__pu_val),		\
++				sizeof(*__pu_ptr)))			\
++				__pu_err = -EFAULT;			\
++			break;						\
++		}							\
++	}								\
++	__pu_err;							\
++})
 +
-+	/* Calculate how to shift a word read at the memory operation
-+	aligned srcp to make it aligned for copy. */
++#define __put_user(x, ptr) put_user(x, ptr)
 +
-+	sh_1 = 8 * (srcp % OPSIZ);
-+	sh_2 = 8 * OPSIZ - sh_1;
-+
-+	/* Make SRCP aligned by rounding it down to the beginning of the `op_t'
-+	it points in the middle of. */
-+	srcp &= -OPSIZ;
-+	ap = ((op_t *) srcp)[0];
-+	srcp += OPSIZ;
-+
-+	while (len > 3) {
-+		op_t a0, a1, a2, a3;
-+		a0 = ((op_t *) srcp)[0];
-+		a1 = ((op_t *) srcp)[1];
-+		a2 = ((op_t *) srcp)[2];
-+		a3 = ((op_t *) srcp)[3];
-+		((op_t *) dstp)[0] = MERGE(ap, sh_1, a0, sh_2);
-+		((op_t *) dstp)[1] = MERGE(a0, sh_1, a1, sh_2);
-+		((op_t *) dstp)[2] = MERGE(a1, sh_1, a2, sh_2);
-+		((op_t *) dstp)[3] = MERGE(a2, sh_1, a3, sh_2);
-+
-+		ap = a3;
-+		srcp += 4 * OPSIZ;
-+		dstp += 4 * OPSIZ;
-+		len -= 4;
-+	}
-+	while (len > 0) {
-+		register op_t a0;
-+		a0 = ((op_t *) srcp)[0];
-+		((op_t *) dstp)[0] = MERGE(ap, sh_1, a0, sh_2);
-+
-+		ap = a0;
-+		srcp += OPSIZ;
-+		dstp += OPSIZ;
-+		len -= 1;
-+	}
-+}
-+
-+void *memcpy(void *dstpp, const void *srcpp, size_t len)
-+{
-+	unsigned long int dstp = (long int) dstpp;
-+	unsigned long int srcp = (long int) srcpp;
-+
-+	/* Copy from the beginning to the end.  */
-+
-+	/* If there not too few bytes to copy, use word copy.  */
-+	if (len >= OP_T_THRES) {
-+		/* Copy just a few bytes to make DSTP aligned.  */
-+		len -= (-dstp) % OPSIZ;
-+		BYTE_COPY_FWD(dstp, srcp, (-dstp) % OPSIZ);
-+
-+		/* Copy whole pages from SRCP to DSTP by virtual address
-+		   manipulation, as much as possible.  */
-+
-+		/* PAGE_COPY_FWD_MAYBE (dstp, srcp, len, len); */
-+
-+		/* Copy from SRCP to DSTP taking advantage of the known
-+		   alignment of DSTP. Number of bytes remaining is put in the
-+		   third argument, i.e. in LEN.  This number may vary from
-+		   machine to machine. */
-+
-+		WORD_COPY_FWD(dstp, srcp, len, len);
-+
-+		/* Fall out and copy the tail. */
-+	}
-+
-+	/* There are just a few bytes to copy.  Use byte memory operations. */
-+	BYTE_COPY_FWD(dstp, srcp, len);
-+
-+	return dstpp;
-+}
-+
-+void *memcpyb(void *dstpp, const void *srcpp, unsigned len)
-+{
-+	unsigned long int dstp = (long int) dstpp;
-+	unsigned long int srcp = (long int) srcpp;
-+
-+	BYTE_COPY_FWD(dstp, srcp, len);
-+
-+	return dstpp;
-+}
-diff --git a/arch/nios2/lib/memmove.c b/arch/nios2/lib/memmove.c
++#endif /* _ASM_NIOS2_UACCESS_H */
+diff --git a/arch/nios2/mm/init.c b/arch/nios2/mm/init.c
 new file mode 100644
-index 0000000..c65ef517eb80c05e337c079ad49e709bbe847188
+index 0000000..4c4538dbbea7e461ae049122957765ea89fa9ded
 --- /dev/null
-+++ b/arch/nios2/lib/memmove.c
-@@ -0,0 +1,82 @@
++++ b/arch/nios2/mm/init.c
+@@ -0,0 +1,152 @@
 +/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + * Copyright (C) 2004 Microtronix Datacom Ltd
 + *
++ * based on arch/m68k/mm/init.c
++ *
 + * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
++ * License. See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#include <linux/types.h>
++#include <linux/signal.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
 +#include <linux/string.h>
++#include <linux/types.h>
++#include <linux/ptrace.h>
++#include <linux/mman.h>
++#include <linux/mm.h>
++#include <linux/init.h>
++#include <linux/pagemap.h>
++#include <linux/bootmem.h>
++#include <linux/slab.h>
++#include <linux/binfmts.h>
 +
-+#ifdef __HAVE_ARCH_MEMMOVE
-+void *memmove(void *d, const void *s, size_t count)
-+{
-+	unsigned long dst, src;
++#include <asm/setup.h>
++#include <asm/page.h>
++#include <asm/pgtable.h>
++#include <asm/sections.h>
++#include <asm/tlb.h>
++#include <asm/mmu_context.h>
++#include <asm/cpuinfo.h>
++#include <asm/processor.h>
 +
-+	if (!count)
-+		return d;
++pgd_t *pgd_current;
 +
-+	if (d < s) {
-+		dst = (unsigned long) d;
-+		src = (unsigned long) s;
-+
-+		if ((count < 8) || ((dst ^ src) & 3))
-+			goto restup;
-+
-+		if (dst & 1) {
-+			*(char *)dst++ = *(char *)src++;
-+			count--;
-+		}
-+		if (dst & 2) {
-+			*(short *)dst = *(short *)src;
-+			src += 2;
-+			dst += 2;
-+			count -= 2;
-+		}
-+		while (count > 3) {
-+			*(long *)dst = *(long *)src;
-+			src += 4;
-+			dst += 4;
-+			count -= 4;
-+		}
-+restup:
-+		while (count--)
-+			*(char *)dst++ = *(char *)src++;
-+	} else {
-+		dst = (unsigned long) d + count;
-+		src = (unsigned long) s + count;
-+
-+		if ((count < 8) || ((dst ^ src) & 3))
-+			goto restdown;
-+
-+		if (dst & 1) {
-+			src--;
-+			dst--;
-+			count--;
-+			*(char *)dst = *(char *)src;
-+		}
-+		if (dst & 2) {
-+			src -= 2;
-+			dst -= 2;
-+			count -= 2;
-+			*(short *)dst = *(short *)src;
-+		}
-+		while (count > 3) {
-+			src -= 4;
-+			dst -= 4;
-+			count -= 4;
-+			*(long *)dst = *(long *)src;
-+		}
-+restdown:
-+		while (count--) {
-+			src--;
-+			dst--;
-+			*(char *)dst = *(char *)src;
-+		}
-+	}
-+
-+	return d;
-+}
-+#endif /* __HAVE_ARCH_MEMMOVE */
-diff --git a/arch/nios2/lib/memset.c b/arch/nios2/lib/memset.c
-new file mode 100644
-index 0000000..65e97802f5cc83c15703c427e61aadf28b4d5b0c
---- /dev/null
-+++ b/arch/nios2/lib/memset.c
-@@ -0,0 +1,81 @@
 +/*
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
-+ *
++ * paging_init() continues the virtual memory environment setup which
++ * was begun by the code in arch/head.S.
++ * The parameters are pointers to where to stick the starting and ending
++ * addresses of available kernel virtual memory.
++ */
++void __init paging_init(void)
++{
++	unsigned long zones_size[MAX_NR_ZONES];
++	unsigned long start_mem, end_mem;
++
++	memset(zones_size, 0, sizeof(zones_size));
++
++	/*
++	 * Make sure start_mem is page aligned, otherwise bootmem and
++	 * page_alloc get different views of the world.
++	 */
++	start_mem = PHYS_OFFSET;
++	end_mem   = memory_end;
++
++	pagetable_init();
++	pgd_current = swapper_pg_dir;
++
++	/*
++	 * Set up SFC/DFC registers (user data space).
++	 */
++	zones_size[ZONE_DMA] = ((end_mem - start_mem) >> PAGE_SHIFT);
++
++	/* pass the memory from the bootmem allocator to the main allocator */
++	free_area_init(zones_size);
++}
++
++void __init mem_init(void)
++{
++	unsigned long end_mem   = memory_end; /* this must not include
++						kernel stack at top */
++
++	pr_debug("mem_init: start=%lx, end=%lx\n", memory_start, memory_end);
++
++	end_mem &= PAGE_MASK;
++	high_memory = __va(end_mem);
++
++	max_mapnr = ((unsigned long)end_mem) >> PAGE_SHIFT;
++
++	/* this will put all memory onto the freelists */
++	free_all_bootmem();
++	mem_init_print_info(NULL);
++}
++
++void __init mmu_init(void)
++{
++	flush_tlb_all();
++}
++
++#ifdef CONFIG_BLK_DEV_INITRD
++void __init free_initrd_mem(unsigned long start, unsigned long end)
++{
++	free_reserved_area((void *)start, (void *)end, -1, "initrd");
++}
++#endif
++
++void __init_refok free_initmem(void)
++{
++	free_initmem_default(-1);
++}
++
++#define __page_aligned(order) __aligned(PAGE_SIZE << (order))
++pgd_t swapper_pg_dir[PTRS_PER_PGD] __page_aligned(PGD_ORDER);
++pte_t invalid_pte_table[PTRS_PER_PTE] __page_aligned(PTE_ORDER);
++static struct page *kuser_page[1];
++
++static int alloc_kuser_page(void)
++{
++	extern char __kuser_helper_start[], __kuser_helper_end[];
++	int kuser_sz = __kuser_helper_end - __kuser_helper_start;
++	unsigned long vpage;
++
++	vpage = get_zeroed_page(GFP_ATOMIC);
++	if (!vpage)
++		return -ENOMEM;
++
++	/* Copy kuser helpers */
++	memcpy((void *)vpage, __kuser_helper_start, kuser_sz);
++
++	flush_icache_range(vpage, vpage + KUSER_SIZE);
++	kuser_page[0] = virt_to_page(vpage);
++
++	return 0;
++}
++arch_initcall(alloc_kuser_page);
++
++int arch_setup_additional_pages(struct linux_binprm *bprm, int uses_interp)
++{
++	struct mm_struct *mm = current->mm;
++	int ret;
++
++	down_write(&mm->mmap_sem);
++
++	/* Map kuser helpers to user space address */
++	ret = install_special_mapping(mm, KUSER_BASE, KUSER_SIZE,
++				      VM_READ | VM_EXEC | VM_MAYREAD |
++				      VM_MAYEXEC, kuser_page);
++
++	up_write(&mm->mmap_sem);
++
++	return ret;
++}
++
++const char *arch_vma_name(struct vm_area_struct *vma)
++{
++	return (vma->vm_start == KUSER_BASE) ? "[kuser]" : NULL;
++}
+diff --git a/arch/nios2/mm/uaccess.c b/arch/nios2/mm/uaccess.c
+new file mode 100644
+index 0000000..4a38ad37c18b4e10792df094d81087a3f32cd9e9
+--- /dev/null
++++ b/arch/nios2/mm/uaccess.c
+@@ -0,0 +1,162 @@
++/*
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
++ *
++ * Copyright (C) 2009, Wind River Systems Inc
++ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
 + */
 +
-+#include <linux/types.h>
-+#include <linux/string.h>
++#include <linux/export.h>
++#include <linux/uaccess.h>
 +
-+#ifdef __HAVE_ARCH_MEMSET
-+void *memset(void *s, int c, size_t count)
-+{
-+	int destptr, charcnt, dwordcnt, fill8reg, wrkrega;
-+
-+	if (!count)
-+		return s;
-+
-+	c &= 0xFF;
-+
-+	if (count <= 8) {
-+		char *xs = (char *) s;
-+
-+		while (count--)
-+			*xs++ = c;
-+		return s;
-+	}
-+
-+	__asm__ __volatile__ (
-+		/* fill8 %3, %5 (c & 0xff) */
-+		"	slli	%4, %5, 8\n"
-+		"	or	%4, %4, %5\n"
-+		"	slli    %3, %4, 16\n"
-+		"	or	%3, %3, %4\n"
-+		/* Word-align %0 (s) if necessary */
-+		"	andi	%4, %0, 0x01\n"
-+		"	beq	%4, zero, 1f\n"
-+		"	addi	%1, %1, -1\n"
-+		"	stb	%3, 0(%0)\n"
-+		"	addi	%0, %0, 1\n"
-+		"1:	mov	%2, %1\n"
-+		/* Dword-align %0 (s) if necessary */
-+		"	andi	%4, %0, 0x02\n"
-+		"	beq	%4, zero, 2f\n"
-+		"	addi	%1, %1, -2\n"
-+		"	sth	%3, 0(%0)\n"
-+		"	addi	%0, %0, 2\n"
-+		"	mov	%2, %1\n"
-+		/* %1 and %2 are how many more bytes to set */
-+		"2:	srli	%2, %2, 2\n"
-+		/* %2 is how many dwords to set */
-+		"3:	stw	%3, 0(%0)\n"
-+		"	addi	%0, %0, 4\n"
-+		"	addi    %2, %2, -1\n"
-+		"	bne	%2, zero, 3b\n"
-+		/* store residual word and/or byte if necessary */
-+		"	andi	%4, %1, 0x02\n"
-+		"	beq	%4, zero, 4f\n"
-+		"	sth	%3, 0(%0)\n"
-+		"	addi	%0, %0, 2\n"
-+		/* store residual byte if necessary */
-+		"4:	andi	%4, %1, 0x01\n"
-+		"	beq	%4, zero, 5f\n"
-+		"	stb	%3, 0(%0)\n"
-+		"5:\n"
-+		: "=r" (destptr),	/* %0  Output */
-+		  "=r" (charcnt),	/* %1  Output */
-+		  "=r" (dwordcnt),	/* %2  Output */
-+		  "=r" (fill8reg),	/* %3  Output */
-+		  "=r" (wrkrega)	/* %4  Output */
-+		: "r" (c),		/* %5  Input */
-+		  "0" (s),		/* %0  Input/Output */
-+		  "1" (count)		/* %1  Input/Output */
-+		: "memory"		/* clobbered */
++asm(".global	__copy_from_user\n"
++	"   .type __copy_from_user, @function\n"
++	"__copy_from_user:\n"
++	"   movi  r2,7\n"
++	"   mov   r3,r4\n"
++	"   bge   r2,r6,1f\n"
++	"   xor   r2,r4,r5\n"
++	"   andi  r2,r2,3\n"
++	"   movi  r7,3\n"
++	"   beq   r2,zero,4f\n"
++	"1: addi  r6,r6,-1\n"
++	"   movi  r2,-1\n"
++	"   beq   r6,r2,3f\n"
++	"   mov   r7,r2\n"
++	"2: ldbu  r2,0(r5)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r5,r5,1\n"
++	"   stb   r2,0(r3)\n"
++	"   addi  r3,r3,1\n"
++	"   bne   r6,r7,2b\n"
++	"3:\n"
++	"   addi  r2,r6,1\n"
++	"   ret\n"
++	"13:mov   r2,r6\n"
++	"   ret\n"
++	"4: andi  r2,r4,1\n"
++	"   cmpeq r2,r2,zero\n"
++	"   beq   r2,zero,7f\n"
++	"5: andi  r2,r3,2\n"
++	"   beq   r2,zero,6f\n"
++	"9: ldhu  r2,0(r5)\n"
++	"   addi  r6,r6,-2\n"
++	"   addi  r5,r5,2\n"
++	"   sth   r2,0(r3)\n"
++	"   addi  r3,r3,2\n"
++	"6: bge   r7,r6,1b\n"
++	"10:ldw   r2,0(r5)\n"
++	"   addi  r6,r6,-4\n"
++	"   addi  r5,r5,4\n"
++	"   stw   r2,0(r3)\n"
++	"   addi  r3,r3,4\n"
++	"   br    6b\n"
++	"7: ldbu  r2,0(r5)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r5,r5,1\n"
++	"   addi  r3,r4,1\n"
++	"   stb   r2,0(r4)\n"
++	"   br    5b\n"
++	".section __ex_table,\"a\"\n"
++	".word 2b,3b\n"
++	".word 9b,13b\n"
++	".word 10b,13b\n"
++	".word 7b,13b\n"
++	".previous\n"
 +	);
++EXPORT_SYMBOL(__copy_from_user);
 +
-+	return s;
++asm(
++	"   .global __copy_to_user\n"
++	"   .type __copy_to_user, @function\n"
++	"__copy_to_user:\n"
++	"   movi  r2,7\n"
++	"   mov   r3,r4\n"
++	"   bge   r2,r6,1f\n"
++	"   xor   r2,r4,r5\n"
++	"   andi  r2,r2,3\n"
++	"   movi  r7,3\n"
++	"   beq   r2,zero,4f\n"
++	/* Bail if we try to copy zero bytes  */
++	"1: addi  r6,r6,-1\n"
++	"   movi  r2,-1\n"
++	"   beq   r6,r2,3f\n"
++	/* Copy byte by byte for small copies and if src^dst != 0 */
++	"   mov   r7,r2\n"
++	"2: ldbu  r2,0(r5)\n"
++	"   addi  r5,r5,1\n"
++	"9: stb   r2,0(r3)\n"
++	"   addi  r6,r6,-1\n"
++	"   addi  r3,r3,1\n"
++	"   bne   r6,r7,2b\n"
++	"3: addi  r2,r6,1\n"
++	"   ret\n"
++	"13:mov   r2,r6\n"
++	"   ret\n"
++	/*  If 'to' is an odd address byte copy */
++	"4: andi  r2,r4,1\n"
++	"   cmpeq r2,r2,zero\n"
++	"   beq   r2,zero,7f\n"
++	/* If 'to' is not divideable by four copy halfwords */
++	"5: andi  r2,r3,2\n"
++	"   beq   r2,zero,6f\n"
++	"   ldhu  r2,0(r5)\n"
++	"   addi  r5,r5,2\n"
++	"10:sth   r2,0(r3)\n"
++	"   addi  r6,r6,-2\n"
++	"   addi  r3,r3,2\n"
++	/* Copy words */
++	"6: bge   r7,r6,1b\n"
++	"   ldw   r2,0(r5)\n"
++	"   addi  r5,r5,4\n"
++	"11:stw   r2,0(r3)\n"
++	"   addi  r6,r6,-4\n"
++	"   addi  r3,r3,4\n"
++	"   br    6b\n"
++	/* Copy remaining bytes */
++	"7: ldbu  r2,0(r5)\n"
++	"   addi  r5,r5,1\n"
++	"   addi  r3,r4,1\n"
++	"12: stb  r2,0(r4)\n"
++	"   addi  r6,r6,-1\n"
++	"   br    5b\n"
++	".section __ex_table,\"a\"\n"
++	".word 9b,3b\n"
++	".word 10b,13b\n"
++	".word 11b,13b\n"
++	".word 12b,13b\n"
++	".previous\n");
++EXPORT_SYMBOL(__copy_to_user);
++
++long strncpy_from_user(char *__to, const char __user *__from, long __len)
++{
++	int l = strnlen_user(__from, __len);
++	int is_zt = 1;
++
++	if (l > __len) {
++		is_zt = 0;
++		l = __len;
++	}
++
++	if (l == 0 || copy_from_user(__to, __from, l))
++		return -EFAULT;
++
++	if (is_zt)
++		l--;
++	return l;
 +}
-+#endif /* __HAVE_ARCH_MEMSET */
++
++long strnlen_user(const char __user *s, long n)
++{
++	long i;
++
++	for (i = 0; i < n; i++) {
++		char c;
++		if (get_user(c, s + i) == -EFAULT)
++			return 0;
++		if (c == 0)
++			return i + 1;
++	}
++	return n + 1;
++}
 -- 
 1.8.3.2
 
