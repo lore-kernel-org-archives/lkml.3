@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754799AbaDRNNg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:13:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39211 "EHLO
+	id S1754368AbaDRNPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:15:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39139 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753288AbaDRNN1 (ORCPT
+	with ESMTP id S1754706AbaDRNMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:13:27 -0400
-Date: Fri, 18 Apr 2014 06:12:37 -0700
+	Fri, 18 Apr 2014 09:12:43 -0400
+Date: Fri, 18 Apr 2014 06:11:10 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-knswsr5mldkr0w1lrdxvc81w@git.kernel.org>
+Message-ID: <tip-mxs4aubiyesi79v8xx53093q@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        will.deacon@arm.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, davej@redhat.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, walken@google.com, jesse.brandeburg@intel.com
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, jejb@parisc-linux.org, tglx@linutronix.de,
+        deller@gmx.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, will.deacon@arm.com,
-        peterz@infradead.org, davej@redhat.com, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, jesse.brandeburg@intel.com, walken@google.com
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, jejb@parisc-linux.org, tglx@linutronix.de,
+        deller@gmx.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] arch,x86: Convert smp_mb__*()
-Git-Commit-ID: d00a569284b1340c16fe2c148099e077ea09ebc9
+Subject: [tip:locking/core] arch,parisc: Convert smp_mb__*()
+Git-Commit-ID: e4a65e9d395feee195f1219d708e9eb2a2d4b583
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,131 +33,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d00a569284b1340c16fe2c148099e077ea09ebc9
-Gitweb:     http://git.kernel.org/tip/d00a569284b1340c16fe2c148099e077ea09ebc9
+Commit-ID:  e4a65e9d395feee195f1219d708e9eb2a2d4b583
+Gitweb:     http://git.kernel.org/tip/e4a65e9d395feee195f1219d708e9eb2a2d4b583
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Thu, 13 Mar 2014 19:00:35 +0100
+AuthorDate: Thu, 13 Mar 2014 19:00:36 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 Apr 2014 14:20:46 +0200
+CommitDate: Fri, 18 Apr 2014 14:20:41 +0200
 
-arch,x86: Convert smp_mb__*()
+arch,parisc: Convert smp_mb__*()
 
-x86 is strongly ordered and all its atomic ops imply a full barrier.
-
-Implement the two new primitives as the old ones were.
+parisc fully relies on asm-generic/barrier.h, therefore its smp_mb()
+is barrier and the default implementation suffices.
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/n/tip-knswsr5mldkr0w1lrdxvc81w@git.kernel.org
-Cc: Dave Jones <davej@redhat.com>
-Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Link: http://lkml.kernel.org/n/tip-mxs4aubiyesi79v8xx53093q@git.kernel.org
+Cc: Helge Deller <deller@gmx.de>
+Cc: James E.J. Bottomley <jejb@parisc-linux.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Michel Lespinasse <walken@google.com>
-Cc: Will Deacon <will.deacon@arm.com>
 Cc: linux-kernel@vger.kernel.org
+Cc: linux-parisc@vger.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/include/asm/atomic.h      | 7 +------
- arch/x86/include/asm/barrier.h     | 4 ++++
- arch/x86/include/asm/bitops.h      | 6 ++----
- arch/x86/include/asm/sync_bitops.h | 2 +-
- arch/x86/kernel/apic/hw_nmi.c      | 2 +-
- 5 files changed, 9 insertions(+), 12 deletions(-)
+ arch/parisc/include/asm/atomic.h | 6 +-----
+ arch/parisc/include/asm/bitops.h | 4 +---
+ 2 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/include/asm/atomic.h b/arch/x86/include/asm/atomic.h
-index b17f4f4..6dd1c7d 100644
---- a/arch/x86/include/asm/atomic.h
-+++ b/arch/x86/include/asm/atomic.h
+diff --git a/arch/parisc/include/asm/atomic.h b/arch/parisc/include/asm/atomic.h
+index 472886c..0be2db2 100644
+--- a/arch/parisc/include/asm/atomic.h
++++ b/arch/parisc/include/asm/atomic.h
 @@ -7,6 +7,7 @@
- #include <asm/alternative.h>
+ 
+ #include <linux/types.h>
  #include <asm/cmpxchg.h>
- #include <asm/rmwcc.h>
 +#include <asm/barrier.h>
  
  /*
   * Atomic operations that C can't guarantee us.  Useful for
-@@ -243,12 +244,6 @@ static inline void atomic_or_long(unsigned long *v1, unsigned long v2)
- 		     : : "r" ((unsigned)(mask)), "m" (*(addr))	\
- 		     : "memory")
+@@ -143,11 +144,6 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
  
--/* Atomic operations are already serializing on x86 */
--#define smp_mb__before_atomic_dec()	barrier()
--#define smp_mb__after_atomic_dec()	barrier()
--#define smp_mb__before_atomic_inc()	barrier()
--#define smp_mb__after_atomic_inc()	barrier()
+ #define ATOMIC_INIT(i)	{ (i) }
+ 
+-#define smp_mb__before_atomic_dec()	smp_mb()
+-#define smp_mb__after_atomic_dec()	smp_mb()
+-#define smp_mb__before_atomic_inc()	smp_mb()
+-#define smp_mb__after_atomic_inc()	smp_mb()
 -
- #ifdef CONFIG_X86_32
- # include <asm/atomic64_32.h>
- #else
-diff --git a/arch/x86/include/asm/barrier.h b/arch/x86/include/asm/barrier.h
-index 69bbb48..5c7198c 100644
---- a/arch/x86/include/asm/barrier.h
-+++ b/arch/x86/include/asm/barrier.h
-@@ -137,6 +137,10 @@ do {									\
+ #ifdef CONFIG_64BIT
  
- #endif
- 
-+/* Atomic operations are already serializing on x86 */
-+#define smp_mb__before_atomic()	barrier()
-+#define smp_mb__after_atomic()	barrier()
-+
- /*
-  * Stop RDTSC speculation. This is needed when you need to use RDTSC
-  * (or get_cycles or vread that possibly accesses the TSC) in a defined
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 9fc1af7..afcd35d 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -15,6 +15,7 @@
+ #define ATOMIC64_INIT(i) { (i) }
+diff --git a/arch/parisc/include/asm/bitops.h b/arch/parisc/include/asm/bitops.h
+index 8c9b631..3f9406d 100644
+--- a/arch/parisc/include/asm/bitops.h
++++ b/arch/parisc/include/asm/bitops.h
+@@ -8,6 +8,7 @@
  #include <linux/compiler.h>
- #include <asm/alternative.h>
- #include <asm/rmwcc.h>
+ #include <asm/types.h>		/* for BITS_PER_LONG/SHIFT_PER_LONG */
+ #include <asm/byteorder.h>
 +#include <asm/barrier.h>
+ #include <linux/atomic.h>
  
- #if BITS_PER_LONG == 32
- # define _BITOPS_LONG_SHIFT 5
-@@ -102,7 +103,7 @@ static inline void __set_bit(long nr, volatile unsigned long *addr)
-  *
-  * clear_bit() is atomic and may not be reordered.  However, it does
-  * not contain a memory barrier, so if it is used for locking purposes,
-- * you should call smp_mb__before_clear_bit() and/or smp_mb__after_clear_bit()
-+ * you should call smp_mb__before_atomic() and/or smp_mb__after_atomic()
-  * in order to ensure changes are visible on other processors.
-  */
- static __always_inline void
-@@ -156,9 +157,6 @@ static inline void __clear_bit_unlock(long nr, volatile unsigned long *addr)
- 	__clear_bit(nr, addr);
- }
+ /*
+@@ -19,9 +20,6 @@
+ #define CHOP_SHIFTCOUNT(x) (((unsigned long) (x)) & (BITS_PER_LONG - 1))
  
--#define smp_mb__before_clear_bit()	barrier()
--#define smp_mb__after_clear_bit()	barrier()
+ 
+-#define smp_mb__before_clear_bit()      smp_mb()
+-#define smp_mb__after_clear_bit()       smp_mb()
 -
- /**
-  * __change_bit - Toggle a bit in memory
-  * @nr: the bit to change
-diff --git a/arch/x86/include/asm/sync_bitops.h b/arch/x86/include/asm/sync_bitops.h
-index 05af3b3..f28a24b 100644
---- a/arch/x86/include/asm/sync_bitops.h
-+++ b/arch/x86/include/asm/sync_bitops.h
-@@ -41,7 +41,7 @@ static inline void sync_set_bit(long nr, volatile unsigned long *addr)
-  *
-  * sync_clear_bit() is atomic and may not be reordered.  However, it does
-  * not contain a memory barrier, so if it is used for locking purposes,
-- * you should call smp_mb__before_clear_bit() and/or smp_mb__after_clear_bit()
-+ * you should call smp_mb__before_atomic() and/or smp_mb__after_atomic()
-  * in order to ensure changes are visible on other processors.
-  */
- static inline void sync_clear_bit(long nr, volatile unsigned long *addr)
-diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
-index a698d71..eab6704 100644
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -57,7 +57,7 @@ void arch_trigger_all_cpu_backtrace(void)
- 	}
- 
- 	clear_bit(0, &backtrace_flag);
--	smp_mb__after_clear_bit();
-+	smp_mb__after_atomic();
- }
- 
- static int __kprobes
+ /* See http://marc.theaimsgroup.com/?t=108826637900003 for discussion
+  * on use of volatile and __*_bit() (set/clear/change):
+  *	*_bit() want use of volatile.
