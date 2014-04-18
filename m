@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732AbaDRQpU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 12:45:20 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:31693 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaDRQpQ (ORCPT
+	id S1754259AbaDRQqT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 12:46:19 -0400
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:39377 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753495AbaDRQpT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 12:45:16 -0400
+	Fri, 18 Apr 2014 12:45:19 -0400
 X-IronPort-AV: E=Sophos;i="4.97,885,1389772800"; 
-   d="scan'208";a="25175772"
+   d="scan'208";a="25487187"
 From: Tim Kryger <tim.kryger@linaro.org>
 To: Thierry Reding <thierry.reding@gmail.com>,
         Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
@@ -26,9 +26,9 @@ CC: Tim Kryger <tim.kryger@linaro.org>,
         Broadcom Kernel Feedback List 
 	<bcm-kernel-feedback-list@broadcom.com>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v6 1/5] Documentation: dt: Add Kona PWM binding
-Date: Fri, 18 Apr 2014 09:44:50 -0700
-Message-ID: <1397839494-21049-2-git-send-email-tim.kryger@linaro.org>
+Subject: [PATCH v6 5/5] ARM: bcm_defconfig: Enable PWM and Backlight
+Date: Fri, 18 Apr 2014 09:44:54 -0700
+Message-ID: <1397839494-21049-6-git-send-email-tim.kryger@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1397839494-21049-1-git-send-email-tim.kryger@linaro.org>
 References: <1397839494-21049-1-git-send-email-tim.kryger@linaro.org>
@@ -38,44 +38,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the binding description for the Kona PWM controller found on Broadcom's
-mobile SoCs.
+Enable PWM drivers and the PWM-based backlight driver.
 
 Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
 Reviewed-by: Alex Elder <elder@linaro.org>
 Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 ---
- .../devicetree/bindings/pwm/bcm-kona-pwm.txt       |   21 ++++++++++++++++++++
- 1 file changed, 21 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
+ arch/arm/configs/bcm_defconfig |    3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt b/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
-new file mode 100644
-index 0000000..8eae9fe
---- /dev/null
-+++ b/Documentation/devicetree/bindings/pwm/bcm-kona-pwm.txt
-@@ -0,0 +1,21 @@
-+Broadcom Kona PWM controller device tree bindings
-+
-+This controller has 6 channels.
-+
-+Required Properties :
-+- compatible: should contain "brcm,kona-pwm"
-+- reg: physical base address and length of the controller's registers
-+- clocks: phandle + clock specifier pair for the external clock
-+- #pwm-cells: Should be 3. See pwm.txt in this directory for a
-+  description of the cells format.
-+
-+Refer to clocks/clock-bindings.txt for generic clock consumer properties.
-+
-+Example:
-+
-+pwm: pwm@3e01a000 {
-+	compatible = "brcm,bcm11351-pwm", "brcm,kona-pwm";
-+	reg = <0x3e01a000 0xc4>;
-+	clocks = <&pwm_clk>;
-+	#pwm-cells = <3>;
-+};
+diff --git a/arch/arm/configs/bcm_defconfig b/arch/arm/configs/bcm_defconfig
+index 0100464..f09f7c6 100644
+--- a/arch/arm/configs/bcm_defconfig
++++ b/arch/arm/configs/bcm_defconfig
+@@ -91,6 +91,7 @@ CONFIG_FB=y
+ CONFIG_BACKLIGHT_LCD_SUPPORT=y
+ CONFIG_LCD_CLASS_DEVICE=y
+ CONFIG_BACKLIGHT_CLASS_DEVICE=y
++CONFIG_BACKLIGHT_PWM=y
+ # CONFIG_USB_SUPPORT is not set
+ CONFIG_MMC=y
+ CONFIG_MMC_UNSAFE_RESUME=y
+@@ -104,6 +105,8 @@ CONFIG_LEDS_TRIGGERS=y
+ CONFIG_LEDS_TRIGGER_TIMER=y
+ CONFIG_LEDS_TRIGGER_HEARTBEAT=y
+ CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
++CONFIG_PWM=y
++CONFIG_PWM_BCM_KONA=y
+ CONFIG_EXT4_FS=y
+ CONFIG_EXT4_FS_POSIX_ACL=y
+ CONFIG_EXT4_FS_SECURITY=y
 -- 
 1.7.9.5
 
