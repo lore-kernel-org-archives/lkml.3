@@ -1,142 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315AbaDROEM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 10:04:12 -0400
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:50496 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaDROEK (ORCPT
+	id S1752095AbaDROHr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 10:07:47 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37842 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139AbaDROHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 10:04:10 -0400
+	Fri, 18 Apr 2014 10:07:44 -0400
+Date: Fri, 18 Apr 2014 15:07:24 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jyri Sarha <jsarha@ti.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Message-ID: <20140418140724.GL12304@sirena.org.uk>
+References: <1397779590-4128-1-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20140417150110.GB20889@saruman.home>
-References: <1396510519-8555-1-git-send-email-sbhatta@xilinx.com>
-	<113d0620-4003-417d-806b-0b79ae692829@VA3EHSMHS023.ehs.local>
-	<20140403145853.GD14162@saruman.home>
-	<CALHRZuoCtEz5-CmU17dUpVS_MjSDdYVLMSvgXq_RwxLj_KJMDA@mail.gmail.com>
-	<20140416180228.GK28035@saruman.home>
-	<CALHRZuq6=TMryHtbjTw7rYoGwbu2w0BTdxiOA95HYS3_CG6vwQ@mail.gmail.com>
-	<20140417150110.GB20889@saruman.home>
-Date: Fri, 18 Apr 2014 19:34:08 +0530
-Message-ID: <CALHRZuqetzEANE=F4mit5sPG_Q-X8Vxsd9-N4k-MKW4_uzDFwg@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
-From: sundeep subbaraya <sundeep.lkml@gmail.com>
-To: "balbi@ti.com" <balbi@ti.com>
-Cc: Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Michal Simek <michals@xilinx.com>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pWvls6SgojIh1mq8"
+Content-Disposition: inline
+In-Reply-To: <1397779590-4128-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: tlv320aic31xx: document that the regulators are
+ mandatory
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Felipe,
 
-On Thu, Apr 17, 2014 at 8:31 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Thu, Apr 17, 2014 at 03:01:37PM +0530, sundeep subbaraya wrote:
->> Hi Felipe,
->>
->> On Wed, Apr 16, 2014 at 11:32 PM, Felipe Balbi <balbi@ti.com> wrote:
->> > Hi,
->> >
->> > On Wed, Apr 16, 2014 at 04:09:28PM +0530, sundeep subbaraya wrote:
->> >> Hi Felipe,
->> >>
->> >> On Thu, Apr 3, 2014 at 8:28 PM, Felipe Balbi <balbi@ti.com> wrote:
->> >>
->> >> >> +static int start_dma(struct xusb_ep *ep, u32 src, u32 dst, u32 length)
->> >> >
->> >> > please prepend this with xudc_, it makes tracing a lot easier.
->> >> >
->> >> >> +{
->> >> >> +     struct xusb_udc *udc;
->> >> >> +     int rc = 0;
->> >> >> +     unsigned long timeout;
->> >> >> +
->> >> >> +     udc = ep->udc;
->> >> >> +     /*
->> >> >> +      * Set the addresses in the DMA source and
->> >> >> +      * destination registers and then set the length
->> >> >> +      * into the DMA length register.
->> >> >> +      */
->> >> >> +     udc->write_fn(udc->base_address, XUSB_DMA_DSAR_ADDR_OFFSET, src);
->> >> >> +     udc->write_fn(udc->base_address, XUSB_DMA_DDAR_ADDR_OFFSET, dst);
->> >> >> +     udc->write_fn(udc->base_address, XUSB_DMA_LENGTH_OFFSET, length);
->> >> >> +
->> >> >> +     /*
->> >> >> +      * Wait till DMA transaction is complete and
->> >> >> +      * check whether the DMA transaction was
->> >> >> +      * successful.
->> >> >> +     */
->> >> >> +     while ((udc->read_fn(ep->udc->base_address + XUSB_DMA_STATUS_OFFSET) &
->> >> >> +                     XUSB_DMA_DMASR_BUSY) == XUSB_DMA_DMASR_BUSY) {
->> >> >> +             timeout = jiffies + 10000;
->> >> >> +
->> >> >> +             if (time_after(jiffies, timeout)) {
->> >> >> +                     rc = -ETIMEDOUT;
->> >> >> +                     goto clean;
->> >> >> +             }
->> >> >> +     }
->> >> >
->> >> > don't you get an IRQ for DMA completion ? If you do, you could be using
->> >> > wait_for_completion()
->> >>
->> >> This function is called in interrupt context when buffer is ready or
->> >> free. It initiates DMA to transfer data from IP buffer to memory.
->> >> Hence it waits in busy loop till DMA completes
->> >
->> > wait, so you start_dma() before your gadget driver asks you to ?
->>
->> in ep_queue driver starts dma transfer from/to IP buffer to/from req->buf.
->> If transfer is completed then request is not added to ep request queue
->> and returns from ep_queue.
->> If transfer is not completed (actual < length) then request is added
->> to queue and returns from ep_queue.
->
-> This is wrong. Why wouldn't you give gadget driver the chance to decide
-> if it needs to queue the request again or not ?
+--pWvls6SgojIh1mq8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-When does gadget driver decides to queue the same request again?
-if -EBUSY is returned from ep_queue or req.status != 0 in completion
-routine?
+On Fri, Apr 18, 2014 at 02:06:30AM +0200, Alexandre Belloni wrote:
+> The driver will not probe if regulators are not provided. Move the regulator
+> properties to the required section.
 
-there are cases where ping-pong buffers both are busy. currently this driver
-adds request to queue only when buffers are busy. In normal cases request is
-processed without adding to queue.
+Applied, thanks.
 
-do i need to have another local queue for requests waiting since
-buffers are busy?
-Or dequeue the request ?
+--pWvls6SgojIh1mq8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->
->> when buffer processed interrupt occurs, handler starts dma if there is
->> request in queue and calls complete call back (when actual == length)
->> Hence answer is Yes for some transfers (start dma called from
->> interrupt handler not from ep_queue).
->
-> this also seems wrong(-ish).
->
-> 1) as Paul pointed out, you can't rely on jiffies if you're calling this
-> with IRQs disabled.
->
-> 2) you don't really need to wait until DMA finishes its transaction
-> before returning from start_dma(), just use the DMA completion IRQ,
->
-> 3) I don't see anywhere any sanitizing of arguments, can your DMA really
-> handle any alignment/unaligned addresses or should you make sure you're
-> getting good arguments?
->
-> You need to work on this a little bit, I guess.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Yes am working on this and will be using seperate ep_ops for ep0  like
-drivers/usb/dwc3/gadget.c since ep0 has no dma and ping-pong buffers
+iQIcBAEBAgAGBQJTUTGZAAoJELSic+t+oim9fyoP/RGkHO6OtnXy9E1NNJldYqb6
+LdNxpTDCwRTdi1e4zSEGg9r+J6zJn762It3QW4slJVL+XmY/zUudIVLtW3cnwPkD
+yDLncC0p2LzLqHlRyD4j3cvrPrcGB4GYVizSI16VfaLBm7w83Bq1erH87eGEhB3x
+vE+yZs28PDJhxasoWOsAioVCJU6QxLs8W5e0UjeKkVdHYul7fhJGVFrSkO5QYHh/
+jJsfpiFZn36zt3cVioqqilPDCrXXVw12ix94XM7LoPLGSWqNYkTBrdzbQePBOub3
+W6MgpBw2SQikGz35H8EVcwRsBXY3XCeApifIDzlkPppxd1R0RhZ4FoGoG5fpyLcA
+mjD3znfIkyIH7k3+FYy3Ck3MwUdePMoDVsDHM54dcSL8t2be1oRS6SIgq/+xSWtr
+yHshLNWYj3Cf7YYHBa2UaXPh8C0b6o48CFuqCZZAqZNBlf+a1Xl3zVTWdIm1xphV
+YlAxlsm6K02Wk+dt5mFNBD7nx1amjLqvA+RG8NrqOHuTe2TpZ7zqQljccSx7Ih0s
+UYfNIhEIApWaAbrO/2wkn0O83xrBzSG5/lMRIFxiFqsP5QJ6J0QN9wybWzHUq7Wt
+wIuPDV0rkP5IzESuTnn+D+qFVCpj0a/NIwPcQG4gORBbzqaGf/e4VZAx1eT1xvs6
+Gcvq5FbGFTSC1OYSfnkr
+=xqYX
+-----END PGP SIGNATURE-----
 
-Thanks,
-Sundeep.B.S.
-
->
-> --
-> balbi
+--pWvls6SgojIh1mq8--
