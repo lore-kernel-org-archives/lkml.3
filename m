@@ -1,182 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753727AbaDRMof (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:44:35 -0400
-Received: from mail-by2on0119.outbound.protection.outlook.com ([207.46.100.119]:34071
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1753845AbaDRMon (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:44:43 -0400
+Received: from mail-bn1bon0113.outbound.protection.outlook.com ([157.56.111.113]:60316
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752726AbaDRMob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:44:31 -0400
+	id S1752726AbaDRMog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:44:36 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH 24/28] nios2: Module support
-Date: Fri, 18 Apr 2014 20:27:07 +0800
-Message-ID: <1397824031-4892-21-git-send-email-lftan@altera.com>
+Subject: [PATCH 22/28] nios2: Miscellaneous header files
+Date: Fri, 18 Apr 2014 20:27:05 +0800
+Message-ID: <1397824031-4892-19-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
 References: <1397824031-4892-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(189002)(199002)(22564002)(93916002)(97736001)(86362001)(46102001)(50466002)(80022001)(50986999)(80976001)(62966002)(81342001)(4396001)(50226001)(48376002)(81542001)(76176999)(2009001)(99396002)(83072002)(85852003)(76482001)(42186004)(74502001)(47776003)(20776003)(16796002)(77982001)(31966008)(74662001)(84676001)(87936001)(87286001)(77156001)(89996001)(88136002)(19580395003)(36756003)(6806004)(44976005)(19580405001)(83322001)(2201001)(92566001)(92726001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB047;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:EA497D4E.A7F0A659.3C3A97E.84D5CF31.203F1;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(22564002)(189002)(199002)(2201001)(83072002)(85852003)(87936001)(2009001)(89996001)(99396002)(81542001)(50226001)(88136002)(81342001)(46102001)(4396001)(87286001)(50466002)(31966008)(74502001)(16796002)(74662001)(84676001)(80976001)(92566001)(92726001)(80022001)(62966002)(86362001)(575784001)(93916002)(97736001)(19580395003)(77156001)(76176999)(83322001)(19580405001)(44976005)(77982001)(47776003)(48376002)(6806004)(50986999)(36756003)(42186004)(76482001)(20776003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB053;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:C8A6F9E5.AB089CA7.4EC5927B.83EB6141.20586;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-OriginatorOrg: altera.onmicrosoft.com
 X-Forefront-PRVS: 018577E36E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for loadable modules.
+This patch introduces a few nios2-specific header files.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/kernel/module.c | 135 +++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 135 insertions(+)
- create mode 100644 arch/nios2/kernel/module.c
+ arch/nios2/include/asm/cmpxchg.h        | 61 +++++++++++++++++++++++++++++++++
+ arch/nios2/include/asm/gpio.h           | 23 +++++++++++++
+ arch/nios2/include/asm/linkage.h        | 25 ++++++++++++++
+ arch/nios2/include/asm/mutex.h          |  1 +
+ arch/nios2/include/asm/pci.h            | 25 ++++++++++++++
+ arch/nios2/include/uapi/asm/byteorder.h | 22 ++++++++++++
+ arch/nios2/include/uapi/asm/stat.h      | 23 +++++++++++++
+ arch/nios2/include/uapi/asm/statfs.h    | 24 +++++++++++++
+ arch/nios2/include/uapi/asm/swab.h      | 37 ++++++++++++++++++++
+ 9 files changed, 241 insertions(+)
+ create mode 100644 arch/nios2/include/asm/cmpxchg.h
+ create mode 100644 arch/nios2/include/asm/gpio.h
+ create mode 100644 arch/nios2/include/asm/linkage.h
+ create mode 100644 arch/nios2/include/asm/mutex.h
+ create mode 100644 arch/nios2/include/asm/pci.h
+ create mode 100644 arch/nios2/include/uapi/asm/byteorder.h
+ create mode 100644 arch/nios2/include/uapi/asm/stat.h
+ create mode 100644 arch/nios2/include/uapi/asm/statfs.h
+ create mode 100644 arch/nios2/include/uapi/asm/swab.h
 
-diff --git a/arch/nios2/kernel/module.c b/arch/nios2/kernel/module.c
+diff --git a/arch/nios2/include/asm/cmpxchg.h b/arch/nios2/include/asm/cmpxchg.h
 new file mode 100644
-index 0000000..360c53ab29f64f4e44c8cfe27f7176d793578569
+index 0000000..8593871
 --- /dev/null
-+++ b/arch/nios2/kernel/module.c
-@@ -0,0 +1,135 @@
++++ b/arch/nios2/include/asm/cmpxchg.h
+@@ -0,0 +1,61 @@
 +/*
-+ * Kernel module support for Nios II.
-+ *
 + * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *   Written by Wentao Xu <xuwentao@microtronix.com>
-+ * Copyright (C) 2001, 2003 Rusty Russell
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_CMPXCHG_H
++#define _ASM_NIOS2_CMPXCHG_H
++
++#include <linux/irqflags.h>
++
++#define xchg(ptr, x)	\
++	((__typeof__(*(ptr)))__xchg((unsigned long)(x), (ptr), sizeof(*(ptr))))
++
++struct __xchg_dummy { unsigned long a[100]; };
++#define __xg(x)		((volatile struct __xchg_dummy *)(x))
++
++static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
++					int size)
++{
++	unsigned long tmp, flags;
++
++	local_irq_save(flags);
++
++	switch (size) {
++	case 1:
++		__asm__ __volatile__(
++			"ldb	%0, %2\n"
++			"stb	%1, %2\n"
++			: "=&r" (tmp)
++			: "r" (x), "m" (*__xg(ptr))
++			: "memory");
++		break;
++	case 2:
++		__asm__ __volatile__(
++			"ldh	%0, %2\n"
++			"sth	%1, %2\n"
++			: "=&r" (tmp)
++			: "r" (x), "m" (*__xg(ptr))
++			: "memory");
++		break;
++	case 4:
++		__asm__ __volatile__(
++			"ldw	%0, %2\n"
++			"stw	%1, %2\n"
++			: "=&r" (tmp)
++			: "r" (x), "m" (*__xg(ptr))
++			: "memory");
++		break;
++	}
++
++	local_irq_restore(flags);
++	return tmp;
++}
++
++#include <asm-generic/cmpxchg.h>
++#include <asm-generic/cmpxchg-local.h>
++
++#endif /* _ASM_NIOS2_CMPXCHG_H */
+diff --git a/arch/nios2/include/asm/gpio.h b/arch/nios2/include/asm/gpio.h
+new file mode 100644
+index 0000000..e726bfc946d4fcf1b54ce9dd46a59cf507171536
+--- /dev/null
++++ b/arch/nios2/include/asm/gpio.h
+@@ -0,0 +1,23 @@
++/*
++ * Copyright (C) 2013 Altera Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#ifndef _ASM_NIOS2_GPIO_H
++#define _ASM_NIOS2_GPIO_H
++
++#include <linux/gpio.h>
++
++#endif /* _ASM_NIOS2_GPIO_H */
+diff --git a/arch/nios2/include/asm/linkage.h b/arch/nios2/include/asm/linkage.h
+new file mode 100644
+index 0000000..e0c6decd7d58db8b37e0f4e060e6394b15eac76c
+--- /dev/null
++++ b/arch/nios2/include/asm/linkage.h
+@@ -0,0 +1,25 @@
++/*
++ * Copyright (C) 2009 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ * NON INFRINGEMENT.  See the GNU General Public License for more
++ * details.
++ */
++
++#ifndef _ASM_NIOS2_LINKAGE_H
++#define _ASM_NIOS2_LINKAGE_H
++
++/* This file is required by include/linux/linkage.h */
++#define __ALIGN .align 4
++#define __ALIGN_STR ".align 4"
++
++#endif
+diff --git a/arch/nios2/include/asm/mutex.h b/arch/nios2/include/asm/mutex.h
+new file mode 100644
+index 0000000..ff6101a
+--- /dev/null
++++ b/arch/nios2/include/asm/mutex.h
+@@ -0,0 +1 @@
++#include <asm-generic/mutex-dec.h>
+diff --git a/arch/nios2/include/asm/pci.h b/arch/nios2/include/asm/pci.h
+new file mode 100644
+index 0000000..69c86faffe17dfd3ba69db90787f859d88f55ea8
+--- /dev/null
++++ b/arch/nios2/include/asm/pci.h
+@@ -0,0 +1,25 @@
++/*
++ *  Copyright (C) 2013 Altera Corporation
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++
++#ifndef __ASM_NIOS2_PCI_H__
++#define __ASM_NIOS2_PCI_H__
++
++/* We don't support PCI yet, but some drivers require this file anyway */
++
++#endif /* __ASM_NIOS2_PCI_H__ */
+diff --git a/arch/nios2/include/uapi/asm/byteorder.h b/arch/nios2/include/uapi/asm/byteorder.h
+new file mode 100644
+index 0000000..3ab5dc20d757c3abe89775d0ba585f47d567d055
+--- /dev/null
++++ b/arch/nios2/include/uapi/asm/byteorder.h
+@@ -0,0 +1,22 @@
++/*
++ * Copyright (C) 2009   Thomas Chou <thomas@wytron.com.tw>
++ * Copyright (C) 2004   Microtronix Datacom Ltd
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++
++#ifndef _ASM_NIOS2_BYTEORDER_H
++#define _ASM_NIOS2_BYTEORDER_H
++
++#include <linux/byteorder/little_endian.h>
++
++#endif
+diff --git a/arch/nios2/include/uapi/asm/stat.h b/arch/nios2/include/uapi/asm/stat.h
+new file mode 100644
+index 0000000..009f505da848ff388d55582984ff83f95ab395ad
+--- /dev/null
++++ b/arch/nios2/include/uapi/asm/stat.h
+@@ -0,0 +1,23 @@
++/*
++ * Copyright Altera Corporation (C) 2014. All rights reserved
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#ifndef _UAPI_ASM_NIOS2_STAT_H
++#define _UAPI_ASM_NIOS2_STAT_H
++
++#include <asm-generic/stat.h>
++
++#endif
+diff --git a/arch/nios2/include/uapi/asm/statfs.h b/arch/nios2/include/uapi/asm/statfs.h
+new file mode 100644
+index 0000000..625c86418dc807f196553bff2f25f8ac40474303
+--- /dev/null
++++ b/arch/nios2/include/uapi/asm/statfs.h
+@@ -0,0 +1,24 @@
++/*
++ * Copyright Altera Corporation (C) 2014. All rights reserved
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#ifndef _UAPI_ASM_NIOS2_STATFS_H
++#define _UAPI_ASM_NIOS2_STATFS_H
++
++#define __statfs_word __s32
++#include <asm-generic/statfs.h>
++
++#endif
+diff --git a/arch/nios2/include/uapi/asm/swab.h b/arch/nios2/include/uapi/asm/swab.h
+new file mode 100644
+index 0000000..b4e22ebaeb1792c2a703ebb235c5448f054685aa
+--- /dev/null
++++ b/arch/nios2/include/uapi/asm/swab.h
+@@ -0,0 +1,37 @@
++/*
++ * Copyright (C) 2012 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2011 Pyramid Technical Consultants, Inc.
 + *
 + * This file is subject to the terms and conditions of the GNU General
-+ * Public License.  See the file COPYING in the main directory of this
++ * Public License. See the file COPYING in the main directory of this
 + * archive for more details.
 + */
 +
-+#include <linux/moduleloader.h>
-+#include <linux/elf.h>
-+#include <linux/mm.h>
-+#include <linux/vmalloc.h>
-+#include <linux/slab.h>
-+#include <linux/fs.h>
-+#include <linux/string.h>
-+#include <linux/kernel.h>
++#ifndef _ASM_NIOS2_SWAB_H
++#define _ASM_NIOS2_SWAB_H
 +
-+#include <asm/pgtable.h>
-+#include <asm/cacheflush.h>
++#include <linux/types.h>
++#include <asm-generic/swab.h>
 +
-+void *module_alloc(unsigned long size)
++#ifdef CONFIG_NIOS2_CI_SWAB_SUPPORT
++#ifdef __GNUC__
++
++#define __nios2_swab(x)		\
++	__builtin_custom_ini(CONFIG_NIOS2_CI_SWAB_NO, (x))
++
++static inline __attribute__((const)) __u16 __arch_swab16(__u16 x)
 +{
-+	if (size == 0)
-+		return NULL;
-+	return kmalloc(size, GFP_KERNEL);
++	return (__u16) __nios2_swab(((__u32) x) << 16);
 +}
++#define __arch_swab16 __arch_swab16
 +
-+/* Free memory returned from module_alloc */
-+void module_free(struct module *mod, void *module_region)
++static inline __attribute__((const)) __u32 __arch_swab32(__u32 x)
 +{
-+	kfree(module_region);
++	return (__u32) __nios2_swab(x);
 +}
++#define __arch_swab32 __arch_swab32
 +
-+int apply_relocate_add(Elf32_Shdr *sechdrs, const char *strtab,
-+			unsigned int symindex, unsigned int relsec,
-+			struct module *mod)
-+{
-+	unsigned int i;
-+	Elf32_Rela *rela = (void *)sechdrs[relsec].sh_addr;
++#endif /* __GNUC__ */
++#endif /* CONFIG_NIOS2_CI_SWAB_SUPPORT */
 +
-+	pr_debug("Applying relocate section %u to %u\n", relsec,
-+		 sechdrs[relsec].sh_info);
-+
-+	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rela); i++) {
-+		/* This is where to make the change */
-+		uint32_t word;
-+		uint32_t *loc
-+			= ((void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
-+			   + rela[i].r_offset);
-+		/* This is the symbol it is referring to.  Note that all
-+		   undefined symbols have been resolved.  */
-+		Elf32_Sym *sym
-+			= ((Elf32_Sym *)sechdrs[symindex].sh_addr
-+				+ ELF32_R_SYM(rela[i].r_info));
-+		uint32_t v = sym->st_value + rela[i].r_addend;
-+		pr_debug("reltype %d 0x%x name:<%s>\n",
-+			ELF32_R_TYPE(rela[i].r_info),
-+			rela[i].r_offset, strtab + sym->st_name);
-+
-+		switch (ELF32_R_TYPE(rela[i].r_info)) {
-+		case R_NIOS2_NONE:
-+			break;
-+		case R_NIOS2_BFD_RELOC_32:
-+			*loc += v;
-+			break;
-+		case R_NIOS2_PCREL16:
-+			v -= (uint32_t)loc + 4;
-+			if ((int32_t)v > 0x7fff ||
-+				(int32_t)v < -(int32_t)0x8000) {
-+				pr_err("module %s: relocation overflow\n",
-+					mod->name);
-+				return -ENOEXEC;
-+			}
-+			word = *loc;
-+			*loc = ((((word >> 22) << 16) | (v & 0xffff)) << 6) |
-+				(word & 0x3f);
-+			break;
-+		case R_NIOS2_CALL26:
-+			if (v & 3) {
-+				pr_err("module %s: dangerous relocation\n",
-+					mod->name);
-+				return -ENOEXEC;
-+			}
-+			if ((v >> 28) != ((uint32_t)loc >> 28)) {
-+				pr_err("module %s: relocation overflow\n",
-+					mod->name);
-+				return -ENOEXEC;
-+			}
-+			*loc = (*loc & 0x3f) | ((v >> 2) << 6);
-+			break;
-+		case R_NIOS2_HI16:
-+			word = *loc;
-+			*loc = ((((word >> 22) << 16) |
-+				((v >> 16) & 0xffff)) << 6) | (word & 0x3f);
-+			break;
-+		case R_NIOS2_LO16:
-+			word = *loc;
-+			*loc = ((((word >> 22) << 16) | (v & 0xffff)) << 6) |
-+					(word & 0x3f);
-+			break;
-+		case R_NIOS2_HIADJ16:
-+			{
-+				Elf32_Addr word2;
-+
-+				word = *loc;
-+				word2 = ((v >> 16) + ((v >> 15) & 1)) & 0xffff;
-+				*loc = ((((word >> 22) << 16) | word2) << 6) |
-+						(word & 0x3f);
-+			}
-+			break;
-+
-+		default:
-+			pr_err("module %s: Unknown reloc: %u\n",
-+				mod->name, ELF32_R_TYPE(rela[i].r_info));
-+			return -ENOEXEC;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+int module_finalize(const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs,
-+			struct module *me)
-+{
-+	flush_cache_all();
-+	return 0;
-+}
-+
-+void module_arch_cleanup(struct module *mod)
-+{
-+}
++#endif /* _ASM_NIOS2_SWAB_H */
 -- 
 1.8.3.2
 
