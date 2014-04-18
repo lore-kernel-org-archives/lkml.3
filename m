@@ -1,102 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646AbaDRITc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 04:19:32 -0400
-Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:15777
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752251AbaDRISq (ORCPT
+	id S1752749AbaDRIT4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 04:19:56 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:55303 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610AbaDRITd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 04:18:46 -0400
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-X-SpamScore: 0
-X-BigFish: VS0(zzzz1f42h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch21a7h1fc6h208chzdchz1de098h8275bh1de097hz2dh2a8h839hd24he5bhf0ah1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1e23h1fe8h1ff5h2218h2216h226dh22d0h24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h268bh26d3h1155h)
-From: <hongbo.zhang@freescale.com>
-To: <vkoul@infradead.org>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>
-CC: <scottwood@freescale.com>, <leo.li@freescale.com>,
-        <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
-        Hongbo Zhang <hongbo.zhang@freescale.com>
-Subject: [PATCH v4 3/8] DMA: Freescale: remove attribute DMA_INTERRUPT of dmaengine
-Date: Fri, 18 Apr 2014 16:17:46 +0800
-Message-ID: <1397809071-5353-4-git-send-email-hongbo.zhang@freescale.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397809071-5353-1-git-send-email-hongbo.zhang@freescale.com>
-References: <1397809071-5353-1-git-send-email-hongbo.zhang@freescale.com>
+	Fri, 18 Apr 2014 04:19:33 -0400
+Date: Fri, 18 Apr 2014 10:19:26 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC PATCH RT V4] rwsem: The return of multi-reader PI rwsems
+Message-ID: <20140418081926.GC14560@gmail.com>
+References: <20140409151922.5fa5d999@gandalf.local.home>
+ <20140410134217.38cd6db7@gandalf.local.home>
+ <20140410223508.6d0fc135@gandalf.local.home>
+ <5347E475.4020009@osadl.org>
+ <20140411092524.1f242e25@gandalf.local.home>
+ <20140417192603.6e379157@gandalf.local.home>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-OriginatorOrg: freescale.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
-X-FOPE-CONNECTOR: Id%0$Dn%FREESCALE.MAIL.ONMICROSOFT.COM$RO%1$TLS%0$FQDN%$TlsDn%
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417192603.6e379157@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hongbo Zhang <hongbo.zhang@freescale.com>
 
-Delete attribute DMA_INTERRUPT because fsldma doesn't support this function,
-exception will be thrown if talitos is used to offload xor at the same time.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Signed-off-by: Hongbo Zhang <hongbo.zhang@freescale.com>
-Signed-off-by: Qiang Liu <qiang.liu@freescale.com>
----
- drivers/dma/fsldma.c |   31 -------------------------------
- 1 file changed, 31 deletions(-)
+> Changes since v3:
+> 
+> Clark reported that he was seeing a large latency when he added this
+> patch. I tested it out on a 8 logical CPU box, and sure enough I was
+> seeing it too. After spending the day debugging why, I found that I had
+> a bug in rt_mutex_getprio(), where I could do:
+> 
+>   min(task_top_pi_waiter(task)->pi_list_entry.prio, prio)
+> 
+> when there was no "top_pi_waiter", which would give garbage as a
+> result. This would let some tasks have higher priority than they
+> should, and cause other tasks that should have high priority not run.
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index 5f32cb8..b71cc04 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -528,35 +528,6 @@ static void fsl_dma_free_chan_resources(struct dma_chan *dchan)
+Would a sanity check like the one below have helped? (untested and 
+such)
+
+Thanks,
+
+	Ingo
+
+==========>
+ kernel/locking/rtmutex_common.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/kernel/locking/rtmutex_common.h b/kernel/locking/rtmutex_common.h
+index 7431a9c..36b1ce8 100644
+--- a/kernel/locking/rtmutex_common.h
++++ b/kernel/locking/rtmutex_common.h
+@@ -85,6 +85,7 @@ static inline int task_has_pi_waiters(struct task_struct *p)
+ static inline struct rt_mutex_waiter *
+ task_top_pi_waiter(struct task_struct *p)
+ {
++	WARN_ON_ONCE(!p->pi_waiters_leftmost);
+ 	return rb_entry(p->pi_waiters_leftmost, struct rt_mutex_waiter,
+ 			pi_tree_entry);
  }
- 
- static struct dma_async_tx_descriptor *
--fsl_dma_prep_interrupt(struct dma_chan *dchan, unsigned long flags)
--{
--	struct fsldma_chan *chan;
--	struct fsl_desc_sw *new;
--
--	if (!dchan)
--		return NULL;
--
--	chan = to_fsl_chan(dchan);
--
--	new = fsl_dma_alloc_descriptor(chan);
--	if (!new) {
--		chan_err(chan, "%s\n", msg_ld_oom);
--		return NULL;
--	}
--
--	new->async_tx.cookie = -EBUSY;
--	new->async_tx.flags = flags;
--
--	/* Insert the link descriptor to the LD ring */
--	list_add_tail(&new->node, &new->tx_list);
--
--	/* Set End-of-link to the last link descriptor of new list */
--	set_ld_eol(chan, new);
--
--	return &new->async_tx;
--}
--
--static struct dma_async_tx_descriptor *
- fsl_dma_prep_memcpy(struct dma_chan *dchan,
- 	dma_addr_t dma_dst, dma_addr_t dma_src,
- 	size_t len, unsigned long flags)
-@@ -1308,12 +1279,10 @@ static int fsldma_of_probe(struct platform_device *op)
- 	fdev->irq = irq_of_parse_and_map(op->dev.of_node, 0);
- 
- 	dma_cap_set(DMA_MEMCPY, fdev->common.cap_mask);
--	dma_cap_set(DMA_INTERRUPT, fdev->common.cap_mask);
- 	dma_cap_set(DMA_SG, fdev->common.cap_mask);
- 	dma_cap_set(DMA_SLAVE, fdev->common.cap_mask);
- 	fdev->common.device_alloc_chan_resources = fsl_dma_alloc_chan_resources;
- 	fdev->common.device_free_chan_resources = fsl_dma_free_chan_resources;
--	fdev->common.device_prep_dma_interrupt = fsl_dma_prep_interrupt;
- 	fdev->common.device_prep_dma_memcpy = fsl_dma_prep_memcpy;
- 	fdev->common.device_prep_dma_sg = fsl_dma_prep_sg;
- 	fdev->common.device_tx_status = fsl_tx_status;
--- 
-1.7.9.5
-
-
-
