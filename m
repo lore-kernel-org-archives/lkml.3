@@ -1,51 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751475AbaDRH0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 03:26:14 -0400
-Received: from mail.ispras.ru ([83.149.199.45]:56847 "EHLO mail.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750959AbaDRH0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 03:26:09 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
-        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        "James E.J. Bottomley" <JBottomley@parallels.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ldv-project@linuxtesting.org
-Subject: [PATCH] [SCSI] bfa: allocate memory with GFP_ATOMIC in spinlock context
-Date: Fri, 18 Apr 2014 00:25:49 -0700
-Message-Id: <1397805949-20502-1-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.8.3.2
+	id S1751392AbaDRHoM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 03:44:12 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44592 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaDRHnw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 03:43:52 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Fri, 18 Apr 2014 16:44:25 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Steven King <sfking@fdwdc.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [uClinux-dev] v3.15-rc1 slab allocator broken on m68knommu
+ (coldfire)
+Message-ID: <20140418074425.GA4812@js1304-P5Q-DELUXE>
+References: <201404141745.44279.sfking@fdwdc.com>
+ <201404161044.11416.sfking@fdwdc.com>
+ <20140417014911.GA3284@js1304-P5Q-DELUXE>
+ <201404171209.43848.sfking@fdwdc.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201404171209.43848.sfking@fdwdc.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bfa_fcb_pbc_vport_create() is called only from bfa_fcs_pbc_vport_init(),
-that is called only from bfad_drv_start() with bfad_lock spinlock held.
-So the patch replaces GFP_KERNEL with GFP_ATOMIC to avoid
-sleeping in atomic spinlock context.
+On Thu, Apr 17, 2014 at 12:09:43PM -0700, Steven King wrote:
+> On Wednesday 16 April 2014 6:49:11 pm Joonsoo Kim wrote:
+> > On Wed, Apr 16, 2014 at 10:44:11AM -0700, Steven King wrote:
+> > > On Wednesday 16 April 2014 9:06:57 am Geert Uytterhoeven wrote:
+> > > > Hi Steven,
+> > > >
+> > > > On Wed, Apr 16, 2014 at 5:47 PM, Steven King <sfking@fdwdc.com> wrote:
+> > > > > --- a/mm/slab.c
+> > > > > +++ b/mm/slab.c
+> > > > > @@ -2572,13 +2572,13 @@ static void *alloc_slabmgmt(struct kmem_cache
+> > > > > *cachep, return freelist;
+> > > > >  }
+> > > > >
+> > > > > -static inline freelist_idx_t get_free_obj(struct page *page,
+> > > > > unsigned char idx) +static inline freelist_idx_t get_free_obj(struct
+> > > > > page *page, unsigned int idx) {
+> > > > >         return ((freelist_idx_t *)page->freelist)[idx];
+> > > > >  }
+> > > > >
+> > > > >  static inline void set_free_obj(struct page *page,
+> > > > > -                                       unsigned char idx,
+> > > > > freelist_idx_t val) +                                       unsigned
+> > > > > int idx, freelist_idx_t val) {
+> > > > >         ((freelist_idx_t *)(page->freelist))[idx] = val;
+> > > > >  }
+> > > > >
+> > > > >
+> > > > > then v3.15-rc1 will boot using the slab allocator.
+> > > >
+> > > > Is "idx" ever larger than 255?
+> > > >
+> > > > Gr{oetje,eeting}s,
+> > >
+> > > Yes.  If I stick
+> > >
+> > >         if (idx > 255)
+> > >                 pr_info("%s %d\n", __func__, idx);
+> > >
+> > > in get_free_obj and set_free_obj and see values for idx up into the 400s.
+> >
+> > Hello,
+> >
+> > Yes, it's my mistake. idx can be larger than 255 if freelist_idx_t is
+> > unsigned short. So unsigned char idx isn't appropriate here. Your
+> > system's PAGE_SIZE may be 2^13, so freelist_idx_t would be unsigned short
+> > and idx will be larger than 255.
+> >
+> > Your fix looks good to me, so could you send it quickly to Pekka with
+> > some description? If you don't have enough time to do it, I can handle it.
+> >
+> > Really thanks for notifying this issue.
+> >
+> > Thanks.
+> 
+> Why don't you go ahead and do it, you know whats going better than I do.
 
-Found by Linux Driver Verification project (linuxtesting.org).
+Okay.
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- drivers/scsi/bfa/bfad.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+I sent it with some description.
+See following link if you want to check.
 
-diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
-index cc0fbcdc5192..8f46d1b72fb8 100644
---- a/drivers/scsi/bfa/bfad.c
-+++ b/drivers/scsi/bfa/bfad.c
-@@ -652,7 +652,7 @@ bfad_vport_create(struct bfad_s *bfad, u16 vf_id,
- 	unsigned long	flags;
- 	struct completion fcomp;
- 
--	vport = kzalloc(sizeof(struct bfad_vport_s), GFP_KERNEL);
-+	vport = kzalloc(sizeof(struct bfad_vport_s), GFP_ATOMIC);
- 	if (!vport) {
- 		rc = BFA_STATUS_ENOMEM;
- 		goto ext;
--- 
-1.8.3.2
+https://lkml.org/lkml/2014/4/18/28
+
+Thanks.
 
