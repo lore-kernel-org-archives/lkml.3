@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751882AbaDRIav (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 04:30:51 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39497 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750974AbaDRIa1 (ORCPT
+	id S1751854AbaDRIeE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 04:34:04 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59045 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaDRId4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 04:30:27 -0400
-Date: Fri, 18 Apr 2014 09:29:36 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Alex Elder <elder@linaro.org>
-Cc: bcm@fixthebug.org, mporter@linaro.org,
-        bcm-kernel-feedback-list@broadcom.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 07/10] ARM: bcm: tidy up a few includes
-Message-ID: <20140418082936.GA24070@n2100.arm.linux.org.uk>
-References: <1397788215-20279-1-git-send-email-elder@linaro.org> <1397788215-20279-8-git-send-email-elder@linaro.org>
+	Fri, 18 Apr 2014 04:33:56 -0400
+Date: Fri, 18 Apr 2014 10:33:42 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 06/19] qspinlock: prolong the stay in the pending bit
+ path
+Message-ID: <20140418083342.GA11096@twins.programming.kicks-ass.net>
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
+ <1397747051-15401-7-git-send-email-Waiman.Long@hp.com>
+ <20140417163640.GT11096@twins.programming.kicks-ass.net>
+ <535083DC.2040406@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397788215-20279-8-git-send-email-elder@linaro.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <535083DC.2040406@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 09:30:12PM -0500, Alex Elder wrote:
-> Clean up a few header file includes, eliminating a few that are not
-> really needed and putting in their place some that are.
-> 
-> Signed-off-by: Alex Elder <elder@linaro.org>
-> Reviewed-by: Matt Porter <mporter@linaro.org>
-> ---
->  arch/arm/mach-bcm/board_bcm21664.c |    3 +--
->  arch/arm/mach-bcm/kona.c           |    5 +++--
->  arch/arm/mach-bcm/kona.h           |    1 +
->  3 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/arm/mach-bcm/board_bcm21664.c b/arch/arm/mach-bcm/board_bcm21664.c
-> index acc1573..ab96c3f 100644
-> --- a/arch/arm/mach-bcm/board_bcm21664.c
-> +++ b/arch/arm/mach-bcm/board_bcm21664.c
-> @@ -11,13 +11,12 @@
->   * GNU General Public License for more details.
->   */
->  
-> -#include <linux/clocksource.h>
->  #include <linux/of_address.h>
->  #include <linux/of_platform.h>
->  
->  #include <asm/mach/arch.h>
-> +#include <asm/io.h>
+On Thu, Apr 17, 2014 at 09:46:04PM -0400, Waiman Long wrote:
+> BTW, I didn't test out your atomic_test_and_set() change. Did it provide a
+> noticeable performance benefit when compared with cmpxchg()?
 
-It's linux/io.h
+I've not tested that I think. I had a hard time showing that cmpxchg
+loops were slower, but once I did, I simply replaced all cmpxchg loops
+with unconditional ops where possible.
 
-> diff --git a/arch/arm/mach-bcm/kona.h b/arch/arm/mach-bcm/kona.h
-> index 110185f..bcdcf06 100644
-> --- a/arch/arm/mach-bcm/kona.h
-> +++ b/arch/arm/mach-bcm/kona.h
-> @@ -12,6 +12,7 @@
->   */
->  
->  #ifdef CONFIG_ARCH_BCM_MOBILE_L2_CACHE
-> +#include <linux/init.h>
->  
->  void __init kona_l2_cache_init(void);
-
-Just get rid of the __init instead.
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+The machine that was big enough to show it lived in a lab half way
+around the world and using it was a right pain in the ass, so I didn't
+use it more than I absolutely had to.
