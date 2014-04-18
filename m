@@ -1,116 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751AbaDRTFw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 15:05:52 -0400
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:59609 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753531AbaDRTEb (ORCPT
+	id S1754769AbaDRTF7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 15:05:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59612 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754470AbaDRTFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 15:04:31 -0400
-From: Suman Tripathi <stripathi@apm.com>
-To: kishon@ti.com, tj@kernel.org
-Cc: olof@lixom.net, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-ide@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        ddutile@redhat.com, jcm@redhat.com, patches@apm.com,
-        Suman Tripathi <stripathi@apm.com>, Loc Ho <lho@apm.com>
-Subject: [PATCH 1/2] PHY: Add function set_rate to generic PHY framework
-Date: Fri, 18 Apr 2014 23:35:54 +0530
-Message-Id: <1397844354-13412-1-git-send-email-stripathi@apm.com>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 18 Apr 2014 15:05:44 -0400
+Date: Fri, 18 Apr 2014 21:05:19 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
+Message-ID: <20140418190519.GA11182@twins.programming.kicks-ass.net>
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
+ <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
+ <20140417155649.GR11096@twins.programming.kicks-ass.net>
+ <53504BB3.4010009@hp.com>
+ <20140418082716.GZ11096@twins.programming.kicks-ass.net>
+ <53516672.3010701@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53516672.3010701@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds function set_rate to the generic PHY framework operation
-structure. This function can be called to instruct the PHY underlying
-layer at specified lane to configure for specified rate.
+On Fri, Apr 18, 2014 at 01:52:50PM -0400, Waiman Long wrote:
+> I am confused by your notation.
 
-Signed-off-by: Loc Ho <lho@apm.com>
-Signed-off-by: Suman Tripathi <stripathi@apm.com>
----
- drivers/phy/phy-core.c  | 27 +++++++++++++++++++++++++++
- include/linux/phy/phy.h |  8 ++++++++
- 2 files changed, 35 insertions(+)
-
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 645c867..51f82e0 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -258,6 +258,33 @@ int phy_power_off(struct phy *phy)
- EXPORT_SYMBOL_GPL(phy_power_off);
-
- /**
-+ * phy_set_rate - set an specified lane at an specified rate
-+ * @phy: phy instance to be set
-+ * @lane: zero-based lane index
-+ * @rate: operating rate in bps (bits per second)
-+ *
-+ * Returns 0 if successful, -ENOTSUPP if not supported
-+ * -EINVAL if parameter out of range.
-+ */
-+int phy_set_rate(struct phy *phy, int lane, u64 rate)
-+{
-+	int ret = 0;
-+
-+	mutex_lock(&phy->mutex);
-+ 	if (phy->ops->set_rate) {
-+		ret = phy->ops->set_rate(phy, lane, rate);
-+		if (ret < 0) {
-+			dev_err(&phy->dev, "phy set rate failed --> %d\n",
-+				ret);
-+		}
-+	}
-+	mutex_unlock(&phy->mutex);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(phy_set_rate);
-+
-+/**
-  * of_phy_get() - lookup and obtain a reference to a phy by phandle
-  * @dev: device that requests this phy
-  * @index: the index of the phy
-diff --git a/include/linux/phy/phy.h b/include/linux/phy/phy.h
-index e273e5a..2dfcb34 100644
---- a/include/linux/phy/phy.h
-+++ b/include/linux/phy/phy.h
-@@ -27,6 +27,7 @@ struct phy;
-  * @exit: operation to be performed while exiting
-  * @power_on: powering on the phy
-  * @power_off: powering off the phy
-+ * @set_rate: set the rate
-  * @owner: the module owner containing the ops
-  */
- struct phy_ops {
-@@ -34,6 +35,7 @@ struct phy_ops {
- 	int	(*exit)(struct phy *phy);
- 	int	(*power_on)(struct phy *phy);
- 	int	(*power_off)(struct phy *phy);
-+	int     (*set_rate)(struct phy *phy, int lane, u64 rate);
- 	struct module *owner;
- };
-
-@@ -137,6 +139,7 @@ int phy_init(struct phy *phy);
- int phy_exit(struct phy *phy);
- int phy_power_on(struct phy *phy);
- int phy_power_off(struct phy *phy);
-+int phy_set_rate(struct phy *phy, int lane, u64 rate);
- static inline int phy_get_bus_width(struct phy *phy)
- {
- 	return phy->attrs.bus_width;
-@@ -217,6 +220,11 @@ static inline int phy_power_off(struct phy *phy)
- 	return -ENOSYS;
- }
-
-+static inline int phy_set_rate(struct phy *phy, int lane, u64 rate)
-+{
-+	return -ENOSYS;
-+}
-+
- static inline int phy_get_bus_width(struct phy *phy)
- {
- 	return -ENOSYS;
---
-1.8.2.1
-
+Nah, I think I was confused :-) Make the 1 _Q_LOCKED_VAL though, as
+that's the proper constant to use.
