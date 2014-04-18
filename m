@@ -1,111 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751460AbaDRARr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 20:17:47 -0400
-Received: from moutng.kundenserver.de ([212.227.17.13]:53809 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944AbaDRARn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 20:17:43 -0400
-From: Max Schwarz <max.schwarz@online.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Heiko Stuebner <heiko@sntech.de>
-Subject: [PATCH] arc_emac: write initial MAC address from devicetree to hw
-Date: Fri, 18 Apr 2014 02:17:32 +0200
-Message-ID: <1664530.jeK9vBIgft@typ>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-19-generic; KDE/4.11.5; x86_64; ; )
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
-X-Provags-ID: V02:K0:aYtv/ZR5JdEVLIoo/HBdfyDDC9FNJvCuHmTyeCGlqy5
- B+ITEpF+tJ6pP3xuqKuaAEWX8qTIBGJ07/gEoX/6ZLQBB4Meia
- K39dNtVW8E3RjeYmcJEnTb630exMe+heTgyf65QYL7PQhfMNMf
- dUHE/U8aGdAXmI3gxrIVdUKaRvGMc7YcQPTzE7nMV/QlCUJMkw
- 8WuroWfKNxUm134a89S0roblDYicETILmmuA8ctIQ5kZLlcA2a
- jkvAoeeBWuB2ITBlVUzY8mzUPzR+7UQGYv312l6EKFrUggxa/S
- 1jdiYp6lGCKMc41IrG+43uYRKsF3OF9xQL9DeQcglk1Lqx9fA=
- =
+	id S1751681AbaDRASj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 20:18:39 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:55748 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751356AbaDRAS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 20:18:28 -0400
+From: Kees Cook <keescook@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
+        David Howells <dhowells@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Li Zefan <lizefan@huawei.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
+        Andrew Shewmaker <agshew@gmail.com>, Andi Kleen <ak@linux.intel.com>,
+        Jens Axboe <axboe@fb.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        Michael Ellerman <michael@ellerman.id.au>
+Subject: [PATCH v2 3/4] sysctl: allow for strict write position handling
+Date: Thu, 17 Apr 2014 17:16:22 -0700
+Message-Id: <1397780183-24633-4-git-send-email-keescook@chromium.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397780183-24633-1-git-send-email-keescook@chromium.org>
+References: <1397780183-24633-1-git-send-email-keescook@chromium.org>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MAC address retrieved from dt was not actually written to the
-hardware. This meant proper communication was only possible after
-changing the MAC address.
+When writing to a sysctl string, each write, regardless of VFS position,
+begins writing the string from the start. This means the contents of
+the last write to the sysctl controls the string contents instead of
+the first:
 
-Fix that by always writing the mac address during probing.
+open("/proc/sys/kernel/modprobe", O_WRONLY)   = 1
+write(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"..., 4096) = 4096
+write(1, "/bin/true", 9)                = 9
+close(1)                                = 0
 
-Signed-off-by: Max Schwarz <max.schwarz@online.de>
+$ cat /proc/sys/kernel/modprobe
+/bin/true
+
+Expected behaviour would be to have the sysctl be "AAAA..." capped at
+maxlen (in this case KMOD_PATH_LEN: 256), instead of truncating to the
+contents of the second write. Similarly, multiple short writes would not
+append to the sysctl.
+
+This provides CONFIG_PROC_SYSCTL_STRICT_WRITES as a way to make this
+behavior act in a less surprising manner for strings, and disallows
+non-zero file position when writing numeric sysctls (similar to what is
+already done when reading from non-zero file positions).
+
+Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
+ fs/proc/Kconfig |   17 +++++++++++++++++
+ kernel/sysctl.c |   17 +++++++++++++++++
+ 2 files changed, 34 insertions(+)
 
-I recently noticed this problem on the Radxa Rock board. I'm not
-sure how this has ever worked on other platforms, though. I can
-only receive broadcast packets without configuring the address.
-
-Running ifconfig eth0 hw ether XYZ or applying the patch fixes
-the problem for me.
-
-CCing Heiko Stübner because he has seen the problem as well.
-
- drivers/net/ethernet/arc/emac_main.c | 21 ++++++++++++++-------
- 1 file changed, 14 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
-index eeecc29..9f45782 100644
---- a/drivers/net/ethernet/arc/emac_main.c
-+++ b/drivers/net/ethernet/arc/emac_main.c
-@@ -574,6 +574,18 @@ static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
- 	return NETDEV_TX_OK;
+diff --git a/fs/proc/Kconfig b/fs/proc/Kconfig
+index 2183fcf41d59..4a93cf8b7b9f 100644
+--- a/fs/proc/Kconfig
++++ b/fs/proc/Kconfig
+@@ -62,6 +62,23 @@ config PROC_SYSCTL
+ 	  building a kernel for install/rescue disks or your system is very
+ 	  limited in memory.
+ 
++config PROC_SYSCTL_STRICT_WRITES
++	bool "Perform strict writes to /proc/sys entries" if EXPERT
++	depends on PROC_SYSCTL
++	default n
++	---help---
++	  When writing to sysctl entries in /proc, each write syscall
++	  is expected to contain the entire sysctl value. For strings
++	  this means that writes do not append, and the contents of the
++	  buffer will be whatever was written last, regardless of the
++	  file position.
++
++	  When PROC_SYSCTL_STRICT_WRITES is enabled, writes to numeric
++	  sysctl entries must always be at file position 0 and the value
++	  must be fully contained in the buffer sent to the write syscall.
++	  For strings, file position is respected, though anything past
++	  the max length of the sysctl buffer will be ignored.
++
+ config PROC_PAGE_MONITOR
+  	default y
+ 	depends on PROC_FS && MMU
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 0e08103a69c8..83902ae3e4e6 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1712,8 +1712,19 @@ static int _proc_do_string(char *data, int maxlen, int write,
+ 	}
+ 
+ 	if (write) {
++#ifdef CONFIG_PROC_SYSCTL_STRICT_WRITES
++		/* Only continue writes not past the end of buffer. */
++		len = strlen(data);
++		if (len > maxlen - 1)
++			len = maxlen - 1;
++
++		if (*ppos > len)
++			return 0;
++		len = *ppos;
++#else
+ 		/* Start writing from beginning of buffer. */
+ 		len = 0;
++#endif
+ 		*ppos += *lenp;
+ 		p = buffer;
+ 		while ((p - buffer) < *lenp && len < maxlen - 1) {
+@@ -1948,6 +1959,8 @@ static int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
+ 		conv = do_proc_dointvec_conv;
+ 
+ 	if (write) {
++		if (IS_ENABLED(CONFIG_PROC_SYSCTL_STRICT_WRITES) && *ppos)
++			goto out;
+ 		if (left > PAGE_SIZE - 1)
+ 			left = PAGE_SIZE - 1;
+ 		page = __get_free_page(GFP_TEMPORARY);
+@@ -2005,6 +2018,7 @@ free:
+ 			return err ? : -EINVAL;
+ 	}
+ 	*lenp -= left;
++out:
+ 	*ppos += *lenp;
+ 	return err;
  }
+@@ -2197,6 +2211,8 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
+ 	left = *lenp;
  
-+static void arc_emac_set_address_internal(struct net_device *ndev)
-+{
-+	struct arc_emac_priv *priv = netdev_priv(ndev);
-+	unsigned int addr_low, addr_hi;
-+
-+	addr_low = le32_to_cpu(*(__le32 *) &ndev->dev_addr[0]);
-+	addr_hi = le16_to_cpu(*(__le16 *) &ndev->dev_addr[4]);
-+
-+	arc_reg_set(priv, R_ADDRL, addr_low);
-+	arc_reg_set(priv, R_ADDRH, addr_hi);
-+}
-+
- /**
-  * arc_emac_set_address - Set the MAC address for this device.
-  * @ndev:	Pointer to net_device structure.
-@@ -587,9 +599,7 @@ static int arc_emac_tx(struct sk_buff *skb, struct net_device *ndev)
-  */
- static int arc_emac_set_address(struct net_device *ndev, void *p)
- {
--	struct arc_emac_priv *priv = netdev_priv(ndev);
- 	struct sockaddr *addr = p;
--	unsigned int addr_low, addr_hi;
- 
- 	if (netif_running(ndev))
- 		return -EBUSY;
-@@ -599,11 +609,7 @@ static int arc_emac_set_address(struct net_device *ndev, void *p)
- 
- 	memcpy(ndev->dev_addr, addr->sa_data, ndev->addr_len);
- 
--	addr_low = le32_to_cpu(*(__le32 *) &ndev->dev_addr[0]);
--	addr_hi = le16_to_cpu(*(__le16 *) &ndev->dev_addr[4]);
--
--	arc_reg_set(priv, R_ADDRL, addr_low);
--	arc_reg_set(priv, R_ADDRH, addr_hi);
-+	arc_emac_set_address_internal(ndev);
- 
- 	return 0;
+ 	if (write) {
++		if (IS_ENABLED(CONFIG_PROC_SYSCTL_STRICT_WRITES) && *ppos)
++			goto out;
+ 		if (left > PAGE_SIZE - 1)
+ 			left = PAGE_SIZE - 1;
+ 		page = __get_free_page(GFP_TEMPORARY);
+@@ -2252,6 +2268,7 @@ free:
+ 			return err ? : -EINVAL;
+ 	}
+ 	*lenp -= left;
++out:
+ 	*ppos += *lenp;
+ 	return err;
  }
-@@ -713,6 +719,7 @@ static int arc_emac_probe(struct platform_device *pdev)
- 	else
- 		eth_hw_addr_random(ndev);
- 
-+	arc_emac_set_address_internal(ndev);
- 	dev_info(&pdev->dev, "MAC address is now %pM\n", ndev->dev_addr);
- 
- 	/* Do 1 allocation instead of 2 separate ones for Rx and Tx BD rings */
 -- 
-1.8.3.2
-
+1.7.9.5
 
