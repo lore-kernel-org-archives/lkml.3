@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516AbaDRQtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 12:49:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41186 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754083AbaDRQtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 12:49:25 -0400
-Message-ID: <53515775.2080604@zytor.com>
-Date: Fri, 18 Apr 2014 09:48:53 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753288AbaDRQyn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 12:54:43 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:56933 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139AbaDRQyj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 12:54:39 -0400
 MIME-Version: 1.0
-To: Sasha Levin <sasha.levin@oracle.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
-        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] x86/insn: Extract more information about instructions
-References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-3-git-send-email-sasha.levin@oracle.com> <534CA38C.80501@hitachi.com> <534D4BF3.3020102@oracle.com> <534DF868.2020901@zytor.com> <534DFD61.4070700@oracle.com> <534DFEDC.8090503@zytor.com> <534E0124.70700@oracle.com> <534E1559.8050904@hitachi.com> <534FF135.40404@oracle.com> <534FF31E.1000104@zytor.com> <53500FF8.8010804@oracle.com> <53509EB9.5070001@hitachi.com> <53509FD9.2020803@zytor.com> <5351491F.3030309@oracle.com>
-In-Reply-To: <5351491F.3030309@oracle.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <7706B5FF-45EB-4860-BD12-204B341A510D@konsulko.com>
+References: <1395179766-31575-1-git-send-email-pantelis.antoniou@konsulko.com>
+	<CANk1AXTb=ob52AfK2z--HvFkxJnjnfYWuTCch_Gw99OCoS1ABg@mail.gmail.com>
+	<7706B5FF-45EB-4860-BD12-204B341A510D@konsulko.com>
+Date: Fri, 18 Apr 2014 11:54:38 -0500
+Message-ID: <CANk1AXSCfpYCgZaqPKqPo1wafXaD_t3f4C0YXGfTYCZE8oL8yw@mail.gmail.com>
+Subject: Re: [PATCH v3 0/7] Introducing (yet again) Device Tree Overlays
+From: delicious quinoa <delicious.quinoa@gmail.com>
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Matt Porter <matt.porter@linaro.org>,
+        Koen Kooi <koen@dominion.thruhere.net>,
+        Alison Chaiken <Alison_Chaiken@mentor.com>,
+        Dinh Nguyen <dinh.linux@gmail.com>, Jan Lubbe <jluebbe@lasnet.de>,
+        Alexander Sverdlin <alexander.sverdlin@nsn.com>,
+        Michael Stickel <ms@mycable.de>, Guenter Roeck <linux@roeck-us.net>,
+        Dirk Behme <dirk.behme@gmail.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Michael Bohan <mbohan@codeaurora.org>,
+        Ionut Nicu <ioan.nicu.ext@nsn.com>, Michal Simek <monstr@monstr.eu>,
+        Matt Ranostay <mranostay@gmail.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Pete Popov <pete.popov@konsulko.com>,
+        Dan Malek <dan.malek@konsulko.com>,
+        Georgi Vlaev <georgi.vlaev@konsulko.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2014 08:47 AM, Sasha Levin wrote:
-> 
-> There are very specific mnemonics that kmemchecks wants to detect and treat
-> as a corner case.
-> 
-> What you're saying here is that while the instruction decoder already has the
-> knowledge of mnemonics, kmemcheck shouldn't use it and instead write it's own
-> opcode -> mnemonic parser and use that instead.
-> 
+On Thu, Apr 17, 2014 at 11:12 AM, Pantelis Antoniou
+<pantelis.antoniou@konsulko.com> wrote:
+> Hi Alan,
+>
+> Ugh, very sorry for the late reply; my mailer filed this somewhere I don't look at very frequently.
+>
+> On Mar 28, 2014, at 8:27 PM, delicious quinoa wrote:
+>
+>> On Tue, Mar 18, 2014 at 4:55 PM, Pantelis Antoniou
+>> <pantelis.antoniou@konsulko.com> wrote:
+>>> The following patchset introduces Device Tree overlays, a method
+>>> of dynamically altering the kernel's live Device Tree, along with
+>>> a generic interface to use it in a board agnostic manner.
+>>>
+>
+> [snip]
+>
+>> \
+>> I did some debug, haven't figured anything out yet.
+>>
+>> I have been able to successfully add/remove an overlay if it was to a
+>> fpga node that was at /fpga and used 'target = <&fpga>;'   Also
+>> 'target-path="/fpga";' works fine.
+>>
+>
+> Yes, platform devices are broken; I carry a patch that fixes all of that mess, and I intend to follow up with it.
 
-I think that involving mnemonics is "bonghits" level of crazy.  It's a
-solution in search of the problem, but it is a hack, and a pretty
-horrific one.
+That's great.  I like this patchset and what it can do.
 
-> 
->> What it sounds like it really wants is a "bitwise" flag on the instruction.
-> 
-> A flag like that would solve part of the problem (we'd still need to work with
-> CMPS and MOVS), and sounds very kmemcheck specific.
-> 
+Regards,
+Alan
 
-Well, guess what, the whole point is to export information to the users
-that need it.
-
-	-hpa
-
-
+>
+>> Alan Tull
+>> aka
+>> delicious quinoa
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe devicetree" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+> Regards
+>
+> -- Pantelis
+>
