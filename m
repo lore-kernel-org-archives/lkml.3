@@ -1,76 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627AbaDRRhX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 13:37:23 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38156 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753425AbaDRRhS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 13:37:18 -0400
-Date: Fri, 18 Apr 2014 18:36:51 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: lgirdwood@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, rdunlap@infradead.org, sameo@linux.intel.com,
-        lee.jones@linaro.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Message-ID: <20140418173651.GT12304@sirena.org.uk>
-References: <1397638902-7576-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
- <1397638902-7576-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Acuacab4LPnnfGxd"
-Content-Disposition: inline
-In-Reply-To: <1397638902-7576-3-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/6] regulator: arizona-ldo1: Move setup processing from
- arizona-core
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1754700AbaDRRhr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 13:37:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32580 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754272AbaDRRfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 13:35:20 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, davem@davemloft.net,
+        eparis@redhat.com, netfilter-devel@vger.kernel.org, hadi@mojatatu.com,
+        sgrubb@redhat.com
+Subject: [PATCH 5/6] audit: add netlink multicast group for log read
+Date: Fri, 18 Apr 2014 13:34:09 -0400
+Message-Id: <bd8877d51ad46dd6e7ee71a8b45a905095a17bf7.1397831970.git.rgb@redhat.com>
+In-Reply-To: <20140324183406.GE28666@madcap2.tricolour.ca>
+References: <20140324183406.GE28666@madcap2.tricolour.ca>
+In-Reply-To: <cover.1397831970.git.rgb@redhat.com>
+References: <cover.1397831970.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Add a netlink multicast socket with one group to kaudit for "best-effort"
+delivery to read-only userspace clients such as systemd, in addition to the
+existing bidirectional unicast auditd userspace client.
 
---Acuacab4LPnnfGxd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Currently, auditd is intended to use the CAP_AUDIT_CONTROL and CAP_AUDIT_WRITE
+capabilities, but actually uses CAP_NET_ADMIN.  The CAP_AUDIT_READ capability
+is added for use by read-only AUDIT_NLGRP_READLOG netlink multicast group
+clients to the kaudit subsystem.
 
-On Wed, Apr 16, 2014 at 10:01:38AM +0100, Charles Keepax wrote:
-> It is more idiomatic to process things relating to the regulator in its
-> driver. This patch moves both processing of device tree relating to the
-> regulator and checking if the regulator is external from arizona-core
-> into the regulator driver.
+This will safely give access to services such as systemd to consume audit logs
+while ensuring write access remains restricted for integrity.
 
-Applied, thanks.  It would have been helpful to say in the commit log
-how this avoid races if the regulator driver is modular - the MFD can't
-get as far as checking if the DCVDD supply is internal until the supply
-is satisfied so if it's being used the LDO must have loaded.
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ include/uapi/linux/audit.h |    8 +++++++
+ kernel/audit.c             |   51 ++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 55 insertions(+), 4 deletions(-)
 
---Acuacab4LPnnfGxd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+diff --git a/include/uapi/linux/audit.h b/include/uapi/linux/audit.h
+index 11917f7..dfa4c86 100644
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -373,6 +373,14 @@ enum {
+  */
+ #define AUDIT_MESSAGE_TEXT_MAX	8560
+ 
++/* Multicast Netlink socket groups (default up to 32) */
++enum audit_nlgrps {
++	AUDIT_NLGRP_NONE,	/* Group 0 not used */
++	AUDIT_NLGRP_READLOG,	/* "best effort" read only socket */
++	__AUDIT_NLGRP_MAX
++};
++#define AUDIT_NLGRP_MAX                (__AUDIT_NLGRP_MAX - 1)
++
+ struct audit_status {
+ 	__u32		mask;		/* Bit mask for valid entries */
+ 	__u32		enabled;	/* 1 = enabled, 0 = disabled */
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 223cb74..d272cc1 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -424,6 +424,35 @@ static void kauditd_send_skb(struct sk_buff *skb)
+ }
+ 
+ /*
++ * kauditd_send_multicast_skb - send the skb to multicast userspace listeners
++ *
++ * This function doesn't consume an skb as might be expected since it has to
++ * copy it anyways.
++ */
++static void kauditd_send_multicast_skb(struct sk_buff *skb)
++{
++	struct sk_buff		*copy;
++	struct audit_net	*aunet = net_generic(&init_net, audit_net_id);
++	struct sock		*sock = aunet->nlsk;
++
++	/*
++	 * The seemingly wasteful skb_copy() rather than bumping the refcount
++	 * using skb_get() is necessary because non-standard mods are made to
++	 * the skb by the original kaudit unicast socket send routine.  The
++	 * existing auditd daemon assumes this breakage.  Fixing this would
++	 * require co-ordinating a change in the established protocol between
++	 * the kaudit kernel subsystem and the auditd userspace code.  There is
++	 * no reason for new multicast clients to continue with this
++	 * non-compliance.
++	 */
++	copy = skb_copy(skb, GFP_KERNEL);
++	if (!copy)
++		return;
++
++	nlmsg_multicast(sock, copy, 0, AUDIT_NLGRP_READLOG, GFP_KERNEL);
++}
++
++/*
+  * flush_hold_queue - empty the hold queue if auditd appears
+  *
+  * If auditd just started, drain the queue of messages already
+@@ -1090,6 +1119,8 @@ static int __net_init audit_net_init(struct net *net)
+ 	struct netlink_kernel_cfg cfg = {
+ 		.input	= audit_receive,
+ 		.bind	= audit_bind,
++		.flags	= NL_CFG_F_NONROOT_RECV,
++		.groups	= AUDIT_NLGRP_MAX,
+ 	};
+ 
+ 	struct audit_net *aunet = net_generic(net, audit_net_id);
+@@ -1911,10 +1942,10 @@ out:
+  * audit_log_end - end one audit record
+  * @ab: the audit_buffer
+  *
+- * The netlink_* functions cannot be called inside an irq context, so
+- * the audit buffer is placed on a queue and a tasklet is scheduled to
+- * remove them from the queue outside the irq context.  May be called in
+- * any context.
++ * netlink_unicast() cannot be called inside an irq context because it blocks
++ * (last arg, flags, is not set to MSG_DONTWAIT), so the audit buffer is placed
++ * on a queue and a tasklet is scheduled to remove them from the queue outside
++ * the irq context.  May be called in any context.
+  */
+ void audit_log_end(struct audit_buffer *ab)
+ {
+@@ -1924,6 +1955,18 @@ void audit_log_end(struct audit_buffer *ab)
+ 		audit_log_lost("rate limit exceeded");
+ 	} else {
+ 		struct nlmsghdr *nlh = nlmsg_hdr(ab->skb);
++
++		kauditd_send_multicast_skb(ab->skb);
++
++		/*
++		 * The original kaudit unicast socket sends up messages with
++		 * nlmsg_len set to the payload length rather than the entire
++		 * message length.  This breaks the standard set by netlink.
++		 * The existing auditd daemon assumes this breakage.  Fixing
++		 * this would require co-ordinating a change in the established
++		 * protocol between the kaudit kernel subsystem and the auditd
++		 * userspace code.
++		 */
+ 		nlh->nlmsg_len = ab->skb->len - NLMSG_HDRLEN;
+ 
+ 		if (audit_pid) {
+-- 
+1.7.1
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTUWKwAAoJELSic+t+oim95yEP/RsYyqQ4HglP1o/FjThmCPby
-S0OKVEcaPTdV+osZ0Ar5UOL03Cjpg1s2wj6ocj0/J+tyPbLFWEbDA/yB0nmfQTDl
-7HGRlDAXQ0hPP2ZHYEJCfy8yhLmBXI+rG9HYPkMK0tgzj3ZPntL/QQnZ3q/3elQN
-FqxxJ6C4OQ3A7Lf91Yr+sQfUcxRu1Qa8naakR+2uMipvA1THS+pmFADVRxkAu8jO
-BEJ18H/FIcITPC+7OdhueCW7ZtFdJMG+573t7aoB7Mlk7miI/S/06vxoZR4RV6oc
-j04jt0nC5mw/2IKcsd6+n/T6hQpAPrzfKwvh45wd2W4CCc7MUSMR7AqRRC8Jm5Go
-Hz7dSsUZ4/dLSAVyktFRXhwbCGv8a5Qr4PLfj/r3SCxfuTUKrjnB2aVqg9I287JQ
-ORVYLDeOgrZlgHc8rYQ4ykE4bFq1Yh5KgKMJcJ1rGWZ67CICtPI7o3AicBvVYt0J
-0hKhHm53/thYT9yELK6XWklpnOoXLYsk7I9H8HbnpsmzGyRpz0K2P8pjbcLlZ89s
-EutAYh80y5lZzhp0ZeXK2VaoIiv3chIHq5gTeJUQOaofRQ5k4AOMchIqAtsIuHf2
-zDtjIhxmgDvcuJ/tfohaJaEMZfHnz7dzwsFYjxj0l9IZ7Bo57CjRM09qJqAhL57T
-/6V2U/fbUxjBGj7HXZD3
-=PvB4
------END PGP SIGNATURE-----
-
---Acuacab4LPnnfGxd--
