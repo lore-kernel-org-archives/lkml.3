@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbaDRQYR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 12:24:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53792 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459AbaDRQYN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 12:24:13 -0400
-Date: Fri, 18 Apr 2014 18:23:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Peter Chiang <pchiang@nvidia.com>
-Cc: "ccross@android.com" <ccross@android.com>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "tj@kernel.org" <tj@kernel.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "guillaume@morinfr.org" <guillaume@morinfr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mm : Avoid candidate task is equal to current task
-Message-ID: <20140418162359.GA4398@redhat.com>
-References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com> <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com> <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com> <20140416135741.GA9407@redhat.com> <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com>
+	id S1754167AbaDRQYj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 12:24:39 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:57912 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841AbaDRQYc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 12:24:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140418150653.GB12515@htj.dyndns.org>
+References: <20140417162720.GQ15326@htj.dyndns.org>
+	<1397827555-19641-1-git-send-email-laijs@cn.fujitsu.com>
+	<1397827555-19641-2-git-send-email-laijs@cn.fujitsu.com>
+	<20140418150653.GB12515@htj.dyndns.org>
+Date: Sat, 19 Apr 2014 00:24:32 +0800
+X-Google-Sender-Auth: qHVFouXDoEYRGFgshtUSPujNU7c
+Message-ID: <CACvQF51a-babdUSBiREEsSv=1keiQCTJh-sZFrtFXn9iUHegOw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] workqueue: fix a possible race condition between
+ rescuer and pwq-release
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17, Peter Chiang wrote:
+On Fri, Apr 18, 2014 at 11:06 PM, Tejun Heo <tj@kernel.org> wrote:
+> Hello,
 >
-> It is a speculation where the panic was.
+> Applied to wq/for-3.15-fixes with put_pwq() relocated and patch
+> description and comments updated.
 >
-> [38261.652100] Call trace:
-> [38261.654616] [<ffffffc000aa6fe0>] mm_update_next_owner+0x190/0x238
-> [38261.660766] [<ffffffc000aa728c>] do_exit+0x204/0x924
-> [38261.665790] [<ffffffc000aa7a1c>] do_group_exit+0x40/0xcc
-> [38261.671169] [<ffffffc000ab59cc>] get_signal_to_deliver+0x218/0x57c
-> [38261.677409] [<ffffffc000a87e6c>] do_signal+0x534/0x550
-> [38261.682608] [<ffffffc000a88070>] do_notify_resume+0x20/0x58
+> Thanks.
+> -------- 8< --------
+> From 4b81955722abe4306096c7b0137e0491a7ba7b0e Mon Sep 17 00:00:00 2001
+> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Date: Fri, 18 Apr 2014 11:04:16 -0400
+>
+> There is a race condition between rescuer_thread() and
+> pwq_unbound_release_workfn().
+>
+> Even after a pwq is scheduled for rescue, the associated work items
+> may be consumed by any worker.  If all of them are consumed before the
+> rescuer gets to them and the pwq's base ref was put due to attribute
+> change, the pwq may be released while still being linked on
+> @wq->maydays list making the rescuer dereference already freed pwq
+> later.
+>
+> Make send_mayday() pin the target pwq until the rescuer is done with
+> it.
+>
+> tj: Updated comment and patch description.  Moved put_pwq() to after
+>     the last @pwq->pool access.  This isn't strictly necessarily for
+>     correctness but is cleaner as the pool is accessed through the
+>     pwq.
+>
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: stable@vger.kernel.org # v3.10+
+> ---
+>  kernel/workqueue.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+>
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 6ba0c60..a6532f2 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1916,6 +1916,12 @@ static void send_mayday(struct work_struct *work)
+>
+>         /* mayday mayday mayday */
+>         if (list_empty(&pwq->mayday_node)) {
+> +               /*
+> +                * If @pwq is for an unbound wq, its base ref may be put at
+> +                * any time due to an attribute change.  Pin @pwq until the
+> +                * rescuer is done with it.
+> +                */
+> +               get_pwq(pwq);
+>                 list_add_tail(&pwq->mayday_node, &wq->maydays);
+>                 wake_up_process(wq->rescuer->task);
+>         }
+> @@ -2459,6 +2465,7 @@ repeat:
+>
+>                 rescuer->pool = NULL;
+>                 spin_unlock(&pool->lock);
+> +               put_pwq(pwq);   /* put the ref from send_mayday() */
 
-Could you show the full dmesg?
+put_pwq() requires pool->lock held.
 
-Could you look into asm/objdump/addr2line to figure out what this
-mm_update_next_owner+0x190 means?
-
-Is it reproducable?
-
-Hmm. I seem to see a bug in this function, it can be fulled by use_mm,
-but I am not sure this can explain the problem. I'll send a patch.
-
-Oleg.
-
+>                 spin_lock(&wq_mayday_lock);
+>         }
+>
+> --
+> 1.9.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
