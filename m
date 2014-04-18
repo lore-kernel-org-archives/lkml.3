@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaDRJWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:22:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:39685 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751459AbaDRJWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 05:22:21 -0400
-Date: Fri, 18 Apr 2014 11:22:19 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Owen Kibel <qmewlo@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "atodorov@redhat.com" <atodorov@redhat.com>,
-        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86/mce: Fix CMCI preemption bugs
-Message-ID: <20140418092219.GA4385@pd.tnic>
-References: <20140417152611.GD4321@pd.tnic>
- <CA+5PVA7i=RrGUk_7zz1yU5gseWpvr+a=4dfkg=n9cNc53S7nPA@mail.gmail.com>
- <20140417192330.GE4321@pd.tnic>
- <CA+55aFyz62W7CD9=9p9OxKuFs9Rck_p93E_40CqLat1HvDdf0Q@mail.gmail.com>
- <20140417194241.GF4321@pd.tnic>
- <20140417205807.GA27852@pd.tnic>
- <CAK7FoDt6tnknX7cioe7=2svVksyAyLUtoZX_oprzJNxoHZEpdw@mail.gmail.com>
- <20140417213012.GC27852@pd.tnic>
- <20140417222028.GD27852@pd.tnic>
- <20140418080716.GA14280@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140418080716.GA14280@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752696AbaDRJW4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:22:56 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45878 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751196AbaDRJWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 05:22:47 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Malahal Naineni <malahal@us.ibm.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 09/72] nfs: initialize the ACL support bits to zero.
+Date: Fri, 18 Apr 2014 11:21:42 +0200
+Message-Id: <0eec43085e1f17a7634ce07073cb6c254135beb7.1397812482.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
+References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
+In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
+References: <cover.1397812482.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 10:07:16AM +0200, Ingo Molnar wrote:
-> Okay, so AFAICS the fix in x86/urgent isn't wrong functionally, it's
-> just that the changelog incorrectly claims the raw-spinlock use is a
-> bug causing a problem here.
->
-> Still that raw spinlock is bogus and might be hiding other problems,
-> so we can keep the x86/urgent change (ea431643d6c3) as-is and I'll get
-> it to Linus later today ...
+From: Malahal Naineni <malahal@us.ibm.com>
 
-Ok.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
+===============
+
+commit a1800acaf7d1c2bf6d68b9a8f4ab8560cc66555a upstream.
+
+Avoid returning incorrect acl mask attributes when the server doesn't
+support ACLs.
+
+Signed-off-by: Malahal Naineni <malahal@us.ibm.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ fs/nfs/nfs4xdr.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/fs/nfs/nfs4xdr.c b/fs/nfs/nfs4xdr.c
+index b2f842d0901b..1c2beb18a713 100644
+--- a/fs/nfs/nfs4xdr.c
++++ b/fs/nfs/nfs4xdr.c
+@@ -3405,7 +3405,7 @@ static int decode_attr_aclsupport(struct xdr_stream *xdr, uint32_t *bitmap, uint
+ {
+ 	__be32 *p;
+ 
+-	*res = ACL4_SUPPORT_ALLOW_ACL|ACL4_SUPPORT_DENY_ACL;
++	*res = 0;
+ 	if (unlikely(bitmap[0] & (FATTR4_WORD0_ACLSUPPORT - 1U)))
+ 		return -EIO;
+ 	if (likely(bitmap[0] & FATTR4_WORD0_ACLSUPPORT)) {
 -- 
-Regards/Gruss,
-    Boris.
+1.9.2
 
-Sent from a fat crate under my desk. Formatting is fine.
---
