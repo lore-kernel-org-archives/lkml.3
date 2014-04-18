@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbaDRKX0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 06:23:26 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60667 "EHLO
+	id S1753027AbaDRKXy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 06:23:54 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60756 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750857AbaDRKXV (ORCPT
+	with ESMTP id S1752864AbaDRKXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 06:23:21 -0400
+	Fri, 18 Apr 2014 06:23:49 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Mathias Nyman <mathias.nyman@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -20,74 +20,37 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: [PATCH 0/8] USB3 support for Armada 38x
-Date: Fri, 18 Apr 2014 12:22:35 +0200
-Message-Id: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH 8/8] ARM: configs: Add usb_xhci_mvebu to multi_v7_defconfig
+Date: Fri, 18 Apr 2014 12:22:43 +0200
+Message-Id: <1397816563-9000-9-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The Marvell Armada 38x platform needs the xhci_mvebu driver enabled
+for the xHCI USB hosts, so this commit enables the corresponding
+Kconfig option in multi_v7_defconfig.
 
-This patch set adds the USB3 support for the Armada 38x and also
-prepares the support for Armada 375. These SoCs use an xHCI but still
-need specific initialization, mainly to setup the windows memory on
-the mbus.
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ arch/arm/configs/multi_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-The first patch extend the the xhci-plat driver to allow to register
-platform specific functions.
-
-The second patch use it to setup the windows memory on the mbus for
-Armada 38x.
-
-Then the 3rd patch update he binding documentation.
-
-This first 3 patches should go through the xhci subsystem, I really
-would like to have a feedback on the 1st patch from the USB
-maintainers.
-
-The rest of the series is more platform specific and should go through
-the mvebu tree, except the last patch that should be taken directly by
-the arm-soc maintainer.
-
-The support for Armada 375 is coming soon.
-
-Thanks,
-
-Gregory
-
-Gregory CLEMENT (8):
-  usb: host: xhci-plat: Allow to register glue code using the device
-    tree
-  usb: host: xhci-plat: Add support for the Armada 38x glue code
-  xhci-platform: Add a new controller using xhci: Armada 38x
-  ARM: mvebu: Add USB3 UTMI support
-  ARM: mvebu: Add Device Tree description of xHCI hosts on Armada 38x
-  ARM: mvebu: Add USB3 support for Armada 38x
-  ARM: configs: Add usb_xhci_mvebu to mvebu_v7_defconfig
-  ARM: configs: Add usb_xhci_mvebu to multi_v7_defconfig
-
- Documentation/devicetree/bindings/usb/usb-xhci.txt |   3 +-
- arch/arm/boot/dts/armada-385-db.dts                |   8 ++
- arch/arm/boot/dts/armada-385-rd.dts                |   4 +
- arch/arm/boot/dts/armada-38x.dtsi                  |  17 ++++
- arch/arm/configs/multi_v7_defconfig                |   1 +
- arch/arm/configs/mvebu_v7_defconfig                |   1 +
- arch/arm/mach-mvebu/Kconfig                        |   1 +
- arch/arm/mach-mvebu/Makefile                       |   2 +-
- arch/arm/mach-mvebu/usb-utmi.c                     |  64 +++++++++++++
- drivers/usb/host/Kconfig                           |   7 ++
- drivers/usb/host/Makefile                          |   1 +
- drivers/usb/host/xhci-mvebu.c                      | 105 +++++++++++++++++++++
- drivers/usb/host/xhci-mvebu.h                      |  21 +++++
- drivers/usb/host/xhci-plat.c                       |  82 +++++++++++++++-
- drivers/usb/host/xhci.h                            |   4 +
- 15 files changed, 315 insertions(+), 6 deletions(-)
- create mode 100644 arch/arm/mach-mvebu/usb-utmi.c
- create mode 100644 drivers/usb/host/xhci-mvebu.c
- create mode 100644 drivers/usb/host/xhci-mvebu.h
-
+diff --git a/arch/arm/configs/multi_v7_defconfig b/arch/arm/configs/multi_v7_defconfig
+index d4e8a47a2f7c..820cc35d40cf 100644
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -254,6 +254,7 @@ CONFIG_SND_SOC_TEGRA_ALC5632=y
+ CONFIG_SND_SOC_TEGRA_MAX98090=y
+ CONFIG_USB=y
+ CONFIG_USB_XHCI_HCD=y
++CONFIG_USB_XHCI_MVEBU=y
+ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_TEGRA=y
+ CONFIG_USB_EHCI_HCD_PLATFORM=y
 -- 
 1.8.1.2
 
