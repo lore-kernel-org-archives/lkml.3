@@ -1,89 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754709AbaDRJuK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:50:10 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60509 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753338AbaDRJuE (ORCPT
+	id S1754724AbaDRJuo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:50:44 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:53610 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753583AbaDRJtv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 05:50:04 -0400
-Date: Fri, 18 Apr 2014 11:45:15 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: perex@perex.cz, alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH 1/6] sound: lx_core: Remove unused defines
-Message-ID: <20140418094515.GF4132@lukather>
-References: <1397728281-26050-1-git-send-email-maxime.ripard@free-electrons.com>
- <s5hd2gfukvh.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="w/VI3ydZO+RcZ3Ux"
-Content-Disposition: inline
-In-Reply-To: <s5hd2gfukvh.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 18 Apr 2014 05:49:51 -0400
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: nicolas.ferre@atmel.com, boris.brezillon@free-electrons.com,
+        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org
+Cc: plagnioj@jcrosoft.com, airlied@linux.ie, robdclark@gmail.com,
+        linux-kernel@vger.kernel.org,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: [RFC 3/3] atmel: dt: Add supports for the lcdc support on the sama5d36ek
+Date: Fri, 18 Apr 2014 11:45:09 +0200
+Message-Id: <1397814309-32160-4-git-send-email-jjhiblot@traphandler.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1397814309-32160-1-git-send-email-jjhiblot@traphandler.com>
+References: <1397814309-32160-1-git-send-email-jjhiblot@traphandler.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+---
+ arch/arm/boot/dts/sama5d36ek.dts | 27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
---w/VI3ydZO+RcZ3Ux
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+diff --git a/arch/arm/boot/dts/sama5d36ek.dts b/arch/arm/boot/dts/sama5d36ek.dts
+index 59576c6..df01037 100644
+--- a/arch/arm/boot/dts/sama5d36ek.dts
++++ b/arch/arm/boot/dts/sama5d36ek.dts
+@@ -11,12 +11,17 @@
+ #include "sama5d3xmb.dtsi"
+ #include "sama5d3xdm.dtsi"
+ 
++
+ / {
+ 	model = "Atmel SAMA5D36-EK";
+ 	compatible = "atmel,sama5d36ek", "atmel,sama5d3xmb", "atmel,sama5d3xcm", "atmel,sama5d36", "atmel,sama5d3", "atmel,sama5";
+ 
+ 	ahb {
+ 		apb {
++			hlcdc: hlcdc@f0030000 {
++				status = "okay";
++			};
++
+ 			spi0: spi@f0004000 {
+ 				status = "okay";
+ 			};
+@@ -46,7 +51,27 @@
+ 			};
+ 		};
+ 	};
+-
++	panel {
++		compatible = "atmel,hlcdc,panel";
++		invert-hsync;
++		invert-vsync;
++		status = "okay";
++		display-timings {
++			800x480p60 {
++				clock-frequency = <33260000>;
++				hactive = <800>;
++				vactive = <480>;
++				hfront-porch = <168>;
++				hback-porch = <88>;
++				hsync-len = <64>;
++				vback-porch = <8>;
++				vfront-porch = <37>;
++				vsync-len = <2>;
++				hsync-active = <1>;
++				vsync-active = <1>;
++			};
++		};
++	};
+ 	sound {
+ 		status = "okay";
+ 	};
+-- 
+1.9.1
 
-Hi,
-
-On Fri, Apr 18, 2014 at 10:01:22AM +0200, Takashi Iwai wrote:
-> At Thu, 17 Apr 2014 11:51:16 +0200,
-> Maxime Ripard wrote:
-> >=20
-> > Commit f9367f3fbe3c ("ALSA: lx6464es: Remove unused
-> > function in pci/lx6464es/lx_core.c") removed the
-> > lx_dsp_es_check_pipeline function that was the only user
-> > of these defines.
-> >=20
-> > Since they're useless now, simply remove them.
-> >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->=20
-> Thanks, applied all patches now.
-> But, at the next time, please put my correct address to Cc.
-
-Hmmm, yes, look like it was a typo on my side.. Sorry.
-
-> Also, for ALSA stuff (except for ASoC), we usually use "ALSA:"
-> prefix.
-
-Ok, I will.
-
-Thanks!
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---w/VI3ydZO+RcZ3Ux
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTUPQrAAoJEBx+YmzsjxAgX9YP/jZ7xhUk9GaBuGSe/nBylDTS
-oDIUnoV+o0SIRwrC1KCgIZ97naaN4+ODnyd4/sfcbHJnKLJsQUnW69IINetwyPxY
-EMLfzPMTWdE7RcNyWcUG0kVcIvblWnKF3EYKiDZFmDct1kH2i6hWltRUfKt5ft6R
-2AO6u1PLICBXlpi9F13f1ZCZgTEJU/eIjBF4rv0YSvJhM0IW9WJekHHglYtQ8Mn/
-pPp0ge6y3rB9EIC8S71It1eBk3irlU+yPbmlU9A1szDaJnmipWlBxqgHgfzEJETJ
-ne22GTXUOW9ihltA68TekmGz9OU9x9FRW+7GxKU9KXwBZxM5YsIp1DZKS2ccKPWL
-anqIjZOA+SKgFnf2T1n6XSNgsyUW4PLMREjQWUZQJng6hWTESfErKkcxFG20QRD4
-+qk67M+Zt0nNa339mfrb04eDoba9GVJdtzbWTgMayadlqzjVMRXgvH0AKl79H55b
-3gR7A61zEQHpHjv2AXnP3H1TC2m7lEIA9CY0Cfh7Li+swXl4b0GJ4PwvQL+LqeGf
-xW4gf2JQFJ6grAdscleiS8hSLuXWM4ekjnpt2EHDYpKKNeEAQ8pf6G4sNeg89DDM
-LhbmVj7OnwIE3ZJ27cJ6CPpdpwHkWcoB4wXGi9H6jE3BRRLRcOEZw+qheQ2PZKpj
-nhxVyMO4LNbj5W2XMbYY
-=Nlyv
------END PGP SIGNATURE-----
-
---w/VI3ydZO+RcZ3Ux--
