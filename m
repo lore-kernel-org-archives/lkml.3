@@ -1,153 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbaDRM7m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:59:42 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:62759 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaDRM7h (ORCPT
+	id S1752479AbaDRNAp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:00:45 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35448 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaDRNAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:59:37 -0400
+	Fri, 18 Apr 2014 09:00:41 -0400
+Message-ID: <535121F5.10307@gmail.com>
+Date: Fri, 18 Apr 2014 15:00:37 +0200
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <53511079.2020206@meduna.org>
-References: <53511079.2020206@meduna.org>
-Date: Fri, 18 Apr 2014 09:59:35 -0300
-Message-ID: <CAOMZO5CyFaP2phreKYdwUUB0RcpAhomDzm1QhAjCYtH09yYfQQ@mail.gmail.com>
-Subject: Re: Freescale FEC i.MX28 restart problem
-From: Fabio Estevam <festevam@gmail.com>
-To: Stanislav Meduna <stano@meduna.org>
-Cc: Fabio Estevam <fabio.estevam@freescale.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Jim Baxter <jim_baxter@mentor.com>,
-        Duan Fugang-B38611 <B38611@freescale.com>,
-        Frank Li <Frank.Li@freescale.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
+To: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris BREZILLON <brezillonboris@gmail.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 02/11] clk: at91: update main clk documentation
+References: <1395649643-9146-1-git-send-email-b.brezillon.dev@gmail.com> <1395649643-9146-3-git-send-email-b.brezillon.dev@gmail.com> <53511F60.3040301@atmel.com>
+In-Reply-To: <53511F60.3040301@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 8:46 AM, Stanislav Meduna <stano@meduna.org> wrote:
-> Hi,
->
-> I am experiencing a problem with the ethernet controller on an
-> i.MX28 SoC. When doing
->   /etc/init.d/networking restart
-> sometimes I get "MDIO read timeout" and the controller does not
-> recover. The problem is more prominent if the interface is communicating
-> when the restart is performed.
->
-> I have found that the reason is the EBERR bit being set somewher.
-> The reference manual states:
->
->   Ethernet bus error. This bit indicates a system bus error occurs when a DMA
->   transaction is underway (Signal dma_eberr_int asserted). When the EBERR bit
->   is set, ETHER_EN is cleared, halting frame processing by the MAC. When this
->   occurs, software needs to insure proper actions (possibly resetting the
->   system) to resume normal operation.
->
-> Clearing the ETHER_EN also disables the MII interrupts, so this
-> explains why the controller does not recover.
->
-> I assume the EBERR comes because of resetting the FEC at various
-> places - the fec_restart is called from 7 and fec_stop from 5 places.
-> It looks something here does not pay attention whether everything
-> is idle. In addition to EBERR also the BABR and MII are set
-> (MII because there was a MII transaction attempt, for babbling
-> receiver I have no idea). In case it matters the PHY connected
-> is the virtual port of the LAN9303 switch.
->
-> Trying to put a graceful stop before the reset in fec_restart
-> did not help. The controller is enabled when coming out of both
-> paths involving the reset, it is after this it falls into the
-> error state.
->
-> My platform is 3.12.15-rt, but I assume the problem is not rt-related.
->
-> The following patch remedies the situation, but this is just
-> a demonstration and not a solution. The warning is sometimes
-> output up to 3 times.
->
-> Please Cc: me when replying.
->
->
-> diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-> index 1ec398b..cebb912 100644
-> --- a/drivers/net/ethernet/freescale/fec_main.c
-> +++ b/drivers/net/ethernet/freescale/fec_main.c
-> @@ -194,7 +194,7 @@ MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
->  #define FEC_ENET_MII   ((uint)0x00800000)      /* MII interrupt */
->  #define FEC_ENET_EBERR ((uint)0x00400000)      /* SDMA bus error */
->
-> -#define FEC_DEFAULT_IMASK (FEC_ENET_TXF | FEC_ENET_RXF | FEC_ENET_MII)
-> +#define FEC_DEFAULT_IMASK (FEC_ENET_TXF | FEC_ENET_RXF | FEC_ENET_MII | FEC_ENET_EBERR)
->  #define FEC_RX_DISABLED_IMASK (FEC_DEFAULT_IMASK & (~FEC_ENET_RXF))
->
->  /* The FEC stores dest/src/type/vlan, data, and checksum for receive packets.
-> @@ -303,6 +303,31 @@ static void *swap_buffer(void *bufaddr, int len)
->         return bufaddr;
->  }
->
-> +/* Re-enable the controller after an ethernet bus error.
-> + *
-> + * Reference manual: This bit indicates a system bus
-> + * error occurs when a DMA transaction is underway
-> + * (Signal dma_eberr_int asserted). When the EBERR bit
-> + * is set, ETHER_EN is cleared, halting frame processing
-> + * by the MAC. When this occurs, software needs to insure
-> + * proper actions (possibly resetting the system) to resume
-> + * normal operation.
-> + *
-> + * This seems to happen when we restart the controller.
-> + */
-> +static inline void fec_enet_clear_eberr_if_needed(struct net_device *ndev)
-> +{
-> +       struct fec_enet_private *fep = netdev_priv(ndev);
-> +       u32 ctl = readl(fep->hwp + FEC_ECNTRL);
-> +
-> +       if (!(ctl & 2)) {
-> +               ctl |= 2;
-> +               writel(FEC_ENET_EBERR, fep->hwp + FEC_IEVENT);
-> +               writel(ctl, fep->hwp + FEC_ECNTRL);
-> +               netdev_warn(ndev, "Re-enabled after EBERR\n");
-> +       }
-> +}
-> +
->  static int
->  fec_enet_clear_csum(struct sk_buff *skb, struct net_device *ndev)
->  {
-> @@ -1059,6 +1084,10 @@ fec_enet_interrupt(int irq, void *dev_id)
->                         ret = IRQ_HANDLED;
->                         complete(&fep->mdio_done);
->                 }
-> +
-> +               if (int_events & FEC_ENET_EBERR)
-> +                       fec_enet_clear_eberr_if_needed(ndev);
-> +
->         } while (int_events);
->
->         return ret;
-> @@ -1200,6 +1229,8 @@ static int fec_enet_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
->         struct fec_enet_private *fep = bus->priv;
->         unsigned long time_left;
->
-> +       fec_enet_clear_eberr_if_needed(fep->netdev);
-> +
->         fep->mii_timeout = 0;
->         init_completion(&fep->mdio_done);
->
-> @@ -1227,6 +1258,8 @@ static int fec_enet_mdio_write(struct mii_bus *bus, int mii_id, int regnum,
->         struct fec_enet_private *fep = bus->priv;
->         unsigned long time_left;
->
-> +       fec_enet_clear_eberr_if_needed(fep->netdev);
-> +
->         fep->mii_timeout = 0;
->         init_completion(&fep->mdio_done);
 
-Could you try the latest Russell's FEC patches available at?
-http://ftp.arm.linux.org.uk/cgit/linux-arm.git/log/?h=fec-testing
+On 18/04/2014 14:49, Nicolas Ferre wrote:
+> On 24/03/2014 09:27, Boris BREZILLON :
+>> Update main clk documentation to match main clk implementation rework.
+>>
+>> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
+>> ---
+>>  .../devicetree/bindings/clock/at91-clock.txt       |   56 ++++++++++++++++----
+>>  1 file changed, 47 insertions(+), 9 deletions(-)
+>>
+>> diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
+>> index cd5e239..9a7025b 100644
+>> --- a/Documentation/devicetree/bindings/clock/at91-clock.txt
+>> +++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
+>> @@ -15,8 +15,13 @@ Required properties:
+>>  		All at91 specific clocks (clocks defined below) must be child
+>>  		node of the PMC node.
+>>  
+>> +	"atmel,at91rm9200-clk-main-osc"
+>> +	"atmel,at91sam9x5-clk-main-rc-osc"
+>> +		at91 main clk sources
+>> +
+>> +	"atmel,at91sam9x5-clk-main"
+>>  	"atmel,at91rm9200-clk-main":
+>> -		at91 main oscillator
+>> +		at91 main clock
+>>  
+>>  	"atmel,at91rm9200-clk-master" or
+>>  	"atmel,at91sam9x5-clk-master":
+>> @@ -85,24 +90,57 @@ For example:
+>>  		/* put at91 clocks here */
+>>  	};
+>>  
+>> +Required properties for main clock oscillator:
+>> +- interrupt-parent : must reference the PMC node.
+>> +- interrupts : shall be set to "<0>".
+>> +- clock-frequency : define the internal RC oscillator frequency.
+>> +
+>> +Optional properties:
+>> +- clock-accuracy : define the internal RC oscillator accuracy.
+>> +
+>> +For example:
+>> +	main_rc_osc: main_rc_osc {
+>> +		compatible = "atmel,at91sam9x5-clk-main-rc-osc";
+>> +		interrupt-parent = <&pmc>;
+>> +		interrupts = <0>;
+>> +		clock-frequency = <12000000>;
+>> +		clock-accuracy = <50000000>;
+>> +	};
+> Don't you swapped this example above with the description below?
 
-Regards,
+Actually I only swapped the "Required properties" lines, I'll fix it.
 
-Fabio Estevam
+Thanks,
+
+Boris
+
+>
+>
+>> +Required properties for main clock internal RC oscillator:
+>> +- interrupt-parent : must reference the PMC node.
+>> +- interrupts : shall be set to "<0>".
+>> +- #clock-cells : from common clock binding; shall be set to 0.
+>> +- clocks : shall encode the main osc source clk sources (see atmel datasheet).
+>> +
+>> +Optional properties:
+>> +- atmel,osc-bypass : boolean property. Specified if a clock signal is provided
+>> +  on XIN.
+>> +
+>> +  clock signal is directly provided on XIN pin.
+>> +
+>> +For example:
+>> +	main_osc: main_osc {
+>> +		compatible = "atmel,at91rm9200-clk-main-osc";
+>> +		interrupt-parent = <&pmc>;
+>> +		interrupts = <0>;
+>> +		#clock-cells = <0>;
+>> +		clocks = <&main_xtal>;
+>> +	};
+>> +
+>>  Required properties for main clock:
+>>  - interrupt-parent : must reference the PMC node.
+>>  - interrupts : shall be set to "<0>".
+>>  - #clock-cells : from common clock binding; shall be set to 0.
+>> -- clocks (optional if clock-frequency is provided) : shall be the slow clock
+>> -	phandle. This clock is used to calculate the main clock rate if
+>> -	"clock-frequency" is not provided.
+>> -- clock-frequency : the main oscillator frequency.Prefer the use of
+>> -	"clock-frequency" over automatic clock rate calculation.
+>> +- clocks : shall encode the main clk sources (see atmel datasheet).
+>>  
+>>  For example:
+>>  	main: mainck {
+>> -		compatible = "atmel,at91rm9200-clk-main";
+>> +		compatible = "atmel,at91sam9x5-clk-main";
+>>  		interrupt-parent = <&pmc>;
+>>  		interrupts = <0>;
+>>  		#clock-cells = <0>;
+>> -		clocks = <&ck32k>;
+>> -		clock-frequency = <18432000>;
+>> +		clocks = <&main_rc_osc &main_osc>;
+>>  	};
+>>  
+>>  Required properties for master clock:
+>>
+>
+
