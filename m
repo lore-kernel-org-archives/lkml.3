@@ -1,280 +1,405 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754221AbaDRQLD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 12:11:03 -0400
-Received: from smtpout2.laposte.net ([193.253.67.227]:24905 "EHLO
-	smtpout.laposte.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaDRQK7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 12:10:59 -0400
-Date: Fri, 18 Apr 2014 18:10:57 +0200
-From: Bastien Armand <armand.bastien@laposte.net>
-To: Willy Tarreau <willy@meta-x.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jake Champlin <jake.champlin.27@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] staging: panel: fix sparse warnings in lcd_write
-Message-ID: <20140418161057.GC1258@plop.dartybox.com>
+	id S1754228AbaDRQLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 12:11:42 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:45419
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751314AbaDRQLh convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 12:11:37 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VPS-1(z579eh551biz98dIc89bh936eI1432I4015Izz1f42h2148h1ee6h1de0h1fdah2149h2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2fh95h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h906i2673i1155h)
+Date: Fri, 18 Apr 2014 09:11:28 -0700
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+CC: Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-serial@vger.kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RESEND PATCH v3 1/9] tty: xuartps: Fix kernel-doc errors in the
+ driver
+References: <1396657425-31029-1-git-send-email-soren.brinkmann@xilinx.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1396657425-31029-1-git-send-email-soren.brinkmann@xilinx.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-RCIS-Action: ALLOW
+Message-ID: <c1835108-0033-4219-89e9-2f02c82b1e27@VA3EHSMHS026.ehs.local>
+Content-Transfer-Encoding: 8BIT
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes two sparse warnings related to lcd_write :
-warning: incorrect type in argument 1 (different address spaces)
-warning: incorrect type in initializer (incompatible argument 2 
-(different address spaces))
+Hi Greg,
 
-lcd_write can be used from kernel space (in panel_lcd_print) or from user
-space. So we introduce the lcd_write_char function that will write a char to
-the device. We modify lcd_write and panel_lcd_print to use it. Finally we add
-__user annotation missing in lcd_write.
+did you have a chance to look at this yet?
 
+	Thanks,
+	Sören
 
-Signed-off-by: Bastien Armand <armand.bastien@laposte.net>
----
- drivers/staging/panel/panel.c |  205 ++++++++++++++++++++++-------------------
- 1 file changed, 109 insertions(+), 96 deletions(-)
-
-diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index 1569e26..dc34254 100644
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -1217,111 +1217,113 @@ static inline int handle_lcd_special_code(void)
- 	return processed;
- }
-
-+static void lcd_write_char(char c)
-+{
-+	/* first, we'll test if we're in escape mode */
-+	if ((c != '\n') && lcd_escape_len >= 0) {
-+		/* yes, let's add this char to the buffer */
-+		lcd_escape[lcd_escape_len++] = c;
-+		lcd_escape[lcd_escape_len] = 0;
-+	} else {
-+		/* aborts any previous escape sequence */
-+		lcd_escape_len = -1;
-+
-+		switch (c) {
-+		case LCD_ESCAPE_CHAR:
-+			/* start of an escape sequence */
-+			lcd_escape_len = 0;
-+			lcd_escape[lcd_escape_len] = 0;
-+			break;
-+		case '\b':
-+			/* go back one char and clear it */
-+			if (lcd_addr_x > 0) {
-+				/* check if we're not at the
-+				   end of the line */
-+				if (lcd_addr_x < lcd_bwidth)
-+					/* back one char */
-+					lcd_write_cmd(0x10);
-+				lcd_addr_x--;
-+			}
-+			/* replace with a space */
-+			lcd_write_data(' ');
-+			/* back one char again */
-+			lcd_write_cmd(0x10);
-+			break;
-+		case '\014':
-+			/* quickly clear the display */
-+			lcd_clear_fast();
-+			break;
-+		case '\n':
-+			/* flush the remainder of the current line and
-+			   go to the beginning of the next line */
-+			for (; lcd_addr_x < lcd_bwidth; lcd_addr_x++)
-+				lcd_write_data(' ');
-+			lcd_addr_x = 0;
-+			lcd_addr_y = (lcd_addr_y + 1) % lcd_height;
-+			lcd_gotoxy();
-+			break;
-+		case '\r':
-+			/* go to the beginning of the same line */
-+			lcd_addr_x = 0;
-+			lcd_gotoxy();
-+			break;
-+		case '\t':
-+			/* print a space instead of the tab */
-+			lcd_print(' ');
-+			break;
-+		default:
-+			/* simply print this char */
-+			lcd_print(c);
-+			break;
-+		}
-+	}
-+
-+	/* now we'll see if we're in an escape mode and if the current
-+	   escape sequence can be understood. */
-+	if (lcd_escape_len >= 2) {
-+		int processed = 0;
-+
-+		if (!strcmp(lcd_escape, "[2J")) {
-+			/* clear the display */
-+			lcd_clear_fast();
-+			processed = 1;
-+		} else if (!strcmp(lcd_escape, "[H")) {
-+			/* cursor to home */
-+			lcd_addr_x = lcd_addr_y = 0;
-+			lcd_gotoxy();
-+			processed = 1;
-+		}
-+		/* codes starting with ^[[L */
-+		else if ((lcd_escape_len >= 3) &&
-+			 (lcd_escape[0] == '[') &&
-+			 (lcd_escape[1] == 'L')) {
-+			processed = handle_lcd_special_code();
-+		}
-+
-+		/* LCD special escape codes */
-+		/* flush the escape sequence if it's been processed
-+		   or if it is getting too long. */
-+		if (processed || (lcd_escape_len >= LCD_ESCAPE_LEN))
-+			lcd_escape_len = -1;
-+	} /* escape codes */
-+}
-+
- static ssize_t lcd_write(struct file *file,
--			 const char *buf, size_t count, loff_t *ppos)
-+	const char __user *buf, size_t count, loff_t *ppos)
- {
--	const char *tmp = buf;
-+	const char __user *tmp = buf;
- 	char c;
-
--	for (; count-- > 0; (ppos ? (*ppos)++ : 0), ++tmp) {
-+	for (; count-- > 0; (*ppos)++, tmp++) {
- 		if (!in_interrupt() && (((count + 1) & 0x1f) == 0))
- 			/* let's be a little nice with other processes
- 			   that need some CPU */
- 			schedule();
-
--		if (ppos == NULL && file == NULL)
--			/* let's not use get_user() from the kernel ! */
--			c = *tmp;
--		else if (get_user(c, tmp))
-+		if (get_user(c, buf))
- 			return -EFAULT;
-
--		/* first, we'll test if we're in escape mode */
--		if ((c != '\n') && lcd_escape_len >= 0) {
--			/* yes, let's add this char to the buffer */
--			lcd_escape[lcd_escape_len++] = c;
--			lcd_escape[lcd_escape_len] = 0;
--		} else {
--			/* aborts any previous escape sequence */
--			lcd_escape_len = -1;
--
--			switch (c) {
--			case LCD_ESCAPE_CHAR:
--				/* start of an escape sequence */
--				lcd_escape_len = 0;
--				lcd_escape[lcd_escape_len] = 0;
--				break;
--			case '\b':
--				/* go back one char and clear it */
--				if (lcd_addr_x > 0) {
--					/* check if we're not at the
--					   end of the line */
--					if (lcd_addr_x < lcd_bwidth)
--						/* back one char */
--						lcd_write_cmd(0x10);
--					lcd_addr_x--;
--				}
--				/* replace with a space */
--				lcd_write_data(' ');
--				/* back one char again */
--				lcd_write_cmd(0x10);
--				break;
--			case '\014':
--				/* quickly clear the display */
--				lcd_clear_fast();
--				break;
--			case '\n':
--				/* flush the remainder of the current line and
--				   go to the beginning of the next line */
--				for (; lcd_addr_x < lcd_bwidth; lcd_addr_x++)
--					lcd_write_data(' ');
--				lcd_addr_x = 0;
--				lcd_addr_y = (lcd_addr_y + 1) % lcd_height;
--				lcd_gotoxy();
--				break;
--			case '\r':
--				/* go to the beginning of the same line */
--				lcd_addr_x = 0;
--				lcd_gotoxy();
--				break;
--			case '\t':
--				/* print a space instead of the tab */
--				lcd_print(' ');
--				break;
--			default:
--				/* simply print this char */
--				lcd_print(c);
--				break;
--			}
--		}
--
--		/* now we'll see if we're in an escape mode and if the current
--		   escape sequence can be understood. */
--		if (lcd_escape_len >= 2) {
--			int processed = 0;
--
--			if (!strcmp(lcd_escape, "[2J")) {
--				/* clear the display */
--				lcd_clear_fast();
--				processed = 1;
--			} else if (!strcmp(lcd_escape, "[H")) {
--				/* cursor to home */
--				lcd_addr_x = lcd_addr_y = 0;
--				lcd_gotoxy();
--				processed = 1;
--			}
--			/* codes starting with ^[[L */
--			else if ((lcd_escape_len >= 3) &&
--				 (lcd_escape[0] == '[') &&
--				 (lcd_escape[1] == 'L')) {
--				processed = handle_lcd_special_code();
--			}
--
--			/* LCD special escape codes */
--			/* flush the escape sequence if it's been processed
--			   or if it is getting too long. */
--			if (processed || (lcd_escape_len >= LCD_ESCAPE_LEN))
--				lcd_escape_len = -1;
--		} /* escape codes */
-+		lcd_write_char(c);
- 	}
-
- 	return tmp - buf;
-@@ -1365,8 +1367,19 @@ static struct miscdevice lcd_dev = {
- /* public function usable from the kernel for any purpose */
- static void panel_lcd_print(const char *s)
- {
--	if (lcd_enabled && lcd_initialized)
--		lcd_write(NULL, s, strlen(s), NULL);
-+	const char *tmp = s;
-+	int count = strlen(s);
-+
-+	if (lcd_enabled && lcd_initialized) {
-+		for (; count-- > 0; tmp++) {
-+			if (!in_interrupt() && (((count + 1) & 0x1f) == 0))
-+				/* let's be a little nice with other processes
-+				   that need some CPU */
-+				schedule();
-+
-+			lcd_write_char(*tmp);
-+		}
-+	}
- }
-
- /* initialize the LCD driver */
---
-1.7.10.4
+On Fri, 2014-04-04 at 05:23PM -0700, Soren Brinkmann wrote:
+> From: Michal Simek <michal.simek@xilinx.com>
+> 
+> No functional changes.
+> 
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+> 
+> Changes in v3: None
+> Changes in v2:
+>  - this patch has been added
+> 
+> ---
+>  drivers/tty/serial/xilinx_uartps.c | 109 +++++++++++++++++--------------------
+>  1 file changed, 49 insertions(+), 60 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/xilinx_uartps.c b/drivers/tty/serial/xilinx_uartps.c
+> index f619ad5b5eae..b2f929e48ddd 100644
+> --- a/drivers/tty/serial/xilinx_uartps.c
+> +++ b/drivers/tty/serial/xilinx_uartps.c
+> @@ -163,11 +163,11 @@ MODULE_PARM_DESC(rx_timeout, "Rx timeout, 1-255");
+>  
+>  /**
+>   * struct xuartps - device data
+> - * @port		Pointer to the UART port
+> - * @refclk		Reference clock
+> - * @aperclk		APB clock
+> - * @baud		Current baud rate
+> - * @clk_rate_change_nb	Notifier block for clock changes
+> + * @port:		Pointer to the UART port
+> + * @refclk:		Reference clock
+> + * @aperclk:		APB clock
+> + * @baud:		Current baud rate
+> + * @clk_rate_change_nb:	Notifier block for clock changes
+>   */
+>  struct xuartps {
+>  	struct uart_port	*port;
+> @@ -183,8 +183,8 @@ struct xuartps {
+>   * @irq: Irq number
+>   * @dev_id: Id of the port
+>   *
+> - * Returns IRQHANDLED
+> - **/
+> + * Return: IRQHANDLED
+> + */
+>  static irqreturn_t xuartps_isr(int irq, void *dev_id)
+>  {
+>  	struct uart_port *port = (struct uart_port *)dev_id;
+> @@ -325,7 +325,7 @@ static irqreturn_t xuartps_isr(int irq, void *dev_id)
+>   * @rbdiv: BDIV value (return value)
+>   * @rcd: CD value (return value)
+>   * @div8: Value for clk_sel bit in mod (return value)
+> - * Returns baud rate, requested baud when possible, or actual baud when there
+> + * Return: baud rate, requested baud when possible, or actual baud when there
+>   *	was too much error, zero if no valid divisors are found.
+>   *
+>   * Formula to obtain baud rate is
+> @@ -384,7 +384,7 @@ static unsigned int xuartps_calc_baud_divs(unsigned int clk, unsigned int baud,
+>   * xuartps_set_baud_rate - Calculate and set the baud rate
+>   * @port: Handle to the uart port structure
+>   * @baud: Baud rate to set
+> - * Returns baud rate, requested baud when possible, or actual baud when there
+> + * Return: baud rate, requested baud when possible, or actual baud when there
+>   *	   was too much error, zero if no valid divisors are found.
+>   */
+>  static unsigned int xuartps_set_baud_rate(struct uart_port *port,
+> @@ -419,7 +419,7 @@ static unsigned int xuartps_set_baud_rate(struct uart_port *port,
+>   * @nb:		Notifier block
+>   * @event:	Notify event
+>   * @data:	Notifier data
+> - * Returns NOTIFY_OK on success, NOTIFY_BAD on error.
+> + * Return: NOTIFY_OK on success, NOTIFY_BAD on error.
+>   */
+>  static int xuartps_clk_notifier_cb(struct notifier_block *nb,
+>  		unsigned long event, void *data)
+> @@ -514,8 +514,7 @@ static int xuartps_clk_notifier_cb(struct notifier_block *nb,
+>  /**
+>   * xuartps_start_tx -  Start transmitting bytes
+>   * @port: Handle to the uart port structure
+> - *
+> - **/
+> + */
+>  static void xuartps_start_tx(struct uart_port *port)
+>  {
+>  	unsigned int status, numbytes = port->fifosize;
+> @@ -562,8 +561,7 @@ static void xuartps_start_tx(struct uart_port *port)
+>  /**
+>   * xuartps_stop_tx - Stop TX
+>   * @port: Handle to the uart port structure
+> - *
+> - **/
+> + */
+>  static void xuartps_stop_tx(struct uart_port *port)
+>  {
+>  	unsigned int regval;
+> @@ -577,8 +575,7 @@ static void xuartps_stop_tx(struct uart_port *port)
+>  /**
+>   * xuartps_stop_rx - Stop RX
+>   * @port: Handle to the uart port structure
+> - *
+> - **/
+> + */
+>  static void xuartps_stop_rx(struct uart_port *port)
+>  {
+>  	unsigned int regval;
+> @@ -593,8 +590,8 @@ static void xuartps_stop_rx(struct uart_port *port)
+>   * xuartps_tx_empty -  Check whether TX is empty
+>   * @port: Handle to the uart port structure
+>   *
+> - * Returns TIOCSER_TEMT on success, 0 otherwise
+> - **/
+> + * Return: TIOCSER_TEMT on success, 0 otherwise
+> + */
+>  static unsigned int xuartps_tx_empty(struct uart_port *port)
+>  {
+>  	unsigned int status;
+> @@ -608,8 +605,7 @@ static unsigned int xuartps_tx_empty(struct uart_port *port)
+>   *			transmitting char breaks
+>   * @port: Handle to the uart port structure
+>   * @ctl: Value based on which start or stop decision is taken
+> - *
+> - **/
+> + */
+>  static void xuartps_break_ctl(struct uart_port *port, int ctl)
+>  {
+>  	unsigned int status;
+> @@ -636,8 +632,7 @@ static void xuartps_break_ctl(struct uart_port *port, int ctl)
+>   * @port: Handle to the uart port structure
+>   * @termios: Handle to the input termios structure
+>   * @old: Values of the previously saved termios structure
+> - *
+> - **/
+> + */
+>  static void xuartps_set_termios(struct uart_port *port,
+>  				struct ktermios *termios, struct ktermios *old)
+>  {
+> @@ -761,8 +756,8 @@ static void xuartps_set_termios(struct uart_port *port,
+>   * xuartps_startup - Called when an application opens a xuartps port
+>   * @port: Handle to the uart port structure
+>   *
+> - * Returns 0 on success, negative error otherwise
+> - **/
+> + * Return: 0 on success, negative error otherwise
+> + */
+>  static int xuartps_startup(struct uart_port *port)
+>  {
+>  	unsigned int retval = 0, status = 0;
+> @@ -824,8 +819,7 @@ static int xuartps_startup(struct uart_port *port)
+>  /**
+>   * xuartps_shutdown - Called when an application closes a xuartps port
+>   * @port: Handle to the uart port structure
+> - *
+> - **/
+> + */
+>  static void xuartps_shutdown(struct uart_port *port)
+>  {
+>  	int status;
+> @@ -844,8 +838,8 @@ static void xuartps_shutdown(struct uart_port *port)
+>   * xuartps_type - Set UART type to xuartps port
+>   * @port: Handle to the uart port structure
+>   *
+> - * Returns string on success, NULL otherwise
+> - **/
+> + * Return: string on success, NULL otherwise
+> + */
+>  static const char *xuartps_type(struct uart_port *port)
+>  {
+>  	return port->type == PORT_XUARTPS ? XUARTPS_NAME : NULL;
+> @@ -856,8 +850,8 @@ static const char *xuartps_type(struct uart_port *port)
+>   * @port: Handle to the uart port structure
+>   * @ser: Handle to the structure whose members are compared
+>   *
+> - * Returns 0 if success otherwise -EINVAL
+> - **/
+> + * Return: 0 if success otherwise -EINVAL
+> + */
+>  static int xuartps_verify_port(struct uart_port *port,
+>  					struct serial_struct *ser)
+>  {
+> @@ -880,8 +874,8 @@ static int xuartps_verify_port(struct uart_port *port,
+>   *				uart_add_one_port()
+>   * @port: Handle to the uart port structure
+>   *
+> - * Returns 0, -ENOMEM if request fails
+> - **/
+> + * Return: 0, -ENOMEM if request fails
+> + */
+>  static int xuartps_request_port(struct uart_port *port)
+>  {
+>  	if (!request_mem_region(port->mapbase, XUARTPS_REGISTER_SPACE,
+> @@ -903,8 +897,7 @@ static int xuartps_request_port(struct uart_port *port)
+>   *				port, called when the driver removes a xuartps
+>   *				port via uart_remove_one_port().
+>   * @port: Handle to the uart port structure
+> - *
+> - **/
+> + */
+>  static void xuartps_release_port(struct uart_port *port)
+>  {
+>  	release_mem_region(port->mapbase, XUARTPS_REGISTER_SPACE);
+> @@ -917,8 +910,7 @@ static void xuartps_release_port(struct uart_port *port)
+>   *				xuartps port
+>   * @port: Handle to the uart port structure
+>   * @flags: If any
+> - *
+> - **/
+> + */
+>  static void xuartps_config_port(struct uart_port *port, int flags)
+>  {
+>  	if (flags & UART_CONFIG_TYPE && xuartps_request_port(port) == 0)
+> @@ -930,9 +922,8 @@ static void xuartps_config_port(struct uart_port *port, int flags)
+>   *
+>   * @port: Handle to the uart port structure
+>   *
+> - * Returns the modem control state
+> - *
+> - **/
+> + * Return: the modem control state
+> + */
+>  static unsigned int xuartps_get_mctrl(struct uart_port *port)
+>  {
+>  	return TIOCM_CTS | TIOCM_DSR | TIOCM_CAR;
+> @@ -1040,8 +1031,8 @@ static struct uart_port xuartps_port[2];
+>   * xuartps_get_port - Configure the port from the platform device resource
+>   *			info
+>   *
+> - * Returns a pointer to a uart_port or NULL for failure
+> - **/
+> + * Return: a pointer to a uart_port or NULL for failure
+> + */
+>  static struct uart_port *xuartps_get_port(void)
+>  {
+>  	struct uart_port *port;
+> @@ -1078,8 +1069,7 @@ static struct uart_port *xuartps_get_port(void)
+>  /**
+>   * xuartps_console_wait_tx - Wait for the TX to be full
+>   * @port: Handle to the uart port structure
+> - *
+> - **/
+> + */
+>  static void xuartps_console_wait_tx(struct uart_port *port)
+>  {
+>  	while ((xuartps_readl(XUARTPS_SR_OFFSET) & XUARTPS_SR_TXEMPTY)
+> @@ -1091,8 +1081,7 @@ static void xuartps_console_wait_tx(struct uart_port *port)
+>   * xuartps_console_putchar - write the character to the FIFO buffer
+>   * @port: Handle to the uart port structure
+>   * @ch: Character to be written
+> - *
+> - **/
+> + */
+>  static void xuartps_console_putchar(struct uart_port *port, int ch)
+>  {
+>  	xuartps_console_wait_tx(port);
+> @@ -1101,10 +1090,10 @@ static void xuartps_console_putchar(struct uart_port *port, int ch)
+>  
+>  /**
+>   * xuartps_console_write - perform write operation
+> - * @port: Handle to the uart port structure
+> + * @co: Console handle
+>   * @s: Pointer to character array
+>   * @count: No of characters
+> - **/
+> + */
+>  static void xuartps_console_write(struct console *co, const char *s,
+>  				unsigned int count)
+>  {
+> @@ -1151,8 +1140,8 @@ static void xuartps_console_write(struct console *co, const char *s,
+>   * @co: Console handle
+>   * @options: Initial settings of uart
+>   *
+> - * Returns 0, -ENODEV if no device
+> - **/
+> + * Return: 0, -ENODEV if no device
+> + */
+>  static int __init xuartps_console_setup(struct console *co, char *options)
+>  {
+>  	struct uart_port *port = &xuartps_port[co->index];
+> @@ -1190,8 +1179,8 @@ static struct console xuartps_console = {
+>  /**
+>   * xuartps_console_init - Initialization call
+>   *
+> - * Returns 0 on success, negative error otherwise
+> - **/
+> + * Return: 0 on success, negative error otherwise
+> + */
+>  static int __init xuartps_console_init(void)
+>  {
+>  	register_console(&xuartps_console);
+> @@ -1221,7 +1210,7 @@ static struct uart_driver xuartps_uart_driver = {
+>   * xuartps_suspend - suspend event
+>   * @device: Pointer to the device structure
+>   *
+> - * Returns 0
+> + * Return: 0
+>   */
+>  static int xuartps_suspend(struct device *device)
+>  {
+> @@ -1269,7 +1258,7 @@ static int xuartps_suspend(struct device *device)
+>   * xuartps_resume - Resume after a previous suspend
+>   * @device: Pointer to the device structure
+>   *
+> - * Returns 0
+> + * Return: 0
+>   */
+>  static int xuartps_resume(struct device *device)
+>  {
+> @@ -1336,8 +1325,8 @@ static SIMPLE_DEV_PM_OPS(xuartps_dev_pm_ops, xuartps_suspend, xuartps_resume);
+>   * xuartps_probe - Platform driver probe
+>   * @pdev: Pointer to the platform device structure
+>   *
+> - * Returns 0 on success, negative error otherwise
+> - **/
+> + * Return: 0 on success, negative error otherwise
+> + */
+>  static int xuartps_probe(struct platform_device *pdev)
+>  {
+>  	int rc;
+> @@ -1437,8 +1426,8 @@ err_out_clk_dis_aper:
+>   * xuartps_remove - called when the platform driver is unregistered
+>   * @pdev: Pointer to the platform device structure
+>   *
+> - * Returns 0 on success, negative error otherwise
+> - **/
+> + * Return: 0 on success, negative error otherwise
+> + */
+>  static int xuartps_remove(struct platform_device *pdev)
+>  {
+>  	struct uart_port *port = platform_get_drvdata(pdev);
+> @@ -1481,8 +1470,8 @@ static struct platform_driver xuartps_platform_driver = {
+>  /**
+>   * xuartps_init - Initial driver registration call
+>   *
+> - * Returns whether the registration was successful or not
+> - **/
+> + * Return: whether the registration was successful or not
+> + */
+>  static int __init xuartps_init(void)
+>  {
+>  	int retval = 0;
+> @@ -1502,7 +1491,7 @@ static int __init xuartps_init(void)
+>  
+>  /**
+>   * xuartps_exit - Driver unregistration call
+> - **/
+> + */
+>  static void __exit xuartps_exit(void)
+>  {
+>  	/* The order of unregistration is important. Unregister the
+> -- 
+> 1.9.1.1.gbb9f595
+> 
+> 
 
