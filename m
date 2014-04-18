@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296AbaDRJbQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:31:16 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45986 "EHLO
+	id S1754399AbaDRJb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:31:56 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45984 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752354AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752351AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nishanth Menon <nm@ti.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 53/72] net: micrel : ks8851-ml: add vdd-supply support
-Date: Fri, 18 Apr 2014 11:22:26 +0200
-Message-Id: <d8496cba73e6eb7f5fd36adbd3dbaf348bbe0ef2.1397812482.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 52/72] ip6mr: fix mfc notification flags
+Date: Fri, 18 Apr 2014 11:22:25 +0200
+Message-Id: <5d0d91da73f727eda31b8600e6f6d7b8579cbe20.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -23,114 +24,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nishanth Menon <nm@ti.com>
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit ebf4ad955d3e26d4d2a33709624fc7b5b9d3b969 ]
+[ Upstream commit f518338b16038beeb73e155e60d0f70beb9379f4 ]
 
-Few platforms use external regulator to keep the ethernet MAC supplied.
-So, request and enable the regulator for driver functionality.
+Commit 812e44dd1829 ("ip6mr: advertise new mfc entries via rtnl") reuses the
+function ip6mr_fill_mroute() to notify mfc events.
+But this function was used only for dump and thus was always setting the
+flag NLM_F_MULTI, which is wrong in case of a single notification.
 
-Fixes: 66fda75f47dc (regulator: core: Replace direct ops->disable usage)
-Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
-Suggested-by: Markus Pargmann <mpa@pengutronix.de>
-Signed-off-by: Nishanth Menon <nm@ti.com>
+Libraries like libnl will wait forever for NLMSG_DONE.
+
+CC: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Acked-by: Thomas Graf <tgraf@suug.ch>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- .../devicetree/bindings/net/micrel-ks8851.txt      |  1 +
- drivers/net/ethernet/micrel/ks8851.c               | 30 +++++++++++++++++++++-
- 2 files changed, 30 insertions(+), 1 deletion(-)
+ net/ipv6/ip6mr.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/net/micrel-ks8851.txt b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
-index 11ace3c3d805..4fc392763611 100644
---- a/Documentation/devicetree/bindings/net/micrel-ks8851.txt
-+++ b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
-@@ -7,3 +7,4 @@ Required properties:
- 
- Optional properties:
- - local-mac-address : Ethernet mac address to use
-+- vdd-supply:	supply for Ethernet mac
-diff --git a/drivers/net/ethernet/micrel/ks8851.c b/drivers/net/ethernet/micrel/ks8851.c
-index 727b546a9eb8..e0c92e0e5e1d 100644
---- a/drivers/net/ethernet/micrel/ks8851.c
-+++ b/drivers/net/ethernet/micrel/ks8851.c
-@@ -23,6 +23,7 @@
- #include <linux/crc32.h>
- #include <linux/mii.h>
- #include <linux/eeprom_93cx6.h>
-+#include <linux/regulator/consumer.h>
- 
- #include <linux/spi/spi.h>
- 
-@@ -83,6 +84,7 @@ union ks8851_tx_hdr {
-  * @rc_rxqcr: Cached copy of KS_RXQCR.
-  * @eeprom_size: Companion eeprom size in Bytes, 0 if no eeprom
-  * @eeprom: 93CX6 EEPROM state for accessing on-board EEPROM.
-+ * @vdd_reg:	Optional regulator supplying the chip
-  *
-  * The @lock ensures that the chip is protected when certain operations are
-  * in progress. When the read or write packet transfer is in progress, most
-@@ -130,6 +132,7 @@ struct ks8851_net {
- 	struct spi_transfer	spi_xfer2[2];
- 
- 	struct eeprom_93cx6	eeprom;
-+	struct regulator	*vdd_reg;
- };
- 
- static int msg_enable;
-@@ -1414,6 +1417,21 @@ static int ks8851_probe(struct spi_device *spi)
- 	ks->spidev = spi;
- 	ks->tx_space = 6144;
- 
-+	ks->vdd_reg = regulator_get_optional(&spi->dev, "vdd");
-+	if (IS_ERR(ks->vdd_reg)) {
-+		ret = PTR_ERR(ks->vdd_reg);
-+		if (ret == -EPROBE_DEFER)
-+			goto err_reg;
-+	} else {
-+		ret = regulator_enable(ks->vdd_reg);
-+		if (ret) {
-+			dev_err(&spi->dev, "regulator enable fail: %d\n",
-+				ret);
-+			goto err_reg_en;
-+		}
-+	}
-+
-+
- 	mutex_init(&ks->lock);
- 	spin_lock_init(&ks->statelock);
- 
-@@ -1508,8 +1526,14 @@ static int ks8851_probe(struct spi_device *spi)
- err_netdev:
- 	free_irq(ndev->irq, ks);
- 
--err_id:
- err_irq:
-+err_id:
-+	if (!IS_ERR(ks->vdd_reg))
-+		regulator_disable(ks->vdd_reg);
-+err_reg_en:
-+	if (!IS_ERR(ks->vdd_reg))
-+		regulator_put(ks->vdd_reg);
-+err_reg:
- 	free_netdev(ndev);
- 	return ret;
+diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
+index 0eb4038a4d63..8737400af0a0 100644
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -2349,13 +2349,14 @@ int ip6mr_get_route(struct net *net,
  }
-@@ -1523,6 +1547,10 @@ static int ks8851_remove(struct spi_device *spi)
  
- 	unregister_netdev(priv->netdev);
- 	free_irq(spi->irq, priv);
-+	if (!IS_ERR(priv->vdd_reg)) {
-+		regulator_disable(priv->vdd_reg);
-+		regulator_put(priv->vdd_reg);
-+	}
- 	free_netdev(priv->netdev);
+ static int ip6mr_fill_mroute(struct mr6_table *mrt, struct sk_buff *skb,
+-			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd)
++			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd,
++			     int flags)
+ {
+ 	struct nlmsghdr *nlh;
+ 	struct rtmsg *rtm;
+ 	int err;
  
- 	return 0;
+-	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), NLM_F_MULTI);
++	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), flags);
+ 	if (nlh == NULL)
+ 		return -EMSGSIZE;
+ 
+@@ -2423,7 +2424,7 @@ static void mr6_netlink_event(struct mr6_table *mrt, struct mfc6_cache *mfc,
+ 	if (skb == NULL)
+ 		goto errout;
+ 
+-	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd);
++	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd, 0);
+ 	if (err < 0)
+ 		goto errout;
+ 
+@@ -2462,7 +2463,8 @@ static int ip6mr_rtm_dumproute(struct sk_buff *skb, struct netlink_callback *cb)
+ 				if (ip6mr_fill_mroute(mrt, skb,
+ 						      NETLINK_CB(cb->skb).portid,
+ 						      cb->nlh->nlmsg_seq,
+-						      mfc, RTM_NEWROUTE) < 0)
++						      mfc, RTM_NEWROUTE,
++						      NLM_F_MULTI) < 0)
+ 					goto done;
+ next_entry:
+ 				e++;
+@@ -2476,7 +2478,8 @@ next_entry:
+ 			if (ip6mr_fill_mroute(mrt, skb,
+ 					      NETLINK_CB(cb->skb).portid,
+ 					      cb->nlh->nlmsg_seq,
+-					      mfc, RTM_NEWROUTE) < 0) {
++					      mfc, RTM_NEWROUTE,
++					      NLM_F_MULTI) < 0) {
+ 				spin_unlock_bh(&mfc_unres_lock);
+ 				goto done;
+ 			}
 -- 
 1.9.2
 
