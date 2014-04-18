@@ -1,235 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751337AbaDRGuJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 02:50:09 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:20694 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750976AbaDRGuG convert rfc822-to-8bit (ORCPT
+	id S1751364AbaDRGz5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 02:55:57 -0400
+Received: from mail-oa0-f43.google.com ([209.85.219.43]:64191 "EHLO
+	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976AbaDRGzx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 02:50:06 -0400
-X-IronPort-AV: E=Sophos;i="4.97,883,1389715200"; 
-   d="scan'208";a="29430410"
-Message-ID: <5350C8D9.3090208@cn.fujitsu.com>
-Date: Fri, 18 Apr 2014 14:40:25 +0800
-From: Gu Zheng <guz.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+	Fri, 18 Apr 2014 02:55:53 -0400
 MIME-Version: 1.0
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-CC: <jaegeuk.kim@samsung.com>, Andrey Tsyvarev <tsyvarev@ispras.ru>,
-        <linux-f2fs-devel@lists.sourceforge.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: f2fs: BUG_ON() is triggered when mount valid f2fs filesystem
-References: <52F320FC.50803@ispras.ru> <534BC29B.3020408@ispras.ru> <1397559864.7727.5.camel@kjgkr> <534E494C.7050909@ispras.ru> <1397691337.7727.18.camel@kjgkr> <534F2A32.9030405@ispras.ru> <1397720720.7727.28.camel@kjgkr> <5350C06A.4090807@ispras.ru>
-In-Reply-To: <5350C06A.4090807@ispras.ru>
-Content-Type: text/plain; charset="UTF-8"
+In-Reply-To: <20140417185258.GJ7422@krava.brq.redhat.com>
+References: <1397721206-15393-1-git-send-email-namhyung@kernel.org>
+ <20140417120046.GC7422@krava.brq.redhat.com> <1397741900.1731.17.camel@leonhard>
+ <20140417185258.GJ7422@krava.brq.redhat.com>
+From: Namhyung Kim <namhyung@kernel.org>
+Date: Fri, 18 Apr 2014 15:55:33 +0900
+X-Google-Sender-Auth: 2LxY9pRp3EEwBTWfBjc4sgnt2Ak
+Message-ID: <CAM9d7chozUKw=TJNCJnR_e5fKmwgSPoBvQdA92N=MStErMFPQA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] perf top/tui: Fixes for percentage filter behavior
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexey, Kim,
-On 04/18/2014 02:04 PM, Alexey Khoroshilov wrote:
+Hi Jiri,
 
-> On 17.04.2014 00:45, Jaegeuk Kim wrote:
->> Hi,
+On Fri, Apr 18, 2014 at 3:52 AM, Jiri Olsa <jolsa@redhat.com> wrote:
+> On Thu, Apr 17, 2014 at 10:38:19PM +0900, Namhyung Kim wrote:
+>> Hi Jiri,
 >>
->> 2014-04-16 (수), 18:11 -0700, Alexey Khoroshilov:
->>> Hi,
->>>
->>> But would not ability to trigger BUG_ON by mounting a crafted image
->>> considered as an issue having security implications?
->> Sorry, I can't come up with you.
->> Could you please explain why this can be related to the security hole?
->> Did you mean it needs to avoid such the BUG_ONs if the image has
->> obsolete data being used before?
-> An ability to trigger a BUG_ON assert by mounting a crafted image is
-> usually considered as a local denial of service [1-3]. As far as I
-> understand, the reason is that some kernel data may become inconsistent
-> that can lead to further problems.
+>> 2014-04-17 (목), 14:00 +0200, Jiri Olsa:
+>> > On Thu, Apr 17, 2014 at 04:53:23PM +0900, Namhyung Kim wrote:
+>> > > Hi,
+>> > >
+>> > > This is a small fixes for a bug in perf top I found during some tests.
+>> > > It gets segfault if symbol filter found no entries - accessing NULL
+>> > > pointer in that case.
+>> >
+>> > yep, I hit that yesterday as well, but I ended up just with
+>> > the patch below, your changes seems more comprehensive ;-)
+>> > going to review..
+>>
+>> Well, the end result will be same, but I think it should have 0
+>> nr_entries when there's no entry to show.
+>
+> also I hit another issue ;-)
+>
+> - running report on data with callchains, and the screen is populated to the middle
+> - press 'END' key and the cursor goes to the bottom of the screen (I can tell based
+>   on the scrollbar), but there are no entries
+>
+> I could make the cursor appear by pressing UP arrow, I bisected to:
+>   f214833 perf report: Add --percentage option
+>
+> not sure where's the problem
 
-I think I caught the key point if I do not miss-read it.
-Alexey's misgiving is that users can mount a crafted or malicious
-image to trigger a BUG_ON, and results in the server panic, especially the
-normal user can do this via fuse,user_namespace...
-So it seems a leak that the user only mounts an invalid image, but results
-in denial of service.
-The following 3 cases also show this point.
-So the right way may be return the suitable *ERROR* to the user rather than
-trigger BUG_ON.
+Hmm.. did you find it when running perf report?  AFAIK there's a
+subtle problem of counting number of entries in perf report TUI with
+callchains.  I wished fixing it but I was afraid of diving into the
+tui code. ;-p  But I think it's a different one to the bug you
+reported.
 
-Regards,
-Gu
+Anyway I found that there's an inconsistency when handling
+hists->nr_entries.  We're increasing hists->nr_entries when new sample
+comes in (ang not merged into an existing entry), but accesses the
+nr_entries before adding it to the hist browser (i.e. output tree).  I
+suspect the original perf top code has similar problem already but it
+seems my change made it to be triggered easily.
 
-> 
-> [1] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3353
-> [2] http://www.openwall.com/lists/oss-security/2011/06/24/4
-> [3] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-2928
-> etc.
-> 
-> --
-> Alexey
-> 
-> 
->> On 16.04.2014 16:35, Jaegeuk Kim wrote:
->>>> Hi,
->>>>
->>>> 2014-04-16 (수), 13:11 +0400, Andrey Tsyvarev:
->>>>> Hi,
->>>>>
->>>>> With this patch mounting of the image continues to fail (with similar 
->>>>> BUG_ON).
->>>>> But when image is formatted again (and steps mentioned in the previous 
->>>>> message are performed),
->>>>> mounting of it is now succeed.
->>>>>
->>>>> Is this is a true purpose of the patch?
->>>> Indeed. The patch solves there-in root cause.
->>>> But, if you're trying to use the failed image again, simply you can skip
->>>> the errorneous part by:
->>>>
->>>> # mount ... -o disable_roll_forward ...
->>>>
->>>> Once sync or umount whatever checkpoint is done after that, the image
->>>> will be mounted without "disable_roll_forward".
->>>>
->>>> Thanks,
->>>>
->>>>> 15.04.2014 15:04, Jaegeuk Kim пишет:
->>>>>> Hi,
->>>>>>
->>>>>> Thank you for the report.
->>>>>> I retrieved the fault image and found out that previous garbage data
->>>>>> wreak such the wrong behaviors.
->>>>>> So, I wrote the following patch that fills one zero-block at the
->>>>>> checkpoint procedure.
->>>>>> If the underlying device supports discard, I expect that it mostly
->>>>>> doesn't incur any performance regression significantly.
->>>>>>
->>>>>> Could you test this patch?
->>>>>>
->>>>>> >From 60588ceb7277aae2a79e7f67f5217d1256720d78 Mon Sep 17 00:00:00 2001
->>>>>> From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
->>>>>> Date: Tue, 15 Apr 2014 13:57:55 +0900
->>>>>> Subject: [PATCH] f2fs: avoid to conduct roll-forward due to the remained
->>>>>>   garbage blocks
->>>>>>
->>>>>> The f2fs always scans the next chain of direct node blocks.
->>>>>> But some garbage blocks are able to be remained due to no discard
->>>>>> support or
->>>>>> SSR triggers.
->>>>>> This occasionally wreaks recovering wrong inodes that were used or
->>>>>> BUG_ONs
->>>>>> due to reallocating node ids as follows.
->>>>>>
->>>>>> When mount this f2fs image:
->>>>>> http://linuxtesting.org/downloads/f2fs_fault_image.zip
->>>>>> BUG_ON is triggered in f2fs driver (messages below are generated on
->>>>>> kernel 3.13.2; for other kernels output is similar):
->>>>>>
->>>>>> kernel BUG at fs/f2fs/node.c:215!
->>>>>>   Call Trace:
->>>>>>   [<ffffffffa032ebad>] recover_inode_page+0x1fd/0x3e0 [f2fs]
->>>>>>   [<ffffffff811446e7>] ? __lock_page+0x67/0x70
->>>>>>   [<ffffffff81089990>] ? autoremove_wake_function+0x50/0x50
->>>>>>   [<ffffffffa0337788>] recover_fsync_data+0x1398/0x15d0 [f2fs]
->>>>>>   [<ffffffff812b9e5c>] ? selinux_d_instantiate+0x1c/0x20
->>>>>>   [<ffffffff811cb20b>] ? d_instantiate+0x5b/0x80
->>>>>>   [<ffffffffa0321044>] f2fs_fill_super+0xb04/0xbf0 [f2fs]
->>>>>>   [<ffffffff811b861e>] ? mount_bdev+0x7e/0x210
->>>>>>   [<ffffffff811b8769>] mount_bdev+0x1c9/0x210
->>>>>>   [<ffffffffa0320540>] ? validate_superblock+0x210/0x210 [f2fs]
->>>>>>   [<ffffffffa031cf8d>] f2fs_mount+0x1d/0x30 [f2fs]
->>>>>>   [<ffffffff811b9497>] mount_fs+0x47/0x1c0
->>>>>>   [<ffffffff81166e00>] ? __alloc_percpu+0x10/0x20
->>>>>>   [<ffffffff811d4032>] vfs_kern_mount+0x72/0x110
->>>>>>   [<ffffffff811d6763>] do_mount+0x493/0x910
->>>>>>   [<ffffffff811615cb>] ? strndup_user+0x5b/0x80
->>>>>>   [<ffffffff811d6c70>] SyS_mount+0x90/0xe0
->>>>>>   [<ffffffff8166f8d9>] system_call_fastpath+0x16/0x1b
->>>>>>
->>>>>> Found by Linux File System Verification project (linuxtesting.org).
->>>>>>
->>>>>> Reported-by: Andrey Tsyvarev <tsyvarev@ispras.ru>
->>>>>> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
->>>>>> ---
->>>>>>   fs/f2fs/checkpoint.c |  6 ++++++
->>>>>>   fs/f2fs/f2fs.h       |  1 +
->>>>>>   fs/f2fs/segment.c    | 17 +++++++++++++++--
->>>>>>   3 files changed, 22 insertions(+), 2 deletions(-)
->>>>>>
->>>>>> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
->>>>>> index 4aa521a..890e23d 100644
->>>>>> --- a/fs/f2fs/checkpoint.c
->>>>>> +++ b/fs/f2fs/checkpoint.c
->>>>>> @@ -762,6 +762,12 @@ static void do_checkpoint(struct f2fs_sb_info *sbi,
->>>>>> bool is_umount)
->>>>>>   	void *kaddr;
->>>>>>   	int i;
->>>>>>   
->>>>>> +	/*
->>>>>> +	 * This avoids to conduct wrong roll-forward operations and uses
->>>>>> +	 * metapages, so should be called prior to sync_meta_pages below.
->>>>>> +	 */
->>>>>> +	discard_next_dnode(sbi);
->>>>>> +
->>>>>>   	/* Flush all the NAT/SIT pages */
->>>>>>   	while (get_pages(sbi, F2FS_DIRTY_META))
->>>>>>   		sync_meta_pages(sbi, META, LONG_MAX);
->>>>>> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
->>>>>> index 2ecac83..2c5a5da 100644
->>>>>> --- a/fs/f2fs/f2fs.h
->>>>>> +++ b/fs/f2fs/f2fs.h
->>>>>> @@ -1179,6 +1179,7 @@ int f2fs_issue_flush(struct f2fs_sb_info *);
->>>>>>   void invalidate_blocks(struct f2fs_sb_info *, block_t);
->>>>>>   void refresh_sit_entry(struct f2fs_sb_info *, block_t, block_t);
->>>>>>   void clear_prefree_segments(struct f2fs_sb_info *);
->>>>>> +void discard_next_dnode(struct f2fs_sb_info *);
->>>>>>   int npages_for_summary_flush(struct f2fs_sb_info *);
->>>>>>   void allocate_new_segments(struct f2fs_sb_info *);
->>>>>>   struct page *get_sum_page(struct f2fs_sb_info *, unsigned int);
->>>>>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
->>>>>> index 1e264e7..9993f94 100644
->>>>>> --- a/fs/f2fs/segment.c
->>>>>> +++ b/fs/f2fs/segment.c
->>>>>> @@ -335,13 +335,26 @@ static void locate_dirty_segment(struct
->>>>>> f2fs_sb_info *sbi, unsigned int segno)
->>>>>>   	mutex_unlock(&dirty_i->seglist_lock);
->>>>>>   }
->>>>>>   
->>>>>> -static void f2fs_issue_discard(struct f2fs_sb_info *sbi,
->>>>>> +static int f2fs_issue_discard(struct f2fs_sb_info *sbi,
->>>>>>   				block_t blkstart, block_t blklen)
->>>>>>   {
->>>>>>   	sector_t start = SECTOR_FROM_BLOCK(sbi, blkstart);
->>>>>>   	sector_t len = SECTOR_FROM_BLOCK(sbi, blklen);
->>>>>> -	blkdev_issue_discard(sbi->sb->s_bdev, start, len, GFP_NOFS, 0);
->>>>>>   	trace_f2fs_issue_discard(sbi->sb, blkstart, blklen);
->>>>>> +	return blkdev_issue_discard(sbi->sb->s_bdev, start, len, GFP_NOFS, 0);
->>>>>> +}
->>>>>> +
->>>>>> +void discard_next_dnode(struct f2fs_sb_info *sbi)
->>>>>> +{
->>>>>> +	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
->>>>>> +	block_t blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
->>>>>> +
->>>>>> +	if (f2fs_issue_discard(sbi, blkaddr, 1)) {
->>>>>> +		struct page *page = grab_meta_page(sbi, blkaddr);
->>>>>> +		/* zero-filled page */
->>>>>> +		set_page_dirty(page);
->>>>>> +		f2fs_put_page(page, 1);
->>>>>> +	}
->>>>>>   }
->>>>>>   
->>>>>>   static void add_discard_addrs(struct f2fs_sb_info *sbi,
->>>
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> .
-> 
+Also when it moves hist entries to the output tree, it resets
+nr_entries and increases nr_entries again as they're moved.  I think
+it's a problem on perf top since it'll loose the number of entries
+already existing on the output tree.  I'm not sure how it has been
+working.. maybe I'm missing something.
 
+I'm out of office now, I'll investigate it more when I'm back to
+office next week.
 
+Thanks,
+Namhyung
