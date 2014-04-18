@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754777AbaDRV2X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 17:28:23 -0400
-Received: from mail-ve0-f180.google.com ([209.85.128.180]:63797 "EHLO
-	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753153AbaDRV2S (ORCPT
+	id S1754792AbaDRV3v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 17:29:51 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38342 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753153AbaDRV3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 17:28:18 -0400
+	Fri, 18 Apr 2014 17:29:49 -0400
+Date: Fri, 18 Apr 2014 22:29:31 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20140418212931.GB12304@sirena.org.uk>
+References: <1397845810-17002-1-git-send-email-tim.kryger@linaro.org>
+ <20140418185225.GA12304@sirena.org.uk>
+ <CAAYSxhoXvpxphks9p2Y8f0yUUp-4PeOjd2JiSYpsd_qvrRh6vA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140418201313.GG5904@bivouac.eciton.net>
-References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
-	<CAL_JsqL8B2ZY7ACXKX3J8VN5ukjKWuycgfDZpp4kYzBxg6BLmQ@mail.gmail.com>
-	<20140418124821.GE5904@bivouac.eciton.net>
-	<CAL_JsqKdFyhHfkcC1E9QuKjQTrXwoELYG+CFTpgf2-jqDvxGmA@mail.gmail.com>
-	<20140418201313.GG5904@bivouac.eciton.net>
-Date: Fri, 18 Apr 2014 16:28:17 -0500
-Message-ID: <CAL_Jsq+L14rgYq5swC3H109DThiyDajmTJpO=y562jcE97K-fg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] of: dts: enable memory@0 quirk for PPC32 only
-From: Rob Herring <robherring2@gmail.com>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="u9ZjGoWtv4kAxd1W"
+Content-Disposition: inline
+In-Reply-To: <CAAYSxhoXvpxphks9p2Y8f0yUUp-4PeOjd2JiSYpsd_qvrRh6vA@mail.gmail.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: Allow set voltage on fixed regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 3:13 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> On Fri, Apr 18, 2014 at 10:37:58AM -0500, Rob Herring wrote:
->> >> But why do you need this?
->> >
->> > Apart from the current code permitting recreating a 15+ year old
->> > firmware bug into completely new platform ports?
->>
->> I would prefer to see a "WARN_ON(!IS_ENABLED(CONFIG_PPC32));" added here.
->
-> In addition to, or instead of, the QUIRK ifdef?
 
-Instead of because I don't see how you handle the ARM board
-compatibility with the ifdef. (And please, no ifdef for that board).
+--u9ZjGoWtv4kAxd1W
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->> Really, I would like to see quirks like this fixed up out of line from
->> the normal flow somewhat like how PCI quirks are handled. So in this
->> example, we would just add the missing property to the dtb for the
->> broken platform before doing the memory scan. That does then require
->> libfdt which is something I'm working on.
->
-> Getting rid of all this handling from generic code would clearly be
-> preferable. Is that code going in in the near future, or could we add
-> the quirk as a stopgap?
+On Fri, Apr 18, 2014 at 02:07:58PM -0700, Tim Kryger wrote:
+> On Fri, Apr 18, 2014 at 11:52 AM, Mark Brown <broonie@kernel.org> wrote:
 
-Some sort of quirk infrastructure is not going to happen soon. It's
-just an idea bouncing in my head ATM.
+> > This seems like the wrong place to fix this, it's nothing to do with DT
+> > and we shouldn't require that nonsensical permissions are set.  Instead
+> > we should fix this at the point where we're implementing the permission
+> > check, have the failure case check the current voltage before returning
+> > an error.
 
->> > Because the UEFI stub for arm/arm64 needs to delete all of the "memory"
->> > nodes from the DT. And it would be nice to at least not have to compile
->> > the "and also delete anything called memory@0" into the arm64 image. Or
->> > any image not including support for affected platforms.
->>
->> I don't see why you would handle that in the EFI stub. Given our lack
->> of validation, I can see there is a chance this happens but I think it
->> is pretty small. Given we only have a ARM board, I'd say we are doing
->> surprisingly well.
->
-> I'm not too bothered personally, but Mark Rutland handed me a patch to
-> improve the memory node handling in the stub, and he seemed to really
-> want this there. You guys can fight it out :)
+> Are you saying that REGULATOR_CHANGE_VOLTAGE and
+> REGULATOR_CHANGE_CURRENT are nonsense?
 
-Simply put, we shouldn't put work-arounds in new code for new platforms.
+Flagging that it's possible to change the voltage of a fixed voltage
+regulator is nonsense.
 
-> What would be the effect of the UEFI code adding all its memblocks,
-> minus the reserved areas, and then the DT code doing a memblock_add
-> of all RAM (including reserved areas)? Would memblock_reserve()s on
-> the protected regions suffice to prevent crazy stuff from happening?
+> It does seem like, even in the non-DT case, that the decision of
+> whether to call the underlying set_voltage and set_current functions
+> could be made solely based on the numerical voltage and current
+> constraints.
 
-So use UEFI to add the memory, but then add reserved areas with DT?
-I'm not sure I follow, but even if I did I don't know memblock code
-well enough to say what it would do.
+The reason they're split is to encourage people to put the information
+about what's supposed to work in there - you might know what the valid
+range is but also know that the drivers are buggy and will break if they
+try to actually vary the voltage.  But yes, in general you should never
+have a range without the ability to use it once everything is working
+properly so having one without the other at least indicates that things
+aren't complete in the non-DT case.
 
-Rob
+It does also make the contract a bit clearer, one of the concerns
+initially was that we wanted to be absolutely clear that the
+machine integration was responsible for enabling the ability to change
+things in case people broke boards.
+
+--u9ZjGoWtv4kAxd1W
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTUZk4AAoJELSic+t+oim90swP/230RRgIQQlAl4/dPnQjzDQx
+RleqpuyH0B3ISzH/Egnd1j7DiVRA7dKSTtBKymloTbS24jjHPXch2x6bLd+PpxeB
+DpL8b5h2UCPnbgHlX49LuV1lCraypQlz3OCmb6O0JuTv1WaPM0HdcHUtg00v6L+H
+w4FlxK5nvwCBrt8SdQuxlldjA6BVwDBdU6iRXHyanyVEkihCdsU2NOfKpDzo63Gy
+XZMRa6CpeaawYFcvCsyMs8a0Fuaz/GuFKn2h19hzSB1tInos2DXYKglGA+fkTXkT
+xlzpPNJ5e6Cp2Mu+2ELTx1QIhYTlNI8uGTHDbk6uYocQJmLoJUlgLsOJbGVm7duj
+pgblO846oI0UFD8RYcNp64iSLZyHrfbC66MP6IZ2Kdf/NDl08fOBiWfLNMgR2snI
+gQsMskJfkD9Kc8MXX0BKPAiuRU3edz/9WVtk8Vymu3amNcH+5I82JrQvCo9hxr28
+KSC0J8KnxvpPMchApSosRjkPj6jCYNzmVCuuPbuLrLSvbPHKpQ8E036sJSEhxAuW
+/LBElwDSs5kkuGEpbv9GnzFwYyYJMameYIM8sB8vhQQ4VLhkftynp/fUa0uL2uID
+4ls+EbsY9JM4wPtxLNAqgBr7MC6OcTNFpenmICii4Rvvbzcakz/mMlSK4uuHGoVK
+HQT6S5n1b+xEJFscY/lA
+=4s3K
+-----END PGP SIGNATURE-----
+
+--u9ZjGoWtv4kAxd1W--
