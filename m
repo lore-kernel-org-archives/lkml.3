@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751392AbaDRHoM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 03:44:12 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:44592 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269AbaDRHnw (ORCPT
+	id S1751232AbaDRHnJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 03:43:09 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:35488 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959AbaDRHnC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 03:43:52 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Fri, 18 Apr 2014 16:44:25 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Steven King <sfking@fdwdc.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [uClinux-dev] v3.15-rc1 slab allocator broken on m68knommu
- (coldfire)
-Message-ID: <20140418074425.GA4812@js1304-P5Q-DELUXE>
-References: <201404141745.44279.sfking@fdwdc.com>
- <201404161044.11416.sfking@fdwdc.com>
- <20140417014911.GA3284@js1304-P5Q-DELUXE>
- <201404171209.43848.sfking@fdwdc.com>
+	Fri, 18 Apr 2014 03:43:02 -0400
+Date: Fri, 18 Apr 2014 09:42:55 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Waiman Long <Waiman.Long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 03/19] qspinlock: Add pending bit
+Message-ID: <20140418074255.GA13517@gmail.com>
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
+ <1397747051-15401-4-git-send-email-Waiman.Long@hp.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201404171209.43848.sfking@fdwdc.com>
+In-Reply-To: <1397747051-15401-4-git-send-email-Waiman.Long@hp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 12:09:43PM -0700, Steven King wrote:
-> On Wednesday 16 April 2014 6:49:11 pm Joonsoo Kim wrote:
-> > On Wed, Apr 16, 2014 at 10:44:11AM -0700, Steven King wrote:
-> > > On Wednesday 16 April 2014 9:06:57 am Geert Uytterhoeven wrote:
-> > > > Hi Steven,
-> > > >
-> > > > On Wed, Apr 16, 2014 at 5:47 PM, Steven King <sfking@fdwdc.com> wrote:
-> > > > > --- a/mm/slab.c
-> > > > > +++ b/mm/slab.c
-> > > > > @@ -2572,13 +2572,13 @@ static void *alloc_slabmgmt(struct kmem_cache
-> > > > > *cachep, return freelist;
-> > > > >  }
-> > > > >
-> > > > > -static inline freelist_idx_t get_free_obj(struct page *page,
-> > > > > unsigned char idx) +static inline freelist_idx_t get_free_obj(struct
-> > > > > page *page, unsigned int idx) {
-> > > > >         return ((freelist_idx_t *)page->freelist)[idx];
-> > > > >  }
-> > > > >
-> > > > >  static inline void set_free_obj(struct page *page,
-> > > > > -                                       unsigned char idx,
-> > > > > freelist_idx_t val) +                                       unsigned
-> > > > > int idx, freelist_idx_t val) {
-> > > > >         ((freelist_idx_t *)(page->freelist))[idx] = val;
-> > > > >  }
-> > > > >
-> > > > >
-> > > > > then v3.15-rc1 will boot using the slab allocator.
-> > > >
-> > > > Is "idx" ever larger than 255?
-> > > >
-> > > > Gr{oetje,eeting}s,
-> > >
-> > > Yes.  If I stick
-> > >
-> > >         if (idx > 255)
-> > >                 pr_info("%s %d\n", __func__, idx);
-> > >
-> > > in get_free_obj and set_free_obj and see values for idx up into the 400s.
-> >
-> > Hello,
-> >
-> > Yes, it's my mistake. idx can be larger than 255 if freelist_idx_t is
-> > unsigned short. So unsigned char idx isn't appropriate here. Your
-> > system's PAGE_SIZE may be 2^13, so freelist_idx_t would be unsigned short
-> > and idx will be larger than 255.
-> >
-> > Your fix looks good to me, so could you send it quickly to Pekka with
-> > some description? If you don't have enough time to do it, I can handle it.
-> >
-> > Really thanks for notifying this issue.
-> >
-> > Thanks.
+
+* Waiman Long <Waiman.Long@hp.com> wrote:
+
+> Because the qspinlock needs to touch a second cacheline; add a pending
+> bit and allow a single in-word spinner before we punt to the second
+> cacheline.
 > 
-> Why don't you go ahead and do it, you know whats going better than I do.
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
 
-Okay.
+This patch should have a "From: Peter" in it as well, right?
 
-I sent it with some description.
-See following link if you want to check.
+Thanks,
 
-https://lkml.org/lkml/2014/4/18/28
-
-Thanks.
-
+	Ingo
