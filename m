@@ -1,48 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173AbaDRKYg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 06:24:36 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:64388 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753123AbaDRKYd (ORCPT
+	id S1752610AbaDRKXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 06:23:39 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60725 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752222AbaDRKX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 06:24:33 -0400
-X-IronPort-AV: E=Sophos;i="4.97,883,1389715200"; 
-   d="scan'208";a="29441839"
-Message-ID: <5350EF6F.3070905@cn.fujitsu.com>
-Date: Fri, 18 Apr 2014 18:25:03 +0900
-From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, <peterz@infradead.org>,
-        <tglx@linutronix.de>, <heiko.carstens@de.ibm.com>
-Subject: Re: [PATCH 17/17] sched: Get rid of opened code implementation of
- funtion nice_to_rlimit().
-References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com> <220c27487540603b7af88ef327600804212a6706.1394532288.git.yangds.fnst@cn.fujitsu.com> <20140418100111.GA29098@gmail.com> <5350ED15.7070103@cn.fujitsu.com> <20140418101942.GA21711@gmail.com>
-In-Reply-To: <20140418101942.GA21711@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.49]
+	Fri, 18 Apr 2014 06:23:28 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: [PATCH 5/8] ARM: mvebu: Add Device Tree description of xHCI hosts on Armada 38x
+Date: Fri, 18 Apr 2014 12:22:40 +0200
+Message-Id: <1397816563-9000-6-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2014 07:19 PM, Ingo Molnar wrote:
-> * Dongsheng Yang <yangds.fnst@cn.fujitsu.com> wrote:
->
->> On 04/18/2014 07:01 PM, Ingo Molnar wrote:
->>> So the patch title has two typos and a superfluous period.
->> Really sorry for that. :( I will update it right now.
-> Please wait for the next -tip update before you resend the series -
-> I've applied a handful of other patches from you, which will reduce
-> the size of your queue.
+The Marvell Armada 38x SoCs contain two xHCI host. This commit adds
+the Device Tree description of those interfaces at the SoC level, and
+also enables the two USB3 ports on the Armada 385 DB platform and one
+USB3 port on the Armada 385 RD platforms.
 
-Okey, thanx !
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ arch/arm/boot/dts/armada-385-db.dts |  8 ++++++++
+ arch/arm/boot/dts/armada-385-rd.dts |  4 ++++
+ arch/arm/boot/dts/armada-38x.dtsi   | 17 +++++++++++++++++
+ 3 files changed, 29 insertions(+)
 
->
-> Thanks,
->
-> 	Ingo
->
+diff --git a/arch/arm/boot/dts/armada-385-db.dts b/arch/arm/boot/dts/armada-385-db.dts
+index 6828d77696a6..d5db1466da82 100644
+--- a/arch/arm/boot/dts/armada-385-db.dts
++++ b/arch/arm/boot/dts/armada-385-db.dts
+@@ -101,6 +101,14 @@
+ 					reg = <0x1000000 0x3f000000>;
+ 				};
+ 			};
++
++			usb3@f0000 {
++				status = "okay";
++			};
++
++			usb3@f8000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie-controller {
+diff --git a/arch/arm/boot/dts/armada-385-rd.dts b/arch/arm/boot/dts/armada-385-rd.dts
+index 45250c88814b..a505fe94ff37 100644
+--- a/arch/arm/boot/dts/armada-385-rd.dts
++++ b/arch/arm/boot/dts/armada-385-rd.dts
+@@ -77,6 +77,10 @@
+ 					reg = <1>;
+ 				};
+ 			};
++
++			usb3@f0000 {
++				status = "okay";
++			};
+ 		};
+ 
+ 		pcie-controller {
+diff --git a/arch/arm/boot/dts/armada-38x.dtsi b/arch/arm/boot/dts/armada-38x.dtsi
+index a064f59da02d..4f117e66aa1a 100644
+--- a/arch/arm/boot/dts/armada-38x.dtsi
++++ b/arch/arm/boot/dts/armada-38x.dtsi
+@@ -355,6 +355,23 @@
+ 				clocks = <&coredivclk 0>;
+ 				status = "disabled";
+ 			};
++
++			usb3@f0000 {
++				compatible = "marvell,xhci-armada-380";
++				reg = <0xf0000 0x3fff>,<0xf4000 0x3fff>;
++				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&gateclk 9>;
++				status = "disabled";
++			};
++
++			usb3@f8000 {
++				compatible = "marvell,xhci-armada-380";
++				reg = <0xf8000 0x3fff>,<0xfc000 0x3fff>;
++				interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
++				clocks = <&gateclk 10>;
++				status = "disabled";
++			};
++
+ 		};
+ 	};
+ 
+-- 
+1.8.1.2
 
