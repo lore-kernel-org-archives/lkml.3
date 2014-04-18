@@ -1,156 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517AbaDRJkG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:40:06 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45948 "EHLO
+	id S1754499AbaDRJkC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:40:02 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45951 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752251AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752254AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Eric Dumazet <eric.dumazet@gmail.com>,
-        Eric Dumazet <edumazet@google.com>,
+Cc: linux-kernel@vger.kernel.org,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 39/72] tcp: tcp_release_cb() should release socket ownership
-Date: Fri, 18 Apr 2014 11:22:12 +0200
-Message-Id: <3e52e9e5c8c315f3514c8b9b85ecaf0e96c1dd00.1397812482.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 40/72] bridge: multicast: add sanity check for general query destination
+Date: Fri, 18 Apr 2014 11:22:13 +0200
+Message-Id: <b8d3ded97fc1d1765a352f8315ad65d6ef302e9c.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
 References: <cover.1397812482.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Linus Lüssing <linus.luessing@web.de>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit c3f9b01849ef3bc69024990092b9f42e20df7797 ]
+[ Upstream commit 9ed973cc40c588abeaa58aea0683ea665132d11d ]
 
-Lars Persson reported following deadlock :
+General IGMP and MLD queries are supposed to have the multicast
+link-local all-nodes address as their destination according to RFC2236
+section 9, RFC3376 section 4.1.12/9.1, RFC2710 section 8 and RFC3810
+section 5.1.15.
 
--000 |M:0x0:0x802B6AF8(asm) <-- arch_spin_lock
--001 |tcp_v4_rcv(skb = 0x8BD527A0) <-- sk = 0x8BE6B2A0
--002 |ip_local_deliver_finish(skb = 0x8BD527A0)
--003 |__netif_receive_skb_core(skb = 0x8BD527A0, ?)
--004 |netif_receive_skb(skb = 0x8BD527A0)
--005 |elk_poll(napi = 0x8C770500, budget = 64)
--006 |net_rx_action(?)
--007 |__do_softirq()
--008 |do_softirq()
--009 |local_bh_enable()
--010 |tcp_rcv_established(sk = 0x8BE6B2A0, skb = 0x87D3A9E0, th = 0x814EBE14, ?)
--011 |tcp_v4_do_rcv(sk = 0x8BE6B2A0, skb = 0x87D3A9E0)
--012 |tcp_delack_timer_handler(sk = 0x8BE6B2A0)
--013 |tcp_release_cb(sk = 0x8BE6B2A0)
--014 |release_sock(sk = 0x8BE6B2A0)
--015 |tcp_sendmsg(?, sk = 0x8BE6B2A0, ?, ?)
--016 |sock_sendmsg(sock = 0x8518C4C0, msg = 0x87D8DAA8, size = 4096)
--017 |kernel_sendmsg(?, ?, ?, ?, size = 4096)
--018 |smb_send_kvec()
--019 |smb_send_rqst(server = 0x87C4D400, rqst = 0x87D8DBA0)
--020 |cifs_call_async()
--021 |cifs_async_writev(wdata = 0x87FD6580)
--022 |cifs_writepages(mapping = 0x852096E4, wbc = 0x87D8DC88)
--023 |__writeback_single_inode(inode = 0x852095D0, wbc = 0x87D8DC88)
--024 |writeback_sb_inodes(sb = 0x87D6D800, wb = 0x87E4A9C0, work = 0x87D8DD88)
--025 |__writeback_inodes_wb(wb = 0x87E4A9C0, work = 0x87D8DD88)
--026 |wb_writeback(wb = 0x87E4A9C0, work = 0x87D8DD88)
--027 |wb_do_writeback(wb = 0x87E4A9C0, force_wait = 0)
--028 |bdi_writeback_workfn(work = 0x87E4A9CC)
--029 |process_one_work(worker = 0x8B045880, work = 0x87E4A9CC)
--030 |worker_thread(__worker = 0x8B045880)
--031 |kthread(_create = 0x87CADD90)
--032 |ret_from_kernel_thread(asm)
+Without this check, such malformed IGMP/MLD queries can result in a
+denial of service: The queries are ignored by most IGMP/MLD listeners
+therefore they will not respond with an IGMP/MLD report. However,
+without this patch these malformed MLD queries would enable the
+snooping part in the bridge code, potentially shutting down the
+according ports towards these hosts for multicast traffic as the
+bridge did not learn about these listeners.
 
-Bug occurs because __tcp_checksum_complete_user() enables BH, assuming
-it is running from softirq context.
-
-Lars trace involved a NIC without RX checksum support but other points
-are problematic as well, like the prequeue stuff.
-
-Problem is triggered by a timer, that found socket being owned by user.
-
-tcp_release_cb() should call tcp_write_timer_handler() or
-tcp_delack_timer_handler() in the appropriate context :
-
-BH disabled and socket lock held, but 'owned' field cleared,
-as if they were running from timer handlers.
-
-Fixes: 6f458dfb4092 ("tcp: improve latencies of timer triggered events")
-Reported-by: Lars Persson <lars.persson@axis.com>
-Tested-by: Lars Persson <lars.persson@axis.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Reported-by: Jan Stancek <jstancek@redhat.com>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- include/net/sock.h    |  5 +++++
- net/core/sock.c       |  5 ++++-
- net/ipv4/tcp_output.c | 11 +++++++++++
- 3 files changed, 20 insertions(+), 1 deletion(-)
+ net/bridge/br_multicast.c | 19 +++++++++++++++++++
+ 1 file changed, 19 insertions(+)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 808cbc2ec6c1..6e2c4901a477 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1459,6 +1459,11 @@ static inline void sk_wmem_free_skb(struct sock *sk, struct sk_buff *skb)
-  */
- #define sock_owned_by_user(sk)	((sk)->sk_lock.owned)
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index b98627e902e7..4af88e2a33c4 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1183,6 +1183,14 @@ static int br_ip4_multicast_query(struct net_bridge *br,
+ 			    IGMPV3_MRC(ih3->code) * (HZ / IGMP_TIMER_SCALE) : 1;
+ 	}
  
-+static inline void sock_release_ownership(struct sock *sk)
-+{
-+	sk->sk_lock.owned = 0;
-+}
-+
- /*
-  * Macro so as to not evaluate some arguments when
-  * lockdep is not enabled.
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 831a0d0af49f..ec228a30e7dc 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -2359,10 +2359,13 @@ void release_sock(struct sock *sk)
- 	if (sk->sk_backlog.tail)
- 		__release_sock(sk);
- 
-+	/* Warning : release_cb() might need to release sk ownership,
-+	 * ie call sock_release_ownership(sk) before us.
++	/* RFC2236+RFC3376 (IGMPv2+IGMPv3) require the multicast link layer
++	 * all-systems destination addresses (224.0.0.1) for general queries
 +	 */
- 	if (sk->sk_prot->release_cb)
- 		sk->sk_prot->release_cb(sk);
- 
--	sk->sk_lock.owned = 0;
-+	sock_release_ownership(sk);
- 	if (waitqueue_active(&sk->sk_lock.wq))
- 		wake_up(&sk->sk_lock.wq);
- 	spin_unlock_bh(&sk->sk_lock.slock);
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index e088932bcfae..826fc6fab576 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -765,6 +765,17 @@ void tcp_release_cb(struct sock *sk)
- 	if (flags & (1UL << TCP_TSQ_DEFERRED))
- 		tcp_tsq_handler(sk);
- 
-+	/* Here begins the tricky part :
-+	 * We are called from release_sock() with :
-+	 * 1) BH disabled
-+	 * 2) sk_lock.slock spinlock held
-+	 * 3) socket owned by us (sk->sk_lock.owned == 1)
-+	 *
-+	 * But following code is meant to be called from BH handlers,
-+	 * so we should keep BH disabled, but early release socket ownership
-+	 */
-+	sock_release_ownership(sk);
++	if (!group && iph->daddr != htonl(INADDR_ALLHOSTS_GROUP)) {
++		err = -EINVAL;
++		goto out;
++	}
 +
- 	if (flags & (1UL << TCP_WRITE_TIMER_DEFERRED)) {
- 		tcp_write_timer_handler(sk);
- 		__sock_put(sk);
+ 	br_multicast_query_received(br, port, &br->ip4_querier, !!iph->saddr,
+ 				    max_delay);
+ 
+@@ -1230,6 +1238,7 @@ static int br_ip6_multicast_query(struct net_bridge *br,
+ 	unsigned long max_delay;
+ 	unsigned long now = jiffies;
+ 	const struct in6_addr *group = NULL;
++	bool is_general_query;
+ 	int err = 0;
+ 	u16 vid = 0;
+ 
+@@ -1265,6 +1274,16 @@ static int br_ip6_multicast_query(struct net_bridge *br,
+ 		max_delay = max(msecs_to_jiffies(mldv2_mrc(mld2q)), 1UL);
+ 	}
+ 
++	is_general_query = group && ipv6_addr_any(group);
++
++	/* RFC2710+RFC3810 (MLDv1+MLDv2) require the multicast link layer
++	 * all-nodes destination address (ff02::1) for general queries
++	 */
++	if (is_general_query && !ipv6_addr_is_ll_all_nodes(&ip6h->daddr)) {
++		err = -EINVAL;
++		goto out;
++	}
++
+ 	br_multicast_query_received(br, port, &br->ip6_querier,
+ 				    !ipv6_addr_any(&ip6h->saddr), max_delay);
+ 
 -- 
 1.9.2
 
