@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754167AbaDRQYj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 12:24:39 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:57912 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751841AbaDRQYc (ORCPT
+	id S1754206AbaDRQ0q (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 12:26:46 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:29285 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751205AbaDRQ0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 12:24:32 -0400
+	Fri, 18 Apr 2014 12:26:43 -0400
+Message-ID: <53515232.50905@hp.com>
+Date: Fri, 18 Apr 2014 12:26:26 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <20140418150653.GB12515@htj.dyndns.org>
-References: <20140417162720.GQ15326@htj.dyndns.org>
-	<1397827555-19641-1-git-send-email-laijs@cn.fujitsu.com>
-	<1397827555-19641-2-git-send-email-laijs@cn.fujitsu.com>
-	<20140418150653.GB12515@htj.dyndns.org>
-Date: Sat, 19 Apr 2014 00:24:32 +0800
-X-Google-Sender-Auth: qHVFouXDoEYRGFgshtUSPujNU7c
-Message-ID: <CACvQF51a-babdUSBiREEsSv=1keiQCTJh-sZFrtFXn9iUHegOw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] workqueue: fix a possible race condition between
- rescuer and pwq-release
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Ingo Molnar <mingo@kernel.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com> <1397747051-15401-6-git-send-email-Waiman.Long@hp.com> <20140417155844.GS11096@twins.programming.kicks-ass.net> <53504C4E.8060800@hp.com> <20140418074616.GB13517@gmail.com>
+In-Reply-To: <20140418074616.GB13517@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 11:06 PM, Tejun Heo <tj@kernel.org> wrote:
-> Hello,
+On 04/18/2014 03:46 AM, Ingo Molnar wrote:
+> * Waiman Long<waiman.long@hp.com>  wrote:
 >
-> Applied to wq/for-3.15-fixes with put_pwq() relocated and patch
-> description and comments updated.
+>> On 04/17/2014 11:58 AM, Peter Zijlstra wrote:
+>>> On Thu, Apr 17, 2014 at 11:03:57AM -0400, Waiman Long wrote:
+>>>> +static __always_inline void
+>>>> +clear_pending_set_locked(struct qspinlock *lock, u32 val)
+>>>> +{
+>>>> +	struct __qspinlock *l = (void *)lock;
+>>>> +
+>>>> +	ACCESS_ONCE(l->locked_pending) = 1;
+>>>> +}
+>>>> @@ -157,8 +251,13 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
+>>>>   	 * we're pending, wait for the owner to go away.
+>>>>   	 *
+>>>>   	 * *,1,1 ->   *,1,0
+>>>> +	 *
+>>>> +	 * this wait loop must be a load-acquire such that we match the
+>>>> +	 * store-release that clears the locked bit and create lock
+>>>> +	 * sequentiality; this because not all try_clear_pending_set_locked()
+>>>> +	 * implementations imply full barriers.
+>>> You renamed the function referred in the above comment.
+>>>
+>> Sorry, will fix the comments.
+> I suggest not renaming the function instead.
+> try_clear_pending_set_locked() tells the intent in a clearer fashion.
 >
-> Thanks.
-> -------- 8< --------
-> From 4b81955722abe4306096c7b0137e0491a7ba7b0e Mon Sep 17 00:00:00 2001
-> From: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Date: Fri, 18 Apr 2014 11:04:16 -0400
+> Thanks,
 >
-> There is a race condition between rescuer_thread() and
-> pwq_unbound_release_workfn().
->
-> Even after a pwq is scheduled for rescue, the associated work items
-> may be consumed by any worker.  If all of them are consumed before the
-> rescuer gets to them and the pwq's base ref was put due to attribute
-> change, the pwq may be released while still being linked on
-> @wq->maydays list making the rescuer dereference already freed pwq
-> later.
->
-> Make send_mayday() pin the target pwq until the rescuer is done with
-> it.
->
-> tj: Updated comment and patch description.  Moved put_pwq() to after
->     the last @pwq->pool access.  This isn't strictly necessarily for
->     correctness but is cleaner as the pool is accessed through the
->     pwq.
->
-> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: stable@vger.kernel.org # v3.10+
-> ---
->  kernel/workqueue.c | 7 +++++++
->  1 file changed, 7 insertions(+)
->
-> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-> index 6ba0c60..a6532f2 100644
-> --- a/kernel/workqueue.c
-> +++ b/kernel/workqueue.c
-> @@ -1916,6 +1916,12 @@ static void send_mayday(struct work_struct *work)
->
->         /* mayday mayday mayday */
->         if (list_empty(&pwq->mayday_node)) {
-> +               /*
-> +                * If @pwq is for an unbound wq, its base ref may be put at
-> +                * any time due to an attribute change.  Pin @pwq until the
-> +                * rescuer is done with it.
-> +                */
-> +               get_pwq(pwq);
->                 list_add_tail(&pwq->mayday_node, &wq->maydays);
->                 wake_up_process(wq->rescuer->task);
->         }
-> @@ -2459,6 +2465,7 @@ repeat:
->
->                 rescuer->pool = NULL;
->                 spin_unlock(&pool->lock);
-> +               put_pwq(pwq);   /* put the ref from send_mayday() */
+> 	Ingo
 
-put_pwq() requires pool->lock held.
+I usually use the word "try" if there is a possibility of failure. 
+However, the function will always succeed, albeit by waiting a bit in 
+some cases. That is why I remove "try" from the name.
 
->                 spin_lock(&wq_mayday_lock);
->         }
->
-> --
-> 1.9.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+-Longman
