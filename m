@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992AbaDRJcE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:32:04 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45979 "EHLO
+	id S1754385AbaDRJbv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:31:51 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45980 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752342AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752349AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
@@ -12,9 +12,9 @@ To: stable@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
         Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
         Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 51/72] ipmr: fix mfc notification flags
-Date: Fri, 18 Apr 2014 11:22:24 +0200
-Message-Id: <6007e2c269182030d25500d3c2b80ee542291cf1.1397812482.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 50/72] rtnetlink: fix fdb notification flags
+Date: Fri, 18 Apr 2014 11:22:23 +0200
+Message-Id: <be67f8bc657d8b0b0c87a5d6215c6329d9b35a03.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -30,10 +30,10 @@ From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
 ===============
 
-[ Upstream commit 65886f439ab0fdc2dff20d1fa87afb98c6717472 ]
+[ Upstream commit 1c104a6bebf3c16b6248408b84f91d09ac8a26b6 ]
 
-Commit 8cd3ac9f9b7b ("ipmr: advertise new mfc entries via rtnl") reuses the
-function ipmr_fill_mroute() to notify mfc events.
+Commit 3ff661c38c84 ("net: rtnetlink notify events for FDB NTF_SELF adds and
+deletes") reuses the function nlmsg_populate_fdb_fill() to notify fdb events.
 But this function was used only for dump and thus was always setting the
 flag NLM_F_MULTI, which is wrong in case of a single notification.
 
@@ -45,59 +45,48 @@ Acked-by: Thomas Graf <tgraf@suug.ch>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv4/ipmr.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ net/core/rtnetlink.c | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/net/ipv4/ipmr.c b/net/ipv4/ipmr.c
-index 1672409f5ba5..6fbf3393d842 100644
---- a/net/ipv4/ipmr.c
-+++ b/net/ipv4/ipmr.c
-@@ -2253,13 +2253,14 @@ int ipmr_get_route(struct net *net, struct sk_buff *skb,
- }
- 
- static int ipmr_fill_mroute(struct mr_table *mrt, struct sk_buff *skb,
--			    u32 portid, u32 seq, struct mfc_cache *c, int cmd)
-+			    u32 portid, u32 seq, struct mfc_cache *c, int cmd,
-+			    int flags)
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 2a0e21de3060..37b492eaa4f8 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -2014,12 +2014,13 @@ EXPORT_SYMBOL(rtmsg_ifinfo);
+ static int nlmsg_populate_fdb_fill(struct sk_buff *skb,
+ 				   struct net_device *dev,
+ 				   u8 *addr, u32 pid, u32 seq,
+-				   int type, unsigned int flags)
++				   int type, unsigned int flags,
++				   int nlflags)
  {
  	struct nlmsghdr *nlh;
- 	struct rtmsg *rtm;
- 	int err;
+ 	struct ndmsg *ndm;
  
--	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), NLM_F_MULTI);
-+	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), flags);
- 	if (nlh == NULL)
+-	nlh = nlmsg_put(skb, pid, seq, type, sizeof(*ndm), NLM_F_MULTI);
++	nlh = nlmsg_put(skb, pid, seq, type, sizeof(*ndm), nlflags);
+ 	if (!nlh)
  		return -EMSGSIZE;
  
-@@ -2327,7 +2328,7 @@ static void mroute_netlink_event(struct mr_table *mrt, struct mfc_cache *mfc,
- 	if (skb == NULL)
+@@ -2057,7 +2058,7 @@ static void rtnl_fdb_notify(struct net_device *dev, u8 *addr, int type)
+ 	if (!skb)
  		goto errout;
  
--	err = ipmr_fill_mroute(mrt, skb, 0, 0, mfc, cmd);
-+	err = ipmr_fill_mroute(mrt, skb, 0, 0, mfc, cmd, 0);
- 	if (err < 0)
+-	err = nlmsg_populate_fdb_fill(skb, dev, addr, 0, 0, type, NTF_SELF);
++	err = nlmsg_populate_fdb_fill(skb, dev, addr, 0, 0, type, NTF_SELF, 0);
+ 	if (err < 0) {
+ 		kfree_skb(skb);
  		goto errout;
+@@ -2282,7 +2283,8 @@ static int nlmsg_populate_fdb(struct sk_buff *skb,
  
-@@ -2366,7 +2367,8 @@ static int ipmr_rtm_dumproute(struct sk_buff *skb, struct netlink_callback *cb)
- 				if (ipmr_fill_mroute(mrt, skb,
- 						     NETLINK_CB(cb->skb).portid,
- 						     cb->nlh->nlmsg_seq,
--						     mfc, RTM_NEWROUTE) < 0)
-+						     mfc, RTM_NEWROUTE,
-+						     NLM_F_MULTI) < 0)
- 					goto done;
- next_entry:
- 				e++;
-@@ -2380,7 +2382,8 @@ next_entry:
- 			if (ipmr_fill_mroute(mrt, skb,
- 					     NETLINK_CB(cb->skb).portid,
- 					     cb->nlh->nlmsg_seq,
--					     mfc, RTM_NEWROUTE) < 0) {
-+					     mfc, RTM_NEWROUTE,
-+					     NLM_F_MULTI) < 0) {
- 				spin_unlock_bh(&mfc_unres_lock);
- 				goto done;
- 			}
+ 		err = nlmsg_populate_fdb_fill(skb, dev, ha->addr,
+ 					      portid, seq,
+-					      RTM_NEWNEIGH, NTF_SELF);
++					      RTM_NEWNEIGH, NTF_SELF,
++					      NLM_F_MULTI);
+ 		if (err < 0)
+ 			return err;
+ skip:
 -- 
 1.9.2
 
