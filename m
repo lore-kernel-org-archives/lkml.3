@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263AbaDRNIa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:08:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38813 "EHLO
+	id S1754322AbaDRNIh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:08:37 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38822 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034AbaDRNIP (ORCPT
+	with ESMTP id S1754221AbaDRNIV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:08:15 -0400
-Date: Fri, 18 Apr 2014 06:07:42 -0700
+	Fri, 18 Apr 2014 09:08:21 -0400
+Date: Fri, 18 Apr 2014 06:07:26 -0700
 From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-46383648b3c769fa74794ae6425ab993fc113bdb@git.kernel.org>
+Message-ID: <tip-f4ebcbc0d7e009783256c9daf76bc4b90e645c14@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        preeti@linux.vnet.ibm.com, peterz@infradead.org, tkhai@yandex.ru,
-        tglx@linutronix.de
+        peterz@infradead.org, tkhai@yandex.ru, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        preeti@linux.vnet.ibm.com, peterz@infradead.org, tkhai@yandex.ru,
-        tglx@linutronix.de
-In-Reply-To: <1394835307.18748.34.camel@HP-250-G1-Notebook-PC>
-References: <1394835307.18748.34.camel@HP-250-G1-Notebook-PC>
+        peterz@infradead.org, tkhai@yandex.ru, tglx@linutronix.de
+In-Reply-To: <1394835300.18748.33.camel@HP-250-G1-Notebook-PC>
+References: <1394835300.18748.33.camel@HP-250-G1-Notebook-PC>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Revert commit 4c6c4e38c4e9 ("sched/core:
-  Fix endless loop in pick_next_task()")
-Git-Commit-ID: 46383648b3c769fa74794ae6425ab993fc113bdb
+Subject: [tip:sched/core] sched/rt:
+  Substract number of tasks of throttled queues from rq->nr_running
+Git-Commit-ID: f4ebcbc0d7e009783256c9daf76bc4b90e645c14
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,96 +32,216 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  46383648b3c769fa74794ae6425ab993fc113bdb
-Gitweb:     http://git.kernel.org/tip/46383648b3c769fa74794ae6425ab993fc113bdb
+Commit-ID:  f4ebcbc0d7e009783256c9daf76bc4b90e645c14
+Gitweb:     http://git.kernel.org/tip/f4ebcbc0d7e009783256c9daf76bc4b90e645c14
 Author:     Kirill Tkhai <tkhai@yandex.ru>
-AuthorDate: Sat, 15 Mar 2014 02:15:07 +0400
+AuthorDate: Sat, 15 Mar 2014 02:15:00 +0400
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 Apr 2014 12:07:29 +0200
+CommitDate: Fri, 18 Apr 2014 12:07:28 +0200
 
-sched: Revert commit 4c6c4e38c4e9 ("sched/core: Fix endless loop in pick_next_task()")
+sched/rt: Substract number of tasks of throttled queues from rq->nr_running
 
-This reverts commit 4c6c4e38c4e9 ("sched/core: Fix endless loop in
-pick_next_task()"), which is not necessary after ("sched/rt: Substract number
-of tasks of throttled queues from rq->nr_running").
+Now rq->rt becomes to be able to be in dequeued or enqueued state.
+We add new member rt_rq->rt_queued, which is used to indicate this.
+The member is used only for top queue rq->rt_rq.
+
+The goal is to fit generic scheme which is used in deadline and
+fair classes, i.e. throttled rt_rq's rt_nr_running is beeing
+substracted from rq->nr_running.
 
 Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-[conflict resolution with stop task checking patch]
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1394835307.18748.34.camel@HP-250-G1-Notebook-PC
+Link: http://lkml.kernel.org/r/1394835300.18748.33.camel@HP-250-G1-Notebook-PC
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c  |  5 +----
- kernel/sched/rt.c    | 10 ++++++++++
- kernel/sched/sched.h | 12 ------------
- 3 files changed, 11 insertions(+), 16 deletions(-)
+ kernel/sched/rt.c    | 73 +++++++++++++++++++++++++++++++++++++++++++---------
+ kernel/sched/sched.h |  2 ++
+ 2 files changed, 63 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 5e157f1..43232b8 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6732,10 +6732,7 @@ static int idle_balance(struct rq *this_rq)
- 
- out:
- 	/* Is there a task of a high priority class? */
--	if (this_rq->nr_running != this_rq->cfs.h_nr_running &&
--	    ((this_rq->stop && this_rq->stop->on_rq) ||
--	     this_rq->dl.dl_nr_running ||
--	     (this_rq->rt.rt_nr_running && !rt_rq_throttled(&this_rq->rt))))
-+	if (this_rq->nr_running != this_rq->cfs.h_nr_running)
- 		pulled_task = -1;
- 
- 	if (pulled_task) {
 diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index 2add019..7795e29 100644
+index f6aa3cd..2add019 100644
 --- a/kernel/sched/rt.c
 +++ b/kernel/sched/rt.c
-@@ -493,6 +493,11 @@ static void sched_rt_rq_dequeue(struct rt_rq *rt_rq)
+@@ -79,6 +79,8 @@ void init_rt_rq(struct rt_rq *rt_rq, struct rq *rq)
+ 	rt_rq->overloaded = 0;
+ 	plist_head_init(&rt_rq->pushable_tasks);
+ #endif
++	/* We start is dequeued state, because no RT tasks are queued */
++	rt_rq->rt_queued = 0;
+ 
+ 	rt_rq->rt_time = 0;
+ 	rt_rq->rt_throttled = 0;
+@@ -404,6 +406,9 @@ static inline void set_post_schedule(struct rq *rq)
+ }
+ #endif /* CONFIG_SMP */
+ 
++static void enqueue_top_rt_rq(struct rt_rq *rt_rq);
++static void dequeue_top_rt_rq(struct rt_rq *rt_rq);
++
+ static inline int on_rt_rq(struct sched_rt_entity *rt_se)
+ {
+ 	return !list_empty(&rt_se->run_list);
+@@ -465,8 +470,11 @@ static void sched_rt_rq_enqueue(struct rt_rq *rt_rq)
+ 	rt_se = rt_rq->tg->rt_se[cpu];
+ 
+ 	if (rt_rq->rt_nr_running) {
+-		if (rt_se && !on_rt_rq(rt_se))
++		if (!rt_se)
++			enqueue_top_rt_rq(rt_rq);
++		else if (!on_rt_rq(rt_se))
+ 			enqueue_rt_entity(rt_se, false);
++
+ 		if (rt_rq->highest_prio.curr < curr->prio)
+ 			resched_task(curr);
+ 	}
+@@ -479,7 +487,9 @@ static void sched_rt_rq_dequeue(struct rt_rq *rt_rq)
+ 
+ 	rt_se = rt_rq->tg->rt_se[cpu];
+ 
+-	if (rt_se && on_rt_rq(rt_se))
++	if (!rt_se)
++		dequeue_top_rt_rq(rt_rq);
++	else if (on_rt_rq(rt_se))
  		dequeue_rt_entity(rt_se);
  }
  
-+static inline int rt_rq_throttled(struct rt_rq *rt_rq)
-+{
-+	return rt_rq->rt_throttled && !rt_rq->rt_nr_boosted;
-+}
-+
- static int rt_se_boosted(struct sched_rt_entity *rt_se)
+@@ -545,12 +555,18 @@ static inline struct rt_rq *group_rt_rq(struct sched_rt_entity *rt_se)
+ 
+ static inline void sched_rt_rq_enqueue(struct rt_rq *rt_rq)
  {
- 	struct rt_rq *rt_rq = group_rt_rq(rt_se);
-@@ -569,6 +574,11 @@ static inline void sched_rt_rq_dequeue(struct rt_rq *rt_rq)
- 	dequeue_top_rt_rq(rt_rq);
+-	if (rt_rq->rt_nr_running)
+-		resched_task(rq_of_rt_rq(rt_rq)->curr);
++	struct rq *rq = rq_of_rt_rq(rt_rq);
++
++	if (!rt_rq->rt_nr_running)
++		return;
++
++	enqueue_top_rt_rq(rt_rq);
++	resched_task(rq->curr);
  }
  
-+static inline int rt_rq_throttled(struct rt_rq *rt_rq)
+ static inline void sched_rt_rq_dequeue(struct rt_rq *rt_rq)
+ {
++	dequeue_top_rt_rq(rt_rq);
+ }
+ 
+ static inline const struct cpumask *sched_rt_period_mask(void)
+@@ -935,6 +951,38 @@ static void update_curr_rt(struct rq *rq)
+ 	}
+ }
+ 
++static void
++dequeue_top_rt_rq(struct rt_rq *rt_rq)
 +{
-+	return rt_rq->rt_throttled;
++	struct rq *rq = rq_of_rt_rq(rt_rq);
++
++	BUG_ON(&rq->rt != rt_rq);
++
++	if (!rt_rq->rt_queued)
++		return;
++
++	BUG_ON(!rq->nr_running);
++
++	rq->nr_running -= rt_rq->rt_nr_running;
++	rt_rq->rt_queued = 0;
 +}
 +
- static inline const struct cpumask *sched_rt_period_mask(void)
++static void
++enqueue_top_rt_rq(struct rt_rq *rt_rq)
++{
++	struct rq *rq = rq_of_rt_rq(rt_rq);
++
++	BUG_ON(&rq->rt != rt_rq);
++
++	if (rt_rq->rt_queued)
++		return;
++	if (rt_rq_throttled(rt_rq) || !rt_rq->rt_nr_running)
++		return;
++
++	rq->nr_running += rt_rq->rt_nr_running;
++	rt_rq->rt_queued = 1;
++}
++
+ #if defined CONFIG_SMP
+ 
+ static void
+@@ -1143,6 +1191,8 @@ static void dequeue_rt_stack(struct sched_rt_entity *rt_se)
+ 		back = rt_se;
+ 	}
+ 
++	dequeue_top_rt_rq(rt_rq_of_se(back));
++
+ 	for (rt_se = back; rt_se; rt_se = rt_se->back) {
+ 		if (on_rt_rq(rt_se))
+ 			__dequeue_rt_entity(rt_se);
+@@ -1151,13 +1201,18 @@ static void dequeue_rt_stack(struct sched_rt_entity *rt_se)
+ 
+ static void enqueue_rt_entity(struct sched_rt_entity *rt_se, bool head)
  {
- 	return cpu_online_mask;
++	struct rq *rq = rq_of_rt_se(rt_se);
++
+ 	dequeue_rt_stack(rt_se);
+ 	for_each_sched_rt_entity(rt_se)
+ 		__enqueue_rt_entity(rt_se, head);
++	enqueue_top_rt_rq(&rq->rt);
+ }
+ 
+ static void dequeue_rt_entity(struct sched_rt_entity *rt_se)
+ {
++	struct rq *rq = rq_of_rt_se(rt_se);
++
+ 	dequeue_rt_stack(rt_se);
+ 
+ 	for_each_sched_rt_entity(rt_se) {
+@@ -1166,6 +1221,7 @@ static void dequeue_rt_entity(struct sched_rt_entity *rt_se)
+ 		if (rt_rq && rt_rq->rt_nr_running)
+ 			__enqueue_rt_entity(rt_se, false);
+ 	}
++	enqueue_top_rt_rq(&rq->rt);
+ }
+ 
+ /*
+@@ -1183,8 +1239,6 @@ enqueue_task_rt(struct rq *rq, struct task_struct *p, int flags)
+ 
+ 	if (!task_current(rq, p) && p->nr_cpus_allowed > 1)
+ 		enqueue_pushable_task(rq, p);
+-
+-	inc_nr_running(rq);
+ }
+ 
+ static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
+@@ -1195,8 +1249,6 @@ static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
+ 	dequeue_rt_entity(rt_se);
+ 
+ 	dequeue_pushable_task(rq, p);
+-
+-	dec_nr_running(rq);
+ }
+ 
+ /*
+@@ -1401,10 +1453,7 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+ 	if (prev->sched_class == &rt_sched_class)
+ 		update_curr_rt(rq);
+ 
+-	if (!rt_rq->rt_nr_running)
+-		return NULL;
+-
+-	if (rt_rq_throttled(rt_rq))
++	if (!rt_rq->rt_queued)
+ 		return NULL;
+ 
+ 	put_prev_task(rq, prev);
 diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index c8d9ee4..b2cbe81 100644
+index 456e492..c8d9ee4 100644
 --- a/kernel/sched/sched.h
 +++ b/kernel/sched/sched.h
-@@ -425,18 +425,6 @@ struct rt_rq {
+@@ -409,6 +409,8 @@ struct rt_rq {
+ 	int overloaded;
+ 	struct plist_head pushable_tasks;
  #endif
- };
- 
--#ifdef CONFIG_RT_GROUP_SCHED
--static inline int rt_rq_throttled(struct rt_rq *rt_rq)
--{
--	return rt_rq->rt_throttled && !rt_rq->rt_nr_boosted;
--}
--#else
--static inline int rt_rq_throttled(struct rt_rq *rt_rq)
--{
--	return rt_rq->rt_throttled;
--}
--#endif
--
- /* Deadline class' related fields in a runqueue */
- struct dl_rq {
- 	/* runqueue is an rbtree, ordered by deadline */
++	int rt_queued;
++
+ 	int rt_throttled;
+ 	u64 rt_time;
+ 	u64 rt_runtime;
