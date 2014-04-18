@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264AbaDRQeQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 12:34:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:41682 "EHLO comal.ext.ti.com"
+	id S1754568AbaDRQgS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 12:36:18 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42387 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752005AbaDRQeK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 12:34:10 -0400
+	id S1754227AbaDRQeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 12:34:13 -0400
 From: Grygorii Strashko <grygorii.strashko@ti.com>
 To: Florian Fainelli <f.fainelli@gmail.com>, <netdev@vger.kernel.org>
 CC: Randy Dunlap <rdunlap@infradead.org>, Jonathan Cameron <jic23@kernel.org>,
@@ -15,40 +15,96 @@ CC: Randy Dunlap <rdunlap@infradead.org>, Jonathan Cameron <jic23@kernel.org>,
         <davinci-linux-open-source@linux.davincidsp.com>,
         <sergei.shtylyov@cogentembedded.com>,
         Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v2 0/4] introduce devm_mdiobus_alloc/free and clean up davinci mdio
-Date: Fri, 18 Apr 2014 20:24:53 +0300
-Message-ID: <1397841897-9170-1-git-send-email-grygorii.strashko@ti.com>
+Subject: [PATCH v2 2/4] net: davinci_mdio: use devm_* api
+Date: Fri, 18 Apr 2014 20:24:55 +0300
+Message-ID: <1397841897-9170-3-git-send-email-grygorii.strashko@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397841897-9170-1-git-send-email-grygorii.strashko@ti.com>
+References: <1397841897-9170-1-git-send-email-grygorii.strashko@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce a resource managed devm_mdiobus_alloc()/devm_mdiobus_free()
-to automatically clean up MDIO bus alocations made by MDIO drivers,
-thus leading to simplified MDIO drivers code.
-
-Clean up Davinci MDIO driver and use new devm API.
-
-Changes in v2:
-- minor comments taken into account
-- additional patches added for cleaning up Davinci MDIO driver
+Use devm_* API for memory allocation and to get device's clock
+to simplify driver's code.
 
 Cc: Florian Fainelli <f.fainelli@gmail.com>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+---
+ drivers/net/ethernet/ti/davinci_mdio.c |   24 +++++-------------------
+ 1 file changed, 5 insertions(+), 19 deletions(-)
 
-Grygorii Strashko (4):
-  mdio_bus: implement devm_mdiobus_alloc/devm_mdiobus_free
-  net: davinci_mdio: use devm_* api
-  net: davinci_mdio: drop pinctrl_pm_select_default_state from probe
-  net: davinci_mdio: simplify IO memory mapping
-
- Documentation/driver-model/devres.txt  |    4 ++
- drivers/net/ethernet/ti/davinci_mdio.c |   48 ++++------------------
- drivers/net/phy/mdio_bus.c             |   68 ++++++++++++++++++++++++++++++++
- include/linux/phy.h                    |    2 +
- 4 files changed, 82 insertions(+), 40 deletions(-)
-
+diff --git a/drivers/net/ethernet/ti/davinci_mdio.c b/drivers/net/ethernet/ti/davinci_mdio.c
+index 0cca9de..eda4946 100644
+--- a/drivers/net/ethernet/ti/davinci_mdio.c
++++ b/drivers/net/ethernet/ti/davinci_mdio.c
+@@ -321,15 +321,14 @@ static int davinci_mdio_probe(struct platform_device *pdev)
+ 	struct phy_device *phy;
+ 	int ret, addr;
+ 
+-	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
+ 
+-	data->bus = mdiobus_alloc();
++	data->bus = devm_mdiobus_alloc(dev, 0);
+ 	if (!data->bus) {
+ 		dev_err(dev, "failed to alloc mii bus\n");
+-		ret = -ENOMEM;
+-		goto bail_out;
++		return -ENOMEM;
+ 	}
+ 
+ 	if (dev->of_node) {
+@@ -354,7 +353,7 @@ static int davinci_mdio_probe(struct platform_device *pdev)
+ 
+ 	pm_runtime_enable(&pdev->dev);
+ 	pm_runtime_get_sync(&pdev->dev);
+-	data->clk = clk_get(&pdev->dev, "fck");
++	data->clk = devm_clk_get(dev, "fck");
+ 	if (IS_ERR(data->clk)) {
+ 		dev_err(dev, "failed to get device clock\n");
+ 		ret = PTR_ERR(data->clk);
+@@ -406,16 +405,9 @@ static int davinci_mdio_probe(struct platform_device *pdev)
+ 	return 0;
+ 
+ bail_out:
+-	if (data->bus)
+-		mdiobus_free(data->bus);
+-
+-	if (data->clk)
+-		clk_put(data->clk);
+ 	pm_runtime_put_sync(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+ 
+-	kfree(data);
+-
+ 	return ret;
+ }
+ 
+@@ -423,18 +415,12 @@ static int davinci_mdio_remove(struct platform_device *pdev)
+ {
+ 	struct davinci_mdio_data *data = platform_get_drvdata(pdev);
+ 
+-	if (data->bus) {
++	if (data->bus)
+ 		mdiobus_unregister(data->bus);
+-		mdiobus_free(data->bus);
+-	}
+ 
+-	if (data->clk)
+-		clk_put(data->clk);
+ 	pm_runtime_put_sync(&pdev->dev);
+ 	pm_runtime_disable(&pdev->dev);
+ 
+-	kfree(data);
+-
+ 	return 0;
+ }
+ 
 -- 
 1.7.9.5
 
