@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556AbaDRTSm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 15:18:42 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:57673 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798AbaDRTSj (ORCPT
+	id S1754609AbaDRTT1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 15:19:27 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:38821 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956AbaDRTTY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 15:18:39 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <53517A8D.10800@roeck-us.net>
-Date: Fri, 18 Apr 2014 12:18:37 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 18 Apr 2014 15:19:24 -0400
+Message-ID: <53517ABD.5060001@cogentembedded.com>
+Date: Fri, 18 Apr 2014 23:19:25 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Organization: Cogent Embedded
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
-CC: satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3.12 00/72] 3.12.18-stable review
-References: <cover.1397812482.git.jslaby@suse.cz>
-In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Guenter Roeck <linux@roeck-us.net>,
+        Florian Fainelli <f.fainelli@gmail.com>
+CC: Chris Healy <chealy@imsco-us.com>, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 1/3] net: mdio-gpio: Use devm_ functions where possible
+References: <1397614602-29694-1-git-send-email-linux@roeck-us.net> <1397614602-29694-2-git-send-email-linux@roeck-us.net>
+In-Reply-To: <1397614602-29694-2-git-send-email-linux@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2014 02:21 AM, Jiri Slaby wrote:
-> This is the start of the stable review cycle for the 3.12.18 release.
-> There are 72 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+Hello.
+
+On 04/16/2014 06:16 AM, Guenter Roeck wrote:
+
+> This simplifies error path and deinit/removal functions.
+
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>   drivers/net/phy/mdio-gpio.c |   19 +++++--------------
+>   1 file changed, 5 insertions(+), 14 deletions(-)
+
+> diff --git a/drivers/net/phy/mdio-gpio.c b/drivers/net/phy/mdio-gpio.c
+> index e701433..e853066 100644
+> --- a/drivers/net/phy/mdio-gpio.c
+> +++ b/drivers/net/phy/mdio-gpio.c
+> @@ -110,7 +110,7 @@ static struct mii_bus *mdio_gpio_bus_init(struct device *dev,
+[...]
+> @@ -163,13 +159,8 @@ out:
+>   static void mdio_gpio_bus_deinit(struct device *dev)
+>   {
+>   	struct mii_bus *bus = dev_get_drvdata(dev);
+> -	struct mdio_gpio_info *bitbang = bus->priv;
 >
-> Responses should be made by Wed Apr 23 09:14:42 2014
-> Anything received after that time might be too late.
->
+> -	dev_set_drvdata(dev, NULL);
 
-Builds results:
-	total: 126 pass: 121 skipped: 5 fail: 0
+    You didn't even document this "drove-by" change. Ideally, it should have 
+been in a separate patch.
 
-Qemu tests all passed. Results are as expected.
+> -	gpio_free(bitbang->mdio);
+> -	gpio_free(bitbang->mdc);
+>   	free_mdio_bitbang(bus);
+> -	kfree(bitbang);
+>   }
 
-Detailed results are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
+WBR, Sergei
 
