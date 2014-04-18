@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754033AbaDRJn6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:43:58 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45895 "EHLO
+	id S1754711AbaDRJn4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:43:56 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45896 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751795AbaDRJWr (ORCPT
+	by vger.kernel.org with ESMTP id S1751930AbaDRJWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:47 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 14/72] drm/i915: Undo the PIPEA quirk for i845
-Date: Fri, 18 Apr 2014 11:21:47 +0200
-Message-Id: <14fa4b5461098c6f7731575653023701f945e3bc.1397812482.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Martin Koegler <martin.koegler@chello.at>,
+        Takashi Iwai <tiwai@suse.de>, Dave Airlie <airlied@redhat.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 15/72] drm/cirrus: Fix cirrus drm driver for fbdev + qemu
+Date: Fri, 18 Apr 2014 11:21:48 +0200
+Message-Id: <929476d0b102eceaed62173ffb2acb6ac97e5796.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -23,40 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Martin Koegler <martin.koegler@chello.at>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit a4945f9522d27e1e6d64a02ad055e83768cb0896 upstream.
+commit 99d4a8ae93ead27b5a88cdbd09dc556fe96ac3a8 upstream.
 
-The PIPEA quirk is specifically for the issue with the PIPEB PLL on
-830gm being slaved to the PIPEA PLL, and so to use PIPEB requires PIPEA
-running. i845 doesn't even have the second PLL or pipe, and enabling
-the quirk results in a blank DVO LVDS.
+Xorg fbdev driver requires smem_start/smem_len, otherwise
+it tries to map 0 bytes as video memory.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=856760
+Signed-off-by: Martin Koegler <martin.koegler@chello.at>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/i915/intel_display.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/gpu/drm/cirrus/cirrus_fbdev.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 9dcf34f9a22d..5aa836e6e190 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -10073,8 +10073,7 @@ static struct intel_quirk intel_quirks[] = {
- 	/* ThinkPad T60 needs pipe A force quirk (bug #16494) */
- 	{ 0x2782, 0x17aa, 0x201a, quirk_pipea_force },
+diff --git a/drivers/gpu/drm/cirrus/cirrus_fbdev.c b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+index 86d779a9c245..32bbba0a787b 100644
+--- a/drivers/gpu/drm/cirrus/cirrus_fbdev.c
++++ b/drivers/gpu/drm/cirrus/cirrus_fbdev.c
+@@ -233,6 +233,9 @@ static int cirrusfb_create(struct drm_fb_helper *helper,
+ 	info->apertures->ranges[0].base = cdev->dev->mode_config.fb_base;
+ 	info->apertures->ranges[0].size = cdev->mc.vram_size;
  
--	/* 830/845 need to leave pipe A & dpll A up */
--	{ 0x2562, PCI_ANY_ID, PCI_ANY_ID, quirk_pipea_force },
-+	/* 830 needs to leave pipe A & dpll A up */
- 	{ 0x3577, PCI_ANY_ID, PCI_ANY_ID, quirk_pipea_force },
++	info->fix.smem_start = cdev->dev->mode_config.fb_base;
++	info->fix.smem_len = cdev->mc.vram_size;
++
+ 	info->screen_base = sysram;
+ 	info->screen_size = size;
  
- 	/* Lenovo U160 cannot use SSC on LVDS */
 -- 
 1.9.2
 
