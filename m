@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752332AbaDRIK2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 04:10:28 -0400
-Received: from smtprelay.synopsys.com ([198.182.60.111]:46933 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751656AbaDRIJL (ORCPT
+	id S1752660AbaDRIKh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 04:10:37 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:42319 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751872AbaDRIJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 04:09:11 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Peter Zijlstra <peterz@infradead.org>, <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Subject: [PATCH 1/2] ARC: Delete stale barrier.h
-Date: Fri, 18 Apr 2014 13:38:34 +0530
-Message-ID: <1397808515-8013-2-git-send-email-vgupta@synopsys.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397808515-8013-1-git-send-email-vgupta@synopsys.com>
-References: <1397808515-8013-1-git-send-email-vgupta@synopsys.com>
+	Fri, 18 Apr 2014 04:09:58 -0400
+Date: Fri, 18 Apr 2014 10:09:51 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        alex.shi@linaro.org, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 3/3] sched/fair: use the idle state info to choose
+ the idlest cpu
+Message-ID: <20140418080951.GB14280@gmail.com>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org>
+ <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org>
+ <alpine.LFD.2.11.1404012208110.1571@knanqh.ubzr>
+ <534FDCDC.6000806@linaro.org>
+ <20140417144707.GL11096@twins.programming.kicks-ass.net>
+ <534FED53.2030804@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.12.196.93]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <534FED53.2030804@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 93ea02bb8435 "arch: Clean up asm/barrier.h implementations" wired
-generic barrier.h for ARC, but failed to delete the existing file.
 
-In 3.15, due to rcupdate.h updates, this causes a build breakage on ARC
+* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
 
---------------->8---------------------
-  CC      arch/arc/kernel/asm-offsets.s
-In file included from include/linux/sched.h:45:0,
-                 from arch/arc/kernel/asm-offsets.c:9:
-include/linux/rculist.h: In function __list_add_rcu:
-include/linux/rculist.h:54:2: error: implicit declaration of function smp_store_release [-Werror=implicit-function-declaration]
-  rcu_assign_pointer(list_next_rcu(prev), new);
-  ^
---------------->8---------------------
+> On 04/17/2014 04:47 PM, Peter Zijlstra wrote:
+> >On Thu, Apr 17, 2014 at 03:53:32PM +0200, Daniel Lezcano wrote:
+> >>Concerning the policy, I would suggest to create an entry in
+> >>/proc/sys/kernel/sched_power, where a couple of values could be performance
+> >>- power saving (0 / 1).
+> >
+> >Ingo wanted a sched_balance_policy file with 3 values:
+> >   "performance, power, auto"
+> >
+> >Where the auto thing switches between them, initially based off of
+> >having AC or not.
+> 
+> oh, good. Thanks !
 
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
----
- arch/arc/include/asm/barrier.h | 37 -------------------------------------
- 1 file changed, 37 deletions(-)
- delete mode 100644 arch/arc/include/asm/barrier.h
+Also, 'auto' should be the default, because the kernel doing TRT is 
+really what users want.
 
-diff --git a/arch/arc/include/asm/barrier.h b/arch/arc/include/asm/barrier.h
-deleted file mode 100644
-index c32245c3d1e9..000000000000
---- a/arch/arc/include/asm/barrier.h
-+++ /dev/null
-@@ -1,37 +0,0 @@
--/*
-- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
-- *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- */
--
--#ifndef __ASM_BARRIER_H
--#define __ASM_BARRIER_H
--
--#ifndef __ASSEMBLY__
--
--/* TODO-vineetg: Need to see what this does, don't we need sync anywhere */
--#define mb() __asm__ __volatile__ ("" : : : "memory")
--#define rmb() mb()
--#define wmb() mb()
--#define set_mb(var, value)  do { var = value; mb(); } while (0)
--#define set_wmb(var, value) do { var = value; wmb(); } while (0)
--#define read_barrier_depends()  mb()
--
--/* TODO-vineetg verify the correctness of macros here */
--#ifdef CONFIG_SMP
--#define smp_mb()        mb()
--#define smp_rmb()       rmb()
--#define smp_wmb()       wmb()
--#else
--#define smp_mb()        barrier()
--#define smp_rmb()       barrier()
--#define smp_wmb()       barrier()
--#endif
--
--#define smp_read_barrier_depends()      do { } while (0)
--
--#endif
--
--#endif
--- 
-1.8.3.2
+Userspace can sill tweak it all and make it all user-space controlled, 
+by flipping between 'performance' and 'power'. (and those modes are 
+also helpful for development and debugging.)
 
+Thanks,
+
+	Ingo
