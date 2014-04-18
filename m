@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943AbaDRNHS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:07:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38753 "EHLO
+	id S1753972AbaDRNHc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:07:32 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38769 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753760AbaDRNHJ (ORCPT
+	with ESMTP id S1752095AbaDRNH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:07:09 -0400
-Date: Fri, 18 Apr 2014 06:06:08 -0700
+	Fri, 18 Apr 2014 09:07:28 -0400
+Date: Fri, 18 Apr 2014 06:05:39 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-cadefd3d6cc914d95163ba1eda766bfe7ce1e5b7@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        bitbucket@online.de, tglx@linutronix.de
+Message-ID: <tip-1widdkdsb3c1titq8jez6g3g@git.kernel.org>
+Cc: mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        paulmck@linux.vnet.ibm.com, geert@linux-m68k.org, realmz6@gmail.com,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        bitbucket@online.de, tglx@linutronix.de
-In-Reply-To: <20140227094035.GZ9987@twins.programming.kicks-ass.net>
-References: <20140227094035.GZ9987@twins.programming.kicks-ass.net>
+        mathieu.desnoyers@polymtl.ca, torvalds@linux-foundation.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com, geert@linux-m68k.org,
+        realmz6@gmail.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Make scale_rt_power()
-  deal with backward clocks
-Git-Commit-ID: cadefd3d6cc914d95163ba1eda766bfe7ce1e5b7
+Subject: [tip:locking/core] arch,blackfin: Convert smp_mb__*()
+Git-Commit-ID: b7bb7d9b28f6278625fbe7892b8c7799bb12a26a
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,54 +33,88 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cadefd3d6cc914d95163ba1eda766bfe7ce1e5b7
-Gitweb:     http://git.kernel.org/tip/cadefd3d6cc914d95163ba1eda766bfe7ce1e5b7
+Commit-ID:  b7bb7d9b28f6278625fbe7892b8c7799bb12a26a
+Gitweb:     http://git.kernel.org/tip/b7bb7d9b28f6278625fbe7892b8c7799bb12a26a
 Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Thu, 27 Feb 2014 10:40:35 +0100
+AuthorDate: Thu, 13 Mar 2014 19:00:37 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 Apr 2014 12:07:21 +0200
+CommitDate: Fri, 18 Apr 2014 11:40:34 +0200
 
-sched: Make scale_rt_power() deal with backward clocks
+arch,blackfin: Convert smp_mb__*()
 
-Mike reported that, while unlikely, its entirely possible for
-scale_rt_power() to see the time go backwards. This yields rather
-'interesting' results.
+Blackfin's atomic primitives do not imply a full barrier as whitnessed
+from its SMP smp_mb__{before,after}_clear_bit() implementations.
 
-So like all other sites that deal with clocks; make this one ignore
-backward clock movement too.
+However since !SMP smp_mb() reduces to barrier() remove everything and
+rely on the asm-generic/barrier.h implentation.
 
-Reported-by: Mike Galbraith <bitbucket@online.de>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/20140227094035.GZ9987@twins.programming.kicks-ass.net
+Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Link: http://lkml.kernel.org/n/tip-1widdkdsb3c1titq8jez6g3g@git.kernel.org
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Cc: Steven Miao <realmz6@gmail.com>
+Cc: adi-buildroot-devel@lists.sourceforge.net
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ arch/blackfin/include/asm/barrier.h |  3 +++
+ arch/blackfin/include/asm/bitops.h  | 14 ++------------
+ 2 files changed, 5 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7570dd9..5e157f1 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -5564,6 +5564,7 @@ static unsigned long scale_rt_power(int cpu)
- {
- 	struct rq *rq = cpu_rq(cpu);
- 	u64 total, available, age_stamp, avg;
-+	s64 delta;
+diff --git a/arch/blackfin/include/asm/barrier.h b/arch/blackfin/include/asm/barrier.h
+index 19283a1..4200068 100644
+--- a/arch/blackfin/include/asm/barrier.h
++++ b/arch/blackfin/include/asm/barrier.h
+@@ -27,6 +27,9 @@
  
- 	/*
- 	 * Since we're reading these variables without serialization make sure
-@@ -5572,7 +5573,11 @@ static unsigned long scale_rt_power(int cpu)
- 	age_stamp = ACCESS_ONCE(rq->age_stamp);
- 	avg = ACCESS_ONCE(rq->rt_avg);
+ #endif /* !CONFIG_SMP */
  
--	total = sched_avg_period() + (rq_clock(rq) - age_stamp);
-+	delta = rq_clock(rq) - age_stamp;
-+	if (unlikely(delta < 0))
-+		delta = 0;
++#define smp_mb__before_atomic()	barrier()
++#define smp_mb__after_atomic()	barrier()
 +
-+	total = sched_avg_period() + delta;
+ #include <asm-generic/barrier.h>
  
- 	if (unlikely(total < avg)) {
- 		/* Ensures that power won't end up being negative */
+ #endif /* _BLACKFIN_BARRIER_H */
+diff --git a/arch/blackfin/include/asm/bitops.h b/arch/blackfin/include/asm/bitops.h
+index 0ca40dd..b298b65 100644
+--- a/arch/blackfin/include/asm/bitops.h
++++ b/arch/blackfin/include/asm/bitops.h
+@@ -27,21 +27,17 @@
+ 
+ #include <asm-generic/bitops/ext2-atomic.h>
+ 
++#include <asm/barrier.h>
++
+ #ifndef CONFIG_SMP
+ #include <linux/irqflags.h>
+-
+ /*
+  * clear_bit may not imply a memory barrier
+  */
+-#ifndef smp_mb__before_clear_bit
+-#define smp_mb__before_clear_bit()	smp_mb()
+-#define smp_mb__after_clear_bit()	smp_mb()
+-#endif
+ #include <asm-generic/bitops/atomic.h>
+ #include <asm-generic/bitops/non-atomic.h>
+ #else
+ 
+-#include <asm/barrier.h>
+ #include <asm/byteorder.h>	/* swab32 */
+ #include <linux/linkage.h>
+ 
+@@ -101,12 +97,6 @@ static inline int test_and_change_bit(int nr, volatile unsigned long *addr)
+ 	return __raw_bit_test_toggle_asm(a, nr & 0x1f);
+ }
+ 
+-/*
+- * clear_bit() doesn't provide any barrier for the compiler.
+- */
+-#define smp_mb__before_clear_bit()	barrier()
+-#define smp_mb__after_clear_bit()	barrier()
+-
+ #define test_bit __skip_test_bit
+ #include <asm-generic/bitops/non-atomic.h>
+ #undef test_bit
