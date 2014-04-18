@@ -1,73 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754731AbaDRVPS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 17:15:18 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:53793 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754645AbaDRVPK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 17:15:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPnjgZ034FrVVphJCmX5jZE8LeWOEBjsH7M=2C_meM0fMss1NA@mail.gmail.com>
-References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
-	<1397757570-19750-3-git-send-email-dianders@chromium.org>
-	<CAPnjgZ034FrVVphJCmX5jZE8LeWOEBjsH7M=2C_meM0fMss1NA@mail.gmail.com>
-Date: Fri, 18 Apr 2014 14:15:09 -0700
-X-Google-Sender-Auth: yNKkrOSIYjXREpHX_HMey--iRIU
-Message-ID: <CAD=FV=XhtW9ZORJLh396FZ=eE+szrTZN94KpoZj-9HVg7TaVRA@mail.gmail.com>
-Subject: Re: [PATCH 2/7] mfd: cros_ec: spi: Add mutex to cros_ec_spi
-From: Doug Anderson <dianders@chromium.org>
-To: Simon Glass <sjg@chromium.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        lk <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754764AbaDRVRx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 17:17:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52881 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753808AbaDRVRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 17:17:51 -0400
+Message-ID: <1397855863.2704.5.camel@adam.happyassassin.net>
+Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
+ ASUS T100TA
+From: Adam Williamson <awilliam@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: Jin Yao <yao.jin@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
+        mathias.nyman@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Date: Fri, 18 Apr 2014 14:17:43 -0700
+In-Reply-To: <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
+References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
+	 <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simon,
+On Fri, 2014-04-18 at 16:44 -0400, Benjamin Tissoires wrote:
+> On Wed, Apr 16, 2014 at 8:05 AM, Jin Yao <yao.jin@linux.intel.com> wrote:
+> > A crash is triggered on the ASUS T100TA Baytrail-T because of a irq
+> > descriptor conflict. There are two gpio triggered acpi events in this
+> > device, GPIO 6 and 18. These gpios are translated to irqs by calling
+> > gpio_to_irq which in turn will call irq_create_mapping(vg->domain, offset).
+> > irq_create_mapping will take care of allocating the irq descriptor, taking
+> > the first available number starting from the given value (6 in our case).
+> > The 0-15 are already reserved by legacy ISA code, so it gets the first
+> > free irq descriptor which is number 16. The i915 driver also uses irq 16,
+> > it loads later than gpio and crashes in probe.
+> >
+> > The bug is reported here:
+> > https://bugzilla.kernel.org/show_bug.cgi?id=68291
+> 
+> Adam, the reporter of this bug told me that his touchscreen was broken
+> in its tablet.
+> I strongly suspect this patch to be the root cause of this, because
+> the touchscreen uses i2c_hid. i2c_hid relies on an IRQ declared in the
+> DSDT when it is acpi enumerated, and since the inclusion of this
+> patch, no irq are triggered from a driver point of view.
+> 
+> Adam should still confirm that the revert of the patch makes the
+> touchscreen back alive, but if I understood correctly the bug report,
+> without the patch, his tablet oopses at boot.
 
-On Fri, Apr 18, 2014 at 10:28 AM, Simon Glass <sjg@chromium.org> wrote:
-> Hi Doug,
->
-> On 17 April 2014 11:59, Doug Anderson <dianders@chromium.org> wrote:
->> The main transfer function for cros_ec_spi can be called by more than
->> one client at a time.  Make sure that those clients don't stomp on
->> each other by locking the bus for the duration of the transfer
->> function.
->
-> Is there no lock at the cros_ec layer?
+if IRQ allocation is enabled, yeah. What I can do is test with the
+#68291 patch dropped and IRQ allocation disabled in pinctrl-baytrail.c -
+as is done in Doug Johnson's patch,
+http://dougvj.net/baytrail_gpio_quirk.patch , for #67921 , with these
+two blocks:
 
-Not with what's upstream.
+@@ -532,8 +535,8 @@ static int byt_gpio_probe(struct platform_device
+*pdev)
+ 		dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
+ 		return ret;
+ 	}
+-
+ 	/* set up interrupts  */
++/*
+ 	irq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (irq_rc && irq_rc->start) {
+ 		hwirq = irq_rc->start;
+@@ -548,7 +551,7 @@ static int byt_gpio_probe(struct platform_device
+*pdev)
+ 
+ 		irq_set_handler_data(hwirq, vg);
+ 		irq_set_chained_handler(hwirq, byt_gpio_irq_handler);
+-	}
++	}*/
+ 
+ 	pm_runtime_enable(dev);
+ 
 
-Locally in the Chromium OS tree:
+so, I'll do a test of that setup, and see how it goes.
+-- 
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
+http://www.happyassassin.net
 
-* You can see that Bill removed the dev_lock at
-<https://chromium-review.googlesource.com/#/c/57051/> since it wasn't
-used.
-
-* Andrew moved to a common locking scheme later in
-<https://chromium-review.googlesource.com/#/c/170747/> (thus adding
-roughly the same lock back and using it), but in order to do that
-we've got a dozen pathces in between, some of which are big
-reorganizations.  This includes at least:
-
-6820b91 CHROMIUM: cros_ec: Tweak struct cros_ec_device for clarity
-5e8e562 CHROMIUM: Use struct cros_ec_command to communicate with the EC
-9e7db82 CHROMIUM: cleanup: remove unused fields from struct cros_ec_device
-866e62d CHROMIUM: cleanup: Remove EC wrapper functions.
-8a372b2 cros_ec: move locking into cros_ec_cmd_xfer
-981c4aa cros_ec: stop calling ->cmd_xfer() directly
-
-I think we should take in some of those other changes but I'd rather
-get correctness in first (since people are wanting to use this driver
-in upstream kernel) and get cleanups posted after this lands.  I was
-also trying not to spam the list with a 20-patch series...
-
--Doug
