@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242AbaDRJbD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:31:03 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45997 "EHLO
+	id S1754296AbaDRJbQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:31:16 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45986 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752358AbaDRJWt (ORCPT
+	by vger.kernel.org with ESMTP id S1752354AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 05:22:49 -0400
+	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Pravin B Shelar <pshelar@nicira.com>,
-        Xin Long <lucien.xin@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, Nishanth Menon <nm@ti.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 56/72] ip_tunnel: Fix dst ref-count.
-Date: Fri, 18 Apr 2014 11:22:29 +0200
-Message-Id: <71986b40bf31e6d726846409722b1ec91ada162c.1397812482.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 53/72] net: micrel : ks8851-ml: add vdd-supply support
+Date: Fri, 18 Apr 2014 11:22:26 +0200
+Message-Id: <d8496cba73e6eb7f5fd36adbd3dbaf348bbe0ef2.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -24,77 +23,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pravin B Shelar <pshelar@nicira.com>
+From: Nishanth Menon <nm@ti.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit fbd02dd405d0724a0f25897ed4a6813297c9b96f ]
+[ Upstream commit ebf4ad955d3e26d4d2a33709624fc7b5b9d3b969 ]
 
-Commit 10ddceb22ba (ip_tunnel:multicast process cause panic due
-to skb->_skb_refdst NULL pointer) removed dst-drop call from
-ip-tunnel-recv.
+Few platforms use external regulator to keep the ethernet MAC supplied.
+So, request and enable the regulator for driver functionality.
 
-Following commit reintroduce dst-drop and fix the original bug by
-checking loopback packet before releasing dst.
-Original bug: https://bugzilla.kernel.org/show_bug.cgi?id=70681
-
-CC: Xin Long <lucien.xin@gmail.com>
-Signed-off-by: Pravin B Shelar <pshelar@nicira.com>
+Fixes: 66fda75f47dc (regulator: core: Replace direct ops->disable usage)
+Reported-by: Russell King <rmk+kernel@arm.linux.org.uk>
+Suggested-by: Markus Pargmann <mpa@pengutronix.de>
+Signed-off-by: Nishanth Menon <nm@ti.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv4/gre_demux.c      | 8 ++++++++
- net/ipv4/ip_tunnel.c      | 3 ---
- net/ipv4/ip_tunnel_core.c | 1 +
- 3 files changed, 9 insertions(+), 3 deletions(-)
+ .../devicetree/bindings/net/micrel-ks8851.txt      |  1 +
+ drivers/net/ethernet/micrel/ks8851.c               | 30 +++++++++++++++++++++-
+ 2 files changed, 30 insertions(+), 1 deletion(-)
 
-diff --git a/net/ipv4/gre_demux.c b/net/ipv4/gre_demux.c
-index 736c9fc3ef93..0c0c1f09fd17 100644
---- a/net/ipv4/gre_demux.c
-+++ b/net/ipv4/gre_demux.c
-@@ -211,6 +211,14 @@ static int gre_cisco_rcv(struct sk_buff *skb)
- 	int i;
- 	bool csum_err = false;
+diff --git a/Documentation/devicetree/bindings/net/micrel-ks8851.txt b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
+index 11ace3c3d805..4fc392763611 100644
+--- a/Documentation/devicetree/bindings/net/micrel-ks8851.txt
++++ b/Documentation/devicetree/bindings/net/micrel-ks8851.txt
+@@ -7,3 +7,4 @@ Required properties:
  
-+#ifdef CONFIG_NET_IPGRE_BROADCAST
-+	if (ipv4_is_multicast(ip_hdr(skb)->daddr)) {
-+		/* Looped back packet, drop it! */
-+		if (rt_is_output_route(skb_rtable(skb)))
-+			goto drop;
+ Optional properties:
+ - local-mac-address : Ethernet mac address to use
++- vdd-supply:	supply for Ethernet mac
+diff --git a/drivers/net/ethernet/micrel/ks8851.c b/drivers/net/ethernet/micrel/ks8851.c
+index 727b546a9eb8..e0c92e0e5e1d 100644
+--- a/drivers/net/ethernet/micrel/ks8851.c
++++ b/drivers/net/ethernet/micrel/ks8851.c
+@@ -23,6 +23,7 @@
+ #include <linux/crc32.h>
+ #include <linux/mii.h>
+ #include <linux/eeprom_93cx6.h>
++#include <linux/regulator/consumer.h>
+ 
+ #include <linux/spi/spi.h>
+ 
+@@ -83,6 +84,7 @@ union ks8851_tx_hdr {
+  * @rc_rxqcr: Cached copy of KS_RXQCR.
+  * @eeprom_size: Companion eeprom size in Bytes, 0 if no eeprom
+  * @eeprom: 93CX6 EEPROM state for accessing on-board EEPROM.
++ * @vdd_reg:	Optional regulator supplying the chip
+  *
+  * The @lock ensures that the chip is protected when certain operations are
+  * in progress. When the read or write packet transfer is in progress, most
+@@ -130,6 +132,7 @@ struct ks8851_net {
+ 	struct spi_transfer	spi_xfer2[2];
+ 
+ 	struct eeprom_93cx6	eeprom;
++	struct regulator	*vdd_reg;
+ };
+ 
+ static int msg_enable;
+@@ -1414,6 +1417,21 @@ static int ks8851_probe(struct spi_device *spi)
+ 	ks->spidev = spi;
+ 	ks->tx_space = 6144;
+ 
++	ks->vdd_reg = regulator_get_optional(&spi->dev, "vdd");
++	if (IS_ERR(ks->vdd_reg)) {
++		ret = PTR_ERR(ks->vdd_reg);
++		if (ret == -EPROBE_DEFER)
++			goto err_reg;
++	} else {
++		ret = regulator_enable(ks->vdd_reg);
++		if (ret) {
++			dev_err(&spi->dev, "regulator enable fail: %d\n",
++				ret);
++			goto err_reg_en;
++		}
 +	}
-+#endif
 +
- 	if (parse_gre_header(skb, &tpi, &csum_err) < 0)
- 		goto drop;
++
+ 	mutex_init(&ks->lock);
+ 	spin_lock_init(&ks->statelock);
  
-diff --git a/net/ipv4/ip_tunnel.c b/net/ipv4/ip_tunnel.c
-index 995a0bb33a65..3bedb26cfb53 100644
---- a/net/ipv4/ip_tunnel.c
-+++ b/net/ipv4/ip_tunnel.c
-@@ -411,9 +411,6 @@ int ip_tunnel_rcv(struct ip_tunnel *tunnel, struct sk_buff *skb,
+@@ -1508,8 +1526,14 @@ static int ks8851_probe(struct spi_device *spi)
+ err_netdev:
+ 	free_irq(ndev->irq, ks);
  
- #ifdef CONFIG_NET_IPGRE_BROADCAST
- 	if (ipv4_is_multicast(iph->daddr)) {
--		/* Looped back packet, drop it! */
--		if (rt_is_output_route(skb_rtable(skb)))
--			goto drop;
- 		tunnel->dev->stats.multicast++;
- 		skb->pkt_type = PACKET_BROADCAST;
- 	}
-diff --git a/net/ipv4/ip_tunnel_core.c b/net/ipv4/ip_tunnel_core.c
-index ba22cc3a5a53..c31e3ad98ef2 100644
---- a/net/ipv4/ip_tunnel_core.c
-+++ b/net/ipv4/ip_tunnel_core.c
-@@ -109,6 +109,7 @@ int iptunnel_pull_header(struct sk_buff *skb, int hdr_len, __be16 inner_proto)
- 	secpath_reset(skb);
- 	if (!skb->l4_rxhash)
- 		skb->rxhash = 0;
-+	skb_dst_drop(skb);
- 	skb->vlan_tci = 0;
- 	skb_set_queue_mapping(skb, 0);
- 	skb->pkt_type = PACKET_HOST;
+-err_id:
+ err_irq:
++err_id:
++	if (!IS_ERR(ks->vdd_reg))
++		regulator_disable(ks->vdd_reg);
++err_reg_en:
++	if (!IS_ERR(ks->vdd_reg))
++		regulator_put(ks->vdd_reg);
++err_reg:
+ 	free_netdev(ndev);
+ 	return ret;
+ }
+@@ -1523,6 +1547,10 @@ static int ks8851_remove(struct spi_device *spi)
+ 
+ 	unregister_netdev(priv->netdev);
+ 	free_irq(spi->irq, priv);
++	if (!IS_ERR(priv->vdd_reg)) {
++		regulator_disable(priv->vdd_reg);
++		regulator_put(priv->vdd_reg);
++	}
+ 	free_netdev(priv->netdev);
+ 
+ 	return 0;
 -- 
 1.9.2
 
