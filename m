@@ -1,75 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754AbaDRPIp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 11:08:45 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37944 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459AbaDRPIn (ORCPT
+	id S1753966AbaDRPJW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 11:09:22 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:56345 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139AbaDRPJR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 11:08:43 -0400
-Date: Fri, 18 Apr 2014 16:08:04 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Lars-Peter Clausen <lars@metafoo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
-        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org
-Message-ID: <20140418150804.GX12304@sirena.org.uk>
-References: <1397727612-32103-1-git-send-email-boris.brezillon@free-electrons.com>
- <1397727612-32103-2-git-send-email-boris.brezillon@free-electrons.com>
+	Fri, 18 Apr 2014 11:09:17 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="E4MLQwZ4UyBg1Kd7"
-Content-Disposition: inline
-In-Reply-To: <1397727612-32103-2-git-send-email-boris.brezillon@free-electrons.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v2 1/2] regmap: add reg_read/reg_write callbacks to
- regmap_bus struct
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <53513A7E.5050907@meduna.org>
+References: <534C3606.7010206@meduna.org>
+	<534C731F.1050406@meduna.org>
+	<534DADF1.6060608@meduna.org>
+	<53500184.4050309@meduna.org>
+	<53505BD7.9050004@meduna.org>
+	<CAOcfFMyTmQH-FwGE2YWoA76ypzBtWPYVTyi+4QpEMnrRtw8QVg@mail.gmail.com>
+	<53513A7E.5050907@meduna.org>
+Date: Fri, 18 Apr 2014 11:09:16 -0400
+Message-ID: <CAOcfFMwybECrCM6ovQs4HdOHDWPAMtyi3hzAYdsKZZBERQAzTQ@mail.gmail.com>
+Subject: Re: BUG: spinlock trylock failure on UP - reverting timer patches helps
+From: jordan <triplesquarednine@gmail.com>
+To: Stanislav Meduna <stano@meduna.org>
+Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hey slavo
 
---E4MLQwZ4UyBg1Kd7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> many thanks for the tests. I probably botched something during
+> the reverting - I now tried some more experiments and the system
+> now runs without BUGs and without kernel leak - of course
+> it needs some more uptime to be really sure.
 
-On Thu, Apr 17, 2014 at 11:40:11AM +0200, Boris BREZILLON wrote:
-> Some busses do not support sending/receiving multiple registers in one go.
-> Such kind of busses just unpack the registers that have been previously
-> packed by the regmap core or pack registers that will be later unpacked by
-> the core code.
+No problem. It's good to hear that is working. My AMD Phenom II 965
+has 1day, 10hours uptime. Hopefully that foreshadows your system
+running well.
 
-Applied, thanks.
+> My combined revert patch from 3.12.15-rt25 is at
+>   http://pastebin.com/MYLqbmZw
+> That was all that was needed.
 
---E4MLQwZ4UyBg1Kd7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Yup. I suggest anyone from the list who can't get their machines to
+boot with those commits applied, test that patch.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+>> Yeah, i know a handful of people [amd users] that have now reported
+>> success booting into 3.14-rt1 reverting those patches.  Personally, I
+>> have disabled NO_HZ_FULL and have switched back to 'old tick' method
+>> in kconfig. I don't think the latest no_hz stuff is stable enough...
+>
+> My problems were with periodic timers (I am on an embedded system
+> that runs things periodically anyway and I have also my doubts
+> regarding the stability), so the latest code did not break
+> only NO_HZ_FULL.
 
-iQIcBAEBAgAGBQJTUT/RAAoJELSic+t+oim9MV0P/0ZkgsEXTSRjEGw7BhYfq91i
-haMBjUskSFxbLcqKeC2brmCv/eSs/GJ6eHbLoxD/1btu4VnlJ4vpDadJaCrD2Mx/
-7BmFLcpz/6zfcX157MNLnanHrv+yb8v9L8vcnsneiRT1bdt1jwRhRiBa7EEM6IzO
-4jIAm72neHZmE8faJtzvxssQ9shSWDBR+YRz3UK1S9tU3/81W6EljE8/wlfI56Nc
-f80kJ7dUO+S18WBiV9Aoqohl8cKG+UFDsXJO+2eZUcG5BL2rRq6op6dyhi84CxVe
-eXgLkz385sEJdgUambBzAJn3l4IXy2anAqa26vjqJmebQNZk3Ih56BXcORQ1dbeP
-caG70x3zPMrabOqBYffuvGYBVSISTXQOwcwhc0wx96+2H1djgGP6QXBp9GLnwnul
-e7PQ94LrFytvZLfrFHRNvEregXiNNZQPqakPPbhf0ZFakuoJqPEF/NwxWRANZLzH
-Rivzo3RgfKzRqatV84wL0NXc0mBD3bGNyMEwwKcEWneruLtUUO9B6YTUhV9L1TeB
-hRuPY2kEeQXThV6ON7iF5GfGaDrYoWbwAwJi7nSw1Zj5ecTlEoPpMAqznsvXpZ+B
-qfo1GaODUOoFAeui/BDUDvBa/dTNiiTIhCKa6rj7VTBpi21uwGkmn54z/kjr1sAm
-56tTuMe1vIp01qeCxUb2
-=1lV5
------END PGP SIGNATURE-----
+ah, thanks for the clarification [ i must have missed that bit - i was
+just glad someone else had verified on the list that those commits
+were problematic, as i hadn't gotten any response]. NO_HZ_FULL had
+been alright for me, for a while - so i didn't really notice the
+breakage with periodic timers, but that is good to know.
 
---E4MLQwZ4UyBg1Kd7--
+I think periodic timers + reverting those patches + resurrecting sirq
+threads on seems to be the best on 3.14-rt, afaict.
+
+Jordan
+
+> Thanks
+> --
+>                                        Stano
+>
