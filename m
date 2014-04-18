@@ -1,38 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaDRETk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 00:19:40 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:57942 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887AbaDRETh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 00:19:37 -0400
-Message-ID: <5350A7D0.8070603@redhat.com>
-Date: Fri, 18 Apr 2014 00:19:28 -0400
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [RFC PATCH 1/5] KVM: vmx: speed up emulation of invalid guest
- state
-References: <1395919838-18466-1-git-send-email-pbonzini@redhat.com> <1395919838-18466-2-git-send-email-pbonzini@redhat.com> <20140416225258.GA19597@amt.cnet>
-In-Reply-To: <20140416225258.GA19597@amt.cnet>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751306AbaDREgr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 00:36:47 -0400
+Received: from mga01.intel.com ([192.55.52.88]:38154 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750830AbaDREgm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 00:36:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,882,1389772800"; 
+   d="scan'208";a="515151642"
+From: Andi Kleen <andi@firstfloor.org>
+To: mmarek@suse.cz
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH] Kbuild, lto: Avoid reported warning with strtoul
+Date: Fri, 18 Apr 2014 06:35:56 +0200
+Message-Id: <1397795756-23283-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.8.5.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 16/04/2014 18:52, Marcelo Tosatti ha scritto:
-> How about handling VM-entry error due to invalid state with
->
-> vmx->emulation_required = true;
-> continue to main vcpu loop;
+From: Andi Kleen <ak@linux.intel.com>
 
-What would reset it to false though?  None of the places that call 
-emulation_required() is a hot path right now, and this patch doesn't add 
-any.
+Apparently someone's C library declares strtoul with warn_unused_result.
+Cast to void to avoid the warning. Error handling is not useful here.
 
-Paolo
+Cc: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ scripts/mod/modpost.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 0663556..b9cf439 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -1707,7 +1707,7 @@ static char *remove_dot(char *s)
+ 	int n = strcspn(s, ".");
+ 
+ 	if (n > 0 && s[n] != 0) {
+-		strtoul(s + n + 1, &end, 10);
++		(void)strtoul(s + n + 1, &end, 10);
+ 		if  (end > s + n + 1 && (*end == '.' || *end == 0))
+ 			s[n] = 0;
+ 	}
+-- 
+1.8.5.2
+
