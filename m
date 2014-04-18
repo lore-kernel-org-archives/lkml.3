@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751415AbaDRAJw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 20:09:52 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:39293 "EHLO
+	id S1751330AbaDRAM3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 20:12:29 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:39852 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751082AbaDRAJs (ORCPT
+	with ESMTP id S1750736AbaDRAM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 20:09:48 -0400
-X-AuditID: cbfee690-b7f266d00000287c-6a-53506d4bb016
-Message-id: <53506D51.2070808@samsung.com>
-Date: Fri, 18 Apr 2014 09:09:53 +0900
+	Thu, 17 Apr 2014 20:12:27 -0400
+X-AuditID: cbfee68d-b7fcd6d00000315b-16-53506dea1015
+Message-id: <53506DF0.8050209@samsung.com>
+Date: Fri, 18 Apr 2014 09:12:32 +0900
 From: Sangjung <sangjung.woo@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
  Thunderbird/24.3.0
@@ -20,38 +20,38 @@ Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Seung-Woo Kim <sw0312.kim@samsung.com>
-Subject: Re: [PATCHv2 8/8] extcon: arizona: Use devm_extcon_dev_register()
+Subject: Re: [PATCHv2 1/8] extcon: Add resource-managed extcon register function
 References: <1397729403-32045-1-git-send-email-sangjung.woo@samsung.com>
- <1397729403-32045-9-git-send-email-sangjung.woo@samsung.com>
- <CAGTfZH0m0YT0Dj7ZavrFrTe-h5J49DausNWnEtcRxxEmqtr3KQ@mail.gmail.com>
-In-reply-to: <CAGTfZH0m0YT0Dj7ZavrFrTe-h5J49DausNWnEtcRxxEmqtr3KQ@mail.gmail.com>
+ <1397729403-32045-2-git-send-email-sangjung.woo@samsung.com>
+ <CAGTfZH1YtzQ0jZS3N-JgX8GYzSx753v_yO0dYM_E+B1bnJvqEQ@mail.gmail.com>
+In-reply-to: <CAGTfZH1YtzQ0jZS3N-JgX8GYzSx753v_yO0dYM_E+B1bnJvqEQ@mail.gmail.com>
 Content-type: text/plain; charset=UTF-8; format=flowed
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDIsWRmVeSWpSXmKPExsWyRsSkQNc7NyDYYPUOYYvrX56zWjw7qm3x
-	+oWhxeVdc9gsbjeuYLOYMfklmwObx85Zd9k9+rasYvT4vEkugDmKyyYlNSezLLVI3y6BK2Pf
-	35+sBe+lKz7NqmlgvC/SxcjJISFgItG8eRMjhC0mceHeerYuRi4OIYGljBIXN99ghSlasWIe
-	C0RiEaPEr1ctbCAJIYHXjBKzzomC2LwCWhJLJv0GauDgYBFQlXj4Mg0kzCagKfH5+EGwclGB
-	CIm5EzezQZQLSvyYfI8FxBYBKp9yr5MdZD6zwF1GiSVPXoNdJCzgJbGw/xAjxOJzjBIn9jaC
-	JTgFgiW6H14Hs5kFzCQetaxjhrDlJTavecsMcfUudomDrekgNouAgMS3yYdYQI6TEJCV2HQA
-	qkRS4uCKGywTGMVmIblpFpKps5BMXcDIvIpRNLUguaA4Kb3IRK84Mbe4NC9dLzk/dxMjMKZO
-	/3s2YQfjvQPWhxiTgVZOZJYSTc4HxmReSbyhsZmRhamJqbGRuaUZacJK4rxqj5KChATSE0tS
-	s1NTC1KL4otKc1KLDzEycXBKNTA2vTk3meWw/proqWWptSs/KO5e/u6xzMp5MZPX5u5tvvSR
-	bZLw1tRFm0yLj9XN8p4RFdTjwLT4e3Fnk3R/Wcq+2d2Pjpj4TH2UyPyF2WnNY7Fv2m4eBXKz
-	rI5InGT/NP2tBu9O1aCHrKUC5tNb4pkLZzGGr3G9eHF9rGWlx1+GMp+k2QdKjbYqsRRnJBpq
-	MRcVJwIAsdE3QL8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupileLIzCtJLcpLzFFi42I5/e+xgK53bkCwwbwebovrX56zWjw7qm3x
-	+oWhxeVdc9gsbjeuYLOYMfklmwObx85Zd9k9+rasYvT4vEkugDmqgdEmIzUxJbVIITUvOT8l
-	My/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0zB2itkkJZYk4pUCggsbhYSd8O04TQ
-	EDddC5jGCF3fkCC4HiMDNJCwhjFj39+frAXvpSs+zappYLwv0sXIySEhYCKxYsU8FghbTOLC
-	vfVsXYxcHEICixglfr1qYQNJCAm8ZpSYdU4UxOYV0JJYMuk3axcjBweLgKrEw5dpIGE2AU2J
-	z8cPgpWLCkRIzJ24mQ2iXFDix+R7YPNFgMqn3OtkB5nPLHCXUWLJk9eMIAlhAS+Jhf2HGCEW
-	n2OUOLG3ESzBKRAs0f3wOpjNLGAm8ahlHTOELS+xec1b5gmMArOQLJmFpGwWkrIFjMyrGEVT
-	C5ILipPSc430ihNzi0vz0vWS83M3MYJj9pn0DsZVDRaHGAU4GJV4eC989Q8WYk0sK67MPcQo
-	wcGsJMJ7Pi0gWIg3JbGyKrUoP76oNCe1+BBjMjAIJjJLiSbnA9NJXkm8obGJmZGlkbmhhZGx
-	OWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUwSvo+WJ+yktllwrmLVgEzlDftuRCzKehk
-	btf0jqMd249tS80Inm6//Idu8NuZUu6qnRviLiYlqVlt/BbcdS9yx4uTva7lAvFc4le3W/g6
-	3tq1Z6ewV1HpFA5Dv7Ul3pIpSQyzD2eanL3xk/XMsQ8NukeFT0juFn1hU9eodv/RTqftHauT
-	lgfcVWIpzkg01GIuKk4EAAn5BeYdAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrFIsWRmVeSWpSXmKPExsWyRsSkWPdVbkCwwY3DqhbXvzxntXh2VNvi
+	9QtDi8u75rBZ3G5cwWYxY/JLNgc2j52z7rJ79G1ZxejxeZNcAHMUl01Kak5mWWqRvl0CV8b1
+	KydYCt5rVTzsfcXcwNij2MXIziEhYCLxoaSLkRPIEpO4cG89WxcjF4eQwFJGicb+DUAOB1jJ
+	5DUZEPHpjBIfX29ghXBeM0r87P7JDtLNK6AlsbP1DCPITBYBVYnZ3iBRNgFNic/HD7KB2KIC
+	ERJzJ25mg6gWlPgx+R4LiC0CVD3lXic7yEhmgbuMEkuevGYESQgLBEjs+fOdEWLXOUaJ23vO
+	MIEcxCkQLHHwpR1IDbOAmcSjlnXMELa8xOY1b5lB6iUE9rFL3OzuZQVJsAgISHybfIgF4hlZ
+	iU0HmCEelpQ4uOIGywRGsVlIbpqFZOwsJGMXMDKvYhRNLUguKE5KLzLUK07MLS7NS9dLzs/d
+	xAiMp9P/nvXuYLx9wPoQYzLQyonMUqLJ+cB4zCuJNzQ2M7IwNTE1NjK3NCNNWEmcN+lhUpCQ
+	QHpiSWp2ampBalF8UWlOavEhRiYOTqkGRjelwhnmT6QnOm70Cl4cuTjR+VPcx/7MV+r3ZR41
+	e0W5fPn9/MMyRrsjj7ItXp7/OSXVIzvSYp60yxK7J/Z5IQETn08yznlUfPW2X2Lsrzxnp4ch
+	E//7ufJUZv/X0T2zSGzGbjfep3yTmF96sbKab+uJ3sHbH765/8Lbf2HVF/wbz1V0WxXuVGIp
+	zkg01GIuKk4EAG1dPEm9AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkleLIzCtJLcpLzFFi42I5/e+xoO6r3IBgg6PfZSyuf3nOavHsqLbF
+	6xeGFpd3zWGzuN24gs1ixuSXbA5sHjtn3WX36NuyitHj8ya5AOaoBkabjNTElNQihdS85PyU
+	zLx0WyXv4HjneFMzA0NdQ0sLcyWFvMTcVFslF58AXbfMHKC1SgpliTmlQKGAxOJiJX07TBNC
+	Q9x0LWAaI3R9Q4LgeowM0EDCGsaM61dOsBS816p42PuKuYGxR7GLkYNDQsBEYvKajC5GTiBT
+	TOLCvfVsXYxcHEIC0xklPr7ewArhvGaU+Nn9kx2kildAS2Jn6xnGLkZ2DhYBVYnZ3iBRNgFN
+	ic/HD7KB2KICERJzJ25mg6gWlPgx+R4LiC0CVD3lXic7yEhmgbuMEkuevGYESQgLBEjs+fOd
+	EWLXOUaJ23vOMIEcxykQLHHwpR1IDbOAmcSjlnXMELa8xOY1b5knMArMQrJjFpKyWUjKFjAy
+	r2IUTS1ILihOSs810itOzC0uzUvXS87P3cQIjthn0jsYVzVYHGIU4GBU4uG98NU/WIg1say4
+	MvcQowQHs5II7/m0gGAh3pTEyqrUovz4otKc1OJDjMnAAJjILCWanA9MJnkl8YbGJmZGlkbm
+	hhZGxuakCSuJ8x5stQ4UEkhPLEnNTk0tSC2C2cLEwSnVwMj0plLMvldc4gD3Y2H/OrHsyWEc
+	XAtkvnmaL72Y8Vvtd9gjy+86Z+bw7BOwWLpld8yO5ZdZGnx3PDOXYRZfKpdxe8JaLQNRydsC
+	VVElSd+K7pg91WH67rrSdF1MzkyRqUd3LVcsWi4lLbLmj7xrnd+FvszTWeJeJ7PlRD1172Sk
+	XPttltw1Q4mlOCPRUIu5qDgRAG/sXQccAwAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,93 +59,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chanwoo.
+Hi Chanwoo
 
-On 04/18/2014 12:29 AM, Chanwoo Choi wrote:
+
+On 04/18/2014 12:26 AM, Chanwoo Choi wrote:
 > Hi Sangjung,
 >
-> Seung-Woo reviewed this patch previously but, He didn't send
-> reviewed-by message as reply.
-> After received reviewed-by message, I think that we should add it on
-> patch description.
+> This patch(v2) is same as previous patch(v1).
+> I think you sent previous patch(v1) instead of v2.
 
-Frankly speaking, I didn't know the basic acknowledge procedure of Linux 
-Kernel development.
-Thank you for your advice.
+You're right. I made a big mistake.
+I will send the fixed one as v3.
 
-I will add the _reviewed-by_ message after I get it from Seung-woo.
-
-BRs,
+Thank you.
 Sangjung
 
-> Thanks,
+>
+> Thanks
 > Chanwoo Choi
 >
-> On Thu, Apr 17, 2014 at 7:10 PM, Sangjung Woo <sangjung.woo@samsung.com> wrote:
->> Use the resource-managed extcon device register function (i.e.
->> devm_extcon_dev_register()) instead of extcon_dev_register(). If extcon device
->> is attached with this function, that extcon device is automatically unregistered
->> on driver detach. That reduces tiresome managing code.
+> On Thu, Apr 17, 2014 at 7:09 PM, Sangjung Woo <sangjung.woo@samsung.com> wrote:
+>> Add resource-managed extcon device register function for convenience.
+>> For example, if a extcon device is attached with new
+>> devm_extcon_dev_register(), that extcon device is automatically
+>> unregistered on driver detach.
 >>
 >> Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
->> Reviewed-by: Seung-Woo Kim <sw0312.kim@samsung.com>
 >> ---
->>   drivers/extcon/extcon-arizona.c |   13 ++++---------
->>   1 file changed, 4 insertions(+), 9 deletions(-)
+>>   drivers/extcon/extcon-class.c |   83 +++++++++++++++++++++++++++++++++++++++++
+>>   include/linux/extcon.h        |    8 ++++
+>>   2 files changed, 91 insertions(+)
 >>
->> diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
->> index 98a14f6..40e6c0b 100644
->> --- a/drivers/extcon/extcon-arizona.c
->> +++ b/drivers/extcon/extcon-arizona.c
->> @@ -1105,15 +1105,13 @@ static int arizona_extcon_probe(struct platform_device *pdev)
->>          info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
->>          if (!info) {
->>                  dev_err(&pdev->dev, "Failed to allocate memory\n");
->> -               ret = -ENOMEM;
->> -               goto err;
+>> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+>> index 7ab21aa..accb49c 100644
+>> --- a/drivers/extcon/extcon-class.c
+>> +++ b/drivers/extcon/extcon-class.c
+>> @@ -32,6 +32,7 @@
+>>   #include <linux/slab.h>
+>>   #include <linux/sysfs.h>
+>>   #include <linux/of.h>
+>> +#include <linux/gfp.h>
+>>
+>>   /*
+>>    * extcon_cable_name suggests the standard cable names for commonly used
+>> @@ -819,6 +820,88 @@ void extcon_dev_unregister(struct extcon_dev *edev)
+>>   }
+>>   EXPORT_SYMBOL_GPL(extcon_dev_unregister);
+>>
+>> +
+>> +/*
+>> + * Device resource management
+>> + */
+>> +
+>> +struct extcon_devres {
+>> +       struct extcon_dev *edev;
+>> +};
+>> +
+>> +static void devm_extcon_release(struct device *dev, void *res)
+>> +{
+>> +       struct extcon_devres *dr = (struct extcon_devres *)res;
+>> +
+>> +       extcon_dev_unregister(dr->edev);
+>> +}
+>> +
+>> +static int devm_extcon_match(struct device *dev, void *res, void *data)
+>> +{
+>> +       struct extcon_devres *dr = (struct extcon_devres *)res;
+>> +       struct extcon_devres *match = (struct extcon_devres *)data;
+>> +
+>> +       return dr->edev == match->edev;
+>> +}
+>> +
+>> +/**
+>> + * devm_extcon_dev_register() - Resource-managed extcon_dev_register()
+>> + * @dev:       device to allocate extcon device
+>> + * @edev:      the new extcon device to register
+>> + *
+>> + * Managed extcon_dev_register() function. If extcon device is attached with
+>> + * this function, that extcon device is automatically unregistered on driver
+>> + * detach. Internally this function calls extcon_dev_register() function.
+>> + * To get more information, refer that function.
+>> + *
+>> + * If extcon device is registered with this function and the device needs to be
+>> + * unregistered separately, devm_extcon_dev_unregister() should be used.
+>> + *
+>> + * RETURNS:
+>> + * 0 on success, negative error number on failure.
+>> + */
+>> +int devm_extcon_dev_register(struct device *dev, struct extcon_dev *edev)
+>> +{
+>> +       struct extcon_devres *dr;
+>> +       int rc;
+>> +
+>> +       dr = devres_alloc(devm_extcon_release, sizeof(struct extcon_devres),
+>> +                       GFP_KERNEL);
+>> +       if (!dr)
 >> +               return -ENOMEM;
->>          }
+>> +
+>> +       rc = extcon_dev_register(edev);
+>> +       if (rc) {
+>> +               devres_free(dr);
+>> +               return rc;
+>> +       }
+>> +
+>> +       dr->edev = edev;
+>> +       devres_add(dev, dr);
+>> +
+>> +       return 0;
+>> +}
+>> +EXPORT_SYMBOL_GPL(devm_extcon_dev_register);
+>> +
+>> +/**
+>> + * devm_extcon_dev_unregister() - Resource-managed extcon_dev_unregister()
+>> + * @dev:       device the extcon belongs to
+>> + * @edev:      the extcon device to unregister
+>> + *
+>> + * Unregister extcon device that is registered with devm_extcon_dev_register()
+>> + * function.
+>> + */
+>> +void devm_extcon_dev_unregister(struct device *dev, struct extcon_dev *edev)
+>> +{
+>> +       struct extcon_devres match_dr = { edev };
+>> +
+>> +       WARN_ON(devres_destroy(dev, devm_extcon_release,
+>> +                       devm_extcon_match, &match_dr));
+>> +
+>> +       extcon_dev_unregister(edev);
+>> +}
+>> +EXPORT_SYMBOL_GPL(devm_extcon_dev_unregister);
+>> +
+>>   #ifdef CONFIG_OF
+>>   /*
+>>    * extcon_get_edev_by_phandle - Get the extcon device from devicetree
+>> diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+>> index f488145..e1e85a1 100644
+>> --- a/include/linux/extcon.h
+>> +++ b/include/linux/extcon.h
+>> @@ -188,6 +188,14 @@ extern void extcon_dev_unregister(struct extcon_dev *edev);
+>>   extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
 >>
->>          info->micvdd = devm_regulator_get(arizona->dev, "MICVDD");
->>          if (IS_ERR(info->micvdd)) {
->> -               ret = PTR_ERR(info->micvdd);
->>                  dev_err(arizona->dev, "Failed to get MICVDD: %d\n", ret);
->> -               goto err;
->> +               return PTR_ERR(info->micvdd);
->>          }
->>
->>          mutex_init(&info->lock);
->> @@ -1155,11 +1153,11 @@ static int arizona_extcon_probe(struct platform_device *pdev)
->>          info->edev.dev.parent = arizona->dev;
->>          info->edev.supported_cable = arizona_cable;
->>
->> -       ret = extcon_dev_register(&info->edev);
->> +       ret = devm_extcon_dev_register(&pdev->dev, &info->edev);
->>          if (ret < 0) {
->>                  dev_err(arizona->dev, "extcon_dev_register() failed: %d\n",
->>                          ret);
->> -               goto err;
->> +               return ret;
->>          }
->>
->>          info->input = devm_input_allocate_device(&pdev->dev);
->> @@ -1410,8 +1408,6 @@ err_rise:
->>   err_input:
->>   err_register:
->>          pm_runtime_disable(&pdev->dev);
->> -       extcon_dev_unregister(&info->edev);
->> -err:
->>          return ret;
->>   }
->>
->> @@ -1445,7 +1441,6 @@ static int arizona_extcon_remove(struct platform_device *pdev)
->>          regmap_update_bits(arizona->regmap, ARIZONA_JACK_DETECT_ANALOGUE,
->>                             ARIZONA_JD1_ENA, 0);
->>          arizona_clk32k_disable(arizona);
->> -       extcon_dev_unregister(&info->edev);
->>
->>          return 0;
->>   }
+>>   /*
+>> + * Resource-managed extcon device register function.
+>> + */
+>> +extern int devm_extcon_dev_register(struct device *dev,
+>> +                               struct extcon_dev *edev);
+>> +extern void devm_extcon_dev_unregister(struct device *dev,
+>> +                               struct extcon_dev *edev);
+>> +
+>> +/*
+>>    * get/set/update_state access the 32b encoded state value, which represents
+>>    * states of all possible cables of the multistate port. For example, if one
+>>    * calls extcon_set_state(edev, 0x7), it may mean that all the three cables
 >> --
 >> 1.7.9.5
 >>
