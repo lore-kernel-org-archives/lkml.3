@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752496AbaDRSpE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 14:45:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13474 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751457AbaDRSo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 14:44:59 -0400
-Date: Fri, 18 Apr 2014 20:44:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Chiang <pchiang@nvidia.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "tj@kernel.org" <tj@kernel.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "guillaume@morinfr.org" <guillaume@morinfr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] memcg: mm_update_next_owner() should skip kthreads
-Message-ID: <20140418184441.GA26046@redhat.com>
-References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com> <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com> <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com> <20140416135741.GA9407@redhat.com> <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com> <20140418162359.GA4398@redhat.com> <20140418172631.GA13323@redhat.com> <20140418182444.GB22235@dhcp22.suse.cz>
+	id S1752572AbaDRSwq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 14:52:46 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38243 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaDRSwn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 14:52:43 -0400
+Date: Fri, 18 Apr 2014 19:52:25 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20140418185225.GA12304@sirena.org.uk>
+References: <1397845810-17002-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Bdcc8l/1lFRK/qa7"
 Content-Disposition: inline
-In-Reply-To: <20140418182444.GB22235@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1397845810-17002-1-git-send-email-tim.kryger@linaro.org>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] regulator: Allow set voltage on fixed regulators
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18, Michal Hocko wrote:
->
-> On Fri 18-04-14 19:26:31, Oleg Nesterov wrote:
-> > On 04/18, Oleg Nesterov wrote:
-> > >
-> > > Hmm. I seem to see a bug in this function, it can be fulled by use_mm,
-> > > but I am not sure this can explain the problem. I'll send a patch.
-> >
-> > Untested, please review. But it really looks "obviously wrong", and note
-> > that unuse_mm() doesn't do mm_update_next_owner(). (just in case, do not
-> > confuse it with unuse_mm() in mm/swapfile.c).
->
-> Both patches seem to be correct but I am missinng why they are marked as
-> memcg: when they are touching generic mm_update_next_owner path.
 
-Well, this is because I didn't know which prefix should I use. I looked
-at git-blame to see who changed this function, picked the random 733eda7ac
-"memcg: clear mm->owner when last possible owner leaves" commit and copied
-"memcg" from there.
+--Bdcc8l/1lFRK/qa7
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-OTOH, mm->owner is used by mm/memcontrol.c, so perhaps the prefix is fine?
+On Fri, Apr 18, 2014 at 11:30:10AM -0700, Tim Kryger wrote:
+> If a regulator consumer requests a voltage range that can be satisfied,
+> the return value should indicate success even if that regulator has a
+> fixed voltage.  Since there is already logic to check if the requested
+> voltage range overlaps the allowed range, set REGULATOR_CHANGE_VOLTAGE
+> for regulators with constraints that include a positive voltage.
 
-I do not even understand why do we have CONFIG_MM_OWNER, perhaps it should
-die?
+This seems like the wrong place to fix this, it's nothing to do with DT
+and we shouldn't require that nonsensical permissions are set.  Instead
+we should fix this at the point where we're implementing the permission
+check, have the failure case check the current voltage before returning
+an error.
 
-> Anyway, feel free to add
-> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+--Bdcc8l/1lFRK/qa7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Thanks!
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Oleg.
+iQIcBAEBAgAGBQJTUXRlAAoJELSic+t+oim9chwP/jXTjcxjfkqkJHxgfjIYdITM
+NGF4a1blcn9lERULG1Vbv+RtQ5jvDxkZnkv83JcUu27uhz3hy3HAt4d5mGjSADy4
+/ZCjvE50wSOeKaUUdhPNECNniKPh3vTFIH/xnCimlnLMaXXKNbuTSmrA4kEThZ68
+CNZIwGsP7AArqe7X8Cca0om9BQ68ckpXfLpueM+5WpR8rzdMqH34GZHZi4Evubrf
+8wWe4TC0G5qkopKQxT/jGYQaLeVWzeezvyREq5f1vg+/wtxviXgdrPFXuLdtM8f5
+aewliUtUfOpJUwepc95Ne5m4GSWm3eoUf7e33d6PgJ/bShgx93fMmgRNMxkf6B7t
+Yo3uqPVextGqdliCDmV3WRSq5JBc1FzKkpoJ68cc99QG5LdNyST+2/FlixsbjIEk
+Lq3S3rETaw8wqRCUndenDcMZCayOayjRMLECzttGKww5+Hj/bZ6c2eArZKUM/HSc
+zb+PsUhlEYde9kt61sixbWXsKxDRZECHJwFdMucGNcn+M4DW429ua0kwQXpO+Qs/
+ZojqlPTJYD1qKyxzwszJ7qlE/Sw0cMlxnkkwRr8ZO0lYxNezUY4LZtwGXRhre9Z5
+8Cf71nhoZc2JK7YdyHKpzUwo2c4lmGGVrQkOo0/bMYcPFA3pu1HmLMRvM4lMf7l/
+4dmaZXtdBKLGutJbZfH0
+=Saf+
+-----END PGP SIGNATURE-----
 
+--Bdcc8l/1lFRK/qa7--
