@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753554AbaDRJjj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:39:39 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45961 "EHLO
+	id S1753621AbaDRJmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:42:20 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45945 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752289AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752222AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Stefan Wahren <stefan.wahren@i2se.com>,
+Cc: linux-kernel@vger.kernel.org, Eric Dumazet <edumazet@google.com>,
+        Rainer Weikusat <rweikusat@mobileactivedefense.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 44/72] eth: fec: Fix lost promiscuous mode after reconnecting cable
-Date: Fri, 18 Apr 2014 11:22:17 +0200
-Message-Id: <a488bc7135f7bb3c4a716105bda1d119748f87b2.1397812482.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 33/72] net: unix: non blocking recvmsg() should not return -EINTR
+Date: Fri, 18 Apr 2014 11:22:06 +0200
+Message-Id: <e3749adbcbf79583fb092fa1866a160f664912eb.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -23,63 +24,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Wahren <stefan.wahren@i2se.com>
+From: Eric Dumazet <edumazet@google.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 84fe61821e4ebab6322eeae3f3c27f77f0031978 ]
+[ Upstream commit de1443916791d75fdd26becb116898277bb0273f ]
 
-If the Freescale fec is in promiscuous mode and network cable is
-reconnected then the promiscuous mode get lost. The problem is caused
-by a too soon call of set_multicast_list to re-enable promisc mode.
-The FEC_R_CNTRL register changes are overwritten by fec_restart.
+Some applications didn't expect recvmsg() on a non blocking socket
+could return -EINTR. This possibility was added as a side effect
+of commit b3ca9b02b00704 ("net: fix multithreaded signal handling in
+unix recv routines").
 
-This patch fixes this by moving the call behind the init of FEC_R_CNTRL
-register in fec_restart.
+To hit this bug, you need to be a bit unlucky, as the u->readlock
+mutex is usually held for very small periods.
 
-Successful tested on a i.MX28 board.
-
-Signed-off-by: Stefan Wahren <stefan.wahren@i2se.com>
+Fixes: b3ca9b02b00704 ("net: fix multithreaded signal handling in unix recv routines")
+Signed-off-by: Eric Dumazet <edumazet@google.com>
+Cc: Rainer Weikusat <rweikusat@mobileactivedefense.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/freescale/fec_main.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ net/unix/af_unix.c | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
-index 63090c0ddeb9..8672547a2a47 100644
---- a/drivers/net/ethernet/freescale/fec_main.c
-+++ b/drivers/net/ethernet/freescale/fec_main.c
-@@ -525,13 +525,6 @@ fec_restart(struct net_device *ndev, int duplex)
- 	/* Clear any outstanding interrupt. */
- 	writel(0xffc00000, fep->hwp + FEC_IEVENT);
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index d7c1ac621a90..c3975bcf725f 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -1785,8 +1785,11 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		goto out;
  
--	/* Setup multicast filter. */
--	set_multicast_list(ndev);
--#ifndef CONFIG_M5272
--	writel(0, fep->hwp + FEC_HASH_TABLE_HIGH);
--	writel(0, fep->hwp + FEC_HASH_TABLE_LOW);
--#endif
--
- 	/* Set maximum receive buffer size. */
- 	writel(PKT_MAXBLR_SIZE, fep->hwp + FEC_R_BUFF_SIZE);
+ 	err = mutex_lock_interruptible(&u->readlock);
+-	if (err) {
+-		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
++	if (unlikely(err)) {
++		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
++		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
++		 */
++		err = noblock ? -EAGAIN : -ERESTARTSYS;
+ 		goto out;
+ 	}
  
-@@ -652,6 +645,13 @@ fec_restart(struct net_device *ndev, int duplex)
+@@ -1911,6 +1914,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	struct unix_sock *u = unix_sk(sk);
+ 	struct sockaddr_un *sunaddr = msg->msg_name;
+ 	int copied = 0;
++	int noblock = flags & MSG_DONTWAIT;
+ 	int check_creds = 0;
+ 	int target;
+ 	int err = 0;
+@@ -1926,7 +1930,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 		goto out;
  
- 	writel(rcntl, fep->hwp + FEC_R_CNTRL);
+ 	target = sock_rcvlowat(sk, flags&MSG_WAITALL, size);
+-	timeo = sock_rcvtimeo(sk, flags&MSG_DONTWAIT);
++	timeo = sock_rcvtimeo(sk, noblock);
  
-+	/* Setup multicast filter. */
-+	set_multicast_list(ndev);
-+#ifndef CONFIG_M5272
-+	writel(0, fep->hwp + FEC_HASH_TABLE_HIGH);
-+	writel(0, fep->hwp + FEC_HASH_TABLE_LOW);
-+#endif
-+
- 	if (id_entry->driver_data & FEC_QUIRK_ENET_MAC) {
- 		/* enable ENET endian swap */
- 		ecntl |= (1 << 8);
+ 	/* Lock the socket to prevent queue disordering
+ 	 * while sleeps in memcpy_tomsg
+@@ -1938,8 +1942,11 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
+ 	}
+ 
+ 	err = mutex_lock_interruptible(&u->readlock);
+-	if (err) {
+-		err = sock_intr_errno(timeo);
++	if (unlikely(err)) {
++		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
++		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
++		 */
++		err = noblock ? -EAGAIN : -ERESTARTSYS;
+ 		goto out;
+ 	}
+ 
 -- 
 1.9.2
 
