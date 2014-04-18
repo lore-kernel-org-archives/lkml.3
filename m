@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758AbaDRNNG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:13:06 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39180 "EHLO
+	id S1754774AbaDRNNU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:13:20 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39192 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbaDRNNA (ORCPT
+	with ESMTP id S1751143AbaDRNNO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:13:00 -0400
-Date: Fri, 18 Apr 2014 06:12:14 -0700
+	Fri, 18 Apr 2014 09:13:14 -0400
+Date: Fri, 18 Apr 2014 06:12:26 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-2cla9ubpd8chrntnm7e4zdt4@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        will.deacon@arm.com, torvalds@linux-foundation.org,
-        peterz@infradead.org, davem@davemloft.net, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de
+Message-ID: <tip-euuabnf5a3u23fy4fq8m3jcg@git.kernel.org>
+Cc: mathieu.desnoyers@polymtl.ca, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@kernel.org, torvalds@linux-foundation.org, peterz@infradead.org,
+        cmetcalf@tilera.com, akinobu.mita@gmail.com,
+        paulmck@linux.vnet.ibm.com, geert@linux-m68k.org,
+        gang.chen@asianux.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, will.deacon@arm.com,
-        peterz@infradead.org, davem@davemloft.net, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de
+        mathieu.desnoyers@polymtl.ca, torvalds@linux-foundation.org,
+        peterz@infradead.org, cmetcalf@tilera.com, akinobu.mita@gmail.com,
+        paulmck@linux.vnet.ibm.com, geert@linux-m68k.org,
+        gang.chen@asianux.com, tglx@linutronix.de
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] arch,sparc: Convert smp_mb__*()
-Git-Commit-ID: 56d3648948c202e8b89cd786a004c451a3eb264f
+Subject: [tip:locking/core] arch,tile: Convert smp_mb__*()
+Git-Commit-ID: ce3609f93445846f7b5a5b4bacb236a9bdc35216
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,129 +35,150 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  56d3648948c202e8b89cd786a004c451a3eb264f
-Gitweb:     http://git.kernel.org/tip/56d3648948c202e8b89cd786a004c451a3eb264f
+Commit-ID:  ce3609f93445846f7b5a5b4bacb236a9bdc35216
+Gitweb:     http://git.kernel.org/tip/ce3609f93445846f7b5a5b4bacb236a9bdc35216
 Author:     Peter Zijlstra <peterz@infradead.org>
 AuthorDate: Thu, 13 Mar 2014 19:00:35 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 Apr 2014 14:20:44 +0200
+CommitDate: Fri, 18 Apr 2014 14:20:45 +0200
 
-arch,sparc: Convert smp_mb__*()
+arch,tile: Convert smp_mb__*()
 
-sparc32: fully relies on asm-generic/barrier.h and thus can use its
-	 implementation.
-
-sparc64: is strongly ordered and its atomic ops imply a full barrier,
-	 implement the new primitives using barrier().
+Implement the new smp_mb__* ops as per the old ones.
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Link: http://lkml.kernel.org/n/tip-2cla9ubpd8chrntnm7e4zdt4@git.kernel.org
+Acked-by: Chris Metcalf <cmetcalf@tilera.com>
+Link: http://lkml.kernel.org/n/tip-euuabnf5a3u23fy4fq8m3jcg@git.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Chen Gang <gang.chen@asianux.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Will Deacon <will.deacon@arm.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
 Cc: linux-kernel@vger.kernel.org
-Cc: sparclinux@vger.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/sparc/include/asm/atomic_32.h  | 7 +------
- arch/sparc/include/asm/atomic_64.h  | 7 +------
- arch/sparc/include/asm/barrier_64.h | 3 +++
- arch/sparc/include/asm/bitops_32.h  | 3 ---
- arch/sparc/include/asm/bitops_64.h  | 4 +---
- 5 files changed, 6 insertions(+), 18 deletions(-)
+ arch/tile/include/asm/atomic_32.h | 10 ----------
+ arch/tile/include/asm/atomic_64.h |  6 ------
+ arch/tile/include/asm/barrier.h   | 14 ++++++++++++++
+ arch/tile/include/asm/bitops.h    |  1 +
+ arch/tile/include/asm/bitops_32.h |  8 ++------
+ arch/tile/include/asm/bitops_64.h |  4 ----
+ 6 files changed, 17 insertions(+), 26 deletions(-)
 
-diff --git a/arch/sparc/include/asm/atomic_32.h b/arch/sparc/include/asm/atomic_32.h
-index 905832a..f08fe51 100644
---- a/arch/sparc/include/asm/atomic_32.h
-+++ b/arch/sparc/include/asm/atomic_32.h
-@@ -14,6 +14,7 @@
- #include <linux/types.h>
+diff --git a/arch/tile/include/asm/atomic_32.h b/arch/tile/include/asm/atomic_32.h
+index 1ad4a1f..1b109fa 100644
+--- a/arch/tile/include/asm/atomic_32.h
++++ b/arch/tile/include/asm/atomic_32.h
+@@ -169,16 +169,6 @@ static inline void atomic64_set(atomic64_t *v, long long n)
+ #define atomic64_dec_and_test(v)	(atomic64_dec_return((v)) == 0)
+ #define atomic64_inc_not_zero(v)	atomic64_add_unless((v), 1LL, 0LL)
  
- #include <asm/cmpxchg.h>
-+#include <asm/barrier.h>
- #include <asm-generic/atomic64.h>
+-/*
+- * We need to barrier before modifying the word, since the _atomic_xxx()
+- * routines just tns the lock and then read/modify/write of the word.
+- * But after the word is updated, the routine issues an "mf" before returning,
+- * and since it's a function call, we don't even need a compiler barrier.
+- */
+-#define smp_mb__before_atomic_dec()	smp_mb()
+-#define smp_mb__before_atomic_inc()	smp_mb()
+-#define smp_mb__after_atomic_dec()	do { } while (0)
+-#define smp_mb__after_atomic_inc()	do { } while (0)
  
+ #endif /* !__ASSEMBLY__ */
  
-@@ -52,10 +53,4 @@ extern void atomic_set(atomic_t *, int);
- #define atomic_dec_and_test(v) (atomic_dec_return(v) == 0)
- #define atomic_sub_and_test(i, v) (atomic_sub_return(i, v) == 0)
+diff --git a/arch/tile/include/asm/atomic_64.h b/arch/tile/include/asm/atomic_64.h
+index ad220ee..7b11c5f 100644
+--- a/arch/tile/include/asm/atomic_64.h
++++ b/arch/tile/include/asm/atomic_64.h
+@@ -105,12 +105,6 @@ static inline long atomic64_add_unless(atomic64_t *v, long a, long u)
  
--/* Atomic operations are already serializing */
--#define smp_mb__before_atomic_dec()	barrier()
--#define smp_mb__after_atomic_dec()	barrier()
--#define smp_mb__before_atomic_inc()	barrier()
--#define smp_mb__after_atomic_inc()	barrier()
+ #define atomic64_inc_not_zero(v)	atomic64_add_unless((v), 1, 0)
+ 
+-/* Atomic dec and inc don't implement barrier, so provide them if needed. */
+-#define smp_mb__before_atomic_dec()	smp_mb()
+-#define smp_mb__after_atomic_dec()	smp_mb()
+-#define smp_mb__before_atomic_inc()	smp_mb()
+-#define smp_mb__after_atomic_inc()	smp_mb()
 -
- #endif /* !(__ARCH_SPARC_ATOMIC__) */
-diff --git a/arch/sparc/include/asm/atomic_64.h b/arch/sparc/include/asm/atomic_64.h
-index be56a24..8b2f1bd 100644
---- a/arch/sparc/include/asm/atomic_64.h
-+++ b/arch/sparc/include/asm/atomic_64.h
-@@ -9,6 +9,7 @@
+ /* Define this to indicate that cmpxchg is an efficient operation. */
+ #define __HAVE_ARCH_CMPXCHG
  
- #include <linux/types.h>
- #include <asm/cmpxchg.h>
-+#include <asm/barrier.h>
+diff --git a/arch/tile/include/asm/barrier.h b/arch/tile/include/asm/barrier.h
+index b5a05d0..96a42ae 100644
+--- a/arch/tile/include/asm/barrier.h
++++ b/arch/tile/include/asm/barrier.h
+@@ -72,6 +72,20 @@ mb_incoherent(void)
+ #define mb()		fast_mb()
+ #define iob()		fast_iob()
  
- #define ATOMIC_INIT(i)		{ (i) }
- #define ATOMIC64_INIT(i)	{ (i) }
-@@ -108,10 +109,4 @@ static inline long atomic64_add_unless(atomic64_t *v, long a, long u)
- 
- extern long atomic64_dec_if_positive(atomic64_t *v);
- 
--/* Atomic operations are already serializing */
--#define smp_mb__before_atomic_dec()	barrier()
--#define smp_mb__after_atomic_dec()	barrier()
--#define smp_mb__before_atomic_inc()	barrier()
--#define smp_mb__after_atomic_inc()	barrier()
--
- #endif /* !(__ARCH_SPARC64_ATOMIC__) */
-diff --git a/arch/sparc/include/asm/barrier_64.h b/arch/sparc/include/asm/barrier_64.h
-index b5aad96..305dcc3 100644
---- a/arch/sparc/include/asm/barrier_64.h
-+++ b/arch/sparc/include/asm/barrier_64.h
-@@ -68,4 +68,7 @@ do {									\
- 	___p1;								\
- })
- 
-+#define smp_mb__before_atomic()	barrier()
-+#define smp_mb__after_atomic()	barrier()
++#ifndef __tilegx__ /* 32 bit */
++/*
++ * We need to barrier before modifying the word, since the _atomic_xxx()
++ * routines just tns the lock and then read/modify/write of the word.
++ * But after the word is updated, the routine issues an "mf" before returning,
++ * and since it's a function call, we don't even need a compiler barrier.
++ */
++#define smp_mb__before_atomic()	smp_mb()
++#define smp_mb__after_atomic()	do { } while (0)
++#else /* 64 bit */
++#define smp_mb__before_atomic()	smp_mb()
++#define smp_mb__after_atomic()	smp_mb()
++#endif
 +
- #endif /* !(__SPARC64_BARRIER_H) */
-diff --git a/arch/sparc/include/asm/bitops_32.h b/arch/sparc/include/asm/bitops_32.h
-index 25a6766..88c9a96 100644
---- a/arch/sparc/include/asm/bitops_32.h
-+++ b/arch/sparc/include/asm/bitops_32.h
-@@ -90,9 +90,6 @@ static inline void change_bit(unsigned long nr, volatile unsigned long *addr)
+ #include <asm-generic/barrier.h>
  
- #include <asm-generic/bitops/non-atomic.h>
+ #endif /* !__ASSEMBLY__ */
+diff --git a/arch/tile/include/asm/bitops.h b/arch/tile/include/asm/bitops.h
+index d5a2068..20caa34 100644
+--- a/arch/tile/include/asm/bitops.h
++++ b/arch/tile/include/asm/bitops.h
+@@ -17,6 +17,7 @@
+ #define _ASM_TILE_BITOPS_H
  
--#define smp_mb__before_clear_bit()	do { } while(0)
--#define smp_mb__after_clear_bit()	do { } while(0)
--
- #include <asm-generic/bitops/ffz.h>
- #include <asm-generic/bitops/__ffs.h>
- #include <asm-generic/bitops/sched.h>
-diff --git a/arch/sparc/include/asm/bitops_64.h b/arch/sparc/include/asm/bitops_64.h
-index 29011cc..f1a051c 100644
---- a/arch/sparc/include/asm/bitops_64.h
-+++ b/arch/sparc/include/asm/bitops_64.h
-@@ -13,6 +13,7 @@
- 
- #include <linux/compiler.h>
- #include <asm/byteorder.h>
+ #include <linux/types.h>
 +#include <asm/barrier.h>
  
- extern int test_and_set_bit(unsigned long nr, volatile unsigned long *addr);
- extern int test_and_clear_bit(unsigned long nr, volatile unsigned long *addr);
-@@ -23,9 +24,6 @@ extern void change_bit(unsigned long nr, volatile unsigned long *addr);
+ #ifndef _LINUX_BITOPS_H
+ #error only <linux/bitops.h> can be included directly
+diff --git a/arch/tile/include/asm/bitops_32.h b/arch/tile/include/asm/bitops_32.h
+index 386865a..bbf7b66 100644
+--- a/arch/tile/include/asm/bitops_32.h
++++ b/arch/tile/include/asm/bitops_32.h
+@@ -49,8 +49,8 @@ static inline void set_bit(unsigned nr, volatile unsigned long *addr)
+  * restricted to acting on a single-word quantity.
+  *
+  * clear_bit() may not contain a memory barrier, so if it is used for
+- * locking purposes, you should call smp_mb__before_clear_bit() and/or
+- * smp_mb__after_clear_bit() to ensure changes are visible on other cpus.
++ * locking purposes, you should call smp_mb__before_atomic() and/or
++ * smp_mb__after_atomic() to ensure changes are visible on other cpus.
+  */
+ static inline void clear_bit(unsigned nr, volatile unsigned long *addr)
+ {
+@@ -121,10 +121,6 @@ static inline int test_and_change_bit(unsigned nr,
+ 	return (_atomic_xor(addr, mask) & mask) != 0;
+ }
  
- #include <asm-generic/bitops/non-atomic.h>
- 
--#define smp_mb__before_clear_bit()	barrier()
--#define smp_mb__after_clear_bit()	barrier()
+-/* See discussion at smp_mb__before_atomic_dec() in <asm/atomic_32.h>. */
+-#define smp_mb__before_clear_bit()	smp_mb()
+-#define smp_mb__after_clear_bit()	do {} while (0)
 -
- #include <asm-generic/bitops/fls.h>
- #include <asm-generic/bitops/__fls.h>
- #include <asm-generic/bitops/fls64.h>
+ #include <asm-generic/bitops/ext2-atomic.h>
+ 
+ #endif /* _ASM_TILE_BITOPS_32_H */
+diff --git a/arch/tile/include/asm/bitops_64.h b/arch/tile/include/asm/bitops_64.h
+index ad34cd0..bb1a292 100644
+--- a/arch/tile/include/asm/bitops_64.h
++++ b/arch/tile/include/asm/bitops_64.h
+@@ -32,10 +32,6 @@ static inline void clear_bit(unsigned nr, volatile unsigned long *addr)
+ 	__insn_fetchand((void *)(addr + nr / BITS_PER_LONG), ~mask);
+ }
+ 
+-#define smp_mb__before_clear_bit()	smp_mb()
+-#define smp_mb__after_clear_bit()	smp_mb()
+-
+-
+ static inline void change_bit(unsigned nr, volatile unsigned long *addr)
+ {
+ 	unsigned long mask = (1UL << (nr % BITS_PER_LONG));
