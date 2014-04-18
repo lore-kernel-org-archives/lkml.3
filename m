@@ -1,72 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954AbaDRTX7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 15:23:59 -0400
-Received: from mailout09.t-online.de ([194.25.134.84]:33184 "EHLO
-	mailout09.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242AbaDRTX5 (ORCPT
+	id S1754580AbaDRTZw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 15:25:52 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:35217 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752935AbaDRTZr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 15:23:57 -0400
-Message-ID: <53517BC5.7090002@web.de>
-Date: Fri, 18 Apr 2014 21:23:49 +0200
-From: =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <jvpeetz@web.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	Fri, 18 Apr 2014 15:25:47 -0400
+Date: Fri, 18 Apr 2014 19:47:24 +0200
+From: "maxime.ripard" <maxime.ripard@free-electrons.com>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: linux-sunxi <linux-sunxi@googlegroups.com>,
+        Mark Rutland <mark.rutland@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [linux-sunxi] Re: [PATCH 7/7] ARM: sun7i: cubietruck: enable
+ bluetooth module
+Message-ID: <20140418174724.GG4132@lukather>
+References: <1397544101-18135-1-git-send-email-wens@csie.org>
+ <1397544101-18135-8-git-send-email-wens@csie.org>
+ <20140415144215.GG3207@lukather>
+ <CAGb2v643HyvFdhQ0znreB8ENXHWpcx6tFwdeU7VuU8KYWcT4ZA@mail.gmail.com>
+ <20140416094428.GK3207@lukather>
+ <CAGb2v67HzB22a3huRRZyufXkdTFE410MhXqAHyC-MmVo0-GCFA@mail.gmail.com>
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel,jcmvbkbc@gmail.com
-To: Ming Lei <tom.leiming@gmail.com>
-CC: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH next 3/4] blk-mq: user (1 << order) to implement order_to_size()
-References: <1397749778-14485-1-git-send-email-tom.leiming@gmail.com>	<1397749778-14485-4-git-send-email-tom.leiming@gmail.com>	<5350257A.30107@web.de> <CACVXFVMFuiHpM-bVjyutP7fH621Gt0bo2+HLwRbk_aGsiZ+1Vw@mail.gmail.com>
-In-Reply-To: <CACVXFVMFuiHpM-bVjyutP7fH621Gt0bo2+HLwRbk_aGsiZ+1Vw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-ID: G5u-MGZ6ghdqMr0d8ihHX3LcHAgc5ex-9h+6YYLIfE16hFHztpauERgbW+O5lVgwa+@t-dialin.net
-X-TOI-MSGID: c48cd18e-36bb-4ac2-9665-0e1e2d5ffcf0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SdvjNjn6lL3tIsv0"
+Content-Disposition: inline
+In-Reply-To: <CAGb2v67HzB22a3huRRZyufXkdTFE410MhXqAHyC-MmVo0-GCFA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ming Lei wrote, on 04/18/2014 17:47:
-> On Fri, Apr 18, 2014 at 3:03 AM, Jörg-Volker Peetz <jvpeetz@web.de> wrote:
->> Ming Lei wrote, on 04/17/2014 17:49:
->>> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
->>> ---
->>>  block/blk-mq.c |    7 +------
->>>  1 file changed, 1 insertion(+), 6 deletions(-)
->>>
->>> diff --git a/block/blk-mq.c b/block/blk-mq.c
->>> index baff2d0..1eff3d9 100644
->>> --- a/block/blk-mq.c
->>> +++ b/block/blk-mq.c
->>> @@ -1130,12 +1130,7 @@ static void blk_mq_free_rq_map(struct blk_mq_tag_set *set,
->>>
->>>  static size_t order_to_size(unsigned int order)
->>>  {
->>> -     size_t ret = PAGE_SIZE;
->>> -
->>> -     while (order--)
->>> -             ret *= 2;
->>> -
->>> -     return ret;
->>> +     return (1 << order) * PAGE_SIZE;
->>
->> Shouldn't this be
->>
->>         return ((size_t)1 << order) * PAGE_SIZE;
->>
->> ?
-> 
-> IMO, it isn't necessary since compiler will cast type
-> of 1 and the expression to size_t automatically.
-> 
-> 
-> Thanks,
 
-Testing this with gcc 4.8.2 with order > 30 confirms that the automatic casting
-is done operator-wise and the explicit casting is necessary.
+--SdvjNjn6lL3tIsv0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Regards,
-jvp.
+On Wed, Apr 16, 2014 at 06:39:28PM +0800, Chen-Yu Tsai wrote:
+> Hi,
+>=20
+> On Wed, Apr 16, 2014 at 5:44 PM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> > Hi,
+> >
+> > Please try to keep me in CC, even though the ML doesn't make it easy..
+>=20
+> Sorry about that.
+>=20
+> > On Wed, Apr 16, 2014 at 12:06:59AM +0800, Chen-Yu Tsai wrote:
+> >> >> @@ -139,4 +152,16 @@
+> >> >>       reg_usb2_vbus: usb2-vbus {
+> >> >>               status =3D "okay";
+> >> >>       };
+> >> >> +
+> >> >> +     rfkill_bt {
+> >> >> +             compatible =3D "rfkill-gpio";
+> >> >> +             pinctrl-names =3D "default";
+> >> >> +             pinctrl-0 =3D <&bt_pwr_pin_cubietruck>, <&clk_out_a_p=
+ins_a>;
+> >> >> +             clocks =3D <&clk_out_a>;
+> >> >> +             clock-frequency =3D <32768>;
+> >> >> +             gpios =3D <&pio 7 18 0>; /* PH18 */
+> >> >> +             gpio-names =3D "reset";
+> >> >> +             rfkill-name =3D "bt";
+> >> >> +             rfkill-type =3D <2>;
+> >> >> +     };
+> >> >
+> >> > Hmmm, I don't think that's actually right.
+> >> >
+> >> > If you have such a device, then I'd expect it to be represented as a
+> >> > full device in the DT, probably with one part for the WiFi, one part
+> >> > for the Bluetooth, and here the definition of the rfkill device that
+> >> > controls it.
+> >>
+> >> The AP6210 is not one device, but 2 separate chips in one module. Each
+> >> chip has its own controls and interface. They just so happen to share
+> >> the same enclosure. Even 2-in-1 chips by Broadcom have separate contro=
+ls
+> >> and interfaces. The WiFi side is most likely connected via SDIO, while
+> >> the Bluetooth side is connected to a UART, and optionally I2S for soun=
+d.
+> >
+> > It's even easier to represent then.
+> >
+> >> > But tying parts of the device to the rfkill that controls it, such as
+> >> > the clocks, or the frequency it runs at seems just wrong.
+> >>
+> >> I understand where you're coming from. For devices on buses that requi=
+re
+> >> drivers (such as USB, SDIO) these properties probably should be tied to
+> >> the device node.
+> >>
+> >> For our use case here, which is a bluetooth chip connected on the UART,
+> >> there is no in kernel representation or driver to tie them to. Same go=
+es
+> >> for UART based GPS chips. They just so happen to require toggling a GP=
+IO,
+> >> and maybe enabling a specific clock, to get it running. Afterwards,
+> >> accessing it is done solely from userspace. For our Broadcom chips, the
+> >> user has to upload its firmware first, then designate the tty as a Blu=
+etooth
+> >> HCI using hciattach.
+> >>
+> >> We are using the rfkill device as a on-off switch.
+> >
+> > I understand your point, but the fact that it's implemented in
+> > user-space, or that UART is not a bus (which probably should be), is
+> > only a Linux specific story, and how it's implemented in Linux (even
+> > if the whole rfkill node is another one, but let's stay on topic).
+>=20
+> I gave it some thought last night. You are right. My whole approach
+> is wrong. But let's try to make it right.
+>=20
+> So considering the fact that it's primarily connected to a UART,
+> maybe I should make it a sub-node to the UART node it's actually
+> connected to? Something like:
+>=20
+>         uart2: serial@01c28800 {
+>                 pinctrl-names =3D "default";
+>                 pinctrl-0 =3D <&uart2_pins_a>;
+>                 status =3D "okay";
+>=20
+>                 bt: bt_hci {
+>                         compatible =3D "brcm,bcm20710";
+>                         /* maybe add some generic compatible */
+>                         pinctrl-names =3D "default";
+>                         pinctrl-0 =3D <&clk_out_a_pins_a>,
+> <&bt_pwr_pin_cubietruck>;
+>                         clocks =3D <&clk_out_a>;
+>                         clock-frequency =3D <32768>;
+>                         gpios =3D <&pio 7 18 0>; /* PH18 */
+>                 };
+>         };
+>=20
+> And let the uart core handle power sequencing for sub-nodes.
+>=20
+> The rfkill node would still have the gpios and clocks, but not the
+> clock-frequency property. It's sole purpose would be to toggle the
+> controls. But I think the placement is still odd. Perhaps these
+> virtual devices shouldn't live in the DT at all.
 
+Yes, it looks much better.
+
+I agree with you on the virtual devices things, and we have a lot of
+other examples unfortunately.
+
+However, since the rfkill nodes are in the DT, I think you'd still
+have a rfkill node to handle the gpio, and a reference to the killed
+device of some sort.
+
+As far as the clock is concerned, I don't know if it makes sense to
+have the BT clock in the RF kill node.
+
+You probably want to use it to gate it whenever the device is killed,
+but if the device is setting the frequency, it will more likely hold a
+reference to that clock, so calling the disable in rfkill won't do
+much.
+
+Is rfkill sending any notification of some sort that the device is
+being killed?
+
+> > This is a huge abstraction leak.
+> >
+> > Let's say you need the I2S stream you mentionned for some
+> > reason. Would you tie the audio stream to the rfkill node as well?
+> > I'm sorry, but from an hardware description perspective, it makes no
+> > sense.
+>=20
+> The above revision should be better, from a hardware perspective. I'm
+> not sure how to tie in the I2S stream, and there I haven't found any
+> examples in the DT tree.
+
+If it acts like an I2S "consumer", you can use ASoC's simple-card, and
+you have a few examples in the other DTs.
+
+Thanks!
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--SdvjNjn6lL3tIsv0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.14 (GNU/Linux)
+
+iQIbBAEBAgAGBQJTUWUrAAoJEBx+YmzsjxAg7FwP+MF7y+W6yH8NCw8ra2wzlxCv
+z4kkKC26PekxHpcMfXfcGyWZgVa7D9pud1cK0SJe4SWZoXpzyc3XZF7L3H70o5YI
+QrP4ZQZOCnsyP2yqug8Ks1cjfOzPXx2znFmzi11x4YMRlsrIovVC1ez8mw6p3V/o
+VqCQtKAm+ZQmc5bZ30ize+mNrsVraiZee7ODikSLCjCLfu3Y2/miVtYSgp2xE0ip
+ST24De9Yi9+1KLtUHCCNlK83Q376qqHM2uKBCm5CcFrqYaL1py+QOOn/NI48n8Cj
+K7XkWT2rMQSVfo4Pd238uw29nO10R+1MCIiEHBYD+lED1CUY7cqWYb4jFHEEpL37
++SYXQmGDYmF+IgjPUZisGftJp4OxZraKG46rUFWWp43mJnvZP3ulRmu/zufoYpBH
+bTqd3lQaKP76hQSmJxUyR+xgKnpgVJI107tvZzWeWwxLwmjuVo/ktUDEczGjUa2e
+pWE72wM6XL7Ink15CBnXQ4XfHM9Odb7y0nPX6qDoT9yIUd1k+7hA04VfIKhHdLR4
+y5cBEO6sgNlOjE3qYwJfYm6NPinyWn3tho8w5WVIbZM8CbCFA28DHD/cU1IuPoW4
+M/VIxF0BTcKVnfC8muphSjOv3AYxDNS6868kw1WtzqynPRdK1rzc2uQfoUl/ki1I
+jUxGpY+PqFdEf/iHE48=
+=+Z9L
+-----END PGP SIGNATURE-----
+
+--SdvjNjn6lL3tIsv0--
