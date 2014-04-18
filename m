@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbaDRSaT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 14:30:19 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:56165 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbaDRSaQ (ORCPT
+	id S1752758AbaDRSiZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 14:38:25 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:44403 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaDRSiS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 14:30:16 -0400
-X-IronPort-AV: E=Sophos;i="4.97,885,1389772800"; 
-   d="scan'208";a="25188477"
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-CC: Tim Kryger <tim.kryger@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] regulator: Allow set voltage on fixed regulators
-Date: Fri, 18 Apr 2014 11:30:10 -0700
-Message-ID: <1397845810-17002-1-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Fri, 18 Apr 2014 14:38:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAFiDJ5-fuzNVF_OyNs-ZYS_qheLSSt7R75CkK2eQCkfYcF_aOw@mail.gmail.com>
+References: <CAFiDJ5-fuzNVF_OyNs-ZYS_qheLSSt7R75CkK2eQCkfYcF_aOw@mail.gmail.com>
+Date: Sat, 19 Apr 2014 02:38:17 +0800
+X-Google-Sender-Auth: egjKcFfFeVmbwikh9ruNcwKyYvo
+Message-ID: <CAFiDJ58bYYkL27TcjynTRQRtLSpWoehgXthD64ZnPna8uMHpWw@mail.gmail.com>
+Subject: Re: [PATCH 00/28] nios2 Linux kernel port
+From: Ley Foon Tan <lftan@altera.com>
+To: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org
+Cc: Ley Foon Tan <lftan@altera.com>, LeyFoon Tan <lftan.linux@gmail.com>,
+        cltang@codesourcery.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a regulator consumer requests a voltage range that can be satisfied,
-the return value should indicate success even if that regulator has a
-fixed voltage.  Since there is already logic to check if the requested
-voltage range overlaps the allowed range, set REGULATOR_CHANGE_VOLTAGE
-for regulators with constraints that include a positive voltage.
+Okay, I already submitted the remaining 4 patches.
+Thanks.
 
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
----
- drivers/regulator/of_regulator.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/regulator/of_regulator.c b/drivers/regulator/of_regulator.c
-index ea4f36f..a205d62 100644
---- a/drivers/regulator/of_regulator.c
-+++ b/drivers/regulator/of_regulator.c
-@@ -36,7 +36,7 @@ static void of_get_regulation_constraints(struct device_node *np,
- 		constraints->max_uV = be32_to_cpu(*max_uV);
- 
- 	/* Voltage change possible? */
--	if (constraints->min_uV != constraints->max_uV)
-+	if (constraints->max_uV > 0)
- 		constraints->valid_ops_mask |= REGULATOR_CHANGE_VOLTAGE;
- 	/* Only one voltage?  Then make sure it's set. */
- 	if (min_uV && max_uV && constraints->min_uV == constraints->max_uV)
--- 
-1.7.9.5
-
+On Sat, Apr 19, 2014 at 12:49 AM, Ley Foon Tan <lftan@altera.com> wrote:
+> Hi all
+>
+> I just found that 4 patches (03/28, 05/28,07/28 and 14/28) are missing
+> here, because the issue in Git v1.8.3.2. But, the cover letter is correct.
+> Do I need to resend the whole series (28 patches) or just the missing 4 patches?
+> Thanks.
+>
+> Regards.
+>
+> On Fri, Apr 18, 2014 at 8:26 PM, Ley Foon Tan <lftan@altera.com> wrote:
+>> This patchset adds the Linux kernel port for Nios II processor from Altera.
+>> The nios2 Linux port follows the guidance for new architecture ports using
+>> generic headers (including unistd.h).
+>>
+>> About Nios II Cores
+>> -------------------
+>> Nios II is a 32-bit embedded-processor architecture designed specifically for the
+>> Altera family of FPGAs.
+>> More information is available  at http://www.altera.com/devices/processor/nios2/ni2-index.html
+>>
+>> Instruction set and architecture overview documents can be found on the
+>> following page:
+>> http://www.altera.com/literature/lit-nio2.jsp
+>>
+>> Nios2 GCC port is in mainline and and will be in the FSF 4.9 release.
+>>
+>> These patches are also available on this branch:
+>> git://git.rocketboards.org/linux-socfpga-next.git  nios2-upstream
+>>
+>> Regards,
+>> Ley Foon
+>> --
+>> 1.8.3.2
+>>
