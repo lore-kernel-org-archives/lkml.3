@@ -1,137 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752725AbaDRLrs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 07:47:48 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:59265 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaDRLrp (ORCPT
+	id S1752075AbaDRLzM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 07:55:12 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:50445 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185AbaDRLzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 07:47:45 -0400
-Message-ID: <535110DA.2010005@gmail.com>
-Date: Fri, 18 Apr 2014 13:47:38 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>
-CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/8] usb: host: xhci-plat: Add support for the Armada
- 38x glue code
-References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com> <1397816563-9000-3-git-send-email-gregory.clement@free-electrons.com> <535108E3.2010208@gmail.com> <53510FEC.7030803@free-electrons.com>
-In-Reply-To: <53510FEC.7030803@free-electrons.com>
-X-Enigmail-Version: 1.6
+	Fri, 18 Apr 2014 07:55:09 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140418105801.GV11182@twins.programming.kicks-ass.net>
+References: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
+ <1397209481-28542-5-git-send-email-vincent.guittot@linaro.org> <20140418105801.GV11182@twins.programming.kicks-ass.net>
+From: Vincent Guittot <vincent.guittot@linaro.org>
+Date: Fri, 18 Apr 2014 13:54:48 +0200
+Message-ID: <CAKfTPtATHUk8kswxQ+MaGhFa-m4TB4pcAxL5mBJHOOZXmm8bwA@mail.gmail.com>
+Subject: Re: [PATCH v4 4/5] sched: add a new SD_SHARE_POWERDOMAIN for sched_domain
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LAK <linux-arm-kernel@lists.infradead.org>,
+        Dietmar Eggemann <dietmar.eggemann@arm.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2014 01:43 PM, Gregory CLEMENT wrote:
->>> @@ -0,0 +1,21 @@
->>> +/*
->>> + * Copyright (C) 2014 Marvell
->>> + *
->>> + * Gregory Clement <gregory.clement@free-electrons.com>
->>> + *
->>> + * This file is licensed under the terms of the GNU General Public
->>> + * License version 2.  This program is licensed "as is" without any
->>> + * warranty of any kind, whether express or implied.
->>> + */
->>> +
->>> +#ifndef __LINUX_XHCI_MVEBU_H
->>> +#define __LINUX_XHCI_MVEBU_H
->>> +
->>> +#ifdef CONFIG_USB_XHCI_MVEBU
->>> +int xhci_mvebu_probe(struct platform_device *pdev);
->>> +int xhci_mvebu_remove(struct platform_device *pdev);
->>> +#else
->>> +#define xhci_mvebu_probe NULL
->>> +#define xhci_mvebu_remove NULL
->>> +#endif
->>> +#endif /* __LINUX_XHCI_MVEBU_H */
->>> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
->>> index 8029cc82edc4..f1261d3848a9 100644
->>> --- a/drivers/usb/host/xhci-plat.c
->>> +++ b/drivers/usb/host/xhci-plat.c
->>> @@ -19,6 +19,7 @@
->>>  #include <linux/of_device.h>
->>>  
->>>  #include "xhci.h"
->>> +#include "xhci-mvebu.h"
->>>  
->>>  static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
->>>  {
->>> @@ -250,6 +251,11 @@ static const struct dev_pm_ops xhci_plat_pm_ops = {
->>>  #endif /* CONFIG_PM */
->>>  
->>>  #ifdef CONFIG_OF
+On 18 April 2014 12:58, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, Apr 11, 2014 at 11:44:40AM +0200, Vincent Guittot wrote:
+>> A new flag SD_SHARE_POWERDOMAIN is created to reflect whether groups of CPUs
+>> in a sched_domain level can or not reach different power state. As an example,
+>> the flag should be cleared at CPU level if groups of cores can be power gated
+>> independently. This information can be used in the load balance decision or to
+>> add load balancing level between group of CPUs that can power gate
+>> independantly.
+>> This flag is part of the topology flags that can be set by arch.
 >>
->> Gregory,
->>
->> either you should #ifndef CONFIG_USB_XHCI_MVEBU this and the one below -
->> or even better:
-> 
-> With the current code we don't need to add this, see xhci-mvebu.h: xhci_mvebu_*
-> are set to NULL if CONFIG_USB_XHCI_MVEBU is not define. Then the driver
-> is more multiplatform friendly.
+>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>> ---
+>
+> Building a cris-defconfig this gets me an endless stream of misery:
+>
+> In file included from /usr/src/linux-2.6/init/do_mounts.c:12:0:
+> /usr/src/linux-2.6/include/linux/sched.h:1048:46: warning: 'struct sched_domain_topology_level' declared inside parameter list [enabled by default]
+> /usr/src/linux-2.6/include/linux/sched.h:1048:46: warning: its scope is only this definition or declaration, which is probably not what you want [enabled by default]
+> In file included from /usr/src/linux-2.6/include/linux/utsname.h:5:0,
+>                  from /usr/src/linux-2.6/include/linux/init_task.h:6,
+>                  from /usr/src/linux-2.6/init/init_task.c:1:
+>
+> Might be something about UP builds, didn't check x86-UP.
 
-Ok, but strictly speaking, the compatible should be #ifndef'd at least.
+yes, you're right
+An empty set_sched_topology function has been define for UP whereas it
+can't because of the sched_domain_topology_level parameter which is
+available only in SMP
 
->>
->> Can you put driver stub with its of_match_table right into xhci-mvebu?
->> That way platform specific probe wouldn't pollute the generic driver.
-> 
-> This sound more interesting. However the only "pollution" is to extend
-> the compatible list, the platform specific code is in is own file. Moreover
-> it could make sens to have all the compatible strings at the same place.
+I'm going to send a fix.
 
-"pollute" wasn't meant for just your patch, but you can expect others
-the hop in as soon as one adds platform specific code ;)
-
-> I wait for the opinion of the USB maintainers for this point.
-
-Agreed.
-
-Sebastian
-
->> Greg will have a better opinion about it, but I remember some cleanup
->> in ehci, that basically removed platform specific references from the
->> generic code.
->>
->>> +struct xhci_plat_ops xhci_plat_mvebu = {
->>> +	.probe =  xhci_mvebu_probe,
->>> +	.remove =  xhci_mvebu_remove,
->>> +};
->>> +
->>>  static const struct of_device_id usb_xhci_of_match[] = {
->>>  	{
->>>  		.compatible = "generic-xhci",
->>> @@ -259,6 +265,10 @@ static const struct of_device_id usb_xhci_of_match[] = {
->>>  		.compatible = "xhci-platform",
->>>  		.data = (void *) &xhci_plat_default,
->>>  	},
->>> +	{
->>> +		.compatible = "marvell,xhci-armada-380",
->>
->> nit: the ususal order we use on mvebu is "marvell,<soc>-<ip>", so this
->> should be "marvell,armada-380-xhci".
->>
->> Sebastian
->>
->>> +		.data = (void *) &xhci_plat_mvebu,
->>> +	},
->>>  	{ },
->>>  };
->>>  MODULE_DEVICE_TABLE(of, usb_xhci_of_match);
->>>
->>
-> 
-> 
-
+sorry for the dumb error
