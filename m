@@ -1,42 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754569AbaDRTwM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 15:52:12 -0400
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:51531 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754172AbaDRTwG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 15:52:06 -0400
-Date: Fri, 18 Apr 2014 15:52:03 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Daeseok Youn <daeseok.youn@gmail.com>
-Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V2] workqueue: jumps to use_dfl_pwq if the target cpumask
- is equal wq's
-Message-ID: <20140418195203.GH23576@htj.dyndns.org>
-References: <20140418000814.GA7622@devel>
+	id S1754220AbaDRT4H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 15:56:07 -0400
+Received: from mail.tpi.com ([74.45.170.26]:46444 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751992AbaDRT4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 15:56:03 -0400
+Message-ID: <53518350.8010605@canonical.com>
+Date: Fri, 18 Apr 2014 13:56:00 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140418000814.GA7622@devel>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Trond Myklebust <trond.myklebust@primarydata.com>
+CC: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH net-next] xprtrdma: rpcrdma_register_default_external:
+ Silence frame size warning
+References: <1397850625-44074-1-git-send-email-tim.gardner@canonical.com> <CAHQdGtQyntscf5kwgWW-v0hWvdT0djKHhibhKNRtwGrcPu-e-Q@mail.gmail.com>
+In-Reply-To: <CAHQdGtQyntscf5kwgWW-v0hWvdT0djKHhibhKNRtwGrcPu-e-Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 09:08:14AM +0900, Daeseok Youn wrote:
-> wq_update_unbound_numa(), when it's decided that the newly updated
-> cpumask equals the default, looks at whether the current pwq is
-> already the default one and skips setting pwq to the default one.
-> This extra step is unnecessary and we can always jump to use_dfl_pwq
-> instead. Simplify the code by removing the conditional.
-> This doesn't make any functional difference.
-> 
-> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
+On 04/18/2014 01:52 PM, Trond Myklebust wrote:
+>
+> On Fri, Apr 18, 2014 at 3:50 PM, Tim Gardner <tim.gardner@canonical.com
+> <mailto:tim.gardner@canonical.com>> wrote:
+>
+>     net/sunrpc/xprtrdma/verbs.c: In function
+>     'rpcrdma_register_default_external':
+>     net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1048
+>     bytes is larger than 1024 bytes [-Wframe-larger-than=]
+>
+>     gcc version 4.8.2, x86_64-linux-gnu
+>
+>     Cc: Trond Myklebust <trond.myklebust@primarydata.com
+>     <mailto:trond.myklebust@primarydata.com>>
+>     Cc: "J. Bruce Fields" <bfields@fieldses.org
+>     <mailto:bfields@fieldses.org>>
+>     Cc: "David S. Miller" <davem@davemloft.net <mailto:davem@davemloft.net>>
+>     Signed-off-by: Tim Gardner <tim.gardner@canonical.com
+>     <mailto:tim.gardner@canonical.com>>
+>     ---
+>       net/sunrpc/xprtrdma/verbs.c |    8 +++++++-
+>       1 file changed, 7 insertions(+), 1 deletion(-)
+>
+>     diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
+>     index 93726560..8130349 100644
+>     --- a/net/sunrpc/xprtrdma/verbs.c
+>     +++ b/net/sunrpc/xprtrdma/verbs.c
+>     @@ -1736,9 +1736,13 @@ rpcrdma_register_default_external(struct
+>     rpcrdma_mr_seg *seg,
+>              int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
+>                                        IB_ACCESS_REMOTE_READ);
+>              struct rpcrdma_mr_seg *seg1 = seg;
+>     -       struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
+>     +       struct ib_phys_buf *ipb;
+>              int len, i, rc = 0;
+>
+>     +       ipb = kmalloc(sizeof(*ipb) * RPCRDMA_MAX_DATA_SEGS, GFP_ATOMIC);
+>     +       if (!ipb)
+>     +               return -ENOMEM;
+>     +
+>              if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
+>                      *nsegs = RPCRDMA_MAX_DATA_SEGS;
+>              for (len = 0, i = 0; i < *nsegs;) {
+>     @@ -1770,6 +1774,8 @@ rpcrdma_register_default_external(struct
+>     rpcrdma_mr_seg *seg,
+>                      seg1->mr_len = len;
+>              }
+>              *nsegs = i;
+>     +
+>     +       kfree(ipb);
+>              return rc;
+>       }
+>
+>     --
+>     1.7.9.5
+>
+> What has this got to do with net-next? It is RPC related...
+>
+> --
+>
+> Trond Myklebust
+>
+> Linux NFS client maintainer, PrimaryData
+>
+> trond.myklebust@primarydata.com <mailto:trond.myklebust@primarydata.com>
+>
 
-Applied to wq/for-3.16 w/ minor update to the patch title.
+I guess I naively thought that anything under the net directory went 
+through Dave's tree.
 
-Thanks.
-
+rtg
 -- 
-tejun
+Tim Gardner tim.gardner@canonical.com
