@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356AbaDRMrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:47:43 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40057 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754322AbaDRMrh (ORCPT
+	id S1754260AbaDRMrX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:47:23 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:37871 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753350AbaDRMrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:47:37 -0400
-Date: Fri, 18 Apr 2014 13:46:52 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: dri-devel@lists.freedesktop.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Inki Dae <inki.dae@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Airlie <airlied@linux.ie>,
-        open list <linux-kernel@vger.kernel.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC 3/3] drm/exynos: use pending_components for
-	components tracking
-Message-ID: <20140418124652.GE24070@n2100.arm.linux.org.uk>
-References: <1397734130-21019-1-git-send-email-a.hajda@samsung.com> <1397734130-21019-4-git-send-email-a.hajda@samsung.com> <20140417220412.GZ24070@n2100.arm.linux.org.uk> <5351145D.8070207@samsung.com>
+	Fri, 18 Apr 2014 08:47:10 -0400
+X-IronPort-AV: E=Sophos;i="4.97,883,1389715200"; 
+   d="scan'208";a="29445301"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>,
+        Andreas Gruenbacher <agruen@linbit.com>,
+        Stephen Hemminger <stephen@networkplumber.org>
+Subject: [PATCH 5/8] idr: covert BUG_ON() to WARN_ON_ONCE() if the argument is invalid.
+Date: Fri, 18 Apr 2014 20:49:52 +0800
+Message-ID: <1397825404-12039-6-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
+References: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5351145D.8070207@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 02:02:37PM +0200, Andrzej Hajda wrote:
-> Separation of the interfaces exposed by the device from the device itself
-> seems to me a good thing. I would even consider it as a biggest
-> advantage of this solution :)
-> 
-> The problem of re-initialization does not seems to be relevant here, it
-> is classic
-> problem of coding correctness nothing more, it can appear here and in
-> many different
-> places.
+When the arguments passed by the caller are invalid, WARN_ON_ONCE()
+is proper than BUG_ON() which may crash the kernel.
 
-It may be a problem of coding correctless, but it's also a maintainability
-problem too - it makes it _much_ more difficult to ensure that everything
-is correct.
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ lib/idr.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-> Anyway it seems we have different point of view on the problem, your say
-> about devices with two stage initialization. I see it more as devices
-> registering interfaces and superdevice using it.
-
-Right, so please make this exynos-specific, because from what I can see it
-has no reason to pretend to be generic.  As I've already pointed out, it
-can't be used in the general case because it ties sub-components directly
-to their main driver, which is absolutely absurd.  Please keep this
-absurdness in exynos and don't spread it around.  Thanks.
-
+diff --git a/lib/idr.c b/lib/idr.c
+index 104f87f..e4f9965 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -1093,13 +1093,14 @@ int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
+ 	unsigned int max;
+ 	unsigned long flags;
+ 
+-	BUG_ON((int)start < 0);
+-	BUG_ON((int)end < 0);
++	if (WARN_ON_ONCE(((int)start < 0) || ((int)end < 0)))
++		return -EINVAL;
+ 
+ 	if (end == 0)
+ 		max = 0x80000000;
+ 	else {
+-		BUG_ON(end < start);
++		if (WARN_ON_ONCE(end < start))
++			return -EINVAL;
+ 		max = end - 1;
+ 	}
+ 
+@@ -1135,7 +1136,7 @@ void ida_simple_remove(struct ida *ida, unsigned int id)
+ {
+ 	unsigned long flags;
+ 
+-	BUG_ON((int)id < 0);
++	WARN_ON_ONCE((int)id < 0);
+ 	spin_lock_irqsave(&simple_ida_lock, flags);
+ 	ida_remove(ida, id);
+ 	spin_unlock_irqrestore(&simple_ida_lock, flags);
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.7.4.4
+
