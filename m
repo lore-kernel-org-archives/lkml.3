@@ -1,402 +1,312 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbaDRMwN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:52:13 -0400
-Received: from mail-by2on0103.outbound.protection.outlook.com ([207.46.100.103]:56236
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	id S1754507AbaDRMwK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:52:10 -0400
+Received: from mail-bn1on0136.outbound.protection.outlook.com ([157.56.110.136]:35140
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752808AbaDRMm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:42:59 -0400
+	id S1753011AbaDRMnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:43:04 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH 11/28] nios2: Cache handling
-Date: Fri, 18 Apr 2014 20:26:55 +0800
-Message-ID: <1397824031-4892-9-git-send-email-lftan@altera.com>
+Subject: [PATCH 21/28] nios2: Cpuinfo handling
+Date: Fri, 18 Apr 2014 20:27:04 +0800
+Message-ID: <1397824031-4892-18-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
 References: <1397824031-4892-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(189002)(199002)(22564002)(93916002)(86362001)(575784001)(97736001)(46102001)(4396001)(50466002)(80022001)(76176999)(80976001)(62966002)(81342001)(50226001)(81542001)(48376002)(50986999)(2009001)(87286001)(99396002)(89996001)(88136002)(16796002)(74662001)(31966008)(74502001)(20776003)(47776003)(85852003)(83072002)(76482001)(42186004)(77156001)(84676001)(87936001)(77982001)(92566001)(2201001)(92726001)(83322001)(19580405001)(19580395003)(6806004)(44976005)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB019;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:EDBA7564.2CDA9F41.40F58176.8CE5E048.20554;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(16796002)(31966008)(74662001)(74502001)(20776003)(76176999)(46102001)(77156001)(36756003)(77982001)(47776003)(19580405001)(83322001)(76482001)(6806004)(44976005)(19580395003)(42186004)(50226001)(4396001)(2009001)(62966002)(84676001)(81542001)(92726001)(92566001)(2201001)(80022001)(93916002)(86362001)(575784001)(80976001)(48376002)(97736001)(50466002)(87286001)(81342001)(87936001)(89996001)(85852003)(83072002)(99396002)(50986999)(88136002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB040;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:EDA3FDF6.2EEA5E25.D6FD1D7B.5A36FA79.2058A;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-OriginatorOrg: altera.onmicrosoft.com
 X-Forefront-PRVS: 018577E36E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds functionality required for cache maintenance.
-
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/cache.h      |  36 +++++
- arch/nios2/include/asm/cacheflush.h |  48 +++++++
- arch/nios2/mm/cacheflush.c          | 255 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 339 insertions(+)
- create mode 100644 arch/nios2/include/asm/cache.h
- create mode 100644 arch/nios2/include/asm/cacheflush.h
- create mode 100644 arch/nios2/mm/cacheflush.c
+ arch/nios2/include/asm/cpuinfo.h |  58 +++++++++++
+ arch/nios2/kernel/cpuinfo.c      | 201 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 259 insertions(+)
+ create mode 100644 arch/nios2/include/asm/cpuinfo.h
+ create mode 100644 arch/nios2/kernel/cpuinfo.c
 
-diff --git a/arch/nios2/include/asm/cache.h b/arch/nios2/include/asm/cache.h
+diff --git a/arch/nios2/include/asm/cpuinfo.h b/arch/nios2/include/asm/cpuinfo.h
 new file mode 100644
-index 0000000..2293cf57e307a6b84e3972c2d27221dda54af500
+index 0000000..eafd7267e46b422ff1acc8efb6a771fb383cc5c4
 --- /dev/null
-+++ b/arch/nios2/include/asm/cache.h
-@@ -0,0 +1,36 @@
++++ b/arch/nios2/include/asm/cpuinfo.h
+@@ -0,0 +1,58 @@
 +/*
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * All rights reserved.
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
 + * the Free Software Foundation; either version 2 of the License, or
 + * (at your option) any later version.
 + *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
-+ * NON INFRINGEMENT.  See the GNU General Public License for more
-+ * details.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
 + */
 +
-+#ifndef _ASM_NIOS2_CACHE_H
-+#define _ASM_NIOS2_CACHE_H
++#ifndef _ASM_NIOS2_CPUINFO_H
++#define _ASM_NIOS2_CPUINFO_H
 +
-+#define NIOS2_DCACHE_SIZE	CONFIG_NIOS2_DCACHE_SIZE
-+#define NIOS2_ICACHE_SIZE	CONFIG_NIOS2_ICACHE_SIZE
-+#define NIOS2_DCACHE_LINE_SIZE	CONFIG_NIOS2_DCACHE_LINE_SIZE
-+#define NIOS2_ICACHE_LINE_SHIFT	5
-+#define NIOS2_ICACHE_LINE_SIZE	(1 << NIOS2_ICACHE_LINE_SHIFT)
++#include <linux/types.h>
++#include <asm/prom.h>
 +
-+/* bytes per L1 cache line */
-+#define L1_CACHE_SHIFT		NIOS2_ICACHE_LINE_SHIFT
-+#define L1_CACHE_BYTES		NIOS2_ICACHE_LINE_SIZE
++struct cpuinfo {
++	/* Core CPU configuration */
++	char cpu_impl[12];
++	u32 cpu_clock_freq;
++	u32 mmu;
++	u32 has_div;
++	u32 has_mul;
++	u32 has_mulx;
 +
-+#define ARCH_DMA_MINALIGN	L1_CACHE_BYTES
++	/* CPU caches */
++	u32 icache_line_size;
++	u32 icache_size;
++	u32 dcache_line_size;
++	u32 dcache_size;
 +
-+#define __cacheline_aligned
-+#define ____cacheline_aligned
++	/* TLB */
++	u32 tlb_pid_num_bits;	/* number of bits used for the PID in TLBMISC */
++	u32 tlb_num_ways;
++	u32 tlb_num_ways_log2;
++	u32 tlb_num_entries;
++	u32 tlb_num_lines;
++	u32 tlb_ptr_sz;
 +
-+#endif
-diff --git a/arch/nios2/include/asm/cacheflush.h b/arch/nios2/include/asm/cacheflush.h
++	/* Addresses */
++	u32 reset_addr;
++	u32 exception_addr;
++	u32 fast_tlb_miss_exc_addr;
++};
++
++extern struct cpuinfo cpuinfo;
++
++extern void setup_cpuinfo(void);
++
++#endif /* _ASM_NIOS2_CPUINFO_H */
+diff --git a/arch/nios2/kernel/cpuinfo.c b/arch/nios2/kernel/cpuinfo.c
 new file mode 100644
-index 0000000..ce2605a8c44de7e33686f9021b2b6736e94455a2
+index 0000000..c7b677db5c3d6b4ae0404bee0fbc8881dace086d
 --- /dev/null
-+++ b/arch/nios2/include/asm/cacheflush.h
-@@ -0,0 +1,48 @@
++++ b/arch/nios2/kernel/cpuinfo.c
+@@ -0,0 +1,201 @@
 +/*
-+ * Copyright (C) 2003 Microtronix Datacom Ltd.
-+ * Copyright (C) 2000-2002 Greg Ungerer <gerg@snapgear.com>
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
 + *
-+ * Ported from m68knommu.
++ * Based on cpuinfo.c from microblaze
 + *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License. See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
 + */
 +
-+#ifndef _ASM_NIOS2_CACHEFLUSH_H
-+#define _ASM_NIOS2_CACHEFLUSH_H
-+
-+#include <linux/mm_types.h>
-+
-+struct mm_struct;
-+
-+extern void flush_cache_all(void);
-+extern void flush_cache_mm(struct mm_struct *mm);
-+extern void flush_cache_dup_mm(struct mm_struct *mm);
-+extern void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
-+	unsigned long end);
-+extern void flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr,
-+	unsigned long pfn);
-+#define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE 1
-+extern void flush_dcache_page(struct page *page);
-+
-+extern void flush_icache_range(unsigned long start, unsigned long end);
-+extern void flush_icache_page(struct vm_area_struct *vma, struct page *page);
-+
-+#define flush_cache_vmap(start, end)		flush_dcache_range(start, end)
-+#define flush_cache_vunmap(start, end)		flush_dcache_range(start, end)
-+
-+extern void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
-+				unsigned long user_vaddr,
-+				void *dst, void *src, int len);
-+extern void copy_from_user_page(struct vm_area_struct *vma, struct page *page,
-+				unsigned long user_vaddr,
-+				void *dst, void *src, int len);
-+
-+extern void flush_dcache_range(unsigned long start, unsigned long end);
-+extern void invalidate_dcache_range(unsigned long start, unsigned long end);
-+
-+#define flush_dcache_mmap_lock(mapping)		do { } while (0)
-+#define flush_dcache_mmap_unlock(mapping)	do { } while (0)
-+
-+#endif /* _ASM_NIOS2_CACHEFLUSH_H */
-diff --git a/arch/nios2/mm/cacheflush.c b/arch/nios2/mm/cacheflush.c
-new file mode 100644
-index 0000000..0c4d0d416f8f603f92b66017d100d3388f3d04c1
---- /dev/null
-+++ b/arch/nios2/mm/cacheflush.c
-@@ -0,0 +1,255 @@
-+/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 2009, Wind River Systems Inc
-+ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ */
-+
-+#include <linux/export.h>
-+#include <linux/sched.h>
-+#include <linux/mm.h>
-+#include <linux/fs.h>
-+
-+#include <asm/cacheflush.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/delay.h>
++#include <linux/seq_file.h>
++#include <linux/string.h>
++#include <linux/of.h>
 +#include <asm/cpuinfo.h>
 +
-+static void __flush_dcache(unsigned long start, unsigned long end)
++struct cpuinfo cpuinfo;
++
++#define err_cpu(x) \
++	pr_err("ERROR: Nios II " x " different for kernel and DTS\n");
++
++static inline u32 fcpu(struct device_node *cpu, const char *n)
 +{
-+	unsigned long addr;
++	u32 val = 0;
 +
-+	start &= ~(cpuinfo.dcache_line_size - 1);
-+	end += (cpuinfo.dcache_line_size - 1);
-+	end &= ~(cpuinfo.dcache_line_size - 1);
++	of_property_read_u32(cpu, n, &val);
 +
-+	if (end > start + cpuinfo.dcache_size)
-+		end = start + cpuinfo.dcache_size;
-+
-+	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
-+		__asm__ __volatile__ ("   flushda 0(%0)\n"
-+					: /* Outputs */
-+					: /* Inputs  */ "r"(addr)
-+					/* : No clobber */);
-+	}
++	return val;
 +}
 +
-+static void __flush_dcache_all(unsigned long start, unsigned long end)
++static inline u32 fcpu_has(struct device_node *cpu, const char *n)
 +{
-+	unsigned long addr;
-+
-+	start &= ~(cpuinfo.dcache_line_size - 1);
-+	end += (cpuinfo.dcache_line_size - 1);
-+	end &= ~(cpuinfo.dcache_line_size - 1);
-+
-+	if (end > start + cpuinfo.dcache_size)
-+		end = start + cpuinfo.dcache_size;
-+
-+	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
-+		__asm__ __volatile__ ("   flushd 0(%0)\n"
-+					: /* Outputs */
-+					: /* Inputs  */ "r"(addr)
-+					/* : No clobber */);
-+	}
++	return of_get_property(cpu, n, NULL) ? 1 : 0;
 +}
 +
-+static void __invalidate_dcache(unsigned long start, unsigned long end)
++void __init setup_cpuinfo(void)
 +{
-+	unsigned long addr;
++	struct device_node *cpu;
++	const char *str;
++	int len;
 +
-+	start &= ~(cpuinfo.dcache_line_size - 1);
-+	end += (cpuinfo.dcache_line_size - 1);
-+	end &= ~(cpuinfo.dcache_line_size - 1);
++	cpu = of_find_node_by_type(NULL, "cpu");
++	if (!cpu)
++		panic("%s: No CPU found in devicetree!\n", __func__);
 +
-+	if (end > start + cpuinfo.dcache_size)
-+		end = start + cpuinfo.dcache_size;
++	if (!fcpu_has(cpu, "ALTR,has-initda"))
++		panic("initda instruction is unimplemented. Please update your "
++			"hardware system to have more than 4-byte line data "
++			"cache\n");
 +
-+	for (addr = start; addr < end; addr += cpuinfo.dcache_line_size) {
-+		__asm__ __volatile__ ("   initda 0(%0)\n"
-+					: /* Outputs */
-+					: /* Inputs  */ "r"(addr)
-+					/* : No clobber */);
-+	}
++	cpuinfo.cpu_clock_freq = fcpu(cpu, "clock-frequency");
++
++	str = of_get_property(cpu, "ALTR,implementation", &len);
++	if (str)
++		strlcpy(cpuinfo.cpu_impl, str, sizeof(cpuinfo.cpu_impl));
++	else
++		strcpy(cpuinfo.cpu_impl, "<unknown>");
++
++	cpuinfo.has_div = fcpu_has(cpu, "ALTR,has-div");
++	cpuinfo.has_mul = fcpu_has(cpu, "ALTR,has-mul");
++	cpuinfo.has_mulx = fcpu_has(cpu, "ALTR,has-mulx");
++
++#ifdef CONFIG_NIOS2_HW_DIV_SUPPORT
++	if (!cpuinfo.has_div)
++		err_cpu("DIV");
++#endif
++#ifdef CONFIG_NIOS2_HW_MUL_SUPPORT
++	if (!cpuinfo.has_mul)
++		err_cpu("MUL");
++#endif
++#ifdef CONFIG_NIOS2_HW_MULX_SUPPORT
++	if (!cpuinfo.has_mulx)
++		err_cpu("MULX");
++#endif
++
++	cpuinfo.tlb_num_ways = fcpu(cpu, "ALTR,tlb-num-ways");
++	if (!cpuinfo.tlb_num_ways)
++		panic("ALTR,tlb-num-ways can't be 0. Please check your hardware "
++			"system\n");
++	cpuinfo.icache_line_size = fcpu(cpu, "icache-line-size");
++	cpuinfo.icache_size = fcpu(cpu, "icache-size");
++	if (CONFIG_NIOS2_ICACHE_SIZE != cpuinfo.icache_size)
++	pr_warn("Warning: icache size configuration mismatch "
++		"(0x%x vs 0x%x) of CONFIG_NIOS2_ICACHE_SIZE vs "
++		"device tree icache-size\n",
++		CONFIG_NIOS2_ICACHE_SIZE, cpuinfo.icache_size);
++
++	cpuinfo.dcache_line_size = fcpu(cpu, "dcache-line-size");
++	if (CONFIG_NIOS2_DCACHE_LINE_SIZE != cpuinfo.dcache_line_size)
++		pr_warn("Warning: dcache line size configuration mismatch "
++		"(0x%x vs 0x%x) of CONFIG_NIOS2_DCACHE_LINE_SIZE vs "
++		"device tree dcache-line-size\n",
++		CONFIG_NIOS2_DCACHE_LINE_SIZE, cpuinfo.dcache_line_size);
++	cpuinfo.dcache_size = fcpu(cpu, "dcache-size");
++	if (CONFIG_NIOS2_DCACHE_SIZE != cpuinfo.dcache_size)
++		pr_warn("Warning: dcache size configuration mismatch "
++			"(0x%x vs 0x%x) of CONFIG_NIOS2_DCACHE_SIZE vs "
++			"device tree dcache-size\n",
++			CONFIG_NIOS2_DCACHE_SIZE, cpuinfo.dcache_size);
++
++	cpuinfo.tlb_pid_num_bits = fcpu(cpu, "ALTR,pid-num-bits");
++	cpuinfo.tlb_num_ways_log2 = ilog2(cpuinfo.tlb_num_ways);
++	cpuinfo.tlb_num_entries = fcpu(cpu, "ALTR,tlb-num-entries");
++	cpuinfo.tlb_num_lines = cpuinfo.tlb_num_entries / cpuinfo.tlb_num_ways;
++	cpuinfo.tlb_ptr_sz = fcpu(cpu, "ALTR,tlb-ptr-sz");
++
++	cpuinfo.reset_addr = fcpu(cpu, "ALTR,reset-addr");
++	cpuinfo.exception_addr = fcpu(cpu, "ALTR,exception-addr");
++	cpuinfo.fast_tlb_miss_exc_addr = fcpu(cpu, "ALTR,fast-tlb-miss-addr");
 +}
 +
-+static void __flush_icache(unsigned long start, unsigned long end)
++#ifdef CONFIG_PROC_FS
++
++/*
++ * Get CPU information for use by the procfs.
++ */
++static int show_cpuinfo(struct seq_file *m, void *v)
 +{
-+	unsigned long addr;
++	int count = 0;
++	const u32 clockfreq = cpuinfo.cpu_clock_freq;
 +
-+	start &= ~(cpuinfo.icache_line_size - 1);
-+	end += (cpuinfo.icache_line_size - 1);
-+	end &= ~(cpuinfo.icache_line_size - 1);
++	count = seq_printf(m,
++			"CPU:\t\tNios II/%s\n"
++			"MMU:\t\t%s\n"
++			"FPU:\t\tnone\n"
++			"Clocking:\t%u.%02u MHz\n"
++			"BogoMips:\t%lu.%02lu\n"
++			"Calibration:\t%lu loops\n",
++			cpuinfo.cpu_impl,
++			cpuinfo.mmu ? "present" : "none",
++			clockfreq / 1000000, (clockfreq / 100000) % 10,
++			(loops_per_jiffy * HZ) / 500000,
++			((loops_per_jiffy * HZ) / 5000) % 100,
++			(loops_per_jiffy * HZ));
 +
-+	if (end > start + cpuinfo.icache_size)
-+		end = start + cpuinfo.icache_size;
++	count += seq_printf(m,
++			"HW:\n"
++			" MUL:\t\t%s\n"
++			" MULX:\t\t%s\n"
++			" DIV:\t\t%s\n",
++			cpuinfo.has_mul ? "yes" : "no",
++			cpuinfo.has_mulx ? "yes" : "no",
++			cpuinfo.has_div ? "yes" : "no");
 +
-+	for (addr = start; addr < end; addr += cpuinfo.icache_line_size) {
-+		__asm__ __volatile__ ("   flushi %0\n"
-+					: /* Outputs */
-+					: /* Inputs  */ "r"(addr)
-+					/* : No clobber */);
-+	}
-+	__asm__ __volatile(" flushp\n");
++	count += seq_printf(m,
++			"Icache:\t\t%ukB, line length: %u\n",
++			cpuinfo.icache_size >> 10,
++			cpuinfo.icache_line_size);
++
++	count += seq_printf(m,
++			"Dcache:\t\t%ukB, line length: %u\n",
++			cpuinfo.dcache_size >> 10,
++			cpuinfo.dcache_line_size);
++
++	count += seq_printf(m,
++			"TLB:\t\t%u ways, %u entries, %u PID bits\n",
++			cpuinfo.tlb_num_ways,
++			cpuinfo.tlb_num_entries,
++			cpuinfo.tlb_pid_num_bits);
++
++	return 0;
 +}
 +
-+static void flush_aliases(struct address_space *mapping, struct page *page)
++static void *cpuinfo_start(struct seq_file *m, loff_t *pos)
 +{
-+	struct mm_struct *mm = current->active_mm;
-+	struct vm_area_struct *mpnt;
-+	pgoff_t pgoff;
++	unsigned long i = *pos;
 +
-+	pgoff = page->index;
-+
-+	flush_dcache_mmap_lock(mapping);
-+	vma_interval_tree_foreach(mpnt, &mapping->i_mmap, pgoff, pgoff) {
-+		unsigned long offset;
-+
-+		if (mpnt->vm_mm != mm)
-+			continue;
-+		if (!(mpnt->vm_flags & VM_MAYSHARE))
-+			continue;
-+
-+		offset = (pgoff - mpnt->vm_pgoff) << PAGE_SHIFT;
-+		flush_cache_page(mpnt, mpnt->vm_start + offset,
-+			page_to_pfn(page));
-+	}
-+	flush_dcache_mmap_unlock(mapping);
++	return i < num_possible_cpus() ? (void *) (i + 1) : NULL;
 +}
 +
-+void flush_cache_all(void)
++static void *cpuinfo_next(struct seq_file *m, void *v, loff_t *pos)
 +{
-+	__flush_dcache_all(0, cpuinfo.dcache_size);
-+	__flush_icache(0, cpuinfo.icache_size);
++	++*pos;
++	return cpuinfo_start(m, pos);
 +}
 +
-+void flush_cache_mm(struct mm_struct *mm)
++static void cpuinfo_stop(struct seq_file *m, void *v)
 +{
-+	flush_cache_all();
 +}
 +
-+void flush_cache_dup_mm(struct mm_struct *mm)
-+{
-+	flush_cache_all();
-+}
++const struct seq_operations cpuinfo_op = {
++	.start	= cpuinfo_start,
++	.next	= cpuinfo_next,
++	.stop	= cpuinfo_stop,
++	.show	= show_cpuinfo
++};
 +
-+void flush_icache_range(unsigned long start, unsigned long end)
-+{
-+	__flush_icache(start, end);
-+}
-+
-+void flush_dcache_range(unsigned long start, unsigned long end)
-+{
-+	__flush_dcache(start, end);
-+}
-+EXPORT_SYMBOL(flush_dcache_range);
-+
-+void invalidate_dcache_range(unsigned long start, unsigned long end)
-+{
-+	__invalidate_dcache(start, end);
-+}
-+EXPORT_SYMBOL(invalidate_dcache_range);
-+
-+void flush_cache_range(struct vm_area_struct *vma, unsigned long start,
-+			unsigned long end)
-+{
-+	__flush_dcache(start, end);
-+	if (vma == NULL || (vma->vm_flags & VM_EXEC))
-+		__flush_icache(start, end);
-+}
-+
-+void flush_icache_page(struct vm_area_struct *vma, struct page *page)
-+{
-+	unsigned long start = (unsigned long) page_address(page);
-+	unsigned long end = start + PAGE_SIZE;
-+
-+	__flush_icache(start, end);
-+}
-+
-+void flush_cache_page(struct vm_area_struct *vma, unsigned long vmaddr,
-+			unsigned long pfn)
-+{
-+	unsigned long start = vmaddr;
-+	unsigned long end = start + PAGE_SIZE;
-+
-+	__flush_dcache(start, end);
-+	if (vma->vm_flags & VM_EXEC)
-+		__flush_icache(start, end);
-+}
-+
-+void flush_dcache_page(struct page *page)
-+{
-+	struct address_space *mapping = page_mapping(page);
-+
-+	/* Flush this page if there are aliases. */
-+	if (mapping) {
-+		if (!mapping_mapped(mapping)) {
-+			clear_bit(PG_arch_1, &page->flags);
-+		} else if (mapping) {
-+			unsigned long start = (unsigned long)page_address(page);
-+			__flush_dcache(start, start + PAGE_SIZE);
-+			flush_aliases(mapping,  page);
-+		}
-+	}
-+}
-+EXPORT_SYMBOL(flush_dcache_page);
-+
-+void update_mmu_cache(struct vm_area_struct *vma,
-+		      unsigned long address, pte_t *pte)
-+{
-+	unsigned long pfn = pte_pfn(*pte);
-+	struct page *page;
-+
-+	if (!pfn_valid(pfn))
-+		return;
-+
-+	page = pfn_to_page(pfn);
-+
-+	if (!PageReserved(page) && !test_bit(PG_arch_1, &page->flags)) {
-+		unsigned long start = page_to_virt(page);
-+		struct address_space *mapping;
-+
-+		__flush_dcache(start, start + PAGE_SIZE);
-+
-+		mapping = page_mapping(page);
-+		if (mapping)
-+			flush_aliases(mapping, page);
-+		set_bit(PG_arch_1, &page->flags);
-+	}
-+}
-+
-+void copy_user_page(void *vto, void *vfrom, unsigned long vaddr,
-+		    struct page *to)
-+{
-+	__flush_dcache(vaddr, vaddr + PAGE_SIZE);
-+	copy_page(vto, vfrom);
-+	__flush_dcache((unsigned long)vto, (unsigned long)vto + PAGE_SIZE);
-+}
-+
-+void clear_user_page(void *addr, unsigned long vaddr, struct page *page)
-+{
-+	__flush_dcache(vaddr, vaddr + PAGE_SIZE);
-+	clear_page(addr);
-+	__flush_dcache((unsigned long)addr, (unsigned long)addr + PAGE_SIZE);
-+}
-+
-+void copy_from_user_page(struct vm_area_struct *vma, struct page *page,
-+			unsigned long user_vaddr,
-+			void *dst, void *src, int len)
-+{
-+	flush_cache_page(vma, user_vaddr, page_to_pfn(page));
-+	memcpy(dst, src, len);
-+	__flush_dcache((unsigned long)src, (unsigned long)src + len);
-+	if (vma->vm_flags & VM_EXEC)
-+		__flush_icache((unsigned long)src, (unsigned long)src + len);
-+}
-+
-+void copy_to_user_page(struct vm_area_struct *vma, struct page *page,
-+			unsigned long user_vaddr,
-+			void *dst, void *src, int len)
-+{
-+	flush_cache_page(vma, user_vaddr, page_to_pfn(page));
-+	memcpy(dst, src, len);
-+	__flush_dcache((unsigned long)dst, (unsigned long)dst + len);
-+	if (vma->vm_flags & VM_EXEC)
-+		__flush_icache((unsigned long)dst, (unsigned long)dst + len);
-+}
++#endif /* CONFIG_PROC_FS */
 -- 
 1.8.3.2
 
