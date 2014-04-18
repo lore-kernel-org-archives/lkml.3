@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398AbaDRRR5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 13:17:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53659 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754319AbaDRRRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 13:17:51 -0400
-Message-ID: <1397829723.4798.5.camel@linux-fkkt.site>
-Subject: Re: question on read_barrier_depends
-From: Oliver Neukum <oneukum@suse.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.44L0.1404171149001.881-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1404171149001.881-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 18 Apr 2014 16:02:03 +0200
-Mime-Version: 1.0
-X-Mailer: Evolution 3.10.2 
-Content-Transfer-Encoding: 7bit
+	id S1754509AbaDRRSy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 13:18:54 -0400
+Received: from mail-qg0-f74.google.com ([209.85.192.74]:36465 "EHLO
+	mail-qg0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346AbaDRRSu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 13:18:50 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Doug Anderson <dianders@chromium.org>,
+        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] kdb: Put a cr before lf when working w/ a non open console port
+Date: Fri, 18 Apr 2014 10:17:28 -0700
+Message-Id: <1397841448-12942-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-17 at 11:50 -0400, Alan Stern wrote:
-> On Thu, 17 Apr 2014, Oliver Neukum wrote:
-> 
-> > On Wed, 2014-04-16 at 11:26 -0400, Alan Stern wrote:
-> > 
-> > > In addition, the following code in kfifo_get() does this:
-> > > 
-> > > 			*(typeof(__tmp->type))__val = \
-> > > 				(__is_kfifo_ptr(__tmp) ? \
-> > > 				((typeof(__tmp->type))__kfifo->data) : \
-> > > 				(__tmp->buf) \
-> > > 				)[__kfifo->out & __tmp->kfifo.mask]; \
-> > > 			smp_wmb(); \
-> > > 			__kfifo->out++; \
-> > > 
-> > > It looks like the smp_wmb() should really be smp_mb(), because it 
-> > > separates the _read_ for val from the _write_ of kfifo->out.
-> > 
-> > But where is kfifo->out read at all?
-> 
-> It is read in kfifo_put(), inside the call to kfifo_is_full() -> 
-> kfifo_len().
+In (efe2f29 kgdboc,kdb: Allow kdb to work on a non open console port)
+support was added to directly use the "write_char" functions when
+doing kdb over a non-open console port.  This is great, but it ends up
+bypassing the normal code in uart_console_write() that adds a carriage
+return before any newlines.
 
-I had overlooked that. In that case kfifo_put() also needs
-smp_read_barrier_depends()
+Add similar code in kdb so we don't get things like:
+[0]kdb>
+       [0]kdb>
+              [0]kdb>
 
-	Regards
-		Oliver
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ kernel/debug/kdb/kdb_io.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-
+diff --git a/kernel/debug/kdb/kdb_io.c b/kernel/debug/kdb/kdb_io.c
+index 14ff484..513ed44 100644
+--- a/kernel/debug/kdb/kdb_io.c
++++ b/kernel/debug/kdb/kdb_io.c
+@@ -698,6 +698,9 @@ kdb_printit:
+ 			len = retlen;
+ 			cp = kdb_buffer;
+ 			while (len--) {
++				if (*cp == '\n')
++					dbg_io_ops->write_char('\r');
++
+ 				dbg_io_ops->write_char(*cp);
+ 				cp++;
+ 			}
+@@ -759,6 +762,9 @@ kdb_printit:
+ 			len = strlen(moreprompt);
+ 			cp = moreprompt;
+ 			while (len--) {
++				if (*cp == '\n')
++					dbg_io_ops->write_char('\r');
++
+ 				dbg_io_ops->write_char(*cp);
+ 				cp++;
+ 			}
+-- 
+1.9.1.423.g4596e3a
 
