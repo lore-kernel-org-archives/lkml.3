@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502AbaDRNJa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:09:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38873 "EHLO
+	id S1754522AbaDRNJu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:09:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38903 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691AbaDRNJW (ORCPT
+	with ESMTP id S1751373AbaDRNJq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:09:22 -0400
-Date: Fri, 18 Apr 2014 06:08:33 -0700
+	Fri, 18 Apr 2014 09:09:46 -0400
+Date: Fri, 18 Apr 2014 06:08:47 -0700
 From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
-Message-ID: <tip-8588a2bbddc524325d84d1d6996758e9242e4ffc@git.kernel.org>
+Message-ID: <tip-4a3dc121d3c370625575247bf714db3f601d83e9@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
         zheng.z.yan@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, zheng.z.yan@intel.com,
-        peterz@infradead.org, tglx@linutronix.de
-In-Reply-To: <1395133004-23205-2-git-send-email-zheng.z.yan@intel.com>
-References: <1395133004-23205-2-git-send-email-zheng.z.yan@intel.com>
+        torvalds@linux-foundation.org, peterz@infradead.org, acme@kernel.org,
+        zheng.z.yan@intel.com, tglx@linutronix.de
+In-Reply-To: <1395133004-23205-3-git-send-email-zheng.z.yan@intel.com>
+References: <1395133004-23205-3-git-send-email-zheng.z.yan@intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] hrtimer: Export __hrtimer_start_range_ns()
-Git-Commit-ID: 8588a2bbddc524325d84d1d6996758e9242e4ffc
+Subject: [tip:perf/core] perf/x86: Export perf_assign_events()
+Git-Commit-ID: 4a3dc121d3c370625575247bf714db3f601d83e9
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -33,39 +33,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8588a2bbddc524325d84d1d6996758e9242e4ffc
-Gitweb:     http://git.kernel.org/tip/8588a2bbddc524325d84d1d6996758e9242e4ffc
+Commit-ID:  4a3dc121d3c370625575247bf714db3f601d83e9
+Gitweb:     http://git.kernel.org/tip/4a3dc121d3c370625575247bf714db3f601d83e9
 Author:     Yan, Zheng <zheng.z.yan@intel.com>
-AuthorDate: Tue, 18 Mar 2014 16:56:42 +0800
+AuthorDate: Tue, 18 Mar 2014 16:56:43 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
 CommitDate: Fri, 18 Apr 2014 12:54:46 +0200
 
-hrtimer: Export __hrtimer_start_range_ns()
+perf/x86: Export perf_assign_events()
 
-Export __hrtimer_start_range_ns() to allow building perf Intel uncore
-driver as a module.
+export perf_assign_events to allow building perf Intel uncore driver
+as module
 
 Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1395133004-23205-2-git-send-email-zheng.z.yan@intel.com
+Link: http://lkml.kernel.org/r/1395133004-23205-3-git-send-email-zheng.z.yan@intel.com
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: eranian@google.com
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/hrtimer.c | 1 +
+ arch/x86/kernel/cpu/perf_event.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index d55092c..53d2682 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1017,6 +1017,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index ae407f7..89f3b7c 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -721,6 +721,7 @@ int perf_assign_events(struct perf_event **events, int n,
  
- 	return ret;
+ 	return sched.state.unassigned;
  }
-+EXPORT_SYMBOL_GPL(__hrtimer_start_range_ns);
++EXPORT_SYMBOL_GPL(perf_assign_events);
  
- /**
-  * hrtimer_start_range_ns - (re)start an hrtimer on the current CPU
+ int x86_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ {
