@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaDRJcW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:32:22 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45966 "EHLO
+	id S1754483AbaDRJcg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:32:36 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45968 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752291AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752307AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, lucien <lucien.xin@gmail.com>,
+Cc: linux-kernel@vger.kernel.org, David Stevens <dlstevens@us.ibm.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 46/72] ipv6: ip6_append_data_mtu do not handle the mtu of the second fragment properly
-Date: Fri, 18 Apr 2014 11:22:19 +0200
-Message-Id: <6caa13565114dc0b946eba39835bd69ebd508205.1397812482.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 47/72] vxlan: fix potential NULL dereference in arp_reduce()
+Date: Fri, 18 Apr 2014 11:22:20 +0200
+Message-Id: <c72c1e886766c2be276e765fc444c23d2ee1543e.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -23,103 +23,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: lucien <lucien.xin@gmail.com>
+From: David Stevens <dlstevens@us.ibm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit e367c2d03dba4c9bcafad24688fadb79dd95b218 ]
+[ Upstream commit 7346135dcd3f9b57f30a5512094848c678d7143e ]
 
-In ip6_append_data_mtu(), when the xfrm mode is not tunnel(such as
-transport),the ipsec header need to be added in the first fragment, so the mtu
-will decrease to reserve space for it, then the second fragment come, the mtu
-should be turn back, as the commit 0c1833797a5a6ec23ea9261d979aa18078720b74
-said.  however, in the commit a493e60ac4bbe2e977e7129d6d8cbb0dd236be, it use
-*mtu = min(*mtu, ...) to change the mtu, which lead to the new mtu is alway
-equal with the first fragment's. and cannot turn back.
+This patch fixes a NULL pointer dereference in the event of an
+skb allocation failure in arp_reduce().
 
-when I test through  ping6 -c1 -s5000 $ip (mtu=1280):
-...frag (0|1232) ESP(spi=0x00002000,seq=0xb), length 1232
-...frag (1232|1216)
-...frag (2448|1216)
-...frag (3664|1216)
-...frag (4880|164)
+Signed-Off-By: David L Stevens <dlstevens@us.ibm.com>
+Acked-by: Cong Wang <cwang@twopensource.com>
 
-which should be:
-...frag (0|1232) ESP(spi=0x00001000,seq=0x1), length 1232
-...frag (1232|1232)
-...frag (2464|1232)
-...frag (3696|1232)
-...frag (4928|116)
-
-so delete the min() when change back the mtu.
-
-Signed-off-by: Xin Long <lucien.xin@gmail.com>
-Fixes: 75a493e60ac4bb ("ipv6: ip6_append_data_mtu did not care about pmtudisc and frag_size")
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv6/ip6_output.c | 14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
+ drivers/net/vxlan.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 68fd4918315c..49f85d49cdb4 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1088,21 +1088,19 @@ static void ip6_append_data_mtu(unsigned int *mtu,
- 				unsigned int fragheaderlen,
- 				struct sk_buff *skb,
- 				struct rt6_info *rt,
--				bool pmtuprobe)
-+				unsigned int orig_mtu)
- {
- 	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
- 		if (skb == NULL) {
- 			/* first fragment, reserve header_len */
--			*mtu = *mtu - rt->dst.header_len;
-+			*mtu = orig_mtu - rt->dst.header_len;
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index 32c45c3d820d..020fe03f37c0 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -1212,6 +1212,9 @@ static int arp_reduce(struct net_device *dev, struct sk_buff *skb)
  
- 		} else {
- 			/*
- 			 * this fragment is not first, the headers
- 			 * space is regarded as data space.
- 			 */
--			*mtu = min(*mtu, pmtuprobe ?
--				   rt->dst.dev->mtu :
--				   dst_mtu(rt->dst.path));
-+			*mtu = orig_mtu;
- 		}
- 		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
- 			      + fragheaderlen - sizeof(struct frag_hdr);
-@@ -1119,7 +1117,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct inet_cork *cork;
- 	struct sk_buff *skb, *skb_prev = NULL;
--	unsigned int maxfraglen, fragheaderlen, mtu;
-+	unsigned int maxfraglen, fragheaderlen, mtu, orig_mtu;
- 	int exthdrlen;
- 	int dst_exthdrlen;
- 	int hh_len;
-@@ -1201,6 +1199,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
- 		dst_exthdrlen = 0;
- 		mtu = cork->fragsize;
- 	}
-+	orig_mtu = mtu;
+ 		neigh_release(n);
  
- 	hh_len = LL_RESERVED_SPACE(rt->dst.dev);
- 
-@@ -1280,8 +1279,7 @@ alloc_new_skb:
- 			if (skb == NULL || skb_prev == NULL)
- 				ip6_append_data_mtu(&mtu, &maxfraglen,
- 						    fragheaderlen, skb, rt,
--						    np->pmtudisc ==
--						    IPV6_PMTUDISC_PROBE);
-+						    orig_mtu);
- 
- 			skb_prev = skb;
- 
++		if (reply == NULL)
++			goto out;
++
+ 		skb_reset_mac_header(reply);
+ 		__skb_pull(reply, skb_network_offset(reply));
+ 		reply->ip_summed = CHECKSUM_UNNECESSARY;
 -- 
 1.9.2
 
