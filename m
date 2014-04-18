@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751982AbaDRIFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 04:05:10 -0400
-Received: from relay.parallels.com ([195.214.232.42]:37065 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbaDRIEz (ORCPT
+	id S1752562AbaDRIFy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 04:05:54 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:63540 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaDRIFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 04:04:55 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <mhocko@suse.cz>, <hannes@cmpxchg.org>
-CC: <akpm@linux-foundation.org>, <glommer@gmail.com>,
-        <cl@linux-foundation.org>, <penberg@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [PATCH RFC -mm v2 0/3] kmemcg: simplify work-flow (was "memcg-vs-slab cleanup")
-Date: Fri, 18 Apr 2014 12:04:46 +0400
-Message-ID: <cover.1397804745.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 18 Apr 2014 04:05:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+From: Norbert Ciosek <norbertciosek@gmail.com>
+Date: Fri, 18 Apr 2014 10:05:24 +0200
+Message-ID: <CAFEQzNtv-iUAELME1Z9Ef6oqaq7WOjoGA_MWUSzGmt=KrRST=w@mail.gmail.com>
+Subject: broken UIO functionality for mmap in linux stable
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal, Johannes,
+Hello kernel developers,
 
-This patch-set is a part of preparations for kmemcg re-parenting. It
-targets at simplifying kmemcg work-flows and synchronization.
+I have some problems with UIO driver.
+To be exact the problem is with uio_mmap_physical function from
+drivers/uio/uio.c.
 
-First, it removes async per memcg cache destruction (see patches 1, 2).
-Now caches are only destroyed on memcg offline. That means the caches
-that are not empty on memcg offline will be leaked. However, they are
-already leaked, because memcg_cache_params::nr_pages normally never
-drops to 0 so the destruction work is never scheduled except
-kmem_cache_shrink is called explicitly. In the future I'm planning
-reaping such dead caches on vmpressure or periodically.
+Problems were introduced by commits:
+b65502879556d041b45104c6a35abbbba28c8f2d
+7314e613d5ff9f0934f7a0f74ed7973b903315d1
 
-Second, it substitutes per memcg slab_caches_mutex's with the global
-memcg_slab_mutex, which should be taken during the whole per memcg cache
-creation/destruction path before the slab_mutex (see patch 3). This
-greatly simplifies synchronization among various per memcg cache
-creation/destruction paths.
+These commits added checks if address and size are page aligned.
+Of course this is correct for the "mmap" call, but currently there is
+no way to store offset in the UIO driver.
+Function "map_offset_show" will always return/store 0 with the page
+aligned addresses.
 
-I really need your help, because I'm far not sure if what I'm doing here
-is right. So I would appreciate if you could look through the patches
-and share your thoughts about the design changes they introduce.
+Is it possible to add additional field called "offset" to struct uio_mem?
+The "addr" could be renamed to "base" and store address with page granularity.
+Then this field should be checked in the "uio_mmap_physical" function
+instead of "addr".
 
-Thanks,
+Beside of this size of the map in the device is not always page aligned.
+For example in my device this value is often set to 4.
+Should I change this value to be page aligned (i.e. 0x1000 in DTS) and
+"remember" the correct size in the user space program which is
+managing the device? Maybe there is some other way?
 
-Vladimir Davydov (3):
-  memcg, slab: do not schedule cache destruction when last page goes
-    away
-  memcg, slab: merge memcg_{bind,release}_pages to
-    memcg_{un}charge_slab
-  memcg, slab: simplify synchronization scheme
+Pozdrawiam / Best regards,
 
- include/linux/memcontrol.h |   15 +--
- include/linux/slab.h       |    8 +-
- mm/memcontrol.c            |  231 +++++++++++++++-----------------------------
- mm/slab.c                  |    2 -
- mm/slab.h                  |   28 +-----
- mm/slab_common.c           |   22 ++---
- mm/slub.c                  |    2 -
- 7 files changed, 92 insertions(+), 216 deletions(-)
-
--- 
-1.7.10.4
-
+Norbert Ciosek
