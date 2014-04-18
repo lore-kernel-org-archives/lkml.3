@@ -1,45 +1,218 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417AbaDRBxJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 21:53:09 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:52372 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaDRBxH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 21:53:07 -0400
-MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 17 Apr 2014 18:52:44 -0700
-X-Google-Sender-Auth: zl1LINvMPupCg8hh-6lQIt0bd7k
-Message-ID: <CAB=NE6WD0AB4qk7t=bszdv61F2g2NvDei_tcx2o98=kQvUuh-Q@mail.gmail.com>
-Subject: 3 linux-next based backports releases
-To: "backports@vger.kernel.org" <backports@vger.kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-media@vger.kernel.org,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-zigbee-devel@lists.sourceforge.net
-Content-Type: text/plain; charset=UTF-8
+	id S1751357AbaDRByW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 21:54:22 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52191 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751041AbaDRByP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 21:54:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,882,1389772800"; 
+   d="scan'208";a="495109316"
+From: Lv Zheng <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <len.brown@intel.com>
+Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>,
+        linux-acpi@vger.kernel.org, Zhao Yakui <yakui.zhao@intel.com>
+Subject: [PATCH] ACPICA: Tables: Skip NULL entries in RSDT and XSDT.
+Date: Fri, 18 Apr 2014 09:53:19 +0800
+Message-Id: <261e2207fab4a185b44fb27dbf9bc68588aea713.1397785844.git.lv.zheng@intel.com>
+X-Mailer: git-send-email 1.7.10
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3 new linux backports release are now available based on linux-next
-tags next-20140320 [0] next-20140411 [1] and next-20140417 [2]. This
-should mean that we can keep things in synch now almost daily, and
-drivers can be tested with the latest code as-is on linux-next. We've
-shaved off kernel support for kernels older than 3.0 in order to help
-scale the project. We've also have added 2 new SmPL patches to help
-backports backport two pain in the ass collateral evolutions
-automatically. Please note that the patches/ directory is now all
-tidied up -- folks interested in playing with SmPL can try to help by
-seeing if they can use SmPL grammer to formalize a collateral
-evolution backport. We have a bit of examples now. For more details
-please refer to the wiki [3] or git tree.
+Note that this patch is only used for stable kernels, upstream kernels
+will have this problem fixed in ACPICA 201303-04 release.  So upstream
+kernels shouldn't merge this commit.
 
-[0] http://www.kernel.org/pub/linux/kernel/projects/backports/2014/03/20/backports-20140320.tar.xz
-[1] https://www.kernel.org/pub/linux/kernel/projects/backports/2014/04/11/backports-20140411.tar.xz
-[2] https://www.kernel.org/pub/linux/kernel/projects/backports/2014/04/17/backports-20140417.tar.xz
-[3] http://backports.wiki.kernel.org
+It is reported that there are buggy BIOSes in the world: AMI uses a XSDt
+compiler for early BIOSes, this compiler will generate XSDT with a NULL
+entry.  The affected BIOS versions are "AMI BIOS F2-F4".
 
-  Luis
+Original solution on Linux is to use an alternative heathy root table
+instead of the ill one.  This commit is refined by the following ACPICA
+commit that tries to reduce the source code differences between Linux and
+ACPICA upstream.
+  Commit: 671cc68dc61f029d44b43a681356078e02d8dab8
+  Subject: ACPICA: Back port and refine validation of the XSDT root table.
+But according to the bug report, the XSDT in fact is not broken, we should
+just add NULL entry sanity check before installing a table address from
+XSDT.
+
+With the NULL entry sanity check implemented, the XSDT validation is
+useless because:
+1. If XSDT contains NULL entries, it can be bypassed by the new sanity
+   check mechanism;
+2. If RSDP contains a bad XSDT address, invoking XSDT validation will still
+   lead to kernel crash.
+
+This patch deletes XSDT validation logics and adds code to skip NULL
+entries that can be found in RSDT or XSDT. Lv Zheng.
+
+Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=73911
+Buglink: https://bugs.archlinux.org/task/39811
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Reported-and-tested-by: Bruce Chiarelli <mano155@gmail.com>
+Reported-and-tested-by: Spyros Stathopoulos <spystath@gmail.com>
+Cc: Zhao Yakui <yakui.zhao@intel.com>
+Cc: <stable@vger.kernel.org> # 3.14.x: 671cc68: ACPICA: Back port and refine validation of the XSDT root table.
+---
+ drivers/acpi/acpica/tbutils.c |  116 ++++-------------------------------------
+ 1 file changed, 11 insertions(+), 105 deletions(-)
+
+diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
+index 6412d3c..aaea4e2 100644
+--- a/drivers/acpi/acpica/tbutils.c
++++ b/drivers/acpi/acpica/tbutils.c
+@@ -49,8 +49,6 @@
+ ACPI_MODULE_NAME("tbutils")
+ 
+ /* Local prototypes */
+-static acpi_status acpi_tb_validate_xsdt(acpi_physical_address address);
+-
+ static acpi_physical_address
+ acpi_tb_get_root_table_entry(u8 *table_entry, u32 table_entry_size);
+ 
+@@ -357,87 +355,6 @@ acpi_tb_get_root_table_entry(u8 *table_entry, u32 table_entry_size)
+ 
+ /*******************************************************************************
+  *
+- * FUNCTION:    acpi_tb_validate_xsdt
+- *
+- * PARAMETERS:  address             - Physical address of the XSDT (from RSDP)
+- *
+- * RETURN:      Status. AE_OK if the table appears to be valid.
+- *
+- * DESCRIPTION: Validate an XSDT to ensure that it is of minimum size and does
+- *              not contain any NULL entries. A problem that is seen in the
+- *              field is that the XSDT exists, but is actually useless because
+- *              of one or more (or all) NULL entries.
+- *
+- ******************************************************************************/
+-
+-static acpi_status acpi_tb_validate_xsdt(acpi_physical_address xsdt_address)
+-{
+-	struct acpi_table_header *table;
+-	u8 *next_entry;
+-	acpi_physical_address address;
+-	u32 length;
+-	u32 entry_count;
+-	acpi_status status;
+-	u32 i;
+-
+-	/* Get the XSDT length */
+-
+-	table =
+-	    acpi_os_map_memory(xsdt_address, sizeof(struct acpi_table_header));
+-	if (!table) {
+-		return (AE_NO_MEMORY);
+-	}
+-
+-	length = table->length;
+-	acpi_os_unmap_memory(table, sizeof(struct acpi_table_header));
+-
+-	/*
+-	 * Minimum XSDT length is the size of the standard ACPI header
+-	 * plus one physical address entry
+-	 */
+-	if (length < (sizeof(struct acpi_table_header) + ACPI_XSDT_ENTRY_SIZE)) {
+-		return (AE_INVALID_TABLE_LENGTH);
+-	}
+-
+-	/* Map the entire XSDT */
+-
+-	table = acpi_os_map_memory(xsdt_address, length);
+-	if (!table) {
+-		return (AE_NO_MEMORY);
+-	}
+-
+-	/* Get the number of entries and pointer to first entry */
+-
+-	status = AE_OK;
+-	next_entry = ACPI_ADD_PTR(u8, table, sizeof(struct acpi_table_header));
+-	entry_count = (u32)((table->length - sizeof(struct acpi_table_header)) /
+-			    ACPI_XSDT_ENTRY_SIZE);
+-
+-	/* Validate each entry (physical address) within the XSDT */
+-
+-	for (i = 0; i < entry_count; i++) {
+-		address =
+-		    acpi_tb_get_root_table_entry(next_entry,
+-						 ACPI_XSDT_ENTRY_SIZE);
+-		if (!address) {
+-
+-			/* Detected a NULL entry, XSDT is invalid */
+-
+-			status = AE_NULL_ENTRY;
+-			break;
+-		}
+-
+-		next_entry += ACPI_XSDT_ENTRY_SIZE;
+-	}
+-
+-	/* Unmap table */
+-
+-	acpi_os_unmap_memory(table, length);
+-	return (status);
+-}
+-
+-/*******************************************************************************
+- *
+  * FUNCTION:    acpi_tb_parse_root_table
+  *
+  * PARAMETERS:  rsdp                    - Pointer to the RSDP
+@@ -502,25 +419,6 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+ 	 */
+ 	acpi_os_unmap_memory(rsdp, sizeof(struct acpi_table_rsdp));
+ 
+-	/*
+-	 * If it is present and used, validate the XSDT for access/size
+-	 * and ensure that all table entries are at least non-NULL
+-	 */
+-	if (table_entry_size == ACPI_XSDT_ENTRY_SIZE) {
+-		status = acpi_tb_validate_xsdt(address);
+-		if (ACPI_FAILURE(status)) {
+-			ACPI_BIOS_WARNING((AE_INFO,
+-					   "XSDT is invalid (%s), using RSDT",
+-					   acpi_format_exception(status)));
+-
+-			/* Fall back to the RSDT */
+-
+-			address =
+-			    (acpi_physical_address) rsdp->rsdt_physical_address;
+-			table_entry_size = ACPI_RSDT_ENTRY_SIZE;
+-		}
+-	}
+-
+ 	/* Map the RSDT/XSDT table header to get the full table length */
+ 
+ 	table = acpi_os_map_memory(address, sizeof(struct acpi_table_header));
+@@ -592,12 +490,20 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
+ 
+ 		/* Get the table physical address (32-bit for RSDT, 64-bit for XSDT) */
+ 
++		address = acpi_tb_get_root_table_entry(table_entry, table_entry_size);
++
++		/* Skip NULL entry in RSDT/XSDT */
++
++		if (!address) {
++			goto next_table;
++		}
++
+ 		acpi_gbl_root_table_list.tables[acpi_gbl_root_table_list.
+-						current_table_count].address =
+-		    acpi_tb_get_root_table_entry(table_entry, table_entry_size);
++						current_table_count].address = address;
++		acpi_gbl_root_table_list.current_table_count++;
+ 
++next_table:
+ 		table_entry += table_entry_size;
+-		acpi_gbl_root_table_list.current_table_count++;
+ 	}
+ 
+ 	/*
+-- 
+1.7.10
+
