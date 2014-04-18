@@ -1,113 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751257AbaDRJRz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:17:55 -0400
-Received: from mail.ovgu.de ([141.44.1.66]:57449 "EHLO mail.ovgu.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111AbaDRJRu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 05:17:50 -0400
-Message-ID: <5350EDAE.8020101@st.ovgu.de>
-Date: Fri, 18 Apr 2014 11:17:34 +0200
-From: Matthias Graf <matthias.graf@st.ovgu.de>
-Organization: student.uni-magdeburg.de
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        alexander.deucher@amd.com
-Subject: Re: PROBLEM: Fatal Machine Check >= 3.13.5-101.fc19.x86_64
-References: <532C727F.1080803@st.ovgu.de> <20140321172742.GA2846@pd.tnic> <532C97DF.9010201@st.ovgu.de> <20140321201352.GC1338@pd.tnic> <533069E4.10002@st.ovgu.de> <533C1B47.8080709@st.ovgu.de> <20140416142232.GF16741@pd.tnic> <534F73F6.7050804@st.ovgu.de> <20140417130207.GB4321@pd.tnic>
-In-Reply-To: <20140417130207.GB4321@pd.tnic>
-X-Enigmail-Version: 1.6
-OpenPGP: id=BE42F9BD
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="GLUCqh46KIgQuQpC9c7djaIAQP8ExxDgQ"
-X-PMX-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- MULTIPLE_RCPTS 0.1, HTML_00_01 0.05, HTML_00_10 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_2000_2999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, RDNS_POOLED 0, RDNS_SUSP 0, RDNS_SUSP_SPECIFIC 0, __ANY_URI 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CT 0, __CTYPE_HAS_BOUNDARY 0, __CTYPE_MULTIPART 0, __FORWARDED_MSG 0, __FRAUD_REFNUM 0, __HAS_FROM 0, __HAS_MSGID 0, __IN_REP_TO 0, __MIME_VERSION 0, __MOZILLA_MSGID 0, __MOZILLA_USER_AGENT 0, __MULTIPLE_RCPTS_CC_X2 0, __RDNS_POOLED_10 0, __SANE_MSGID 0, __STOCK_PHRASE_6 0, __SUBJ_ALPHA_NEGATE 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0'
-X-Spam-Score: Gauge=IIIIIIII
+	id S1751501AbaDRJTA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:19:00 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:60318 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751111AbaDRJSr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 05:18:47 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
+        aswin@hp.com, linux-mm@kvack.org,
+        Manfred Spraul <manfred@colorfullife.com>, mtk.manpages@gmail.com
+Subject: [PATCH] ipc/shm: Increase the defaults for SHMALL, SHMMAX to infinity
+Date: Fri, 18 Apr 2014 11:18:40 +0200
+Message-Id: <1397812720-5629-1-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---GLUCqh46KIgQuQpC9c7djaIAQP8ExxDgQ
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+System V shared memory
 
-Fine-grained bisection result:
+a) can be abused to trigger out-of-memory conditions and the standard
+   measures against out-of-memory do not work:
 
+    - it is not possible to use setrlimit to limit the size of shm segments.
 
-ab70b1dde73ff4525c3cd51090c233482c50f217 is the first bad commit
-commit ab70b1dde73ff4525c3cd51090c233482c50f217
-Author: Alex Deucher <alexander.deucher@amd.com>
-Date:   Fri Nov 1 15:16:02 2013 -0400
+    - segments can exist without association with any processes, thus
+      the oom-killer is unable to free that memory.
 
-    drm/radeon: enable DPM by default on r7xx asics
+b) is typically used for shared information - today often multiple GB.
+   (e.g. database shared buffers)
 
-    Seems to be stable on them.
+The current default is a maximum segment size of 32 MB and a maximum total
+size of 8 GB. This is often too much for a) and not enough for b), which
+means that lots of users must change the defaults.
 
-    Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+This patch increases the default limits to ULONG_MAX, which is perfect for
+case b). The defaults are used after boot and as the initial value for
+each new namespace.
 
-:040000 040000 f3262029b868df4d882f64b4deba6b9230e307ea
-1f1dfca42763703a56e3cc82bb103608a24be94e M	drivers
+Admins/distros that need a protection against a) should reduce the limits
+and/or enable shm_rmid_forced.
 
+Further notes:
+- The patch only changes the boot time default, overrides behave as before:
+	# sysctl kernel/shmall=33554432
+  would recreate the previous limit for SHMMAX (for the current namespace).
 
-Result is reasonable: I have a RV770 chip.
+- Disabling sysv shm allocation is possible with:
+	# sysctl kernel.shmall=0
+  (not a new feature, also per-namespace)
 
-(Additional) Bug Report for Reference:
-https://bugzilla.redhat.com/show_bug.cgi?id=3D1085785
+- ULONG_MAX is not really infinity, but 18 Exabyte segment size and
+  75 Zettabyte total size. This should be enough for the next few weeks.
+  (assuming a 64-bit system with 4k pages)
 
-Thanks for the instructions Borislav! At first, I was not completely
-sure what you expected me to do (this is my first kernel bug report :)).
-If there is anymore more I can help you with, let me know.
+Risks:
+- The patch breaks installations that use "take current value and increase
+  it a bit". [seems to exist, http://marc.info/?l=linux-mm&m=139638334330127]
+  After a:
+	# CUR=`sysctl -n kernel.shmmax`
+	# NEW=`echo $CUR+1 | bc -l`
+	# sysctl -n kernel.shmmax=$NEW
+  shmmax ends up as 0, which disables shm allocations.
 
-Kind regards
-Matthias
+- There is no wrap-around protection for ns->shm_ctlall, i.e. the 75 ZB
+  limit is not enforced.
 
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+Reported-by: Davidlohr Bueso <davidlohr@hp.com>
+Cc: mtk.manpages@gmail.com
+---
+ include/linux/shm.h      | 1 -
+ include/uapi/linux/shm.h | 8 +++-----
+ 2 files changed, 3 insertions(+), 6 deletions(-)
 
-Am 17.04.2014 15:02, schrieb Borislav Petkov:
-> On Thu, Apr 17, 2014 at 08:25:58AM +0200, Matthias Graf wrote:
->> Ok. I tried:
->>
->> 3.15-rc1 (16. April)
->> failed.
->>
->> Bisecting turned out:
->> last working: 3.12.17
->> first failing: 3.13
->=20
-> Ok, next steps would then be:
->=20
-> * test stock 3.12.
->  -> if it works, bisect between 3.12 and 3.13.
->  -> if not, bisect between 3.12 and 3.12.17
->=20
-> If all works out correctly, the bisection result will give us the patch=
+diff --git a/include/linux/shm.h b/include/linux/shm.h
+index 1e2cd2e..b33bbeb 100644
+--- a/include/linux/shm.h
++++ b/include/linux/shm.h
+@@ -4,7 +4,6 @@
+ #include <asm/page.h>
+ #include <uapi/linux/shm.h>
+ 
+-#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
+ #include <asm/shmparam.h>
+ struct shmid_kernel /* private to the kernel */
+ {	
+diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+index 78b6941..b7370f9 100644
+--- a/include/uapi/linux/shm.h
++++ b/include/uapi/linux/shm.h
+@@ -9,15 +9,13 @@
+ 
+ /*
+  * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+- * be increased by sysctl
++ * be modified by sysctl
+  */
+ 
+-#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
++#define SHMMAX ULONG_MAX		 /* max shared seg size (bytes) */
+ #define SHMMIN 1			 /* min shared seg size (bytes) */
+ #define SHMMNI 4096			 /* max num of segs system wide */
+-#ifndef __KERNEL__
+-#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
+-#endif
++#define SHMALL ULONG_MAX		 /* max shm system wide (pages) */
+ #define SHMSEG SHMMNI			 /* max shared segs per process */
+ 
+ 
+-- 
+1.9.0
 
-> which broke things on your machine and which is still unfixed upstream.=
-
->=20
-> Thanks.
->=20
-
-
---GLUCqh46KIgQuQpC9c7djaIAQP8ExxDgQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iQEcBAEBAgAGBQJTUO2uAAoJELO00SK+Qvm9UYUH/0EA1sfhd/SHzm/61Z8XFZBU
-7to0A5wkPOkuazN2kaPYmCdvymH1zjpGN9muVRfUMvJmKzHR1VNViLvj9KCCvIbp
-sgYVpvpzTb551sWsTcouLfAfOnXBkuiJ71k1jXCylLPh/xw8qQTwfE0HmwNeNYXw
-hnVlpRJQ6GYN7QlZmKxiEcDd4jkmz62ATkiXPh1x3sqwl4Eo0HFA2G7DupSAioqV
-grn23sxHdf+OhUgog49MkbbRePHFl1uDNO11MVmJQSpWWB0cehIS12k0Yf05DrWR
-7sUcc+NFh/frtZceZ57HjwTSwCi1gF4yq5I7lnfjvxCGa5dZzL59Y+y+VtDTdLY=
-=WJhW
------END PGP SIGNATURE-----
-
---GLUCqh46KIgQuQpC9c7djaIAQP8ExxDgQ--
