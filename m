@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaDRK0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 06:26:49 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:60714 "EHLO
+	id S1753355AbaDRK1W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 06:27:22 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60685 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752203AbaDRKX1 (ORCPT
+	with ESMTP id S1751293AbaDRKXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 06:23:27 -0400
+	Fri, 18 Apr 2014 06:23:23 -0400
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Mathias Nyman <mathias.nyman@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
@@ -20,9 +20,9 @@ Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: [PATCH 4/8] ARM: mvebu: Add USB3 UTMI support
-Date: Fri, 18 Apr 2014 12:22:39 +0200
-Message-Id: <1397816563-9000-5-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH 1/8] usb: host: xhci-plat: Allow to register glue code using the device tree
+Date: Fri, 18 Apr 2014 12:22:36 +0200
+Message-Id: <1397816563-9000-2-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.8.1.2
 In-Reply-To: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
@@ -30,100 +30,165 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The usb3-utmi registers allow to configure the internal USB PHY of the
-Armada 380/385 SoCs. A small initialization is needed to be able to use
-the USB3 ports.
+This patch allow to register specific glue code for xhci controller.
+It creates a structure called xhci_plat_ops to register functions
+specific to an SoC. Currently there are only probe() and remove() but
+it can be extended later, it was the point to create such a structure.
+
+Each compatible string can then be associated to an instance of this
+structure. In the non device tree case a default structure is used.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- arch/arm/mach-mvebu/Makefile   |  2 +-
- arch/arm/mach-mvebu/usb-utmi.c | 64 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 65 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/mach-mvebu/usb-utmi.c
+ drivers/usb/host/xhci-plat.c | 72 +++++++++++++++++++++++++++++++++++++++++---
+ drivers/usb/host/xhci.h      |  4 +++
+ 2 files changed, 72 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-mvebu/Makefile b/arch/arm/mach-mvebu/Makefile
-index a63e43b6b451..2d98a3eeecf6 100644
---- a/arch/arm/mach-mvebu/Makefile
-+++ b/arch/arm/mach-mvebu/Makefile
-@@ -4,7 +4,7 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) := -I$(srctree)/$(src)/include \
- AFLAGS_coherency_ll.o		:= -Wa,-march=armv7-a
+diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+index 151901ce1ba9..8029cc82edc4 100644
+--- a/drivers/usb/host/xhci-plat.c
++++ b/drivers/usb/host/xhci-plat.c
+@@ -16,6 +16,7 @@
+ #include <linux/slab.h>
+ #include <linux/of.h>
+ #include <linux/dma-mapping.h>
++#include <linux/of_device.h>
  
- obj-y				 += system-controller.o mvebu-soc-id.o
--obj-$(CONFIG_MACH_MVEBU_V7)      += board-v7.o
-+obj-$(CONFIG_MACH_MVEBU_V7)      += board-v7.o  usb-utmi.o
- obj-$(CONFIG_MACH_DOVE)		 += dove.o
- obj-$(CONFIG_ARCH_MVEBU)	 += coherency.o coherency_ll.o pmsu.o
- obj-$(CONFIG_SMP)                += platsmp.o headsmp.o
-diff --git a/arch/arm/mach-mvebu/usb-utmi.c b/arch/arm/mach-mvebu/usb-utmi.c
-new file mode 100644
-index 000000000000..e91e86f85eb4
---- /dev/null
-+++ b/arch/arm/mach-mvebu/usb-utmi.c
-@@ -0,0 +1,64 @@
-+/*
-+ * USB UTMI support for Armada 38x platform.
-+ *
-+ * Copyright (C) 2014 Marvell
-+ *
-+ * Gregory CLEMENT <gregory.clement@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ *
-+ */
+ #include "xhci.h"
+ 
+@@ -85,7 +86,7 @@ static const struct hc_driver xhci_plat_xhci_driver = {
+ 	.bus_resume =		xhci_bus_resume,
+ };
+ 
+-static int xhci_plat_probe(struct platform_device *pdev)
++int common_xhci_plat_probe(struct platform_device *pdev, void *priv)
+ {
+ 	const struct hc_driver	*driver;
+ 	struct xhci_hcd		*xhci;
+@@ -145,6 +146,7 @@ static int xhci_plat_probe(struct platform_device *pdev)
+ 	/* USB 2.0 roothub is stored in the platform_device now. */
+ 	hcd = platform_get_drvdata(pdev);
+ 	xhci = hcd_to_xhci(hcd);
++	xhci->priv = priv;
+ 	xhci->shared_hcd = usb_create_shared_hcd(driver, &pdev->dev,
+ 			dev_name(&pdev->dev), hcd);
+ 	if (!xhci->shared_hcd) {
+@@ -185,7 +187,7 @@ put_hcd:
+ 	return ret;
+ }
+ 
+-static int xhci_plat_remove(struct platform_device *dev)
++int common_xhci_plat_remove(struct platform_device *dev)
+ {
+ 	struct usb_hcd	*hcd = platform_get_drvdata(dev);
+ 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
+@@ -202,6 +204,26 @@ static int xhci_plat_remove(struct platform_device *dev)
+ 	return 0;
+ }
+ 
++static int default_xhci_plat_probe(struct platform_device *pdev)
++{
++	return common_xhci_plat_probe(pdev, NULL);
++}
 +
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/of_address.h>
-+#include <linux/io.h>
-+#include <linux/slab.h>
++static int default_xhci_plat_remove(struct platform_device *pdev)
++{
++	return common_xhci_plat_remove(pdev);
++}
 +
-+#define USB_UTMI_PHY_CTRL_STATUS(i)	(0x20+i*4)
-+#define		USB_UTMI_TX_BITSTUFF_EN BIT(1)
-+#define		USB_UTMI_PU_PHY		BIT(5)
-+#define		USB_UTMI_VBUS_ON_PHY	BIT(6)
-+
-+static struct of_device_id of_usb_utmi_table[] = {
-+	{ .compatible = "marvell,armada-380-usb-utmi", },
-+	{ /* end of list */ },
++struct xhci_plat_ops {
++	int (*probe)(struct platform_device *);
++	int (*remove)(struct platform_device *);
 +};
 +
-+static int __init mvebu_usb_utmi_init(void)
++static struct xhci_plat_ops xhci_plat_default = {
++	.probe = default_xhci_plat_probe,
++	.remove =  default_xhci_plat_remove,
++};
++
+ #ifdef CONFIG_PM
+ static int xhci_plat_suspend(struct device *dev)
+ {
+@@ -229,13 +251,55 @@ static const struct dev_pm_ops xhci_plat_pm_ops = {
+ 
+ #ifdef CONFIG_OF
+ static const struct of_device_id usb_xhci_of_match[] = {
+-	{ .compatible = "generic-xhci" },
+-	{ .compatible = "xhci-platform" },
++	{
++		.compatible = "generic-xhci",
++		.data = (void *) &xhci_plat_default,
++	},
++	{
++		.compatible = "xhci-platform",
++		.data = (void *) &xhci_plat_default,
++	},
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(of, usb_xhci_of_match);
+ #endif
+ 
++static int xhci_plat_probe(struct platform_device *pdev)
 +{
-+	struct device_node *np;
++	const struct xhci_plat_ops *plat_of = &xhci_plat_default;
 +
-+	np = of_find_matching_node(NULL, of_usb_utmi_table);
-+	if (np) {
-+		void __iomem *usb_utmi_base, *utmi_base;
-+
-+		usb_utmi_base = of_iomap(np, 0);
-+		BUG_ON(!usb_utmi_base);
-+
-+		utmi_base = of_iomap(np, 1);
-+		BUG_ON(!utmi_base);
-+
-+		writel(USB_UTMI_TX_BITSTUFF_EN |
-+			   USB_UTMI_PU_PHY |
-+			   USB_UTMI_VBUS_ON_PHY,
-+			   usb_utmi_base + USB_UTMI_PHY_CTRL_STATUS(0));
-+
-+		/*
-+		 * Magic init... the registers and their value are not
-+		 * documented
-+		 */
-+		writel(0x40605205, utmi_base);
-+		writel(0x409, utmi_base + 4);
-+		writel(0x1be7f6f, utmi_base + 0xc);
-+
-+		of_node_put(np);
-+		iounmap(utmi_base);
-+		iounmap(usb_utmi_base);
++	if (pdev->dev.of_node) {
++		const struct of_device_id *match =
++			of_match_device(usb_xhci_of_match, &pdev->dev);
++		if (!match)
++			return -ENODEV;
++		plat_of = match->data;
 +	}
 +
-+	return 0;
++	if (!plat_of || !plat_of->probe)
++		return  -ENODEV;
++
++	return plat_of->probe(pdev);
 +}
-+postcore_initcall(mvebu_usb_utmi_init);
++
++static int xhci_plat_remove(struct platform_device *pdev)
++{
++	const struct xhci_plat_ops *plat_of = &xhci_plat_default;
++
++	if (pdev->dev.of_node) {
++		const struct of_device_id *match =
++			of_match_device(usb_xhci_of_match, &pdev->dev);
++		if (!match)
++			return -ENODEV;
++		plat_of = match->data;
++	}
++
++	if (!plat_of || !plat_of->remove)
++		return  -ENODEV;
++
++	return plat_of->remove(pdev);
++}
++
+ static struct platform_driver usb_xhci_driver = {
+ 	.probe	= xhci_plat_probe,
+ 	.remove	= xhci_plat_remove,
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index d280e9213d08..96dd3df3dd8c 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1461,6 +1461,7 @@ struct xhci_hcd {
+ 	__u32		hcc_params;
+ 
+ 	spinlock_t	lock;
++	void           *priv;
+ 
+ 	/* packed release number */
+ 	u8		sbrn;
+@@ -1597,6 +1598,9 @@ static inline struct usb_hcd *xhci_to_hcd(struct xhci_hcd *xhci)
+ 	return xhci->main_hcd;
+ }
+ 
++int common_xhci_plat_probe(struct platform_device *pdev, void *priv);
++int common_xhci_plat_remove(struct platform_device *dev);
++
+ #define xhci_dbg(xhci, fmt, args...) \
+ 	dev_dbg(xhci_to_hcd(xhci)->self.controller , fmt , ## args)
+ #define xhci_err(xhci, fmt, args...) \
 -- 
 1.8.1.2
 
