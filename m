@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752196AbaDRCbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 22:31:23 -0400
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:60679 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751417AbaDRCaZ (ORCPT
+	id S1752074AbaDRCbU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 22:31:20 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:48395 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415AbaDRCaY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 22:30:25 -0400
+	Thu, 17 Apr 2014 22:30:24 -0400
 From: Alex Elder <elder@linaro.org>
 To: bcm@fixthebug.org, mporter@linaro.org
 Cc: bcm-kernel-feedback-list@broadcom.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 07/10] ARM: bcm: tidy up a few includes
-Date: Thu, 17 Apr 2014 21:30:12 -0500
-Message-Id: <1397788215-20279-8-git-send-email-elder@linaro.org>
+Subject: [PATCH 06/10] ARM: bcm: config option for l2 cache support
+Date: Thu, 17 Apr 2014 21:30:11 -0500
+Message-Id: <1397788215-20279-7-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1397788215-20279-1-git-send-email-elder@linaro.org>
 References: <1397788215-20279-1-git-send-email-elder@linaro.org>
@@ -21,67 +21,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Clean up a few header file includes, eliminating a few that are not
-really needed and putting in their place some that are.
+Add a new config option ARCH_BCM_MOBILE_L2_CACHE that allows support
+for level-2 cache to be enabled or disabled at build time for
+BCM218XX and BCM21664 family SoCs.
+
+Build support for SMC only if it's required (currently it's only
+required for to support level 2 cache control).
+
+If arch/arm/mach-bcm/kona.c gets compiled, ARCH_BCM_MOBILE_L2_CACHE
+must have been selected, which implies CONFIG_CACHE_L2X0 is set.
+There is therefore no need to check CONFIG_CACHE_L2X0 at the top
+of kona_l2_cache_init(), so get rid of that check.
 
 Signed-off-by: Alex Elder <elder@linaro.org>
+Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
+Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 Reviewed-by: Matt Porter <mporter@linaro.org>
 ---
- arch/arm/mach-bcm/board_bcm21664.c |    3 +--
- arch/arm/mach-bcm/kona.c           |    5 +++--
- arch/arm/mach-bcm/kona.h           |    1 +
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ arch/arm/mach-bcm/Kconfig  |   12 +++++++++++-
+ arch/arm/mach-bcm/Makefile |    5 ++++-
+ arch/arm/mach-bcm/kona.c   |    3 ---
+ arch/arm/mach-bcm/kona.h   |    5 +++++
+ 4 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-bcm/board_bcm21664.c b/arch/arm/mach-bcm/board_bcm21664.c
-index acc1573..ab96c3f 100644
---- a/arch/arm/mach-bcm/board_bcm21664.c
-+++ b/arch/arm/mach-bcm/board_bcm21664.c
-@@ -11,13 +11,12 @@
-  * GNU General Public License for more details.
-  */
+diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
+index 5f5740f..28f90a0 100644
+--- a/arch/arm/mach-bcm/Kconfig
++++ b/arch/arm/mach-bcm/Kconfig
+@@ -18,7 +18,6 @@ config ARCH_BCM_MOBILE
+ 	select ARM_GIC
+ 	select GPIO_BCM_KONA
+ 	select TICK_ONESHOT
+-	select CACHE_L2X0
+ 	select HAVE_ARM_ARCH_TIMER
+ 	select PINCTRL
+ 	help
+@@ -43,6 +42,17 @@ config ARCH_BCM_21664
+ 	  Enable support for the the BCM21664 family, which includes
+ 	  BCM21663 and BCM21664 variants.
  
--#include <linux/clocksource.h>
- #include <linux/of_address.h>
- #include <linux/of_platform.h>
++config ARCH_BCM_MOBILE_L2_CACHE
++	bool "Broadcom mobile SoC level 2 cache support"
++	depends on (ARCH_BCM_281XX || ARCH_BCM_21664)
++	default y
++	select CACHE_L2X0
++	select ARCH_BCM_MOBILE_SMC
++
++config ARCH_BCM_MOBILE_SMC
++	bool
++	depends on ARCH_BCM_281XX || ARCH_BCM_21664
++
+ endmenu
  
- #include <asm/mach/arch.h>
-+#include <asm/io.h>
+ endif
+diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
+index 7fb9b04..5154981 100644
+--- a/arch/arm/mach-bcm/Makefile
++++ b/arch/arm/mach-bcm/Makefile
+@@ -17,7 +17,10 @@ obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
+ obj-$(CONFIG_ARCH_BCM_21664)	+= board_bcm21664.o
  
--#include "bcm_kona_smc.h"
- #include "kona.h"
+ # BCM281XX and BCM21664 L2 cache control
+-obj-$(CONFIG_ARCH_BCM_MOBILE)	+= bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
++obj-$(CONFIG_ARCH_BCM_MOBILE_L2_CACHE) += kona.o
++
++# Support for secure monitor traps
++obj-$(CONFIG_ARCH_BCM_MOBILE_SMC) += bcm_kona_smc.o bcm_kona_smc_asm.o
+ plus_sec := $(call as-instr,.arch_extension sec,+sec)
+ AFLAGS_bcm_kona_smc_asm.o	:=-Wa,-march=armv7-a$(plus_sec)
  
- #define RSTMGR_DT_STRING		"brcm,bcm21664-resetmgr"
 diff --git a/arch/arm/mach-bcm/kona.c b/arch/arm/mach-bcm/kona.c
-index 60b5dd5..b319703 100644
+index ecdd713..60b5dd5 100644
 --- a/arch/arm/mach-bcm/kona.c
 +++ b/arch/arm/mach-bcm/kona.c
-@@ -11,11 +11,12 @@
+@@ -22,9 +22,6 @@ void __init kona_l2_cache_init(void)
+ 	unsigned int result;
+ 	int ret;
+ 
+-	if (!IS_ENABLED(CONFIG_CACHE_L2X0))
+-		return;
+-
+ 	ret = bcm_kona_smc_init();
+ 	if (ret) {
+ 		pr_info("Secure API not available (%d). Skipping L2 init.\n",
+diff --git a/arch/arm/mach-bcm/kona.h b/arch/arm/mach-bcm/kona.h
+index 3a7a017..110185f 100644
+--- a/arch/arm/mach-bcm/kona.h
++++ b/arch/arm/mach-bcm/kona.h
+@@ -11,4 +11,9 @@
   * GNU General Public License for more details.
   */
  
--#include <linux/of_platform.h>
++#ifdef CONFIG_ARCH_BCM_MOBILE_L2_CACHE
 +
-+#include <linux/init.h>
-+#include <linux/printk.h>
- #include <asm/hardware/cache-l2x0.h>
- 
- #include "bcm_kona_smc.h"
--#include "kona.h"
- 
- void __init kona_l2_cache_init(void)
- {
-diff --git a/arch/arm/mach-bcm/kona.h b/arch/arm/mach-bcm/kona.h
-index 110185f..bcdcf06 100644
---- a/arch/arm/mach-bcm/kona.h
-+++ b/arch/arm/mach-bcm/kona.h
-@@ -12,6 +12,7 @@
-  */
- 
- #ifdef CONFIG_ARCH_BCM_MOBILE_L2_CACHE
-+#include <linux/init.h>
- 
  void __init kona_l2_cache_init(void);
- #else
++#else
++#define kona_l2_cache_init() ((void)0)
++#endif
 -- 
 1.7.9.5
 
