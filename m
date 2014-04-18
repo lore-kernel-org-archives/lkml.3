@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751217AbaDRGPJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 02:15:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:35648 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaDRGPE (ORCPT
+	id S1751246AbaDRGYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 02:24:06 -0400
+Received: from mail-oa0-f50.google.com ([209.85.219.50]:42212 "EHLO
+	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaDRGYB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 02:15:04 -0400
-Date: Thu, 17 Apr 2014 23:15:10 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Bastien Armand <armand.bastien@laposte.net>
-Cc: Willy Tarreau <willy@meta-x.org>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jake Champlin <jake.champlin.27@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: panel: fix sparse warnings
-Message-ID: <20140418061510.GA8415@kroah.com>
-References: <20140418060122.GA477@plop.dartybox.com>
+	Fri, 18 Apr 2014 02:24:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140418060122.GA477@plop.dartybox.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140418002858.GJ32556@tassilo.jf.intel.com>
+References: <1397780183-24633-1-git-send-email-keescook@chromium.org>
+	<1397780183-24633-2-git-send-email-keescook@chromium.org>
+	<20140418002858.GJ32556@tassilo.jf.intel.com>
+Date: Thu, 17 Apr 2014 23:24:00 -0700
+X-Google-Sender-Auth: GvtG6-NPvdsv0UQep9t2ufuR8B8
+Message-ID: <CAGXu5jLUo4tcwp+AKtd4_MN-PsC6W3wV7WEPvxv8Xt=0x0J5Vg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/4] sysctl: clean up char buffer arguments
+From: Kees Cook <keescook@chromium.org>
+To: Andi Kleen <ak@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Li Zefan <lizefan@huawei.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
+        Andrew Shewmaker <agshew@gmail.com>, Jens Axboe <axboe@fb.com>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        Michael Ellerman <michael@ellerman.id.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 08:01:22AM +0200, Bastien Armand wrote:
-> This patch fixes sparse warnings in panel.c.
+On Thu, Apr 17, 2014 at 5:28 PM, Andi Kleen <ak@linux.intel.com> wrote:
+> BTW if you're worried about sysctl races you may also want to resurrect
+> https://lkml.org/lkml/2009/12/20/214
 
-What sparse warnings were fixed here?
+Yeah, this had bothered me too while reading the code. The only "good"
+news is that the strings are always NULL terminated and only "old"
+contents can ever leak. Still, it's kind of horrible that there is no
+locking here. :)
 
-It looks like you did a lot of different things, can you please break
-this out into "one patch per logical change" so it can be reviewed
-easier?
+-Kees
 
-thanks,
-
-greg k-h
+-- 
+Kees Cook
+Chrome OS Security
