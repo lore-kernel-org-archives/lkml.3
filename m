@@ -1,212 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752004AbaDRH7e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 03:59:34 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:26695 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751826AbaDRH7S (ORCPT
+	id S1752059AbaDRH7j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 03:59:39 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:64190 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751905AbaDRH7Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 03:59:18 -0400
-X-AuditID: cbfee690-b7f266d00000287c-db-5350db545ba2
-From: Jungseok Lee <jays.lee@samsung.com>
-To: linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        Catalin.Marinas@arm.com, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Christoffer Dall <christoffer.dall@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        steve.capper@linaro.org, sungjinn.chung@samsung.com,
-        Arnd Bergmann <arnd@arndb.de>, kgene.kim@samsung.com,
-        ilho215.lee@samsung.com
-Subject: [PATCH v3 5/7] arm64: Add 4 levels of page tables definition with 4KB
- pages
-Date: Fri, 18 Apr 2014 16:59:16 +0900
-Message-id: <000601cf5adc$18490fa0$48db2ee0$@samsung.com>
+	Fri, 18 Apr 2014 03:59:24 -0400
+X-AuditID: cbfec7f5-b7fc96d000004885-5c-5350db58afe2
+Message-id: <1397807962.29800.10.camel@AMDC1943>
+Subject: Re: [PATCH 2/2] mfd: sec-core: Update sec_pmic documentation
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Date: Fri, 18 Apr 2014 09:59:22 +0200
+In-reply-to: <20140417083258.GH28725@lee--X1>
+References: <1397477015-13900-1-git-send-email-k.kozlowski@samsung.com>
+ <1397477015-13900-2-git-send-email-k.kozlowski@samsung.com>
+ <20140417083258.GH28725@lee--X1>
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.8.4-0ubuntu1
 MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: Ac9a1L5T2RBXDhkORcaxK/sKOQpTZA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t8zI92Q2wHBBjcWqln8nXSM3eL9sh5G
-	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WKecvYLD7MWMno
-	wOOxZt4aRo/fvyYxety5tofN4/ymNcwem5fUe/RtWcXo8XmTXAB7FJdNSmpOZllqkb5dAlfG
-	xnvLGQuuqlTceniCuYFxqVwXIweHhICJRNOhoC5GTiBTTOLCvfVsXYxcHEICyxglXtxeywSR
-	MJGYd+0BmC0kMJ1R4uBFe4iiP4wSLWsfgiXYBDQlHt3tYQdJiAjsYJSYvHYRK4jDLPCQUeLn
-	2/3MIFXCAmESR8/OBetgEVCVOL96NZjNK2ApsW/Zf2YIW1Dix+R7LCA2s4CWxPqdx5kgbHmJ
-	zWveMkOcpCCx4+xrRhBbREBP4sR/mHoRiX0v3jFC1LRySNw+IACxS0Di2+RDLBAvy0psOgA1
-	RlLi4IobLBMYxWYh2TwLyeZZSDbPQrJhASPLKkbR1ILkguKk9CITveLE3OLSvHS95PzcTYyQ
-	mJ6wg/HeAetDjMlA6ycyS4km5wNTQl5JvKGxmZGFqYmpsZG5pRlpwkrivGqPkoKEBNITS1Kz
-	U1MLUovii0pzUosPMTJxcEo1MCo9OMj79N+tK5b9bBl7YpRU2RPf/RcVPKLBaZgfKnVopo+7
-	qzOzgXHhN8Ujp2aV1W09s5BlZeD66MKZVkuvHdTeeyD9enO22Ns5j2J7Wk83pHGc2Zf+YkmN
-	mvWTvdobdzfu8FgyY8/2iWaJpVzZM3/sdC4+PHdWpP0cn+k6B5ob2ljnr6s9/E6JpTgj0VCL
-	uag4EQAGJVj6/wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNKsWRmVeSWpSXmKPExsVy+t9jQd2Q2wHBBg/3KFr8nXSM3eL9sh5G
-	ixev/zFaHP23kNGid8FVNouPp46zW2x6fI3V4vKuOWwWM87vY7L4e+cfm8WKecvYLD7MWMno
-	wOOxZt4aRo/fvyYxety5tofN4/ymNcwem5fUe/RtWcXo8XmTXAB7VAOjTUZqYkpqkUJqXnJ+
-	SmZeuq2Sd3C8c7ypmYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QpUoKZYk5pUChgMTiYiV9O0wT
-	QkPcdC1gGiN0fUOC4HqMDNBAwjrGjI33ljMWXFWpuPXwBHMD41K5LkZODgkBE4l51x4wQdhi
-	EhfurWcDsYUEpjNKHLxo38XIBWT/YZRoWfsQrIhNQFPi0d0edpCEiMAORonJaxexgjjMAg8Z
-	JX6+3c8MUiUsECZx9OxcsA4WAVWJ86tXg9m8ApYS+5b9Z4awBSV+TL7HAmIzC2hJrN95nAnC
-	lpfYvOYtM8RJChI7zr5mBLFFBPQkTvyHqReR2PfiHeMERoFZSEbNQjJqFpJRs5C0LGBkWcUo
-	mlqQXFCclJ5rqFecmFtcmpeul5yfu4kRnDSeSe1gXNlgcYhRgINRiYdXQC8gWIg1say4MvcQ
-	owQHs5IIr3IpUIg3JbGyKrUoP76oNCe1+BBjMtCnE5mlRJPzgQktryTe0NjEzMjSyMzCyMTc
-	nDRhJXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoY97CFHU930bdfysn6/btTxeUtzUFx+pLP
-	95iXPZ/Hu/Xt82esD46+T9YomrXg/HKv53dMWWwVSuu6r/zWOjWnUOP1Xs8lz53t9NgaMkXt
-	Psgt2Ni3I3Rq89qXXPfSlu/rmpvn/Syr6XlZ1A3rdIeqAubOSwJJVxhrv2bt8y2an+eiZHTb
-	Y42wEktxRqKhFnNRcSIA4eu/8F4DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOLMWRmVeSWpSXmKPExsVy+t/xq7qRtwOCDZbIWWycsZ7V4mzTG3aL
+	+1+PMlpc3jWHzWLtkbvsFqe7WS0urvjC5MDucefaHjaPeScDPfq2rGL0+LxJLoAlissmJTUn
+	syy1SN8ugStj47ZnTAXHxCu6Lh1ibmCcIdTFyMkhIWAi8e3PN3YIW0ziwr31bF2MXBxCAksZ
+	JQ6teAnlfGaUmPfmEytIFa+AgcTB60uYQGxhAVeJGZeegdlsAsYSm5cvAWrg4BARUJE498Yc
+	pJdZ4B+jxJKJZ5lBalgEVCVm3W4BszkFdCU6T69lhViwglHiw7alYIOYBdQlJs1bxAxxkpLE
+	uXVrGCEWC0r8mHyPBaJGXmLzmrfMExgFZiFpmYWkbBaSsgWMzKsYRVNLkwuKk9JzjfSKE3OL
+	S/PS9ZLzczcxQgL76w7GpcesDjEKcDAq8fBe+OofLMSaWFZcmXuIUYKDWUmEV7k0IFiINyWx
+	siq1KD++qDQntfgQIxMHp1QD444q+W0t188ZVekI7l63RF5k4jnRsBvKuZmv2iUmSd9qPX3t
+	7vejiRkRG6omSj/LYnmmUWjD6N5pUl3y2uv0I7szU7cmFs3TD6vpDa3dtvahJRu31cNHXMFp
+	up4zI5fsOv937dXCCZcvyD0TXi5uc7/y3d7pU25sfWj4ZO5m0Wfq86/v9OT6uVyJpTgj0VCL
+	uag4EQB84fSKSgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds hardware definition and types for 4 levels of
-translation tables with 4KB pages.
+On czw, 2014-04-17 at 09:32 +0100, Lee Jones wrote:
+> > Update the documentation for sec_pmic state container structure to
+> > reflect current code.
+> > 
+> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > ---
+> >  include/linux/mfd/samsung/core.h | 29 +++++++++++++++++------------
+> >  1 file changed, 17 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
+> > index 2633083262ea..1923fe026c01 100644
+> > --- a/include/linux/mfd/samsung/core.h
+> > +++ b/include/linux/mfd/samsung/core.h
+> > @@ -24,18 +24,23 @@ enum sec_device_type {
+> >  };
+> >  
+> >  /**
+> > - * struct sec_pmic_dev - s5m87xx master device for sub-drivers
+> > - * @dev: master device of the chip (can be used to access platform data)
+> > - * @pdata: pointer to private data used to pass platform data to child
+> > - * @i2c: i2c client private data for regulator
+> > - * @iolock: mutex for serializing io access
+> > - * @irqlock: mutex for buslock
+> > - * @irq_base: base IRQ number for sec-pmic, required for IRQs
+> > - * @irq: generic IRQ number for s5m87xx
+> > - * @ono: power onoff IRQ number for s5m87xx
+> > - * @irq_masks_cur: currently active value
+> > - * @irq_masks_cache: cached hardware value
+> > - * @type: indicate which s5m87xx "variant" is used
+> > + * struct sec_pmic_dev - s2m/s5m master device for sub-drivers
+> > + * @dev:		Master device of the chip (can be used to access
+> > + *			platform data)
+> 
+> Please remove the part in ()'s.
 
-Signed-off-by: Jungseok Lee <jays.lee@samsung.com>
-Reviewed-by: Sungjinn Chung <sungjinn.chung@samsung.com>
----
- arch/arm64/include/asm/pgtable-4level-hwdef.h |   50 +++++++++++++++++
- arch/arm64/include/asm/pgtable-4level-types.h |   71 +++++++++++++++++++++++++
- 2 files changed, 121 insertions(+)
- create mode 100644 arch/arm64/include/asm/pgtable-4level-hwdef.h
- create mode 100644 arch/arm64/include/asm/pgtable-4level-types.h
+OK
 
-diff --git a/arch/arm64/include/asm/pgtable-4level-hwdef.h b/arch/arm64/include/asm/pgtable-4level-hwdef.h
-new file mode 100644
-index 0000000..0ec84e2
---- /dev/null
-+++ b/arch/arm64/include/asm/pgtable-4level-hwdef.h
-@@ -0,0 +1,50 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_PGTABLE_4LEVEL_HWDEF_H
-+#define __ASM_PGTABLE_4LEVEL_HWDEF_H
-+
-+#define PTRS_PER_PTE		512
-+#define PTRS_PER_PMD		512
-+#define PTRS_PER_PUD		512
-+#define PTRS_PER_PGD		512
-+
-+/*
-+ * PGDIR_SHIFT determines the size a top-level page table entry can map.
-+ */
-+#define PGDIR_SHIFT		39
-+#define PGDIR_SIZE		(_AC(1, UL) << PGDIR_SHIFT)
-+#define PGDIR_MASK		(~(PGDIR_SIZE-1))
-+
-+/*
-+ * PUD_SHIFT determines the size the second level page table entry can map.
-+ */
-+#define PUD_SHIFT		30
-+#define PUD_SIZE		(_AC(1, UL) << PUD_SHIFT)
-+#define PUD_MASK		(~(PUD_SIZE-1))
-+
-+/*
-+ * PMD_SHIFT determines the size the third level page table entry can map.
-+ */
-+#define PMD_SHIFT		21
-+#define PMD_SIZE		(_AC(1, UL) << PMD_SHIFT)
-+#define PMD_MASK		(~(PMD_SIZE-1))
-+
-+/*
-+ * section address mask and size definitions.
-+ */
-+#define SECTION_SHIFT		21
-+#define SECTION_SIZE		(_AC(1, UL) << SECTION_SHIFT)
-+#define SECTION_MASK		(~(SECTION_SIZE-1))
-+
-+#endif
-diff --git a/arch/arm64/include/asm/pgtable-4level-types.h b/arch/arm64/include/asm/pgtable-4level-types.h
-new file mode 100644
-index 0000000..7ad8dd2
---- /dev/null
-+++ b/arch/arm64/include/asm/pgtable-4level-types.h
-@@ -0,0 +1,71 @@
-+/*
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#ifndef __ASM_PGTABLE_4LEVEL_TYPES_H
-+#define __ASM_PGTABLE_4LEVEL_TYPES_H
-+
-+#include <asm/types.h>
-+
-+typedef u64 pteval_t;
-+typedef u64 pmdval_t;
-+typedef u64 pudval_t;
-+typedef u64 pgdval_t;
-+
-+#undef STRICT_MM_TYPECHECKS
-+
-+#ifdef STRICT_MM_TYPECHECKS
-+
-+/*
-+ * These are used to make use of C type-checking..
-+ */
-+typedef struct { pteval_t pte; } pte_t;
-+typedef struct { pmdval_t pmd; } pmd_t;
-+typedef struct { pudval_t pud; } pud_t;
-+typedef struct { pgdval_t pgd; } pgd_t;
-+typedef struct { pteval_t pgprot; } pgprot_t;
-+
-+#define pte_val(x)	((x).pte)
-+#define pmd_val(x)	((x).pmd)
-+#define pud_val(x)	((x).pud)
-+#define pgd_val(x)	((x).pgd)
-+#define pgprot_val(x)	((x).pgprot)
-+
-+#define __pte(x)	((pte_t) { (x) } )
-+#define __pmd(x)	((pmd_t) { (x) } )
-+#define __pud(x)	((pud_t) { (x) } )
-+#define __pgd(x)	((pgd_t) { (x) } )
-+#define __pgprot(x)	((pgprot_t) { (x) } )
-+
-+#else	/* !STRICT_MM_TYPECHECKS */
-+
-+typedef pteval_t pte_t;
-+typedef pmdval_t pmd_t;
-+typedef pudval_t pud_t;
-+typedef pgdval_t pgd_t;
-+typedef pteval_t pgprot_t;
-+
-+#define pte_val(x)	(x)
-+#define pmd_val(x)	(x)
-+#define pud_val(x)	(x)
-+#define pgd_val(x)	(x)
-+#define pgprot_val(x)	(x)
-+
-+#define __pte(x)	(x)
-+#define __pmd(x)	(x)
-+#define __pud(x)	(x)
-+#define __pgd(x)	(x)
-+#define __pgprot(x)	(x)
-+
-+#endif /* STRICT_MM_TYPECHECKS */
-+
-+#endif /* __ASM_PGTABLE_4LEVEL_TYPES_H */
--- 
-1.7.10.4
+> 
+> a) There's no need for it - we know what's in 'struct device' and b)
+> if 'struct platform_data' is removed from 'struct device' this comment
+> will become incorrect. Easy maintainability and all that ...
+> 
+> > + * @pdata:		Platform data from DTS or board files
+> 
+> s/from/populated with data from
 
+OK
+
+> 
+> > + * @regmap_pmic:	Regmap associated with PMIC's I2C address
+> > + * @i2c:		I2C client of the main driver
+> > + * @device_type:	Type of device, matches enum sec_device_type
+> > + * @irq_base:		Base IRQ number for device, required for IRQs
+> 
+> Is there any reason for not using IRQ Domains?
+
+No, I have it in my TODO list.
+
+> 
+> > + * @irq:		Generic IRQ number for device
+> > + * @irq_data:		Runtime data structure for IRQ controller
+> > + * @ono:		Power onoff IRQ number for s5m87xx
+> 
+> Perhaps consider a better name for this in a future patch.
+
+Actually I couldn't find usage of it so I plan to do some cleanup and
+get rid of it.
+
+Thanks for review.
+
+Best regards,
+Krzysztof
+
+> 
+> > + * @wakeup:		Whether or not this is a wakeup device
+> > + * @wtsr_smpl:		Whether or not to enable in RTC driver the Watchdog
+> > + *			Timer Software Reset (registers set to default value
+> > + *			after PWRHOLD falling) and Sudden Momentary Power Loss
+> > + *			(PMIC will enter power on sequence after short drop in
+> > + *			VBATT voltage).
+> >   */
+> >  struct sec_pmic_dev {
+> >  	struct device *dev;
+> 
 
