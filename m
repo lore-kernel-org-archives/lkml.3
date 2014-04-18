@@ -1,73 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276AbaDRRHA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 13:07:00 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38082 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752807AbaDRRGj (ORCPT
+	id S1752457AbaDRRHj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 13:07:39 -0400
+Received: from g2t2352.austin.hp.com ([15.217.128.51]:25892 "EHLO
+	g2t2352.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751646AbaDRRHd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 13:06:39 -0400
-Date: Fri, 18 Apr 2014 18:06:22 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Chew Chiau Ee <chiau.ee.chew@intel.com>
-Cc: Eric Miao <eric.y.miao@gmail.com>, Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-spi@vger.kernel.org, linux-kernel@vger.kernel.org
-Message-ID: <20140418170622.GM12304@sirena.org.uk>
-References: <1397751967-20250-1-git-send-email-chiau.ee.chew@intel.com>
- <1397751967-20250-2-git-send-email-chiau.ee.chew@intel.com>
+	Fri, 18 Apr 2014 13:07:33 -0400
+Message-ID: <53515BC2.6000602@hp.com>
+Date: Fri, 18 Apr 2014 13:07:14 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n6oL1CxvjBDs4F0r"
-Content-Disposition: inline
-In-Reply-To: <1397751967-20250-2-git-send-email-chiau.ee.chew@intel.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 1/2] spi/pxa2xx-pci: Add PCI mode support for BayTrail
- LPSS SPI
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 03/19] qspinlock: Add pending bit
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com> <1397747051-15401-4-git-send-email-Waiman.Long@hp.com> <20140417154200.GN11096@twins.programming.kicks-ass.net> <5350459F.5010903@hp.com> <20140418081345.GX11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140418081345.GX11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/18/2014 04:13 AM, Peter Zijlstra wrote:
+> On Thu, Apr 17, 2014 at 05:20:31PM -0400, Waiman Long wrote:
+>>>> +	while ((val = atomic_read(&lock->val))&   _Q_LOCKED_MASK)
+>>>> +		arch_mutex_cpu_relax();
+>>> That was a cpu_relax().
+>> Yes, but arch_mutex_cpu_relax() is the same as cpu_relax() for x86.
+> Yeah, so why bother typing more?
+>
+> Let the s390 people sort that if/when they try and make this work for
+> them.
 
---n6oL1CxvjBDs4F0r
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+OK, I can revert the change if you wish. I have no objection for that.
 
-On Fri, Apr 18, 2014 at 12:26:06AM +0800, Chew Chiau Ee wrote:
-> From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
->=20
-> Similar to CE4100, BayTrail LPSS SPI can be PCI enumerated
-> as well. Thus, the functions are renamed from ce4100_xxx
-
-Applied, thanks.
-
---n6oL1CxvjBDs4F0r
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTUVuKAAoJELSic+t+oim9l4EP/j042IXNTvY1lKh1UAed6t+Q
-NucI8DI6QkkM760VdE16leQOg/VuwQZepAHWwLNvwU0SdVPuu6mHzD3EJQPBjrdh
-w6UZOYWfgTfHx2qrzERRydFPF74D8USNp/wMCrmn4N9miV/zcQHcEtTFvQLi6ETr
-KZCDQ2ovxRoRqxkU7GPK44jlYdb8VShHLX0/SYpP8DzUrMVaEVZSPY6GYxyq4WTS
-c4noqVkCfR9SSUxHYVet2PYa00VaGR5kaWFpwdUhQtMXffrB95DNOHoEAfDsOutD
-X7rNHrlpHfVy5T2XO4ocDIE5KIHRJ03GySK8HCPxmAGWBWBnrcaJA8Ya1l8oYAyF
-8ikDpkjtrLvNJYqEIgCmnzv9ele9NP2+UBDr9qJjjfPB/YT07RVmob/6oJufrQyl
-ItUuSZG2s4A5K7nKU1OVBVf/mzayV3uqspoageVkaj6HC/TU/BDxx20u+Ju41Ow0
-7KY5Mes1q4E4NN3OSVW49DBMjNguiF2ipVUY4MKlOdwM366ERgt22QHmIZPJB2wE
-7Pb9OVDui7+yqI73CkcjOuQlwRL7Mrv0YUwG0EonO0W5oiPcGzy/ackDJ/zVHrbm
-q7qUTtDCvtR1PQfN3UAZ0EYOf2NqyZCmkVhetBG71usmsfxxdfqi+wnpO8c1T1qP
-F21F8HmdvMl2pU8KZ5cf
-=MkO4
------END PGP SIGNATURE-----
-
---n6oL1CxvjBDs4F0r--
+-Longman
