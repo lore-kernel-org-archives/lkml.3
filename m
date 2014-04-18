@@ -1,785 +1,333 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554AbaDRMm3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:42:29 -0400
-Received: from mail-bn1bon0114.outbound.protection.outlook.com ([157.56.111.114]:55377
+	id S1752770AbaDRMmj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:42:39 -0400
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:3012
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752389AbaDRMmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:42:19 -0400
-X-Greylist: delayed 888 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Apr 2014 08:42:18 EDT
+	id S1751185AbaDRMmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:42:32 -0400
+X-Greylist: delayed 894 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Apr 2014 08:42:32 EDT
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH 10/28] nios2: Process management
-Date: Fri, 18 Apr 2014 20:26:54 +0800
-Message-ID: <1397824031-4892-8-git-send-email-lftan@altera.com>
+Subject: [PATCH 20/28] nios2: Time keeping
+Date: Fri, 18 Apr 2014 20:27:03 +0800
+Message-ID: <1397824031-4892-17-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
 References: <1397824031-4892-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(43544003)(189002)(22564002)(19580405001)(83322001)(46102001)(575784001)(86362001)(80022001)(44976005)(93916002)(81342001)(6806004)(81542001)(48376002)(99396002)(2009001)(50986999)(76176999)(50466002)(97736001)(4396001)(50226001)(77156001)(42186004)(76482001)(87286001)(62966002)(36756003)(77982001)(84676001)(80976001)(47776003)(20776003)(83072002)(89996001)(2201001)(92566001)(74502001)(85852003)(16796002)(87936001)(31966008)(19580395003)(74662001)(92726001)(88136002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB024;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:E28DD854.88EA9FB4.7CD2714E.4A26E0F0.20B82;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(22564002)(76176999)(99396002)(6806004)(50986999)(80022001)(87286001)(93916002)(88136002)(86362001)(575784001)(50466002)(19580405001)(62966002)(2201001)(92566001)(92726001)(77982001)(2009001)(47776003)(20776003)(80976001)(44976005)(48376002)(83322001)(19580395003)(84676001)(81542001)(97736001)(76482001)(81342001)(77156001)(83072002)(85852003)(42186004)(36756003)(4396001)(87936001)(89996001)(50226001)(46102001)(16796002)(74502001)(31966008)(74662001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB029;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:CC9ED165.2FEADFC5.E0F046BA.6EF79230.206E9;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-OriginatorOrg: altera.onmicrosoft.com
 X-Forefront-PRVS: 018577E36E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for thread creation and context switching.
+Add time keeping code for nios2.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/mmu_context.h |  66 +++++++++
- arch/nios2/include/asm/processor.h   | 102 ++++++++++++++
- arch/nios2/include/asm/switch_to.h   |  31 +++++
- arch/nios2/include/asm/thread_info.h | 120 ++++++++++++++++
- arch/nios2/kernel/process.c          | 262 +++++++++++++++++++++++++++++++++++
- arch/nios2/mm/mmu_context.c          | 116 ++++++++++++++++
- 6 files changed, 697 insertions(+)
- create mode 100644 arch/nios2/include/asm/mmu_context.h
- create mode 100644 arch/nios2/include/asm/processor.h
- create mode 100644 arch/nios2/include/asm/switch_to.h
- create mode 100644 arch/nios2/include/asm/thread_info.h
- create mode 100644 arch/nios2/kernel/process.c
- create mode 100644 arch/nios2/mm/mmu_context.c
+ arch/nios2/include/asm/delay.h |  92 +++++++++++++++++++++++++
+ arch/nios2/include/asm/timex.h |  27 ++++++++
+ arch/nios2/kernel/time.c       | 150 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 269 insertions(+)
+ create mode 100644 arch/nios2/include/asm/delay.h
+ create mode 100644 arch/nios2/include/asm/timex.h
+ create mode 100644 arch/nios2/kernel/time.c
 
-diff --git a/arch/nios2/include/asm/mmu_context.h b/arch/nios2/include/asm/mmu_context.h
+diff --git a/arch/nios2/include/asm/delay.h b/arch/nios2/include/asm/delay.h
 new file mode 100644
-index 0000000..294b4b1
+index 0000000..8070a09
 --- /dev/null
-+++ b/arch/nios2/include/asm/mmu_context.h
-@@ -0,0 +1,66 @@
++++ b/arch/nios2/include/asm/delay.h
+@@ -0,0 +1,92 @@
 +/*
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 1996, 1997, 1998, 1999 by Ralf Baechle
-+ * Copyright (C) 1999 Silicon Graphics, Inc.
-+ *
-+ * based on MIPS asm/mmu_context.h
++ * Copyright (C) 2004 Microtronix Datacom Ltd
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_MMU_CONTEXT_H
-+#define _ASM_NIOS2_MMU_CONTEXT_H
++#ifndef _ASM_NIOS2_DELAY_H
++#define _ASM_NIOS2_DELAY_H
 +
-+#include <asm-generic/mm_hooks.h>
++#include <asm/param.h>
 +
-+extern void mmu_context_init(void);
-+extern unsigned long get_pid_from_context(mm_context_t *ctx);
-+
-+/*
-+ * For the fast tlb miss handlers, we keep a pointer to the current pgd.
-+ * processor.
-+ */
-+extern pgd_t *pgd_current;
-+
-+static inline void enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
++static inline void __delay(unsigned long loops)
 +{
++	int dummy;
++
++	__asm__ __volatile__(
++	"1:\n\t"
++	"    beq    %0,zero,2f\n\t"
++	"    addi   %0, %0, -1\n\t"
++	"    br     1b\n\t"
++	"2:\n\t"
++	:  "=r" (dummy)		/* Need output for optimizer */
++	:  "0" (loops));	/* %0  Input */
 +}
 +
 +/*
-+ * Initialize the context related info for a new mm_struct instance.
++ * Note that 19 * 226 == 4294 ==~ 2^32 / 10^6, so
++ * loops = (4294 * usecs * loops_per_jiffy * HZ) / 2^32.
 + *
-+ * Set all new contexts to 0, that way the generation will never match
-+ * the currently running generation when this context is switched in.
++ * The mul instruction gives us loops = (a * b) / 2^32.
++ * We choose a = usecs * 19 * HZ and b = loops_per_jiffy * 226
++ * because this lets us support a wide range of HZ and
++ * loops_per_jiffy values without either a or b overflowing 2^32.
++ * Thus we need usecs * HZ <= (2^32 - 1) / 19 = 226050910 and
++ * loops_per_jiffy <= (2^32 - 1) / 226 = 19004280
++ * (which corresponds to ~3800 bogomips at HZ = 100).
++ *  -- paulus
 + */
-+static inline int init_new_context(struct task_struct *tsk,
-+					struct mm_struct *mm)
++#define __MAX_UDELAY	(226050910UL/HZ)	/* maximum udelay argument */
++#define __MAX_NDELAY	(4294967295UL/HZ)	/* maximum ndelay argument */
++
++extern unsigned long loops_per_jiffy;
++
++static inline void __udelay(unsigned int x)
 +{
-+	mm->context = 0;
-+	return 0;
-+}
++	unsigned int loops;
++
++	/*
++	 * Note, if this is compiled with -mhw-mulx it will produce a "mulxuu"
++	 * (at least in toolchain 145) so there is no need for inline
++	 * assembly here anymore, which might in turn be emulated if unsupported
++	 * by the design.
++	 */
++	loops = (unsigned int)((((unsigned long long)(x) *
++			(unsigned long long)(loops_per_jiffy * 226))) >> 32);
 +
 +/*
-+ * Destroy context related info for an mm_struct that is about
-+ * to be put to rest.
-+ */
-+static inline void destroy_context(struct mm_struct *mm)
-+{
++	__asm__("mulxuu %0,%1,%2" : "=r" (loops) :
++		"r" (x), "r" (loops_per_jiffy * 226));
++*/
++	__delay(loops);
 +}
 +
-+void switch_mm(struct mm_struct *prev, struct mm_struct *next,
-+		struct task_struct *tsk);
-+
-+static inline void deactivate_mm(struct task_struct *tsk,
-+				struct mm_struct *mm)
++static inline void __ndelay(unsigned int x)
 +{
-+}
++	unsigned int loops;
++
++	/* see comment in __udelay */
++	loops = (unsigned int)((((unsigned long long)(x) *
++			(unsigned long long)(loops_per_jiffy * 5))) >> 32);
 +
 +/*
-+ * After we have set current->mm to a new value, this activates
-+ * the context for the new mm so we see the new mappings.
-+ */
-+void activate_mm(struct mm_struct *prev, struct mm_struct *next);
++	__asm__("mulxuu %0,%1,%2" : "=r" (loops) :
++		"r" (x), "r" (loops_per_jiffy * 5));
++*/
++	__delay(loops);
++}
 +
-+#endif /* _ASM_NIOS2_MMU_CONTEXT_H */
-diff --git a/arch/nios2/include/asm/processor.h b/arch/nios2/include/asm/processor.h
++extern void __bad_udelay(void);		/* deliberately undefined */
++extern void __bad_ndelay(void);		/* deliberately undefined */
++
++#define udelay(n) (__builtin_constant_p(n) ? \
++	((n) > __MAX_UDELAY ? __bad_udelay() : __udelay((n) * (19 * HZ))) : \
++	__udelay((n) * (19 * HZ)))
++
++#define ndelay(n) (__builtin_constant_p(n) ? \
++	((n) > __MAX_NDELAY ? __bad_ndelay() : __ndelay((n) * HZ)) : \
++	__ndelay((n) * HZ))
++
++#endif /* _ASM_NIOS2_DELAY_H */
+diff --git a/arch/nios2/include/asm/timex.h b/arch/nios2/include/asm/timex.h
 new file mode 100644
-index 0000000..cff9b2da0cdd3f9ba392f782492dd3b8d435bb9a
+index 0000000..524b47d79d3dad53b98713f31517e28ac0c99d98
 --- /dev/null
-+++ b/arch/nios2/include/asm/processor.h
-@@ -0,0 +1,102 @@
++++ b/arch/nios2/include/asm/timex.h
+@@ -0,0 +1,27 @@
++/*
++ * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++
++#ifndef _ASM_NIOS2_TIMEX_H
++#define _ASM_NIOS2_TIMEX_H
++
++/* Supply dummy tick-rate. Real value will be read from devicetree */
++#define CLOCK_TICK_RATE		(HZ * 100000UL)
++
++#include <asm-generic/timex.h>
++
++#endif
+diff --git a/arch/nios2/kernel/time.c b/arch/nios2/kernel/time.c
+new file mode 100644
+index 0000000..0677ebaa1dffd8213f52a704c6a8366d34c05ca2
+--- /dev/null
++++ b/arch/nios2/kernel/time.c
+@@ -0,0 +1,150 @@
 +/*
 + * Copyright (C) 2013 Altera Corporation
 + * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
-+ * Copyright (C) 2001 Ken Hill (khill@microtronix.com)
-+ *                    Vic Phillips (vic@microtronix.com)
-+ *
-+ * based on SPARC asm/processor_32.h which is:
-+ *
-+ * Copyright (C) 1994 David S. Miller
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_PROCESSOR_H
-+#define _ASM_NIOS2_PROCESSOR_H
-+
-+#include <asm/ptrace.h>
-+#include <asm/registers.h>
-+#include <asm/page.h>
-+
-+#define NIOS2_FLAG_KTHREAD	0x00000001	/* task is a kernel thread */
-+
-+#define NIOS2_OP_NOP		0x1883a
-+#define NIOS2_OP_BREAK		0x3da03a
-+
-+#ifdef __KERNEL__
-+
-+#define STACK_TOP	TASK_SIZE
-+#define STACK_TOP_MAX	STACK_TOP
-+
-+#endif /* __KERNEL__ */
-+
-+/* Kuser helpers is mapped to this user space address */
-+#define KUSER_BASE		0x1000
-+#define KUSER_SIZE		(PAGE_SIZE)
-+#ifndef __ASSEMBLY__
-+
-+/*
-+ * Default implementation of macro that returns current
-+ * instruction pointer ("program counter").
-+ */
-+#define current_text_addr() ({ __label__ _l; _l: &&_l; })
-+
-+# define TASK_SIZE		0x7FFF0000UL
-+# define TASK_UNMAPPED_BASE	(PAGE_ALIGN(TASK_SIZE / 3))
-+
-+/* The Nios processor specific thread struct. */
-+struct thread_struct {
-+	struct pt_regs *kregs;
-+
-+	/* Context switch saved kernel state. */
-+	unsigned long ksp;
-+	unsigned long kpsr;
-+};
-+
-+#define INIT_MMAP \
-+	{ &init_mm, (0), (0), __pgprot(0x0), VM_READ | VM_WRITE | VM_EXEC }
-+
-+# define INIT_THREAD {			\
-+	.kregs	= NULL,			\
-+	.ksp	= 0,			\
-+	.kpsr	= 0,			\
-+}
-+
-+extern void start_thread(struct pt_regs *regs, unsigned long pc,
-+			unsigned long sp);
-+
-+struct task_struct;
-+
-+/* Free all resources held by a thread. */
-+static inline void release_thread(struct task_struct *dead_task)
-+{
-+}
-+
-+/* Free current thread data structures etc.. */
-+static inline void exit_thread(void)
-+{
-+}
-+
-+/* Return saved PC of a blocked thread. */
-+#define thread_saved_pc(tsk)	((tsk)->thread.kregs->ea)
-+
-+extern unsigned long get_wchan(struct task_struct *p);
-+
-+/* Prepare to copy thread state - unlazy all lazy status */
-+#define prepare_to_copy(tsk)	do { } while (0)
-+
-+#define task_pt_regs(p) \
-+	((struct pt_regs *)(THREAD_SIZE + task_stack_page(p)) - 1)
-+
-+/* Used by procfs */
-+#define KSTK_EIP(tsk)	((tsk)->thread.kregs->ea)
-+#define KSTK_ESP(tsk)	((tsk)->thread.kregs->sp)
-+
-+#define cpu_relax()	barrier()
-+
-+#endif /* __ASSEMBLY__ */
-+
-+#endif /* _ASM_NIOS2_PROCESSOR_H */
-diff --git a/arch/nios2/include/asm/switch_to.h b/arch/nios2/include/asm/switch_to.h
-new file mode 100644
-index 0000000..c47b3f4afbcddcea3a89f44569141339412d6cf3
---- /dev/null
-+++ b/arch/nios2/include/asm/switch_to.h
-@@ -0,0 +1,31 @@
-+/*
 + * Copyright (C) 2004 Microtronix Datacom Ltd.
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License. See the file "COPYING" in the main directory of this archive
 + * for more details.
 + */
-+#ifndef _ASM_NIOS2_SWITCH_TO_H
-+#define _ASM_NIOS2_SWITCH_TO_H
 +
-+/*
-+ * switch_to(n) should switch tasks to task ptr, first checking that
-+ * ptr isn't the current task, in which case it does nothing.  This
-+ * also clears the TS-flag if the task we switched to has used the
-+ * math co-processor latest.
-+ */
-+#define switch_to(prev, next, last)			\
-+{							\
-+	void *_last;					\
-+	__asm__ __volatile__ (				\
-+		"mov	r4, %1\n"			\
-+		"mov	r5, %2\n"			\
-+		"call	resume\n"			\
-+		"mov	%0,r4\n"			\
-+		: "=r" (_last)				\
-+		: "r" (prev), "r" (next)		\
-+		: "r4", "r5", "r7", "r8", "ra");	\
-+	(last) = _last;					\
-+}
-+
-+#endif /* _ASM_NIOS2_SWITCH_TO_H */
-diff --git a/arch/nios2/include/asm/thread_info.h b/arch/nios2/include/asm/thread_info.h
-new file mode 100644
-index 0000000..1f266575beb51c459432ac918e96e0b3b810ae85
---- /dev/null
-+++ b/arch/nios2/include/asm/thread_info.h
-@@ -0,0 +1,120 @@
-+/*
-+ * NiosII low-level thread information
-+ *
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2004 Microtronix Datacom Ltd.
-+ *
-+ * Based on asm/thread_info_no.h from m68k which is:
-+ *
-+ * Copyright (C) 2002 David Howells <dhowells@redhat.com>
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#ifndef _ASM_NIOS2_THREAD_INFO_H
-+#define _ASM_NIOS2_THREAD_INFO_H
-+
-+#ifdef __KERNEL__
-+
-+/*
-+ * Size of the kernel stack for each process.
-+ */
-+#define THREAD_SIZE_ORDER	1
-+#define THREAD_SIZE		8192 /* 2 * PAGE_SIZE */
-+
-+#ifndef __ASSEMBLY__
-+
-+typedef struct {
-+	unsigned long seg;
-+} mm_segment_t;
-+
-+/*
-+ * low level task data that entry.S needs immediate access to
-+ * - this struct should fit entirely inside of one cache line
-+ * - this struct shares the supervisor stack pages
-+ * - if the contents of this structure are changed, the assembly constants
-+ *   must also be changed
-+ */
-+struct thread_info {
-+	struct task_struct	*task;		/* main task structure */
-+	struct exec_domain	*exec_domain;	/* execution domain */
-+	unsigned long		flags;		/* low level flags */
-+	__u32			cpu;		/* current CPU */
-+	int			preempt_count;	/* 0 => preemptable,<0 => BUG */
-+	mm_segment_t		addr_limit;	/* thread address space:
-+						  0-0x7FFFFFFF for user-thead
-+						  0-0xFFFFFFFF for kernel-thread
-+						*/
-+	struct restart_block	restart_block;
-+	struct pt_regs		*regs;
-+};
-+
-+/*
-+ * macros/functions for gaining access to the thread information structure
-+ *
-+ * preempt_count needs to be 1 initially, until the scheduler is functional.
-+ */
-+#define INIT_THREAD_INFO(tsk)			\
-+{						\
-+	.task		= &tsk,			\
-+	.exec_domain	= &default_exec_domain,	\
-+	.flags		= 0,			\
-+	.cpu		= 0,			\
-+	.preempt_count	= INIT_PREEMPT_COUNT,	\
-+	.addr_limit	= KERNEL_DS,		\
-+	.restart_block	= {			\
-+		.fn = do_no_restart_syscall,	\
-+	},					\
-+}
-+
-+#define init_thread_info	(init_thread_union.thread_info)
-+#define init_stack		(init_thread_union.stack)
-+
-+/* how to get the thread information struct from C */
-+static inline struct thread_info *current_thread_info(void)
-+{
-+	register unsigned long sp asm("sp");
-+
-+	return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
-+}
-+#endif /* !__ASSEMBLY__ */
-+
-+/*
-+ * thread information flags
-+ * - these are process state flags that various assembly files may need to
-+ *   access
-+ * - pending work-to-be-done flags are in LSW
-+ * - other flags in MSW
-+ */
-+#define TIF_SYSCALL_TRACE	0	/* syscall trace active */
-+#define TIF_NOTIFY_RESUME	1	/* resumption notification requested */
-+#define TIF_SIGPENDING		2	/* signal pending */
-+#define TIF_NEED_RESCHED	3	/* rescheduling necessary */
-+#define TIF_MEMDIE		4	/* is terminating due to OOM killer */
-+#define TIF_SECCOMP		5	/* secure computing */
-+#define TIF_SYSCALL_AUDIT	6	/* syscall auditing active */
-+#define TIF_RESTORE_SIGMASK	9	/* restore signal mask in do_signal() */
-+
-+#define TIF_POLLING_NRFLAG	16	/* true if poll_idle() is polling
-+					   TIF_NEED_RESCHED */
-+
-+#define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
-+#define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
-+#define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
-+#define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
-+#define _TIF_SECCOMP		(1 << TIF_SECCOMP)
-+#define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
-+#define _TIF_RESTORE_SIGMASK	(1 << TIF_RESTORE_SIGMASK)
-+#define _TIF_POLLING_NRFLAG	(1 << TIF_POLLING_NRFLAG)
-+
-+/* work to do on interrupt/exception return */
-+#define _TIF_WORK_MASK		0x0000FFFE
-+
-+/* work to do on any return to u-space */
-+# define _TIF_ALLWORK_MASK	0x0000FFFF
-+
-+#endif /* __KERNEL__ */
-+
-+#endif /* _ASM_NIOS2_THREAD_INFO_H */
-diff --git a/arch/nios2/kernel/process.c b/arch/nios2/kernel/process.c
-new file mode 100644
-index 0000000..162b3f0
---- /dev/null
-+++ b/arch/nios2/kernel/process.c
-@@ -0,0 +1,262 @@
-+/*
-+ * Architecture-dependent parts of process handling.
-+ *
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ * Copyright (C) 2004 Microtronix Datacom Ltd
-+ *
-+ * based on arch/m68knommu/kernel/process.c which is:
-+ *
-+ * Copyright (C) 2000-2002 David McCullough <davidm@snapgear.com>
-+ * Copyright (C) 1995 Hamish Macdonald
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/export.h>
++#include <linux/init.h>
 +#include <linux/sched.h>
-+#include <linux/tick.h>
-+#include <linux/uaccess.h>
++#include <linux/interrupt.h>
++#include <linux/time.h>
++#include <linux/timex.h>
++#include <linux/profile.h>
++#include <linux/clocksource.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/of_irq.h>
++#include <linux/io.h>
 +
-+#include <asm/unistd.h>
-+#include <asm/traps.h>
-+#include <asm/cpuinfo.h>
++#define	TICK_SIZE		(tick_nsec / 1000)
++#define NIOS2_TIMER_PERIOD	(timer_freq / HZ)
 +
-+asmlinkage void ret_from_fork(void);
-+asmlinkage void ret_from_kernel_thread(void);
++#define ALTERA_TIMER_STATUS_REG		0
++#define ALTERA_TIMER_CONTROL_REG	4
++#define ALTERA_TIMER_PERIODL_REG	8
++#define ALTERA_TIMER_PERIODH_REG	12
++#define ALTERA_TIMER_SNAPL_REG		16
++#define ALTERA_TIMER_SNAPH_REG		20
 +
-+void (*pm_power_off)(void) = NULL;
-+EXPORT_SYMBOL(pm_power_off);
++#define ALTERA_TIMER_CONTROL_ITO_MSK	(0x1)
++#define ALTERA_TIMER_CONTROL_CONT_MSK	(0x2)
++#define ALTERA_TIMER_CONTROL_START_MSK	(0x4)
++#define ALTERA_TIMER_CONTROL_STOP_MSK	(0x8)
 +
-+void arch_cpu_idle(void)
++static u32 nios2_timer_count;
++static void __iomem *timer_membase;
++static u32 timer_freq;
++
++static inline unsigned long read_timersnapshot(void)
 +{
-+	local_irq_enable();
++	unsigned long count;
++
++	outw(0, timer_membase + ALTERA_TIMER_SNAPL_REG);
++	count =
++		inw(timer_membase + ALTERA_TIMER_SNAPH_REG) << 16 |
++		inw(timer_membase + ALTERA_TIMER_SNAPL_REG);
++
++	return count;
++}
++
++static inline void write_timerperiod(unsigned long period)
++{
++	outw(period, timer_membase + ALTERA_TIMER_PERIODL_REG);
++	outw(period >> 16, timer_membase + ALTERA_TIMER_PERIODH_REG);
 +}
 +
 +/*
-+ * The development boards have no way to pull a board reset. Just jump to the
-+ * cpu reset address and let the boot loader or the code in head.S take care of
-+ * resetting peripherals.
++ * timer_interrupt() needs to keep up the real-time clock,
++ * as well as call the "xtime_update()" routine every clocktick
 + */
-+void machine_restart(char *__unused)
++irqreturn_t timer_interrupt(int irq, void *dummy)
 +{
-+	pr_notice("Machine restart (%08x)...\n", cpuinfo.reset_addr);
-+	local_irq_disable();
-+	__asm__ __volatile__ (
-+	"jmp	%0\n\t"
-+	:
-+	: "r" (cpuinfo.reset_addr)
-+	: "r4");
++	/* Clear the interrupt condition */
++	outw(0, timer_membase + ALTERA_TIMER_STATUS_REG);
++	nios2_timer_count += NIOS2_TIMER_PERIOD;
++
++	profile_tick(CPU_PROFILING);
++
++	xtime_update(1);
++
++	update_process_times(user_mode(get_irq_regs()));
++
++	return IRQ_HANDLED;
 +}
 +
-+void machine_halt(void)
-+{
-+	pr_notice("Machine halt...\n");
-+	local_irq_disable();
-+	for (;;)
-+		;
-+}
-+
-+/*
-+ * There is no way to power off the development boards. So just spin for now. If
-+ * we ever have a way of resetting a board using a GPIO we should add that here.
-+ */
-+void machine_power_off(void)
-+{
-+	pr_notice("Machine power off...\n");
-+	local_irq_disable();
-+	for (;;)
-+		;
-+}
-+
-+void show_regs(struct pt_regs *regs)
-+{
-+	pr_notice("\n");
-+	show_regs_print_info(KERN_DEFAULT);
-+
-+	pr_notice("r1: %08lx r2: %08lx r3: %08lx r4: %08lx\n",
-+		regs->r1,  regs->r2,  regs->r3,  regs->r4);
-+
-+	pr_notice("r5: %08lx r6: %08lx r7: %08lx r8: %08lx\n",
-+		regs->r5,  regs->r6,  regs->r7,  regs->r8);
-+
-+	pr_notice("r9: %08lx r10: %08lx r11: %08lx r12: %08lx\n",
-+		regs->r9,  regs->r10, regs->r11, regs->r12);
-+
-+	pr_notice("r13: %08lx r14: %08lx r15: %08lx\n",
-+		regs->r13, regs->r14, regs->r15);
-+
-+	pr_notice("ra: %08lx fp:  %08lx sp: %08lx gp: %08lx\n",
-+		regs->ra,  regs->fp,  regs->sp,  regs->gp);
-+
-+	pr_notice("ea: %08lx estatus: %08lx\n",
-+		regs->ea,  regs->estatus);
-+}
-+
-+void flush_thread(void)
-+{
-+	set_fs(USER_DS);
-+}
-+
-+int copy_thread(unsigned long clone_flags,
-+		unsigned long usp, unsigned long arg, struct task_struct *p)
-+{
-+	struct pt_regs *childregs = task_pt_regs(p);
-+	struct pt_regs *regs;
-+	struct switch_stack *stack;
-+	struct switch_stack *childstack =
-+		((struct switch_stack *)childregs) - 1;
-+
-+	if (unlikely(p->flags & PF_KTHREAD)) {
-+		memset(childstack, 0,
-+			sizeof(struct switch_stack) + sizeof(struct pt_regs));
-+
-+		childstack->r16 = usp;		/* fn */
-+		childstack->r17 = arg;
-+		childstack->ra = (unsigned long) ret_from_kernel_thread;
-+		childregs->estatus = STATUS_PIE;
-+		childregs->sp = (unsigned long) childstack;
-+
-+		p->thread.ksp = (unsigned long) childstack;
-+		p->thread.kregs = childregs;
-+		return 0;
-+	}
-+
-+	regs = current_pt_regs();
-+	*childregs = *regs;
-+	childregs->r2 = 0;	/* Set the return value for the child. */
-+	childregs->r7 = 0;
-+
-+	stack = ((struct switch_stack *) regs) - 1;
-+	*childstack = *stack;
-+	childstack->ra = (unsigned long)ret_from_fork;
-+	p->thread.kregs = childregs;
-+	p->thread.ksp = (unsigned long) childstack;
-+
-+	if (usp)
-+		childregs->sp = usp;
-+
-+	/* Initialize tls register. */
-+	if (clone_flags & CLONE_SETTLS)
-+		childstack->r23 = regs->r8;
-+
-+	return 0;
-+}
-+
-+/*
-+ *	Generic dumping code. Used for panic and debug.
-+ */
-+void dump(struct pt_regs *fp)
-+{
-+	unsigned long	*sp;
-+	unsigned char	*tp;
-+	int		i;
-+
-+	pr_emerg("\nCURRENT PROCESS:\n\n");
-+	pr_emerg("COMM=%s PID=%d\n", current->comm, current->pid);
-+
-+	if (current->mm) {
-+		pr_emerg("TEXT=%08x-%08x DATA=%08x-%08x BSS=%08x-%08x\n",
-+			(int) current->mm->start_code,
-+			(int) current->mm->end_code,
-+			(int) current->mm->start_data,
-+			(int) current->mm->end_data,
-+			(int) current->mm->end_data,
-+			(int) current->mm->brk);
-+		pr_emerg("USER-STACK=%08x  KERNEL-STACK=%08x\n\n",
-+			(int) current->mm->start_stack,
-+			(int)(((unsigned long) current) + THREAD_SIZE));
-+	}
-+
-+	pr_emerg("PC: %08lx\n", fp->ea);
-+	pr_emerg(KERN_EMERG "SR: %08lx    SP: %08lx\n",
-+		(long) fp->estatus, (long) fp);
-+
-+	pr_emerg("r1: %08lx    r2: %08lx    r3: %08lx\n",
-+		fp->r1, fp->r2, fp->r3);
-+
-+	pr_emerg("r4: %08lx    r5: %08lx    r6: %08lx    r7: %08lx\n",
-+		fp->r4, fp->r5, fp->r6, fp->r7);
-+	pr_emerg("r8: %08lx    r9: %08lx    r10: %08lx    r11: %08lx\n",
-+		fp->r8, fp->r9, fp->r10, fp->r11);
-+	pr_emerg("r12: %08lx  r13: %08lx    r14: %08lx    r15: %08lx\n",
-+		fp->r12, fp->r13, fp->r14, fp->r15);
-+	pr_emerg("or2: %08lx   ra: %08lx     fp: %08lx    sp: %08lx\n",
-+		fp->orig_r2, fp->ra, fp->fp, fp->sp);
-+	pr_emerg("\nUSP: %08x   TRAPFRAME: %08x\n",
-+		(unsigned int) fp->sp, (unsigned int) fp);
-+
-+	pr_emerg("\nCODE:");
-+	tp = ((unsigned char *) fp->ea) - 0x20;
-+	for (sp = (unsigned long *) tp, i = 0; (i < 0x40);  i += 4) {
-+		if ((i % 0x10) == 0)
-+			pr_emerg("\n%08x: ", (int) (tp + i));
-+		pr_emerg("%08x ", (int) *sp++);
-+	}
-+	pr_emerg("\n");
-+
-+	pr_emerg("\nKERNEL STACK:");
-+	tp = ((unsigned char *) fp) - 0x40;
-+	for (sp = (unsigned long *) tp, i = 0; (i < 0xc0); i += 4) {
-+		if ((i % 0x10) == 0)
-+			pr_emerg("\n%08x: ", (int) (tp + i));
-+		pr_emerg("%08x ", (int) *sp++);
-+	}
-+	pr_emerg("\n");
-+	pr_emerg("\n");
-+
-+	pr_emerg("\nUSER STACK:");
-+	tp = (unsigned char *) (fp->sp - 0x10);
-+	for (sp = (unsigned long *) tp, i = 0; (i < 0x80); i += 4) {
-+		if ((i % 0x10) == 0)
-+			pr_emerg("\n%08x: ", (int) (tp + i));
-+		pr_emerg("%08x ", (int) *sp++);
-+	}
-+	pr_emerg("\n\n");
-+}
-+
-+unsigned long get_wchan(struct task_struct *p)
-+{
-+	unsigned long fp, pc;
-+	unsigned long stack_page;
-+	int count = 0;
-+	if (!p || p == current || p->state == TASK_RUNNING)
-+		return 0;
-+
-+	stack_page = (unsigned long)p;
-+	fp = ((struct switch_stack *)p->thread.ksp)->fp;	/* ;dgt2 */
-+	do {
-+		if (fp < stack_page+sizeof(struct task_struct) ||
-+			fp >= 8184+stack_page)	/* ;dgt2;tmp */
-+			return 0;
-+		pc = ((unsigned long *)fp)[1];
-+		if (!in_sched_functions(pc))
-+			return pc;
-+		fp = *(unsigned long *) fp;
-+	} while (count++ < 16);		/* ;dgt2;tmp */
-+	return 0;
-+}
-+
-+/*
-+ * Do necessary setup to start up a newly executed thread.
-+ * Will startup in user mode (status_extension = 0).
-+ */
-+void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
-+{
-+	memset((void *) regs, 0, sizeof(struct pt_regs));
-+	regs->estatus = ESTATUS_EPIE | ESTATUS_EU;
-+	regs->ea = pc;
-+	regs->sp = sp;
-+}
-+
-+#include <linux/elfcore.h>
-+
-+/* Fill in the FPU structure for a core dump. */
-+int dump_fpu(struct pt_regs *regs, elf_fpregset_t *r)
-+{
-+	return 0; /* Nios2 has no FPU and thus no FPU registers */
-+}
-diff --git a/arch/nios2/mm/mmu_context.c b/arch/nios2/mm/mmu_context.c
-new file mode 100644
-index 0000000..45d6b9c58d677a93b3bbe38148693e02394aac87
---- /dev/null
-+++ b/arch/nios2/mm/mmu_context.c
-@@ -0,0 +1,116 @@
-+/*
-+ * MMU context handling.
-+ *
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2009 Wind River Systems Inc
-+ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ */
-+
-+#include <linux/mm.h>
-+
-+#include <asm/cpuinfo.h>
-+#include <asm/mmu_context.h>
-+#include <asm/tlb.h>
-+
-+/* The pids position and mask in context */
-+#define PID_SHIFT	0
-+#define PID_BITS	(cpuinfo.tlb_pid_num_bits)
-+#define PID_MASK	((1UL << PID_BITS) - 1)
-+
-+/* The versions position and mask in context */
-+#define VERSION_BITS	(32 - PID_BITS)
-+#define VERSION_SHIFT	(PID_SHIFT + PID_BITS)
-+#define VERSION_MASK	((1UL << VERSION_BITS) - 1)
-+
-+/* Return the version part of a context */
-+#define CTX_VERSION(c)	(((c) >> VERSION_SHIFT) & VERSION_MASK)
-+
-+/* Return the pid part of a context */
-+#define CTX_PID(c)	(((c) >> PID_SHIFT) & PID_MASK)
-+
-+/* Value of the first context (version 1, pid 0) */
-+#define FIRST_CTX	((1UL << VERSION_SHIFT) | (0 << PID_SHIFT))
-+
-+static mm_context_t next_mmu_context;
-+
-+/*
-+ * Initialize MMU context management stuff.
-+ */
-+void __init mmu_context_init(void)
-+{
-+	/* We need to set this here because the value depends on runtime data
-+	 * from cpuinfo */
-+	next_mmu_context = FIRST_CTX;
-+}
-+
-+/*
-+ * Set new context (pid), keep way
-+ */
-+static void set_context(mm_context_t context)
-+{
-+	set_mmu_pid(CTX_PID(context));
-+}
-+
-+static mm_context_t get_new_context(void)
-+{
-+	/* Return the next pid */
-+	next_mmu_context += (1UL << PID_SHIFT);
-+
-+	/* If the pid field wraps around we increase the version and
-+	 * flush the tlb */
-+	if (unlikely(CTX_PID(next_mmu_context) == 0)) {
-+		/* Version is incremented since the pid increment above
-+		 * overflows info version */
-+		flush_cache_all();
-+		flush_tlb_all();
-+	}
-+
-+	/* If the version wraps we start over with the first generation, we do
-+	 * not need to flush the tlb here since it's always done above */
-+	if (unlikely(CTX_VERSION(next_mmu_context) == 0))
-+		next_mmu_context = FIRST_CTX;
-+
-+	return next_mmu_context;
-+}
-+
-+void switch_mm(struct mm_struct *prev, struct mm_struct *next,
-+	       struct task_struct *tsk)
++static cycle_t nios2_timer_read(struct clocksource *cs)
 +{
 +	unsigned long flags;
++	u32 cycles;
++	u32 tcn;
 +
 +	local_irq_save(flags);
-+
-+	/* If the process context we are swapping in has a different context
-+	 * generation then we have it should get a new generation/pid */
-+	if (unlikely(CTX_VERSION(next->context) !=
-+		CTX_VERSION(next_mmu_context)))
-+		next->context = get_new_context();
-+
-+	/* Save the current pgd so the fast tlb handler can find it */
-+	pgd_current = next->pgd;
-+
-+	/* Set the current context */
-+	set_context(next->context);
-+
++	tcn = NIOS2_TIMER_PERIOD - 1 - read_timersnapshot();
++	cycles = nios2_timer_count;
 +	local_irq_restore(flags);
++
++	return cycles + tcn;
 +}
 +
-+/*
-+ * After we have set current->mm to a new value, this activates
-+ * the context for the new mm so we see the new mappings.
-+ */
-+void activate_mm(struct mm_struct *prev, struct mm_struct *next)
++static struct clocksource nios2_timer = {
++	.name	= "timer",
++	.rating	= 250,
++	.read	= nios2_timer_read,
++	.shift	= 20,
++	.mask	= CLOCKSOURCE_MASK(32),
++	.flags	= CLOCK_SOURCE_IS_CONTINUOUS,
++};
++
++static struct irqaction nios2_timer_irq = {
++	.name		= "timer",
++	.flags		= IRQF_TIMER,
++	.handler	= timer_interrupt,
++};
++
++static void __init nios2_time_init(struct device_node *timer)
 +{
-+	next->context = get_new_context();
-+	set_context(next->context);
-+	pgd_current = next->pgd;
++	int irq;
++	unsigned int ctrl;
++
++	timer_membase = of_iomap(timer, 0);
++	if (!timer_membase)
++		panic("Unable to map timer resource\n");
++
++	if (of_property_read_u32(timer, "clock-frequency", &timer_freq))
++		panic("Unable to get timer clock frequency\n");
++
++	irq = irq_of_parse_and_map(timer, 0);
++	if (irq < 0)
++		panic("Unable to parse timer irq\n");
++
++	if (setup_irq(irq, &nios2_timer_irq))
++		panic("Unable to setup timer irq\n");
++
++	write_timerperiod(NIOS2_TIMER_PERIOD - 1);
++
++	/* clocksource initialize */
++	nios2_timer.mult = clocksource_hz2mult(timer_freq, nios2_timer.shift);
++	clocksource_register(&nios2_timer);
++
++	/* interrupt enable + continuous + start */
++	ctrl = ALTERA_TIMER_CONTROL_ITO_MSK | ALTERA_TIMER_CONTROL_CONT_MSK |
++		ALTERA_TIMER_CONTROL_START_MSK;
++	outw(ctrl, timer_membase + ALTERA_TIMER_CONTROL_REG);
 +}
 +
-+unsigned long get_pid_from_context(mm_context_t *context)
++void read_persistent_clock(struct timespec *ts)
 +{
-+	return CTX_PID((*context));
++	ts->tv_sec = mktime(2007, 1, 1, 0, 0, 0);
++	ts->tv_nsec = 0;
 +}
++
++void __init time_init(void)
++{
++	clocksource_of_init();
++}
++
++CLOCKSOURCE_OF_DECLARE(nios2_timer, "ALTR,timer-1.0", nios2_time_init);
 -- 
 1.8.3.2
 
