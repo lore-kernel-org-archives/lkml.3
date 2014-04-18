@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbaDRDr3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 23:47:29 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:48849
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1751529AbaDRD4P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 23:56:15 -0400
+Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:9762
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751661AbaDRDr0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 23:47:26 -0400
+	id S1751259AbaDRD4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 23:56:08 -0400
 From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
 To: Daniel Lezcano <daniel.lezcano@linaro.org>,
         "tglx@linutronix.de" <tglx@linutronix.de>,
@@ -22,9 +22,9 @@ Subject: RE: [RFC][PATCH 3/3] clocksource: Add Freescale FlexTimer Module
  (FTM) timer support
 Thread-Topic: [RFC][PATCH 3/3] clocksource: Add Freescale FlexTimer Module
  (FTM) timer support
-Thread-Index: AQHPWSBc9k7OgjbNkEijY/VC8/wPu5sV3s2AgADf4bA=
-Date: Fri, 18 Apr 2014 03:47:22 +0000
-Message-ID: <0604781786e540b5baa98a07d0809c92@BY2PR03MB505.namprd03.prod.outlook.com>
+Thread-Index: AQHPWSBc9k7OgjbNkEijY/VC8/wPu5sV3s2AgADiQ/A=
+Date: Fri, 18 Apr 2014 03:55:46 +0000
+Message-ID: <aa8f83c882144105b4c2c230dc6f517b@BY2PR03MB505.namprd03.prod.outlook.com>
 References: <1397614787-8300-1-git-send-email-Li.Xiubo@freescale.com>
  <1397614787-8300-4-git-send-email-Li.Xiubo@freescale.com>
  <534FE3C1.4060509@linaro.org>
@@ -35,7 +35,7 @@ X-MS-Has-Attach:
 X-MS-TNEF-Correlator: 
 x-originating-ip: [123.151.195.49]
 x-forefront-prvs: 018577E36E
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(51704005)(164054003)(2201001)(54356999)(81542001)(80976001)(99396002)(80022001)(77096999)(76176999)(20776003)(66066001)(79102001)(87936001)(99286001)(92566001)(2656002)(50986999)(46102001)(74502001)(31966008)(85852003)(83322001)(33646001)(83072002)(4396001)(76576001)(86362001)(81342001)(76482001)(575784001)(74662001)(74316001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB380;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:B02EC83F.80E3DFBB.BBF11D73.C5A2F484.2026F;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(199002)(189002)(92566001)(86362001)(83072002)(2201001)(83322001)(76482001)(81342001)(81542001)(85852003)(80976001)(20776003)(79102001)(33646001)(66066001)(80022001)(74316001)(4396001)(76176999)(50986999)(77096999)(46102001)(74662001)(31966008)(87936001)(54356999)(2656002)(76576001)(99286001)(99396002)(74502001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB377;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:7C96D836.81B11E2B.7BF10DC7.64AC2150.200F2;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
 Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 X-OriginatorOrg: freescale.com
@@ -43,90 +43,8 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3I3lX1m017622
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3I3v235017649
 
-> > Here using the FTM0 as clock event device and the FTM1 as clock
-> > source device.
-> 
-> As it is a new driver, please add a more elaborated description of the
-> timer.
-> 
-
-Please see the next version.
-
-
-> > +#include <linux/clk.h>
-> > +#include <linux/clockchips.h>
-> > +#include <linux/clocksource.h>
-> > +#include <linux/err.h>
-> > +#include <linux/interrupt.h>
-> > +#include <linux/io.h>
-> > +#include <linux/kernel.h>
-> > +#include <linux/module.h>
-> > +#include <linux/of_address.h>
-> > +#include <linux/of_irq.h>
-> > +#include <linux/sched_clock.h>
-> 
-> Could you check all these headers are effectively needed ?
-> 
-
-Yes, I will.
-
-
-
-> > +#define FTM_OFFSET(n)	(0x1000 * n)
-> > +
-> > +#define FTM_SC		0x00
-> > +#define FTM_SC_CLK_SHIFT	3
-> > +#define FTM_SC_CLK_MASK	(0x3 << FTM_SC_CLK_SHIFT)
-> > +#define FTM_SC_CLK(c)	((c) << FTM_SC_CLK_SHIFT)
-> > +#define FTM_SC_PS_MASK	0x7
-> > +#define FTM_SC_TOIE	BIT(6)
-> > +#define FTM_SC_TOF	BIT(7)
-> > +
-> > +#define FTM_CNT		0x04
-> > +#define FTM_MOD		0x08
-> > +
-> > +#define FTM_CSC_BASE	0x0C
-> > +#define FTM_CSC_MSB	BIT(5)
-> > +#define FTM_CSC_MSA	BIT(4)
-> > +#define FTM_CSC_ELSB	BIT(3)
-> > +#define FTM_CSC_ELSA	BIT(2)
-> > +
-> > +#define FTM_CV_BASE	0x10
-> > +#define FTM_CNTIN	0x4C
-> > +#define FTM_STATUS	0x50
-> > +
-> > +#define FTM_MODE	0x54
-> > +#define FTM_MODE_FTMEN	BIT(0)
-> > +#define FTM_MODE_WPDIS	BIT(2)
-> > +#define FTM_MODE_PWMSYNC	BIT(3)
-> > +
-> > +#define FTM_SYNC	0x58
-> > +#define FTM_OUTINIT	0x5C
-> > +#define FTM_OUTMASK	0x60
-> > +#define FTM_COMBINE	0x64
-> > +#define FTM_DEADTIME	0x68
-> > +#define FTM_EXTTRIG	0x6C
-> > +#define FTM_POL		0x70
-> > +#define FTM_FMS		0x74
-> > +#define FTM_FILTER	0x78
-> > +#define FTM_FLTCTRL	0x7C
-> > +#define FTM_QDCTRL	0x80
-> > +#define FTM_CONF	0x84
-> > +#define FTM_FLTPOL	0x88
-> > +#define FTM_SYNCONF	0x8C
-> > +#define FTM_INVCTRL	0x90
-> > +#define FTM_SWOCTRL	0x94
-> > +#define FTM_PWMLOAD	0x98
-> 
-> Please remove the unused macros.
-> 
-
-Okay.
-
-
-> > +
 > > +	freq = clk_get_rate(ftm_clk);
 > > +
 > > +	calc_closest_cound_cyc(freq);
@@ -141,17 +59,12 @@ Okay.
 > I am not a big fan of those BUG_ON every line. Could you please replace
 > it by dev_err().
 > 
-> That is also not in the logic of a single zImage.
-> 
 
-Yes, if so, I will revise this.
+While, for the FlexTimer driver, there hasn't any device creation and
+registering, so I'll use pr_err() instead of dev_err()...
 
-
-Thanks,
+Thanks
 
 BRs
 Xiubo
-
-
-
 ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
