@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754924AbaDRViu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 17:38:50 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42861 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754903AbaDRVip (ORCPT
+	id S1161002AbaDRVjl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 17:39:41 -0400
+Received: from mail-ve0-f179.google.com ([209.85.128.179]:39763 "EHLO
+	mail-ve0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008AbaDRVje (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 17:38:45 -0400
-Date: Fri, 18 Apr 2014 14:38:54 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] char/misc fixes for 3.15-rc2
-Message-ID: <20140418213854.GA3818@kroah.com>
+	Fri, 18 Apr 2014 17:39:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140418205213.GA21823@atomide.com>
+References: <20140320161118.B7075C4067A@trevor.secretlab.ca>
+	<1395413185-29763-1-git-send-email-jjhiblot@traphandler.com>
+	<1395413185-29763-3-git-send-email-jjhiblot@traphandler.com>
+	<CAL_Jsq+aU+rs28gV=Gesb_-Dy6Ht7zuKrRA6_hmqp94Uun23Yg@mail.gmail.com>
+	<20140418205213.GA21823@atomide.com>
+Date: Fri, 18 Apr 2014 16:39:33 -0500
+Message-ID: <CAL_JsqJvVvo6R-qNXxur7wiZERKbi52xyKoWnmzJTfKS2iKK7A@mail.gmail.com>
+Subject: Re: [PATCH v3 2/2] dt: platform driver: Fill the resources before
+ probe and defer if needed
+From: Rob Herring <robherring2@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+On Fri, Apr 18, 2014 at 3:52 PM, Tony Lindgren <tony@atomide.com> wrote:
+> * Rob Herring <robherring2@gmail.com> [140411 10:33]:
+>> On Fri, Mar 21, 2014 at 9:46 AM, Jean-Jacques Hiblot
+>> <jjhiblot@traphandler.com> wrote:
+>> > The goal of this patch is to allow drivers to be probed even if at the time of
+>> > the DT parsing some of their IRQ ressources are not available yet.
+>> >
+>> > In the current situation, the IRQ resources of a platform device are filled from
+>> > the DT at the time the device is created (of_device_alloc()). The drawback of
+>> > this is that a device sitting close to the top of the DT (ahb for example) but
+>> > depending on ressources that are initialized later (IRQ domain dynamically
+>> > created for example) will fail to probe because the ressources don't exist
+>> > at this time.
+>>
+>> s/ressources/resources/
+>
+> While I've tested these two patches and they fix the issue for me. I have
+> some serious doubts again about this whole ------ up string parsing
+> pile of ---- called device tree.
+>
+> Do we really need to sprinkle more of_* hacks to the irq subsystem?
+>
+> There's nothing wrong with with the irq subsystem. Platform bus is just
+> calling the irq subsystem at the wrong time with uninitialized data.
 
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+This patch doesn't even touch the irq subsystem.
 
-are available in the git repository at:
+> It seems that we're again papering over the fact that there's nothing
+> coordinating the setting up of various resources with device tree.
+> That seems to be the repeating never ending pattern as we've already
+> seen with GPIOs, pinctrl, and IRQchips. We end up adding all kinds of
+> cross subsystem calls that were never needed earlier.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.15-rc2
+This problem may be made worse with DT, but this problem has existed
+for as long as I have worked on the kernel. It is worse with DT since
+platforms have less control over the init ordering and loose some
+ability to do tricks like changing the initcall levels. We didn't even
+try to do pinctrl in any generic way before DT.
 
-for you to fetch changes up to 03367ef5ea811475187a0732aada068919e14d61:
-
-  Drivers: hv: vmbus: Negotiate version 3.0 when running on ws2012r2 hosts (2014-04-16 14:14:07 -0700)
-
-----------------------------------------------------------------
-Char/Misc driver fixes for 3.15-rc2
-
-Here are a few driver fixes for char/misc drivers that resolve reported
-issues.
-
-All have been in linux-next successfully for a few days.
-
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
-----------------------------------------------------------------
-Aaron Sierra (1):
-      vme_tsi148: Utilize to_pci_dev() macro
-
-Alexander Usyskin (1):
-      mei: ignore client writing state during cb completion
-
-Christoph Jaeger (1):
-      drivers: mcb: fix memory leak in chameleon_parse_cells() error path
-
-Colin Ian King (1):
-      GenWQE: Ensure rc is not returning an uninitialized value
-
-David Fries (2):
-      w1: fix netlink refcnt leak on error path
-      w1: avoid recursive device_add
-
-Frank Haverkamp (4):
-      GenWQE: Enable access to VPD flash area
-      GenWQE: Add wmb before DDCB is started
-      GenWQE: Fix multithreading problems
-      GenWQE: Increase driver version number
-
-Geert Uytterhoeven (1):
-      misc: Grammar s/addition/additional/
-
-Joe Schultz (2):
-      vme_tsi148: Fix typo in tsi148_slave_get()
-      vme_tsi148: Fix PCI address mapping assumption
-
-K. Y. Srinivasan (2):
-      Tools: hv: Handle the case when the target file exists correctly
-      Drivers: hv: vmbus: Negotiate version 3.0 when running on ws2012r2 hosts
-
-Tomas Winkler (1):
-      mei: me: do not load the driver if the FW doesn't support MEI interface
-
- drivers/hv/connection.c             |   5 +-
- drivers/mcb/mcb-parse.c             |   1 +
- drivers/misc/Kconfig                |   4 +-
- drivers/misc/genwqe/card_base.h     |  58 ++++++++----
- drivers/misc/genwqe/card_ddcb.c     |   6 +-
- drivers/misc/genwqe/card_dev.c      |  44 ++++------
- drivers/misc/genwqe/card_utils.c    | 170 +++++++++++++++++++++++++++---------
- drivers/misc/genwqe/genwqe_driver.h |   2 +-
- drivers/misc/mei/hw-me-regs.h       |   5 ++
- drivers/misc/mei/interrupt.c        |   3 +-
- drivers/misc/mei/main.c             |   3 +-
- drivers/misc/mei/pci-me.c           |  30 +++++--
- drivers/vme/bridges/vme_tsi148.c    |  22 +++--
- drivers/w1/w1.c                     |  32 ++-----
- drivers/w1/w1_netlink.c             |  44 ++++++----
- include/linux/hyperv.h              |   4 +-
- include/uapi/linux/hyperv.h         |   1 +
- tools/hv/hv_fcopy_daemon.c          |   4 +-
- 18 files changed, 280 insertions(+), 158 deletions(-)
+Rob
