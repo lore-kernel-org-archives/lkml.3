@@ -1,135 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbaDRMts (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:49:48 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:14122 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807AbaDRMtl (ORCPT
+	id S1754130AbaDRMq7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:46:59 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:45782 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753350AbaDRMqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:49:41 -0400
-Message-ID: <53511F60.3040301@atmel.com>
-Date: Fri, 18 Apr 2014 14:49:36 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 18 Apr 2014 08:46:54 -0400
+X-IronPort-AV: E=Sophos;i="4.97,883,1389715200"; 
+   d="scan'208";a="29445278"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>, <stable@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>,
+        Andreas Gruenbacher <agruen@linbit.com>,
+        Stephen Hemminger <stephen@networkplumber.org>
+Subject: [PATCH 1/8] idr: fix overflow bug for the max-high layer
+Date: Fri, 18 Apr 2014 20:49:48 +0800
+Message-ID: <1397825404-12039-2-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
+References: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Boris BREZILLON <brezillonboris@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        "Boris BREZILLON" <b.brezillon.dev@gmail.com>
-Subject: Re: [PATCH v2 02/11] clk: at91: update main clk documentation
-References: <1395649643-9146-1-git-send-email-b.brezillon.dev@gmail.com> <1395649643-9146-3-git-send-email-b.brezillon.dev@gmail.com>
-In-Reply-To: <1395649643-9146-3-git-send-email-b.brezillon.dev@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/03/2014 09:27, Boris BREZILLON :
-> Update main clk documentation to match main clk implementation rework.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
-> ---
->  .../devicetree/bindings/clock/at91-clock.txt       |   56 ++++++++++++++++----
->  1 file changed, 47 insertions(+), 9 deletions(-)
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
-> index cd5e239..9a7025b 100644
-> --- a/Documentation/devicetree/bindings/clock/at91-clock.txt
-> +++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
-> @@ -15,8 +15,13 @@ Required properties:
->  		All at91 specific clocks (clocks defined below) must be child
->  		node of the PMC node.
->  
-> +	"atmel,at91rm9200-clk-main-osc"
-> +	"atmel,at91sam9x5-clk-main-rc-osc"
-> +		at91 main clk sources
-> +
-> +	"atmel,at91sam9x5-clk-main"
->  	"atmel,at91rm9200-clk-main":
-> -		at91 main oscillator
-> +		at91 main clock
->  
->  	"atmel,at91rm9200-clk-master" or
->  	"atmel,at91sam9x5-clk-master":
-> @@ -85,24 +90,57 @@ For example:
->  		/* put at91 clocks here */
->  	};
->  
-> +Required properties for main clock oscillator:
-> +- interrupt-parent : must reference the PMC node.
-> +- interrupts : shall be set to "<0>".
-> +- clock-frequency : define the internal RC oscillator frequency.
-> +
-> +Optional properties:
-> +- clock-accuracy : define the internal RC oscillator accuracy.
-> +
-> +For example:
-> +	main_rc_osc: main_rc_osc {
-> +		compatible = "atmel,at91sam9x5-clk-main-rc-osc";
-> +		interrupt-parent = <&pmc>;
-> +		interrupts = <0>;
-> +		clock-frequency = <12000000>;
-> +		clock-accuracy = <50000000>;
-> +	};
+In idr_replace(), when the top layer is the max-high layer(p->layer == 3),
+The "(1 << n)" will overflow and the result is 0, it causes idr_replace()
+return -EINVAL even the id is actually valid.
 
-Don't you swapped this example above with the description below?
+The following test code shows it fails to replace the value for id=((1<<27)+42):
 
+static void test5(void)
+{
+	int id;
+	DEFINE_IDR(test_idr);
+#define TEST5_START ((1<<27)+42) /* use the highest layer */
 
-> +Required properties for main clock internal RC oscillator:
-> +- interrupt-parent : must reference the PMC node.
-> +- interrupts : shall be set to "<0>".
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- clocks : shall encode the main osc source clk sources (see atmel datasheet).
-> +
-> +Optional properties:
-> +- atmel,osc-bypass : boolean property. Specified if a clock signal is provided
-> +  on XIN.
-> +
-> +  clock signal is directly provided on XIN pin.
-> +
-> +For example:
-> +	main_osc: main_osc {
-> +		compatible = "atmel,at91rm9200-clk-main-osc";
-> +		interrupt-parent = <&pmc>;
-> +		interrupts = <0>;
-> +		#clock-cells = <0>;
-> +		clocks = <&main_xtal>;
-> +	};
-> +
->  Required properties for main clock:
->  - interrupt-parent : must reference the PMC node.
->  - interrupts : shall be set to "<0>".
->  - #clock-cells : from common clock binding; shall be set to 0.
-> -- clocks (optional if clock-frequency is provided) : shall be the slow clock
-> -	phandle. This clock is used to calculate the main clock rate if
-> -	"clock-frequency" is not provided.
-> -- clock-frequency : the main oscillator frequency.Prefer the use of
-> -	"clock-frequency" over automatic clock rate calculation.
-> +- clocks : shall encode the main clk sources (see atmel datasheet).
->  
->  For example:
->  	main: mainck {
-> -		compatible = "atmel,at91rm9200-clk-main";
-> +		compatible = "atmel,at91sam9x5-clk-main";
->  		interrupt-parent = <&pmc>;
->  		interrupts = <0>;
->  		#clock-cells = <0>;
-> -		clocks = <&ck32k>;
-> -		clock-frequency = <18432000>;
-> +		clocks = <&main_rc_osc &main_osc>;
->  	};
->  
->  Required properties for master clock:
-> 
+	printk(KERN_INFO "Start test5\n");
+	id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
+	BUG_ON(id != TEST5_START);
+	TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
+	idr_destroy(&test_idr);
+	printk(KERN_INFO "End of test5\n");
+}
 
+Fixed the bug by using idr_max() instead of the incorrect open code.
 
+There is the same problem in sub_alloc(). The overflow causes sub_alloc()
+returns -EAGAIN unexpectedly. But the idr_get_empty_slot() will call it
+again with increased @id. So the bug is hided.
+
+CC: stable@vger.kernel.org
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ lib/idr.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/lib/idr.c b/lib/idr.c
+index 2642fa8..4df6792 100644
+--- a/lib/idr.c
++++ b/lib/idr.c
+@@ -249,7 +249,7 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa,
+ 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
+ 
+ 			/* if already at the top layer, we need to grow */
+-			if (id >= 1 << (idp->layers * IDR_BITS)) {
++			if (id > idr_max(idp->layers)) {
+ 				*starting_id = id;
+ 				return -EAGAIN;
+ 			}
+@@ -811,12 +811,10 @@ void *idr_replace(struct idr *idp, void *ptr, int id)
+ 	if (!p)
+ 		return ERR_PTR(-EINVAL);
+ 
+-	n = (p->layer+1) * IDR_BITS;
+-
+-	if (id >= (1 << n))
++	if (id > idr_max(p->layer + 1))
+ 		return ERR_PTR(-EINVAL);
+ 
+-	n -= IDR_BITS;
++	n = p->layer * IDR_BITS;
+ 	while ((n > 0) && p) {
+ 		p = p->ary[(id >> n) & IDR_MASK];
+ 		n -= IDR_BITS;
 -- 
-Nicolas Ferre
+1.7.4.4
+
