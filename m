@@ -1,148 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468AbaDRNJR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:09:17 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:15242 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386AbaDRNJF (ORCPT
+	id S1754502AbaDRNJa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:09:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38873 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691AbaDRNJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:09:05 -0400
-Message-ID: <535123ED.9070303@atmel.com>
-Date: Fri, 18 Apr 2014 15:09:01 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 18 Apr 2014 09:09:22 -0400
+Date: Fri, 18 Apr 2014 06:08:33 -0700
+From: "tip-bot for Yan, Zheng" <tipbot@zytor.com>
+Message-ID: <tip-8588a2bbddc524325d84d1d6996758e9242e4ffc@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        torvalds@linux-foundation.org, peterz@infradead.org,
+        zheng.z.yan@intel.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, zheng.z.yan@intel.com,
+        peterz@infradead.org, tglx@linutronix.de
+In-Reply-To: <1395133004-23205-2-git-send-email-zheng.z.yan@intel.com>
+References: <1395133004-23205-2-git-send-email-zheng.z.yan@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] hrtimer: Export __hrtimer_start_range_ns()
+Git-Commit-ID: 8588a2bbddc524325d84d1d6996758e9242e4ffc
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Boris BREZILLON <brezillonboris@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: <devicetree@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        "Boris BREZILLON" <b.brezillon.dev@gmail.com>
-Subject: Re: [PATCH v2 04/11] clk: at91: add slow clk documentation
-References: <1395649643-9146-1-git-send-email-b.brezillon.dev@gmail.com> <1395649643-9146-5-git-send-email-b.brezillon.dev@gmail.com>
-In-Reply-To: <1395649643-9146-5-git-send-email-b.brezillon.dev@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/03/2014 09:27, Boris BREZILLON :
-> Add slow clk, and slow oscillators documentation.
-> 
-> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
-> ---
->  .../devicetree/bindings/clock/at91-clock.txt       |   72 ++++++++++++++++++++
->  1 file changed, 72 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
-> index 9a7025b..820061c 100644
-> --- a/Documentation/devicetree/bindings/clock/at91-clock.txt
-> +++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
-> @@ -6,6 +6,16 @@ This binding uses the common clock binding[1].
->  
->  Required properties:
->  - compatible : shall be one of the following:
-> +	"atmel,at91sam9x5-sckc":
-> +		at91 SCKC (Slow Clock Controller)
-> +		This node contains the slow clock definitions.
-> +
-> +	"atmel,at91sam9x5-clk-slow-osc":
-> +		at91 slow oscillator
-> +
-> +	"atmel,at91sam9x5-clk-slow-rc-osc":
-> +		at91 internal slow RC oscillator
-> +
->  	"atmel,at91rm9200-pmc" or
->  	"atmel,at91sam9g45-pmc" or
->  	"atmel,at91sam9n12-pmc" or
-> @@ -15,6 +25,11 @@ Required properties:
->  		All at91 specific clocks (clocks defined below) must be child
->  		node of the PMC node.
->  
-> +	"atmel,at91sam9x5-clk-slow" (under sckc node)
-> +	or
-> +	"atmel,at91sam9260-clk-slow" (under pmc node):
-> +		at91 slow clk
-> +
->  	"atmel,at91rm9200-clk-main-osc"
->  	"atmel,at91sam9x5-clk-main-rc-osc"
->  		at91 main clk sources
-> @@ -59,6 +74,63 @@ Required properties:
->  	"atmel,at91sam9x5-clk-utmi":
->  		at91 utmi clock
->  
-> +Required properties for SCKC node:
-> +- reg : defines the IO memory reserved for the SCKC.
-> +- #size-cells : shall be 0 (reg is used to encode clk id).
-> +- #address-cells : shall be 1 (reg is used to encode clk id).
-> +
-> +
-> +For example:
-> +	ckc: sckc@fffffe50 {
+Commit-ID:  8588a2bbddc524325d84d1d6996758e9242e4ffc
+Gitweb:     http://git.kernel.org/tip/8588a2bbddc524325d84d1d6996758e9242e4ffc
+Author:     Yan, Zheng <zheng.z.yan@intel.com>
+AuthorDate: Tue, 18 Mar 2014 16:56:42 +0800
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Fri, 18 Apr 2014 12:54:46 +0200
 
-s/ckc/sckc/ ?
+hrtimer: Export __hrtimer_start_range_ns()
 
+Export __hrtimer_start_range_ns() to allow building perf Intel uncore
+driver as a module.
 
-> +		compatible = "atmel,sama5d3-pmc";
-> +		reg = <0xfffffe50 0x4>
-> +		#size-cells = <0>;
-> +		#address-cells = <1>;
-> +
-> +		/* put at91 slow clocks here */
-> +	};
-> +
-> +
-> +Required properties for internal slow RC oscillator:
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- clock-frequency : define the internal RC oscillator frequency.
-> +
-> +Optional properties:
-> +- clock-accuracy : define the internal RC oscillator accuracy.
-> +
-> +For example:
-> +	slow_rc_osc: slow_rc_osc {
-> +		compatible = "atmel,at91sam9x5-clk-slow-rc-osc";
-> +		clock-frequency = <32768>;
-> +		clock-accuracy = <50000000>;
-> +	};
-> +
-> +Required properties for slow oscillator:
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- clocks : shall encode the main osc source clk sources (see atmel datasheet).
-> +
-> +Optional properties:
-> +- atmel,osc-bypass : boolean property. Set this when a clock signal is directly
-> +  provided on XIN.
-> +
-> +For example:
-> +	slow_osc: slow_osc {
-> +		compatible = "atmel,at91rm9200-clk-slow-osc";
-> +		#clock-cells = <0>;
-> +		clocks = <&slow_xtal>;
-> +	};
-> +
-> +Required properties for slow clock:
-> +- #clock-cells : from common clock binding; shall be set to 0.
-> +- clocks : shall encode the slow clk sources (see atmel datasheet).
-> +
-> +For example:
-> +	clk32k: slck {
-> +		compatible = "atmel,at91sam9x5-clk-slow";
-> +		#clock-cells = <0>;
-> +		clocks = <&slow_rc_osc &slow_osc>;
-> +	};
-> +
->  Required properties for PMC node:
->  - reg : defines the IO memory reserved for the PMC.
->  - #size-cells : shall be 0 (reg is used to encode clk id).
-> 
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1395133004-23205-2-git-send-email-zheng.z.yan@intel.com
+Cc: eranian@google.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/hrtimer.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-
--- 
-Nicolas Ferre
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index d55092c..53d2682 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -1017,6 +1017,7 @@ int __hrtimer_start_range_ns(struct hrtimer *timer, ktime_t tim,
+ 
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(__hrtimer_start_range_ns);
+ 
+ /**
+  * hrtimer_start_range_ns - (re)start an hrtimer on the current CPU
