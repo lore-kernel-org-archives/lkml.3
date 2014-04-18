@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399AbaDRJb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:31:56 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45984 "EHLO
+	id S1752498AbaDRJcW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:32:22 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45966 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752351AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752291AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 52/72] ip6mr: fix mfc notification flags
-Date: Fri, 18 Apr 2014 11:22:25 +0200
-Message-Id: <5d0d91da73f727eda31b8600e6f6d7b8579cbe20.1397812482.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, lucien <lucien.xin@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 46/72] ipv6: ip6_append_data_mtu do not handle the mtu of the second fragment properly
+Date: Fri, 18 Apr 2014 11:22:19 +0200
+Message-Id: <6caa13565114dc0b946eba39835bd69ebd508205.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -24,80 +23,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: lucien <lucien.xin@gmail.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit f518338b16038beeb73e155e60d0f70beb9379f4 ]
+[ Upstream commit e367c2d03dba4c9bcafad24688fadb79dd95b218 ]
 
-Commit 812e44dd1829 ("ip6mr: advertise new mfc entries via rtnl") reuses the
-function ip6mr_fill_mroute() to notify mfc events.
-But this function was used only for dump and thus was always setting the
-flag NLM_F_MULTI, which is wrong in case of a single notification.
+In ip6_append_data_mtu(), when the xfrm mode is not tunnel(such as
+transport),the ipsec header need to be added in the first fragment, so the mtu
+will decrease to reserve space for it, then the second fragment come, the mtu
+should be turn back, as the commit 0c1833797a5a6ec23ea9261d979aa18078720b74
+said.  however, in the commit a493e60ac4bbe2e977e7129d6d8cbb0dd236be, it use
+*mtu = min(*mtu, ...) to change the mtu, which lead to the new mtu is alway
+equal with the first fragment's. and cannot turn back.
 
-Libraries like libnl will wait forever for NLMSG_DONE.
+when I test through  ping6 -c1 -s5000 $ip (mtu=1280):
+...frag (0|1232) ESP(spi=0x00002000,seq=0xb), length 1232
+...frag (1232|1216)
+...frag (2448|1216)
+...frag (3664|1216)
+...frag (4880|164)
 
-CC: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Acked-by: Thomas Graf <tgraf@suug.ch>
+which should be:
+...frag (0|1232) ESP(spi=0x00001000,seq=0x1), length 1232
+...frag (1232|1232)
+...frag (2464|1232)
+...frag (3696|1232)
+...frag (4928|116)
+
+so delete the min() when change back the mtu.
+
+Signed-off-by: Xin Long <lucien.xin@gmail.com>
+Fixes: 75a493e60ac4bb ("ipv6: ip6_append_data_mtu did not care about pmtudisc and frag_size")
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/ipv6/ip6mr.c | 13 ++++++++-----
- 1 file changed, 8 insertions(+), 5 deletions(-)
+ net/ipv6/ip6_output.c | 14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
-index 0eb4038a4d63..8737400af0a0 100644
---- a/net/ipv6/ip6mr.c
-+++ b/net/ipv6/ip6mr.c
-@@ -2349,13 +2349,14 @@ int ip6mr_get_route(struct net *net,
- }
- 
- static int ip6mr_fill_mroute(struct mr6_table *mrt, struct sk_buff *skb,
--			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd)
-+			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd,
-+			     int flags)
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 68fd4918315c..49f85d49cdb4 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1088,21 +1088,19 @@ static void ip6_append_data_mtu(unsigned int *mtu,
+ 				unsigned int fragheaderlen,
+ 				struct sk_buff *skb,
+ 				struct rt6_info *rt,
+-				bool pmtuprobe)
++				unsigned int orig_mtu)
  {
- 	struct nlmsghdr *nlh;
- 	struct rtmsg *rtm;
- 	int err;
+ 	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
+ 		if (skb == NULL) {
+ 			/* first fragment, reserve header_len */
+-			*mtu = *mtu - rt->dst.header_len;
++			*mtu = orig_mtu - rt->dst.header_len;
  
--	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), NLM_F_MULTI);
-+	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), flags);
- 	if (nlh == NULL)
- 		return -EMSGSIZE;
+ 		} else {
+ 			/*
+ 			 * this fragment is not first, the headers
+ 			 * space is regarded as data space.
+ 			 */
+-			*mtu = min(*mtu, pmtuprobe ?
+-				   rt->dst.dev->mtu :
+-				   dst_mtu(rt->dst.path));
++			*mtu = orig_mtu;
+ 		}
+ 		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
+ 			      + fragheaderlen - sizeof(struct frag_hdr);
+@@ -1119,7 +1117,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+ 	struct inet_cork *cork;
+ 	struct sk_buff *skb, *skb_prev = NULL;
+-	unsigned int maxfraglen, fragheaderlen, mtu;
++	unsigned int maxfraglen, fragheaderlen, mtu, orig_mtu;
+ 	int exthdrlen;
+ 	int dst_exthdrlen;
+ 	int hh_len;
+@@ -1201,6 +1199,7 @@ int ip6_append_data(struct sock *sk, int getfrag(void *from, char *to,
+ 		dst_exthdrlen = 0;
+ 		mtu = cork->fragsize;
+ 	}
++	orig_mtu = mtu;
  
-@@ -2423,7 +2424,7 @@ static void mr6_netlink_event(struct mr6_table *mrt, struct mfc6_cache *mfc,
- 	if (skb == NULL)
- 		goto errout;
+ 	hh_len = LL_RESERVED_SPACE(rt->dst.dev);
  
--	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd);
-+	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd, 0);
- 	if (err < 0)
- 		goto errout;
+@@ -1280,8 +1279,7 @@ alloc_new_skb:
+ 			if (skb == NULL || skb_prev == NULL)
+ 				ip6_append_data_mtu(&mtu, &maxfraglen,
+ 						    fragheaderlen, skb, rt,
+-						    np->pmtudisc ==
+-						    IPV6_PMTUDISC_PROBE);
++						    orig_mtu);
  
-@@ -2462,7 +2463,8 @@ static int ip6mr_rtm_dumproute(struct sk_buff *skb, struct netlink_callback *cb)
- 				if (ip6mr_fill_mroute(mrt, skb,
- 						      NETLINK_CB(cb->skb).portid,
- 						      cb->nlh->nlmsg_seq,
--						      mfc, RTM_NEWROUTE) < 0)
-+						      mfc, RTM_NEWROUTE,
-+						      NLM_F_MULTI) < 0)
- 					goto done;
- next_entry:
- 				e++;
-@@ -2476,7 +2478,8 @@ next_entry:
- 			if (ip6mr_fill_mroute(mrt, skb,
- 					      NETLINK_CB(cb->skb).portid,
- 					      cb->nlh->nlmsg_seq,
--					      mfc, RTM_NEWROUTE) < 0) {
-+					      mfc, RTM_NEWROUTE,
-+					      NLM_F_MULTI) < 0) {
- 				spin_unlock_bh(&mfc_unres_lock);
- 				goto done;
- 			}
+ 			skb_prev = skb;
+ 
 -- 
 1.9.2
 
