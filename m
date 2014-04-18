@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517AbaDRASa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 20:18:30 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:42647 "EHLO smtp.outflux.net"
+	id S1751920AbaDRATO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 20:19:14 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:57159 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751239AbaDRAS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 20:18:28 -0400
+	id S1751239AbaDRATH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 20:19:07 -0400
 From: Kees Cook <keescook@chromium.org>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
@@ -22,31 +22,73 @@ Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
         Pavel Emelyanov <xemul@parallels.com>,
         Andrey Vagin <avagin@openvz.org>,
         Michael Ellerman <michael@ellerman.id.au>
-Subject: [PATCH v2 0/4] sysctl: fix incorrect write position handling
-Date: Thu, 17 Apr 2014 17:16:19 -0700
-Message-Id: <1397780183-24633-1-git-send-email-keescook@chromium.org>
+Subject: [PATCH v2 1/4] sysctl: clean up char buffer arguments
+Date: Thu, 17 Apr 2014 17:16:20 -0700
+Message-Id: <1397780183-24633-2-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397780183-24633-1-git-send-email-keescook@chromium.org>
+References: <1397780183-24633-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When writing to a sysctl string, each write, regardless of VFS position,
-began writing the string from the start. This meant the contents of
-the last write to the sysctl controlled the string contents instead of
-the first.
+The char buffer arguments are needlessly cast in weird places. Clean it up
+so things are easier to read.
 
-This misbehavior was featured in an exploit against Chrome OS. While it's
-not in itself a vulnerability, it's a weirdness that isn't on the mind
-of most auditors: "This filter looks correct, the first line written
-would not be meaningful to sysctl" doesn't apply here, since the size
-of the write and the contents of the final write are what matter when
-writing to procfs.
+Signed-off-by: Kees Cook <keescook@chromium.org>
+---
+ kernel/sysctl.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-For the paranoid, introduce CONFIG_PROC_SYSCTL_STRICT_WRITES to
-change the behavior to track file position most strictly.
-
-Thanks,
-
--Kees
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 74f5b580fe34..e7ff80a73c44 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1698,8 +1698,8 @@ int __init sysctl_init(void)
+ 
+ #ifdef CONFIG_PROC_SYSCTL
+ 
+-static int _proc_do_string(void* data, int maxlen, int write,
+-			   void __user *buffer,
++static int _proc_do_string(char *data, int maxlen, int write,
++			   char __user *buffer,
+ 			   size_t *lenp, loff_t *ppos)
+ {
+ 	size_t len;
+@@ -1725,7 +1725,7 @@ static int _proc_do_string(void* data, int maxlen, int write,
+ 			len = maxlen-1;
+ 		if(copy_from_user(data, buffer, len))
+ 			return -EFAULT;
+-		((char *) data)[len] = 0;
++		data[len] = 0;
+ 		*ppos += *lenp;
+ 	} else {
+ 		len = strlen(data);
+@@ -1743,10 +1743,10 @@ static int _proc_do_string(void* data, int maxlen, int write,
+ 		if (len > *lenp)
+ 			len = *lenp;
+ 		if (len)
+-			if(copy_to_user(buffer, data, len))
++			if (copy_to_user(buffer, data, len))
+ 				return -EFAULT;
+ 		if (len < *lenp) {
+-			if(put_user('\n', ((char __user *) buffer) + len))
++			if (put_user('\n', buffer + len))
+ 				return -EFAULT;
+ 			len++;
+ 		}
+@@ -1776,8 +1776,8 @@ static int _proc_do_string(void* data, int maxlen, int write,
+ int proc_dostring(struct ctl_table *table, int write,
+ 		  void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+-	return _proc_do_string(table->data, table->maxlen, write,
+-			       buffer, lenp, ppos);
++	return _proc_do_string((char *)(table->data), table->maxlen, write,
++			       (char __user *)buffer, lenp, ppos);
+ }
+ 
+ static size_t proc_skip_spaces(char **buf)
+-- 
+1.7.9.5
 
