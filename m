@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753134AbaDRJXy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:23:54 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45905 "EHLO
+	id S1753304AbaDRJYG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:24:06 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45901 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752068AbaDRJWr (ORCPT
+	by vger.kernel.org with ESMTP id S1752044AbaDRJWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:47 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Adam Jackson <ajax@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 21/72] fbdev: Make the switch from generic to native driver less alarming
-Date: Fri, 18 Apr 2014 11:21:54 +0200
-Message-Id: <aa66ee9749278e793e720037937c66c4d96c7517.1397812482.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Gerd Hoffmann <kraxel@redhat.com>,
+        Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 22/72] drm: add drm_set_preferred_mode
+Date: Fri, 18 Apr 2014 11:21:55 +0200
+Message-Id: <1d2fa7e7e9182bbd085e314d6c804ab34d068e47.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -23,39 +23,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adam Jackson <ajax@redhat.com>
+From: Gerd Hoffmann <kraxel@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 13ba0ad4490c3dd08b15c430a7a01c6fb45d5bce upstream.
+commit 3cf70dafd7bbbc91df0a9ecb081d46f9f3d867f6 upstream.
 
-Calling this "conflicting" just makes people think there's a problem
-when there's not.
+New helper function to set the preferred video mode.  Can be called
+after drm_add_modes_noedid if you don't want the largest supported
+video mode be used by default.
 
-Signed-off-by: Adam Jackson <ajax@redhat.com>
-Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/video/fbmem.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/gpu/drm/drm_edid.c | 13 +++++++++++++
+ include/drm/drm_crtc.h     |  2 ++
+ 2 files changed, 15 insertions(+)
 
-diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
-index 7309ac704e26..b6d5008f361f 100644
---- a/drivers/video/fbmem.c
-+++ b/drivers/video/fbmem.c
-@@ -1596,8 +1596,7 @@ static int do_remove_conflicting_framebuffers(struct apertures_struct *a,
- 			(primary && gen_aper && gen_aper->count &&
- 			 gen_aper->ranges[0].base == VGA_FB_PHYS)) {
+diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
+index d0d3eae05a1a..1cb50268a224 100644
+--- a/drivers/gpu/drm/drm_edid.c
++++ b/drivers/gpu/drm/drm_edid.c
+@@ -3296,6 +3296,19 @@ int drm_add_modes_noedid(struct drm_connector *connector,
+ }
+ EXPORT_SYMBOL(drm_add_modes_noedid);
  
--			printk(KERN_INFO "fb: conflicting fb hw usage "
--			       "%s vs %s - removing generic driver\n",
-+			printk(KERN_INFO "fb: switching to %s from %s\n",
- 			       name, registered_fb[i]->fix.id);
- 			ret = do_unregister_framebuffer(registered_fb[i]);
- 			if (ret)
++void drm_set_preferred_mode(struct drm_connector *connector,
++			   int hpref, int vpref)
++{
++	struct drm_display_mode *mode;
++
++	list_for_each_entry(mode, &connector->probed_modes, head) {
++		if (drm_mode_width(mode)  == hpref &&
++		    drm_mode_height(mode) == vpref)
++			mode->type |= DRM_MODE_TYPE_PREFERRED;
++	}
++}
++EXPORT_SYMBOL(drm_set_preferred_mode);
++
+ /**
+  * drm_hdmi_avi_infoframe_from_display_mode() - fill an HDMI AVI infoframe with
+  *                                              data from a DRM display mode
+diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
+index 24f499569a2f..ec5d737f93c5 100644
+--- a/include/drm/drm_crtc.h
++++ b/include/drm/drm_crtc.h
+@@ -1108,6 +1108,8 @@ extern struct drm_display_mode *drm_gtf_mode_complex(struct drm_device *dev,
+ 				int GTF_2C, int GTF_K, int GTF_2J);
+ extern int drm_add_modes_noedid(struct drm_connector *connector,
+ 				int hdisplay, int vdisplay);
++extern void drm_set_preferred_mode(struct drm_connector *connector,
++				   int hpref, int vpref);
+ 
+ extern int drm_edid_header_is_valid(const u8 *raw_edid);
+ extern bool drm_edid_block_valid(u8 *raw_edid, int block, bool print_bad_edid);
 -- 
 1.9.2
 
