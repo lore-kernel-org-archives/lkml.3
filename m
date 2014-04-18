@@ -1,35 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751125AbaDRFdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 01:33:43 -0400
-Received: from mail.barnsley.ac.uk ([195.195.132.10]:50977 "EHLO
-	mail-spam.barnsley.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaDRFdk convert rfc822-to-8bit (ORCPT
+	id S1751157AbaDRFwx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 01:52:53 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39992 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750867AbaDRFwu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 01:33:40 -0400
-X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Apr 2014 01:33:39 EDT
-From: Richard Bentley <r.bentley@barnsley.ac.uk>
-Subject: Admin Service Center 
-Thread-Topic: Admin Service Center 
-Thread-Index: Ac9axY4PhxEotFryQ/qadNi+wwwAqA==
-Date: Fri, 18 Apr 2014 05:23:00 +0000
-Message-ID: <E10109530B094541B91526241599441556DCAF2E@EXCHANGEMB1.student.barnsley.ac.uk>
-Accept-Language: en-GB, en-US
-Content-Language: en-GB
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [180.215.2.212]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Fri, 18 Apr 2014 01:52:50 -0400
+X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
+Message-ID: <5350BD85.4050302@jp.fujitsu.com>
+Date: Fri, 18 Apr 2014 14:52:05 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
 MIME-Version: 1.0
-X-SEA-Spam: Gauge=XXXXXXXXX, Probability=90%, Report='
- PHISH_SPEAR1_X3 3, PHISH_SPEAR2_X4 2, PHISH_SPEAR1_X4 1.5, PHISH_SPEAR2_X3 1, PHISH_SPEAR_FROM_WEBMAIL 1, PHISH_SPEAR_FROM_EDU_FORM_URI 0.5, PHISH_SPEAR_CONTENT_X3 0.1, PHISH_SPEAR_CONTENT_X4 0.1, HTML_00_01 0.05, HTML_00_10 0.05, SUPERLONG_LINE 0.05, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_400_499 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, FROM_EDU_TLD 0, MISSING_HEADERS 0, TO_MALFORMED 0, WEBMAIL_SOURCE 0, WEBMAIL_XOIP 0, WEBMAIL_X_IP_HDR 0, __ANY_URI 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __HAS_FROM 0, __HAS_MSGID 0, __HAS_XOIP 0, __IMS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_PHRASE1_B 0, __PHISH_SPEAR_DETAILS 0, __PHISH_SPEAR_REASONS 0, __PHISH_SPEAR_STRUCTURE_1 0, __PHISH_SPEAR_STRUCTURE_2 0, __PHISH_SPEAR_URI 0, __SANE_MSGID 0, __SUBJ_ALPHA_END 0, __URI_NO_MAILTO 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
-To: unlisted-recipients:; (no To-header on input)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: linux-kernel@vger.kernel.org,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
+        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
+Subject: Re: [PATCH 2/2] nohz: use delayed iowait accounting to avoid race
+ on idle time stats
+References: <53465F54.708@jp.fujitsu.com> <534660D2.1080505@jp.fujitsu.com> <20140415101910.GN11096@twins.programming.kicks-ass.net> <534E2422.1040706@jp.fujitsu.com> <20140417100519.GF11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140417100519.GF11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Helpdesk Service Center requires your immediate re-activation of your Email account. This is to improve and to Upgrade your Email Account and to keep your Account Updated. Inability to complete this procedure will render your account inactivate. Activate your Account by completing the survey procedure. CLICK HERE adminservicecenter.jigsy.com: to activate your Account now.
+(2014/04/17 19:05), Peter Zijlstra wrote:
+> Anyway, if you want to preserve the same broken ass crap we had pre
+> NOHZ, something like the below should do that.
+> 
+> I'm not really thrilled with iowait_{start,stop}() but I think they
+> should have the same general cost as the atomic ops we already had. In
+> particular on x86 an uncontended lock+unlock is a single atomic.
+> 
+> This is on top the first patch from Frederic that both you and Denys
+> carried.
+> 
+> That said; I really hate duckt taping this together, for the generated
+> numbers are still useless.
+> 
+> --- a/include/linux/ktime.h
+> +++ b/include/linux/ktime.h
+> @@ -58,6 +58,8 @@ union ktime {
+>  
+>  typedef union ktime ktime_t;		/* Kill this */
+>  
+> +#define ktime_zero ((ktime_t){ .tv64 = 0 })
+> +
+>  /*
+>   * ktime_t definitions when using the 64-bit scalar representation:
+>   */
+> --- a/kernel/sched/core.c
+> +++ b/kernel/sched/core.c
+> @@ -2297,15 +2297,29 @@ unsigned long nr_iowait(void)
+>  	unsigned long i, sum = 0;
+>  
+>  	for_each_possible_cpu(i)
+> -		sum += atomic_read(&cpu_rq(i)->nr_iowait);
+> +		sum += cpu_rq(i)->nr_iowait;
+>  
+>  	return sum;
+>  }
+>  
+>  unsigned long nr_iowait_cpu(int cpu)
+>  {
+> -	struct rq *this = cpu_rq(cpu);
+> -	return atomic_read(&this->nr_iowait);
+> +	return cpu_rq(cpu)->nr_iowait;
+> +}
+> +
+> +void nr_iowait_deltas(ktime_t start, ktime_t now,
+> +		      ktime_t *iowait_delta, ktime_t *idle_delta)
+> +{
+> +	struct rq *rq = this_rq();
+> +
+> +	raw_spin_lock(&rq->iowait_lock);
+> +	if (rq->nr_iowait) {
+> +		*iowait_delta = ktime_sub(now, start);
+> +	} else {
+> +		*iowait_delta = ktime_sub(rq->last_iowait, start);
+> +		*idle_delta = ktime_sub(now, rq->last_iowait);
+> +	}
+> +	raw_spin_unlock(&rq->iowait_lock);
+>  }
+>  
+>  #ifdef CONFIG_SMP
+> @@ -4201,6 +4215,24 @@ bool __sched yield_to(struct task_struct
+>  }
+>  EXPORT_SYMBOL_GPL(yield_to);
+>  
+> +static inline void iowait_start(struct rq *rq)
+> +{
+> +	raw_spin_lock(&rq->iowait_lock);
+> +	rq->nr_iowait++;
+> +	raw_spin_unlock(&rq->iowait_lock);
+> +	current->in_iowait = 1;
+> +}
+> +
+> +static inline void iowait_stop(struct rq *rq)
+> +{
+> +	current->in_iowait = 0;
+> +	raw_spin_lock(&rq->iowait_lock);
+> +	rq->nr_iowait--;
+> +	if (!rq->nr_iowait && rq != this_rq())
+> +		rq->last_iowait = ktime_get();
+> +	raw_spin_unlock(&rq->iowait_lock);
+> +}
+> +
+>  /*
+>   * This task is about to go to sleep on IO. Increment rq->nr_iowait so
+>   * that process accounting knows that this is a task in IO wait state.
+> @@ -4210,12 +4242,10 @@ void __sched io_schedule(void)
+>  	struct rq *rq = raw_rq();
+>  
+>  	delayacct_blkio_start();
+> -	atomic_inc(&rq->nr_iowait);
+> +	iowait_start();
+>  	blk_flush_plug(current);
+> -	current->in_iowait = 1;
+>  	schedule();
+> -	current->in_iowait = 0;
+> -	atomic_dec(&rq->nr_iowait);
+> +	iowait_stop();
+>  	delayacct_blkio_end();
+>  }
+>  EXPORT_SYMBOL(io_schedule);
+> @@ -4226,12 +4256,10 @@ long __sched io_schedule_timeout(long ti
+>  	long ret;
+>  
+>  	delayacct_blkio_start();
+> -	atomic_inc(&rq->nr_iowait);
+> +	iowait_start();
+>  	blk_flush_plug(current);
+> -	current->in_iowait = 1;
+>  	ret = schedule_timeout(timeout);
+> -	current->in_iowait = 0;
+> -	atomic_dec(&rq->nr_iowait);
+> +	iowait_stop();
+>  	delayacct_blkio_end();
+>  	return ret;
+>  }
+> @@ -6880,7 +6908,10 @@ void __init sched_init(void)
+>  #endif
+>  #endif
+>  		init_rq_hrtick(rq);
+> -		atomic_set(&rq->nr_iowait, 0);
+> +
+> +		raw_spinlock_init(&rq->iowait_lock);
+> +		rq->nr_iowait = 0;
+> +		rq->last_iowait = ktime_get();
+>  	}
+>  
+>  	set_load_weight(&init_task);
 
-IT-Helpdesk Service.
-2014
+I think it also works... but I have some concerns here:
+
+ - it changes golden path in scheduler core.
+    impact for performance is questionable.
+
+ - it forces managing last_iowait even if system is in busy
+    I guess it will drop max performance of the system
+    while my proposed fix only touches procedure for idle
+    with nohz. 
+
+By the way, I have posted my v4 patch set:
+https://lkml.org/lkml/2014/4/17/120
+
+I'll happy if you could give your comments on it too!
+
+
+Thanks,
+H.Seto
+
