@@ -1,45 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751195AbaDREQF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 00:16:05 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:52198 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830AbaDREQC (ORCPT
+	id S1751609AbaDRETk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 00:19:40 -0400
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:57942 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750887AbaDRETh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 00:16:02 -0400
+	Fri, 18 Apr 2014 00:19:37 -0400
+Message-ID: <5350A7D0.8070603@redhat.com>
+Date: Fri, 18 Apr 2014 00:19:28 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140417212834.GC17769@csclub.uwaterloo.ca>
-References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com>
- <20140417212834.GC17769@csclub.uwaterloo.ca>
-From: Michael Kerrisk <mtk.manpages@gmail.com>
-Date: Fri, 18 Apr 2014 06:15:40 +0200
-X-Google-Sender-Auth: _PiCd56PMc3TpJ-g40jYD-RR--0
-Message-ID: <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com>
-Subject: Re: inotify, new idea?
-To: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>
-Cc: Jos Huisken <jos.huisken@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [RFC PATCH 1/5] KVM: vmx: speed up emulation of invalid guest
+ state
+References: <1395919838-18466-1-git-send-email-pbonzini@redhat.com> <1395919838-18466-2-git-send-email-pbonzini@redhat.com> <20140416225258.GA19597@amt.cnet>
+In-Reply-To: <20140416225258.GA19597@amt.cnet>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 11:28 PM, Lennart Sorensen
-<lsorense@csclub.uwaterloo.ca> wrote:
-> On Thu, Apr 17, 2014 at 11:00:37PM +0200, Jos Huisken wrote:
->> I was trying to maintain a local and remote directory in sync with
->> lsync, using inotify.
->> I happen to have >4M files and >400k directories... running over
->> /proc/sys/fs/inotify/max_user_watches
+Il 16/04/2014 18:52, Marcelo Tosatti ha scritto:
+> How about handling VM-entry error due to invalid state with
 >
-> Would fanotify perhaps be a better interface to use?
+> vmx->emulation_required = true;
+> continue to main vcpu loop;
 
-(One of us is misunderstanding fanotify; it might be me.)
+What would reset it to false though?  None of the places that call 
+emulation_required() is a hot path right now, and this patch doesn't add 
+any.
 
-Did you look at fanotify closely? I don't think it could be used for
-this task -- does not notify linka dn unlink events, difficult to set
-up recursive monitoring, etc.
-
-Cheers,
-
-Michael
+Paolo
