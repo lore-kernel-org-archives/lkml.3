@@ -1,86 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751430AbaDRHXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 03:23:40 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:50708 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959AbaDRHXh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 03:23:37 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Christoph Lameter <cl@linux.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, David Rientjes <rientjes@google.com>,
-        Steven King <sfking@fdwdc.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: [PATCH] slab: fix the type of the index on freelist index accessor
-Date: Fri, 18 Apr 2014 16:24:09 +0900
-Message-Id: <1397805849-4913-1-git-send-email-iamjoonsoo.kim@lge.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751475AbaDRH0O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 03:26:14 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:56847 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750959AbaDRH0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 03:26:09 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: [PATCH] [SCSI] bfa: allocate memory with GFP_ATOMIC in spinlock context
+Date: Fri, 18 Apr 2014 00:25:49 -0700
+Message-Id: <1397805949-20502-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 8dcc774 (slab: introduce byte sized index for the freelist of
-a slab) changes the size of freelist index and also changes prototype
-of accessor function to freelist index. And there was a mistake.
+bfa_fcb_pbc_vport_create() is called only from bfa_fcs_pbc_vport_init(),
+that is called only from bfad_drv_start() with bfad_lock spinlock held.
+So the patch replaces GFP_KERNEL with GFP_ATOMIC to avoid
+sleeping in atomic spinlock context.
 
-The mistake is that although it changes the size of freelist index
-correctly, it changes the size of the index of freelist index incorrectly.
-With patch, freelist index can be 1 byte or 2 bytes, that means that
-num of object on on a slab can be more than 255. So we need more than 1
-byte for the index to find the index of free object on freelist. But,
-above patch makes this index type 1 byte, so slab which have more than
-255 objects cannot work properly and in consequence of it, the system
-cannot boot.
+Found by Linux Driver Verification project (linuxtesting.org).
 
-This issue was reported by Steven King on m68knommu which would use
-2 bytes freelist index. Please refer following link.
-
-https://lkml.org/lkml/2014/4/16/433
-
-To fix it is so easy. To change the type of the index of freelist index
-on accessor functions is enough to fix this bug. Although 2 bytes is
-enough, I use 4 bytes since it have no bad effect and make things
-more easier. This fix was suggested and tested by Steven in his
-original report.
-
-Reported-by: Steven King <sfking@fdwdc.com>
-Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
-Hello, Pekka.
+ drivers/scsi/bfa/bfad.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Could you send this for v3.15-rc2?
-Without this patch, many architecture using 2 bytes freelist index cannot
-work properly, I guess.
-
-This patch is based on v3.15-rc1.
-
-Thanks.
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 388cb1a..d7f9f44 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -2572,13 +2572,13 @@ static void *alloc_slabmgmt(struct kmem_cache *cachep,
- 	return freelist;
- }
+diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
+index cc0fbcdc5192..8f46d1b72fb8 100644
+--- a/drivers/scsi/bfa/bfad.c
++++ b/drivers/scsi/bfa/bfad.c
+@@ -652,7 +652,7 @@ bfad_vport_create(struct bfad_s *bfad, u16 vf_id,
+ 	unsigned long	flags;
+ 	struct completion fcomp;
  
--static inline freelist_idx_t get_free_obj(struct page *page, unsigned char idx)
-+static inline freelist_idx_t get_free_obj(struct page *page, unsigned int idx)
- {
- 	return ((freelist_idx_t *)page->freelist)[idx];
- }
- 
- static inline void set_free_obj(struct page *page,
--					unsigned char idx, freelist_idx_t val)
-+					unsigned int idx, freelist_idx_t val)
- {
- 	((freelist_idx_t *)(page->freelist))[idx] = val;
- }
+-	vport = kzalloc(sizeof(struct bfad_vport_s), GFP_KERNEL);
++	vport = kzalloc(sizeof(struct bfad_vport_s), GFP_ATOMIC);
+ 	if (!vport) {
+ 		rc = BFA_STATUS_ENOMEM;
+ 		goto ext;
 -- 
-1.7.9.5
+1.8.3.2
 
