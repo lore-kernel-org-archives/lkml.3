@@ -1,106 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaDRBQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 21:16:29 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:53758 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208AbaDRBPa (ORCPT
+	id S1753011AbaDRBXZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 21:23:25 -0400
+Received: from mail-pb0-f42.google.com ([209.85.160.42]:37884 "EHLO
+	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179AbaDRBXL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 21:15:30 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-9a-53507cb0cc0b
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux@arm.linux.org.uk, ben-linux@fluff.org, kgene.kim@samsung.com,
-        t.figa@samsung.com, arnd@arndb.de, olof@lixom.net,
-        marc.zyngier@arm.com, thomas.abraham@linaro.org,
-        kyungmin.park@samsung.com, cw00.choi@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        chanho61.park@samsung.com, sajjan.linux@gmail.com,
-        tushar.behera@linaro.org, sachin.kamat@linaro.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: [PATCHv3 3/7] ARM: EXYNOS: Support secondary CPU boot of Exynos3250
-Date: Fri, 18 Apr 2014 10:15:24 +0900
-Message-id: <1397783728-6193-4-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1397783728-6193-1-git-send-email-cw00.choi@samsung.com>
-References: <1397783728-6193-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsWyRsSkQHdDTUCwwecVwhZ/Jx1jt5i07gCT
-	xeX92hbXvzxntZh/5ByrxecPLewWvQuuslmcbXrDbrHp8TVWi8u75rBZzDi/j8ni9mVei793
-	/rFZnLr+mc3i5J9eRosnhz+yWsyY/JLNYv2M1ywWx2YsYbRo/7uXzWLvzsmMDqIea+atYfRo
-	ae5h8/j9axKjx99VL5g9ds66y+5x59oeNo/NS+o9rpxoYvXo27KK0ePzJrkArigum5TUnMyy
-	1CJ9uwSujMvrlrIW3OWu6N2/ibWB8SRnFyMnh4SAicTys8/ZIWwxiQv31rN1MXJxCAksZZS4
-	tuMaK0zRr13bWCASixgl/tw9xQrhNDFJnDs6hwmkik1AS2L/ixtsILaIgILE5t5nYEXMAr+Y
-	JX4+bwbbISzgIzHvwiFGEJtFQFWidcF8sDivgIvEz/0TmSDWyUl82PMILM4p4Cpx/vERFhBb
-	CKjm4ffpLBA1Szkkel/VQ8wRkPg2+RBQnAMoLiux6QAzRImkxMEVN1gmMAovYGRYxSiaWpBc
-	UJyUXmSsV5yYW1yal66XnJ+7iREYoaf/PevfwXj3gPUhxmSgcROZpUST84ERnlcSb2hsZmRh
-	amJqbGRuaUaasJI47/2HSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGGWMXmn4n0tTV7ER
-	ZYy1qQ6vTl85pbrgzVMHn92Sr71Vt93QM2f+YMR93Ujc+/WufKGe6ZP5HExPqx5cuFz/ZXbT
-	teg3Od/8rO2m3lx6Q3HLR7XcWenpr7MVlZ9EhnqnXuNP9eWQ3BL6/evmKAaGWVyfnc2WNyf1
-	JdYVqRsssGa9daPf4n2xEktxRqKhFnNRcSIA9ZGy6+YCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrIKsWRmVeSWpSXmKPExsVy+t9jAd0NNQHBBrcvcVn8nXSM3WLSugNM
-	Fpf3a1tc//Kc1WL+kXOsFp8/tLBb9C64ymZxtukNu8Wmx9dYLS7vmsNmMeP8PiaL25d5Lf7e
-	+cdmcer6ZzaLk396GS2eHP7IajFj8ks2i/UzXrNYHJuxhNGi/e9eNou9OyczOoh6rJm3htGj
-	pbmHzeP3r0mMHn9XvWD22DnrLrvHnWt72Dw2L6n3uHKiidWjb8sqRo/Pm+QCuKIaGG0yUhNT
-	UosUUvOS81My89JtlbyD453jTc0MDHUNLS3MlRTyEnNTbZVcfAJ03TJzgH5UUihLzCkFCgUk
-	Fhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLWMGZcXreUteAud0Xv/k2sDYwnObsYOTkkBEwk
-	fu3axgJhi0lcuLeerYuRi0NIYBGjxJ+7p1ghnCYmiXNH5zCBVLEJaEnsf3GDDcQWEVCQ2Nz7
-	DKyIWeAXs8TP583sIAlhAR+JeRcOMYLYLAKqEq0L5oPFeQVcJH7un8gEsU5O4sOeR2BxTgFX
-	ifOPj4CdIQRU8/D7dJYJjLwLGBlWMYqmFiQXFCel5xrpFSfmFpfmpesl5+duYgQngGfSOxhX
-	NVgcYhTgYFTi4b3w1T9YiDWxrLgy9xCjBAezkgivcmlAsBBvSmJlVWpRfnxRaU5q8SHGZKCr
-	JjJLiSbnA5NTXkm8obGJmZGlkbmhhZGxOWnCSuK8B1utA4UE0hNLUrNTUwtSi2C2MHFwSjUw
-	ltTpCX9i/XC5+5bMfXdZ0cVrVx7P5N7oJOu+UGHrJf0i/duiGxRLAs4ucypSfsv5OLx23a8J
-	L6o32PxivCWaYCFXZnp1taZlZliRSHm15OuwoPuBcw0K3j1hy2qd1b7h/cKO+UyPhVgWT37+
-	V2vP7S1f3LduuOJVdumArx2rEavzx8uaF6N3KbEUZyQaajEXFScCAIZCu7JEAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 17 Apr 2014 21:23:11 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
+        linux-zigbee-devel@lists.sourceforge.net, davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        backports@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>
+Subject: [PATCH 1/3] 6lowpan: add helper to get 6lowpan namespace
+Date: Thu, 17 Apr 2014 18:22:54 -0700
+Message-Id: <1397784176-15809-2-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1397784176-15809-1-git-send-email-mcgrof@do-not-panic.com>
+References: <1397784176-15809-1-git-send-email-mcgrof@do-not-panic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix the offset of CPU boot address and don't need to send smc call
-of SMC_CMD_CPU1BOOT command for secondary CPU boot because Exynos3250 removes
-WFE in secure mode.
+From: "Luis R. Rodriguez" <mcgrof@suse.com>
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+This will simplify the new reassembly backport
+with no code changes being required.
+
+CC: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: linux-zigbee-devel@lists.sourceforge.net
+Cc: David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
 ---
- arch/arm/mach-exynos/firmware.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ include/net/net_namespace.h | 15 +++++++++++++++
+ net/ieee802154/reassembly.c | 46 +++++++++++++++++++++++++++++----------------
+ 2 files changed, 45 insertions(+), 16 deletions(-)
 
-diff --git a/arch/arm/mach-exynos/firmware.c b/arch/arm/mach-exynos/firmware.c
-index aa01c42..386d01d 100644
---- a/arch/arm/mach-exynos/firmware.c
-+++ b/arch/arm/mach-exynos/firmware.c
-@@ -31,11 +31,17 @@ static int exynos_do_idle(void)
- static int exynos_cpu_boot(int cpu)
+diff --git a/include/net/net_namespace.h b/include/net/net_namespace.h
+index 5f9eb26..bc4118e 100644
+--- a/include/net/net_namespace.h
++++ b/include/net/net_namespace.h
+@@ -373,6 +373,21 @@ static inline void rt_genid_bump_ipv6(struct net *net)
+ }
+ #endif
+ 
++#if IS_ENABLED(CONFIG_IEEE802154_6LOWPAN)
++static inline struct netns_ieee802154_lowpan *
++net_ieee802154_lowpan(struct net *net)
++{
++	return &net->ieee802154_lowpan;
++}
++#else
++static inline struct netns_ieee802154_lowpan *
++net_ieee802154_lowpan(struct net *net)
++{
++	return NULL;
++}
++#endif
++
++
+ /* For callers who don't really care about whether it's IPv4 or IPv6 */
+ static inline void rt_genid_bump_all(struct net *net)
  {
- 	/*
-+	 * Exynos3250 doesn't need to send smc command for secondary CPU boot
-+	 * because Exynos3250 removes WFE in secure mode.
-+	 */
-+	if (soc_is_exynos3250())
-+		return 0;
-+	/*
- 	 * The second parameter of SMC_CMD_CPU1BOOT command means CPU id.
- 	 * But, Exynos4212 has only one secondary CPU so second parameter
- 	 * isn't used for informing secure firmware about CPU id.
- 	 */
--	if (soc_is_exynos4212())
-+	else if (soc_is_exynos4212())
- 		cpu = 0;
+diff --git a/net/ieee802154/reassembly.c b/net/ieee802154/reassembly.c
+index ef2d543..132b65b 100644
+--- a/net/ieee802154/reassembly.c
++++ b/net/ieee802154/reassembly.c
+@@ -120,6 +120,8 @@ fq_find(struct net *net, const struct lowpan_frag_info *frag_info,
+ 	struct inet_frag_queue *q;
+ 	struct lowpan_create_arg arg;
+ 	unsigned int hash;
++	struct netns_ieee802154_lowpan *ieee802154_lowpan =
++		net_ieee802154_lowpan(net);
  
- 	exynos_smc(SMC_CMD_CPU1BOOT, cpu, 0, 0);
-@@ -46,7 +52,7 @@ static int exynos_set_cpu_boot_addr(int cpu, unsigned long boot_addr)
+ 	arg.tag = frag_info->d_tag;
+ 	arg.d_size = frag_info->d_size;
+@@ -129,7 +131,7 @@ fq_find(struct net *net, const struct lowpan_frag_info *frag_info,
+ 	read_lock(&lowpan_frags.lock);
+ 	hash = lowpan_hash_frag(frag_info->d_tag, frag_info->d_size, src, dst);
+ 
+-	q = inet_frag_find(&net->ieee802154_lowpan.frags,
++	q = inet_frag_find(&ieee802154_lowpan->frags,
+ 			   &lowpan_frags, &arg, hash);
+ 	if (IS_ERR_OR_NULL(q)) {
+ 		inet_frag_maybe_warn_overflow(q, pr_fmt());
+@@ -357,6 +359,8 @@ int lowpan_frag_rcv(struct sk_buff *skb, const u8 frag_type)
+ 	struct net *net = dev_net(skb->dev);
+ 	struct lowpan_frag_info *frag_info = lowpan_cb(skb);
+ 	struct ieee802154_addr source, dest;
++	struct netns_ieee802154_lowpan *ieee802154_lowpan =
++		net_ieee802154_lowpan(net);
+ 	int err;
+ 
+ 	source = mac_cb(skb)->source;
+@@ -366,10 +370,10 @@ int lowpan_frag_rcv(struct sk_buff *skb, const u8 frag_type)
+ 	if (err < 0)
+ 		goto err;
+ 
+-	if (frag_info->d_size > net->ieee802154_lowpan.max_dsize)
++	if (frag_info->d_size > ieee802154_lowpan->max_dsize)
+ 		goto err;
+ 
+-	inet_frag_evictor(&net->ieee802154_lowpan.frags, &lowpan_frags, false);
++	inet_frag_evictor(&ieee802154_lowpan->frags, &lowpan_frags, false);
+ 
+ 	fq = fq_find(net, frag_info, &source, &dest);
+ 	if (fq != NULL) {
+@@ -436,6 +440,8 @@ static int __net_init lowpan_frags_ns_sysctl_register(struct net *net)
  {
- 	void __iomem *boot_reg = S5P_VA_SYSRAM_NS + 0x1c;
+ 	struct ctl_table *table;
+ 	struct ctl_table_header *hdr;
++	struct netns_ieee802154_lowpan *ieee802154_lowpan =
++		net_ieee802154_lowpan(net);
  
--	if (!soc_is_exynos4212())
-+	if (!soc_is_exynos4212() && !soc_is_exynos3250())
- 		boot_reg += 4*cpu;
+ 	table = lowpan_frags_ns_ctl_table;
+ 	if (!net_eq(net, &init_net)) {
+@@ -444,10 +450,10 @@ static int __net_init lowpan_frags_ns_sysctl_register(struct net *net)
+ 		if (table == NULL)
+ 			goto err_alloc;
  
- 	__raw_writel(boot_addr, boot_reg);
+-		table[0].data = &net->ieee802154_lowpan.frags.high_thresh;
+-		table[1].data = &net->ieee802154_lowpan.frags.low_thresh;
+-		table[2].data = &net->ieee802154_lowpan.frags.timeout;
+-		table[3].data = &net->ieee802154_lowpan.max_dsize;
++		table[0].data = &ieee802154_lowpan->frags.high_thresh;
++		table[1].data = &ieee802154_lowpan->frags.low_thresh;
++		table[2].data = &ieee802154_lowpan->frags.timeout;
++		table[3].data = &ieee802154_lowpan->max_dsize;
+ 
+ 		/* Don't export sysctls to unprivileged users */
+ 		if (net->user_ns != &init_user_ns)
+@@ -458,7 +464,7 @@ static int __net_init lowpan_frags_ns_sysctl_register(struct net *net)
+ 	if (hdr == NULL)
+ 		goto err_reg;
+ 
+-	net->ieee802154_lowpan.sysctl.frags_hdr = hdr;
++	ieee802154_lowpan->sysctl.frags_hdr = hdr;
+ 	return 0;
+ 
+ err_reg:
+@@ -471,9 +477,11 @@ err_alloc:
+ static void __net_exit lowpan_frags_ns_sysctl_unregister(struct net *net)
+ {
+ 	struct ctl_table *table;
++	struct netns_ieee802154_lowpan *ieee802154_lowpan =
++		net_ieee802154_lowpan(net);
+ 
+-	table = net->ieee802154_lowpan.sysctl.frags_hdr->ctl_table_arg;
+-	unregister_net_sysctl_table(net->ieee802154_lowpan.sysctl.frags_hdr);
++	table = ieee802154_lowpan->sysctl.frags_hdr->ctl_table_arg;
++	unregister_net_sysctl_table(ieee802154_lowpan->sysctl.frags_hdr);
+ 	if (!net_eq(net, &init_net))
+ 		kfree(table);
+ }
+@@ -514,20 +522,26 @@ static inline void lowpan_frags_sysctl_unregister(void)
+ 
+ static int __net_init lowpan_frags_init_net(struct net *net)
+ {
+-	net->ieee802154_lowpan.frags.high_thresh = IPV6_FRAG_HIGH_THRESH;
+-	net->ieee802154_lowpan.frags.low_thresh = IPV6_FRAG_LOW_THRESH;
+-	net->ieee802154_lowpan.frags.timeout = IPV6_FRAG_TIMEOUT;
+-	net->ieee802154_lowpan.max_dsize = 0xFFFF;
++	struct netns_ieee802154_lowpan *ieee802154_lowpan =
++		net_ieee802154_lowpan(net);
+ 
+-	inet_frags_init_net(&net->ieee802154_lowpan.frags);
++	ieee802154_lowpan->frags.high_thresh = IPV6_FRAG_HIGH_THRESH;
++	ieee802154_lowpan->frags.low_thresh = IPV6_FRAG_LOW_THRESH;
++	ieee802154_lowpan->frags.timeout = IPV6_FRAG_TIMEOUT;
++	ieee802154_lowpan->max_dsize = 0xFFFF;
++
++	inet_frags_init_net(&ieee802154_lowpan->frags);
+ 
+ 	return lowpan_frags_ns_sysctl_register(net);
+ }
+ 
+ static void __net_exit lowpan_frags_exit_net(struct net *net)
+ {
++	struct netns_ieee802154_lowpan *ieee802154_lowpan =
++		net_ieee802154_lowpan(net);
++
+ 	lowpan_frags_ns_sysctl_unregister(net);
+-	inet_frags_exit_net(&net->ieee802154_lowpan.frags, &lowpan_frags);
++	inet_frags_exit_net(&ieee802154_lowpan->frags, &lowpan_frags);
+ }
+ 
+ static struct pernet_operations lowpan_frags_ops = {
 -- 
-1.8.0
+1.9.1
 
