@@ -1,136 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117AbaDRJpc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:45:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58545 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752386AbaDRJpZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 05:45:25 -0400
-Date: Fri, 18 Apr 2014 11:45:23 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Matthias Graf <matthias.graf@st.ovgu.de>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        alexander.deucher@amd.com
-Subject: Re: PROBLEM: Fatal Machine Check >= 3.13.5-101.fc19.x86_64
-Message-ID: <20140418094523.GB4385@pd.tnic>
-References: <532C727F.1080803@st.ovgu.de>
- <20140321172742.GA2846@pd.tnic>
- <532C97DF.9010201@st.ovgu.de>
- <20140321201352.GC1338@pd.tnic>
- <533069E4.10002@st.ovgu.de>
- <533C1B47.8080709@st.ovgu.de>
- <20140416142232.GF16741@pd.tnic>
- <534F73F6.7050804@st.ovgu.de>
- <20140417130207.GB4321@pd.tnic>
- <5350EDAE.8020101@st.ovgu.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5350EDAE.8020101@st.ovgu.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754659AbaDRJnd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:43:33 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45920 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752139AbaDRJWs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 05:22:48 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 02/72] powernow-k6: correctly initialize default parameters
+Date: Fri, 18 Apr 2014 11:21:35 +0200
+Message-Id: <b80bb221ead1e6f3bae0945e0b90e21ea0d7ca1b.1397812482.git.jslaby@suse.cz>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
+References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
+In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
+References: <cover.1397812482.git.jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 11:17:34AM +0200, Matthias Graf wrote:
-> Fine-grained bisection result:
-> 
-> ab70b1dde73ff4525c3cd51090c233482c50f217 is the first bad commit
-> commit ab70b1dde73ff4525c3cd51090c233482c50f217
-> Author: Alex Deucher <alexander.deucher@amd.com>
-> Date:   Fri Nov 1 15:16:02 2013 -0400
-> 
->     drm/radeon: enable DPM by default on r7xx asics
-> 
->     Seems to be stable on them.
-> 
->     Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-> 
-> :040000 040000 f3262029b868df4d882f64b4deba6b9230e307ea
-> 1f1dfca42763703a56e3cc82bb103608a24be94e M	drivers
-> 
-> 
-> Result is reasonable: I have a RV770 chip.
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-Yes it is.
+3.12-stable review patch.  If anyone has any objections, please let me know.
 
-> (Additional) Bug Report for Reference:
-> https://bugzilla.redhat.com/show_bug.cgi?id=1085785
-> 
-> Thanks for the instructions Borislav! At first, I was not completely
-> sure what you expected me to do (this is my first kernel bug report :)).
+===============
 
-And you're doing good so far! :-)
+commit d82b922a4acc1781d368aceac2f9da43b038cab2 upstream.
 
-> If there is anymore more I can help you with, let me know.
+The powernow-k6 driver used to read the initial multiplier from the
+powernow register. However, there is a problem with this:
 
-Ok, now we want to confirm that this patch is *actually* the culprit by
-reverting it. Simply pull Linus' master branch to have the latest tree,
-and then do:
+* If there was a frequency transition before, the multiplier read from the
+  register corresponds to the current multiplier.
+* If there was no frequency transition since reset, the field in the
+  register always reads as zero, regardless of the current multiplier that
+  is set using switches on the mainboard and that the CPU is running at.
 
-$ git checkout -b radeon-revert master
+The zero value corresponds to multiplier 4.5, so as a consequence, the
+powernow-k6 driver always assumes multiplier 4.5.
 
-so that you land on a throwaway branch where we can play. Then normally you
-would do
+For example, if we have 550MHz CPU with bus frequency 100MHz and
+multiplier 5.5, the powernow-k6 driver thinks that the multiplier is 4.5
+and bus frequency is 122MHz. The powernow-k6 driver then sets the
+multiplier to 4.5, underclocking the CPU to 450MHz, but reports the
+current frequency as 550MHz.
 
-$ git revert ab70b1dde73ff4525c3cd51090c233482c50f217
+There is no reliable way how to read the initial multiplier. I modified
+the driver so that it contains a table of known frequencies (based on
+parameters of existing CPUs and some common overclocking schemes) and sets
+the multiplier according to the frequency. If the frequency is unknown
+(because of unusual overclocking or underclocking), the user must supply
+the bus speed and maximum multiplier as module parameters.
 
-but that causes conflicts so I did it for you, see below. Simply apply
-this patch ontop *without* doing the revert with git. Then build, boot
-and test. We want to see whether it still generates those ROB timeout
-machine checks. If all looks ok, then we're pretty sure we need to talk
-about DPM with your GPU on your platform with Alex. :-)
+This patch should be backported to all stable kernels. If it doesn't
+apply cleanly, change it, or ask me to change it.
 
-Feel free to ask any questions should something be not clear.
-
-Thanks.
-
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
->From 0790e872f6d3c986d9ed36b850fd9d799dc422f9 Mon Sep 17 00:00:00 2001
-From: Borislav Petkov <bp@suse.de>
-Date: Fri, 18 Apr 2014 11:43:12 +0200
-Subject: [PATCH] Revert "drm/radeon: enable DPM by default on r7xx asics"
+ drivers/cpufreq/powernow-k6.c | 76 ++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 72 insertions(+), 4 deletions(-)
 
-This reverts commit ab70b1dde73ff4525c3cd51090c233482c50f217.
-
-Conflicts:
-	drivers/gpu/drm/radeon/radeon_pm.c
----
- drivers/gpu/drm/radeon/radeon_pm.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/radeon_pm.c b/drivers/gpu/drm/radeon/radeon_pm.c
-index ee738a524639..af693c4746da 100644
---- a/drivers/gpu/drm/radeon/radeon_pm.c
-+++ b/drivers/gpu/drm/radeon/radeon_pm.c
-@@ -1257,6 +1257,10 @@ int radeon_pm_init(struct radeon_device *rdev)
- 	case CHIP_RV670:
- 	case CHIP_RS780:
- 	case CHIP_RS880:
-+	case CHIP_RV770:
-+	case CHIP_RV730:
-+	case CHIP_RV710:
-+	case CHIP_RV740:
- 	case CHIP_BARTS:
- 	case CHIP_TURKS:
- 	case CHIP_CAICOS:
-@@ -1273,10 +1277,6 @@ int radeon_pm_init(struct radeon_device *rdev)
- 		else
- 			rdev->pm.pm_method = PM_METHOD_PROFILE;
- 		break;
--	case CHIP_RV770:
--	case CHIP_RV730:
--	case CHIP_RV710:
--	case CHIP_RV740:
- 	case CHIP_CEDAR:
- 	case CHIP_REDWOOD:
- 	case CHIP_JUNIPER:
+diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
+index 9c6a4412eca7..1624188e584f 100644
+--- a/drivers/cpufreq/powernow-k6.c
++++ b/drivers/cpufreq/powernow-k6.c
+@@ -26,6 +26,14 @@
+ static unsigned int                     busfreq;   /* FSB, in 10 kHz */
+ static unsigned int                     max_multiplier;
+ 
++static unsigned int			param_busfreq = 0;
++static unsigned int			param_max_multiplier = 0;
++
++module_param_named(max_multiplier, param_max_multiplier, uint, S_IRUGO);
++MODULE_PARM_DESC(max_multiplier, "Maximum multiplier (allowed values: 20 30 35 40 45 50 55 60)");
++
++module_param_named(bus_frequency, param_busfreq, uint, S_IRUGO);
++MODULE_PARM_DESC(bus_frequency, "Bus frequency in kHz");
+ 
+ /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
+ static struct cpufreq_frequency_table clock_ratio[] = {
+@@ -40,6 +48,27 @@ static struct cpufreq_frequency_table clock_ratio[] = {
+ 	{0, CPUFREQ_TABLE_END}
+ };
+ 
++static const struct {
++	unsigned freq;
++	unsigned mult;
++} usual_frequency_table[] = {
++	{ 400000, 40 },	// 100   * 4
++	{ 450000, 45 }, // 100   * 4.5
++	{ 475000, 50 }, //  95   * 5
++	{ 500000, 50 }, // 100   * 5
++	{ 506250, 45 }, // 112.5 * 4.5
++	{ 533500, 55 }, //  97   * 5.5
++	{ 550000, 55 }, // 100   * 5.5
++	{ 562500, 50 }, // 112.5 * 5
++	{ 570000, 60 }, //  95   * 6
++	{ 600000, 60 }, // 100   * 6
++	{ 618750, 55 }, // 112.5 * 5.5
++	{ 660000, 55 }, // 120   * 5.5
++	{ 675000, 60 }, // 112.5 * 6
++	{ 720000, 60 }, // 120   * 6
++};
++
++#define FREQ_RANGE		3000
+ 
+ /**
+  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
+@@ -163,18 +192,57 @@ static int powernow_k6_target(struct cpufreq_policy *policy,
+ 	return 0;
+ }
+ 
+-
+ static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
+ {
+ 	unsigned int i, f;
+ 	int result;
++	unsigned khz;
+ 
+ 	if (policy->cpu != 0)
+ 		return -ENODEV;
+ 
+-	/* get frequencies */
+-	max_multiplier = powernow_k6_get_cpu_multiplier();
+-	busfreq = cpu_khz / max_multiplier;
++	max_multiplier = 0;
++	khz = cpu_khz;
++	for (i = 0; i < ARRAY_SIZE(usual_frequency_table); i++) {
++		if (khz >= usual_frequency_table[i].freq - FREQ_RANGE &&
++		    khz <= usual_frequency_table[i].freq + FREQ_RANGE) {
++			khz = usual_frequency_table[i].freq;
++			max_multiplier = usual_frequency_table[i].mult;
++			break;
++		}
++	}
++	if (param_max_multiplier) {
++		for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
++			if (clock_ratio[i].driver_data == param_max_multiplier) {
++				max_multiplier = param_max_multiplier;
++				goto have_max_multiplier;
++			}
++		}
++		printk(KERN_ERR "powernow-k6: invalid max_multiplier parameter, valid parameters 20, 30, 35, 40, 45, 50, 55, 60\n");
++		return -EINVAL;
++	}
++
++	if (!max_multiplier) {
++		printk(KERN_WARNING "powernow-k6: unknown frequency %u, cannot determine current multiplier\n", khz);
++		printk(KERN_WARNING "powernow-k6: use module parameters max_multiplier and bus_frequency\n");
++		return -EOPNOTSUPP;
++	}
++
++have_max_multiplier:
++	param_max_multiplier = max_multiplier;
++
++	if (param_busfreq) {
++		if (param_busfreq >= 50000 && param_busfreq <= 150000) {
++			busfreq = param_busfreq / 10;
++			goto have_busfreq;
++		}
++		printk(KERN_ERR "powernow-k6: invalid bus_frequency parameter, allowed range 50000 - 150000 kHz\n");
++		return -EINVAL;
++	}
++
++	busfreq = khz / max_multiplier;
++have_busfreq:
++	param_busfreq = busfreq * 10;
+ 
+ 	/* table init */
+ 	for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
 -- 
-1.9.0
+1.9.2
 
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
