@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754077AbaDRSyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 14:54:44 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41795 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaDRSyk (ORCPT
+	id S1754169AbaDRS6r (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 14:58:47 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:30693 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885AbaDRS6m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 14:54:40 -0400
-Date: Fri, 18 Apr 2014 11:54:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Kara <jack@suse.cz>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
- offloading
-Message-Id: <20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
-In-Reply-To: <20140326192815.GC18118@quack.suse.cz>
-References: <1395770101-24534-1-git-send-email-jack@suse.cz>
-	<1395770101-24534-9-git-send-email-jack@suse.cz>
-	<20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
-	<20140326192815.GC18118@quack.suse.cz>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 18 Apr 2014 14:58:42 -0400
+X-IronPort-AV: E=Sophos;i="4.97,885,1389772800"; 
+   d="scan'208";a="25191924"
+From: Tim Kryger <tim.kryger@linaro.org>
+To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+CC: Tim Kryger <tim.kryger@linaro.org>, Linux MMC <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] mmc: core: Try other signal levels during power up
+Date: Fri, 18 Apr 2014 11:58:30 -0700
+Message-ID: <1397847510-17199-1-git-send-email-tim.kryger@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 Mar 2014 20:28:15 +0100 Jan Kara <jack@suse.cz> wrote:
+The eMMC signalling voltage is determined by VCCQ which is provided to
+the card by the host.  Signalling is not required to begin at 3.3v and,
+if the host and card both support a particular VCC/VCCQ combination, it
+can be used immediately.
 
-> > All the afflicted consoles are serial, all go via the uart layer as far
-> > as I can see.
-> > 
-> > The uart layer has a queue mechanism that could be used
->   I'm sorry, I don't follow here - what can the uart queueing be used for?
+In contrast, SD Cards must begin with 3.3v signalling and may switch to
+a lower voltage signalling if instructed to do so in CMD11.  A message
+is required to coordinate this operation because the card only receives
+a 3.3v VDD and must know when to use the 1.8v produced by its internal
+regulator.
 
-Alan, I'm desperate to avoid adding all this complexity to core printk
-code to solve such a rare problem.  It'd be great if you could flesh out
-any alternative ideas please.
+It makes sense for the core to begin with 3.3v signalling but when that
+can't be set, 1.8v and 1.2v signalling also should be attempted.  This
+is especially important when an external regulator with a limited range
+is used to supply VCCQ to an eMMC part.
+
+Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+---
+ drivers/mmc/core/core.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index acbc3f2..ecdbeae 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1517,6 +1517,8 @@ void mmc_set_driver_type(struct mmc_host *host, unsigned int drv_type)
+  */
+ void mmc_power_up(struct mmc_host *host, u32 ocr)
+ {
++	int err;
++
+ 	if (host->ios.power_mode == MMC_POWER_ON)
+ 		return;
+ 
+@@ -1534,7 +1536,13 @@ void mmc_power_up(struct mmc_host *host, u32 ocr)
+ 	mmc_set_ios(host);
+ 
+ 	/* Set signal voltage to 3.3V */
+-	__mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_330);
++	err = __mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_330);
++
++	/* Since eMMC parts can start at 1.8v or 1.2v try those too */
++	if (err)
++		err = __mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_180);
++	if (err)
++		__mmc_set_signal_voltage(host, MMC_SIGNAL_VOLTAGE_120);
+ 
+ 	/*
+ 	 * This delay should be sufficient to allow the power supply
+-- 
+1.7.9.5
+
