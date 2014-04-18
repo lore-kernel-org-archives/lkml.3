@@ -1,106 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350AbaDROzH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 10:55:07 -0400
-Received: from fujitsu25.fnanic.fujitsu.com ([192.240.6.15]:60230 "EHLO
-	fujitsu25.fnanic.fujitsu.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752263AbaDROzC convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 10:55:02 -0400
-From: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
-To: Manfred Spraul <manfred@colorfullife.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
-        "gthelen@google.com" <gthelen@google.com>,
-        "aswin@hp.com" <aswin@hp.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>
-Date: Fri, 18 Apr 2014 07:54:36 -0700
-Subject: RE: [PATCH] ipc/shm: Increase the defaults for SHMALL, SHMMAX to
- infinity
-Thread-Topic: [PATCH] ipc/shm: Increase the defaults for SHMALL, SHMMAX to
- infinity
-Thread-Index: Ac9a5z2umjBksE+wSTKA+wv1IS9RrAALr2nA
-Message-ID: <6B2BA408B38BA1478B473C31C3D2074E30986F0FF0@SV-EXCHANGE1.Corp.FC.LOCAL>
-References: <1397812720-5629-1-git-send-email-manfred@colorfullife.com>
-In-Reply-To: <1397812720-5629-1-git-send-email-manfred@colorfullife.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1752271AbaDRPGL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 11:06:11 -0400
+Received: from mail-qc0-f178.google.com ([209.85.216.178]:43141 "EHLO
+	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197AbaDRPGG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 11:06:06 -0400
+Date: Fri, 18 Apr 2014 11:06:01 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] workqueue: make rescuer_thread() empty wq->maydays list
+ before exiting
+Message-ID: <20140418150601.GA12515@htj.dyndns.org>
+References: <20140417162720.GQ15326@htj.dyndns.org>
+ <1397827555-19641-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-18_01:2014-04-18,2014-04-18,1970-01-01 signatures=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397827555-19641-1-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Applied to wq/for-3.15-fixes w/ comment and description updates.
 
+Thanks.
+------- 8< -------
+>From 4d595b866d2c653dc90a492b9973a834eabfa354 Mon Sep 17 00:00:00 2001
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+Date: Fri, 18 Apr 2014 11:04:16 -0400
 
-> -----Original Message-----
-> From: Manfred Spraul [mailto:manfred@colorfullife.com]
-> Sent: Friday, April 18, 2014 2:19 AM
-> To: Andrew Morton; Davidlohr Bueso
-> Cc: LKML; KAMEZAWA Hiroyuki; Motohiro Kosaki JP; gthelen@google.com; aswin@hp.com; linux-mm@kvack.org; Manfred Spraul;
-> mtk.manpages@gmail.com
-> Subject: [PATCH] ipc/shm: Increase the defaults for SHMALL, SHMMAX to infinity
-> 
-> System V shared memory
-> 
-> a) can be abused to trigger out-of-memory conditions and the standard
->    measures against out-of-memory do not work:
-> 
->     - it is not possible to use setrlimit to limit the size of shm segments.
-> 
->     - segments can exist without association with any processes, thus
->       the oom-killer is unable to free that memory.
-> 
-> b) is typically used for shared information - today often multiple GB.
->    (e.g. database shared buffers)
-> 
-> The current default is a maximum segment size of 32 MB and a maximum total size of 8 GB. This is often too much for a) and not
-> enough for b), which means that lots of users must change the defaults.
-> 
-> This patch increases the default limits to ULONG_MAX, which is perfect for case b). The defaults are used after boot and as the initial
-> value for each new namespace.
-> 
-> Admins/distros that need a protection against a) should reduce the limits and/or enable shm_rmid_forced.
-> 
-> Further notes:
-> - The patch only changes the boot time default, overrides behave as before:
-> 	# sysctl kernel/shmall=33554432
->   would recreate the previous limit for SHMMAX (for the current namespace).
-> 
-> - Disabling sysv shm allocation is possible with:
-> 	# sysctl kernel.shmall=0
->   (not a new feature, also per-namespace)
-> 
-> - ULONG_MAX is not really infinity, but 18 Exabyte segment size and
->   75 Zettabyte total size. This should be enough for the next few weeks.
->   (assuming a 64-bit system with 4k pages)
-> 
-> Risks:
-> - The patch breaks installations that use "take current value and increase
->   it a bit". [seems to exist, http://marc.info/?l=linux-mm&m=139638334330127]
->   After a:
-> 	# CUR=`sysctl -n kernel.shmmax`
-> 	# NEW=`echo $CUR+1 | bc -l`
-> 	# sysctl -n kernel.shmmax=$NEW
->   shmmax ends up as 0, which disables shm allocations.
-> 
-> - There is no wrap-around protection for ns->shm_ctlall, i.e. the 75 ZB
->   limit is not enforced.
-> 
-> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-> Reported-by: Davidlohr Bueso <davidlohr@hp.com>
-> Cc: mtk.manpages@gmail.com
+After a @pwq is scheduled for emergency execution, other workers may
+consume the affectd work items before the rescuer gets to them.  This
+means that a workqueue many have pwqs queued on @wq->maydays list
+while not having any work item pending or in-flight.  If
+destroy_workqueue() executes in such condition, the rescuer may exit
+without emptying @wq->maydays.
 
-I'm ok either ULONG_MAX or 0 (special value of infinity).
+This currently doesn't cause any actual harm.  destroy_workqueue() can
+safely destroy all the involved data structures whether @wq->maydays
+is populated or not as nobody access the list once the rescuer exits.
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+However, this is nasty and makes future development difficult.  Let's
+update rescuer_thread() so that it empties @wq->maydays after seeing
+should_stop to guarantee that the list is empty on rescuer exit.
+
+tj: Updated comment and patch description.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: stable@vger.kernel.org # v3.10+
+---
+ kernel/workqueue.c | 21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 3150b21..6ba0c60 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -2398,6 +2398,7 @@ static int rescuer_thread(void *__rescuer)
+ 	struct worker *rescuer = __rescuer;
+ 	struct workqueue_struct *wq = rescuer->rescue_wq;
+ 	struct list_head *scheduled = &rescuer->scheduled;
++	bool should_stop;
+ 
+ 	set_user_nice(current, RESCUER_NICE_LEVEL);
+ 
+@@ -2409,11 +2410,15 @@ static int rescuer_thread(void *__rescuer)
+ repeat:
+ 	set_current_state(TASK_INTERRUPTIBLE);
+ 
+-	if (kthread_should_stop()) {
+-		__set_current_state(TASK_RUNNING);
+-		rescuer->task->flags &= ~PF_WQ_WORKER;
+-		return 0;
+-	}
++	/*
++	 * By the time the rescuer is requested to stop, the workqueue
++	 * shouldn't have any work pending, but @wq->maydays may still have
++	 * pwq(s) queued.  This can happen by non-rescuer workers consuming
++	 * all the work items before the rescuer got to them.  Go through
++	 * @wq->maydays processing before acting on should_stop so that the
++	 * list is always empty on exit.
++	 */
++	should_stop = kthread_should_stop();
+ 
+ 	/* see whether any pwq is asking for help */
+ 	spin_lock_irq(&wq_mayday_lock);
+@@ -2459,6 +2464,12 @@ repeat:
+ 
+ 	spin_unlock_irq(&wq_mayday_lock);
+ 
++	if (should_stop) {
++		__set_current_state(TASK_RUNNING);
++		rescuer->task->flags &= ~PF_WQ_WORKER;
++		return 0;
++	}
++
+ 	/* rescuers should never participate in concurrency management */
+ 	WARN_ON_ONCE(!(rescuer->flags & WORKER_NOT_RUNNING));
+ 	schedule();
+-- 
+1.9.0
+
