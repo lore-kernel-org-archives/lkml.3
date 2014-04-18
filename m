@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074AbaDRCbU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 22:31:20 -0400
-Received: from mail-ie0-f170.google.com ([209.85.223.170]:48395 "EHLO
-	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415AbaDRCaY (ORCPT
+	id S1752016AbaDRCbQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 22:31:16 -0400
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:62749 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373AbaDRCaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 22:30:24 -0400
+	Thu, 17 Apr 2014 22:30:22 -0400
 From: Alex Elder <elder@linaro.org>
 To: bcm@fixthebug.org, mporter@linaro.org
 Cc: bcm-kernel-feedback-list@broadcom.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 06/10] ARM: bcm: config option for l2 cache support
-Date: Thu, 17 Apr 2014 21:30:11 -0500
-Message-Id: <1397788215-20279-7-git-send-email-elder@linaro.org>
+Subject: [PATCH 04/10] ARM: bcm: have bcm_kona_smc() return request result
+Date: Thu, 17 Apr 2014 21:30:09 -0500
+Message-Id: <1397788215-20279-5-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1397788215-20279-1-git-send-email-elder@linaro.org>
 References: <1397788215-20279-1-git-send-email-elder@linaro.org>
@@ -21,103 +21,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new config option ARCH_BCM_MOBILE_L2_CACHE that allows support
-for level-2 cache to be enabled or disabled at build time for
-BCM218XX and BCM21664 family SoCs.
+Currently it is assumed that SEC_ROM_RET_OK is the only valid "good"
+result of a secure monitor request.  However the values that can be
+returned by a secure monitor request are dependent on which service
+id was provided.
 
-Build support for SMC only if it's required (currently it's only
-required for to support level 2 cache control).
+We therefore should handle the result in a request-dependent way.
+The most natural way to do that is to have the initiator of the
+request--where bcm_kona_smc() is called--handle the result in a way
+appropriate to the request.
 
-If arch/arm/mach-bcm/kona.c gets compiled, ARCH_BCM_MOBILE_L2_CACHE
-must have been selected, which implies CONFIG_CACHE_L2X0 is set.
-There is therefore no need to check CONFIG_CACHE_L2X0 at the top
-of kona_l2_cache_init(), so get rid of that check.
+An "smc" operation must be performed only on core 0, while the
+request can be initiated from any core.  To pass back the request
+result, we add a new field to the bcm_kona_smc_data structure, and
+have bcm_kona_smc() return that value rather than 0.
+
+There's only one caller right now.  Move the existing check of the
+result out of __bcm_kona_smc() and into the kona_l2_cache_init()
+where the SSAPI_ENABLE_L2_CACHE request is initiated.
 
 Signed-off-by: Alex Elder <elder@linaro.org>
 Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
 Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 Reviewed-by: Matt Porter <mporter@linaro.org>
 ---
- arch/arm/mach-bcm/Kconfig  |   12 +++++++++++-
- arch/arm/mach-bcm/Makefile |    5 ++++-
- arch/arm/mach-bcm/kona.c   |    3 ---
- arch/arm/mach-bcm/kona.h   |    5 +++++
- 4 files changed, 20 insertions(+), 5 deletions(-)
+ arch/arm/mach-bcm/bcm_kona_smc.c |   12 +++++-------
+ arch/arm/mach-bcm/kona.c         |    8 +++++++-
+ 2 files changed, 12 insertions(+), 8 deletions(-)
 
-diff --git a/arch/arm/mach-bcm/Kconfig b/arch/arm/mach-bcm/Kconfig
-index 5f5740f..28f90a0 100644
---- a/arch/arm/mach-bcm/Kconfig
-+++ b/arch/arm/mach-bcm/Kconfig
-@@ -18,7 +18,6 @@ config ARCH_BCM_MOBILE
- 	select ARM_GIC
- 	select GPIO_BCM_KONA
- 	select TICK_ONESHOT
--	select CACHE_L2X0
- 	select HAVE_ARM_ARCH_TIMER
- 	select PINCTRL
- 	help
-@@ -43,6 +42,17 @@ config ARCH_BCM_21664
- 	  Enable support for the the BCM21664 family, which includes
- 	  BCM21663 and BCM21664 variants.
+diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
+index 0d2bfe2..47cf360 100644
+--- a/arch/arm/mach-bcm/bcm_kona_smc.c
++++ b/arch/arm/mach-bcm/bcm_kona_smc.c
+@@ -30,6 +30,7 @@ struct bcm_kona_smc_data {
+ 	unsigned arg1;
+ 	unsigned arg2;
+ 	unsigned arg3;
++	unsigned result;
+ };
  
-+config ARCH_BCM_MOBILE_L2_CACHE
-+	bool "Broadcom mobile SoC level 2 cache support"
-+	depends on (ARCH_BCM_281XX || ARCH_BCM_21664)
-+	default y
-+	select CACHE_L2X0
-+	select ARCH_BCM_MOBILE_SMC
-+
-+config ARCH_BCM_MOBILE_SMC
-+	bool
-+	depends on ARCH_BCM_281XX || ARCH_BCM_21664
-+
- endmenu
+ static const struct of_device_id bcm_kona_smc_ids[] __initconst = {
+@@ -80,7 +81,6 @@ static void __bcm_kona_smc(void *info)
+ {
+ 	struct bcm_kona_smc_data *data = info;
+ 	u32 *args = bcm_smc_buffer;
+-	int rc;
  
- endif
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index 7fb9b04..5154981 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -17,7 +17,10 @@ obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
- obj-$(CONFIG_ARCH_BCM_21664)	+= board_bcm21664.o
+ 	BUG_ON(smp_processor_id() != 0);
+ 	BUG_ON(!args);
+@@ -94,11 +94,8 @@ static void __bcm_kona_smc(void *info)
+ 	/* Flush caches for input data passed to Secure Monitor */
+ 	flush_cache_all();
  
- # BCM281XX and BCM21664 L2 cache control
--obj-$(CONFIG_ARCH_BCM_MOBILE)	+= bcm_kona_smc.o bcm_kona_smc_asm.o kona.o
-+obj-$(CONFIG_ARCH_BCM_MOBILE_L2_CACHE) += kona.o
-+
-+# Support for secure monitor traps
-+obj-$(CONFIG_ARCH_BCM_MOBILE_SMC) += bcm_kona_smc.o bcm_kona_smc_asm.o
- plus_sec := $(call as-instr,.arch_extension sec,+sec)
- AFLAGS_bcm_kona_smc_asm.o	:=-Wa,-march=armv7-a$(plus_sec)
+-	/* Trap into Secure Monitor */
+-	rc = bcm_kona_smc_asm(data->service_id, bcm_smc_buffer_phys);
+-
+-	if (rc != SEC_ROM_RET_OK)
+-		pr_err("Secure Monitor call failed (0x%x)!\n", rc);
++	/* Trap into Secure Monitor and record the request result */
++	data->result = bcm_kona_smc_asm(data->service_id, bcm_smc_buffer_phys);
+ }
  
+ unsigned bcm_kona_smc(unsigned service_id, unsigned arg0, unsigned arg1,
+@@ -111,6 +108,7 @@ unsigned bcm_kona_smc(unsigned service_id, unsigned arg0, unsigned arg1,
+ 	data.arg1 = arg1;
+ 	data.arg2 = arg2;
+ 	data.arg3 = arg3;
++	data.result = 0;
+ 
+ 	/*
+ 	 * Due to a limitation of the secure monitor, we must use the SMP
+@@ -123,5 +121,5 @@ unsigned bcm_kona_smc(unsigned service_id, unsigned arg0, unsigned arg1,
+ 
+ 	put_cpu();
+ 
+-	return 0;
++	return data.result;
+ }
 diff --git a/arch/arm/mach-bcm/kona.c b/arch/arm/mach-bcm/kona.c
-index ecdd713..60b5dd5 100644
+index 768bc28..ecdd713 100644
 --- a/arch/arm/mach-bcm/kona.c
 +++ b/arch/arm/mach-bcm/kona.c
-@@ -22,9 +22,6 @@ void __init kona_l2_cache_init(void)
- 	unsigned int result;
+@@ -19,6 +19,7 @@
+ 
+ void __init kona_l2_cache_init(void)
+ {
++	unsigned int result;
  	int ret;
  
--	if (!IS_ENABLED(CONFIG_CACHE_L2X0))
--		return;
--
- 	ret = bcm_kona_smc_init();
- 	if (ret) {
- 		pr_info("Secure API not available (%d). Skipping L2 init.\n",
-diff --git a/arch/arm/mach-bcm/kona.h b/arch/arm/mach-bcm/kona.h
-index 3a7a017..110185f 100644
---- a/arch/arm/mach-bcm/kona.h
-+++ b/arch/arm/mach-bcm/kona.h
-@@ -11,4 +11,9 @@
-  * GNU General Public License for more details.
-  */
+ 	if (!IS_ENABLED(CONFIG_CACHE_L2X0))
+@@ -31,7 +32,12 @@ void __init kona_l2_cache_init(void)
+ 		return;
+ 	}
  
-+#ifdef CONFIG_ARCH_BCM_MOBILE_L2_CACHE
-+
- void __init kona_l2_cache_init(void);
-+#else
-+#define kona_l2_cache_init() ((void)0)
-+#endif
+-	bcm_kona_smc(SSAPI_ENABLE_L2_CACHE, 0, 0, 0, 0);
++	result = bcm_kona_smc(SSAPI_ENABLE_L2_CACHE, 0, 0, 0, 0);
++	if (result != SEC_ROM_RET_OK) {
++		pr_err("Secure Monitor call failed (%u)! Skipping L2 init.\n",
++			result);
++		return;
++	}
+ 
+ 	/*
+ 	 * The aux_val and aux_mask have no effect since L2 cache is already
 -- 
 1.7.9.5
 
