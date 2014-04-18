@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806AbaDRUuF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 16:50:05 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:25451 "EHLO
+	id S1754828AbaDRUuW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 16:50:22 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.242]:61979 "EHLO
 	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753710AbaDRUt4 (ORCPT
+	with ESMTP id S1754022AbaDRUuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 16:49:56 -0400
-Message-ID: <53518FEE.9090207@atmel.com>
-Date: Fri, 18 Apr 2014 22:49:50 +0200
+	Fri, 18 Apr 2014 16:50:12 -0400
+Message-ID: <53518FFE.5000305@atmel.com>
+Date: Fri, 18 Apr 2014 22:50:06 +0200
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
 Organization: atmel
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
@@ -23,10 +23,9 @@ CC: Andrew Victor <linux@maxim.org.za>,
         "Russell King" <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/8] ARM: at91: sama5d3: correct the sound compatible
- string
-References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <1395049541-28128-4-git-send-email-voice.shen@atmel.com>
-In-Reply-To: <1395049541-28128-4-git-send-email-voice.shen@atmel.com>
+Subject: Re: [PATCH 4/8] ARM: at91: sama5d3: add the missing property
+References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <1395049541-28128-5-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1395049541-28128-5-git-send-email-voice.shen@atmel.com>
 X-Enigmail-Version: 1.5.2
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
@@ -36,9 +35,8 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 17/03/2014 10:45, Bo Shen :
-> As the sama5d3 dtsi file in go into mainline before sound driver,
-> and, the sound compatible string is changed when go into mainline.
-> Add this patch to correct the sound compatible string.
+> If without the MICBIAS routing, the record don't work.
+> Add the missing MICBIAS routing to let record from mic working.
 > 
 > Signed-off-by: Bo Shen <voice.shen@atmel.com>
 
@@ -46,22 +44,21 @@ Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
 > ---
 > 
->  arch/arm/boot/dts/sama5d3xmb.dtsi | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+>  arch/arm/boot/dts/sama5d3xmb.dtsi | 1 +
+>  1 file changed, 1 insertion(+)
 > 
 > diff --git a/arch/arm/boot/dts/sama5d3xmb.dtsi b/arch/arm/boot/dts/sama5d3xmb.dtsi
-> index 2938605..e1bd5767 100644
+> index e1bd5767..0600153 100644
 > --- a/arch/arm/boot/dts/sama5d3xmb.dtsi
 > +++ b/arch/arm/boot/dts/sama5d3xmb.dtsi
-> @@ -156,7 +156,7 @@
->  	};
+> @@ -166,6 +166,7 @@
+>  			"Headphone Jack", "HPOUTR",
+>  			"IN2L", "Line In Jack",
+>  			"IN2R", "Line In Jack",
+> +			"MICBIAS", "IN1L",
+>  			"IN1L", "Mic";
 >  
->  	sound {
-> -		compatible = "atmel,sama5d3ek-wm8904";
-> +		compatible = "atmel,asoc-wm8904";
->  		pinctrl-names = "default";
->  		pinctrl-0 = <&pinctrl_pck0_as_audio_mck>;
->  
+>  		atmel,ssc-controller = <&ssc0>;
 > 
 
 
