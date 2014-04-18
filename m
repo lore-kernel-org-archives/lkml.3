@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737AbaDRRii (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 13:38:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754220AbaDRRfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 13:35:18 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, davem@davemloft.net,
-        eparis@redhat.com, netfilter-devel@vger.kernel.org, hadi@mojatatu.com,
-        sgrubb@redhat.com
-Subject: [PATCH 4/6] audit: add netlink audit protocol bind to check capabilities on multicast join
-Date: Fri, 18 Apr 2014 13:34:08 -0400
-Message-Id: <a8d72cb5f3f5f1c34ebc0a585a3e4ccfaf57e307.1397831970.git.rgb@redhat.com>
-In-Reply-To: <20140324183406.GE28666@madcap2.tricolour.ca>
-References: <20140324183406.GE28666@madcap2.tricolour.ca>
-In-Reply-To: <cover.1397831970.git.rgb@redhat.com>
-References: <cover.1397831970.git.rgb@redhat.com>
+	id S1754605AbaDRRj5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 13:39:57 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:38169 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139AbaDRRjy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 13:39:54 -0400
+Date: Fri, 18 Apr 2014 18:39:24 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, rdunlap@infradead.org, sameo@linux.intel.com,
+        lee.jones@linaro.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Message-ID: <20140418173924.GU12304@sirena.org.uk>
+References: <1397638902-7576-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+ <1397638902-7576-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="7U1RSSkRXGczHgJj"
+Content-Disposition: inline
+In-Reply-To: <1397638902-7576-4-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 3/6] regulator: arizona-ldo1: Add processing of init_data
+ from device tree
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register a netlink per-protocol bind fuction for audit to check userspace
-process capabilities before allowing a multicast group connection.
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- include/uapi/linux/capability.h     |    7 ++++++-
- kernel/audit.c                      |   10 ++++++++++
- security/selinux/include/classmap.h |    2 +-
- 3 files changed, 17 insertions(+), 2 deletions(-)
+--7U1RSSkRXGczHgJj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-diff --git a/include/uapi/linux/capability.h b/include/uapi/linux/capability.h
-index 154dd6d..12c37a1 100644
---- a/include/uapi/linux/capability.h
-+++ b/include/uapi/linux/capability.h
-@@ -347,7 +347,12 @@ struct vfs_cap_data {
- 
- #define CAP_BLOCK_SUSPEND    36
- 
--#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
-+/* Allow reading the audit log via multicast netlink socket */
-+
-+#define CAP_AUDIT_READ		37
-+
-+
-+#define CAP_LAST_CAP         CAP_AUDIT_READ
- 
- #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
- 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 7c28936..223cb74 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1076,10 +1076,20 @@ static void audit_receive(struct sk_buff  *skb)
- 	mutex_unlock(&audit_cmd_mutex);
- }
- 
-+/* Run custom bind function on netlink socket group connect or bind requests. */
-+static int audit_bind(int group)
-+{
-+	if (!capable(CAP_AUDIT_READ))
-+		return -EPERM;
-+
-+	return 0;
-+}
-+
- static int __net_init audit_net_init(struct net *net)
- {
- 	struct netlink_kernel_cfg cfg = {
- 		.input	= audit_receive,
-+		.bind	= audit_bind,
- 	};
- 
- 	struct audit_net *aunet = net_generic(net, audit_net_id);
-diff --git a/security/selinux/include/classmap.h b/security/selinux/include/classmap.h
-index 14d04e6..be491a7 100644
---- a/security/selinux/include/classmap.h
-+++ b/security/selinux/include/classmap.h
-@@ -147,7 +147,7 @@ struct security_class_mapping secclass_map[] = {
- 	{ "peer", { "recv", NULL } },
- 	{ "capability2",
- 	  { "mac_override", "mac_admin", "syslog", "wake_alarm", "block_suspend",
--	    NULL } },
-+	    "audit_read", NULL } },
- 	{ "kernel_service", { "use_as_override", "create_files_as", NULL } },
- 	{ "tun_socket",
- 	  { COMMON_SOCK_PERMS, "attach_queue", NULL } },
--- 
-1.7.1
+On Wed, Apr 16, 2014 at 10:01:39AM +0100, Charles Keepax wrote:
+> Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
+Applied, but again you really need better changelogs - processing of
+init_data for what?  For most regulators init_data is handled totally
+transparently so this isn't normal.
+
+--7U1RSSkRXGczHgJj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTUWNJAAoJELSic+t+oim9MjkP/RnP/zjU6sXXm8wclKFZXc67
+iETLVzdf4ix0BS7/oB2TIeXQ14iujDyn+gw+UB68WnTc/F/A4P2dzw/TgEX2kOJH
+gRpug53VyoKyC0dD242xt05BAyBmzIoVRI3vTAInKph7Ov+viwRf8pD3aIRKCXL4
+/ibETP5u7Ovf+TXvjDqN+Th1GZkdcse+2Ku9Fj8ADgTWS8RfONFi1p91T0KwRlUQ
+D7wfWTk8DruW/OMX+3t4IXfO5acPRWhJp3SZqwZVGGajKODaSm6yPAuW0LVFFF/N
+AElLgUEGal7M552ZPFWaixp0i7EUnokO4nQeUVJRXRMbdN2di2c5Vuonlm3C8RBN
+iJzJlKudSdRehA58tOEfKiURe5HBw1TQK3hbgfIfhPGjfKlt81c6ATyQusdcGDJy
+6hwxUf+nYWvAqaDy177Ch2tjMYoum4IDYHBiILjmXn/38jV7gA2K+YOHPV0zRpwf
+LxuA+01cgrrRyXIBJFS8wI+RXFKF7YF8QtZAj8RrjoTJwSKWFXFDlqIJ8uqdKhhu
+euMepxazB6O4iQFqo0dIEUqR/NIqxMNuYlPYEmldqTflavn3lO+OF/5AXMfUeX4o
+I2x2ZcqtGP8g3rrrTStuw5MqJ0c2JI3IK0JILAzbd3LVZbasy1GU1pidq0TrNnry
+VlIMxzuJFfMIQXr+f2/q
+=iVCr
+-----END PGP SIGNATURE-----
+
+--7U1RSSkRXGczHgJj--
