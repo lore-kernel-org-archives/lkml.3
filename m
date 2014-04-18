@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575AbaDRNRi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:17:38 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38982 "EHLO
+	id S1754565AbaDRNKK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:10:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38925 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752005AbaDRNKm (ORCPT
+	with ESMTP id S1751307AbaDRNKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:10:42 -0400
-Date: Fri, 18 Apr 2014 06:10:06 -0700
+	Fri, 18 Apr 2014 09:10:02 -0400
+Date: Fri, 18 Apr 2014 06:09:28 -0700
 From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-s5dvosrb7qhvpmtaffwfn0zg@git.kernel.org>
+Message-ID: <tip-87irqrrbgizeojjfdqhypud3@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, geert@linux-m68k.org, tglx@linutronix.de
+        paulmck@linux.vnet.ibm.com, vgupta@synopsys.com, tglx@linutronix.de,
+        rkuo@codeaurora.org
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, geert@linux-m68k.org, tglx@linutronix.de
+        paulmck@linux.vnet.ibm.com, vgupta@synopsys.com, tglx@linutronix.de,
+        rkuo@codeaurora.org
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] arch,m68k: Convert smp_mb__*()
-Git-Commit-ID: 2db56e8606016e33903c64feaed989ffecd66a1b
+Subject: [tip:locking/core] arch,hexagon: Convert smp_mb__*()
+Git-Commit-ID: 94cf42f823bc904305b0ee93a09bcd51ba380497
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -31,77 +33,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  2db56e8606016e33903c64feaed989ffecd66a1b
-Gitweb:     http://git.kernel.org/tip/2db56e8606016e33903c64feaed989ffecd66a1b
+Commit-ID:  94cf42f823bc904305b0ee93a09bcd51ba380497
+Gitweb:     http://git.kernel.org/tip/94cf42f823bc904305b0ee93a09bcd51ba380497
 Author:     Peter Zijlstra <peterz@infradead.org>
 AuthorDate: Thu, 13 Mar 2014 19:00:36 +0100
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 Apr 2014 14:20:37 +0200
+CommitDate: Fri, 18 Apr 2014 14:20:35 +0200
 
-arch,m68k: Convert smp_mb__*()
+arch,hexagon: Convert smp_mb__*()
 
-m68k uses asm-generic/barrier.h and its smp_mb() is barrier(),
-therefore we can use the generic versions that use smp_mb().
+Hexagon uses asm-gemeric/barrier.h and its smp_mb() is barrier().
+Therefore we can use the default implementation that uses smp_mb().
 
 Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/n/tip-s5dvosrb7qhvpmtaffwfn0zg@git.kernel.org
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+Link: http://lkml.kernel.org/n/tip-87irqrrbgizeojjfdqhypud3@git.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Richard Kuo <rkuo@codeaurora.org>
+Cc: Vineet Gupta <vgupta@synopsys.com>
+Cc: linux-hexagon@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Cc: linux-m68k@lists.linux-m68k.org
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/m68k/include/asm/atomic.h | 8 +-------
- arch/m68k/include/asm/bitops.h | 7 +------
- 2 files changed, 2 insertions(+), 13 deletions(-)
+ arch/hexagon/include/asm/atomic.h | 6 +-----
+ arch/hexagon/include/asm/bitops.h | 4 +---
+ 2 files changed, 2 insertions(+), 8 deletions(-)
 
-diff --git a/arch/m68k/include/asm/atomic.h b/arch/m68k/include/asm/atomic.h
-index f4e32de..5569521 100644
---- a/arch/m68k/include/asm/atomic.h
-+++ b/arch/m68k/include/asm/atomic.h
-@@ -4,6 +4,7 @@
+diff --git a/arch/hexagon/include/asm/atomic.h b/arch/hexagon/include/asm/atomic.h
+index 17dc637..de916b1 100644
+--- a/arch/hexagon/include/asm/atomic.h
++++ b/arch/hexagon/include/asm/atomic.h
+@@ -24,6 +24,7 @@
+ 
  #include <linux/types.h>
- #include <linux/irqflags.h>
  #include <asm/cmpxchg.h>
 +#include <asm/barrier.h>
  
- /*
-  * Atomic operations that C can't guarantee us.  Useful for
-@@ -209,11 +210,4 @@ static __inline__ int __atomic_add_unless(atomic_t *v, int a, int u)
- 	return c;
- }
+ #define ATOMIC_INIT(i)		{ (i) }
  
--
--/* Atomic operations are already serializing */
+@@ -176,9 +177,4 @@ static inline int __atomic_add_unless(atomic_t *v, int a, int u)
+ #define atomic_inc_return(v) (atomic_add_return(1, v))
+ #define atomic_dec_return(v) (atomic_sub_return(1, v))
+ 
 -#define smp_mb__before_atomic_dec()	barrier()
 -#define smp_mb__after_atomic_dec()	barrier()
 -#define smp_mb__before_atomic_inc()	barrier()
 -#define smp_mb__after_atomic_inc()	barrier()
 -
- #endif /* __ARCH_M68K_ATOMIC __ */
-diff --git a/arch/m68k/include/asm/bitops.h b/arch/m68k/include/asm/bitops.h
-index c6baa91..b4a9b0d 100644
---- a/arch/m68k/include/asm/bitops.h
-+++ b/arch/m68k/include/asm/bitops.h
-@@ -13,6 +13,7 @@
  #endif
- 
+diff --git a/arch/hexagon/include/asm/bitops.h b/arch/hexagon/include/asm/bitops.h
+index 9b1e4af..5e4a59b 100644
+--- a/arch/hexagon/include/asm/bitops.h
++++ b/arch/hexagon/include/asm/bitops.h
+@@ -25,12 +25,10 @@
  #include <linux/compiler.h>
+ #include <asm/byteorder.h>
+ #include <asm/atomic.h>
 +#include <asm/barrier.h>
  
- /*
-  *	Bit access functions vary across the ColdFire and 68k families.
-@@ -67,12 +68,6 @@ static inline void bfset_mem_set_bit(int nr, volatile unsigned long *vaddr)
- #define __set_bit(nr, vaddr)	set_bit(nr, vaddr)
+ #ifdef __KERNEL__
  
- 
--/*
-- * clear_bit() doesn't provide any barrier for the compiler.
-- */
 -#define smp_mb__before_clear_bit()	barrier()
 -#define smp_mb__after_clear_bit()	barrier()
 -
- static inline void bclr_reg_clear_bit(int nr, volatile unsigned long *vaddr)
- {
- 	char *p = (char *)vaddr + (nr ^ 31) / 8;
+ /*
+  * The offset calculations for these are based on BITS_PER_LONG == 32
+  * (i.e. I get to shift by #5-2 (32 bits per long, 4 bytes per access),
