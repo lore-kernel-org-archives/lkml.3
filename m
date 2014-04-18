@@ -1,114 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432AbaDRNJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:09:09 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38856 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754383AbaDRNJE (ORCPT
+	id S1754865AbaDRNTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:19:12 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:21676 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753827AbaDRNTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:09:04 -0400
-Date: Fri, 18 Apr 2014 06:08:07 -0700
-From: tip-bot for Venkatesh Srinivas <tipbot@zytor.com>
-Message-ID: <tip-24223657806a0ebd0ae5c9caaf7b021091889cf2@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, venkateshs@google.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, venkateshs@google.com
-In-Reply-To: <1394739386-22260-1-git-send-email-venkateshs@google.com>
-References: <1394739386-22260-1-git-send-email-venkateshs@google.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf/x86/intel: Use rdmsrl_safe()
-  when initializing RAPL PMU
-Git-Commit-ID: 24223657806a0ebd0ae5c9caaf7b021091889cf2
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 18 Apr 2014 09:19:04 -0400
+Date: Fri, 18 Apr 2014 09:18:07 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>,
+        Marcos Matsunaga <Marcos.Matsunaga@oracle.com>
+Subject: Re: [PATCH v9 00/19] qspinlock: a 4-byte queue spinlock with PV
+ support
+Message-ID: <20140418131807.GD4010@phenom.dumpdata.com>
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
+ <20140417172246.GA9849@localhost.localdomain>
+ <53508474.7010402@hp.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <53508474.7010402@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  24223657806a0ebd0ae5c9caaf7b021091889cf2
-Gitweb:     http://git.kernel.org/tip/24223657806a0ebd0ae5c9caaf7b021091889cf2
-Author:     Venkatesh Srinivas <venkateshs@google.com>
-AuthorDate: Thu, 13 Mar 2014 12:36:26 -0700
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 Apr 2014 12:14:26 +0200
+On Thu, Apr 17, 2014 at 09:48:36PM -0400, Waiman Long wrote:
+> On 04/17/2014 01:23 PM, Konrad Rzeszutek Wilk wrote:
+> >On Thu, Apr 17, 2014 at 11:03:52AM -0400, Waiman Long wrote:
+> >>v8->v9:
+> >>   - Integrate PeterZ's version of the queue spinlock patch with some
+> >>     modification:
+> >>     http://lkml.kernel.org/r/20140310154236.038181843@infradead.org
+> >>   - Break the more complex patches into smaller ones to ease review effort.
+> >>   - Fix a racing condition in the PV qspinlock code.
+> >I am not seeing anything mentioning that the overcommit scenario
+> >for KVM and Xen had been fixed. Or was the 'racing condition' said
+> >issue?
+> >
+> >Thanks.
+> 
+> The hanging is caused by a racing condition which should be fixed in
+> the v9 patch. Please let me know if you are still seeing it.
 
-perf/x86/intel: Use rdmsrl_safe() when initializing RAPL PMU
+OK, is there a git tree with these patches to easily slurp them up?
 
-CPUs which should support the RAPL counters according to
-Family/Model/Stepping may still issue #GP when attempting to access
-the RAPL MSRs. This may happen when Linux is running under KVM and
-we are passing-through host F/M/S data, for example. Use rdmsrl_safe
-to first access the RAPL_POWER_UNIT MSR; if this fails, do not
-attempt to use this PMU.
 
-Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1394739386-22260-1-git-send-email-venkateshs@google.com
-Cc: zheng.z.yan@intel.com
-Cc: eranian@google.com
-Cc: ak@linux.intel.com
-Cc: linux-kernel@vger.kernel.org
-[ The patch also silently fixes another bug: rapl_pmu_init() didn't handle the memory alloc failure case previously. ]
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/x86/kernel/cpu/perf_event_intel_rapl.c | 12 +++++++++---
- 1 file changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-index 4b9a9e9..7c87424 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-@@ -535,6 +535,7 @@ static int rapl_cpu_prepare(int cpu)
- 	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
- 	int phys_id = topology_physical_package_id(cpu);
- 	u64 ms;
-+	u64 msr_rapl_power_unit_bits;
- 
- 	if (pmu)
- 		return 0;
-@@ -542,6 +543,9 @@ static int rapl_cpu_prepare(int cpu)
- 	if (phys_id < 0)
- 		return -1;
- 
-+	if (!rdmsrl_safe(MSR_RAPL_POWER_UNIT, &msr_rapl_power_unit_bits))
-+		return -1;
-+
- 	pmu = kzalloc_node(sizeof(*pmu), GFP_KERNEL, cpu_to_node(cpu));
- 	if (!pmu)
- 		return -1;
-@@ -555,8 +559,7 @@ static int rapl_cpu_prepare(int cpu)
- 	 *
- 	 * we cache in local PMU instance
- 	 */
--	rdmsrl(MSR_RAPL_POWER_UNIT, pmu->hw_unit);
--	pmu->hw_unit = (pmu->hw_unit >> 8) & 0x1FULL;
-+	pmu->hw_unit = (msr_rapl_power_unit_bits >> 8) & 0x1FULL;
- 	pmu->pmu = &rapl_pmu_class;
- 
- 	/*
-@@ -677,7 +680,9 @@ static int __init rapl_pmu_init(void)
- 	cpu_notifier_register_begin();
- 
- 	for_each_online_cpu(cpu) {
--		rapl_cpu_prepare(cpu);
-+		ret = rapl_cpu_prepare(cpu);
-+		if (ret)
-+			goto out;
- 		rapl_cpu_init(cpu);
- 	}
- 
-@@ -700,6 +705,7 @@ static int __init rapl_pmu_init(void)
- 		hweight32(rapl_cntr_mask),
- 		ktime_to_ms(pmu->timer_interval));
- 
-+out:
- 	cpu_notifier_register_done();
- 
- 	return 0;
+Thanks!
+> 
+> -Longman
