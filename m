@@ -1,79 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbaDRAfb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 20:35:31 -0400
-Received: from mailgw12.technion.ac.il ([132.68.225.12]:61087 "EHLO
-	mailgw12.technion.ac.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751274AbaDRAf3 (ORCPT
+	id S1751609AbaDRAhh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 20:37:37 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:34270 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaDRAhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 20:35:29 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AkkCABJyUFOERM5ejGdsb2JhbABZyACBIxYOAQEBJzyCJgEFJ1IQQBFXBxIbh2HGDYYUF45iB4Q4BIlcpRM6
-X-IPAS-Result: AkkCABJyUFOERM5ejGdsb2JhbABZyACBIxYOAQEBJzyCJgEFJ1IQQBFXBxIbh2HGDYYUF45iB4Q4BIlcpRM6
-X-IronPort-AV: E=Sophos;i="4.97,882,1389736800"; 
-   d="scan'208";a="102882798"
-From: Nadav Amit <namit@cs.technion.ac.il>
-To: gleb@kernel.org, pbonzini@redhat.com
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nadav Amit <namit@cs.technion.ac.il>
-Subject: [PATCH 1/5] KVM: x86: Fix wrong/stuck PMU when guest does not use PMI
-Date: Fri, 18 Apr 2014 03:35:08 +0300
-Message-Id: <1397781312-6885-1-git-send-email-namit@cs.technion.ac.il>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il>
-References: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il>
+	Thu, 17 Apr 2014 20:37:32 -0400
+Date: Fri, 18 Apr 2014 01:37:26 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, tytso@mit.edu
+Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15
+Message-ID: <20140418003725.GE18016@ZenIV.linux.org.uk>
+References: <20140413053956.GM18016@ZenIV.linux.org.uk>
+ <87zjjp3e7w.fsf@x220.int.ebiederm.org>
+ <87ppkl1xb7.fsf@x220.int.ebiederm.org>
+ <20140413215242.GP18016@ZenIV.linux.org.uk>
+ <87y4z8uzqw.fsf_-_@x220.int.ebiederm.org>
+ <87ppkhc4pp.fsf@x220.int.ebiederm.org>
+ <87ha5r3emw.fsf_-_@x220.int.ebiederm.org>
+ <20140417202237.GA18016@ZenIV.linux.org.uk>
+ <87tx9rwsz4.fsf@x220.int.ebiederm.org>
+ <20140417221203.GC18016@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417221203.GC18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If a guest enables a performance counter but does not enable PMI, the
-hypervisor currently does not reprogram the performance counter once it
-overflows.  As a result the host performance counter is kept with the original
-sampling period which was configured according to the value of the guest's
-counter when the counter was enabled.
+On Thu, Apr 17, 2014 at 11:12:03PM +0100, Al Viro wrote:
 
-Such behaviour can cause very bad consequences. The most distrubing one can
-cause the guest not to make any progress at all, and keep exiting due to host
-PMI before any guest instructions is exeucted. This situation occurs when the
-performance counter holds a very high value when the guest enables the
-performance counter. As a result the host's sampling period is configured to be
-very short. The host then never reconfigures the sampling period and get stuck
-at entry->PMI->exit loop. We encountered such a scenario in our experiments.
+> That's all.  And yes, I believe that such series would make sense on its
+> own and once it survives beating (see above about docker - that bastard has
+> surprised me quite a bit re stressing namespace-related codepaths), I would
+> be quite willing to help with getting it merged.
 
-The solution is to reprogram the counter even if the guest does not use PMI.
+FWIW, the tricky part around auto-close of acct is that we really want to
+preserve the following property:
 
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
----
-:100644 100644 5c4f631... cbecaa9... M	arch/x86/kvm/pmu.c
- arch/x86/kvm/pmu.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+	In usual setups, umount(2) will not return until fs has been
+shut down.
 
-diff --git a/arch/x86/kvm/pmu.c b/arch/x86/kvm/pmu.c
-index 5c4f631..cbecaa9 100644
---- a/arch/x86/kvm/pmu.c
-+++ b/arch/x86/kvm/pmu.c
-@@ -108,7 +108,10 @@ static void kvm_perf_overflow(struct perf_event *perf_event,
- {
- 	struct kvm_pmc *pmc = perf_event->overflow_handler_context;
- 	struct kvm_pmu *pmu = &pmc->vcpu->arch.pmu;
--	__set_bit(pmc->idx, (unsigned long *)&pmu->global_status);
-+	if (!test_and_set_bit(pmc->idx, (unsigned long *)&pmu->reprogram_pmi)) {
-+		__set_bit(pmc->idx, (unsigned long *)&pmu->global_status);
-+		kvm_make_request(KVM_REQ_PMU, pmc->vcpu);
-+	}
- }
- 
- static void kvm_perf_overflow_intr(struct perf_event *perf_event,
-@@ -117,7 +120,7 @@ static void kvm_perf_overflow_intr(struct perf_event *perf_event,
- 	struct kvm_pmc *pmc = perf_event->overflow_handler_context;
- 	struct kvm_pmu *pmu = &pmc->vcpu->arch.pmu;
- 	if (!test_and_set_bit(pmc->idx, (unsigned long *)&pmu->reprogram_pmi)) {
--		kvm_perf_overflow(perf_event, data, regs);
-+		__set_bit(pmc->idx, (unsigned long *)&pmu->global_status);
- 		kvm_make_request(KVM_REQ_PMU, pmc->vcpu);
- 		/*
- 		 * Inject PMI. If vcpu was in a guest mode during NMI PMI
--- 
-1.7.10.4
+fput() being async is not a problem - it will be processed before we
+return to userland.  I agree that we don't need the loop anymore (it's
+basically a stack depth reduction measure that was needed with sync
+fput() - without "add one more and deal with it when we return" we
+would be getting mntput_no_expire -> fput -> mntput -> fs shutdown
+back then).  But offloading that fput() to workqueue makes it really
+possible to have actual fs shutdown happen after umount(2) returns,
+without any extra mounts of the same fs, etc.  And since that shutdown
+*can* take a long time (lots of dirty pages around, slow device or
+slow network, etc.), we really might be talking about e.g. umount(8)
+being finished before fs shutdown finishes.  It's an expected situation
+when we have the same thing still mounted elsewhere or lazy-umounted
+and busy, but this changes behaviour on setups where we had been
+guaranteed that umount -a *will* wait until all filesystems except
+root are shut down and root is remounted r/o.  So this change really
+can cause data loss on reboot(8)/halt(8) on existing boxen...
 
+IOW, workqueue is not the right tool here.  OTOH, it looks like we do have
+a problem with kernel/acct.c vs. umount; it just requires a race between
+auto-closing and acct_process_in_ns().  It's narrow, so it doesn't bite
+us all the time, but it's there...  Damn, it had been a long time since
+I really looked at that code ;-/
+
+Actually, there's another reason why workqueue is bogus - we call
+do_acct_process(), same as we do on acct(NULL) (which might or might
+not be a good idea), but at least with do that from the context of
+real process doing umount(2).  Doing that from workqueue is going to
+produce a really bogus record...
