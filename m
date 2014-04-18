@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751520AbaDRLTw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 07:19:52 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:33319 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaDRLTt (ORCPT
+	id S1751872AbaDRLXb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 07:23:31 -0400
+Received: from mail-ee0-f44.google.com ([74.125.83.44]:51423 "EHLO
+	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbaDRLX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 07:19:49 -0400
-Message-ID: <53510A4D.8050706@gmail.com>
-Date: Fri, 18 Apr 2014 13:19:41 +0200
+	Fri, 18 Apr 2014 07:23:26 -0400
+Message-ID: <53510B28.1070709@gmail.com>
+Date: Fri, 18 Apr 2014 13:23:20 +0200
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
@@ -22,9 +22,10 @@ CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH 4/8] ARM: mvebu: Add USB3 UTMI support
-References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com> <1397816563-9000-5-git-send-email-gregory.clement@free-electrons.com>
-In-Reply-To: <1397816563-9000-5-git-send-email-gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 5/8] ARM: mvebu: Add Device Tree description of xHCI hosts
+ on Armada 38x
+References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com> <1397816563-9000-6-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1397816563-9000-6-git-send-email-gregory.clement@free-electrons.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -33,116 +34,54 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 04/18/2014 12:22 PM, Gregory CLEMENT wrote:
-> The usb3-utmi registers allow to configure the internal USB PHY of the
-> Armada 380/385 SoCs. A small initialization is needed to be able to use
-> the USB3 ports.
+> The Marvell Armada 38x SoCs contain two xHCI host. This commit adds
+> the Device Tree description of those interfaces at the SoC level, and
+> also enables the two USB3 ports on the Armada 385 DB platform and one
+> USB3 port on the Armada 385 RD platforms.
 > 
 > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 > ---
->  arch/arm/mach-mvebu/Makefile   |  2 +-
->  arch/arm/mach-mvebu/usb-utmi.c | 64 ++++++++++++++++++++++++++++++++++++++++++
-
-Gregory,
-
-there is the generic PHY framework, that could possibly be used to
-avoid adding more code to arch/arm/mach-mvebu.
-
->  2 files changed, 65 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/mach-mvebu/usb-utmi.c
-> 
-> diff --git a/arch/arm/mach-mvebu/Makefile b/arch/arm/mach-mvebu/Makefile
-> index a63e43b6b451..2d98a3eeecf6 100644
-> --- a/arch/arm/mach-mvebu/Makefile
-> +++ b/arch/arm/mach-mvebu/Makefile
-> @@ -4,7 +4,7 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) := -I$(srctree)/$(src)/include \
->  AFLAGS_coherency_ll.o		:= -Wa,-march=armv7-a
->  
->  obj-y				 += system-controller.o mvebu-soc-id.o
-> -obj-$(CONFIG_MACH_MVEBU_V7)      += board-v7.o
-> +obj-$(CONFIG_MACH_MVEBU_V7)      += board-v7.o  usb-utmi.o
->  obj-$(CONFIG_MACH_DOVE)		 += dove.o
->  obj-$(CONFIG_ARCH_MVEBU)	 += coherency.o coherency_ll.o pmsu.o
->  obj-$(CONFIG_SMP)                += platsmp.o headsmp.o
-> diff --git a/arch/arm/mach-mvebu/usb-utmi.c b/arch/arm/mach-mvebu/usb-utmi.c
-> new file mode 100644
-> index 000000000000..e91e86f85eb4
-> --- /dev/null
-> +++ b/arch/arm/mach-mvebu/usb-utmi.c
-> @@ -0,0 +1,64 @@
-> +/*
-> + * USB UTMI support for Armada 38x platform.
-> + *
-> + * Copyright (C) 2014 Marvell
-> + *
-> + * Gregory CLEMENT <gregory.clement@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2.  This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + *
-> + */
+>  arch/arm/boot/dts/armada-385-db.dts |  8 ++++++++
+>  arch/arm/boot/dts/armada-385-rd.dts |  4 ++++
+>  arch/arm/boot/dts/armada-38x.dtsi   | 17 +++++++++++++++++
+>  3 files changed, 29 insertions(+)
+[...]
+> diff --git a/arch/arm/boot/dts/armada-38x.dtsi b/arch/arm/boot/dts/armada-38x.dtsi
+> index a064f59da02d..4f117e66aa1a 100644
+> --- a/arch/arm/boot/dts/armada-38x.dtsi
+> +++ b/arch/arm/boot/dts/armada-38x.dtsi
+> @@ -355,6 +355,23 @@
+>  				clocks = <&coredivclk 0>;
+>  				status = "disabled";
+>  			};
 > +
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/of_address.h>
-> +#include <linux/io.h>
-> +#include <linux/slab.h>
+> +			usb3@f0000 {
+> +				compatible = "marvell,xhci-armada-380";
+> +				reg = <0xf0000 0x3fff>,<0xf4000 0x3fff>;
+> +				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
+> +				clocks = <&gateclk 9>;
 
-nit: sort alphabetically
+Using generic PHY framework will allow you to reference the PHY nodes
+with "usb-phy" here.
 
-> +#define USB_UTMI_PHY_CTRL_STATUS(i)	(0x20+i*4)
-> +#define		USB_UTMI_TX_BITSTUFF_EN BIT(1)
-> +#define		USB_UTMI_PU_PHY		BIT(5)
-> +#define		USB_UTMI_VBUS_ON_PHY	BIT(6)
-
-nit: two TABs in front of the defines above.
-
-> +static struct of_device_id of_usb_utmi_table[] = {
-> +	{ .compatible = "marvell,armada-380-usb-utmi", },
-> +	{ /* end of list */ },
-> +};
-> +
-> +static int __init mvebu_usb_utmi_init(void)
-> +{
-> +	struct device_node *np;
-> +
-> +	np = of_find_matching_node(NULL, of_usb_utmi_table);
-> +	if (np) {
-> +		void __iomem *usb_utmi_base, *utmi_base;
-> +
-> +		usb_utmi_base = of_iomap(np, 0);
-> +		BUG_ON(!usb_utmi_base);
-> +
-> +		utmi_base = of_iomap(np, 1);
-> +		BUG_ON(!utmi_base);
-> +
-> +		writel(USB_UTMI_TX_BITSTUFF_EN |
-> +			   USB_UTMI_PU_PHY |
-> +			   USB_UTMI_VBUS_ON_PHY,
-> +			   usb_utmi_base + USB_UTMI_PHY_CTRL_STATUS(0));
-> +
-> +		/*
-> +		 * Magic init... the registers and their value are not
-> +		 * documented
-> +		 */
-> +		writel(0x40605205, utmi_base);
-> +		writel(0x409, utmi_base + 4);
-> +		writel(0x1be7f6f, utmi_base + 0xc);
-
-nit: decimal/hexadecimal offsets, also IMHO filling the values
-written with leading zeros improves readability of "magic init"
-alot :)
+BTW, you added a "marvell,armada-380-usb-utmi" in the patch for PHY init
+but I can see no corresponding node added.
 
 Sebastian
 
+> +				status = "disabled";
+> +			};
 > +
-> +		of_node_put(np);
-> +		iounmap(utmi_base);
-> +		iounmap(usb_utmi_base);
-> +	}
+> +			usb3@f8000 {
+> +				compatible = "marvell,xhci-armada-380";
+> +				reg = <0xf8000 0x3fff>,<0xfc000 0x3fff>;
+> +				interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
+> +				clocks = <&gateclk 10>;
+> +				status = "disabled";
+> +			};
 > +
-> +	return 0;
-> +}
-> +postcore_initcall(mvebu_usb_utmi_init);
+>  		};
+>  	};
+>  
 > 
 
