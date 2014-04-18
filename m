@@ -1,84 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753992AbaDRJ1I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:27:08 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:46038 "EHLO
+	id S1753939AbaDRJ07 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:26:59 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:46040 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752431AbaDRJWt (ORCPT
+	by vger.kernel.org with ESMTP id S1752441AbaDRJWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 05:22:49 -0400
+	Fri, 18 Apr 2014 05:22:50 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Pablo Neira <pablo@netfilter.org>,
-        Florian Westphal <fw@strlen.de>, Thomas Graf <tgraf@suug.ch>,
+Cc: linux-kernel@vger.kernel.org, Wei Liu <wei.liu2@citrix.com>,
+        Ian Campbell <ian.campbell@citrix.com>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 64/72] netlink: don't compare the nul-termination in nla_strcmp
-Date: Fri, 18 Apr 2014 11:22:37 +0200
-Message-Id: <066bde36d333845215f6317a56d6c8d9c593c5b6.1397812482.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 65/72] xen-netback: disable rogue vif in kthread context
+Date: Fri, 18 Apr 2014 11:22:38 +0200
+Message-Id: <699dfec4e90e73bac6455560187c34f77115bc2f.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
 References: <cover.1397812482.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pablo Neira <pablo@netfilter.org>
+From: Wei Liu <wei.liu2@citrix.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 8b7b932434f5eee495b91a2804f5b64ebb2bc835 ]
+[ Upstream commit e9d8b2c2968499c1f96563e6522c56958d5a1d0d ]
 
-nla_strcmp compares the string length plus one, so it's implicitly
-including the nul-termination in the comparison.
+When netback discovers frontend is sending malformed packet it will
+disables the interface which serves that frontend.
 
- int nla_strcmp(const struct nlattr *nla, const char *str)
- {
-        int len = strlen(str) + 1;
-        ...
-                d = memcmp(nla_data(nla), str, len);
+However disabling a network interface involving taking a mutex which
+cannot be done in softirq context, so we need to defer this process to
+kthread context.
 
-However, if NLA_STRING is used, userspace can send us a string without
-the nul-termination. This is a problem since the string
-comparison will not match as the last byte may be not the
-nul-termination.
+This patch does the following:
+1. introduce a flag to indicate the interface is disabled.
+2. check that flag in TX path, don't do any work if it's true.
+3. check that flag in RX path, turn off that interface if it's true.
 
-Fix this by skipping the comparison of the nul-termination if the
-attribute data is nul-terminated. Suggested by Thomas Graf.
+The reason to disable it in RX path is because RX uses kthread. After
+this change the behavior of netback is still consistent -- it won't do
+any TX work for a rogue frontend, and the interface will be eventually
+turned off.
 
-Cc: Florian Westphal <fw@strlen.de>
-Cc: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
+Also change a "continue" to "break" after xenvif_fatal_tx_err, as it
+doesn't make sense to continue processing packets if frontend is rogue.
+
+This is a fix for XSA-90.
+
+Reported-by: Török Edwin <edwin@etorok.net>
+Signed-off-by: Wei Liu <wei.liu2@citrix.com>
+Cc: Ian Campbell <ian.campbell@citrix.com>
+Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- lib/nlattr.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+ drivers/net/xen-netback/common.h    |  5 +++++
+ drivers/net/xen-netback/interface.c | 11 +++++++++++
+ drivers/net/xen-netback/netback.c   | 16 ++++++++++++++--
+ 3 files changed, 30 insertions(+), 2 deletions(-)
 
-diff --git a/lib/nlattr.c b/lib/nlattr.c
-index 18eca7809b08..fc6754720ced 100644
---- a/lib/nlattr.c
-+++ b/lib/nlattr.c
-@@ -303,9 +303,15 @@ int nla_memcmp(const struct nlattr *nla, const void *data,
-  */
- int nla_strcmp(const struct nlattr *nla, const char *str)
- {
--	int len = strlen(str) + 1;
--	int d = nla_len(nla) - len;
-+	int len = strlen(str);
-+	char *buf = nla_data(nla);
-+	int attrlen = nla_len(nla);
-+	int d;
+diff --git a/drivers/net/xen-netback/common.h b/drivers/net/xen-netback/common.h
+index 400fea1de080..a7501cb9b53b 100644
+--- a/drivers/net/xen-netback/common.h
++++ b/drivers/net/xen-netback/common.h
+@@ -102,6 +102,11 @@ struct xenvif {
+ 	domid_t          domid;
+ 	unsigned int     handle;
  
-+	if (attrlen > 0 && buf[attrlen - 1] == '\0')
-+		attrlen--;
++	/* Is this interface disabled? True when backend discovers
++	 * frontend is rogue.
++	 */
++	bool disabled;
 +
-+	d = attrlen - len;
- 	if (d == 0)
- 		d = memcmp(nla_data(nla), str, len);
+ 	/* Use NAPI for guest TX */
+ 	struct napi_struct napi;
+ 	/* When feature-split-event-channels = 0, tx_irq = rx_irq. */
+diff --git a/drivers/net/xen-netback/interface.c b/drivers/net/xen-netback/interface.c
+index 459935a6bfae..adfe46068581 100644
+--- a/drivers/net/xen-netback/interface.c
++++ b/drivers/net/xen-netback/interface.c
+@@ -66,6 +66,15 @@ static int xenvif_poll(struct napi_struct *napi, int budget)
+ 	struct xenvif *vif = container_of(napi, struct xenvif, napi);
+ 	int work_done;
+ 
++	/* This vif is rogue, we pretend we've there is nothing to do
++	 * for this vif to deschedule it from NAPI. But this interface
++	 * will be turned off in thread context later.
++	 */
++	if (unlikely(vif->disabled)) {
++		napi_complete(napi);
++		return 0;
++	}
++
+ 	work_done = xenvif_tx_action(vif, budget);
+ 
+ 	if (work_done < budget) {
+@@ -309,6 +318,8 @@ struct xenvif *xenvif_alloc(struct device *parent, domid_t domid,
+ 	vif->csum = 1;
+ 	vif->dev = dev;
+ 
++	vif->disabled = false;
++
+ 	vif->credit_bytes = vif->remaining_credit = ~0UL;
+ 	vif->credit_usec  = 0UL;
+ 	init_timer(&vif->credit_timeout);
+diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+index 74b09260457a..a1186533cee8 100644
+--- a/drivers/net/xen-netback/netback.c
++++ b/drivers/net/xen-netback/netback.c
+@@ -731,7 +731,8 @@ static void xenvif_tx_err(struct xenvif *vif,
+ static void xenvif_fatal_tx_err(struct xenvif *vif)
+ {
+ 	netdev_err(vif->dev, "fatal error; disabling device\n");
+-	xenvif_carrier_off(vif);
++	vif->disabled = true;
++	xenvif_kick_thread(vif);
+ }
+ 
+ static int xenvif_count_requests(struct xenvif *vif,
+@@ -1242,7 +1243,7 @@ static unsigned xenvif_tx_build_gops(struct xenvif *vif)
+ 				   vif->tx.sring->req_prod, vif->tx.req_cons,
+ 				   XEN_NETIF_TX_RING_SIZE);
+ 			xenvif_fatal_tx_err(vif);
+-			continue;
++			break;
+ 		}
+ 
+ 		RING_FINAL_CHECK_FOR_REQUESTS(&vif->tx, work_to_do);
+@@ -1642,7 +1643,18 @@ int xenvif_kthread(void *data)
+ 	while (!kthread_should_stop()) {
+ 		wait_event_interruptible(vif->wq,
+ 					 rx_work_todo(vif) ||
++					 vif->disabled ||
+ 					 kthread_should_stop());
++
++		/* This frontend is found to be rogue, disable it in
++		 * kthread context. Currently this is only set when
++		 * netback finds out frontend sends malformed packet,
++		 * but we cannot disable the interface in softirq
++		 * context so we defer it here.
++		 */
++		if (unlikely(vif->disabled && netif_carrier_ok(vif->dev)))
++			xenvif_carrier_off(vif);
++
+ 		if (kthread_should_stop())
+ 			break;
  
 -- 
 1.9.2
