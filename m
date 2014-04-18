@@ -1,102 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220AbaDRT4H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 15:56:07 -0400
-Received: from mail.tpi.com ([74.45.170.26]:46444 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751992AbaDRT4D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 15:56:03 -0400
-Message-ID: <53518350.8010605@canonical.com>
-Date: Fri, 18 Apr 2014 13:56:00 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754521AbaDRT45 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 15:56:57 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:64861 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754022AbaDRT4y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 15:56:54 -0400
+Date: Fri, 18 Apr 2014 15:56:50 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, David Milburn <dmilburn@redhat.com>,
+        linux-ide@vger.kernel.org
+Subject: Re: [PATCH 1/1] ahci: Do not receive interrupts sent by dummy ports
+Message-ID: <20140418195650.GJ23576@htj.dyndns.org>
+References: <cover.1397750166.git.agordeev@redhat.com>
+ <dbaed51ffe73dec1966eba256c3b42ed22ed58f3.1397750166.git.agordeev@redhat.com>
 MIME-Version: 1.0
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-CC: Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH net-next] xprtrdma: rpcrdma_register_default_external:
- Silence frame size warning
-References: <1397850625-44074-1-git-send-email-tim.gardner@canonical.com> <CAHQdGtQyntscf5kwgWW-v0hWvdT0djKHhibhKNRtwGrcPu-e-Q@mail.gmail.com>
-In-Reply-To: <CAHQdGtQyntscf5kwgWW-v0hWvdT0djKHhibhKNRtwGrcPu-e-Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <dbaed51ffe73dec1966eba256c3b42ed22ed58f3.1397750166.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2014 01:52 PM, Trond Myklebust wrote:
->
-> On Fri, Apr 18, 2014 at 3:50 PM, Tim Gardner <tim.gardner@canonical.com
-> <mailto:tim.gardner@canonical.com>> wrote:
->
->     net/sunrpc/xprtrdma/verbs.c: In function
->     'rpcrdma_register_default_external':
->     net/sunrpc/xprtrdma/verbs.c:1774:1: warning: the frame size of 1048
->     bytes is larger than 1024 bytes [-Wframe-larger-than=]
->
->     gcc version 4.8.2, x86_64-linux-gnu
->
->     Cc: Trond Myklebust <trond.myklebust@primarydata.com
->     <mailto:trond.myklebust@primarydata.com>>
->     Cc: "J. Bruce Fields" <bfields@fieldses.org
->     <mailto:bfields@fieldses.org>>
->     Cc: "David S. Miller" <davem@davemloft.net <mailto:davem@davemloft.net>>
->     Signed-off-by: Tim Gardner <tim.gardner@canonical.com
->     <mailto:tim.gardner@canonical.com>>
->     ---
->       net/sunrpc/xprtrdma/verbs.c |    8 +++++++-
->       1 file changed, 7 insertions(+), 1 deletion(-)
->
->     diff --git a/net/sunrpc/xprtrdma/verbs.c b/net/sunrpc/xprtrdma/verbs.c
->     index 93726560..8130349 100644
->     --- a/net/sunrpc/xprtrdma/verbs.c
->     +++ b/net/sunrpc/xprtrdma/verbs.c
->     @@ -1736,9 +1736,13 @@ rpcrdma_register_default_external(struct
->     rpcrdma_mr_seg *seg,
->              int mem_priv = (writing ? IB_ACCESS_REMOTE_WRITE :
->                                        IB_ACCESS_REMOTE_READ);
->              struct rpcrdma_mr_seg *seg1 = seg;
->     -       struct ib_phys_buf ipb[RPCRDMA_MAX_DATA_SEGS];
->     +       struct ib_phys_buf *ipb;
->              int len, i, rc = 0;
->
->     +       ipb = kmalloc(sizeof(*ipb) * RPCRDMA_MAX_DATA_SEGS, GFP_ATOMIC);
->     +       if (!ipb)
->     +               return -ENOMEM;
->     +
->              if (*nsegs > RPCRDMA_MAX_DATA_SEGS)
->                      *nsegs = RPCRDMA_MAX_DATA_SEGS;
->              for (len = 0, i = 0; i < *nsegs;) {
->     @@ -1770,6 +1774,8 @@ rpcrdma_register_default_external(struct
->     rpcrdma_mr_seg *seg,
->                      seg1->mr_len = len;
->              }
->              *nsegs = i;
->     +
->     +       kfree(ipb);
->              return rc;
->       }
->
->     --
->     1.7.9.5
->
-> What has this got to do with net-next? It is RPC related...
->
-> --
->
-> Trond Myklebust
->
-> Linux NFS client maintainer, PrimaryData
->
-> trond.myklebust@primarydata.com <mailto:trond.myklebust@primarydata.com>
->
+On Thu, Apr 17, 2014 at 06:06:15PM +0200, Alexander Gordeev wrote:
+> In multiple MSI mode all AHCI ports (including dummy) get
+> assigned separate MSI vectors and (as result of execution
+> pci_enable_msi_exact() function) separate IRQ numbers,
+> (mapped to the MSI vectors).
+> 
+> Therefore, although interrupts from dummy ports are not
+> desired they are still enabled. We do not request IRQs
+> for dummy ports, but that only means we do not assign
+> AHCI-specific ISRs to corresponding IRQ numbers.
+> 
+> As result, dummy port interrupts still could come and
+> traverse all the way from the PCI device to the kernel,
+> causing unnecessary overhead.
+> 
+> This update disables IRQs for dummy ports and prevents
+> the described issue.
+> 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: David Milburn <dmilburn@redhat.com>
+> Cc: linux-ide@vger.kernel.org
 
-I guess I naively thought that anything under the net directory went 
-through Dave's tree.
+Applied to libata/for-3.15-fixes w/ David's tested-by added.
 
-rtg
+Thanks.
+
 -- 
-Tim Gardner tim.gardner@canonical.com
+tejun
