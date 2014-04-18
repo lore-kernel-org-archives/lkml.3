@@ -1,97 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752799AbaDRObi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 10:31:38 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:41236 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751001AbaDRObf (ORCPT
+	id S1753085AbaDROgE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 10:36:04 -0400
+Received: from asavdk4.altibox.net ([109.247.116.15]:46320 "EHLO
+	asavdk4.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752005AbaDROf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 10:31:35 -0400
+	Fri, 18 Apr 2014 10:35:59 -0400
+Date: Fri, 18 Apr 2014 16:35:53 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+Subject: Re: [PATCH 01/28] nios2: Build infrastructure
+Message-ID: <20140418143553.GB8589@ravnborg.org>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+ <1397824031-4892-2-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-In-Reply-To: <535126D2.4080406@free-electrons.com>
-References: <1397814309-32160-1-git-send-email-jjhiblot@traphandler.com>
-	<1397814309-32160-2-git-send-email-jjhiblot@traphandler.com>
-	<535126D2.4080406@free-electrons.com>
-Date: Fri, 18 Apr 2014 09:31:34 -0500
-Message-ID: <CAOCHtYiCq6SBadzashe+mwKmx8_23=-++zyhRM=dtjEbgrQ98w@mail.gmail.com>
-Subject: Re: [RFC 1/3] atmel: drm: added drm driver for the atmel hlcd controller
-From: Robert Nelson <robertcnelson@gmail.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        dri-devel@lists.freedesktop.org, airlied@linux.ie, robdclark@gmail.com,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397824031-4892-2-git-send-email-lftan@altera.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 8:21 AM, Boris BREZILLON
-<boris.brezillon@free-electrons.com> wrote:
-> Hi JJ,
->
-> On 18/04/2014 11:45, Jean-Jacques Hiblot wrote:
->> +
->> +static void update_scanout(struct drm_crtc *crtc)
->> +{
->> +     struct atmel_hlcdc_crtc *hlcdc_crtc = to_atmel_hlcdc_crtc(crtc);
->> +     struct drm_device *dev = crtc->dev;
->> +     struct atmel_hlcdc_drm_private *priv = dev->dev_private;
->> +     struct drm_framebuffer *fb = crtc->fb;
->> +
->
-> I guess you meant
->
-> struct drm_framebuffer *fb = hclcd_crtc->fb;
->
->
-> because otherwise you get an error when compiling (there are similar
-> issues below).
+On Fri, Apr 18, 2014 at 08:26:48PM +0800, Ley Foon Tan wrote:
+> This patch adds Makefile and Kconfig files required for building a
+> nios2 kernel.
 
-This fixes this with v3.15-rc1
+It is good practice to add build infrastructure last - so build is not broken.
+But for a new architecture it matters only little.
 
-diff --git a/drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_crtc.c
-b/drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_crtc.c
-index 649fa19..a111d69 100644
---- a/drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_crtc.c
-+++ b/drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_crtc.c
-@@ -81,7 +81,7 @@ static void update_scanout(struct drm_crtc *crtc)
-  struct atmel_hlcdc_crtc *hlcdc_crtc = to_atmel_hlcdc_crtc(crtc);
-  struct drm_device *dev = crtc->dev;
-  struct atmel_hlcdc_drm_private *priv = dev->dev_private;
-- struct drm_framebuffer *fb = crtc->fb;
-+ struct drm_framebuffer *fb = crtc->primary->fb;
+Some comments in the following.
 
-  struct drm_gem_cma_object *gem;
-  struct atmel_hlcd_dma_desc *desc = hlcdc_crtc->dma_descs[DMA_BASE];
-@@ -188,7 +188,7 @@ static int atmel_hlcdc_crtc_page_flip(struct drm_crtc *crtc,
-  return -EBUSY;
-  }
+	Sam
+> 
+> Signed-off-by: Ley Foon Tan <lftan@altera.com>
+> ---
+> 
+> diff --git a/arch/nios2/Kconfig b/arch/nios2/Kconfig
+> new file mode 100644
+> index 0000000..2bd0d0d7160f31a5c5890cf8a059b9f53378be6e
+> --- /dev/null
+> +++ b/arch/nios2/Kconfig
+> @@ -0,0 +1,213 @@
+> +config NIOS2
+> +	def_bool y
+> +	select OF
+> +	select OF_EARLY_FLATTREE
+> +	select USB_ARCH_HAS_HCD if USB_SUPPORT
+> +	select ARCH_WANT_OPTIONAL_GPIOLIB
+> +	select GENERIC_IRQ_PROBE
+> +	select GENERIC_IRQ_SHOW
+> +	select GENERIC_CPU_DEVICES
+> +	select GENERIC_ATOMIC64
+> +	select MODULES_USE_ELF_RELA
+> +	select IRQ_DOMAIN
+> +	select SOC_BUS
+> +	select CLKSRC_OF
+If you keep this list sorted then merge issues are less likely.
 
-- crtc->fb = fb;
-+ crtc->primary->fb = fb;
-  atmel_hlcdc_crtc->event = event;
-  update_scanout(crtc);
-  return 0;
-@@ -397,7 +397,7 @@ static int atmel_hlcdc_crtc_mode_set(struct drm_crtc *crtc,
-  hlcdc_write(dev, ATMEL_LCDC_BASECFG0,
-     LCDC_BASECFG0_BLEN_AHB_INCR16 | LCDC_BASECFG0_DLBO);
+> +menu "Advanced setup"
+> +
+> +config ADVANCED_OPTIONS
+> +	bool "Prompt for advanced kernel configuration options"
+> +	help
+> +
+> +comment "Default settings for advanced configuration options are used"
+> +	depends on !ADVANCED_OPTIONS
+> +
+> +config KERNEL_MMU_REGION_BASE_BOOL
+> +	bool "Set custom kernel MMU region base address"
+> +	depends on ADVANCED_OPTIONS
+> +	help
+> +	  This option allows you to set the virtual address of the kernel MMU region.
+> +
+> +	  Say N here unless you know what you are doing.
 
-- drm_fb_get_bpp_depth(crtc->fb->pixel_format, &depth, &bpp);
-+ drm_fb_get_bpp_depth(crtc->primary->fb->pixel_format, &depth, &bpp);
-  hlcdc_write(dev, ATMEL_LCDC_BASECFG1,
-     atmel_hlcdfb_get_rgbmode(dev->dev, depth, bpp));
-  hlcdc_write(dev, ATMEL_LCDC_BASECFG2, 0);
+All Nios2 specific options should be prefixed with NIOS2_
+This is what is done for all new arch specific symbols.
 
-Tested-by: Robert Nelson <robertcnelson@gmail.com>
+> diff --git a/arch/nios2/boot/Makefile b/arch/nios2/boot/Makefile
+> new file mode 100644
+> index 0000000..00aef5e266f9cc629f126445535f9aae6ca8962f
+> --- /dev/null
+> +++ b/arch/nios2/boot/Makefile
+> @@ -0,0 +1,51 @@
+> +#
+> +# arch/nios2/boot/Makefile
+> +#
+> +# This file is subject to the terms and conditions of the GNU General Public
+> +# License.  See the file "COPYING" in the main directory of this archive
+> +# for more details.
+> +#
+> +
+> +UIMAGE_LOADADDR = $(shell $(NM) vmlinux | awk '$$NF == "_stext" {print $$1}')
+> +UIMAGE_ENTRYADDR = $(shell $(NM) vmlinux | awk '$$NF == "_start" {print $$1}')
+> +UIMAGE_COMPRESSION = gzip
+> +
+> +OBJCOPYFLAGS_vmlinux.bin := -O binary
+> +$(obj)/vmlinux.bin: vmlinux FORCE
+> +	$(call if_changed,objcopy)
+> +
+> +$(obj)/vmlinux.gz: $(obj)/vmlinux.bin FORCE
+> +	$(call if_changed,gzip)
+> +
+> +$(obj)/vmImage: $(obj)/vmlinux.gz
+> +	$(call if_changed,uimage)
+> +	@$(kecho) 'Kernel: $@ is ready'
 
-digs out my 31/33/34, should have a patch for them in a bit...
+Add:
+targets += vmlinux.bin vmlinux.gz vmImage
+to make $(call if_changed ... actually work.
 
-Regards,
 
--- 
-Robert Nelson
-http://www.rcn-ee.com/
+> +obj-y += cpuinfo.o insnemu.o irq.o nios2_ksyms.o process.o prom.o ptrace.o \
+> +	 setup.o signal.o sys_nios2.o syscall_table.o time.o traps.o
+
+In new stuff try to avoid using ... \
+to contatenate lines.
+Use:
+obj-y += xxx
+
+This is much more readable.
+
