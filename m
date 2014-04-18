@@ -1,363 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018AbaDRATk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 20:19:40 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:43515 "EHLO smtp.outflux.net"
+	id S1751305AbaDRAYj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 20:24:39 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:48658 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317AbaDRAS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 20:18:28 -0400
+	id S1751101AbaDRAYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 20:24:35 -0400
 From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        David Howells <dhowells@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Li Zefan <lizefan@huawei.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
-        Andrew Shewmaker <agshew@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        Jens Axboe <axboe@fb.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: [PATCH v2 4/4] test: validate CONFIG_PROC_SYSCTL_STRICT_WRITES
-Date: Thu, 17 Apr 2014 17:16:23 -0700
-Message-Id: <1397780183-24633-5-git-send-email-keescook@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Kees Cook <keescook@chromium.org>, Andy Lutomirski <luto@amacapital.net>,
+        Oleg Nesterov <oleg@redhat.com>,
+        John Johansen <john.johansen@canonical.com>,
+        Will Drewry <wad@chromium.org>, Julien Tinnes <jln@chromium.org>,
+        linux-doc@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [PATCH v3 2/5] seccomp: create locked helper for setting mode
+Date: Thu, 17 Apr 2014 17:24:17 -0700
+Message-Id: <1397780660-24750-3-git-send-email-keescook@chromium.org>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397780183-24633-1-git-send-email-keescook@chromium.org>
-References: <1397780183-24633-1-git-send-email-keescook@chromium.org>
+In-Reply-To: <1397780660-24750-1-git-send-email-keescook@chromium.org>
+References: <1397780660-24750-1-git-send-email-keescook@chromium.org>
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds several behavioral tests to sysctl string and number writing
-to detect unexpected cases that behaved differently when the option
-CONFIG_PROC_SYSCTL_STRICT_WRITES was unset.
-
-[ original ]
-root@localhost:~# make test_num
-== Testing sysctl behavior against /proc/sys/kernel/domainname ==
-Writing test file ... ok
-Checking sysctl is not set to test value ... ok
-Writing sysctl from shell ... ok
-Resetting sysctl to original value ... ok
-Writing entire sysctl in single write ... ok
-Writing middle of sysctl after synchronized seek ... FAIL
-Writing beyond end of sysctl ... FAIL
-Writing sysctl with multiple long writes ... FAIL
-Writing entire sysctl in short writes ... FAIL
-Writing middle of sysctl after unsynchronized seek ... ok
-Checking sysctl maxlen is at least 65 ... ok
-Checking sysctl keeps original string on overflow append ... FAIL
-Checking sysctl stays NULL terminated on write ... ok
-Checking sysctl stays NULL terminated on overwrite ... ok
-make: *** [test_num] Error 1
-root@localhost:~# make test_string
-== Testing sysctl behavior against /proc/sys/vm/swappiness ==
-Writing test file ... ok
-Checking sysctl is not set to test value ... ok
-Writing sysctl from shell ... ok
-Resetting sysctl to original value ... ok
-Writing entire sysctl in single write ... ok
-Writing middle of sysctl after synchronized seek ... FAIL
-Writing beyond end of sysctl ... FAIL
-Writing sysctl with multiple long writes ... ok
-make: *** [test_string] Error 1
-
-[ with CONFIG_PROC_SYSCTL_STRICT_WRITES ]
-root@localhost:~# make run_tests
-== Testing sysctl behavior against /proc/sys/kernel/domainname ==
-Writing test file ... ok
-Checking sysctl is not set to test value ... ok
-Writing sysctl from shell ... ok
-Resetting sysctl to original value ... ok
-Writing entire sysctl in single write ... ok
-Writing middle of sysctl after synchronized seek ... ok
-Writing beyond end of sysctl ... ok
-Writing sysctl with multiple long writes ... ok
-Writing entire sysctl in short writes ... ok
-Writing middle of sysctl after unsynchronized seek ... ok
-Checking sysctl maxlen is at least 65 ... ok
-Checking sysctl keeps original string on overflow append ... ok
-Checking sysctl stays NULL terminated on write ... ok
-Checking sysctl stays NULL terminated on overwrite ... ok
-== Testing sysctl behavior against /proc/sys/vm/swappiness ==
-Writing test file ... ok
-Checking sysctl is not set to test value ... ok
-Writing sysctl from shell ... ok
-Resetting sysctl to original value ... ok
-Writing entire sysctl in single write ... ok
-Writing middle of sysctl after synchronized seek ... ok
-Writing beyond end of sysctl ... ok
-Writing sysctl with multiple long writes ... ok
+For multiple mode-setting callers, we will need a helper to perform the
+sanity-checking and finalization logic while the seccomp lock is held.
 
 Signed-off-by: Kees Cook <keescook@chromium.org>
 ---
- tools/testing/selftests/Makefile                |    1 +
- tools/testing/selftests/sysctl/Makefile         |   19 ++++
- tools/testing/selftests/sysctl/common_tests     |  109 +++++++++++++++++++++++
- tools/testing/selftests/sysctl/run_numerictests |   10 +++
- tools/testing/selftests/sysctl/run_stringtests  |   77 ++++++++++++++++
- 5 files changed, 216 insertions(+)
- create mode 100644 tools/testing/selftests/sysctl/Makefile
- create mode 100644 tools/testing/selftests/sysctl/common_tests
- create mode 100644 tools/testing/selftests/sysctl/run_numerictests
- create mode 100644 tools/testing/selftests/sysctl/run_stringtests
+ kernel/seccomp.c |   42 +++++++++++++++++++++++++-----------------
+ 1 file changed, 25 insertions(+), 17 deletions(-)
 
-diff --git a/tools/testing/selftests/Makefile b/tools/testing/selftests/Makefile
-index 32487ed18354..e66e710cc595 100644
---- a/tools/testing/selftests/Makefile
-+++ b/tools/testing/selftests/Makefile
-@@ -10,6 +10,7 @@ TARGETS += timers
- TARGETS += vm
- TARGETS += powerpc
- TARGETS += user
-+TARGETS += sysctl
+diff --git a/kernel/seccomp.c b/kernel/seccomp.c
+index 6d61a0b5080c..440dc2c213ac 100644
+--- a/kernel/seccomp.c
++++ b/kernel/seccomp.c
+@@ -462,26 +462,11 @@ long prctl_get_seccomp(void)
+ 	return current->seccomp.mode;
+ }
  
- all:
- 	for TARGET in $(TARGETS); do \
-diff --git a/tools/testing/selftests/sysctl/Makefile b/tools/testing/selftests/sysctl/Makefile
-new file mode 100644
-index 000000000000..3fc94dc83b44
---- /dev/null
-+++ b/tools/testing/selftests/sysctl/Makefile
-@@ -0,0 +1,19 @@
-+# Makefile for sysctl selftests.
-+# Expects CONFIG_PROC_SYSCTL_STRICT_WRITES=y.
-+
-+# No binaries, but make sure arg-less "make" doesn't trigger "run_tests".
-+all:
-+
-+# Allow specific tests to be selected.
-+test_num:
-+	@/bin/sh ./run_numerictests
-+
-+test_string:
-+	@/bin/sh ./run_stringtests
-+
-+run_tests: all test_num test_string
-+
-+# Nothing to clean up.
-+clean:
-+
-+.PHONY: all run_tests clean test_num test_string
-diff --git a/tools/testing/selftests/sysctl/common_tests b/tools/testing/selftests/sysctl/common_tests
-new file mode 100644
-index 000000000000..17d534b1b7b4
---- /dev/null
-+++ b/tools/testing/selftests/sysctl/common_tests
-@@ -0,0 +1,109 @@
-+#!/bin/sh
-+
-+TEST_FILE=$(mktemp)
-+
-+echo "== Testing sysctl behavior against ${TARGET} =="
-+
-+set_orig()
-+{
-+	echo "${ORIG}" > "${TARGET}"
+-/**
+- * prctl_set_seccomp: configures current->seccomp.mode
+- * @seccomp_mode: requested mode to use
+- * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
+- *
+- * This function may be called repeatedly with a @seccomp_mode of
+- * SECCOMP_MODE_FILTER to install additional filters.  Every filter
+- * successfully installed will be evaluated (in reverse order) for each system
+- * call the task makes.
+- *
+- * Once current->seccomp.mode is non-zero, it may not be changed.
+- *
+- * Returns 0 on success or -EINVAL on failure.
+- */
+-long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
++/* Expects to be called under seccomp lock. */
++static long _seccomp_set_mode(unsigned long seccomp_mode, char * __user filter)
+ {
+ 	long ret = -EINVAL;
+ 
+-	seccomp_lock(current);
+-
+ 	if (current->seccomp.mode &&
+ 	    current->seccomp.mode != seccomp_mode)
+ 		goto out;
+@@ -507,6 +492,29 @@ long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
+ 	current->seccomp.mode = seccomp_mode;
+ 	set_thread_flag(TIF_SECCOMP);
+ out:
++	return ret;
 +}
 +
-+set_test()
++/**
++ * prctl_set_seccomp: configures current->seccomp.mode
++ * @seccomp_mode: requested mode to use
++ * @filter: optional struct sock_fprog for use with SECCOMP_MODE_FILTER
++ *
++ * This function may be called repeatedly with a @seccomp_mode of
++ * SECCOMP_MODE_FILTER to install additional filters.  Every filter
++ * successfully installed will be evaluated (in reverse order) for each system
++ * call the task makes.
++ *
++ * Once current->seccomp.mode is non-zero, it may not be changed.
++ *
++ * Returns 0 on success or -EINVAL on failure.
++ */
++long prctl_set_seccomp(unsigned long seccomp_mode, char __user *filter)
 +{
-+	echo "${TEST_STR}" > "${TARGET}"
-+}
++	long ret;
 +
-+verify()
-+{
-+	local seen
-+	seen=$(cat "$1")
-+	if [ "${seen}" != "${TEST_STR}" ]; then
-+		return 1
-+	fi
-+	return 0
-+}
-+
-+trap 'set_orig; rm -f "${TEST_FILE}"' EXIT
-+
-+rc=0
-+
-+echo -n "Writing test file ... "
-+echo "${TEST_STR}" > "${TEST_FILE}"
-+if ! verify "${TEST_FILE}"; then
-+	echo "FAIL" >&2
-+	exit 1
-+else
-+	echo "ok"
-+fi
-+
-+echo -n "Checking sysctl is not set to test value ... "
-+if verify "${TARGET}"; then
-+	echo "FAIL" >&2
-+	exit 1
-+else
-+	echo "ok"
-+fi
-+
-+echo -n "Writing sysctl from shell ... "
-+set_test
-+if ! verify "${TARGET}"; then
-+	echo "FAIL" >&2
-+	exit 1
-+else
-+	echo "ok"
-+fi
-+
-+echo -n "Resetting sysctl to original value ... "
-+set_orig
-+if verify "${TARGET}"; then
-+	echo "FAIL" >&2
-+	exit 1
-+else
-+	echo "ok"
-+fi
-+
-+# Now that we've validated the sanity of "set_test" and "set_orig",
-+# we can use those functions to set starting states before running
-+# specific behavioral tests.
-+
-+echo -n "Writing entire sysctl in single write ... "
-+set_orig
-+dd if="${TEST_FILE}" of="${TARGET}" bs=4096 2>/dev/null
-+if ! verify "${TARGET}"; then
-+	echo "FAIL" >&2
-+	rc=1
-+else
-+	echo "ok"
-+fi
-+
-+echo -n "Writing middle of sysctl after synchronized seek ... "
-+set_test
-+dd if="${TEST_FILE}" of="${TARGET}" bs=1 seek=1 skip=1 2>/dev/null
-+if ! verify "${TARGET}"; then
-+	echo "FAIL" >&2
-+	rc=1
-+else
-+	echo "ok"
-+fi
-+
-+echo -n "Writing beyond end of sysctl ... "
-+set_orig
-+dd if="${TEST_FILE}" of="${TARGET}" bs=20 seek=2 2>/dev/null
-+if verify "${TARGET}"; then
-+        echo "FAIL" >&2
-+        rc=1
-+else
-+        echo "ok"
-+fi
-+
-+echo -n "Writing sysctl with multiple long writes ... "
-+set_orig
-+(perl -e 'print "A" x 50;'; echo "${TEST_STR}") | \
-+	dd of="${TARGET}" bs=50 2>/dev/null
-+if verify "${TARGET}"; then
-+	echo "FAIL" >&2
-+	rc=1
-+else
-+	echo "ok"
-+fi
-diff --git a/tools/testing/selftests/sysctl/run_numerictests b/tools/testing/selftests/sysctl/run_numerictests
-new file mode 100644
-index 000000000000..8510f93f2d14
---- /dev/null
-+++ b/tools/testing/selftests/sysctl/run_numerictests
-@@ -0,0 +1,10 @@
-+#!/bin/sh
-+
-+SYSCTL="/proc/sys"
-+TARGET="${SYSCTL}/vm/swappiness"
-+ORIG=$(cat "${TARGET}")
-+TEST_STR=$(( $ORIG + 1 ))
-+
-+. ./common_tests
-+
-+exit $rc
-diff --git a/tools/testing/selftests/sysctl/run_stringtests b/tools/testing/selftests/sysctl/run_stringtests
-new file mode 100644
-index 000000000000..90a9293d520c
---- /dev/null
-+++ b/tools/testing/selftests/sysctl/run_stringtests
-@@ -0,0 +1,77 @@
-+#!/bin/sh
-+
-+SYSCTL="/proc/sys"
-+TARGET="${SYSCTL}/kernel/domainname"
-+ORIG=$(cat "${TARGET}")
-+TEST_STR="Testing sysctl"
-+
-+. ./common_tests
-+
-+# Only string sysctls support seeking/appending.
-+MAXLEN=65
-+
-+echo -n "Writing entire sysctl in short writes ... "
-+set_orig
-+dd if="${TEST_FILE}" of="${TARGET}" bs=1 2>/dev/null
-+if ! verify "${TARGET}"; then
-+	echo "FAIL" >&2
-+	rc=1
-+else
-+	echo "ok"
-+fi
-+
-+echo -n "Writing middle of sysctl after unsynchronized seek ... "
-+set_test
-+dd if="${TEST_FILE}" of="${TARGET}" bs=1 seek=1 2>/dev/null
-+if verify "${TARGET}"; then
-+	echo "FAIL" >&2
-+	rc=1
-+else
-+	echo "ok"
-+fi
-+
-+echo -n "Checking sysctl maxlen is at least $MAXLEN ... "
-+set_orig
-+perl -e 'print "A" x ('"${MAXLEN}"'-2), "B";' | \
-+	dd of="${TARGET}" bs="${MAXLEN}" 2>/dev/null
-+if ! grep -q B "${TARGET}"; then
-+	echo "FAIL" >&2
-+	rc=1
-+else
-+	echo "ok"
-+fi
-+
-+echo -n "Checking sysctl keeps original string on overflow append ... "
-+set_orig
-+perl -e 'print "A" x ('"${MAXLEN}"'-1), "B";' | \
-+	dd of="${TARGET}" bs=$(( MAXLEN - 1 )) 2>/dev/null
-+if grep -q B "${TARGET}"; then
-+	echo "FAIL" >&2
-+	rc=1
-+else
-+	echo "ok"
-+fi
-+
-+echo -n "Checking sysctl stays NULL terminated on write ... "
-+set_orig
-+perl -e 'print "A" x ('"${MAXLEN}"'-1), "B";' | \
-+	dd of="${TARGET}" bs="${MAXLEN}" 2>/dev/null
-+if grep -q B "${TARGET}"; then
-+	echo "FAIL" >&2
-+	rc=1
-+else
-+	echo "ok"
-+fi
-+
-+echo -n "Checking sysctl stays NULL terminated on overwrite ... "
-+set_orig
-+perl -e 'print "A" x ('"${MAXLEN}"'-1), "BB";' | \
-+	dd of="${TARGET}" bs=$(( $MAXLEN + 1 )) 2>/dev/null
-+if grep -q B "${TARGET}"; then
-+	echo "FAIL" >&2
-+	rc=1
-+else
-+	echo "ok"
-+fi
-+
-+exit $rc
++	seccomp_lock(current);
++	ret = _seccomp_set_mode(seccomp_mode, filter);
+ 	seccomp_unlock(current);
+ 	return ret;
+ }
 -- 
 1.7.9.5
 
