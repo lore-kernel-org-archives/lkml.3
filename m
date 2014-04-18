@@ -1,101 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772AbaDRWLv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 18:11:51 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:34635 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798AbaDRWLt (ORCPT
+	id S1754823AbaDRWMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 18:12:51 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:23735 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754335AbaDRWMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 18:11:49 -0400
-Message-ID: <5351A31E.7080109@atmel.com>
-Date: Sat, 19 Apr 2014 00:11:42 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Boris BREZILLON <b.brezillon.dev@gmail.com>,
-        Bo Shen <voice.shen@atmel.com>,
-        Boris BREZILLON <b.brezillon@overkiz.com>
-CC: Mark Brown <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <devicetree@vger.kernel.org>, Rob Landley <rob@landley.net>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        <linux-kernel@vger.kernel.org>, Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH 0/8] ARM: at91: sama5d3: enable sound support
-References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <53518C76.2020005@atmel.com> <5351A1DE.9070801@gmail.com>
-In-Reply-To: <5351A1DE.9070801@gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+	Fri, 18 Apr 2014 18:12:41 -0400
+X-AuditID: cbfec37d-b7f616d0000059df-17-5351a35857ee
+Message-id: <5351A355.1030607@samsung.com>
+Date: Fri, 18 Apr 2014 16:12:37 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Jiri Slaby <jslaby@suse.cz>, stable@vger.kernel.org
+Cc: linux@roeck-us.net, satoru.takeuchi@gmail.com,
+        linux-kernel@vger.kernel.org, Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.12 00/72] 3.12.18-stable review
+References: <cover.1397812482.git.jslaby@suse.cz>
+In-reply-to: <cover.1397812482.git.jslaby@suse.cz>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.134.209]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsVy+t9hP92IxYHBBh+Pc1t8/r2L1eLyrjls
+	Fk8WnmGymHpqAovFgo2PGB1YPXbOusvusfN7A7vHmQVH2D0+b5ILYInisklJzcksSy3St0vg
+	yth45B9rwWG2is4JZ5kaGGeydjFyckgImEj0XX0KZYtJXLi3nq2LkYtDSGAZo8T1yY8ZIZxe
+	Jomjn3eyQzjbGCUuNv5mB2nhFdCSaL/wFsjm4GARUJU4OiEOJMwmoC7x+fUOsBIhATmJpiWr
+	mUFsUYEIiVdnJ7JAtApK/Jh8D8wWETCXeHDnAFg9s0CJxPXnX9hAbGEBU4kF8z6zgIwXEjCU
+	uLBTBsTkFDCSuPxZF6LaTOJRyzpmCFteYvOat8wQW5Ul/lw+xQTxl7LExMbbLBMYRWYhWTwL
+	SfssJO0LGJlXMYqVFicXFCelp1aY6BUn5haX5qXrJefnbmKExEntDsb7X20OMQpwMCrx8D6s
+	CgwWYk0sK67MPcQowcGsJMJ7tQsoxJuSWFmVWpQfX1Sak1p8iJGJg1OqgXFP+EvdiwryN910
+	pL5q/fWampLhs2TNVu67kS82hnB82nRi61GO7iXJ15Ju5b6ZWeizLybqiIKDufWykwl5E0Ir
+	1/EffRZ/6ODJcNtZTqFan54nSiU3Klnx91R/k9ozwce5I/Qje/yEvojNa/wSf9RzZ4u6/usI
+	DQtw9+q5zGbXrZ1mq1Itq8RSnJFoqMVcVJwIALtd6JxxAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/04/2014 00:06, Boris BREZILLON :
-> 
-> On 18/04/2014 22:35, Nicolas Ferre wrote:
->> On 17/03/2014 10:45, Bo Shen :
->>> This patch add sound support on sama5d3xek board.
->>>
->>> This patch series based on the following patch set:
->>>   clk: at91: better support for the PCKs
->>>   http://comments.gmane.org/gmane.linux.kernel/1664477
->>>
->>>
->>> Bo Shen (5):
->>>   ARM: at91: sama5d3: add DMA property for SSC devices
->>>   ARM: at91: sama5d3: disable sound by default
->>>   ARM: at91: sama5d3: correct the sound compatible string
->>>   ARM: at91: sama5d3: add the missing property
->>>   ARM: at91: sama5d3: clock for ssc from rk pin
->>>
->>> Boris BREZILLON (3):
->>>   ASoC: atmel: support CCF based clks
->>>   ASoC: atmel: document clock properties of the wm8904 driver
->>>   ARM: at91/dt: add clock properties to the wm8904 codec node
->> Hi Voice and Boris,
->>
->> For this series I am a little bit puzzled: should I take the ASoC part
->> of it? I see no acknowledgement from Mark and I also read some messages
->> still discussing about CCF and wm8904 afterwards.
->>
->> So, I take the 5 patches by Voice Shen and tell me what is the proper
->> sequence with this wm8904 work.
-> 
-> Bo was waiting for the "move sam9n12 SoC to the CCF" (which has been
-> submitted earlier this week) series before sending a new version of his
-> "wm8904: add CCF support" series.
+On 04/18/2014 03:21 AM, Jiri Slaby wrote:
+> This is the start of the stable review cycle for the 3.12.18 release.
+> There are 72 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Wed Apr 23 09:14:42 2014
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.18-rc1.xz
+> and the diffstat can be found below.
+>
+> thanks,
+> js
+>
 
-Ok, that makes perfect sense.
-So I have the whole dependency graph in mind now: we will have fun
-stacking everything in the proper order ;-)
+Compiled and booted on my system. No regressions in dmesg.
 
-Thanks for the clarification, Bye.
-
-
->> I will be happy to stack more patches about this topic during the 3.16
->> development phase.
->>
->>
->> Otherwise, the 5 patches by Voice go into at91-3.16-dt branch.
->>
->> Thanks, bye.
->>
->>
->>>  .../devicetree/bindings/sound/atmel-wm8904.txt     |  2 ++
->>>  arch/arm/boot/dts/sama5d3.dtsi                     |  6 ++++++
->>>  arch/arm/boot/dts/sama5d3xmb.dtsi                  | 11 +++++++++-
->>>  sound/soc/atmel/atmel_wm8904.c                     | 25 +++++++++++-----------
->>>  4 files changed, 31 insertions(+), 13 deletions(-)
->>>
->>
-> 
-> 
-> 
+-- Shuah
 
 
 -- 
-Nicolas Ferre
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
