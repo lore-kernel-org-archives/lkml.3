@@ -1,244 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751314AbaDRB7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 21:59:42 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61407 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751041AbaDRB7i convert rfc822-to-8bit (ORCPT
+	id S1751290AbaDRCDO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 22:03:14 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:15773 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaDRCDM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 21:59:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,882,1389772800"; 
-   d="scan'208";a="495110713"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>
-CC: Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>
-Subject: RE: [PATCH] ACPICA: Tables: Skip NULL entries in RSDT and XSDT.
-Thread-Topic: [PATCH] ACPICA: Tables: Skip NULL entries in RSDT and XSDT.
-Thread-Index: AQHPWqkiRbIEWi18XUqckj4NN5SyAZsWnSKw
-Date: Fri, 18 Apr 2014 01:59:32 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802554B14@SHSMSX101.ccr.corp.intel.com>
-References: <261e2207fab4a185b44fb27dbf9bc68588aea713.1397785844.git.lv.zheng@intel.com>
-In-Reply-To: <261e2207fab4a185b44fb27dbf9bc68588aea713.1397785844.git.lv.zheng@intel.com>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 17 Apr 2014 22:03:12 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfee691-b7efc6d0000039d3-cb-535087dec48f
+Content-transfer-encoding: 8BIT
+Message-id: <1397786468.7727.31.camel@kjgkr>
+Subject: Re: [PATCH V2] fs/f2fs/node.c: add static to recover_inline_xattr
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>
+Date: Fri, 18 Apr 2014 11:01:08 +0900
+In-reply-to: <20140417180154.7a7d35366ef948ab867b5108@skynet.be>
+References: <20140417180154.7a7d35366ef948ab867b5108@skynet.be>
+Organization: Samsung
+X-Mailer: Evolution 3.2.3-0ubuntu6
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t8zA9177QHBBvMnqVrMWb+GzaLr9082
+	i8u75rA5MHucmPGbxeNu9z9mj8+b5AKYo7hsUlJzMstSi/TtErgytt7qYSlYzF7x5s0mtgbG
+	H6xdjJwcEgImEnNuf2KEsMUkLtxbz9bFyMUhJLCMUWLR4yZGmKKHe18wQiQWMUpsWPaOCSTB
+	KyAo8WPyPZYuRg4OZgF5iSOXskHCzALqEpPmLWKGqH/FKLGy9QcjRL2OxNc5n5hBbGEBL4ne
+	q9/BetkEtCU27zcACQsJKEq83X8X7DgRAVWJxy9us0PMDJZYv74NbAwLUPzQp49sIDangIPE
+	wsd7WCB67SWWT70PVsMvICpxeOF2Zoj7lSR2t3eyg9wjIbCPXWJ2908miEECEt8mHwK7QUJA
+	VmLTAah6SYmDK26wTGCUmIXky1kIX85C8uUCRuZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmb
+	GCFxNnEH4/0D1ocYk4E2TmSWEk3OB8ZpXkm8obGZkYWpiamxkbmlGWnCSuK86Y+SgoQE0hNL
+	UrNTUwtSi+KLSnNSiw8xMnFwSjUwTipXufjca2dpLM+hT5IlepMenPcuvmo8u6JAsuo5t+X8
+	CTPDUjKDeKX5f/ovFvSv4b+vc8VObu8CtQUbviaLnPXlef3qAevO4rb3ce4rnzw9Ul8puZPN
+	99Q5m7xzq84m3pvU8cZ6/bKbu2wt5sT/2f/xGUdN/cEl2+P237FMjHgzT9xxD7vxHCWW4oxE
+	Qy3mouJEAAylG1vJAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t9jAd177QHBBtuWKVrMWb+GzaLr9082
+	i8u75rA5MHucmPGbxeNu9z9mj8+b5AKYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwM
+	dQ0tLcyVFPISc1NtlVx8AnTdMnOANikplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0Jgusx
+	MkADCesYM7be6mEpWMxe8ebNJrYGxh+sXYycHBICJhIP975ghLDFJC7cW8/WxcjFISSwiFFi
+	w7J3TCAJXgFBiR+T77F0MXJwMAvISxy5lA0SZhZQl5g0bxEzRP0rRomVrT8YIep1JL7O+cQM
+	YgsLeEn0Xv0O1ssmoC2xeb8BSFhIQFHi7f67YDeICKhKPH5xmx1iZrDE+vVtYGNYgOKHPn1k
+	A7E5BRwkFj7ewwLRay+xfOp9sBp+AVGJwwu3M0PcrySxu72TfQKj0CwkV89CuHoWkqsXMDKv
+	YhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiO4mdSOxhXNlgcYhTgYFTi4RXQCwgWYk0sK67M
+	PcQowcGsJMKrXAoU4k1JrKxKLcqPLyrNSS0+xJgMdPhEZinR5HxggskriTc0NjEzsjQyszAy
+	MTcnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBsb8W2xlsy7zWPm8jFeQ/rL9qOmS7Qp7
+	Hq1tK3D6q7q7/bX3hfMf5Ntq2NfyeJe4CC0/6fmJa4bo5uL5PQGHpdvOOznM/yDxJXV5bWVR
+	l+BDz5Uzp0yYtOpd8hVrdpUylem3p7os7ZTw/83/x/afEtMexbgTK2dFPVzNvG2emoyy6567
+	P+/z7y9TYinOSDTUYi4qTgQAJerqqyYDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Stable reviewers
+Hi,
 
-This patch is not included in any upstream kernel, so it might not follow the stable rule.
-If you think you need more information, please ignore this message.
-This urgent fix is sent here for people who are monitoring stable and seeking for this fix.
+This was already resolved by Jingoo Han.
+Thanks,
 
-Thanks and best regards
--Lv
-
-> From: Zheng, Lv
-> Sent: Friday, April 18, 2014 9:53 AM
+2014-04-17 (목), 18:01 +0200, Fabian Frederick:
+> recover_inline_xattr is only used in node.c
 > 
-> Note that this patch is only used for stable kernels, upstream kernels
-> will have this problem fixed in ACPICA 201303-04 release.  So upstream
-> kernels shouldn't merge this commit.
-> 
-> It is reported that there are buggy BIOSes in the world: AMI uses a XSDt
-> compiler for early BIOSes, this compiler will generate XSDT with a NULL
-> entry.  The affected BIOS versions are "AMI BIOS F2-F4".
-> 
-> Original solution on Linux is to use an alternative heathy root table
-> instead of the ill one.  This commit is refined by the following ACPICA
-> commit that tries to reduce the source code differences between Linux and
-> ACPICA upstream.
->   Commit: 671cc68dc61f029d44b43a681356078e02d8dab8
->   Subject: ACPICA: Back port and refine validation of the XSDT root table.
-> But according to the bug report, the XSDT in fact is not broken, we should
-> just add NULL entry sanity check before installing a table address from
-> XSDT.
-> 
-> With the NULL entry sanity check implemented, the XSDT validation is
-> useless because:
-> 1. If XSDT contains NULL entries, it can be bypassed by the new sanity
->    check mechanism;
-> 2. If RSDP contains a bad XSDT address, invoking XSDT validation will still
->    lead to kernel crash.
-> 
-> This patch deletes XSDT validation logics and adds code to skip NULL
-> entries that can be found in RSDT or XSDT. Lv Zheng.
-> 
-> Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=73911
-> Buglink: https://bugs.archlinux.org/task/39811
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> Reported-and-tested-by: Bruce Chiarelli <mano155@gmail.com>
-> Reported-and-tested-by: Spyros Stathopoulos <spystath@gmail.com>
-> Cc: Zhao Yakui <yakui.zhao@intel.com>
-> Cc: <stable@vger.kernel.org> # 3.14.x: 671cc68: ACPICA: Back port and refine validation of the XSDT root table.
+> Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Fabian Frederick <fabf@skynet.be>
 > ---
->  drivers/acpi/acpica/tbutils.c |  116 ++++-------------------------------------
->  1 file changed, 11 insertions(+), 105 deletions(-)
+>  fs/f2fs/node.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/drivers/acpi/acpica/tbutils.c b/drivers/acpi/acpica/tbutils.c
-> index 6412d3c..aaea4e2 100644
-> --- a/drivers/acpi/acpica/tbutils.c
-> +++ b/drivers/acpi/acpica/tbutils.c
-> @@ -49,8 +49,6 @@
->  ACPI_MODULE_NAME("tbutils")
-> 
->  /* Local prototypes */
-> -static acpi_status acpi_tb_validate_xsdt(acpi_physical_address address);
-> -
->  static acpi_physical_address
->  acpi_tb_get_root_table_entry(u8 *table_entry, u32 table_entry_size);
-> 
-> @@ -357,87 +355,6 @@ acpi_tb_get_root_table_entry(u8 *table_entry, u32 table_entry_size)
-> 
->  /*******************************************************************************
->   *
-> - * FUNCTION:    acpi_tb_validate_xsdt
-> - *
-> - * PARAMETERS:  address             - Physical address of the XSDT (from RSDP)
-> - *
-> - * RETURN:      Status. AE_OK if the table appears to be valid.
-> - *
-> - * DESCRIPTION: Validate an XSDT to ensure that it is of minimum size and does
-> - *              not contain any NULL entries. A problem that is seen in the
-> - *              field is that the XSDT exists, but is actually useless because
-> - *              of one or more (or all) NULL entries.
-> - *
-> - ******************************************************************************/
-> -
-> -static acpi_status acpi_tb_validate_xsdt(acpi_physical_address xsdt_address)
-> -{
-> -	struct acpi_table_header *table;
-> -	u8 *next_entry;
-> -	acpi_physical_address address;
-> -	u32 length;
-> -	u32 entry_count;
-> -	acpi_status status;
-> -	u32 i;
-> -
-> -	/* Get the XSDT length */
-> -
-> -	table =
-> -	    acpi_os_map_memory(xsdt_address, sizeof(struct acpi_table_header));
-> -	if (!table) {
-> -		return (AE_NO_MEMORY);
-> -	}
-> -
-> -	length = table->length;
-> -	acpi_os_unmap_memory(table, sizeof(struct acpi_table_header));
-> -
-> -	/*
-> -	 * Minimum XSDT length is the size of the standard ACPI header
-> -	 * plus one physical address entry
-> -	 */
-> -	if (length < (sizeof(struct acpi_table_header) + ACPI_XSDT_ENTRY_SIZE)) {
-> -		return (AE_INVALID_TABLE_LENGTH);
-> -	}
-> -
-> -	/* Map the entire XSDT */
-> -
-> -	table = acpi_os_map_memory(xsdt_address, length);
-> -	if (!table) {
-> -		return (AE_NO_MEMORY);
-> -	}
-> -
-> -	/* Get the number of entries and pointer to first entry */
-> -
-> -	status = AE_OK;
-> -	next_entry = ACPI_ADD_PTR(u8, table, sizeof(struct acpi_table_header));
-> -	entry_count = (u32)((table->length - sizeof(struct acpi_table_header)) /
-> -			    ACPI_XSDT_ENTRY_SIZE);
-> -
-> -	/* Validate each entry (physical address) within the XSDT */
-> -
-> -	for (i = 0; i < entry_count; i++) {
-> -		address =
-> -		    acpi_tb_get_root_table_entry(next_entry,
-> -						 ACPI_XSDT_ENTRY_SIZE);
-> -		if (!address) {
-> -
-> -			/* Detected a NULL entry, XSDT is invalid */
-> -
-> -			status = AE_NULL_ENTRY;
-> -			break;
-> -		}
-> -
-> -		next_entry += ACPI_XSDT_ENTRY_SIZE;
-> -	}
-> -
-> -	/* Unmap table */
-> -
-> -	acpi_os_unmap_memory(table, length);
-> -	return (status);
-> -}
-> -
-> -/*******************************************************************************
-> - *
->   * FUNCTION:    acpi_tb_parse_root_table
->   *
->   * PARAMETERS:  rsdp                    - Pointer to the RSDP
-> @@ -502,25 +419,6 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
->  	 */
->  	acpi_os_unmap_memory(rsdp, sizeof(struct acpi_table_rsdp));
-> 
-> -	/*
-> -	 * If it is present and used, validate the XSDT for access/size
-> -	 * and ensure that all table entries are at least non-NULL
-> -	 */
-> -	if (table_entry_size == ACPI_XSDT_ENTRY_SIZE) {
-> -		status = acpi_tb_validate_xsdt(address);
-> -		if (ACPI_FAILURE(status)) {
-> -			ACPI_BIOS_WARNING((AE_INFO,
-> -					   "XSDT is invalid (%s), using RSDT",
-> -					   acpi_format_exception(status)));
-> -
-> -			/* Fall back to the RSDT */
-> -
-> -			address =
-> -			    (acpi_physical_address) rsdp->rsdt_physical_address;
-> -			table_entry_size = ACPI_RSDT_ENTRY_SIZE;
-> -		}
-> -	}
-> -
->  	/* Map the RSDT/XSDT table header to get the full table length */
-> 
->  	table = acpi_os_map_memory(address, sizeof(struct acpi_table_header));
-> @@ -592,12 +490,20 @@ acpi_status __init acpi_tb_parse_root_table(acpi_physical_address rsdp_address)
-> 
->  		/* Get the table physical address (32-bit for RSDT, 64-bit for XSDT) */
-> 
-> +		address = acpi_tb_get_root_table_entry(table_entry, table_entry_size);
-> +
-> +		/* Skip NULL entry in RSDT/XSDT */
-> +
-> +		if (!address) {
-> +			goto next_table;
-> +		}
-> +
->  		acpi_gbl_root_table_list.tables[acpi_gbl_root_table_list.
-> -						current_table_count].address =
-> -		    acpi_tb_get_root_table_entry(table_entry, table_entry_size);
-> +						current_table_count].address = address;
-> +		acpi_gbl_root_table_list.current_table_count++;
-> 
-> +next_table:
->  		table_entry += table_entry_size;
-> -		acpi_gbl_root_table_list.current_table_count++;
->  	}
-> 
->  	/*
-> --
-> 1.7.10
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index a161e95..3ce4beb 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -1534,7 +1534,7 @@ void recover_node_page(struct f2fs_sb_info *sbi, struct page *page,
+>  	clear_node_page_dirty(page);
+>  }
+>  
+> -void recover_inline_xattr(struct inode *inode, struct page *page)
+> +static void recover_inline_xattr(struct inode *inode, struct page *page)
+>  {
+>  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
+>  	void *src_addr, *dst_addr;
+
+-- 
+Jaegeuk Kim
+Samsung
 
