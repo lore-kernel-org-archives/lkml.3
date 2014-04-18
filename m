@@ -1,186 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663AbaDRULu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 16:11:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:35512 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752263AbaDRULs (ORCPT
+	id S1754175AbaDRUXv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 16:23:51 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:59168 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482AbaDRUXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 16:11:48 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Guenter Roeck <linux@roeck-us.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Shuge <shuge@allwinnertech.com>, kevin@allwinnertech.com,
-        Chen-Yu Tsai <wens@csie.org>, Hans de Goede <hdegoede@redhat.com>,
-        Carlo Caione <carlo@caione.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, dev@linux-sunxi.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3] regmap: i2c: fallback to SMBus if the adapter does not support standard I2C
-Date: Fri, 18 Apr 2014 22:11:41 +0200
-Message-Id: <1397851901-16390-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397727612-32103-1-git-send-email-boris.brezillon@free-electrons.com>
-References: <1397727612-32103-1-git-send-email-boris.brezillon@free-electrons.com>
+	Fri, 18 Apr 2014 16:23:47 -0400
+From: Konrad Zapalowicz <bergo.torino@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Konrad M Zapalowicz <bergo.torino@gmail.com>
+Subject: [PATCH 0/2] staging: rtl8188eu: fix checkpatch errors.
+Date: Fri, 18 Apr 2014 22:23:05 +0200
+Message-Id: <1397852587-8170-1-git-send-email-bergo.torino@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some I2C adapters are only compatible with the SMBus protocol and do not
-support standard I2C transfers.
+From: Konrad M Zapalowicz <bergo.torino@gmail.com>
 
-Fallback to SMBus transfers if we encounter such kind of adapters.
-The transfer type is chosen according to the val_bits field in the regmap
-config.
+This patch removes the following checkpatch errors:
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
-Changes since v2:
-- fix regmap_get_i2c_bus scope (declare as static)
-- fix reg width check in reg_read/write functions
-- add reg_bits check in regmap_get_i2c_bus function
-- 
+rtl8188eu/core/rtw_p2p.c:
+    - 1508: ERROR: code indent should use tabs where possible
+    - 1509: ERROR: code indent should use tabs where possible
+    - 1510: ERROR: code indent should use tabs where possible
+rtl8188eu/core/rtw_recv.c
+    - 1874: ERROR: code indent should use tabs where possible
 
- drivers/base/regmap/regmap-i2c.c | 104 ++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 102 insertions(+), 2 deletions(-)
+Konrad M Zapalowicz (2):
+  staging: rtl8188eu: fix spaces instead of tabs for rtw_p2p.c
+  staging: rtl8188eu: fix spaces instead of tabs for rtw_recv.c
 
-diff --git a/drivers/base/regmap/regmap-i2c.c b/drivers/base/regmap/regmap-i2c.c
-index ebd1895..0a43211 100644
---- a/drivers/base/regmap/regmap-i2c.c
-+++ b/drivers/base/regmap/regmap-i2c.c
-@@ -14,6 +14,79 @@
- #include <linux/i2c.h>
- #include <linux/module.h>
- 
-+
-+static int regmap_smbus_byte_reg_read(void *context, unsigned int reg,
-+				      unsigned int *val)
-+{
-+	struct device *dev = context;
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+	int ret;
-+
-+	if (reg > 0xff)
-+		return -EINVAL;
-+
-+	ret = i2c_smbus_read_byte_data(i2c, reg);
-+	if (ret < 0)
-+		return ret;
-+
-+	*val = ret;
-+
-+	return 0;
-+}
-+
-+static int regmap_smbus_byte_reg_write(void *context, unsigned int reg,
-+				       unsigned int val)
-+{
-+	struct device *dev = context;
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+
-+	if (val > 0xff || reg > 0xff)
-+		return -EINVAL;
-+
-+	return i2c_smbus_write_byte_data(i2c, reg, val);
-+}
-+
-+static struct regmap_bus regmap_smbus_byte = {
-+	.reg_write = regmap_smbus_byte_reg_write,
-+	.reg_read = regmap_smbus_byte_reg_read,
-+};
-+
-+static int regmap_smbus_word_reg_read(void *context, unsigned int reg,
-+				      unsigned int *val)
-+{
-+	struct device *dev = context;
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+	int ret;
-+
-+	if (reg > 0xff)
-+		return -EINVAL;
-+
-+	ret = i2c_smbus_read_word_data(i2c, reg);
-+	if (ret < 0)
-+		return ret;
-+
-+	*val = ret;
-+
-+	return 0;
-+}
-+
-+static int regmap_smbus_word_reg_write(void *context, unsigned int reg,
-+				       unsigned int val)
-+{
-+	struct device *dev = context;
-+	struct i2c_client *i2c = to_i2c_client(dev);
-+
-+	if (val > 0xffff || reg > 0xff)
-+		return -EINVAL;
-+
-+	return i2c_smbus_write_word_data(i2c, reg, val);
-+}
-+
-+static struct regmap_bus regmap_smbus_word = {
-+	.reg_write = regmap_smbus_word_reg_write,
-+	.reg_read = regmap_smbus_word_reg_read,
-+};
-+
- static int regmap_i2c_write(void *context, const void *data, size_t count)
- {
- 	struct device *dev = context;
-@@ -97,6 +170,23 @@ static struct regmap_bus regmap_i2c = {
- 	.read = regmap_i2c_read,
- };
- 
-+static const struct regmap_bus *regmap_get_i2c_bus(struct i2c_client *i2c,
-+					const struct regmap_config *config)
-+{
-+	if (i2c_check_functionality(i2c->adapter, I2C_FUNC_I2C))
-+		return &regmap_i2c;
-+	else if (config->val_bits == 16 && config->reg_bits == 8 &&
-+		 i2c_check_functionality(i2c->adapter,
-+					 I2C_FUNC_SMBUS_WORD_DATA))
-+		return &regmap_smbus_word;
-+	else if (config->val_bits == 8 && config->reg_bits == 8 &&
-+		 i2c_check_functionality(i2c->adapter,
-+					 I2C_FUNC_SMBUS_BYTE_DATA))
-+		return &regmap_smbus_byte;
-+
-+	return ERR_PTR(-ENOTSUPP);
-+}
-+
- /**
-  * regmap_init_i2c(): Initialise register map
-  *
-@@ -109,7 +199,12 @@ static struct regmap_bus regmap_i2c = {
- struct regmap *regmap_init_i2c(struct i2c_client *i2c,
- 			       const struct regmap_config *config)
- {
--	return regmap_init(&i2c->dev, &regmap_i2c, &i2c->dev, config);
-+	const struct regmap_bus *bus = regmap_get_i2c_bus(i2c, config);
-+
-+	if (IS_ERR(bus))
-+		return ERR_PTR(PTR_ERR(bus));
-+
-+	return regmap_init(&i2c->dev, bus, &i2c->dev, config);
- }
- EXPORT_SYMBOL_GPL(regmap_init_i2c);
- 
-@@ -126,7 +221,12 @@ EXPORT_SYMBOL_GPL(regmap_init_i2c);
- struct regmap *devm_regmap_init_i2c(struct i2c_client *i2c,
- 				    const struct regmap_config *config)
- {
--	return devm_regmap_init(&i2c->dev, &regmap_i2c, &i2c->dev, config);
-+	const struct regmap_bus *bus = regmap_get_i2c_bus(i2c, config);
-+
-+	if (IS_ERR(bus))
-+		return ERR_PTR(PTR_ERR(bus));
-+
-+	return devm_regmap_init(&i2c->dev, bus, &i2c->dev, config);
- }
- EXPORT_SYMBOL_GPL(devm_regmap_init_i2c);
- 
+ drivers/staging/rtl8188eu/core/rtw_p2p.c  | 6 +++---
+ drivers/staging/rtl8188eu/core/rtw_recv.c | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
 -- 
-1.8.3.2
+1.8.1.2
 
