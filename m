@@ -1,95 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaDRKWH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 06:22:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5263 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613AbaDRKVL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 06:21:11 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrien BAK <adrien.bak@metascale.org>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/3] perf tools: Error reporting improvement
-Date: Fri, 18 Apr 2014 12:20:43 +0200
-Message-Id: <1397816443-14630-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1397816443-14630-1-git-send-email-jolsa@redhat.com>
-References: <1397816443-14630-1-git-send-email-jolsa@redhat.com>
+	id S1752197AbaDRKX0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 06:23:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:60667 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750857AbaDRKXV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 06:23:21 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: [PATCH 0/8] USB3 support for Armada 38x
+Date: Fri, 18 Apr 2014 12:22:35 +0200
+Message-Id: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Adrien BAK <adrien.bak@metascale.org>
+Hello,
 
-In the current version, when using perf record, if something goes
-wrong in tools/perf/builtin-record.c:375
-  session = perf_session__new(file, false, NULL);
+This patch set adds the USB3 support for the Armada 38x and also
+prepares the support for Armada 375. These SoCs use an xHCI but still
+need specific initialization, mainly to setup the windows memory on
+the mbus.
 
-The error message:
-"Not enough memory for reading per file header"
+The first patch extend the the xhci-plat driver to allow to register
+platform specific functions.
 
-is issued. This error message seems to be outdated and is not very
-helpful.  This patch propose to replace this error message by
-"Perf session creation failed"
+The second patch use it to setup the windows memory on the mbus for
+Armada 38x.
 
-I believe this issue has been brought to lkml:
-https://lkml.org/lkml/2014/2/24/458
-although this patch only tackle a (small) part of the issue.
+Then the 3rd patch update he binding documentation.
 
-Additionnaly, this patch improves error reporting in
-tools/perf/util/data.c open_file_write.
+This first 3 patches should go through the xhci subsystem, I really
+would like to have a feedback on the 1st patch from the USB
+maintainers.
 
-Currently, if the call to open fails, the user is unaware of it.
-This patch logs the error, before returning the error code to
-the caller.
+The rest of the series is more platform specific and should go through
+the mvebu tree, except the last patch that should be taken directly by
+the arm-soc maintainer.
 
-Reported-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Adrien BAK <adrien.bak@metascale.org>
-Link: http://lkml.kernel.org/r/1397786443.3093.4.camel@beast
-[ Reorganize the changelog into paragraphs ]
-[ Added empty line after fd declaration in open_file_write ]
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/builtin-record.c | 2 +-
- tools/perf/util/data.c      | 9 ++++++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
+The support for Armada 375 is coming soon.
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index eb524f9..8ce62ef 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -374,7 +374,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 
- 	session = perf_session__new(file, false, NULL);
- 	if (session == NULL) {
--		pr_err("Not enough memory for reading perf file header\n");
-+		pr_err("Perf session creation failed.\n");
- 		return -1;
- 	}
- 
-diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
-index 1fbcd8b..55de44e 100644
---- a/tools/perf/util/data.c
-+++ b/tools/perf/util/data.c
-@@ -86,10 +86,17 @@ static int open_file_read(struct perf_data_file *file)
- 
- static int open_file_write(struct perf_data_file *file)
- {
-+	int fd;
-+
- 	if (check_backup(file))
- 		return -1;
- 
--	return open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-+	fd = open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-+
-+	if (fd < 0)
-+		pr_err("failed to open %s : %s\n", file->path, strerror(errno));
-+
-+	return fd;
- }
- 
- static int open_file(struct perf_data_file *file)
+Thanks,
+
+Gregory
+
+Gregory CLEMENT (8):
+  usb: host: xhci-plat: Allow to register glue code using the device
+    tree
+  usb: host: xhci-plat: Add support for the Armada 38x glue code
+  xhci-platform: Add a new controller using xhci: Armada 38x
+  ARM: mvebu: Add USB3 UTMI support
+  ARM: mvebu: Add Device Tree description of xHCI hosts on Armada 38x
+  ARM: mvebu: Add USB3 support for Armada 38x
+  ARM: configs: Add usb_xhci_mvebu to mvebu_v7_defconfig
+  ARM: configs: Add usb_xhci_mvebu to multi_v7_defconfig
+
+ Documentation/devicetree/bindings/usb/usb-xhci.txt |   3 +-
+ arch/arm/boot/dts/armada-385-db.dts                |   8 ++
+ arch/arm/boot/dts/armada-385-rd.dts                |   4 +
+ arch/arm/boot/dts/armada-38x.dtsi                  |  17 ++++
+ arch/arm/configs/multi_v7_defconfig                |   1 +
+ arch/arm/configs/mvebu_v7_defconfig                |   1 +
+ arch/arm/mach-mvebu/Kconfig                        |   1 +
+ arch/arm/mach-mvebu/Makefile                       |   2 +-
+ arch/arm/mach-mvebu/usb-utmi.c                     |  64 +++++++++++++
+ drivers/usb/host/Kconfig                           |   7 ++
+ drivers/usb/host/Makefile                          |   1 +
+ drivers/usb/host/xhci-mvebu.c                      | 105 +++++++++++++++++++++
+ drivers/usb/host/xhci-mvebu.h                      |  21 +++++
+ drivers/usb/host/xhci-plat.c                       |  82 +++++++++++++++-
+ drivers/usb/host/xhci.h                            |   4 +
+ 15 files changed, 315 insertions(+), 6 deletions(-)
+ create mode 100644 arch/arm/mach-mvebu/usb-utmi.c
+ create mode 100644 drivers/usb/host/xhci-mvebu.c
+ create mode 100644 drivers/usb/host/xhci-mvebu.h
+
 -- 
-1.8.3.1
+1.8.1.2
 
