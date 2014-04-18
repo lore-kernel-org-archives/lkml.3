@@ -1,255 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbaDRMoF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:44:05 -0400
-Received: from mail-bn1on0111.outbound.protection.outlook.com ([157.56.110.111]:22782
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1753727AbaDRMof (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:44:35 -0400
+Received: from mail-by2on0119.outbound.protection.outlook.com ([207.46.100.119]:34071
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752904AbaDRMn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:43:56 -0400
+	id S1752726AbaDRMob (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:44:31 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH 13/28] nios2: Interrupt handling
-Date: Fri, 18 Apr 2014 20:26:57 +0800
-Message-ID: <1397824031-4892-11-git-send-email-lftan@altera.com>
+Subject: [PATCH 24/28] nios2: Module support
+Date: Fri, 18 Apr 2014 20:27:07 +0800
+Message-ID: <1397824031-4892-21-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
 References: <1397824031-4892-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(189002)(199002)(575784001)(97736001)(46102001)(93916002)(86362001)(50466002)(4396001)(80022001)(76176999)(80976001)(62966002)(81342001)(50226001)(81542001)(48376002)(50986999)(2009001)(99396002)(87286001)(77156001)(89996001)(83072002)(31966008)(85852003)(87936001)(88136002)(36756003)(77982001)(84676001)(42186004)(76482001)(47776003)(19580395003)(20776003)(19580405001)(44976005)(2201001)(92726001)(16796002)(83322001)(6806004)(74502001)(92566001)(74662001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB011;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:E095F9D5.A7189C25.EF19A5B.47F06A66.20464;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(189002)(199002)(22564002)(93916002)(97736001)(86362001)(46102001)(50466002)(80022001)(50986999)(80976001)(62966002)(81342001)(4396001)(50226001)(48376002)(81542001)(76176999)(2009001)(99396002)(83072002)(85852003)(76482001)(42186004)(74502001)(47776003)(20776003)(16796002)(77982001)(31966008)(74662001)(84676001)(87936001)(87286001)(77156001)(89996001)(88136002)(19580395003)(36756003)(6806004)(44976005)(19580405001)(83322001)(2201001)(92566001)(92726001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB047;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:EA497D4E.A7F0A659.3C3A97E.84D5CF31.203F1;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-OriginatorOrg: altera.onmicrosoft.com
 X-Forefront-PRVS: 018577E36E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the support for IRQ handling.
+This patch adds support for loadable modules.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/include/asm/irq.h      | 34 +++++++++++++++
- arch/nios2/include/asm/irqflags.h | 69 ++++++++++++++++++++++++++++++
- arch/nios2/kernel/irq.c           | 90 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 193 insertions(+)
- create mode 100644 arch/nios2/include/asm/irq.h
- create mode 100644 arch/nios2/include/asm/irqflags.h
- create mode 100644 arch/nios2/kernel/irq.c
+ arch/nios2/kernel/module.c | 135 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 135 insertions(+)
+ create mode 100644 arch/nios2/kernel/module.c
 
-diff --git a/arch/nios2/include/asm/irq.h b/arch/nios2/include/asm/irq.h
+diff --git a/arch/nios2/kernel/module.c b/arch/nios2/kernel/module.c
 new file mode 100644
-index 0000000..f7e94b9
+index 0000000..360c53ab29f64f4e44c8cfe27f7176d793578569
 --- /dev/null
-+++ b/arch/nios2/include/asm/irq.h
-@@ -0,0 +1,34 @@
++++ b/arch/nios2/kernel/module.c
+@@ -0,0 +1,135 @@
 +/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Kernel module support for Nios II.
 + *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *   Written by Wentao Xu <xuwentao@microtronix.com>
++ * Copyright (C) 2001, 2003 Rusty Russell
 + *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
++ * This file is subject to the terms and conditions of the GNU General
++ * Public License.  See the file COPYING in the main directory of this
++ * archive for more details.
 + */
 +
-+#ifndef _ASM_NIOS2_IRQ_H
-+#define _ASM_NIOS2_IRQ_H
++#include <linux/moduleloader.h>
++#include <linux/elf.h>
++#include <linux/mm.h>
++#include <linux/vmalloc.h>
++#include <linux/slab.h>
++#include <linux/fs.h>
++#include <linux/string.h>
++#include <linux/kernel.h>
 +
-+#define NIOS2_CPU_NR_IRQS	32
-+/* Reserve 32 additional interrupts for GPIO IRQs */
-+#define NR_IRQS			(NIOS2_CPU_NR_IRQS + 32)
++#include <asm/pgtable.h>
++#include <asm/cacheflush.h>
 +
-+#ifndef NO_IRQ
-+#define NO_IRQ			(-1)
-+#endif
-+
-+#include <asm-generic/irq.h>
-+#include <linux/irqdomain.h>
-+
-+#endif
-diff --git a/arch/nios2/include/asm/irqflags.h b/arch/nios2/include/asm/irqflags.h
-new file mode 100644
-index 0000000..e91f4f0b7c69454f7dd89590ddebccff73aad62a
---- /dev/null
-+++ b/arch/nios2/include/asm/irqflags.h
-@@ -0,0 +1,69 @@
-+/*
-+ * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+#ifndef _ASM_IRQFLAGS_H
-+#define _ASM_IRQFLAGS_H
-+
-+#include <asm/registers.h>
-+
-+static inline unsigned long arch_local_save_flags(void)
++void *module_alloc(unsigned long size)
 +{
-+	return RDCTL(CTL_STATUS);
++	if (size == 0)
++		return NULL;
++	return kmalloc(size, GFP_KERNEL);
 +}
 +
-+/*
-+ * This will restore ALL status register flags, not only the interrupt
-+ * mask flag.
-+ */
-+static inline void arch_local_irq_restore(unsigned long flags)
++/* Free memory returned from module_alloc */
++void module_free(struct module *mod, void *module_region)
 +{
-+	WRCTL(CTL_STATUS, flags);
++	kfree(module_region);
 +}
 +
-+static inline void arch_local_irq_disable(void)
++int apply_relocate_add(Elf32_Shdr *sechdrs, const char *strtab,
++			unsigned int symindex, unsigned int relsec,
++			struct module *mod)
 +{
-+	unsigned long flags;
-+	flags = arch_local_save_flags();
-+	arch_local_irq_restore(flags & ~STATUS_PIE);
-+}
++	unsigned int i;
++	Elf32_Rela *rela = (void *)sechdrs[relsec].sh_addr;
 +
-+static inline void arch_local_irq_enable(void)
-+{
-+	unsigned long flags;
-+	flags = arch_local_save_flags();
-+	arch_local_irq_restore(flags | STATUS_PIE);
-+}
++	pr_debug("Applying relocate section %u to %u\n", relsec,
++		 sechdrs[relsec].sh_info);
 +
-+static inline int arch_irqs_disabled_flags(unsigned long flags)
-+{
-+	return (flags & STATUS_PIE) == 0;
-+}
++	for (i = 0; i < sechdrs[relsec].sh_size / sizeof(*rela); i++) {
++		/* This is where to make the change */
++		uint32_t word;
++		uint32_t *loc
++			= ((void *)sechdrs[sechdrs[relsec].sh_info].sh_addr
++			   + rela[i].r_offset);
++		/* This is the symbol it is referring to.  Note that all
++		   undefined symbols have been resolved.  */
++		Elf32_Sym *sym
++			= ((Elf32_Sym *)sechdrs[symindex].sh_addr
++				+ ELF32_R_SYM(rela[i].r_info));
++		uint32_t v = sym->st_value + rela[i].r_addend;
++		pr_debug("reltype %d 0x%x name:<%s>\n",
++			ELF32_R_TYPE(rela[i].r_info),
++			rela[i].r_offset, strtab + sym->st_name);
 +
-+static inline int arch_irqs_disabled(void)
-+{
-+	return arch_irqs_disabled_flags(arch_local_save_flags());
-+}
++		switch (ELF32_R_TYPE(rela[i].r_info)) {
++		case R_NIOS2_NONE:
++			break;
++		case R_NIOS2_BFD_RELOC_32:
++			*loc += v;
++			break;
++		case R_NIOS2_PCREL16:
++			v -= (uint32_t)loc + 4;
++			if ((int32_t)v > 0x7fff ||
++				(int32_t)v < -(int32_t)0x8000) {
++				pr_err("module %s: relocation overflow\n",
++					mod->name);
++				return -ENOEXEC;
++			}
++			word = *loc;
++			*loc = ((((word >> 22) << 16) | (v & 0xffff)) << 6) |
++				(word & 0x3f);
++			break;
++		case R_NIOS2_CALL26:
++			if (v & 3) {
++				pr_err("module %s: dangerous relocation\n",
++					mod->name);
++				return -ENOEXEC;
++			}
++			if ((v >> 28) != ((uint32_t)loc >> 28)) {
++				pr_err("module %s: relocation overflow\n",
++					mod->name);
++				return -ENOEXEC;
++			}
++			*loc = (*loc & 0x3f) | ((v >> 2) << 6);
++			break;
++		case R_NIOS2_HI16:
++			word = *loc;
++			*loc = ((((word >> 22) << 16) |
++				((v >> 16) & 0xffff)) << 6) | (word & 0x3f);
++			break;
++		case R_NIOS2_LO16:
++			word = *loc;
++			*loc = ((((word >> 22) << 16) | (v & 0xffff)) << 6) |
++					(word & 0x3f);
++			break;
++		case R_NIOS2_HIADJ16:
++			{
++				Elf32_Addr word2;
 +
-+static inline unsigned long arch_local_irq_save(void)
-+{
-+	unsigned long flags;
-+	flags = arch_local_save_flags();
-+	arch_local_irq_restore(flags & ~STATUS_PIE);
-+	return flags;
-+}
++				word = *loc;
++				word2 = ((v >> 16) + ((v >> 15) & 1)) & 0xffff;
++				*loc = ((((word >> 22) << 16) | word2) << 6) |
++						(word & 0x3f);
++			}
++			break;
 +
-+#endif /* _ASM_IRQFLAGS_H */
-diff --git a/arch/nios2/kernel/irq.c b/arch/nios2/kernel/irq.c
-new file mode 100644
-index 0000000..e9265bd
---- /dev/null
-+++ b/arch/nios2/kernel/irq.c
-@@ -0,0 +1,90 @@
-+/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
-+ * Copyright (C) 2008 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * based on irq.c from m68k which is:
-+ *
-+ * Copyright (C) 2007 Greg Ungerer <gerg@snapgear.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/interrupt.h>
-+#include <linux/of.h>
-+
-+asmlinkage void do_IRQ(int hwirq, struct pt_regs *regs)
-+{
-+	struct pt_regs *oldregs = set_irq_regs(regs);
-+	int irq;
-+
-+	irq_enter();
-+	irq = irq_find_mapping(NULL, hwirq);
-+	generic_handle_irq(irq);
-+	irq_exit();
-+
-+	set_irq_regs(oldregs);
-+}
-+
-+static void chip_unmask(struct irq_data *d)
-+{
-+	u32 ien;
-+	ien = RDCTL(CTL_IENABLE);
-+	ien |= (1 << d->hwirq);
-+	WRCTL(CTL_IENABLE, ien);
-+}
-+
-+static void chip_mask(struct irq_data *d)
-+{
-+	u32 ien;
-+	ien = RDCTL(CTL_IENABLE);
-+	ien &= ~(1 << d->hwirq);
-+	WRCTL(CTL_IENABLE, ien);
-+}
-+
-+static struct irq_chip m_irq_chip = {
-+	.name		= "NIOS2-INTC",
-+	.irq_unmask	= chip_unmask,
-+	.irq_mask	= chip_mask,
-+};
-+
-+static int irq_map(struct irq_domain *h, unsigned int virq,
-+				irq_hw_number_t hw_irq_num)
-+{
-+	irq_set_chip_and_handler(virq, &m_irq_chip, handle_level_irq);
++		default:
++			pr_err("module %s: Unknown reloc: %u\n",
++				mod->name, ELF32_R_TYPE(rela[i].r_info));
++			return -ENOEXEC;
++		}
++	}
 +
 +	return 0;
 +}
 +
-+static struct irq_domain_ops irq_ops = {
-+	.map	= irq_map,
-+	.xlate	= irq_domain_xlate_onecell,
-+};
-+
-+void __init init_IRQ(void)
++int module_finalize(const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs,
++			struct module *me)
 +{
-+	struct irq_domain *domain;
-+	struct device_node *node;
++	flush_cache_all();
++	return 0;
++}
 +
-+	node = of_find_compatible_node(NULL, NULL, "ALTR,nios2-1.0");
-+	BUG_ON(!node);
-+
-+	domain = irq_domain_add_linear(node, NIOS2_CPU_NR_IRQS, &irq_ops, NULL);
-+	BUG_ON(!domain);
-+
-+	irq_set_default_host(domain);
-+	of_node_put(node);
++void module_arch_cleanup(struct module *mod)
++{
 +}
 -- 
 1.8.3.2
