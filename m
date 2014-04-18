@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaDRCbF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 22:31:05 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:59949 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161AbaDRCaT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 22:30:19 -0400
-From: Alex Elder <elder@linaro.org>
-To: bcm@fixthebug.org, mporter@linaro.org
-Cc: bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 01/10] ARM: bcm: use memory accessors for ioremapped area
-Date: Thu, 17 Apr 2014 21:30:06 -0500
-Message-Id: <1397788215-20279-2-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397788215-20279-1-git-send-email-elder@linaro.org>
-References: <1397788215-20279-1-git-send-email-elder@linaro.org>
+	id S1751460AbaDRCjX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 22:39:23 -0400
+Received: from mga02.intel.com ([134.134.136.20]:28840 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970AbaDRCjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 22:39:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,882,1389772800"; 
+   d="scan'208";a="523026977"
+From: David Cohen <david.a.cohen@linux.intel.com>
+To: hpa@zytor.com, mingo@redhat.com, tglx@linutronix.de, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, gnomes@lxorguk.ukuu.org.uk,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Mark Gross <mark.gross@intel.com>
+Subject: [PATCH] MAINTAINERS: INTEL MID SOC: add maintainer
+Date: Thu, 17 Apr 2014 19:39:18 -0700
+Message-Id: <1397788758-6335-1-git-send-email-david.a.cohen@linux.intel.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pointer used to pass parameters to an "smc" call is produced
-through a call to ioremap().  As such, we should be using functions
-like writel() to access it.
+This patch adds official maintainer for low power Intel MID SoC
+platforms.
 
-Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
-Reviewed-by: Matt Porter <mporter@linaro.org>
+Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
+Cc: Mark Gross <mark.gross@intel.com>
 ---
- arch/arm/mach-bcm/bcm_kona_smc.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
+ MAINTAINERS | 8 ++++++++
+ 1 file changed, 8 insertions(+)
 
-diff --git a/arch/arm/mach-bcm/bcm_kona_smc.c b/arch/arm/mach-bcm/bcm_kona_smc.c
-index 5e31e91..d881c72 100644
---- a/arch/arm/mach-bcm/bcm_kona_smc.c
-+++ b/arch/arm/mach-bcm/bcm_kona_smc.c
-@@ -79,11 +79,11 @@ static void __bcm_kona_smc(void *info)
- 	/* Check map in the bounce area */
- 	BUG_ON(!bridge_data.initialized);
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6dc67b1fdb50..b6056f33cb4d 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -5447,6 +5447,14 @@ W:	logfs.org
+ S:	Maintained
+ F:	fs/logfs/
  
--	/* Copy one 32 bit word into the bounce area */
--	args[0] = data->arg0;
--	args[1] = data->arg1;
--	args[2] = data->arg2;
--	args[3] = data->arg3;
-+	/* Copy the four 32 bit argument values into the bounce area */
-+	writel_relaxed(data->arg0, args++);
-+	writel_relaxed(data->arg1, args++);
-+	writel_relaxed(data->arg2, args++);
-+	writel(data->arg3, args);
- 
- 	/* Flush caches for input data passed to Secure Monitor */
- 	if (data->service_id != SSAPI_BRCM_START_VC_CORE)
++LOW-POWER INTEL MID SOC SUPPORT
++M:	David Cohen <david.a.cohen@linux.intel.com>
++S:	Supported
++F:	arch/x86/platform/intel-mid/
++F:	arch/x86/pci/intel_mid_pci.c
++F:	arch/x86/include/asm/intel-mid.h
++F:	arch/x86/include/asm/intel_mid*.h
++
+ LPC32XX MACHINE SUPPORT
+ M:	Roland Stigge <stigge@antcom.de>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
 -- 
-1.7.9.5
+1.9.1
 
