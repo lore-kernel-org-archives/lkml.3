@@ -1,47 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295AbaDRRbB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 13:31:01 -0400
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:57213 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794AbaDRRa4 (ORCPT
+	id S1753215AbaDRRdJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 13:33:09 -0400
+Received: from g4t3426.houston.hp.com ([15.201.208.54]:50881 "EHLO
+	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139AbaDRRdF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 13:30:56 -0400
+	Fri, 18 Apr 2014 13:33:05 -0400
+Message-ID: <535161BF.90405@hp.com>
+Date: Fri, 18 Apr 2014 13:32:47 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <1397757570-19750-5-git-send-email-dianders@chromium.org>
-References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
-	<1397757570-19750-5-git-send-email-dianders@chromium.org>
-Date: Fri, 18 Apr 2014 11:30:55 -0600
-X-Google-Sender-Auth: pAaY46_AAVgW7MpMNd2yUFi62IY
-Message-ID: <CAPnjgZ1_LAzUMX+K06o7A8uH6RLk59E-3mV30-Yo8YRcwvsJ8A@mail.gmail.com>
-Subject: Re: [PATCH 4/7] mfd: cros_ec: spi: Increase cros_ec_spi deadline from
- 5ms to 100ms
-From: Simon Glass <sjg@chromium.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        lk <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 04/19] qspinlock: Extract out the exchange of tail
+ code word
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com> <1397747051-15401-5-git-send-email-Waiman.Long@hp.com> <20140417154902.GO11096@twins.programming.kicks-ass.net> <53504771.9070102@hp.com> <20140418081517.GY11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140418081517.GY11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+On 04/18/2014 04:15 AM, Peter Zijlstra wrote:
+> On Thu, Apr 17, 2014 at 05:28:17PM -0400, Waiman Long wrote:
+>> On 04/17/2014 11:49 AM, Peter Zijlstra wrote:
+>>> On Thu, Apr 17, 2014 at 11:03:56AM -0400, Waiman Long wrote:
+>>>> @@ -192,36 +220,25 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
+>>>>   	node->next = NULL;
+>>>>
+>>>>   	/*
+>>>> +	 * We touched a (possibly) cold cacheline; attempt the trylock once
+>>>> +	 * more in the hope someone let go while we weren't watching as long
+>>>> +	 * as no one was queuing.
+>>>>   	 */
+>>>> +	if (!(val&   _Q_TAIL_MASK)&&   queue_spin_trylock(lock))
+>>>> +		goto release;
+>>> But you just did a potentially very expensive op; @val isn't
+>>> representative anymore!
+>> That is not true. I pass in a pointer to val to trylock_pending() (the
+>> pointer thing) so that it will store the latest value that it reads from the
+>> lock back into val. I did miss one in the PV qspinlock exit loop. I will add
+>> it back when I do the next version.
+> But you did that read _before_ you touched a cold cacheline, that's 100s
+> of cycles. Whatever value you read back then is now complete nonsense.
 
-On 17 April 2014 11:59, Doug Anderson <dianders@chromium.org> wrote:
-> We're adding i2c tunneling to the list of things that goes over
-> cros_ec.  i2c tunneling can be slooooooow, so increase our deadline to
-> 100ms to account for that.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+For spin_lock(), the lock cacheline is touched by a cmpxchg(). It can 
+takes 100s of cycles whether it is hot or cold.
 
-I believe the EC protocol should be changed on future platforms to
-poll for completion of I2C, but in the meantime this patch prevents
-failure.
+I will take the precheck out, it is not such a big deal anyway.
 
-Reviewed-by: Simon Glass <sjg@chromium.org>
+-Longman
