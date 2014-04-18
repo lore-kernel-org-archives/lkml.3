@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001AbaDRPry (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 11:47:54 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:61538 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbaDRPrw convert rfc822-to-8bit (ORCPT
+	id S1753422AbaDRPsO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 11:48:14 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:51699 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751307AbaDRPsH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 11:47:52 -0400
+	Fri, 18 Apr 2014 11:48:07 -0400
+Message-ID: <5351491F.3030309@oracle.com>
+Date: Fri, 18 Apr 2014 11:47:43 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <5350257A.30107@web.de>
-References: <1397749778-14485-1-git-send-email-tom.leiming@gmail.com>
-	<1397749778-14485-4-git-send-email-tom.leiming@gmail.com>
-	<5350257A.30107@web.de>
-Date: Fri, 18 Apr 2014 23:47:51 +0800
-Message-ID: <CACVXFVMFuiHpM-bVjyutP7fH621Gt0bo2+HLwRbk_aGsiZ+1Vw@mail.gmail.com>
-Subject: Re: [PATCH next 3/4] blk-mq: user (1 << order) to implement order_to_size()
-From: Ming Lei <tom.leiming@gmail.com>
-To: =?UTF-8?B?SsO2cmctVm9sa2VyIFBlZXR6?= <jvpeetz@web.de>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>
+To: "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: vegard.nossum@oracle.com, penberg@kernel.org, jamie.iles@oracle.com,
+        mingo@redhat.com, tglx@linutronix.de, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] x86/insn: Extract more information about instructions
+References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-3-git-send-email-sasha.levin@oracle.com> <534CA38C.80501@hitachi.com> <534D4BF3.3020102@oracle.com> <534DF868.2020901@zytor.com> <534DFD61.4070700@oracle.com> <534DFEDC.8090503@zytor.com> <534E0124.70700@oracle.com> <534E1559.8050904@hitachi.com> <534FF135.40404@oracle.com> <534FF31E.1000104@zytor.com> <53500FF8.8010804@oracle.com> <53509EB9.5070001@hitachi.com> <53509FD9.2020803@zytor.com>
+In-Reply-To: <53509FD9.2020803@zytor.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 3:03 AM, Jörg-Volker Peetz <jvpeetz@web.de> wrote:
-> Ming Lei wrote, on 04/17/2014 17:49:
->> Signed-off-by: Ming Lei <tom.leiming@gmail.com>
->> ---
->>  block/blk-mq.c |    7 +------
->>  1 file changed, 1 insertion(+), 6 deletions(-)
->>
->> diff --git a/block/blk-mq.c b/block/blk-mq.c
->> index baff2d0..1eff3d9 100644
->> --- a/block/blk-mq.c
->> +++ b/block/blk-mq.c
->> @@ -1130,12 +1130,7 @@ static void blk_mq_free_rq_map(struct blk_mq_tag_set *set,
->>
->>  static size_t order_to_size(unsigned int order)
->>  {
->> -     size_t ret = PAGE_SIZE;
->> -
->> -     while (order--)
->> -             ret *= 2;
->> -
->> -     return ret;
->> +     return (1 << order) * PAGE_SIZE;
->
-> Shouldn't this be
->
->         return ((size_t)1 << order) * PAGE_SIZE;
->
-> ?
+On 04/17/2014 11:45 PM, H. Peter Anvin wrote:
+>>> The other part is adding mnemonics to the instruction decoder. If my
+>>> >> explanation above makes sense, and kmemcheck does need to know about AND,
+>>> >> OR, XOR, MOVS and CMPS then let me know how to proceed about changing
+>>> >> the instruction decoder to add that functionality.
+>> > 
+>> > I don't think we need to add such things to instruction decoder.
+>> > You'd better start from clarifying the bit pattern of those instructions
+>> > and making macros or inlines which evaluate insn->opcode.value.
 
-IMO, it isn't necessary since compiler will cast type
-of 1 and the expression to size_t automatically.
+There are very specific mnemonics that kmemchecks wants to detect and treat
+as a corner case.
+
+What you're saying here is that while the instruction decoder already has the
+knowledge of mnemonics, kmemcheck shouldn't use it and instead write it's own
+opcode -> mnemonic parser and use that instead.
+
+Note that it won't be enough to decode just the opcodes, as variants of the
+instructions we need to detect are hidden inside groups, so we'd need to parse
+mod/rm in addition to the opcode.
+
+This means we're adding a tiny instruction parser to kmemcheck, which is
+exactly the thing we're trying to remove with the previous part of this
+patchset.
+
+>> > Using automatic generated macros for immediate in the source code always
+>> > leads misunderstanding and abuse, and is hard to fix if a bug is there.
+>> > I strongly recommend you to define instruction classification macros
+>> > for their use by hand. That's easy to review too.
+>> > Actually x86 has a long history and its mnemonics are not so simple...
+
+If the issue is that they get dynamically generated I'm fine with making that
+a static list and updating it by hand whenever new instructions or
+mnemonics are introduced.
+
+> What it sounds like it really wants is a "bitwise" flag on the instruction.
+
+A flag like that would solve part of the problem (we'd still need to work with
+CMPS and MOVS), and sounds very kmemcheck specific.
 
 
 Thanks,
--- 
-Ming Lei
+Sasha
