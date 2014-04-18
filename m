@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753172AbaDRPyq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 11:54:46 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:62702 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459AbaDRPyn (ORCPT
+	id S1753437AbaDRQAv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 12:00:51 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:39013 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590AbaDRQAq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 11:54:43 -0400
-From: Julien Grall <julien.grall@linaro.org>
-To: stefano.stabellini@eu.citrix.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xenproject.org, ian.campbell@citrix.com,
-        david.vrabel@citrix.com, konrad.wilk@oracle.com,
-        Julien Grall <julien.grall@linaro.org>
-Subject: [PATCH] arm/xen: Remove definiition of virt_to_pfn in asm/xen/page.h
-Date: Fri, 18 Apr 2014 16:54:34 +0100
-Message-Id: <1397836474-10478-1-git-send-email-julien.grall@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
+	Fri, 18 Apr 2014 12:00:46 -0400
+Date: Fri, 18 Apr 2014 12:00:44 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        alex.shi@linaro.org, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 3/3] sched/fair: use the idle state info to choose
+ the idlest cpu
+In-Reply-To: <535122EE.7030803@linaro.org>
+Message-ID: <alpine.LFD.2.11.1404181159010.980@knanqh.ubzr>
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.11.1404012208110.1571@knanqh.ubzr> <534FDCDC.6000806@linaro.org> <alpine.LFD.2.11.1404171138470.980@knanqh.ubzr>
+ <534FFBB3.8050601@linaro.org> <alpine.LFD.2.11.1404171207531.980@knanqh.ubzr> <20140418093845.GD11096@twins.programming.kicks-ass.net> <535116FC.5070700@linaro.org> <20140418125344.GX11182@twins.programming.kicks-ass.net> <535122EE.7030803@linaro.org>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-virt_to_pfn has been defined in asm/memory.h by the commit e26a9e0 "ARM: Better
-virt_to_page() handling"
+On Fri, 18 Apr 2014, Daniel Lezcano wrote:
 
-This will result of a compilation warning when CONFIG_XEN is enabled.
+> On 04/18/2014 02:53 PM, Peter Zijlstra wrote:
+> > I suppose so; its still a bit like we won't but we will :-)
+> >
+> > So we _will_ actually expose coupled C states through the topology bits,
+> > that's good.
+> 
+> Ah, ok. I think I understood where the confusion is coming from.
+> 
+> A couple of definitions for the same thing :)
+> 
+> 1. Coupled C-states : *mechanism* implemented in the cpuidle framework:
+> drivers/cpuidle/coupled.c
+> 
+> 2. Coupled C-states : *constraint* to reach a cluster power down state, will
+> be described through the topology and could be implemented by different
+> mechanism (MCPM, handmade sync, cpuidle-coupled-c-state, firmware).
+> 
+> We want to expose 2. not 1. to the scheduler.
 
-arch/arm/include/asm/xen/page.h:80:0: warning: "virt_to_pfn" redefined [enabled by default]
- #define virt_to_pfn(v)          (PFN_DOWN(__pa(v)))
- ^
-In file included from arch/arm/include/asm/page.h:163:0,
-                 from arch/arm/include/asm/xen/page.h:4,
-                 from include/xen/page.h:4,
-                 from arch/arm/xen/grant-table.c:33:
+I couldn't explain it better.
 
-The definition in memory.h is nearly the same (it directly expand PFN_DOWN),
-so we can safely drop virt_to_pfn in xen include.
+Sorry for creating confusion.
 
-Signed-off-by: Julien Grall <julien.grall@linaro.org>
----
- arch/arm/include/asm/xen/page.h |    1 -
- 1 file changed, 1 deletion(-)
 
-diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-index cf4f3e8..ded062f 100644
---- a/arch/arm/include/asm/xen/page.h
-+++ b/arch/arm/include/asm/xen/page.h
-@@ -77,7 +77,6 @@ static inline xpaddr_t machine_to_phys(xmaddr_t machine)
- }
- /* VIRT <-> MACHINE conversion */
- #define virt_to_machine(v)	(phys_to_machine(XPADDR(__pa(v))))
--#define virt_to_pfn(v)          (PFN_DOWN(__pa(v)))
- #define virt_to_mfn(v)		(pfn_to_mfn(virt_to_pfn(v)))
- #define mfn_to_virt(m)		(__va(mfn_to_pfn(m) << PAGE_SHIFT))
- 
--- 
-1.7.10.4
-
+Nicolas
