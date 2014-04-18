@@ -1,88 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364AbaDRGz5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 02:55:57 -0400
-Received: from mail-oa0-f43.google.com ([209.85.219.43]:64191 "EHLO
-	mail-oa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750976AbaDRGzx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 02:55:53 -0400
+	id S1751208AbaDRHTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 03:19:09 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32430 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750976AbaDRHTE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 03:19:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,883,1389772800"; 
+   d="scan'208";a="495195548"
+Date: Fri, 18 Apr 2014 15:18:23 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Clemens Ladisch <clemens@ladisch.de>, tglx@linutronix.de, mingo@elte.hu,
+        hpa@zytor.com, linux-kernel@vger.kernel.org,
+        John Stultz <john.stultz@linaro.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: Re: [PATCH v2] x86: hpet: Don't default CONFIG_HPET_TIMER to be y
+ for X86_64
+Message-ID: <20140418071823.GA4533@feng-snb>
+References: <20140328071716.GC30107@gmail.com>
+ <20140328073718.GA12762@feng-snb>
+ <53352DE5.2090600@ladisch.de>
+ <20140328081117.GA32308@gmail.com>
+ <20140415074443.GA10911@feng-snb>
+ <20140415090025.GA31244@gmail.com>
+ <20140415095539.GA19271@feng-snb>
+ <20140415104206.GA31656@gmail.com>
+ <20140415141206.GA12076@feng-snb>
+ <20140416065148.GB1193@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140417185258.GJ7422@krava.brq.redhat.com>
-References: <1397721206-15393-1-git-send-email-namhyung@kernel.org>
- <20140417120046.GC7422@krava.brq.redhat.com> <1397741900.1731.17.camel@leonhard>
- <20140417185258.GJ7422@krava.brq.redhat.com>
-From: Namhyung Kim <namhyung@kernel.org>
-Date: Fri, 18 Apr 2014 15:55:33 +0900
-X-Google-Sender-Auth: 2LxY9pRp3EEwBTWfBjc4sgnt2Ak
-Message-ID: <CAM9d7chozUKw=TJNCJnR_e5fKmwgSPoBvQdA92N=MStErMFPQA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] perf top/tui: Fixes for percentage filter behavior
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140416065148.GB1193@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi All,
 
-On Fri, Apr 18, 2014 at 3:52 AM, Jiri Olsa <jolsa@redhat.com> wrote:
-> On Thu, Apr 17, 2014 at 10:38:19PM +0900, Namhyung Kim wrote:
->> Hi Jiri,
->>
->> 2014-04-17 (목), 14:00 +0200, Jiri Olsa:
->> > On Thu, Apr 17, 2014 at 04:53:23PM +0900, Namhyung Kim wrote:
->> > > Hi,
->> > >
->> > > This is a small fixes for a bug in perf top I found during some tests.
->> > > It gets segfault if symbol filter found no entries - accessing NULL
->> > > pointer in that case.
->> >
->> > yep, I hit that yesterday as well, but I ended up just with
->> > the patch below, your changes seems more comprehensive ;-)
->> > going to review..
->>
->> Well, the end result will be same, but I think it should have 0
->> nr_entries when there's no entry to show.
->
-> also I hit another issue ;-)
->
-> - running report on data with callchains, and the screen is populated to the middle
-> - press 'END' key and the cursor goes to the bottom of the screen (I can tell based
->   on the scrollbar), but there are no entries
->
-> I could make the cursor appear by pressing UP arrow, I bisected to:
->   f214833 perf report: Add --percentage option
->
-> not sure where's the problem
+On Wed, Apr 16, 2014 at 08:51:48AM +0200, Ingo Molnar wrote:
+> 
+> * Feng Tang <feng.tang@intel.com> wrote:
+ > > > > > > > >
+> > > > > > > > > I thought about this before, HPET doesn't have PCI ID like stuff,
+> > > > > > > > 
+> > > > > > > > HPET does have the PCI vendor ID in the first register.
+> > > > > > > > 
+> > > > > > > > > only thing I can think of to identify them may be the CPU family/ID.
+> > > > > > > > 
+> > > > > > > > The HPET is implemented by some actual chip, and that chip also has lots
+> > > > > > > > of PCI devices.  (In the case of a SoC, the CPU ID would work, too).
+> > > > > > > 
+> > > > > > > Correct. See arch/x86/kernel/hpet.c, which has a large number of HPET 
+> > > > > > > quirks keyed off chipset PCI IDs:
+> > > > > > > 
+> > > > > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ESB2_0,
+> > > > > > >                            ich_force_enable_hpet);
+> > > > > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_0,
+> > > > > > >                            ich_force_enable_hpet);
+> > > > > > >   DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH6_1,
+> > > > > > >                            ich_force_enable_hpet);
+> > > > > > >   [...]
+> > > > > > 
+> > > > > > I just gave it another thought, that the HPET on our platform 
+> > > > > > currently do have some problem to be used as clocksource/clockevent, 
+> > > > > > but it may get fixed in future version (by Silicon or BIOS).
+> > > > > > 
+> > > > > > If I add quirk to block it now, I may revert this code in future 
+> > > > > > when it get fixed, same problem applis for the future generation of 
+> > > > > > platform.
+> > > > > 
+> > > > > If the hardware or BIOS gets fixed then that will be visible in the 
+> > > > > revision level of the hardware, right?
+> > > > 
+> > > > AFAIK, if it is fixed in a new silicon version, we should be able to 
+> > > > detect it by the "stepping", but the PCI DEV ID is not likely to 
+> > > > change.
+> > > > 
+> > > > If it is fixed by BIOS or PUNIT FW, then we may go through the 
+> > > > DMI info to check the BIOS version, One problem is there is some 
+> > > > Baytrail tablet platforms that doesn't provide DMI info as its 
+> > > > FW is not UEFI/Legacy BIOS compatible version.
+> > > 
+> > > So just turn it off for the current hardware, via PCI ID. When you 
+> > > get a fix, you can turn it back on again by refining the quirk 
+> > > check, for that specific hardware.
+> > 
+> > got it, thanks!
+> 
+> Btw., note that such narrow quirk refinings are pretty uncontroversial 
+> and have a pretty fast path upstream, once you have the initial quirk 
+> in there.
 
-Hmm.. did you find it when running perf report?  AFAIK there's a
-subtle problem of counting number of entries in perf report TUI with
-callchains.  I wished fixing it but I was afraid of diving into the
-tui code. ;-p  But I think it's a different one to the bug you
-reported.
+During implementing, I found the arch/x86/kerne/quirks.c doesn't fit
+well as the DECLARE_PCI_FIXUP_HEADER/EARLY/FINAL() way of quirk happens
+inside the pci subsystem init phase, while the hpet_enable() will be
+called before that.
 
-Anyway I found that there's an inconsistency when handling
-hists->nr_entries.  We're increasing hists->nr_entries when new sample
-comes in (ang not merged into an existing entry), but accesses the
-nr_entries before adding it to the hist browser (i.e. output tree).  I
-suspect the original perf top code has similar problem already but it
-seems my change made it to be triggered easily.
+Then by searching the arch/x86/, the early-quirks.c can be used to
+add such a quirk as the early quirks are checked earlier than
+hpet_enable()
 
-Also when it moves hist entries to the output tree, it resets
-nr_entries and increases nr_entries again as they're moved.  I think
-it's a problem on perf top since it'll loose the number of entries
-already existing on the output tree.  I'm not sure how it has been
-working.. maybe I'm missing something.
-
-I'm out of office now, I'll investigate it more when I'm back to
-office next week.
+I'll post a RFC patch soon.
 
 Thanks,
-Namhyung
+Feng
+
