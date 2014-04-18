@@ -1,83 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872AbaDRVna (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 17:43:30 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:55127 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754232AbaDRVnY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 17:43:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAD=FV=XhtW9ZORJLh396FZ=eE+szrTZN94KpoZj-9HVg7TaVRA@mail.gmail.com>
-References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
-	<1397757570-19750-3-git-send-email-dianders@chromium.org>
-	<CAPnjgZ034FrVVphJCmX5jZE8LeWOEBjsH7M=2C_meM0fMss1NA@mail.gmail.com>
-	<CAD=FV=XhtW9ZORJLh396FZ=eE+szrTZN94KpoZj-9HVg7TaVRA@mail.gmail.com>
-Date: Fri, 18 Apr 2014 15:43:23 -0600
-X-Google-Sender-Auth: 14l1RxFH1uL9PJLNq5gHN0KUEow
-Message-ID: <CAPnjgZ1px6fvDmr59b4g-u2pXqtr_bFnDYXXqR5whTOxoY+ZsQ@mail.gmail.com>
-Subject: Re: [PATCH 2/7] mfd: cros_ec: spi: Add mutex to cros_ec_spi
-From: Simon Glass <sjg@chromium.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        lk <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754008AbaDRVr2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 17:47:28 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40999 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752798AbaDRVrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 17:47:24 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,886,1389772800"; 
+   d="scan'208";a="523092491"
+From: Andi Kleen <andi@firstfloor.org>
+To: peterz@infradead.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/2] x86, perf: Update Haswell PEBS event table
+Date: Fri, 18 Apr 2014 14:31:14 -0700
+Message-Id: <1397856674-11549-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1397856674-11549-1-git-send-email-andi@firstfloor.org>
+References: <1397856674-11549-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+From: Andi Kleen <ak@linux.intel.com>
 
-On 18 April 2014 15:15, Doug Anderson <dianders@chromium.org> wrote:
->
-> Simon,
->
-> On Fri, Apr 18, 2014 at 10:28 AM, Simon Glass <sjg@chromium.org> wrote:
-> > Hi Doug,
-> >
-> > On 17 April 2014 11:59, Doug Anderson <dianders@chromium.org> wrote:
-> >> The main transfer function for cros_ec_spi can be called by more than
-> >> one client at a time.  Make sure that those clients don't stomp on
-> >> each other by locking the bus for the duration of the transfer
-> >> function.
-> >
-> > Is there no lock at the cros_ec layer?
->
-> Not with what's upstream.
->
-> Locally in the Chromium OS tree:
->
-> * You can see that Bill removed the dev_lock at
-> <https://chromium-review.googlesource.com/#/c/57051/> since it wasn't
-> used.
->
-> * Andrew moved to a common locking scheme later in
-> <https://chromium-review.googlesource.com/#/c/170747/> (thus adding
-> roughly the same lock back and using it), but in order to do that
-> we've got a dozen pathces in between, some of which are big
-> reorganizations.  This includes at least:
->
-> 6820b91 CHROMIUM: cros_ec: Tweak struct cros_ec_device for clarity
-> 5e8e562 CHROMIUM: Use struct cros_ec_command to communicate with the EC
-> 9e7db82 CHROMIUM: cleanup: remove unused fields from struct cros_ec_device
-> 866e62d CHROMIUM: cleanup: Remove EC wrapper functions.
-> 8a372b2 cros_ec: move locking into cros_ec_cmd_xfer
-> 981c4aa cros_ec: stop calling ->cmd_xfer() directly
->
-> I think we should take in some of those other changes but I'd rather
-> get correctness in first (since people are wanting to use this driver
-> in upstream kernel) and get cleanups posted after this lands.  I was
-> also trying not to spam the list with a 20-patch series...
+- We were allowing some sub events in c4 (BR_INST_RETIRED.*)
+that are not in the event list.  Tighten the check slightly.
 
-That explains it, thank you. I should have guessed that for myself.
+- We were missing some valid subevents in d1-d2 (MEM_LOAD_UOPS_RETIRED.*,
+MEM_LOAD_UOPS_RETIRED_L3_HIT_RETIRED.*) Allow all subevents.
 
-Reviewed-by: Simon Glass <sjg@chromium.org>
+The full event list supported by this table now:
 
-Regards,
-Simon
+INST_RETIRED.PREC_DIST cpu/event=0xC0,umask=0x01/pp
+UOPS_RETIRED.ALL cpu/event=0xC2,umask=0x01/pp
+UOPS_RETIRED.RETIRE_SLOTS cpu/event=0xC2,umask=0x02/pp
+BR_INST_RETIRED.CONDITIONAL cpu/event=0xC4,umask=0x01/pp
+BR_INST_RETIRED.NEAR_CALL cpu/event=0xC4,umask=0x02/pp
+BR_INST_RETIRED.NEAR_RETURN cpu/event=0xC4,umask=0x08/pp
+BR_INST_RETIRED.NEAR_TAKEN cpu/event=0xC4,umask=0x20/pp
+BR_INST_RETIRED.ALL_BRANCHES_PEBS cpu/event=0xC4,umask=0x04/pp
+BR_INST_RETIRED.NEAR_CALL_R3 cpu/event=0xC4,umask=0x02/pp
+BR_MISP_RETIRED.CONDITIONAL cpu/event=0xC5,umask=0x01/pp
+BR_MISP_RETIRED.ALL_BRANCHES_PEBS cpu/event=0xC5,umask=0x04/pp
+HLE_RETIRED.ABORTED cpu/event=0xc8,umask=0x04/pp
+RTM_RETIRED.ABORTED cpu/event=0xc9,umask=0x04/pp
+MEM_TRANS_RETIRED.LOAD_LATENCY_GT_4 cpu/event=0xCD,umask=0x01,ldlat=0x4/pp
+MEM_TRANS_RETIRED.LOAD_LATENCY_GT_8 cpu/event=0xCD,umask=0x01,ldlat=0x8/pp
+MEM_TRANS_RETIRED.LOAD_LATENCY_GT_16 cpu/event=0xCD,umask=0x01,ldlat=0x10/pp
+MEM_TRANS_RETIRED.LOAD_LATENCY_GT_32 cpu/event=0xCD,umask=0x01,ldlat=0x20/pp
+MEM_TRANS_RETIRED.LOAD_LATENCY_GT_64 cpu/event=0xCD,umask=0x01,ldlat=0x40/pp
+MEM_TRANS_RETIRED.LOAD_LATENCY_GT_128 cpu/event=0xCD,umask=0x01,ldlat=0x80/pp
+MEM_TRANS_RETIRED.LOAD_LATENCY_GT_256 cpu/event=0xCD,umask=0x01,ldlat=0x100/pp
+MEM_TRANS_RETIRED.LOAD_LATENCY_GT_512 cpu/event=0xCD,umask=0x01,ldlat=0x200/pp
+MEM_UOPS_RETIRED.STLB_MISS_LOADS cpu/event=0xD0,umask=0x11/pp
+MEM_UOPS_RETIRED.STLB_MISS_STORES cpu/event=0xD0,umask=0x12/pp
+MEM_UOPS_RETIRED.LOCK_LOADS cpu/event=0xD0,umask=0x21/pp
+MEM_UOPS_RETIRED.SPLIT_LOADS cpu/event=0xD0,umask=0x41/pp
+MEM_UOPS_RETIRED.SPLIT_STORES cpu/event=0xD0,umask=0x42/pp
+MEM_UOPS_RETIRED.ALL_LOADS cpu/event=0xD0,umask=0x81/pp
+MEM_UOPS_RETIRED.ALL_STORES cpu/event=0xD0,umask=0x82/pp
+MEM_LOAD_UOPS_RETIRED.L1_HIT cpu/event=0xD1,umask=0x01/pp
+MEM_LOAD_UOPS_RETIRED.L2_HIT cpu/event=0xD1,umask=0x02/pp
+MEM_LOAD_UOPS_RETIRED.L3_HIT cpu/event=0xD1,umask=0x04/pp
+MEM_LOAD_UOPS_RETIRED.L1_MISS cpu/event=0xD1,umask=0x08/pp
+MEM_LOAD_UOPS_RETIRED.L2_MISS cpu/event=0xD1,umask=0x10/pp
+MEM_LOAD_UOPS_RETIRED.L3_MISS cpu/event=0xD1,umask=0x20/pp
+MEM_LOAD_UOPS_RETIRED.HIT_LFB cpu/event=0xD1,umask=0x40/pp
+MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_MISS cpu/event=0xD2,umask=0x01/pp
+MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_HIT cpu/event=0xD2,umask=0x02/pp
+MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_HITM cpu/event=0xD2,umask=0x04/pp
+MEM_LOAD_UOPS_L3_HIT_RETIRED.XSNP_NONE cpu/event=0xD2,umask=0x08/pp
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_ds.c | 21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 7e9546a..07feaa0 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -641,7 +641,11 @@ struct event_constraint intel_hsw_pebs_event_constraints[] = {
+ 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
+ 	INTEL_PST_HSW_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
+ 	INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
+-	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
++	INTEL_UEVENT_CONSTRAINT(0x1c4, 0xf),	/* BR_INST_RETIRED.CONDITIONAL */
++	INTEL_UEVENT_CONSTRAINT(0x2c4, 0xf),	/* BR_INST_RETIRED.NEAR_CALL */
++	INTEL_UEVENT_CONSTRAINT(0x4c4, 0xf),	/* BR_INST_RETIRED.ALL_BRANCHES */
++	INTEL_UEVENT_CONSTRAINT(0x8c4, 0xf),	/* BR_INST_RETIRED.NEAR_RETURN */
++	INTEL_UEVENT_CONSTRAINT(0x20c4, 0xf),	/* BR_INST_RETIRED.NEAR_TAKEN */
+ 	INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
+ 	INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
+ 	INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
+@@ -656,17 +660,10 @@ struct event_constraint intel_hsw_pebs_event_constraints[] = {
+ 	INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf),
+ 	INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
+ 	INTEL_PST_HSW_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
+-	INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
+-	INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
+-	INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
+-	/* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
+-	INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf),
+-	/* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
+-	INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf),
+-	/* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
+-	INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf),
+-	/* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
+-	INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf),
++	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),	/* MEM_LOAD_UOPS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),	/* MEM_LOAD_UOPS_L3_HIT_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd3, 0xf),	/* MEM_LOAD_UOPS_L3_MISS_RETIRED.* */
++	INTEL_EVENT_CONSTRAINT(0xd3, 0xf),	/* MEM_LOAD_UOPS_L3_MISS_RETIRED.* */
+ 	INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
+ 	INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
+ 
+-- 
+1.9.0
+
