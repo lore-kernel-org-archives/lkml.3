@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751529AbaDRD4P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 23:56:15 -0400
-Received: from mail-bl2lp0212.outbound.protection.outlook.com ([207.46.163.212]:9762
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751259AbaDRD4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 23:56:08 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        Jingchang Lu <jingchang.lu@freescale.com>,
-        "Jason.Jin@freescale.com" <Jason.Jin@freescale.com>,
-        "Dongsheng.Wang@freescale.com" <Dongsheng.Wang@freescale.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [RFC][PATCH 3/3] clocksource: Add Freescale FlexTimer Module
- (FTM) timer support
-Thread-Topic: [RFC][PATCH 3/3] clocksource: Add Freescale FlexTimer Module
- (FTM) timer support
-Thread-Index: AQHPWSBc9k7OgjbNkEijY/VC8/wPu5sV3s2AgADiQ/A=
-Date: Fri, 18 Apr 2014 03:55:46 +0000
-Message-ID: <aa8f83c882144105b4c2c230dc6f517b@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1397614787-8300-1-git-send-email-Li.Xiubo@freescale.com>
- <1397614787-8300-4-git-send-email-Li.Xiubo@freescale.com>
- <534FE3C1.4060509@linaro.org>
-In-Reply-To: <534FE3C1.4060509@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 018577E36E
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(199002)(189002)(92566001)(86362001)(83072002)(2201001)(83322001)(76482001)(81342001)(81542001)(85852003)(80976001)(20776003)(79102001)(33646001)(66066001)(80022001)(74316001)(4396001)(76176999)(50986999)(77096999)(46102001)(74662001)(31966008)(87936001)(54356999)(2656002)(76576001)(99286001)(99396002)(74502001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB377;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:7C96D836.81B11E2B.7BF10DC7.64AC2150.200F2;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1751818AbaDRD47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 23:56:59 -0400
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:42182 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609AbaDRD4p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 23:56:45 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <alpine.LSU.2.11.1402032014140.29889@eggly.anvils>
+References: <000c01cf1b47$ce280170$6a780450$%yang@samsung.com>
+	<20140203153628.5e186b0e4e81400773faa7ac@linux-foundation.org>
+	<alpine.LSU.2.11.1402032014140.29889@eggly.anvils>
+Date: Fri, 18 Apr 2014 11:56:45 +0800
+Message-ID: <CAL1ERfO2u838hnY2NVKVd7Tr_=2o=nVpBf_hTKGHms+QFGTFPQ@mail.gmail.com>
+Subject: Re: [PATCH 3/8] mm/swap: prevent concurrent swapon on the same
+ S_ISBLK blockdev
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, shli@kernel.org,
+        Bob Liu <bob.liu@oracle.com>, Seth Jennings <sjennings@variantweb.net>,
+        Heesub Shin <heesub.shin@samsung.com>, mquzik@redhat.com,
+        Linux-MM <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3I3v235017649
 
-> > +	freq = clk_get_rate(ftm_clk);
-> > +
-> > +	calc_closest_cound_cyc(freq);
-> > +
-> > +	BUG_ON(ftm_clocksource_init(freq));
-> > +
-> > +	BUG_ON(ftm_clockevent_init(freq, irq));
-> > +}
-> > +CLOCKSOURCE_OF_DECLARE(vf610, "fsl,vf610-ftm-timer", ftm_timer_init);
-> 
-> 
-> I am not a big fan of those BUG_ON every line. Could you please replace
-> it by dev_err().
-> 
+On Tue, Feb 4, 2014 at 12:20 PM, Hugh Dickins <hughd@google.com> wrote:
+> On Mon, 3 Feb 2014, Andrew Morton wrote:
+>> On Mon, 27 Jan 2014 18:03:04 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
+>>
+>> > When swapon the same S_ISBLK blockdev concurrent, the allocated two
+>> > swap_info could hold the same block_device, because claim_swapfile()
+>> > allow the same holder(here, it is sys_swapon function).
+>> >
+>> > To prevent this situation, This patch adds swap_lock protect to ensure
+>> > we can find this situation and return -EBUSY for one swapon call.
+>> >
+>> > As for S_ISREG swapfile, claim_swapfile() already prevent this scenario
+>> > by holding inode->i_mutex.
+>> >
+>> > This patch is just for a rare scenario, aim to correct of code.
+>> >
+>>
+>> hm, OK.  Would it be saner to pass a unique `holder' to
+>> claim_swapfile()?  Say, `p'?
+>>
+>> Truly, I am fed up with silly swapon/swapoff races.  How often does
+>> anyone call these things?  Let's slap a huge lock around the whole
+>> thing and be done with it?
+>
+> That answer makes me sad: we can't be bothered to get it right,
+> even when Weijie goes to the trouble of presenting a series to do so.
+> But I sure don't deserve a vote until I've actually looked through it.
+>
 
-While, for the FlexTimer driver, there hasn't any device creation and
-registering, so I'll use pr_err() instead of dev_err()...
+Hi,
 
-Thanks
+This is a ping email. Could I get some options about these patch series?
 
-BRs
-Xiubo
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks.
+
+> Hugh
