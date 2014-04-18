@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265AbaDRAD7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 20:03:59 -0400
-Received: from mga03.intel.com ([143.182.124.21]:55229 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751111AbaDRAD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 20:03:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,882,1389772800"; 
-   d="scan'208";a="420549455"
-From: Andi Kleen <andi@firstfloor.org>
-To: peterz@infradead.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH] x86, perf: Update Haswell PEBS event table
-Date: Thu, 17 Apr 2014 17:03:44 -0700
-Message-Id: <1397779424-10248-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.8.5.3
+	id S1751286AbaDRAGg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 20:06:36 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58634 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751082AbaDRAGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 20:06:34 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Jyri Sarha <jsarha@ti.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] ASoC: tlv320aic31xx: document that the regulators are mandatory
+Date: Fri, 18 Apr 2014 02:06:30 +0200
+Message-Id: <1397779590-4128-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andi Kleen <ak@linux.intel.com>
+The driver will not probe if regulators are not provided. Move the regulator
+properties to the required section.
 
-- We were allowing some sub events in c4 that are not in the event list.
-Tighten the check slightly.
-- We were missing some valid subevents in d1-d3. Allow all subevents.
-
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/x86/kernel/cpu/perf_event_intel_ds.c | 21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
+ Documentation/devicetree/bindings/sound/tlv320aic31xx.txt | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index 7e9546a..07feaa0 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -641,7 +641,11 @@ struct event_constraint intel_hsw_pebs_event_constraints[] = {
- 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PRECDIST */
- 	INTEL_PST_HSW_CONSTRAINT(0x01c2, 0xf), /* UOPS_RETIRED.ALL */
- 	INTEL_UEVENT_CONSTRAINT(0x02c2, 0xf), /* UOPS_RETIRED.RETIRE_SLOTS */
--	INTEL_EVENT_CONSTRAINT(0xc4, 0xf),    /* BR_INST_RETIRED.* */
-+	INTEL_UEVENT_CONSTRAINT(0x1c4, 0xf),	/* BR_INST_RETIRED.CONDITIONAL */
-+	INTEL_UEVENT_CONSTRAINT(0x2c4, 0xf),	/* BR_INST_RETIRED.NEAR_CALL */
-+	INTEL_UEVENT_CONSTRAINT(0x4c4, 0xf),	/* BR_INST_RETIRED.ALL_BRANCHES */
-+	INTEL_UEVENT_CONSTRAINT(0x8c4, 0xf),	/* BR_INST_RETIRED.NEAR_RETURN */
-+	INTEL_UEVENT_CONSTRAINT(0x20c4, 0xf),	/* BR_INST_RETIRED.NEAR_TAKEN */
- 	INTEL_UEVENT_CONSTRAINT(0x01c5, 0xf), /* BR_MISP_RETIRED.CONDITIONAL */
- 	INTEL_UEVENT_CONSTRAINT(0x04c5, 0xf), /* BR_MISP_RETIRED.ALL_BRANCHES */
- 	INTEL_UEVENT_CONSTRAINT(0x20c5, 0xf), /* BR_MISP_RETIRED.NEAR_TAKEN */
-@@ -656,17 +660,10 @@ struct event_constraint intel_hsw_pebs_event_constraints[] = {
- 	INTEL_UEVENT_CONSTRAINT(0x42d0, 0xf),
- 	INTEL_UEVENT_CONSTRAINT(0x81d0, 0xf), /* MEM_UOPS_RETIRED.ALL_LOADS */
- 	INTEL_PST_HSW_CONSTRAINT(0x82d0, 0xf), /* MEM_UOPS_RETIRED.ALL_STORES */
--	INTEL_UEVENT_CONSTRAINT(0x01d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L1_HIT */
--	INTEL_UEVENT_CONSTRAINT(0x02d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L2_HIT */
--	INTEL_UEVENT_CONSTRAINT(0x04d1, 0xf), /* MEM_LOAD_UOPS_RETIRED.L3_HIT */
--	/* MEM_LOAD_UOPS_RETIRED.HIT_LFB */
--	INTEL_UEVENT_CONSTRAINT(0x40d1, 0xf),
--	/* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_MISS */
--	INTEL_UEVENT_CONSTRAINT(0x01d2, 0xf),
--	/* MEM_LOAD_UOPS_LLC_HIT_RETIRED.XSNP_HIT */
--	INTEL_UEVENT_CONSTRAINT(0x02d2, 0xf),
--	/* MEM_LOAD_UOPS_LLC_MISS_RETIRED.LOCAL_DRAM */
--	INTEL_UEVENT_CONSTRAINT(0x01d3, 0xf),
-+	INTEL_EVENT_CONSTRAINT(0xd1, 0xf),	/* MEM_LOAD_UOPS_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd2, 0xf),	/* MEM_LOAD_UOPS_L3_HIT_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd3, 0xf),	/* MEM_LOAD_UOPS_L3_MISS_RETIRED.* */
-+	INTEL_EVENT_CONSTRAINT(0xd3, 0xf),	/* MEM_LOAD_UOPS_L3_MISS_RETIRED.* */
- 	INTEL_UEVENT_CONSTRAINT(0x04c8, 0xf), /* HLE_RETIRED.Abort */
- 	INTEL_UEVENT_CONSTRAINT(0x04c9, 0xf), /* RTM_RETIRED.Abort */
+diff --git a/Documentation/devicetree/bindings/sound/tlv320aic31xx.txt b/Documentation/devicetree/bindings/sound/tlv320aic31xx.txt
+index 74c66dee3e14..eff12be5e789 100644
+--- a/Documentation/devicetree/bindings/sound/tlv320aic31xx.txt
++++ b/Documentation/devicetree/bindings/sound/tlv320aic31xx.txt
+@@ -13,6 +13,9 @@ Required properties:
+     "ti,tlv320aic3111" - TLV320AIC3111 (stereo speaker amp, MiniDSP)
  
+ - reg - <int> -  I2C slave address
++- HPVDD-supply, SPRVDD-supply, SPLVDD-supply, AVDD-supply, IOVDD-supply,
++  DVDD-supply : power supplies for the device as covered in
++  Documentation/devicetree/bindings/regulator/regulator.txt
+ 
+ 
+ Optional properties:
+@@ -24,9 +27,6 @@ Optional properties:
+         3 or MICBIAS_AVDD - MICBIAS output is connected to AVDD
+ 	If this node is not mentioned or if the value is unknown, then
+ 	micbias	is set to 2.0V.
+-- HPVDD-supply, SPRVDD-supply, SPLVDD-supply, AVDD-supply, IOVDD-supply,
+-  DVDD-supply : power supplies for the device as covered in
+-  Documentation/devicetree/bindings/regulator/regulator.txt
+ 
+ CODEC output pins:
+   * HPL
 -- 
-1.8.5.3
+1.8.3.2
 
