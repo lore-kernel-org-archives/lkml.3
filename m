@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751826AbaDRIo1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 04:44:27 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:59077 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034AbaDRIoW (ORCPT
+	id S1751272AbaDRIvK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 04:51:10 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39577 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750857AbaDRIvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 04:44:22 -0400
-Date: Fri, 18 Apr 2014 10:44:01 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
-Subject: Re: [PATCH 2/2] nohz: use delayed iowait accounting to avoid race on
- idle time stats
-Message-ID: <20140418084401.GC11096@twins.programming.kicks-ass.net>
-References: <53465F54.708@jp.fujitsu.com>
- <534660D2.1080505@jp.fujitsu.com>
- <20140415101910.GN11096@twins.programming.kicks-ass.net>
- <534E2422.1040706@jp.fujitsu.com>
- <20140417100519.GF11096@twins.programming.kicks-ass.net>
- <5350BD85.4050302@jp.fujitsu.com>
+	Fri, 18 Apr 2014 04:51:06 -0400
+Date: Fri, 18 Apr 2014 09:50:19 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joel Fernandes <joelf@ti.com>
+Cc: dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com,
+        Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>
+Subject: Re: [PATCH] [FIX] dmaengine: virt-dma: Free descriptor after
+	callback
+Message-ID: <20140418085019.GN27282@n2100.arm.linux.org.uk>
+References: <1397782610-7370-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5350BD85.4050302@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1397782610-7370-1-git-send-email-joelf@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 02:52:05PM +0900, Hidetoshi Seto wrote:
-> I think it also works... but I have some concerns here:
-> 
->  - it changes golden path in scheduler core.
->     impact for performance is questionable.
+On Thu, Apr 17, 2014 at 07:56:50PM -0500, Joel Fernandes wrote:
+> Free the vd (virt descriptor) after the callback is called.  In EDMA driver
+> atleast which uses virt-dma, we make use of the desc during the callback and if
+> its dangerously freed before the callback is called. I also noticed this in
+> omap-dma dmaengine driver.
 
-We should be able to measure that, but like said, it shouldn't change
-the number of atomic ops and makes sure its all in the same cacheline,
-so the additional code is all cheap.
+You've missed the vital bit of information: why do you make use of the
+descriptor afterwards?  You shouldn't.  omap-dma doesn't either.
 
->  - it forces managing last_iowait even if system is in busy
->     I guess it will drop max performance of the system
->     while my proposed fix only touches procedure for idle
->     with nohz. 
+Once clients submit their request to DMA engine, they must not hold any
+kind of reference to the descriptor other than the cookie.
 
-That could be fixed by looking to see if the remote rq is idle.
-
-> By the way, I have posted my v4 patch set:
-> https://lkml.org/lkml/2014/4/17/120
-> 
-> I'll happy if you could give your comments on it too!
-
-Yeah, I saw that, didn't have time yet, will hopefully get to it soon
-:-)
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
