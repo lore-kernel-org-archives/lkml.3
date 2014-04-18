@@ -1,76 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbaDRLey (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 07:34:54 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:56469 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaDRLev (ORCPT
+	id S1752152AbaDRLf0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 07:35:26 -0400
+Received: from mail-we0-f178.google.com ([74.125.82.178]:33050 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaDRLfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 07:34:51 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140418105601.GU11182@twins.programming.kicks-ass.net>
-References: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
- <1397209481-28542-2-git-send-email-vincent.guittot@linaro.org> <20140418105601.GU11182@twins.programming.kicks-ass.net>
+	Fri, 18 Apr 2014 07:35:21 -0400
 From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Fri, 18 Apr 2014 13:34:30 +0200
-Message-ID: <CAKfTPtCQpesxEMOcaOPemv+QydhrnN9H=NPHdczsY991Vhtdkg@mail.gmail.com>
-Subject: Re: [PATCH v4 1/5] sched: rework of sched_domain topology definition
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LAK <linux-arm-kernel@lists.infradead.org>,
-        Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: peterz@infradead.org
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, dietmar.eggemann@arm.com,
+        preeti@linux.vnet.ibm.com, linaro-kernel@lists.linaro.org,
+        tony.luck@intel.com, fenghua.yu@intel.com, schwidefsky@de.ibm.com,
+        cmetcalf@tilera.com, benh@kernel.crashing.org, linux@arm.linux.org.uk,
+        linux-arm-kernel@lists.infradead.org,
+        Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH] fix: sched: rework of sched_domain topology definition
+Date: Fri, 18 Apr 2014 13:34:06 +0200
+Message-Id: <1397820846-32603-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20140418105601.GU11182@twins.programming.kicks-ass.net>
+References: <20140418105601.GU11182@twins.programming.kicks-ass.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18 April 2014 12:56, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, Apr 11, 2014 at 11:44:37AM +0200, Vincent Guittot wrote:
->> We replace the old way to configure the scheduler topology with a new method
->> which enables a platform to declare additionnal level (if needed).
->>
->> We still have a default topology table definition that can be used by platform
->> that don't want more level than the SMT, MC, CPU and NUMA ones. This table can
->> be overwritten by an arch which either wants to add new level where a load
->> balance make sense like BOOK or powergating level or wants to change the flags
->> configuration of some levels.
->>
->> For each level, we need a function pointer that returns cpumask for each cpu,
->> a function pointer that returns the flags for the level and a name. Only flags
->> that describe topology, can be set by an architecture. The current topology
->> flags are:
->>  SD_SHARE_CPUPOWER
->>  SD_SHARE_PKG_RESOURCES
->>  SD_NUMA
->>  SD_ASYM_PACKING
->>
->> Then, each level must be a subset on the next one. The build sequence of the
->> sched_domain will take care of removing useless levels like those with 1 CPU
->> and those with the same CPU span and no more relevant information for
->> load balancing than its childs.
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
->
-> On x86_64 defconfig this gets me:
->
-> kernel/sched/core.c: In function 'sched_init_numa':
-> kernel/sched/core.c:6197:4: warning: initialization makes pointer from integer without a cast [enabled by default]
-> kernel/sched/core.c:6197:4: warning: (near initialization for '(anonymous).sd_flags') [enabled by default]
+fix missing change from int to pointer function for numa flags
 
-Sorry, while moving from int to function pointer, i forgot to change
-the numa part
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ include/linux/sched.h | 7 +++++++
+ kernel/sched/core.c   | 2 +-
+ 2 files changed, 8 insertions(+), 1 deletion(-)
 
-I'm going to send a fix right now
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 18464cb..d2b981c 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -887,6 +887,13 @@ static inline const int cpu_core_flags(void)
+ }
+ #endif
+ 
++#ifdef CONFIG_NUMA
++static inline const int cpu_numa_flags(void)
++{
++	return SD_NUMA;
++}
++#endif
++
+ struct sched_domain_attr {
+ 	int relax_domain_level;
+ };
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index a30b0b4..24d0831 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -6235,7 +6235,7 @@ static void sched_init_numa(void)
+ 	for (j = 0; j < level; i++, j++) {
+ 		tl[i] = (struct sched_domain_topology_level){
+ 			.mask = sd_numa_mask,
+-			.sd_flags = SD_NUMA,
++			.sd_flags = cpu_numa_flags,
+ 			.flags = SDTL_OVERLAP,
+ 			.numa_level = j,
+ 			SD_INIT_NAME(NUMA)
+-- 
+1.9.1
 
-
->
