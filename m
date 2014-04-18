@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751330AbaDRKOT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 06:14:19 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39941 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751110AbaDRKOQ (ORCPT
+	id S1751542AbaDRKPB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 06:15:01 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:9579 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751370AbaDRKOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 06:14:16 -0400
-Date: Fri, 18 Apr 2014 11:13:30 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Philipp Zabel <p.zabel@pengutronix.de>
-Cc: devel@driverdev.osuosl.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [PATCH v2 0/8] Reorder i.MX IPU display enable/disable sequence
-Message-ID: <20140418101330.GC24070@n2100.arm.linux.org.uk>
-References: <1397512403-19622-1-git-send-email-p.zabel@pengutronix.de>
+	Fri, 18 Apr 2014 06:14:35 -0400
+X-IronPort-AV: E=Sophos;i="4.97,883,1389715200"; 
+   d="scan'208";a="29441551"
+Message-ID: <5350ED15.7070103@cn.fujitsu.com>
+Date: Fri, 18 Apr 2014 18:15:01 +0900
+From: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130612 Thunderbird/17.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397512403-19622-1-git-send-email-p.zabel@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Ingo Molnar <mingo@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <peterz@infradead.org>,
+        <tglx@linutronix.de>, <heiko.carstens@de.ibm.com>
+Subject: Re: [PATCH 17/17] sched: Get rid of opened code implementation of
+ funtion nice_to_rlimit().
+References: <cover.1394532288.git.yangds.fnst@cn.fujitsu.com> <220c27487540603b7af88ef327600804212a6706.1394532288.git.yangds.fnst@cn.fujitsu.com> <20140418100111.GA29098@gmail.com>
+In-Reply-To: <20140418100111.GA29098@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.49]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 11:53:15PM +0200, Philipp Zabel wrote:
-> Repeatedly enabling and disabling the display currently can lead to a state
-> in which the IPU doesn't produce a valid signal anymore because we disable
-> IPU submodules before they can finish their interaction.
-> 
-> This series reorders the enable/disable sequence so that we first wait for the
-> DC/DP to finish processing the current frame, then stop the DI and IDMAC, and
-> only then disable clocks to the submodules. Also from now on we really disable
-> the DC when it is not in use.
+On 04/18/2014 07:01 PM, Ingo Molnar wrote:
+> So the patch title has two typos and a superfluous period.
 
-Okay, I'm going to queue these up in a couple of days, but there's
-something which I'd prefer to be fixed... there's one in particular
-that is excessively long.
+Really sorry for that. :( I will update it right now.
+> I really don't want to apply patches that only get written but don't
+> get read...
 
-> Philipp Zabel (8):
->   imx-drm: ipu-common: add ipu_map_irq to request non-IDMAC interrupts
->   imx-drm: ipu-common: Add helpers to check for a busy IDMAC channel and
->     to busywait for an interrupt
->   imx-drm: ipu-dmfc: Wait for FIFOs to run empty before disabling
->   imx-drm: ipu-dc: Wait for DC_FC_1 / DP_SF_END interrupt
->   imx-drm: ipu-dp: Split disabling the DP foreground channel from
->     disabling the DP module
->   imx-drm: imx-dp: When disabling the DP foreground channel, wait until
->     the DP background channel is finished before disabling the IDMAC
->     channel
+Spelling double-check was added in my checklist, wish it can make my work
+better. :)
 
-    imx-drm: imx-dp: disable DP fg channel after DP bg channel has finished
+Dongsheng
+>
+> Thanks,
+>
+> 	Ingo
+>
 
-maybe?
-
->   imx-drm: ipuv3-crtc: Change display enable/disable order
->   imx-drm: ipu-dc: Disable DC module when not in use
-
-
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
