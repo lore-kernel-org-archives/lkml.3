@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753190AbaDRJYA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:24:00 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45903 "EHLO
+	id S1753134AbaDRJXy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:23:54 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45905 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752051AbaDRJWr (ORCPT
+	by vger.kernel.org with ESMTP id S1752068AbaDRJWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:47 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Gerd Hoffmann <kraxel@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 23/72] drm/cirrus: use drm_set_preferred_mode
-Date: Fri, 18 Apr 2014 11:21:56 +0200
-Message-Id: <7837b5ae7cd2a1be36cef09f923289fe7c076a34.1397812482.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Adam Jackson <ajax@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 21/72] fbdev: Make the switch from generic to native driver less alarming
+Date: Fri, 18 Apr 2014 11:21:54 +0200
+Message-Id: <aa66ee9749278e793e720037937c66c4d96c7517.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -23,52 +23,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gerd Hoffmann <kraxel@redhat.com>
+From: Adam Jackson <ajax@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 121a6a17439b000b9699c3fa876636db20fa4107 upstream.
+commit 13ba0ad4490c3dd08b15c430a7a01c6fb45d5bce upstream.
 
-Explicitly set 1024x768 as default mode, so the display doesn't come up
-with the largest supported mode.
+Calling this "conflicting" just makes people think there's a problem
+when there's not.
 
-While being at it drop first three drm_add_modes_noedid calls.  As
-drm_add_modes_noedid fills the mode list with modes from the database
-*up to* the specified size it is pretty pointless to call it multiple
-times with different sizes.
-
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Adam Jackson <ajax@redhat.com>
+Reviewed-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/cirrus/cirrus_mode.c | 11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ drivers/video/fbmem.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/cirrus/cirrus_mode.c b/drivers/gpu/drm/cirrus/cirrus_mode.c
-index 379a47ea99f6..3592616d484b 100644
---- a/drivers/gpu/drm/cirrus/cirrus_mode.c
-+++ b/drivers/gpu/drm/cirrus/cirrus_mode.c
-@@ -494,13 +494,12 @@ static struct drm_encoder *cirrus_encoder_init(struct drm_device *dev)
+diff --git a/drivers/video/fbmem.c b/drivers/video/fbmem.c
+index 7309ac704e26..b6d5008f361f 100644
+--- a/drivers/video/fbmem.c
++++ b/drivers/video/fbmem.c
+@@ -1596,8 +1596,7 @@ static int do_remove_conflicting_framebuffers(struct apertures_struct *a,
+ 			(primary && gen_aper && gen_aper->count &&
+ 			 gen_aper->ranges[0].base == VGA_FB_PHYS)) {
  
- int cirrus_vga_get_modes(struct drm_connector *connector)
- {
--	/* Just add a static list of modes */
--	drm_add_modes_noedid(connector, 640, 480);
--	drm_add_modes_noedid(connector, 800, 600);
--	drm_add_modes_noedid(connector, 1024, 768);
--	drm_add_modes_noedid(connector, 1280, 1024);
-+	int count;
- 
--	return 4;
-+	/* Just add a static list of modes */
-+	count = drm_add_modes_noedid(connector, 1280, 1024);
-+	drm_set_preferred_mode(connector, 1024, 768);
-+	return count;
- }
- 
- static int cirrus_vga_mode_valid(struct drm_connector *connector,
+-			printk(KERN_INFO "fb: conflicting fb hw usage "
+-			       "%s vs %s - removing generic driver\n",
++			printk(KERN_INFO "fb: switching to %s from %s\n",
+ 			       name, registered_fb[i]->fix.id);
+ 			ret = do_unregister_framebuffer(registered_fb[i]);
+ 			if (ret)
 -- 
 1.9.2
 
