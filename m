@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555AbaDRLNw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 07:13:52 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:57868 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaDRLNr (ORCPT
+	id S1751520AbaDRLTw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 07:19:52 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:33319 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaDRLTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 07:13:47 -0400
-Message-ID: <535108E3.2010208@gmail.com>
-Date: Fri, 18 Apr 2014 13:13:39 +0200
+	Fri, 18 Apr 2014 07:19:49 -0400
+Message-ID: <53510A4D.8050706@gmail.com>
+Date: Fri, 18 Apr 2014 13:19:41 +0200
 From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
@@ -22,10 +22,9 @@ CC: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Grant Likely <grant.likely@linaro.org>,
         Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/8] usb: host: xhci-plat: Add support for the Armada
- 38x glue code
-References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com> <1397816563-9000-3-git-send-email-gregory.clement@free-electrons.com>
-In-Reply-To: <1397816563-9000-3-git-send-email-gregory.clement@free-electrons.com>
+Subject: Re: [PATCH 4/8] ARM: mvebu: Add USB3 UTMI support
+References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com> <1397816563-9000-5-git-send-email-gregory.clement@free-electrons.com>
+In-Reply-To: <1397816563-9000-5-git-send-email-gregory.clement@free-electrons.com>
 X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -34,242 +33,116 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On 04/18/2014 12:22 PM, Gregory CLEMENT wrote:
-> For the armada 38x SoCs which come with an xhci controller, specific
-> initialization must be done during probe, especially in relation with
-> the MBus windows initialization. This patch adds this support.
+> The usb3-utmi registers allow to configure the internal USB PHY of the
+> Armada 380/385 SoCs. A small initialization is needed to be able to use
+> the USB3 ports.
 > 
 > Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 > ---
->  drivers/usb/host/Kconfig      |   7 +++
->  drivers/usb/host/Makefile     |   1 +
->  drivers/usb/host/xhci-mvebu.c | 105 ++++++++++++++++++++++++++++++++++++++++++
->  drivers/usb/host/xhci-mvebu.h |  21 +++++++++
->  drivers/usb/host/xhci-plat.c  |  10 ++++
->  5 files changed, 144 insertions(+)
->  create mode 100644 drivers/usb/host/xhci-mvebu.c
->  create mode 100644 drivers/usb/host/xhci-mvebu.h
+>  arch/arm/mach-mvebu/Makefile   |  2 +-
+>  arch/arm/mach-mvebu/usb-utmi.c | 64 ++++++++++++++++++++++++++++++++++++++++++
+
+Gregory,
+
+there is the generic PHY framework, that could possibly be used to
+avoid adding more code to arch/arm/mach-mvebu.
+
+>  2 files changed, 65 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/arm/mach-mvebu/usb-utmi.c
 > 
-> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> index 3d9e54062d62..e70943fac4a1 100644
-> --- a/drivers/usb/host/Kconfig
-> +++ b/drivers/usb/host/Kconfig
-> @@ -29,6 +29,13 @@ if USB_XHCI_HCD
->  config USB_XHCI_PLATFORM
->  	tristate
+> diff --git a/arch/arm/mach-mvebu/Makefile b/arch/arm/mach-mvebu/Makefile
+> index a63e43b6b451..2d98a3eeecf6 100644
+> --- a/arch/arm/mach-mvebu/Makefile
+> +++ b/arch/arm/mach-mvebu/Makefile
+> @@ -4,7 +4,7 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) := -I$(srctree)/$(src)/include \
+>  AFLAGS_coherency_ll.o		:= -Wa,-march=armv7-a
 >  
-> +config USB_XHCI_MVEBU
-> +	tristate "xHCI support for Marvell Armada 38x"
-> +	select USB_XHCI_PLATFORM
-> +	---help---
-> +	  Say 'Y' to enable the support for the xHCI host controller
-> +	  found in Marvell Armada 38x ARM SOCs.
-> +
->  endif # USB_XHCI_HCD
->  
->  config USB_EHCI_HCD
-> diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-> index 7530468c9a4f..7a8db7f7dc01 100644
-> --- a/drivers/usb/host/Makefile
-> +++ b/drivers/usb/host/Makefile
-> @@ -19,6 +19,7 @@ xhci-hcd-$(CONFIG_PCI)	+= xhci-pci.o
->  
->  ifneq ($(CONFIG_USB_XHCI_PLATFORM), )
->  	xhci-hcd-y		+= xhci-plat.o
-> +	xhci-hcd-$(CONFIG_USB_XHCI_MVEBU)	+= xhci-mvebu.o
->  endif
->  
->  obj-$(CONFIG_USB_WHCI_HCD)	+= whci/
-> diff --git a/drivers/usb/host/xhci-mvebu.c b/drivers/usb/host/xhci-mvebu.c
+>  obj-y				 += system-controller.o mvebu-soc-id.o
+> -obj-$(CONFIG_MACH_MVEBU_V7)      += board-v7.o
+> +obj-$(CONFIG_MACH_MVEBU_V7)      += board-v7.o  usb-utmi.o
+>  obj-$(CONFIG_MACH_DOVE)		 += dove.o
+>  obj-$(CONFIG_ARCH_MVEBU)	 += coherency.o coherency_ll.o pmsu.o
+>  obj-$(CONFIG_SMP)                += platsmp.o headsmp.o
+> diff --git a/arch/arm/mach-mvebu/usb-utmi.c b/arch/arm/mach-mvebu/usb-utmi.c
 > new file mode 100644
-> index 000000000000..dc9c7648ab65
+> index 000000000000..e91e86f85eb4
 > --- /dev/null
-> +++ b/drivers/usb/host/xhci-mvebu.c
-> @@ -0,0 +1,105 @@
+> +++ b/arch/arm/mach-mvebu/usb-utmi.c
+> @@ -0,0 +1,64 @@
 > +/*
-> + * Copyright (C) 2014 Marvell
-> + * Author: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> + * USB UTMI support for Armada 38x platform.
 > + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * version 2 as published by the Free Software Foundation.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/io.h>
-> +#include <linux/mbus.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +
-> +#include "xhci.h"
-> +
-> +#define USB3_MAX_WINDOWS	4
-> +#define USB3_WIN_CTRL(w)	(0x0 + ((w) * 8))
-> +#define USB3_WIN_BASE(w)	(0x4 + ((w) * 8))
-> +
-> +static void __init mv_usb3_conf_mbus_windows(void __iomem *base,
-> +			const struct mbus_dram_target_info *dram)
-> +{
-> +	int win;
-> +
-> +	/* Clear all existing windows */
-> +	for (win = 0; win < USB3_MAX_WINDOWS; win++) {
-> +		writel(0, base + USB3_WIN_CTRL(win));
-> +		writel(0, base + USB3_WIN_BASE(win));
-> +	}
-> +
-> +	/* Program each DRAM CS in a seperate window */
-> +	for (win = 0; win < dram->num_cs; win++) {
-> +		const struct mbus_dram_window *cs = dram->cs + win;
-> +
-> +		writel(((cs->size - 1) & 0xffff0000) | (cs->mbus_attr << 8) |
-> +		       (dram->mbus_dram_target_id << 4) | 1,
-> +		       base + USB3_WIN_CTRL(win));
-> +
-> +		writel((cs->base & 0xffff0000), base + USB3_WIN_BASE(win));
-> +	}
-> +}
-> +
-> +int xhci_mvebu_probe(struct platform_device *pdev)
-> +{
-> +	struct resource	*res;
-> +	void __iomem	*base;
-> +	const struct mbus_dram_target_info *dram;
-> +	int ret;
-> +	struct clk *clk;
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> +	if (!res)
-> +		return -ENODEV;
-> +
-> +	/*
-> +	 * We don't use devm_ioremap() because this mapping should
-> +	 * only exists for the duration of this probe function.
-> +	 */
-> +	base = ioremap(res->start, resource_size(res));
-> +	if (!base)
-> +		return -ENODEV;
-> +
-> +	clk = devm_clk_get(&pdev->dev, NULL);
-> +	if (IS_ERR(clk)) {
-> +		iounmap(base);
-> +		return PTR_ERR(clk);
-> +	}
-> +
-> +	ret = clk_prepare_enable(clk);
-> +	if (ret < 0) {
-> +		iounmap(base);
-> +		return ret;
-> +	}
-> +
-> +	dram = mv_mbus_dram_info();
-> +	mv_usb3_conf_mbus_windows(base, dram);
-> +
-> +	/*
-> +	 * This memory area was only needed to configure the MBus
-> +	 * windows, and is therefore no longer useful.
-> +	 */
-> +	iounmap(base);
-> +
-> +	ret = common_xhci_plat_probe(pdev, clk);
-> +	if (ret < 0) {
-> +		clk_disable_unprepare(clk);
-> +		return ret;
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +int xhci_mvebu_remove(struct platform_device *pdev)
-> +{
-> +	struct usb_hcd *hcd = platform_get_drvdata(pdev);
-> +	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
-> +	struct clk *clk = xhci->priv;
-> +
-> +	common_xhci_plat_remove(pdev);
-> +	clk_disable_unprepare(clk);
-> +
-> +	return 0;
-> +}
-> diff --git a/drivers/usb/host/xhci-mvebu.h b/drivers/usb/host/xhci-mvebu.h
-> new file mode 100644
-> index 000000000000..897ef298f22f
-> --- /dev/null
-> +++ b/drivers/usb/host/xhci-mvebu.h
-> @@ -0,0 +1,21 @@
-> +/*
 > + * Copyright (C) 2014 Marvell
 > + *
-> + * Gregory Clement <gregory.clement@free-electrons.com>
+> + * Gregory CLEMENT <gregory.clement@free-electrons.com>
 > + *
 > + * This file is licensed under the terms of the GNU General Public
 > + * License version 2.  This program is licensed "as is" without any
 > + * warranty of any kind, whether express or implied.
+> + *
 > + */
 > +
-> +#ifndef __LINUX_XHCI_MVEBU_H
-> +#define __LINUX_XHCI_MVEBU_H
-> +
-> +#ifdef CONFIG_USB_XHCI_MVEBU
-> +int xhci_mvebu_probe(struct platform_device *pdev);
-> +int xhci_mvebu_remove(struct platform_device *pdev);
-> +#else
-> +#define xhci_mvebu_probe NULL
-> +#define xhci_mvebu_remove NULL
-> +#endif
-> +#endif /* __LINUX_XHCI_MVEBU_H */
-> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-> index 8029cc82edc4..f1261d3848a9 100644
-> --- a/drivers/usb/host/xhci-plat.c
-> +++ b/drivers/usb/host/xhci-plat.c
-> @@ -19,6 +19,7 @@
->  #include <linux/of_device.h>
->  
->  #include "xhci.h"
-> +#include "xhci-mvebu.h"
->  
->  static void xhci_plat_quirks(struct device *dev, struct xhci_hcd *xhci)
->  {
-> @@ -250,6 +251,11 @@ static const struct dev_pm_ops xhci_plat_pm_ops = {
->  #endif /* CONFIG_PM */
->  
->  #ifdef CONFIG_OF
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/of_address.h>
+> +#include <linux/io.h>
+> +#include <linux/slab.h>
 
-Gregory,
+nit: sort alphabetically
 
-either you should #ifndef CONFIG_USB_XHCI_MVEBU this and the one below -
-or even better:
+> +#define USB_UTMI_PHY_CTRL_STATUS(i)	(0x20+i*4)
+> +#define		USB_UTMI_TX_BITSTUFF_EN BIT(1)
+> +#define		USB_UTMI_PU_PHY		BIT(5)
+> +#define		USB_UTMI_VBUS_ON_PHY	BIT(6)
 
-Can you put driver stub with its of_match_table right into xhci-mvebu?
-That way platform specific probe wouldn't pollute the generic driver.
+nit: two TABs in front of the defines above.
 
-Greg will have a better opinion about it, but I remember some cleanup
-in ehci, that basically removed platform specific references from the
-generic code.
-
-> +struct xhci_plat_ops xhci_plat_mvebu = {
-> +	.probe =  xhci_mvebu_probe,
-> +	.remove =  xhci_mvebu_remove,
+> +static struct of_device_id of_usb_utmi_table[] = {
+> +	{ .compatible = "marvell,armada-380-usb-utmi", },
+> +	{ /* end of list */ },
 > +};
 > +
->  static const struct of_device_id usb_xhci_of_match[] = {
->  	{
->  		.compatible = "generic-xhci",
-> @@ -259,6 +265,10 @@ static const struct of_device_id usb_xhci_of_match[] = {
->  		.compatible = "xhci-platform",
->  		.data = (void *) &xhci_plat_default,
->  	},
-> +	{
-> +		.compatible = "marvell,xhci-armada-380",
+> +static int __init mvebu_usb_utmi_init(void)
+> +{
+> +	struct device_node *np;
+> +
+> +	np = of_find_matching_node(NULL, of_usb_utmi_table);
+> +	if (np) {
+> +		void __iomem *usb_utmi_base, *utmi_base;
+> +
+> +		usb_utmi_base = of_iomap(np, 0);
+> +		BUG_ON(!usb_utmi_base);
+> +
+> +		utmi_base = of_iomap(np, 1);
+> +		BUG_ON(!utmi_base);
+> +
+> +		writel(USB_UTMI_TX_BITSTUFF_EN |
+> +			   USB_UTMI_PU_PHY |
+> +			   USB_UTMI_VBUS_ON_PHY,
+> +			   usb_utmi_base + USB_UTMI_PHY_CTRL_STATUS(0));
+> +
+> +		/*
+> +		 * Magic init... the registers and their value are not
+> +		 * documented
+> +		 */
+> +		writel(0x40605205, utmi_base);
+> +		writel(0x409, utmi_base + 4);
+> +		writel(0x1be7f6f, utmi_base + 0xc);
 
-nit: the ususal order we use on mvebu is "marvell,<soc>-<ip>", so this
-should be "marvell,armada-380-xhci".
+nit: decimal/hexadecimal offsets, also IMHO filling the values
+written with leading zeros improves readability of "magic init"
+alot :)
 
 Sebastian
 
-> +		.data = (void *) &xhci_plat_mvebu,
-> +	},
->  	{ },
->  };
->  MODULE_DEVICE_TABLE(of, usb_xhci_of_match);
+> +
+> +		of_node_put(np);
+> +		iounmap(utmi_base);
+> +		iounmap(usb_utmi_base);
+> +	}
+> +
+> +	return 0;
+> +}
+> +postcore_initcall(mvebu_usb_utmi_init);
 > 
 
