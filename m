@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaDRIJk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 04:09:40 -0400
-Received: from smtprelay4.synopsys.com ([198.182.44.111]:53758 "EHLO
+	id S1752332AbaDRIK2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 04:10:28 -0400
+Received: from smtprelay.synopsys.com ([198.182.60.111]:46933 "EHLO
 	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872AbaDRIJW (ORCPT
+	with ESMTP id S1751656AbaDRIJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 04:09:22 -0400
+	Fri, 18 Apr 2014 04:09:11 -0400
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 To: Peter Zijlstra <peterz@infradead.org>, <torvalds@linux-foundation.org>
-CC: <linux-kernel@vger.kernel.org>, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
-        Richard Kuo <rkuo@codeaurora.org>
-Subject: [PATCH 2/2] Hexagon: Delete stale barrier.h
-Date: Fri, 18 Apr 2014 13:38:35 +0530
-Message-ID: <1397808515-8013-3-git-send-email-vgupta@synopsys.com>
+CC: <linux-kernel@vger.kernel.org>, Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Subject: [PATCH 1/2] ARC: Delete stale barrier.h
+Date: Fri, 18 Apr 2014 13:38:34 +0530
+Message-ID: <1397808515-8013-2-git-send-email-vgupta@synopsys.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397808515-8013-1-git-send-email-vgupta@synopsys.com>
 References: <1397808515-8013-1-git-send-email-vgupta@synopsys.com>
@@ -24,61 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is likely Hexagon build is broken too in 3.15.
-But I don't have a working compiler to be sure.
+Commit 93ea02bb8435 "arch: Clean up asm/barrier.h implementations" wired
+generic barrier.h for ARC, but failed to delete the existing file.
 
-Cc: Richard Kuo <rkuo@codeaurora.org>
+In 3.15, due to rcupdate.h updates, this causes a build breakage on ARC
+
+--------------->8---------------------
+  CC      arch/arc/kernel/asm-offsets.s
+In file included from include/linux/sched.h:45:0,
+                 from arch/arc/kernel/asm-offsets.c:9:
+include/linux/rculist.h: In function __list_add_rcu:
+include/linux/rculist.h:54:2: error: implicit declaration of function smp_store_release [-Werror=implicit-function-declaration]
+  rcu_assign_pointer(list_next_rcu(prev), new);
+  ^
+--------------->8---------------------
+
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: linux-kernel@vger.kernel.org
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 ---
- arch/hexagon/include/asm/barrier.h | 37 -------------------------------------
+ arch/arc/include/asm/barrier.h | 37 -------------------------------------
  1 file changed, 37 deletions(-)
- delete mode 100644 arch/hexagon/include/asm/barrier.h
+ delete mode 100644 arch/arc/include/asm/barrier.h
 
-diff --git a/arch/hexagon/include/asm/barrier.h b/arch/hexagon/include/asm/barrier.h
+diff --git a/arch/arc/include/asm/barrier.h b/arch/arc/include/asm/barrier.h
 deleted file mode 100644
-index 4e863daea25b..000000000000
---- a/arch/hexagon/include/asm/barrier.h
+index c32245c3d1e9..000000000000
+--- a/arch/arc/include/asm/barrier.h
 +++ /dev/null
 @@ -1,37 +0,0 @@
 -/*
-- * Memory barrier definitions for the Hexagon architecture
-- *
-- * Copyright (c) 2010-2011, The Linux Foundation. All rights reserved.
+- * Copyright (C) 2004, 2007-2010, 2011-2012 Synopsys, Inc. (www.synopsys.com)
 - *
 - * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 and
-- * only version 2 as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
-- * You should have received a copy of the GNU General Public License
-- * along with this program; if not, write to the Free Software
-- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-- * 02110-1301, USA.
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
 - */
 -
--#ifndef _ASM_BARRIER_H
--#define _ASM_BARRIER_H
+-#ifndef __ASM_BARRIER_H
+-#define __ASM_BARRIER_H
 -
--#define rmb()				barrier()
--#define read_barrier_depends()		barrier()
--#define wmb()				barrier()
--#define mb()				barrier()
--#define smp_rmb()			barrier()
--#define smp_read_barrier_depends()	barrier()
--#define smp_wmb()			barrier()
--#define smp_mb()			barrier()
+-#ifndef __ASSEMBLY__
 -
--/*  Set a value and use a memory barrier.  Used by the scheduler somewhere.  */
--#define set_mb(var, value) \
--	do { var = value; mb(); } while (0)
+-/* TODO-vineetg: Need to see what this does, don't we need sync anywhere */
+-#define mb() __asm__ __volatile__ ("" : : : "memory")
+-#define rmb() mb()
+-#define wmb() mb()
+-#define set_mb(var, value)  do { var = value; mb(); } while (0)
+-#define set_wmb(var, value) do { var = value; wmb(); } while (0)
+-#define read_barrier_depends()  mb()
 -
--#endif /* _ASM_BARRIER_H */
+-/* TODO-vineetg verify the correctness of macros here */
+-#ifdef CONFIG_SMP
+-#define smp_mb()        mb()
+-#define smp_rmb()       rmb()
+-#define smp_wmb()       wmb()
+-#else
+-#define smp_mb()        barrier()
+-#define smp_rmb()       barrier()
+-#define smp_wmb()       barrier()
+-#endif
+-
+-#define smp_read_barrier_depends()      do { } while (0)
+-
+-#endif
+-
+-#endif
 -- 
 1.8.3.2
 
