@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505AbaDRUYK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 16:24:10 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:59759 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754307AbaDRUXz (ORCPT
+	id S1754389AbaDRUfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 16:35:16 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:23694 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752808AbaDRUfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 16:23:55 -0400
-From: Konrad Zapalowicz <bergo.torino@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Konrad M Zapalowicz <bergo.torino@gmail.com>
-Subject: [PATCH 1/2] staging: rtl8188eu: fix spaces instead of tabs for rtw_p2p.c
-Date: Fri, 18 Apr 2014 22:23:06 +0200
-Message-Id: <1397852587-8170-2-git-send-email-bergo.torino@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1397852587-8170-1-git-send-email-bergo.torino@gmail.com>
-References: <1397852587-8170-1-git-send-email-bergo.torino@gmail.com>
+	Fri, 18 Apr 2014 16:35:11 -0400
+Message-ID: <53518C76.2020005@atmel.com>
+Date: Fri, 18 Apr 2014 22:35:02 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Bo Shen <voice.shen@atmel.com>, Boris BREZILLON <b.brezillon@overkiz.com>
+CC: Mark Brown <broonie@kernel.org>, <alsa-devel@alsa-project.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        <devicetree@vger.kernel.org>, Rob Landley <rob@landley.net>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@linaro.org>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        <linux-kernel@vger.kernel.org>, Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 0/8] ARM: at91: sama5d3: enable sound support
+References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com>
+In-Reply-To: <1395049541-28128-1-git-send-email-voice.shen@atmel.com>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konrad M Zapalowicz <bergo.torino@gmail.com>
+On 17/03/2014 10:45, Bo Shen :
+> This patch add sound support on sama5d3xek board.
+> 
+> This patch series based on the following patch set:
+>   clk: at91: better support for the PCKs
+>   http://comments.gmane.org/gmane.linux.kernel/1664477
+> 
+> 
+> Bo Shen (5):
+>   ARM: at91: sama5d3: add DMA property for SSC devices
+>   ARM: at91: sama5d3: disable sound by default
+>   ARM: at91: sama5d3: correct the sound compatible string
+>   ARM: at91: sama5d3: add the missing property
+>   ARM: at91: sama5d3: clock for ssc from rk pin
+> 
+> Boris BREZILLON (3):
+>   ASoC: atmel: support CCF based clks
+>   ASoC: atmel: document clock properties of the wm8904 driver
+>   ARM: at91/dt: add clock properties to the wm8904 codec node
 
-This commit fixes the following checkpatch errors:
+Hi Voice and Boris,
 
-rtl8188eu/core/rtw_p2p.c
-    - 1508: ERROR: code indent should use tabs where possible
-    - 1509: ERROR: code indent should use tabs where possible
-    - 1510: ERROR: code indent should use tabs where possible
+For this series I am a little bit puzzled: should I take the ASoC part
+of it? I see no acknowledgement from Mark and I also read some messages
+still discussing about CCF and wm8904 afterwards.
 
-Signed-off-by: Konrad Zapalowicz <bergo.torino at gmail.com>
----
- drivers/staging/rtl8188eu/core/rtw_p2p.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+So, I take the 5 patches by Voice Shen and tell me what is the proper
+sequence with this wm8904 work.
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_p2p.c b/drivers/staging/rtl8188eu/core/rtw_p2p.c
-index 9425c49..0a15f8c 100644
---- a/drivers/staging/rtl8188eu/core/rtw_p2p.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_p2p.c
-@@ -1505,9 +1505,9 @@ static void find_phase_handler(struct adapter *padapter)
- 
- 	rtw_p2p_set_state(pwdinfo, P2P_STATE_FIND_PHASE_SEARCH);
- 
--        spin_lock_bh(&pmlmepriv->lock);
--        rtw_sitesurvey_cmd(padapter, &ssid, 1, NULL, 0);
--        spin_unlock_bh(&pmlmepriv->lock);
-+	spin_lock_bh(&pmlmepriv->lock);
-+	rtw_sitesurvey_cmd(padapter, &ssid, 1, NULL, 0);
-+	spin_unlock_bh(&pmlmepriv->lock);
- }
- 
- void p2p_concurrent_handler(struct adapter *padapter);
+I will be happy to stack more patches about this topic during the 3.16
+development phase.
+
+
+Otherwise, the 5 patches by Voice go into at91-3.16-dt branch.
+
+Thanks, bye.
+
+
+>  .../devicetree/bindings/sound/atmel-wm8904.txt     |  2 ++
+>  arch/arm/boot/dts/sama5d3.dtsi                     |  6 ++++++
+>  arch/arm/boot/dts/sama5d3xmb.dtsi                  | 11 +++++++++-
+>  sound/soc/atmel/atmel_wm8904.c                     | 25 +++++++++++-----------
+>  4 files changed, 31 insertions(+), 13 deletions(-)
+> 
+
+
 -- 
-1.8.1.2
-
+Nicolas Ferre
