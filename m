@@ -1,57 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751286AbaDRAGg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 20:06:36 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58634 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751082AbaDRAGe (ORCPT
+	id S1751358AbaDRAIn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 20:08:43 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:57122 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751082AbaDRAIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 20:06:34 -0400
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Mark Brown <broonie@kernel.org>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jyri Sarha <jsarha@ti.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH] ASoC: tlv320aic31xx: document that the regulators are mandatory
-Date: Fri, 18 Apr 2014 02:06:30 +0200
-Message-Id: <1397779590-4128-1-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	Thu, 17 Apr 2014 20:08:40 -0400
+Date: Fri, 18 Apr 2014 09:08:14 +0900
+From: Daeseok Youn <daeseok.youn@gmail.com>
+To: tj@kernel.org
+Cc: laijs@cn.fujitsu.com, linux-kernel@vger.kernel.org, daeseok.youn@gmail.com
+Subject: [PATCH V2] workqueue: jumps to use_dfl_pwq if the target cpumask is
+ equal wq's
+Message-ID: <20140418000814.GA7622@devel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The driver will not probe if regulators are not provided. Move the regulator
-properties to the required section.
+wq_update_unbound_numa(), when it's decided that the newly updated
+cpumask equals the default, looks at whether the current pwq is
+already the default one and skips setting pwq to the default one.
+This extra step is unnecessary and we can always jump to use_dfl_pwq
+instead. Simplify the code by removing the conditional.
+This doesn't make any functional difference.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
 ---
- Documentation/devicetree/bindings/sound/tlv320aic31xx.txt | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+V2: update patch description and comment of code
 
-diff --git a/Documentation/devicetree/bindings/sound/tlv320aic31xx.txt b/Documentation/devicetree/bindings/sound/tlv320aic31xx.txt
-index 74c66dee3e14..eff12be5e789 100644
---- a/Documentation/devicetree/bindings/sound/tlv320aic31xx.txt
-+++ b/Documentation/devicetree/bindings/sound/tlv320aic31xx.txt
-@@ -13,6 +13,9 @@ Required properties:
-     "ti,tlv320aic3111" - TLV320AIC3111 (stereo speaker amp, MiniDSP)
+ kernel/workqueue.c |    8 ++------
+ 1 files changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 3150b21..e122d39 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -4080,17 +4080,13 @@ static void wq_update_unbound_numa(struct workqueue_struct *wq, int cpu,
+ 	 * Let's determine what needs to be done.  If the target cpumask is
+ 	 * different from wq's, we need to compare it to @pwq's and create
+ 	 * a new one if they don't match.  If the target cpumask equals
+-	 * wq's, the default pwq should be used.  If @pwq is already the
+-	 * default one, nothing to do; otherwise, install the default one.
++	 * wq's, the default pwq should be used.
+ 	 */
+ 	if (wq_calc_node_cpumask(wq->unbound_attrs, node, cpu_off, cpumask)) {
+ 		if (cpumask_equal(cpumask, pwq->pool->attrs->cpumask))
+ 			goto out_unlock;
+ 	} else {
+-		if (pwq == wq->dfl_pwq)
+-			goto out_unlock;
+-		else
+-			goto use_dfl_pwq;
++		goto use_dfl_pwq;
+ 	}
  
- - reg - <int> -  I2C slave address
-+- HPVDD-supply, SPRVDD-supply, SPLVDD-supply, AVDD-supply, IOVDD-supply,
-+  DVDD-supply : power supplies for the device as covered in
-+  Documentation/devicetree/bindings/regulator/regulator.txt
- 
- 
- Optional properties:
-@@ -24,9 +27,6 @@ Optional properties:
-         3 or MICBIAS_AVDD - MICBIAS output is connected to AVDD
- 	If this node is not mentioned or if the value is unknown, then
- 	micbias	is set to 2.0V.
--- HPVDD-supply, SPRVDD-supply, SPLVDD-supply, AVDD-supply, IOVDD-supply,
--  DVDD-supply : power supplies for the device as covered in
--  Documentation/devicetree/bindings/regulator/regulator.txt
- 
- CODEC output pins:
-   * HPL
+ 	mutex_unlock(&wq->mutex);
 -- 
-1.8.3.2
+1.7.4.4
 
