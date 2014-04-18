@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913AbaDRSkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 14:40:47 -0400
-Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:50434 "HELO
-	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751242AbaDRSkl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 14:40:41 -0400
-From: Roland Dreier <roland@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
-Subject: [GIT PULL] please pull infiniband.git
-Date: Fri, 18 Apr 2014 11:40:32 -0700
-Message-Id: <1397846432-20495-1-git-send-email-roland@kernel.org>
-X-Mailer: git-send-email 1.9.1
+	id S1752496AbaDRSpE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 14:45:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13474 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751457AbaDRSo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 14:44:59 -0400
+Date: Fri, 18 Apr 2014 20:44:41 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Chiang <pchiang@nvidia.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "lizefan@huawei.com" <lizefan@huawei.com>,
+        "tj@kernel.org" <tj@kernel.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "guillaume@morinfr.org" <guillaume@morinfr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] memcg: mm_update_next_owner() should skip kthreads
+Message-ID: <20140418184441.GA26046@redhat.com>
+References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com> <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com> <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com> <20140416135741.GA9407@redhat.com> <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com> <20140418162359.GA4398@redhat.com> <20140418172631.GA13323@redhat.com> <20140418182444.GB22235@dhcp22.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140418182444.GB22235@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 04/18, Michal Hocko wrote:
+>
+> On Fri 18-04-14 19:26:31, Oleg Nesterov wrote:
+> > On 04/18, Oleg Nesterov wrote:
+> > >
+> > > Hmm. I seem to see a bug in this function, it can be fulled by use_mm,
+> > > but I am not sure this can explain the problem. I'll send a patch.
+> >
+> > Untested, please review. But it really looks "obviously wrong", and note
+> > that unuse_mm() doesn't do mm_update_next_owner(). (just in case, do not
+> > confuse it with unuse_mm() in mm/swapfile.c).
+>
+> Both patches seem to be correct but I am missinng why they are marked as
+> memcg: when they are touching generic mm_update_next_owner path.
 
-Please pull from
+Well, this is because I didn't know which prefix should I use. I looked
+at git-blame to see who changed this function, picked the random 733eda7ac
+"memcg: clear mm->owner when last possible owner leaves" commit and copied
+"memcg" from there.
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/roland/infiniband.git tags/rdma-for-linus
+OTOH, mm->owner is used by mm/memcontrol.c, so perhaps the prefix is fine?
 
-----------------------------------------------------------------
+I do not even understand why do we have CONFIG_MM_OWNER, perhaps it should
+die?
 
-InfiniBand/RDMA updates for 3.15-rc2:
+> Anyway, feel free to add
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
- - Mostly cxgb4 fixes unblocked by the merge of some prerequisites via
-   the net tree.
+Thanks!
 
- - Drop deprecated MSI-X API use.
+Oleg.
 
- - A couple other miscellaneous things.
-
-----------------------------------------------------------------
-Alexander Gordeev (2):
-      IB/qib: Use pci_enable_msix_range() instead of pci_enable_msix()
-      IB/mthca: Use pci_enable_msix_exact() instead of pci_enable_msix()
-
-Eli Cohen (1):
-      IB/mlx5: Add block multicast loopback support
-
-Hariprasad Shenai (1):
-      RDMA/cxgb4: Use pr_warn_ratelimited
-
-Roland Dreier (1):
-      Merge branches 'cxgb4', 'misc', 'mlx5' and 'qib' into for-next
-
-Steve Wise (9):
-      RDMA/cxgb4: Use the BAR2/WC path for kernel QPs and T5 devices
-      RDMA/cxgb4: Endpoint timeout fixes
-      RDMA/cxgb4: rmb() after reading valid gen bit
-      RDMA/cxgb4: SQ flush fix
-      RDMA/cxgb4: Max fastreg depth depends on DSGL support
-      RDMA/cxgb4: Initialize reserved fields in a FW work request
-      RDMA/cxgb4: Add missing debug stats
-      RDMA/cxgb4: Use uninitialized_var()
-      RDMA/cxgb4: Fix over-dereference when terminating
-
- drivers/infiniband/hw/cxgb4/cm.c         | 89 ++++++++++++++++++++------------
- drivers/infiniband/hw/cxgb4/cq.c         | 24 ++++-----
- drivers/infiniband/hw/cxgb4/device.c     | 41 ++++++++++++---
- drivers/infiniband/hw/cxgb4/iw_cxgb4.h   |  2 +
- drivers/infiniband/hw/cxgb4/mem.c        |  6 ++-
- drivers/infiniband/hw/cxgb4/provider.c   |  2 +-
- drivers/infiniband/hw/cxgb4/qp.c         | 70 +++++++++++++++----------
- drivers/infiniband/hw/cxgb4/resource.c   | 10 ++--
- drivers/infiniband/hw/cxgb4/t4.h         | 72 ++++++++++++++++++++++++--
- drivers/infiniband/hw/mlx5/main.c        |  2 +
- drivers/infiniband/hw/mlx5/qp.c          | 12 +++++
- drivers/infiniband/hw/mthca/mthca_main.c |  8 +--
- drivers/infiniband/hw/qib/qib_pcie.c     | 55 ++++++++++----------
- include/linux/mlx5/device.h              |  1 +
- include/linux/mlx5/qp.h                  |  1 +
- 15 files changed, 270 insertions(+), 125 deletions(-)
