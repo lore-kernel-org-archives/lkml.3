@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597AbaDRR1g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 13:27:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1318 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753893AbaDRR11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 13:27:27 -0400
-Date: Fri, 18 Apr 2014 19:27:14 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Chiang <pchiang@nvidia.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Cc: "ccross@android.com" <ccross@android.com>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "tj@kernel.org" <tj@kernel.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "guillaume@morinfr.org" <guillaume@morinfr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] memcg: optimize the "Search everything else" loop in
-	mm_update_next_owner()
-Message-ID: <20140418172714.GC13323@redhat.com>
-References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com> <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com> <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com> <20140416135741.GA9407@redhat.com> <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com> <20140418162359.GA4398@redhat.com> <20140418172631.GA13323@redhat.com>
+	id S1754614AbaDRR2J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 13:28:09 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:51261 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320AbaDRR1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 13:27:32 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140418172631.GA13323@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1397757570-19750-2-git-send-email-dianders@chromium.org>
+References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
+	<1397757570-19750-2-git-send-email-dianders@chromium.org>
+Date: Fri, 18 Apr 2014 11:27:31 -0600
+X-Google-Sender-Auth: nwFo4Rz0wKE-9h0kpMVJzBMrkmM
+Message-ID: <CAPnjgZ0AabYa=VF9E=mLKYwE5YJraW2iRHCtmKNbtji58grrwA@mail.gmail.com>
+Subject: Re: [PATCH 1/7] mfd: cros_ec: spi: calculate delay between transfers correctly
+From: Simon Glass <sjg@chromium.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        David Hendricks <dhendrix@chromium.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        lk <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-for_each_process_thread() is sub-optimal. All threads share the same
-->mm, we can swicth to the next process once we found a thread with
-->mm != NULL and ->mm != mm.
+On 17 April 2014 11:59, Doug Anderson <dianders@chromium.org> wrote:
+> From: David Hendricks <dhendrix@chromium.org>
+>
+> To avoid spamming the EC we calculate the time between the previous
+> transfer and the current transfer and force a delay if the time delta
+> is too small.
+>
+> However, a small miscalculation causes the delay period to be
+> far too short. Most noticably this impacts commands with a long
+> turnaround time such as EC firmware reads and writes.
+>
+> Signed-off-by: David Hendricks <dhendrix@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- kernel/exit.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/exit.c b/kernel/exit.c
-index e270d2a..429659c 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -358,9 +358,15 @@ retry:
- 	/*
- 	 * Search through everything else, we should not get here often.
- 	 */
--	for_each_process_thread(g, c) {
--		if (!(c->flags & PF_KTHREAD) && c->mm == mm)
--			goto assign_new_owner;
-+	for_each_process(g) {
-+		if (g->flags & PF_KTHREAD)
-+			continue;
-+		for_each_thread(g, c) {
-+			if (c->mm == mm)
-+				goto assign_new_owner;
-+			if (c->mm)
-+				break;
-+		}
- 	}
- 	read_unlock(&tasklist_lock);
- 	/*
--- 
-1.5.5.1
-
-
+Reviewed-by: Simon Glass <sjg@chromium.org>
