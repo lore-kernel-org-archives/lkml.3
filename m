@@ -1,89 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093AbaDRIE2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 04:04:28 -0400
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:39773 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751459AbaDRIER (ORCPT
+	id S1752551AbaDRIFR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 04:05:17 -0400
+Received: from relay.parallels.com ([195.214.232.42]:37068 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751459AbaDRIEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 04:04:17 -0400
+	Fri, 18 Apr 2014 04:04:55 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <mhocko@suse.cz>, <hannes@cmpxchg.org>
+CC: <akpm@linux-foundation.org>, <glommer@gmail.com>,
+        <cl@linux-foundation.org>, <penberg@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: [PATCH RFC -mm v2 2/3] memcg, slab: merge memcg_{bind,release}_pages to memcg_{un}charge_slab
+Date: Fri, 18 Apr 2014 12:04:48 +0400
+Message-ID: <49f7f2d048e56fac4d29dd5b39f6f76c7bdd6bec.1397804745.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <cover.1397804745.git.vdavydov@parallels.com>
+References: <cover.1397804745.git.vdavydov@parallels.com>
 MIME-Version: 1.0
-In-Reply-To: <1397756521-29387-4-git-send-email-leif.lindholm@linaro.org>
-References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
-	<1397756521-29387-4-git-send-email-leif.lindholm@linaro.org>
-Date: Fri, 18 Apr 2014 10:04:15 +0200
-X-Google-Sender-Auth: 2hkJr54s0bKm8cCgbdWQhY2uaF0
-Message-ID: <CAMuHMdXBNWum7UJ95uT2hwTd1b5C8ebF2LQ4T-A+RS80p7MH=A@mail.gmail.com>
-Subject: Re: [PATCH 3/3] of: Handle memory@0 node on PPC32 only
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        patches@linaro.org,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Leif,
+Currently we have two pairs of kmemcg-related functions that are called
+on slab alloc/free. The first is memcg_{bind,release}_pages that count
+the total number of pages allocated on a kmem cache. The second is
+memcg_{un}charge_slab that {un}charge slab pages to kmemcg resource
+counter. Let's just merge them to keep the code clean.
 
-On Thu, Apr 17, 2014 at 7:42 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> In order to deal with an firmware bug on a specific ppc32 platform
-> (longtrail), early_init_dt_scan_memory() looks for a node called
-> memory@0 on all platforms. Restrict this quirk to ppc32 kernels only.
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+---
+ include/linux/memcontrol.h |    4 ++--
+ mm/memcontrol.c            |   22 ++++++++++++++++++++--
+ mm/slab.c                  |    2 --
+ mm/slab.h                  |   25 ++-----------------------
+ mm/slub.c                  |    2 --
+ 5 files changed, 24 insertions(+), 31 deletions(-)
 
-This breaks backwards compatibilty with old DTSes (at least on ARM/MIPS,
-where you added the missing property in patches 1 and 2 of the series)?
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 087a45314181..d38d190f4cec 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -506,8 +506,8 @@ void memcg_update_array_size(int num_groups);
+ struct kmem_cache *
+ __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
+ 
+-int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size);
+-void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size);
++int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order);
++void __memcg_uncharge_slab(struct kmem_cache *cachep, int order);
+ 
+ int __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
+ 
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 81ecb0de95dd..5221347b0e1b 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2944,7 +2944,7 @@ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
+ }
+ #endif
+ 
+-int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
++static int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+ {
+ 	struct res_counter *fail_res;
+ 	int ret = 0;
+@@ -2982,7 +2982,7 @@ int memcg_charge_kmem(struct mem_cgroup *memcg, gfp_t gfp, u64 size)
+ 	return ret;
+ }
+ 
+-void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
++static void memcg_uncharge_kmem(struct mem_cgroup *memcg, u64 size)
+ {
+ 	res_counter_uncharge(&memcg->res, size);
+ 	if (do_swap_account)
+@@ -3380,6 +3380,24 @@ static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+ 	__memcg_create_cache_enqueue(memcg, cachep);
+ 	memcg_resume_kmem_account();
+ }
++
++int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order)
++{
++	int res;
++
++	res = memcg_charge_kmem(cachep->memcg_params->memcg, gfp,
++				PAGE_SIZE << order);
++	if (!res)
++		atomic_add(1 << order, &cachep->memcg_params->nr_pages);
++	return res;
++}
++
++void __memcg_uncharge_slab(struct kmem_cache *cachep, int order)
++{
++	memcg_uncharge_kmem(cachep->memcg_params->memcg, PAGE_SIZE << order);
++	atomic_sub(1 << order, &cachep->memcg_params->nr_pages);
++}
++
+ /*
+  * Return the kmem_cache we're supposed to use for a slab allocation.
+  * We try to use the current memcg's version of the cache.
+diff --git a/mm/slab.c b/mm/slab.c
+index cbcd2fa7af2f..fa28f86ac16f 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -1706,7 +1706,6 @@ static struct page *kmem_getpages(struct kmem_cache *cachep, gfp_t flags,
+ 	__SetPageSlab(page);
+ 	if (page->pfmemalloc)
+ 		SetPageSlabPfmemalloc(page);
+-	memcg_bind_pages(cachep, cachep->gfporder);
+ 
+ 	if (kmemcheck_enabled && !(cachep->flags & SLAB_NOTRACK)) {
+ 		kmemcheck_alloc_shadow(page, cachep->gfporder, flags, nodeid);
+@@ -1742,7 +1741,6 @@ static void kmem_freepages(struct kmem_cache *cachep, struct page *page)
+ 	page_mapcount_reset(page);
+ 	page->mapping = NULL;
+ 
+-	memcg_release_pages(cachep, cachep->gfporder);
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += nr_freed;
+ 	__free_pages(page, cachep->gfporder);
+diff --git a/mm/slab.h b/mm/slab.h
+index efe14d420010..11eb623f0e61 100644
+--- a/mm/slab.h
++++ b/mm/slab.h
+@@ -119,18 +119,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return !s->memcg_params || s->memcg_params->is_root_cache;
+ }
+ 
+-static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+-{
+-	if (!is_root_cache(s))
+-		atomic_add(1 << order, &s->memcg_params->nr_pages);
+-}
+-
+-static inline void memcg_release_pages(struct kmem_cache *s, int order)
+-{
+-	if (!is_root_cache(s))
+-		atomic_sub(1 << order, &s->memcg_params->nr_pages);
+-}
+-
+ static inline bool slab_equal_or_root(struct kmem_cache *s,
+ 					struct kmem_cache *p)
+ {
+@@ -196,8 +184,7 @@ static __always_inline int memcg_charge_slab(struct kmem_cache *s,
+ 		return 0;
+ 	if (is_root_cache(s))
+ 		return 0;
+-	return memcg_charge_kmem(s->memcg_params->memcg, gfp,
+-				 PAGE_SIZE << order);
++	return __memcg_charge_slab(s, gfp, order);
+ }
+ 
+ static __always_inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
+@@ -206,7 +193,7 @@ static __always_inline void memcg_uncharge_slab(struct kmem_cache *s, int order)
+ 		return;
+ 	if (is_root_cache(s))
+ 		return;
+-	memcg_uncharge_kmem(s->memcg_params->memcg, PAGE_SIZE << order);
++	__memcg_uncharge_slab(s, order);
+ }
+ #else
+ static inline bool is_root_cache(struct kmem_cache *s)
+@@ -214,14 +201,6 @@ static inline bool is_root_cache(struct kmem_cache *s)
+ 	return true;
+ }
+ 
+-static inline void memcg_bind_pages(struct kmem_cache *s, int order)
+-{
+-}
+-
+-static inline void memcg_release_pages(struct kmem_cache *s, int order)
+-{
+-}
+-
+ static inline bool slab_equal_or_root(struct kmem_cache *s,
+ 				      struct kmem_cache *p)
+ {
+diff --git a/mm/slub.c b/mm/slub.c
+index fa7a1817835e..c17d8b9975be 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -1427,7 +1427,6 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+ 
+ 	order = compound_order(page);
+ 	inc_slabs_node(s, page_to_nid(page), page->objects);
+-	memcg_bind_pages(s, order);
+ 	page->slab_cache = s;
+ 	__SetPageSlab(page);
+ 	if (page->pfmemalloc)
+@@ -1478,7 +1477,6 @@ static void __free_slab(struct kmem_cache *s, struct page *page)
+ 	__ClearPageSlabPfmemalloc(page);
+ 	__ClearPageSlab(page);
+ 
+-	memcg_release_pages(s, order);
+ 	page_mapcount_reset(page);
+ 	if (current->reclaim_state)
+ 		current->reclaim_state->reclaimed_slab += pages;
+-- 
+1.7.10.4
 
-For the Longtrail, I don't care much anymore, as mine died in 2004.
-AFAIK, there have never been many users anyway.
-
-> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> Cc: linuxppc-dev@lists.ozlabs.org
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: devicetree@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> ---
->  drivers/of/fdt.c |    7 ++++++-
->  1 file changed, 6 insertions(+), 1 deletion(-)
->
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index fa16a91..7368472 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -887,14 +887,19 @@ int __init early_init_dt_scan_memory(unsigned long node, const char *uname,
->
->         /* We are scanning "memory" nodes only */
->         if (type == NULL) {
-> +#ifdef CONFIG_PPC32
->                 /*
->                  * The longtrail doesn't have a device_type on the
->                  * /memory node, so look for the node called /memory@0.
->                  */
->                 if (depth != 1 || strcmp(uname, "memory@0") != 0)
->                         return 0;
-> -       } else if (strcmp(type, "memory") != 0)
-> +#else
-> +               return 0;
-> +#endif
-> +       } else if (strcmp(type, "memory") != 0) {
->                 return 0;
-> +       }
->
->         reg = of_get_flat_dt_prop(node, "linux,usable-memory", &l);
->         if (reg == NULL)
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
