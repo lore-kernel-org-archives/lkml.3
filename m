@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385AbaDRJbv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:31:51 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45980 "EHLO
+	id S1754365AbaDRJbo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:31:44 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45969 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752349AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752315AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Thomas Graf <tgraf@suug.ch>, "David S. Miller" <davem@davemloft.net>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 50/72] rtnetlink: fix fdb notification flags
-Date: Fri, 18 Apr 2014 11:22:23 +0200
-Message-Id: <be67f8bc657d8b0b0c87a5d6215c6329d9b35a03.1397812482.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, David Stevens <dlstevens@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 48/72] vxlan: fix nonfunctional neigh_reduce()
+Date: Fri, 18 Apr 2014 11:22:21 +0200
+Message-Id: <d8be18c52dbc94989f6d74637b731af39cd3d902.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -24,69 +23,215 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+From: David Stevens <dlstevens@us.ibm.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 1c104a6bebf3c16b6248408b84f91d09ac8a26b6 ]
+[ Upstream commit 4b29dba9c085a4fb79058fb1c45a2f6257ca3dfa ]
 
-Commit 3ff661c38c84 ("net: rtnetlink notify events for FDB NTF_SELF adds and
-deletes") reuses the function nlmsg_populate_fdb_fill() to notify fdb events.
-But this function was used only for dump and thus was always setting the
-flag NLM_F_MULTI, which is wrong in case of a single notification.
+The VXLAN neigh_reduce() code is completely non-functional since
+check-in. Specific errors:
 
-Libraries like libnl will wait forever for NLMSG_DONE.
+1) The original code drops all packets with a multicast destination address,
+	even though neighbor solicitations are sent to the solicited-node
+	address, a multicast address. The code after this check was never run.
+2) The neighbor table lookup used the IPv6 header destination, which is the
+	solicited node address, rather than the target address from the
+	neighbor solicitation. So neighbor lookups would always fail if it
+	got this far. Also for L3MISSes.
+3) The code calls ndisc_send_na(), which does a send on the tunnel device.
+	The context for neigh_reduce() is the transmit path, vxlan_xmit(),
+	where the host or a bridge-attached neighbor is trying to transmit
+	a neighbor solicitation. To respond to it, the tunnel endpoint needs
+	to do a *receive* of the appropriate neighbor advertisement. Doing a
+	send, would only try to send the advertisement, encapsulated, to the
+	remote destinations in the fdb -- hosts that definitely did not do the
+	corresponding solicitation.
+4) The code uses the tunnel endpoint IPv6 forwarding flag to determine the
+	isrouter flag in the advertisement. This has nothing to do with whether
+	or not the target is a router, and generally won't be set since the
+	tunnel endpoint is bridging, not routing, traffic.
 
-CC: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Acked-by: Thomas Graf <tgraf@suug.ch>
+	The patch below creates a proxy neighbor advertisement to respond to
+neighbor solicitions as intended, providing proper IPv6 support for neighbor
+reduction.
+
+Signed-off-by: David L Stevens <dlstevens@us.ibm.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/core/rtnetlink.c | 10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/net/vxlan.c | 127 ++++++++++++++++++++++++++++++++++++++++++++++------
+ 1 file changed, 113 insertions(+), 14 deletions(-)
 
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 2a0e21de3060..37b492eaa4f8 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -2014,12 +2014,13 @@ EXPORT_SYMBOL(rtmsg_ifinfo);
- static int nlmsg_populate_fdb_fill(struct sk_buff *skb,
- 				   struct net_device *dev,
- 				   u8 *addr, u32 pid, u32 seq,
--				   int type, unsigned int flags)
-+				   int type, unsigned int flags,
-+				   int nlflags)
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index 020fe03f37c0..6c0d1c103286 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -1236,15 +1236,103 @@ out:
+ }
+ 
+ #if IS_ENABLED(CONFIG_IPV6)
++
++static struct sk_buff *vxlan_na_create(struct sk_buff *request,
++	struct neighbour *n, bool isrouter)
++{
++	struct net_device *dev = request->dev;
++	struct sk_buff *reply;
++	struct nd_msg *ns, *na;
++	struct ipv6hdr *pip6;
++	u8 *daddr;
++	int na_olen = 8; /* opt hdr + ETH_ALEN for target */
++	int ns_olen;
++	int i, len;
++
++	if (dev == NULL)
++		return NULL;
++
++	len = LL_RESERVED_SPACE(dev) + sizeof(struct ipv6hdr) +
++		sizeof(*na) + na_olen + dev->needed_tailroom;
++	reply = alloc_skb(len, GFP_ATOMIC);
++	if (reply == NULL)
++		return NULL;
++
++	reply->protocol = htons(ETH_P_IPV6);
++	reply->dev = dev;
++	skb_reserve(reply, LL_RESERVED_SPACE(request->dev));
++	skb_push(reply, sizeof(struct ethhdr));
++	skb_set_mac_header(reply, 0);
++
++	ns = (struct nd_msg *)skb_transport_header(request);
++
++	daddr = eth_hdr(request)->h_source;
++	ns_olen = request->len - skb_transport_offset(request) - sizeof(*ns);
++	for (i = 0; i < ns_olen-1; i += (ns->opt[i+1]<<3)) {
++		if (ns->opt[i] == ND_OPT_SOURCE_LL_ADDR) {
++			daddr = ns->opt + i + sizeof(struct nd_opt_hdr);
++			break;
++		}
++	}
++
++	/* Ethernet header */
++	memcpy(eth_hdr(reply)->h_dest, daddr, ETH_ALEN);
++	memcpy(eth_hdr(reply)->h_source, n->ha, ETH_ALEN);
++	eth_hdr(reply)->h_proto = htons(ETH_P_IPV6);
++	reply->protocol = htons(ETH_P_IPV6);
++
++	skb_pull(reply, sizeof(struct ethhdr));
++	skb_set_network_header(reply, 0);
++	skb_put(reply, sizeof(struct ipv6hdr));
++
++	/* IPv6 header */
++
++	pip6 = ipv6_hdr(reply);
++	memset(pip6, 0, sizeof(struct ipv6hdr));
++	pip6->version = 6;
++	pip6->priority = ipv6_hdr(request)->priority;
++	pip6->nexthdr = IPPROTO_ICMPV6;
++	pip6->hop_limit = 255;
++	pip6->daddr = ipv6_hdr(request)->saddr;
++	pip6->saddr = *(struct in6_addr *)n->primary_key;
++
++	skb_pull(reply, sizeof(struct ipv6hdr));
++	skb_set_transport_header(reply, 0);
++
++	na = (struct nd_msg *)skb_put(reply, sizeof(*na) + na_olen);
++
++	/* Neighbor Advertisement */
++	memset(na, 0, sizeof(*na)+na_olen);
++	na->icmph.icmp6_type = NDISC_NEIGHBOUR_ADVERTISEMENT;
++	na->icmph.icmp6_router = isrouter;
++	na->icmph.icmp6_override = 1;
++	na->icmph.icmp6_solicited = 1;
++	na->target = ns->target;
++	memcpy(&na->opt[2], n->ha, ETH_ALEN);
++	na->opt[0] = ND_OPT_TARGET_LL_ADDR;
++	na->opt[1] = na_olen >> 3;
++
++	na->icmph.icmp6_cksum = csum_ipv6_magic(&pip6->saddr,
++		&pip6->daddr, sizeof(*na)+na_olen, IPPROTO_ICMPV6,
++		csum_partial(na, sizeof(*na)+na_olen, 0));
++
++	pip6->payload_len = htons(sizeof(*na)+na_olen);
++
++	skb_push(reply, sizeof(struct ipv6hdr));
++
++	reply->ip_summed = CHECKSUM_UNNECESSARY;
++
++	return reply;
++}
++
+ static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
  {
- 	struct nlmsghdr *nlh;
- 	struct ndmsg *ndm;
+ 	struct vxlan_dev *vxlan = netdev_priv(dev);
+-	struct neighbour *n;
+-	union vxlan_addr ipa;
++	struct nd_msg *msg;
+ 	const struct ipv6hdr *iphdr;
+ 	const struct in6_addr *saddr, *daddr;
+-	struct nd_msg *msg;
+-	struct inet6_dev *in6_dev = NULL;
++	struct neighbour *n;
++	struct inet6_dev *in6_dev;
  
--	nlh = nlmsg_put(skb, pid, seq, type, sizeof(*ndm), NLM_F_MULTI);
-+	nlh = nlmsg_put(skb, pid, seq, type, sizeof(*ndm), nlflags);
- 	if (!nlh)
- 		return -EMSGSIZE;
+ 	in6_dev = __in6_dev_get(dev);
+ 	if (!in6_dev)
+@@ -1257,19 +1345,20 @@ static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
+ 	saddr = &iphdr->saddr;
+ 	daddr = &iphdr->daddr;
  
-@@ -2057,7 +2058,7 @@ static void rtnl_fdb_notify(struct net_device *dev, u8 *addr, int type)
- 	if (!skb)
- 		goto errout;
+-	if (ipv6_addr_loopback(daddr) ||
+-	    ipv6_addr_is_multicast(daddr))
+-		goto out;
+-
+ 	msg = (struct nd_msg *)skb_transport_header(skb);
+ 	if (msg->icmph.icmp6_code != 0 ||
+ 	    msg->icmph.icmp6_type != NDISC_NEIGHBOUR_SOLICITATION)
+ 		goto out;
  
--	err = nlmsg_populate_fdb_fill(skb, dev, addr, 0, 0, type, NTF_SELF);
-+	err = nlmsg_populate_fdb_fill(skb, dev, addr, 0, 0, type, NTF_SELF, 0);
- 	if (err < 0) {
- 		kfree_skb(skb);
- 		goto errout;
-@@ -2282,7 +2283,8 @@ static int nlmsg_populate_fdb(struct sk_buff *skb,
+-	n = neigh_lookup(ipv6_stub->nd_tbl, daddr, dev);
++	if (ipv6_addr_loopback(daddr) ||
++	    ipv6_addr_is_multicast(&msg->target))
++		goto out;
++
++	n = neigh_lookup(ipv6_stub->nd_tbl, &msg->target, dev);
  
- 		err = nlmsg_populate_fdb_fill(skb, dev, ha->addr,
- 					      portid, seq,
--					      RTM_NEWNEIGH, NTF_SELF);
-+					      RTM_NEWNEIGH, NTF_SELF,
-+					      NLM_F_MULTI);
- 		if (err < 0)
- 			return err;
- skip:
+ 	if (n) {
+ 		struct vxlan_fdb *f;
++		struct sk_buff *reply;
+ 
+ 		if (!(n->nud_state & NUD_CONNECTED)) {
+ 			neigh_release(n);
+@@ -1283,13 +1372,23 @@ static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
+ 			goto out;
+ 		}
+ 
+-		ipv6_stub->ndisc_send_na(dev, n, saddr, &msg->target,
+-					 !!in6_dev->cnf.forwarding,
+-					 true, false, false);
++		reply = vxlan_na_create(skb, n,
++					!!(f ? f->flags & NTF_ROUTER : 0));
++
+ 		neigh_release(n);
++
++		if (reply == NULL)
++			goto out;
++
++		if (netif_rx_ni(reply) == NET_RX_DROP)
++			dev->stats.rx_dropped++;
++
+ 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
+-		ipa.sin6.sin6_addr = *daddr;
+-		ipa.sa.sa_family = AF_INET6;
++		union vxlan_addr ipa = {
++			.sin6.sin6_addr = msg->target,
++			.sa.sa_family = AF_INET6,
++		};
++
+ 		vxlan_ip_miss(dev, &ipa);
+ 	}
+ 
 -- 
 1.9.2
 
