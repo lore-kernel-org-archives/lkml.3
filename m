@@ -1,44 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524AbaDRR0y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 13:26:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4101 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752453AbaDRR0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 13:26:50 -0400
-Date: Fri, 18 Apr 2014 19:26:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Peter Chiang <pchiang@nvidia.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Cc: "ccross@android.com" <ccross@android.com>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "tj@kernel.org" <tj@kernel.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "guillaume@morinfr.org" <guillaume@morinfr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/2] memcg: mm_update_next_owner() should skip kthreads
-Message-ID: <20140418172631.GA13323@redhat.com>
-References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com> <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com> <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com> <20140416135741.GA9407@redhat.com> <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com> <20140418162359.GA4398@redhat.com>
+	id S1754554AbaDRR1E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 13:27:04 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:62167 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753048AbaDRR06 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 13:26:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140418162359.GA4398@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1397757570-19750-4-git-send-email-dianders@chromium.org>
+References: <1397757570-19750-1-git-send-email-dianders@chromium.org>
+	<1397757570-19750-4-git-send-email-dianders@chromium.org>
+Date: Fri, 18 Apr 2014 11:26:56 -0600
+X-Google-Sender-Auth: Y0Dhi0u0RGgQjJVZ87fj_rX6ELA
+Message-ID: <CAPnjgZ2J8V=ZtivYZJOepBi_6h7VEhZ+R-XjjT+yA0YeW9+Tqw@mail.gmail.com>
+Subject: Re: [PATCH 3/7] mfd: cros_ec: spi: Make the cros_ec_spi timeout more reliable
+From: Simon Glass <sjg@chromium.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
+        Wolfram Sang <wsa@the-dreams.de>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        lk <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18, Oleg Nesterov wrote:
+On 17 April 2014 11:59, Doug Anderson <dianders@chromium.org> wrote:
+> The cros_ec_spi transfer had two problems with its timeout code:
 >
-> Hmm. I seem to see a bug in this function, it can be fulled by use_mm,
-> but I am not sure this can explain the problem. I'll send a patch.
+> 1. It looked at the timeout even in the case that it found valid data.
+> 2. If the cros_ec_spi code got switched out for a while, it's possible
+>    it could get a timeout after a single loop.  Let's be paranoid and
+>    make sure we do one last transfer after the timeout expires.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-Untested, please review. But it really looks "obviously wrong", and note
-that unuse_mm() doesn't do mm_update_next_owner(). (just in case, do not
-confuse it with unuse_mm() in mm/swapfile.c).
-
-Oleg.
-
+Reviewed-by: Simon Glass <sjg@chromium.org>
