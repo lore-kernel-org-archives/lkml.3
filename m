@@ -1,106 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746AbaDROky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 10:40:54 -0400
-Received: from smtp106.biz.mail.gq1.yahoo.com ([98.137.12.181]:36941 "HELO
-	smtp106.biz.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751314AbaDROkv (ORCPT
+	id S1752354AbaDROmg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 10:42:36 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:45223 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001AbaDROmd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 10:40:51 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: Z.gvIZQVM1ncNRQDbUv6KzTfPlm9iQHTu1zYuXdyD02yjLg
- PmbO5Vuwf2PXt0WhLWfAGyb2llM9IQots2MSLERKHi1fJX6Xp0HxIMKHQ.7u
- NIXSAda3Xyptt7YqItilOp.LfDjEo_3jEtEbPDVNreqz.dN4T.tHdfUl981H
- iMjVCsQWvqzcE4oSM7apUdrUJquH4DzsTFD0.X7qDJ5.dIzp4KrumBdcVSke
- VY.GzqarZEHGsj.i_iH_UAcbswRx1uu7f4u6FkfprvBtdmlhj5PLL.xEZUx1
- 7WjhrTAbwO3ky9Q.qgn0eaBZB5c06sTNjkTr3ZsnpleZyK_fOYxm3ljY6nXB
- qE9gb34CJMyB5fMFMch_L2tu.PYAyqxyWctzOeAHUZRtBHNhUL9AYf9KNYog
- cQ.QShSn6MXd1w8KpSMmI4TCk6GlEBcns5JOuIR84ARa1lHKsBly2K5mQIO4
- .KViTdRWZ5IAEGDekWhzHBOvYi00ys.ilpDIWjgAkKiXIcHE.wHsAi_gkVH7
- VDkYCXZ8GwpvWWdqAcUD1gdV82v1yHoTR8k26O516JqsNAFvkGigYSuRIQ17
- BIDT1jxxiATlG0ADeqayRQVTH6_avPZbJ8Zr6EwyM
-X-Yahoo-SMTP: qGLgp.mswBDSnFfWmYVMF5Rmg6NJ
-X-Rocket-Received: from fdwdc.com (sfking@67.139.206.186 with plain [208.71.40.208])
-        by smtp106.biz.mail.gq1.yahoo.com with SMTP; 18 Apr 2014 14:40:50 +0000 UTC
-From: Steven King <sfking@fdwdc.com>
-Organization: fdwdc
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: [PATCH] slab: fix the type of the index on freelist index accessor
-Date: Fri, 18 Apr 2014 07:40:47 -0700
-User-Agent: KMail/1.9.9
-Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        David Rientjes <rientjes@google.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-References: <1397805849-4913-1-git-send-email-iamjoonsoo.kim@lge.com>
-In-Reply-To: <1397805849-4913-1-git-send-email-iamjoonsoo.kim@lge.com>
+	Fri, 18 Apr 2014 10:42:33 -0400
+Date: Fri, 18 Apr 2014 10:45:47 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Ingo Molnar <mingo@kernel.org>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+In-Reply-To: <20140417145418.GM11096@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.10.1404181042320.26918@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1404151729230.17264@vincent-weaver-1.um.maine.edu> <20140416141514.GS11182@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404161326380.19325@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1404161337350.19325@vincent-weaver-1.um.maine.edu>
+ <20140417094815.GA9348@gmail.com> <20140417114533.GJ11096@twins.programming.kicks-ass.net> <20140417142213.GA29338@gmail.com> <alpine.DEB.2.10.1404171037590.22226@vincent-weaver-1.um.maine.edu> <20140417145418.GM11096@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201404180740.48445.sfking@fdwdc.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 April 2014 12:24:09 am Joonsoo Kim wrote:
-> commit 8dcc774 (slab: introduce byte sized index for the freelist of
-> a slab) changes the size of freelist index and also changes prototype
-> of accessor function to freelist index. And there was a mistake.
->
-> The mistake is that although it changes the size of freelist index
-> correctly, it changes the size of the index of freelist index incorrectly.
-> With patch, freelist index can be 1 byte or 2 bytes, that means that
-> num of object on on a slab can be more than 255. So we need more than 1
-> byte for the index to find the index of free object on freelist. But,
-> above patch makes this index type 1 byte, so slab which have more than
-> 255 objects cannot work properly and in consequence of it, the system
-> cannot boot.
->
-> This issue was reported by Steven King on m68knommu which would use
-> 2 bytes freelist index. Please refer following link.
->
-> https://lkml.org/lkml/2014/4/16/433
->
-> To fix it is so easy. To change the type of the index of freelist index
-> on accessor functions is enough to fix this bug. Although 2 bytes is
-> enough, I use 4 bytes since it have no bad effect and make things
-> more easier. This fix was suggested and tested by Steven in his
-> original report.
->
-> Reported-by: Steven King <sfking@fdwdc.com>
-> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> ---
-> Hello, Pekka.
->
-> Could you send this for v3.15-rc2?
-> Without this patch, many architecture using 2 bytes freelist index cannot
-> work properly, I guess.
->
-> This patch is based on v3.15-rc1.
->
-> Thanks.
->
-> diff --git a/mm/slab.c b/mm/slab.c
-> index 388cb1a..d7f9f44 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -2572,13 +2572,13 @@ static void *alloc_slabmgmt(struct kmem_cache
-> *cachep, return freelist;
->  }
->
-> -static inline freelist_idx_t get_free_obj(struct page *page, unsigned char
-> idx) +static inline freelist_idx_t get_free_obj(struct page *page, unsigned
-> int idx) {
->  	return ((freelist_idx_t *)page->freelist)[idx];
->  }
->
->  static inline void set_free_obj(struct page *page,
-> -					unsigned char idx, freelist_idx_t val)
-> +					unsigned int idx, freelist_idx_t val)
->  {
->  	((freelist_idx_t *)(page->freelist))[idx] = val;
->  }
 
-Acked-by: Steven King <sfking@fdwdc.com>
+OK, since the slab corruption was happening to event->hlist_entry->pprev
+I added a WARN() call to every modifier of pprev under 
+include/linux/*list*.h to see what was stomping over freed memory.
+
+This is what came up:
+
+Apr 18 10:36:11 haswell kernel: [  998.316177] ------------[ cut here ]------------
+Apr 18 10:36:11 haswell kernel: [  998.321188] WARNING: CPU: 3 PID: 20717 at include/linux/rculist.h:410 perf_trace_add+0xc1/0x100()
+Apr 18 10:36:11 haswell kernel: [  998.330681] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp coretemp snd_hda_codec_realtek snd_hda_codec_generic snd_hda_codec_hdmi kvm snd_hda_intel iTCO_wdt snd_hda_controller i915 snd_hda_codec evdev crct10dif_pclmul drm_kms_helper iTCO_vendor_support snd_hwdep snd_pcm drm crc32_pclmul snd_seq mei_me parport_pc parport lpc_ich mfd_core psmouse ghash_clmulni_intel snd_timer snd_seq_device mei snd aesni_intel aes_x86_64 lrw gf128mul glue_helper ablk_helper cryptd soundcore pcspkr serio_raw i2c_i801 processor video i2c_algo_bit i2c_core wmi button battery tpm_tis tpm sg sd_mod sr_mod crc_t10dif crct10dif_common cdrom ahci ehci_pci libahci xhci_hcd e1000e libata ehci_hcd ptp scsi_mod crc32c_intel usbcore pps_core usb_common fan thermal thermal_sys
+Apr 18 10:36:11 haswell kernel: [  998.405736] CPU: 3 PID: 20717 Comm: perf_fuzzer Not tainted 3.15.0-rc1+ #63
+Apr 18 10:36:11 haswell kernel: [  998.413162] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
+Apr 18 10:36:11 haswell kernel: [  998.420987]  0000000000000009 ffff880117923c70 ffffffff8164f753 0000000000000000
+Apr 18 10:36:11 haswell kernel: [  998.429016]  ffff880117923ca8 ffffffff810647cd ffffe8ffffcc30d8 ffff8800ce29f040
+Apr 18 10:36:11 haswell kernel: [  998.437121]  ffffffff81c1ba40 ffff8800cd3d9040 000000da35b18e50 ffff880117923cb8
+Apr 18 10:36:11 haswell kernel: [  998.445246] Call Trace:
+Apr 18 10:36:11 haswell kernel: [  998.447910]  [<ffffffff8164f753>] dump_stack+0x45/0x56
+Apr 18 10:36:11 haswell kernel: [  998.453451]  [<ffffffff810647cd>] warn_slowpath_common+0x7d/0xa0
+Apr 18 10:36:11 haswell kernel: [  998.459871]  [<ffffffff810648aa>] warn_slowpath_null+0x1a/0x20
+Apr 18 10:36:11 haswell kernel: [  998.466143]  [<ffffffff81125a01>] perf_trace_add+0xc1/0x100
+Apr 18 10:36:11 haswell kernel: [  998.472160]  [<ffffffff81136640>] event_sched_in.isra.76+0x90/0x1e0
+Apr 18 10:36:11 haswell kernel: [  998.478849]  [<ffffffff811367f9>] group_sched_in+0x69/0x1e0
+Apr 18 10:36:11 haswell kernel: [  998.484812]  [<ffffffff81136e45>] __perf_event_enable+0x255/0x260
+Apr 18 10:36:11 haswell kernel: [  998.491370]  [<ffffffff81132340>] remote_function+0x40/0x50
+Apr 18 10:36:11 haswell kernel: [  998.497311]  [<ffffffff810de116>] generic_exec_single+0x126/0x170
+Apr 18 10:36:11 haswell kernel: [  998.503764]  [<ffffffff81132300>] ? task_clock_event_add+0x40/0x40
+Apr 18 10:36:11 haswell kernel: [  998.510432]  [<ffffffff810de1c7>] smp_call_function_single+0x67/0xa0
+Apr 18 10:36:11 haswell kernel: [  998.517299]  [<ffffffff811312b4>] task_function_call+0x44/0x50
+Apr 18 10:36:11 haswell kernel: [  998.523539]  [<ffffffff81136bf0>] ? perf_event_sched_in+0x90/0x90
+Apr 18 10:36:11 haswell kernel: [  998.530085]  [<ffffffff81131350>] perf_event_enable+0x90/0xf0
+Apr 18 10:36:11 haswell kernel: [  998.536308]  [<ffffffff811312c0>] ? task_function_call+0x50/0x50
+Apr 18 10:36:11 haswell kernel: [  998.542761]  [<ffffffff8113142a>] perf_event_for_each_child+0x3a/0xa0
+Apr 18 10:36:11 haswell kernel: [  998.551512]  [<ffffffff811379af>] perf_event_task_enable+0x4f/0x80
+Apr 18 10:36:11 haswell kernel: [  998.560080]  [<ffffffff8107c015>] SyS_prctl+0x255/0x4b0
+Apr 18 10:36:11 haswell kernel: [  998.567605]  [<ffffffff813c1406>] ? lockdep_sys_exit_thunk+0x35/0x67
+Apr 18 10:36:11 haswell kernel: [  998.576333]  [<ffffffff816609ed>] system_call_fastpath+0x1a/0x1f
+Apr 18 10:36:11 haswell kernel: [  998.584698] ---[ end trace b175966afd57a174 ]---
+Apr 18 10:36:12 haswell kernel: [  998.910691] ------------[ cut here ]------------
+
