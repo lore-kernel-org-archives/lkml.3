@@ -1,925 +1,785 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752353AbaDRMmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:42:14 -0400
-Received: from mail-bn1on0131.outbound.protection.outlook.com ([157.56.110.131]:33108
+	id S1752554AbaDRMm3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:42:29 -0400
+Received: from mail-bn1bon0114.outbound.protection.outlook.com ([157.56.111.114]:55377
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752165AbaDRMmJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:42:09 -0400
+	id S1752389AbaDRMmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:42:19 -0400
+X-Greylist: delayed 888 seconds by postgrey-1.27 at vger.kernel.org; Fri, 18 Apr 2014 08:42:18 EDT
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH 04/28] nios2: Exception handling
-Date: Fri, 18 Apr 2014 20:26:50 +0800
-Message-ID: <1397824031-4892-4-git-send-email-lftan@altera.com>
+Subject: [PATCH 10/28] nios2: Process management
+Date: Fri, 18 Apr 2014 20:26:54 +0800
+Message-ID: <1397824031-4892-8-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
 References: <1397824031-4892-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(22564002)(189002)(199002)(87936001)(31966008)(77982001)(16796002)(74662001)(84676001)(77156001)(89996001)(87286001)(99396002)(85852003)(83072002)(76482001)(2009001)(74502001)(47776003)(20776003)(42186004)(2201001)(19580405001)(83322001)(92726001)(92566001)(88136002)(19580395003)(6806004)(44976005)(36756003)(50986999)(50466002)(80022001)(93916002)(575784001)(46102001)(86362001)(97736001)(4396001)(50226001)(48376002)(81342001)(76176999)(81542001)(62966002)(80976001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB036;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:EEEDD35D.48FEDFE1.7CD99176.AC75372.20CFF;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(43544003)(189002)(22564002)(19580405001)(83322001)(46102001)(575784001)(86362001)(80022001)(44976005)(93916002)(81342001)(6806004)(81542001)(48376002)(99396002)(2009001)(50986999)(76176999)(50466002)(97736001)(4396001)(50226001)(77156001)(42186004)(76482001)(87286001)(62966002)(36756003)(77982001)(84676001)(80976001)(47776003)(20776003)(83072002)(89996001)(2201001)(92566001)(74502001)(85852003)(16796002)(87936001)(31966008)(19580395003)(74662001)(92726001)(88136002);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB024;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:E28DD854.88EA9FB4.7CD2714E.4A26E0F0.20B82;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 X-OriginatorOrg: altera.onmicrosoft.com
 X-Forefront-PRVS: 018577E36E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch contains the exception entry code (kernel/entry.S) and misaligned exception.
+This patch adds support for thread creation and context switching.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/kernel/entry.S      | 551 +++++++++++++++++++++++++++++++++++++++++
- arch/nios2/kernel/misaligned.c | 319 ++++++++++++++++++++++++
- 2 files changed, 870 insertions(+)
- create mode 100644 arch/nios2/kernel/entry.S
- create mode 100644 arch/nios2/kernel/misaligned.c
+ arch/nios2/include/asm/mmu_context.h |  66 +++++++++
+ arch/nios2/include/asm/processor.h   | 102 ++++++++++++++
+ arch/nios2/include/asm/switch_to.h   |  31 +++++
+ arch/nios2/include/asm/thread_info.h | 120 ++++++++++++++++
+ arch/nios2/kernel/process.c          | 262 +++++++++++++++++++++++++++++++++++
+ arch/nios2/mm/mmu_context.c          | 116 ++++++++++++++++
+ 6 files changed, 697 insertions(+)
+ create mode 100644 arch/nios2/include/asm/mmu_context.h
+ create mode 100644 arch/nios2/include/asm/processor.h
+ create mode 100644 arch/nios2/include/asm/switch_to.h
+ create mode 100644 arch/nios2/include/asm/thread_info.h
+ create mode 100644 arch/nios2/kernel/process.c
+ create mode 100644 arch/nios2/mm/mmu_context.c
 
-diff --git a/arch/nios2/kernel/entry.S b/arch/nios2/kernel/entry.S
+diff --git a/arch/nios2/include/asm/mmu_context.h b/arch/nios2/include/asm/mmu_context.h
 new file mode 100644
-index 0000000..cda0854d1d29450325fa90ab62ced2c215035f3c
+index 0000000..294b4b1
 --- /dev/null
-+++ b/arch/nios2/kernel/entry.S
-@@ -0,0 +1,551 @@
++++ b/arch/nios2/include/asm/mmu_context.h
+@@ -0,0 +1,66 @@
 +/*
-+ * linux/arch/nios2/kernel/entry.S
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 1996, 1997, 1998, 1999 by Ralf Baechle
++ * Copyright (C) 1999 Silicon Graphics, Inc.
 + *
-+ * Copyright (C) 2013  Altera Corporation
-+ * Copyright (C) 2009, Wind River Systems Inc
-+ *
-+ * Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
-+ *
-+ * Based on:
-+ *
-+ * linux/arch/nios2/kernel/entry.S
-+ *
-+ *  Copyright (C) 1999-2002, Greg Ungerer (gerg@snapgear.com)
-+ *  Copyright (C) 1998  D. Jeff Dionne <jeff@lineo.ca>,
-+ *                      Kenneth Albanowski <kjahds@kjahds.com>,
-+ *  Copyright (C) 2000  Lineo Inc. (www.lineo.com)
-+ *  Copyright (C) 2004  Microtronix Datacom Ltd.
-+ *
-+ * Based on:
-+ *
-+ *  linux/arch/m68knommu/kernel/entry.S
-+ *
-+ *  Copyright (C) 1991, 1992  Linus Torvalds
++ * based on MIPS asm/mmu_context.h
 + *
 + * This file is subject to the terms and conditions of the GNU General Public
 + * License.  See the file "COPYING" in the main directory of this archive
 + * for more details.
-+ *
-+ * Linux/m68k support by Hamish Macdonald
-+ *
-+ * 68060 fixes by Jesper Skov
-+ * ColdFire support by Greg Ungerer (gerg@snapgear.com)
-+ * 5307 fixes by David W. Miller
-+ * linux 2.4 support David McCullough <davidm@snapgear.com>
 + */
 +
-+#include <linux/sys.h>
-+#include <linux/linkage.h>
-+#include <asm/asm-offsets.h>
-+#include <asm/asm-macros.h>
-+#include <asm/thread_info.h>
-+#include <asm/errno.h>
-+#include <asm/setup.h>
-+#include <asm/entry.h>
-+#include <asm/unistd.h>
-+#include <asm/processor.h>
++#ifndef _ASM_NIOS2_MMU_CONTEXT_H
++#define _ASM_NIOS2_MMU_CONTEXT_H
 +
-+.macro GET_THREAD_INFO reg
-+.if THREAD_SIZE & 0xffff0000
-+	andhi	\reg, sp, %hi(~(THREAD_SIZE-1))
-+.else
-+	addi	\reg, r0, %lo(~(THREAD_SIZE-1))
-+	and	\reg, \reg, sp
-+.endif
-+.endm
++#include <asm-generic/mm_hooks.h>
 +
-+.macro	kuser_cmpxchg_check
-+	/*
-+	 * Make sure our user space atomic helper is restarted if it was
-+	 * interrupted in a critical region.
-+	 * ea-4 = address of interrupted insn (ea must be preserved).
-+	 * sp = saved regs.
-+	 * cmpxchg_ldw = first critical insn, cmpxchg_stw = last critical insn.
-+	 * If ea <= cmpxchg_stw and ea > cmpxchg_ldw then saved EA is set to
-+	 * cmpxchg_ldw + 4.
-+	*/
-+	/* et = cmpxchg_stw + 4 */
-+	movui   et, (KUSER_BASE + 4 + (cmpxchg_stw - __kuser_helper_start))
-+	bgtu	ea, et, 1f
-+
-+	subi	et, et, (cmpxchg_stw - cmpxchg_ldw) /* et = cmpxchg_ldw + 4 */
-+	bltu	ea, et, 1f
-+	stw	et, PT_EA(sp)	/* fix up EA */
-+	mov	ea, et
-+1:
-+.endm
-+
-+.section .rodata
-+.align 4
-+exception_table:
-+	.word unhandled_exception	/* 0 - Reset */
-+	.word unhandled_exception	/* 1 - Processor-only Reset */
-+	.word external_interrupt	/* 2 - Interrupt */
-+	.word handle_trap		/* 3 - Trap Instruction */
-+
-+	.word instruction_trap		/* 4 - Unimplemented instruction */
-+	.word handle_illegal		/* 5 - Illegal instruction */
-+	.word handle_unaligned		/* 6 - Misaligned data access */
-+	.word handle_unaligned		/* 7 - Misaligned destination address */
-+
-+	.word handle_diverror		/* 8 - Division error */
-+	.word protection_exception_ba	/* 9 - Supervisor-only instr. address */
-+	.word protection_exception_instr /* 10 - Supervisor only instruction */
-+	.word protection_exception_ba	/* 11 - Supervisor only data address */
-+
-+	.word unhandled_exception	/* 12 - Double TLB miss (data) */
-+	.word protection_exception_pte	/* 13 - TLB permission violation (x) */
-+	.word protection_exception_pte	/* 14 - TLB permission violation (r) */
-+	.word protection_exception_pte	/* 15 - TLB permission violation (w) */
-+
-+	.word unhandled_exception	/* 16 - MPU region violation */
-+
-+trap_table:
-+	.word	handle_system_call	/* 0  */
-+	.word	instruction_trap	/* 1  */
-+	.word	instruction_trap	/* 2  */
-+	.word	instruction_trap	/* 3  */
-+	.word	instruction_trap	/* 4  */
-+	.word	instruction_trap	/* 5  */
-+	.word	instruction_trap	/* 6  */
-+	.word	instruction_trap	/* 7  */
-+	.word	instruction_trap	/* 8  */
-+	.word	instruction_trap	/* 9  */
-+	.word	instruction_trap	/* 10 */
-+	.word	instruction_trap	/* 11 */
-+	.word	instruction_trap	/* 12 */
-+	.word	instruction_trap	/* 13 */
-+	.word	instruction_trap	/* 14 */
-+	.word	instruction_trap	/* 15 */
-+	.word	instruction_trap	/* 16 */
-+	.word	instruction_trap	/* 17 */
-+	.word	instruction_trap	/* 18 */
-+	.word	instruction_trap	/* 19 */
-+	.word	instruction_trap	/* 20 */
-+	.word	instruction_trap	/* 21 */
-+	.word	instruction_trap	/* 22 */
-+	.word	instruction_trap	/* 23 */
-+	.word	instruction_trap	/* 24 */
-+	.word	instruction_trap	/* 25 */
-+	.word	instruction_trap	/* 26 */
-+	.word	instruction_trap	/* 27 */
-+	.word	instruction_trap	/* 28 */
-+	.word	instruction_trap	/* 29 */
-+	.word	instruction_trap	/* 30 */
-+	.word	handle_breakpoint	/* 31 */
-+
-+.text
-+.set noat
-+.set nobreak
-+
-+ENTRY(inthandler)
-+	SAVE_ALL
-+
-+	kuser_cmpxchg_check
-+
-+	/* Clear EH bit before we get a new excpetion in the kernel
-+	 * and after we have saved it to the exception frame. This is done
-+	 * wheter it's trap, tlb-miss or interrupt. If we don't do this
-+	 * estatus is not updated the next exception.
-+	 */
-+	rdctl	r24, status
-+	movi	r9, %lo(~STATUS_EH)
-+	and	r24, r24, r9
-+	wrctl	status, r24
-+
-+	/* Read cause and vector and branch to the associated handler */
-+	mov	r4, sp
-+	rdctl	r5, exception
-+	movia	r9, exception_table
-+	add	r24, r9, r5
-+	ldw	r24, 0(r24)
-+	jmp	r24
-+
-+
-+/***********************************************************************
-+ * Handle traps
-+ ***********************************************************************
-+ */
-+ENTRY(handle_trap)
-+	ldw	r24, -4(ea)	/* instruction that caused the exception */
-+	srli	r24, r24, 4
-+	andi	r24, r24, 0x7c
-+	movia	r9,trap_table
-+	add	r24, r24, r9
-+	ldw	r24, 0(r24)
-+	jmp	r24
-+
-+
-+/***********************************************************************
-+ * Handle system calls
-+ ***********************************************************************
-+ */
-+ENTRY(handle_system_call)
-+	/* Enable interrupts */
-+	rdctl	r10, status
-+	ori	r10, r10, STATUS_PIE
-+	wrctl	status, r10
-+
-+	/* Reload registers destroyed by common code. */
-+	ldw	r4, PT_R4(sp)
-+	ldw	r5, PT_R5(sp)
-+
-+	/* Check that the requested system call is within limits */
-+	movui	r1, __NR_syscalls
-+	bgeu	r2, r1, ret_invsyscall
-+	slli	r1, r2, 2
-+	movhi	r11, %hiadj(sys_call_table)
-+	add	r1, r1, r11
-+	ldw	r1, %lo(sys_call_table)(r1)
-+	beq	r1, r0, ret_invsyscall
-+
-+	/* Get thread info pointer */
-+	movi	r11, %lo(0xfffff000)
-+	and	r11, sp, r11
-+	ldw	r11, TI_FLAGS(r11)
-+
-+	/* If someone is ptrace:ing us, take the long way. */
-+	BTBNZ	r11, r11, TIF_SYSCALL_TRACE, traced_system_call
-+
-+	/* Execute the system call */
-+	callr	r1
-+
-+	/* If the syscall returns a negative result:
-+	 *   Set r7 to 1 to indicate error,
-+	 *   Negate r2 to get a positive error code
-+	 * If the syscall returns zero or a positive value:
-+	 *   Set r7 to 0.
-+	 * The sigreturn system calls will skip the code below by
-+	 * adding to register ra. To avoid destroying registers
-+	 */
-+translate_rc_and_ret:
-+	movi	r1, 0
-+	bge	r2, zero, 3f
-+	sub	r2, zero, r2
-+	movi	r1, 1
-+3:
-+	stw	r2, PT_R2(sp)
-+	stw	r1, PT_R7(sp)
-+end_translate_rc_and_ret:
-+
-+ret_from_exception:
-+	ldw	r1, PT_ESTATUS(sp)
-+	/* if so, skip resched, signals */
-+	TSTBNZ	r1, r1, ESTATUS_EU, Luser_return
-+
-+restore_all:
-+	rdctl	r10, status			/* disable intrs */
-+	andi	r10, r10, %lo(~STATUS_PIE)
-+	wrctl	status, r10
-+	RESTORE_ALL
-+	eret
-+
-+	/* If the syscall number was invalid return ENOSYS */
-+ret_invsyscall:
-+	movi	r2, -ENOSYS
-+	br	translate_rc_and_ret
-+
-+	/* This implements the same as above, except it calls
-+	 * syscall_trace before and after the syscall in order
-+	 * for utilities like strace and gdb to work.
-+	 */
-+traced_system_call:
-+	SAVE_SWITCH_STACK
-+	call	syscall_trace
-+	RESTORE_SWITCH_STACK
-+
-+	/* Create system call register arguments. The 5th and 6th
-+	   arguments on stack are already in place at the beginning
-+	   of pt_regs. */
-+	ldw	r2, PT_R2(sp)
-+	ldw	r4, PT_R4(sp)
-+	ldw	r5, PT_R5(sp)
-+	ldw	r6, PT_R6(sp)
-+	ldw	r7, PT_R7(sp)
-+
-+	/* Fetch the syscall function, we don't need to check the boundaries
-+	 * since this is already done.
-+	 */
-+	slli	r1, r2, 2
-+	movhi	r11,%hiadj(sys_call_table)
-+	add	r1, r1, r11
-+	ldw	r1, %lo(sys_call_table)(r1)
-+
-+	callr	r1
-+
-+	/* If the syscall returns a negative result:
-+	 *   Set r7 to 1 to indicate error,
-+	 *   Negate r2 to get a positive error code
-+	 * If the syscall returns zero or a positive value:
-+	 *   Set r7 to 0.
-+	 * The sigreturn system calls will skip the code below by
-+	 * adding to register ra. To avoid destroying registers
-+	 */
-+translate_rc_and_ret2:
-+	movi	r1, 0
-+	bge	r2, zero, 4f
-+	sub	r2, zero, r2
-+	movi	r1, 1
-+4:
-+	stw	r2, PT_R2(sp)
-+	stw	r1, PT_R7(sp)
-+end_translate_rc_and_ret2:
-+	SAVE_SWITCH_STACK
-+	call	syscall_trace
-+	RESTORE_SWITCH_STACK
-+	br	ret_from_exception
-+
-+Luser_return:
-+	GET_THREAD_INFO	r11			/* get thread_info pointer */
-+	ldw	r10, TI_FLAGS(r11)		/* get thread_info->flags */
-+	ANDI32	r11, r10, _TIF_WORK_MASK
-+	beq	r11, r0, restore_all		/* Nothing to do */
-+	BTBZ	r1, r10, TIF_NEED_RESCHED, Lsignal_return
-+
-+	/* Reschedule work */
-+	call	schedule
-+	br	ret_from_exception
-+
-+Lsignal_return:
-+	ANDI32	r1, r10, _TIF_SIGPENDING | _TIF_NOTIFY_RESUME
-+	beq	r1, r0, restore_all
-+	mov	r4, sp			/* pt_regs */
-+	SAVE_SWITCH_STACK
-+	mov	r5, r0			/* oldset = 0 */
-+	movi	r6, 1			/* in_syscall = 1 */
-+	call	do_notify_resume
-+	RESTORE_SWITCH_STACK
-+	br	restore_all
-+
-+
-+
-+/***********************************************************************
-+ * Handle external interrupts.
-+ ***********************************************************************
-+ */
-+/*
-+ * This is the generic interrupt handler (for all hardware interrupt
-+ * sources). It figures out the vector number and calls the appropriate
-+ * interrupt service routine directly.
-+ */
-+external_interrupt:
-+	rdctl	r12, ipending
-+	rdctl	r9, ienable
-+	and	r12, r12, r9
-+	/* skip if no interrupt is pending */
-+	beq	r12, r0, ret_from_interrupt
-+
-+	movi	r24, -1
-+	stw	r24, PT_ORIG_R2(sp)
-+
-+	/*
-+	 * Process an external hardware interrupt.
-+	 */
-+
-+	addi	ea, ea, -4	/* re-issue the interrupted instruction */
-+	stw	ea, PT_EA(sp)
-+2:	movi	r4, %lo(-1)	/* Start from bit position 0,
-+					highest priority */
-+				/* This is the IRQ # for handler call */
-+1:	andi	r10, r12, 1	/* Isolate bit we are interested in */
-+	srli	r12, r12, 1	/* shift count is costly without hardware
-+					multiplier */
-+	addi	r4, r4, 1
-+	beq	r10, r0, 1b
-+	mov	r5, sp		/* Setup pt_regs pointer for handler call */
-+	call	do_IRQ
-+	rdctl	r12, ipending	/* check again if irq still pending */
-+	rdctl	r9, ienable	/* Isolate possible interrupts */
-+	and	r12, r12, r9
-+	bne	r12, r0, 2b
-+	/* br	ret_from_interrupt */ /* fall throught to ret_from_interrupt */
-+
-+ENTRY(ret_from_interrupt)
-+	ldw	r1, PT_ESTATUS(sp)	/* check if returning to kernel */
-+	TSTBNZ	r1, r1, ESTATUS_EU, Luser_return
-+
-+#ifdef CONFIG_PREEMPT
-+	GET_THREAD_INFO	r1
-+	ldw	r4, TI_PREEMPT_COUNT(r1)
-+	bne	r4, r0, restore_all
-+
-+need_resched:
-+	ldw	r4, TI_FLAGS(r1)		/* ? Need resched set */
-+	BTBZ	r10, r4, TIF_NEED_RESCHED, restore_all
-+	ldw	r4, PT_ESTATUS(sp)	/* ? Interrupts off */
-+	andi	r10, r4, ESTATUS_EPIE
-+	beq	r10, r0, restore_all
-+	movia	r4, PREEMPT_ACTIVE
-+	stw	r4, TI_PREEMPT_COUNT(r1)
-+	rdctl	r10, status		/* enable intrs again */
-+	ori	r10, r10 ,STATUS_PIE
-+	wrctl	status, r10
-+	PUSH	r1
-+	call	schedule
-+	POP	r1
-+	mov	r4, r0
-+	stw	r4, TI_PREEMPT_COUNT(r1)
-+	rdctl	r10, status		/* disable intrs */
-+	andi	r10, r10, %lo(~STATUS_PIE)
-+	wrctl	status, r10
-+	br	need_resched
-+#else
-+	br	restore_all
-+#endif
-+
-+/***********************************************************************
-+ * A few syscall wrappers
-+ ***********************************************************************
-+ */
-+/*
-+ * int clone(unsigned long clone_flags, unsigned long newsp,
-+ *		int __user * parent_tidptr, int __user * child_tidptr,
-+ *		int tls_val)
-+ */
-+ENTRY(sys_clone)
-+	SAVE_SWITCH_STACK
-+	addi	sp, sp, -4
-+	stw	r7, 0(sp)	/* Pass 5th arg thru stack */
-+	mov	r7, r6		/* 4th arg is 3rd of clone() */
-+	mov	r6, zero	/* 3rd arg always 0 */
-+	call	do_fork
-+	addi	sp, sp, 4
-+	RESTORE_SWITCH_STACK
-+	ret
-+
-+ENTRY(sys_rt_sigreturn)
-+	SAVE_SWITCH_STACK
-+	mov	r4, sp
-+	call	do_rt_sigreturn
-+	RESTORE_SWITCH_STACK
-+	addi	ra, ra, (end_translate_rc_and_ret - translate_rc_and_ret)
-+	ret
-+
-+/***********************************************************************
-+ * A few other wrappers and stubs
-+ ***********************************************************************
-+ */
-+protection_exception_pte:
-+	rdctl	r6, pteaddr
-+	slli	r6, r6, 10
-+	call	do_page_fault
-+	br	ret_from_exception
-+
-+protection_exception_ba:
-+	rdctl	r6, badaddr
-+	call	do_page_fault
-+	br	ret_from_exception
-+
-+protection_exception_instr:
-+	call	handle_supervisor_instr
-+	br	ret_from_exception
-+
-+handle_breakpoint:
-+	call	breakpoint_c
-+	br	ret_from_exception
-+
-+#ifdef CONFIG_ALIGNMENT_TRAP
-+handle_unaligned:
-+	SAVE_SWITCH_STACK
-+	call	handle_unaligned_c
-+	RESTORE_SWITCH_STACK
-+	br	ret_from_exception
-+#else
-+handle_unaligned:
-+	call	handle_unaligned_c
-+	br	ret_from_exception
-+#endif
-+
-+handle_illegal:
-+	call	handle_illegal_c
-+	br	ret_from_exception
-+
-+handle_diverror:
-+	call	handle_diverror_c
-+	br	ret_from_exception
++extern void mmu_context_init(void);
++extern unsigned long get_pid_from_context(mm_context_t *ctx);
 +
 +/*
-+ * Beware - when entering resume, prev (the current task) is
-+ * in r4, next (the new task) is in r5, don't change these
-+ * registers.
++ * For the fast tlb miss handlers, we keep a pointer to the current pgd.
++ * processor.
 + */
-+ENTRY(resume)
++extern pgd_t *pgd_current;
 +
-+	rdctl	r7, status			/* save thread status reg */
-+	stw	r7, TASK_THREAD + THREAD_KPSR(r4)
-+
-+	andi	r7, r7, %lo(~STATUS_PIE)	/* disable interrupts */
-+	wrctl	status, r7
-+
-+	SAVE_SWITCH_STACK
-+	stw	sp, TASK_THREAD + THREAD_KSP(r4)/* save kernel stack pointer */
-+	ldw	sp, TASK_THREAD + THREAD_KSP(r5)/* restore new thread stack */
-+	movia	r24, _current_thread		/* save thread */
-+	GET_THREAD_INFO r1
-+	stw	r1, 0(r24)
-+	RESTORE_SWITCH_STACK
-+
-+	ldw	r7, TASK_THREAD + THREAD_KPSR(r5)/* restore thread status reg */
-+	wrctl	status, r7
-+	ret
-+
-+ENTRY(ret_from_fork)
-+	call	schedule_tail
-+	br	ret_from_exception
-+
-+ENTRY(ret_from_kernel_thread)
-+	call	schedule_tail
-+	mov	r4,r17	/* arg */
-+	callr	r16	/* function */
-+	br	ret_from_exception
++static inline void enter_lazy_tlb(struct mm_struct *mm, struct task_struct *tsk)
++{
++}
 +
 +/*
-+ * Kernel user helpers.
++ * Initialize the context related info for a new mm_struct instance.
 + *
-+ * Each segment is 64-byte aligned and will be mapped to the <User space>.
-+ * New segments (if ever needed) must be added after the existing ones.
-+ * This mechanism should be used only for things that are really small and
-+ * justified, and not be abused freely.
-+ *
++ * Set all new contexts to 0, that way the generation will never match
++ * the currently running generation when this context is switched in.
 + */
++static inline int init_new_context(struct task_struct *tsk,
++					struct mm_struct *mm)
++{
++	mm->context = 0;
++	return 0;
++}
 +
-+ /* Filling pads with undefined instructions. */
-+.macro	kuser_pad sym size
-+	.if	((. - \sym) & 3)
-+	.rept	(4 - (. - \sym) & 3)
-+	.byte	0
-+	.endr
-+	.endif
-+	.rept	((\size - (. - \sym)) / 4)
-+	.word	0xdeadbeef
-+	.endr
-+.endm
++/*
++ * Destroy context related info for an mm_struct that is about
++ * to be put to rest.
++ */
++static inline void destroy_context(struct mm_struct *mm)
++{
++}
 +
-+	.align	6
-+	.globl	__kuser_helper_start
-+__kuser_helper_start:
++void switch_mm(struct mm_struct *prev, struct mm_struct *next,
++		struct task_struct *tsk);
 +
-+__kuser_helper_version:				/* @ 0x1000 */
-+	.word	((__kuser_helper_end - __kuser_helper_start) >> 6)
++static inline void deactivate_mm(struct task_struct *tsk,
++				struct mm_struct *mm)
++{
++}
 +
-+__kuser_cmpxchg:				/* @ 0x1004 */
-+	/*
-+	 * r4 pointer to exchange variable
-+	 * r5 old value
-+	 * r6 new value
-+	 */
-+cmpxchg_ldw:
-+	ldw	r2, 0(r4)			/* load current value */
-+	sub	r2, r2, r5			/* compare with old value */
-+	bne	r2, zero, cmpxchg_ret
++/*
++ * After we have set current->mm to a new value, this activates
++ * the context for the new mm so we see the new mappings.
++ */
++void activate_mm(struct mm_struct *prev, struct mm_struct *next);
 +
-+	/* We had a match, store the new value */
-+cmpxchg_stw:
-+	stw	r6, 0(r4)
-+cmpxchg_ret:
-+	ret
-+
-+	kuser_pad __kuser_cmpxchg, 64
-+
-+	.globl	__kuser_helper_end
-+__kuser_helper_end:
-diff --git a/arch/nios2/kernel/misaligned.c b/arch/nios2/kernel/misaligned.c
++#endif /* _ASM_NIOS2_MMU_CONTEXT_H */
+diff --git a/arch/nios2/include/asm/processor.h b/arch/nios2/include/asm/processor.h
 new file mode 100644
-index 0000000..f8845ab72af03d946561c84c125fc8ab4f6fce1b
+index 0000000..cff9b2da0cdd3f9ba392f782492dd3b8d435bb9a
 --- /dev/null
-+++ b/arch/nios2/kernel/misaligned.c
-@@ -0,0 +1,319 @@
++++ b/arch/nios2/include/asm/processor.h
+@@ -0,0 +1,102 @@
 +/*
-+ *  linux/arch/nios2/kernel/misaligned.c
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd
++ * Copyright (C) 2001 Ken Hill (khill@microtronix.com)
++ *                    Vic Phillips (vic@microtronix.com)
 + *
-+ *  basic emulation for mis-aligned accesses on the NIOS II cpu
-+ *  modeled after the version for arm in arm/alignment.c
++ * based on SPARC asm/processor_32.h which is:
 + *
-+ *  Brad Parker <brad@heeltoe.com>
-+ *  Copyright (C) 2010 Ambient Corporation
-+ *  Copyright (c) 2010 Altera Corporation, San Jose, California, USA.
-+ *  Copyright (c) 2010 Arrow Electronics, Inc.
++ * Copyright (C) 1994 David S. Miller
 + *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License.  See the file COPYING in the main directory of
-+ * this archive for more details.
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
 + */
 +
-+#include <linux/errno.h>
-+#include <linux/string.h>
-+#include <linux/proc_fs.h>
-+#include <linux/init.h>
++#ifndef _ASM_NIOS2_PROCESSOR_H
++#define _ASM_NIOS2_PROCESSOR_H
++
++#include <asm/ptrace.h>
++#include <asm/registers.h>
++#include <asm/page.h>
++
++#define NIOS2_FLAG_KTHREAD	0x00000001	/* task is a kernel thread */
++
++#define NIOS2_OP_NOP		0x1883a
++#define NIOS2_OP_BREAK		0x3da03a
++
++#ifdef __KERNEL__
++
++#define STACK_TOP	TASK_SIZE
++#define STACK_TOP_MAX	STACK_TOP
++
++#endif /* __KERNEL__ */
++
++/* Kuser helpers is mapped to this user space address */
++#define KUSER_BASE		0x1000
++#define KUSER_SIZE		(PAGE_SIZE)
++#ifndef __ASSEMBLY__
++
++/*
++ * Default implementation of macro that returns current
++ * instruction pointer ("program counter").
++ */
++#define current_text_addr() ({ __label__ _l; _l: &&_l; })
++
++# define TASK_SIZE		0x7FFF0000UL
++# define TASK_UNMAPPED_BASE	(PAGE_ALIGN(TASK_SIZE / 3))
++
++/* The Nios processor specific thread struct. */
++struct thread_struct {
++	struct pt_regs *kregs;
++
++	/* Context switch saved kernel state. */
++	unsigned long ksp;
++	unsigned long kpsr;
++};
++
++#define INIT_MMAP \
++	{ &init_mm, (0), (0), __pgprot(0x0), VM_READ | VM_WRITE | VM_EXEC }
++
++# define INIT_THREAD {			\
++	.kregs	= NULL,			\
++	.ksp	= 0,			\
++	.kpsr	= 0,			\
++}
++
++extern void start_thread(struct pt_regs *regs, unsigned long pc,
++			unsigned long sp);
++
++struct task_struct;
++
++/* Free all resources held by a thread. */
++static inline void release_thread(struct task_struct *dead_task)
++{
++}
++
++/* Free current thread data structures etc.. */
++static inline void exit_thread(void)
++{
++}
++
++/* Return saved PC of a blocked thread. */
++#define thread_saved_pc(tsk)	((tsk)->thread.kregs->ea)
++
++extern unsigned long get_wchan(struct task_struct *p);
++
++/* Prepare to copy thread state - unlazy all lazy status */
++#define prepare_to_copy(tsk)	do { } while (0)
++
++#define task_pt_regs(p) \
++	((struct pt_regs *)(THREAD_SIZE + task_stack_page(p)) - 1)
++
++/* Used by procfs */
++#define KSTK_EIP(tsk)	((tsk)->thread.kregs->ea)
++#define KSTK_ESP(tsk)	((tsk)->thread.kregs->sp)
++
++#define cpu_relax()	barrier()
++
++#endif /* __ASSEMBLY__ */
++
++#endif /* _ASM_NIOS2_PROCESSOR_H */
+diff --git a/arch/nios2/include/asm/switch_to.h b/arch/nios2/include/asm/switch_to.h
+new file mode 100644
+index 0000000..c47b3f4afbcddcea3a89f44569141339412d6cf3
+--- /dev/null
++++ b/arch/nios2/include/asm/switch_to.h
+@@ -0,0 +1,31 @@
++/*
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License. See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++#ifndef _ASM_NIOS2_SWITCH_TO_H
++#define _ASM_NIOS2_SWITCH_TO_H
++
++/*
++ * switch_to(n) should switch tasks to task ptr, first checking that
++ * ptr isn't the current task, in which case it does nothing.  This
++ * also clears the TS-flag if the task we switched to has used the
++ * math co-processor latest.
++ */
++#define switch_to(prev, next, last)			\
++{							\
++	void *_last;					\
++	__asm__ __volatile__ (				\
++		"mov	r4, %1\n"			\
++		"mov	r5, %2\n"			\
++		"call	resume\n"			\
++		"mov	%0,r4\n"			\
++		: "=r" (_last)				\
++		: "r" (prev), "r" (next)		\
++		: "r4", "r5", "r7", "r8", "ra");	\
++	(last) = _last;					\
++}
++
++#endif /* _ASM_NIOS2_SWITCH_TO_H */
+diff --git a/arch/nios2/include/asm/thread_info.h b/arch/nios2/include/asm/thread_info.h
+new file mode 100644
+index 0000000..1f266575beb51c459432ac918e96e0b3b810ae85
+--- /dev/null
++++ b/arch/nios2/include/asm/thread_info.h
+@@ -0,0 +1,120 @@
++/*
++ * NiosII low-level thread information
++ *
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2004 Microtronix Datacom Ltd.
++ *
++ * Based on asm/thread_info_no.h from m68k which is:
++ *
++ * Copyright (C) 2002 David Howells <dhowells@redhat.com>
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#ifndef _ASM_NIOS2_THREAD_INFO_H
++#define _ASM_NIOS2_THREAD_INFO_H
++
++#ifdef __KERNEL__
++
++/*
++ * Size of the kernel stack for each process.
++ */
++#define THREAD_SIZE_ORDER	1
++#define THREAD_SIZE		8192 /* 2 * PAGE_SIZE */
++
++#ifndef __ASSEMBLY__
++
++typedef struct {
++	unsigned long seg;
++} mm_segment_t;
++
++/*
++ * low level task data that entry.S needs immediate access to
++ * - this struct should fit entirely inside of one cache line
++ * - this struct shares the supervisor stack pages
++ * - if the contents of this structure are changed, the assembly constants
++ *   must also be changed
++ */
++struct thread_info {
++	struct task_struct	*task;		/* main task structure */
++	struct exec_domain	*exec_domain;	/* execution domain */
++	unsigned long		flags;		/* low level flags */
++	__u32			cpu;		/* current CPU */
++	int			preempt_count;	/* 0 => preemptable,<0 => BUG */
++	mm_segment_t		addr_limit;	/* thread address space:
++						  0-0x7FFFFFFF for user-thead
++						  0-0xFFFFFFFF for kernel-thread
++						*/
++	struct restart_block	restart_block;
++	struct pt_regs		*regs;
++};
++
++/*
++ * macros/functions for gaining access to the thread information structure
++ *
++ * preempt_count needs to be 1 initially, until the scheduler is functional.
++ */
++#define INIT_THREAD_INFO(tsk)			\
++{						\
++	.task		= &tsk,			\
++	.exec_domain	= &default_exec_domain,	\
++	.flags		= 0,			\
++	.cpu		= 0,			\
++	.preempt_count	= INIT_PREEMPT_COUNT,	\
++	.addr_limit	= KERNEL_DS,		\
++	.restart_block	= {			\
++		.fn = do_no_restart_syscall,	\
++	},					\
++}
++
++#define init_thread_info	(init_thread_union.thread_info)
++#define init_stack		(init_thread_union.stack)
++
++/* how to get the thread information struct from C */
++static inline struct thread_info *current_thread_info(void)
++{
++	register unsigned long sp asm("sp");
++
++	return (struct thread_info *)(sp & ~(THREAD_SIZE - 1));
++}
++#endif /* !__ASSEMBLY__ */
++
++/*
++ * thread information flags
++ * - these are process state flags that various assembly files may need to
++ *   access
++ * - pending work-to-be-done flags are in LSW
++ * - other flags in MSW
++ */
++#define TIF_SYSCALL_TRACE	0	/* syscall trace active */
++#define TIF_NOTIFY_RESUME	1	/* resumption notification requested */
++#define TIF_SIGPENDING		2	/* signal pending */
++#define TIF_NEED_RESCHED	3	/* rescheduling necessary */
++#define TIF_MEMDIE		4	/* is terminating due to OOM killer */
++#define TIF_SECCOMP		5	/* secure computing */
++#define TIF_SYSCALL_AUDIT	6	/* syscall auditing active */
++#define TIF_RESTORE_SIGMASK	9	/* restore signal mask in do_signal() */
++
++#define TIF_POLLING_NRFLAG	16	/* true if poll_idle() is polling
++					   TIF_NEED_RESCHED */
++
++#define _TIF_SYSCALL_TRACE	(1 << TIF_SYSCALL_TRACE)
++#define _TIF_NOTIFY_RESUME	(1 << TIF_NOTIFY_RESUME)
++#define _TIF_SIGPENDING		(1 << TIF_SIGPENDING)
++#define _TIF_NEED_RESCHED	(1 << TIF_NEED_RESCHED)
++#define _TIF_SECCOMP		(1 << TIF_SECCOMP)
++#define _TIF_SYSCALL_AUDIT	(1 << TIF_SYSCALL_AUDIT)
++#define _TIF_RESTORE_SIGMASK	(1 << TIF_RESTORE_SIGMASK)
++#define _TIF_POLLING_NRFLAG	(1 << TIF_POLLING_NRFLAG)
++
++/* work to do on interrupt/exception return */
++#define _TIF_WORK_MASK		0x0000FFFE
++
++/* work to do on any return to u-space */
++# define _TIF_ALLWORK_MASK	0x0000FFFF
++
++#endif /* __KERNEL__ */
++
++#endif /* _ASM_NIOS2_THREAD_INFO_H */
+diff --git a/arch/nios2/kernel/process.c b/arch/nios2/kernel/process.c
+new file mode 100644
+index 0000000..162b3f0
+--- /dev/null
++++ b/arch/nios2/kernel/process.c
+@@ -0,0 +1,262 @@
++/*
++ * Architecture-dependent parts of process handling.
++ *
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2010 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ * Copyright (C) 2004 Microtronix Datacom Ltd
++ *
++ * based on arch/m68knommu/kernel/process.c which is:
++ *
++ * Copyright (C) 2000-2002 David McCullough <davidm@snapgear.com>
++ * Copyright (C) 1995 Hamish Macdonald
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/export.h>
 +#include <linux/sched.h>
++#include <linux/tick.h>
 +#include <linux/uaccess.h>
-+#include <linux/seq_file.h>
 +
++#include <asm/unistd.h>
 +#include <asm/traps.h>
-+#include <asm/unaligned.h>
++#include <asm/cpuinfo.h>
 +
-+/* instructions we emulate */
-+#define INST_LDHU	0x0b
-+#define INST_STH	0x0d
-+#define INST_LDH	0x0f
-+#define INST_STW	0x15
-+#define INST_LDW	0x17
++asmlinkage void ret_from_fork(void);
++asmlinkage void ret_from_kernel_thread(void);
 +
-+static unsigned long ma_user, ma_kern, ma_skipped, ma_half, ma_word;
++void (*pm_power_off)(void) = NULL;
++EXPORT_SYMBOL(pm_power_off);
 +
-+static unsigned int ma_usermode;
-+#define UM_WARN		0x01
-+#define UM_FIXUP	0x02
-+#define UM_SIGNAL	0x04
-+#define KM_WARN		0x08
-+
-+/* see arch/nios2/include/asm/ptrace.h */
-+static u8 sys_stack_frame_reg_offset[] = {
-+	/* struct pt_regs */
-+	8, 9, 10, 11, 12, 13, 14, 15, 1, 2, 3, 4, 5, 6, 7, 0,
-+	/* struct switch_stack */
-+	16, 17, 18, 19, 20, 21, 22, 23, 0, 0, 0, 0, 0, 0, 0, 0
-+};
-+
-+static int reg_offsets[32];
-+
-+static inline u32 get_reg_val(struct pt_regs *fp, int reg)
++void arch_cpu_idle(void)
 +{
-+	u8 *p = ((u8 *)fp) + reg_offsets[reg];
-+	return *(u32 *)p;
-+}
-+
-+static inline void put_reg_val(struct pt_regs *fp, int reg, u32 val)
-+{
-+	u8 *p = ((u8 *)fp) + reg_offsets[reg];
-+	*(u32 *)p = val;
++	local_irq_enable();
 +}
 +
 +/*
-+ * (mis)alignment handler
++ * The development boards have no way to pull a board reset. Just jump to the
++ * cpu reset address and let the boot loader or the code in head.S take care of
++ * resetting peripherals.
 + */
-+asmlinkage void handle_unaligned_c(struct pt_regs *fp, int cause)
++void machine_restart(char *__unused)
 +{
-+	u32 isn, addr, val;
-+	int in_kernel;
-+	u8 a, b, d0, d1, d2, d3;
-+	u16 imm16;
-+	unsigned int fault;
-+
-+	/* back up one instruction */
-+	fp->ea -= 4;
-+
-+	if (fixup_exception(fp)) {
-+		ma_skipped++;
-+		return;
-+	}
-+
-+	in_kernel = !user_mode(fp);
-+
-+	isn = *(unsigned long *)(fp->ea);
-+
-+	fault = 0;
-+
-+	/* do fixup if in kernel or mode turned on */
-+	if (in_kernel || (ma_usermode & UM_FIXUP)) {
-+		/* decompose instruction */
-+		a = (isn >> 27) & 0x1f;
-+		b = (isn >> 22) & 0x1f;
-+		imm16 = (isn >> 6) & 0xffff;
-+		addr = get_reg_val(fp, a) + imm16;
-+
-+		/* do fixup to saved registers */
-+		switch (isn & 0x3f) {
-+		case INST_LDHU:
-+			fault |= __get_user(d0, (u8 *)(addr+0));
-+			fault |= __get_user(d1, (u8 *)(addr+1));
-+			val = (d1 << 8) | d0;
-+			put_reg_val(fp, b, val);
-+			ma_half++;
-+			break;
-+		case INST_STH:
-+			val = get_reg_val(fp, b);
-+			d1 = val >> 8;
-+			d0 = val >> 0;
-+
-+			pr_debug("sth: ra=%d (%08x) rb=%d (%08x), imm16 %04x addr %08x val %08x\n",
-+				a, get_reg_val(fp, a),
-+				b, get_reg_val(fp, b),
-+				imm16, addr, val);
-+
-+			if (in_kernel) {
-+				*(u8 *)(addr+0) = d0;
-+				*(u8 *)(addr+1) = d1;
-+			} else {
-+				fault |= __put_user(d0, (u8 *)(addr+0));
-+				fault |= __put_user(d1, (u8 *)(addr+1));
-+			}
-+			ma_half++;
-+			break;
-+		case INST_LDH:
-+			fault |= __get_user(d0, (u8 *)(addr+0));
-+			fault |= __get_user(d1, (u8 *)(addr+1));
-+			val = (short)((d1 << 8) | d0);
-+			put_reg_val(fp, b, val);
-+			ma_half++;
-+			break;
-+		case INST_STW:
-+			val = get_reg_val(fp, b);
-+			d3 = val >> 24;
-+			d2 = val >> 16;
-+			d1 = val >> 8;
-+			d0 = val >> 0;
-+			if (in_kernel) {
-+				*(u8 *)(addr+0) = d0;
-+				*(u8 *)(addr+1) = d1;
-+				*(u8 *)(addr+2) = d2;
-+				*(u8 *)(addr+3) = d3;
-+			} else {
-+				fault |= __put_user(d0, (u8 *)(addr+0));
-+				fault |= __put_user(d1, (u8 *)(addr+1));
-+				fault |= __put_user(d2, (u8 *)(addr+2));
-+				fault |= __put_user(d3, (u8 *)(addr+3));
-+			}
-+			ma_word++;
-+			break;
-+		case INST_LDW:
-+			fault |= __get_user(d0, (u8 *)(addr+0));
-+			fault |= __get_user(d1, (u8 *)(addr+1));
-+			fault |= __get_user(d2, (u8 *)(addr+2));
-+			fault |= __get_user(d3, (u8 *)(addr+3));
-+			val = (d3 << 24) | (d2 << 16) | (d1 << 8) | d0;
-+			put_reg_val(fp, b, val);
-+			ma_word++;
-+			break;
-+		}
-+	}
-+
-+	addr = RDCTL(CTL_BADADDR);
-+	cause >>= 2;
-+
-+	if (fault) {
-+		if (in_kernel) {
-+			pr_err("fault during kernel misaligned fixup @ %#lx; addr 0x%08lx; isn=0x%08x\n",
-+				fp->ea, (long unsigned int)addr,
-+				(unsigned int)isn);
-+		} else {
-+			pr_err("fault during user misaligned fixup @ %#lx; isn=%08x addr=0x%08x sp=0x%08lx pid=%d\n",
-+				fp->ea,
-+				(unsigned int)isn, addr, fp->sp,
-+				current->pid);
-+
-+			_exception(SIGSEGV, fp, SEGV_MAPERR, fp->ea);
-+			return;
-+		}
-+	}
-+
-+	/*
-+	 * kernel mode -
-+	 *  note exception and skip bad instruction (return)
-+	 */
-+	if (in_kernel) {
-+		ma_kern++;
-+		fp->ea += 4;
-+
-+		if (ma_usermode & KM_WARN) {
-+			pr_err("kernel unaligned access @ %#lx; BADADDR 0x%08lx; cause=%d, isn=0x%08lx\n",
-+				fp->ea,
-+				(long unsigned int)addr, cause,
-+				(long unsigned int)isn);
-+			/* show_regs(fp); */
-+		}
-+
-+		return;
-+	}
-+
-+	ma_user++;
-+
-+	/*
-+	 * user mode -
-+	 *  possibly warn,
-+	 *  possibly send SIGBUS signal to process
-+	 */
-+	if (ma_usermode & UM_WARN) {
-+		pr_err("user unaligned access @ %#lx; isn=0x%08lx ea=0x%08lx ra=0x%08lx sp=0x%08lx\n",
-+			(unsigned long)addr, (unsigned long)isn,
-+			fp->ea, fp->ra, fp->sp);
-+	}
-+
-+	if (ma_usermode & UM_SIGNAL)
-+		_exception(SIGBUS, fp, BUS_ADRALN, fp->ea);
-+	else
-+		fp->ea += 4;	/* else advance */
++	pr_notice("Machine restart (%08x)...\n", cpuinfo.reset_addr);
++	local_irq_disable();
++	__asm__ __volatile__ (
++	"jmp	%0\n\t"
++	:
++	: "r" (cpuinfo.reset_addr)
++	: "r4");
 +}
 +
-+#ifdef CONFIG_PROC_FS
-+static const char * const usermode_action[] = {
-+	"ignored",	/* 0 */
-+	"warn",		/* 1 */
-+	"fixup",	/* 2 */
-+	"fixup+warn",	/* 3 */
-+	"signal",	/* 4 */
-+	"signal+warn",	/* 5 */
-+	"signal+fixup",
-+	"signal+fixup+warn"
-+};
-+
-+static int misaligned_proc_show(struct seq_file *m, void *v)
++void machine_halt(void)
 +{
-+	seq_printf(m, "User:\t\t%lu\n", ma_user);
-+	seq_printf(m, "Kernel:\t\t%lu\n", ma_kern);
-+	seq_printf(m, "Skipped:\t%lu\n", ma_skipped);
-+	seq_printf(m, "Half:\t\t%lu\n", ma_half);
-+	seq_printf(m, "Word:\t\t%lu\n", ma_word);
-+	seq_printf(m, "User faults:\t%i (%s)\n", ma_usermode,
-+			usermode_action[ma_usermode & 7]);
++	pr_notice("Machine halt...\n");
++	local_irq_disable();
++	for (;;)
++		;
++}
++
++/*
++ * There is no way to power off the development boards. So just spin for now. If
++ * we ever have a way of resetting a board using a GPIO we should add that here.
++ */
++void machine_power_off(void)
++{
++	pr_notice("Machine power off...\n");
++	local_irq_disable();
++	for (;;)
++		;
++}
++
++void show_regs(struct pt_regs *regs)
++{
++	pr_notice("\n");
++	show_regs_print_info(KERN_DEFAULT);
++
++	pr_notice("r1: %08lx r2: %08lx r3: %08lx r4: %08lx\n",
++		regs->r1,  regs->r2,  regs->r3,  regs->r4);
++
++	pr_notice("r5: %08lx r6: %08lx r7: %08lx r8: %08lx\n",
++		regs->r5,  regs->r6,  regs->r7,  regs->r8);
++
++	pr_notice("r9: %08lx r10: %08lx r11: %08lx r12: %08lx\n",
++		regs->r9,  regs->r10, regs->r11, regs->r12);
++
++	pr_notice("r13: %08lx r14: %08lx r15: %08lx\n",
++		regs->r13, regs->r14, regs->r15);
++
++	pr_notice("ra: %08lx fp:  %08lx sp: %08lx gp: %08lx\n",
++		regs->ra,  regs->fp,  regs->sp,  regs->gp);
++
++	pr_notice("ea: %08lx estatus: %08lx\n",
++		regs->ea,  regs->estatus);
++}
++
++void flush_thread(void)
++{
++	set_fs(USER_DS);
++}
++
++int copy_thread(unsigned long clone_flags,
++		unsigned long usp, unsigned long arg, struct task_struct *p)
++{
++	struct pt_regs *childregs = task_pt_regs(p);
++	struct pt_regs *regs;
++	struct switch_stack *stack;
++	struct switch_stack *childstack =
++		((struct switch_stack *)childregs) - 1;
++
++	if (unlikely(p->flags & PF_KTHREAD)) {
++		memset(childstack, 0,
++			sizeof(struct switch_stack) + sizeof(struct pt_regs));
++
++		childstack->r16 = usp;		/* fn */
++		childstack->r17 = arg;
++		childstack->ra = (unsigned long) ret_from_kernel_thread;
++		childregs->estatus = STATUS_PIE;
++		childregs->sp = (unsigned long) childstack;
++
++		p->thread.ksp = (unsigned long) childstack;
++		p->thread.kregs = childregs;
++		return 0;
++	}
++
++	regs = current_pt_regs();
++	*childregs = *regs;
++	childregs->r2 = 0;	/* Set the return value for the child. */
++	childregs->r7 = 0;
++
++	stack = ((struct switch_stack *) regs) - 1;
++	*childstack = *stack;
++	childstack->ra = (unsigned long)ret_from_fork;
++	p->thread.kregs = childregs;
++	p->thread.ksp = (unsigned long) childstack;
++
++	if (usp)
++		childregs->sp = usp;
++
++	/* Initialize tls register. */
++	if (clone_flags & CLONE_SETTLS)
++		childstack->r23 = regs->r8;
 +
 +	return 0;
 +}
 +
-+static int proc_misaligned_open(struct inode *inode, struct file *file)
++/*
++ *	Generic dumping code. Used for panic and debug.
++ */
++void dump(struct pt_regs *fp)
 +{
-+	return single_open(file, misaligned_proc_show, NULL);
-+}
++	unsigned long	*sp;
++	unsigned char	*tp;
++	int		i;
 +
-+static ssize_t proc_misaligned_write(struct file *file,
-+			const char __user *buffer,
-+			size_t count, loff_t *ppos)
-+{
-+	char mode;
++	pr_emerg("\nCURRENT PROCESS:\n\n");
++	pr_emerg("COMM=%s PID=%d\n", current->comm, current->pid);
 +
-+	if (count > 0) {
-+		if (get_user(mode, buffer))
-+			return -EFAULT;
-+		if (mode >= '0' && mode <= '5')
-+			ma_usermode = mode - '0';
++	if (current->mm) {
++		pr_emerg("TEXT=%08x-%08x DATA=%08x-%08x BSS=%08x-%08x\n",
++			(int) current->mm->start_code,
++			(int) current->mm->end_code,
++			(int) current->mm->start_data,
++			(int) current->mm->end_data,
++			(int) current->mm->end_data,
++			(int) current->mm->brk);
++		pr_emerg("USER-STACK=%08x  KERNEL-STACK=%08x\n\n",
++			(int) current->mm->start_stack,
++			(int)(((unsigned long) current) + THREAD_SIZE));
 +	}
 +
-+	return count;
++	pr_emerg("PC: %08lx\n", fp->ea);
++	pr_emerg(KERN_EMERG "SR: %08lx    SP: %08lx\n",
++		(long) fp->estatus, (long) fp);
++
++	pr_emerg("r1: %08lx    r2: %08lx    r3: %08lx\n",
++		fp->r1, fp->r2, fp->r3);
++
++	pr_emerg("r4: %08lx    r5: %08lx    r6: %08lx    r7: %08lx\n",
++		fp->r4, fp->r5, fp->r6, fp->r7);
++	pr_emerg("r8: %08lx    r9: %08lx    r10: %08lx    r11: %08lx\n",
++		fp->r8, fp->r9, fp->r10, fp->r11);
++	pr_emerg("r12: %08lx  r13: %08lx    r14: %08lx    r15: %08lx\n",
++		fp->r12, fp->r13, fp->r14, fp->r15);
++	pr_emerg("or2: %08lx   ra: %08lx     fp: %08lx    sp: %08lx\n",
++		fp->orig_r2, fp->ra, fp->fp, fp->sp);
++	pr_emerg("\nUSP: %08x   TRAPFRAME: %08x\n",
++		(unsigned int) fp->sp, (unsigned int) fp);
++
++	pr_emerg("\nCODE:");
++	tp = ((unsigned char *) fp->ea) - 0x20;
++	for (sp = (unsigned long *) tp, i = 0; (i < 0x40);  i += 4) {
++		if ((i % 0x10) == 0)
++			pr_emerg("\n%08x: ", (int) (tp + i));
++		pr_emerg("%08x ", (int) *sp++);
++	}
++	pr_emerg("\n");
++
++	pr_emerg("\nKERNEL STACK:");
++	tp = ((unsigned char *) fp) - 0x40;
++	for (sp = (unsigned long *) tp, i = 0; (i < 0xc0); i += 4) {
++		if ((i % 0x10) == 0)
++			pr_emerg("\n%08x: ", (int) (tp + i));
++		pr_emerg("%08x ", (int) *sp++);
++	}
++	pr_emerg("\n");
++	pr_emerg("\n");
++
++	pr_emerg("\nUSER STACK:");
++	tp = (unsigned char *) (fp->sp - 0x10);
++	for (sp = (unsigned long *) tp, i = 0; (i < 0x80); i += 4) {
++		if ((i % 0x10) == 0)
++			pr_emerg("\n%08x: ", (int) (tp + i));
++		pr_emerg("%08x ", (int) *sp++);
++	}
++	pr_emerg("\n\n");
 +}
 +
-+static const struct file_operations misalign_fops = {
-+	.open		= proc_misaligned_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+	.write		= proc_misaligned_write,
-+};
-+#endif /* CONFIG_PROC_FS */
-+
-+static void __init misaligned_calc_reg_offsets(void)
++unsigned long get_wchan(struct task_struct *p)
 +{
-+	int i, r, offset;
++	unsigned long fp, pc;
++	unsigned long stack_page;
++	int count = 0;
++	if (!p || p == current || p->state == TASK_RUNNING)
++		return 0;
 +
-+	/* pre-calc offsets of registers on sys call stack frame */
-+	offset = 0;
-+
-+	/* struct pt_regs */
-+	for (i = 0; i < 16; i++) {
-+		r = sys_stack_frame_reg_offset[i];
-+		reg_offsets[r] = offset;
-+		offset += 4;
-+	}
-+
-+	/* struct switch_stack */
-+	offset = -sizeof(struct switch_stack);
-+	for (i = 16; i < 32; i++) {
-+		r = sys_stack_frame_reg_offset[i];
-+		reg_offsets[r] = offset;
-+		offset += 4;
-+	}
-+}
-+
-+
-+static int __init misaligned_init(void)
-+{
-+#ifdef CONFIG_PROC_FS
-+
-+	struct proc_dir_entry *res;
-+
-+	res = proc_create("misalign", S_IWUSR | S_IRUGO, NULL, &misalign_fops);
-+	if (!res)
-+		return -ENOMEM;
-+#endif
-+
-+	/* default mode - silent fix */
-+	ma_usermode = UM_FIXUP | KM_WARN;
-+
-+	misaligned_calc_reg_offsets();
-+
++	stack_page = (unsigned long)p;
++	fp = ((struct switch_stack *)p->thread.ksp)->fp;	/* ;dgt2 */
++	do {
++		if (fp < stack_page+sizeof(struct task_struct) ||
++			fp >= 8184+stack_page)	/* ;dgt2;tmp */
++			return 0;
++		pc = ((unsigned long *)fp)[1];
++		if (!in_sched_functions(pc))
++			return pc;
++		fp = *(unsigned long *) fp;
++	} while (count++ < 16);		/* ;dgt2;tmp */
 +	return 0;
 +}
 +
-+fs_initcall(misaligned_init);
++/*
++ * Do necessary setup to start up a newly executed thread.
++ * Will startup in user mode (status_extension = 0).
++ */
++void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long sp)
++{
++	memset((void *) regs, 0, sizeof(struct pt_regs));
++	regs->estatus = ESTATUS_EPIE | ESTATUS_EU;
++	regs->ea = pc;
++	regs->sp = sp;
++}
++
++#include <linux/elfcore.h>
++
++/* Fill in the FPU structure for a core dump. */
++int dump_fpu(struct pt_regs *regs, elf_fpregset_t *r)
++{
++	return 0; /* Nios2 has no FPU and thus no FPU registers */
++}
+diff --git a/arch/nios2/mm/mmu_context.c b/arch/nios2/mm/mmu_context.c
+new file mode 100644
+index 0000000..45d6b9c58d677a93b3bbe38148693e02394aac87
+--- /dev/null
++++ b/arch/nios2/mm/mmu_context.c
+@@ -0,0 +1,116 @@
++/*
++ * MMU context handling.
++ *
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2009 Wind River Systems Inc
++ *   Implemented by fredrik.markstrom@gmail.com and ivarholmqvist@gmail.com
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/mm.h>
++
++#include <asm/cpuinfo.h>
++#include <asm/mmu_context.h>
++#include <asm/tlb.h>
++
++/* The pids position and mask in context */
++#define PID_SHIFT	0
++#define PID_BITS	(cpuinfo.tlb_pid_num_bits)
++#define PID_MASK	((1UL << PID_BITS) - 1)
++
++/* The versions position and mask in context */
++#define VERSION_BITS	(32 - PID_BITS)
++#define VERSION_SHIFT	(PID_SHIFT + PID_BITS)
++#define VERSION_MASK	((1UL << VERSION_BITS) - 1)
++
++/* Return the version part of a context */
++#define CTX_VERSION(c)	(((c) >> VERSION_SHIFT) & VERSION_MASK)
++
++/* Return the pid part of a context */
++#define CTX_PID(c)	(((c) >> PID_SHIFT) & PID_MASK)
++
++/* Value of the first context (version 1, pid 0) */
++#define FIRST_CTX	((1UL << VERSION_SHIFT) | (0 << PID_SHIFT))
++
++static mm_context_t next_mmu_context;
++
++/*
++ * Initialize MMU context management stuff.
++ */
++void __init mmu_context_init(void)
++{
++	/* We need to set this here because the value depends on runtime data
++	 * from cpuinfo */
++	next_mmu_context = FIRST_CTX;
++}
++
++/*
++ * Set new context (pid), keep way
++ */
++static void set_context(mm_context_t context)
++{
++	set_mmu_pid(CTX_PID(context));
++}
++
++static mm_context_t get_new_context(void)
++{
++	/* Return the next pid */
++	next_mmu_context += (1UL << PID_SHIFT);
++
++	/* If the pid field wraps around we increase the version and
++	 * flush the tlb */
++	if (unlikely(CTX_PID(next_mmu_context) == 0)) {
++		/* Version is incremented since the pid increment above
++		 * overflows info version */
++		flush_cache_all();
++		flush_tlb_all();
++	}
++
++	/* If the version wraps we start over with the first generation, we do
++	 * not need to flush the tlb here since it's always done above */
++	if (unlikely(CTX_VERSION(next_mmu_context) == 0))
++		next_mmu_context = FIRST_CTX;
++
++	return next_mmu_context;
++}
++
++void switch_mm(struct mm_struct *prev, struct mm_struct *next,
++	       struct task_struct *tsk)
++{
++	unsigned long flags;
++
++	local_irq_save(flags);
++
++	/* If the process context we are swapping in has a different context
++	 * generation then we have it should get a new generation/pid */
++	if (unlikely(CTX_VERSION(next->context) !=
++		CTX_VERSION(next_mmu_context)))
++		next->context = get_new_context();
++
++	/* Save the current pgd so the fast tlb handler can find it */
++	pgd_current = next->pgd;
++
++	/* Set the current context */
++	set_context(next->context);
++
++	local_irq_restore(flags);
++}
++
++/*
++ * After we have set current->mm to a new value, this activates
++ * the context for the new mm so we see the new mappings.
++ */
++void activate_mm(struct mm_struct *prev, struct mm_struct *next)
++{
++	next->context = get_new_context();
++	set_context(next->context);
++	pgd_current = next->pgd;
++}
++
++unsigned long get_pid_from_context(mm_context_t *context)
++{
++	return CTX_PID((*context));
++}
 -- 
 1.8.3.2
 
