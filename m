@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066AbaDRJ1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:27:15 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:46036 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752428AbaDRJWt (ORCPT
+	id S1753812AbaDRJ0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:26:38 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:57048 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbaDRJ0H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 05:22:49 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Paul Durrant <Paul.Durrant@citrix.com>,
-        Paul Durrant <paul.durrant@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 62/72] xen-netback: remove pointless clause from if statement
-Date: Fri, 18 Apr 2014 11:22:35 +0200
-Message-Id: <63273418e7e48018bfb432f13caca9eeaee00679.1397812482.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
-References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
-In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
-References: <cover.1397812482.git.jslaby@suse.cz>
+	Fri, 18 Apr 2014 05:26:07 -0400
+Message-ID: <5350EFAA.2030607@colorfullife.com>
+Date: Fri, 18 Apr 2014 11:26:02 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Davidlohr Bueso <davidlohr@hp.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Michael Kerrisk <mtk.manpages@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
+        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Greg Thelen <gthelen@google.com>, aswin@hp.com,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, linux-api@vger.kernel.org
+Subject: Re: [PATCH v3] ipc,shm: disable shmmax and shmall by default
+References: <1397784345.2556.26.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1397784345.2556.26.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Durrant <Paul.Durrant@citrix.com>
+Hi Davidlohr,
 
-3.12-stable review patch.  If anyone has any objections, please let me know.
+On 04/18/2014 03:25 AM, Davidlohr Bueso wrote:
+> So a value of 0 bytes or pages, for shmmax and shmall, respectively,
+> implies unlimited memory, as opposed to disabling sysv shared memory.
+That might be a second risk:
+Right now, a sysadmin can prevent sysv memory allocations with
 
-===============
+     # sysctl kernel.shmall=0
 
-[ Upstream commit 0576eddf24df716d8570ef8ca11452a9f98eaab2 ]
+After your patch is applied, this line allows unlimited allocations.
 
-This patch removes a test in start_new_rx_buffer() that checks whether
-a copy operation is less than MAX_BUFFER_OFFSET in length, since
-MAX_BUFFER_OFFSET is defined to be PAGE_SIZE and the only caller of
-start_new_rx_buffer() already limits copy operations to PAGE_SIZE or less.
+Obviously my patch has the opposite problem: 64-bit wrap-arounds.
 
-Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>
-Reported-By: Sander Eikelenboom <linux@eikelenboom.it>
-Tested-By: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/net/xen-netback/netback.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> --- a/include/uapi/linux/shm.h
+> +++ b/include/uapi/linux/shm.h
+> @@ -9,14 +9,14 @@
+>   
+>   /*
+>    * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+> - * be increased by sysctl
+> + * be modified by sysctl. By default, disable SHMMAX and SHMALL with
+> + * 0 bytes, thus allowing processes to have unlimited shared memory.
+>    */
+> -
+> -#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
+> +#define SHMMAX 0		         /* max shared seg size (bytes) */
+>   #define SHMMIN 1			 /* min shared seg size (bytes) */
+>   #define SHMMNI 4096			 /* max num of segs system wide */
+>   #ifndef __KERNEL__
+> -#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
+> +#define SHMALL 0
+>   #endif
+>   #define SHMSEG SHMMNI			 /* max shared segs per process */
+>   
+The "#ifndef __KERNEL__" is not required:
+As there is no reference to PAGE_SIZE anymore, one definition for SHMALL 
+is sufficient.
 
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 625585034ef4..74b09260457a 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -206,8 +206,8 @@ static bool start_new_rx_buffer(int offset, unsigned long size, int head)
- 	 * into multiple copies tend to give large frags their
- 	 * own buffers as before.
- 	 */
--	if ((offset + size > MAX_BUFFER_OFFSET) &&
--	    (size <= MAX_BUFFER_OFFSET) && offset && !head)
-+	BUG_ON(size > MAX_BUFFER_OFFSET);
-+	if ((offset + size > MAX_BUFFER_OFFSET) && offset && !head)
- 		return true;
- 
- 	return false;
--- 
-1.9.2
 
+--
+     Manfred
