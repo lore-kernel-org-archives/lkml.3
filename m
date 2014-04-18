@@ -1,138 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752479AbaDRNAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:00:45 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:35448 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159AbaDRNAl (ORCPT
+	id S1752033AbaDRNEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:04:25 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:57017 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaDRNEW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:00:41 -0400
-Message-ID: <535121F5.10307@gmail.com>
-Date: Fri, 18 Apr 2014 15:00:37 +0200
-From: Boris BREZILLON <b.brezillon.dev@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 18 Apr 2014 09:04:22 -0400
+Message-ID: <535122EE.7030803@linaro.org>
+Date: Fri, 18 Apr 2014 15:04:46 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris BREZILLON <brezillonboris@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 02/11] clk: at91: update main clk documentation
-References: <1395649643-9146-1-git-send-email-b.brezillon.dev@gmail.com> <1395649643-9146-3-git-send-email-b.brezillon.dev@gmail.com> <53511F60.3040301@atmel.com>
-In-Reply-To: <53511F60.3040301@atmel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        alex.shi@linaro.org, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com
+Subject: Re: [RFC PATCHC 3/3] sched/fair: use the idle state info to choose
+ the idlest cpu
+References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org> <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org> <alpine.LFD.2.11.1404012208110.1571@knanqh.ubzr> <534FDCDC.6000806@linaro.org> <alpine.LFD.2.11.1404171138470.980@knanqh.ubzr> <534FFBB3.8050601@linaro.org> <alpine.LFD.2.11.1404171207531.980@knanqh.ubzr> <20140418093845.GD11096@twins.programming.kicks-ass.net> <535116FC.5070700@linaro.org> <20140418125344.GX11182@twins.programming.kicks-ass.net>
+In-Reply-To: <20140418125344.GX11182@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 18/04/2014 14:49, Nicolas Ferre wrote:
-> On 24/03/2014 09:27, Boris BREZILLON :
->> Update main clk documentation to match main clk implementation rework.
+On 04/18/2014 02:53 PM, Peter Zijlstra wrote:
+> On Fri, Apr 18, 2014 at 02:13:48PM +0200, Daniel Lezcano wrote:
+>> On 04/18/2014 11:38 AM, Peter Zijlstra wrote:
+>>> On Thu, Apr 17, 2014 at 12:21:28PM -0400, Nicolas Pitre wrote:
+>>>> CPU topology is needed to properly describe scheduling domains.  Whether
+>>>> we balance across domains or pack using as few domains as possible is a
+>>>> separate issue.  In other words, you shouldn't have to care in this
+>>>> patch series.
+>>>>
+>>>> And IMHO coupled C-state is a low-level mechanism that should remain
+>>>> private to cpuidle which the scheduler shouldn't be aware of.
+>>>
+>>> I'm confused.. why wouldn't you want to expose these?
 >>
->> Signed-off-by: Boris BREZILLON <b.brezillon.dev@gmail.com>
->> ---
->>  .../devicetree/bindings/clock/at91-clock.txt       |   56 ++++++++++++++++----
->>  1 file changed, 47 insertions(+), 9 deletions(-)
+>> The couple C-state is used as a mechanism for cpuidle to sync the cpus when
+>> entering a specific c-state. This mechanism is usually used to handle the
+>> cluster power down. It is only used for a two drivers (soon three) but it is
+>> not the only mechanism used for syncing the cpus. There are also the MCPM
+>> (tc2), the hand made sync when the hardware allows it (ux500), and an
+>> abstraction from the firmware (mwait), transparent to the kernel.
 >>
->> diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
->> index cd5e239..9a7025b 100644
->> --- a/Documentation/devicetree/bindings/clock/at91-clock.txt
->> +++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
->> @@ -15,8 +15,13 @@ Required properties:
->>  		All at91 specific clocks (clocks defined below) must be child
->>  		node of the PMC node.
->>  
->> +	"atmel,at91rm9200-clk-main-osc"
->> +	"atmel,at91sam9x5-clk-main-rc-osc"
->> +		at91 main clk sources
->> +
->> +	"atmel,at91sam9x5-clk-main"
->>  	"atmel,at91rm9200-clk-main":
->> -		at91 main oscillator
->> +		at91 main clock
->>  
->>  	"atmel,at91rm9200-clk-master" or
->>  	"atmel,at91sam9x5-clk-master":
->> @@ -85,24 +90,57 @@ For example:
->>  		/* put at91 clocks here */
->>  	};
->>  
->> +Required properties for main clock oscillator:
->> +- interrupt-parent : must reference the PMC node.
->> +- interrupts : shall be set to "<0>".
->> +- clock-frequency : define the internal RC oscillator frequency.
->> +
->> +Optional properties:
->> +- clock-accuracy : define the internal RC oscillator accuracy.
->> +
->> +For example:
->> +	main_rc_osc: main_rc_osc {
->> +		compatible = "atmel,at91sam9x5-clk-main-rc-osc";
->> +		interrupt-parent = <&pmc>;
->> +		interrupts = <0>;
->> +		clock-frequency = <12000000>;
->> +		clock-accuracy = <50000000>;
->> +	};
-> Don't you swapped this example above with the description below?
-
-Actually I only swapped the "Required properties" lines, I'll fix it.
-
-Thanks,
-
-Boris
-
->
->
->> +Required properties for main clock internal RC oscillator:
->> +- interrupt-parent : must reference the PMC node.
->> +- interrupts : shall be set to "<0>".
->> +- #clock-cells : from common clock binding; shall be set to 0.
->> +- clocks : shall encode the main osc source clk sources (see atmel datasheet).
->> +
->> +Optional properties:
->> +- atmel,osc-bypass : boolean property. Specified if a clock signal is provided
->> +  on XIN.
->> +
->> +  clock signal is directly provided on XIN pin.
->> +
->> +For example:
->> +	main_osc: main_osc {
->> +		compatible = "atmel,at91rm9200-clk-main-osc";
->> +		interrupt-parent = <&pmc>;
->> +		interrupts = <0>;
->> +		#clock-cells = <0>;
->> +		clocks = <&main_xtal>;
->> +	};
->> +
->>  Required properties for main clock:
->>  - interrupt-parent : must reference the PMC node.
->>  - interrupts : shall be set to "<0>".
->>  - #clock-cells : from common clock binding; shall be set to 0.
->> -- clocks (optional if clock-frequency is provided) : shall be the slow clock
->> -	phandle. This clock is used to calculate the main clock rate if
->> -	"clock-frequency" is not provided.
->> -- clock-frequency : the main oscillator frequency.Prefer the use of
->> -	"clock-frequency" over automatic clock rate calculation.
->> +- clocks : shall encode the main clk sources (see atmel datasheet).
->>  
->>  For example:
->>  	main: mainck {
->> -		compatible = "atmel,at91rm9200-clk-main";
->> +		compatible = "atmel,at91sam9x5-clk-main";
->>  		interrupt-parent = <&pmc>;
->>  		interrupts = <0>;
->>  		#clock-cells = <0>;
->> -		clocks = <&ck32k>;
->> -		clock-frequency = <18432000>;
->> +		clocks = <&main_rc_osc &main_osc>;
->>  	};
->>  
->>  Required properties for master clock:
+>> Taking into account the couple c-state only does not make sense because of
+>> the other mechanisms above. This is why it should stay inside the cpuidle
+>> framework.
 >>
+>> The extension of the cpu topology will provide a generic way to describe and
+>> abstracting such dependencies.
+>>
+>> Does it answer your question ?
 >
+> I suppose so; its still a bit like we won't but we will :-)
+>
+> So we _will_ actually expose coupled C states through the topology bits,
+> that's good.
+
+Ah, ok. I think I understood where the confusion is coming from.
+
+A couple of definitions for the same thing :)
+
+1. Coupled C-states : *mechanism* implemented in the cpuidle framework: 
+drivers/cpuidle/coupled.c
+
+2. Coupled C-states : *constraint* to reach a cluster power down state, 
+will be described through the topology and could be implemented by 
+different mechanism (MCPM, handmade sync, cpuidle-coupled-c-state, 
+firmware).
+
+We want to expose 2. not 1. to the scheduler.
+
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
