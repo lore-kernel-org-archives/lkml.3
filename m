@@ -1,98 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaDRKbj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 06:31:39 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:36058 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034AbaDRKbh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 06:31:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHb8M2BdDUJBOsFdDXOKSo2p+=_Gb4Ha92UMa5K6wMyg3KKdmw@mail.gmail.com>
-References: <20140416094034.GA18082@devel>
-	<6A3BE65E-93FD-4E22-A55E-49E54E435558@jcrosoft.com>
-	<CAHb8M2BdDUJBOsFdDXOKSo2p+=_Gb4Ha92UMa5K6wMyg3KKdmw@mail.gmail.com>
-Date: Fri, 18 Apr 2014 19:31:37 +0900
-Message-ID: <CAHb8M2DmRjw_bJT0+6TY=6JDV6YsSvzfdc17Ko5svx82KeTYaw@mail.gmail.com>
-Subject: Re: [PATCH] fbdev: fix possible NULL pointer derefernce
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-Cc: tomi.valkeinen@ti.com, jg1.han@samsung.com,
-        laurent.pinchart@ideasonboard.com, Rob Clark <robdclark@gmail.com>,
-        linux-fbdev@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1752516AbaDRKcS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 06:32:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37075 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752349AbaDRKcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 06:32:14 -0400
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 5/5] perf callchain: Add generic report parse callchain callback function
+Date: Fri, 18 Apr 2014 12:31:59 +0200
+Message-Id: <1397817119-15195-6-git-send-email-jolsa@redhat.com>
+In-Reply-To: <1397817119-15195-1-git-send-email-jolsa@redhat.com>
+References: <1397817119-15195-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+From: Don Zickus <dzickus@redhat.com>
 
-2014-04-17 9:00 GMT+09:00 DaeSeok Youn <daeseok.youn@gmail.com>:
-> Hello,
->
-> 2014-04-16 21:38 GMT+09:00 Jean-Christophe PLAGNIOL-VILLARD
-> <plagnioj@jcrosoft.com>:
->>
->> On Apr 16, 2014, at 5:40 PM, Daeseok Youn <daeseok.youn@gmail.com> wrote:
->>
->>>
->>> The spec->modedb can be NULL by fb_create_modedb().
->>>
->>> And also smatch says:
->>> drivers/video/fbdev/core/fbmon.c:975 fb_edid_to_monspecs() error:
->>> potential null dereference 'specs->modedb'.
->>> (fb_create_modedb returns null)
->>>
->>> Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
->>> ---
->>> drivers/video/fbdev/core/fbmon.c |    3 +++
->>> 1 files changed, 3 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/video/fbdev/core/fbmon.c b/drivers/video/fbdev/core/fbmon.c
->>> index c204ebe..db274ca 100644
->>> --- a/drivers/video/fbdev/core/fbmon.c
->>> +++ b/drivers/video/fbdev/core/fbmon.c
->>> @@ -966,6 +966,9 @@ void fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
->>>
->>>       specs->modedb = fb_create_modedb(edid, &specs->modedb_len);
->>>
->>> +     if (!specs->modedb)
->>> +             return;
->>> +
->>
->> we need to return an error and trace it
-> Yes, you're right. I will change return type from void to int and add
-> to handle an error when this function(fb_edid_to_monspecs) is called.
->
-I try to look at the fbdev code related with fb_edid_to_monspecs().
-And the result, I think it doesn't need to return an error and trace it.
-My patch is also useless because modedb_len is zero when
-fb_create_modedb() returns NULL so It cannot be dereferenced.
+This takes the parse_callchain_opt function and copies it into the
+callchain.c file.  Now the c2c tool can use it too without duplicating.
 
-And callers of this function seem to need a log but I think they don't need to
-handling an error. Some functions are handling error with checking
-NULL of modedb variable,
-they are just printing an error message.
+Update perf-report to use the new routine too.
 
-If I am wrong or you have reasons for handling an error on that
-function, please let me know.
+V3: rename function
+V2: remove commented code, combine with perf-report change
 
-Regards,
-Daeseok Youn.
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Reviewed-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1396896924-129847-5-git-send-email-dzickus@redhat.com
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/builtin-report.c | 81 ++------------------------------------------
+ tools/perf/util/callchain.c | 82 +++++++++++++++++++++++++++++++++++++++++++++
+ tools/perf/util/callchain.h |  1 +
+ 3 files changed, 86 insertions(+), 78 deletions(-)
 
-> I will send this patch as your comment.
->
-> Thanks for review.
->
-> Daeseok Youn.
->>
->> Best Regards,
->> J.
->>>       /*
->>>        * Workaround for buggy EDIDs that sets that the first
->>>        * detailed timing is preferred but has not detailed
->>> --
->>> 1.7.4.4
->>>
->>
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index af8cb7a..76e2bb6 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -589,11 +589,9 @@ static int __cmd_report(struct report *rep)
+ }
+ 
+ static int
+-parse_callchain_opt(const struct option *opt, const char *arg, int unset)
++report_parse_callchain_opt(const struct option *opt, const char *arg, int unset)
+ {
+ 	struct report *rep = (struct report *)opt->value;
+-	char *tok, *tok2;
+-	char *endptr;
+ 
+ 	/*
+ 	 * --no-call-graph
+@@ -603,80 +601,7 @@ parse_callchain_opt(const struct option *opt, const char *arg, int unset)
+ 		return 0;
+ 	}
+ 
+-	symbol_conf.use_callchain = true;
+-
+-	if (!arg)
+-		return 0;
+-
+-	tok = strtok((char *)arg, ",");
+-	if (!tok)
+-		return -1;
+-
+-	/* get the output mode */
+-	if (!strncmp(tok, "graph", strlen(arg)))
+-		callchain_param.mode = CHAIN_GRAPH_ABS;
+-
+-	else if (!strncmp(tok, "flat", strlen(arg)))
+-		callchain_param.mode = CHAIN_FLAT;
+-
+-	else if (!strncmp(tok, "fractal", strlen(arg)))
+-		callchain_param.mode = CHAIN_GRAPH_REL;
+-
+-	else if (!strncmp(tok, "none", strlen(arg))) {
+-		callchain_param.mode = CHAIN_NONE;
+-		symbol_conf.use_callchain = false;
+-
+-		return 0;
+-	}
+-
+-	else
+-		return -1;
+-
+-	/* get the min percentage */
+-	tok = strtok(NULL, ",");
+-	if (!tok)
+-		goto setup;
+-
+-	callchain_param.min_percent = strtod(tok, &endptr);
+-	if (tok == endptr)
+-		return -1;
+-
+-	/* get the print limit */
+-	tok2 = strtok(NULL, ",");
+-	if (!tok2)
+-		goto setup;
+-
+-	if (tok2[0] != 'c') {
+-		callchain_param.print_limit = strtoul(tok2, &endptr, 0);
+-		tok2 = strtok(NULL, ",");
+-		if (!tok2)
+-			goto setup;
+-	}
+-
+-	/* get the call chain order */
+-	if (!strncmp(tok2, "caller", strlen("caller")))
+-		callchain_param.order = ORDER_CALLER;
+-	else if (!strncmp(tok2, "callee", strlen("callee")))
+-		callchain_param.order = ORDER_CALLEE;
+-	else
+-		return -1;
+-
+-	/* Get the sort key */
+-	tok2 = strtok(NULL, ",");
+-	if (!tok2)
+-		goto setup;
+-	if (!strncmp(tok2, "function", strlen("function")))
+-		callchain_param.key = CCKEY_FUNCTION;
+-	else if (!strncmp(tok2, "address", strlen("address")))
+-		callchain_param.key = CCKEY_ADDRESS;
+-	else
+-		return -1;
+-setup:
+-	if (callchain_register_param(&callchain_param) < 0) {
+-		pr_err("Can't register callchain params\n");
+-		return -1;
+-	}
+-	return 0;
++	return parse_callchain_report_opt(arg);
+ }
+ 
+ int
+@@ -788,7 +713,7 @@ int cmd_report(int argc, const char **argv, const char *prefix __maybe_unused)
+ 		    "Only display entries with parent-match"),
+ 	OPT_CALLBACK_DEFAULT('g', "call-graph", &report, "output_type,min_percent[,print_limit],call_order",
+ 		     "Display callchains using output_type (graph, flat, fractal, or none) , min percent threshold, optional print limit, callchain order, key (function or address). "
+-		     "Default: fractal,0.5,callee,function", &parse_callchain_opt, callchain_default_opt),
++		     "Default: fractal,0.5,callee,function", &report_parse_callchain_opt, callchain_default_opt),
+ 	OPT_INTEGER(0, "max-stack", &report.max_stack,
+ 		    "Set the maximum stack depth when parsing the callchain, "
+ 		    "anything beyond the specified depth will be ignored. "
+diff --git a/tools/perf/util/callchain.c b/tools/perf/util/callchain.c
+index 8d9db45..2fa48a9 100644
+--- a/tools/perf/util/callchain.c
++++ b/tools/perf/util/callchain.c
+@@ -25,6 +25,88 @@
+ 
+ __thread struct callchain_cursor callchain_cursor;
+ 
++int
++parse_callchain_report_opt(const char *arg)
++{
++	char *tok, *tok2;
++	char *endptr;
++
++	symbol_conf.use_callchain = true;
++
++	if (!arg)
++		return 0;
++
++	tok = strtok((char *)arg, ",");
++	if (!tok)
++		return -1;
++
++	/* get the output mode */
++	if (!strncmp(tok, "graph", strlen(arg)))
++		callchain_param.mode = CHAIN_GRAPH_ABS;
++
++	else if (!strncmp(tok, "flat", strlen(arg)))
++		callchain_param.mode = CHAIN_FLAT;
++
++	else if (!strncmp(tok, "fractal", strlen(arg)))
++		callchain_param.mode = CHAIN_GRAPH_REL;
++
++	else if (!strncmp(tok, "none", strlen(arg))) {
++		callchain_param.mode = CHAIN_NONE;
++		symbol_conf.use_callchain = false;
++
++		return 0;
++	}
++
++	else
++		return -1;
++
++	/* get the min percentage */
++	tok = strtok(NULL, ",");
++	if (!tok)
++		goto setup;
++
++	callchain_param.min_percent = strtod(tok, &endptr);
++	if (tok == endptr)
++		return -1;
++
++	/* get the print limit */
++	tok2 = strtok(NULL, ",");
++	if (!tok2)
++		goto setup;
++
++	if (tok2[0] != 'c') {
++		callchain_param.print_limit = strtoul(tok2, &endptr, 0);
++		tok2 = strtok(NULL, ",");
++		if (!tok2)
++			goto setup;
++	}
++
++	/* get the call chain order */
++	if (!strncmp(tok2, "caller", strlen("caller")))
++		callchain_param.order = ORDER_CALLER;
++	else if (!strncmp(tok2, "callee", strlen("callee")))
++		callchain_param.order = ORDER_CALLEE;
++	else
++		return -1;
++
++	/* Get the sort key */
++	tok2 = strtok(NULL, ",");
++	if (!tok2)
++		goto setup;
++	if (!strncmp(tok2, "function", strlen("function")))
++		callchain_param.key = CCKEY_FUNCTION;
++	else if (!strncmp(tok2, "address", strlen("address")))
++		callchain_param.key = CCKEY_ADDRESS;
++	else
++		return -1;
++setup:
++	if (callchain_register_param(&callchain_param) < 0) {
++		pr_err("Can't register callchain params\n");
++		return -1;
++	}
++	return 0;
++}
++
+ static void
+ rb_insert_callchain(struct rb_root *root, struct callchain_node *chain,
+ 		    enum chain_mode mode)
+diff --git a/tools/perf/util/callchain.h b/tools/perf/util/callchain.h
+index 8ad97e9..dda4cf8 100644
+--- a/tools/perf/util/callchain.h
++++ b/tools/perf/util/callchain.h
+@@ -157,4 +157,5 @@ int sample__resolve_callchain(struct perf_sample *sample, struct symbol **parent
+ int hist_entry__append_callchain(struct hist_entry *he, struct perf_sample *sample);
+ 
+ extern const char record_callchain_help[];
++int parse_callchain_report_opt(const char *arg);
+ #endif	/* __PERF_CALLCHAIN_H */
+-- 
+1.8.3.1
+
