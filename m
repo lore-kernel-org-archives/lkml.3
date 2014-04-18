@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754697AbaDRTFY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 15:05:24 -0400
+	id S1754751AbaDRTFw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 15:05:52 -0400
 Received: from denmail01-v4020.amcc.com ([192.195.68.30]:59609 "EHLO
 	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754470AbaDRTEe (ORCPT
+	with ESMTP id S1753531AbaDRTEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 15:04:34 -0400
+	Fri, 18 Apr 2014 15:04:31 -0400
 From: Suman Tripathi <stripathi@apm.com>
 To: kishon@ti.com, tj@kernel.org
 Cc: olof@lixom.net, arnd@arndb.de, linux-kernel@vger.kernel.org,
@@ -15,11 +15,9 @@ Cc: olof@lixom.net, arnd@arndb.de, linux-kernel@vger.kernel.org,
         ddutile@redhat.com, jcm@redhat.com, patches@apm.com,
         Suman Tripathi <stripathi@apm.com>, Loc Ho <lho@apm.com>
 Subject: [PATCH 1/2] PHY: Add function set_rate to generic PHY framework
-Date: Fri, 18 Apr 2014 23:33:16 +0530
-Message-Id: <1397844197-13356-2-git-send-email-stripathi@apm.com>
+Date: Fri, 18 Apr 2014 23:35:54 +0530
+Message-Id: <1397844354-13412-1-git-send-email-stripathi@apm.com>
 X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1397844197-13356-1-git-send-email-stripathi@apm.com>
-References: <1397844197-13356-1-git-send-email-stripathi@apm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
