@@ -1,332 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593AbaDRMoL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:44:11 -0400
-Received: from mail-bn1bon0136.outbound.protection.outlook.com ([157.56.111.136]:63915
+	id S1753489AbaDRMoF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:44:05 -0400
+Received: from mail-bn1on0111.outbound.protection.outlook.com ([157.56.110.111]:22782
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752546AbaDRMn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:43:58 -0400
+	id S1752904AbaDRMn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 08:43:56 -0400
 From: Ley Foon Tan <lftan@altera.com>
 To: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         <linux-doc@vger.kernel.org>
 CC: Ley Foon Tan <lftan@altera.com>, <lftan.linux@gmail.com>,
         <cltang@codesourcery.com>
-Subject: [PATCH 19/28] nios2: Device tree support
-Date: Fri, 18 Apr 2014 20:27:02 +0800
-Message-ID: <1397824031-4892-16-git-send-email-lftan@altera.com>
+Subject: [PATCH 13/28] nios2: Interrupt handling
+Date: Fri, 18 Apr 2014 20:26:57 +0800
+Message-ID: <1397824031-4892-11-git-send-email-lftan@altera.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1397824031-4892-1-git-send-email-lftan@altera.com>
 References: <1397824031-4892-1-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(199002)(189002)(22564002)(62966002)(4396001)(19580405001)(83322001)(46102001)(44976005)(80976001)(19580395003)(81542001)(50226001)(80022001)(85852003)(6806004)(83072002)(84676001)(81342001)(89996001)(575784001)(92566001)(2201001)(92726001)(93916002)(86362001)(88136002)(87936001)(87286001)(20776003)(50986999)(48376002)(99396002)(2009001)(76176999)(50466002)(97736001)(74502001)(77982001)(74662001)(47776003)(16796002)(77156001)(31966008)(76482001)(36756003)(42186004);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB020;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:F0ABFD59.BD69501.41FA9997.70BBAC1.207BA;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(189002)(199002)(575784001)(97736001)(46102001)(93916002)(86362001)(50466002)(4396001)(80022001)(76176999)(80976001)(62966002)(81342001)(50226001)(81542001)(48376002)(50986999)(2009001)(99396002)(87286001)(77156001)(89996001)(83072002)(31966008)(85852003)(87936001)(88136002)(36756003)(77982001)(84676001)(42186004)(76482001)(47776003)(19580395003)(20776003)(19580405001)(44976005)(2201001)(92726001)(16796002)(83322001)(6806004)(74502001)(92566001)(74662001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB011;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:E095F9D5.A7189C25.EF19A5B.47F06A66.20464;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
 X-OriginatorOrg: altera.onmicrosoft.com
 X-Forefront-PRVS: 018577E36E
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add device tree support to arch/nios2.
+This patch adds the support for IRQ handling.
 
 Signed-off-by: Ley Foon Tan <lftan@altera.com>
 ---
- arch/nios2/boot/dts/3c120_devboard.dts | 205 +++++++++++++++++++++++++++++++++
- arch/nios2/boot/linked_dtb.S           |  19 +++
- arch/nios2/include/asm/prom.h          |  26 +++++
- arch/nios2/kernel/prom.c               |  67 +++++++++++
- arch/nios2/platform/platform.c         |  69 +++++++++++
- 5 files changed, 386 insertions(+)
- create mode 100644 arch/nios2/boot/dts/3c120_devboard.dts
- create mode 100644 arch/nios2/boot/linked_dtb.S
- create mode 100644 arch/nios2/include/asm/prom.h
- create mode 100644 arch/nios2/kernel/prom.c
- create mode 100644 arch/nios2/platform/platform.c
+ arch/nios2/include/asm/irq.h      | 34 +++++++++++++++
+ arch/nios2/include/asm/irqflags.h | 69 ++++++++++++++++++++++++++++++
+ arch/nios2/kernel/irq.c           | 90 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 193 insertions(+)
+ create mode 100644 arch/nios2/include/asm/irq.h
+ create mode 100644 arch/nios2/include/asm/irqflags.h
+ create mode 100644 arch/nios2/kernel/irq.c
 
-diff --git a/arch/nios2/boot/dts/3c120_devboard.dts b/arch/nios2/boot/dts/3c120_devboard.dts
+diff --git a/arch/nios2/include/asm/irq.h b/arch/nios2/include/asm/irq.h
 new file mode 100644
-index 0000000..cad29a9
+index 0000000..f7e94b9
 --- /dev/null
-+++ b/arch/nios2/boot/dts/3c120_devboard.dts
-@@ -0,0 +1,205 @@
++++ b/arch/nios2/include/asm/irq.h
+@@ -0,0 +1,34 @@
 +/*
-+ *  Copyright (C) 2013 Altera Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ * This file is generated by sopc2dts.
-+ */
-+
-+/dts-v1/;
-+
-+/ {
-+	model = "ALTR,qsys_ghrd_3c120";
-+	compatible = "ALTR,qsys_ghrd_3c120";
-+	#address-cells = < 1 >;
-+	#size-cells = < 1 >;
-+
-+	cpus {
-+		#address-cells = < 1 >;
-+		#size-cells = < 0 >;
-+
-+		cpu: cpu@0x0 {
-+			device_type = "cpu";
-+			compatible = "ALTR,nios2-1.0";
-+			reg = < 0x00000000 >;
-+			interrupt-controller;
-+			#interrupt-cells = < 1 >;
-+			clock-frequency = < 125000000 >;
-+			dcache-line-size = < 32 >;
-+			icache-line-size = < 32 >;
-+			dcache-size = < 32768 >;
-+			icache-size = < 32768 >;
-+			ALTR,implementation = "fast";
-+			ALTR,pid-num-bits = < 8 >;
-+			ALTR,tlb-num-ways = < 16 >;
-+			ALTR,tlb-num-entries = < 128 >;
-+			ALTR,tlb-ptr-sz = < 7 >;
-+			ALTR,has-div = < 1 >;
-+			ALTR,has-mul = < 1 >;
-+			ALTR,reset-addr = < 0xc2800000 >;
-+			ALTR,fast-tlb-miss-addr = < 0xc7fff400 >;
-+			ALTR,exception-addr = < 0xd0000020 >;
-+			ALTR,has-initda = < 1 >;
-+			ALTR,has-mmu = < 1 >;
-+		}; //end cpu@0x0 (cpu)
-+	}; //end cpus
-+
-+	memory@0 {
-+		device_type = "memory";
-+		reg = < 0x10000000 0x08000000
-+			0x07FFF400 0x00000400 >;
-+	}; //end memory@0
-+
-+	sopc@0 {
-+		device_type = "soc";
-+		ranges;
-+		#address-cells = < 1 >;
-+		#size-cells = < 1 >;
-+		compatible = "ALTR,avalon", "simple-bus";
-+		bus-frequency = < 125000000 >;
-+
-+		pb_cpu_to_io: bridge@0x8000000 {
-+			compatible = "simple-bus";
-+			reg = < 0x08000000 0x00800000 >;
-+			#address-cells = < 1 >;
-+			#size-cells = < 1 >;
-+			ranges = < 0x00400000 0x08400000 0x00000020
-+				0x00004D40 0x08004D40 0x00000008
-+				0x00004D50 0x08004D50 0x00000008
-+				0x00004000 0x08004000 0x00000400
-+				0x00004400 0x08004400 0x00000040
-+				0x00004800 0x08004800 0x00000040
-+				0x00002000 0x08002000 0x00002000
-+				0x00004C80 0x08004C80 0x00000020
-+				0x00004CC0 0x08004CC0 0x00000010
-+				0x00004CE0 0x08004CE0 0x00000010
-+				0x00004D00 0x08004D00 0x00000010 >;
-+
-+			timer_1ms: timer@0x400000 {
-+				compatible = "ALTR,timer-1.0";
-+				reg = < 0x00400000 0x00000020 >;
-+				interrupt-parent = < &cpu >;
-+				interrupts = < 11 >;
-+				clock-frequency = < 125000000 >;
-+			}; //end timer@0x400000 (timer_1ms)
-+
-+			sysid: sysid@0x4d40 {
-+				compatible = "ALTR,sysid-1.0";
-+				reg = < 0x00004D40 0x00000008 >;
-+				id = < 0 >;
-+				timestamp = < 1364882880 >;
-+			}; //end sysid@0x4d40 (sysid)
-+
-+			jtag_uart: serial@0x4d50 {
-+				compatible = "ALTR,juart-1.0";
-+				reg = < 0x00004D50 0x00000008 >;
-+				interrupt-parent = < &cpu >;
-+				interrupts = < 1 >;
-+			}; //end serial@0x4d50 (jtag_uart)
-+
-+			tse_mac: ethernet@0x4000 {
-+				compatible = "ALTR,tse-1.0";
-+				reg = < 0x00004000 0x00000400
-+					0x00004400 0x00000040
-+					0x00004800 0x00000040
-+					0x00002000 0x00002000 >;
-+                                reg-names = "control_port", "rx_csr", "tx_csr", "s1";
-+				interrupt-parent = < &cpu >;
-+				interrupts = < 2 3 >;
-+				interrupt-names = "rx_irq", "tx_irq";
-+				rx-fifo-depth = < 8192 >;
-+				tx-fifo-depth = < 8192 >;
-+				address-bits = < 48 >;
-+				max-frame-size = < 1518 >;
-+				local-mac-address = [ 02 00 00 00 00 00 ];
-+				phy-mode = "rgmii-id";
-+				ALTR,mii-id = < 0 >;
-+				phy-handle = < &phy0 >;
-+				tse_mac_mdio: mdio {
-+					compatible = "altr,tse-mdio";
-+					#address-cells = < 1 >;
-+					#size-cells = < 0 >;
-+					phy0: ethernet-phy@18 {
-+						reg = < 18 >;
-+						device_type = "ethernet-phy";
-+					};
-+				};
-+			}; //end ethernet@0x4000 (tse_mac)
-+
-+			uart: serial@0x4c80 {
-+				compatible = "ALTR,uart-1.0";
-+				reg = < 0x00004C80 0x00000020 >;
-+				interrupt-parent = < &cpu >;
-+				interrupts = < 10 >;
-+				current-speed = < 115200 >;
-+				clock-frequency = < 62500000 >;
-+			}; //end serial@0x4c80 (uart)
-+
-+			user_led_pio_8out: gpio@0x4cc0 {
-+				compatible = "ALTR,pio-1.0";
-+				reg = < 0x00004CC0 0x00000010 >;
-+				width = < 8 >;
-+				resetvalue = < 255 >;
-+				#gpio-cells = < 2 >;
-+				gpio-controller;
-+			}; //end gpio@0x4cc0 (user_led_pio_8out)
-+
-+			user_dipsw_pio_8in: gpio@0x4ce0 {
-+				compatible = "ALTR,pio-1.0";
-+				reg = < 0x00004CE0 0x00000010 >;
-+				interrupt-parent = < &cpu >;
-+				interrupts = < 8 >;
-+				width = < 8 >;
-+				resetvalue = < 0 >;
-+				edge_type = < 2 >;
-+				level_trigger = < 0 >;
-+				altr,interrupt_type = < 3 >;
-+				#gpio-cells = < 2 >;
-+				gpio-controller;
-+			}; //end gpio@0x4ce0 (user_dipsw_pio_8in)
-+
-+			user_pb_pio_4in: gpio@0x4d00 {
-+				compatible = "ALTR,pio-1.0";
-+				reg = < 0x00004D00 0x00000010 >;
-+				interrupt-parent = < &cpu >;
-+				interrupts = < 9 >;
-+				width = < 4 >;
-+				resetvalue = < 0 >;
-+				edge_type = < 2 >;
-+				level_trigger = < 0 >;
-+				altr,interrupt_type = < 3 >;
-+				#gpio-cells = < 2 >;
-+				gpio-controller;
-+			}; //end gpio@0x4d00 (user_pb_pio_4in)
-+		}; //end bridge@0x8000000 (pb_cpu_to_io)
-+
-+		cfi_flash_64m: flash@0x0 {
-+			compatible = "cfi-flash";
-+			reg = < 0x00000000 0x04000000 >;
-+			bank-width = < 2 >;
-+			device-width = < 1 >;
-+			#address-cells = < 1 >;
-+			#size-cells = < 1 >;
-+
-+			partition@800000 {
-+				reg = < 0x00800000 0x01E00000 >;
-+				label = "JFFS2 Filesystem";
-+			}; //end partition@800000
-+		}; //end flash@0x0 (cfi_flash_64m)
-+	}; //end sopc@0
-+
-+	chosen {
-+		bootargs = "debug console=ttyJ0,115200";
-+	}; //end chosen
-+}; //end /
-diff --git a/arch/nios2/boot/linked_dtb.S b/arch/nios2/boot/linked_dtb.S
-new file mode 100644
-index 0000000..071f922db338e2cb4064bc77bf346f50e584d04f
---- /dev/null
-+++ b/arch/nios2/boot/linked_dtb.S
-@@ -0,0 +1,19 @@
-+/*
-+ * Copyright (C) 2011 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+.section .dtb.init.rodata,"a"
-+.incbin "arch/nios2/boot/system.dtb"
-diff --git a/arch/nios2/include/asm/prom.h b/arch/nios2/include/asm/prom.h
-new file mode 100644
-index 0000000..7a71e4c50a42134ffceabd233f83b5d1c48917c1
---- /dev/null
-+++ b/arch/nios2/include/asm/prom.h
-@@ -0,0 +1,26 @@
-+/*
-+ *  Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+ *
-+ */
-+
-+#ifndef _ASM_NIOS2_PROM_H
-+#define _ASM_NIOS2_PROM_H
-+
-+extern int __dtb_start;
-+
-+extern unsigned long early_altera_uart_or_juart_console(void);
-+
-+#endif /* _ASM_NIOS2_PROM_H */
-diff --git a/arch/nios2/kernel/prom.c b/arch/nios2/kernel/prom.c
-new file mode 100644
-index 0000000..a2d8308b939c33496e1416253b37c018d88c0c7f
---- /dev/null
-+++ b/arch/nios2/kernel/prom.c
-@@ -0,0 +1,67 @@
-+/*
-+ * Device tree support
-+ *
 + * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
-+ *
-+ * Based on MIPS support for CONFIG_OF device tree support
-+ *
-+ * Copyright (C) 2010 Cisco Systems Inc. <dediao@cisco.com>
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -343,123 +65,192 @@ index 0000000..a2d8308b939c33496e1416253b37c018d88c0c7f
 + *
 + */
 +
-+#include <linux/init.h>
-+#include <linux/types.h>
-+#include <linux/bootmem.h>
-+#include <linux/of.h>
-+#include <linux/of_fdt.h>
-+#include <linux/io.h>
++#ifndef _ASM_NIOS2_IRQ_H
++#define _ASM_NIOS2_IRQ_H
 +
-+#include <asm/prom.h>
-+#include <asm/sections.h>
++#define NIOS2_CPU_NR_IRQS	32
++/* Reserve 32 additional interrupts for GPIO IRQs */
++#define NR_IRQS			(NIOS2_CPU_NR_IRQS + 32)
 +
-+void __init early_init_dt_add_memory_arch(u64 base, u64 size)
-+{
-+	u64 kernel_start = (u64)virt_to_phys(_text);
-+
-+	if (!memory_size &&
-+	    (kernel_start >= base) && (kernel_start < (base + size)))
-+		memory_size = size;
-+
-+	return;
-+}
-+
-+void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-+{
-+	return __alloc_bootmem(size, align, __pa(MAX_DMA_ADDRESS));
-+}
-+
-+void __init early_init_devtree(void *params)
-+{
-+	if (params && be32_to_cpup((__be32 *)params) == OF_DT_HEADER)
-+		initial_boot_params = params;
-+#if defined(CONFIG_NIOS2_DTB_AT_PHYS_ADDR)
-+	else if (be32_to_cpup((__be32 *)CONFIG_NIOS2_DTB_PHYS_ADDR) ==
-+		 OF_DT_HEADER)
-+		initial_boot_params = (void *)CONFIG_NIOS2_DTB_PHYS_ADDR;
++#ifndef NO_IRQ
++#define NO_IRQ			(-1)
 +#endif
-+	else if (be32_to_cpu((__be32)__dtb_start) == OF_DT_HEADER)
-+		initial_boot_params = (void *)&__dtb_start;
-+	else
-+		return;
 +
-+	early_init_dt_scan(initial_boot_params);
-+}
-diff --git a/arch/nios2/platform/platform.c b/arch/nios2/platform/platform.c
++#include <asm-generic/irq.h>
++#include <linux/irqdomain.h>
++
++#endif
+diff --git a/arch/nios2/include/asm/irqflags.h b/arch/nios2/include/asm/irqflags.h
 new file mode 100644
-index 0000000..2e5b8f624f4d593a2d9bf544ea7cc06b076b44b4
+index 0000000..e91f4f0b7c69454f7dd89590ddebccff73aad62a
 --- /dev/null
-+++ b/arch/nios2/platform/platform.c
++++ b/arch/nios2/include/asm/irqflags.h
 @@ -0,0 +1,69 @@
 +/*
-+ * Copyright (C) 2013 Altera Corporation
-+ * Copyright (C) 2011 Thomas Chou
-+ * Copyright (C) 2011 Walter Goossens
++ * Copyright (C) 2010 Thomas Chou <thomas@wytron.com.tw>
 + *
-+ * This file is subject to the terms and conditions of the GNU General
-+ * Public License. See the file COPYING in the main directory of this
-+ * archive for more details.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
++ */
++#ifndef _ASM_IRQFLAGS_H
++#define _ASM_IRQFLAGS_H
++
++#include <asm/registers.h>
++
++static inline unsigned long arch_local_save_flags(void)
++{
++	return RDCTL(CTL_STATUS);
++}
++
++/*
++ * This will restore ALL status register flags, not only the interrupt
++ * mask flag.
++ */
++static inline void arch_local_irq_restore(unsigned long flags)
++{
++	WRCTL(CTL_STATUS, flags);
++}
++
++static inline void arch_local_irq_disable(void)
++{
++	unsigned long flags;
++	flags = arch_local_save_flags();
++	arch_local_irq_restore(flags & ~STATUS_PIE);
++}
++
++static inline void arch_local_irq_enable(void)
++{
++	unsigned long flags;
++	flags = arch_local_save_flags();
++	arch_local_irq_restore(flags | STATUS_PIE);
++}
++
++static inline int arch_irqs_disabled_flags(unsigned long flags)
++{
++	return (flags & STATUS_PIE) == 0;
++}
++
++static inline int arch_irqs_disabled(void)
++{
++	return arch_irqs_disabled_flags(arch_local_save_flags());
++}
++
++static inline unsigned long arch_local_irq_save(void)
++{
++	unsigned long flags;
++	flags = arch_local_save_flags();
++	arch_local_irq_restore(flags & ~STATUS_PIE);
++	return flags;
++}
++
++#endif /* _ASM_IRQFLAGS_H */
+diff --git a/arch/nios2/kernel/irq.c b/arch/nios2/kernel/irq.c
+new file mode 100644
+index 0000000..e9265bd
+--- /dev/null
++++ b/arch/nios2/kernel/irq.c
+@@ -0,0 +1,90 @@
++/*
++ * Copyright (C) 2013 Altera Corporation
++ * Copyright (C) 2011 Tobias Klauser <tklauser@distanz.ch>
++ * Copyright (C) 2008 Thomas Chou <thomas@wytron.com.tw>
++ *
++ * based on irq.c from m68k which is:
++ *
++ * Copyright (C) 2007 Greg Ungerer <gerg@snapgear.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
++ *
 + */
 +
 +#include <linux/init.h>
-+#include <linux/of_platform.h>
-+#include <linux/of_address.h>
-+#include <linux/of_fdt.h>
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/sys_soc.h>
-+#include <linux/io.h>
++#include <linux/interrupt.h>
++#include <linux/of.h>
 +
-+#define NIOS2_ID_DEFAULT		(0x1)
-+#define NIOS2_REVISION_DEFAULT		(0x1)
-+
-+static struct of_device_id altera_of_bus_ids[] __initdata = {
-+	{ .compatible = "simple-bus", },
-+	{ .compatible = "altr,avalon", },
-+	{}
-+};
-+
-+static void __init nios2_soc_device_init(void)
++asmlinkage void do_IRQ(int hwirq, struct pt_regs *regs)
 +{
-+	struct soc_device *soc_dev;
-+	struct soc_device_attribute *soc_dev_attr;
-+	const char *machine;
++	struct pt_regs *oldregs = set_irq_regs(regs);
++	int irq;
 +
-+	machine = of_flat_dt_get_machine_name();
-+	if (!machine)
-+		return;
++	irq_enter();
++	irq = irq_find_mapping(NULL, hwirq);
++	generic_handle_irq(irq);
++	irq_exit();
 +
-+	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
-+	if (!soc_dev_attr)
-+		return;
-+
-+	soc_dev_attr->soc_id = kasprintf(GFP_KERNEL, "%u", NIOS2_ID_DEFAULT);
-+	soc_dev_attr->revision = kasprintf(GFP_KERNEL, "%d",
-+		NIOS2_REVISION_DEFAULT);
-+	soc_dev_attr->machine = kasprintf(GFP_KERNEL, "%s", machine);
-+	soc_dev_attr->family = "Nios II";
-+
-+	soc_dev = soc_device_register(soc_dev_attr);
-+	if (IS_ERR_OR_NULL(soc_dev)) {
-+		kfree(soc_dev_attr->soc_id);
-+		kfree(soc_dev_attr->machine);
-+		kfree(soc_dev_attr->revision);
-+		kfree(soc_dev_attr);
-+		return;
-+	}
-+
-+	return;
++	set_irq_regs(oldregs);
 +}
 +
-+static int __init nios2_device_probe(void)
++static void chip_unmask(struct irq_data *d)
 +{
-+	nios2_soc_device_init();
++	u32 ien;
++	ien = RDCTL(CTL_IENABLE);
++	ien |= (1 << d->hwirq);
++	WRCTL(CTL_IENABLE, ien);
++}
 +
-+	of_platform_bus_probe(NULL, altera_of_bus_ids, NULL);
++static void chip_mask(struct irq_data *d)
++{
++	u32 ien;
++	ien = RDCTL(CTL_IENABLE);
++	ien &= ~(1 << d->hwirq);
++	WRCTL(CTL_IENABLE, ien);
++}
++
++static struct irq_chip m_irq_chip = {
++	.name		= "NIOS2-INTC",
++	.irq_unmask	= chip_unmask,
++	.irq_mask	= chip_mask,
++};
++
++static int irq_map(struct irq_domain *h, unsigned int virq,
++				irq_hw_number_t hw_irq_num)
++{
++	irq_set_chip_and_handler(virq, &m_irq_chip, handle_level_irq);
++
 +	return 0;
 +}
 +
-+device_initcall(nios2_device_probe);
++static struct irq_domain_ops irq_ops = {
++	.map	= irq_map,
++	.xlate	= irq_domain_xlate_onecell,
++};
++
++void __init init_IRQ(void)
++{
++	struct irq_domain *domain;
++	struct device_node *node;
++
++	node = of_find_compatible_node(NULL, NULL, "ALTR,nios2-1.0");
++	BUG_ON(!node);
++
++	domain = irq_domain_add_linear(node, NIOS2_CPU_NR_IRQS, &irq_ops, NULL);
++	BUG_ON(!domain);
++
++	irq_set_default_host(domain);
++	of_node_put(node);
++}
 -- 
 1.8.3.2
 
