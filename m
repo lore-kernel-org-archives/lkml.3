@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308AbaDRRRu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 13:17:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53657 "EHLO mx2.suse.de"
+	id S1754398AbaDRRR5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 13:17:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53659 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753240AbaDRRRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 13:17:45 -0400
-Message-ID: <1397841463.4798.6.camel@linux-fkkt.site>
+	id S1754319AbaDRRRv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 13:17:51 -0400
+Message-ID: <1397829723.4798.5.camel@linux-fkkt.site>
 Subject: Re: question on read_barrier_depends
 From: Oliver Neukum <oneukum@suse.de>
 To: Alan Stern <stern@rowland.harvard.edu>
 Cc: linux-kernel@vger.kernel.org
-Date: Fri, 18 Apr 2014 19:17:43 +0200
 In-Reply-To: <Pine.LNX.4.44L0.1404171149001.881-100000@iolanthe.rowland.org>
 References: <Pine.LNX.4.44L0.1404171149001.881-100000@iolanthe.rowland.org>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
+Date: Fri, 18 Apr 2014 16:02:03 +0200
 Mime-Version: 1.0
+X-Mailer: Evolution 3.10.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
 
 On Thu, 2014-04-17 at 11:50 -0400, Alan Stern wrote:
 > On Thu, 17 Apr 2014, Oliver Neukum wrote:
@@ -51,7 +50,6 @@ smp_read_barrier_depends()
 
 	Regards
 		Oliver
-
 
 
 
