@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751937AbaDRPSE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 11:18:04 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:49393 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaDRPSB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 11:18:01 -0400
+	id S1752034AbaDRPXQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 11:23:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52574 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751139AbaDRPXM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 11:23:12 -0400
+Date: Fri, 18 Apr 2014 17:23:11 +0200
+From: Jiri Bohac <jbohac@suse.cz>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jiri Bohac <jbohac@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] timer: prevent overflow in apply_slack
+Message-ID: <20140418152310.GA13654@midget.suse.cz>
+References: <20140417194215.GA10494@midget.suse.cz>
+ <alpine.DEB.2.02.1404172344420.22697@ionos.tec.linutronix.de>
 MIME-Version: 1.0
-In-Reply-To: <534BEF2E.9050502@hitachi.com>
-References: <20140406201628.GA507@redhat.com> <1396995963.5056.46.camel@oc7886638347.ibm.com.usor.ibm.com>
- <20140409154346.GB18486@redhat.com> <53469F95.1030709@redhat.com>
- <5346A362.9010802@hitachi.com> <5346A8BE.5060401@redhat.com>
- <53475B74.30504@hitachi.com> <CAK1hOcMO7HUUihGwxYW8PkkLtA2mAZSc9J2JMuehHEWoX15rUQ@mail.gmail.com>
- <534BEF2E.9050502@hitachi.com>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Fri, 18 Apr 2014 17:17:40 +0200
-Message-ID: <CAK1hOcOOfr=DyLd-gZccZzvCuxGJiehi6NTe88QMQd0qRg2TJw@mail.gmail.com>
-Subject: Re: Re: Re: [RFC PATCH 4/6] uprobes/x86: Emulate rip-relative call's
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jonathan Lebon <jlebon@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1404172344420.22697@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 4:22 PM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
-> (2014/04/11 21:23), Denys Vlasenko wrote:
->> On Fri, Apr 11, 2014 at 5:03 AM, Masami Hiramatsu
->> <masami.hiramatsu.pt@hitachi.com> wrote:
->>> At least, if we can trust Intel SDM, it says that depends
->>> on the operand-size (insn->opnd_bytes) and stack segment
->>> descriptor. Please check the SDM vol.1 6.2.2 Stack Alignment
->>> and vol.2a, 3.2 Instructions (A-M), CALL--Call Procedure.
->>> But we'd better check it on x86-32.
->>
->> I am past trusting CPU manuals on this one:
->>
->> By now I verified on the real hardware that AMD and Intel CPUs
->> handle this insn differently in 64-bit mode: Intel ignores 0x66 prefix.
->> AMD treats this insn the same as in 32-bit mode: as 16-bit insn.
->>
->> (Should I submit a patch adding comment about it
->> in x86-opcode-map.txt?)
->
-> Yeah, feel free to do so :)
+On architectures with sizeof(int) < sizeof (long), the
+computation of mask inside apply_slack() can be undefined if the
+computed bit is > 32.
 
-I sent a patch (in another email), please apply.
+E.g. with: expires = 0xffffe6f5 and slack = 25, we get:
+
+expires_limit = 0x20000000e
+bit = 33
+mask = (1 << 33) - 1  /* undefined */
+
+On x86, mask becomes 1 and and the slack is not applied properly.
+On s390, mask is -1, expires is set to 0 and the timer fires immediately.
+
+Signed-off-by: Jiri Bohac <jbohac@suse.cz>
+Suggested-by: Deborah Townsend <dstownse@us.ibm.com>
+
+diff --git a/kernel/timer.c b/kernel/timer.c
+index 87bd529..4c36c91 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -838,7 +838,7 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+ 
+ 	bit = find_last_bit(&mask, BITS_PER_LONG);
+ 
+-	mask = (1 << bit) - 1;
++	mask = (1LL << bit) - 1;
+ 
+ 	expires_limit = expires_limit & ~(mask);
+ 
+-- 
+
+-- 
+Jiri Bohac <jbohac@suse.cz>
+SUSE Labs, SUSE CZ
+
