@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752960AbaDRKdt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 06:33:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21034 "EHLO mx1.redhat.com"
+	id S1751523AbaDRKjE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 06:39:04 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33634 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068AbaDRKcL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 06:32:11 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 3/5] perf tools: Use cpu/possible instead of cpu/kernel_max
-Date: Fri, 18 Apr 2014 12:31:57 +0200
-Message-Id: <1397817119-15195-4-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1397817119-15195-1-git-send-email-jolsa@redhat.com>
-References: <1397817119-15195-1-git-send-email-jolsa@redhat.com>
+	id S1750857AbaDRKi6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 06:38:58 -0400
+Date: Fri, 18 Apr 2014 12:38:54 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Dave Jones <davej@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "Zhang, Rui" <rui.zhang@intel.com>, "Lu, Aaron" <aaron.lu@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        Linux PCI <linux-pci@vger.kernel.org>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng Z" <zheng.z.yan@intel.com>, daniel.vetter@ffwll.ch
+Subject: Re: Info: mapping multiple BARs. Your kernel is fine.
+Message-ID: <20140418103854.GE4385@pd.tnic>
+References: <20140416223122.GA2767@redhat.com>
+ <20140416225600.GA23781@google.com>
+ <20140417104533.GB8215@pd.tnic>
+ <20140417182637.GA2098@google.com>
+ <20140417195240.GA18876@redhat.com>
+ <20140417200127.GH4321@pd.tnic>
+ <20140417200352.GB18876@redhat.com>
+ <20140417205355.GA22191@redhat.com>
+ <20140417210101.GB27852@pd.tnic>
+ <20140417213027.GA22412@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140417213027.GA22412@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Don Zickus <dzickus@redhat.com>
+On Thu, Apr 17, 2014 at 05:30:27PM -0400, Dave Jones wrote:
+> I think it's just implicated because that's the next thing that seems
+> to init after the modeswitch. The config differences are small, just
+> things like =m instead of =y or vice-versa.
+>
+> I'm about to head into a long weekend, so I'll get back to this on
+> Monday, but for now I'm out of ideas.
 
-The system's max configuration is represented by cpu/possible and
-cpu/kernel_max can be huge (4096 vs. 128), so save space by keeping
-smaller structures.
+This is for when you get back: :-)
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1396896924-129847-3-git-send-email-dzickus@redhat.com
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/util/cpumap.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Can you debug that hang a bit more, like enable some sensible options
+under "Kernel Hacking" or somesuch, boot with initcall_debug, add
+more printks at key places? If the machine would tell us why exactly
+it hangs, we might have an idea, like corruption, transaction stall,
+whatever...
 
-diff --git a/tools/perf/util/cpumap.c b/tools/perf/util/cpumap.c
-index 0a27732..3d124fb 100644
---- a/tools/perf/util/cpumap.c
-+++ b/tools/perf/util/cpumap.c
-@@ -365,7 +365,7 @@ static void set_max_cpu_num(void)
- 		goto out;
- 
- 	/* get the highest possible cpu number for a sparse allocation */
--	snprintf(path, PATH_MAX, "%s/devices/system/cpu/kernel_max", mnt);
-+	snprintf(path, PATH_MAX, "%s/devices/system/cpu/possible", mnt);
- 
- 	ret = get_max_num(path, &max_cpu_num);
- 
 -- 
-1.8.3.1
+Regards/Gruss,
+    Boris.
 
+Sent from a fat crate under my desk. Formatting is fine.
+--
