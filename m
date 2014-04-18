@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754472AbaDRJj5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:39:57 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45952 "EHLO
+	id S1754419AbaDRJjv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:39:51 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45957 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752263AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752275AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>,
+Cc: linux-kernel@vger.kernel.org, dingtianhong <dingtianhong@huawei.com>,
+        Jay Vosburgh <fubar@us.ibm.com>, Andy Gospodarek <andy@greyhouse.net>,
         "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 41/72] bridge: multicast: enable snooping on general queries only
-Date: Fri, 18 Apr 2014 11:22:14 +0200
-Message-Id: <9ee68ddbab843386afdcc369acf8a96c28b6cdf2.1397812482.git.jslaby@suse.cz>
+Subject: [PATCH 3.12 43/72] bonding: set correct vlan id for alb xmit path
+Date: Fri, 18 Apr 2014 11:22:16 +0200
+Message-Id: <3f6f4a798fddeb5702de262e708ff7bddadb67fd.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
 References: <cover.1397812482.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Lüssing <linus.luessing@web.de>
+From: dingtianhong <dingtianhong@huawei.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 20a599bec95a52fa72432b2376a2ce47c5bb68fb ]
+[ Upstream commit fb00bc2e6cd2046282ba4b03f4fe682aee70b2f8 ]
 
-Without this check someone could easily create a denial of service
-by injecting multicast-specific queries to enable the bridge
-snooping part if no real querier issuing periodic general queries
-is present on the link which would result in the bridge wrongly
-shutting down ports for multicast traffic as the bridge did not learn
-about these listeners.
+The commit d3ab3ffd1d728d7ee77340e7e7e2c7cfe6a4013e
+(bonding: use rlb_client_info->vlan_id instead of ->tag)
+remove the rlb_client_info->tag, but occur some issues,
+The vlan_get_tag() will return 0 for success and -EINVAL for
+error, so the client_info->vlan_id always be set to 0 if the
+vlan_get_tag return 0 for success, so the client_info would
+never get a correct vlan id.
 
-With this patch the snooping code is enabled upon receiving valid,
-general queries only.
+We should only set the vlan id to 0 when the vlan_get_tag return error.
 
-Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+Fixes: d3ab3ffd1d7 (bonding: use rlb_client_info->vlan_id instead of ->tag)
+
+CC: Ding Tianhong <dingtianhong@huawei.com>
+CC: Jay Vosburgh <fubar@us.ibm.com>
+CC: Andy Gospodarek <andy@greyhouse.net>
+Signed-off-by: Ding Tianhong <dingtianhong@huawei.com>
+Acked-by: Veaceslav Falico <vfalico@redhat.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- net/bridge/br_multicast.c | 8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/net/bonding/bond_alb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-index 4af88e2a33c4..162d6c78ad05 100644
---- a/net/bridge/br_multicast.c
-+++ b/net/bridge/br_multicast.c
-@@ -1129,9 +1129,10 @@ static void br_multicast_query_received(struct net_bridge *br,
- 					struct net_bridge_port *port,
- 					struct bridge_mcast_querier *querier,
- 					int saddr,
-+					bool is_general_query,
- 					unsigned long max_delay)
- {
--	if (saddr)
-+	if (saddr && is_general_query)
- 		br_multicast_update_querier_timer(br, querier, max_delay);
- 	else if (timer_pending(&querier->timer))
- 		return;
-@@ -1192,7 +1193,7 @@ static int br_ip4_multicast_query(struct net_bridge *br,
- 	}
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index f428ef574372..71adb692e457 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -694,7 +694,7 @@ static struct slave *rlb_choose_channel(struct sk_buff *skb, struct bonding *bon
+ 			client_info->ntt = 0;
+ 		}
  
- 	br_multicast_query_received(br, port, &br->ip4_querier, !!iph->saddr,
--				    max_delay);
-+				    !group, max_delay);
+-		if (!vlan_get_tag(skb, &client_info->vlan_id))
++		if (vlan_get_tag(skb, &client_info->vlan_id))
+ 			client_info->vlan_id = 0;
  
- 	if (!group)
- 		goto out;
-@@ -1285,7 +1286,8 @@ static int br_ip6_multicast_query(struct net_bridge *br,
- 	}
- 
- 	br_multicast_query_received(br, port, &br->ip6_querier,
--				    !ipv6_addr_any(&ip6h->saddr), max_delay);
-+				    !ipv6_addr_any(&ip6h->saddr),
-+				    is_general_query, max_delay);
- 
- 	if (!group)
- 		goto out;
+ 		if (!client_info->assigned) {
 -- 
 1.9.2
 
