@@ -1,130 +1,283 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751173AbaDRGAm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 02:00:42 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:42810 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750857AbaDRGAg (ORCPT
+	id S1751286AbaDRGBd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 02:01:33 -0400
+Received: from smtpout2.laposte.net ([193.253.67.227]:29800 "EHLO
+	smtpout.laposte.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750857AbaDRGBa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 02:00:36 -0400
-X-AuditID: cbfee690-b7f266d00000287c-89-5350bf82999e
-Message-id: <1397800711.7727.34.camel@kjgkr>
-Subject: RE: [f2fs-dev] [PATCH] f2fs: fix to enable readahead last NAT block
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Chao Yu <chao2.yu@samsung.com>
-Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 18 Apr 2014 14:58:31 +0900
-In-reply-to: <000901cf5ab4$d64171a0$82c454e0$@samsung.com>
-References: <000101cf5a1e$5c051770$140f4650$@samsung.com>
- <1397787344.7727.32.camel@kjgkr> <000901cf5ab4$d64171a0$82c454e0$@samsung.com>
-Organization: Samsung
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrNIsWRmVeSWpSXmKPExsVy+t8zfd2m/QHBBtOecFn8b/rIZnFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI7isklJzcksSy3St0vgytg25Q5bwQHBijcd
-	6Q2MO/i6GDk5JARMJO68WM0GYYtJXLi3Hsjm4hASWMYosWDrGVaYovlnDoAVCQksYpR4sYkH
-	ougVo0TXxxVMIAleAR2JJ88XMoPYwgI+Er/aZrF0MXJwsAloS2zebwDRqyjxdv9dsJkiAkoS
-	v+YvArOZBTIl7jXNAGtlEVCVaN27EizOKWAl0bq6BeqgLkaJ+a/awBL8AqIShxduZ4ZoVpeY
-	NG8RM8ShShK72zvZIeLyEpvXvGWGuE1Q4sfkeywggyQE9rFL7Ds2hxFim4DEt8mHwA6VEJCV
-	2HQAao6kxMEVN1gmMErMQrJiFpKxs5CMXcDIvIpRNLUguaA4Kb3IRK84Mbe4NC9dLzk/dxMj
-	JOIm7GC8d8D6EGMy0MqJzFKiyfnAiM0riTc0NjOyMDUxNTYytzQjTVhJnFftUVKQkEB6Yklq
-	dmpqQWpRfFFpTmrxIUYmDk6pBkbX1twJYkuiA6qjey5xFzVcPrdhfXXIrEampAn3KzV3FStP
-	suhmfRfS/bF1W+3ppQmsgvwxS7fXnuhgPV+S+2Mu80eGE7d4T83ME4maL+Kxv6jn4p3Vm6eJ
-	/TMIvxhy1+iB0D0unWetlT9TPropcM9yie0Wuz13T5NGt9WRGpMdeqWeXiaLw5RYijMSDbWY
-	i4oTARnCeVrOAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBKsWRmVeSWpSXmKPExsVy+t9jAd2m/QHBBmsvs1r8b/rIZnFpkbvF
-	nr0nWSwu75rD5sDisXvBZyaPvi2rGD0+b5ILYI5qYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneO
-	NzUzMNQ1tLQwV1LIS8xNtVVy8QnQdcvMAdqmpFCWmFMKFApILC5W0rfDNCE0xE3XAqYxQtc3
-	JAiux8gADSSsY8zYNuUOW8EBwYo3HekNjDv4uhg5OSQETCTmnznABmGLSVy4tx7MFhJYxCjx
-	YhNPFyMXkP2KUaLr4womkASvgI7Ek+cLmUFsYQEfiV9ts1i6GDk42AS0JTbvN4DoVZR4u/8u
-	K4gtIqAk8Wv+IjCbWSBT4l7TDLBWFgFVida9K8HinAJWEq2rW9ggdnUxSsx/1QaW4BcQlTi8
-	cDszRLO6xKR5i5ghDlWS2N3eyQ4Rl5fYvOYtM8RtghI/Jt9jmcAoNAtJyywkZbOQlC1gZF7F
-	KJpakFxQnJSea6RXnJhbXJqXrpecn7uJERzPz6R3MK5qsDjEKMDBqMTDe+Grf7AQa2JZcWXu
-	IUYJDmYlEV7l0oBgId6UxMqq1KL8+KLSnNTiQ4zJQO9NZJYSTc4Hppq8knhDYxMzI0sjMwsj
-	E3Nz0oSVxHkPtloHCgmkJ5akZqemFqQWwWxh4uCUamCsfdJ8fuu2D19X5R2y8NdOt1kp8Dzl
-	Hae6/q6r/Q+mKhVetH7PyLNUZhqLWPWy3HV3pI53SQo8buCcG57I+WZqwPYf/ns/V/JUlS6p
-	NvLdanbHzDJi4bkCeWbjPW7Tls+YbFq8xMf1g6Kdq+9jlzXKzqLKZ8zSqmfNZD128t7fpdf+
-	cb5PaJRSYinOSDTUYi4qTgQAlnKJ8CsDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 18 Apr 2014 02:01:30 -0400
+Date: Fri, 18 Apr 2014 08:01:22 +0200
+From: Bastien Armand <armand.bastien@laposte.net>
+To: Willy Tarreau <willy@meta-x.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        Jake Champlin <jake.champlin.27@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: panel: fix sparse warnings
+Message-ID: <20140418060122.GA477@plop.dartybox.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Got it.
-The patch is like this.
-Thanks,
+This patch fixes sparse warnings in panel.c.
 
->From 5f7a3bcf0df10bbb47a6e4409cc92ba8e6090674 Mon Sep 17 00:00:00 2001
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Date: Fri, 18 Apr 2014 11:14:37 +0900
-Subject: [PATCH] f2fs: add available_nids to fix handling max_nid
-correctly
 
-This patch introduces available_nids for alloc_nids() and fixes max_nid
-for
-build_free_nids() and scan_nat_pages().
-
-Signed-off-by: Chao Yu <chao2.yu@samsung.com>
-Reviewed-by: Chao Yu <chao2.yu@samsung.com>
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Signed-off-by: Bastien Armand <armand.bastien@laposte.net>
 ---
- fs/f2fs/f2fs.h | 1 +
- fs/f2fs/node.c | 6 ++++--
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/staging/panel/panel.c |  209 ++++++++++++++++++++++-------------------
+ 1 file changed, 111 insertions(+), 98 deletions(-)
 
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 55152de..556d06b 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -244,6 +244,7 @@ static inline void set_raw_extent(struct extent_info
-*ext,
- struct f2fs_nm_info {
- 	block_t nat_blkaddr;		/* base disk address of NAT */
- 	nid_t max_nid;			/* maximum possible node ids */
-+	nid_t available_nids;		/* maximum available node ids */
- 	nid_t next_scan_nid;		/* the next nid to be scanned */
- 	unsigned int ram_thresh;	/* control the memory footprint */
- 
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 837f5fd..6ebdba1 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1447,7 +1447,7 @@ bool alloc_nid(struct f2fs_sb_info *sbi, nid_t
-*nid)
- 	struct f2fs_nm_info *nm_i = NM_I(sbi);
- 	struct free_nid *i = NULL;
- retry:
--	if (unlikely(sbi->total_valid_node_count + 1 >= nm_i->max_nid))
-+	if (unlikely(sbi->total_valid_node_count + 1 > nm_i->available_nids))
- 		return false;
- 
- 	spin_lock(&nm_i->free_nid_list_lock);
-@@ -1859,8 +1859,10 @@ static int init_node_manager(struct f2fs_sb_info
-*sbi)
- 	nat_segs = le32_to_cpu(sb_raw->segment_count_nat) >> 1;
- 	nat_blocks = nat_segs << le32_to_cpu(sb_raw->log_blocks_per_seg);
- 
-+	nm_i->max_nid = NAT_ENTRY_PER_BLOCK * nat_blocks;
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index 08f9a48..dc34254 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -1217,111 +1217,113 @@ static inline int handle_lcd_special_code(void)
+ 	return processed;
+ }
+
++static void lcd_write_char(char c)
++{
++	/* first, we'll test if we're in escape mode */
++	if ((c != '\n') && lcd_escape_len >= 0) {
++		/* yes, let's add this char to the buffer */
++		lcd_escape[lcd_escape_len++] = c;
++		lcd_escape[lcd_escape_len] = 0;
++	} else {
++		/* aborts any previous escape sequence */
++		lcd_escape_len = -1;
 +
- 	/* not used nids: 0, node, meta, (and root counted as valid node) */
--	nm_i->max_nid = NAT_ENTRY_PER_BLOCK * nat_blocks - 3;
-+	nm_i->available_nids = nm_i->max_nid - 3;
- 	nm_i->fcnt = 0;
- 	nm_i->nat_cnt = 0;
- 	nm_i->ram_thresh = DEF_RAM_THRESHOLD;
--- 
-1.8.4.474.g128a96c
++		switch (c) {
++		case LCD_ESCAPE_CHAR:
++			/* start of an escape sequence */
++			lcd_escape_len = 0;
++			lcd_escape[lcd_escape_len] = 0;
++			break;
++		case '\b':
++			/* go back one char and clear it */
++			if (lcd_addr_x > 0) {
++				/* check if we're not at the
++				   end of the line */
++				if (lcd_addr_x < lcd_bwidth)
++					/* back one char */
++					lcd_write_cmd(0x10);
++				lcd_addr_x--;
++			}
++			/* replace with a space */
++			lcd_write_data(' ');
++			/* back one char again */
++			lcd_write_cmd(0x10);
++			break;
++		case '\014':
++			/* quickly clear the display */
++			lcd_clear_fast();
++			break;
++		case '\n':
++			/* flush the remainder of the current line and
++			   go to the beginning of the next line */
++			for (; lcd_addr_x < lcd_bwidth; lcd_addr_x++)
++				lcd_write_data(' ');
++			lcd_addr_x = 0;
++			lcd_addr_y = (lcd_addr_y + 1) % lcd_height;
++			lcd_gotoxy();
++			break;
++		case '\r':
++			/* go to the beginning of the same line */
++			lcd_addr_x = 0;
++			lcd_gotoxy();
++			break;
++		case '\t':
++			/* print a space instead of the tab */
++			lcd_print(' ');
++			break;
++		default:
++			/* simply print this char */
++			lcd_print(c);
++			break;
++		}
++	}
++
++	/* now we'll see if we're in an escape mode and if the current
++	   escape sequence can be understood. */
++	if (lcd_escape_len >= 2) {
++		int processed = 0;
++
++		if (!strcmp(lcd_escape, "[2J")) {
++			/* clear the display */
++			lcd_clear_fast();
++			processed = 1;
++		} else if (!strcmp(lcd_escape, "[H")) {
++			/* cursor to home */
++			lcd_addr_x = lcd_addr_y = 0;
++			lcd_gotoxy();
++			processed = 1;
++		}
++		/* codes starting with ^[[L */
++		else if ((lcd_escape_len >= 3) &&
++			 (lcd_escape[0] == '[') &&
++			 (lcd_escape[1] == 'L')) {
++			processed = handle_lcd_special_code();
++		}
++
++		/* LCD special escape codes */
++		/* flush the escape sequence if it's been processed
++		   or if it is getting too long. */
++		if (processed || (lcd_escape_len >= LCD_ESCAPE_LEN))
++			lcd_escape_len = -1;
++	} /* escape codes */
++}
++
+ static ssize_t lcd_write(struct file *file,
+-			 const char *buf, size_t count, loff_t *ppos)
++	const char __user *buf, size_t count, loff_t *ppos)
+ {
+-	const char *tmp = buf;
++	const char __user *tmp = buf;
+ 	char c;
 
+-	for (; count-- > 0; (ppos ? (*ppos)++ : 0), ++tmp) {
++	for (; count-- > 0; (*ppos)++, tmp++) {
+ 		if (!in_interrupt() && (((count + 1) & 0x1f) == 0))
+ 			/* let's be a little nice with other processes
+ 			   that need some CPU */
+ 			schedule();
 
+-		if (ppos == NULL && file == NULL)
+-			/* let's not use get_user() from the kernel ! */
+-			c = *tmp;
+-		else if (get_user(c, tmp))
++		if (get_user(c, buf))
+ 			return -EFAULT;
 
+-		/* first, we'll test if we're in escape mode */
+-		if ((c != '\n') && lcd_escape_len >= 0) {
+-			/* yes, let's add this char to the buffer */
+-			lcd_escape[lcd_escape_len++] = c;
+-			lcd_escape[lcd_escape_len] = 0;
+-		} else {
+-			/* aborts any previous escape sequence */
+-			lcd_escape_len = -1;
+-
+-			switch (c) {
+-			case LCD_ESCAPE_CHAR:
+-				/* start of an escape sequence */
+-				lcd_escape_len = 0;
+-				lcd_escape[lcd_escape_len] = 0;
+-				break;
+-			case '\b':
+-				/* go back one char and clear it */
+-				if (lcd_addr_x > 0) {
+-					/* check if we're not at the
+-					   end of the line */
+-					if (lcd_addr_x < lcd_bwidth)
+-						/* back one char */
+-						lcd_write_cmd(0x10);
+-					lcd_addr_x--;
+-				}
+-				/* replace with a space */
+-				lcd_write_data(' ');
+-				/* back one char again */
+-				lcd_write_cmd(0x10);
+-				break;
+-			case '\014':
+-				/* quickly clear the display */
+-				lcd_clear_fast();
+-				break;
+-			case '\n':
+-				/* flush the remainder of the current line and
+-				   go to the beginning of the next line */
+-				for (; lcd_addr_x < lcd_bwidth; lcd_addr_x++)
+-					lcd_write_data(' ');
+-				lcd_addr_x = 0;
+-				lcd_addr_y = (lcd_addr_y + 1) % lcd_height;
+-				lcd_gotoxy();
+-				break;
+-			case '\r':
+-				/* go to the beginning of the same line */
+-				lcd_addr_x = 0;
+-				lcd_gotoxy();
+-				break;
+-			case '\t':
+-				/* print a space instead of the tab */
+-				lcd_print(' ');
+-				break;
+-			default:
+-				/* simply print this char */
+-				lcd_print(c);
+-				break;
+-			}
+-		}
+-
+-		/* now we'll see if we're in an escape mode and if the current
+-		   escape sequence can be understood. */
+-		if (lcd_escape_len >= 2) {
+-			int processed = 0;
+-
+-			if (!strcmp(lcd_escape, "[2J")) {
+-				/* clear the display */
+-				lcd_clear_fast();
+-				processed = 1;
+-			} else if (!strcmp(lcd_escape, "[H")) {
+-				/* cursor to home */
+-				lcd_addr_x = lcd_addr_y = 0;
+-				lcd_gotoxy();
+-				processed = 1;
+-			}
+-			/* codes starting with ^[[L */
+-			else if ((lcd_escape_len >= 3) &&
+-				 (lcd_escape[0] == '[') &&
+-				 (lcd_escape[1] == 'L')) {
+-				processed = handle_lcd_special_code();
+-			}
+-
+-			/* LCD special escape codes */
+-			/* flush the escape sequence if it's been processed
+-			   or if it is getting too long. */
+-			if (processed || (lcd_escape_len >= LCD_ESCAPE_LEN))
+-				lcd_escape_len = -1;
+-		} /* escape codes */
++		lcd_write_char(c);
+ 	}
 
--- 
-Jaegeuk Kim
-Samsung
+ 	return tmp - buf;
+@@ -1365,8 +1367,19 @@ static struct miscdevice lcd_dev = {
+ /* public function usable from the kernel for any purpose */
+ static void panel_lcd_print(const char *s)
+ {
+-	if (lcd_enabled && lcd_initialized)
+-		lcd_write(NULL, s, strlen(s), NULL);
++	const char *tmp = s;
++	int count = strlen(s);
++
++	if (lcd_enabled && lcd_initialized) {
++		for (; count-- > 0; tmp++) {
++			if (!in_interrupt() && (((count + 1) & 0x1f) == 0))
++				/* let's be a little nice with other processes
++				   that need some CPU */
++				schedule();
++
++			lcd_write_char(*tmp);
++		}
++	}
+ }
 
+ /* initialize the LCD driver */
+@@ -1571,11 +1584,11 @@ static void lcd_init(void)
+  */
+
+ static ssize_t keypad_read(struct file *file,
+-			   char *buf, size_t count, loff_t *ppos)
++			   char __user *buf, size_t count, loff_t *ppos)
+ {
+
+ 	unsigned i = *ppos;
+-	char *tmp = buf;
++	char __user *tmp = buf;
+
+ 	if (keypad_buflen == 0) {
+ 		if (file->f_flags & O_NONBLOCK)
