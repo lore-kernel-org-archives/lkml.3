@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754839AbaDRWDE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 18:03:04 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:33636 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752798AbaDRWDC (ORCPT
+	id S1754743AbaDRWGb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 18:06:31 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:42440 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068AbaDRWG0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 18:03:02 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [GIT PULL] at91: DT for 3.16 #1
-Date: Sat, 19 Apr 2014 00:02:59 +0200
-Message-ID: <1397858579-11619-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.8.2.2
-Organization: atmel
+	Fri, 18 Apr 2014 18:06:26 -0400
+Message-ID: <5351A1DE.9070801@gmail.com>
+Date: Sat, 19 Apr 2014 00:06:22 +0200
+From: Boris BREZILLON <b.brezillon.dev@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Nicolas Ferre <nicolas.ferre@atmel.com>, Bo Shen <voice.shen@atmel.com>,
+        Boris BREZILLON <b.brezillon@overkiz.com>
+CC: Mark Brown <broonie@kernel.org>, alsa-devel@alsa-project.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        devicetree@vger.kernel.org, Rob Landley <rob@landley.net>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 0/8] ARM: at91: sama5d3: enable sound support
+References: <1395049541-28128-1-git-send-email-voice.shen@atmel.com> <53518C76.2020005@atmel.com>
+In-Reply-To: <53518C76.2020005@atmel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
 
-Here is the first AT91 DT pull-request for 3.16. Nice enhancements for
-three different products.
+On 18/04/2014 22:35, Nicolas Ferre wrote:
+> On 17/03/2014 10:45, Bo Shen :
+>> This patch add sound support on sama5d3xek board.
+>>
+>> This patch series based on the following patch set:
+>>   clk: at91: better support for the PCKs
+>>   http://comments.gmane.org/gmane.linux.kernel/1664477
+>>
+>>
+>> Bo Shen (5):
+>>   ARM: at91: sama5d3: add DMA property for SSC devices
+>>   ARM: at91: sama5d3: disable sound by default
+>>   ARM: at91: sama5d3: correct the sound compatible string
+>>   ARM: at91: sama5d3: add the missing property
+>>   ARM: at91: sama5d3: clock for ssc from rk pin
+>>
+>> Boris BREZILLON (3):
+>>   ASoC: atmel: support CCF based clks
+>>   ASoC: atmel: document clock properties of the wm8904 driver
+>>   ARM: at91/dt: add clock properties to the wm8904 codec node
+> Hi Voice and Boris,
+>
+> For this series I am a little bit puzzled: should I take the ASoC part
+> of it? I see no acknowledgement from Mark and I also read some messages
+> still discussing about CCF and wm8904 afterwards.
+>
+> So, I take the 5 patches by Voice Shen and tell me what is the proper
+> sequence with this wm8904 work.
 
-Thanks, best regards,
+Bo was waiting for the "move sam9n12 SoC to the CCF" (which has been
+submitted earlier this week) series before sending a new version of his
+"wm8904: add CCF support" series.
 
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+Best Regards,
 
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+Boris
 
-are available in the git repository at:
+> I will be happy to stack more patches about this topic during the 3.16
+> development phase.
+>
+>
+> Otherwise, the 5 patches by Voice go into at91-3.16-dt branch.
+>
+> Thanks, bye.
+>
+>
+>>  .../devicetree/bindings/sound/atmel-wm8904.txt     |  2 ++
+>>  arch/arm/boot/dts/sama5d3.dtsi                     |  6 ++++++
+>>  arch/arm/boot/dts/sama5d3xmb.dtsi                  | 11 +++++++++-
+>>  sound/soc/atmel/atmel_wm8904.c                     | 25 +++++++++++-----------
+>>  4 files changed, 31 insertions(+), 13 deletions(-)
+>>
+>
 
-  git://github.com/at91linux/linux-at91.git tags/at91-dt
-
-for you to fetch changes up to 27a96a0364787d2b41d2a72d08143d95263e1b07:
-
-  ARM: at91: sama5d3: clock for ssc from rk pin (2014-04-18 22:43:44 +0200)
-
-----------------------------------------------------------------
-3.16: first DT series:
-- more support for at91sam9rl and its associated EK board
-- some improvements to at91sam9g45 (ADC, TS, PWM leds)
-- addition of some missing pieces for describing audio
-  of SAMA5D3-EK in DT
-
-----------------------------------------------------------------
-Alexandre Belloni (5):
-      ARM: at91/dt: sam9rl: add lcd, adc, usb gadget and pwm support
-      ARM: at91/dt: add peripherals to the at91sam9rlek board
-      ARM: at91/dt: sam9g45: improve ADC/touchscreen support
-      ARM: at91/dt: at91sam9m10g45ek: add ADC and touchscreen support
-      ARM: at91/dt: at91sam9m10g45ek PWM leds polarity is inversed
-
-Bo Shen (5):
-      ARM: at91: sama5d3: add DMA property for SSC devices
-      ARM: at91: sama5d3: disable sound by default
-      ARM: at91: sama5d3: correct the sound compatible string
-      ARM: at91: sama5d3: add the missing property
-      ARM: at91: sama5d3: clock for ssc from rk pin
-
- arch/arm/boot/dts/at91sam9g45.dtsi     |  33 +++-
- arch/arm/boot/dts/at91sam9m10g45ek.dts |  20 ++-
- arch/arm/boot/dts/at91sam9rl.dtsi      | 265 +++++++++++++++++++++++++++++++--
- arch/arm/boot/dts/at91sam9rlek.dts     |  90 ++++++++++-
- arch/arm/boot/dts/sama5d3.dtsi         |   6 +
- arch/arm/boot/dts/sama5d3xmb.dtsi      |   9 +-
- 6 files changed, 405 insertions(+), 18 deletions(-)
-
--- 
-Nicolas Ferre
