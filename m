@@ -1,237 +1,429 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365AbaDRJbo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:31:44 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45969 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752315AbaDRJWs (ORCPT
+	id S1753809AbaDRJfP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:35:15 -0400
+Received: from va3ehsobe002.messaging.microsoft.com ([216.32.180.12]:57475
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753600AbaDRJfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 05:22:48 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, David Stevens <dlstevens@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 48/72] vxlan: fix nonfunctional neigh_reduce()
-Date: Fri, 18 Apr 2014 11:22:21 +0200
-Message-Id: <d8be18c52dbc94989f6d74637b731af39cd3d902.1397812482.git.jslaby@suse.cz>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
-References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
-In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
-References: <cover.1397812482.git.jslaby@suse.cz>
+	Fri, 18 Apr 2014 05:35:04 -0400
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPV:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+X-SpamScore: -1
+X-BigFish: VS-1(zz98dI936eIe2eI1432Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah1fc6h208ch1082kzz1de098h8275bh1de097hz2dh2a8h839h944hd25hd2bhf0ah1220h1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1ad9h1b0ah1b2fh2222h224fh1fb3h1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h22d0h2336h2438h2461h2487h24d7h2516h2545h255eh25cch25f6h2605h262fh268bh26d3h1155h)
+Date: Fri, 18 Apr 2014 17:41:00 +0800
+From: Robin Gong <b38343@freescale.com>
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+CC: "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v1] dma: imx-sdma: add support for sdma memory copy
+Message-ID: <20140418094057.GA11496@Robin-OptiPlex-780>
+References: <1397728870-22086-1-git-send-email-b38343@freescale.com>
+ <1397730289.11914.225.camel@smile.fi.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1397730289.11914.225.camel@smile.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: freescale.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Stevens <dlstevens@us.ibm.com>
-
-3.12-stable review patch.  If anyone has any objections, please let me know.
-
-===============
-
-[ Upstream commit 4b29dba9c085a4fb79058fb1c45a2f6257ca3dfa ]
-
-The VXLAN neigh_reduce() code is completely non-functional since
-check-in. Specific errors:
-
-1) The original code drops all packets with a multicast destination address,
-	even though neighbor solicitations are sent to the solicited-node
-	address, a multicast address. The code after this check was never run.
-2) The neighbor table lookup used the IPv6 header destination, which is the
-	solicited node address, rather than the target address from the
-	neighbor solicitation. So neighbor lookups would always fail if it
-	got this far. Also for L3MISSes.
-3) The code calls ndisc_send_na(), which does a send on the tunnel device.
-	The context for neigh_reduce() is the transmit path, vxlan_xmit(),
-	where the host or a bridge-attached neighbor is trying to transmit
-	a neighbor solicitation. To respond to it, the tunnel endpoint needs
-	to do a *receive* of the appropriate neighbor advertisement. Doing a
-	send, would only try to send the advertisement, encapsulated, to the
-	remote destinations in the fdb -- hosts that definitely did not do the
-	corresponding solicitation.
-4) The code uses the tunnel endpoint IPv6 forwarding flag to determine the
-	isrouter flag in the advertisement. This has nothing to do with whether
-	or not the target is a router, and generally won't be set since the
-	tunnel endpoint is bridging, not routing, traffic.
-
-	The patch below creates a proxy neighbor advertisement to respond to
-neighbor solicitions as intended, providing proper IPv6 support for neighbor
-reduction.
-
-Signed-off-by: David L Stevens <dlstevens@us.ibm.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
----
- drivers/net/vxlan.c | 127 ++++++++++++++++++++++++++++++++++++++++++++++------
- 1 file changed, 113 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
-index 020fe03f37c0..6c0d1c103286 100644
---- a/drivers/net/vxlan.c
-+++ b/drivers/net/vxlan.c
-@@ -1236,15 +1236,103 @@ out:
- }
- 
- #if IS_ENABLED(CONFIG_IPV6)
-+
-+static struct sk_buff *vxlan_na_create(struct sk_buff *request,
-+	struct neighbour *n, bool isrouter)
-+{
-+	struct net_device *dev = request->dev;
-+	struct sk_buff *reply;
-+	struct nd_msg *ns, *na;
-+	struct ipv6hdr *pip6;
-+	u8 *daddr;
-+	int na_olen = 8; /* opt hdr + ETH_ALEN for target */
-+	int ns_olen;
-+	int i, len;
-+
-+	if (dev == NULL)
-+		return NULL;
-+
-+	len = LL_RESERVED_SPACE(dev) + sizeof(struct ipv6hdr) +
-+		sizeof(*na) + na_olen + dev->needed_tailroom;
-+	reply = alloc_skb(len, GFP_ATOMIC);
-+	if (reply == NULL)
-+		return NULL;
-+
-+	reply->protocol = htons(ETH_P_IPV6);
-+	reply->dev = dev;
-+	skb_reserve(reply, LL_RESERVED_SPACE(request->dev));
-+	skb_push(reply, sizeof(struct ethhdr));
-+	skb_set_mac_header(reply, 0);
-+
-+	ns = (struct nd_msg *)skb_transport_header(request);
-+
-+	daddr = eth_hdr(request)->h_source;
-+	ns_olen = request->len - skb_transport_offset(request) - sizeof(*ns);
-+	for (i = 0; i < ns_olen-1; i += (ns->opt[i+1]<<3)) {
-+		if (ns->opt[i] == ND_OPT_SOURCE_LL_ADDR) {
-+			daddr = ns->opt + i + sizeof(struct nd_opt_hdr);
-+			break;
-+		}
-+	}
-+
-+	/* Ethernet header */
-+	memcpy(eth_hdr(reply)->h_dest, daddr, ETH_ALEN);
-+	memcpy(eth_hdr(reply)->h_source, n->ha, ETH_ALEN);
-+	eth_hdr(reply)->h_proto = htons(ETH_P_IPV6);
-+	reply->protocol = htons(ETH_P_IPV6);
-+
-+	skb_pull(reply, sizeof(struct ethhdr));
-+	skb_set_network_header(reply, 0);
-+	skb_put(reply, sizeof(struct ipv6hdr));
-+
-+	/* IPv6 header */
-+
-+	pip6 = ipv6_hdr(reply);
-+	memset(pip6, 0, sizeof(struct ipv6hdr));
-+	pip6->version = 6;
-+	pip6->priority = ipv6_hdr(request)->priority;
-+	pip6->nexthdr = IPPROTO_ICMPV6;
-+	pip6->hop_limit = 255;
-+	pip6->daddr = ipv6_hdr(request)->saddr;
-+	pip6->saddr = *(struct in6_addr *)n->primary_key;
-+
-+	skb_pull(reply, sizeof(struct ipv6hdr));
-+	skb_set_transport_header(reply, 0);
-+
-+	na = (struct nd_msg *)skb_put(reply, sizeof(*na) + na_olen);
-+
-+	/* Neighbor Advertisement */
-+	memset(na, 0, sizeof(*na)+na_olen);
-+	na->icmph.icmp6_type = NDISC_NEIGHBOUR_ADVERTISEMENT;
-+	na->icmph.icmp6_router = isrouter;
-+	na->icmph.icmp6_override = 1;
-+	na->icmph.icmp6_solicited = 1;
-+	na->target = ns->target;
-+	memcpy(&na->opt[2], n->ha, ETH_ALEN);
-+	na->opt[0] = ND_OPT_TARGET_LL_ADDR;
-+	na->opt[1] = na_olen >> 3;
-+
-+	na->icmph.icmp6_cksum = csum_ipv6_magic(&pip6->saddr,
-+		&pip6->daddr, sizeof(*na)+na_olen, IPPROTO_ICMPV6,
-+		csum_partial(na, sizeof(*na)+na_olen, 0));
-+
-+	pip6->payload_len = htons(sizeof(*na)+na_olen);
-+
-+	skb_push(reply, sizeof(struct ipv6hdr));
-+
-+	reply->ip_summed = CHECKSUM_UNNECESSARY;
-+
-+	return reply;
-+}
-+
- static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
- {
- 	struct vxlan_dev *vxlan = netdev_priv(dev);
--	struct neighbour *n;
--	union vxlan_addr ipa;
-+	struct nd_msg *msg;
- 	const struct ipv6hdr *iphdr;
- 	const struct in6_addr *saddr, *daddr;
--	struct nd_msg *msg;
--	struct inet6_dev *in6_dev = NULL;
-+	struct neighbour *n;
-+	struct inet6_dev *in6_dev;
- 
- 	in6_dev = __in6_dev_get(dev);
- 	if (!in6_dev)
-@@ -1257,19 +1345,20 @@ static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
- 	saddr = &iphdr->saddr;
- 	daddr = &iphdr->daddr;
- 
--	if (ipv6_addr_loopback(daddr) ||
--	    ipv6_addr_is_multicast(daddr))
--		goto out;
--
- 	msg = (struct nd_msg *)skb_transport_header(skb);
- 	if (msg->icmph.icmp6_code != 0 ||
- 	    msg->icmph.icmp6_type != NDISC_NEIGHBOUR_SOLICITATION)
- 		goto out;
- 
--	n = neigh_lookup(ipv6_stub->nd_tbl, daddr, dev);
-+	if (ipv6_addr_loopback(daddr) ||
-+	    ipv6_addr_is_multicast(&msg->target))
-+		goto out;
-+
-+	n = neigh_lookup(ipv6_stub->nd_tbl, &msg->target, dev);
- 
- 	if (n) {
- 		struct vxlan_fdb *f;
-+		struct sk_buff *reply;
- 
- 		if (!(n->nud_state & NUD_CONNECTED)) {
- 			neigh_release(n);
-@@ -1283,13 +1372,23 @@ static int neigh_reduce(struct net_device *dev, struct sk_buff *skb)
- 			goto out;
- 		}
- 
--		ipv6_stub->ndisc_send_na(dev, n, saddr, &msg->target,
--					 !!in6_dev->cnf.forwarding,
--					 true, false, false);
-+		reply = vxlan_na_create(skb, n,
-+					!!(f ? f->flags & NTF_ROUTER : 0));
-+
- 		neigh_release(n);
-+
-+		if (reply == NULL)
-+			goto out;
-+
-+		if (netif_rx_ni(reply) == NET_RX_DROP)
-+			dev->stats.rx_dropped++;
-+
- 	} else if (vxlan->flags & VXLAN_F_L3MISS) {
--		ipa.sin6.sin6_addr = *daddr;
--		ipa.sa.sa_family = AF_INET6;
-+		union vxlan_addr ipa = {
-+			.sin6.sin6_addr = msg->target,
-+			.sa.sa_family = AF_INET6,
-+		};
-+
- 		vxlan_ip_miss(dev, &ipa);
- 	}
- 
--- 
-1.9.2
+On Thu, Apr 17, 2014 at 10:24:50AM +0000, Shevchenko, Andriy wrote:
+> On Thu, 2014-04-17 at 18:01 +0800, Robin Gong wrote:
+> > add "device_prep_dma_memcpy" and "device_prep_dma_sg" for memory copy by sdma.
+> > 
+> > Signed-off-by: Robin Gong <b38343@freescale.com>
+> > ---
+> >  drivers/dma/imx-sdma.c |  188 +++++++++++++++++++++++++++++++++++++++++------
+> >  1 files changed, 164 insertions(+), 24 deletions(-)
+> > 
+> > diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+> > index 4e79183..2a97e03 100644
+> > --- a/drivers/dma/imx-sdma.c
+> > +++ b/drivers/dma/imx-sdma.c
+> > @@ -229,6 +229,7 @@ struct sdma_context_data {
+> >  } __attribute__ ((packed));
+> >  
+> >  #define NUM_BD (int)(PAGE_SIZE / sizeof(struct sdma_buffer_descriptor))
+> > +#define SDMA_BD_MAX_CNT	(0xfffc) /* align with 4 bytes */
+> >  
+> >  struct sdma_engine;
+> >  
+> > @@ -260,6 +261,7 @@ struct sdma_channel {
+> >  	unsigned int			pc_from_device, pc_to_device;
+> >  	unsigned long			flags;
+> >  	dma_addr_t			per_address;
+> > +	unsigned int                    pc_to_pc;
+> >  	unsigned long			event_mask[2];
+> >  	unsigned long			watermark_level;
+> >  	u32				shp_addr, per_addr;
+> > @@ -694,6 +696,7 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
+> >  
+> >  	sdmac->pc_from_device = 0;
+> >  	sdmac->pc_to_device = 0;
+> > +	sdmac->pc_to_pc = 0;
+> >  
+> >  	switch (peripheral_type) {
+> >  	case IMX_DMATYPE_MEMORY:
+> > @@ -763,6 +766,7 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
+> >  
+> >  	sdmac->pc_from_device = per_2_emi;
+> >  	sdmac->pc_to_device = emi_2_per;
+> > +	sdmac->pc_to_pc = emi_2_emi;
+> >  }
+> >  
+> >  static int sdma_load_context(struct sdma_channel *sdmac)
+> > @@ -775,11 +779,12 @@ static int sdma_load_context(struct sdma_channel *sdmac)
+> >  	int ret;
+> >  	unsigned long flags;
+> >  
+> > -	if (sdmac->direction == DMA_DEV_TO_MEM) {
+> > +	if (sdmac->direction == DMA_DEV_TO_MEM)
+> >  		load_address = sdmac->pc_from_device;
+> > -	} else {
+> > +	else if (sdmac->direction == DMA_MEM_TO_MEM)
+> > +		load_address = sdmac->pc_to_pc;
+> > +	else
+> >  		load_address = sdmac->pc_to_device;
+> > -	}
+> >  
+> >  	if (load_address < 0)
+> >  		return load_address;
+> > @@ -1010,16 +1015,118 @@ static void sdma_free_chan_resources(struct dma_chan *chan)
+> >  	clk_disable(sdma->clk_ahb);
+> >  }
+> >  
+> > -static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
+> > -		struct dma_chan *chan, struct scatterlist *sgl,
+> > -		unsigned int sg_len, enum dma_transfer_direction direction,
+> > -		unsigned long flags, void *context)
+> > +static struct dma_async_tx_descriptor *sdma_prep_memcpy(
+> > +		struct dma_chan *chan, dma_addr_t dma_dst,
+> > +		dma_addr_t dma_src, size_t len, unsigned long flags)
+> > +{
+> > +	struct sdma_channel *sdmac = to_sdma_chan(chan);
+> > +	struct sdma_engine *sdma = sdmac->sdma;
+> > +	int channel = sdmac->channel;
+> > +	size_t count;
+> > +	int i = 0, param, ret;
+> > +	struct sdma_buffer_descriptor *bd;
+> > +
+> > +	if (!chan || !len || sdmac->status == DMA_IN_PROGRESS)
+> > +		return NULL;
+> > +
+> > +	if (len >= NUM_BD * SDMA_BD_MAX_CNT) {
+> > +		dev_err(sdma->dev, "channel%d: maximum bytes exceeded:%d > %d\n"
+> > +			, channel, len, NUM_BD * SDMA_BD_MAX_CNT);
+> > +		goto err_out;
+> > +	}
+> > +
+> > +	sdmac->status = DMA_IN_PROGRESS;
+> > +
+> > +	sdmac->buf_tail = 0;
+> > +
+> > +	dev_dbg(sdma->dev, "memcpy: %x->%x, len=%d, channel=%d.\n",
+> 
+> %pad for dma_addr_t variables.
+>
+Yes, %x here is not proper, will be %#llx here to align with others similar
+code in this file.
+> > +		dma_src, dma_dst, len, channel);
+> > +
+> > +	sdmac->direction = DMA_MEM_TO_MEM;
+> > +
+> > +	ret = sdma_load_context(sdmac);
+> > +	if (ret)
+> > +		goto err_out;
+> > +
+> > +	sdmac->chn_count = 0;
+> > +
+> > +	do {
+> > +		count = min_t(size_t, len, SDMA_BD_MAX_CNT);
+> > +		bd = &sdmac->bd[i];
+> > +		bd->buffer_addr = dma_src;
+> > +		bd->ext_buffer_addr = dma_dst;
+> > +		bd->mode.count = count;
+> > +
+> > +		if (sdmac->word_size > DMA_SLAVE_BUSWIDTH_4_BYTES) {
+> > +			ret =  -EINVAL;
+> > +			goto err_out;
+> > +		}
+> > +
+> > +		switch (sdmac->word_size) {
+> > +		case DMA_SLAVE_BUSWIDTH_4_BYTES:
+> > +			bd->mode.command = 0;
+> > +			if (count & 3 || dma_dst & 3 || dma_src & 3)
+> 
+> Could it be like
+> if ((count | dma_dst | dma_src) & 3)
+> ?
+> 
+Accept.
+> > +				return NULL;
+> > +			break;
+> > +		case DMA_SLAVE_BUSWIDTH_2_BYTES:
+> > +			bd->mode.command = 2;
+> > +			if (count & 1 || dma_dst & 1 || dma_src & 1)
+> 
+> Similar here.
+> 
+Accept.
+> > +				return NULL;
+> > +			break;
+> > +		case DMA_SLAVE_BUSWIDTH_1_BYTE:
+> > +			bd->mode.command = 1;
+> > +			break;
+> > +		default:
+> > +			return NULL;
+> > +		}
+> 
+> Moreover, could you consider to make above piece of code (switch) a
+> separate function and re-use it in sdma_prep_slave_sg()?
+> 
+Initially, I didn't want to make so many changes in the driver. But maybe we
+need make code clean firstly. Will make it better in V2.
+> > +
+> > +		dma_src += count;
+> > +		dma_dst += count;
+> > +		len -= count;
+> > +		i++;
+> > +
+> > +		param = BD_DONE | BD_EXTD | BD_CONT;
+> > +		/* last bd */
+> > +		if (!len) {
+> > +			param |= BD_INTR;
+> > +			param |= BD_LAST;
+> > +			param &= ~BD_CONT;
+> > +		}
+> > +
+> > +		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%08x %s%s\n",
+> > +				i, count, bd->buffer_addr,
+> 
+> 
+> > +				param & BD_WRAP ? "wrap" : "",
+> > +				param & BD_INTR ? " intr" : "");
+> > +
+> > +		bd->mode.status = param;
+> > +		sdmac->chn_count += count;
+> > +	} while (len);
+> > +
+> > +	sdmac->num_bd = i;
+> > +	sdma->channel_control[channel].current_bd_ptr = sdmac->bd_phys;
+> > +
+> > +	return &sdmac->desc;
+> > +err_out:
+> > +	sdmac->status = DMA_ERROR;
+> > +	return NULL;
+> > +}
+> > +
+> > +/*
+> > + * Please ensure dst_nents no smaller than src_nents , also every sg_len of
+> > + * dst_sg node no smaller than src_sg. To simply things, please use the same
+> > + * size of dst_sg as src_sg.
+> > + */
+> > +static struct dma_async_tx_descriptor *sdma_prep_sg(
+> > +		struct dma_chan *chan,
+> > +		struct scatterlist *dst_sg, unsigned int dst_nents,
+> > +		struct scatterlist *src_sg, unsigned int src_nents,
+> > +		enum dma_transfer_direction direction)
+> >  {
+> >  	struct sdma_channel *sdmac = to_sdma_chan(chan);
+> >  	struct sdma_engine *sdma = sdmac->sdma;
+> >  	int ret, i, count;
+> >  	int channel = sdmac->channel;
+> > -	struct scatterlist *sg;
+> > +	struct scatterlist *sg_src = src_sg, *sg_dst = dst_sg;
+> >  
+> >  	if (sdmac->status == DMA_IN_PROGRESS)
+> >  		return NULL;
+> > @@ -1030,32 +1137,38 @@ static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
+> >  	sdmac->buf_tail = 0;
+> >  
+> >  	dev_dbg(sdma->dev, "setting up %d entries for channel %d.\n",
+> > -			sg_len, channel);
+> > +			src_nents, channel);
+> >  
+> >  	sdmac->direction = direction;
+> > +
+> >  	ret = sdma_load_context(sdmac);
+> >  	if (ret)
+> >  		goto err_out;
+> >  
+> > -	if (sg_len > NUM_BD) {
+> > +	if (src_nents > NUM_BD) {
+> >  		dev_err(sdma->dev, "SDMA channel %d: maximum number of sg exceeded: %d > %d\n",
+> > -				channel, sg_len, NUM_BD);
+> 
+> %u for sg_len.
+> I guess the same for NUM_BD.
+> 
+This line has been removed...
+> > +				channel, src_nents, NUM_BD);
+> >  		ret = -EINVAL;
+> >  		goto err_out;
+> >  	}
+> >  
+> >  	sdmac->chn_count = 0;
+> > -	for_each_sg(sgl, sg, sg_len, i) {
+> > +	for_each_sg(src_sg, sg_src, src_nents, i) {
+> >  		struct sdma_buffer_descriptor *bd = &sdmac->bd[i];
+> >  		int param;
+> >  
+> > -		bd->buffer_addr = sg->dma_address;
+> > +		bd->buffer_addr = sg_src->dma_address;
+> >  
+> > -		count = sg_dma_len(sg);
+> > +		if (direction == DMA_MEM_TO_MEM) {
+> > +			BUG_ON(!sg_dst);
+> > +			bd->ext_buffer_addr = sg_dst->dma_address;
+> > +		}
+> > +
+> > +		count = sg_dma_len(sg_src);
+> >  
+> > -		if (count > 0xffff) {
+> > +		if (count > SDMA_BD_MAX_CNT) {
+> >  			dev_err(sdma->dev, "SDMA channel %d: maximum bytes for sg entry exceeded: %d > %d\n",
+> > -					channel, count, 0xffff);
+> > +					channel, count, SDMA_BD_MAX_CNT);
+> >  			ret = -EINVAL;
+> >  			goto err_out;
+> >  		}
+> > @@ -1071,12 +1184,14 @@ static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
+> >  		switch (sdmac->word_size) {
+> >  		case DMA_SLAVE_BUSWIDTH_4_BYTES:
+> >  			bd->mode.command = 0;
+> > -			if (count & 3 || sg->dma_address & 3)
+> > +			if (count & 3 || sg_src->dma_address & 3 ||
+> > +				(sg_dst && (sg_dst->dma_address & 3)))
+> >  				return NULL;
+> >  			break;
+> >  		case DMA_SLAVE_BUSWIDTH_2_BYTES:
+> >  			bd->mode.command = 2;
+> > -			if (count & 1 || sg->dma_address & 1)
+> > +			if (count & 1 || sg_src->dma_address & 1 ||
+> > +				(sg_dst && (sg_dst->dma_address & 1)))
+> >  				return NULL;
+> >  			break;
+> >  		case DMA_SLAVE_BUSWIDTH_1_BYTE:
+> > @@ -1088,21 +1203,23 @@ static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
+> >  
+> >  		param = BD_DONE | BD_EXTD | BD_CONT;
+> >  
+> > -		if (i + 1 == sg_len) {
+> > +		if (i + 1 == src_nents) {
+> >  			param |= BD_INTR;
+> >  			param |= BD_LAST;
+> >  			param &= ~BD_CONT;
+> >  		}
+> >  
+> > -		dev_dbg(sdma->dev, "entry %d: count: %d dma: %#llx %s%s\n",
+> > -				i, count, (u64)sg->dma_address,
+> > +		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%08x %s%s\n",
+> > +				i, count, sg_src->dma_address,
+> 
+> %pad for dma_addr_t.
+> 
+Accept the idea, same as the above.
+> >  				param & BD_WRAP ? "wrap" : "",
+> >  				param & BD_INTR ? " intr" : "");
+> >  
+> >  		bd->mode.status = param;
+> > +		if (direction == DMA_MEM_TO_MEM)
+> > +			sg_dst = sg_next(sg_dst);
+> >  	}
+> >  
+> > -	sdmac->num_bd = sg_len;
+> > +	sdmac->num_bd = src_nents;
+> >  	sdma->channel_control[channel].current_bd_ptr = sdmac->bd_phys;
+> >  
+> >  	return &sdmac->desc;
+> > @@ -1111,6 +1228,24 @@ err_out:
+> >  	return NULL;
+> >  }
+> >  
+> > +static struct dma_async_tx_descriptor *sdma_prep_memcpy_sg(
+> > +		struct dma_chan *chan,
+> > +		struct scatterlist *dst_sg, unsigned int dst_nents,
+> > +		struct scatterlist *src_sg, unsigned int src_nents,
+> > +		unsigned long flags)
+> > +{
+> > +	return sdma_prep_sg(chan, dst_sg, dst_nents, src_sg, src_nents,
+> > +			   DMA_MEM_TO_MEM);
+> > +}
+> > +
+> > +static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
+> > +		struct dma_chan *chan, struct scatterlist *sgl,
+> > +		unsigned int sg_len, enum dma_transfer_direction direction,
+> > +		unsigned long flags, void *context)
+> > +{
+> > +	return sdma_prep_sg(chan, NULL, 0, sgl, sg_len, direction);
+> > +}
+> > +
+> >  static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
+> >  		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+> >  		size_t period_len, enum dma_transfer_direction direction,
+> > @@ -1143,9 +1278,9 @@ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
+> >  		goto err_out;
+> >  	}
+> >  
+> > -	if (period_len > 0xffff) {
+> > +	if (period_len > SDMA_BD_MAX_CNT) {
+> >  		dev_err(sdma->dev, "SDMA channel %d: maximum period size exceeded: %d > %d\n",
+> > -				channel, period_len, 0xffff);
+> > +				channel, period_len, SDMA_BD_MAX_CNT);
+> 
+> %zu for period_len. Check carefully print specifiers over your code,
+> please.
+> 
+Accept, although it has been here for long time.
+> >  		goto err_out;
+> >  	}
+> >  
+> > @@ -1206,6 +1341,8 @@ static int sdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+> >  			sdmac->watermark_level = dmaengine_cfg->src_maxburst *
+> >  						dmaengine_cfg->src_addr_width;
+> >  			sdmac->word_size = dmaengine_cfg->src_addr_width;
+> > +		} else if (dmaengine_cfg->direction == DMA_MEM_TO_MEM) {
+> > +			sdmac->word_size = dmaengine_cfg->dst_addr_width;
+> >  		} else {
+> >  			sdmac->per_address = dmaengine_cfg->dst_addr;
+> >  			sdmac->watermark_level = dmaengine_cfg->dst_maxburst *
+> > @@ -1516,6 +1653,7 @@ static int __init sdma_probe(struct platform_device *pdev)
+> >  
+> >  	dma_cap_set(DMA_SLAVE, sdma->dma_device.cap_mask);
+> >  	dma_cap_set(DMA_CYCLIC, sdma->dma_device.cap_mask);
+> > +	dma_cap_set(DMA_MEMCPY, sdma->dma_device.cap_mask);
+> >  
+> >  	INIT_LIST_HEAD(&sdma->dma_device.channels);
+> >  	/* Initialize channel parameters */
+> > @@ -1578,6 +1716,8 @@ static int __init sdma_probe(struct platform_device *pdev)
+> >  	sdma->dma_device.device_tx_status = sdma_tx_status;
+> >  	sdma->dma_device.device_prep_slave_sg = sdma_prep_slave_sg;
+> >  	sdma->dma_device.device_prep_dma_cyclic = sdma_prep_dma_cyclic;
+> > +	sdma->dma_device.device_prep_dma_memcpy = sdma_prep_memcpy;
+> > +	sdma->dma_device.device_prep_dma_sg = sdma_prep_memcpy_sg;
+> >  	sdma->dma_device.device_control = sdma_control;
+> >  	sdma->dma_device.device_issue_pending = sdma_issue_pending;
+> >  	sdma->dma_device.dev->dma_parms = &sdma->dma_parms;
+> 
+> 
+> -- 
+> Andy Shevchenko <andriy.shevchenko@intel.com>
+> Intel Finland Oy
+> ---------------------------------------------------------------------
+> Intel Finland Oy
+> Registered Address: PL 281, 00181 Helsinki 
+> Business Identity Code: 0357606 - 4 
+> Domiciled in Helsinki 
+> 
+> This e-mail and any attachments may contain confidential material for
+> the sole use of the intended recipient(s). Any review or distribution
+> by others is strictly prohibited. If you are not the intended
+> recipient, please contact the sender and delete all copies.
 
