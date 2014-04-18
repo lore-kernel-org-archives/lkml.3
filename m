@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbaDRIKh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 04:10:37 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:42319 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751872AbaDRIJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 04:09:58 -0400
-Date: Fri, 18 Apr 2014 10:09:51 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
-        alex.shi@linaro.org, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com
-Subject: Re: [RFC PATCHC 3/3] sched/fair: use the idle state info to choose
- the idlest cpu
-Message-ID: <20140418080951.GB14280@gmail.com>
-References: <1396009796-31598-1-git-send-email-daniel.lezcano@linaro.org>
- <1396009796-31598-4-git-send-email-daniel.lezcano@linaro.org>
- <alpine.LFD.2.11.1404012208110.1571@knanqh.ubzr>
- <534FDCDC.6000806@linaro.org>
- <20140417144707.GL11096@twins.programming.kicks-ass.net>
- <534FED53.2030804@linaro.org>
+	id S1752041AbaDRIMi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 04:12:38 -0400
+Received: from mout.gmx.net ([212.227.17.21]:62850 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307AbaDRIMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 04:12:14 -0400
+Message-ID: <5350DDE9.1040102@gmx.at>
+Date: Fri, 18 Apr 2014 10:10:17 +0200
+From: Manfred Schlaegl <manfred.schlaegl@gmx.at>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <534FED53.2030804@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>,
+        Alan Cox <alan@redhat.com>, linux-kernel@vger.kernel.org,
+        Manfred Schlaegl <manfred.schlaegl@ginzinger.com>
+Subject: Re: [PATCH] tty: Fix race condition between __tty_buffer_request_room
+ and flush_to_ldisc
+References: <5343EE9C.9010004@gmx.at>
+In-Reply-To: <5343EE9C.9010004@gmx.at>
+X-Enigmail-Version: 1.5.1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Provags-ID: V03:K0:PPD8AK1tAYcJVOzWGa+99QRP7CVd/bY1cM8yQ/AfAC0lH/+UH2j
+ vts8pebKnmB0OJab86Qh2jq00V4pPQLcul7tXLulzP6Cs2tpLpbtBBU2cPY1UJQjXmp45Vb
+ q1TdFCGi7QIy0RH1vqYdLxa21qa/zyw32L/N8PQ77QoAo3BWDq3qeEKMD9hUgRQkYbv0WE1
+ DuAshvg014hf03waN19vg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Daniel Lezcano <daniel.lezcano@linaro.org> wrote:
-
-> On 04/17/2014 04:47 PM, Peter Zijlstra wrote:
-> >On Thu, Apr 17, 2014 at 03:53:32PM +0200, Daniel Lezcano wrote:
-> >>Concerning the policy, I would suggest to create an entry in
-> >>/proc/sys/kernel/sched_power, where a couple of values could be performance
-> >>- power saving (0 / 1).
-> >
-> >Ingo wanted a sched_balance_policy file with 3 values:
-> >   "performance, power, auto"
-> >
-> >Where the auto thing switches between them, initially based off of
-> >having AC or not.
+On 2014-04-08 14:42, Manfred Schlaegl wrote:
+> The race was introduced while development of linux-3.11 by
+> e8437d7ecbc50198705331449367d401ebb3181f and
+> e9975fdec0138f1b2a85b9624e41660abd9865d4.
+> Originally it was found and reproduced on linux-3.12.15 and
+> linux-3.12.15-rt25, by sending 500 byte blocks with 115kbaud to the
+> target uart in a loop with 100 milliseconds delay.
 > 
-> oh, good. Thanks !
+> In short:
+>  1. The consumer flush_to_ldisc is on to remove the head tty_buffer.
+>  2. The producer adds a number of bytes, so that a new tty_buffer must
+> 	be allocated and added by __tty_buffer_request_room.
+>  3. The consumer removes the head tty_buffer element, without handling
+> 	newly committed data.
 
-Also, 'auto' should be the default, because the kernel doing TRT is 
-really what users want.
+Hi!
 
-Userspace can sill tweak it all and make it all user-space controlled, 
-by flipping between 'performance' and 'power'. (and those modes are 
-also helpful for development and debugging.)
+Reminder: The Problem is still existent in linux-3.11, 3.12, 3.13. 3.14 and pre 3.15 kernels.
 
-Thanks,
+The lastly delivered patch cleanly applies to pre 3.15 (torvalds tree) and 3.14(.1).
 
-	Ingo
+Manfred
