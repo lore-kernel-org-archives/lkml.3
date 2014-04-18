@@ -1,113 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788AbaDRNKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 09:10:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38987 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751197AbaDRNKo (ORCPT
+	id S1754440AbaDRNLL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 09:11:11 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:57500 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753374AbaDRNLF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 09:10:44 -0400
-Date: Fri, 18 Apr 2014 06:09:55 -0700
-From: tip-bot for Peter Zijlstra <tipbot@zytor.com>
-Message-ID: <tip-wh6xljltyvmpy9t0bc80k1fy@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, takata@linux-m32r.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com, tglx@linutronix.de, takata@linux-m32r.org
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] arch,m32r: Convert smp_mb__*()
-Git-Commit-ID: 89607d5e2928d49bb64669d6d1e30e933a33f817
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 18 Apr 2014 09:11:05 -0400
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140418125924.GF5904@bivouac.eciton.net>
+References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
+	<1397756521-29387-4-git-send-email-leif.lindholm@linaro.org>
+	<CAMuHMdXBNWum7UJ95uT2hwTd1b5C8ebF2LQ4T-A+RS80p7MH=A@mail.gmail.com>
+	<20140418125924.GF5904@bivouac.eciton.net>
+Date: Fri, 18 Apr 2014 15:11:03 +0200
+X-Google-Sender-Auth: EouQJaLNxerwMnEFm3GDCXmyfCg
+Message-ID: <CAMuHMdUYisn2ejxd_SJ3LDsCgVKkPPT4hgS0-2znm=VFyfMDeQ@mail.gmail.com>
+Subject: Re: [PATCH 3/3] of: Handle memory@0 node on PPC32 only
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        patches@linaro.org,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robherring2@gmail.com>, Lee Jones <lee.jones@linaro.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  89607d5e2928d49bb64669d6d1e30e933a33f817
-Gitweb:     http://git.kernel.org/tip/89607d5e2928d49bb64669d6d1e30e933a33f817
-Author:     Peter Zijlstra <peterz@infradead.org>
-AuthorDate: Thu, 13 Mar 2014 19:00:36 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Fri, 18 Apr 2014 14:20:36 +0200
+Hei Leif,
 
-arch,m32r: Convert smp_mb__*()
+On Fri, Apr 18, 2014 at 2:59 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+> On Fri, Apr 18, 2014 at 10:04:15AM +0200, Geert Uytterhoeven wrote:
+>> On Thu, Apr 17, 2014 at 7:42 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+>> > In order to deal with an firmware bug on a specific ppc32 platform
+>> > (longtrail), early_init_dt_scan_memory() looks for a node called
+>> > memory@0 on all platforms. Restrict this quirk to ppc32 kernels only.
+>>
+>> This breaks backwards compatibilty with old DTSes (at least on ARM/MIPS,
+>> where you added the missing property in patches 1 and 2 of the series)?
+>
+> As Rob said in response to 0/3, the MIPSs would likely not be affected,
+> since they embed the DT.
+>
+> How about the below v2 3/3 to address the ARM platform?
 
-M32r uses asm-generic/barrier.h and its smp_mb() is barrier();
-therefore we can use the generic versions which default to smp_mb().
+Looks fine to me, thanks!
 
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Acked-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Link: http://lkml.kernel.org/n/tip-wh6xljltyvmpy9t0bc80k1fy@git.kernel.org
-Cc: Hirokazu Takata <takata@linux-m32r.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-m32r-ja@ml.linux-m32r.org
-Cc: linux-m32r@ml.linux-m32r.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- arch/m32r/include/asm/atomic.h | 7 +------
- arch/m32r/include/asm/bitops.h | 6 ++----
- 2 files changed, 3 insertions(+), 10 deletions(-)
+Gr{oetje,eeting}s,
 
-diff --git a/arch/m32r/include/asm/atomic.h b/arch/m32r/include/asm/atomic.h
-index 0d81697..8ad0ed4 100644
---- a/arch/m32r/include/asm/atomic.h
-+++ b/arch/m32r/include/asm/atomic.h
-@@ -13,6 +13,7 @@
- #include <asm/assembler.h>
- #include <asm/cmpxchg.h>
- #include <asm/dcache_clear.h>
-+#include <asm/barrier.h>
- 
- /*
-  * Atomic operations that C can't guarantee us.  Useful for
-@@ -308,10 +309,4 @@ static __inline__ void atomic_set_mask(unsigned long  mask, atomic_t *addr)
- 	local_irq_restore(flags);
- }
- 
--/* Atomic operations are already serializing on m32r */
--#define smp_mb__before_atomic_dec()	barrier()
--#define smp_mb__after_atomic_dec()	barrier()
--#define smp_mb__before_atomic_inc()	barrier()
--#define smp_mb__after_atomic_inc()	barrier()
--
- #endif	/* _ASM_M32R_ATOMIC_H */
-diff --git a/arch/m32r/include/asm/bitops.h b/arch/m32r/include/asm/bitops.h
-index d3dea9a..86ba2b4 100644
---- a/arch/m32r/include/asm/bitops.h
-+++ b/arch/m32r/include/asm/bitops.h
-@@ -21,6 +21,7 @@
- #include <asm/byteorder.h>
- #include <asm/dcache_clear.h>
- #include <asm/types.h>
-+#include <asm/barrier.h>
- 
- /*
-  * These have to be done with inline assembly: that way the bit-setting
-@@ -73,7 +74,7 @@ static __inline__ void set_bit(int nr, volatile void * addr)
-  *
-  * clear_bit() is atomic and may not be reordered.  However, it does
-  * not contain a memory barrier, so if it is used for locking purposes,
-- * you should call smp_mb__before_clear_bit() and/or smp_mb__after_clear_bit()
-+ * you should call smp_mb__before_atomic() and/or smp_mb__after_atomic()
-  * in order to ensure changes are visible on other processors.
-  */
- static __inline__ void clear_bit(int nr, volatile void * addr)
-@@ -103,9 +104,6 @@ static __inline__ void clear_bit(int nr, volatile void * addr)
- 	local_irq_restore(flags);
- }
- 
--#define smp_mb__before_clear_bit()	barrier()
--#define smp_mb__after_clear_bit()	barrier()
--
- /**
-  * change_bit - Toggle a bit in memory
-  * @nr: Bit to clear
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
