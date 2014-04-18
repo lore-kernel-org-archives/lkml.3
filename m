@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbaDRJYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:24:06 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45901 "EHLO
+	id S1752962AbaDRJXn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:23:43 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45911 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752044AbaDRJWr (ORCPT
+	by vger.kernel.org with ESMTP id S1752128AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 05:22:47 -0400
+	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Gerd Hoffmann <kraxel@redhat.com>,
-        Dave Airlie <airlied@redhat.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 22/72] drm: add drm_set_preferred_mode
-Date: Fri, 18 Apr 2014 11:21:55 +0200
-Message-Id: <1d2fa7e7e9182bbd085e314d6c804ab34d068e47.1397812482.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 17/72] drm/radeon: enable speaker allocation setup on dce3.2
+Date: Fri, 18 Apr 2014 11:21:50 +0200
+Message-Id: <21a4209d4288e5075edcd46881fd4b78a5a9bf3d.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
 References: <cover.1397812482.git.jslaby@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gerd Hoffmann <kraxel@redhat.com>
+From: Alex Deucher <alexander.deucher@amd.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3cf70dafd7bbbc91df0a9ecb081d46f9f3d867f6 upstream.
+commit 3803c8e5b50946dd6bc18972d9190757d05648f0 upstream.
 
-New helper function to set the preferred video mode.  Can be called
-after drm_add_modes_noedid if you don't want the largest supported
-video mode be used by default.
+Now that we disable audio while setting up the audio
+hw, we should be able to set this up without hangs.
 
-Signed-off-by: Gerd Hoffmann <kraxel@redhat.com>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+Reviewed-by: Christian König <christian.koenig@amd.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/drm_edid.c | 13 +++++++++++++
- include/drm/drm_crtc.h     |  2 ++
- 2 files changed, 15 insertions(+)
+ drivers/gpu/drm/radeon/r600_hdmi.c | 3 ---
+ 1 file changed, 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_edid.c b/drivers/gpu/drm/drm_edid.c
-index d0d3eae05a1a..1cb50268a224 100644
---- a/drivers/gpu/drm/drm_edid.c
-+++ b/drivers/gpu/drm/drm_edid.c
-@@ -3296,6 +3296,19 @@ int drm_add_modes_noedid(struct drm_connector *connector,
- }
- EXPORT_SYMBOL(drm_add_modes_noedid);
+diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
+index 9ba0675d0682..d38b725563e4 100644
+--- a/drivers/gpu/drm/radeon/r600_hdmi.c
++++ b/drivers/gpu/drm/radeon/r600_hdmi.c
+@@ -329,9 +329,6 @@ static void dce3_2_afmt_write_speaker_allocation(struct drm_encoder *encoder)
+ 	u8 *sadb;
+ 	int sad_count;
  
-+void drm_set_preferred_mode(struct drm_connector *connector,
-+			   int hpref, int vpref)
-+{
-+	struct drm_display_mode *mode;
-+
-+	list_for_each_entry(mode, &connector->probed_modes, head) {
-+		if (drm_mode_width(mode)  == hpref &&
-+		    drm_mode_height(mode) == vpref)
-+			mode->type |= DRM_MODE_TYPE_PREFERRED;
-+	}
-+}
-+EXPORT_SYMBOL(drm_set_preferred_mode);
-+
- /**
-  * drm_hdmi_avi_infoframe_from_display_mode() - fill an HDMI AVI infoframe with
-  *                                              data from a DRM display mode
-diff --git a/include/drm/drm_crtc.h b/include/drm/drm_crtc.h
-index 24f499569a2f..ec5d737f93c5 100644
---- a/include/drm/drm_crtc.h
-+++ b/include/drm/drm_crtc.h
-@@ -1108,6 +1108,8 @@ extern struct drm_display_mode *drm_gtf_mode_complex(struct drm_device *dev,
- 				int GTF_2C, int GTF_K, int GTF_2J);
- extern int drm_add_modes_noedid(struct drm_connector *connector,
- 				int hdisplay, int vdisplay);
-+extern void drm_set_preferred_mode(struct drm_connector *connector,
-+				   int hpref, int vpref);
- 
- extern int drm_edid_header_is_valid(const u8 *raw_edid);
- extern bool drm_edid_block_valid(u8 *raw_edid, int block, bool print_bad_edid);
+-	/* XXX: setting this register causes hangs on some asics */
+-	return;
+-
+ 	list_for_each_entry(connector, &encoder->dev->mode_config.connector_list, head) {
+ 		if (connector->encoder == encoder)
+ 			radeon_connector = to_radeon_connector(connector);
 -- 
 1.9.2
 
