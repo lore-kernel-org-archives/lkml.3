@@ -1,150 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaDRM4H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 08:56:07 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:53215 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736AbaDRM4B (ORCPT
+	id S1752130AbaDRM7m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 08:59:42 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:62759 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaDRM7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 08:56:01 -0400
-Date: Fri, 18 Apr 2014 13:59:24 +0100
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        patches@linaro.org,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 3/3] of: Handle memory@0 node on PPC32 only
-Message-ID: <20140418125924.GF5904@bivouac.eciton.net>
-References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
- <1397756521-29387-4-git-send-email-leif.lindholm@linaro.org>
- <CAMuHMdXBNWum7UJ95uT2hwTd1b5C8ebF2LQ4T-A+RS80p7MH=A@mail.gmail.com>
+	Fri, 18 Apr 2014 08:59:37 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAMuHMdXBNWum7UJ95uT2hwTd1b5C8ebF2LQ4T-A+RS80p7MH=A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53511079.2020206@meduna.org>
+References: <53511079.2020206@meduna.org>
+Date: Fri, 18 Apr 2014 09:59:35 -0300
+Message-ID: <CAOMZO5CyFaP2phreKYdwUUB0RcpAhomDzm1QhAjCYtH09yYfQQ@mail.gmail.com>
+Subject: Re: Freescale FEC i.MX28 restart problem
+From: Fabio Estevam <festevam@gmail.com>
+To: Stanislav Meduna <stano@meduna.org>
+Cc: Fabio Estevam <fabio.estevam@freescale.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Jim Baxter <jim_baxter@mentor.com>,
+        Duan Fugang-B38611 <B38611@freescale.com>,
+        Frank Li <Frank.Li@freescale.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Geert,
+On Fri, Apr 18, 2014 at 8:46 AM, Stanislav Meduna <stano@meduna.org> wrote:
+> Hi,
+>
+> I am experiencing a problem with the ethernet controller on an
+> i.MX28 SoC. When doing
+>   /etc/init.d/networking restart
+> sometimes I get "MDIO read timeout" and the controller does not
+> recover. The problem is more prominent if the interface is communicating
+> when the restart is performed.
+>
+> I have found that the reason is the EBERR bit being set somewher.
+> The reference manual states:
+>
+>   Ethernet bus error. This bit indicates a system bus error occurs when a DMA
+>   transaction is underway (Signal dma_eberr_int asserted). When the EBERR bit
+>   is set, ETHER_EN is cleared, halting frame processing by the MAC. When this
+>   occurs, software needs to insure proper actions (possibly resetting the
+>   system) to resume normal operation.
+>
+> Clearing the ETHER_EN also disables the MII interrupts, so this
+> explains why the controller does not recover.
+>
+> I assume the EBERR comes because of resetting the FEC at various
+> places - the fec_restart is called from 7 and fec_stop from 5 places.
+> It looks something here does not pay attention whether everything
+> is idle. In addition to EBERR also the BABR and MII are set
+> (MII because there was a MII transaction attempt, for babbling
+> receiver I have no idea). In case it matters the PHY connected
+> is the virtual port of the LAN9303 switch.
+>
+> Trying to put a graceful stop before the reset in fec_restart
+> did not help. The controller is enabled when coming out of both
+> paths involving the reset, it is after this it falls into the
+> error state.
+>
+> My platform is 3.12.15-rt, but I assume the problem is not rt-related.
+>
+> The following patch remedies the situation, but this is just
+> a demonstration and not a solution. The warning is sometimes
+> output up to 3 times.
+>
+> Please Cc: me when replying.
+>
+>
+> diff --git a/drivers/net/ethernet/freescale/fec_main.c b/drivers/net/ethernet/freescale/fec_main.c
+> index 1ec398b..cebb912 100644
+> --- a/drivers/net/ethernet/freescale/fec_main.c
+> +++ b/drivers/net/ethernet/freescale/fec_main.c
+> @@ -194,7 +194,7 @@ MODULE_PARM_DESC(macaddr, "FEC Ethernet MAC address");
+>  #define FEC_ENET_MII   ((uint)0x00800000)      /* MII interrupt */
+>  #define FEC_ENET_EBERR ((uint)0x00400000)      /* SDMA bus error */
+>
+> -#define FEC_DEFAULT_IMASK (FEC_ENET_TXF | FEC_ENET_RXF | FEC_ENET_MII)
+> +#define FEC_DEFAULT_IMASK (FEC_ENET_TXF | FEC_ENET_RXF | FEC_ENET_MII | FEC_ENET_EBERR)
+>  #define FEC_RX_DISABLED_IMASK (FEC_DEFAULT_IMASK & (~FEC_ENET_RXF))
+>
+>  /* The FEC stores dest/src/type/vlan, data, and checksum for receive packets.
+> @@ -303,6 +303,31 @@ static void *swap_buffer(void *bufaddr, int len)
+>         return bufaddr;
+>  }
+>
+> +/* Re-enable the controller after an ethernet bus error.
+> + *
+> + * Reference manual: This bit indicates a system bus
+> + * error occurs when a DMA transaction is underway
+> + * (Signal dma_eberr_int asserted). When the EBERR bit
+> + * is set, ETHER_EN is cleared, halting frame processing
+> + * by the MAC. When this occurs, software needs to insure
+> + * proper actions (possibly resetting the system) to resume
+> + * normal operation.
+> + *
+> + * This seems to happen when we restart the controller.
+> + */
+> +static inline void fec_enet_clear_eberr_if_needed(struct net_device *ndev)
+> +{
+> +       struct fec_enet_private *fep = netdev_priv(ndev);
+> +       u32 ctl = readl(fep->hwp + FEC_ECNTRL);
+> +
+> +       if (!(ctl & 2)) {
+> +               ctl |= 2;
+> +               writel(FEC_ENET_EBERR, fep->hwp + FEC_IEVENT);
+> +               writel(ctl, fep->hwp + FEC_ECNTRL);
+> +               netdev_warn(ndev, "Re-enabled after EBERR\n");
+> +       }
+> +}
+> +
+>  static int
+>  fec_enet_clear_csum(struct sk_buff *skb, struct net_device *ndev)
+>  {
+> @@ -1059,6 +1084,10 @@ fec_enet_interrupt(int irq, void *dev_id)
+>                         ret = IRQ_HANDLED;
+>                         complete(&fep->mdio_done);
+>                 }
+> +
+> +               if (int_events & FEC_ENET_EBERR)
+> +                       fec_enet_clear_eberr_if_needed(ndev);
+> +
+>         } while (int_events);
+>
+>         return ret;
+> @@ -1200,6 +1229,8 @@ static int fec_enet_mdio_read(struct mii_bus *bus, int mii_id, int regnum)
+>         struct fec_enet_private *fep = bus->priv;
+>         unsigned long time_left;
+>
+> +       fec_enet_clear_eberr_if_needed(fep->netdev);
+> +
+>         fep->mii_timeout = 0;
+>         init_completion(&fep->mdio_done);
+>
+> @@ -1227,6 +1258,8 @@ static int fec_enet_mdio_write(struct mii_bus *bus, int mii_id, int regnum,
+>         struct fec_enet_private *fep = bus->priv;
+>         unsigned long time_left;
+>
+> +       fec_enet_clear_eberr_if_needed(fep->netdev);
+> +
+>         fep->mii_timeout = 0;
+>         init_completion(&fep->mdio_done);
 
-On Fri, Apr 18, 2014 at 10:04:15AM +0200, Geert Uytterhoeven wrote:
-> On Thu, Apr 17, 2014 at 7:42 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> > In order to deal with an firmware bug on a specific ppc32 platform
-> > (longtrail), early_init_dt_scan_memory() looks for a node called
-> > memory@0 on all platforms. Restrict this quirk to ppc32 kernels only.
-> 
-> This breaks backwards compatibilty with old DTSes (at least on ARM/MIPS,
-> where you added the missing property in patches 1 and 2 of the series)?
-
-As Rob said in response to 0/3, the MIPSs would likely not be affected,
-since they embed the DT.
-
-> For the Longtrail, I don't care much anymore, as mine died in 2004.
-> AFAIK, there have never been many users anyway.
-
-There are still a few mentions of it under arch/powerpc/, so I wouldn't
-want to be the one to kill it off...
-
-How about the below v2 3/3 to address the ARM platform?
+Could you try the latest Russell's FEC patches available at?
+http://ftp.arm.linux.org.uk/cgit/linux-arm.git/log/?h=fec-testing
 
 Regards,
 
-Leif
-
->From 6fa0b837ad71780334eb97d63c507165b6c57add Mon Sep 17 00:00:00 2001
-From: Leif Lindholm <leif.lindholm@linaro.org>
-Date: Thu, 17 Apr 2014 14:24:47 +0100
-Subject: [PATCH] of: arm: powerpc: Restrict memory@0 node handling to
- affected platforms
-
-In order to deal with a firmware bug on a specific ppc32 platform
-(longtrail), early_init_dt_scan_memory() looks for a node called
-memory@0 on all platforms, for all nodes lacking a device_type.
-Restrict this quirk to ppc32 and the arm mach-ux500 platforms (one of
-which has depended on this special handling).
-
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Rutland <mark.rutland@arm.com>
-Cc: devicetree@vger.kernel.org
----
- arch/arm/mach-ux500/Kconfig |    1 +
- arch/powerpc/Kconfig        |    1 +
- drivers/of/Kconfig          |    3 +++
- drivers/of/fdt.c            |   10 +++++++++-
- 4 files changed, 14 insertions(+), 1 deletion(-)
-
-diff --git a/arch/arm/mach-ux500/Kconfig b/arch/arm/mach-ux500/Kconfig
-index b41a42d..e6b0c3b 100644
---- a/arch/arm/mach-ux500/Kconfig
-+++ b/arch/arm/mach-ux500/Kconfig
-@@ -13,6 +13,7 @@ config ARCH_U8500
- 	select CLKSRC_NOMADIK_MTU
- 	select HAVE_ARM_SCU if SMP
- 	select HAVE_ARM_TWD if SMP
-+	select OF_MEMORY_AT_0_QUIRK
- 	select PINCTRL
- 	select PINCTRL_ABX500
- 	select PINCTRL_NOMADIK
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index e099899..d78452d 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -3,6 +3,7 @@ source "arch/powerpc/platforms/Kconfig.cputype"
- config PPC32
- 	bool
- 	default y if !PPC64
-+	select OF_MEMORY_AT_0_QUIRK
- 
- config 32BIT
- 	bool
-diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-index 889005f..230c747 100644
---- a/drivers/of/Kconfig
-+++ b/drivers/of/Kconfig
-@@ -77,4 +77,7 @@ config OF_RESERVED_MEM
- 	help
- 	  Helpers to allow for reservation of memory regions
- 
-+config OF_MEMORY_AT_0_QUIRK
-+	def_bool n
-+
- endmenu # OF
-diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-index fa16a91..1b80b94 100644
---- a/drivers/of/fdt.c
-+++ b/drivers/of/fdt.c
-@@ -887,14 +887,22 @@ int __init early_init_dt_scan_memory(unsigned long node, const char *uname,
- 
- 	/* We are scanning "memory" nodes only */
- 	if (type == NULL) {
-+#ifdef CONFIG_OF_MEMORY_AT_0_QUIRK
- 		/*
- 		 * The longtrail doesn't have a device_type on the
- 		 * /memory node, so look for the node called /memory@0.
-+		 * Converted to generic quirk to handle later platforms
-+		 * with inforrect DTs that work only because of this
-+		 * special handling.
- 		 */
- 		if (depth != 1 || strcmp(uname, "memory@0") != 0)
- 			return 0;
--	} else if (strcmp(type, "memory") != 0)
-+#else
-+		return 0;
-+#endif
-+	} else if (strcmp(type, "memory") != 0) {
- 		return 0;
-+	}
- 
- 	reg = of_get_flat_dt_prop(node, "linux,usable-memory", &l);
- 	if (reg == NULL)
--- 
-1.7.10.4
-
+Fabio Estevam
