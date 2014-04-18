@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665AbaDRJ01 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:26:27 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:46052 "EHLO
+	id S1753566AbaDRJ0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:26:21 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:46058 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752457AbaDRJWu (ORCPT
+	by vger.kernel.org with ESMTP id S1752467AbaDRJWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:50 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 68/72] isdnloop: several buffer overflows
-Date: Fri, 18 Apr 2014 11:22:41 +0200
-Message-Id: <f11c98eec721c6c00d1c56289ebf35971037b967.1397812482.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        Herbert Xu <herbert@gondor.apana.org.au>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 72/72] crypto: ghash-clmulni-intel - use C implementation for setkey()
+Date: Fri, 18 Apr 2014 11:22:45 +0200
+Message-Id: <a9149a366f5be56e50e9ec52bad0f616293fb640.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -23,102 +23,114 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-[ Upstream commit 7563487cbf865284dcd35e9ef5a95380da046737 ]
+commit 8ceee72808d1ae3fb191284afc2257a2be964725 upstream.
 
-There are three buffer overflows addressed in this patch.
+The GHASH setkey() function uses SSE registers but fails to call
+kernel_fpu_begin()/kernel_fpu_end(). Instead of adding these calls, and
+then having to deal with the restriction that they cannot be called from
+interrupt context, move the setkey() implementation to the C domain.
 
-1) In isdnloop_fake_err() we add an 'E' to a 60 character string and
-then copy it into a 60 character buffer.  I have made the destination
-buffer 64 characters and I'm changed the sprintf() to a snprintf().
+Note that setkey() does not use any particular SSE features and is not
+expected to become a performance bottleneck.
 
-2) In isdnloop_parse_cmd(), p points to a 6 characters into a 60
-character buffer so we have 54 characters.  The ->eazlist[] is 11
-characters long.  I have modified the code to return if the source
-buffer is too long.
-
-3) In isdnloop_command() the cbuf[] array was 60 characters long but the
-max length of the string then can be up to 79 characters.  I made the
-cbuf array 80 characters long and changed the sprintf() to snprintf().
-I also removed the temporary "dial" buffer and changed it to use "p"
-directly.
-
-Unfortunately, we pass the "cbuf" string from isdnloop_command() to
-isdnloop_writecmd() which truncates anything over 60 characters to make
-it fit in card->omsg[].  (It can accept values up to 255 characters so
-long as there is a '\n' character every 60 characters).  For now I have
-just fixed the memory corruption bug and left the other problems in this
-driver alone.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Acked-by: H. Peter Anvin <hpa@linux.intel.com>
+Fixes: 0e1227d356e9b (crypto: ghash - Add PCLMULQDQ accelerated implementation)
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/isdn/isdnloop/isdnloop.c | 17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ arch/x86/crypto/ghash-clmulni-intel_asm.S  | 29 -----------------------------
+ arch/x86/crypto/ghash-clmulni-intel_glue.c | 14 +++++++++++---
+ 2 files changed, 11 insertions(+), 32 deletions(-)
 
-diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
-index e1f8748ff25d..5a4da94aefb0 100644
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -518,9 +518,9 @@ static isdnloop_stat isdnloop_cmd_table[] =
- static void
- isdnloop_fake_err(isdnloop_card *card)
- {
--	char buf[60];
-+	char buf[64];
+diff --git a/arch/x86/crypto/ghash-clmulni-intel_asm.S b/arch/x86/crypto/ghash-clmulni-intel_asm.S
+index 586f41aac361..185fad49d86f 100644
+--- a/arch/x86/crypto/ghash-clmulni-intel_asm.S
++++ b/arch/x86/crypto/ghash-clmulni-intel_asm.S
+@@ -24,10 +24,6 @@
+ .align 16
+ .Lbswap_mask:
+ 	.octa 0x000102030405060708090a0b0c0d0e0f
+-.Lpoly:
+-	.octa 0xc2000000000000000000000000000001
+-.Ltwo_one:
+-	.octa 0x00000001000000000000000000000001
  
--	sprintf(buf, "E%s", card->omsg);
-+	snprintf(buf, sizeof(buf), "E%s", card->omsg);
- 	isdnloop_fake(card, buf, -1);
- 	isdnloop_fake(card, "NAK", -1);
+ #define DATA	%xmm0
+ #define SHASH	%xmm1
+@@ -134,28 +130,3 @@ ENTRY(clmul_ghash_update)
+ .Lupdate_just_ret:
+ 	ret
+ ENDPROC(clmul_ghash_update)
+-
+-/*
+- * void clmul_ghash_setkey(be128 *shash, const u8 *key);
+- *
+- * Calculate hash_key << 1 mod poly
+- */
+-ENTRY(clmul_ghash_setkey)
+-	movaps .Lbswap_mask, BSWAP
+-	movups (%rsi), %xmm0
+-	PSHUFB_XMM BSWAP %xmm0
+-	movaps %xmm0, %xmm1
+-	psllq $1, %xmm0
+-	psrlq $63, %xmm1
+-	movaps %xmm1, %xmm2
+-	pslldq $8, %xmm1
+-	psrldq $8, %xmm2
+-	por %xmm1, %xmm0
+-	# reduction
+-	pshufd $0b00100100, %xmm2, %xmm1
+-	pcmpeqd .Ltwo_one, %xmm1
+-	pand .Lpoly, %xmm1
+-	pxor %xmm1, %xmm0
+-	movups %xmm0, (%rdi)
+-	ret
+-ENDPROC(clmul_ghash_setkey)
+diff --git a/arch/x86/crypto/ghash-clmulni-intel_glue.c b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+index 6759dd1135be..d785cf2c529c 100644
+--- a/arch/x86/crypto/ghash-clmulni-intel_glue.c
++++ b/arch/x86/crypto/ghash-clmulni-intel_glue.c
+@@ -30,8 +30,6 @@ void clmul_ghash_mul(char *dst, const be128 *shash);
+ void clmul_ghash_update(char *dst, const char *src, unsigned int srclen,
+ 			const be128 *shash);
+ 
+-void clmul_ghash_setkey(be128 *shash, const u8 *key);
+-
+ struct ghash_async_ctx {
+ 	struct cryptd_ahash *cryptd_tfm;
+ };
+@@ -58,13 +56,23 @@ static int ghash_setkey(struct crypto_shash *tfm,
+ 			const u8 *key, unsigned int keylen)
+ {
+ 	struct ghash_ctx *ctx = crypto_shash_ctx(tfm);
++	be128 *x = (be128 *)key;
++	u64 a, b;
+ 
+ 	if (keylen != GHASH_BLOCK_SIZE) {
+ 		crypto_shash_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
+ 		return -EINVAL;
+ 	}
+ 
+-	clmul_ghash_setkey(&ctx->shash, key);
++	/* perform multiplication by 'x' in GF(2^128) */
++	a = be64_to_cpu(x->a);
++	b = be64_to_cpu(x->b);
++
++	ctx->shash.a = (__be64)((b << 1) | (a >> 63));
++	ctx->shash.b = (__be64)((a << 1) | (b >> 63));
++
++	if (a >> 63)
++		ctx->shash.b ^= cpu_to_be64(0xc2);
+ 
+ 	return 0;
  }
-@@ -903,6 +903,8 @@ isdnloop_parse_cmd(isdnloop_card *card)
- 	case 7:
- 		/* 0x;EAZ */
- 		p += 3;
-+		if (strlen(p) >= sizeof(card->eazlist[0]))
-+			break;
- 		strcpy(card->eazlist[ch - 1], p);
- 		break;
- 	case 8:
-@@ -1133,7 +1135,7 @@ isdnloop_command(isdn_ctrl *c, isdnloop_card *card)
- {
- 	ulong a;
- 	int i;
--	char cbuf[60];
-+	char cbuf[80];
- 	isdn_ctrl cmd;
- 	isdnloop_cdef cdef;
- 
-@@ -1198,7 +1200,6 @@ isdnloop_command(isdn_ctrl *c, isdnloop_card *card)
- 			break;
- 		if ((c->arg & 255) < ISDNLOOP_BCH) {
- 			char *p;
--			char dial[50];
- 			char dcode[4];
- 
- 			a = c->arg;
-@@ -1210,10 +1211,10 @@ isdnloop_command(isdn_ctrl *c, isdnloop_card *card)
- 			} else
- 				/* Normal Dial */
- 				strcpy(dcode, "CAL");
--			strcpy(dial, p);
--			sprintf(cbuf, "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
--				dcode, dial, c->parm.setup.si1,
--				c->parm.setup.si2, c->parm.setup.eazmsn);
-+			snprintf(cbuf, sizeof(cbuf),
-+				 "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
-+				 dcode, p, c->parm.setup.si1,
-+				 c->parm.setup.si2, c->parm.setup.eazmsn);
- 			i = isdnloop_writecmd(cbuf, strlen(cbuf), 0, card);
- 		}
- 		break;
 -- 
 1.9.2
 
