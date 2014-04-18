@@ -1,63 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752962AbaDRJXn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:23:43 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45911 "EHLO
+	id S1752856AbaDRJXj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:23:39 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45912 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752128AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752130AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexander.deucher@amd.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 17/72] drm/radeon: enable speaker allocation setup on dce3.2
-Date: Fri, 18 Apr 2014 11:21:50 +0200
-Message-Id: <21a4209d4288e5075edcd46881fd4b78a5a9bf3d.1397812482.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Nikolay Aleksandrov <nikolay@redhat.com>,
+        Florian Westphal <fw@strlen.de>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 24/72] net: fix for a race condition in the inet frag code
+Date: Fri, 18 Apr 2014 11:21:57 +0200
+Message-Id: <e8443124a1ba9ceee59fb611c534957278f7d44e.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 In-Reply-To: <cover.1397812482.git.jslaby@suse.cz>
 References: <cover.1397812482.git.jslaby@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex Deucher <alexander.deucher@amd.com>
+From: Nikolay Aleksandrov <nikolay@redhat.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit 3803c8e5b50946dd6bc18972d9190757d05648f0 upstream.
+[ Upstream commit 24b9bf43e93e0edd89072da51cf1fab95fc69dec ]
 
-Now that we disable audio while setting up the audio
-hw, we should be able to set this up without hangs.
+I stumbled upon this very serious bug while hunting for another one,
+it's a very subtle race condition between inet_frag_evictor,
+inet_frag_intern and the IPv4/6 frag_queue and expire functions
+(basically the users of inet_frag_kill/inet_frag_put).
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
+What happens is that after a fragment has been added to the hash chain
+but before it's been added to the lru_list (inet_frag_lru_add) in
+inet_frag_intern, it may get deleted (either by an expired timer if
+the system load is high or the timer sufficiently low, or by the
+fraq_queue function for different reasons) before it's added to the
+lru_list, then after it gets added it's a matter of time for the
+evictor to get to a piece of memory which has been freed leading to a
+number of different bugs depending on what's left there.
+
+I've been able to trigger this on both IPv4 and IPv6 (which is normal
+as the frag code is the same), but it's been much more difficult to
+trigger on IPv4 due to the protocol differences about how fragments
+are treated.
+
+The setup I used to reproduce this is: 2 machines with 4 x 10G bonded
+in a RR bond, so the same flow can be seen on multiple cards at the
+same time. Then I used multiple instances of ping/ping6 to generate
+fragmented packets and flood the machines with them while running
+other processes to load the attacked machine.
+
+*It is very important to have the _same flow_ coming in on multiple CPUs
+concurrently. Usually the attacked machine would die in less than 30
+minutes, if configured properly to have many evictor calls and timeouts
+it could happen in 10 minutes or so.
+
+An important point to make is that any caller (frag_queue or timer) of
+inet_frag_kill will remove both the timer refcount and the
+original/guarding refcount thus removing everything that's keeping the
+frag from being freed at the next inet_frag_put.  All of this could
+happen before the frag was ever added to the LRU list, then it gets
+added and the evictor uses a freed fragment.
+
+An example for IPv6 would be if a fragment is being added and is at
+the stage of being inserted in the hash after the hash lock is
+released, but before inet_frag_lru_add executes (or is able to obtain
+the lru lock) another overlapping fragment for the same flow arrives
+at a different CPU which finds it in the hash, but since it's
+overlapping it drops it invoking inet_frag_kill and thus removing all
+guarding refcounts, and afterwards freeing it by invoking
+inet_frag_put which removes the last refcount added previously by
+inet_frag_find, then inet_frag_lru_add gets executed by
+inet_frag_intern and we have a freed fragment in the lru_list.
+
+The fix is simple, just move the lru_add under the hash chain locked
+region so when a removing function is called it'll have to wait for
+the fragment to be added to the lru_list, and then it'll remove it (it
+works because the hash chain removal is done before the lru_list one
+and there's no window between the two list adds when the frag can get
+dropped). With this fix applied I couldn't kill the same machine in 24
+hours with the same setup.
+
+Fixes: 3ef0eb0db4bf ("net: frag, move LRU list maintenance outside of
+rwlock")
+
+CC: Florian Westphal <fw@strlen.de>
+CC: Jesper Dangaard Brouer <brouer@redhat.com>
+CC: David S. Miller <davem@davemloft.net>
+
+Signed-off-by: Nikolay Aleksandrov <nikolay@redhat.com>
+Acked-by: Jesper Dangaard Brouer <brouer@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/gpu/drm/radeon/r600_hdmi.c | 3 ---
- 1 file changed, 3 deletions(-)
+ net/ipv4/inet_fragment.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/radeon/r600_hdmi.c b/drivers/gpu/drm/radeon/r600_hdmi.c
-index 9ba0675d0682..d38b725563e4 100644
---- a/drivers/gpu/drm/radeon/r600_hdmi.c
-+++ b/drivers/gpu/drm/radeon/r600_hdmi.c
-@@ -329,9 +329,6 @@ static void dce3_2_afmt_write_speaker_allocation(struct drm_encoder *encoder)
- 	u8 *sadb;
- 	int sad_count;
+diff --git a/net/ipv4/inet_fragment.c b/net/ipv4/inet_fragment.c
+index c5313a9c019b..e15fb7b2db59 100644
+--- a/net/ipv4/inet_fragment.c
++++ b/net/ipv4/inet_fragment.c
+@@ -281,9 +281,10 @@ static struct inet_frag_queue *inet_frag_intern(struct netns_frags *nf,
  
--	/* XXX: setting this register causes hangs on some asics */
--	return;
--
- 	list_for_each_entry(connector, &encoder->dev->mode_config.connector_list, head) {
- 		if (connector->encoder == encoder)
- 			radeon_connector = to_radeon_connector(connector);
+ 	atomic_inc(&qp->refcnt);
+ 	hlist_add_head(&qp->list, &hb->chain);
++	inet_frag_lru_add(nf, qp);
+ 	spin_unlock(&hb->chain_lock);
+ 	read_unlock(&f->lock);
+-	inet_frag_lru_add(nf, qp);
++
+ 	return qp;
+ }
+ 
 -- 
 1.9.2
 
