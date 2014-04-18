@@ -1,271 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751602AbaDRDOw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 23:14:52 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47778 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751246AbaDRDOs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 23:14:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,882,1389772800"; 
-   d="scan'208";a="522612105"
-From: Chew Chiau Ee <chiau.ee.chew@intel.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Chew Chiau Ee <chiau.ee.chew@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alan Cox <alan@linux.intel.com>, linux-pwm@vger.kernel.org,
+	id S1751666AbaDRDST (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 23:18:19 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:32008 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750970AbaDRDSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 17 Apr 2014 23:18:16 -0400
+X-AuditID: cbfee61b-b7f456d000006dfd-60-5350997654fa
+From: Chao Yu <chao2.yu@samsung.com>
+To: jaegeuk.kim@samsung.com
+Cc: linux-f2fs-devel@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3] pwm_lpss: Add support for PCI devices
-Date: Fri, 18 Apr 2014 19:17:40 +0800
-Message-Id: <1397819860-22213-1-git-send-email-chiau.ee.chew@intel.com>
-X-Mailer: git-send-email 1.7.4.4
+References: <000101cf5a1e$5c051770$140f4650$@samsung.com>
+ <1397787344.7727.32.camel@kjgkr>
+In-reply-to: <1397787344.7727.32.camel@kjgkr>
+Subject: RE: [f2fs-dev] [PATCH] f2fs: fix to enable readahead last NAT block
+Date: Fri, 18 Apr 2014 11:17:16 +0800
+Message-id: <000901cf5ab4$d64171a0$82c454e0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQJ+B5VCbaafyLSB4DaGccbOc89jYQGozRZ8mawFQ1A=
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t9jAd2ymQHBBu+2m1tc3/WXyeLSIneL
+	PXtPslhc3jWHzYHFY/eCz0wefVtWMXp83iQXwBzFZZOSmpNZllqkb5fAlTFp0RfGgovCFY3N
+	W5gbGF/ydzFyckgImEhcefONFcIWk7hwbz1bFyMXh5DAIkaJH3OXsUA4Pxglft3oBKtiE1CR
+	WN7xnwnEFhGQlpj1aR4LiM0skClxr2kGcxcjB1BDjMSTCeogYU4BXYl3328zg9jCAj4Sv9pm
+	gZWzCKhKTJm8FMzmFbCUuL/8DJQtKPFj8j2okeoSk+YtYoaw5SU2r3nLDHGogsSOs68ZIU6w
+	kpjdtpoJokZcYuORWywTGIVmIRk1C8moWUhGzULSsoCRZRWjaGpBckFxUnqukV5xYm5xaV66
+	XnJ+7iZGcOA/k97BuKrB4hCjAAejEg/vha/+wUKsiWXFlbmHGCU4mJVEeJVLA4KFeFMSK6tS
+	i/Lji0pzUosPMUpzsCiJ8x5stQ4UEkhPLEnNTk0tSC2CyTJxcEo1MLreCgj7sZhD9WR62lqN
+	VQXL6htcLQIPfLt51ZsrfMLbuAsJjGUlm7jW+0Qkz1R//PvMyraSmApP/pwtx3/fX1OjyrH4
+	XaP2Sn6L+D3qas5ZT1fGC2mYHbPujxav7Jwy58O+ewoXqxu1Altrzul26voZ9YttOhre4jVT
+	aubj6/vLrl3868B0VImlOCPRUIu5qDgRAAt81fF4AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+Hi,
 
-Not all systems enumerate the PWM devices via ACPI. They can also be exposed
-via the PCI interface.
+> -----Original Message-----
+> From: Jaegeuk Kim [mailto:jaegeuk.kim@samsung.com]
+> Sent: Friday, April 18, 2014 10:16 AM
+> To: Chao Yu
+> Cc: linux-f2fs-devel@lists.sourceforge.net; linux-fsdevel@vger.kernel.org;
+> linux-kernel@vger.kernel.org
+> Subject: Re: [f2fs-dev] [PATCH] f2fs: fix to enable readahead last NAT block
+> 
+> Hi Chao,
+> 
+> How about this?
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Chew, Chiau Ee <chiau.ee.chew@intel.com>
----
- drivers/pwm/pwm-lpss.c |  161 ++++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 130 insertions(+), 31 deletions(-)
+This modification can really fix the previously deadloop problem without bringing
+more problem. I'd like use your patch.
+Thanks.
 
-diff --git a/drivers/pwm/pwm-lpss.c b/drivers/pwm/pwm-lpss.c
-index 449e372..c718ad1 100644
---- a/drivers/pwm/pwm-lpss.c
-+++ b/drivers/pwm/pwm-lpss.c
-@@ -6,6 +6,7 @@
-  * Author: Chew Kean Ho <kean.ho.chew@intel.com>
-  * Author: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
-  * Author: Chew Chiau Ee <chiau.ee.chew@intel.com>
-+ * Author: Alan Cox <alan@linux.intel.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -19,6 +20,9 @@
- #include <linux/module.h>
- #include <linux/pwm.h>
- #include <linux/platform_device.h>
-+#include <linux/pci.h>
-+
-+static int pci_drv, plat_drv;	/* So we know which drivers registered */
- 
- #define PWM				0x00000000
- #define PWM_ENABLE			BIT(31)
-@@ -34,6 +38,16 @@ struct pwm_lpss_chip {
- 	struct pwm_chip chip;
- 	void __iomem *regs;
- 	struct clk *clk;
-+	unsigned long clk_rate;
-+};
-+
-+struct pwm_lpss_boardinfo {
-+	unsigned long clk_rate;
-+};
-+
-+/* BayTrail */
-+static const struct pwm_lpss_boardinfo byt_info = {
-+	25000000
- };
- 
- static inline struct pwm_lpss_chip *to_lpwm(struct pwm_chip *chip)
-@@ -55,7 +69,7 @@ static int pwm_lpss_config(struct pwm_chip *chip, struct pwm_device *pwm,
- 	/* The equation is: base_unit = ((freq / c) * 65536) + correction */
- 	base_unit = freq * 65536;
- 
--	c = clk_get_rate(lpwm->clk);
-+	c = lpwm->clk_rate;
- 	if (!c)
- 		return -EINVAL;
- 
-@@ -113,52 +127,48 @@ static const struct pwm_ops pwm_lpss_ops = {
- 	.owner = THIS_MODULE,
- };
- 
--static const struct acpi_device_id pwm_lpss_acpi_match[] = {
--	{ "80860F09", 0 },
--	{ },
--};
--MODULE_DEVICE_TABLE(acpi, pwm_lpss_acpi_match);
--
--static int pwm_lpss_probe(struct platform_device *pdev)
-+static struct pwm_lpss_chip *pwm_lpss_probe(struct device *dev,
-+					    struct resource *r,
-+					    struct pwm_lpss_boardinfo *info)
- {
- 	struct pwm_lpss_chip *lpwm;
--	struct resource *r;
- 	int ret;
- 
--	lpwm = devm_kzalloc(&pdev->dev, sizeof(*lpwm), GFP_KERNEL);
-+	lpwm = devm_kzalloc(dev, sizeof(*lpwm), GFP_KERNEL);
- 	if (!lpwm)
--		return -ENOMEM;
--
--	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+		return ERR_PTR(-ENOMEM);
- 
--	lpwm->regs = devm_ioremap_resource(&pdev->dev, r);
-+	lpwm->regs = devm_ioremap_resource(dev, r);
- 	if (IS_ERR(lpwm->regs))
--		return PTR_ERR(lpwm->regs);
--
--	lpwm->clk = devm_clk_get(&pdev->dev, NULL);
--	if (IS_ERR(lpwm->clk)) {
--		dev_err(&pdev->dev, "failed to get PWM clock\n");
--		return PTR_ERR(lpwm->clk);
-+		return lpwm->regs;
-+
-+	if (info) {
-+		lpwm->clk_rate = info->clk_rate;
-+	} else {
-+		lpwm->clk = devm_clk_get(dev, NULL);
-+		if (IS_ERR(lpwm->clk)) {
-+			dev_err(dev, "failed to get PWM clock\n");
-+			return ERR_CAST(lpwm->clk);
-+		}
-+		lpwm->clk_rate = clk_get_rate(lpwm->clk);
- 	}
- 
--	lpwm->chip.dev = &pdev->dev;
-+	lpwm->chip.dev = dev;
- 	lpwm->chip.ops = &pwm_lpss_ops;
- 	lpwm->chip.base = -1;
- 	lpwm->chip.npwm = 1;
- 
- 	ret = pwmchip_add(&lpwm->chip);
- 	if (ret) {
--		dev_err(&pdev->dev, "failed to add PWM chip: %d\n", ret);
--		return ret;
-+		dev_err(dev, "failed to add PWM chip: %d\n", ret);
-+		return ERR_PTR(ret);
- 	}
- 
--	platform_set_drvdata(pdev, lpwm);
--	return 0;
-+	return lpwm;
- }
- 
--static int pwm_lpss_remove(struct platform_device *pdev)
-+static int pwm_lpss_remove(struct pwm_lpss_chip *lpwm)
- {
--	struct pwm_lpss_chip *lpwm = platform_get_drvdata(pdev);
- 	u32 ctrl;
- 
- 	ctrl = readl(lpwm->regs + PWM);
-@@ -167,15 +177,104 @@ static int pwm_lpss_remove(struct platform_device *pdev)
- 	return pwmchip_remove(&lpwm->chip);
- }
- 
--static struct platform_driver pwm_lpss_driver = {
-+static int pwm_lpss_probe_pci(struct pci_dev *pdev,
-+			      const struct pci_device_id *id)
-+{
-+	const struct pwm_lpss_boardinfo *info;
-+	struct pwm_lpss_chip *lpwm;
-+	int err;
-+
-+	err = pci_enable_device(pdev);
-+	if (err < 0)
-+		return err;
-+
-+	info = (struct pwm_lpss_boardinfo *)id->driver_data;
-+	lpwm = pwm_lpss_probe(&pdev->dev, &pdev->resource[0], info);
-+	if (IS_ERR(lpwm))
-+		return PTR_ERR(lpwm);
-+
-+	pci_set_drvdata(pdev, lpwm);
-+	return 0;
-+}
-+
-+static void pwm_lpss_remove_pci(struct pci_dev *pdev)
-+{
-+	struct pwm_lpss_chip *lpwm = pci_get_drvdata(pdev);
-+
-+	pwm_lpss_remove(lpwm);
-+	pci_disable_device(pdev);
-+}
-+
-+static struct pci_device_id pwm_lpss_pci_ids[] = {
-+	{ PCI_VDEVICE(INTEL, 0x0f08), (unsigned long)&byt_info},
-+	{ PCI_VDEVICE(INTEL, 0x0f09), (unsigned long)&byt_info},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(pci, pwm_lpss_pci_ids);
-+
-+static struct pci_driver pwm_lpss_driver_pci = {
-+	.name = "pwm-lpss",
-+	.id_table = pwm_lpss_pci_ids,
-+	.probe = pwm_lpss_probe_pci,
-+	.remove = pwm_lpss_remove_pci,
-+};
-+
-+static int pwm_lpss_probe_platform(struct platform_device *pdev)
-+{
-+	struct pwm_lpss_chip *lpwm;
-+	struct resource *r;
-+
-+	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+
-+	lpwm = pwm_lpss_probe(&pdev->dev, r, NULL);
-+	if (IS_ERR(lpwm))
-+		return PTR_ERR(lpwm);
-+
-+	platform_set_drvdata(pdev, lpwm);
-+	return 0;
-+}
-+
-+static int pwm_lpss_remove_platform(struct platform_device *pdev)
-+{
-+	struct pwm_lpss_chip *lpwm = platform_get_drvdata(pdev);
-+
-+	return pwm_lpss_remove(lpwm);
-+}
-+
-+static const struct acpi_device_id pwm_lpss_acpi_match[] = {
-+	{ "80860F09", 0 },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(acpi, pwm_lpss_acpi_match);
-+
-+static struct platform_driver pwm_lpss_driver_platform = {
- 	.driver = {
- 		.name = "pwm-lpss",
- 		.acpi_match_table = pwm_lpss_acpi_match,
- 	},
--	.probe = pwm_lpss_probe,
--	.remove = pwm_lpss_remove,
-+	.probe = pwm_lpss_probe_platform,
-+	.remove = pwm_lpss_remove_platform,
- };
--module_platform_driver(pwm_lpss_driver);
-+
-+static int __init pwm_init(void)
-+{
-+	pci_drv = pci_register_driver(&pwm_lpss_driver_pci);
-+	plat_drv = platform_driver_register(&pwm_lpss_driver_platform);
-+	if (pci_drv && plat_drv)
-+		return pci_drv;
-+
-+	return 0;
-+}
-+module_init(pwm_init);
-+
-+static void __exit pwm_exit(void)
-+{
-+	if (!pci_drv)
-+		pci_unregister_driver(&pwm_lpss_driver_pci);
-+	if (!plat_drv)
-+		platform_driver_unregister(&pwm_lpss_driver_platform);
-+}
-+module_exit(pwm_exit);
- 
- MODULE_DESCRIPTION("PWM driver for Intel LPSS");
- MODULE_AUTHOR("Mika Westerberg <mika.westerberg@linux.intel.com>");
--- 
-1.7.4.4
+One comment as following.
+
+Reviewed-by: Chao Yu <chao2.yu@samsung.com>
+
+> 
+> ---
+>  fs/f2fs/f2fs.h | 1 +
+>  fs/f2fs/node.c | 6 ++++--
+>  2 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index 55152de..556d06b 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -244,6 +244,7 @@ static inline void set_raw_extent(struct extent_info
+> *ext,
+>  struct f2fs_nm_info {
+>  	block_t nat_blkaddr;		/* base disk address of NAT */
+>  	nid_t max_nid;			/* maximum possible node ids */
+> +	nid_t available_nids;		/* maximum available node ids */
+>  	nid_t next_scan_nid;		/* the next nid to be scanned */
+>  	unsigned int ram_thresh;	/* control the memory footprint */
+> 
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index 837f5fd..5fb484c 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -1447,7 +1447,7 @@ bool alloc_nid(struct f2fs_sb_info *sbi, nid_t
+> *nid)
+>  	struct f2fs_nm_info *nm_i = NM_I(sbi);
+>  	struct free_nid *i = NULL;
+>  retry:
+> -	if (unlikely(sbi->total_valid_node_count + 1 >= nm_i->max_nid))
+> +	if (unlikely(sbi->total_valid_node_count + 1 >= nm_i->available_nids))
+
+Could we use the last valid nid and modify like this?
+
+	if (unlikely(sbi->total_valid_node_count + 1 > nm_i->available_nids))
+
+>  		return false;
+> 
+>  	spin_lock(&nm_i->free_nid_list_lock);
+> @@ -1859,8 +1859,10 @@ static int init_node_manager(struct f2fs_sb_info
+> *sbi)
+>  	nat_segs = le32_to_cpu(sb_raw->segment_count_nat) >> 1;
+>  	nat_blocks = nat_segs << le32_to_cpu(sb_raw->log_blocks_per_seg);
+> 
+> +	nm_i->max_nid = NAT_ENTRY_PER_BLOCK * nat_blocks;
+> +
+>  	/* not used nids: 0, node, meta, (and root counted as valid node) */
+> -	nm_i->max_nid = NAT_ENTRY_PER_BLOCK * nat_blocks - 3;
+> +	nm_i->available_nids = nm_i->max_nid - 3;
+>  	nm_i->fcnt = 0;
+>  	nm_i->nat_cnt = 0;
+>  	nm_i->ram_thresh = DEF_RAM_THRESHOLD;
+> --
+> 1.8.4.474.g128a96c
+> 
+> 
+> --
+> Jaegeuk Kim
+> Samsung
 
