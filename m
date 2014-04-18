@@ -1,90 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751290AbaDRCDO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 22:03:14 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:15773 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970AbaDRCDM (ORCPT
+	id S1751386AbaDRCGR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 22:06:17 -0400
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:39903 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbaDRCGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 22:03:12 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfee691-b7efc6d0000039d3-cb-535087dec48f
-Content-transfer-encoding: 8BIT
-Message-id: <1397786468.7727.31.camel@kjgkr>
-Subject: Re: [PATCH V2] fs/f2fs/node.c: add static to recover_inline_xattr
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        akpm <akpm@linux-foundation.org>
-Date: Fri, 18 Apr 2014 11:01:08 +0900
-In-reply-to: <20140417180154.7a7d35366ef948ab867b5108@skynet.be>
-References: <20140417180154.7a7d35366ef948ab867b5108@skynet.be>
-Organization: Samsung
-X-Mailer: Evolution 3.2.3-0ubuntu6
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t8zA9177QHBBvMnqVrMWb+GzaLr9082
-	i8u75rA5MHucmPGbxeNu9z9mj8+b5AKYo7hsUlJzMstSi/TtErgytt7qYSlYzF7x5s0mtgbG
-	H6xdjJwcEgImEnNuf2KEsMUkLtxbz9bFyMUhJLCMUWLR4yZGmKKHe18wQiQWMUpsWPaOCSTB
-	KyAo8WPyPZYuRg4OZgF5iSOXskHCzALqEpPmLWKGqH/FKLGy9QcjRL2OxNc5n5hBbGEBL4ne
-	q9/BetkEtCU27zcACQsJKEq83X8X7DgRAVWJxy9us0PMDJZYv74NbAwLUPzQp49sIDangIPE
-	wsd7WCB67SWWT70PVsMvICpxeOF2Zoj7lSR2t3eyg9wjIbCPXWJ2908miEECEt8mHwK7QUJA
-	VmLTAah6SYmDK26wTGCUmIXky1kIX85C8uUCRuZVjKKpBckFxUnpRaZ6xYm5xaV56XrJ+bmb
-	GCFxNnEH4/0D1ocYk4E2TmSWEk3OB8ZpXkm8obGZkYWpiamxkbmlGWnCSuK86Y+SgoQE0hNL
-	UrNTUwtSi+KLSnNSiw8xMnFwSjUwTipXufjca2dpLM+hT5IlepMenPcuvmo8u6JAsuo5t+X8
-	CTPDUjKDeKX5f/ovFvSv4b+vc8VObu8CtQUbviaLnPXlef3qAevO4rb3ce4rnzw9Ul8puZPN
-	99Q5m7xzq84m3pvU8cZ6/bKbu2wt5sT/2f/xGUdN/cEl2+P237FMjHgzT9xxD7vxHCWW4oxE
-	Qy3mouJEAAylG1vJAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprMKsWRmVeSWpSXmKPExsVy+t9jAd177QHBBtuWKVrMWb+GzaLr9082
-	i8u75rA5MHucmPGbxeNu9z9mj8+b5AKYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwM
-	dQ0tLcyVFPISc1NtlVx8AnTdMnOANikplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0Jgusx
-	MkADCesYM7be6mEpWMxe8ebNJrYGxh+sXYycHBICJhIP975ghLDFJC7cW8/WxcjFISSwiFFi
-	w7J3TCAJXgFBiR+T77F0MXJwMAvISxy5lA0SZhZQl5g0bxEzRP0rRomVrT8YIep1JL7O+cQM
-	YgsLeEn0Xv0O1ssmoC2xeb8BSFhIQFHi7f67YDeICKhKPH5xmx1iZrDE+vVtYGNYgOKHPn1k
-	A7E5BRwkFj7ewwLRay+xfOp9sBp+AVGJwwu3M0PcrySxu72TfQKj0CwkV89CuHoWkqsXMDKv
-	YhRNLUguKE5KzzXUK07MLS7NS9dLzs/dxAiO4mdSOxhXNlgcYhTgYFTi4RXQCwgWYk0sK67M
-	PcQowcGsJMKrXAoU4k1JrKxKLcqPLyrNSS0+xJgMdPhEZinR5HxggskriTc0NjEzsjQyszAy
-	MTcnTVhJnPdAq3WgkEB6YklqdmpqQWoRzBYmDk6pBsb8W2xlsy7zWPm8jFeQ/rL9qOmS7Qp7
-	Hq1tK3D6q7q7/bX3hfMf5Ntq2NfyeJe4CC0/6fmJa4bo5uL5PQGHpdvOOznM/yDxJXV5bWVR
-	l+BDz5Uzp0yYtOpd8hVrdpUylem3p7os7ZTw/83/x/afEtMexbgTK2dFPVzNvG2emoyy6567
-	P+/z7y9TYinOSDTUYi4qTgQAJerqqyYDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 17 Apr 2014 22:06:12 -0400
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+To: backports@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-zigbee-devel@lists.sourceforge.net,
+        "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Subject: [ANNOUNCE] backports-3.14-1 released
+Date: Thu, 17 Apr 2014 19:06:02 -0700
+Message-Id: <1397786762-17656-1-git-send-email-mcgrof@do-not-panic.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Linux backports [0] backports-v3.14-1 is out [1]. Thanks for Hauke
+for taking the torch while I was in limbo. The release obviously
+has all the things that upstream has so there's no point in mentioning
+any of that, but new drivers are igb, added by Stefan. This release
+also has a new backports-update-manager under devel/ which will do
+what you expect -- download any new kernels / keep trees in sycn and
+remove any stale once we stop supporting them. One of the biggest changes
+here is also the more extensive use of Coccinelle SmPL grammar [2] to
+help further with automatic backports. I've written a piece of great
+lengh to get people excited about the potential here. Hopefully, more
+than anything, you'll just see by example how we do things better with
+SmPL.
 
-This was already resolved by Jingoo Han.
-Thanks,
+[0] https://backports.wiki.kernel.org/
+[1] http://www.kernel.org/pub/linux/kernel/projects/backports/stable/v3.14/backports-3.14-1.tar.xz
+[2] http://coccinelle.lip6.fr/
+[3] http://www.do-not-panic.com/2014/04/automatic-linux-kernel-backporting-with-coccinelle.html
 
-2014-04-17 (목), 18:01 +0200, Fabian Frederick:
-> recover_inline_xattr is only used in node.c
-> 
-> Cc: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Signed-off-by: Fabian Frederick <fabf@skynet.be>
-> ---
->  fs/f2fs/node.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-> index a161e95..3ce4beb 100644
-> --- a/fs/f2fs/node.c
-> +++ b/fs/f2fs/node.c
-> @@ -1534,7 +1534,7 @@ void recover_node_page(struct f2fs_sb_info *sbi, struct page *page,
->  	clear_node_page_dirty(page);
->  }
->  
-> -void recover_inline_xattr(struct inode *inode, struct page *page)
-> +static void recover_inline_xattr(struct inode *inode, struct page *page)
->  {
->  	struct f2fs_sb_info *sbi = F2FS_SB(inode->i_sb);
->  	void *src_addr, *dst_addr;
+Eliad Peller (1):
+      backports: ifdef some pci functions
 
--- 
-Jaegeuk Kim
-Samsung
+Emmanuel Grumbach (2):
+      backports: add support for prandom_bytes
+      backports: fix iwlwifi threaded IRQ patches
+
+Hauke Mehrtens (98):
+      backports: remove mdio driver code
+      backports: remove eeprom_93cx6.h header
+      backports: remove acpi_video_register_with_quirks()
+      backports: remove atomic_inc_not_zero_hint()
+      backports: remove irq_set_affinity_hint()
+      backports: remove efi
+      backports: remove ethtool_rxfh_indir_default()
+      backports: remove fb_enable_skip_vt_switch()
+      backports: remove vlan_hw_offload_capable()
+      backports: remove hex_byte_pack()
+      backports: remove kref_get_unless_zero()
+      backports: remove usb_unlink_anchored_urbs()
+      backports: remove backport/backport-include/linux/vgaarb.h
+      backports: remove own version of include/linux/wireless.h
+      backports: remove own version of include/linux/unaligned/*.h
+      backports: check for define in module_driver and not kernel version
+      backports: add backport_ prefix in front of BQL functions
+      backports: remove duplicate allyesconfig from help
+      backports: add backport_ in front of sign_extend32()
+      backports: refresh patches on next-20131129
+      backports: remove DMI_EXACT_MATCH
+      backports: add missing include for linux/of.h
+      backports: add LINUX_BACKPORT infront of functions
+      backports: remove unused workqueue backports
+      backports: so not add netdev_features_t on RHEL 6.5
+      backports: add missing LINUX_BACKPORT() on various places
+      backports: fix skb_add_rx_fragi() for SLES 11 SP3
+      backports: do not call dev_hw_addr_random()
+      backports: add devm_kmalloc()
+      backports: add netdev_notify_peers()
+      backports: add ARPHRD_6LOWPAN
+      backports: add include/trace/events/v4l2.h file
+      backports: fix number of arguments of phy_connect()
+      backports: make b44 depend on kernel > 2.6.28
+      backports: remove usage of members of struct property for kernel < 2.6.39
+      backports: add include/net/af_ieee802154.h file
+      backports: remove usage of addr_assign_type in 6lowpan.c
+      backports: remove CRC8 backport
+      backports: add printk_ratelimited()
+      backports: build some regulator drivers only with recent kernels
+      backports: copy include/uapi/linux/vsp1.h
+      backports: fix i2c_add_mux_adapter() parameters
+      backports: update kernel versions
+      backports: refresh on next-20131224
+      backports: add prefix infront of led_blink_set()
+      backports: add missing include
+      gentree: create *.tar.gz instead of *.tar.bz for kernel.org
+      backports: add ether_addr_equal_64bits()
+      backports: add ether_addr_equal_unaligned()
+      backports: do not build ACT8865 with kernel < 3.12
+      backports: add missing header file
+      backports: refresh on next-20140106
+      backports: adapt to changes in netdev select_queue call
+      backports: add USB_DEVICE_INTERFACE_CLASS
+      backports: do not activate BCMA_HOST_SOC on kernel < 3.7
+      backports: add sdio device id list
+      backports: add ATTRIBUTE_GROUPS unconditionally
+      backports: add linux/irqdomain.h
+      backports: fix header of phy_mii_ioctl()
+      backports: backport get_stats in alx driver
+      backports: add IS_BUILTIN()
+      backports: add prefix infront of ether_addr_equal_{unaligned, 64bits}()
+      backports: fix led_trigger warning with old kernel versions
+      backports: fix unused mwifiex_sdio_resume() warning
+      backports: fix unused var ret warning
+      backports: fix unused atl1e_rx_mode() warning
+      backports: fix unused hidp_get_raw_report() warning
+      backports: refresh on next-20140117
+      backports: add DECLARE_SOCKADDR
+      backports: add __sockaddr_check_size()
+      backports: always access net/ieee802154/ with make
+      backports: refresh on next-20140124
+      backports: fix uninstall filename
+      backports: refresh on next-20140131
+      backports: add led_trigger_blink{_oneshot}()
+      backports: remove bluetooth HIDP transport-driver functions
+      backports: add compat_put_timespec()
+      backports: update sch_fq_codel_core.c
+      backports: update test kernel versions
+      backports: refresh patches on next-20140207
+      backports: REGULATOR_S5M8767 depends on kernel 3.15
+      backports: add ipv6_addr_hash()
+      backports: add ETH_P_TEB and ETH_P_8021AD
+      backports: copy cordic from kernel
+      backports: copy sch_codel.c from kernel
+      backports: copy sch_fq_codel.c from kernel
+      backports: fix indenting
+      backports: add atomic64_set()
+      backports: add VHCI_MINOR
+      backports: add snd_card_new()
+      backports: add pci_enable_msi_range()
+      backports: add pci_enable_msix_range()
+      backports: add devm_kstrdup()
+      backports: add of_property_count_u32_elems()
+      backports: add of_property_read_u32_index()
+      backports: add NLA_S{9,16,32,64}
+      backports: remove usage of net_device member qdisc_tx_busylock
+      backports: refresh patches on next-20140221
+
+Ido Yariv (1):
+      backports: backport ACPI_HANDLE(dev)
+
+Johannes Berg (9):
+      ckmake: sort kernel releases properly
+      backports: backport hex2bin()
+      gentree: combine spatches (unless using --gitdebug)
+      backports: backport multicast list handling in iwlwifi mvm
+      backports: backport power efficient workqueues
+      backports: make BACKPORT_BUILD_LEDS depend on LEDS_CLASS=n
+      backports: conditionally access net/ieee802154/ with make
+      backports: fix compilation with CONFIG_OF
+      backports: add crypto/ccm backport
+
+Luis R. Rodriguez (25):
+      backports: backport ktime_to_ms()
+      backports: backport getrawmonotonic() with do_posix_clock_monotonic_gettime()
+      backports: refresh patches for next-20131206
+      backports: add Python based backports-update-manager
+      backports: convert the 62-usb_driver_lpm patch series to SmPL
+      backports: convert 11-dev-pm-ops patch series to SmPL
+      backports: refresh patches for next-20131206 a second time
+      backports: backport MPLS support
+      backports: make WL1251_SPI depend on >= 3.5
+      backports: bump kernel reqs for WL1251_SDIO and WLCORE_SDIO
+      backports: bump drivers dependency that require I2C bus classes
+      backports: define ETH_P_80221
+      backports: backport definition of struct frag_queue
+      backports: backport skb_unclone()
+      backports: backport frag helper functions for mem limit tracking
+      backports: backport inet_frag_maybe_warn_overflow()
+      backports: add threaded Coccinelle spatch support
+      backports: use --ignore-removal for git add
+      backports: add git diff support to lib/bpgit.py
+      backports: add support for testing only a single Coccinelle SmPL patch
+      backports: add Coccinelle SmPL profiling support to gentree.py
+      Revert "backports: backport MPLS support"
+      backports: remove bluetooth HIDP backport
+      backports: bump bluetooth backport to require >= 2.6.39
+      backports: refresh patches for v3.14
+
+Stefan Assmann (12):
+      backports: igb fixes for linux-3.13
+      backports: igb fixes for linux-3.12
+      backports: igb fixes for linux-3.9
+      backports: igb fixes for linux-3.8
+      backports: igb fixes for linux-3.7
+      backports: igb fixes for linux-3.6
+      backports: igb fixes for linux-3.5
+      backports: igb fixes for linux-3.4
+      backports: igb fixes for linux-3.3
+      backports: igb fixes for linux-3.2
+      backports: igb fixes for linux-3.1
+      backports: enable igb and add defconfig
 
