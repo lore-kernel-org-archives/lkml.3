@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504AbaDRDjn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 23:39:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:34894 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaDRDjl (ORCPT
+	id S1751786AbaDRDkw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 23:40:52 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:42257 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751580AbaDRDku (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 23:39:41 -0400
-Date: Thu, 17 Apr 2014 20:39:45 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>
-Subject: Re: [PATCH] ACPICA: Tables: Skip NULL entries in RSDT and XSDT.
-Message-ID: <20140418033945.GA20137@kroah.com>
-References: <261e2207fab4a185b44fb27dbf9bc68588aea713.1397785844.git.lv.zheng@intel.com>
- <20140418024426.GA10084@kroah.com>
- <1AE640813FDE7649BE1B193DEA596E8802554BEC@SHSMSX101.ccr.corp.intel.com>
+	Thu, 17 Apr 2014 23:40:50 -0400
+Message-ID: <53509EB9.5070001@hitachi.com>
+Date: Fri, 18 Apr 2014 12:40:41 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802554BEC@SHSMSX101.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, vegard.nossum@oracle.com,
+        penberg@kernel.org, jamie.iles@oracle.com, mingo@redhat.com,
+        tglx@linutronix.de, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] x86/insn: Extract more information about instructions
+References: <1397497450-6440-1-git-send-email-sasha.levin@oracle.com> <1397497450-6440-3-git-send-email-sasha.levin@oracle.com> <534CA38C.80501@hitachi.com> <534D4BF3.3020102@oracle.com> <534DF868.2020901@zytor.com> <534DFD61.4070700@oracle.com> <534DFEDC.8090503@zytor.com> <534E0124.70700@oracle.com> <534E1559.8050904@hitachi.com> <534FF135.40404@oracle.com> <534FF31E.1000104@zytor.com> <53500FF8.8010804@oracle.com>
+In-Reply-To: <53500FF8.8010804@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 03:00:21AM +0000, Zheng, Lv wrote:
-> Hi, Greg
+(2014/04/18 2:31), Sasha Levin wrote:
+>> I also have seen several attempts at using the generic instruction
+>> decoder which has resulted in more complexity, not less, because of
+>> excess generality, so it is not an obvious thing.
 > 
-> > From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> > Sent: Friday, April 18, 2014 10:44 AM
-> > 
-> > On Fri, Apr 18, 2014 at 09:53:19AM +0800, Lv Zheng wrote:
-> > > Note that this patch is only used for stable kernels, upstream kernels
-> > > will have this problem fixed in ACPICA 201303-04 release.  So upstream
-> > > kernels shouldn't merge this commit.
-> > 
-> > What kernel commit fixed this issue in "upstream"?
+> Let's split this patchset into two:
 > 
-> There is no kernel commit now has fixed this issue in "upstream".
-> The fix commit need to go into ACPICA first, so I believe it will
-> appear in 3.15-rc2 (ACPICA 201403xx release) or 3.15-rc3 (ACPICA
-> 201404xx release).
+> We have one part which moves kmemcheck to the generic instruction decoder
+> and adds memory access size to the instruction decoder. There seems to be
+> no objection to that part beyond technical issues regarding how we store
+> the new size value.
 
-Then I can't take this patch at all in any stable tree.  Please read
-Documentation/stable_kernel_rules.txt for why and how to properly do
-this.
+This looks OK to me.
 
-Just mark the commit that fixes the issue in Linus's tree for stable,
-and it will happen automatically.
+> The other part is adding mnemonics to the instruction decoder. If my
+> explanation above makes sense, and kmemcheck does need to know about AND,
+> OR, XOR, MOVS and CMPS then let me know how to proceed about changing
+> the instruction decoder to add that functionality.
 
-> The back port of the fix commit will have many dependencies as we have
-> a big change in ACPICA table manager in ACPICA 201403xx release.
+I don't think we need to add such things to instruction decoder.
+You'd better start from clarifying the bit pattern of those instructions
+and making macros or inlines which evaluate insn->opcode.value.
 
-Why not just submit this fix first to Linus, for his tree now, and then
-do the larger changes later?
+Using automatic generated macros for immediate in the source code always
+leads misunderstanding and abuse, and is hard to fix if a bug is there.
+I strongly recommend you to define instruction classification macros
+for their use by hand. That's easy to review too.
+Actually x86 has a long history and its mnemonics are not so simple...
 
-> However this back port is very light and has been confirmed by the reporters.
-> 
-> The bug seems to be urgent, it has broken many platforms shipped with
-> AMI BIOSes versioning from F2 to F4.  Someone may monitor here to find
-> a valid fix.
+Thank you,
 
-Not any stable maintainers, we can't take patches that aren't in Linus's
-tree, sorry.
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-greg k-h
+
