@@ -1,101 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251AbaDRPhK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 11:37:10 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:55997 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbaDRPhH (ORCPT
+	id S1753098AbaDRPiL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 11:38:11 -0400
+Received: from mail-ve0-f170.google.com ([209.85.128.170]:60077 "EHLO
+	mail-ve0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795AbaDRPh7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 11:37:07 -0400
+	Fri, 18 Apr 2014 11:37:59 -0400
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <5350EFAA.2030607@colorfullife.com>
-References: <1397784345.2556.26.camel@buesod1.americas.hpqcorp.net> <5350EFAA.2030607@colorfullife.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Fri, 18 Apr 2014 17:36:46 +0200
-Message-ID: <CAKgNAkhY94Y5Nut9+Jj1gcnio81CEmE5sQL_gH_zFnHD-yNx2Q@mail.gmail.com>
-Subject: Re: [PATCH v3] ipc,shm: disable shmmax and shmall by default
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Greg Thelen <gthelen@google.com>, aswin@hp.com,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Linux API <linux-api@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20140418124821.GE5904@bivouac.eciton.net>
+References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
+	<CAL_JsqL8B2ZY7ACXKX3J8VN5ukjKWuycgfDZpp4kYzBxg6BLmQ@mail.gmail.com>
+	<20140418124821.GE5904@bivouac.eciton.net>
+Date: Fri, 18 Apr 2014 10:37:58 -0500
+Message-ID: <CAL_JsqKdFyhHfkcC1E9QuKjQTrXwoELYG+CFTpgf2-jqDvxGmA@mail.gmail.com>
+Subject: Re: [PATCH 0/3] of: dts: enable memory@0 quirk for PPC32 only
+From: Rob Herring <robherring2@gmail.com>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Mark Rutland <mark.rutland@arm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 11:26 AM, Manfred Spraul
-<manfred@colorfullife.com> wrote:
-> Hi Davidlohr,
->
->
-> On 04/18/2014 03:25 AM, Davidlohr Bueso wrote:
+On Fri, Apr 18, 2014 at 7:48 AM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
+> On Thu, Apr 17, 2014 at 07:43:13PM -0500, Rob Herring wrote:
+>> On Thu, Apr 17, 2014 at 12:41 PM, Leif Lindholm
+>> <leif.lindholm@linaro.org> wrote:
+>> > drivers/of/fdt.c contains a workaround for a missing memory type
+>> > entry on longtrail firmware. Make that quirk PPC32 only, and while
+>> > at it - fix up the .dts files in the tree currently working only
+>> > because of that quirk.
 >>
->> So a value of 0 bytes or pages, for shmmax and shmall, respectively,
->> implies unlimited memory, as opposed to disabling sysv shared memory.
+>> But why do you need this?
 >
-> That might be a second risk:
-> Right now, a sysadmin can prevent sysv memory allocations with
->
->     # sysctl kernel.shmall=0
->
-> After your patch is applied, this line allows unlimited allocations.
+> Apart from the current code permitting recreating a 15+ year old
+> firmware bug into completely new platform ports?
 
-Good point. I wonder if some folk may get bitten by this complete
-reversal the semantics of shmall==0.
+I would prefer to see a "WARN_ON(!IS_ENABLED(CONFIG_PPC32));" added here.
 
-> Obviously my patch has the opposite problem: 64-bit wrap-arounds.
+Really, I would like to see quirks like this fixed up out of line from
+the normal flow somewhat like how PCI quirks are handled. So in this
+example, we would just add the missing property to the dtb for the
+broken platform before doing the memory scan. That does then require
+libfdt which is something I'm working on.
 
-I know you alluded to a case in another thread, but I couldn't quite
-work out from the mail you referred to whether this was really the
-problem. (And I assume those folks were forced to fix their set-up
-scripts anyway.) So, it's not clear to me whether this is a real
-problem. (And your patch does not worsen things from the current
-situation, right?)
+> Because the UEFI stub for arm/arm64 needs to delete all of the "memory"
+> nodes from the DT. And it would be nice to at least not have to compile
+> the "and also delete anything called memory@0" into the arm64 image. Or
+> any image not including support for affected platforms.
 
-Cheers,
+I don't see why you would handle that in the EFI stub. Given our lack
+of validation, I can see there is a chance this happens but I think it
+is pretty small. Given we only have a ARM board, I'd say we are doing
+surprisingly well.
 
-Michael
+Rob
 
-
-
->> --- a/include/uapi/linux/shm.h
->> +++ b/include/uapi/linux/shm.h
->> @@ -9,14 +9,14 @@
->>     /*
->>    * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
->> - * be increased by sysctl
->> + * be modified by sysctl. By default, disable SHMMAX and SHMALL with
->> + * 0 bytes, thus allowing processes to have unlimited shared memory.
->>    */
->> -
->> -#define SHMMAX 0x2000000                /* max shared seg size (bytes) */
->> +#define SHMMAX 0                        /* max shared seg size (bytes) */
->>   #define SHMMIN 1                       /* min shared seg size (bytes) */
->>   #define SHMMNI 4096                    /* max num of segs system wide */
->>   #ifndef __KERNEL__
->> -#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
->> +#define SHMALL 0
->>   #endif
->>   #define SHMSEG SHMMNI                  /* max shared segs per process */
+>> >  arch/arm/boot/dts/ste-ccu8540.dts     |    1 +
+>> >  arch/mips/lantiq/dts/easy50712.dts    |    1 +
+>> >  arch/mips/ralink/dts/mt7620a_eval.dts |    1 +
+>> >  arch/mips/ralink/dts/rt2880_eval.dts  |    1 +
+>> >  arch/mips/ralink/dts/rt3052_eval.dts  |    1 +
+>> >  arch/mips/ralink/dts/rt3883_eval.dts  |    1 +
 >>
+>> I'm not worried about these MIPS dts files because they are all
+>> built-in, but you are breaking compatibility with old dtbs for this
+>> ARM board.
 >
-> The "#ifndef __KERNEL__" is not required:
-> As there is no reference to PAGE_SIZE anymore, one definition for SHMALL is
-> sufficient.
+> Yeah, sorry. Sending out a v2 of part 3 shortly.
 >
->
-> --
->     Manfred
-
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+> /
+>     Leif
