@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621AbaDRUYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 16:24:12 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:60385 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320AbaDRUYB (ORCPT
+	id S1754505AbaDRUYK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 16:24:10 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:59759 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754307AbaDRUXz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 16:24:01 -0400
+	Fri, 18 Apr 2014 16:23:55 -0400
 From: Konrad Zapalowicz <bergo.torino@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Konrad M Zapalowicz <bergo.torino@gmail.com>
-Subject: [PATCH 2/2] staging: rtl8188eu: fix spaces instead of tabs for rtw_recv.c
-Date: Fri, 18 Apr 2014 22:23:07 +0200
-Message-Id: <1397852587-8170-3-git-send-email-bergo.torino@gmail.com>
+Subject: [PATCH 1/2] staging: rtl8188eu: fix spaces instead of tabs for rtw_p2p.c
+Date: Fri, 18 Apr 2014 22:23:06 +0200
+Message-Id: <1397852587-8170-2-git-send-email-bergo.torino@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1397852587-8170-2-git-send-email-bergo.torino@gmail.com>
+In-Reply-To: <1397852587-8170-1-git-send-email-bergo.torino@gmail.com>
 References: <1397852587-8170-1-git-send-email-bergo.torino@gmail.com>
- <1397852587-8170-2-git-send-email-bergo.torino@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -25,27 +24,33 @@ From: Konrad M Zapalowicz <bergo.torino@gmail.com>
 
 This commit fixes the following checkpatch errors:
 
-rtl8188eu/core/rtw_recv.c
-    - 1874: ERROR: code indent should use tabs where possible
+rtl8188eu/core/rtw_p2p.c
+    - 1508: ERROR: code indent should use tabs where possible
+    - 1509: ERROR: code indent should use tabs where possible
+    - 1510: ERROR: code indent should use tabs where possible
 
 Signed-off-by: Konrad Zapalowicz <bergo.torino at gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_recv.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/rtl8188eu/core/rtw_p2p.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_recv.c b/drivers/staging/rtl8188eu/core/rtw_recv.c
-index e305d43..5c1d2d2 100644
---- a/drivers/staging/rtl8188eu/core/rtw_recv.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_recv.c
-@@ -1871,7 +1871,7 @@ static int recv_indicatepkts_in_order(struct adapter *padapter, struct recv_reor
- 			return true;
+diff --git a/drivers/staging/rtl8188eu/core/rtw_p2p.c b/drivers/staging/rtl8188eu/core/rtw_p2p.c
+index 9425c49..0a15f8c 100644
+--- a/drivers/staging/rtl8188eu/core/rtw_p2p.c
++++ b/drivers/staging/rtl8188eu/core/rtw_p2p.c
+@@ -1505,9 +1505,9 @@ static void find_phase_handler(struct adapter *padapter)
  
- 		prhdr = container_of(plist, struct recv_frame, list);
--	        pattrib = &prhdr->attrib;
-+		pattrib = &prhdr->attrib;
- 		preorder_ctrl->indicate_seq = pattrib->seq_num;
- 	}
+ 	rtw_p2p_set_state(pwdinfo, P2P_STATE_FIND_PHASE_SEARCH);
  
+-        spin_lock_bh(&pmlmepriv->lock);
+-        rtw_sitesurvey_cmd(padapter, &ssid, 1, NULL, 0);
+-        spin_unlock_bh(&pmlmepriv->lock);
++	spin_lock_bh(&pmlmepriv->lock);
++	rtw_sitesurvey_cmd(padapter, &ssid, 1, NULL, 0);
++	spin_unlock_bh(&pmlmepriv->lock);
+ }
+ 
+ void p2p_concurrent_handler(struct adapter *padapter);
 -- 
 1.8.1.2
 
