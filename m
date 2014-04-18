@@ -1,131 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751413AbaDRGiE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 02:38:04 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:62947 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751337AbaDRGhJ (ORCPT
+	id S1751337AbaDRGuJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 02:50:09 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:20694 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750976AbaDRGuG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 02:37:09 -0400
-X-AuditID: cbfee68f-b7f156d00000276c-a2-5350c813ad1d
-Message-id: <1397802904.4283.1.camel@kjgkr>
-Subject: Re: f2fs: BUG_ON() is triggered when mount valid f2fs filesystem
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Reply-to: jaegeuk.kim@samsung.com
+	Fri, 18 Apr 2014 02:50:06 -0400
+X-IronPort-AV: E=Sophos;i="4.97,883,1389715200"; 
+   d="scan'208";a="29430410"
+Message-ID: <5350C8D9.3090208@cn.fujitsu.com>
+Date: Fri, 18 Apr 2014 14:40:25 +0800
+From: Gu Zheng <guz.fnst@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:7.0.1) Gecko/20110930 Thunderbird/7.0.1
+MIME-Version: 1.0
 To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: Andrey Tsyvarev <tsyvarev@ispras.ru>,
-        linux-f2fs-devel@lists.sourceforge.net,
+CC: <jaegeuk.kim@samsung.com>, Andrey Tsyvarev <tsyvarev@ispras.ru>,
+        <linux-f2fs-devel@lists.sourceforge.net>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 18 Apr 2014 15:35:04 +0900
-In-reply-to: <5350C06A.4090807@ispras.ru>
-References: <52F320FC.50803@ispras.ru> <534BC29B.3020408@ispras.ru>
- <1397559864.7727.5.camel@kjgkr> <534E494C.7050909@ispras.ru>
- <1397691337.7727.18.camel@kjgkr> <534F2A32.9030405@ispras.ru>
- <1397720720.7727.28.camel@kjgkr> <5350C06A.4090807@ispras.ru>
-Organization: Samsung
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.2.3-0ubuntu6
-Content-transfer-encoding: 7bit
-MIME-version: 1.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t8zA13hEwHBBp8uc1nsWLeT3eLSIneL
-	y7vmsFksvxznwOIx499URo/dCz4zeXzeJBfAHMVlk5Kak1mWWqRvl8CVcenQTtaC4wIVs/Yt
-	ZW1gvMvbxcjJISFgItG45B4zhC0mceHeerYuRi4OIYFljBJXl59i6mLkACua26oMEZ/OKLFw
-	8g1WCOcVo8SyrdtZQLp5BbQlGh5OAZskLOApsXHqFbBmNqD45v0GIGEhAUWJt/vvsoLYIgJ6
-	Eh9fbWUCmcMs0MgosaZlIyNIgkVAVWLz33NMIDangKZEw7E/UMuamCQuNz5hA0nwC4hKHF64
-	HWwZs4C6xKR5i6BeUJLY3d7JDhGXl9i85i0zxHGCEj8m32MBGSQhcIpd4vCZZVDbBCS+TT7E
-	AvGmrMSmA1BzJCUOrrjBMoFRYhaSFbOQjJ2FZOwCRuZVjKKpBckFxUnpRcZ6xYm5xaV56XrJ
-	+bmbGCEx17+D8e4B60OMyUArJzJLiSbnA2M2ryTe0NjMyMLUxNTYyNzSjDRhJXHe+w+TgoQE
-	0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwbipz2MJ98H7oRfcdzx5dtouT6Xh8J1fcz/6Fy6nS
-	ZWvuW8pPfvo1y+GVajpDbLp/4zFvNqHNwjsZ+heXLlqfN8fWsEba/PC1Sz3qz+fu27DB2eNF
-	b7UIi2uP6NdlnKduhPF1XixL7J8pY70oauWETp0KaaGd94In7GmZ1JVjNq/McS/TTa3jSizF
-	GYmGWsxFxYkAuRD7Lc8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprJKsWRmVeSWpSXmKPExsVy+t9jQV3hEwHBBhe2sFnsWLeT3eLSIneL
-	y7vmsFksvxznwOIx499URo/dCz4zeXzeJBfAHNXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxv
-	amZgqGtoaWGupJCXmJtqq+TiE6DrlpkDtExJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9I
-	EFyPkQEaSFjHmHHp0E7WguMCFbP2LWVtYLzL28XIwSEhYCIxt1W5i5ETyBSTuHBvPVsXIxeH
-	kMB0RomFk2+wQjivGCWWbd3OAlLFK6At0fBwCjOILSzgKbFx6hUmkEFsQPHN+w1AwkICihJv
-	999lBbFFBPQkPr7aygQyh1mgkVFiTctGRpAEi4CqxOa/55hAbE4BTYmGY3+gljUxSVxufMIG
-	kuAXEJU4vHA72DJmAXWJSfMWMUOcqiSxu72THSIuL7F5zVtmiOMEJX5MvscygVFoFpKWWUjK
-	ZiEpW8DIvIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOKKfSe1gXNlgcYhRgINRiYdXQC8g
-	WIg1say4MvcQowQHs5IIr3IpUIg3JbGyKrUoP76oNCe1+BBjMtB7E5mlRJPzgckmryTe0NjE
-	zMjSyMzCyMTcnDRhJXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoYJ767nnl9xmdxPoXqeDfh
-	4jVBgh9S7xsVPfvvcvzWxvf52TktW49LbNsuevjLq12LHx25sOd/fdLSg9In3+zT+hsW3Oy+
-	zzz3C4vDoqkp65v/Fz397fR64eKpj7aIeryScJWbP3tmT/+kKq5JBydOMw3e+uTUZZu6a9Wh
-	bzM6r15xZsl/y9b3crESS3FGoqEWc1FxIgD36yXJLAMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+Subject: Re: f2fs: BUG_ON() is triggered when mount valid f2fs filesystem
+References: <52F320FC.50803@ispras.ru> <534BC29B.3020408@ispras.ru> <1397559864.7727.5.camel@kjgkr> <534E494C.7050909@ispras.ru> <1397691337.7727.18.camel@kjgkr> <534F2A32.9030405@ispras.ru> <1397720720.7727.28.camel@kjgkr> <5350C06A.4090807@ispras.ru>
+In-Reply-To: <5350C06A.4090807@ispras.ru>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [10.167.226.100]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for the explanation.
-The following patch will resolve the issue.
-Thanks,
+Hi Alexey, Kim,
+On 04/18/2014 02:04 PM, Alexey Khoroshilov wrote:
 
->From 2048e7458c982f4297da9d3366ab29224ae2e8b0 Mon Sep 17 00:00:00 2001
-From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
-Date: Fri, 18 Apr 2014 15:21:04 +0900
-Subject: [PATCH] f2fs: avoid BUG_ON when mouting corrupted image having
- garbage blocks
+> On 17.04.2014 00:45, Jaegeuk Kim wrote:
+>> Hi,
+>>
+>> 2014-04-16 (수), 18:11 -0700, Alexey Khoroshilov:
+>>> Hi,
+>>>
+>>> But would not ability to trigger BUG_ON by mounting a crafted image
+>>> considered as an issue having security implications?
+>> Sorry, I can't come up with you.
+>> Could you please explain why this can be related to the security hole?
+>> Did you mean it needs to avoid such the BUG_ONs if the image has
+>> obsolete data being used before?
+> An ability to trigger a BUG_ON assert by mounting a crafted image is
+> usually considered as a local denial of service [1-3]. As far as I
+> understand, the reason is that some kernel data may become inconsistent
+> that can lead to further problems.
 
-If the disk has some garbage blocks, F2FS is able to face with BUG_ON
-when
-recovering direct node blocks.
-This patch detects the error case and avoids that prior to reaching
-BUG_ON.
+I think I caught the key point if I do not miss-read it.
+Alexey's misgiving is that users can mount a crafted or malicious
+image to trigger a BUG_ON, and results in the server panic, especially the
+normal user can do this via fuse,user_namespace...
+So it seems a leak that the user only mounts an invalid image, but results
+in denial of service.
+The following 3 cases also show this point.
+So the right way may be return the suitable *ERROR* to the user rather than
+trigger BUG_ON.
 
-Alexey Khoroshilov addressed the potential security issues as follows.
-"An ability to trigger a BUG_ON assert by mounting a crafted image is
-usually considered as a local denial of service [1-3]. As far as I
-understand, the reason is that some kernel data may become inconsistent
-that can lead to further problems.
+Regards,
+Gu
 
-[1] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3353
-[2] http://www.openwall.com/lists/oss-security/2011/06/24/4
-[3] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-2928
-etc."
+> 
+> [1] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-3353
+> [2] http://www.openwall.com/lists/oss-security/2011/06/24/4
+> [3] http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2011-2928
+> etc.
+> 
+> --
+> Alexey
+> 
+> 
+>> On 16.04.2014 16:35, Jaegeuk Kim wrote:
+>>>> Hi,
+>>>>
+>>>> 2014-04-16 (수), 13:11 +0400, Andrey Tsyvarev:
+>>>>> Hi,
+>>>>>
+>>>>> With this patch mounting of the image continues to fail (with similar 
+>>>>> BUG_ON).
+>>>>> But when image is formatted again (and steps mentioned in the previous 
+>>>>> message are performed),
+>>>>> mounting of it is now succeed.
+>>>>>
+>>>>> Is this is a true purpose of the patch?
+>>>> Indeed. The patch solves there-in root cause.
+>>>> But, if you're trying to use the failed image again, simply you can skip
+>>>> the errorneous part by:
+>>>>
+>>>> # mount ... -o disable_roll_forward ...
+>>>>
+>>>> Once sync or umount whatever checkpoint is done after that, the image
+>>>> will be mounted without "disable_roll_forward".
+>>>>
+>>>> Thanks,
+>>>>
+>>>>> 15.04.2014 15:04, Jaegeuk Kim пишет:
+>>>>>> Hi,
+>>>>>>
+>>>>>> Thank you for the report.
+>>>>>> I retrieved the fault image and found out that previous garbage data
+>>>>>> wreak such the wrong behaviors.
+>>>>>> So, I wrote the following patch that fills one zero-block at the
+>>>>>> checkpoint procedure.
+>>>>>> If the underlying device supports discard, I expect that it mostly
+>>>>>> doesn't incur any performance regression significantly.
+>>>>>>
+>>>>>> Could you test this patch?
+>>>>>>
+>>>>>> >From 60588ceb7277aae2a79e7f67f5217d1256720d78 Mon Sep 17 00:00:00 2001
+>>>>>> From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+>>>>>> Date: Tue, 15 Apr 2014 13:57:55 +0900
+>>>>>> Subject: [PATCH] f2fs: avoid to conduct roll-forward due to the remained
+>>>>>>   garbage blocks
+>>>>>>
+>>>>>> The f2fs always scans the next chain of direct node blocks.
+>>>>>> But some garbage blocks are able to be remained due to no discard
+>>>>>> support or
+>>>>>> SSR triggers.
+>>>>>> This occasionally wreaks recovering wrong inodes that were used or
+>>>>>> BUG_ONs
+>>>>>> due to reallocating node ids as follows.
+>>>>>>
+>>>>>> When mount this f2fs image:
+>>>>>> http://linuxtesting.org/downloads/f2fs_fault_image.zip
+>>>>>> BUG_ON is triggered in f2fs driver (messages below are generated on
+>>>>>> kernel 3.13.2; for other kernels output is similar):
+>>>>>>
+>>>>>> kernel BUG at fs/f2fs/node.c:215!
+>>>>>>   Call Trace:
+>>>>>>   [<ffffffffa032ebad>] recover_inode_page+0x1fd/0x3e0 [f2fs]
+>>>>>>   [<ffffffff811446e7>] ? __lock_page+0x67/0x70
+>>>>>>   [<ffffffff81089990>] ? autoremove_wake_function+0x50/0x50
+>>>>>>   [<ffffffffa0337788>] recover_fsync_data+0x1398/0x15d0 [f2fs]
+>>>>>>   [<ffffffff812b9e5c>] ? selinux_d_instantiate+0x1c/0x20
+>>>>>>   [<ffffffff811cb20b>] ? d_instantiate+0x5b/0x80
+>>>>>>   [<ffffffffa0321044>] f2fs_fill_super+0xb04/0xbf0 [f2fs]
+>>>>>>   [<ffffffff811b861e>] ? mount_bdev+0x7e/0x210
+>>>>>>   [<ffffffff811b8769>] mount_bdev+0x1c9/0x210
+>>>>>>   [<ffffffffa0320540>] ? validate_superblock+0x210/0x210 [f2fs]
+>>>>>>   [<ffffffffa031cf8d>] f2fs_mount+0x1d/0x30 [f2fs]
+>>>>>>   [<ffffffff811b9497>] mount_fs+0x47/0x1c0
+>>>>>>   [<ffffffff81166e00>] ? __alloc_percpu+0x10/0x20
+>>>>>>   [<ffffffff811d4032>] vfs_kern_mount+0x72/0x110
+>>>>>>   [<ffffffff811d6763>] do_mount+0x493/0x910
+>>>>>>   [<ffffffff811615cb>] ? strndup_user+0x5b/0x80
+>>>>>>   [<ffffffff811d6c70>] SyS_mount+0x90/0xe0
+>>>>>>   [<ffffffff8166f8d9>] system_call_fastpath+0x16/0x1b
+>>>>>>
+>>>>>> Found by Linux File System Verification project (linuxtesting.org).
+>>>>>>
+>>>>>> Reported-by: Andrey Tsyvarev <tsyvarev@ispras.ru>
+>>>>>> Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+>>>>>> ---
+>>>>>>   fs/f2fs/checkpoint.c |  6 ++++++
+>>>>>>   fs/f2fs/f2fs.h       |  1 +
+>>>>>>   fs/f2fs/segment.c    | 17 +++++++++++++++--
+>>>>>>   3 files changed, 22 insertions(+), 2 deletions(-)
+>>>>>>
+>>>>>> diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+>>>>>> index 4aa521a..890e23d 100644
+>>>>>> --- a/fs/f2fs/checkpoint.c
+>>>>>> +++ b/fs/f2fs/checkpoint.c
+>>>>>> @@ -762,6 +762,12 @@ static void do_checkpoint(struct f2fs_sb_info *sbi,
+>>>>>> bool is_umount)
+>>>>>>   	void *kaddr;
+>>>>>>   	int i;
+>>>>>>   
+>>>>>> +	/*
+>>>>>> +	 * This avoids to conduct wrong roll-forward operations and uses
+>>>>>> +	 * metapages, so should be called prior to sync_meta_pages below.
+>>>>>> +	 */
+>>>>>> +	discard_next_dnode(sbi);
+>>>>>> +
+>>>>>>   	/* Flush all the NAT/SIT pages */
+>>>>>>   	while (get_pages(sbi, F2FS_DIRTY_META))
+>>>>>>   		sync_meta_pages(sbi, META, LONG_MAX);
+>>>>>> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+>>>>>> index 2ecac83..2c5a5da 100644
+>>>>>> --- a/fs/f2fs/f2fs.h
+>>>>>> +++ b/fs/f2fs/f2fs.h
+>>>>>> @@ -1179,6 +1179,7 @@ int f2fs_issue_flush(struct f2fs_sb_info *);
+>>>>>>   void invalidate_blocks(struct f2fs_sb_info *, block_t);
+>>>>>>   void refresh_sit_entry(struct f2fs_sb_info *, block_t, block_t);
+>>>>>>   void clear_prefree_segments(struct f2fs_sb_info *);
+>>>>>> +void discard_next_dnode(struct f2fs_sb_info *);
+>>>>>>   int npages_for_summary_flush(struct f2fs_sb_info *);
+>>>>>>   void allocate_new_segments(struct f2fs_sb_info *);
+>>>>>>   struct page *get_sum_page(struct f2fs_sb_info *, unsigned int);
+>>>>>> diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+>>>>>> index 1e264e7..9993f94 100644
+>>>>>> --- a/fs/f2fs/segment.c
+>>>>>> +++ b/fs/f2fs/segment.c
+>>>>>> @@ -335,13 +335,26 @@ static void locate_dirty_segment(struct
+>>>>>> f2fs_sb_info *sbi, unsigned int segno)
+>>>>>>   	mutex_unlock(&dirty_i->seglist_lock);
+>>>>>>   }
+>>>>>>   
+>>>>>> -static void f2fs_issue_discard(struct f2fs_sb_info *sbi,
+>>>>>> +static int f2fs_issue_discard(struct f2fs_sb_info *sbi,
+>>>>>>   				block_t blkstart, block_t blklen)
+>>>>>>   {
+>>>>>>   	sector_t start = SECTOR_FROM_BLOCK(sbi, blkstart);
+>>>>>>   	sector_t len = SECTOR_FROM_BLOCK(sbi, blklen);
+>>>>>> -	blkdev_issue_discard(sbi->sb->s_bdev, start, len, GFP_NOFS, 0);
+>>>>>>   	trace_f2fs_issue_discard(sbi->sb, blkstart, blklen);
+>>>>>> +	return blkdev_issue_discard(sbi->sb->s_bdev, start, len, GFP_NOFS, 0);
+>>>>>> +}
+>>>>>> +
+>>>>>> +void discard_next_dnode(struct f2fs_sb_info *sbi)
+>>>>>> +{
+>>>>>> +	struct curseg_info *curseg = CURSEG_I(sbi, CURSEG_WARM_NODE);
+>>>>>> +	block_t blkaddr = NEXT_FREE_BLKADDR(sbi, curseg);
+>>>>>> +
+>>>>>> +	if (f2fs_issue_discard(sbi, blkaddr, 1)) {
+>>>>>> +		struct page *page = grab_meta_page(sbi, blkaddr);
+>>>>>> +		/* zero-filled page */
+>>>>>> +		set_page_dirty(page);
+>>>>>> +		f2fs_put_page(page, 1);
+>>>>>> +	}
+>>>>>>   }
+>>>>>>   
+>>>>>>   static void add_discard_addrs(struct f2fs_sb_info *sbi,
+>>>
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> .
+> 
 
-Reported-by: Andrey Tsyvarev <tsyvarev@ispras.ru>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Signed-off-by: Jaegeuk Kim <jaegeuk.kim@samsung.com>
----
- fs/f2fs/node.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
-index 6ebdba1..64755f4 100644
---- a/fs/f2fs/node.c
-+++ b/fs/f2fs/node.c
-@@ -1609,6 +1609,11 @@ int recover_inode_page(struct f2fs_sb_info *sbi,
-struct page *page)
- 	struct node_info old_ni, new_ni;
- 	struct page *ipage;
- 
-+	get_node_info(sbi, ino, &old_ni);
-+
-+	if (unlikely(old_ni.blk_addr != NULL_ADDR))
-+		return -EINVAL;
-+
- 	ipage = grab_cache_page(NODE_MAPPING(sbi), ino);
- 	if (!ipage)
- 		return -ENOMEM;
-@@ -1616,7 +1621,6 @@ int recover_inode_page(struct f2fs_sb_info *sbi,
-struct page *page)
- 	/* Should not use this inode  from free nid list */
- 	remove_free_nid(NM_I(sbi), ino);
- 
--	get_node_info(sbi, ino, &old_ni);
- 	SetPageUptodate(ipage);
- 	fill_node_footer(ipage, ino, ino, 0, true);
- 
--- 
-1.8.4.474.g128a96c
-
-
-
-
--- 
-Jaegeuk Kim
-Samsung
 
