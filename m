@@ -1,506 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752143AbaDRIGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 04:06:39 -0400
-Received: from relay.parallels.com ([195.214.232.42]:37071 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985AbaDRIEz (ORCPT
+	id S1752624AbaDRIHm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 04:07:42 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:46101 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120AbaDRIHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 04:04:55 -0400
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: <mhocko@suse.cz>, <hannes@cmpxchg.org>
-CC: <akpm@linux-foundation.org>, <glommer@gmail.com>,
-        <cl@linux-foundation.org>, <penberg@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [PATCH RFC -mm v2 3/3] memcg, slab: simplify synchronization scheme
-Date: Fri, 18 Apr 2014 12:04:49 +0400
-Message-ID: <c3c36df83d582f8fac94bb716b82406e24229cad.1397804745.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1397804745.git.vdavydov@parallels.com>
-References: <cover.1397804745.git.vdavydov@parallels.com>
+	Fri, 18 Apr 2014 04:07:22 -0400
+Date: Fri, 18 Apr 2014 10:07:16 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Owen Kibel <qmewlo@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "atodorov@redhat.com" <atodorov@redhat.com>,
+        "gong.chen@linux.intel.com" <gong.chen@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/urgent] x86/mce: Fix CMCI preemption bugs
+Message-ID: <20140418080716.GA14280@gmail.com>
+References: <3908561D78D1C84285E8C5FCA982C28F31E2A1D3@ORSMSX106.amr.corp.intel.com>
+ <20140417152611.GD4321@pd.tnic>
+ <CA+5PVA7i=RrGUk_7zz1yU5gseWpvr+a=4dfkg=n9cNc53S7nPA@mail.gmail.com>
+ <20140417192330.GE4321@pd.tnic>
+ <CA+55aFyz62W7CD9=9p9OxKuFs9Rck_p93E_40CqLat1HvDdf0Q@mail.gmail.com>
+ <20140417194241.GF4321@pd.tnic>
+ <20140417205807.GA27852@pd.tnic>
+ <CAK7FoDt6tnknX7cioe7=2svVksyAyLUtoZX_oprzJNxoHZEpdw@mail.gmail.com>
+ <20140417213012.GC27852@pd.tnic>
+ <20140417222028.GD27852@pd.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.30.16.96]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417222028.GD27852@pd.tnic>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At present, we have the following mutexes protecting data related to
-per memcg kmem caches:
 
- - slab_mutex. This one is held during the whole kmem cache creation and
-   destruction paths. We also take it when updating per root cache
-   memcg_caches arrays (see memcg_update_all_caches). As a result,
-   taking it guarantees there will be no changes to any kmem cache
-   (including per memcg). Why do we need something else then? The point
-   is it is private to slab implementation and has some internal
-   dependencies with other mutexes (get_online_cpus). So we just don't
-   want to rely upon it and prefer to introduce additional mutexes
-   instead.
+* Borislav Petkov <bp@alien8.de> wrote:
 
- - activate_kmem_mutex. Initially it was added to synchronize
-   initializing kmem limit (memcg_activate_kmem). However, since we can
-   grow per root cache memcg_caches arrays only on kmem limit
-   initialization (see memcg_update_all_caches), we also employ it to
-   protect against memcg_caches arrays relocation (e.g. see
-   __kmem_cache_destroy_memcg_children).
+> On Thu, Apr 17, 2014 at 11:30:12PM +0200, Borislav Petkov wrote:
+> > This is most likely unrelated and is caused by the preemption checks
+> > added to __this_cpu_* in 188a81409ff7. If you'd like to debug this
+> > further, please send a full dmesg:
+> > 
+> > dmesg > dmesg.log
+> > 
+> > Privately is fine too.
+> 
+> Ok, thanks for the dmesg. Replying to the thread with everybody:
+> 
+> The splat Owen is seeing is the same as this one at the beginning of
+> this thread here:
+> 
+> http://lkml.kernel.org/r/8761m7lm3j.fsf@canonical.com
+> 
+> which has a viable fix. Btw, those two splats happen on HP notebooks.
+> 
+> Ok, good, I think we're all solved. Phew :-)
+> 
+> Thanks to all for their help.
 
- - We have a convention not to take slab_mutex in memcontrol.c, but we
-   want to walk over per memcg memcg_slab_caches lists there (e.g. for
-   destroying all memcg caches on offline). So we have per memcg
-   slab_caches_mutex's protecting those lists.
+Okay, so AFAICS the fix in x86/urgent isn't wrong functionally, it's 
+just that the changelog incorrectly claims the raw-spinlock use is a 
+bug causing a problem here.
 
-The mutexes are taken in the following order:
+Still that raw spinlock is bogus and might be hiding other problems, 
+so we can keep the x86/urgent change (ea431643d6c3) as-is and I'll get 
+it to Linus later today ...
 
-   activate_kmem_mutex -> slab_mutex -> memcg::slab_caches_mutex
+Thanks,
 
-Such a syncrhonization scheme has a number of flaws, for instance:
-
- - We can't call kmem_cache_{destroy,shrink} while walking over a
-   memcg::memcg_slab_caches list due to locking order. As a result, in
-   mem_cgroup_destroy_all_caches we schedule the
-   memcg_cache_params::destroy work shrinking and destroying the cache.
-
- - We don't have a mutex to synchronize per memcg caches destruction
-   between memcg offline (mem_cgroup_destroy_all_caches) and root cache
-   destruction (__kmem_cache_destroy_memcg_children). Currently we just
-   don't bother about it.
-
-This patch simplifies it by substituting per memcg slab_caches_mutex's
-with the global memcg_slab_mutex. It will be held whenever a new per
-memcg cache is created or destroyed, so it protects per root cache
-memcg_caches arrays and per memcg memcg_slab_caches lists. The locking
-order is following:
-
-   activate_kmem_mutex -> memcg_slab_mutex -> slab_mutex
-
-This allows us to call kmem_cache_{create,shrink,destroy} under the
-memcg_slab_mutex. As a result, we don't need memcg_cache_params::destroy
-work any more - we can simply destroy caches while iterating over a per
-memcg slab caches list.
-
-Also using the global mutex simplifies synchronization between
-concurrent per memcg caches creation/destruction, e.g.
-mem_cgroup_destroy_all_caches vs __kmem_cache_destroy_memcg_children.
-
-The downside of this is that we substitute per-memcg slab_caches_mutex's
-with a hummer-like global mutex, but since we already take either the
-slab_mutex or the cgroup_mutex along with a memcg::slab_caches_mutex, it
-shouldn't hurt concurrency a lot.
-
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- include/linux/memcontrol.h |   10 ---
- include/linux/slab.h       |    6 +-
- mm/memcontrol.c            |  150 +++++++++++++++++---------------------------
- mm/slab_common.c           |   22 +++----
- 4 files changed, 68 insertions(+), 120 deletions(-)
-
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index d38d190f4cec..1fa23244fe37 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -497,8 +497,6 @@ char *memcg_create_cache_name(struct mem_cgroup *memcg,
- int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
- 			     struct kmem_cache *root_cache);
- void memcg_free_cache_params(struct kmem_cache *s);
--void memcg_register_cache(struct kmem_cache *s);
--void memcg_unregister_cache(struct kmem_cache *s);
- 
- int memcg_update_cache_size(struct kmem_cache *s, int num_groups);
- void memcg_update_array_size(int num_groups);
-@@ -640,14 +638,6 @@ static inline void memcg_free_cache_params(struct kmem_cache *s)
- {
- }
- 
--static inline void memcg_register_cache(struct kmem_cache *s)
--{
--}
--
--static inline void memcg_unregister_cache(struct kmem_cache *s)
--{
--}
--
- static inline struct kmem_cache *
- memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp)
- {
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 905541dd3778..ecbec9ccb80d 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -116,7 +116,8 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
- 			unsigned long,
- 			void (*)(void *));
- #ifdef CONFIG_MEMCG_KMEM
--void kmem_cache_create_memcg(struct mem_cgroup *, struct kmem_cache *);
-+struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *,
-+					   struct kmem_cache *);
- #endif
- void kmem_cache_destroy(struct kmem_cache *);
- int kmem_cache_shrink(struct kmem_cache *);
-@@ -525,8 +526,6 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
-  * @list: list_head for the list of all caches in this memcg
-  * @root_cache: pointer to the global, root cache, this cache was derived from
-  * @nr_pages: number of pages that belongs to this cache.
-- * @destroy: worker to be called whenever we are ready, or believe we may be
-- *           ready, to destroy this cache.
-  */
- struct memcg_cache_params {
- 	bool is_root_cache;
-@@ -540,7 +539,6 @@ struct memcg_cache_params {
- 			struct list_head list;
- 			struct kmem_cache *root_cache;
- 			atomic_t nr_pages;
--			struct work_struct destroy;
- 		};
- 	};
- };
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 5221347b0e1b..900f968b41ee 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -357,10 +357,9 @@ struct mem_cgroup {
- 	struct cg_proto tcp_mem;
- #endif
- #if defined(CONFIG_MEMCG_KMEM)
--	/* analogous to slab_common's slab_caches list. per-memcg */
-+	/* analogous to slab_common's slab_caches list, but per-memcg;
-+	 * protected by memcg_slab_mutex */
- 	struct list_head memcg_slab_caches;
--	/* Not a spinlock, we can take a lot of time walking the list */
--	struct mutex slab_caches_mutex;
-         /* Index in the kmem_cache->memcg_params->memcg_caches array */
- 	int kmemcg_id;
- #endif
-@@ -2903,6 +2902,12 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *memcg,
- static DEFINE_MUTEX(set_limit_mutex);
- 
- #ifdef CONFIG_MEMCG_KMEM
-+/*
-+ * The memcg_slab_mutex is held whenever a per memcg kmem cache is created or
-+ * destroyed. It protects memcg_caches arrays and memcg_slab_caches lists.
-+ */
-+static DEFINE_MUTEX(memcg_slab_mutex);
-+
- static DEFINE_MUTEX(activate_kmem_mutex);
- 
- static inline bool memcg_can_account_kmem(struct mem_cgroup *memcg)
-@@ -2935,10 +2940,10 @@ static int mem_cgroup_slabinfo_read(struct seq_file *m, void *v)
- 
- 	print_slabinfo_header(m);
- 
--	mutex_lock(&memcg->slab_caches_mutex);
-+	mutex_lock(&memcg_slab_mutex);
- 	list_for_each_entry(params, &memcg->memcg_slab_caches, list)
- 		cache_show(memcg_params_to_cache(params), m);
--	mutex_unlock(&memcg->slab_caches_mutex);
-+	mutex_unlock(&memcg_slab_mutex);
- 
- 	return 0;
- }
-@@ -3040,8 +3045,6 @@ void memcg_update_array_size(int num)
- 		memcg_limited_groups_array_size = memcg_caches_array_size(num);
- }
- 
--static void kmem_cache_destroy_work_func(struct work_struct *w);
--
- int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
- {
- 	struct memcg_cache_params *cur_params = s->memcg_params;
-@@ -3138,8 +3141,6 @@ int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
- 	if (memcg) {
- 		s->memcg_params->memcg = memcg;
- 		s->memcg_params->root_cache = root_cache;
--		INIT_WORK(&s->memcg_params->destroy,
--				kmem_cache_destroy_work_func);
- 		css_get(&memcg->css);
- 	} else
- 		s->memcg_params->is_root_cache = true;
-@@ -3156,24 +3157,34 @@ void memcg_free_cache_params(struct kmem_cache *s)
- 	kfree(s->memcg_params);
- }
- 
--void memcg_register_cache(struct kmem_cache *s)
-+static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
-+				    struct kmem_cache *root_cache)
- {
--	struct kmem_cache *root;
--	struct mem_cgroup *memcg;
-+	struct kmem_cache *cachep;
- 	int id;
- 
--	if (is_root_cache(s))
-+	lockdep_assert_held(&memcg_slab_mutex);
-+
-+	id = memcg_cache_id(memcg);
-+
-+	/*
-+	 * Since per-memcg caches are created asynchronously on first
-+	 * allocation (see memcg_kmem_get_cache()), several threads can try to
-+	 * create the same cache, but only one of them may succeed.
-+	 */
-+	if (cache_from_memcg_idx(root_cache, id))
- 		return;
- 
-+	cachep = kmem_cache_create_memcg(memcg, root_cache);
- 	/*
--	 * Holding the slab_mutex assures nobody will touch the memcg_caches
--	 * array while we are modifying it.
-+	 * If we could not create a memcg cache, do not complain, because
-+	 * that's not critical at all as we can always proceed with the root
-+	 * cache.
- 	 */
--	lockdep_assert_held(&slab_mutex);
-+	if (!cachep)
-+		return;
- 
--	root = s->memcg_params->root_cache;
--	memcg = s->memcg_params->memcg;
--	id = memcg_cache_id(memcg);
-+	list_add(&cachep->memcg_params->list, &memcg->memcg_slab_caches);
- 
- 	/*
- 	 * Since readers won't lock (see cache_from_memcg_idx()), we need a
-@@ -3182,49 +3193,30 @@ void memcg_register_cache(struct kmem_cache *s)
- 	 */
- 	smp_wmb();
- 
--	/*
--	 * Initialize the pointer to this cache in its parent's memcg_params
--	 * before adding it to the memcg_slab_caches list, otherwise we can
--	 * fail to convert memcg_params_to_cache() while traversing the list.
--	 */
--	VM_BUG_ON(root->memcg_params->memcg_caches[id]);
--	root->memcg_params->memcg_caches[id] = s;
--
--	mutex_lock(&memcg->slab_caches_mutex);
--	list_add(&s->memcg_params->list, &memcg->memcg_slab_caches);
--	mutex_unlock(&memcg->slab_caches_mutex);
-+	BUG_ON(root_cache->memcg_params->memcg_caches[id]);
-+	root_cache->memcg_params->memcg_caches[id] = cachep;
- }
- 
--void memcg_unregister_cache(struct kmem_cache *s)
-+static void memcg_kmem_destroy_cache(struct kmem_cache *cachep)
- {
--	struct kmem_cache *root;
-+	struct kmem_cache *root_cache;
- 	struct mem_cgroup *memcg;
- 	int id;
- 
--	if (is_root_cache(s))
--		return;
-+	lockdep_assert_held(&memcg_slab_mutex);
- 
--	/*
--	 * Holding the slab_mutex assures nobody will touch the memcg_caches
--	 * array while we are modifying it.
--	 */
--	lockdep_assert_held(&slab_mutex);
-+	BUG_ON(is_root_cache(cachep));
- 
--	root = s->memcg_params->root_cache;
--	memcg = s->memcg_params->memcg;
-+	root_cache = cachep->memcg_params->root_cache;
-+	memcg = cachep->memcg_params->memcg;
- 	id = memcg_cache_id(memcg);
- 
--	mutex_lock(&memcg->slab_caches_mutex);
--	list_del(&s->memcg_params->list);
--	mutex_unlock(&memcg->slab_caches_mutex);
-+	BUG_ON(root_cache->memcg_params->memcg_caches[id] != cachep);
-+	root_cache->memcg_params->memcg_caches[id] = NULL;
- 
--	/*
--	 * Clear the pointer to this cache in its parent's memcg_params only
--	 * after removing it from the memcg_slab_caches list, otherwise we can
--	 * fail to convert memcg_params_to_cache() while traversing the list.
--	 */
--	VM_BUG_ON(root->memcg_params->memcg_caches[id] != s);
--	root->memcg_params->memcg_caches[id] = NULL;
-+	list_del(&cachep->memcg_params->list);
-+
-+	kmem_cache_destroy(cachep);
- }
- 
- /*
-@@ -3258,70 +3250,42 @@ static inline void memcg_resume_kmem_account(void)
- 	current->memcg_kmem_skip_account--;
- }
- 
--static void kmem_cache_destroy_work_func(struct work_struct *w)
--{
--	struct kmem_cache *cachep;
--	struct memcg_cache_params *p;
--
--	p = container_of(w, struct memcg_cache_params, destroy);
--
--	cachep = memcg_params_to_cache(p);
--
--	kmem_cache_shrink(cachep);
--	if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
--		kmem_cache_destroy(cachep);
--}
--
- int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- {
- 	struct kmem_cache *c;
- 	int i, failed = 0;
- 
--	/*
--	 * If the cache is being destroyed, we trust that there is no one else
--	 * requesting objects from it. Even if there are, the sanity checks in
--	 * kmem_cache_destroy should caught this ill-case.
--	 *
--	 * Still, we don't want anyone else freeing memcg_caches under our
--	 * noses, which can happen if a new memcg comes to life. As usual,
--	 * we'll take the activate_kmem_mutex to protect ourselves against
--	 * this.
--	 */
--	mutex_lock(&activate_kmem_mutex);
-+	mutex_lock(&memcg_slab_mutex);
- 	for_each_memcg_cache_index(i) {
- 		c = cache_from_memcg_idx(s, i);
- 		if (!c)
- 			continue;
- 
--		/*
--		 * We will now manually delete the caches, so to avoid races
--		 * we need to cancel all pending destruction workers and
--		 * proceed with destruction ourselves.
--		 */
--		cancel_work_sync(&c->memcg_params->destroy);
--		kmem_cache_destroy(c);
-+		memcg_kmem_destroy_cache(c);
- 
- 		if (cache_from_memcg_idx(s, i))
- 			failed++;
- 	}
--	mutex_unlock(&activate_kmem_mutex);
-+	mutex_unlock(&memcg_slab_mutex);
- 	return failed;
- }
- 
- static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
- {
- 	struct kmem_cache *cachep;
--	struct memcg_cache_params *params;
-+	struct memcg_cache_params *params, *tmp;
- 
- 	if (!memcg_kmem_is_active(memcg))
- 		return;
- 
--	mutex_lock(&memcg->slab_caches_mutex);
--	list_for_each_entry(params, &memcg->memcg_slab_caches, list) {
-+	mutex_lock(&memcg_slab_mutex);
-+	list_for_each_entry_safe(params, tmp, &memcg->memcg_slab_caches, list) {
- 		cachep = memcg_params_to_cache(params);
--		schedule_work(&cachep->memcg_params->destroy);
-+		kmem_cache_shrink(cachep);
-+		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
-+			memcg_kmem_destroy_cache(cachep);
- 	}
--	mutex_unlock(&memcg->slab_caches_mutex);
-+	mutex_unlock(&memcg_slab_mutex);
- }
- 
- struct create_work {
-@@ -3336,7 +3300,10 @@ static void memcg_create_cache_work_func(struct work_struct *w)
- 	struct mem_cgroup *memcg = cw->memcg;
- 	struct kmem_cache *cachep = cw->cachep;
- 
--	kmem_cache_create_memcg(memcg, cachep);
-+	mutex_lock(&memcg_slab_mutex);
-+	memcg_kmem_create_cache(memcg, cachep);
-+	mutex_unlock(&memcg_slab_mutex);
-+
- 	css_put(&memcg->css);
- 	kfree(cw);
- }
-@@ -5021,13 +4988,14 @@ static int __memcg_activate_kmem(struct mem_cgroup *memcg,
- 	 * Make sure we have enough space for this cgroup in each root cache's
- 	 * memcg_params.
- 	 */
-+	mutex_lock(&memcg_slab_mutex);
- 	err = memcg_update_all_caches(memcg_id + 1);
-+	mutex_unlock(&memcg_slab_mutex);
- 	if (err)
- 		goto out_rmid;
- 
- 	memcg->kmemcg_id = memcg_id;
- 	INIT_LIST_HEAD(&memcg->memcg_slab_caches);
--	mutex_init(&memcg->slab_caches_mutex);
- 
- 	/*
- 	 * We couldn't have accounted to this cgroup, because it hasn't got the
-diff --git a/mm/slab_common.c b/mm/slab_common.c
-index cab4c49b3e8c..b3968ca1e55d 100644
---- a/mm/slab_common.c
-+++ b/mm/slab_common.c
-@@ -160,7 +160,6 @@ do_kmem_cache_create(char *name, size_t object_size, size_t size, size_t align,
- 
- 	s->refcount = 1;
- 	list_add(&s->list, &slab_caches);
--	memcg_register_cache(s);
- out:
- 	if (err)
- 		return ERR_PTR(err);
-@@ -266,22 +265,15 @@ EXPORT_SYMBOL(kmem_cache_create);
-  * requests going from @memcg to @root_cache. The new cache inherits properties
-  * from its parent.
-  */
--void kmem_cache_create_memcg(struct mem_cgroup *memcg, struct kmem_cache *root_cache)
-+struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *memcg,
-+					   struct kmem_cache *root_cache)
- {
--	struct kmem_cache *s;
-+	struct kmem_cache *s = NULL;
- 	char *cache_name;
- 
- 	get_online_cpus();
- 	mutex_lock(&slab_mutex);
- 
--	/*
--	 * Since per-memcg caches are created asynchronously on first
--	 * allocation (see memcg_kmem_get_cache()), several threads can try to
--	 * create the same cache, but only one of them may succeed.
--	 */
--	if (cache_from_memcg_idx(root_cache, memcg_cache_id(memcg)))
--		goto out_unlock;
--
- 	cache_name = memcg_create_cache_name(memcg, root_cache);
- 	if (!cache_name)
- 		goto out_unlock;
-@@ -290,12 +282,15 @@ void kmem_cache_create_memcg(struct mem_cgroup *memcg, struct kmem_cache *root_c
- 				 root_cache->size, root_cache->align,
- 				 root_cache->flags, root_cache->ctor,
- 				 memcg, root_cache);
--	if (IS_ERR(s))
-+	if (IS_ERR(s)) {
- 		kfree(cache_name);
-+		s = NULL;
-+	}
- 
- out_unlock:
- 	mutex_unlock(&slab_mutex);
- 	put_online_cpus();
-+	return s;
- }
- 
- static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
-@@ -332,11 +327,8 @@ void kmem_cache_destroy(struct kmem_cache *s)
- 		goto out_unlock;
- 
- 	list_del(&s->list);
--	memcg_unregister_cache(s);
--
- 	if (__kmem_cache_shutdown(s) != 0) {
- 		list_add(&s->list, &slab_caches);
--		memcg_register_cache(s);
- 		printk(KERN_ERR "kmem_cache_destroy %s: "
- 		       "Slab cache still has objects\n", s->name);
- 		dump_stack();
--- 
-1.7.10.4
-
+	Ingo
