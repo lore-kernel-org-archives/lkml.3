@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659AbaDRJnd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 05:43:33 -0400
-Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45920 "EHLO
+	id S1754615AbaDRJnY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 05:43:24 -0400
+Received: from ip4-83-240-18-248.cust.nbox.cz ([83.240.18.248]:45926 "EHLO
 	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752139AbaDRJWs (ORCPT
+	by vger.kernel.org with ESMTP id S1752152AbaDRJWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 05:22:48 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: stable@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mikulas Patocka <mpatocka@redhat.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: [PATCH 3.12 02/72] powernow-k6: correctly initialize default parameters
-Date: Fri, 18 Apr 2014 11:21:35 +0200
-Message-Id: <b80bb221ead1e6f3bae0945e0b90e21ea0d7ca1b.1397812482.git.jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Erik Hugne <erik.hugne@ericsson.com>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 3.12 29/72] tipc: drop subscriber connection id invalidation
+Date: Fri, 18 Apr 2014 11:22:02 +0200
+Message-Id: <fa7a24eeb7d49ea81028b1ddb0921a6703fe1424.1397812482.git.jslaby@suse.cz>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
 References: <3389f243c528afc7c7300c83b8f296290cd3656d.1397812482.git.jslaby@suse.cz>
@@ -24,158 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Erik Hugne <erik.hugne@ericsson.com>
 
 3.12-stable review patch.  If anyone has any objections, please let me know.
 
 ===============
 
-commit d82b922a4acc1781d368aceac2f9da43b038cab2 upstream.
+[ Upstream commit edcc0511b5ee7235282a688cd604e3ae7f9e1fc9 ]
 
-The powernow-k6 driver used to read the initial multiplier from the
-powernow register. However, there is a problem with this:
+When a topology server subscriber is disconnected, the associated
+connection id is set to zero. A check vs zero is then done in the
+subscription timeout function to see if the subscriber have been
+shut down. This is unnecessary, because all subscription timers
+will be cancelled when a subscriber terminates. Setting the
+connection id to zero is actually harmful because id zero is the
+identity of the topology server listening socket, and can cause a
+race that leads to this socket being closed instead.
 
-* If there was a frequency transition before, the multiplier read from the
-  register corresponds to the current multiplier.
-* If there was no frequency transition since reset, the field in the
-  register always reads as zero, regardless of the current multiplier that
-  is set using switches on the mainboard and that the CPU is running at.
-
-The zero value corresponds to multiplier 4.5, so as a consequence, the
-powernow-k6 driver always assumes multiplier 4.5.
-
-For example, if we have 550MHz CPU with bus frequency 100MHz and
-multiplier 5.5, the powernow-k6 driver thinks that the multiplier is 4.5
-and bus frequency is 122MHz. The powernow-k6 driver then sets the
-multiplier to 4.5, underclocking the CPU to 450MHz, but reports the
-current frequency as 550MHz.
-
-There is no reliable way how to read the initial multiplier. I modified
-the driver so that it contains a table of known frequencies (based on
-parameters of existing CPUs and some common overclocking schemes) and sets
-the multiplier according to the frequency. If the frequency is unknown
-(because of unusual overclocking or underclocking), the user must supply
-the bus speed and maximum multiplier as module parameters.
-
-This patch should be backported to all stable kernels. If it doesn't
-apply cleanly, change it, or ask me to change it.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Erik Hugne <erik.hugne@ericsson.com>
+Acked-by: Ying Xue <ying.xue@windriver.com>
+Reviewed-by: Jon Maloy <jon.maloy@ericsson.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/cpufreq/powernow-k6.c | 76 ++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 72 insertions(+), 4 deletions(-)
+ net/tipc/subscr.c | 11 -----------
+ 1 file changed, 11 deletions(-)
 
-diff --git a/drivers/cpufreq/powernow-k6.c b/drivers/cpufreq/powernow-k6.c
-index 9c6a4412eca7..1624188e584f 100644
---- a/drivers/cpufreq/powernow-k6.c
-+++ b/drivers/cpufreq/powernow-k6.c
-@@ -26,6 +26,14 @@
- static unsigned int                     busfreq;   /* FSB, in 10 kHz */
- static unsigned int                     max_multiplier;
+diff --git a/net/tipc/subscr.c b/net/tipc/subscr.c
+index 13f48bb5e540..78bdf1db4cdf 100644
+--- a/net/tipc/subscr.c
++++ b/net/tipc/subscr.c
+@@ -149,14 +149,6 @@ static void subscr_timeout(struct tipc_subscription *sub)
+ 	/* The spin lock per subscriber is used to protect its members */
+ 	spin_lock_bh(&subscriber->lock);
  
-+static unsigned int			param_busfreq = 0;
-+static unsigned int			param_max_multiplier = 0;
-+
-+module_param_named(max_multiplier, param_max_multiplier, uint, S_IRUGO);
-+MODULE_PARM_DESC(max_multiplier, "Maximum multiplier (allowed values: 20 30 35 40 45 50 55 60)");
-+
-+module_param_named(bus_frequency, param_busfreq, uint, S_IRUGO);
-+MODULE_PARM_DESC(bus_frequency, "Bus frequency in kHz");
- 
- /* Clock ratio multiplied by 10 - see table 27 in AMD#23446 */
- static struct cpufreq_frequency_table clock_ratio[] = {
-@@ -40,6 +48,27 @@ static struct cpufreq_frequency_table clock_ratio[] = {
- 	{0, CPUFREQ_TABLE_END}
- };
- 
-+static const struct {
-+	unsigned freq;
-+	unsigned mult;
-+} usual_frequency_table[] = {
-+	{ 400000, 40 },	// 100   * 4
-+	{ 450000, 45 }, // 100   * 4.5
-+	{ 475000, 50 }, //  95   * 5
-+	{ 500000, 50 }, // 100   * 5
-+	{ 506250, 45 }, // 112.5 * 4.5
-+	{ 533500, 55 }, //  97   * 5.5
-+	{ 550000, 55 }, // 100   * 5.5
-+	{ 562500, 50 }, // 112.5 * 5
-+	{ 570000, 60 }, //  95   * 6
-+	{ 600000, 60 }, // 100   * 6
-+	{ 618750, 55 }, // 112.5 * 5.5
-+	{ 660000, 55 }, // 120   * 5.5
-+	{ 675000, 60 }, // 112.5 * 6
-+	{ 720000, 60 }, // 120   * 6
-+};
-+
-+#define FREQ_RANGE		3000
- 
- /**
-  * powernow_k6_get_cpu_multiplier - returns the current FSB multiplier
-@@ -163,18 +192,57 @@ static int powernow_k6_target(struct cpufreq_policy *policy,
- 	return 0;
- }
- 
+-	/* Validate if the connection related to the subscriber is
+-	 * closed (in case subscriber is terminating)
+-	 */
+-	if (subscriber->conid == 0) {
+-		spin_unlock_bh(&subscriber->lock);
+-		return;
+-	}
 -
- static int powernow_k6_cpu_init(struct cpufreq_policy *policy)
- {
- 	unsigned int i, f;
- 	int result;
-+	unsigned khz;
+ 	/* Validate timeout (in case subscription is being cancelled) */
+ 	if (sub->timeout == TIPC_WAIT_FOREVER) {
+ 		spin_unlock_bh(&subscriber->lock);
+@@ -211,9 +203,6 @@ static void subscr_release(struct tipc_subscriber *subscriber)
  
- 	if (policy->cpu != 0)
- 		return -ENODEV;
+ 	spin_lock_bh(&subscriber->lock);
  
--	/* get frequencies */
--	max_multiplier = powernow_k6_get_cpu_multiplier();
--	busfreq = cpu_khz / max_multiplier;
-+	max_multiplier = 0;
-+	khz = cpu_khz;
-+	for (i = 0; i < ARRAY_SIZE(usual_frequency_table); i++) {
-+		if (khz >= usual_frequency_table[i].freq - FREQ_RANGE &&
-+		    khz <= usual_frequency_table[i].freq + FREQ_RANGE) {
-+			khz = usual_frequency_table[i].freq;
-+			max_multiplier = usual_frequency_table[i].mult;
-+			break;
-+		}
-+	}
-+	if (param_max_multiplier) {
-+		for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
-+			if (clock_ratio[i].driver_data == param_max_multiplier) {
-+				max_multiplier = param_max_multiplier;
-+				goto have_max_multiplier;
-+			}
-+		}
-+		printk(KERN_ERR "powernow-k6: invalid max_multiplier parameter, valid parameters 20, 30, 35, 40, 45, 50, 55, 60\n");
-+		return -EINVAL;
-+	}
-+
-+	if (!max_multiplier) {
-+		printk(KERN_WARNING "powernow-k6: unknown frequency %u, cannot determine current multiplier\n", khz);
-+		printk(KERN_WARNING "powernow-k6: use module parameters max_multiplier and bus_frequency\n");
-+		return -EOPNOTSUPP;
-+	}
-+
-+have_max_multiplier:
-+	param_max_multiplier = max_multiplier;
-+
-+	if (param_busfreq) {
-+		if (param_busfreq >= 50000 && param_busfreq <= 150000) {
-+			busfreq = param_busfreq / 10;
-+			goto have_busfreq;
-+		}
-+		printk(KERN_ERR "powernow-k6: invalid bus_frequency parameter, allowed range 50000 - 150000 kHz\n");
-+		return -EINVAL;
-+	}
-+
-+	busfreq = khz / max_multiplier;
-+have_busfreq:
-+	param_busfreq = busfreq * 10;
- 
- 	/* table init */
- 	for (i = 0; (clock_ratio[i].frequency != CPUFREQ_TABLE_END); i++) {
+-	/* Invalidate subscriber reference */
+-	subscriber->conid = 0;
+-
+ 	/* Destroy any existing subscriptions for subscriber */
+ 	list_for_each_entry_safe(sub, sub_temp, &subscriber->subscription_list,
+ 				 subscription_list) {
 -- 
 1.9.2
 
