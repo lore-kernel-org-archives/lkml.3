@@ -1,115 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751503AbaDRI0n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 04:26:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36276 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750977AbaDRI0h (ORCPT
+	id S1752090AbaDRI1m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 04:27:42 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:59028 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbaDRI1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 04:26:37 -0400
-Date: Fri, 18 Apr 2014 01:24:38 -0700
-From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-a1d9a3231eac4117cadaf4b6bba5b2902c15a33e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, sasha.levin@oracle.com, hpa@zytor.com,
-        mingo@kernel.org, peterz@infradead.org, tkhai@yandex.ru,
-        wangyun@linux.vnet.ibm.com, tglx@linutronix.de
-Reply-To: mingo@kernel.org, hpa@zytor.com, sasha.levin@oracle.com,
-        linux-kernel@vger.kernel.org, peterz@infradead.org, tkhai@yandex.ru,
-        wangyun@linux.vnet.ibm.com, tglx@linutronix.de
-In-Reply-To: <336561397137116@web27h.yandex.ru>
-References: <336561397137116@web27h.yandex.ru>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched:
-  Check for stop task appearance when balancing happens
-Git-Commit-ID: a1d9a3231eac4117cadaf4b6bba5b2902c15a33e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 18 Apr 2014 04:27:34 -0400
+Date: Fri, 18 Apr 2014 10:27:16 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
+Message-ID: <20140418082716.GZ11096@twins.programming.kicks-ass.net>
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
+ <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
+ <20140417155649.GR11096@twins.programming.kicks-ass.net>
+ <53504BB3.4010009@hp.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <53504BB3.4010009@hp.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a1d9a3231eac4117cadaf4b6bba5b2902c15a33e
-Gitweb:     http://git.kernel.org/tip/a1d9a3231eac4117cadaf4b6bba5b2902c15a33e
-Author:     Kirill Tkhai <tkhai@yandex.ru>
-AuthorDate: Thu, 10 Apr 2014 17:38:36 +0400
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 17 Apr 2014 13:39:51 +0200
+On Thu, Apr 17, 2014 at 05:46:27PM -0400, Waiman Long wrote:
+> On 04/17/2014 11:56 AM, Peter Zijlstra wrote:
+> >On Thu, Apr 17, 2014 at 11:03:57AM -0400, Waiman Long wrote:
+> >>+struct __qspinlock {
+> >>+	union {
+> >>+		atomic_t val;
 
-sched: Check for stop task appearance when balancing happens
+		char bytes[4];
 
-We need to do it like we do for the other higher priority classes..
+> >>+		struct {
+> >>+#ifdef __LITTLE_ENDIAN
+> >>+			u16	locked_pending;
+> >>+			u16	tail;
+> >>+#else
+> >>+			u16	tail;
+> >>+			u16	locked_pending;
+> >>+#endif
+> >>+		};
 
-Signed-off-by: Kirill Tkhai <tkhai@yandex.ru>
-Cc: Michael wang <wangyun@linux.vnet.ibm.com>
-Cc: Sasha Levin <sasha.levin@oracle.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/336561397137116@web27h.yandex.ru
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/sched/deadline.c | 11 ++++++++++-
- kernel/sched/fair.c     |  3 ++-
- kernel/sched/rt.c       |  7 ++++---
- 3 files changed, 16 insertions(+), 5 deletions(-)
+		struct {
+#ifdef __LITTLE_ENDIAN
+			u8	locked;
+#else
+			u8	res[3];
+			u8	locked;
+#endif
+		};
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 27ef409..b080957 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1021,8 +1021,17 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
- 
- 	dl_rq = &rq->dl;
- 
--	if (need_pull_dl_task(rq, prev))
-+	if (need_pull_dl_task(rq, prev)) {
- 		pull_dl_task(rq);
-+		/*
-+		 * pull_rt_task() can drop (and re-acquire) rq->lock; this
-+		 * means a stop task can slip in, in which case we need to
-+		 * re-start task selection.
-+		 */
-+		if (rq->stop && rq->stop->on_rq)
-+			return RETRY_TASK;
-+	}
-+
- 	/*
- 	 * When prev is DL, we may throttle it in put_prev_task().
- 	 * So, we update time before we check for dl_nr_running.
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 4f14a65..7570dd9 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6728,7 +6728,8 @@ static int idle_balance(struct rq *this_rq)
- out:
- 	/* Is there a task of a high priority class? */
- 	if (this_rq->nr_running != this_rq->cfs.h_nr_running &&
--	    (this_rq->dl.dl_nr_running ||
-+	    ((this_rq->stop && this_rq->stop->on_rq) ||
-+	     this_rq->dl.dl_nr_running ||
- 	     (this_rq->rt.rt_nr_running && !rt_rq_throttled(&this_rq->rt))))
- 		pulled_task = -1;
- 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index d8cdf16..bd2267a 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1362,10 +1362,11 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- 		pull_rt_task(rq);
- 		/*
- 		 * pull_rt_task() can drop (and re-acquire) rq->lock; this
--		 * means a dl task can slip in, in which case we need to
--		 * re-start task selection.
-+		 * means a dl or stop task can slip in, in which case we need
-+		 * to re-start task selection.
- 		 */
--		if (unlikely(rq->dl.dl_nr_running))
-+		if (unlikely((rq->stop && rq->stop->on_rq) ||
-+			     rq->dl.dl_nr_running))
- 			return RETRY_TASK;
- 	}
- 
+> >>+	};
+> >>+};
+> >>+
+> >>+/**
+> >>+ * clear_pending_set_locked - take ownership and clear the pending bit.
+> >>+ * @lock: Pointer to queue spinlock structure
+> >>+ * @val : Current value of the queue spinlock 32-bit word
+> >>+ *
+> >>+ * *,1,0 ->  *,0,1
+> >>+ */
+> >>+static __always_inline void
+> >>+clear_pending_set_locked(struct qspinlock *lock, u32 val)
+> >>+{
+> >>+	struct __qspinlock *l = (void *)lock;
+> >>+
+> >>+	ACCESS_ONCE(l->locked_pending) = 1;
+> >You lost the __constant_le16_to_cpu(_Q_LOCKED_VAL) there. The
+> >unconditional 1 is wrong. You also have to flip the bytes in
+> >locked_pending.
+> 
+> I don't think that is wrong. The lock byte is in the least significant 8
+> bits and the pending byte is the next higher significant 8 bits irrespective
+> of the endian-ness. So a value of 1 in a 16-bit context means the lock byte
+> is set, but the pending byte is cleared. The name "locked_pending" doesn't
+> mean that locked variable is in a lower address than pending.
+
+val            is LE bytes[0,1,2,3] BE [3,2,1,0]
+locked_pending is LE bytes[0,1]     BE     [1,0]
+locked            LE bytes[0]       BE       [0]
+
+That does mean that the LSB of BE locked_pending is bytes[1].
+So if you do BE: locked_pending = 1, you set bytes[1], not bytes[0].
+
+
