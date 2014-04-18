@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaDROHr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 10:07:47 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37842 "EHLO
+	id S1752444AbaDROMa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 10:12:30 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:37850 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139AbaDROHo (ORCPT
+	with ESMTP id S1751139AbaDROM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 10:07:44 -0400
-Date: Fri, 18 Apr 2014 15:07:24 +0100
+	Fri, 18 Apr 2014 10:12:27 -0400
+Date: Fri, 18 Apr 2014 15:12:14 +0100
 From: Mark Brown <broonie@kernel.org>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jyri Sarha <jsarha@ti.com>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Message-ID: <20140418140724.GL12304@sirena.org.uk>
-References: <1397779590-4128-1-git-send-email-alexandre.belloni@free-electrons.com>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Liam Girdwood <lgirdwood@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-ID: <20140418141214.GM12304@sirena.org.uk>
+References: <1397760924-7423-1-git-send-email-tim.kryger@linaro.org>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pWvls6SgojIh1mq8"
+	protocol="application/pgp-signature"; boundary="mNe6SYwlAlLDuqTf"
 Content-Disposition: inline
-In-Reply-To: <1397779590-4128-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1397760924-7423-1-git-send-email-tim.kryger@linaro.org>
 X-Cookie: You will be successful in your work.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: tlv320aic31xx: document that the regulators are
- mandatory
+Subject: Re: [PATCH] regulator: core: Return error in get optional stub
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,36 +31,40 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---pWvls6SgojIh1mq8
+--mNe6SYwlAlLDuqTf
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Fri, Apr 18, 2014 at 02:06:30AM +0200, Alexandre Belloni wrote:
-> The driver will not probe if regulators are not provided. Move the regulator
-> properties to the required section.
+On Thu, Apr 17, 2014 at 11:55:24AM -0700, Tim Kryger wrote:
+> Drivers that call regulator_get_optional are tolerant to the absence of
+> that regulator.  By modifying the value returned from the stub function
+> to match that seen when a regulator isn't present, callers can wrap the
+> regulator logic with an IS_ERR based conditional even if they happen to
+> call regulator_is_supported_voltage.  This improves efficiency as well
+> as eliminates the possibility for a very subtle bug.
 
 Applied, thanks.
 
---pWvls6SgojIh1mq8
+--mNe6SYwlAlLDuqTf
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTUTGZAAoJELSic+t+oim9fyoP/RGkHO6OtnXy9E1NNJldYqb6
-LdNxpTDCwRTdi1e4zSEGg9r+J6zJn762It3QW4slJVL+XmY/zUudIVLtW3cnwPkD
-yDLncC0p2LzLqHlRyD4j3cvrPrcGB4GYVizSI16VfaLBm7w83Bq1erH87eGEhB3x
-vE+yZs28PDJhxasoWOsAioVCJU6QxLs8W5e0UjeKkVdHYul7fhJGVFrSkO5QYHh/
-jJsfpiFZn36zt3cVioqqilPDCrXXVw12ix94XM7LoPLGSWqNYkTBrdzbQePBOub3
-W6MgpBw2SQikGz35H8EVcwRsBXY3XCeApifIDzlkPppxd1R0RhZ4FoGoG5fpyLcA
-mjD3znfIkyIH7k3+FYy3Ck3MwUdePMoDVsDHM54dcSL8t2be1oRS6SIgq/+xSWtr
-yHshLNWYj3Cf7YYHBa2UaXPh8C0b6o48CFuqCZZAqZNBlf+a1Xl3zVTWdIm1xphV
-YlAxlsm6K02Wk+dt5mFNBD7nx1amjLqvA+RG8NrqOHuTe2TpZ7zqQljccSx7Ih0s
-UYfNIhEIApWaAbrO/2wkn0O83xrBzSG5/lMRIFxiFqsP5QJ6J0QN9wybWzHUq7Wt
-wIuPDV0rkP5IzESuTnn+D+qFVCpj0a/NIwPcQG4gORBbzqaGf/e4VZAx1eT1xvs6
-Gcvq5FbGFTSC1OYSfnkr
-=xqYX
+iQIcBAEBAgAGBQJTUTK7AAoJELSic+t+oim9gsUP/iyYyBtR8K+gLdIzpcrx5i+k
+YCc/7IqUYuDA99hUyRwSglDaCIbV9Ofef1BDg8TBPeIdGp45Qp1OGAj9lC6lhcyS
+dJgcRmosA5Pedr/n1/qSEJajQRUdz/Mrvh3v+azGiz9/yVrxNs+azfI3vbQKc5od
+IwB9d3FKWm86bLLRxVaO/lH+2ae+9VsykJTwIVrtPJUCo9qgge53h4i1Cj96N0ob
+0+xxiUa085HOMhiwK4ghkxUYb0bg6NSyZRkQQW3Bu/3mvYyB+kXrnrWoCbYyAekJ
+PKwUtI8kM0VAxjNGe72PfJyC0ahxMeH02smSF+OBc4GB9Kl4EVzcdf+Wvzpibrk/
+drqrPt1cZ3gXGv71BWeYjx9yyWhz4VAIr1C57HILWEyUZsLlBydWWsZ2ylhDdx9B
+rn/YDXv7p1xxLd+UK4FvIMzZxgbmXicNp1FKamKFdsQmAcRCbeABkOFN78t/1i80
+3lVr2aL4XQ6sV5PGlyKaUig6w2sLw0FoR86KSx5slOrBTLqnq6wraR7KIlXWNN1f
+qn8oh+sfBAGJ6BSaOaRJQJzLyP4JwIYMveM+GlZF2rYSpTZ6XWwcVdweMRCe7/xR
+sF/5uhkUT29MyWixm2ULgSs5/OZNBuyJmKVz9uDtqIo15J7cXHMbdDd1ffyYc8lU
+MxG2fZijrJQq2B7ofsYj
+=eDQN
 -----END PGP SIGNATURE-----
 
---pWvls6SgojIh1mq8--
+--mNe6SYwlAlLDuqTf--
