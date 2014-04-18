@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674AbaDRRi1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 13:38:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2181 "EHLO mx1.redhat.com"
+	id S1754737AbaDRRii (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 13:38:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54001 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754224AbaDRRfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754220AbaDRRfS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 18 Apr 2014 13:35:18 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
@@ -13,9 +13,9 @@ To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
 Cc: Richard Guy Briggs <rgb@redhat.com>, davem@davemloft.net,
         eparis@redhat.com, netfilter-devel@vger.kernel.org, hadi@mojatatu.com,
         sgrubb@redhat.com
-Subject: [PATCH 3/6] netlink: implement unbind to netlink_setsockopt NETLINK_DROP_MEMBERSHIP
-Date: Fri, 18 Apr 2014 13:34:07 -0400
-Message-Id: <05abbc9f1bad49dd7adca5f434fb47404caddd84.1397831970.git.rgb@redhat.com>
+Subject: [PATCH 4/6] audit: add netlink audit protocol bind to check capabilities on multicast join
+Date: Fri, 18 Apr 2014 13:34:08 -0400
+Message-Id: <a8d72cb5f3f5f1c34ebc0a585a3e4ccfaf57e307.1397831970.git.rgb@redhat.com>
 In-Reply-To: <20140324183406.GE28666@madcap2.tricolour.ca>
 References: <20140324183406.GE28666@madcap2.tricolour.ca>
 In-Reply-To: <cover.1397831970.git.rgb@redhat.com>
@@ -24,36 +24,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call the per-protocol unbind function rather than bind function on
-NETLINK_DROP_MEMBERSHIP in netlink_setsockopt().
+Register a netlink per-protocol bind fuction for audit to check userspace
+process capabilities before allowing a multicast group connection.
 
 Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- net/netlink/af_netlink.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ include/uapi/linux/capability.h     |    7 ++++++-
+ kernel/audit.c                      |   10 ++++++++++
+ security/selinux/include/classmap.h |    2 +-
+ 3 files changed, 17 insertions(+), 2 deletions(-)
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 3f43e5a..cdb236f 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -2118,7 +2118,7 @@ static int netlink_setsockopt(struct socket *sock, int level, int optname,
- 			return err;
- 		if (!val || val - 1 >= nlk->ngroups)
- 			return -EINVAL;
--		if (nlk->netlink_bind) {
-+		if (optname == NETLINK_ADD_MEMBERSHIP && nlk->netlink_bind) {
- 			err = nlk->netlink_bind(val);
- 			if (err)
- 				return err;
-@@ -2127,6 +2127,8 @@ static int netlink_setsockopt(struct socket *sock, int level, int optname,
- 		netlink_update_socket_mc(nlk, val,
- 					 optname == NETLINK_ADD_MEMBERSHIP);
- 		netlink_table_ungrab();
-+		if (optname == NETLINK_DROP_MEMBERSHIP && nlk->netlink_unbind)
-+			nlk->netlink_unbind(val);
+diff --git a/include/uapi/linux/capability.h b/include/uapi/linux/capability.h
+index 154dd6d..12c37a1 100644
+--- a/include/uapi/linux/capability.h
++++ b/include/uapi/linux/capability.h
+@@ -347,7 +347,12 @@ struct vfs_cap_data {
  
- 		err = 0;
- 		break;
+ #define CAP_BLOCK_SUSPEND    36
+ 
+-#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
++/* Allow reading the audit log via multicast netlink socket */
++
++#define CAP_AUDIT_READ		37
++
++
++#define CAP_LAST_CAP         CAP_AUDIT_READ
+ 
+ #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
+ 
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 7c28936..223cb74 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -1076,10 +1076,20 @@ static void audit_receive(struct sk_buff  *skb)
+ 	mutex_unlock(&audit_cmd_mutex);
+ }
+ 
++/* Run custom bind function on netlink socket group connect or bind requests. */
++static int audit_bind(int group)
++{
++	if (!capable(CAP_AUDIT_READ))
++		return -EPERM;
++
++	return 0;
++}
++
+ static int __net_init audit_net_init(struct net *net)
+ {
+ 	struct netlink_kernel_cfg cfg = {
+ 		.input	= audit_receive,
++		.bind	= audit_bind,
+ 	};
+ 
+ 	struct audit_net *aunet = net_generic(net, audit_net_id);
+diff --git a/security/selinux/include/classmap.h b/security/selinux/include/classmap.h
+index 14d04e6..be491a7 100644
+--- a/security/selinux/include/classmap.h
++++ b/security/selinux/include/classmap.h
+@@ -147,7 +147,7 @@ struct security_class_mapping secclass_map[] = {
+ 	{ "peer", { "recv", NULL } },
+ 	{ "capability2",
+ 	  { "mac_override", "mac_admin", "syslog", "wake_alarm", "block_suspend",
+-	    NULL } },
++	    "audit_read", NULL } },
+ 	{ "kernel_service", { "use_as_override", "create_files_as", NULL } },
+ 	{ "tun_socket",
+ 	  { COMMON_SOCK_PERMS, "attach_queue", NULL } },
 -- 
 1.7.1
 
