@@ -1,66 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751265AbaDRGbH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 02:31:07 -0400
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:39300 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750959AbaDRGbA (ORCPT
+	id S1751317AbaDRGhA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 02:37:00 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38499 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750959AbaDRGg5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 02:31:00 -0400
-Date: Thu, 17 Apr 2014 23:30:54 -0700
-From: Brian Norris <computersforpeace@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Marek Vasut <marex@denx.de>,
-        linux-mtd@lists.infradead.org, Russell King <linux@arm.linux.org.uk>,
-        Shawn Guo <shawn.guo@freescale.com>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, Steven Miao <realmz6@gmail.com>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-sh@vger.kernel.org
-Subject: Re: [PATCH 0/5] defconfigs: add MTD_SPI_NOR (dependency for M25P80)
-Message-ID: <20140418063054.GK5512@norris-Latitude-E6410>
-References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
- <20140417105302.GA32603@ulmo>
+	Fri, 18 Apr 2014 02:36:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,883,1389772800"; 
+   d="scan'208";a="495183490"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>
+Subject: RE: [PATCH] ACPICA: Tables: Skip NULL entries in RSDT and XSDT.
+Thread-Topic: [PATCH] ACPICA: Tables: Skip NULL entries in RSDT and XSDT.
+Thread-Index: AQHPWrAcRbIEWi18XUqckj4NN5SyAZsWrGRA//+HzYCAALcRAA==
+Date: Fri, 18 Apr 2014 06:36:48 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E8802554D4E@SHSMSX101.ccr.corp.intel.com>
+References: <261e2207fab4a185b44fb27dbf9bc68588aea713.1397785844.git.lv.zheng@intel.com>
+ <20140418024426.GA10084@kroah.com>
+ <1AE640813FDE7649BE1B193DEA596E8802554BEC@SHSMSX101.ccr.corp.intel.com>
+ <20140418033945.GA20137@kroah.com>
+In-Reply-To: <20140418033945.GA20137@kroah.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140417105302.GA32603@ulmo>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Thu, Apr 17, 2014 at 12:53:03PM +0200, Thierry Reding wrote:
-> On Thu, Apr 17, 2014 at 12:21:44AM -0700, Brian Norris wrote:
-> > We are introducing a new SPI-NOR library/framework for MTD, to support various
-> > types of SPI-NOR flash controllers which require (or benefit from) intimate
-> > knowledge of the flash interface, rather than just the relatively dumb SPI
-> > interface. This library borrows much of the m25p80 driver for its abstraction
-> > and moves this code into a spi-nor module.
+> From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> Sent: Friday, April 18, 2014 11:40 AM
 > 
-> If this is a common library, then the more common approach to solve this
-> would be to have each driver that uses it to select MTD_SPI_NOR rather
-> than depend on it. That way you can drop this whole series to update the
-> default configurations.
+> On Fri, Apr 18, 2014 at 03:00:21AM +0000, Zheng, Lv wrote:
+> > Hi, Greg
+> >
+> > > From: Greg KH [mailto:gregkh@linuxfoundation.org]
+> > > Sent: Friday, April 18, 2014 10:44 AM
+> > >
+> > > On Fri, Apr 18, 2014 at 09:53:19AM +0800, Lv Zheng wrote:
+> > > > Note that this patch is only used for stable kernels, upstream kernels
+> > > > will have this problem fixed in ACPICA 201303-04 release.  So upstream
+> > > > kernels shouldn't merge this commit.
+> > >
+> > > What kernel commit fixed this issue in "upstream"?
+> >
+> > There is no kernel commit now has fixed this issue in "upstream".
+> > The fix commit need to go into ACPICA first, so I believe it will
+> > appear in 3.15-rc2 (ACPICA 201403xx release) or 3.15-rc3 (ACPICA
+> > 201404xx release).
+> 
+> Then I can't take this patch at all in any stable tree.  Please read
+> Documentation/stable_kernel_rules.txt for why and how to properly do
+> this.
+> 
+> Just mark the commit that fixes the issue in Linus's tree for stable,
+> and it will happen automatically.
+> 
 
-But does MTD_SPI_NOR (and drivers/mtd/spi-nor/) qualify as a "library"
-or as a "subsystem"? I thought the latter were typically expected to be
-user-selectable options, not automatically-"select"ed.
+OK.
 
-I would say that, except for its age, MTD_SPI_NOR is very similar in to
-MTD_NAND (driver/mtd/nand/), which I'd consider a kind of subsystem, and
-which users must select before they are asked about drivers which fall
-under its category.
+> > The back port of the fix commit will have many dependencies as we have
+> > a big change in ACPICA table manager in ACPICA 201403xx release.
+> 
+> Why not just submit this fix first to Linus, for his tree now, and then
+> do the larger changes later?
+> 
 
-Perhaps my usage of the word "library" in the description was a mistake,
-as I don't exactly consider it like a library in the sense of many other
-"select"ed libraries.
+OK.  It seems possible now.
 
-Brian
+> > However this back port is very light and has been confirmed by the reporters.
+> >
+> > The bug seems to be urgent, it has broken many platforms shipped with
+> > AMI BIOSes versioning from F2 to F4.  Someone may monitor here to find
+> > a valid fix.
+> 
+> Not any stable maintainers, we can't take patches that aren't in Linus's
+> tree, sorry.
+> 
+
+OK.
+I was just a little worried about as I'm the culprit.
+Sorry for the noise.
+
+Thanks and best regards
+-Lv
+
+> greg k-h
