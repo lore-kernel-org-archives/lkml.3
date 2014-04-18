@@ -1,260 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751257AbaDRBoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 17 Apr 2014 21:44:18 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:32994 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbaDRBoN (ORCPT
+	id S1751330AbaDRBqO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 17 Apr 2014 21:46:14 -0400
+Received: from g4t3427.houston.hp.com ([15.201.208.55]:29461 "EHLO
+	g4t3427.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbaDRBqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 17 Apr 2014 21:44:13 -0400
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: cocci@systeme.lip6.fr
-Cc: "Luis R. Rodriguez" <mcgrof@suse.com>,
-        Johannes Berg <johannes.berg@intel.com>, backports@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] coccinelle: add pycocci wrapper for multithreaded support
-Date: Thu, 17 Apr 2014 18:44:02 -0700
-Message-Id: <1397785442-17005-1-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 17 Apr 2014 21:46:11 -0400
+Message-ID: <535083DC.2040406@hp.com>
+Date: Thu, 17 Apr 2014 21:46:04 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 06/19] qspinlock: prolong the stay in the pending bit
+ path
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com> <1397747051-15401-7-git-send-email-Waiman.Long@hp.com> <20140417163640.GT11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140417163640.GT11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On 04/17/2014 12:36 PM, Peter Zijlstra wrote:
+> On Thu, Apr 17, 2014 at 11:03:58AM -0400, Waiman Long wrote:
+>> There is a problem in the current trylock_pending() function.  When the
+>> lock is free, but the pending bit holder hasn't grabbed the lock&
+>> cleared the pending bit yet, the trylock_pending() function will fail.
+> I remember seeing some of this..
+>
+>> It can be seen that the queue spinlock is slower than the ticket
+>> spinlock when there are 2 or 3 contending tasks. In all the other case,
+>> the queue spinlock is either equal or faster than the ticket spinlock.
+> So with my code I get:
+>
+>          qspinlock	   ticket
+>
+> local:  2: 8741.853010     2: 8812.042460
+> remote: 2: 8549.731795     2: 8709.005695
+>
+> And that is without this optimization.
+>
+> Also note that I don't have this cmpxchg loop anymore.
 
-This is a wrapper for folks which by work on git trees, specifically
-the linux kernel with lots of files and with random task Cocci files.
-The assumption is all you need is multithreaded support and currently only
-a shell script is lying around, but that isn't easily extensible, nor
-is it dynamic. This uses Python to add Coccinelle's mechanisms for
-multithreaded support but also enables all sorts of defaults which
-you'd expect to be enabled when using Coccinelle for Linux kernel
-development.
+It is a matter of timing. If the contending task enters the pending bit 
+code path at the right time, it will be able to get pending bit and 
+wait. If it enters at the wrong time, it will bail out and use the 
+queuing code path. The patch is just to enlarge the timing windows so 
+that it won't bail out so easily.
 
-The Linux kernel backports project makes use of this tool on a daily
-basis and as such you can expect more tuning to it. All this is being
-done as Coccinelle's multithreaded support is being revamped but
-that will take a while so we want something easy to use that is
-extensible in the meantime.
+ From my own testing, using xchg(), for example, will be a bit faster 
+than cmpxchg(). The downside of that is that I can guarantee strict 
+ordering between a pending bit waiter and a queue waiter. So I need to 
+use cmpxchg to set the lock. This didn't slow thing down that much when 
+I tested it on a Westmere-EX box, but I saw significant slowdown in 
+IvyBridge-EX. That is why I trade the use of xchg() with cmpxchg() at 
+the expense of a bit of slowdown in the pending bit code path.
 
-The purpose of putting this into Coccinelle is to make the tool generic
-and usable outside of backports. If this tool gets merged into
-Coccinelle we'll just drop this copy and help evolve it within
-Coccinelle.
+>>   kernel/locking/qspinlock.c |   32 ++++++++++++++++++++++++++++++--
+>>   1 files changed, 30 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
+>> index 55601b4..497da24 100644
+>> --- a/kernel/locking/qspinlock.c
+>> +++ b/kernel/locking/qspinlock.c
+>> @@ -216,6 +216,7 @@ xchg_tail(struct qspinlock *lock, u32 tail, u32 *pval)
+>>   static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
+>>   {
+>>   	u32 old, new, val = *pval;
+>> +	int retry = 1;
+>>
+>>   	/*
+>>   	 * trylock || pending
+>> @@ -225,11 +226,38 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
+>>   	 */
+>>   	for (;;) {
+>>   		/*
+>> -		 * If we observe any contention; queue.
+>> +		 * If we observe that the queue is not empty,
+>> +		 * return and be queued.
+>>   		 */
+>> -		if (val&  ~_Q_LOCKED_MASK)
+>> +		if (val&  _Q_TAIL_MASK)
+>>   			return 0;
+>>
+>> +		if ((val&  _Q_LOCKED_PENDING_MASK) ==
+>> +		    (_Q_LOCKED_VAL|_Q_PENDING_VAL)) {
+>> +			/*
+>> +			 * If both the lock and pending bits are set, we wait
+>> +			 * a while to see if that either bit will be cleared.
+>> +			 * If that is no change, we return and be queued.
+>> +			 */
+>> +			if (!retry)
+>> +				return 0;
+>> +			retry--;
+>> +			cpu_relax();
+>> +			cpu_relax();
+>> +			*pval = val = atomic_read(&lock->val);
+>> +			continue;
+> Since you gave up optimizing the _Q_PENDING_BITS != 8 case why bother
+> with this? The switch from _Q_PENDING_VAL to _Q_LOCKED_VAL is atomic by
+> virtue of your (endian challenged) clear_pending_set_locked().
 
-You just pass it a cocci file, a target dir, and that's it.
+The code is just to extend the timing window a bit more to include cases 
+where the lock holder is about to release the lock. It applies to both 
+cases. However, it is not strictly necessary and I can take it out.
 
-Cc: Johannes Berg <johannes.berg@intel.com>
-Cc: backports@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: cocci@systeme.lip6.fr
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
+BTW, I didn't test out your atomic_test_and_set() change. Did it provide 
+a noticeable performance benefit when compared with cmpxchg()?
 
-This v2 has taken quite a bit of consideration into some additional flags
-to make default, in particular --coccigrep is now used which proved in
-the general case to not require increasing the number of threads depending
-on the type of Cocci patch you produce. This patch also now puts pycocci
-under tool tools/ directory. If I get an ACK I can commit and push.
+>> +		} else if ((val&  _Q_LOCKED_PENDING_MASK) == _Q_PENDING_VAL) {
+>> +			/*
+>> +			 * Pending bit is set, but not the lock bit.
+>> +			 * Assuming that the pending bit holder is going to
+>> +			 * set the lock bit and clear the pending bit soon,
+>> +			 * it is better to wait than to exit at this point.
+>> +			 */
+>> +			cpu_relax();
+>> +			*pval = val = atomic_read(&lock->val);
+>> +			continue;
+>> +		}
+>> +
+>>   		new = _Q_LOCKED_VAL;
+>>   		if (val == new)
+>>   			new |= _Q_PENDING_VAL;
+> Wouldn't something like:
+>
+> 	while (atomic_read(&lock->val) == _Q_PENDING_VAL)
+> 		cpu_relax();
+>
+> before the cmpxchg loop have gotten you all this?
 
-If you'd like to downlaod this tool I'll try to keep an updated version
-here:
+Yes, you are right. I don't need to do a bitwise AND with 
+_Q_LOCKED_PENDING_MASK. I will try make the loop a bit simpler.
 
-http://drvbp1.linux-foundation.org/~mcgrof/coccinelle/
+>
+> I just tried this on my code and I cannot see a difference.
 
-Its also currently available under the backports project -- until and only
-if Coccinelle does wish to carry this internally in its own repo / releases.
+Again, it is a matter of timing and it depends on the tests that we 
+used. My test showed a difference, but not yours. Both can be true.
 
- tools/pycocci | 180 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 180 insertions(+)
- create mode 100755 tools/pycocci
-
-diff --git a/tools/pycocci b/tools/pycocci
-new file mode 100755
-index 0000000..fde8190
---- /dev/null
-+++ b/tools/pycocci
-@@ -0,0 +1,180 @@
-+#!/usr/bin/env python
-+#
-+# Copyright (c) 2014 Luis R. Rodriguez  <mcgrof@suse.com>
-+# Copyright (c) 2013 Johannes Berg <johannes@sipsolutions.net>
-+#
-+# This file is released under the GPLv2.
-+#
-+# Python wrapper for Coccinelle for multithreaded support,
-+# designed to be used for working on a git tree, and with sensible
-+# defaults, specifically for kernel developers.
-+
-+from multiprocessing import Process, cpu_count, Queue
-+import argparse, subprocess, os, sys
-+import tempfile, shutil
-+
-+# simple tempdir wrapper object for 'with' statement
-+#
-+# Usage:
-+# with tempdir.tempdir() as tmpdir:
-+#     os.chdir(tmpdir)
-+#     do something
-+#
-+class tempdir(object):
-+    def __init__(self, suffix='', prefix='', dir=None, nodelete=False):
-+        self.suffix = ''
-+        self.prefix = ''
-+        self.dir = dir
-+        self.nodelete = nodelete
-+
-+    def __enter__(self):
-+        self._name = tempfile.mkdtemp(suffix=self.suffix,
-+                                      prefix=self.prefix,
-+                                      dir=self.dir)
-+        return self._name
-+
-+    def __exit__(self, type, value, traceback):
-+        if self.nodelete:
-+            print('not deleting directory %s!' % self._name)
-+        else:
-+            shutil.rmtree(self._name)
-+
-+class CoccinelleError(Exception):
-+    pass
-+class ExecutionError(CoccinelleError):
-+    def __init__(self, cmd, errcode):
-+        self.error_code = errcode
-+        print('Failed command:')
-+        print(' '.join(cmd))
-+
-+class ExecutionErrorThread(CoccinelleError):
-+    def __init__(self, errcode, fn, cocci_file, threads, t, logwrite, print_name):
-+        self.error_code = errcode
-+        logwrite("Failed to apply changes from %s" % print_name)
-+
-+        logwrite("Specific log output from change that failed using %s" % print_name)
-+        tf = open(fn, 'r')
-+        for line in tf.read():
-+            logwrite('> %s' % line)
-+        tf.close()
-+
-+        logwrite("Full log using %s" % print_name)
-+        for num in range(threads):
-+            fn = os.path.join(t, '.tmp_spatch_worker.' + str(num))
-+            if (not os.path.isfile(fn)):
-+                continue
-+            tf = open(fn, 'r')
-+            for line in tf.read():
-+                logwrite('> %s' % line)
-+            tf.close()
-+            os.unlink(fn)
-+
-+def spatch(cocci_file, outdir,
-+           max_threads, thread_id, temp_dir, ret_q, extra_args=[]):
-+    cmd = ['spatch',
-+            '--sp-file', cocci_file,
-+            '--in-place',
-+            '--recursive-includes',
-+            '--relax-include-path',
-+            '--use-coccigrep',
-+            '--timeout', '120',
-+            '--dir', outdir ]
-+
-+    if (max_threads > 1):
-+        cmd.extend(['-max', str(max_threads), '-index', str(thread_id)])
-+
-+    cmd.extend(extra_args)
-+
-+    fn = os.path.join(temp_dir, '.tmp_spatch_worker.' + str(thread_id))
-+    outfile = open(fn, 'w')
-+
-+    sprocess = subprocess.Popen(cmd,
-+                               stdout=outfile, stderr=subprocess.STDOUT,
-+                               close_fds=True, universal_newlines=True)
-+    sprocess.wait()
-+    if sprocess.returncode != 0:
-+        raise ExecutionError(cmd, sprocess.returncode)
-+    outfile.close()
-+    ret_q.put((sprocess.returncode, fn))
-+
-+def threaded_spatch(cocci_file, outdir, logwrite, num_jobs,
-+                    print_name, extra_args=[]):
-+    num_cpus = cpu_count()
-+    if num_jobs:
-+        threads = int(num_jobs)
-+    else:
-+        threads = num_cpus
-+    jobs = list()
-+    output = ""
-+    ret_q = Queue()
-+    with tempdir() as t:
-+        for num in range(threads):
-+            p = Process(target=spatch, args=(cocci_file, outdir,
-+                                             threads, num, t, ret_q,
-+                                             extra_args))
-+            jobs.append(p)
-+        for p in jobs:
-+            p.start()
-+
-+        for num in range(threads):
-+            ret, fn = ret_q.get()
-+            if ret != 0:
-+                raise ExecutionErrorThread(ret, fn, cocci_file, threads, t,
-+                                           logwrite, print_name)
-+        for job in jobs:
-+            p.join()
-+
-+        for num in range(threads):
-+            fn = os.path.join(t, '.tmp_spatch_worker.' + str(num))
-+            tf = open(fn, 'r')
-+            output = output + tf.read()
-+            tf.close()
-+            os.unlink(fn)
-+        return output
-+
-+def logwrite(msg):
-+    sys.stdout.write(msg)
-+    sys.stdout.flush()
-+
-+def _main():
-+    parser = argparse.ArgumentParser(description='Multithreaded Python wrapper for Coccinelle ' +
-+                                     'with sensible defaults, targetted specifically ' +
-+                                     'for git development environments')
-+    parser.add_argument('cocci_file', metavar='<Coccinelle SmPL rules file>', type=str,
-+                        help='This is the Coccinelle file you want to use')
-+    parser.add_argument('target_dir', metavar='<target directory>', type=str,
-+                        help='Target source directory to modify')
-+    parser.add_argument('-p', '--profile-cocci', const=True, default=False, action="store_const",
-+                        help='Enable profile, this will pass --profile  to Coccinelle.')
-+    parser.add_argument('-j', '--jobs', metavar='<jobs>', type=str, default=None,
-+                        help='Only use the cocci file passed for Coccinelle, don\'t do anything else, ' +
-+                        'also creates a git repo on the target directory for easy inspection ' +
-+                        'of changes done by Coccinelle.')
-+    parser.add_argument('-v', '--verbose', const=True, default=False, action="store_const",
-+                        help='Enable output from Coccinelle')
-+    args = parser.parse_args()
-+
-+    if not os.path.isfile(args.cocci_file):
-+        return -2
-+
-+    extra_spatch_args = []
-+    if args.profile_cocci:
-+        extra_spatch_args.append('--profile')
-+    jobs = 0
-+    if args.jobs > 0:
-+        jobs = args.jobs
-+
-+    output = threaded_spatch(args.cocci_file,
-+                             args.target_dir,
-+                             logwrite,
-+                             jobs,
-+                             os.path.basename(args.cocci_file),
-+                             extra_args=extra_spatch_args)
-+    if args.verbose:
-+        logwrite(output)
-+    return 0
-+
-+if __name__ == '__main__':
-+    ret = _main()
-+    if ret:
-+        sys.exit(ret)
--- 
-1.9.1
-
+-Longman
