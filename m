@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751519AbaDRHqZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 03:46:25 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:63656 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110AbaDRHqV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 03:46:21 -0400
-Date: Fri, 18 Apr 2014 09:46:16 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
-Message-ID: <20140418074616.GB13517@gmail.com>
-References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
- <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
- <20140417155844.GS11096@twins.programming.kicks-ass.net>
- <53504C4E.8060800@hp.com>
+	id S1751312AbaDRHuU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 03:50:20 -0400
+Received: from mail.ispras.ru ([83.149.199.45]:57272 "EHLO mail.ispras.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751034AbaDRHuR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 03:50:17 -0400
+Message-ID: <5350D934.706@ispras.ru>
+Date: Fri, 18 Apr 2014 00:50:12 -0700
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53504C4E.8060800@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Anil Gurumurthy <anil.gurumurthy@qlogic.com>,
+        Sudarsana Kalluru <sudarsana.kalluru@qlogic.com>
+CC: "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ldv-project@linuxtesting.org
+Subject: Re: [PATCH] [SCSI] bfa: allocate memory with GFP_ATOMIC in spinlock
+ context
+References: <1397805949-20502-1-git-send-email-khoroshilov@ispras.ru>
+In-Reply-To: <1397805949-20502-1-git-send-email-khoroshilov@ispras.ru>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please ignore this patch, it will resend a correct version of it.
 
-* Waiman Long <waiman.long@hp.com> wrote:
+On 18.04.2014 00:25, Alexey Khoroshilov wrote:
+> bfa_fcb_pbc_vport_create() is called only from bfa_fcs_pbc_vport_init(),
+> that is called only from bfad_drv_start() with bfad_lock spinlock held.
+> So the patch replaces GFP_KERNEL with GFP_ATOMIC to avoid
+> sleeping in atomic spinlock context.
+>
+> Found by Linux Driver Verification project (linuxtesting.org).
+>
+> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+> ---
+>  drivers/scsi/bfa/bfad.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/scsi/bfa/bfad.c b/drivers/scsi/bfa/bfad.c
+> index cc0fbcdc5192..8f46d1b72fb8 100644
+> --- a/drivers/scsi/bfa/bfad.c
+> +++ b/drivers/scsi/bfa/bfad.c
+> @@ -652,7 +652,7 @@ bfad_vport_create(struct bfad_s *bfad, u16 vf_id,
+>  	unsigned long	flags;
+>  	struct completion fcomp;
+>  
+> -	vport = kzalloc(sizeof(struct bfad_vport_s), GFP_KERNEL);
+> +	vport = kzalloc(sizeof(struct bfad_vport_s), GFP_ATOMIC);
+>  	if (!vport) {
+>  		rc = BFA_STATUS_ENOMEM;
+>  		goto ext;
 
-> On 04/17/2014 11:58 AM, Peter Zijlstra wrote:
-> >On Thu, Apr 17, 2014 at 11:03:57AM -0400, Waiman Long wrote:
-> >>+static __always_inline void
-> >>+clear_pending_set_locked(struct qspinlock *lock, u32 val)
-> >>+{
-> >>+	struct __qspinlock *l = (void *)lock;
-> >>+
-> >>+	ACCESS_ONCE(l->locked_pending) = 1;
-> >>+}
-> >>@@ -157,8 +251,13 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
-> >>  	 * we're pending, wait for the owner to go away.
-> >>  	 *
-> >>  	 * *,1,1 ->  *,1,0
-> >>+	 *
-> >>+	 * this wait loop must be a load-acquire such that we match the
-> >>+	 * store-release that clears the locked bit and create lock
-> >>+	 * sequentiality; this because not all try_clear_pending_set_locked()
-> >>+	 * implementations imply full barriers.
-> >You renamed the function referred in the above comment.
-> >
-> 
-> Sorry, will fix the comments.
-
-I suggest not renaming the function instead. 
-try_clear_pending_set_locked() tells the intent in a clearer fashion.
-
-Thanks,
-
-	Ingo
