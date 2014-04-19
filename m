@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755306AbaDTC2o (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 22:28:44 -0400
-Received: from g2t2353.austin.hp.com ([15.217.128.52]:57917 "EHLO
-	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755234AbaDTC0v (ORCPT
+	id S1161123AbaDTCbJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 22:31:09 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:36082 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755234AbaDTCa4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 22:26:51 -0400
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: akpm@linux-foundation.org
-Cc: zeus@gnu.org, aswin@hp.com, davidlohr@hp.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Vineet Gupta <vgupta@synopsys.com>
-Subject: [PATCH 4/6] arc: call find_vma with the mmap_sem held
-Date: Sat, 19 Apr 2014 19:26:29 -0700
-Message-Id: <1397960791-16320-5-git-send-email-davidlohr@hp.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1397960791-16320-1-git-send-email-davidlohr@hp.com>
-References: <1397960791-16320-1-git-send-email-davidlohr@hp.com>
+	Sat, 19 Apr 2014 22:30:56 -0400
+From: "Son P. Nguyen" <fastmutex@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, "Son P. Nguyen" <fastmutex@gmail.com>
+Subject: [PATCH 1/2] Staging: dgnc: dgnc_driver: fixed coding style of dgnc_pci_tbl
+Date: Sat, 19 Apr 2014 22:48:10 +0000
+Message-Id: <1397947691-19232-1-git-send-email-fastmutex@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Performing vma lookups without taking the mm->mmap_sem is asking
-for trouble. While doing the search, the vma in question can be
-modified or even removed before returning to the caller. Take the
-lock (shared) in order to avoid races while iterating through
-the vmacache and/or rbtree.
+From: "Son P. Nguyen" <fastmutex@gmail.com>
 
-This patch is completely *untested*.
+Fixed coding style of dgnc_pci_tbl definition (longer than 80 chars)
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Vineet Gupta <vgupta@synopsys.com>
+Signed-off-by: Son P. Nguyen <fastmutex@gmail.com>
 ---
- arch/arc/kernel/troubleshoot.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+ drivers/staging/dgnc/dgnc_driver.c | 36 +++++++++++++++++++-----------------
+ 1 file changed, 19 insertions(+), 17 deletions(-)
 
-diff --git a/arch/arc/kernel/troubleshoot.c b/arch/arc/kernel/troubleshoot.c
-index 73a7450..3a5a5c1 100644
---- a/arch/arc/kernel/troubleshoot.c
-+++ b/arch/arc/kernel/troubleshoot.c
-@@ -90,7 +90,7 @@ static void show_faulting_vma(unsigned long address, char *buf)
- 	/* can't use print_vma_addr() yet as it doesn't check for
- 	 * non-inclusive vma
- 	 */
--
-+	down_read(&current->active_mm->mmap_sem);
- 	vma = find_vma(current->active_mm, address);
+diff --git a/drivers/staging/dgnc/dgnc_driver.c b/drivers/staging/dgnc/dgnc_driver.c
+index b1a39b2..e91d3a7 100644
+--- a/drivers/staging/dgnc/dgnc_driver.c
++++ b/drivers/staging/dgnc/dgnc_driver.c
+@@ -124,25 +124,27 @@ static ulong		dgnc_poll_time;				/* Time of next poll */
+ static uint		dgnc_poll_stop;				/* Used to tell poller to stop */
+ static struct timer_list dgnc_poll_timer;
  
- 	/* check against the find_vma( ) behaviour which returns the next VMA
-@@ -110,9 +110,10 @@ static void show_faulting_vma(unsigned long address, char *buf)
- 			vma->vm_start < TASK_UNMAPPED_BASE ?
- 				address : address - vma->vm_start,
- 			nm, vma->vm_start, vma->vm_end);
--	} else {
-+	} else
- 		pr_info("    @No matching VMA found\n");
--	}
-+
-+	up_read(&current->active_mm->mmap_sem);
- }
++#define DIGIVID_PCI_DEVICE_ID(subdevice, driver_data) \
++	{ DIGI_VID, PCI_DEVICE_##subdevice, PCI_ANY_ID, 0, 0, driver_data }
  
- static void show_ecr_verbose(struct pt_regs *regs)
+ static struct pci_device_id dgnc_pci_tbl[] = {
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	0 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	1 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	2 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	3 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,		4 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,		5 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_2DB9_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	6 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_2DB9PRI_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	7 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_2RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	8 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_2RJ45PRI_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	9 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_1_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	10 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_1_422_485_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	11 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_2_422_485_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	12 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	 13 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	14 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_4RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	15 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_8RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	16 },
++	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_4_DID,		0 },
++	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_4_422_DID,	1 },
++	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_8_DID,		2 },
++	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_8_422_DID,	3 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_4_DID,		4 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_8_DID,		5 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_2DB9_DID,		6 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_2DB9PRI_DID,	7 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_2RJ45_DID,		8 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_2RJ45PRI_DID,	9 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_1_422_DID,		10 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_1_422_485_DID,	11 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_2_422_485_DID,	12 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_8_DID,	13 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_4_DID,	14 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_4RJ45_DID,	15 },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_8RJ45_DID,	16 },
+ 	{0,}						/* 0 terminated list. */
+ };
+ MODULE_DEVICE_TABLE(pci, dgnc_pci_tbl);
 -- 
-1.8.1.4
+1.8.1.2
 
