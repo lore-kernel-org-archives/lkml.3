@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117AbaDSPyJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 11:54:09 -0400
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:52174 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754908AbaDSPxb (ORCPT
+	id S1755059AbaDSPx4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 11:53:56 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:55135 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271AbaDSPx0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 11:53:31 -0400
+	Sat, 19 Apr 2014 11:53:26 -0400
 From: Dan Streetman <ddstreet@ieee.org>
 To: Seth Jennings <sjennings@variantweb.net>, Minchan Kim <minchan@kernel.org>,
         Nitin Gupta <ngupta@vflare.org>
@@ -19,9 +19,9 @@ Cc: Dan Streetman <ddstreet@ieee.org>,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
         Linux-MM <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] mm: zpool: update zswap to use zpool
-Date: Sat, 19 Apr 2014 11:52:44 -0400
-Message-Id: <1397922764-1512-5-git-send-email-ddstreet@ieee.org>
+Subject: [PATCH 2/4] mm: zpool: implement zsmalloc shrinking
+Date: Sat, 19 Apr 2014 11:52:42 -0400
+Message-Id: <1397922764-1512-3-git-send-email-ddstreet@ieee.org>
 X-Mailer: git-send-email 1.8.3.1
 In-Reply-To: <1397922764-1512-1-git-send-email-ddstreet@ieee.org>
 References: <1397922764-1512-1-git-send-email-ddstreet@ieee.org>
@@ -29,236 +29,316 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change zswap to use the zpool api instead of directly using zbud.
-Add a boot-time param to allow selecting which zpool implementation
-to use, with zbud as the default.
+Add zs_shrink() and helper functions to zsmalloc.  Update zsmalloc
+zs_create_pool() creation function to include ops param that provides
+an evict() function for use during shrinking.  Update helper function
+fix_fullness_group() to always reinsert changed zspages even if the
+fullness group did not change, so they are updated in the fullness
+group lru.  Also update zram to use the new zsmalloc pool creation
+function but pass NULL as the ops param, since zram does not use
+pool shrinking.
 
 Signed-off-by: Dan Streetman <ddstreet@ieee.org>
----
- mm/zswap.c | 70 ++++++++++++++++++++++++++++++++++----------------------------
- 1 file changed, 39 insertions(+), 31 deletions(-)
 
-diff --git a/mm/zswap.c b/mm/zswap.c
-index 1cc6770..4f4a8ec 100644
---- a/mm/zswap.c
-+++ b/mm/zswap.c
-@@ -34,7 +34,7 @@
- #include <linux/swap.h>
- #include <linux/crypto.h>
- #include <linux/mempool.h>
--#include <linux/zbud.h>
-+#include <linux/zpool.h>
+---
+
+To find all the used objects inside a zspage, I had to do a full scan
+of the zspage->freelist for each object, since there's no list of used
+objects, and no way to keep a list of used objects without allocating
+more memory for each zspage (that I could see).  Of course, by taking
+a byte (or really only a bit) out of each object's memory area to use
+as a flag, we could just check that instead of scanning ->freelist
+for each zspage object, but that would (slightly) reduce the available
+size of each zspage object.
+
+
+ drivers/block/zram/zram_drv.c |   2 +-
+ include/linux/zsmalloc.h      |   7 +-
+ mm/zsmalloc.c                 | 168 ++++++++++++++++++++++++++++++++++++++----
+ 3 files changed, 160 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 9849b52..dacf343 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -249,7 +249,7 @@ static struct zram_meta *zram_meta_alloc(u64 disksize)
+ 		goto free_meta;
+ 	}
  
- #include <linux/mm_types.h>
- #include <linux/page-flags.h>
-@@ -45,8 +45,8 @@
- /*********************************
- * statistics
- **********************************/
--/* Number of memory pages used by the compressed pool */
--static u64 zswap_pool_pages;
-+/* Total bytes used by the compressed storage */
-+static u64 zswap_pool_total_size;
- /* The number of compressed pages currently stored in zswap */
- static atomic_t zswap_stored_pages = ATOMIC_INIT(0);
+-	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM);
++	meta->mem_pool = zs_create_pool(GFP_NOIO | __GFP_HIGHMEM, NULL);
+ 	if (!meta->mem_pool) {
+ 		pr_err("Error creating memory pool\n");
+ 		goto free_table;
+diff --git a/include/linux/zsmalloc.h b/include/linux/zsmalloc.h
+index e44d634..a75ab6e 100644
+--- a/include/linux/zsmalloc.h
++++ b/include/linux/zsmalloc.h
+@@ -36,11 +36,16 @@ enum zs_mapmode {
  
-@@ -89,8 +89,13 @@ static unsigned int zswap_max_pool_percent = 20;
- module_param_named(max_pool_percent,
- 			zswap_max_pool_percent, uint, 0644);
+ struct zs_pool;
  
--/* zbud_pool is shared by all of zswap backend  */
--static struct zbud_pool *zswap_pool;
-+/* Compressed storage to use */
-+#define ZSWAP_ZPOOL_DEFAULT ZPOOL_TYPE_ZBUD
-+static char *zswap_zpool_type = ZSWAP_ZPOOL_DEFAULT;
-+module_param_named(zpool, zswap_zpool_type, charp, 0444);
+-struct zs_pool *zs_create_pool(gfp_t flags);
++struct zs_ops {
++	int (*evict)(struct zs_pool *pool, unsigned long handle);
++};
 +
-+/* zpool is shared by all of zswap backend  */
-+static struct zpool *zswap_pool;
++struct zs_pool *zs_create_pool(gfp_t flags, struct zs_ops *ops);
+ void zs_destroy_pool(struct zs_pool *pool);
  
- /*********************************
- * compression functions
-@@ -168,7 +173,7 @@ static void zswap_comp_exit(void)
-  *            be held while changing the refcount.  Since the lock must
-  *            be held, there is no reason to also make refcount atomic.
-  * offset - the swap offset for the entry.  Index into the red-black tree.
-- * handle - zbud allocation handle that stores the compressed page data
-+ * handle - zpool allocation handle that stores the compressed page data
-  * length - the length in bytes of the compressed page data.  Needed during
-  *          decompression
-  */
-@@ -284,15 +289,15 @@ static void zswap_rb_erase(struct rb_root *root, struct zswap_entry *entry)
+ unsigned long zs_malloc(struct zs_pool *pool, size_t size);
+ void zs_free(struct zs_pool *pool, unsigned long obj);
++int zs_shrink(struct zs_pool *pool, size_t size);
+ 
+ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+ 			enum zs_mapmode mm);
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index 36b4591..b99bec0 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -219,6 +219,8 @@ struct zs_pool {
+ 	struct size_class size_class[ZS_SIZE_CLASSES];
+ 
+ 	gfp_t flags;	/* allocation flags used when growing pool */
++
++	struct zs_ops *ops;
+ };
+ 
+ /*
+@@ -389,16 +391,14 @@ static enum fullness_group fix_fullness_group(struct zs_pool *pool,
+ 	BUG_ON(!is_first_page(page));
+ 
+ 	get_zspage_mapping(page, &class_idx, &currfg);
+-	newfg = get_fullness_group(page);
+-	if (newfg == currfg)
+-		goto out;
+-
+ 	class = &pool->size_class[class_idx];
++	newfg = get_fullness_group(page);
++	/* Need to do this even if currfg == newfg, to update lru */
+ 	remove_zspage(page, class, currfg);
+ 	insert_zspage(page, class, newfg);
+-	set_zspage_mapping(page, class_idx, newfg);
++	if (currfg != newfg)
++		set_zspage_mapping(page, class_idx, newfg);
+ 
+-out:
+ 	return newfg;
+ }
+ 
+@@ -438,6 +438,36 @@ static int get_pages_per_zspage(int class_size)
  }
  
  /*
-- * Carries out the common pattern of freeing and entry's zbud allocation,
-+ * Carries out the common pattern of freeing and entry's zpool allocation,
-  * freeing the entry itself, and decrementing the number of stored pages.
++ * To determine which class to use when shrinking, we find the
++ * first zspage class that is greater than the requested shrink
++ * size, and has at least one zspage.  This returns the class
++ * with the class lock held, or NULL.
++ */
++static struct size_class *get_class_to_shrink(struct zs_pool *pool,
++			size_t size)
++{
++	struct size_class *class;
++	int i;
++	bool in_use, large_enough;
++
++	for (i = 0; i <= ZS_SIZE_CLASSES; i++) {
++		class = &pool->size_class[i];
++
++		spin_lock(&class->lock);
++
++		in_use = class->pages_allocated > 0;
++		large_enough = class->pages_per_zspage * PAGE_SIZE >= size;
++
++		if (in_use && large_enough)
++			return class;
++
++		spin_unlock(&class->lock);
++	}
++
++	return NULL;
++}
++
++/*
+  * A single 'zspage' is composed of many system pages which are
+  * linked together using fields in struct page. This function finds
+  * the first/head page, given any component page of a zspage.
+@@ -508,6 +538,48 @@ static unsigned long obj_idx_to_offset(struct page *page,
+ 	return off + obj_idx * class_size;
+ }
+ 
++static bool obj_handle_is_free(struct page *first_page,
++			struct size_class *class, unsigned long handle)
++{
++	unsigned long obj, idx, offset;
++	struct page *page;
++	struct link_free *link;
++
++	BUG_ON(!is_first_page(first_page));
++
++	obj = (unsigned long)first_page->freelist;
++
++	while (obj) {
++		if (obj == handle)
++			return true;
++
++		obj_handle_to_location(obj, &page, &idx);
++		offset = obj_idx_to_offset(page, idx, class->size);
++
++		link = (struct link_free *)kmap_atomic(page) +
++					offset / sizeof(*link);
++		obj = (unsigned long)link->next;
++		kunmap_atomic(link);
++	}
++
++	return false;
++}
++
++static void obj_free(unsigned long obj, struct page *page, unsigned long offset)
++{
++	struct page *first_page = get_first_page(page);
++	struct link_free *link;
++
++	/* Insert this object in containing zspage's freelist */
++	link = (struct link_free *)((unsigned char *)kmap_atomic(page)
++							+ offset);
++	link->next = first_page->freelist;
++	kunmap_atomic(link);
++	first_page->freelist = (void *)obj;
++
++	first_page->inuse--;
++}
++
+ static void reset_page(struct page *page)
+ {
+ 	clear_bit(PG_private, &page->flags);
+@@ -651,6 +723,39 @@ cleanup:
+ 	return first_page;
+ }
+ 
++static int reclaim_zspage(struct zs_pool *pool, struct size_class *class,
++			struct page *first_page)
++{
++	struct page *page = first_page;
++	unsigned long offset = 0, handle, idx, objs;
++	int ret = 0;
++
++	BUG_ON(!is_first_page(page));
++	BUG_ON(!pool->ops);
++	BUG_ON(!pool->ops->evict);
++
++	while (page) {
++		objs = DIV_ROUND_UP(PAGE_SIZE - offset, class->size);
++
++		for (idx = 0; idx < objs; idx++) {
++			handle = (unsigned long)obj_location_to_handle(page,
++									idx);
++			if (!obj_handle_is_free(first_page, class, handle))
++				ret = pool->ops->evict(pool, handle);
++			if (ret)
++				return ret;
++			else
++				obj_free(handle, page, offset);
++		}
++
++		page = get_next_page(page);
++		if (page)
++			offset = page->index;
++	}
++
++	return 0;
++}
++
+ static struct page *find_get_zspage(struct size_class *class)
+ {
+ 	int i;
+@@ -856,7 +961,7 @@ fail:
+  * On success, a pointer to the newly created pool is returned,
+  * otherwise NULL.
   */
- static void zswap_free_entry(struct zswap_entry *entry)
+-struct zs_pool *zs_create_pool(gfp_t flags)
++struct zs_pool *zs_create_pool(gfp_t flags, struct zs_ops *ops)
  {
--	zbud_free(zswap_pool, entry->handle);
-+	zpool_free(zswap_pool, entry->handle);
- 	zswap_entry_cache_free(entry);
- 	atomic_dec(&zswap_stored_pages);
--	zswap_pool_pages = zbud_get_pool_size(zswap_pool);
-+	zswap_pool_total_size = zpool_get_total_size(zswap_pool);
- }
- 
- /* caller must hold the tree lock */
-@@ -409,7 +414,7 @@ cleanup:
- static bool zswap_is_full(void)
- {
- 	return totalram_pages * zswap_max_pool_percent / 100 <
--		zswap_pool_pages;
-+		DIV_ROUND_UP(zswap_pool_total_size, PAGE_SIZE);
- }
- 
- /*********************************
-@@ -525,7 +530,7 @@ static int zswap_get_swap_cache_page(swp_entry_t entry,
-  * the swap cache, the compressed version stored by zswap can be
-  * freed.
-  */
--static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
-+static int zswap_writeback_entry(struct zpool *pool, unsigned long handle)
- {
- 	struct zswap_header *zhdr;
- 	swp_entry_t swpentry;
-@@ -541,9 +546,9 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 	};
- 
- 	/* extract swpentry from data */
--	zhdr = zbud_map(pool, handle);
-+	zhdr = zpool_map_handle(pool, handle, ZPOOL_MM_RO);
- 	swpentry = zhdr->swpentry; /* here */
--	zbud_unmap(pool, handle);
-+	zpool_unmap_handle(pool, handle);
- 	tree = zswap_trees[swp_type(swpentry)];
- 	offset = swp_offset(swpentry);
- 
-@@ -573,13 +578,13 @@ static int zswap_writeback_entry(struct zbud_pool *pool, unsigned long handle)
- 	case ZSWAP_SWAPCACHE_NEW: /* page is locked */
- 		/* decompress */
- 		dlen = PAGE_SIZE;
--		src = (u8 *)zbud_map(zswap_pool, entry->handle) +
--			sizeof(struct zswap_header);
-+		src = (u8 *)zpool_map_handle(zswap_pool, entry->handle,
-+				ZPOOL_MM_RO) + sizeof(struct zswap_header);
- 		dst = kmap_atomic(page);
- 		ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src,
- 				entry->length, dst, &dlen);
- 		kunmap_atomic(dst);
--		zbud_unmap(zswap_pool, entry->handle);
-+		zpool_unmap_handle(zswap_pool, entry->handle);
- 		BUG_ON(ret);
- 		BUG_ON(dlen != PAGE_SIZE);
- 
-@@ -652,7 +657,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 	/* reclaim space if needed */
- 	if (zswap_is_full()) {
- 		zswap_pool_limit_hit++;
--		if (zbud_reclaim_page(zswap_pool, 8)) {
-+		if (zpool_shrink(zswap_pool, PAGE_SIZE)) {
- 			zswap_reject_reclaim_fail++;
- 			ret = -ENOMEM;
- 			goto reject;
-@@ -679,7 +684,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 
- 	/* store */
- 	len = dlen + sizeof(struct zswap_header);
--	ret = zbud_alloc(zswap_pool, len, &handle);
-+	ret = zpool_malloc(zswap_pool, len, &handle);
- 	if (ret == -ENOSPC) {
- 		zswap_reject_compress_poor++;
- 		goto freepage;
-@@ -688,11 +693,11 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
- 		zswap_reject_alloc_fail++;
- 		goto freepage;
+ 	int i, ovhd_size;
+ 	struct zs_pool *pool;
+@@ -883,6 +988,7 @@ struct zs_pool *zs_create_pool(gfp_t flags)
  	}
--	zhdr = zbud_map(zswap_pool, handle);
-+	zhdr = zpool_map_handle(zswap_pool, handle, ZPOOL_MM_RW);
- 	zhdr->swpentry = swp_entry(type, offset);
- 	buf = (u8 *)(zhdr + 1);
- 	memcpy(buf, dst, dlen);
--	zbud_unmap(zswap_pool, handle);
-+	zpool_unmap_handle(zswap_pool, handle);
- 	put_cpu_var(zswap_dstmem);
  
- 	/* populate entry */
-@@ -715,7 +720,7 @@ static int zswap_frontswap_store(unsigned type, pgoff_t offset,
+ 	pool->flags = flags;
++	pool->ops = ops;
  
- 	/* update stats */
- 	atomic_inc(&zswap_stored_pages);
--	zswap_pool_pages = zbud_get_pool_size(zswap_pool);
-+	zswap_pool_total_size = zpool_get_total_size(zswap_pool);
- 
- 	return 0;
- 
-@@ -751,13 +756,13 @@ static int zswap_frontswap_load(unsigned type, pgoff_t offset,
- 
- 	/* decompress */
- 	dlen = PAGE_SIZE;
--	src = (u8 *)zbud_map(zswap_pool, entry->handle) +
--			sizeof(struct zswap_header);
-+	src = (u8 *)zpool_map_handle(zswap_pool, entry->handle,
-+			ZPOOL_MM_RO) + sizeof(struct zswap_header);
- 	dst = kmap_atomic(page);
- 	ret = zswap_comp_op(ZSWAP_COMPOP_DECOMPRESS, src, entry->length,
- 		dst, &dlen);
- 	kunmap_atomic(dst);
--	zbud_unmap(zswap_pool, entry->handle);
-+	zpool_unmap_handle(zswap_pool, entry->handle);
- 	BUG_ON(ret);
- 
- 	spin_lock(&tree->lock);
-@@ -810,7 +815,7 @@ static void zswap_frontswap_invalidate_area(unsigned type)
- 	zswap_trees[type] = NULL;
+ 	return pool;
  }
+@@ -968,7 +1074,6 @@ EXPORT_SYMBOL_GPL(zs_malloc);
  
--static struct zbud_ops zswap_zbud_ops = {
-+static struct zpool_ops zswap_zpool_ops = {
- 	.evict = zswap_writeback_entry
- };
+ void zs_free(struct zs_pool *pool, unsigned long obj)
+ {
+-	struct link_free *link;
+ 	struct page *first_page, *f_page;
+ 	unsigned long f_objidx, f_offset;
  
-@@ -868,8 +873,8 @@ static int __init zswap_debugfs_init(void)
- 			zswap_debugfs_root, &zswap_written_back_pages);
- 	debugfs_create_u64("duplicate_entry", S_IRUGO,
- 			zswap_debugfs_root, &zswap_duplicate_entry);
--	debugfs_create_u64("pool_pages", S_IRUGO,
--			zswap_debugfs_root, &zswap_pool_pages);
-+	debugfs_create_u64("pool_total_size", S_IRUGO,
-+			zswap_debugfs_root, &zswap_pool_total_size);
- 	debugfs_create_atomic_t("stored_pages", S_IRUGO,
- 			zswap_debugfs_root, &zswap_stored_pages);
+@@ -988,14 +1093,8 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
  
-@@ -899,12 +904,15 @@ static int __init init_zswap(void)
+ 	spin_lock(&class->lock);
  
- 	pr_info("loading zswap\n");
+-	/* Insert this object in containing zspage's freelist */
+-	link = (struct link_free *)((unsigned char *)kmap_atomic(f_page)
+-							+ f_offset);
+-	link->next = first_page->freelist;
+-	kunmap_atomic(link);
+-	first_page->freelist = (void *)obj;
++	obj_free(obj, f_page, f_offset);
  
--	zswap_pool = zbud_create_pool(__GFP_NORETRY | __GFP_NOWARN,
--			&zswap_zbud_ops);
-+	zswap_pool = zpool_create_pool(zswap_zpool_type,
-+			__GFP_NORETRY | __GFP_NOWARN, &zswap_zpool_ops, true);
- 	if (!zswap_pool) {
--		pr_err("zbud pool creation failed\n");
-+		pr_err("zpool creation failed\n");
- 		goto error;
- 	}
-+	if (strcmp(zswap_zpool_type, zpool_get_type(zswap_pool)))
-+		pr_info("zpool gave us fallback implementation: %s\n",
-+				zpool_get_type(zswap_pool));
+-	first_page->inuse--;
+ 	fullness = fix_fullness_group(pool, first_page);
  
- 	if (zswap_entry_cache_create()) {
- 		pr_err("entry cache creation failed\n");
-@@ -928,7 +936,7 @@ pcpufail:
- compfail:
- 	zswap_entry_cache_destory();
- cachefail:
--	zbud_destroy_pool(zswap_pool);
-+	zpool_destroy_pool(zswap_pool);
- error:
- 	return -ENOMEM;
+ 	if (fullness == ZS_EMPTY)
+@@ -1008,6 +1107,45 @@ void zs_free(struct zs_pool *pool, unsigned long obj)
  }
+ EXPORT_SYMBOL_GPL(zs_free);
+ 
++int zs_shrink(struct zs_pool *pool, size_t size)
++{
++	struct size_class *class;
++	struct page *first_page;
++	enum fullness_group fullness;
++	int ret;
++
++	if (!pool->ops || !pool->ops->evict)
++		return -EINVAL;
++
++	/* the class is returned locked */
++	class = get_class_to_shrink(pool, size);
++	if (!class)
++		return -ENOENT;
++
++	first_page = find_get_zspage(class);
++	if (!first_page) {
++		spin_unlock(&class->lock);
++		return -ENOENT;
++	}
++
++	ret = reclaim_zspage(pool, class, first_page);
++
++	if (ret) {
++		fullness = fix_fullness_group(pool, first_page);
++
++		if (fullness == ZS_EMPTY)
++			class->pages_allocated -= class->pages_per_zspage;
++	}
++
++	spin_unlock(&class->lock);
++
++	if (!ret || fullness == ZS_EMPTY)
++		free_zspage(first_page);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(zs_shrink);
++
+ /**
+  * zs_map_object - get address of allocated object from handle.
+  * @pool: pool from which the object was allocated
 -- 
 1.8.3.1
 
