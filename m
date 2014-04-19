@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751675AbaDSMc4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 08:32:56 -0400
-Received: from mail-ve0-f172.google.com ([209.85.128.172]:35693 "EHLO
-	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaDSMcw (ORCPT
+	id S1751701AbaDSM5o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 08:57:44 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:65040 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaDSM5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 08:32:52 -0400
+	Sat, 19 Apr 2014 08:57:10 -0400
+Date: Sat, 19 Apr 2014 08:57:06 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Takeshi Misawa <jeantsuru@gmail.com>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroup:cgroup_mount: Fix uninitialized warning
+Message-ID: <20140419125706.GA3277@htj.dyndns.org>
+References: <CABYERD89BtTTJh8j0d0kvCU-xNEy8YJhFaPFr+hjuy5gWQoVNg@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1397841897-9170-1-git-send-email-grygorii.strashko@ti.com>
-References: <1397841897-9170-1-git-send-email-grygorii.strashko@ti.com>
-From: Prabhakar Lad <prabhakar.csengg@gmail.com>
-Date: Sat, 19 Apr 2014 18:02:21 +0530
-Message-ID: <CA+V-a8t+U5cqbB5Cm0JZV-=yy6OeemCRrLGUd8-ET+7E4hYmRw@mail.gmail.com>
-Subject: Re: [PATCH v2 0/4] introduce devm_mdiobus_alloc/free and clean up
- davinci mdio
-To: Grygorii Strashko <grygorii.strashko@ti.com>
-Cc: Florian Fainelli <f.fainelli@gmail.com>, netdev <netdev@vger.kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Jonathan Cameron <jic23@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sekhar Nori <nsekhar@ti.com>, LDOC <linux-doc@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        dlos <davinci-linux-open-source@linux.davincidsp.com>,
-        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CABYERD89BtTTJh8j0d0kvCU-xNEy8YJhFaPFr+hjuy5gWQoVNg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grygorii,
+On Sat, Apr 19, 2014 at 09:52:14PM +0900, Takeshi Misawa wrote:
+> This patch fixes the following warning.
+> 
+> kernel/cgroup.c: In function ‘cgroup_mount’:
+> kernel/cgroup.c:1609:13: warning: ‘root’ may be used uninitialized in this
+> function
 
-Thanks for the patches!
+Which compiler are you using?  This is a spurious warning which the
+compiler should be able to avoid pretty easily.
 
+Thanks.
 
-On Fri, Apr 18, 2014 at 10:54 PM, Grygorii Strashko
-<grygorii.strashko@ti.com> wrote:
-> Introduce a resource managed devm_mdiobus_alloc()/devm_mdiobus_free()
-> to automatically clean up MDIO bus alocations made by MDIO drivers,
-> thus leading to simplified MDIO drivers code.
->
-> Clean up Davinci MDIO driver and use new devm API.
->
-> Changes in v2:
-> - minor comments taken into account
-> - additional patches added for cleaning up Davinci MDIO driver
->
-> Cc: Florian Fainelli <f.fainelli@gmail.com>
->
-> Grygorii Strashko (4):
->   mdio_bus: implement devm_mdiobus_alloc/devm_mdiobus_free
->   net: davinci_mdio: use devm_* api
->   net: davinci_mdio: drop pinctrl_pm_select_default_state from probe
->   net: davinci_mdio: simplify IO memory mapping
->
-Tested on DA850EVM.
-
-Acked-and-tested-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
-
-Regards,
---Prabhakar Lad
-
->  Documentation/driver-model/devres.txt  |    4 ++
->  drivers/net/ethernet/ti/davinci_mdio.c |   48 ++++------------------
->  drivers/net/phy/mdio_bus.c             |   68 ++++++++++++++++++++++++++++++++
->  include/linux/phy.h                    |    2 +
->  4 files changed, 82 insertions(+), 40 deletions(-)
->
-> --
-> 1.7.9.5
->
+-- 
+tejun
