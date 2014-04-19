@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841AbaDSOeb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 10:34:31 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:53135 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751082AbaDSOeX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 10:34:23 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v2 1/7] device: introduce per device dma_pfn_offset
-Date: Sat, 19 Apr 2014 10:32:46 -0400
-Message-ID: <1397917972-6293-2-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
+	id S1161031AbaDSOhG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 10:37:06 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:35216 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964769AbaDSOg6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 10:36:58 -0400
+Message-ID: <53528A00.6090906@gmail.com>
+Date: Sat, 19 Apr 2014 16:36:48 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sachin Kamat <sachin.kamat@linaro.org>
+CC: Chanwoo Choi <cwchoi00@gmail.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH 0/2] Support cpufreq driver for Exynos3250
+References: <1397787634-9334-1-git-send-email-cw00.choi@samsung.com>	<CAK9yfHygoHZ7hnAcLuuaMEsPb8Tqw-QbcTrQ+b=2CD6kK3odmw@mail.gmail.com>	<CAGTfZH1M9h3Sx73wJsD=_vnSyV-+fyOY041PN_7ea718B0mFoQ@mail.gmail.com>	<53527F54.5020601@gmail.com> <CAK9yfHxdC7JAJ6CiBsoHWcdbnv53qzs0XNtfjsabGmA6Sgv=ww@mail.gmail.com>
+In-Reply-To: <CAK9yfHxdC7JAJ6CiBsoHWcdbnv53qzs0XNtfjsabGmA6Sgv=ww@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On few architectures, there are few restrictions on DMAble area of system
-RAM. That also means that devices needs to know about this restrictions so
-that the dma_masks can be updated accordingly and dma address translation
-helpers can add/subtract the dma offset.
 
-In most of cases DMA addresses can be performed using offset value of
-Bus address space relatively to physical address space as following:
 
-PFN->DMA:  __pfn_to_phys(pfn + [-]dma_pfn_offset)
-DMA->PFN:  __phys_to_pfn(dma_addr) + [-]dma_pfn_offset
+On 19.04.2014 16:35, Sachin Kamat wrote:
+> Hi Tomasz,
+>
+>
+> On 19 April 2014 19:21, Tomasz Figa <tomasz.figa@gmail.com> wrote:
+>> Hi Chanwoo, Sachin,
+>>
+>>
+>> On 19.04.2014 15:43, Chanwoo Choi wrote:
+>>>
+>>> Hi Sachin,
+>>>
+>>> On Fri, Apr 18, 2014 at 5:14 PM, Sachin Kamat <sachin.kamat@linaro.org>
+>>> wrote:
+>>>>
+>>>> Hi Chanwoo,
+>>>>
+>>>> On 18 April 2014 07:50, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>>>>>
+>>>>> This patchset support cpufreq driver for Exynos3250 which uses the
+>>>>> Cortex-A7
+>>>>> dual cores and has a target speed of 1.0 GHz and code clean using
+>>>>> dev_err/info
+>>>>> instead of pr_err/info function.
+>>>>
+>>>>
+>>>> Per SoC cpufreq driver which does not use CCF is no more encouraged for
+>>>> new
+>>>> Exynos platforms. Thomas has already posted patches to make use of
+>>>> generic cpu freq driver
+>>>> on Exynos platforms. Please refer to [1] and try to utilize it for
+>>>> this platform as well.
+>>>>
+>>>> [1] http://permalink.gmane.org/gmane.linux.kernel.samsung-soc/26886
+>>>
+>>>
+>>> OK, I'll refer to this new patch for cpufreq and rebase it.
+>>>
+>>> Thanks for your reply.
+>>
+>>
+>> The last version posted by Thomas still had several comments to be addressed
+>> that could lead to quite big changes in the whole design in next version.
+>> According to the information from Thomas, the work on it is in progress and
+>> we should see updated patchset soon.
+>
+> Yes, that is right. I wanted Chanwoo to be aware of this new design
+> and track the same.
+>
 
-So we introduce per device dma_pfn_offset which can be popullated
-by architecture init code while creating the devices.
+Sure. Just wanted to make sure this is clear.
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Grant Likely <grant.likely@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
----
- include/linux/device.h |    2 ++
- 1 file changed, 2 insertions(+)
-
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 233bbbe..85a52d6 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -691,6 +691,7 @@ struct acpi_dev_node {
-  * @coherent_dma_mask: Like dma_mask, but for alloc_coherent mapping as not all
-  * 		hardware supports 64-bit addresses for consistent allocations
-  * 		such descriptors.
-+ * @dma_pfn_offset: offset of DMA memory range relatively of RAM
-  * @dma_parms:	A low level driver may set these to teach IOMMU code about
-  * 		segment limitations.
-  * @dma_pools:	Dma pools (if dma'ble device).
-@@ -756,6 +757,7 @@ struct device {
- 					     not all hardware supports
- 					     64 bit addresses for consistent
- 					     allocations such descriptors. */
-+	unsigned long	dma_pfn_offset;
- 
- 	struct device_dma_parameters *dma_parms;
- 
--- 
-1.7.9.5
-
+Best regards,
+Tomasz
