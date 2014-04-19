@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754640AbaDSAmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 20:42:32 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:63045 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913AbaDSAma (ORCPT
+	id S1754736AbaDSAth (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 20:49:37 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:35169 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754234AbaDSAte (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 20:42:30 -0400
+	Fri, 18 Apr 2014 20:49:34 -0400
 MIME-Version: 1.0
-In-Reply-To: <87a9bljl7m.fsf@gmail.com>
-References: <87a9bljl7m.fsf@gmail.com>
-Date: Fri, 18 Apr 2014 20:42:28 -0400
-Message-ID: <CADVnQyn-cxWv_5qd8ZwVyrty=PQr-aw2e7kVWgt+rA9_Jt5QJg@mail.gmail.com>
-Subject: Re: [PATCH v3] tcp: Add a TCP_FASTOPEN socket option to get a max
- backlog on its listner
-From: Neal Cardwell <ncardwell@google.com>
-To: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Netdev <netdev@vger.kernel.org>,
-        Yuchung Cheng <ycheng@google.com>, Eric Dumazet <edumazet@google.com>
+In-Reply-To: <CAGVrzcZLUgpZZKAHjPSWaBs6w1XoegLaoWUAaMYUD9zW9yzq0w@mail.gmail.com>
+References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
+	<1397719309-2022-4-git-send-email-computersforpeace@gmail.com>
+	<CAGVrzcZLUgpZZKAHjPSWaBs6w1XoegLaoWUAaMYUD9zW9yzq0w@mail.gmail.com>
+Date: Fri, 18 Apr 2014 17:49:33 -0700
+Message-ID: <CAN8TOE90nh1v_84FSvF8MrN=eR-dOcXAYiOLeqRqXd3JCjfAzw@mail.gmail.com>
+Subject: Re: [PATCH 3/5] mips: defconfigs: add MTD_SPI_NOR (new dependency for M25P80)
+From: Brian Norris <computersforpeace@gmail.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Marek Vasut <marex@denx.de>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Linux-MIPS <linux-mips@linux-mips.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 12:25 PM, Kenjiro Nakayama
-<nakayamakenjiro@gmail.com> wrote:
-> This patch adds a TCP_FASTOPEN socket option to get a max backlog on its
-> listener to getsockopt().
+On Fri, Apr 18, 2014 at 5:24 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> 2014-04-17 0:21 GMT-07:00 Brian Norris <computersforpeace@gmail.com>:
+>> These defconfigs contain the CONFIG_M25P80 symbol, which is now
+>> dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to the
+>> relevant defconfigs.
 >
-> Signed-off-by: Kenjiro Nakayama <nakayamakenjiro@gmail.com>
-> ---
->  net/ipv4/tcp.c | 8 ++++++++
->  1 file changed, 8 insertions(+)
+> so CONFIG_M25P80 should select CONFIG_MTD_SPI_NOR, right? in that
+> case, I do not think this is needed at all, as it would be
+> automatically picked up during the build and if someone refreshes the
+> defconfigs, although it cannot hurt.
 
-Acked-by: Neal Cardwell <ncardwell@google.com>
+Can you reply to the cover letter? 3 people have made the same
+comment, and I had a rebuttal that I'm not sure if anyone considered
+yet.
 
-Seems fine to me. Thanks, Kenjiro.
+(And it wouldn't be picked up by 'savedefconfig', since it saves a
+minimal .config; when one symbol 'select's another, the latter is not
+needed in the defconfig)
 
-neal
+Brian
