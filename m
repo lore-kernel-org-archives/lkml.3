@@ -1,77 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886AbaDSVZC (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 17:25:02 -0400
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:62368 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751294AbaDSVYu (ORCPT
+	id S1754807AbaDSV4a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 17:56:30 -0400
+Received: from mail2.learning.gov.ab.ca ([142.229.16.40]:27485 "EHLO
+	VM-EXCHHUB-1B.lan.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751241AbaDSV4V convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 17:24:50 -0400
-Date: Sat, 19 Apr 2014 14:23:38 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Kelley Nielsen <kelleynnn@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Chiang <pchiang@nvidia.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        "ccross@android.com" <ccross@android.com>,
-        "lizefan@huawei.com" <lizefan@huawei.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "guillaume@morinfr.org" <guillaume@morinfr.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] memcg: mm_update_next_owner() should skip kthreads
-In-Reply-To: <20140419181407.GB982@redhat.com>
-Message-ID: <alpine.LSU.2.11.1404191404510.15123@eggly.anvils>
-References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com> <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com> <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com> <20140416135741.GA9407@redhat.com>
- <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com> <20140418162359.GA4398@redhat.com> <20140418172631.GA13323@redhat.com> <20140419083455.GA17601@amd.pavel.ucw.cz> <20140419181407.GB982@redhat.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Sat, 19 Apr 2014 17:56:21 -0400
+X-Greylist: delayed 314 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Apr 2014 17:56:21 EDT
+From: Michelle Starzynski <Michelle.Starzynski@gov.ab.ca>
+Date: Sat, 19 Apr 2014 15:51:05 -0600
+Subject: =?windows-1256?Q?Humanitarian_Project=FD?=
+Thread-Topic: =?windows-1256?Q?Humanitarian_Project=FD?=
+Thread-Index: AQHPXBl2zhM+BjNp4kqnZ/BdKNgb8g==
+Message-ID: <CFC252D245250840832F9554C591DB8D1A3571EF8D@EDM-SME-EXCH-1A.lan.local>
+Accept-Language: en-US, en-CA
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, en-CA
+Content-Type: text/plain; charset="windows-1256"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Undisclosed recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Apr 2014, Oleg Nesterov wrote:
-> On 04/19, Pavel Machek wrote:
-> >
-> > > > Hmm. I seem to see a bug in this function, it can be fulled by use_mm,
-> > > > but I am not sure this can explain the problem. I'll send a patch.
-> > >
-> > > Untested, please review. But it really looks "obviously wrong", and note
-> > > that unuse_mm() doesn't do mm_update_next_owner(). (just in case, do not
-> > > confuse it with unuse_mm() in mm/swapfile.c).
-> >
-> > Having two functions, one exported, one static with same name -- that
-> > sounds quite evil, right?
-> 
-> Yes, agreed.
 
-Doubly agreed; though it seems to have escaped causing confusion
-for several years, so no great hurry to resolve it.
+I write you this email on behalf of Mrs. Margaret Crawford regards to her wish. She has decided to donate part of her inheritance to you for humanitarian work and your personal use. For more details contact her Attorney, Mark Lawson via email: mlawson1@rogers.com
 
-> 
-> > mmu_context.c: * unuse_mm
-> > mmu_context.c:void unuse_mm(struct mm_struct *mm)
-> > mmu_context.c:EXPORT_SYMBOL_GPL(unuse_mm);
-> > swapfile.c:static int unuse_mm(struct mm_struct *mm,
-> 
-> Yes, I was thinking about s/unuse_mm/unswap_mm/ change in swapfile.c,
-> but then we should probaly rename other "unuse" functions there, and
-> shmem_unuse/try_to_unuse are not static.
-
-My preference is "swapoff" instead of "unuse" throughout there:
-it saves having to explain that "unuse" implies "swapoff" each
-time we send in a patch making a change to that code.
-
-But I'd prefer you hold off for the moment: Kelley Nielsen is currently
-preparing a patchset reworking try_to_unuse, and I suggested a few days
-ago to include such renaming in that patchset.
-
-Partly driven by s390's recent 45961722f8e3 "mm: add support for
-discard of unused ptes" which adds further confusion with pte_unused().
-
-Hugh
+________________________________
+This communication is intended for the use of the recipient to which it is addressed, and may contain confidential, personal, and or privileged information. Please contact us immediately if you are not the intended recipient of this communication, and do not copy, distribute, or take action relying on it. Any communication received in error, or subsequent reply, should be deleted or destroyed.
