@@ -1,168 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188AbaDSN7N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 09:59:13 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:40304 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaDSN7K (ORCPT
+	id S1753630AbaDSOEJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 10:04:09 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:43916 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751476AbaDSOEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 09:59:10 -0400
-From: Lin Yongting <linyongting@gmail.com>
-To: rostedt@goodmis.org, fweisbec@gmail.com, mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org, linyongting@gmail.com,
-        linyongting@huawei.com
-Subject: [PATCH] tracing: Correct braces usage in if-else statement
-Date: Sat, 19 Apr 2014 21:58:23 +0800
-Message-Id: <1397915903-21326-1-git-send-email-linyongting@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-Content-Type: text/plain; charset="utf-8"
+	Sat, 19 Apr 2014 10:04:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140419130726.GC3277@htj.dyndns.org>
+References: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
+	<1397907496-5993-1-git-send-email-laijs@cn.fujitsu.com>
+	<1397907496-5993-6-git-send-email-laijs@cn.fujitsu.com>
+	<20140419130726.GC3277@htj.dyndns.org>
+Date: Sat, 19 Apr 2014 22:04:06 +0800
+X-Google-Sender-Auth: p79gs9Fv78uRY9BdbJ2DzOLBC4g
+Message-ID: <CACvQF52jWM1LFQGYZFyktCubt6YWdCx6kd3+aCW=3mCpzCR1Mw@mail.gmail.com>
+Subject: Re: [PATCH 5/9 V2] idr: covert BUG_ON() to WARN_ON_ONCE() if the
+ argument is invalid.
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>,
+        Andreas Gruenbacher <agruen@linbit.com>,
+        Stephen Hemminger <stephen@networkplumber.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some incorrect braces usages in kernerl/trace/trace.c, including:
-1. Missing braces in 'if' or 'else' branch.
-2. Unnecessary braces in 'if' statement.
+On Sat, Apr 19, 2014 at 9:07 PM, Tejun Heo <tj@kernel.org> wrote:
+> On Sat, Apr 19, 2014 at 07:38:12PM +0800, Lai Jiangshan wrote:
+>> @@ -559,7 +559,7 @@ void idr_remove(struct idr *idp, int id)
+>>       struct idr_layer *p;
+>>       struct idr_layer *to_free;
+>>
+>> -     if (id < 0)
+>> +     if (WARN_ON_ONCE(id < 0))
+>>               return;
+>
+> ISTR callers which call in with error value, but yeah weeding them out
+> could be a good idea.  Shouldn't it be idr_remove_warning() though?
 
-Fix them according to kernel CodeStyle.
+WARN_ON_ONCE() for invalid id (negative id).
+idr_remove_warning() for unallocated id.
 
-Signed-off-by: Lin Yongting <linyongting@gmail.com>
----
- kernel/trace/trace.c |   39 +++++++++++++++++++++++----------------
- 1 file changed, 23 insertions(+), 16 deletions(-)
+>
+>> @@ -1030,6 +1030,9 @@ void ida_remove(struct ida *ida, int id)
+>>       int n;
+>>       struct ida_bitmap *bitmap;
+>>
+>> +     if (WARN_ON_ONCE(id < 0))
+>> +             return;
+>
+> Why not jump to err?
 
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index 737b0ef..1028f68 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -488,8 +488,9 @@ int __trace_puts(unsigned long ip, const char *str, int size)
- 	if (entry->buf[size - 1] != '\n') {
- 		entry->buf[size] = '\n';
- 		entry->buf[size + 1] = '\0';
--	} else
-+	} else {
- 		entry->buf[size] = '\0';
-+	}
- 
- 	__buffer_unlock_commit(buffer, event);
- 
-@@ -891,9 +892,9 @@ int trace_get_user(struct trace_parser *parser, const char __user *ubuf,
- 
- 	/* read the non-space input */
- 	while (cnt && !isspace(ch)) {
--		if (parser->idx < parser->size - 1)
-+		if (parser->idx < parser->size - 1) {
- 			parser->buffer[parser->idx++] = ch;
--		else {
-+		} else {
- 			ret = -EINVAL;
- 			goto out;
- 		}
-@@ -1756,9 +1757,10 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
- 
- 		if (trace.nr_entries > size)
- 			size = trace.nr_entries;
--	} else
-+	} else {
- 		/* From now on, use_stack is a boolean */
- 		use_stack = 0;
-+	}
- 
- 	size *= sizeof(unsigned long);
- 
-@@ -1770,10 +1772,10 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
- 
- 	memset(&entry->caller, 0, size);
- 
--	if (use_stack)
-+	if (use_stack) {
- 		memcpy(&entry->caller, trace.entries,
- 		       trace.nr_entries * sizeof(unsigned long));
--	else {
-+	} else {
- 		trace.max_entries	= FTRACE_STACK_ENTRIES;
- 		trace.entries		= entry->caller;
- 		if (regs)
-@@ -2398,8 +2400,9 @@ static void *s_start(struct seq_file *m, loff_t *pos)
- 		if (cpu_file == RING_BUFFER_ALL_CPUS) {
- 			for_each_tracing_cpu(cpu)
- 				tracing_iter_reset(iter, cpu);
--		} else
-+		} else {
- 			tracing_iter_reset(iter, cpu_file);
-+		}
- 
- 		iter->leftover = 0;
- 		for (p = iter; p && l < *pos; p = s_next(m, p, &l))
-@@ -2410,9 +2413,9 @@ static void *s_start(struct seq_file *m, loff_t *pos)
- 		 * If we overflowed the seq_file before, then we want
- 		 * to just reuse the trace_seq buffer again.
- 		 */
--		if (iter->leftover)
-+		if (iter->leftover) {
- 			p = iter;
--		else {
-+		} else {
- 			l = *pos - 1;
- 			p = s_next(m, p, &l);
- 		}
-@@ -2460,9 +2463,10 @@ get_total_entries(struct trace_buffer *buf,
- 			count -= per_cpu_ptr(buf->data, cpu)->skipped_entries;
- 			/* total is the same as the entries */
- 			*total += count;
--		} else
-+		} else {
- 			*total += count +
- 				ring_buffer_overrun_cpu(buf->buffer, cpu);
-+		}
- 		*entries += count;
- 	}
- }
-@@ -4251,9 +4255,8 @@ static int tracing_wait_pipe(struct file *filp)
- 
- 	while (trace_empty(iter)) {
- 
--		if ((filp->f_flags & O_NONBLOCK)) {
-+		if ((filp->f_flags & O_NONBLOCK))
- 			return -EAGAIN;
--		}
- 
- 		mutex_unlock(&iter->mutex);
- 
-@@ -4560,10 +4563,12 @@ tracing_entries_read(struct file *filp, char __user *ubuf,
- 					    trace_buf_size >> 10);
- 			else
- 				r = sprintf(buf, "%lu\n", size >> 10);
--		} else
-+		} else {
- 			r = sprintf(buf, "X\n");
--	} else
-+		}
-+	} else {
- 		r = sprintf(buf, "%lu\n", per_cpu_ptr(tr->trace_buffer.data, cpu)->entries >> 10);
-+	}
- 
- 	mutex_unlock(&trace_types_lock);
- 
-@@ -4734,14 +4739,16 @@ tracing_mark_write(struct file *filp, const char __user *ubuf,
- 		len = PAGE_SIZE - offset;
- 		memcpy(&entry->buf, map_page[0] + offset, len);
- 		memcpy(&entry->buf[len], map_page[1], cnt - len);
--	} else
-+	} else {
- 		memcpy(&entry->buf, map_page[0] + offset, cnt);
-+	}
- 
- 	if (entry->buf[cnt - 1] != '\n') {
- 		entry->buf[cnt] = '\n';
- 		entry->buf[cnt + 1] = '\0';
--	} else
-+	} else {
- 		entry->buf[cnt] = '\0';
-+	}
- 
- 	__buffer_unlock_commit(buffer, event);
- 
--- 
-1.7.9.5
+WARN_ON_ONCE() for invalid id (negative id).
+"goto err" for unallocated id.
 
+>
+>> +
+>>       if (idr_id > idr_max(ida->idr.layers))
+>>               goto err;
+>>
+>> @@ -1096,13 +1099,14 @@ int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
+>>       unsigned int max;
+>>       unsigned long flags;
+>>
+>> -     BUG_ON((int)start < 0);
+>> -     BUG_ON((int)end < 0);
+>> +     if (WARN_ON_ONCE(((int)start < 0) || ((int)end < 0)))
+>> +             return -EINVAL;
+>>
+>>       if (end == 0)
+>>               max = 0x80000000;
+>>       else {
+>> -             BUG_ON(end < start);
+>> +             if (WARN_ON_ONCE(end < start))
+>> +                     return -ENOSPC;
+>
+> -EINVAL
+
+In my V1 patch, it returns -EINVAL.
+
+The V2 changelog explain this change: make the returned value as the
+same as idr_alloc().
+###
+It is important for cyclic allocation (idr_alloc()).
+
+int idr_alloc_cyclic(struct idr *idr, void *ptr, int start, int end,
+gfp_t gfp_mask)
+{
+int id;
+
+id = idr_alloc(idr, ptr, max(start, idr->cur), end, gfp_mask);
+if (id == -ENOSPC)
+id = idr_alloc(idr, ptr, start, end, gfp_mask);
+
+if (likely(id >= 0))
+idr->cur = id + 1;
+return id;
+}
+
+idr->cur can equals to @end. idr_alloc() should return  -ENOSPC for
+next idr_alloc().
+
+>
+> Thanks.
+>
+> --
+> tejun
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
