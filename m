@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161054AbaDSRDf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 13:03:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47519 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510AbaDSRCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 13:02:06 -0400
-Date: Sat, 19 Apr 2014 19:01:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] uprobes/x86: Shift "insn_complete" from
-	branch_setup_xol_ops() to uprobe_init_insn()
-Message-ID: <20140419170155.GA30864@redhat.com>
+	id S1755099AbaDSRJR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 13:09:17 -0400
+Received: from mail-qc0-f180.google.com ([209.85.216.180]:51162 "EHLO
+	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751393AbaDSRJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 13:09:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140419170104.GA30667@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20140419112821.6ee5b104@gandalf.local.home>
+References: <1397915903-21326-1-git-send-email-linyongting@gmail.com>
+	<20140419112821.6ee5b104@gandalf.local.home>
+Date: Sun, 20 Apr 2014 01:09:15 +0800
+Message-ID: <CANWV4VmqxZYMP26fV+Dt3h6LubyYppdgpxkRxetmtJOZbpzYkA@mail.gmail.com>
+Subject: Re: [PATCH] tracing: Correct braces usage in if-else statement
+From: ivan lin <linyongting@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+        mingo@redhat.com, linux-kernel@vger.kernel.org, linyongting@huawei.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change uprobe_init_insn() to make insn_complete() == T, this makes
-other insn_get_*() calls unnecessary.
+2014-04-19 23:28 GMT+08:00 Steven Rostedt <rostedt@goodmis.org>:
+> On Sat, 19 Apr 2014 21:58:23 +0800
+> Lin Yongting <linyongting@gmail.com> wrote:
+>
+>> There are some incorrect braces usages in kernerl/trace/trace.c, including:
+>> 1. Missing braces in 'if' or 'else' branch.
+>> 2. Unnecessary braces in 'if' statement.
+>>
+>> Fix them according to kernel CodeStyle.
+>
+> I understand that this is part of the CodeStyle, but I'm not accepting
+> this patch. It causes more pain than it is worth, as it makes it more
+> difficult to see git history because of "clean up" changes that get in
+> the way. I also honestly don't think this is much of a clean up.
+>
+> Sorry,
+>
+> -- Steve
+>
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/uprobes.c |   13 ++++---------
- 1 files changed, 4 insertions(+), 9 deletions(-)
+Yes, you are right.  This clean up is pain than it is worth.
 
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 5876ba5..6748600 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -209,8 +209,11 @@ static int uprobe_init_insn(struct arch_uprobe *auprobe, struct insn *insn, bool
- 	u32 volatile *good_insns;
- 
- 	insn_init(insn, auprobe->insn, x86_64);
-+	/* has the side-effect of processing the entire instruction */
-+	insn_get_length(insn);
-+	if (WARN_ON_ONCE(!insn_complete(insn)))
-+		return -ENOEXEC;
- 
--	insn_get_opcode(insn);
- 	if (is_prefix_bad(insn))
- 		return -ENOTSUPP;
- 
-@@ -283,8 +286,6 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
- 	 * is the immediate operand.
- 	 */
- 	cursor = auprobe->insn + insn_offset_modrm(insn);
--	insn_get_length(insn);
--
- 	/*
- 	 * Convert from rip-relative addressing to indirect addressing
- 	 * via a scratch register.  Change the r/m field from 0x5 (%rip)
-@@ -563,11 +564,6 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- {
- 	u8 opc1 = OPCODE1(insn);
- 
--	/* has the side-effect of processing the entire instruction */
--	insn_get_length(insn);
--	if (WARN_ON_ONCE(!insn_complete(insn)))
--		return -ENOEXEC;
--
- 	switch (opc1) {
- 	case 0xeb:	/* jmp 8 */
- 	case 0xe9:	/* jmp 32 */
-@@ -643,7 +639,6 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 		fix_ip = false;
- 		break;
- 	case 0xff:
--		insn_get_modrm(&insn);
- 		switch (MODRM_REG(&insn)) {
- 		case 2: case 3:			/* call or lcall, indirect */
- 			fix_call = true;
--- 
-1.5.5.1
+Thnaks!
 
+-- Yongting.
