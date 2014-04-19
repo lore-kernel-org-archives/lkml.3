@@ -1,147 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239AbaDTBYf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 21:24:35 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:46162 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754793AbaDTBY2 (ORCPT
+	id S1755217AbaDTBhM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 21:37:12 -0400
+Received: from 7.mo4.mail-out.ovh.net ([178.33.253.54]:33144 "EHLO
+	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754793AbaDTBhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 21:24:28 -0400
-Date: Sat, 19 Apr 2014 18:24:19 -0700
-From: Zi Shen Lim <zlim.lnx@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] smc91x: fix compile error when SMC_DEBUG >= 2
-Message-ID: <20140420012419.GA12770@gup76>
-References: <1397879250-32041-1-git-send-email-zlim.lnx@gmail.com>
- <1397880413.3106.2.camel@joe-AO725>
+	Sat, 19 Apr 2014 21:37:06 -0400
+X-Greylist: delayed 16798 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Apr 2014 21:37:06 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Description: Re: [PATCH] smc91x: fix compile error when SMC_DEBUG >= 2
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397880413.3106.2.camel@joe-AO725>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAOCHtYjkUnWiGHG6v5Op-=3AxEW9sJ9xaSWkmu6Bg-6q23L2=g@mail.gmail.com>
+References: <1397814309-32160-1-git-send-email-jjhiblot@traphandler.com>
+	<1397814309-32160-4-git-send-email-jjhiblot@traphandler.com>
+	<CAOCHtYjkUnWiGHG6v5Op-=3AxEW9sJ9xaSWkmu6Bg-6q23L2=g@mail.gmail.com>
+Date: Sat, 19 Apr 2014 21:07:41 +0200
+Message-ID: <CACh+v5MyeCkCz=8w-5iNRrgxRiOdPsQV5zExMiZmdFTYX9dJ3Q@mail.gmail.com>
+Subject: Re: [RFC 3/3] atmel: dt: Add supports for the lcdc support on the sama5d36ek
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+To: Robert Nelson <robertcnelson@gmail.com>
+Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dri-devel@lists.freedesktop.org, airlied@linux.ie,
+        Rob Clark <robdclark@gmail.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        linux kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-Ovh-Tracer-Id: 14533115998480324632
+X-Ovh-Remote: 209.85.223.176 (mail-ie0-f176.google.com)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-OVH-SPAMSTATE: OK
+X-OVH-SPAMSCORE: -100
+X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -100
+X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joe,
+2014-04-18 16:48 GMT+02:00 Robert Nelson <robertcnelson@gmail.com>:
+>
+> On Fri, Apr 18, 2014 at 4:45 AM, Jean-Jacques Hiblot
+> <jjhiblot@traphandler.com> wrote:
+>> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+>> ---
+>>  arch/arm/boot/dts/sama5d36ek.dts | 27 ++++++++++++++++++++++++++-
+>>  1 file changed, 26 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/arch/arm/boot/dts/sama5d36ek.dts b/arch/arm/boot/dts/sama5d36ek.dts
+>> index 59576c6..df01037 100644
+>> --- a/arch/arm/boot/dts/sama5d36ek.dts
+>> +++ b/arch/arm/boot/dts/sama5d36ek.dts
+>> @@ -11,12 +11,17 @@
+>>  #include "sama5d3xmb.dtsi"
+>>  #include "sama5d3xdm.dtsi"
+>>
+>> +
+>
+> extra space
+>
+>>  / {
+>>         model = "Atmel SAMA5D36-EK";
+>>         compatible = "atmel,sama5d36ek", "atmel,sama5d3xmb", "atmel,sama5d3xcm", "atmel,sama5d36", "atmel,sama5d3", "atmel,sama5";
+>>
+>>         ahb {
+>>                 apb {
+>> +                       hlcdc: hlcdc@f0030000 {
+>> +                               status = "okay";
+>> +                       };
+>> +
+>>                         spi0: spi@f0004000 {
+>>                                 status = "okay";
+>>                         };
+>> @@ -46,7 +51,27 @@
+>>                         };
+>>                 };
+>>         };
+>> -
+>> +       panel {
+>> +               compatible = "atmel,hlcdc,panel";
+>> +               invert-hsync;
+>> +               invert-vsync;
+>> +               status = "okay";
+>> +               display-timings {
+>> +                       800x480p60 {
+>> +                               clock-frequency = <33260000>;
+>> +                               hactive = <800>;
+>> +                               vactive = <480>;
+>> +                               hfront-porch = <168>;
+>> +                               hback-porch = <88>;
+>> +                               hsync-len = <64>;
+>> +                               vback-porch = <8>;
+>> +                               vfront-porch = <37>;
+>> +                               vsync-len = <2>;
+>> +                               hsync-active = <1>;
+>> +                               vsync-active = <1>;
+>> +                       };
+>> +               };
+>> +       };
+>>         sound {
+>>                 status = "okay";
+>>         };
+>> --
+>> 1.9.1
+>
+> Feel free to merge in this patch:
+>
+> https://github.com/RobertCNelson/armv7_devel/blob/v3.15.x-sama5-armv7/patches/drm/0005-atmel-dt-Add-supports-for-the-lcdc-support-on-the-sa.patch
+>
+Thanks for the patch.
+> With this commit..
+>
+> All tested with sama5d31/33/34/36ek board's..
 
-On Fri, Apr 18, 2014 at 09:06:53PM -0700, Joe Perches wrote:
-> On Fri, 2014-04-18 at 20:47 -0700, Zi Shen Lim wrote:
-> > When SMC_DEBUG >= 2, we hit the following compilation error:
-> > 
-> > drivers/net/ethernet/smsc/smc91x.c:85:0:
-> > drivers/net/ethernet/smsc/smc91x.c: In function ‘smc_findirq’:
-> > drivers/net/ethernet/smsc/smc91x.c:1784:9: error: ‘dev’ undeclared (first use in this function)
-> >   DBG(2, dev, "%s: %s\n", CARDNAME, __func__);
-> >          ^
-> > Fix it by passing in the appropriate netdev pointer.
-> 
-> Perhaps verifying the format and args in all cases
-> would help avoid more of these in the future.
+and many thanks for the testing.
 
-Sounds good. I can add it as the second patch in the series.
-
-> ---
->  drivers/net/ethernet/smsc/smc91x.c | 25 +++++++++++++++----------
->  1 file changed, 15 insertions(+), 10 deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/smsc/smc91x.c b/drivers/net/ethernet/smsc/smc91x.c
-> index d1b4dca..a8302f5 100644
-> --- a/drivers/net/ethernet/smsc/smc91x.c
-> +++ b/drivers/net/ethernet/smsc/smc91x.c
-> @@ -148,16 +148,19 @@ MODULE_ALIAS("platform:smc91x");
->  #define MII_DELAY		1
->  
->  #if SMC_DEBUG > 0
-> -#define DBG(n, dev, args...)				\
-> -	do {						\
-> -		if (SMC_DEBUG >= (n))			\
-> -			netdev_dbg(dev, args);		\
-> -	} while (0)
-> -
-> -#define PRINTK(dev, args...)   netdev_info(dev, args)
-> +#define DBG(n, dev, fmt, ...)				\
-> +do {								\
-> +	if (SMC_DEBUG >= (n))					\
-> +		netdev_dbg(dev, fmt, ##__VA_ARGS__);		\
-> +} while (0)
-> +#define PRINTK(dev, fmt, ...)   netdev_info(dev, fmt, ##__VA_ARGS__)
->  #else
-> -#define DBG(n, dev, args...)   do { } while (0)
-> -#define PRINTK(dev, args...)   netdev_dbg(dev, args)
-> +#define DBG(n, dev, fmt, ...)				\
-> +do {								\
-> +	if (0)					\
-> +		netdev_dbg(dev, fmt, ##__VA_ARGS__);		\
-> +} while (0)
-> +#define PRINTK(dev, fmt, ...)   netdev_dbg(dev, fmt, ##__VA_ARGS__)
->  #endif
->  
->  #if SMC_DEBUG > 3
-> @@ -191,7 +194,9 @@ static void PRINT_PKT(u_char *buf, int length)
->  	pr_cont("\n");
->  }
->  #else
-> -#define PRINT_PKT(x...)  do { } while (0)
-> +static inline void PRINT_PKT(u_char *buf, int length)
-> +{
-> +}
->  #endif
->  
-
-How about the following?
-Ok to add your Signed-off-by as well?
-
-Thanks.
-
----
- drivers/net/ethernet/smsc/smc91x.c | 23 ++++++++++++-----------
- 1 file changed, 12 insertions(+), 11 deletions(-)
-
-diff --git a/drivers/net/ethernet/smsc/smc91x.c b/drivers/net/ethernet/smsc/smc91x.c
-index d1b4dca..796355a 100644
---- a/drivers/net/ethernet/smsc/smc91x.c
-+++ b/drivers/net/ethernet/smsc/smc91x.c
-@@ -147,18 +147,19 @@ MODULE_ALIAS("platform:smc91x");
-  */
- #define MII_DELAY		1
- 
--#if SMC_DEBUG > 0
--#define DBG(n, dev, args...)				\
--	do {						\
--		if (SMC_DEBUG >= (n))			\
--			netdev_dbg(dev, args);		\
-+#define DBG(n, dev, fmt, ...)					\
-+	do {							\
-+		if (SMC_DEBUG >= (n))				\
-+			netdev_dbg(dev, fmt, ##__VA_ARGS__);	\
- 	} while (0)
- 
--#define PRINTK(dev, args...)   netdev_info(dev, args)
--#else
--#define DBG(n, dev, args...)   do { } while (0)
--#define PRINTK(dev, args...)   netdev_dbg(dev, args)
--#endif
-+#define PRINTK(dev, fmt, ...)					\
-+	do {							\
-+		if (SMC_DEBUG > 0)				\
-+			netdev_info(dev, fmt, ##__VA_ARGS__);	\
-+		else						\
-+			netdev_dbg(dev, fmt, ##__VA_ARGS__);	\
-+	} while (0)
- 
- #if SMC_DEBUG > 3
- static void PRINT_PKT(u_char *buf, int length)
-@@ -191,7 +192,7 @@ static void PRINT_PKT(u_char *buf, int length)
- 	pr_cont("\n");
- }
- #else
--#define PRINT_PKT(x...)  do { } while (0)
-+static inline void PRINT_PKT(u_char *buf, int length) { }
- #endif
- 
-
+>
+> Regards,
+>
+> --
+> Robert Nelson
+> http://www.rcn-ee.com/
