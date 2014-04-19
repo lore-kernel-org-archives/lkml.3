@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951AbaDSLoM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 07:44:12 -0400
-Received: from mail-ee0-f42.google.com ([74.125.83.42]:35907 "EHLO
-	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754781AbaDSLoE (ORCPT
+	id S1754734AbaDSLoA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 07:44:00 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:42252 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638AbaDSLn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 07:44:04 -0400
+	Sat, 19 Apr 2014 07:43:57 -0400
 From: Manfred Spraul <manfred@colorfullife.com>
 To: Davidlohr Bueso <davidlohr.bueso@hp.com>,
         Michael Kerrisk <mtk.manpages@gmail.com>,
@@ -17,114 +17,68 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
         aswin@hp.com, linux-mm@kvack.org,
         Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH 4/4] ipc/shm.c: Increase the defaults for SHMALL, SHMMAX.
-Date: Sat, 19 Apr 2014 13:43:41 +0200
-Message-Id: <1397907821-29319-5-git-send-email-manfred@colorfullife.com>
+Subject: [PATCH 0/4] ipc/shm.c: increase the limits for SHMMAX, SHMALL
+Date: Sat, 19 Apr 2014 13:43:37 +0200
+Message-Id: <1397907821-29319-1-git-send-email-manfred@colorfullife.com>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1397907821-29319-4-git-send-email-manfred@colorfullife.com>
-References: <1397907821-29319-1-git-send-email-manfred@colorfullife.com>
- <1397907821-29319-2-git-send-email-manfred@colorfullife.com>
- <1397907821-29319-3-git-send-email-manfred@colorfullife.com>
- <1397907821-29319-4-git-send-email-manfred@colorfullife.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-System V shared memory
+Hi all,
 
-a) can be abused to trigger out-of-memory conditions and the standard
-   measures against out-of-memory do not work:
+the increase of SHMMAX/SHMALL is now a 4 patch series, and still
+not ready for merging (see at the end, TASK_SIZE and s390).
 
-    - it is not possible to use setrlimit to limit the size of shm segments.
+If we increase the default limits for SHMMAX and SHMALL,
+integer overflows could happen:
 
-    - segments can exist without association with any processes, thus
-      the oom-killer is unable to free that memory.
+SHMMAX:
 
-b) is typically used for shared information - today often multiple GB.
-   (e.g. database shared buffers)
+- shmmem_file_setup places a hard limit on the segment size:
+	MAX_LFS_FILESIZE.
 
-The current default is a maximum segment size of 32 MB and a maximum total
-size of 8 GB. This is often too much for a) and not enough for b), which
-means that lots of users must change the defaults.
+	on 32-bit, the limit is > 1 TB.
+	--> 32-bit: 4 GB-1 segments are possible.
+		Rounded up to full pages the actual allocated size
+                is 0.
+		--> patch 3
 
-This patch increases the default limits to the supported maximum, which is
-perfect for case b). The defaults are used after boot and as the initial
-value for each new namespace.
+	on 64-bit, this is 0x7fff ffff ffff ffff
+		--> no chance for an overflow.
 
-Admins/distros that need a protection against a) should reduce the limits
-and/or enable shm_rmid_forced.
+- shmat:
+	- find_vma_intersection does not handle overflows properly
+		--> patch 1.
 
-Further notes:
-- The patch only changes default, overrides behave as before:
-        # sysctl kernel/shmall=33554432
-  would recreate the previous limit for SHMMAX (for the current namespace).
+	- do_mmap_pgoff limits mappings to TASK_SIZE
+		3 GB on 32-bit (assuming x86)
+		47 bits on 64-bit (assuming x86)
 
-- Disabling sysv shm allocation is possible with:
-        # sysctl kernel.shmall=0
-  (not a new feature, also per-namespace)
+	- do_mmap_pgoff checks for overflows:
+		map 2 GB, starting from addr=2.5GB fails.
 
-- The limits are intentionally not set to ULONG_MAX, to avoid triggering
-  overflows in user space.
-  [not unreasonable, see http://marc.info/?l=linux-mm&m=139638334330127]
+SHMALL:
 
-- The the maximum segment size is set to TASK_SIZE. Segments larger than
-  TASK_SIZE do not make sense, because such segments can't be mapped.
+- after creating 8192 segments size (1L<<63)-1, shm_tot
+  overflows and returns 0.
+	--> patch 2.
 
-- The limit for the total memory is 256*TASK_SIZE.
-  This would be 768 GB for x86-32 and 64 PB for x86-64.
-  Values larger than that might make sense, but not in the next few weeks.
+And finally:
+Patch 4, increase the limits to ULONG_MAX
 
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-Reported-by: Davidlohr Bueso <davidlohr@hp.com>
-Cc: mtk.manpages@gmail.com
----
- include/linux/shm.h      |  5 ++++-
- include/uapi/linux/shm.h | 10 ++++++++--
- 2 files changed, 12 insertions(+), 3 deletions(-)
+Open points:
+- Better ideas to handle uapi: Is it worth the effort to get
+  access to TASK_SIZE? I would say no.
+- Better ideas with regards to SHMALL? The values are probably
+  large enough, but still arbitrary.
 
-diff --git a/include/linux/shm.h b/include/linux/shm.h
-index 1e2cd2e..7cafb08 100644
---- a/include/linux/shm.h
-+++ b/include/linux/shm.h
-@@ -4,7 +4,10 @@
- #include <asm/page.h>
- #include <uapi/linux/shm.h>
- 
--#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
-+#define SHMMAX TASK_SIZE		 /* max shared seg size (bytes) */
-+#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16))
-+					 /* max shm system wide (pages) */
-+
- #include <asm/shmparam.h>
- struct shmid_kernel /* private to the kernel */
- {	
-diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
-index 78b6941..a20bb7a 100644
---- a/include/uapi/linux/shm.h
-+++ b/include/uapi/linux/shm.h
-@@ -9,14 +9,20 @@
- 
- /*
-  * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
-- * be increased by sysctl
-+ * be modified by sysctl
-  */
- 
--#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
- #define SHMMIN 1			 /* min shared seg size (bytes) */
- #define SHMMNI 4096			 /* max num of segs system wide */
- #ifndef __KERNEL__
-+/*
-+ * The real values is TASK_SIZE, which is not exported as uapi.
-+ * Since this is only the boot time default, 1 GB is a sufficiently
-+ * accurate approximation of TASK_SIZE.
-+ */
-+#define SHMMAX 0x40000000		 /* max shared seg size (bytes) */
- #define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
-+					 /* max shm system wide (pages) */
- #endif
- #define SHMSEG SHMMNI			 /* max shared segs per process */
- 
--- 
-1.9.0
+- The TASK_SIZE definition for e.g. S390 differs: It's not
+  a constant, instead it is the current task size for current.
+  And it seems that the task size can change based on
+  (virtual) memory pressure (s390_mmap_check()).
+  For new namespaces, this might have interesting effects, i.e.
+  this must be fixed.
 
+--
+	Manfred
