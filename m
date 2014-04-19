@@ -1,83 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754465AbaDSTtq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 15:49:46 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59450 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaDSTth (ORCPT
+	id S1751416AbaDSUMo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 16:12:44 -0400
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:54010 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaDSUMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 15:49:37 -0400
-Date: Sat, 19 Apr 2014 21:49:36 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Carlos Chinea <carlos.chinea@nokia.com>
-Subject: Re: [PATCHv3 10/14] HSI: Introduce driver for SSI Protocol
-Message-ID: <20140419194936.GJ5148@amd.pavel.ucw.cz>
-References: <1396053110-21639-1-git-send-email-sre@kernel.org>
- <1396053110-21639-11-git-send-email-sre@kernel.org>
+	Sat, 19 Apr 2014 16:12:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396053110-21639-11-git-send-email-sre@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1397824031-4892-13-git-send-email-lftan@altera.com>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<1397824031-4892-13-git-send-email-lftan@altera.com>
+Date: Sat, 19 Apr 2014 22:12:28 +0200
+X-Google-Sender-Auth: f42ntuaflxlv_5p5feum75DgDrs
+Message-ID: <CAMuHMdXvLLNXQXYRD71Uv7F-Fh_E6EmF7_OvBUYF513cMfy8sw@mail.gmail.com>
+Subject: Re: [PATCH 16/28] nios2: System calls handling
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        lftan.linux@gmail.com, cltang@codesourcery.com,
+        Pavel Machek <pavel@denx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Fri, Apr 18, 2014 at 2:26 PM, Ley Foon Tan <lftan@altera.com> wrote:
+> +/* sys_cacheflush -- flush the processor cache. */
+> +asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len,
+> +                               unsigned int op)
+> +{
+> +       struct vm_area_struct *vma;
+> +
+> +       if (len == 0)
+> +               return 0;
+> +
+> +       /* Check for overflow */
+> +       if (addr + len < addr)
+> +               return -EFAULT;
+> +
+> +       /*
+> +        * Verify that the specified address region actually belongs
+> +        * to this process.
+> +        */
+> +       vma = find_vma(current->mm, addr);
+> +       if (vma == NULL || addr < vma->vm_start || addr + len > vma->vm_end)
+> +               return -EFAULT;
+> +
+> +       /* Ignore the scope and cache arguments. */
 
-> This adds a driver for the SSI McSAAB protocol as used in
-> the Nokia N900.
-> 
-> Signed-off-by: Carlos Chinea <carlos.chinea@nokia.com>
-> Signed-off-by: Sebastian Reichel <sre@kernel.org>
+This function doesn't have scope and cache arguments
+(sys_cacheflush() on m68k does have them ;-)
 
-> +#define SSIP_MIN_PN_HDR		6	/* FIXME: Revisit */
-> +#define SSIP_WDTOUT		2000	/* FIXME: has to be 500 msecs> */
+On Sat, Apr 19, 2014 at 6:09 PM, Pavel Machek <pavel@denx.de> wrote:
+> Also... explanation why you need this syscall while other
+> architectures live happily without it would be nice.
 
-Can they be fixed now, or do they have to wait?
+12 our of 28 architectures provide such a syscall...
 
+Is flushing the cache a privileged operation on nios2?
 
-> +#ifdef __LITTLE_ENDIAN
-> +	((u16 *)skb->data)[2] = swab16(((u16 *)skb->data)[2]);
-> +	dev_dbg(&dev->dev, "RX length fixed (%04x -> %u)\n",
-> +			((u16 *)skb->data)[2], ntohs(((u16 *)skb->data)[2]));
-> +#endif
+Gr{oetje,eeting}s,
 
-Uh. Can this be replaced by
-    ((u16 *)skb->data)[2] = htons(((u16 *)skb->data)[2]);
+                        Geert
 
-(without the ifdef?)
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-> +	/*
-> +	 * Modem sends Phonet messages over SSI with its own endianess...
-> +	 * Assume that modem has the same endianess as we do.
-> +	 */
-> +	if (skb_cow_head(skb, 0))
-> +		goto drop;
-> +#ifdef __LITTLE_ENDIAN
-> +	((u16 *)skb->data)[2] = swab16(((u16 *)skb->data)[2]);
-> +#endif
-
-Here, too?
-
-But it looks like the comment does not match the code, because we
-swap.
-
-Best regards,
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
