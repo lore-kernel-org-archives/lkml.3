@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250AbaDSVTn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 17:19:43 -0400
-Received: from mail-qc0-f175.google.com ([209.85.216.175]:47844 "EHLO
-	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaDSVTh (ORCPT
+	id S1754845AbaDSVU1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 17:20:27 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:44130 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754591AbaDSVUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 17:19:37 -0400
+	Sat, 19 Apr 2014 17:20:00 -0400
 From: Dimitri John Ledkov <dimitri.ledkov@surgut.co.uk>
+To: linux-nvme@lists.infradead.org
 Cc: keith.busch@intel.com, willy@linux.intel.com, linux-kernel@vger.kernel.org
 Subject: [PATCH] NVMe: Update namespace and controller identity structures as per 1.1a spec
-Date: Sat, 19 Apr 2014 22:19:34 +0100
-Message-Id: <1397942374-29959-1-git-send-email-dimitri.ledkov@canonical.com>
+Date: Sat, 19 Apr 2014 22:19:57 +0100
+Message-Id: <1397942397-29998-1-git-send-email-dimitri.ledkov@canonical.com>
 X-Mailer: git-send-email 1.9.1
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
