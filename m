@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487AbaDSKl7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 06:41:59 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:39998 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043AbaDSKl4 (ORCPT
+	id S1751440AbaDSKz6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 06:55:58 -0400
+Received: from mail-ee0-f52.google.com ([74.125.83.52]:62697 "EHLO
+	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaDSKz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 06:41:56 -0400
-Date: Sat, 19 Apr 2014 12:41:49 +0200
+	Sat, 19 Apr 2014 06:55:56 -0400
+Date: Sat, 19 Apr 2014 12:55:49 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20140419104149.GA4224@gmail.com>
+Subject: [GIT PULL] scheduler fixes
+Message-ID: <20140419105549.GA4492@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -26,123 +25,162 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest perf-urgent-for-linus git tree from:
+Please pull the latest sched-urgent-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
 
-   # HEAD: 24223657806a0ebd0ae5c9caaf7b021091889cf2 perf/x86/intel: Use rdmsrl_safe() when initializing RAPL PMU
+   # HEAD: a1d9a3231eac4117cadaf4b6bba5b2902c15a33e sched: Check for stop task appearance when balancing happens
 
-Two kernel side fixes:
+Two fixes:
 
- - an Intel uncore PMU driver potential crash fix
- - a kprobes/perf-call-graph interaction fix
+ - a SCHED_DEADLINE task selection fix
+ - a sched/numa related lockdep splat fix
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Masami Hiramatsu (1):
-      kprobes/x86: Fix page-fault handling logic
+Kirill Tkhai (1):
+      sched: Check for stop task appearance when balancing happens
 
-Venkatesh Srinivas (1):
-      perf/x86/intel: Use rdmsrl_safe() when initializing RAPL PMU
+Mike Galbraith (1):
+      sched/numa: Fix task_numa_free() lockdep splat
 
 
- arch/x86/kernel/cpu/perf_event_intel_rapl.c | 12 +++++++++---
- arch/x86/kernel/kprobes/core.c              | 16 +++++++---------
- 2 files changed, 16 insertions(+), 12 deletions(-)
+ kernel/sched/deadline.c | 11 ++++++++++-
+ kernel/sched/fair.c     | 16 +++++++++-------
+ kernel/sched/rt.c       |  7 ++++---
+ kernel/sched/sched.h    |  9 +++++++++
+ 4 files changed, 32 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-index 4b9a9e9..7c87424 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-@@ -535,6 +535,7 @@ static int rapl_cpu_prepare(int cpu)
- 	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
- 	int phys_id = topology_physical_package_id(cpu);
- 	u64 ms;
-+	u64 msr_rapl_power_unit_bits;
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 27ef409..b080957 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -1021,8 +1021,17 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
  
- 	if (pmu)
- 		return 0;
-@@ -542,6 +543,9 @@ static int rapl_cpu_prepare(int cpu)
- 	if (phys_id < 0)
- 		return -1;
+ 	dl_rq = &rq->dl;
  
-+	if (!rdmsrl_safe(MSR_RAPL_POWER_UNIT, &msr_rapl_power_unit_bits))
-+		return -1;
+-	if (need_pull_dl_task(rq, prev))
++	if (need_pull_dl_task(rq, prev)) {
+ 		pull_dl_task(rq);
++		/*
++		 * pull_rt_task() can drop (and re-acquire) rq->lock; this
++		 * means a stop task can slip in, in which case we need to
++		 * re-start task selection.
++		 */
++		if (rq->stop && rq->stop->on_rq)
++			return RETRY_TASK;
++	}
 +
- 	pmu = kzalloc_node(sizeof(*pmu), GFP_KERNEL, cpu_to_node(cpu));
- 	if (!pmu)
- 		return -1;
-@@ -555,8 +559,7 @@ static int rapl_cpu_prepare(int cpu)
- 	 *
- 	 * we cache in local PMU instance
- 	 */
--	rdmsrl(MSR_RAPL_POWER_UNIT, pmu->hw_unit);
--	pmu->hw_unit = (pmu->hw_unit >> 8) & 0x1FULL;
-+	pmu->hw_unit = (msr_rapl_power_unit_bits >> 8) & 0x1FULL;
- 	pmu->pmu = &rapl_pmu_class;
- 
  	/*
-@@ -677,7 +680,9 @@ static int __init rapl_pmu_init(void)
- 	cpu_notifier_register_begin();
- 
- 	for_each_online_cpu(cpu) {
--		rapl_cpu_prepare(cpu);
-+		ret = rapl_cpu_prepare(cpu);
-+		if (ret)
-+			goto out;
- 		rapl_cpu_init(cpu);
+ 	 * When prev is DL, we may throttle it in put_prev_task().
+ 	 * So, we update time before we check for dl_nr_running.
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index 7e9bd0b..7570dd9 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -1497,7 +1497,7 @@ static void task_numa_placement(struct task_struct *p)
+ 	/* If the task is part of a group prevent parallel updates to group stats */
+ 	if (p->numa_group) {
+ 		group_lock = &p->numa_group->lock;
+-		spin_lock(group_lock);
++		spin_lock_irq(group_lock);
  	}
  
-@@ -700,6 +705,7 @@ static int __init rapl_pmu_init(void)
- 		hweight32(rapl_cntr_mask),
- 		ktime_to_ms(pmu->timer_interval));
+ 	/* Find the node with the highest number of faults */
+@@ -1572,7 +1572,7 @@ static void task_numa_placement(struct task_struct *p)
+ 			}
+ 		}
  
-+out:
- 	cpu_notifier_register_done();
+-		spin_unlock(group_lock);
++		spin_unlock_irq(group_lock);
+ 	}
  
- 	return 0;
-diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
-index 79a3f96..61b17dc 100644
---- a/arch/x86/kernel/kprobes/core.c
-+++ b/arch/x86/kernel/kprobes/core.c
-@@ -897,9 +897,10 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 	struct kprobe *cur = kprobe_running();
- 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+ 	/* Preferred node as the node with the most faults */
+@@ -1677,7 +1677,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 	if (!join)
+ 		return;
  
--	switch (kcb->kprobe_status) {
--	case KPROBE_HIT_SS:
--	case KPROBE_REENTER:
-+	if (unlikely(regs->ip == (unsigned long)cur->ainsn.insn)) {
-+		/* This must happen on single-stepping */
-+		WARN_ON(kcb->kprobe_status != KPROBE_HIT_SS &&
-+			kcb->kprobe_status != KPROBE_REENTER);
+-	double_lock(&my_grp->lock, &grp->lock);
++	BUG_ON(irqs_disabled());
++	double_lock_irq(&my_grp->lock, &grp->lock);
+ 
+ 	for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++) {
+ 		my_grp->faults[i] -= p->numa_faults_memory[i];
+@@ -1691,7 +1692,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
+ 	grp->nr_tasks++;
+ 
+ 	spin_unlock(&my_grp->lock);
+-	spin_unlock(&grp->lock);
++	spin_unlock_irq(&grp->lock);
+ 
+ 	rcu_assign_pointer(p->numa_group, grp);
+ 
+@@ -1710,14 +1711,14 @@ void task_numa_free(struct task_struct *p)
+ 	void *numa_faults = p->numa_faults_memory;
+ 
+ 	if (grp) {
+-		spin_lock(&grp->lock);
++		spin_lock_irq(&grp->lock);
+ 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
+ 			grp->faults[i] -= p->numa_faults_memory[i];
+ 		grp->total_faults -= p->total_numa_faults;
+ 
+ 		list_del(&p->numa_entry);
+ 		grp->nr_tasks--;
+-		spin_unlock(&grp->lock);
++		spin_unlock_irq(&grp->lock);
+ 		rcu_assign_pointer(p->numa_group, NULL);
+ 		put_numa_group(grp);
+ 	}
+@@ -6727,7 +6728,8 @@ static int idle_balance(struct rq *this_rq)
+ out:
+ 	/* Is there a task of a high priority class? */
+ 	if (this_rq->nr_running != this_rq->cfs.h_nr_running &&
+-	    (this_rq->dl.dl_nr_running ||
++	    ((this_rq->stop && this_rq->stop->on_rq) ||
++	     this_rq->dl.dl_nr_running ||
+ 	     (this_rq->rt.rt_nr_running && !rt_rq_throttled(&this_rq->rt))))
+ 		pulled_task = -1;
+ 
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index d8cdf16..bd2267a 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -1362,10 +1362,11 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
+ 		pull_rt_task(rq);
  		/*
- 		 * We are here because the instruction being single
- 		 * stepped caused a page fault. We reset the current
-@@ -914,9 +915,8 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 		else
- 			reset_current_kprobe();
- 		preempt_enable_no_resched();
--		break;
--	case KPROBE_HIT_ACTIVE:
--	case KPROBE_HIT_SSDONE:
-+	} else if (kcb->kprobe_status == KPROBE_HIT_ACTIVE ||
-+		   kcb->kprobe_status == KPROBE_HIT_SSDONE) {
- 		/*
- 		 * We increment the nmissed count for accounting,
- 		 * we can also use npre/npostfault count for accounting
-@@ -945,10 +945,8 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 		 * fixup routine could not handle it,
- 		 * Let do_page_fault() fix it.
+ 		 * pull_rt_task() can drop (and re-acquire) rq->lock; this
+-		 * means a dl task can slip in, in which case we need to
+-		 * re-start task selection.
++		 * means a dl or stop task can slip in, in which case we need
++		 * to re-start task selection.
  		 */
--		break;
--	default:
--		break;
+-		if (unlikely(rq->dl.dl_nr_running))
++		if (unlikely((rq->stop && rq->stop->on_rq) ||
++			     rq->dl.dl_nr_running))
+ 			return RETRY_TASK;
  	}
-+
- 	return 0;
+ 
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index c9007f2..456e492 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -1385,6 +1385,15 @@ static inline void double_lock(spinlock_t *l1, spinlock_t *l2)
+ 	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
  }
  
++static inline void double_lock_irq(spinlock_t *l1, spinlock_t *l2)
++{
++	if (l1 > l2)
++		swap(l1, l2);
++
++	spin_lock_irq(l1);
++	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
++}
++
+ static inline void double_raw_lock(raw_spinlock_t *l1, raw_spinlock_t *l2)
+ {
+ 	if (l1 > l2)
