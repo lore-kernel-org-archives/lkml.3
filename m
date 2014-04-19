@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbaDSLew (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 07:34:52 -0400
+	id S932069AbaDSLhZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 07:37:25 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:55869 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751842AbaDSLem (ORCPT
+	with ESMTP id S1751842AbaDSLex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 07:34:42 -0400
+	Sat, 19 Apr 2014 07:34:53 -0400
 X-IronPort-AV: E=Sophos;i="4.97,888,1389715200"; 
-   d="scan'208";a="29471746"
+   d="scan'208";a="29471752"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, <stable@vger.kernel.org>,
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Jean Delvare <jdelvare@suse.de>,
         Monam Agarwal <monamagarwal123@gmail.com>,
         Jeff Layton <jlayton@redhat.com>,
         Andreas Gruenbacher <agruen@linbit.com>,
         Stephen Hemminger <stephen@networkplumber.org>
-Subject: [PATCH 1/9 V2] idr: fix overflow bug during maximum ID calculation at maximum height
-Date: Sat, 19 Apr 2014 19:38:08 +0800
-Message-ID: <1397907496-5993-2-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 4/9 V2] idr: fix idr_replace()'s returned error code
+Date: Sat, 19 Apr 2014 19:38:11 +0800
+Message-ID: <1397907496-5993-5-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1397907496-5993-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
@@ -32,73 +32,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-idr_replace() open-codes the logic to calculate the maximum valid ID
-given the height of the idr tree; unfortunately, the open-coded logic
-doesn't account for the fact that the top layer may have unused slots
-and over-shifts the limit to zero when the tree is at its maximum
-height.
+When the smaller id is not found, idr_replace() returns -ENOENT.
+But when the id is bigger enough, idr_replace() returns -EINVAL,
+actually there is no difference between these two kinds of ids.
 
-The following test code shows it fails to replace the value for id=((1<<27)+42):
+These are all unallocated id, the return values of the idr_replace()
+for these ids should be the same: -ENOENT.
 
-static void test5(void)
-{
-	int id;
-	DEFINE_IDR(test_idr);
-#define TEST5_START ((1<<27)+42) /* use the highest layer */
-
-	printk(KERN_INFO "Start test5\n");
-	id = idr_alloc(&test_idr, (void *)1, TEST5_START, 0, GFP_KERNEL);
-	BUG_ON(id != TEST5_START);
-	TEST_BUG_ON(idr_replace(&test_idr, (void *)2, TEST5_START) != (void *)1);
-	idr_destroy(&test_idr);
-	printk(KERN_INFO "End of test5\n");
-}
-
-Fix the bug by using idr_max() which correctly takes into account the
-maximum allowed shift.
-
-sub_alloc() shares the same problem and may incorrectly fail with
--EAGAIN; however, this bug doesn't affect correct operation because
-idr_get_empty_slot(), which already uses idr_max(), retries with the
-increased @id in such cases.
-
-tj: Updated patch description.
-
-CC: stable@vger.kernel.org
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Acked-by: Tejun Heo <tj@kernel.org>
 ---
- lib/idr.c |    8 +++-----
- 1 files changed, 3 insertions(+), 5 deletions(-)
+ lib/idr.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/lib/idr.c b/lib/idr.c
-index 2642fa8..4df6792 100644
+index 36ff732..e79e051 100644
 --- a/lib/idr.c
 +++ b/lib/idr.c
-@@ -249,7 +249,7 @@ static int sub_alloc(struct idr *idp, int *starting_id, struct idr_layer **pa,
- 			id = (id | ((1 << (IDR_BITS * l)) - 1)) + 1;
+@@ -814,10 +814,10 @@ void *idr_replace(struct idr *idp, void *ptr, int id)
  
- 			/* if already at the top layer, we need to grow */
--			if (id >= 1 << (idp->layers * IDR_BITS)) {
-+			if (id > idr_max(idp->layers)) {
- 				*starting_id = id;
- 				return -EAGAIN;
- 			}
-@@ -811,12 +811,10 @@ void *idr_replace(struct idr *idp, void *ptr, int id)
+ 	p = idp->top;
  	if (!p)
- 		return ERR_PTR(-EINVAL);
+-		return ERR_PTR(-EINVAL);
++		return ERR_PTR(-ENOENT);
  
--	n = (p->layer+1) * IDR_BITS;
--
--	if (id >= (1 << n))
-+	if (id > idr_max(p->layer + 1))
- 		return ERR_PTR(-EINVAL);
+ 	if (id > idr_max(p->layer + 1))
+-		return ERR_PTR(-EINVAL);
++		return ERR_PTR(-ENOENT);
  
--	n -= IDR_BITS;
-+	n = p->layer * IDR_BITS;
+ 	n = p->layer * IDR_BITS;
  	while ((n > 0) && p) {
- 		p = p->ary[(id >> n) & IDR_MASK];
- 		n -= IDR_BITS;
 -- 
 1.7.4.4
 
