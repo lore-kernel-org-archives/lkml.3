@@ -1,146 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751530AbaDSK6a (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 06:58:30 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:45977 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043AbaDSK61 (ORCPT
+	id S1751563AbaDSLA0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 07:00:26 -0400
+Received: from emh03.mail.saunalahti.fi ([62.142.5.109]:60522 "EHLO
+	emh03.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaDSLAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 06:58:27 -0400
-Date: Sat, 19 Apr 2014 12:58:22 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86 fix
-Message-ID: <20140419105822.GA4844@gmail.com>
+	Sat, 19 Apr 2014 07:00:18 -0400
+X-Greylist: delayed 520 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Apr 2014 07:00:18 EDT
+Date: Sat, 19 Apr 2014 13:52:26 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Robert Baldyga <r.baldyga@samsung.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        myungjoo.ham@samsung.com, cw00.choi@samsung.com, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, balbi@ti.com, gregkh@linuxfoundation.org,
+        grant.likely@linaro.org, ldewangan@nvidia.com, kishon@ti.com,
+        gg@slimlogic.co.uk, anton@enomsg.org, jonghwa3.lee@samsung.com,
+        rongjun.ying@csr.com, linux@roeck-us.net, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, m.szyprowski@samsung.com,
+        t.figa@samsung.com
+Subject: Re: [PATCH v2 05/13] extcon: extcon-class: improve extcon client API
+Message-ID: <20140419105225.GB976@ambient.musicnaut.iki.fi>
+References: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
+ <1397475984-28001-6-git-send-email-r.baldyga@samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397475984-28001-6-git-send-email-r.baldyga@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi,
 
-Please pull the latest x86-urgent-for-linus git tree from:
+On Mon, Apr 14, 2014 at 01:46:16PM +0200, Robert Baldyga wrote:
+>  	dev_info(&pdev->dev,
+> -		 "OMAP USB OTG controller rev %d.%d (%s, id=%d, vbus=%d)\n",
+> -		 (rev >> 4) & 0xf, rev & 0xf, config->extcon, otg_dev->id,
+> +		 "OMAP USB OTG controller rev %d.%d (id=%d, vbus=%d)\n",
+> +		 (rev >> 4) & 0xf, rev & 0xf, otg_dev->id,
+>  		 otg_dev->vbus);
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
+This change is unrelated to the patch and not needed.
 
-   # HEAD: ea431643d6c38728195e2c456801c3ef66bb9991 x86/mce: Fix CMCI preemption bugs
-
-This fixes the preemption-count imbalance crash reported by Owen 
-Kibel. (The second part of the changelog is not true because even 
-RAW_SPINLOCKs have a preemption count - but this was the tested commit 
-so I didn't amend it. Let me know if I should resend it.)
-
- Thanks,
-
-	Ingo
-
------------------->
-Ingo Molnar (1):
-      x86/mce: Fix CMCI preemption bugs
-
-
- arch/x86/kernel/cpu/mcheck/mce.c       |  4 +---
- arch/x86/kernel/cpu/mcheck/mce_intel.c | 18 +++++++++---------
- 2 files changed, 10 insertions(+), 12 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index eeee23f..68317c8 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -598,7 +598,6 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- {
- 	struct mce m;
- 	int i;
--	unsigned long *v;
- 
- 	this_cpu_inc(mce_poll_count);
- 
-@@ -618,8 +617,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
- 		if (!(m.status & MCI_STATUS_VAL))
- 			continue;
- 
--		v = &get_cpu_var(mce_polled_error);
--		set_bit(0, v);
-+		this_cpu_write(mce_polled_error, 1);
- 		/*
- 		 * Uncorrected or signalled events are handled by the exception
- 		 * handler when it is enabled, so don't process those here.
-diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-index 3bdb95a..9a316b2 100644
---- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
-@@ -42,7 +42,7 @@ static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
-  * cmci_discover_lock protects against parallel discovery attempts
-  * which could race against each other.
-  */
--static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
-+static DEFINE_SPINLOCK(cmci_discover_lock);
- 
- #define CMCI_THRESHOLD		1
- #define CMCI_POLL_INTERVAL	(30 * HZ)
-@@ -144,14 +144,14 @@ static void cmci_storm_disable_banks(void)
- 	int bank;
- 	u64 val;
- 
--	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
-+	spin_lock_irqsave(&cmci_discover_lock, flags);
- 	owned = __get_cpu_var(mce_banks_owned);
- 	for_each_set_bit(bank, owned, MAX_NR_BANKS) {
- 		rdmsrl(MSR_IA32_MCx_CTL2(bank), val);
- 		val &= ~MCI_CTL2_CMCI_EN;
- 		wrmsrl(MSR_IA32_MCx_CTL2(bank), val);
- 	}
--	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
-+	spin_unlock_irqrestore(&cmci_discover_lock, flags);
- }
- 
- static bool cmci_storm_detect(void)
-@@ -211,7 +211,7 @@ static void cmci_discover(int banks)
- 	int i;
- 	int bios_wrong_thresh = 0;
- 
--	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
-+	spin_lock_irqsave(&cmci_discover_lock, flags);
- 	for (i = 0; i < banks; i++) {
- 		u64 val;
- 		int bios_zero_thresh = 0;
-@@ -266,7 +266,7 @@ static void cmci_discover(int banks)
- 			WARN_ON(!test_bit(i, __get_cpu_var(mce_poll_banks)));
- 		}
- 	}
--	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
-+	spin_unlock_irqrestore(&cmci_discover_lock, flags);
- 	if (mca_cfg.bios_cmci_threshold && bios_wrong_thresh) {
- 		pr_info_once(
- 			"bios_cmci_threshold: Some banks do not have valid thresholds set\n");
-@@ -316,10 +316,10 @@ void cmci_clear(void)
- 
- 	if (!cmci_supported(&banks))
- 		return;
--	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
-+	spin_lock_irqsave(&cmci_discover_lock, flags);
- 	for (i = 0; i < banks; i++)
- 		__cmci_disable_bank(i);
--	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
-+	spin_unlock_irqrestore(&cmci_discover_lock, flags);
- }
- 
- static void cmci_rediscover_work_func(void *arg)
-@@ -360,9 +360,9 @@ void cmci_disable_bank(int bank)
- 	if (!cmci_supported(&banks))
- 		return;
- 
--	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
-+	spin_lock_irqsave(&cmci_discover_lock, flags);
- 	__cmci_disable_bank(bank);
--	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
-+	spin_unlock_irqrestore(&cmci_discover_lock, flags);
- }
- 
- static void intel_init_cmci(void)
+A.
