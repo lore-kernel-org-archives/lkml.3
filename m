@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831AbaDSDWP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 23:22:15 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48162 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754284AbaDSDVw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 23:21:52 -0400
+	id S1754883AbaDSDWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 23:22:38 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47665 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753931AbaDSDVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 23:21:50 -0400
 From: Kishon Vijay Abraham I <kishon@ti.com>
 To: <gregkh@linuxfoundation.org>
 CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] phy: fix kernel oops in phy_lookup()
-Date: Sat, 19 Apr 2014 08:51:43 +0530
-Message-ID: <1397877704-2755-4-git-send-email-kishon@ti.com>
+Subject: [PATCH 2/4] phy: restore OMAP_CONTROL_PHY dependencies
+Date: Sat, 19 Apr 2014 08:51:42 +0530
+Message-ID: <1397877704-2755-3-git-send-email-kishon@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1397877704-2755-1-git-send-email-kishon@ti.com>
 References: <1397877704-2755-1-git-send-email-kishon@ti.com>
@@ -22,34 +21,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+From: Jean Delvare <jdelvare@suse.de>
 
-The kernel oopses in phy_lookup() due to 'phy->init_data' being NULL if we
-register PHYs from a device tree probing driver and then call phy_get() on a
-device that has no representation in the device tree (e.g. a PCI device).
-Checking the pointer before dereferening it and skipping an interation if
-it's NULL prevents this kernel oops.
+When OMAP_CONTROL_USB was renamed to OMAP_CONTROL_PHY (commit
+14da699b), its dependencies were lost in the process. Nothing in the
+commit message indicates that this removal was intentional, so I think
+it was by accident and the dependencies should be restored.
 
-Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Signed-off-by: Jean Delvare <jdelvare@suse.de>
+Acked-by: Roger Quadros <rogerq@ti.com>
+Cc: Felipe Balbi <balbi@ti.com>
 Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
 ---
- drivers/phy/phy-core.c |    3 +++
- 1 file changed, 3 insertions(+)
+ drivers/phy/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/phy/phy-core.c b/drivers/phy/phy-core.c
-index 623b71c..c64a2f3 100644
---- a/drivers/phy/phy-core.c
-+++ b/drivers/phy/phy-core.c
-@@ -64,6 +64,9 @@ static struct phy *phy_lookup(struct device *device, const char *port)
- 	class_dev_iter_init(&iter, phy_class, NULL, NULL);
- 	while ((dev = class_dev_iter_next(&iter))) {
- 		phy = to_phy(dev);
-+
-+		if (!phy->init_data)
-+			continue;
- 		count = phy->init_data->num_consumers;
- 		consumers = phy->init_data->consumers;
- 		while (count--) {
+diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+index 3bb05f1..4906c27 100644
+--- a/drivers/phy/Kconfig
++++ b/drivers/phy/Kconfig
+@@ -33,6 +33,7 @@ config PHY_MVEBU_SATA
+ 
+ config OMAP_CONTROL_PHY
+ 	tristate "OMAP CONTROL PHY Driver"
++	depends on ARCH_OMAP2PLUS || COMPILE_TEST
+ 	help
+ 	  Enable this to add support for the PHY part present in the control
+ 	  module. This driver has API to power on the USB2 PHY and to write to
 -- 
 1.7.9.5
 
