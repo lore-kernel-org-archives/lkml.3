@@ -1,68 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345AbaDSIcS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 04:32:18 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:64768 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751327AbaDSI1u (ORCPT
+	id S1751380AbaDSIfB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 04:35:01 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:49035 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996AbaDSIe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 04:27:50 -0400
+	Sat, 19 Apr 2014 04:34:57 -0400
+Date: Sat, 19 Apr 2014 10:34:55 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Peter Chiang <pchiang@nvidia.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>, Michal Hocko <mhocko@suse.cz>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "lizefan@huawei.com" <lizefan@huawei.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "guillaume@morinfr.org" <guillaume@morinfr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] memcg: mm_update_next_owner() should skip kthreads
+Message-ID: <20140419083455.GA17601@amd.pavel.ucw.cz>
+References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com>
+ <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com>
+ <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com>
+ <20140416135741.GA9407@redhat.com>
+ <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com>
+ <20140418162359.GA4398@redhat.com>
+ <20140418172631.GA13323@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOmT4fRoz+TyxUKBS22RAqsZmyo-27qCuKQQsg-hHdsY5JRSWw@mail.gmail.com>
-References: <1397843871-10850-1-git-send-email-prtvar.b@gmail.com>
-	<20140418232315.GA23165@kroah.com>
-	<CAOmT4fRoz+TyxUKBS22RAqsZmyo-27qCuKQQsg-hHdsY5JRSWw@mail.gmail.com>
-Date: Sat, 19 Apr 2014 10:27:50 +0200
-Message-ID: <CAOmT4fRs8Gyg_tw2YhJwcH7Mzw4A2TVBRU4VXi8MCN8K+5vACA@mail.gmail.com>
-Subject: Re: [PATCH] Staging: crystalhd: Mark local functions as static
-From: bojan prtvar <prtvar.b@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: nsankar@broadcom.com, jarod@wilsonet.com, Scott Davilla <davilla@4pi.com>,
-        Manu Abraham <abraham.manu@gmail.com>,
-        Amarjargal G <amarjargal16@gmail.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>, devel@driverdev.osuosl.org,
-        kernel-janitors@vger.kernel.org,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140418172631.GA13323@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 9:58 AM, bojan prtvar <prtvar.b@gmail.com> wrote:
-> On Sat, Apr 19, 2014 at 1:23 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
->> On Fri, Apr 18, 2014 at 07:57:51PM +0200, Bojan Prtvar wrote:
->>> This fixes the following sparse warnings:
->>> drivers/staging/crystalhd/crystalhd_lnx.c:631:5: warning: symbol 'chd_dec_pci_suspend' was not declared. Should it be static?
->>> drivers/staging/crystalhd/crystalhd_lnx.c:665:5: warning: symbol 'chd_dec_pci_resume' was not declared. Should it be static?
->>> drivers/staging/crystalhd/crystalhd_lnx.c:78:29: warning: symbol 'chd_dec_alloc_iodata' was not declared. Should it be static?
->>> drivers/staging/crystalhd/crystalhd_lnx.c:99:6: warning: symbol 'chd_dec_free_iodata' was not declared. Should it be static?
->>>
->>> Signed-off-by: Bojan Prtvar <prtvar.b@gmail.com>
->>> ---
->>>  drivers/staging/crystalhd/crystalhd_lnx.c |   10 +++++-----
->>>  1 file changed, 5 insertions(+), 5 deletions(-)
->>
->> This patch doesn't apply to my tree, can you redo it and resend?
->>
->> thanks,
->>
->> greg k-h
->
-> I cloned your tree
-> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging.git
-> and on master branch I see work is already done in
->
-> commit 038d3f882926bf49562e5f119957fd81015a9390
-> Author: Valentina Manea <valentina.manea.m@gmail.com>
-> Date:   Mon Oct 7 23:12:14 2013 +0300
->
-> Now what confuses me is the date of this patch. Why I didn't see it
-> linux-next and even in vanilla?
-> I know this question goes under 'basic workflow section'.
->
-> Regards,
-> Bojan
+Hi!
 
-I re-checked. Everything is OK with  038d3f8829. I made a mess in my
-local branches.
-Drop this one. And sorry for the noise.
+> > Hmm. I seem to see a bug in this function, it can be fulled by use_mm,
+> > but I am not sure this can explain the problem. I'll send a patch.
+> 
+> Untested, please review. But it really looks "obviously wrong", and note
+> that unuse_mm() doesn't do mm_update_next_owner(). (just in case, do not
+> confuse it with unuse_mm() in mm/swapfile.c).
+
+Having two functions, one exported, one static with same name -- that
+sounds quite evil, right?
+
+mmu_context.c: * unuse_mm
+mmu_context.c:void unuse_mm(struct mm_struct *mm)
+mmu_context.c:EXPORT_SYMBOL_GPL(unuse_mm);
+swapfile.c:static int unuse_mm(struct mm_struct *mm,
+swapfile.c:	      		      retval = unuse_mm(start_mm,
+entry, page);
+swapfile.c:					retval = unuse_mm(mm,
+entry, page);
+swapfile.c:		 * or while we dropped it in unuse_mm().  The
+page might even
+
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
