@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754736AbaDSAth (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 20:49:37 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:35169 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754234AbaDSAte (ORCPT
+	id S1754712AbaDSBDW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 21:03:22 -0400
+Received: from mail-lb0-f178.google.com ([209.85.217.178]:46688 "EHLO
+	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982AbaDSBDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 20:49:34 -0400
+	Fri, 18 Apr 2014 21:03:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAGVrzcZLUgpZZKAHjPSWaBs6w1XoegLaoWUAaMYUD9zW9yzq0w@mail.gmail.com>
-References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com>
-	<1397719309-2022-4-git-send-email-computersforpeace@gmail.com>
-	<CAGVrzcZLUgpZZKAHjPSWaBs6w1XoegLaoWUAaMYUD9zW9yzq0w@mail.gmail.com>
-Date: Fri, 18 Apr 2014 17:49:33 -0700
-Message-ID: <CAN8TOE90nh1v_84FSvF8MrN=eR-dOcXAYiOLeqRqXd3JCjfAzw@mail.gmail.com>
-Subject: Re: [PATCH 3/5] mips: defconfigs: add MTD_SPI_NOR (new dependency for M25P80)
-From: Brian Norris <computersforpeace@gmail.com>
-To: Florian Fainelli <f.fainelli@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, Marek Vasut <marex@denx.de>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Linux-MIPS <linux-mips@linux-mips.org>
+In-Reply-To: <1396597880-2325-1-git-send-email-k.kozlowski@samsung.com>
+References: <1396597880-2325-1-git-send-email-k.kozlowski@samsung.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Fri, 18 Apr 2014 18:02:58 -0700
+Message-ID: <CAK5ve-JfGY0CbRXAuHYgp6i=VJObLKtbMcjaHgzFgpwJRdsCMA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] leds: 88pm860x: Use of_get_child_by_name
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>,
+        Linux LED Subsystem <linux-leds@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 5:24 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
-> 2014-04-17 0:21 GMT-07:00 Brian Norris <computersforpeace@gmail.com>:
->> These defconfigs contain the CONFIG_M25P80 symbol, which is now
->> dependent on the MTD_SPI_NOR symbol. Add CONFIG_MTD_SPI_NOR to the
->> relevant defconfigs.
+On Fri, Apr 4, 2014 at 12:51 AM, Krzysztof Kozlowski
+<k.kozlowski@samsung.com> wrote:
+> Use of_get_child_by_name to obtain reference to charger node instead of
+> of_find_node_by_name which can walk outside of the parent node.
 >
-> so CONFIG_M25P80 should select CONFIG_MTD_SPI_NOR, right? in that
-> case, I do not think this is needed at all, as it would be
-> automatically picked up during the build and if someone refreshes the
-> defconfigs, although it cannot hurt.
 
-Can you reply to the cover letter? 3 people have made the same
-comment, and I had a rebuttal that I'm not sure if anyone considered
-yet.
+Looks good to me, applied to my for-next branch.
+Thanks,
+-Bryan
 
-(And it wouldn't be picked up by 'savedefconfig', since it saves a
-minimal .config; when one symbol 'select's another, the latter is not
-needed in the defconfig)
 
-Brian
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/leds/leds-88pm860x.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/leds/leds-88pm860x.c b/drivers/leds/leds-88pm860x.c
+> index 5f588c0a376e..2f9ee538f30d 100644
+> --- a/drivers/leds/leds-88pm860x.c
+> +++ b/drivers/leds/leds-88pm860x.c
+> @@ -134,7 +134,7 @@ static int pm860x_led_dt_init(struct platform_device *pdev,
+>         nproot = of_node_get(pdev->dev.parent->of_node);
+>         if (!nproot)
+>                 return -ENODEV;
+> -       nproot = of_find_node_by_name(nproot, "leds");
+> +       nproot = of_get_child_by_name(nproot, "leds");
+>         if (!nproot) {
+>                 dev_err(&pdev->dev, "failed to find leds node\n");
+>                 return -ENODEV;
+> --
+> 1.7.9.5
+>
