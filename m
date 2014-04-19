@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755157AbaDSRC1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 13:02:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33290 "EHLO mx1.redhat.com"
+	id S1161054AbaDSRDf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 13:03:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47519 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755088AbaDSRCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 13:02:14 -0400
-Date: Sat, 19 Apr 2014 19:01:59 +0200
+	id S1751510AbaDSRCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 13:02:06 -0400
+Date: Sat, 19 Apr 2014 19:01:55 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -17,8 +17,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] uprobes/x86: Make good_insns_* depend on CONFIG_X86_*
-Message-ID: <20140419170159.GA30867@redhat.com>
+Subject: [PATCH 3/5] uprobes/x86: Shift "insn_complete" from
+	branch_setup_xol_ops() to uprobe_init_insn()
+Message-ID: <20140419170155.GA30864@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,104 +29,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the suitable ifdef's around good_insns_* arrays. We do not want
-to add the ugly ifdef's into their only user, uprobe_init_insn(), so
-the "#else" branch simply defines them as NULL. This doesn't generate
-the extra code, gcc is smart enough, although the code is fine even if
-it could not detect that (without CONFIG_IA32_EMULATION) is_64bit_mm()
-is __builtin_constant_p().
-
-The patch looks more complicated because it also moves good_insns_64
-up close to good_insns_32.
+Change uprobe_init_insn() to make insn_complete() == T, this makes
+other insn_get_*() calls unnecessary.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/kernel/uprobes.c |   56 +++++++++++++++++++++++++-------------------
- 1 files changed, 32 insertions(+), 24 deletions(-)
+ arch/x86/kernel/uprobes.c |   13 ++++---------
+ 1 files changed, 4 insertions(+), 9 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 6748600..f445b00 100644
+index 5876ba5..6748600 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -64,6 +64,7 @@
-  * to keep gcc from statically optimizing it out, as variable_test_bit makes
-  * some versions of gcc to think only *(unsigned long*) is used.
-  */
-+#if defined(CONFIG_X86_32) || defined(CONFIG_IA32_EMULATION)
- static volatile u32 good_insns_32[256 / 32] = {
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
- 	/*      ----------------------------------------------         */
-@@ -86,32 +87,12 @@ static volatile u32 good_insns_32[256 / 32] = {
- 	/*      ----------------------------------------------         */
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
- };
+@@ -209,8 +209,11 @@ static int uprobe_init_insn(struct arch_uprobe *auprobe, struct insn *insn, bool
+ 	u32 volatile *good_insns;
+ 
+ 	insn_init(insn, auprobe->insn, x86_64);
++	/* has the side-effect of processing the entire instruction */
++	insn_get_length(insn);
++	if (WARN_ON_ONCE(!insn_complete(insn)))
++		return -ENOEXEC;
+ 
+-	insn_get_opcode(insn);
+ 	if (is_prefix_bad(insn))
+ 		return -ENOTSUPP;
+ 
+@@ -283,8 +286,6 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
+ 	 * is the immediate operand.
+ 	 */
+ 	cursor = auprobe->insn + insn_offset_modrm(insn);
+-	insn_get_length(insn);
 -
--/* Using this for both 64-bit and 32-bit apps */
--static volatile u32 good_2byte_insns[256 / 32] = {
--	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
--	/*      ----------------------------------------------         */
--	W(0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1) | /* 00 */
--	W(0x10, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1) , /* 10 */
--	W(0x20, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1) | /* 20 */
--	W(0x30, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) , /* 30 */
--	W(0x40, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 40 */
--	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
--	W(0x60, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 60 */
--	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1) , /* 70 */
--	W(0x80, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
--	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
--	W(0xa0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1) | /* a0 */
--	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
--	W(0xc0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* c0 */
--	W(0xd0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
--	W(0xe0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* e0 */
--	W(0xf0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)   /* f0 */
--	/*      ----------------------------------------------         */
--	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
--};
-+#else
-+#define good_insns_32	NULL
-+#endif
+ 	/*
+ 	 * Convert from rip-relative addressing to indirect addressing
+ 	 * via a scratch register.  Change the r/m field from 0x5 (%rip)
+@@ -563,11 +564,6 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+ {
+ 	u8 opc1 = OPCODE1(insn);
  
- /* Good-instruction tables for 64-bit apps */
-+#if defined(CONFIG_X86_64)
- static volatile u32 good_insns_64[256 / 32] = {
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
- 	/*      ----------------------------------------------         */
-@@ -134,6 +115,33 @@ static volatile u32 good_insns_64[256 / 32] = {
- 	/*      ----------------------------------------------         */
- 	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
- };
-+#else
-+#define good_insns_64	NULL
-+#endif
-+
-+/* Using this for both 64-bit and 32-bit apps */
-+static volatile u32 good_2byte_insns[256 / 32] = {
-+	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-+	/*      ----------------------------------------------         */
-+	W(0x00, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1) | /* 00 */
-+	W(0x10, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1) , /* 10 */
-+	W(0x20, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1) | /* 20 */
-+	W(0x30, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) , /* 30 */
-+	W(0x40, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 40 */
-+	W(0x50, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 50 */
-+	W(0x60, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 60 */
-+	W(0x70, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1) , /* 70 */
-+	W(0x80, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* 80 */
-+	W(0x90, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* 90 */
-+	W(0xa0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 1) | /* a0 */
-+	W(0xb0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1) , /* b0 */
-+	W(0xc0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* c0 */
-+	W(0xd0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) , /* d0 */
-+	W(0xe0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1) | /* e0 */
-+	W(0xf0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0)   /* f0 */
-+	/*      ----------------------------------------------         */
-+	/*      0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f         */
-+};
- #undef W
- 
- /*
+-	/* has the side-effect of processing the entire instruction */
+-	insn_get_length(insn);
+-	if (WARN_ON_ONCE(!insn_complete(insn)))
+-		return -ENOEXEC;
+-
+ 	switch (opc1) {
+ 	case 0xeb:	/* jmp 8 */
+ 	case 0xe9:	/* jmp 32 */
+@@ -643,7 +639,6 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 		fix_ip = false;
+ 		break;
+ 	case 0xff:
+-		insn_get_modrm(&insn);
+ 		switch (MODRM_REG(&insn)) {
+ 		case 2: case 3:			/* call or lcall, indirect */
+ 			fix_call = true;
 -- 
 1.5.5.1
 
