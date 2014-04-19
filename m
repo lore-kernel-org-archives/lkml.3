@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256AbaDSLfL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 07:35:11 -0400
+	id S1753756AbaDSLfE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 07:35:04 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:55869 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751367AbaDSLfG (ORCPT
+	with ESMTP id S1751367AbaDSLe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 07:35:06 -0400
+	Sat, 19 Apr 2014 07:34:58 -0400
 X-IronPort-AV: E=Sophos;i="4.97,888,1389715200"; 
-   d="scan'208";a="29471759"
+   d="scan'208";a="29471755"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
 CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
@@ -18,9 +18,9 @@ CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
         Jeff Layton <jlayton@redhat.com>,
         Andreas Gruenbacher <agruen@linbit.com>,
         Stephen Hemminger <stephen@networkplumber.org>
-Subject: [PATCH 7/9 V2] idr: don't need to shink the free list when idr_remove()
-Date: Sat, 19 Apr 2014 19:38:14 +0800
-Message-ID: <1397907496-5993-8-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 5/9 V2] idr: covert BUG_ON() to WARN_ON_ONCE() if the argument is invalid.
+Date: Sat, 19 Apr 2014 19:38:12 +0800
+Message-ID: <1397907496-5993-6-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1397907496-5993-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
@@ -32,50 +32,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After idr subsystem is changed to RCU-awared, the free layer will not go to
-the free list. The free list will not be filled up when idr_remove().
-So we don't need to shink it too.
+When the arguments passed by the caller are invalid, WARN_ON_ONCE()
+is proper than BUG_ON() which may crash the kernel.
+
+The invalid-checking for ida_simple_remove() is moved into ida_remove().
+idr_remove() also adds this WARN_ON_ONCE().
+
+And when "end < start" in ida_simple_get(), it returns -ENOSPC as
+ida_alloc() does.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Tejun Heo <tj@kernel.org>
 ---
- lib/idr.c |   16 ----------------
- 1 files changed, 0 insertions(+), 16 deletions(-)
+ lib/idr.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
 
 diff --git a/lib/idr.c b/lib/idr.c
-index 25fe476..4a11c5d 100644
+index e79e051..317fd35 100644
 --- a/lib/idr.c
 +++ b/lib/idr.c
-@@ -18,12 +18,6 @@
-  * pointer or what ever, we treat it as a (void *).  You can pass this
-  * id to a user for him to pass back at a later time.  You then pass
-  * that id to this code and it returns your pointer.
--
-- * You can release ids at any time. When all ids are released, most of
-- * the memory is returned (we keep MAX_IDR_FREE) in a local pool so we
-- * don't need to go to the memory "store" during an id allocate, just
-- * so you don't need to be too concerned about locking and conflicts
-- * with the slab allocator.
-  */
+@@ -559,7 +559,7 @@ void idr_remove(struct idr *idp, int id)
+ 	struct idr_layer *p;
+ 	struct idr_layer *to_free;
  
- #ifndef TEST                        // to test in user space...
-@@ -584,16 +578,6 @@ void idr_remove(struct idr *idp, int id)
- 		bitmap_clear(to_free->bitmap, 0, IDR_SIZE);
- 		free_layer(idp, to_free);
+-	if (id < 0)
++	if (WARN_ON_ONCE(id < 0))
+ 		return;
+ 
+ 	if (id > idr_max(idp->layers)) {
+@@ -1030,6 +1030,9 @@ void ida_remove(struct ida *ida, int id)
+ 	int n;
+ 	struct ida_bitmap *bitmap;
+ 
++	if (WARN_ON_ONCE(id < 0))
++		return;
++
+ 	if (idr_id > idr_max(ida->idr.layers))
+ 		goto err;
+ 
+@@ -1096,13 +1099,14 @@ int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
+ 	unsigned int max;
+ 	unsigned long flags;
+ 
+-	BUG_ON((int)start < 0);
+-	BUG_ON((int)end < 0);
++	if (WARN_ON_ONCE(((int)start < 0) || ((int)end < 0)))
++		return -EINVAL;
+ 
+ 	if (end == 0)
+ 		max = 0x80000000;
+ 	else {
+-		BUG_ON(end < start);
++		if (WARN_ON_ONCE(end < start))
++			return -ENOSPC;
+ 		max = end - 1;
  	}
--	while (idp->id_free_cnt >= MAX_IDR_FREE) {
--		p = get_from_free_list(idp);
--		/*
--		 * Note: we don't call the rcu callback here, since the only
--		 * layers that fall into the freelist are those that have been
--		 * preallocated.
--		 */
--		kmem_cache_free(idr_layer_cache, p);
--	}
--	return;
- }
- EXPORT_SYMBOL(idr_remove);
  
+@@ -1138,7 +1142,6 @@ void ida_simple_remove(struct ida *ida, unsigned int id)
+ {
+ 	unsigned long flags;
+ 
+-	BUG_ON((int)id < 0);
+ 	spin_lock_irqsave(&simple_ida_lock, flags);
+ 	ida_remove(ida, id);
+ 	spin_unlock_irqrestore(&simple_ida_lock, flags);
 -- 
 1.7.4.4
 
