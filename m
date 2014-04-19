@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1160996AbaDSQ7H (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 12:59:07 -0400
-Received: from mail-lb0-f177.google.com ([209.85.217.177]:48816 "EHLO
-	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752691AbaDSQ6n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 12:58:43 -0400
+	id S1161041AbaDSRBn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 13:01:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18851 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1161018AbaDSRBm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 13:01:42 -0400
+Date: Sat, 19 Apr 2014 19:01:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jim Keniston <jkenisto@us.ibm.com>, Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] uprobes/x86: cleanup validate_insn_* paths, fix
+	X86_X32 case
+Message-ID: <20140419170104.GA30667@redhat.com>
+References: <20140417200228.GA31097@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CAP=VYLp61h_i+RyuUfowO9CqjV6ohMZ=FSgqQbxv6WQjXR1_6g@mail.gmail.com>
-References: <CAF1ivSbZKbDc+rzd+CUqCzNmSgZmZTE-QeSU-2WmSiuEs-Kw_w@mail.gmail.com>
-	<20140409194742.GC26782@laptop.programming.kicks-ass.net>
-	<20140409200836.GE26782@laptop.programming.kicks-ass.net>
-	<CAF1ivSa6_ir0LwiydugzSdEqNoVy7evbb7N6QX_02H32A1dwmw@mail.gmail.com>
-	<CAP=VYLp61h_i+RyuUfowO9CqjV6ohMZ=FSgqQbxv6WQjXR1_6g@mail.gmail.com>
-Date: Sat, 19 Apr 2014 09:58:41 -0700
-Message-ID: <CAF1ivSbqxNAiZw3RNS+BgeQJMVJeUJoCNYCbeeLAYYqG7KNxkw@mail.gmail.com>
-Subject: Re: current->sched_class->yield_task is NULL, any hint?
-From: Lin Ming <minggr@gmail.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417200228.GA31097@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 9:21 AM, Paul Gortmaker
-<paul.gortmaker@windriver.com> wrote:
-> On Wed, Apr 9, 2014 at 5:39 PM, Lin Ming <minggr@gmail.com> wrote:
->> On Wed, Apr 9, 2014 at 1:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> [...]
->
->>>>
->>>> Look at that, its calling yield() from a non-preemptible context as
->>>> well.
->>>>
->>>> That code is full of fail.
->>>
->>> *phew* none of that br_igmp_* muck lives in any kernel tree near me so I
->>> can stop worrying :-)
->>
->> It's our internal code.
->
-> In the future, please don't simply call it 3.4-rt when there are a bunch of
-> vendor/project/SDK patches also applied, as that can be very misleading
-> to the people you are asking for help from.  If it is a hybrid franken-kernel
-> then please at least indicate that right at the very beginning.
+Peter, feel free to ignore 1-4, but could you look at 5/5? It lacks the
+test-case because I do not have a x32-ready testing machine.
 
-Sorry for the misleading.
-I'll make it clear next time.
-
-Thanks.
-
+On 04/17, Oleg Nesterov wrote:
 >
-> Paul.
-> --
->
->>
->>>
->>> In any case, it wrongly passes a GFP_WAIT along to netlink_broadcast.
->>
->> I'll fix it.
->> Thanks very much.
+> This series only fixes the problem. I'll send more changes to address
+> some of TODO's mentioned in the changelogs later. In particular, we
+> need to do something with "callw", see "Note: in 13/15.
+
+So, what do you all think we should do with "callw"? Jim votes for
+declining to probe callw, and I fully agree.
+
+Any objection?
+
+Until then, lets cleanup the validate_insn_* paths and fix another bug.
+This cleanup can also simplify the next "reject callw" change.
+
+Oleg.
+
+ arch/x86/kernel/process_64.c |    7 +-
+ arch/x86/kernel/uprobes.c    |  126 ++++++++++++++++++------------------------
+ 2 files changed, 58 insertions(+), 75 deletions(-)
+
