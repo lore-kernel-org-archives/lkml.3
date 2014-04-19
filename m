@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393AbaDSLe4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 07:34:56 -0400
+	id S1754256AbaDSLfL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 07:35:11 -0400
 Received: from cn.fujitsu.com ([59.151.112.132]:55869 "EHLO
 	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751367AbaDSLep (ORCPT
+	with ESMTP id S1751367AbaDSLfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 07:34:45 -0400
+	Sat, 19 Apr 2014 07:35:06 -0400
 X-IronPort-AV: E=Sophos;i="4.97,888,1389715200"; 
-   d="scan'208";a="29471748"
+   d="scan'208";a="29471759"
 From: Lai Jiangshan <laijs@cn.fujitsu.com>
 To: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
 CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
@@ -18,9 +18,9 @@ CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
         Jeff Layton <jlayton@redhat.com>,
         Andreas Gruenbacher <agruen@linbit.com>,
         Stephen Hemminger <stephen@networkplumber.org>
-Subject: [PATCH 2/9 V2] idr: fix unexpected ID-removal when idr_remove(unallocated_id)
-Date: Sat, 19 Apr 2014 19:38:09 +0800
-Message-ID: <1397907496-5993-3-git-send-email-laijs@cn.fujitsu.com>
+Subject: [PATCH 7/9 V2] idr: don't need to shink the free list when idr_remove()
+Date: Sat, 19 Apr 2014 19:38:14 +0800
+Message-ID: <1397907496-5993-8-git-send-email-laijs@cn.fujitsu.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1397907496-5993-1-git-send-email-laijs@cn.fujitsu.com>
 References: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
@@ -32,63 +32,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If unallocated_id = (ANY * idr_max(idp->layers) + existing_id) is passed
-to idr_remove(). The existing_id will be removed unexpectedly.
-
-The following test shows this unexpected id-removal:
-
-static void test4(void)
-{
-	int id;
-	DEFINE_IDR(test_idr);
-
-	printk(KERN_INFO "Start test4\n");
-	id = idr_alloc(&test_idr, (void *)1, 42, 43, GFP_KERNEL);
-	BUG_ON(id != 42);
-	idr_remove(&test_idr, 42 + IDR_SIZE);
-	TEST_BUG_ON(idr_find(&test_idr, 42) != (void *)1);
-	idr_destroy(&test_idr);
-	printk(KERN_INFO "End of test4\n");
-}
-
-ida_remove() shares the similar problem.
-
-It happens only when the caller tries to free an unallocated ID which
-is the caller's fault. It is not a bug. But it is better to add
-the proper check and complain rather than removing an existing_id silently.
+After idr subsystem is changed to RCU-awared, the free layer will not go to
+the free list. The free list will not be filled up when idr_remove().
+So we don't need to shink it too.
 
 Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
 Acked-by: Tejun Heo <tj@kernel.org>
 ---
- lib/idr.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ lib/idr.c |   16 ----------------
+ 1 files changed, 0 insertions(+), 16 deletions(-)
 
 diff --git a/lib/idr.c b/lib/idr.c
-index 4df6792..c4afd94 100644
+index 25fe476..4a11c5d 100644
 --- a/lib/idr.c
 +++ b/lib/idr.c
-@@ -562,6 +562,11 @@ void idr_remove(struct idr *idp, int id)
- 	if (id < 0)
- 		return;
+@@ -18,12 +18,6 @@
+  * pointer or what ever, we treat it as a (void *).  You can pass this
+  * id to a user for him to pass back at a later time.  You then pass
+  * that id to this code and it returns your pointer.
+-
+- * You can release ids at any time. When all ids are released, most of
+- * the memory is returned (we keep MAX_IDR_FREE) in a local pool so we
+- * don't need to go to the memory "store" during an id allocate, just
+- * so you don't need to be too concerned about locking and conflicts
+- * with the slab allocator.
+  */
  
-+	if (id > idr_max(idp->layers)) {
-+		idr_remove_warning(id);
-+		return;
-+	}
-+
- 	sub_remove(idp, (idp->layers - 1) * IDR_BITS, id);
- 	if (idp->top && idp->top->count == 1 && (idp->layers > 1) &&
- 	    idp->top->ary[0]) {
-@@ -1025,6 +1030,9 @@ void ida_remove(struct ida *ida, int id)
- 	int n;
- 	struct ida_bitmap *bitmap;
+ #ifndef TEST                        // to test in user space...
+@@ -584,16 +578,6 @@ void idr_remove(struct idr *idp, int id)
+ 		bitmap_clear(to_free->bitmap, 0, IDR_SIZE);
+ 		free_layer(idp, to_free);
+ 	}
+-	while (idp->id_free_cnt >= MAX_IDR_FREE) {
+-		p = get_from_free_list(idp);
+-		/*
+-		 * Note: we don't call the rcu callback here, since the only
+-		 * layers that fall into the freelist are those that have been
+-		 * preallocated.
+-		 */
+-		kmem_cache_free(idr_layer_cache, p);
+-	}
+-	return;
+ }
+ EXPORT_SYMBOL(idr_remove);
  
-+	if (idr_id > idr_max(ida->idr.layers))
-+		goto err;
-+
- 	/* clear full bits while looking up the leaf idr_layer */
- 	while ((shift > 0) && p) {
- 		n = (idr_id >> shift) & IDR_MASK;
 -- 
 1.7.4.4
 
