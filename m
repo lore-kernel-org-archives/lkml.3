@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921AbaDSDXE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 23:23:04 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43946 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753531AbaDSDVt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 23:21:49 -0400
-From: Kishon Vijay Abraham I <kishon@ti.com>
-To: <gregkh@linuxfoundation.org>
-CC: <kishon@ti.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] phy: exynos: fix building as a module
-Date: Sat, 19 Apr 2014 08:51:41 +0530
-Message-ID: <1397877704-2755-2-git-send-email-kishon@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1397877704-2755-1-git-send-email-kishon@ti.com>
-References: <1397877704-2755-1-git-send-email-kishon@ti.com>
+	id S1754205AbaDSDro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 23:47:44 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:60851 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550AbaDSDrm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 18 Apr 2014 23:47:42 -0400
+From: Zi Shen Lim <zlim.lnx@gmail.com>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Zi Shen Lim <zlim.lnx@gmail.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] smc91x: fix compile error when SMC_DEBUG >= 2
+Date: Fri, 18 Apr 2014 20:47:30 -0700
+Message-Id: <1397879250-32041-1-git-send-email-zlim.lnx@gmail.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+When SMC_DEBUG >= 2, we hit the following compilation error:
 
-The top-level phy-samsung-usb2 driver may be configured as a
-loadable module, which currently causes link errors because
-of the dependency on the exynos{5250,4x12,4210}_usb2_phy_config
-symbol. Solving this could be achieved by exporting these
-symbols, but as the SoC-specific parts of the driver are not
-currently built as modules, it seems better to just link
-everything into one module and avoid the need for the export.
+drivers/net/ethernet/smsc/smc91x.c:85:0:
+drivers/net/ethernet/smsc/smc91x.c: In function ‘smc_findirq’:
+drivers/net/ethernet/smsc/smc91x.c:1784:9: error: ‘dev’ undeclared (first use in this function)
+  DBG(2, dev, "%s: %s\n", CARDNAME, __func__);
+         ^
+Fix it by passing in the appropriate netdev pointer.
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Kamil Debski <k.debski@samsung.com>
-Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
 ---
- drivers/phy/Makefile |    9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/smsc/smc91x.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-index 2faf78e..7728518 100644
---- a/drivers/phy/Makefile
-+++ b/drivers/phy/Makefile
-@@ -13,8 +13,9 @@ obj-$(CONFIG_TI_PIPE3)			+= phy-ti-pipe3.o
- obj-$(CONFIG_TWL4030_USB)		+= phy-twl4030-usb.o
- obj-$(CONFIG_PHY_EXYNOS5250_SATA)	+= phy-exynos5250-sata.o
- obj-$(CONFIG_PHY_SUN4I_USB)		+= phy-sun4i-usb.o
--obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-samsung-usb2.o
--obj-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
--obj-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
--obj-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
-+obj-$(CONFIG_PHY_SAMSUNG_USB2)		+= phy-exynos-usb2.o
-+phy-exynos-usb2-y			+= phy-samsung-usb2.o
-+phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4210_USB2)	+= phy-exynos4210-usb2.o
-+phy-exynos-usb2-$(CONFIG_PHY_EXYNOS4X12_USB2)	+= phy-exynos4x12-usb2.o
-+phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
- obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
+diff --git a/drivers/net/ethernet/smsc/smc91x.c b/drivers/net/ethernet/smsc/smc91x.c
+index d1b4dca..597909f 100644
+--- a/drivers/net/ethernet/smsc/smc91x.c
++++ b/drivers/net/ethernet/smsc/smc91x.c
+@@ -1781,7 +1781,7 @@ static int smc_findirq(struct smc_local *lp)
+ 	int timeout = 20;
+ 	unsigned long cookie;
+ 
+-	DBG(2, dev, "%s: %s\n", CARDNAME, __func__);
++	DBG(2, lp->dev, "%s: %s\n", CARDNAME, __func__);
+ 
+ 	cookie = probe_irq_on();
+ 
 -- 
-1.7.9.5
+1.9.1
 
