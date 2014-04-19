@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161090AbaDSTG2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 15:06:28 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58723 "EHLO
+	id S1161105AbaDSTG4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 15:06:56 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58736 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755081AbaDSTG0 (ORCPT
+	with ESMTP id S1755081AbaDSTGs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 15:06:26 -0400
-Date: Sat, 19 Apr 2014 21:06:25 +0200
+	Sat, 19 Apr 2014 15:06:48 -0400
+Date: Sat, 19 Apr 2014 21:06:46 +0200
 From: Pavel Machek <pavel@ucw.cz>
 To: Sebastian Reichel <sre@kernel.org>
 Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
@@ -22,26 +22,28 @@ Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
 	<freemangordon@abv.bg>,
         Joni Lapilainen <joni.lapilainen@gmail.com>,
         Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCHv3 02/14] MAINTAINERS: update HSI entry
-Message-ID: <20140419190624.GB5148@amd.pavel.ucw.cz>
+Subject: Re: [PATCHv3 03/14] HSI: hsi-char: fix driver for multiport
+ scenarios
+Message-ID: <20140419190646.GC5148@amd.pavel.ucw.cz>
 References: <1396053110-21639-1-git-send-email-sre@kernel.org>
- <1396053110-21639-3-git-send-email-sre@kernel.org>
+ <1396053110-21639-4-git-send-email-sre@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396053110-21639-3-git-send-email-sre@kernel.org>
+In-Reply-To: <1396053110-21639-4-git-send-email-sre@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2014-03-29 01:31:38, Sebastian Reichel wrote:
-> Add git tree for hsi subsystem, update Sebastian Reichel's e-mail
-> address and add Documentation/hsi.txt as maintained file.
+On Sat 2014-03-29 01:31:39, Sebastian Reichel wrote:
+> Fix return code check of alloc_chrdev_region, which
+> returns 0 on success.
 > 
 > Signed-off-by: Sebastian Reichel <sre@kernel.org>
 
 Reviewed-by: Pavel Machek <pavel@ucw.cz>
+
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
