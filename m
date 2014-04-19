@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367AbaDSOqO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 10:46:14 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:46704 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104AbaDSOqK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 10:46:10 -0400
-Message-ID: <1397918766.5436.16.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Date: Sat, 19 Apr 2014 16:46:06 +0200
-In-Reply-To: <20140411185739.GA6644@linutronix.de>
-References: <20140411185739.GA6644@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
+	id S1754800AbaDSOt1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 10:49:27 -0400
+Received: from smtp1.ngi.it ([88.149.128.112]:54231 "EHLO smtp1.ngi.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751059AbaDSOtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 10:49:24 -0400
+Message-ID: <25D8F77BCF9142DE87B7CDEAB21A4CE2@vanni.it>
+From: "Valerio Vanni" <valerio.vanni@inwind.it>
+To: <linux-pm@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Cc: <gregkh@linuxfoundation.org>, <jslaby@suse.cz>, <baryluk@smp.if.uj.edu.pl>,
+        <davem@davemloft.net>, <peter@hurleysoftware.com>,
+        <rmk@arm.linux.org.uk>, <tianyu.lan@intel.com>
+Subject: Fw: serial console does not wake from S3 suspend
+Date: Sat, 19 Apr 2014 16:49:18 +0200
+MIME-Version: 1.0
+Content-Type: text/plain;
+	format=flowed;
+	charset="Windows-1252";
+	reply-type=response
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6157
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sebastian,
-
-On Fri, 2014-04-11 at 20:57 +0200, Sebastian Andrzej Siewior wrote: 
-> Dear RT folks!
+> "Valerio Vanni" <valerio@valeriovanni.com> ha scritto nel messaggio
+> news:lg9etc$9fl$1@ger.gmane.org
+> When resuming from S3 suspend, serial console starts sending garbage
+> on the serial port.
+> Not continuously, it sends garbage only when in local console prints
+> a text.
+> It stops only when the (sending) machine is shut down, or if some
+> text is sent manually (i.e. with "cat txtfile > /dev/ttyS0").
 > 
-> I'm pleased to announce the v3.14-rt1 patch set.
+> Full details are here:
+>> https://bugzilla.kernel.org/show_bug.cgi?id=69751
 
-This hunk in hotplug-light-get-online-cpus.patch looks like a bug.
-
-@@ -333,7 +449,7 @@ static int __ref _cpu_down(unsigned int
-                /* CPU didn't die: tell everyone.  Can't complain. */
-                smpboot_unpark_threads(cpu);
-                cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
--               goto out_release;
-+               goto out_cancel;
-        }
-        BUG_ON(cpu_online(cpu));
-
-
-> x86-64 crashed after I started hackbench. I figured out that the crash
-> does not happen with lazy-preempt disabled. Therefore the last but one
-> patch in the queue disables lazy preempt on x86-64. With this change the
-> test box survived ~2h without a crash. I look at this later but it looks
-> good now.
-
-Ah, I had trouble there a while back too.  I'll try to scrape up cycles
-for a round 2, see who begs for mercy this time, it or me again.
-
--Mike
+It's still present in 3.15-rc1 and in actual -next.
 
