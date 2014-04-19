@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752308AbaDSUOH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 16:14:07 -0400
-Received: from fep32.mx.upcmail.net ([62.179.121.50]:63804 "EHLO
-	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaDSUN5 (ORCPT
+	id S1751534AbaDSU0G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 16:26:06 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59940 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaDSUZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 16:13:57 -0400
-X-SourceIP: 77.56.27.120
-X-Authenticated-Sender: odi.ch@hispeed.ch
-Message-ID: <5352D8FF.6070305@odi.ch>
-Date: Sat, 19 Apr 2014 22:13:51 +0200
-From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sat, 19 Apr 2014 16:25:59 -0400
+Date: Sat, 19 Apr 2014 22:25:56 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-omap@vger.kernel.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCHv3 11/14] HSI: Introduce Nokia N900 modem driver
+Message-ID: <20140419202556.GK5148@amd.pavel.ucw.cz>
+References: <1396053110-21639-1-git-send-email-sre@kernel.org>
+ <1396053110-21639-12-git-send-email-sre@kernel.org>
 MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, gerben@daybyday.nl,
-        Vlad Yasevich <vyasevic@redhat.com>
-Subject: Re: 3.14 regression: huge latency in read/select on tun
-References: <533C381E.9090103@odi.ch>	 <1396456973.3989.41.camel@edumazet-glaptop2.roam.corp.google.com>	 <533D133A.3090008@odi.ch>	 <1396531176.12330.6.camel@edumazet-glaptop2.roam.corp.google.com> <1396533026.12330.9.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1396533026.12330.9.camel@edumazet-glaptop2.roam.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396053110-21639-12-git-send-email-sre@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 03.04.2014 15:50, Eric Dumazet wrote:
-> On Thu, 2014-04-03 at 06:19 -0700, Eric Dumazet wrote:
+On Sat 2014-03-29 01:31:47, Sebastian Reichel wrote:
+> The Nokia N900's modem is connected via Synchronous Serial Interface (SSI),
+> which is a legacy version of MIPI's High-speed Synchronous Serial Interface
+> (HSI).
 > 
->> It seems TSO support is broken.
+> The handles the GPIOs for enabling and resetting the modem and instanciates
+> ssi-protocol for data exchange. It does not yet support exchanging voice data
+> with the modem.
+> 
+> Signed-off-by: Sebastian Reichel <sre@kernel.org>
 
-I finally found time to bisect this:
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
 
-53d6471cef17262d3ad1c7ce8982a234244f68ec is the first bad commit
-commit 53d6471cef17262d3ad1c7ce8982a234244f68ec
-Author: Vlad Yasevich <vyasevic@redhat.com>
-Date:   Thu Mar 27 17:26:18 2014 -0400
+> +static void do_nokia_modem_rst_ind_tasklet(unsigned long data)
+> +{
+> +	struct nokia_modem_device *modem = (struct nokia_modem_device *)data;
+> +
+> +	if (!modem)
+> +		return;
+> +
+> +	dev_info(modem->device, "*** CMT rst line change detected ***\n");
 
-    net: Account for all vlan headers in skb_mac_gso_segment
+Maybe slightly less stars would work?
 
-    skb_network_protocol() already accounts for multiple vlan
-    headers that may be present in the skb.  However, skb_mac_gso_segment()
-    doesn't know anything about it and assumes that skb->mac_len
-    is set correctly to skip all mac headers.  That may not
-    always be the case.  If we are simply forwarding the packet (via
-    bridge or macvtap), all vlan headers may not be accounted for.
 
-    A simple solution is to allow skb_network_protocol to return
-    the vlan depth it has calculated.  This way skb_mac_gso_segment
-    will correctly skip all mac headers.
+> +static int nokia_modem_gpio_probe(struct device *dev)
+> +{
+> +	struct device_node *np = dev->of_node;
+> +	struct nokia_modem_device *modem = dev_get_drvdata(dev);
+> +	int gpio_count, gpio_name_count, i, err;
+> +
+> +	gpio_count = of_gpio_count(np);
+> +	gpio_name_count = of_property_count_strings(np, "gpio-names");
+> +
+> +	if(gpio_count != gpio_name_count) {
 
-    Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
+"if (".
 
-:040000 040000 6066ee76dd70dde2f4675155579e550d29ba0216
-2196ebff4f9a8b909617dd57beeaa76cbafc8525 M      include
-:040000 040000 20fdfb5efc1ada562b7899d0d58998914b1c2ff1
-c398988f31e1b1b6ee56cb20b1a7becbdf782a17 M      net
+> +	modem->ssi_protocol = hsi_new_client(port, &ssip);
+> +	if (modem->ssi_protocol == NULL) {
+
+...if (! ...)
+
+> +		dev_err(dev, "Could not register ssi-protocol device\n");
+> +		goto error2;
+> +	}
+> +
+> +	err = device_attach(&modem->ssi_protocol->device);
+> +	if (err == 0) {
+
+if (!...)
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
