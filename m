@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392AbaDSVJk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 17:09:40 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:54825 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbaDSVJd (ORCPT
+	id S1754250AbaDSVTn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 17:19:43 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:47844 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbaDSVTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 17:09:33 -0400
-Date: Sat, 19 Apr 2014 14:09:29 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-input@vger.kernel.org,
-        kernel@stlinux.com, Lee Jones <lee.jones@linaro.org>,
-        Giuseppe Condorelli <giuseppe.condorelli@st.com>
-Subject: Re: [PATCH v4 1/7] drivers: input: keyboard: st-keyscan: add keyscan
- driver
-Message-ID: <20140419210929.GA8343@core.coreip.homeip.net>
-References: <1397228856-9218-1-git-send-email-gabriel.fernandez@linaro.org>
- <1397228856-9218-2-git-send-email-gabriel.fernandez@linaro.org>
- <20140413051050.GA7267@core.coreip.homeip.net>
- <CAG374jCT78wkxwzn9qMsBD2bGiEXr=spu+cF7C45+nr8C6gRRQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG374jCT78wkxwzn9qMsBD2bGiEXr=spu+cF7C45+nr8C6gRRQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sat, 19 Apr 2014 17:19:37 -0400
+From: Dimitri John Ledkov <dimitri.ledkov@surgut.co.uk>
+Cc: keith.busch@intel.com, willy@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] NVMe: Update namespace and controller identity structures as per 1.1a spec
+Date: Sat, 19 Apr 2014 22:19:34 +0100
+Message-Id: <1397942374-29959-1-git-send-email-dimitri.ledkov@canonical.com>
+X-Mailer: git-send-email 1.9.1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 10:49:29AM +0200, Gabriel Fernandez wrote:
-> On 13 April 2014 07:10, Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
-> >
-> > Does the version of the patch below still work for you?
-> >
-> Yes it's was tested on b2000 and b2089 sti boards.
-> 
-> > Thanks.
-> >
-> > --
-> > Dmitry
-> >
-> Thanks for yours remarks, i will prepare a v5 versions.
+Controller: add CNTLID, AVSCC, APSTA, NVSCC, ACWU, SGLS fields.
 
+Namespace: add NMIC, RESCAP, EUI64 fields. EUI64 is specifically
+interesting, since it can be used to construct an UEFI NVMe device
+path for a boot entry.
 
-If the version I sent to you works then you do not need to prepare v5,
-I'll just apply what I have.
+As per NVM Express 1.1a spec:
+http://www.nvmexpress.org/wp-content/uploads/NVM-Express-1_1a.pdf
 
-Thanks!
+Signed-off-by: Dimitri John Ledkov <dimitri.ledkov@canonical.com>
+---
+ include/uapi/linux/nvme.h | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
+diff --git a/include/uapi/linux/nvme.h b/include/uapi/linux/nvme.h
+index 096fe1c..73cb2af 100644
+--- a/include/uapi/linux/nvme.h
++++ b/include/uapi/linux/nvme.h
+@@ -49,7 +49,8 @@ struct nvme_id_ctrl {
+ 	__u8			ieee[3];
+ 	__u8			mic;
+ 	__u8			mdts;
+-	__u8			rsvd78[178];
++	__le16			cntlid;
++	__u8			rsvd80[176];
+ 	__le16			oacs;
+ 	__u8			acl;
+ 	__u8			aerl;
+@@ -57,7 +58,9 @@ struct nvme_id_ctrl {
+ 	__u8			lpa;
+ 	__u8			elpe;
+ 	__u8			npss;
+-	__u8			rsvd264[248];
++	__u8			avscc;
++	__u8			apsta;
++	__u8			rsvd266[246];
+ 	__u8			sqes;
+ 	__u8			cqes;
+ 	__u8			rsvd514[2];
+@@ -68,7 +71,12 @@ struct nvme_id_ctrl {
+ 	__u8			vwc;
+ 	__le16			awun;
+ 	__le16			awupf;
+-	__u8			rsvd530[1518];
++	__u8			nvscc;
++	__u8			rsvd531;
++	__le16			acwu;
++	__u8			rsvd534[2];
++	__le32			sgls;
++	__u8			rsvd540[1508];
+ 	struct nvme_id_power_state	psd[32];
+ 	__u8			vs[1024];
+ };
+@@ -95,7 +103,10 @@ struct nvme_id_ns {
+ 	__u8			mc;
+ 	__u8			dpc;
+ 	__u8			dps;
+-	__u8			rsvd30[98];
++	__u8			nmic;
++	__u8			rescap;
++	__u8			rsvd32[88];
++	__le64			eui64;
+ 	struct nvme_lbaf	lbaf[16];
+ 	__u8			rsvd192[192];
+ 	__u8			vs[3712];
 -- 
-Dmitry
+1.9.1
+
