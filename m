@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019AbaDSP20 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 11:28:26 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:55908 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751059AbaDSP2X (ORCPT
+	id S1754899AbaDSPdA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 11:33:00 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:53992 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751104AbaDSPcz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 11:28:23 -0400
-Date: Sat, 19 Apr 2014 11:28:21 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Lin Yongting <linyongting@gmail.com>
-Cc: fweisbec@gmail.com, mingo@redhat.com, linux-kernel@vger.kernel.org,
-        linyongting@huawei.com
-Subject: Re: [PATCH] tracing: Correct braces usage in if-else statement
-Message-ID: <20140419112821.6ee5b104@gandalf.local.home>
-In-Reply-To: <1397915903-21326-1-git-send-email-linyongting@gmail.com>
-References: <1397915903-21326-1-git-send-email-linyongting@gmail.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Sat, 19 Apr 2014 11:32:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 00/28] nios2 Linux kernel port
+Date: Sat, 19 Apr 2014 17:30:54 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        lftan.linux@gmail.com, cltang@codesourcery.com
+References: <1397824031-4892-1-git-send-email-lftan@altera.com> <53518FAC.8020504@zytor.com>
+In-Reply-To: <53518FAC.8020504@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Message-Id: <201404191730.54400.arnd@arndb.de>
+X-Provags-ID: V02:K0:iVcZ7MBcBE5Wr3UIN+bSasrHuE1KL80otyE6YKM0r37
+ VbVJQ3L7P1E0ChH0lg1xBQLBFryNsMwQlr3KqZ7kVjOiE/kLeP
+ Xwpb+wqf6nrl02APt8+AdA0A5tIQeaB55PktLiuDV4Or11fKV5
+ 8UqjM9WaFtmWKKKodiBtJ+9Jpcn6JWqVoaSvEVORAgshO8VEzG
+ VsTkgdOx33eoqHt4KXnN72dCazUfg0vkMe/FMYNvsffHD4pgQE
+ D7ldd3Ndk9Mg+ozOA61G+8C9wif+xb0HxVap6kD45BFnPo2TLM
+ YPlnpT2VlIOJAU7D9Gy+LJuid66crnswBNpVCbliyoWgYiA5FA
+ bndeYovQK7TglTRvG9yslHHc8rA7uMYPGRO97smem
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 19 Apr 2014 21:58:23 +0800
-Lin Yongting <linyongting@gmail.com> wrote:
-
-> There are some incorrect braces usages in kernerl/trace/trace.c, including:
-> 1. Missing braces in 'if' or 'else' branch.
-> 2. Unnecessary braces in 'if' statement.
+On Friday 18 April 2014, H. Peter Anvin wrote:
+> On 04/18/2014 05:26 AM, Ley Foon Tan wrote:
+> > This patchset adds the Linux kernel port for Nios II processor from Altera.
+> > The nios2 Linux port follows the guidance for new architecture ports using
+> > generic headers (including unistd.h).
 > 
-> Fix them according to kernel CodeStyle.
+> Did the generic headers ever get updated to match Linus' guidance that
+> any new architecture ports should use a 64-bit time_t?
 
-I understand that this is part of the CodeStyle, but I'm not accepting
-this patch. It causes more pain than it is worth, as it makes it more
-difficult to see git history because of "clean up" changes that get in
-the way. I also honestly don't think this is much of a clean up.
+No, unfortunately not. With my rule that every architecture that gets
+added needs to clean up asm-generic some more, to make it easier to add
+the next one, we should probably do for nios2.
 
-Sorry,
-
--- Steve
-
-
-> 
-> Signed-off-by: Lin Yongting <linyongting@gmail.com>
-> ---
->  kernel/trace/trace.c |   39 +++++++++++++++++++++++----------------
->  1 file changed, 23 insertions(+), 16 deletions(-)
-> 
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+	Arnd
