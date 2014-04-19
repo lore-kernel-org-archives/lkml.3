@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440AbaDSKz6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 06:55:58 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:62697 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043AbaDSKz4 (ORCPT
+	id S1751530AbaDSK6a (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 06:58:30 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:45977 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaDSK61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 06:55:56 -0400
-Date: Sat, 19 Apr 2014 12:55:49 +0200
+	Sat, 19 Apr 2014 06:58:27 -0400
+Date: Sat, 19 Apr 2014 12:58:22 +0200
 From: Ingo Molnar <mingo@kernel.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mike Galbraith <efault@gmx.de>, Thomas Gleixner <tglx@linutronix.de>,
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] scheduler fixes
-Message-ID: <20140419105549.GA4492@gmail.com>
+Subject: [GIT PULL] x86 fix
+Message-ID: <20140419105822.GA4844@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -25,162 +25,122 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest sched-urgent-for-linus git tree from:
+Please pull the latest x86-urgent-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git sched-urgent-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-urgent-for-linus
 
-   # HEAD: a1d9a3231eac4117cadaf4b6bba5b2902c15a33e sched: Check for stop task appearance when balancing happens
+   # HEAD: ea431643d6c38728195e2c456801c3ef66bb9991 x86/mce: Fix CMCI preemption bugs
 
-Two fixes:
-
- - a SCHED_DEADLINE task selection fix
- - a sched/numa related lockdep splat fix
+This fixes the preemption-count imbalance crash reported by Owen 
+Kibel. (The second part of the changelog is not true because even 
+RAW_SPINLOCKs have a preemption count - but this was the tested commit 
+so I didn't amend it. Let me know if I should resend it.)
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Kirill Tkhai (1):
-      sched: Check for stop task appearance when balancing happens
-
-Mike Galbraith (1):
-      sched/numa: Fix task_numa_free() lockdep splat
+Ingo Molnar (1):
+      x86/mce: Fix CMCI preemption bugs
 
 
- kernel/sched/deadline.c | 11 ++++++++++-
- kernel/sched/fair.c     | 16 +++++++++-------
- kernel/sched/rt.c       |  7 ++++---
- kernel/sched/sched.h    |  9 +++++++++
- 4 files changed, 32 insertions(+), 11 deletions(-)
+ arch/x86/kernel/cpu/mcheck/mce.c       |  4 +---
+ arch/x86/kernel/cpu/mcheck/mce_intel.c | 18 +++++++++---------
+ 2 files changed, 10 insertions(+), 12 deletions(-)
 
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index 27ef409..b080957 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -1021,8 +1021,17 @@ struct task_struct *pick_next_task_dl(struct rq *rq, struct task_struct *prev)
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index eeee23f..68317c8 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -598,7 +598,6 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ {
+ 	struct mce m;
+ 	int i;
+-	unsigned long *v;
  
- 	dl_rq = &rq->dl;
+ 	this_cpu_inc(mce_poll_count);
  
--	if (need_pull_dl_task(rq, prev))
-+	if (need_pull_dl_task(rq, prev)) {
- 		pull_dl_task(rq);
-+		/*
-+		 * pull_rt_task() can drop (and re-acquire) rq->lock; this
-+		 * means a stop task can slip in, in which case we need to
-+		 * re-start task selection.
-+		 */
-+		if (rq->stop && rq->stop->on_rq)
-+			return RETRY_TASK;
-+	}
-+
- 	/*
- 	 * When prev is DL, we may throttle it in put_prev_task().
- 	 * So, we update time before we check for dl_nr_running.
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 7e9bd0b..7570dd9 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -1497,7 +1497,7 @@ static void task_numa_placement(struct task_struct *p)
- 	/* If the task is part of a group prevent parallel updates to group stats */
- 	if (p->numa_group) {
- 		group_lock = &p->numa_group->lock;
--		spin_lock(group_lock);
-+		spin_lock_irq(group_lock);
- 	}
+@@ -618,8 +617,7 @@ void machine_check_poll(enum mcp_flags flags, mce_banks_t *b)
+ 		if (!(m.status & MCI_STATUS_VAL))
+ 			continue;
  
- 	/* Find the node with the highest number of faults */
-@@ -1572,7 +1572,7 @@ static void task_numa_placement(struct task_struct *p)
- 			}
- 		}
- 
--		spin_unlock(group_lock);
-+		spin_unlock_irq(group_lock);
- 	}
- 
- 	/* Preferred node as the node with the most faults */
-@@ -1677,7 +1677,8 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 	if (!join)
- 		return;
- 
--	double_lock(&my_grp->lock, &grp->lock);
-+	BUG_ON(irqs_disabled());
-+	double_lock_irq(&my_grp->lock, &grp->lock);
- 
- 	for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++) {
- 		my_grp->faults[i] -= p->numa_faults_memory[i];
-@@ -1691,7 +1692,7 @@ static void task_numa_group(struct task_struct *p, int cpupid, int flags,
- 	grp->nr_tasks++;
- 
- 	spin_unlock(&my_grp->lock);
--	spin_unlock(&grp->lock);
-+	spin_unlock_irq(&grp->lock);
- 
- 	rcu_assign_pointer(p->numa_group, grp);
- 
-@@ -1710,14 +1711,14 @@ void task_numa_free(struct task_struct *p)
- 	void *numa_faults = p->numa_faults_memory;
- 
- 	if (grp) {
--		spin_lock(&grp->lock);
-+		spin_lock_irq(&grp->lock);
- 		for (i = 0; i < NR_NUMA_HINT_FAULT_STATS * nr_node_ids; i++)
- 			grp->faults[i] -= p->numa_faults_memory[i];
- 		grp->total_faults -= p->total_numa_faults;
- 
- 		list_del(&p->numa_entry);
- 		grp->nr_tasks--;
--		spin_unlock(&grp->lock);
-+		spin_unlock_irq(&grp->lock);
- 		rcu_assign_pointer(p->numa_group, NULL);
- 		put_numa_group(grp);
- 	}
-@@ -6727,7 +6728,8 @@ static int idle_balance(struct rq *this_rq)
- out:
- 	/* Is there a task of a high priority class? */
- 	if (this_rq->nr_running != this_rq->cfs.h_nr_running &&
--	    (this_rq->dl.dl_nr_running ||
-+	    ((this_rq->stop && this_rq->stop->on_rq) ||
-+	     this_rq->dl.dl_nr_running ||
- 	     (this_rq->rt.rt_nr_running && !rt_rq_throttled(&this_rq->rt))))
- 		pulled_task = -1;
- 
-diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
-index d8cdf16..bd2267a 100644
---- a/kernel/sched/rt.c
-+++ b/kernel/sched/rt.c
-@@ -1362,10 +1362,11 @@ pick_next_task_rt(struct rq *rq, struct task_struct *prev)
- 		pull_rt_task(rq);
+-		v = &get_cpu_var(mce_polled_error);
+-		set_bit(0, v);
++		this_cpu_write(mce_polled_error, 1);
  		/*
- 		 * pull_rt_task() can drop (and re-acquire) rq->lock; this
--		 * means a dl task can slip in, in which case we need to
--		 * re-start task selection.
-+		 * means a dl or stop task can slip in, in which case we need
-+		 * to re-start task selection.
- 		 */
--		if (unlikely(rq->dl.dl_nr_running))
-+		if (unlikely((rq->stop && rq->stop->on_rq) ||
-+			     rq->dl.dl_nr_running))
- 			return RETRY_TASK;
- 	}
+ 		 * Uncorrected or signalled events are handled by the exception
+ 		 * handler when it is enabled, so don't process those here.
+diff --git a/arch/x86/kernel/cpu/mcheck/mce_intel.c b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+index 3bdb95a..9a316b2 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+@@ -42,7 +42,7 @@ static DEFINE_PER_CPU(mce_banks_t, mce_banks_owned);
+  * cmci_discover_lock protects against parallel discovery attempts
+  * which could race against each other.
+  */
+-static DEFINE_RAW_SPINLOCK(cmci_discover_lock);
++static DEFINE_SPINLOCK(cmci_discover_lock);
  
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index c9007f2..456e492 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1385,6 +1385,15 @@ static inline void double_lock(spinlock_t *l1, spinlock_t *l2)
- 	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
+ #define CMCI_THRESHOLD		1
+ #define CMCI_POLL_INTERVAL	(30 * HZ)
+@@ -144,14 +144,14 @@ static void cmci_storm_disable_banks(void)
+ 	int bank;
+ 	u64 val;
+ 
+-	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
++	spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	owned = __get_cpu_var(mce_banks_owned);
+ 	for_each_set_bit(bank, owned, MAX_NR_BANKS) {
+ 		rdmsrl(MSR_IA32_MCx_CTL2(bank), val);
+ 		val &= ~MCI_CTL2_CMCI_EN;
+ 		wrmsrl(MSR_IA32_MCx_CTL2(bank), val);
+ 	}
+-	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	spin_unlock_irqrestore(&cmci_discover_lock, flags);
  }
  
-+static inline void double_lock_irq(spinlock_t *l1, spinlock_t *l2)
-+{
-+	if (l1 > l2)
-+		swap(l1, l2);
-+
-+	spin_lock_irq(l1);
-+	spin_lock_nested(l2, SINGLE_DEPTH_NESTING);
-+}
-+
- static inline void double_raw_lock(raw_spinlock_t *l1, raw_spinlock_t *l2)
- {
- 	if (l1 > l2)
+ static bool cmci_storm_detect(void)
+@@ -211,7 +211,7 @@ static void cmci_discover(int banks)
+ 	int i;
+ 	int bios_wrong_thresh = 0;
+ 
+-	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
++	spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	for (i = 0; i < banks; i++) {
+ 		u64 val;
+ 		int bios_zero_thresh = 0;
+@@ -266,7 +266,7 @@ static void cmci_discover(int banks)
+ 			WARN_ON(!test_bit(i, __get_cpu_var(mce_poll_banks)));
+ 		}
+ 	}
+-	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	spin_unlock_irqrestore(&cmci_discover_lock, flags);
+ 	if (mca_cfg.bios_cmci_threshold && bios_wrong_thresh) {
+ 		pr_info_once(
+ 			"bios_cmci_threshold: Some banks do not have valid thresholds set\n");
+@@ -316,10 +316,10 @@ void cmci_clear(void)
+ 
+ 	if (!cmci_supported(&banks))
+ 		return;
+-	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
++	spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	for (i = 0; i < banks; i++)
+ 		__cmci_disable_bank(i);
+-	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	spin_unlock_irqrestore(&cmci_discover_lock, flags);
+ }
+ 
+ static void cmci_rediscover_work_func(void *arg)
+@@ -360,9 +360,9 @@ void cmci_disable_bank(int bank)
+ 	if (!cmci_supported(&banks))
+ 		return;
+ 
+-	raw_spin_lock_irqsave(&cmci_discover_lock, flags);
++	spin_lock_irqsave(&cmci_discover_lock, flags);
+ 	__cmci_disable_bank(bank);
+-	raw_spin_unlock_irqrestore(&cmci_discover_lock, flags);
++	spin_unlock_irqrestore(&cmci_discover_lock, flags);
+ }
+ 
+ static void intel_init_cmci(void)
