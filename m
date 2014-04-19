@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328AbaDSToD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 15:44:03 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:38975 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751095AbaDSTnz (ORCPT
+	id S1751539AbaDSTpB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 15:45:01 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:41421 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751345AbaDSToX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 15:43:55 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AuQJAF/RUlNXQ7Be/2dsb2JhbABYgwarSZligRsXdIJTExwjGIECJBOIRQHNR45ihD8BA45pigQBimqHZYMzOw
-Date: Sat, 19 Apr 2014 21:43:52 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: viro <viro@zeniv.linux.org.uk>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] fs/aio.c: Remove ctx parameter in kiocb_cancel
-Message-Id: <20140419214352.c707e7e7cf9b977986c76320@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 19 Apr 2014 15:44:23 -0400
+Date: Sat, 19 Apr 2014 20:43:34 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2 5/7] ARM: dma: Use dma_pfn_offset for dma address
+	translation
+Message-ID: <20140419194334.GL24070@n2100.arm.linux.org.uk>
+References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com> <1397917972-6293-6-git-send-email-santosh.shilimkar@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397917972-6293-6-git-send-email-santosh.shilimkar@ti.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ctx is no longer used in kiocb_cancel since
+On Sat, Apr 19, 2014 at 10:32:50AM -0400, Santosh Shilimkar wrote:
+> From: Grygorii Strashko <grygorii.strashko@ti.com>
+> 
+> In most of cases DMA addresses can be performed using offset value of
+>  Bus address space relatively to physical address space as following:
+> 
+> PFN->DMA:
+>  __pfn_to_phys(pfn + [-]dma_pfn_offset)
+> 
+> DMA->PFN:
+>  __phys_to_pfn(dma_addr) + [-]dma_pfn_offset
+> 
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+>  arch/arm/include/asm/dma-mapping.h |   17 +++++++++++++----
+>  1 file changed, 13 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+> index e701a4d..8c12149 100644
+> --- a/arch/arm/include/asm/dma-mapping.h
+> +++ b/arch/arm/include/asm/dma-mapping.h
+> @@ -58,22 +58,31 @@ static inline int dma_set_mask(struct device *dev, u64 mask)
+>  #ifndef __arch_pfn_to_dma
+>  static inline dma_addr_t pfn_to_dma(struct device *dev, unsigned long pfn)
+>  {
+> -	return (dma_addr_t)__pfn_to_bus(pfn);
+> +	if (!dev)
+> +		return DMA_ERROR_CODE;
+> +	return (dma_addr_t)__pfn_to_bus(pfn - dev->dma_pfn_offset);
 
-57282d8fd74407 ("aio: Kill ki_users")
+How do ISA devices (iow, those which pass a NULL device) work with this?
+This looks to me like it ends up breaking some drivers.
 
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/aio.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+I've also seen some drivers (such as the Freescale FEC driver) which
+perform DMA coherent allocations with a NULL device - technically, that's
+a bug in the driver, but the above change will cause them to regress.
 
-diff --git a/fs/aio.c b/fs/aio.c
-index 12a3de0e..b92fdee 100644
---- a/fs/aio.c
-+++ b/fs/aio.c
-@@ -472,7 +472,7 @@ void kiocb_set_cancel_fn(struct kiocb *req, kiocb_cancel_fn *cancel)
- }
- EXPORT_SYMBOL(kiocb_set_cancel_fn);
- 
--static int kiocb_cancel(struct kioctx *ctx, struct kiocb *kiocb)
-+static int kiocb_cancel(struct kiocb *kiocb)
- {
- 	kiocb_cancel_fn *old, *cancel;
- 
-@@ -529,7 +529,7 @@ static void free_ioctx_users(struct percpu_ref *ref)
- 				       struct kiocb, ki_list);
- 
- 		list_del_init(&req->ki_list);
--		kiocb_cancel(ctx, req);
-+		kiocb_cancel(req);
- 	}
- 
- 	spin_unlock_irq(&ctx->ctx_lock);
-@@ -1559,7 +1559,7 @@ SYSCALL_DEFINE3(io_cancel, aio_context_t, ctx_id, struct iocb __user *, iocb,
- 
- 	kiocb = lookup_kiocb(ctx, iocb, key);
- 	if (kiocb)
--		ret = kiocb_cancel(ctx, kiocb);
-+		ret = kiocb_cancel(kiocb);
- 	else
- 		ret = -EINVAL;
- 
 -- 
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
