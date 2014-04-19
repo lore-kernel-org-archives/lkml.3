@@ -1,84 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751393AbaDSKkK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 06:40:10 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:34200 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751043AbaDSKkE (ORCPT
+	id S1751487AbaDSKl7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 06:41:59 -0400
+Received: from mail-ee0-f50.google.com ([74.125.83.50]:39998 "EHLO
+	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751043AbaDSKl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 06:40:04 -0400
-X-IronPort-AV: E=Sophos;i="4.97,888,1389715200"; 
-   d="scan'208";a="29471159"
-Message-ID: <5352535D.8030407@cn.fujitsu.com>
-Date: Sat, 19 Apr 2014 18:43:41 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Sat, 19 Apr 2014 06:41:56 -0400
+Date: Sat, 19 Apr 2014 12:41:49 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20140419104149.GA4224@gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Andreas Gruenbacher <agruen@linbit.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-Subject: Re: [PATCH 6/8] idr: avoid ping-pong
-References: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com> <1397825404-12039-7-git-send-email-laijs@cn.fujitsu.com> <20140418171717.GE23576@htj.dyndns.org>
-In-Reply-To: <20140418171717.GE23576@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2014 01:17 AM, Tejun Heo wrote:
-> On Fri, Apr 18, 2014 at 08:49:53PM +0800, Lai Jiangshan wrote:
->> The ida callers always calls ida_pre_get() before ida_get_new*().
->> ida_pre_get() will do layer allocation, and ida_get_new*() will do layer removal.
->>
->> It causes an unneeded ping-pong. The speculative layer removal in
->> ida_get_new*() can't result expected optimization.
->>
->> So we remove the unneeded layer removal in ida_get_new*().
-> 
-> But the as comment says, ida doesn't want to keep extra layers around
-> as it wants to keep its memory footprint minimal.  
+Linus,
 
-It only frees one layer. And the ida_pre_get() for the next ida_get_new*()
-will allocation it back again. The aim "Throw away extra resources one by one"
-can't be achieved. It can't keep its memory footprint minimal.
+Please pull the latest perf-urgent-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+
+   # HEAD: 24223657806a0ebd0ae5c9caaf7b021091889cf2 perf/x86/intel: Use rdmsrl_safe() when initializing RAPL PMU
+
+Two kernel side fixes:
+
+ - an Intel uncore PMU driver potential crash fix
+ - a kprobes/perf-call-graph interaction fix
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Masami Hiramatsu (1):
+      kprobes/x86: Fix page-fault handling logic
+
+Venkatesh Srinivas (1):
+      perf/x86/intel: Use rdmsrl_safe() when initializing RAPL PMU
 
 
-> I think the right
-> thing to do is implementing ida_preload() which is simliar to
-> idr_preload() and do away with per-ida layer cache.
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c | 12 +++++++++---
+ arch/x86/kernel/kprobes/core.c              | 16 +++++++---------
+ 2 files changed, 16 insertions(+), 12 deletions(-)
 
-Yes and no.
-
-We need a static private ida_preload() for ida_simple_get() only.
-
-Because the IDA doesn't have any query-function, so IDA's own synchronization
-is enough for all use cases, IDA should off-loads the caller's
-synchronization burden.
-
-In my todo-list, IDA only needs the following functions. other functions
-will be deprecated and scheduled to be removed:
-	void ida_destroy(struct ida *ida);
-	void ida_init(struct ida *ida);
-	int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
-			   gfp_t gfp_mask);
-	void ida_simple_remove(struct ida *ida, unsigned int id);
-
-(I don't think we need any query-function, But...)
-If in the future we need some query-functions such as:
-	ida_is_this_id_allocated()
-	ida_find_next_[un]allocated_id(),
-In this case, we can expose the ida_preload() and ida_alloc() at the same time that
-we introduce the query-functions.
-
-Any thought?
-
-But we need to remove this unneeded ping-pong despite of any plan.
-
-Thanks,
-Lai
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+index 4b9a9e9..7c87424 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+@@ -535,6 +535,7 @@ static int rapl_cpu_prepare(int cpu)
+ 	struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
+ 	int phys_id = topology_physical_package_id(cpu);
+ 	u64 ms;
++	u64 msr_rapl_power_unit_bits;
+ 
+ 	if (pmu)
+ 		return 0;
+@@ -542,6 +543,9 @@ static int rapl_cpu_prepare(int cpu)
+ 	if (phys_id < 0)
+ 		return -1;
+ 
++	if (!rdmsrl_safe(MSR_RAPL_POWER_UNIT, &msr_rapl_power_unit_bits))
++		return -1;
++
+ 	pmu = kzalloc_node(sizeof(*pmu), GFP_KERNEL, cpu_to_node(cpu));
+ 	if (!pmu)
+ 		return -1;
+@@ -555,8 +559,7 @@ static int rapl_cpu_prepare(int cpu)
+ 	 *
+ 	 * we cache in local PMU instance
+ 	 */
+-	rdmsrl(MSR_RAPL_POWER_UNIT, pmu->hw_unit);
+-	pmu->hw_unit = (pmu->hw_unit >> 8) & 0x1FULL;
++	pmu->hw_unit = (msr_rapl_power_unit_bits >> 8) & 0x1FULL;
+ 	pmu->pmu = &rapl_pmu_class;
+ 
+ 	/*
+@@ -677,7 +680,9 @@ static int __init rapl_pmu_init(void)
+ 	cpu_notifier_register_begin();
+ 
+ 	for_each_online_cpu(cpu) {
+-		rapl_cpu_prepare(cpu);
++		ret = rapl_cpu_prepare(cpu);
++		if (ret)
++			goto out;
+ 		rapl_cpu_init(cpu);
+ 	}
+ 
+@@ -700,6 +705,7 @@ static int __init rapl_pmu_init(void)
+ 		hweight32(rapl_cntr_mask),
+ 		ktime_to_ms(pmu->timer_interval));
+ 
++out:
+ 	cpu_notifier_register_done();
+ 
+ 	return 0;
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 79a3f96..61b17dc 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -897,9 +897,10 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 	struct kprobe *cur = kprobe_running();
+ 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+ 
+-	switch (kcb->kprobe_status) {
+-	case KPROBE_HIT_SS:
+-	case KPROBE_REENTER:
++	if (unlikely(regs->ip == (unsigned long)cur->ainsn.insn)) {
++		/* This must happen on single-stepping */
++		WARN_ON(kcb->kprobe_status != KPROBE_HIT_SS &&
++			kcb->kprobe_status != KPROBE_REENTER);
+ 		/*
+ 		 * We are here because the instruction being single
+ 		 * stepped caused a page fault. We reset the current
+@@ -914,9 +915,8 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 		else
+ 			reset_current_kprobe();
+ 		preempt_enable_no_resched();
+-		break;
+-	case KPROBE_HIT_ACTIVE:
+-	case KPROBE_HIT_SSDONE:
++	} else if (kcb->kprobe_status == KPROBE_HIT_ACTIVE ||
++		   kcb->kprobe_status == KPROBE_HIT_SSDONE) {
+ 		/*
+ 		 * We increment the nmissed count for accounting,
+ 		 * we can also use npre/npostfault count for accounting
+@@ -945,10 +945,8 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+ 		 * fixup routine could not handle it,
+ 		 * Let do_page_fault() fix it.
+ 		 */
+-		break;
+-	default:
+-		break;
+ 	}
++
+ 	return 0;
+ }
+ 
