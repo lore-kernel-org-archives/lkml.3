@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaDSUMo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 16:12:44 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:54010 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191AbaDSUMa (ORCPT
+	id S1752308AbaDSUOH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 16:14:07 -0400
+Received: from fep32.mx.upcmail.net ([62.179.121.50]:63804 "EHLO
+	fep32.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191AbaDSUN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 16:12:30 -0400
+	Sat, 19 Apr 2014 16:13:57 -0400
+X-SourceIP: 77.56.27.120
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <5352D8FF.6070305@odi.ch>
+Date: Sat, 19 Apr 2014 22:13:51 +0200
+From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1397824031-4892-13-git-send-email-lftan@altera.com>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<1397824031-4892-13-git-send-email-lftan@altera.com>
-Date: Sat, 19 Apr 2014 22:12:28 +0200
-X-Google-Sender-Auth: f42ntuaflxlv_5p5feum75DgDrs
-Message-ID: <CAMuHMdXvLLNXQXYRD71Uv7F-Fh_E6EmF7_OvBUYF513cMfy8sw@mail.gmail.com>
-Subject: Re: [PATCH 16/28] nios2: System calls handling
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        lftan.linux@gmail.com, cltang@codesourcery.com,
-        Pavel Machek <pavel@denx.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, gerben@daybyday.nl,
+        Vlad Yasevich <vyasevic@redhat.com>
+Subject: Re: 3.14 regression: huge latency in read/select on tun
+References: <533C381E.9090103@odi.ch>	 <1396456973.3989.41.camel@edumazet-glaptop2.roam.corp.google.com>	 <533D133A.3090008@odi.ch>	 <1396531176.12330.6.camel@edumazet-glaptop2.roam.corp.google.com> <1396533026.12330.9.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1396533026.12330.9.camel@edumazet-glaptop2.roam.corp.google.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 2:26 PM, Ley Foon Tan <lftan@altera.com> wrote:
-> +/* sys_cacheflush -- flush the processor cache. */
-> +asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len,
-> +                               unsigned int op)
-> +{
-> +       struct vm_area_struct *vma;
-> +
-> +       if (len == 0)
-> +               return 0;
-> +
-> +       /* Check for overflow */
-> +       if (addr + len < addr)
-> +               return -EFAULT;
-> +
-> +       /*
-> +        * Verify that the specified address region actually belongs
-> +        * to this process.
-> +        */
-> +       vma = find_vma(current->mm, addr);
-> +       if (vma == NULL || addr < vma->vm_start || addr + len > vma->vm_end)
-> +               return -EFAULT;
-> +
-> +       /* Ignore the scope and cache arguments. */
+On 03.04.2014 15:50, Eric Dumazet wrote:
+> On Thu, 2014-04-03 at 06:19 -0700, Eric Dumazet wrote:
+> 
+>> It seems TSO support is broken.
 
-This function doesn't have scope and cache arguments
-(sys_cacheflush() on m68k does have them ;-)
+I finally found time to bisect this:
 
-On Sat, Apr 19, 2014 at 6:09 PM, Pavel Machek <pavel@denx.de> wrote:
-> Also... explanation why you need this syscall while other
-> architectures live happily without it would be nice.
+53d6471cef17262d3ad1c7ce8982a234244f68ec is the first bad commit
+commit 53d6471cef17262d3ad1c7ce8982a234244f68ec
+Author: Vlad Yasevich <vyasevic@redhat.com>
+Date:   Thu Mar 27 17:26:18 2014 -0400
 
-12 our of 28 architectures provide such a syscall...
+    net: Account for all vlan headers in skb_mac_gso_segment
 
-Is flushing the cache a privileged operation on nios2?
+    skb_network_protocol() already accounts for multiple vlan
+    headers that may be present in the skb.  However, skb_mac_gso_segment()
+    doesn't know anything about it and assumes that skb->mac_len
+    is set correctly to skip all mac headers.  That may not
+    always be the case.  If we are simply forwarding the packet (via
+    bridge or macvtap), all vlan headers may not be accounted for.
 
-Gr{oetje,eeting}s,
+    A simple solution is to allow skb_network_protocol to return
+    the vlan depth it has calculated.  This way skb_mac_gso_segment
+    will correctly skip all mac headers.
 
-                        Geert
+    Signed-off-by: Vlad Yasevich <vyasevic@redhat.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+:040000 040000 6066ee76dd70dde2f4675155579e550d29ba0216
+2196ebff4f9a8b909617dd57beeaa76cbafc8525 M      include
+:040000 040000 20fdfb5efc1ada562b7899d0d58998914b1c2ff1
+c398988f31e1b1b6ee56cb20b1a7becbdf782a17 M      net
