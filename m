@@ -1,58 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754690AbaDSLfV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 07:35:21 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:55869 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754159AbaDSLfL (ORCPT
+	id S1754870AbaDSLgI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 07:36:08 -0400
+Received: from zion.composeit.hu ([195.56.148.109]:50155 "EHLO mail.maltai.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754465AbaDSLfS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 07:35:11 -0400
-X-IronPort-AV: E=Sophos;i="4.97,888,1389715200"; 
-   d="scan'208";a="29471762"
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Andreas Gruenbacher <agruen@linbit.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-Subject: [PATCH 8/9 V2] idr: reduce the unneeded check in free_layer()
-Date: Sat, 19 Apr 2014 19:38:15 +0800
-Message-ID: <1397907496-5993-9-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1397907496-5993-1-git-send-email-laijs@cn.fujitsu.com>
-References: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
- <1397907496-5993-1-git-send-email-laijs@cn.fujitsu.com>
+	Sat, 19 Apr 2014 07:35:18 -0400
+Date: Sat, 19 Apr 2014 13:32:03 +0200 (CEST)
+From: Webmail / Administrador 2014 <mazacs.zsoa@maltai.hu>
+Message-ID: <461452298.4136739.1397907123597.JavaMail.zimbra@maltai.hu>
+In-Reply-To: <1776231423.4136735.1397907110243.JavaMail.zimbra@maltai.hu>
+Subject: Estimado E-mail del usuario;
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.167.226.103]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.138.181.62]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF28 (Win)/8.0.5_GA_5839)
+Thread-Topic: Estimado E-mail del usuario;
+Thread-Index: lqsyIVii6Xxcw9ieiL+7fELDTzif6g==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If "idr->hint == p" is true, it also implies "idr->hint" is true(not NULL).
+Estimado E-mail del usuario;
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-Acked-by: Tejun Heo <tj@kernel.org>
----
- lib/idr.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Se ha superado 23.432 Repositorio para el conjunto buzón
+Servicios Web / Administrador, y habrás problemas al enviar y
+recepción de correo, mientras que volver a verificar. Debe actualizar
+haciendo clic en enlace de abajo y complete la información para verificar su cuenta.
 
-diff --git a/lib/idr.c b/lib/idr.c
-index 4a11c5d..e3c1da0 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -145,7 +145,7 @@ static void idr_layer_rcu_free(struct rcu_head *head)
- 
- static inline void free_layer(struct idr *idr, struct idr_layer *p)
- {
--	if (idr->hint && idr->hint == p)
-+	if (idr->hint == p)
- 		RCU_INIT_POINTER(idr->hint, NULL);
- 	call_rcu(&p->rcu_head, idr_layer_rcu_free);
- }
--- 
-1.7.4.4
+http://webmailadmin000.jimdo.com/
 
+Por favor, haga clic en el siguiente enlace para actualizar la bandeja de
+entrada.
+¡Atención!
+De no hacerlo, tendrá acceso limitado a su buzón de correo.
+Si no actualiza su cuenta dentro de los tres días posteriores a la
+actualización
+aviso, su cuenta será cerrada permanentemente.
