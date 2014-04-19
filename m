@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751563AbaDSLA0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 07:00:26 -0400
-Received: from emh03.mail.saunalahti.fi ([62.142.5.109]:60522 "EHLO
-	emh03.mail.saunalahti.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751043AbaDSLAS (ORCPT
+	id S1751505AbaDSLRn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 07:17:43 -0400
+Received: from zion.composeit.hu ([195.56.148.109]:40732 "EHLO mail.maltai.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751142AbaDSLRl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 07:00:18 -0400
-X-Greylist: delayed 520 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Apr 2014 07:00:18 EDT
-Date: Sat, 19 Apr 2014 13:52:26 +0300
-From: Aaro Koskinen <aaro.koskinen@iki.fi>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        myungjoo.ham@samsung.com, cw00.choi@samsung.com, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, balbi@ti.com, gregkh@linuxfoundation.org,
-        grant.likely@linaro.org, ldewangan@nvidia.com, kishon@ti.com,
-        gg@slimlogic.co.uk, anton@enomsg.org, jonghwa3.lee@samsung.com,
-        rongjun.ying@csr.com, linux@roeck-us.net, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, m.szyprowski@samsung.com,
-        t.figa@samsung.com
-Subject: Re: [PATCH v2 05/13] extcon: extcon-class: improve extcon client API
-Message-ID: <20140419105225.GB976@ambient.musicnaut.iki.fi>
-References: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
- <1397475984-28001-6-git-send-email-r.baldyga@samsung.com>
+	Sat, 19 Apr 2014 07:17:41 -0400
+X-Greylist: delayed 485 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Apr 2014 07:17:41 EDT
+Date: Sat, 19 Apr 2014 13:06:22 +0200 (CEST)
+From: Webmail / Administrador 2014 <mazacs.zsoa@maltai.hu>
+Message-ID: <683484962.4133852.1397905582566.JavaMail.zimbra@maltai.hu>
+In-Reply-To: <860102758.4133843.1397905522557.JavaMail.zimbra@maltai.hu>
+Subject: Estimado E-mail del usuario;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397475984-28001-6-git-send-email-r.baldyga@samsung.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.138.181.62]
+X-Mailer: Zimbra 8.0.5_GA_5839 (ZimbraWebClient - FF28 (Win)/8.0.5_GA_5839)
+Thread-Topic: Estimado E-mail del usuario;
+Thread-Index: t+04qECD5rgsOirxkgvZ8KqBSYyXbw==
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Estimado E-mail del usuario;
 
-On Mon, Apr 14, 2014 at 01:46:16PM +0200, Robert Baldyga wrote:
->  	dev_info(&pdev->dev,
-> -		 "OMAP USB OTG controller rev %d.%d (%s, id=%d, vbus=%d)\n",
-> -		 (rev >> 4) & 0xf, rev & 0xf, config->extcon, otg_dev->id,
-> +		 "OMAP USB OTG controller rev %d.%d (id=%d, vbus=%d)\n",
-> +		 (rev >> 4) & 0xf, rev & 0xf, otg_dev->id,
->  		 otg_dev->vbus);
+Se ha superado 23.432 Repositorio para el conjunto buzón
+Servicios Web / Administrador, y habrás problemas al enviar y
+recepción de correo, mientras que volver a verificar. Debe actualizar
+haciendo clic en enlace de abajo y complete la información para verificar su cuenta.
 
-This change is unrelated to the patch and not needed.
+http://stananzanleonsin.net/predzenie-ujrarvnyestst.html/
 
-A.
+Por favor, haga clic en el siguiente enlace para actualizar la bandeja de
+entrada.
+¡Atención!
+De no hacerlo, tendrá acceso limitado a su buzón de correo.
+Si no actualiza su cuenta dentro de los tres días posteriores a la
+actualización
+aviso, su cuenta será cerrada permanentemente.
