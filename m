@@ -1,189 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751540AbaDSLb3 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 07:31:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33666 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751081AbaDSLbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 07:31:23 -0400
-Date: Sat, 19 Apr 2014 13:31:11 +0200
-From: Borislav Petkov <bp@suse.de>
-To: Myron Stowe <myron.stowe@redhat.com>
-Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
-        suravee.suthikulpanit@amd.com, aravind.gopalakrishnan@amd.com,
-        kim.naru@amd.com, andreas.herrmann3@amd.com, daniel@numascale.com,
-        tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        bp@suse.de, sp@numascale.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] x86/PCI: Add support for generic AMD hostbridges
-Message-ID: <20140419113111.GA8109@pd.tnic>
-References: <20140419025308.2408.51252.stgit@amt.stowe>
- <20140419025316.2408.29771.stgit@amt.stowe>
+	id S1751714AbaDSLdX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 07:33:23 -0400
+Received: from moutng.kundenserver.de ([212.227.17.24]:62654 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751081AbaDSLdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 07:33:19 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: [PATCH 4/8] tty/serial: add generic serial earlycon
+Date: Sat, 19 Apr 2014 13:32:24 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        "x86@kernel.org" <x86@kernel.org>, Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Jiri Slaby <jslaby@suse.cz>
+References: <1395436128-11244-1-git-send-email-robherring2@gmail.com> <21117957.8m9iUdR1VN@wuerfel> <CAL_JsqJwKQ_KuWWQNZHrMh8NwwiubB2jR+g-Y2n_dH4kJ5zVow@mail.gmail.com>
+In-Reply-To: <CAL_JsqJwKQ_KuWWQNZHrMh8NwwiubB2jR+g-Y2n_dH4kJ5zVow@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140419025316.2408.29771.stgit@amt.stowe>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404191332.24392.arnd@arndb.de>
+X-Provags-ID: V02:K0:aaAi2lVSv1JxDGs8gRyhJeqohqn9xyWDkvaY1vxn3lQ
+ sssAfq2cF3ayVpTCFS0i+gkIQwwrE25PT/PzA5PUI6K+QpUj4Z
+ YsyC7XoVCx7MzQZZowOujkzZIhEWVQILVirCPSI01GaR0z+zum
+ c2ogzOJ3IV3a1TbM4YpKWkMulkGgYlwfxloyT3Ou31FKoeK33e
+ Rh1TUn4gAUKqC1XIbCFyegEWlGkTQB0uJd84RAIdArUDwLdu9M
+ a0n/MMi/V3HgqAXk3uM2ZaRfl5QXDn+7x/9CUIpen4abF/6O5y
+ N/KlMCShc7PINn3/gsPpWivAz/2khdPuP2p8Y/YwLJTeXqATkM
+ 7fsPUJWJpavr6C9R7N2Gj1Sd5jJNBhxa9LxTqPFP9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 08:53:16PM -0600, Myron Stowe wrote:
-> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
+On Thursday 17 April 2014, Rob Herring wrote:
+> On Mon, Mar 24, 2014 at 10:42 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Monday 24 March 2014 08:36:46 Rob Herring wrote:
+> >> On Mon, Mar 24, 2014 at 6:29 AM, Arnd Bergmann <arnd@arndb.de> wrote:
+> >> > On Monday 24 March 2014 11:22:03 Catalin Marinas wrote:
+> >> >> On Fri, Mar 21, 2014 at 09:08:44PM +0000, Rob Herring wrote:
+> >> >> > diff --git a/drivers/tty/serial/earlycon.c b/drivers/tty/serial/earlycon.c
+> >> >> > new file mode 100644
+> >> >> > index 0000000..241757a
+> >> >> > --- /dev/null
+> >> >> > +++ b/drivers/tty/serial/earlycon.c
+> >> >> [...]
+> >> >> > +static void __iomem * __init earlycon_map(unsigned long paddr, size_t size)
+> >> >> > +{
+> >> >> > +   void __iomem *base;
+> >> >> > +#ifdef CONFIG_FIX_EARLYCON_MEM
+> >> >> > +   set_fixmap_nocache(FIX_EARLYCON_MEM_BASE, paddr & PAGE_MASK);
+> >> >> > +   base = (void __iomem *)__fix_to_virt(FIX_EARLYCON_MEM_BASE);
+> >> >> > +   base += paddr & ~PAGE_MASK;
+> >> >> > +#else
+> >> >> > +   base = ioremap_nocache(paddr, size);
+> >> >> > +#endif
+> >> >>
+> >> >> Just curious why not set_fixmap_io (and plain ioremap)?
+> >> >
+> >> > Good point. Note that ioremap_nocache() is the same as ioremap()
+> >> > on *all* architectures.
 > 
-> AMD hostbridges gnenerally show up as PCI device 0:18.0.  This patch adds
-> logic to automatically probe the device at this location and check PCI
-> device class code.
-> 
-> This patch supports platforms with the following AMD hostbridge types:
-> (K8, family10h, 11h, 12h, 14h 15h  and 16h processors).
-> 
-> Reference(s):
->   https://bugzilla.kernel.org/show_bug.cgi?id=72051
->   Advanced Micro Devices (AMD), "BIOS and Kernel Developer's
->   Guide (BKDG) for AMD Family 15h Models 00h-0fh Processors."  Section
->   3.4 Device [1F:18]h Function 1 Configuration Registers; D18F1x[EC:E0]
->   Configuration Map, 42301 Rev 3.12 - October 11, 2012.
-> 
-> Signed-off-by: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-> Tested-by: Aravind Gopalakrishnan <Aravind.Gopalakrishnan@amd.com>
-> ---
-> 
->  arch/x86/pci/amd_bus.c |   71 ++++++++++++++++++++++++++++++++----------------
->  1 files changed, 47 insertions(+), 24 deletions(-)
-> 
-> diff --git a/arch/x86/pci/amd_bus.c b/arch/x86/pci/amd_bus.c
-> index e88f4c5..c8cd75c 100644
-> --- a/arch/x86/pci/amd_bus.c
-> +++ b/arch/x86/pci/amd_bus.c
-> @@ -11,27 +11,34 @@
->  
->  #include "bus_numa.h"
->  
-> +#define AMD_NB_F0_NODE_ID			0x60
-> +#define AMD_NB_F0_UNIT_ID			0x64
-> +#define AMD_NB_F1_CONFIG_MAP_REG		0xe0
-> +
-> +#define RANGE_NUM				16
-> +#define AMD_NB_F1_CONFIG_MAP_RANGES		4
-> +
->  /*
-> - * This discovers the pcibus <-> node mapping on AMD K8.
-> - * also get peer root bus resource for io,mmio
-> + * This discovers the pcibus <-> node mapping on AMD K8, Family 10h, 12h,
-> + * 14h, 15h, and 16h processor based systems.  This also gets peer root bus
-> + * resources corresponding to I/O and MMIO addresses.
->   */
->  
-> -struct pci_hostbridge_probe {
-> +struct amd_hostbridge {
->  	u32 bus;
->  	u32 slot;
-> -	u32 vendor;
->  	u32 device;
->  };
->  
-> -static struct pci_hostbridge_probe pci_probes[] __initdata = {
-> -	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1100 },
-> -	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1200 },
-> -	{ 0xff, 0, PCI_VENDOR_ID_AMD, 0x1200 },
-> -	{ 0, 0x18, PCI_VENDOR_ID_AMD, 0x1300 },
-> +static struct amd_hostbridge hb_probes[] __initdata = {
-> +	/* Standard AMD Hostbriges are at bus 0x0 slot 0x18.
-> +	 * In case of PCI_ANY_ID, the logic will try matching
-> +	 * PCI_CLASS_BRIDGE_HOST instead.
-> +	 */
+> Did you mean "not the same"?
 
-Standard kernel comment style:
+No
 
-/*
- * Something interesting for the code below.
- * This is the second comment line.
- */
+> Why are there 2 flavors if they are
+> always the same.
 
-> +	{ 0x0 , 0x18, PCI_ANY_ID },
-> +	{ 0xff, 0   , PCI_DEVICE_ID_AMD_10H_NB_HT },
->  };
->  
-> -#define RANGE_NUM 16
-> -
->  static struct pci_root_info __init *find_pci_root_info(int node, int link)
->  {
->  	struct pci_root_info *info;
-> @@ -75,31 +82,47 @@ static int __init early_fill_mp_bus_info(void)
+I assume it's just a mistake someone made a long time ago and nobody
+ever changed it because they didn't want to break obscure code.
 
-Btw, this function is huuuge. It could use a splitup some day.
+x86 seems to be a bit odd here, because is has both page-table
+and MTRR method of setting up whether an access can be cached or not.
+This may have led to the introduction of the _nocache variant, when
+the regular ioremap was already uncached on all other architectures
+but cached on x86.
 
->  		return -1;
->  
->  	found = false;
-> -	for (i = 0; i < ARRAY_SIZE(pci_probes); i++) {
-> +	for (i = 0; i < ARRAY_SIZE(hb_probes); i++) {
->  		u32 id;
->  		u16 device;
->  		u16 vendor;
-> +		u32 class;
->  
-> -		bus = pci_probes[i].bus;
-> -		slot = pci_probes[i].slot;
-> +		bus = hb_probes[i].bus;
-> +		slot = hb_probes[i].slot;
->  		id = read_pci_config(bus, slot, 0, PCI_VENDOR_ID);
-> -
->  		vendor = id & 0xffff;
->  		device = (id>>16) & 0xffff;
-> -		if (pci_probes[i].vendor == vendor &&
-> -		    pci_probes[i].device == device) {
-> -			found = true;
-> -			break;
-> +		class = read_pci_config(bus, slot, 0,
-> +			PCI_CLASS_REVISION) >> 16;
-> +
-> +		if (PCI_VENDOR_ID_AMD == vendor) {
-
-Flip comparison:
-
-		if (vendor == PCI_VENDOR_ID_AMD)
-
-and then save yourself another indentation level:
-
-		if (vendor != PCI_VENDOR_ID_AMD)
-			continue;
-
-> +			if (hb_probes[i].device == device) {
-> +				found = true;
-> +				break;
-> +			}
-> +
-> +			if ((hb_probes[i].device == PCI_ANY_ID) &&
-> +			    (class == PCI_CLASS_BRIDGE_HOST)) {
-> +				hb_probes[i].device = device;
-> +				found = true;
-> +				break;
-> +			}
->  		}
->  	}
->  
-> -	if (!found)
-> +	if (!found) {
-> +		pr_warn("AMD hostbridge not found\n");
->  		return 0;
-> +	}
-
-I guess this should return a negative value... Not that it matters much
-from looking at the call site in the amd_postcore_init initcall.
-
->  
-> -	for (i = 0; i < 4; i++) {
-> +	pr_debug("Found AMD hostbridge at %x:%x.0\n", bus, slot);
-
-Why not pr_info? I think this is useful info we want to print out at
-default level.
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+	Arnd
