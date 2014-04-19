@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753218AbaDSNns (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 09:43:48 -0400
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:48982 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751332AbaDSNnV (ORCPT
+	id S1751867AbaDSNnU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 09:43:20 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:63920 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332AbaDSNnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 09:43:21 -0400
+	Sat, 19 Apr 2014 09:43:17 -0400
+Message-ID: <53527D74.4070909@gmail.com>
+Date: Sat, 19 Apr 2014 21:43:16 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CAK9yfHygoHZ7hnAcLuuaMEsPb8Tqw-QbcTrQ+b=2CD6kK3odmw@mail.gmail.com>
-References: <1397787634-9334-1-git-send-email-cw00.choi@samsung.com>
-	<CAK9yfHygoHZ7hnAcLuuaMEsPb8Tqw-QbcTrQ+b=2CD6kK3odmw@mail.gmail.com>
-Date: Sat, 19 Apr 2014 22:43:20 +0900
-Message-ID: <CAGTfZH1M9h3Sx73wJsD=_vnSyV-+fyOY041PN_7ea718B0mFoQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Support cpufreq driver for Exynos3250
-From: Chanwoo Choi <cwchoi00@gmail.com>
-To: Sachin Kamat <sachin.kamat@linaro.org>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Willy Tarreau <w@1wt.eu>
+CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        joe@perches.com, julia.lawall@lip6.fr, dingtianhong@huawei.com,
+        linux-kernel@vger.kernel.org, jasowang@redhat.com, mst@redhat.com,
+        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
+        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
+        "Tao, Yue" <Yue.Tao@windriver.com>
+Subject: Re: in kernel 2.6.x, tun/tap nic supports vlan packets
+References: <534F4C1E.1000006@gmail.com> <20140417050228.GC8243@1wt.eu>
+In-Reply-To: <20140417050228.GC8243@1wt.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sachin,
-
-On Fri, Apr 18, 2014 at 5:14 PM, Sachin Kamat <sachin.kamat@linaro.org> wrote:
-> Hi Chanwoo,
+On 04/17/2014 01:02 PM, Willy Tarreau wrote:
+> Hi Zhu,
 >
-> On 18 April 2014 07:50, Chanwoo Choi <cw00.choi@samsung.com> wrote:
->> This patchset support cpufreq driver for Exynos3250 which uses the Cortex-A7
->> dual cores and has a target speed of 1.0 GHz and code clean using dev_err/info
->> instead of pr_err/info function.
+> On Thu, Apr 17, 2014 at 11:35:58AM +0800, zhuyj wrote:
+>> Hi, all
+>>
+>> In kernel 2.6.x, linux depends on nic vlan hardware acceleration to
+>> insert/extract
+>> vlan tag. In this scene, in kernel 2.6.x
+>>
+>>                   _____        ________
+>>      A           |     | B    |        | C
+>>   vlan packets-->| tap |----->|vlan nic|--->
+>>                  |_____|      |________|
+>>
+>> We hope vlan packets pass through tap and vlan nic from A to c.
+>> But in kernel 2.6.x, linux kernel can not extract vlan tag. It depends
+>> on nic vlan hardware acceleration. It is well known that tap nic has no
+>> vlan acceleration. So in the above scene, vlan packets can not be handled by
+>> tap nic. These vlan packets will be discarded in B. They can not arrive
+>> at C.
+> It's not clear to me what you want to achieve. Are you trying to create
+> vlan interfaces on top of a tap interface ? Eg: tap1.12, tap1.23 etc ?
 >
-> Per SoC cpufreq driver which does not use CCF is no more encouraged for new
-> Exynos platforms. Thomas has already posted patches to make use of
-> generic cpu freq driver
-> on Exynos platforms. Please refer to [1] and try to utilize it for
-> this platform as well.
+>> In kernel 3.x, linux can handle vlan packets. It does not depend on nic vlan
+>> hardware acceleration. So the above scene can work well in kernel 3.x.
+>>
+>> To resolve the above in kernel 2.6.x, we simulated vlan hardware
+>> acceleration in
+>> tun/tap driver. Then followed the logic of commit commit 4fba4ca4
+>> [vlan: Centralize handling of hardware acceleration] to modify the vlan
+>> packets
+>> process in kernel 2.6.x. In the end, the above scene can work well in
+>> patched
+>> kernel 2.6.x.
+>>
+>> Please comment on it. Any reply is appreciated.
+>>
+>> Hi, Willy
+>>
+>> These 2 patches are for linux2.6.x. These can work well here. Please
+>> help to merge
+>> linux 2.6.32.x. Thanks a lot.
+> Well, 2.6.32.x is in deep freeze mode and it receives only critical fixes
+> once in a while. While I can appreciate that the patch above might solve
+> the issue you're facing, I'm wondering if there are not any acceptable
+> workarounds for such a deep freeze kernel. You patch is not huge, but it
+> definitely affects a working driver, and I wouldn't like risking to break
+> the tap driver for other users, and I reall don't have the skills to audit
+> it completely to ensure this is not the case. And if it breaks, I'll have
+> to revert it or seek for some help on netdev.
 >
-> [1] http://permalink.gmane.org/gmane.linux.kernel.samsung-soc/26886
+> So I'd say that I'd rather not merge it unless I get an Acked-by from some
+> netdev people who are willing to help in case of any future regression,
+> which is unlikely but still possible.
+>
+> Just out of curiosity, what is the motivation for ongoing development on
+> top of 2.6.32 ? Are there any important deployments that cannot upgrade
+> for any specific reason ? I'm asking because most 2.6.32.x kernels that
+> are stuffed into embedded boxes very likely come with their own number
+> of in-house patches to add whatever feature is needed in such contexts,
+> so I'm wondering why having this patch in mainline would help in your
+> situation compared to having it into your own patch set only.
+Hi, Willy
 
-OK, I'll refer to this new patch for cpufreq and rebase it.
+I want to submit these 2 patches to this long-term kernel. I have 2 
+purposes:
 
-Thanks for your reply.
+1. I want to share these 2 patches with the ones who need this kind of 
+feature. Maybe these 2 patches can help them.
+2. When many people make use of these 2 patches, we will find some 
+defects. Then we fix them and make this kind of feature better.
 
-Best Regards,
-Chanwoo Choi
+Zhu Yanjun
+> Thanks,
+> Willy
+>
+>
+
