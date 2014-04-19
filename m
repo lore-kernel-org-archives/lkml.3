@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223AbaDSTQR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 15:16:17 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:58893 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063AbaDSTQO (ORCPT
+	id S1755231AbaDSTTa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 15:19:30 -0400
+Received: from mail-yh0-f46.google.com ([209.85.213.46]:52851 "EHLO
+	mail-yh0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754991AbaDSTTY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 15:16:14 -0400
-Date: Sat, 19 Apr 2014 21:16:12 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCHv3 07/14] HSI: Add common DT binding for HSI client
- devices
-Message-ID: <20140419191612.GG5148@amd.pavel.ucw.cz>
-References: <1396053110-21639-1-git-send-email-sre@kernel.org>
- <1396053110-21639-8-git-send-email-sre@kernel.org>
+	Sat, 19 Apr 2014 15:19:24 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396053110-21639-8-git-send-email-sre@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <108530.1397932407@turing-police.cc.vt.edu>
+References: <CAGG-pURwpGGFyCp-htffegnVhf1VwAke1XPrC+GirXKy-HhqJA@mail.gmail.com>
+	<20140419161552.GB27776@amd.pavel.ucw.cz>
+	<CAGG-pUQ5+dv566KZK2hbQENXSEPaY5k5fapgnLUE0jTv1ihPMg@mail.gmail.com>
+	<108530.1397932407@turing-police.cc.vt.edu>
+Date: Sat, 19 Apr 2014 16:19:23 -0300
+Message-ID: <CAGG-pURRQpRL2dTT5gmgqnuDtU048OL6xJHFc1W6KkugR6He3g@mail.gmail.com>
+Subject: Re: [Kernel-BR] Re: [RFC] Only a.out QMAGIC format is working
+From: =?ISO-8859-1?Q?Geyslan_Greg=F3rio_Bem?= <geyslan@gmail.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: kernel-br <kernel-br@googlegroups.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "open list:FILESYSTEMS (VFS...), linux-kernel@vger.kernel.org (open
+	list)" <linux-fsdevel@vger.kernel.org>,
+        kernelnewbies <Kernelnewbies@kernelnewbies.org>, jikos@jikos.cz
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2014-03-29 01:31:43, Sebastian Reichel wrote:
-> Implement and document generic DT bindings for HSI clients.
-> 
-> Signed-off-by: Sebastian Reichel <sre@kernel.org>
+Valdis,
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+2014-04-19 15:33 GMT-03:00  <Valdis.Kletnieks@vt.edu>:
+> On Sat, 19 Apr 2014 13:37:27 -0300, Geyslan Gregório Bem said:
+>
+>> Maintainers, is there some chance to fix it or a.out is really doomed?
+>
+> Is there an actual use case for a.out on a modern kernel?
 
-> diff --git a/drivers/hsi/hsi.c b/drivers/hsi/hsi.c
-> index 07e1639..5973906 100644
-> --- a/drivers/hsi/hsi.c
-> +++ b/drivers/hsi/hsi.c
-> @@ -26,8 +26,14 @@
->  #include <linux/slab.h>
->  #include <linux/string.h>
->  #include <linux/notifier.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
->  #include "hsi_core.h"
+Maybe retrocompatibility.
 
+>
+> In other wods, is there any reason to really care if it's doomed, since
+> it's been *years* since that worked?
 
-> +	err = hsi_of_property_parse_mode(client, "hsi-mode", &mode);
-> +	if (err) {
-> +		err = hsi_of_property_parse_mode(client, "hsi-rx-mode",
-> +						 &cl->rx_cfg.mode);
-> +		if (err)
-> +			goto err;
-> +
-> +		err = hsi_of_property_parse_mode(client, "hsi-tx-mode",
-> +						 &cl->tx_cfg.mode);
-> +		if (err)
-> +			goto err;
+Perhaps not, but why to continue patching the ia32_aout.c and
+binfmt_aout.c if that format doesn't matter (and work) anymore? That's
+was the reason that I asked if it is really doomed in linux.
 
-Will this need some #ifdef CONFIG_OF? 
 
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Regards,
+
+Geyslan G. Bem
+hackingbits.com
