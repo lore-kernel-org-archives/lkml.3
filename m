@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaDSU1I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 16:27:08 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:59993 "EHLO
+	id S1754661AbaDSU2M (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 16:28:12 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60086 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaDSU05 (ORCPT
+	with ESMTP id S1751254AbaDSU2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 16:26:57 -0400
-Date: Sat, 19 Apr 2014 22:26:55 +0200
+	Sat, 19 Apr 2014 16:28:02 -0400
+Date: Sat, 19 Apr 2014 22:28:00 +0200
 From: Pavel Machek <pavel@ucw.cz>
 To: Sebastian Reichel <sre@kernel.org>
 Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
@@ -21,32 +21,27 @@ Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
         =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
 	<freemangordon@abv.bg>,
         Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Sebastian Reichel <sre@debian.org>
-Subject: Re: [PATCHv3 12/14] ARM: dts: omap3 clocks: simplify ssi aliases
-Message-ID: <20140419202655.GL5148@amd.pavel.ucw.cz>
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCHv3 13/14] DTS: ARM: OMAP3-N900: Add SSI support
+Message-ID: <20140419202800.GM5148@amd.pavel.ucw.cz>
 References: <1396053110-21639-1-git-send-email-sre@kernel.org>
- <1396053110-21639-13-git-send-email-sre@kernel.org>
+ <1396053110-21639-14-git-send-email-sre@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396053110-21639-13-git-send-email-sre@kernel.org>
+In-Reply-To: <1396053110-21639-14-git-send-email-sre@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2014-03-29 01:31:48, Sebastian Reichel wrote:
-> From: Sebastian Reichel <sre@debian.org>
+On Sat 2014-03-29 01:31:49, Sebastian Reichel wrote:
+> Add SSI device tree data for OMAP3 and Nokia N900.
 > 
-> update aliases for the ssi clocks ssi_ssr_fck, ssi_sst_fck and ssi_ick
-> to make them consistent for omap34xx and omap36xx. This makes it
-> possible to reference the clocks from generic omap3 dts files.
-> 
-> Signed-off-by: Sebastian Reichel <sre@debian.org>
-> Acked-by: Tero Kristo <t-kristo@ti.com>
+> Signed-off-by: Sebastian Reichel <sre@kernel.org>
 
 Reviewed-by: Pavel Machek <pavel@ucw.cz>
+
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
