@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754959AbaDSAPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 20:15:54 -0400
-Received: from relay4-d.mail.gandi.net ([217.70.183.196]:38721 "EHLO
+	id S1754937AbaDSAPs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 20:15:48 -0400
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:59461 "EHLO
 	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651AbaDSAOq (ORCPT
+	with ESMTP id S1754640AbaDSAOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 20:14:46 -0400
+	Fri, 18 Apr 2014 20:14:44 -0400
 X-Originating-IP: 76.119.93.133
 From: Ryan Desfosses <ryan@desfo.org>
 To: bhelgaas@google.com
 Cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, Ryan Desfosses <ryan@desfo.org>
-Subject: [PATCH 7/8] pci-driver: moved EXPORT_SYMBOL so that it immediately followed its function/variable
-Date: Fri, 18 Apr 2014 20:13:52 -0400
-Message-Id: <1397866433-21119-8-git-send-email-ryan@desfo.org>
+Subject: [PATCH 6/8] pci-driver: added or removed a space to resolve checkpatch messages
+Date: Fri, 18 Apr 2014 20:13:51 -0400
+Message-Id: <1397866433-21119-7-git-send-email-ryan@desfo.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1397866433-21119-1-git-send-email-ryan@desfo.org>
 References: <1397866433-21119-1-git-send-email-ryan@desfo.org>
@@ -22,96 +22,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-change made to resolve following checkpatch message:
-        WARNING: EXPORT_SYMBOL(foo); should immediately follow
-        its function/aariable
+changes made to resolve following messages:
+  ERROR: spaces required around that '=' (ctx:VxV)
+  ERROR: "foo * bar" should be "foo *bar"
+  ERROR: spaces required around that '<=' (ctx:VxV)
+  ERROR: space required before the open parenthesis '('
 branch: Linux 3.15-rc1
 
 Signed-off-by: Ryan Desfosses <ryan@desfo.org>
 ---
- drivers/pci/pci-driver.c | 16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
+ drivers/pci/pci-driver.c | 34 +++++++++++++++++-----------------
+ 1 file changed, 17 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
-index 821efe2..2c921a2 100644
+index d911e0c..821efe2 100644
 --- a/drivers/pci/pci-driver.c
 +++ b/drivers/pci/pci-driver.c
-@@ -77,6 +77,7 @@ int pci_add_dynid(struct pci_driver *drv,
- 
- 	return retval;
- }
-+EXPORT_SYMBOL_GPL(pci_add_dynid);
- 
- static void pci_free_dynids(struct pci_driver *drv)
+@@ -103,10 +103,10 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
  {
-@@ -242,6 +243,7 @@ static const struct pci_device_id *pci_match_device(struct pci_driver *drv,
+ 	struct pci_driver *pdrv = to_pci_driver(driver);
+ 	const struct pci_device_id *ids = pdrv->id_table;
+-	__u32 vendor, device, subvendor=PCI_ANY_ID,
+-		subdevice=PCI_ANY_ID, class=0, class_mask=0;
+-	unsigned long driver_data=0;
+-	int fields=0;
++	__u32 vendor, device, subvendor = PCI_ANY_ID,
++		subdevice = PCI_ANY_ID, class = 0, class_mask = 0;
++	unsigned long driver_data = 0;
++	int fields = 0;
+ 	int retval;
  
- 	return pci_match_id(drv->id_table, dev);
+ 	fields = sscanf(buf, "%x %x %x %x %x %x %lx",
+@@ -351,7 +351,7 @@ __pci_device_probe(struct pci_driver *drv, struct pci_dev *pci_dev)
+ 	return error;
  }
-+EXPORT_SYMBOL(pci_match_id);
  
- struct drv_dev_and_id {
+-static int pci_device_probe(struct device * dev)
++static int pci_device_probe(struct device *dev)
+ {
+ 	int error = 0;
  	struct pci_driver *drv;
-@@ -1216,6 +1218,7 @@ int __pci_register_driver(struct pci_driver *drv, struct module *owner,
- 	/* register with core */
- 	return driver_register(&drv->driver);
+@@ -367,10 +367,10 @@ static int pci_device_probe(struct device * dev)
+ 	return error;
  }
-+EXPORT_SYMBOL(__pci_register_driver);
  
- /**
-  * pci_unregister_driver - unregister a pci driver
-@@ -1233,6 +1236,7 @@ pci_unregister_driver(struct pci_driver *drv)
- 	driver_unregister(&drv->driver);
- 	pci_free_dynids(drv);
- }
-+EXPORT_SYMBOL(pci_unregister_driver);
+-static int pci_device_remove(struct device * dev)
++static int pci_device_remove(struct device *dev)
+ {
+-	struct pci_dev * pci_dev = to_pci_dev(dev);
+-	struct pci_driver * drv = pci_dev->driver;
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct pci_driver *drv = pci_dev->driver;
  
- static struct pci_driver pci_compat_driver = {
- 	.name = "compat"
-@@ -1258,6 +1262,7 @@ pci_dev_driver(const struct pci_dev *dev)
+ 	if (drv) {
+ 		if (drv->remove) {
+@@ -498,8 +498,8 @@ static int pci_pm_reenable_device(struct pci_dev *pci_dev)
+ 
+ static int pci_legacy_suspend(struct device *dev, pm_message_t state)
+ {
+-	struct pci_dev * pci_dev = to_pci_dev(dev);
+-	struct pci_driver * drv = pci_dev->driver;
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct pci_driver *drv = pci_dev->driver;
+ 
+ 	if (drv && drv->suspend) {
+ 		pci_power_t prev = pci_dev->current_state;
+@@ -525,8 +525,8 @@ static int pci_legacy_suspend(struct device *dev, pm_message_t state)
+ 
+ static int pci_legacy_suspend_late(struct device *dev, pm_message_t state)
+ {
+-	struct pci_dev * pci_dev = to_pci_dev(dev);
+-	struct pci_driver * drv = pci_dev->driver;
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct pci_driver *drv = pci_dev->driver;
+ 
+ 	if (drv && drv->suspend_late) {
+ 		pci_power_t prev = pci_dev->current_state;
+@@ -556,8 +556,8 @@ static int pci_legacy_suspend_late(struct device *dev, pm_message_t state)
+ 
+ static int pci_legacy_resume_early(struct device *dev)
+ {
+-	struct pci_dev * pci_dev = to_pci_dev(dev);
+-	struct pci_driver * drv = pci_dev->driver;
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct pci_driver *drv = pci_dev->driver;
+ 
+ 	return drv && drv->resume_early ?
+ 			drv->resume_early(pci_dev) : 0;
+@@ -565,8 +565,8 @@ static int pci_legacy_resume_early(struct device *dev)
+ 
+ static int pci_legacy_resume(struct device *dev)
+ {
+-	struct pci_dev * pci_dev = to_pci_dev(dev);
+-	struct pci_driver * drv = pci_dev->driver;
++	struct pci_dev *pci_dev = to_pci_dev(dev);
++	struct pci_driver *drv = pci_dev->driver;
+ 
+ 	pci_fixup_device(pci_fixup_resume, pci_dev);
+ 
+@@ -1252,7 +1252,7 @@ pci_dev_driver(const struct pci_dev *dev)
+ 		return dev->driver;
+ 	else {
+ 		int i;
+-		for(i=0; i<=PCI_ROM_RESOURCE; i++)
++		for (i = 0; i <= PCI_ROM_RESOURCE; i++)
+ 			if (dev->resource[i].flags & IORESOURCE_BUSY)
+ 				return &pci_compat_driver;
  	}
- 	return NULL;
- }
-+EXPORT_SYMBOL(pci_dev_driver);
- 
- /**
-  * pci_bus_match - Tell if a PCI device structure has a matching PCI device id structure
-@@ -1303,6 +1308,7 @@ struct pci_dev *pci_dev_get(struct pci_dev *dev)
- 		get_device(&dev->dev);
- 	return dev;
- }
-+EXPORT_SYMBOL(pci_dev_get);
- 
- /**
-  * pci_dev_put - release a use of the pci device structure
-@@ -1316,6 +1322,7 @@ void pci_dev_put(struct pci_dev *dev)
- 	if (dev)
- 		put_device(&dev->dev);
- }
-+EXPORT_SYMBOL(pci_dev_put);
- 
- static int pci_uevent(struct device *dev, struct kobj_uevent_env *env)
- {
-@@ -1362,6 +1369,7 @@ struct bus_type pci_bus_type = {
- 	.drv_groups	= pci_drv_groups,
- 	.pm		= PCI_PM_OPS_PTR,
- };
-+EXPORT_SYMBOL(pci_bus_type);
- 
- static int __init pci_driver_init(void)
- {
-@@ -1370,11 +1378,3 @@ static int __init pci_driver_init(void)
- 
- postcore_initcall(pci_driver_init);
- 
--EXPORT_SYMBOL_GPL(pci_add_dynid);
--EXPORT_SYMBOL(pci_match_id);
--EXPORT_SYMBOL(__pci_register_driver);
--EXPORT_SYMBOL(pci_unregister_driver);
--EXPORT_SYMBOL(pci_dev_driver);
--EXPORT_SYMBOL(pci_bus_type);
--EXPORT_SYMBOL(pci_dev_get);
--EXPORT_SYMBOL(pci_dev_put);
 -- 
 1.9.1
 
