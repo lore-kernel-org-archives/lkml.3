@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751236AbaDSGmI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 02:42:08 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:51470 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905AbaDSGmA (ORCPT
+	id S1751191AbaDSGzW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 02:55:22 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:10793 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750905AbaDSGzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 02:42:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1397876987-11254-1-git-send-email-jinqiangzeng@gmail.com>
-References: <1397876987-11254-1-git-send-email-jinqiangzeng@gmail.com>
-From: Jianyu Zhan <nasa4836@gmail.com>
-Date: Sat, 19 Apr 2014 14:41:19 +0800
-Message-ID: <CAHz2CGVVf6tFsPRX90PZDHrWMoEd2Jn+2x3Rex-b2J0+2CZOSA@mail.gmail.com>
-Subject: Re: [PATCH] fix the code style errors in sn9c102
-To: Jinqiang Zeng <jinqiangzeng@gmail.com>
-Cc: Luca Risolia <luca.risolia@studio.unibo.it>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-media@vger.kernel.org,
-        devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 19 Apr 2014 02:55:21 -0400
+Message-ID: <1397890512.19331.21.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH] ipc/shm: Increase the defaults for SHMALL, SHMMAX to
+ infinity
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
+        aswin@hp.com, linux-mm@kvack.org, mtk.manpages@gmail.com
+Date: Fri, 18 Apr 2014 23:55:12 -0700
+In-Reply-To: <1397812720-5629-1-git-send-email-manfred@colorfullife.com>
+References: <1397812720-5629-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 11:09 AM, Jinqiang Zeng <jinqiangzeng@gmail.com> wrote:
-> ---
->  drivers/staging/media/sn9c102/sn9c102.h            |   30 +-
->  drivers/staging/media/sn9c102/sn9c102_core.c       |  342 ++++++++++----------
->  drivers/staging/media/sn9c102/sn9c102_devtable.h   |   22 +-
->  drivers/staging/media/sn9c102/sn9c102_hv7131d.c    |   22 +-
->  drivers/staging/media/sn9c102/sn9c102_hv7131r.c    |   22 +-
->  drivers/staging/media/sn9c102/sn9c102_mi0343.c     |   30 +-
->  drivers/staging/media/sn9c102/sn9c102_mi0360.c     |   30 +-
->  drivers/staging/media/sn9c102/sn9c102_ov7630.c     |   22 +-
->  drivers/staging/media/sn9c102/sn9c102_ov7660.c     |   22 +-
->  drivers/staging/media/sn9c1
+On Fri, 2014-04-18 at 11:18 +0200, Manfred Spraul wrote:
+> System V shared memory
+> 
+> a) can be abused to trigger out-of-memory conditions and the standard
+>    measures against out-of-memory do not work:
+> 
+>     - it is not possible to use setrlimit to limit the size of shm segments.
+> 
+>     - segments can exist without association with any processes, thus
+>       the oom-killer is unable to free that memory.
+> 
+> b) is typically used for shared information - today often multiple GB.
+>    (e.g. database shared buffers)
+> 
+> The current default is a maximum segment size of 32 MB and a maximum total
+> size of 8 GB. This is often too much for a) and not enough for b), which
+> means that lots of users must change the defaults.
+> 
+> This patch increases the default limits to ULONG_MAX, which is perfect for
+> case b). The defaults are used after boot and as the initial value for
+> each new namespace.
+> 
+> Admins/distros that need a protection against a) should reduce the limits
+> and/or enable shm_rmid_forced.
+> 
+> Further notes:
+> - The patch only changes the boot time default, overrides behave as before:
+> 	# sysctl kernel/shmall=33554432
+>   would recreate the previous limit for SHMMAX (for the current namespace).
+> 
+> - Disabling sysv shm allocation is possible with:
+> 	# sysctl kernel.shmall=0
+>   (not a new feature, also per-namespace)
+> 
+> - ULONG_MAX is not really infinity, but 18 Exabyte segment size and
+>   75 Zettabyte total size. This should be enough for the next few weeks.
+>   (assuming a 64-bit system with 4k pages)
+> 
+> Risks:
+> - The patch breaks installations that use "take current value and increase
+>   it a bit". [seems to exist, http://marc.info/?l=linux-mm&m=139638334330127]
 
-Hi, Jinqiang,
+This really scares me. The probability of occurrence is now much higher,
+and not just theoretical. It would legitimately break userspace.
 
-you just missed something.
-1. a "Signed-off-by" line, if you use git, git-format-patch is a good tool.;-)
-2. better add a module name in cover later, like this:
-     "sn9c102: fix the coding style errors"
-3. maybe some changelog is good, but for this patch, leaving it out is OK.
-
-You would better read the "Documentation/SubmittingPatches" .
-
-Thanks,
-Jianyu Zhan
