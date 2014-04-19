@@ -1,90 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753718AbaDSCQz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 18 Apr 2014 22:16:55 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38077 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751429AbaDSCQv (ORCPT
+	id S1753950AbaDSCvh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 18 Apr 2014 22:51:37 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46344 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751550AbaDSCvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 18 Apr 2014 22:16:51 -0400
-Date: Sat, 19 Apr 2014 03:16:46 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Fengguang Wu <fengguang.wu@intel.com>, tytso@mit.edu
-Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15
-Message-ID: <20140419021646.GO18016@ZenIV.linux.org.uk>
-References: <87ppkl1xb7.fsf@x220.int.ebiederm.org>
- <20140413215242.GP18016@ZenIV.linux.org.uk>
- <87y4z8uzqw.fsf_-_@x220.int.ebiederm.org>
- <87ppkhc4pp.fsf@x220.int.ebiederm.org>
- <87ha5r3emw.fsf_-_@x220.int.ebiederm.org>
- <20140417202237.GA18016@ZenIV.linux.org.uk>
- <87tx9rwsz4.fsf@x220.int.ebiederm.org>
- <20140417221203.GC18016@ZenIV.linux.org.uk>
- <20140418003725.GE18016@ZenIV.linux.org.uk>
- <20140419013526.GN18016@ZenIV.linux.org.uk>
+	Fri, 18 Apr 2014 22:51:33 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <nsekhar@ti.com>
+CC: <dmaengine@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Joel Fernandes <joelf@ti.com>
+Subject: [PATCH] dmaengine: edma: Add DMA memcpy support
+Date: Fri, 18 Apr 2014 21:50:33 -0500
+Message-ID: <1397875833-31345-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140419013526.GN18016@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 02:35:26AM +0100, Al Viro wrote:
+We add DMA memcpy support to EDMA driver. Successful tests performed using
+dmatest kernel module. Copy alignment is set to DMA_SLAVE_BUSWIDTH_4_BYTES and
+users must ensure length is aligned so that copy is performed fully.
 
-> My apologies for confusion - I have not looked at your last commit.
-> I *really* don't like that solution, but it probably does close that
-> particular problem.  Consider that objection withdrawn (modulo "you
-> have created a bisect hazard here, that part of series needs to be
-> reordered").
-> 
-> I still don't think that this is the right approach.  Hell knows ;-/
-> Maybe you are right about offloading auto-close to a wq...  The whole
-> mnt_pin/mnt_unpin is bloody ugly, especially with multiple references
-> held by kernel/acct.c-opened files ;-/
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ drivers/dma/edma.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
 
-Actually, it's worse than ugly.  Consider the following race:
-* umount(2) decides that victim isn't busy and does everything up to
-the final mntput_no_expire().
-* acct(NULL) is called, and gets to
-        if (old_acct) {
-                mnt_unpin(old_acct->f_path.mnt);
-                spin_unlock(&acct_lock);   
-                do_acct_process(acct, old_ns, old_acct);
-                filp_close(old_acct, NULL);
-                spin_lock(&acct_lock);
-        }
-It starts writing and blocks.  Now mnt_pinned is 0 and refcount is 1, so
-mntput_no_expire() from umount(2) does not see anything untowards and just
-returns.  Eventually, write finishes and acct(2) does filp_close().  Fine,
-but by that point umount(2) has already returned to userland and we have
-the problem I'd been complaining about in your solution.  And your patches
-won't go anywhere near wait_for_completion() in that case, so they don't
-close that hole either...
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+index 25a75e2..072f642 100644
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -378,6 +378,11 @@ static int edma_config_pset(struct dma_chan *chan, struct edmacc_param *pset,
+ 		src_cidx = 0;
+ 		dst_bidx = acnt;
+ 		dst_cidx = cidx;
++	} else if (direction == DMA_MEM_TO_MEM)  {
++		src_bidx = acnt;
++		src_cidx = cidx;
++		dst_bidx = acnt;
++		dst_cidx = cidx;
+ 	} else {
+ 		dev_err(dev, "%s: direction not implemented yet\n", __func__);
+ 		return -EINVAL;
+@@ -498,6 +503,44 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
+ 	return vchan_tx_prep(&echan->vchan, &edesc->vdesc, tx_flags);
+ }
+ 
++struct dma_async_tx_descriptor *edma_prep_dma_memcpy(
++	struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
++	size_t len, unsigned long tx_flags)
++{
++	int ret;
++	struct edma_desc *edesc;
++	struct device *dev = chan->device->dev;
++	struct edma_chan *echan = to_edma_chan(chan);
++
++	if (unlikely(!echan || !len))
++		return NULL;
++
++	edesc = kzalloc(sizeof(*edesc) + sizeof(edesc->pset[0]), GFP_ATOMIC);
++	if (!edesc) {
++		dev_dbg(dev, "Failed to allocate a descriptor\n");
++		return NULL;
++	}
++
++	edesc->pset_nr = 1;
++
++	ret = edma_config_pset(chan, &edesc->pset[0], src, dest, 1,
++			       DMA_SLAVE_BUSWIDTH_4_BYTES, len, DMA_MEM_TO_MEM);
++	if (ret < 0)
++		return NULL;
++
++	edesc->absync = ret;
++
++	/*
++	 * Enable intermediate transfer chaining to re-trigger channel
++	 * on completion of every TR, and enable transfer-completion
++	 * interrupt on completion of the whole transfer.
++	 */
++	edesc->pset[0].opt |= ITCCHEN;
++	edesc->pset[0].opt |= TCINTEN;
++
++	return vchan_tx_prep(&echan->vchan, &edesc->vdesc, tx_flags);
++}
++
+ static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
+ 	struct dma_chan *chan, dma_addr_t buf_addr, size_t buf_len,
+ 	size_t period_len, enum dma_transfer_direction direction,
+@@ -875,6 +918,7 @@ static void edma_dma_init(struct edma_cc *ecc, struct dma_device *dma,
+ {
+ 	dma->device_prep_slave_sg = edma_prep_slave_sg;
+ 	dma->device_prep_dma_cyclic = edma_prep_dma_cyclic;
++	dma->device_prep_dma_memcpy = edma_prep_dma_memcpy;
+ 	dma->device_alloc_chan_resources = edma_alloc_chan_resources;
+ 	dma->device_free_chan_resources = edma_free_chan_resources;
+ 	dma->device_issue_pending = edma_issue_pending;
+@@ -883,6 +927,12 @@ static void edma_dma_init(struct edma_cc *ecc, struct dma_device *dma,
+ 	dma->device_slave_caps = edma_dma_device_slave_caps;
+ 	dma->dev = dev;
+ 
++	/*
++	 * code using dma memcpy must make sure alignment of
++	 * length is at dma->copy_align boundary.
++	 */
++	dma->copy_align = DMA_SLAVE_BUSWIDTH_4_BYTES;
++
+ 	INIT_LIST_HEAD(&dma->channels);
+ }
+ 
+@@ -911,6 +961,7 @@ static int edma_probe(struct platform_device *pdev)
+ 	dma_cap_zero(ecc->dma_slave.cap_mask);
+ 	dma_cap_set(DMA_SLAVE, ecc->dma_slave.cap_mask);
+ 	dma_cap_set(DMA_CYCLIC, ecc->dma_slave.cap_mask);
++	dma_cap_set(DMA_MEMCPY, ecc->dma_slave.cap_mask);
+ 
+ 	edma_dma_init(ecc, &ecc->dma_slave, &pdev->dev);
+ 
+-- 
+1.7.9.5
 
-Not your fault, and not that scary wrt dirty shutdown, but it still needs
-fixing.  While we are at it, consider what happens if something is busy
-in acct_process() while we are hitting that race.  This filp_close()
-will happen before the final fput(), so the actual fs shutdown is moved
-to whatever exiting process that was in acct_process() at that point.
-Might be more than one of those, even - then the last one to finish
-writing will end up carrying the bucket.
-
-Actually, even without umount(2) in the mix (just acct(NULL) vs. exiting
-processes) it's somewhat fishy - we are, after all, calling ->flush()
-before the final entries are written.
-
-That, BTW, is another reason why "let's write one last entry on acct(NULL)"
-is bogus - userland tools might hope to use that to get information about the
-command that has stopped logging, but it is not guaranteed to be the last
-one.
