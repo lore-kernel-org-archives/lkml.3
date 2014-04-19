@@ -1,181 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751244AbaDSO3r (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 10:29:47 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:42347 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983AbaDSO3o (ORCPT
+	id S1751957AbaDSOeT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 10:34:19 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:58829 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065AbaDSOeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 10:29:44 -0400
+	Sat, 19 Apr 2014 10:34:15 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and dma-coherent
+Date: Sat, 19 Apr 2014 10:32:45 -0400
+Message-ID: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <CAGTfZH0Qwpup_wiyLjFg0EjeiK7UjMDMR3TUhB+uT86+sZboSg@mail.gmail.com>
-References: <1397781160-744-1-git-send-email-sangjung.woo@samsung.com>
-	<1397781160-744-2-git-send-email-sangjung.woo@samsung.com>
-	<CAGTfZH3L-FZ4+cNHYMpuRqWSbcvEZoOYQdJzxOK8yLofFc5dVw@mail.gmail.com>
-	<535246ED.4090701@samsung.com>
-	<CAGTfZH0Qwpup_wiyLjFg0EjeiK7UjMDMR3TUhB+uT86+sZboSg@mail.gmail.com>
-Date: Sat, 19 Apr 2014 23:29:43 +0900
-Message-ID: <CAGTfZH1vuooC5QoQqyBuQPx7hL_Brn9C+J6bMLtFh8HbJ2+sUw@mail.gmail.com>
-Subject: Re: [PATCHv3 1/8] extcon: Add resource-managed extcon register function
-From: Chanwoo Choi <cwchoi00@gmail.com>
-To: Sangjung <sangjung.woo@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>, again4you@gmail.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Here is an updated version of [2] based on discussion. Series introduces
+support for setting up dma parameters based on device tree properties
+like 'dma-ranges' and 'dma-coherent' and also update to ARM 32 bit port.
+Earlier version of the same series is here [1].
 
-On Sat, Apr 19, 2014 at 10:36 PM, Chanwoo Choi <cwchoi00@gmail.com> wrote:
-> Hi,
->
-> On Sat, Apr 19, 2014 at 6:50 PM, Sangjung <sangjung.woo@samsung.com> wrote:
->> Hi Chanwoo.
->>
->> Thanks for your comments. I also add my opinion too.
->>
->>
->>
->> On 04/19/2014 04:13 PM, Chanwoo Choi wrote:
->>>
->>> Hi Sangjung,
->>>
->>> On Fri, Apr 18, 2014 at 9:32 AM, Sangjung Woo <sangjung.woo@samsung.com>
->>> wrote:
->>>>
->>>> Add resource-managed extcon device register function for convenience.
->>>> For example, if a extcon device is attached with new
->>>> devm_extcon_dev_register(), that extcon device is automatically
->>>> unregistered on driver detach.
->>>>
->>>> Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
->>>> ---
->>>>   drivers/extcon/extcon-class.c |   72
->>>> +++++++++++++++++++++++++++++++++++++++++
->>>>   include/linux/extcon.h        |   17 ++++++++++
->>>>   2 files changed, 89 insertions(+)
->>>>
->>>> diff --git a/drivers/extcon/extcon-class.c
->>>> b/drivers/extcon/extcon-class.c
->>>> index 7ab21aa..e177edb6 100644
->>>> --- a/drivers/extcon/extcon-class.c
->>>> +++ b/drivers/extcon/extcon-class.c
->>>> @@ -819,6 +819,78 @@ void extcon_dev_unregister(struct extcon_dev *edev)
->>>>   }
->>>>   EXPORT_SYMBOL_GPL(extcon_dev_unregister);
->>>>
->>>> +
->>>> +/*
->>>> + * Device resource management
->>>> + */
->>>
->>> This comment is un-necessary because this patchset(v3) remove 'struct
->>> extcon_devres'.
->>>
->>>> +static void devm_extcon_dev_release(struct device *dev, void *res)
->>>> +{
->>>> +       struct extcon_dev *devres = res;
->>>> +
->>>> +       extcon_dev_unregister(devres);
->>>
->>> I prefer following function call withou defining separate 'devres'
->>> variable.
->>> But, this casting on the first argument is only for readability.
->>>    extcon_dev_unregister((strcut extcon_dev *)res);
->>>
->> OK. I'll fix it.
->>
->>
->>>> +}
->>>> +
->>>> +static int devm_extcon_dev_match(struct device *dev, void *res, void
->>>> *data)
->>>> +{
->>>> +       struct extcon_dev *devres = res;
->>>> +       struct extcon_dev *match = data;
->>>> +       return devres == match;
->>>
->>> To simplify code, I think you could change checking code as following:
->>>              return res == data;
->>
->> Right. Simple is better than others.
->>
->>
->>>> +}
->>>> +
->>>> +/**
->>>> + * devm_extcon_dev_register() - Resource-managed extcon_dev_register()
->>>> + * @dev:       device to allocate extcon device
->>>> + * @edev:      the new extcon device to register
->>>> + *
->>>> + * Managed extcon_dev_register() function. If extcon device is attached
->>>> with
->>>> + * this function, that extcon device is automatically unregistered on
->>>> driver
->>>> + * detach. Internally this function calls extcon_dev_register()
->>>> function.
->>>> + * To get more information, refer that function.
->>>> + *
->>>> + * If extcon device is registered with this function and the device
->>>> needs to be
->>>> + * unregistered separately, devm_extcon_dev_unregister() should be used.
->>>> + *
->>>> + * RETURNS:
->>>> + * 0 on success, negative error number on failure.
->>>> + */
->>>> +int devm_extcon_dev_register(struct device *dev, struct extcon_dev
->>>> *edev)
->>>> +{
->>>> +       struct extcon_dev *devres;
->>>
->>> The 'devres' in this function don't mean 'device resource structure'.
->>> So I think it is not proper name.
->>> I think you should use other general name (e.g.,  'ptr' or 'res'
->>> instead of 'devres')
->>>
->>>> +       int ret;
->>>> +
->>>> +       devres = devres_alloc(devm_extcon_dev_release, sizeof(*devres)
->>>
->>> Other subsytem used double pointer to get device resource from
->>> devres_alloc() instead of
->>> single pointer.(devres is single pointer)  I can't find subsystem
->>> using single pointer of devm function.
->>> First of all, We have to analyze the correct reason using only double
->>> pointer instead of single pointer whether single pointer use is good
->>> or not.
->>
->>
->> IMO, other subsystem should return the memory pointer that is allocated by
->> devres_alloc().
->> However, in our case, we need not do that since the pointer is used only in
->> extcon core.
->> You can refer the way that I did to gpio subsystem (devm_gpio_request() in
->> /drivers/gpio/devres.c).
->
-> As you comment, I checked 'devm_gpio_request' in drivers/gpio/devres.c
-> . There are a little difference between devm_extcon_dev_register and
-> devm_gpio_request.
->
-> The second argument (unsigned gpio) is not pointer type in
-> devm_gpio_request() But, devm_extcon_dev_register() needs the pointer
-> type for second argument(struct extcon_dev *edev).
+The 'dma-ranges' helps to take care of few DMAable system memory restrictions
+by use of dma_pfn_offset which we maintain now per device. Arch code then
+uses it for dma address translations for such cases. We update the
+dma_pfn_offset accordingly during DT the device creation process.The
+'dma-coherent' property is used to setup arch's coherent dma_ops.
 
-This patch have to use double pointer for extcon device from devres_alloc().
+After some off-list discussion with RMK and Arnd, I have now dropped the
+controversial dma_mask setup code from the series which actually isn't blocking
+me as such. Considering rest of the parts of the series are already aligned,
+am hoping to get this version merged for 3.16 merge window.
 
-Because in this following case:
-struct extcon_dev *ptr;
+We agreed in last discussion that drivers have the ultimate
+responsibility to setup the correct dma mask but then we need to have some
+means to see if bus can support what driver has requested for a case where
+driver request for bigger mask than what bus supports. I can follow up on
+the mask topic if we have broken drivers.
 
-ptr = devres_alloc(...)
-...
-ptr = edev;
--> edev would override the 'ptr' which is allocated memory from devres_alloc()
-In result, this patch cannot access original allocated memory for 'ptr'.
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Grygorii Strashko <grygorii.strashko@ti.com>
 
-Thanks,
-Chanwoo Choi
+Grygorii Strashko (2):
+  of: introduce of_dma_get_range() helper
+  ARM: dma: Use dma_pfn_offset for dma address translation
+
+Santosh Shilimkar (5):
+  device: introduce per device dma_pfn_offset
+  of: introduce of_dma_is_coherent() helper
+  of: configure the platform device dma parameters
+  ARM: dma: implement set_arch_dma_coherent_ops()
+  ARM: mm: use phys_addr_t in __dma_page_[cpu_to_dev/dev_to_cpu]
+
+ arch/arm/include/asm/dma-mapping.h |   24 +++++-
+ arch/arm/mm/dma-mapping.c          |    4 +-
+ drivers/of/platform.c              |  151 ++++++++++++++++++++++++++++++++++++
+ include/linux/device.h             |    2 +
+ include/linux/dma-mapping.h        |    7 ++
+ include/linux/of_platform.h        |   15 ++++
+ 6 files changed, 197 insertions(+), 6 deletions(-)
+
+Regards,
+Santosh
+
+[1] http://www.spinics.net/lists/arm-kernel/msg311678.html
+[2] https://lkml.org/lkml/2014/3/6/186 
+-- 
+1.7.9.5
+
