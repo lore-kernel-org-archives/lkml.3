@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890AbaDSU2w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 16:28:52 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:60099 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688AbaDSU2m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 16:28:42 -0400
-Date: Sat, 19 Apr 2014 22:28:40 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCHv3 14/14] DTS: ARM: OMAP3-N900: Add modem support
-Message-ID: <20140419202840.GN5148@amd.pavel.ucw.cz>
-References: <1396053110-21639-1-git-send-email-sre@kernel.org>
- <1396053110-21639-15-git-send-email-sre@kernel.org>
+	id S1751827AbaDSUdr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 16:33:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13744 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751204AbaDSUdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 16:33:39 -0400
+Date: Sat, 19 Apr 2014 16:33:36 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@file01.intranet.prod.int.rdu2.redhat.com
+To: "Theodore Ts'o" <tytso@mit.edu>
+cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: an infinite loop in ext4 in 3.14
+In-Reply-To: <20140417211627.GC4979@thunk.org>
+Message-ID: <alpine.LRH.2.02.1404191438120.22143@file01.intranet.prod.int.rdu2.redhat.com>
+References: <alpine.LRH.2.02.1404171510330.22570@file01.intranet.prod.int.rdu2.redhat.com> <20140417211627.GC4979@thunk.org>
+User-Agent: Alpine 2.02 (LRH 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1396053110-21639-15-git-send-email-sre@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat 2014-03-29 01:31:50, Sebastian Reichel wrote:
-> Add modem device tree data to Nokia N900's DTS file.
+
+
+On Thu, 17 Apr 2014, Theodore Ts'o wrote:
+
+> On Thu, Apr 17, 2014 at 03:23:13PM -0400, Mikulas Patocka wrote:
+> > 
+> > I hit a bug in ext4 - jbd2 was stuck in an infinite loop when remounting 
+> > the root filesystem read-only during shutdown.
 > 
-> Signed-off-by: Sebastian Reichel <sre@kernel.org>
+> Is this at all repeatable?  I suspect what happened is that we're not
+> checking the error return from jbd2_log_do_checkpoint(), and if it ran
+> into an error doing the jbd2_log_do_checkpoint --- for example, if it
+> wasn't able to write to the journal --- say, because __wait_cp_io()
+> returned -EIO, we might be spinning in the while loop in jbd2_journal_flush:
+> 
+> > while (!err && journal->j_checkpoint_transactions != NULL) {
+> 
+> 
+> (as you suspected).
+> 
+> I can add some error checking, but it would be interesting to know if
+> you can easily reproduce the problem so we can confirm if that's what
+> was really going on.
+> 
+> Regards,
+> 
+> 						- Ted
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Hi
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+It turned out that the computer had bad memory, there were other stability 
+issues - so you can ignore this bug report.
+
+Mikulas
