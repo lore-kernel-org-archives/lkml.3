@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943AbaDSWeO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 18:34:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65234 "EHLO mx1.redhat.com"
+	id S1754996AbaDSWnK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 18:43:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52696 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270AbaDSWeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 18:34:07 -0400
-Date: Sun, 20 Apr 2014 00:33:56 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
-        acme@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf test x86: Fit memory leak in sample_ustack()
-Message-ID: <20140419223356.GB6234@krava.redhat.com>
-References: <1397920601-27712-1-git-send-email-standby24x7@gmail.com>
- <20140419221913.GA6234@krava.redhat.com>
+	id S1751270AbaDSWnB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 18:43:01 -0400
+Message-ID: <5352FBC8.7030704@zytor.com>
+Date: Sat, 19 Apr 2014 15:42:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140419221913.GA6234@krava.redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Matt Fleming <matt@console-pimps.org>, Ingo Molnar <mingo@kernel.org>
+CC: Leif Lindholm <leif.lindholm@linaro.org>, Roy Franz <roy.franz@linaro.org>,
+        Mark Salter <msalter@redhat.com>, linux-efi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] EFI changes for v3.16
+References: <20140419100653.GA26088@console-pimps.org>
+In-Reply-To: <20140419100653.GA26088@console-pimps.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 20, 2014 at 12:19:13AM +0200, Jiri Olsa wrote:
-> On Sun, Apr 20, 2014 at 12:16:41AM +0900, Masanari Iida wrote:
-> > buf is not freed, when kernel failed to get stack map
-> > and return.
-> > 
-> > Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+On 04/19/2014 03:06 AM, Matt Fleming wrote:
+> Hi folks,
 > 
-> Acked-by: Jiri Olsa <jolsa@redhat.com>
+> Please pull the following changes for v3.16. I'd like to get these in
+> early so that they've got plenty of time to bake in linux-next. In
+> particular, the ARM folks have had a hard time getting the generic EFI
+> cleanups/improvements picked up via other trees.
 > 
-> thanks,
-> jirka
+> Obviously by taking these through tip we're creating a dependency with
+> whatever tree the ARM patches live in. Do we need to inform Stephen
+> Rothwell explicitly of this dependency? How should we handle things when
+> the v3.16 merge window opens?
 > 
-> > ---
-> >  tools/perf/arch/x86/tests/dwarf-unwind.c | 1 +
-> >  1 file changed, 1 insertion(+)
-> > 
-> > diff --git a/tools/perf/arch/x86/tests/dwarf-unwind.c b/tools/perf/arch/x86/tests/dwarf-unwind.c
-> > index b602ad9..68f2711 100644
-> > --- a/tools/perf/arch/x86/tests/dwarf-unwind.c
-> > +++ b/tools/perf/arch/x86/tests/dwarf-unwind.c
-> > @@ -26,6 +26,7 @@ static int sample_ustack(struct perf_sample *sample,
-> >  	map = map_groups__find(&thread->mg, MAP__FUNCTION, (u64) sp);
-> >  	if (!map) {
-> >  		pr_debug("failed to get stack map\n");
-> > +		kfree(buf);
 
-and changing this to free(buf) ;-)
+It doesn't hurt to inform Stephen, although I think it will simply fall
+out automatically since he uses git to merge and git will recognize the
+graph.
 
-jirka
+During the merge window, it means they should not push their patches
+until Linus has accepted the precondition patches from the tip tree.
+Since Ingo and I try to push most of the tip tree as early as possible
+in the merge window, this is usually not a problem.
 
-> >  		return -1;
-> >  	}
-> >  
-> > -- 
-> > 1.9.2.468.g3f0c02a
-> > 
+	-hpa
+
