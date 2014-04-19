@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908AbaDSQP4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 12:15:56 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:56313 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453AbaDSQPy (ORCPT
+	id S1754981AbaDSQWF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 12:22:05 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:51707 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751189AbaDSQWA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 12:15:54 -0400
-Date: Sat, 19 Apr 2014 18:15:52 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Geyslan =?iso-8859-1?Q?Greg=F3rio?= Bem <geyslan@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "open list:FILESYSTEMS (VFS...), linux-kernel@vger.kernel.org (open
-	list)" <linux-fsdevel@vger.kernel.org>,
-        kernel-br <kernel-br@googlegroups.com>,
-        kernelnewbies <Kernelnewbies@kernelnewbies.org>, jikos@jikos.cz
-Subject: Re: [RFC] Only a.out QMAGIC format is working
-Message-ID: <20140419161552.GB27776@amd.pavel.ucw.cz>
-References: <CAGG-pURwpGGFyCp-htffegnVhf1VwAke1XPrC+GirXKy-HhqJA@mail.gmail.com>
+	Sat, 19 Apr 2014 12:22:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGG-pURwpGGFyCp-htffegnVhf1VwAke1XPrC+GirXKy-HhqJA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAF1ivSa6_ir0LwiydugzSdEqNoVy7evbb7N6QX_02H32A1dwmw@mail.gmail.com>
+References: <CAF1ivSbZKbDc+rzd+CUqCzNmSgZmZTE-QeSU-2WmSiuEs-Kw_w@mail.gmail.com>
+ <20140409194742.GC26782@laptop.programming.kicks-ass.net> <20140409200836.GE26782@laptop.programming.kicks-ass.net>
+ <CAF1ivSa6_ir0LwiydugzSdEqNoVy7evbb7N6QX_02H32A1dwmw@mail.gmail.com>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+Date: Sat, 19 Apr 2014 12:21:28 -0400
+X-Google-Sender-Auth: acQ-AP7bb8xHE4j_gdS5wZHiRWE
+Message-ID: <CAP=VYLp61h_i+RyuUfowO9CqjV6ohMZ=FSgqQbxv6WQjXR1_6g@mail.gmail.com>
+Subject: Re: current->sched_class->yield_task is NULL, any hint?
+To: Lin Ming <minggr@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, Apr 9, 2014 at 5:39 PM, Lin Ming <minggr@gmail.com> wrote:
+> On Wed, Apr 9, 2014 at 1:08 PM, Peter Zijlstra <peterz@infradead.org> wrote:
 
-> I was researching about old binary formats and did some tests.
-> Meantime, I was able to run sucessfully only the QMAGIC format.
-> Nonetheless, the OMAGIC, NMAGIC and ZMAGIC didn't work anymore.
+[...]
 
-Some time ago, I ran into similar problem, and turning off userspace
-randomization was neccessary... Jiri Kosina might remember details.
+>>>
+>>> Look at that, its calling yield() from a non-preemptible context as
+>>> well.
+>>>
+>>> That code is full of fail.
+>>
+>> *phew* none of that br_igmp_* muck lives in any kernel tree near me so I
+>> can stop worrying :-)
+>
+> It's our internal code.
 
-									Pavel
+In the future, please don't simply call it 3.4-rt when there are a bunch of
+vendor/project/SDK patches also applied, as that can be very misleading
+to the people you are asking for help from.  If it is a hybrid franken-kernel
+then please at least indicate that right at the very beginning.
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Paul.
+--
+
+>
+>>
+>> In any case, it wrongly passes a GFP_WAIT along to netlink_broadcast.
+>
+> I'll fix it.
+> Thanks very much.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
