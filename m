@@ -1,129 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751156AbaDTV5S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 17:57:18 -0400
-Received: from mxip4-inbound.gatech.edu ([130.207.182.13]:2501 "EHLO
-	mxip4-inbound.gatech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750967AbaDTV5P (ORCPT
+	id S1751210AbaDTWA2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 18:00:28 -0400
+Received: from mail-ve0-f171.google.com ([209.85.128.171]:44981 "EHLO
+	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967AbaDTWAZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 17:57:15 -0400
-X-RemoteIP: 130.207.185.163
-X-Group: ZimbraSenderGroup
-X-Policy: $ZIMBRA
-X-MID: 79926639
-X-SBRS: None
-X-IronPort-AV: E=Sophos;i="4.97,894,1389762000"; 
-   d="scan'208";a="79926639"
-X-GT-Spam-Rating: (0%)
-Message-ID: <535442DB.80208@gatech.edu>
-Date: Sun, 20 Apr 2014 17:57:47 -0400
-From: Pranith Kumar <pranith@gatech.edu>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sun, 20 Apr 2014 18:00:25 -0400
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] rcu: cleanup: make rcutorture specific definitions depend
- on config value
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1533887.5nzvy1GCXV@sigyn>
+References: <1609685.QRL9N9sQvX@sigyn>
+	<1533887.5nzvy1GCXV@sigyn>
+Date: Mon, 21 Apr 2014 00:00:24 +0200
+Message-ID: <CADbOyBSNZ3QV7VRZELK3RH-4kVaPga0jrMufAk3P2bXjvqox6Q@mail.gmail.com>
+Subject: Re: [PATCH 12/24] Port hid-lgff to ff-memless-next
+From: Elias Vanderstuyft <elias.vds@gmail.com>
+To: =?UTF-8?B?TWljaGFsIE1hbMO9?= <madcatxster@devoid-pointer.net>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-make rcutorture specific variables in tree.c depend on CONFIG_RCU_TORTURE_TEST
-This avoid having to have them when no torture tests are running.
-Also cleanup some macros which are rcutorture specific.
+On Wed, Apr 9, 2014 at 1:24 PM, Michal Malý
+<madcatxster@devoid-pointer.net> wrote:
+> Port hid-lgff to ff-memless-next
+>
+> Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
+> ---
+>  drivers/hid/Kconfig    |  2 +-
+>  drivers/hid/hid-lgff.c | 63 ++++++++++++++++++++++++++++++++++----------------
+>  2 files changed, 44 insertions(+), 21 deletions(-)
+>
+> diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+> index d1d4e77..c7794ae 100644
+> --- a/drivers/hid/Kconfig
+> +++ b/drivers/hid/Kconfig
+> @@ -356,7 +356,7 @@ config HID_LOGITECH_DJ
+>  config LOGITECH_FF
+>         bool "Logitech force feedback support"
+>         depends on HID_LOGITECH
+> -       select INPUT_FF_MEMLESS
+> +       select INPUT_FF_MEMLESS_NEXT
+>         help
+>           Say Y here if you have one of these devices:
+>           - Logitech WingMan Cordless RumblePad
+> diff --git a/drivers/hid/hid-lgff.c b/drivers/hid/hid-lgff.c
+> index e1394af..b929a3a 100644
+> --- a/drivers/hid/hid-lgff.c
+> +++ b/drivers/hid/hid-lgff.c
+> @@ -31,9 +31,12 @@
+>
+>  #include <linux/input.h>
+>  #include <linux/hid.h>
+> +#include <linux/input/ff-memless-next.h>
+>
+>  #include "hid-lg.h"
+>
+> +#define FF_UPDATE_RATE 50
+> +
+>  struct dev_type {
+>         u16 idVendor;
+>         u16 idProduct;
+> @@ -47,6 +50,13 @@ static const signed short ff_rumble[] = {
+>
+>  static const signed short ff_joystick[] = {
+>         FF_CONSTANT,
+> +       FF_RAMP,
+> +       FF_PERIODIC,
+> +       FF_SQUARE,
+> +       FF_TRIANGLE,
+> +       FF_SINE,
+> +       FF_SAW_UP,
+> +       FF_SAW_DOWN,
+>         -1
+>  };
 
-Tested with rcutorture both in-built and as a module
+Also do the same for the ff_joystick_ac[] array, as it also contains
+the FF_CONSTANT capability.
+
+>
+> @@ -66,45 +76,58 @@ static const struct dev_type devices[] = {
+>         { 0x046d, 0xc295, ff_joystick },
+>  };
+>
+> -static int hid_lgff_play(struct input_dev *dev, void *data, struct ff_effect *effect)
+> +static int hid_lgff_play(struct input_dev *dev, void *data,
+> +                        const struct mlnx_effect_command *command)
+>  {
+>         struct hid_device *hid = input_get_drvdata(dev);
+>         struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
+>         struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
+> -       int x, y;
+> -       unsigned int left, right;
+>
+> -#define CLAMP(x) if (x < 0) x = 0; if (x > 0xff) x = 0xff
+> +       switch (command->cmd) {
+> +       case MLNX_START_COMBINED: {
+> +               const struct mlnx_simple_force *simple_force = &command->u.simple_force;
+> +               /* Scale down from MLNX range */
+> +               const int x = 0x80 - (simple_force->x * 0xff / 0xffff);
+> +               const int y = simple_force->y * 0xff / 0xffff;
+
+This should be concentrated about the center, which is 0x7f (see * in
+next comment.)
+Something like this:
+        const int x = 0x7f - (simple_force->x * 0xff / 0xffff);
+        const int y = 0x7f - (simple_force->y * 0xff / 0xffff);
+
+>
+> -       switch (effect->type) {
+> -       case FF_CONSTANT:
+> -               x = effect->u.ramp.start_level + 0x7f;  /* 0x7f is center */
+
+* Here.
+
+> -               y = effect->u.ramp.end_level + 0x7f;
+> -               CLAMP(x);
+> -               CLAMP(y);
+>                 report->field[0]->value[0] = 0x51;
+>                 report->field[0]->value[1] = 0x08;
+>                 report->field[0]->value[2] = x;
+>                 report->field[0]->value[3] = y;
+>                 dbg_hid("(x, y)=(%04x, %04x)\n", x, y);
+> -               hid_hw_request(hid, report, HID_REQ_SET_REPORT);
+>                 break;
+> +       }
+> +       case MLNX_STOP_COMBINED:
+> +               report->field[0]->value[0] = 0x51;
+> +               report->field[0]->value[1] = 0x08;
+> +               report->field[0]->value[2] = 0;
+> +               report->field[0]->value[3] = 0;
+
+Then this should become the center-position:
+        report->field[0]->value[2] = 0x7f;
+        report->field[0]->value[3] = 0x7f;
+
+> +               break;
+> +       case MLNX_START_RUMBLE: {
+> +               const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
+> +               /* Scale down from MLNX range */
+> +               const unsigned int right = rumble_force->weak * 0xff / 0xffff;
+> +               const unsigned int left = rumble_force->strong * 0xff / 0xffff;
+>
+> -       case FF_RUMBLE:
+> -               right = effect->u.rumble.strong_magnitude;
+> -               left = effect->u.rumble.weak_magnitude;
+> -               right = right * 0xff / 0xffff;
+> -               left = left * 0xff / 0xffff;
+> -               CLAMP(left);
+> -               CLAMP(right);
+>                 report->field[0]->value[0] = 0x42;
+>                 report->field[0]->value[1] = 0x00;
+>                 report->field[0]->value[2] = left;
+>                 report->field[0]->value[3] = right;
+>                 dbg_hid("(left, right)=(%04x, %04x)\n", left, right);
+> -               hid_hw_request(hid, report, HID_REQ_SET_REPORT);
+>                 break;
+>         }
+> +       case MLNX_STOP_RUMBLE:
+> +               report->field[0]->value[0] = 0x42;
+> +               report->field[0]->value[1] = 0x00;
+> +               report->field[0]->value[2] = 0;
+> +               report->field[0]->value[3] = 0;
+> +               break;
+> +       default:
+> +               return -EINVAL;
+> +       }
+> +
+> +       hid_hw_request(hid, report, HID_REQ_SET_REPORT);
+> +
+>         return 0;
+>  }
+>
+> @@ -148,7 +171,7 @@ int lgff_init(struct hid_device* hid)
+>         for (i = 0; ff_bits[i] >= 0; i++)
+>                 set_bit(ff_bits[i], dev->ffbit);
+>
+> -       error = input_ff_create_memless(dev, NULL, hid_lgff_play);
+> +       error = input_ff_create_mlnx(dev, NULL, hid_lgff_play, FF_UPDATE_RATE);
+>         if (error)
+>                 return error;
+>
+> --
+> 1.9.1
+>
+>
+
+These comments might fix the weird behaviour (when effects stopped
+playing) Simon saw when testing the patchset with his Logitech Wingman
+Force 3D.
 
 
-Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
----
- include/linux/rcupdate.h |   13 +++----------
- kernel/rcu/tree.c        |   29 +++++++++++++++++------------
- kernel/rcu/tree_trace.c  |    7 +++++++
- 3 files changed, 27 insertions(+), 22 deletions(-)
-
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index 00a7fd6..b49e46b 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -49,16 +49,8 @@
- extern int rcu_expedited; /* for sysctl */
- #ifdef CONFIG_RCU_TORTURE_TEST
- extern int rcutorture_runnable; /* for sysctl */
--#endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
--
--#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
- void rcutorture_record_test_transition(void);
- void rcutorture_record_progress(unsigned long vernum);
--void do_trace_rcu_torture_read(const char *rcutorturename,
--			       struct rcu_head *rhp,
--			       unsigned long secs,
--			       unsigned long c_old,
--			       unsigned long c);
- #else
- static inline void rcutorture_record_test_transition(void)
- {
-@@ -66,7 +58,9 @@ static inline void rcutorture_record_test_transition(void)
- static inline void rcutorture_record_progress(unsigned long vernum)
- {
- }
--#ifdef CONFIG_RCU_TRACE
-+#endif /* CONFIG_RCU_TORTURE_TEST */
-+
-+#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU) || defined(CONFIG_RCU_TRACE)
- void do_trace_rcu_torture_read(const char *rcutorturename,
- 			       struct rcu_head *rhp,
- 			       unsigned long secs,
-@@ -76,7 +70,6 @@ void do_trace_rcu_torture_read(const char *rcutorturename,
- #define do_trace_rcu_torture_read(rcutorturename, rhp, secs, c_old, c) \
- 	do { } while (0)
- #endif
--#endif
- 
- #define UINT_CMP_GE(a, b)	(UINT_MAX / 2 >= (a) - (b))
- #define UINT_CMP_LT(a, b)	(UINT_MAX / 2 < (a) - (b))
-diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
-index 0c47e30..d1dc83b 100644
---- a/kernel/rcu/tree.c
-+++ b/kernel/rcu/tree.c
-@@ -161,18 +161,6 @@ static void invoke_rcu_core(void);
- static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp);
- 
- /*
-- * Track the rcutorture test sequence number and the update version
-- * number within a given test.  The rcutorture_testseq is incremented
-- * on every rcutorture module load and unload, so has an odd value
-- * when a test is running.  The rcutorture_vernum is set to zero
-- * when rcutorture starts and is incremented on each rcutorture update.
-- * These variables enable correlating rcutorture output with the
-- * RCU tracing information.
-- */
--unsigned long rcutorture_testseq;
--unsigned long rcutorture_vernum;
--
--/*
-  * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
-  * permit this function to be invoked without holding the root rcu_node
-  * structure's ->lock, but of course results can be subject to change.
-@@ -279,6 +267,21 @@ void rcu_bh_force_quiescent_state(void)
- }
- EXPORT_SYMBOL_GPL(rcu_bh_force_quiescent_state);
- 
-+#ifdef CONFIG_RCU_TORTURE_TEST
-+
-+/*
-+ * Track the rcutorture test sequence number and the update version
-+ * number within a given test.  The rcutorture_testseq is incremented
-+ * on every rcutorture module load and unload, so has an odd value
-+ * when a test is running.  The rcutorture_vernum is set to zero
-+ * when rcutorture starts and is incremented on each rcutorture update.
-+ * These variables enable correlating rcutorture output with the
-+ * RCU tracing information.
-+ */
-+unsigned long rcutorture_testseq;
-+unsigned long rcutorture_vernum;
-+
-+
- /*
+Elias
