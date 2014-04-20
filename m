@@ -1,155 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207AbaDTBVe (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 21:21:34 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:42136 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754793AbaDTBVP convert rfc822-to-8bit (ORCPT
+	id S1755239AbaDTBYf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 21:24:35 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:46162 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754793AbaDTBY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 21:21:15 -0400
+	Sat, 19 Apr 2014 21:24:28 -0400
+Date: Sat, 19 Apr 2014 18:24:19 -0700
+From: Zi Shen Lim <zlim.lnx@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] smc91x: fix compile error when SMC_DEBUG >= 2
+Message-ID: <20140420012419.GA12770@gup76>
+References: <1397879250-32041-1-git-send-email-zlim.lnx@gmail.com>
+ <1397880413.3106.2.camel@joe-AO725>
 MIME-Version: 1.0
-In-Reply-To: <20140419190305.GA267@x4>
-References: <alpine.DEB.2.00.1404190810001.7507@skynet.skynet.ie>
-	<20140419190305.GA267@x4>
-Date: Sat, 19 Apr 2014 21:21:14 -0400
-Message-ID: <CADnq5_M9COdOJhOu4_9yRpDoFt3bcc9HVqrvQqnYM3YuTLv15A@mail.gmail.com>
-Subject: Re: [git pull] drm fixes
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Dave Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Description: Re: [PATCH] smc91x: fix compile error when SMC_DEBUG >= 2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1397880413.3106.2.camel@joe-AO725>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 3:03 PM, Markus Trippelsdorf
-<markus@trippelsdorf.de> wrote:
-> On 2014.04.19 at 08:19 +0100, Dave Airlie wrote:
->>
->> Unfortunately this contains no easter eggs, its a bit larger than I'd
->> like, but I included a patch that just moves code from one file to another
->> and I'd like to avoid merge conflicts with that later, so it makes it seem
->> worse than it is,
->
->> Christian König (2):
->>       drm/radeon: apply more strict limits for PLL params v2
->>       drm/radeon: improve PLL params if we don't match exactly v2
->
-> commit f8a2645ecede4eaf90b3d785f2805c8ecb76d43e
-> Author: Christian König <christian.koenig@amd.com>
-> Date:   Wed Apr 16 11:54:21 2014 +0200
->
->     drm/radeon: improve PLL params if we don't match exactly v2
->
-> The commit above causes my monitor to just stay blank after boot.
-> No framebuffer, no Xorg, no nothing. I'm using a Radeon RS780.
+Hi Joe,
 
-Can you try the patch on:
-https://bugs.freedesktop.org/show_bug.cgi?id=77673
+On Fri, Apr 18, 2014 at 09:06:53PM -0700, Joe Perches wrote:
+> On Fri, 2014-04-18 at 20:47 -0700, Zi Shen Lim wrote:
+> > When SMC_DEBUG >= 2, we hit the following compilation error:
+> > 
+> > drivers/net/ethernet/smsc/smc91x.c:85:0:
+> > drivers/net/ethernet/smsc/smc91x.c: In function ‘smc_findirq’:
+> > drivers/net/ethernet/smsc/smc91x.c:1784:9: error: ‘dev’ undeclared (first use in this function)
+> >   DBG(2, dev, "%s: %s\n", CARDNAME, __func__);
+> >          ^
+> > Fix it by passing in the appropriate netdev pointer.
+> 
+> Perhaps verifying the format and args in all cases
+> would help avoid more of these in the future.
 
-Alex
+Sounds good. I can add it as the second patch in the series.
 
->
->
-> Apr 19 20:55:45 x4 kernel: Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
-> Apr 19 20:55:45 x4 kernel: [drm] Initialized drm 1.1.0 20060810
-> Apr 19 20:55:45 x4 kernel: [drm] radeon kernel modesetting enabled.
-> Apr 19 20:55:45 x4 kernel: [drm] initializing kernel modesetting (RS780 0x1002:0x9614 0x1043:0x834D).
-> Apr 19 20:55:45 x4 kernel: [drm] register mmio base: 0xFBEE0000
-> Apr 19 20:55:45 x4 kernel: [drm] register mmio size: 65536
-> Apr 19 20:55:45 x4 kernel: ATOM BIOS: 113
-> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: VRAM: 128M 0x00000000C0000000 - 0x00000000C7FFFFFF (128M used)
-> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: GTT: 512M 0x00000000A0000000 - 0x00000000BFFFFFFF
-> Apr 19 20:55:45 x4 kernel: [drm] Detected VRAM RAM=128M, BAR=128M
-> Apr 19 20:55:45 x4 kernel: [drm] RAM width 32bits DDR
-> Apr 19 20:55:45 x4 kernel: [TTM] Zone  kernel: Available graphics memory: 4083362 kiB
-> Apr 19 20:55:45 x4 kernel: [TTM] Zone   dma32: Available graphics memory: 2097152 kiB
-> Apr 19 20:55:45 x4 kernel: [TTM] Initializing pool allocator
-> Apr 19 20:55:45 x4 kernel: [TTM] Initializing DMA pool allocator
-> Apr 19 20:55:45 x4 kernel: [drm] radeon: 128M of VRAM memory ready
-> Apr 19 20:55:45 x4 kernel: [drm] radeon: 512M of GTT memory ready.
-> Apr 19 20:55:45 x4 kernel: [drm] Loading RS780 Microcode
-> Apr 19 20:55:45 x4 kernel: == power state 0 ==
-> Apr 19 20:55:45 x4 kernel:      ui class: none
-> Apr 19 20:55:45 x4 kernel:      internal class: boot
-> Apr 19 20:55:45 x4 kernel:      caps: video
-> Apr 19 20:55:45 x4 kernel:      uvd    vclk: 0 dclk: 0
-> Apr 19 20:55:45 x4 kernel:              power level 0    sclk: 50000 vddc_index: 2
-> Apr 19 20:55:45 x4 kernel:              power level 1    sclk: 50000 vddc_index: 2
-> Apr 19 20:55:45 x4 kernel:      status: c r b
-> Apr 19 20:55:45 x4 kernel: == power state 1 ==
-> Apr 19 20:55:45 x4 kernel:      ui class: performance
-> Apr 19 20:55:45 x4 kernel:      internal class: none
-> Apr 19 20:55:45 x4 kernel:      caps: video
-> Apr 19 20:55:45 x4 kernel:      uvd    vclk: 0 dclk: 0
-> Apr 19 20:55:45 x4 kernel:              power level 0    sclk: 50000 vddc_index: 1
-> Apr 19 20:55:45 x4 kernel:              power level 1    sclk: 70000 vddc_index: 2
-> Apr 19 20:55:45 x4 kernel:      status:
-> Apr 19 20:55:45 x4 kernel: == power state 2 ==
-> Apr 19 20:55:45 x4 kernel:      ui class: none
-> Apr 19 20:55:45 x4 kernel:      internal class: uvd
-> Apr 19 20:55:45 x4 kernel:      caps: video
-> Apr 19 20:55:45 x4 kernel:      uvd    vclk: 53300 dclk: 40000
-> Apr 19 20:55:45 x4 kernel:              power level 0    sclk: 50000 vddc_index: 1
-> Apr 19 20:55:45 x4 kernel:              power level 1    sclk: 50000 vddc_index: 1
-> Apr 19 20:55:45 x4 kernel:      status:
-> Apr 19 20:55:45 x4 kernel: [drm] radeon: dpm initialized
-> Apr 19 20:55:45 x4 kernel: [drm] GART: num cpu pages 131072, num gpu pages 131072
-> Apr 19 20:55:45 x4 kernel: [drm] PCIE GART of 512M enabled (table at 0x00000000C0040000).
-> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: WB enabled
-> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: fence driver on ring 0 use gpu addr 0x00000000a0000c00 and cpu addr 0xffff8800db8d0c00
-> Apr 19 20:55:45 x4 kernel: [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
-> Apr 19 20:55:45 x4 kernel: [drm] Driver supports precise vblank timestamp query.
-> Apr 19 20:55:45 x4 kernel: [drm] radeon: irq initialized.
-> Apr 19 20:55:45 x4 kernel: [drm] ring test on 0 succeeded in 1 usecs
-> Apr 19 20:55:45 x4 kernel: [drm] ib test on ring 0 succeeded in 0 usecs
-> Apr 19 20:55:45 x4 kernel: [drm] Radeon Display Connectors
-> Apr 19 20:55:45 x4 kernel: [drm] Connector 0:
-> Apr 19 20:55:45 x4 kernel: [drm]   VGA-1
-> Apr 19 20:55:45 x4 kernel: [drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
-> Apr 19 20:55:45 x4 kernel: [drm]   Encoders:
-> Apr 19 20:55:45 x4 kernel: [drm]     CRT1: INTERNAL_KLDSCP_DAC1
-> Apr 19 20:55:45 x4 kernel: [drm] Connector 1:
-> Apr 19 20:55:45 x4 kernel: [drm]   DVI-D-1
-> Apr 19 20:55:45 x4 kernel: [drm]   HPD3
-> Apr 19 20:55:45 x4 kernel: [drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
-> Apr 19 20:55:45 x4 kernel: [drm]   Encoders:
-> Apr 19 20:55:45 x4 kernel: [drm]     DFP3: INTERNAL_KLDSCP_LVTMA
-> Apr 19 20:55:45 x4 kernel: switching from power state:
-> Apr 19 20:55:45 x4 kernel:      ui class: none
-> Apr 19 20:55:45 x4 kernel:      internal class: boot
-> Apr 19 20:55:45 x4 kernel:      caps: video
-> Apr 19 20:55:45 x4 kernel:      uvd    vclk: 0 dclk: 0
-> Apr 19 20:55:45 x4 kernel:              power level 0    sclk: 50000 vddc_index: 2
-> Apr 19 20:55:45 x4 kernel:              power level 1    sclk: 50000 vddc_index: 2
-> Apr 19 20:55:45 x4 kernel:      status: c b
-> Apr 19 20:55:45 x4 kernel: switching to power state:
-> Apr 19 20:55:45 x4 kernel:      ui class: performance
-> Apr 19 20:55:45 x4 kernel:      internal class: none
-> Apr 19 20:55:45 x4 kernel:      caps: video
-> Apr 19 20:55:45 x4 kernel:      uvd    vclk: 0 dclk: 0
-> Apr 19 20:55:45 x4 kernel:              power level 0    sclk: 50000 vddc_index: 1
-> Apr 19 20:55:45 x4 kernel:              power level 1    sclk: 70000 vddc_index: 2
-> Apr 19 20:55:45 x4 kernel:      status: r
-> Apr 19 20:55:45 x4 kernel: [drm] fb mappable at 0xF0141000
-> Apr 19 20:55:45 x4 kernel: [drm] vram apper at 0xF0000000
-> Apr 19 20:55:45 x4 kernel: [drm] size 7299072
-> Apr 19 20:55:45 x4 kernel: [drm] fb depth is 24
-> Apr 19 20:55:45 x4 kernel: [drm]    pitch is 6912
-> Apr 19 20:55:45 x4 kernel: fbcon: radeondrmfb (fb0) is primary device
-> Apr 19 20:55:45 x4 kernel: Console: switching to colour frame buffer device 131x105
-> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: fb0: radeondrmfb frame buffer device
-> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: registered panic notifier
-> Apr 19 20:55:45 x4 kernel: [drm] Initialized radeon 2.38.0 20080528 for 0000:01:05.0 on minor 0
->
-> --
-> Markus
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+> ---
+>  drivers/net/ethernet/smsc/smc91x.c | 25 +++++++++++++++----------
+>  1 file changed, 15 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/smsc/smc91x.c b/drivers/net/ethernet/smsc/smc91x.c
+> index d1b4dca..a8302f5 100644
+> --- a/drivers/net/ethernet/smsc/smc91x.c
+> +++ b/drivers/net/ethernet/smsc/smc91x.c
+> @@ -148,16 +148,19 @@ MODULE_ALIAS("platform:smc91x");
+>  #define MII_DELAY		1
+>  
+>  #if SMC_DEBUG > 0
+> -#define DBG(n, dev, args...)				\
+> -	do {						\
+> -		if (SMC_DEBUG >= (n))			\
+> -			netdev_dbg(dev, args);		\
+> -	} while (0)
+> -
+> -#define PRINTK(dev, args...)   netdev_info(dev, args)
+> +#define DBG(n, dev, fmt, ...)				\
+> +do {								\
+> +	if (SMC_DEBUG >= (n))					\
+> +		netdev_dbg(dev, fmt, ##__VA_ARGS__);		\
+> +} while (0)
+> +#define PRINTK(dev, fmt, ...)   netdev_info(dev, fmt, ##__VA_ARGS__)
+>  #else
+> -#define DBG(n, dev, args...)   do { } while (0)
+> -#define PRINTK(dev, args...)   netdev_dbg(dev, args)
+> +#define DBG(n, dev, fmt, ...)				\
+> +do {								\
+> +	if (0)					\
+> +		netdev_dbg(dev, fmt, ##__VA_ARGS__);		\
+> +} while (0)
+> +#define PRINTK(dev, fmt, ...)   netdev_dbg(dev, fmt, ##__VA_ARGS__)
+>  #endif
+>  
+>  #if SMC_DEBUG > 3
+> @@ -191,7 +194,9 @@ static void PRINT_PKT(u_char *buf, int length)
+>  	pr_cont("\n");
+>  }
+>  #else
+> -#define PRINT_PKT(x...)  do { } while (0)
+> +static inline void PRINT_PKT(u_char *buf, int length)
+> +{
+> +}
+>  #endif
+>  
+
+How about the following?
+Ok to add your Signed-off-by as well?
+
+Thanks.
+
+---
+ drivers/net/ethernet/smsc/smc91x.c | 23 ++++++++++++-----------
+ 1 file changed, 12 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/net/ethernet/smsc/smc91x.c b/drivers/net/ethernet/smsc/smc91x.c
+index d1b4dca..796355a 100644
+--- a/drivers/net/ethernet/smsc/smc91x.c
++++ b/drivers/net/ethernet/smsc/smc91x.c
+@@ -147,18 +147,19 @@ MODULE_ALIAS("platform:smc91x");
+  */
+ #define MII_DELAY		1
+ 
+-#if SMC_DEBUG > 0
+-#define DBG(n, dev, args...)				\
+-	do {						\
+-		if (SMC_DEBUG >= (n))			\
+-			netdev_dbg(dev, args);		\
++#define DBG(n, dev, fmt, ...)					\
++	do {							\
++		if (SMC_DEBUG >= (n))				\
++			netdev_dbg(dev, fmt, ##__VA_ARGS__);	\
+ 	} while (0)
+ 
+-#define PRINTK(dev, args...)   netdev_info(dev, args)
+-#else
+-#define DBG(n, dev, args...)   do { } while (0)
+-#define PRINTK(dev, args...)   netdev_dbg(dev, args)
+-#endif
++#define PRINTK(dev, fmt, ...)					\
++	do {							\
++		if (SMC_DEBUG > 0)				\
++			netdev_info(dev, fmt, ##__VA_ARGS__);	\
++		else						\
++			netdev_dbg(dev, fmt, ##__VA_ARGS__);	\
++	} while (0)
+ 
+ #if SMC_DEBUG > 3
+ static void PRINT_PKT(u_char *buf, int length)
+@@ -191,7 +192,7 @@ static void PRINT_PKT(u_char *buf, int length)
+ 	pr_cont("\n");
+ }
+ #else
+-#define PRINT_PKT(x...)  do { } while (0)
++static inline void PRINT_PKT(u_char *buf, int length) { }
+ #endif
+ 
+
