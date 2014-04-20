@@ -1,80 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161152AbaDTDZw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 23:25:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:33093 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755238AbaDTDZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 23:25:44 -0400
-Date: Sat, 19 Apr 2014 22:22:55 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-CC: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 4/8] ARM: mvebu: Add USB3 UTMI support
-Message-ID: <20140420032255.GD26893@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
- <1397816563-9000-5-git-send-email-gregory.clement@free-electrons.com>
+	id S1755262AbaDTDcq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 23:32:46 -0400
+Received: from mail-yk0-f170.google.com ([209.85.160.170]:42755 "EHLO
+	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196AbaDTDcf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 23:32:35 -0400
+Message-ID: <53533FD0.8040602@gmail.com>
+Date: Sat, 19 Apr 2014 22:32:32 -0500
+From: Joel Pelaez Jorge <joelpelaez@gmail.com>
+Organization: DarkSoft Foundation
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="48TaNjbzBVislYPb"
-Content-Disposition: inline
-In-Reply-To: <1397816563-9000-5-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        Andrea Merello <andrea.merello@gmail.com>,
+        Joe Perches <joe@perches.com>, Teodora Baluta <teobaluta@gmail.com>,
+        navin patidar <navinp@cdac.in>, Silvan Jegen <s.jegen@gmail.com>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: rtl8192e: Fix declaration of symbols
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---48TaNjbzBVislYPb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The two declarations with issues in rtl_wx.h:
 
-Hi,
+  * function: struct iw_statistics *r8192_get_wireless_stats();
+  * variable: extern struct iw_handler_def r8192_wx_handlers_def;
 
-On Fri, Apr 18, 2014 at 12:22:39PM +0200, Gregory CLEMENT wrote:
-> The usb3-utmi registers allow to configure the internal USB PHY of the
-> Armada 380/385 SoCs. A small initialization is needed to be able to use
-> the USB3 ports.
->=20
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+The symbol 'r8192_get_wireless_stats' is declared as 'extern'
+but it is only used in the local scope. The declaration is deleted
+of rtl_wx.h, fixing the conflict with the 'extern' and 'static' scope.
 
-looks like this should be a generic drivers/phy/phy-utmi.c driver
+The symbol 'r8192_wx_handlers_def' was fixed of some issues related
+to variable declaration marked as 'extern' implicitly,
+causing this sparse warning:
 
---=20
-balbi
+drivers/staging/rtl8192e/rtl8192e/rtl_wx.c:1323:24: warning: symbol
+'r8192_wx_handlers_def' was not declared. Should it be static?
 
---48TaNjbzBVislYPb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Resolved incluing the fixed header to rtl_wx.c
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Also, isn't declared as constant variable, so it declared as such.
+And delete unnecessary cast in rtl_core.c.
 
-iQIcBAEBAgAGBQJTUz2PAAoJEIaOsuA1yqREO4EP/jNZO1AxWmt82Jibv1FYvn1B
-zZNy8kl8oldc+CARHLI50TdUuN6BEFNQFeusOAVhSkPvkVjRu3/eDAukuZlJTLEN
-hdfR3YUC+30ZpDPPYIqFyPKkEayzh/c5HnMWnRURxnraoi1CYKvHFQu/TDV/zAS+
-QO8AN73mXwtlG7Z9N2f+V+56ocet9PYXAkv+VgOD3DyTuDdbmY7tqxnmwFrm5jpH
-SE1vqic3JKYZlV1Ujali6KEjX79cp2aSh1fmAZqeRfoefkZ2pOGrltvi2mHk6bwZ
-Ky2phO58Wel6tCRk1liPAbGCAF/Wc+5k5Ws5VOT8gvtjYQbTGV1OJvyBLHhC+bpy
-2y8DwcPCB1jP6mr9p1IDTCwP6dS68svewYEtOrO1heW0dDonIfmzoTnVzr/+wHNI
-vqZNw4NW1XR1EYXmOUxdkPBC+jCf1kiqM0zoQ4BxfldVuoylHtLaxpOBDsQmJyqG
-HLyuIgOo7y3utTM7EJhRE6TSR+lk1d/1KbpHkmSxhECxc3vkuL5CjhCL3YZ31HGX
-FEhN2pmtwsRrl2HxM8lzE21QmdWjlPwYkrMbcIBWvldQ8KodETFruavnsZFFJYnj
-64ivZ7YqYey7MiQG0GEeiLD8nzJDL3tBDopWgYPcujgoO8qsEM7pyfTKgdcpBSM/
-YEaNzxfP5wd37SEKdTBK
-=8OR0
------END PGP SIGNATURE-----
+Signed-off-by: Joel Pelaez Jorge <joelpelaez@gmail.com>
+---
+ drivers/staging/rtl8192e/rtl8192e/rtl_core.c | 3 +--
+ drivers/staging/rtl8192e/rtl8192e/rtl_wx.c   | 3 ++-
+ drivers/staging/rtl8192e/rtl8192e/rtl_wx.h   | 3 +--
+ 3 files changed, 4 insertions(+), 5 deletions(-)
 
---48TaNjbzBVislYPb--
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+index c01abc2..fa087b6 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_core.c
+@@ -2926,8 +2926,7 @@ static int rtl8192_pci_probe(struct pci_dev *pdev,
+ 
+ 	dev->netdev_ops = &rtl8192_netdev_ops;
+ 
+-	dev->wireless_handlers = (struct iw_handler_def *)
+-				 &r8192_wx_handlers_def;
++	dev->wireless_handlers = &r8192_wx_handlers_def;
+ 	dev->ethtool_ops = &rtl819x_ethtool_ops;
+ 
+ 	dev->type = ARPHRD_ETHER;
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
+index 498995d..7d8fcde 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.c
+@@ -19,6 +19,7 @@
+ 
+ #include <linux/string.h>
+ #include "rtl_core.h"
++#include "rtl_wx.h"
+ 
+ #define RATE_COUNT 12
+ static u32 rtl8192_rates[] = {
+@@ -1320,7 +1321,7 @@ static struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev)
+ 	return wstats;
+ }
+ 
+-struct iw_handler_def  r8192_wx_handlers_def = {
++const struct iw_handler_def r8192_wx_handlers_def = {
+ 	.standard = r8192_wx_handlers,
+ 	.num_standard = ARRAY_SIZE(r8192_wx_handlers),
+ 	.private = r8192_private_handler,
+diff --git a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h
+index 6a51a25..5839851 100644
+--- a/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h
++++ b/drivers/staging/rtl8192e/rtl8192e/rtl_wx.h
+@@ -24,8 +24,7 @@ struct net_device;
+ struct iw_handler_def;
+ struct iw_statistics;
+ 
+-extern struct iw_handler_def r8192_wx_handlers_def;
+-struct iw_statistics *r8192_get_wireless_stats(struct net_device *dev);
++extern const struct iw_handler_def r8192_wx_handlers_def;
+ u16 rtl8192_11n_user_show_rates(struct net_device *dev);
+ 
+ #endif
+-- 
+1.9.2
+
