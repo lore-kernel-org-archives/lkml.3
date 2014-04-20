@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471AbaDTQYi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 12:24:38 -0400
-Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:24416
-	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751046AbaDTQXm (ORCPT
+	id S1755525AbaDTQ1T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 12:27:19 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:11694
+	"EHLO va3outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755476AbaDTQ1N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 12:23:42 -0400
+	Sun, 20 Apr 2014 12:27:13 -0400
 X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
 X-SpamScore: 3
-X-BigFish: VPS3(z551bizzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2fh95h839hc61hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h906i2673i1155h)
+X-BigFish: VPS3(z551bizzz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzdchz1de098h8275bh1de097hz2fh95h839hc61hd24hf0ah119dh1288h12a5h12a9h12bdh12e5h137ah139eh13b6h1441h14ddh1504h1537h162dh1631h1758h1898h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1e23h1fe8h1ff5h2218h2216h226dh24afh2327h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h906i2673i1155h)
 From: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-To: <leoli@freescale.com>, <balbi@ti.com>, <michal.simek@xilinx.c>
+To: <leoli@freescale.com>, <balbi@ti.com>, <michal.simek@xilinx.com>
 CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
         <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
+        <kalluripunnaiahchoudary@gmail.com>, <kpc528@gmail.com>,
         Punnaiah Choudary Kalluri <punnaia@xilinx.com>
 Subject: [RFC PATCH 1/2] usb: gadget: fsl_udc: Add support for zynq usb device controller
-Date: Sun, 20 Apr 2014 21:53:28 +0530
+Date: Sun, 20 Apr 2014 21:57:04 +0530
 X-Mailer: git-send-email 1.7.4
-In-Reply-To: <1398011009-10978-1-git-send-email-punnaia@xilinx.com>
-References: <1398011009-10978-1-git-send-email-punnaia@xilinx.com>
+In-Reply-To: <1398011225-19835-1-git-send-email-punnaia@xilinx.com>
+References: <1398011225-19835-1-git-send-email-punnaia@xilinx.com>
 X-RCIS-Action: ALLOW
 MIME-Version: 1.0
 Content-Type: text/plain
-Message-ID: <b67542c4-b314-4d8d-ad0c-fcc08da6d65b@CH1EHSMHS041.ehs.local>
+Message-ID: <428dce63-7b2f-4375-8f69-41eadbf0c042@VA3EHSMHS011.ehs.local>
 X-OriginatorOrg: xilinx.com
 X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
