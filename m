@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092AbaDTGZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 02:25:59 -0400
-Received: from ud10.udmedia.de ([194.117.254.50]:45652 "EHLO
-	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589AbaDTGYx (ORCPT
+	id S932081AbaDTHWd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 03:22:33 -0400
+Received: from mailrelay002.isp.belgacom.be ([195.238.6.175]:47786 "EHLO
+	mailrelay002.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751466AbaDTHWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 02:24:53 -0400
-Date: Sun, 20 Apr 2014 08:24:50 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dave Airlie <airlied@linux.ie>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
-Subject: Re: [git pull] drm fixes
-Message-ID: <20140420062450.GA281@x4>
-References: <alpine.DEB.2.00.1404190810001.7507@skynet.skynet.ie>
- <20140419190305.GA267@x4>
- <CADnq5_M9COdOJhOu4_9yRpDoFt3bcc9HVqrvQqnYM3YuTLv15A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CADnq5_M9COdOJhOu4_9yRpDoFt3bcc9HVqrvQqnYM3YuTLv15A@mail.gmail.com>
+	Sun, 20 Apr 2014 03:22:21 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApYIAIlLU1NR86LL/2dsb2JhbABYgwaCXqhsmWKBGRd0gmYcIxiBAiQTiEUBzQ0XjmKEPwEDjmmKBAGKaodlgzM7
+Date: Sun, 20 Apr 2014 09:22:18 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: viro <viro@zeniv.linux.org.uk>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] FS: Use device_initcall
+Message-Id: <20140420092218.37091f597bd32d9a730d6b4f@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014.04.19 at 21:21 -0400, Alex Deucher wrote:
-> On Sat, Apr 19, 2014 at 3:03 PM, Markus Trippelsdorf
-> <markus@trippelsdorf.de> wrote:
-> > On 2014.04.19 at 08:19 +0100, Dave Airlie wrote:
-> >>
-> >> Unfortunately this contains no easter eggs, its a bit larger than I'd
-> >> like, but I included a patch that just moves code from one file to another
-> >> and I'd like to avoid merge conflicts with that later, so it makes it seem
-> >> worse than it is,
-> >
-> >> Christian König (2):
-> >>       drm/radeon: apply more strict limits for PLL params v2
-> >>       drm/radeon: improve PLL params if we don't match exactly v2
-> >
-> > commit f8a2645ecede4eaf90b3d785f2805c8ecb76d43e
-> > Author: Christian König <christian.koenig@amd.com>
-> > Date:   Wed Apr 16 11:54:21 2014 +0200
-> >
-> >     drm/radeon: improve PLL params if we don't match exactly v2
-> >
-> > The commit above causes my monitor to just stay blank after boot.
-> > No framebuffer, no Xorg, no nothing. I'm using a Radeon RS780.
-> 
-> Can you try the patch on:
-> https://bugs.freedesktop.org/show_bug.cgi?id=77673
+Replace deprecated __initcall
 
-I did and it doesn't fix the issue.
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/aio.c          | 2 +-
+ fs/compat_ioctl.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/fs/aio.c b/fs/aio.c
+index 12a3de0e..6279d88 100644
+--- a/fs/aio.c
++++ b/fs/aio.c
+@@ -222,7 +222,7 @@ static int __init aio_setup(void)
+ 
+ 	return 0;
+ }
+-__initcall(aio_setup);
++device_initcall(aio_setup);
+ 
+ static void put_aio_ring_file(struct kioctx *ctx)
+ {
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index e822890..3bfcb0e 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -1633,4 +1633,4 @@ static int __init init_sys32_ioctl(void)
+ 		init_sys32_ioctl_cmp, NULL);
+ 	return 0;
+ }
+-__initcall(init_sys32_ioctl);
++device_initcall(init_sys32_ioctl);
 -- 
-Markus
+1.8.3.2
