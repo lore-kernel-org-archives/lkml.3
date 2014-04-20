@@ -1,51 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751400AbaDTWWf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 18:22:35 -0400
-Received: from mail-ve0-f178.google.com ([209.85.128.178]:44779 "EHLO
-	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751039AbaDTWWd (ORCPT
+	id S1751247AbaDTW21 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 18:28:27 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:31602 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039AbaDTW2Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 18:22:33 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com>
-References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com>
-	<20140417212834.GC17769@csclub.uwaterloo.ca>
-	<CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com>
-Date: Mon, 21 Apr 2014 00:22:32 +0200
-Message-ID: <CAFLxGvxx8_gJ+NAGVn_vZmkVfey45_1qTqAQnxKDCZD0gQsr5w@mail.gmail.com>
-Subject: Re: inotify, new idea?
-From: Richard Weinberger <richard.weinberger@gmail.com>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Jos Huisken <jos.huisken@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 20 Apr 2014 18:28:25 -0400
+Message-ID: <1398032896.19331.25.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 2/6] m68k: call find_vma with the mmap_sem held in
+ sys_cacheflush()
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, zeus@gnu.org,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>
+Date: Sun, 20 Apr 2014 15:28:16 -0700
+In-Reply-To: <CAMuHMdVBZSC3Kvwsw5pa-m8ZAUCjpkF8gjJH1XbOK2iFbU1KEg@mail.gmail.com>
+References: <1397960791-16320-1-git-send-email-davidlohr@hp.com>
+	 <1397960791-16320-3-git-send-email-davidlohr@hp.com>
+	 <CAMuHMdVBZSC3Kvwsw5pa-m8ZAUCjpkF8gjJH1XbOK2iFbU1KEg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 6:15 AM, Michael Kerrisk <mtk.manpages@gmail.com> wrote:
-> On Thu, Apr 17, 2014 at 11:28 PM, Lennart Sorensen
-> <lsorense@csclub.uwaterloo.ca> wrote:
->> On Thu, Apr 17, 2014 at 11:00:37PM +0200, Jos Huisken wrote:
->>> I was trying to maintain a local and remote directory in sync with
->>> lsync, using inotify.
->>> I happen to have >4M files and >400k directories... running over
->>> /proc/sys/fs/inotify/max_user_watches
->>
->> Would fanotify perhaps be a better interface to use?
->
-> (One of us is misunderstanding fanotify; it might be me.)
->
-> Did you look at fanotify closely? I don't think it could be used for
-> this task -- does not notify linka dn unlink events, difficult to set
-> up recursive monitoring, etc.
+On Sun, 2014-04-20 at 10:04 +0200, Geert Uytterhoeven wrote:
+> Hi David,
+> 
+> On Sun, Apr 20, 2014 at 4:26 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> > Performing vma lookups without taking the mm->mmap_sem is asking
+> > for trouble. While doing the search, the vma in question can be
+> > modified or even removed before returning to the caller. Take the
+> > lock (shared) in order to avoid races while iterating through
+> > the vmacache and/or rbtree.
+> 
+> Thanks for your patch!
+> 
+> > This patch is completely *untested*.
+> >
+> > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> > Cc: linux-m68k@lists.linux-m68k.org
+> > ---
+> >  arch/m68k/kernel/sys_m68k.c | 18 ++++++++++++------
+> >  1 file changed, 12 insertions(+), 6 deletions(-)
+> >
+> > diff --git a/arch/m68k/kernel/sys_m68k.c b/arch/m68k/kernel/sys_m68k.c
+> > index 3a480b3..d2263a0 100644
+> > --- a/arch/m68k/kernel/sys_m68k.c
+> > +++ b/arch/m68k/kernel/sys_m68k.c
+> > @@ -376,7 +376,6 @@ cache_flush_060 (unsigned long addr, int scope, int cache, unsigned long len)
+> >  asmlinkage int
+> >  sys_cacheflush (unsigned long addr, int scope, int cache, unsigned long len)
+> >  {
+> > -       struct vm_area_struct *vma;
+> >         int ret = -EINVAL;
+> >
+> >         if (scope < FLUSH_SCOPE_LINE || scope > FLUSH_SCOPE_ALL ||
+> > @@ -389,16 +388,23 @@ sys_cacheflush (unsigned long addr, int scope, int cache, unsigned long len)
+> >                 if (!capable(CAP_SYS_ADMIN))
+> >                         goto out;
+> >         } else {
+> > +               struct vm_area_struct *vma;
+> > +               bool invalid;
+> > +
+> > +               /* Check for overflow.  */
+> > +               if (addr + len < addr)
+> > +                       goto out;
+> > +
+> >                 /*
+> >                  * Verify that the specified address region actually belongs
+> >                  * to this process.
+> >                  */
+> > -               vma = find_vma (current->mm, addr);
+> >                 ret = -EINVAL;
+> > -               /* Check for overflow.  */
+> > -               if (addr + len < addr)
+> > -                       goto out;
+> > -               if (vma == NULL || addr < vma->vm_start || addr + len > vma->vm_end)
+> > +               down_read(&current->mm->mmap_sem);
+> > +               vma = find_vma(current->mm, addr);
+> > +               invalid = !vma || addr < vma->vm_start || addr + len > vma->vm_end;
+> > +               up_read(&current->mm->mmap_sem);
+> > +               if (invalid)
+> >                         goto out;
+> >         }
+> 
+> Shouldn't the up_read() be moved to the end of the function?
+> The vma may still be modified or destroyed between the call to find_vma(),
+> and the actual cache flush?
 
-Does recursive monitoring even work with inotify?
-Last time I've tried it did failed as soon I did a mkdir -p a/b/c/d because
-mkdir() raced against the thread which installes the new watches.
+I don't think so. afaict the vma is only searched to check upon validity
+for the address being passed. Once the sem is dropped, the call doesn't
+do absolutely anything else with the returned vma.
 
--- 
 Thanks,
-//richard
+Davidlohr
+
