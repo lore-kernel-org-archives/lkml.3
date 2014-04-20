@@ -1,113 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161176AbaDTIFE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 04:05:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55754 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1161144AbaDTIEe (ORCPT
+	id S932105AbaDTIdo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 04:33:44 -0400
+Received: from pegasos-out.vodafone.de ([80.84.1.38]:52372 "EHLO
+	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641AbaDTIde (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 04:04:34 -0400
-Date: Sun, 20 Apr 2014 01:03:57 -0700
-From: tip-bot for Adrien BAK <tipbot@zytor.com>
-Message-ID: <tip-ffa91880a992ec1aaee4b4f7c9ddffda0c277ba9@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        will.deacon@arm.com, adrien.bak@metascale.org, tglx@linutronix.de,
-        jolsa@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        will.deacon@arm.com, adrien.bak@metascale.org, tglx@linutronix.de,
-        jolsa@redhat.com
-In-Reply-To: <1397786443.3093.4.camel@beast>
-References: <1397786443.3093.4.camel@beast>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf tools: Improve error reporting
-Git-Commit-ID: ffa91880a992ec1aaee4b4f7c9ddffda0c277ba9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 20 Apr 2014 04:33:34 -0400
+X-Greylist: delayed 338 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Apr 2014 04:33:34 EDT
+X-Spam-Flag: NO
+X-Spam-Score: -0.045
+Authentication-Results: rohrpostix2.prod.vfnet.de (amavisd-new); dkim=pass
+	header.i=@vodafone.de
+X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 80377526272
+X-DKIM: OpenDKIM Filter v2.0.2 smtp-02.vodafone.de 53F39E8B74
+Message-ID: <535384FC.1060708@vodafone.de>
+Date: Sun, 20 Apr 2014 10:27:40 +0200
+From: =?ISO-8859-1?Q?Christian_K=F6nig?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Alex Deucher <alexdeucher@gmail.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        =?ISO-8859-1?Q?Chris?= =?ISO-8859-1?Q?tian_K=F6nig?= 
+	<christian.koenig@amd.com>
+Subject: Re: [git pull] drm fixes
+References: <alpine.DEB.2.00.1404190810001.7507@skynet.skynet.ie> <20140419190305.GA267@x4> <CADnq5_M9COdOJhOu4_9yRpDoFt3bcc9HVqrvQqnYM3YuTLv15A@mail.gmail.com> <20140420062450.GA281@x4>
+In-Reply-To: <20140420062450.GA281@x4>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ffa91880a992ec1aaee4b4f7c9ddffda0c277ba9
-Gitweb:     http://git.kernel.org/tip/ffa91880a992ec1aaee4b4f7c9ddffda0c277ba9
-Author:     Adrien BAK <adrien.bak@metascale.org>
-AuthorDate: Fri, 18 Apr 2014 11:00:43 +0900
-Committer:  Jiri Olsa <jolsa@redhat.com>
-CommitDate: Sun, 20 Apr 2014 00:15:12 +0200
+> I did and it doesn't fix the issue.
+In this case please open up a new bugreport on 
+https://bugs.freedesktop.org/enter_bug.cgi?product=DRI and select 
+DRM/Radeon as component.
 
-perf tools: Improve error reporting
+Additional to that please provide a dmesg output generated with 
+drm.debug=0xE for both the good and the bad case.
 
-In the current version, when using perf record, if something goes
-wrong in tools/perf/builtin-record.c:375
-  session = perf_session__new(file, false, NULL);
+Thanks in advance,
+Christian.
 
-The error message:
-"Not enough memory for reading per file header"
+Am 20.04.2014 08:24, schrieb Markus Trippelsdorf:
+> On 2014.04.19 at 21:21 -0400, Alex Deucher wrote:
+>> On Sat, Apr 19, 2014 at 3:03 PM, Markus Trippelsdorf
+>> <markus@trippelsdorf.de> wrote:
+>>> On 2014.04.19 at 08:19 +0100, Dave Airlie wrote:
+>>>> Unfortunately this contains no easter eggs, its a bit larger than I'd
+>>>> like, but I included a patch that just moves code from one file to another
+>>>> and I'd like to avoid merge conflicts with that later, so it makes it seem
+>>>> worse than it is,
+>>>> Christian König (2):
+>>>>        drm/radeon: apply more strict limits for PLL params v2
+>>>>        drm/radeon: improve PLL params if we don't match exactly v2
+>>> commit f8a2645ecede4eaf90b3d785f2805c8ecb76d43e
+>>> Author: Christian König <christian.koenig@amd.com>
+>>> Date:   Wed Apr 16 11:54:21 2014 +0200
+>>>
+>>>      drm/radeon: improve PLL params if we don't match exactly v2
+>>>
+>>> The commit above causes my monitor to just stay blank after boot.
+>>> No framebuffer, no Xorg, no nothing. I'm using a Radeon RS780.
+>> Can you try the patch on:
+>> https://bugs.freedesktop.org/show_bug.cgi?id=77673
+> I did and it doesn't fix the issue.
+>
 
-is issued. This error message seems to be outdated and is not very
-helpful. This patch proposes to replace this error message by
-"Perf session creation failed"
-
-I believe this issue has been brought to lkml:
-https://lkml.org/lkml/2014/2/24/458
-although this patch only tackles a (small) part of the issue.
-
-Additionnaly, this patch improves error reporting in
-tools/perf/util/data.c open_file_write.
-
-Currently, if the call to open fails, the user is unaware of it.
-This patch logs the error, before returning the error code to
-the caller.
-
-Reported-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Adrien BAK <adrien.bak@metascale.org>
-Link: http://lkml.kernel.org/r/1397786443.3093.4.camel@beast
-[ Reorganize the changelog into paragraphs ]
-[ Added empty line after fd declaration in open_file_write ]
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/builtin-record.c | 2 +-
- tools/perf/util/data.c      | 9 ++++++++-
- 2 files changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index eb524f9..8ce62ef 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -374,7 +374,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 
- 	session = perf_session__new(file, false, NULL);
- 	if (session == NULL) {
--		pr_err("Not enough memory for reading perf file header\n");
-+		pr_err("Perf session creation failed.\n");
- 		return -1;
- 	}
- 
-diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
-index 1fbcd8b..55de44e 100644
---- a/tools/perf/util/data.c
-+++ b/tools/perf/util/data.c
-@@ -86,10 +86,17 @@ static int open_file_read(struct perf_data_file *file)
- 
- static int open_file_write(struct perf_data_file *file)
- {
-+	int fd;
-+
- 	if (check_backup(file))
- 		return -1;
- 
--	return open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-+	fd = open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-+
-+	if (fd < 0)
-+		pr_err("failed to open %s : %s\n", file->path, strerror(errno));
-+
-+	return fd;
- }
- 
- static int open_file(struct perf_data_file *file)
