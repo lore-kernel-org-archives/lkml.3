@@ -1,90 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751609AbaDUDyN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 23:54:13 -0400
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:39732 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293AbaDUDyK (ORCPT
+	id S1751682AbaDUDy7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 23:54:59 -0400
+Received: from mail-pb0-f51.google.com ([209.85.160.51]:43449 "EHLO
+	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605AbaDUDyO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 23:54:10 -0400
+	Sun, 20 Apr 2014 23:54:14 -0400
 From: "Son P. Nguyen" <fastmutex@gmail.com>
 To: gregkh@linuxfoundation.org
 Cc: driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org, "Son P. Nguyen" <fastmutex@gmail.com>
-Subject: [PATCH v2 1/2] Staging: dgnc: dgnc_driver: fixed dgnc_pci_tbl definition
-Date: Sun, 20 Apr 2014 18:05:38 +0000
-Message-Id: <1398017139-22231-1-git-send-email-fastmutex@gmail.com>
+Subject: [PATCH v2 2/2] Staging: dgnc: dgnc_driver: fixed incorrect braces
+Date: Sun, 20 Apr 2014 18:05:39 +0000
+Message-Id: <1398017139-22231-2-git-send-email-fastmutex@gmail.com>
 X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1397947691-19232-2-git-send-email-fastmutex@gmail.com>
+In-Reply-To: <1398017139-22231-1-git-send-email-fastmutex@gmail.com>
 References: <1397947691-19232-2-git-send-email-fastmutex@gmail.com>
+ <1398017139-22231-1-git-send-email-fastmutex@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Son P. Nguyen" <fastmutex@gmail.com>
 
-Fixed dgnc_pci_tbl definition for correct coding style
-
-PS: This is for task 10 of eudyptula-challenge.
+Fixed incorrect braces (coding style)
 
 Signed-off-by: Son P. Nguyen <fastmutex@gmail.com>
 ---
- drivers/staging/dgnc/dgnc_driver.c | 39 +++++++++++++++++++++-----------------
- 1 file changed, 22 insertions(+), 17 deletions(-)
+ drivers/staging/dgnc/dgnc_driver.c | 21 +++++++--------------
+ 1 file changed, 7 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/staging/dgnc/dgnc_driver.c b/drivers/staging/dgnc/dgnc_driver.c
-index b1a39b2..6af1ab3 100644
+index 6af1ab3..de76eb5 100644
 --- a/drivers/staging/dgnc/dgnc_driver.c
 +++ b/drivers/staging/dgnc/dgnc_driver.c
-@@ -125,26 +125,31 @@ static uint		dgnc_poll_stop;				/* Used to tell poller to stop */
- static struct timer_list dgnc_poll_timer;
- 
- 
-+
-+#define DIGIVID_PCI_DEVICE_ID(subdevice, driver_data) \
-+	{ DIGI_VID, PCI_DEVICE_##subdevice, PCI_ANY_ID, 0, 0, driver_data }
-+
- static struct pci_device_id dgnc_pci_tbl[] = {
--	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	0 },
--	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	1 },
--	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	2 },
--	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	3 },
--	{	DIGI_VID, PCI_DEVICE_NEO_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,		4 },
--	{	DIGI_VID, PCI_DEVICE_NEO_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,		5 },
--	{	DIGI_VID, PCI_DEVICE_NEO_2DB9_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	6 },
--	{	DIGI_VID, PCI_DEVICE_NEO_2DB9PRI_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	7 },
--	{	DIGI_VID, PCI_DEVICE_NEO_2RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	8 },
--	{	DIGI_VID, PCI_DEVICE_NEO_2RJ45PRI_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	9 },
--	{	DIGI_VID, PCI_DEVICE_NEO_1_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	10 },
--	{	DIGI_VID, PCI_DEVICE_NEO_1_422_485_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	11 },
--	{	DIGI_VID, PCI_DEVICE_NEO_2_422_485_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	12 },
--	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	 13 },
--	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	14 },
--	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_4RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	15 },
--	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_8RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	16 },
-+	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_4_DID,		0) },
-+	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_4_422_DID,	1) },
-+	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_8_DID,		2) },
-+	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_8_422_DID,	3) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_4_DID,		4) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_8_DID,		5) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_2DB9_DID,		6) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_2DB9PRI_DID,	7) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_2RJ45_DID,		8) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_2RJ45PRI_DID,	9) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_1_422_DID,		10) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_1_422_485_DID,	11) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_2_422_485_DID,	12) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_8_DID,	13) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_4_DID,	14) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_4RJ45_DID,	15) },
-+	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_8RJ45_DID,	16) },
- 	{0,}						/* 0 terminated list. */
+@@ -158,8 +158,7 @@ struct board_id {
+ 	unsigned int is_pci_express;
  };
-+
- MODULE_DEVICE_TABLE(pci, dgnc_pci_tbl);
  
- struct board_id {
+-static struct board_id dgnc_Ids[] =
+-{
++static struct board_id dgnc_Ids[] = {
+ 	{	PCI_DEVICE_CLASSIC_4_PCI_NAME,		4,	0	},
+ 	{	PCI_DEVICE_CLASSIC_4_422_PCI_NAME,	4,	0	},
+ 	{	PCI_DEVICE_CLASSIC_8_PCI_NAME,		8,	0	},
+@@ -224,9 +223,8 @@ int dgnc_init_module(void)
+ 	 */
+ 	rc = dgnc_start();
+ 
+-	if (rc < 0) {
++	if (rc < 0)
+ 		return rc;
+-	}
+ 
+ 	/*
+ 	 * Find and configure all the cards
+@@ -244,8 +242,7 @@ int dgnc_init_module(void)
+ 			pr_warn("WARNING: dgnc driver load failed.  No Digi Neo or Classic boards found.\n");
+ 
+ 		dgnc_cleanup_module();
+-	}
+-	else {
++	} else {
+ 		dgnc_create_driver_sysfiles(&dgnc_driver);
+ 	}
+ 
+@@ -524,9 +521,8 @@ static int dgnc_found_board(struct pci_dev *pdev, int id)
+ 
+ 	brd->state		= BOARD_FOUND;
+ 
+-	for (i = 0; i < MAXPORTS; i++) {
++	for (i = 0; i < MAXPORTS; i++)
+ 		brd->channels[i] = NULL;
+-	}
+ 
+ 	/* store which card & revision we have */
+ 	pci_read_config_word(pdev, PCI_SUBSYSTEM_VENDOR_ID, &brd->subvendor);
+@@ -804,9 +800,8 @@ static void dgnc_poll_handler(ulong dummy)
+ 	 * driver tells us its up and running, and has
+ 	 * everything it needs.
+ 	 */
+-	if (dgnc_driver_state != DRIVER_READY) {
++	if (dgnc_driver_state != DRIVER_READY)
+ 		goto schedule_poller;
+-	}
+ 
+ 	/* Go thru each board, kicking off a tasklet for each if needed */
+ 	for (i = 0; i < dgnc_NumBoards; i++) {
+@@ -836,9 +831,8 @@ schedule_poller:
+ 
+ 	new_time = dgnc_poll_time - jiffies;
+ 
+-	if ((ulong) new_time >= 2 * dgnc_poll_tick) {
++	if ((ulong) new_time >= 2 * dgnc_poll_tick)
+ 		dgnc_poll_time = jiffies +  dgnc_jiffies_from_ms(dgnc_poll_tick);
+-	}
+ 
+ 	init_timer(&dgnc_poll_timer);
+ 	dgnc_poll_timer.function = dgnc_poll_handler;
+@@ -865,9 +859,8 @@ static void dgnc_init_globals(void)
+ 	dgnc_trcbuf_size	= trcbuf_size;
+ 	dgnc_debug		= debug;
+ 
+-	for (i = 0; i < MAXBOARDS; i++) {
++	for (i = 0; i < MAXBOARDS; i++)
+ 		dgnc_Board[i] = NULL;
+-	}
+ 
+ 	init_timer(&dgnc_poll_timer);
+ }
 -- 
 1.8.1.2
 
