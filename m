@@ -1,77 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378AbaDTMeS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 08:34:18 -0400
-Received: from mail-wg0-f43.google.com ([74.125.82.43]:64306 "EHLO
-	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196AbaDTMeN (ORCPT
+	id S1755388AbaDTMkD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 08:40:03 -0400
+Received: from mail-pa0-f47.google.com ([209.85.220.47]:48555 "EHLO
+	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196AbaDTMj5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 08:34:13 -0400
-From: Terence Eden <terence.eden@gmail.com>
-To: vgupta@synopsys.com
-Cc: linux-kernel@vger.kernel.org, trivial@rustcorp.com.au, kernel@shkspr.mobi,
-        Terence Eden <github.com@shkspr.mobi>
-Subject: [PATCH] Fixed spelling errors within comments
-Date: Sun, 20 Apr 2014 13:33:48 +0100
-Message-Id: <1397997228-2701-1-git-send-email-terence.eden@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sun, 20 Apr 2014 08:39:57 -0400
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
+        x86@kernel.org, iommu@lists.linux-foundation.org
+Subject: [PATCH -mm 0/2] x86: fix DMA CMA on x86
+Date: Sun, 20 Apr 2014 21:39:45 +0900
+Message-Id: <1397997587-11021-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Terence Eden <github.com@shkspr.mobi>
+This series includes two fixes for dma_generic_alloc_coherent(), based
+on top of the patchset 'enhance DMA CMA on x86' which has been added
+in -mm tree.
 
-This is my first patch submission. Please let me know if I have made a mistake anywhere.
+Akinobu Mita (2):
+  x86: fix dma_generic_alloc_coherent() when CONFIG_DMA_CMA is enabled
+  x86: avoid duplicated memset in dma_generic_alloc_coherent()
 
-Signed-off-by: Terence Eden <github.com@shkspr.mobi>
----
- arch/arc/kernel/entry.S |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/x86/kernel/pci-dma.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-index 819dd5f..38ef91a 100644
---- a/arch/arc/kernel/entry.S
-+++ b/arch/arc/kernel/entry.S
-@@ -156,7 +156,7 @@ ARCFP_DATA int1_saved_reg
- int1_saved_reg:
- 	.zero 4
- 
--/* Each Interrupt level needs it's own scratch */
-+/* Each Interrupt level needs its own scratch */
- #ifdef CONFIG_ARC_COMPACT_IRQ_LEVELS
- 
- ARCFP_DATA int2_saved_reg
-@@ -473,7 +473,7 @@ trap_with_param:
- 	lr  r0, [efa]
- 	mov r1, sp
- 
--	; Now that we have read EFA, its safe to do "fake" rtie
-+	; Now that we have read EFA, it is safe to do "fake" rtie
- 	;   and get out of CPU exception mode
- 	FAKE_RET_FROM_EXCPN r11
- 
-@@ -676,9 +676,9 @@ not_exception:
- 	brne r9, event_IRQ2, 149f
- 
- 	;------------------------------------------------------------------
--	; if L2 IRQ interrupted a L1 ISR,  we'd disbaled preemption earlier
--	; so that sched doesnt move to new task, causing L1 to be delayed
--	; undeterministically. Now that we've achieved that, lets reset
-+	; if L2 IRQ interrupted a L1 ISR,  we'd disabled preemption earlier
-+	; so that sched doesn't move to new task, causing L1 to be delayed
-+	; undeterministically. Now that we've achieved that, let's reset
- 	; things to what they were, before returning from L2 context
- 	;----------------------------------------------------------------
- 
-@@ -734,7 +734,7 @@ ENTRY(ret_from_fork)
- 	; put last task in scheduler queue
- 	bl   @schedule_tail
- 
--	; If kernel thread, jump to it's entry-point
-+	; If kernel thread, jump to its entry-point
- 	ld   r9, [sp, PT_status32]
- 	brne r9, 0, 1f
- 
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Don Dutile <ddutile@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org
+Cc: iommu@lists.linux-foundation.org
 -- 
-1.7.9.5
+1.8.3.2
 
