@@ -1,36 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751364AbaDTWVG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 18:21:06 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:53960 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266AbaDTWVD (ORCPT
+	id S1751400AbaDTWWf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 18:22:35 -0400
+Received: from mail-ve0-f178.google.com ([209.85.128.178]:44779 "EHLO
+	mail-ve0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039AbaDTWWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 18:21:03 -0400
-Date: Sun, 20 Apr 2014 18:21:02 -0400 (EDT)
-Message-Id: <20140420.182102.175207647021494785.davem@davemloft.net>
-To: mcgrof@do-not-panic.com
-Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
-        linux-zigbee-devel@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, backports@vger.kernel.org
-Subject: Re: [PATCH 0/3] 6lowpan: few changes to help with backports
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1397784176-15809-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1397784176-15809-1-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Sun, 20 Apr 2014 15:21:03 -0700 (PDT)
+	Sun, 20 Apr 2014 18:22:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com>
+References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com>
+	<20140417212834.GC17769@csclub.uwaterloo.ca>
+	<CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com>
+Date: Mon, 21 Apr 2014 00:22:32 +0200
+Message-ID: <CAFLxGvxx8_gJ+NAGVn_vZmkVfey45_1qTqAQnxKDCZD0gQsr5w@mail.gmail.com>
+Subject: Re: inotify, new idea?
+From: Richard Weinberger <richard.weinberger@gmail.com>
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Jos Huisken <jos.huisken@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 17 Apr 2014 18:22:53 -0700
+On Fri, Apr 18, 2014 at 6:15 AM, Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+> On Thu, Apr 17, 2014 at 11:28 PM, Lennart Sorensen
+> <lsorense@csclub.uwaterloo.ca> wrote:
+>> On Thu, Apr 17, 2014 at 11:00:37PM +0200, Jos Huisken wrote:
+>>> I was trying to maintain a local and remote directory in sync with
+>>> lsync, using inotify.
+>>> I happen to have >4M files and >400k directories... running over
+>>> /proc/sys/fs/inotify/max_user_watches
+>>
+>> Would fanotify perhaps be a better interface to use?
+>
+> (One of us is misunderstanding fanotify; it might be me.)
+>
+> Did you look at fanotify closely? I don't think it could be used for
+> this task -- does not notify linka dn unlink events, difficult to set
+> up recursive monitoring, etc.
 
-> Here's a few changes that can help automate the backport of 6lowpan.
-> I've been carrying them around for a while, I think its best to just
-> merge these upstream as its nothing controversial.
+Does recursive monitoring even work with inotify?
+Last time I've tried it did failed as soon I did a mkdir -p a/b/c/d because
+mkdir() raced against the thread which installes the new watches.
 
-Series applied.
+-- 
+Thanks,
+//richard
