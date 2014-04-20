@@ -1,68 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430AbaDTMlM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 08:41:12 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:39492 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396AbaDTMkG (ORCPT
+	id S1755385AbaDTMsF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 08:48:05 -0400
+Received: from pegasos-out.vodafone.de ([80.84.1.38]:50305 "EHLO
+	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196AbaDTMsA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 08:40:06 -0400
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Woodhouse <dwmw2@infradead.org>, Don Dutile <ddutile@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, iommu@lists.linux-foundation.org
-Subject: [PATCH -mm 2/2] x86: avoid duplicated memset in dma_generic_alloc_coherent()
-Date: Sun, 20 Apr 2014 21:39:47 +0900
-Message-Id: <1397997587-11021-3-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1397997587-11021-1-git-send-email-akinobu.mita@gmail.com>
-References: <1397997587-11021-1-git-send-email-akinobu.mita@gmail.com>
+	Sun, 20 Apr 2014 08:48:00 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -0.045
+Authentication-Results: rohrpostix1.prod.vfnet.de (amavisd-new); dkim=pass
+	header.i=@vodafone.de
+X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 7C0842600D3
+X-DKIM: OpenDKIM Filter v2.0.2 smtp-03.vodafone.de 5551EE6D48
+Message-ID: <5353C1EF.80407@vodafone.de>
+Date: Sun, 20 Apr 2014 14:47:43 +0200
+From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Borislav Petkov <bp@alien8.de>, Alex Deucher <alexdeucher@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: more radeon fun: uvd this time
+References: <20140420122621.GE19667@pd.tnic>
+In-Reply-To: <20140420122621.GE19667@pd.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes duplicated memset that is introduced by the patch
-x86-make-dma_alloc_coherent-return-zeroed-memory-if-cma-is-enabled.patch
-in -mm tree, and this change should be folded into it.
+Is this a regression? UVD is released for quite a while.
 
-If dma_generic_alloc_coherent() is called with __GFP_ZERO, it does a
-duplicated memset to the memory area allocated by alloc_pages_node()
-with __GFP_ZERO.  This change fixes that inefficiency by clearing
-__GFP_ZERO bit in gfp flages before calling alloc_pages_node().  Note
-that dma_generic_alloc_coherent() always returns zeroed memory.
+Make sure you have updated firmware installed as well.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Don Dutile <ddutile@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: x86@kernel.org
-Cc: iommu@lists.linux-foundation.org
----
- arch/x86/kernel/pci-dma.c | 1 +
- 1 file changed, 1 insertion(+)
+Christian.
 
-diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
-index f15bf8d..a25e202 100644
---- a/arch/x86/kernel/pci-dma.c
-+++ b/arch/x86/kernel/pci-dma.c
-@@ -97,6 +97,7 @@ void *dma_generic_alloc_coherent(struct device *dev, size_t size,
- 
- 	dma_mask = dma_alloc_coherent_mask(dev, flag);
- 
-+	flag &= ~__GFP_ZERO;
- again:
- 	page = NULL;
- 	/* CMA can be used only in the context which permits sleeping */
--- 
-1.8.3.2
+Am 20.04.2014 14:26, schrieb Borislav Petkov:
+> Hey guys,
+>
+> while we're on the topic, I'm seeing this on an older F14h laptop
+> (E-350). I'm guessing the UVD won't get up on that machine, maybe we
+> want to tone down the output a bit. I mean, for your sake, before it
+> hits a release and people flood you with bug reports.
+>
+> :-)
+>
+> [    1.448294] [drm] Initialized drm 1.1.0 20060810
+> [   11.669812] [drm] radeon kernel modesetting enabled.
+> [   11.676972] [drm] initializing kernel modesetting (PALM 0x1002:0x9802 0x17AA:0x21EC).
+> [   11.677301] [drm] register mmio base: 0xF0300000
+> [   11.677426] [drm] register mmio size: 262144
+> [   11.678243] [drm] Detected VRAM RAM=384M, BAR=256M
+> [   11.678321] [drm] RAM width 32bits DDR
+> [   11.681367] [drm] radeon: 384M of VRAM memory ready
+> [   11.681520] [drm] radeon: 1024M of GTT memory ready.
+> [   11.681751] [drm] Loading PALM Microcode
+> [   11.981767] [drm] Internal thermal controller without fan control
+> [   11.982742] [drm] Found smc ucode version: 0x00010601
+> [   11.983189] [drm] radeon: dpm initialized
+> [   12.011690] [drm] GART: num cpu pages 262144, num gpu pages 262144
+> [   12.096379] [drm] PCIE GART of 1024M enabled (table at 0x0000000000273000).
+> [   12.116168] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
+> [   12.116356] [drm] Driver supports precise vblank timestamp query.
+> [   12.117470] [drm] radeon: irq initialized.
+> [   12.186579] [drm] ring test on 0 succeeded in 0 usecs
+> [   12.186826] [drm] ring test on 3 succeeded in 1 usecs
+> [   14.029987] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
+> [   15.084697] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
+> [   16.098856] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
+> [   17.110795] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
+> [   18.122720] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
+> [   19.134692] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
+> [   20.146596] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
+> [   21.158570] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
+> [   22.171389] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
+> [   23.184846] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
+> [   23.204904] [drm:uvd_v1_0_start] *ERROR* UVD not responding, giving up!!!
+> [   23.224948] [drm:evergreen_startup] *ERROR* radeon: error initializing UVD (-1).
+> [   23.226911] [drm] ib test on ring 0 succeeded in 0 usecs
+> [   23.227165] [drm] ib test on ring 3 succeeded in 0 usecs
+> [   23.284404] [drm] radeon atom DIG backlight initialized
+> [   23.284625] [drm] Radeon Display Connectors
+> [   23.284772] [drm] Connector 0:
+> [   23.284917] [drm]   LVDS-1
+> [   23.285057] [drm]   HPD1
+> [   23.285200] [drm]   DDC: 0x6430 0x6430 0x6434 0x6434 0x6438 0x6438 0x643c 0x643c
+> [   23.285390] [drm]   Encoders:
+> [   23.285531] [drm]     LCD1: INTERNAL_UNIPHY
+> [   23.285675] [drm] Connector 1:
+> [   23.285817] [drm]   HDMI-A-1
+> [   23.285957] [drm]   HPD2
+> [   23.286098] [drm]   DDC: 0x6440 0x6440 0x6444 0x6444 0x6448 0x6448 0x644c 0x644c
+> [   23.286287] [drm]   Encoders:
+> [   23.286428] [drm]     DFP1: INTERNAL_UNIPHY
+> [   23.286571] [drm] Connector 2:
+> [   23.286713] [drm]   VGA-1
+> [   23.286855] [drm]   DDC: 0x64d8 0x64d8 0x64dc 0x64dc 0x64e0 0x64e0 0x64e4 0x64e4
+> [   23.287044] [drm]   Encoders:
+> [   23.287184] [drm]     CRT1: INTERNAL_KLDSCP_DAC1
+> [   23.720985] [drm] fb mappable at 0xE0477000
+> [   23.721185] [drm] vram apper at 0xE0000000
+> [   23.721318] [drm] size 4325376
+> [   23.721400] [drm] fb depth is 24
+> [   23.721482] [drm]    pitch is 5632
+> [   23.725697] fbcon: radeondrmfb (fb0) is primary device
+> [   24.296791] radeon 0000:00:01.0: fb0: radeondrmfb frame buffer device
+> [   24.299140] [drm] Initialized radeon 2.38.0 20080528 for 0000:00:01.0 on minor 0
+>
+>
 
