@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964838AbaDTIuI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 04:50:08 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:33046 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964808AbaDTItl (ORCPT
+	id S964855AbaDTIuO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 04:50:14 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:53903 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964823AbaDTItx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 04:49:41 -0400
+	Sun, 20 Apr 2014 04:49:53 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 08/10] staging: rtl8188eu: Remove unused macros.
-Date: Sun, 20 Apr 2014 14:17:16 +0530
-Message-Id: <1397983638-10752-8-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 09/10] staging: rtl8188eu: Remove unused enum LED_STATE_871x members.
+Date: Sun, 20 Apr 2014 14:17:17 +0530
+Message-Id: <1397983638-10752-9-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1397983638-10752-1-git-send-email-navin.patidar@gmail.com>
 References: <1397983638-10752-1-git-send-email-navin.patidar@gmail.com>
@@ -23,64 +23,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/include/rtw_led.h |   31 ---------------------------
- 1 file changed, 31 deletions(-)
+ drivers/staging/rtl8188eu/include/rtw_led.h |   30 +++++++++------------------
+ 1 file changed, 10 insertions(+), 20 deletions(-)
 
 diff --git a/drivers/staging/rtl8188eu/include/rtw_led.h b/drivers/staging/rtl8188eu/include/rtw_led.h
-index ed1c687..2f81fab 100644
+index 2f81fab..2ad7e4a 100644
 --- a/drivers/staging/rtl8188eu/include/rtw_led.h
 +++ b/drivers/staging/rtl8188eu/include/rtw_led.h
-@@ -23,39 +23,12 @@
- #include <osdep_service.h>
- #include <drv_types.h>
+@@ -47,26 +47,16 @@ enum LED_CTL_MODE {
+ };
  
--#define MSECS(t)        (HZ * ((t) / 1000) + (HZ * ((t) % 1000)) / 1000)
--
--#define LED_BLINK_NORMAL_INTERVAL		100
--#define LED_BLINK_SLOWLY_INTERVAL		200
--#define LED_BLINK_LONG_INTERVAL			400
--
- #define LED_BLINK_NO_LINK_INTERVAL_ALPHA	1000
- #define LED_BLINK_LINK_INTERVAL_ALPHA		500	/* 500 */
- #define LED_BLINK_SCAN_INTERVAL_ALPHA		180	/* 150 */
- #define LED_BLINK_FASTER_INTERVAL_ALPHA		50
- #define LED_BLINK_WPS_SUCESS_INTERVAL_ALPHA	5000
+ enum LED_STATE_871x {
+-	LED_UNKNOWN = 0,
+-	RTW_LED_ON = 1,
+-	RTW_LED_OFF = 2,
+-	LED_BLINK_NORMAL = 3,
+-	LED_BLINK_SLOWLY = 4,
+-	LED_BLINK_POWER_ON = 5,
+-	LED_BLINK_SCAN = 6, /*  LED is blinking during scanning period,
+-			     * the # of times to blink is depend on time
+-			     * for scanning. */
+-	LED_BLINK_NO_LINK = 7, /*  LED is blinking during no link state. */
+-	LED_BLINK_StartToBlink = 8,/*  Customzied for Sercomm Printer
+-				    * Server case */
+-	LED_BLINK_TXRX = 9,
+-	LED_BLINK_WPS = 10,	/*  LED is blinkg during WPS communication */
+-	LED_BLINK_WPS_STOP = 11,	/* for ALPHA */
+-	LED_BLINK_WPS_STOP_OVERLAP = 12,	/* for BELKIN */
+-	LED_BLINK_RUNTOP = 13, /*  Customized for RunTop */
+-	LED_BLINK_CAMEO = 14,
+-	LED_BLINK_XAVI = 15,
+-	LED_BLINK_ALWAYS_ON = 16,
++	LED_UNKNOWN,
++	RTW_LED_ON,
++	RTW_LED_OFF,
++	LED_BLINK_NORMAL,
++	LED_BLINK_SLOWLY,
++	LED_BLINK_POWER_ON,
++	LED_BLINK_SCAN,
++	LED_BLINK_TXRX,
++	LED_BLINK_WPS,
++	LED_BLINK_WPS_STOP
+ };
  
--#define LED_BLINK_NORMAL_INTERVAL_NETTRONIX	100
--#define LED_BLINK_SLOWLY_INTERVAL_NETTRONIX	2000
--
--#define LED_BLINK_SLOWLY_INTERVAL_PORNET	1000
--#define LED_BLINK_NORMAL_INTERVAL_PORNET	100
--
--#define LED_BLINK_FAST_INTERVAL_BITLAND		30
--
--/*  060403, rcnjko: Customized for AzWave. */
--#define LED_CM2_BLINK_ON_INTERVAL		250
--#define LED_CM2_BLINK_OFF_INTERVAL		4750
--
--#define LED_CM8_BLINK_INTERVAL			500	/* for QMI */
--#define LED_CM8_BLINK_OFF_INTERVAL		3750	/* for QMI */
--
--/*  080124, lanhsin: Customized for RunTop */
--#define LED_RunTop_BLINK_INTERVAL		300
--
--/*  060421, rcnjko: Customized for Sercomm Printer Server case. */
--#define LED_CM3_BLINK_INTERVAL			1500
--
- enum LED_CTL_MODE {
- 	LED_CTL_POWER_ON = 1,
- 	LED_CTL_LINK = 2,
-@@ -129,10 +102,6 @@ struct LED_871x {
- 	((struct LED_871x *)_LED_871x)->CurrLedState == LED_BLINK_WPS_STOP || \
- 	((struct LED_871x *)_LED_871x)->bLedWPSBlinkInProgress)
- 
--#define IS_LED_BLINKING(_LED_871x)					\
--	(((struct LED_871x *)_LED_871x)->bLedWPSBlinkInProgress	||	\
--	((struct LED_871x *)_LED_871x)->bLedScanBlinkInProgress)
--
- void LedControl8188eu(struct adapter *padapter, enum LED_CTL_MODE	LedAction);
- 
- struct led_priv{
+ struct LED_871x {
 -- 
 1.7.10.4
 
