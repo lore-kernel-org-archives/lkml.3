@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178AbaDTH7y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 03:59:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39643 "EHLO mx2.suse.de"
+	id S964771AbaDTICS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 04:02:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39701 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751494AbaDTH7q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 03:59:46 -0400
-Date: Sun, 20 Apr 2014 09:59:37 +0200
+	id S932086AbaDTICJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Apr 2014 04:02:09 -0400
+Date: Sun, 20 Apr 2014 10:02:03 +0200
 From: Borislav Petkov <bp@suse.de>
 To: Myron Stowe <myron.stowe@redhat.com>
 Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
@@ -15,76 +15,45 @@ Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
         mingo@redhat.com, hpa@zytor.com, x86@kernel.org, bp@suse.de,
         sp@numascale.com, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/5] x86/PCI: Support additional MMIO range
- capabilities
-Message-ID: <20140420075936.GA19672@pd.tnic>
+Subject: Re: [PATCH v2 3/5] x86/PCI: Miscellaneous code clean up for
+ early_fillup_mp_bus_info
+Message-ID: <20140420080203.GB19672@pd.tnic>
 References: <20140419025308.2408.51252.stgit@amt.stowe>
- <20140419025323.2408.88764.stgit@amt.stowe>
- <20140419135219.GC8109@pd.tnic>
+ <20140419025331.2408.40589.stgit@amt.stowe>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140419135219.GC8109@pd.tnic>
+In-Reply-To: <20140419025331.2408.40589.stgit@amt.stowe>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop Andreas' old email address from CC as it keeps bouncing.
-
-On Sat, Apr 19, 2014 at 03:52:20PM +0200, Borislav Petkov wrote:
-> > -static void __init pci_enable_pci_io_ecs(void)
-> > +static void __init pci_enable_pci_io_ecs(u8 bus, u8 slot)
-> >  {
-> >  #ifdef CONFIG_AMD_NB
-> >  	unsigned int i, n;
-> > +	u8 limit;
-> >  
-> >  	for (n = i = 0; !n && amd_nb_bus_dev_ranges[i].dev_limit; ++i) {
-> > -		u8 bus = amd_nb_bus_dev_ranges[i].bus;
-> > -		u8 slot = amd_nb_bus_dev_ranges[i].dev_base;
-> > -		u8 limit = amd_nb_bus_dev_ranges[i].dev_limit;
-> > +		/* Try matching for the bus range */
-> > +		if ((bus != amd_nb_bus_dev_ranges[i].bus) ||
-> > +		    (slot != amd_nb_bus_dev_ranges[i].dev_base))
-> > +			continue;
-> > +
-> > +		limit = amd_nb_bus_dev_ranges[i].dev_limit;
-> >  
-> > +		/* Setup all northbridges within the range */
-> >  		for (; slot < limit; ++slot) {
-> >  			u32 val = read_pci_config(bus, slot, 3, 0);
-> > -
-> > -			if (!early_is_amd_nb(val))
-> > +			if (!val)
-> >  				continue;
-> >  
-> >  			val = read_pci_config(bus, slot, 3, 0x8c);
-> > @@ -375,13 +457,14 @@ static void __init pci_enable_pci_io_ecs(void)
-> >  				val |= ENABLE_CF8_EXT_CFG >> 32;
+On Fri, Apr 18, 2014 at 08:53:31PM -0600, Myron Stowe wrote:
+> From: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
 > 
-> What a fun shifting!
-> 
-> Maybe you should do
-> 
-> #define ENABLE_CF8_EXT_CFG	BIT(46 - 32)
-> 
-> to show exactly what you mean and how the bit is defined in MSR NB_CFG1
-> and also show how the high 32-bits are mapped into F3x8c, while at it.
-> 
-> And then you can drop the shifting at the call site.
+> * Refactoring of the early_fill_mp_bus_info function into multiple helper
+>   functions since it is getting long, and difficult to follow.
 
-Ok, I see another fun with this ECS enabling:
+Much better.
 
-There's a enable_pci_io_ecs() which enables ECS through the NB_CFG MSR
-which is called as part of the notifier *and* there's a PCI write to
-that same bit in pci_enable_pci_io_ecs() which iterates over all NBs.
+> * Merge early_fill_mp_bus_info into amd_postcore_init as there is no need to
+>   have this as a separate function.
+> 
+> * Use pr_xxx instead of printk
 
-So, AFAICT, we do it twice and the second time is not needed. Which
-means, you probably can drop pci_enable_pci_io_ecs() completely and use
-solely the notifier?
+You can convert the printk(KERN_CONT -> pr_cont( too, while at it.
+Although, this would prepend the fmt thing on every line ...
 
-Yes, no?
+> * Prepend "AMD-Bus" for each print.
+
+That's done with pr_fmt
+
+> * The current code is using "fam10h_mmconf_*" in several place.  As this
+>   file is no longer specific to family10h systems, this patch changes
+>   such occurrances to "amd_mmconf_*" instead for clarity.
+
+...
 
 -- 
 Regards/Gruss,
