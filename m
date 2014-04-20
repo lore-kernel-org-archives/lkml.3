@@ -1,96 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471AbaDTRAG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 13:00:06 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:60794 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751072AbaDTRAE (ORCPT
+	id S1753152AbaDTRoX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 13:44:23 -0400
+Received: from mail.csclub.uwaterloo.ca ([129.97.134.52]:35989 "EHLO
+	mail.csclub.uwaterloo.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaDTRoV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 13:00:04 -0400
-Message-ID: <5353FD09.6000701@infradead.org>
-Date: Sun, 20 Apr 2014 09:59:53 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Sun, 20 Apr 2014 13:44:21 -0400
+From: "Lennart Sorensen" <lsorense@csclub.uwaterloo.ca>
+Date: Sun, 20 Apr 2014 13:44:18 -0400
+To: Michael Kerrisk <mtk.manpages@gmail.com>
+Cc: Jos Huisken <jos.huisken@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: inotify, new idea?
+Message-ID: <20140420174418.GN17765@csclub.uwaterloo.ca>
+References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com>
+ <20140417212834.GC17769@csclub.uwaterloo.ca>
+ <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com>
 MIME-Version: 1.0
-To: Terence Eden <terence.eden@gmail.com>, vgupta@synopsys.com
-CC: linux-kernel@vger.kernel.org, trivial@rustcorp.com.au, kernel@shkspr.mobi,
-        Terence Eden <github.com@shkspr.mobi>,
-        Jiri Kosina <trivial@kernel.org>
-Subject: Re: [PATCH] Fixed spelling errors within comments
-References: <1397997228-2701-1-git-send-email-terence.eden@gmail.com>
-In-Reply-To: <1397997228-2701-1-git-send-email-terence.eden@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2014 05:33 AM, Terence Eden wrote:
-> From: Terence Eden <github.com@shkspr.mobi>
-> 
-> This is my first patch submission. Please let me know if I have made a mistake anywhere.
-> 
-> Signed-off-by: Terence Eden <github.com@shkspr.mobi>
+On Fri, Apr 18, 2014 at 06:15:40AM +0200, Michael Kerrisk wrote:
+> (One of us is misunderstanding fanotify; it might be me.)
 
-trivial's email address is trivial@kernel.org (cc-ed).
+No I think you are right, and that the misunderstanding is on my part.
+I had not realized that fanotify did not provide create/delete events,
+only access events.
 
-> ---
->  arch/arc/kernel/entry.S |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arc/kernel/entry.S b/arch/arc/kernel/entry.S
-> index 819dd5f..38ef91a 100644
-> --- a/arch/arc/kernel/entry.S
-> +++ b/arch/arc/kernel/entry.S
-> @@ -156,7 +156,7 @@ ARCFP_DATA int1_saved_reg
->  int1_saved_reg:
->  	.zero 4
->  
-> -/* Each Interrupt level needs it's own scratch */
-> +/* Each Interrupt level needs its own scratch */
->  #ifdef CONFIG_ARC_COMPACT_IRQ_LEVELS
->  
->  ARCFP_DATA int2_saved_reg
-> @@ -473,7 +473,7 @@ trap_with_param:
->  	lr  r0, [efa]
->  	mov r1, sp
->  
-> -	; Now that we have read EFA, its safe to do "fake" rtie
-> +	; Now that we have read EFA, it is safe to do "fake" rtie
->  	;   and get out of CPU exception mode
->  	FAKE_RET_FROM_EXCPN r11
->  
-> @@ -676,9 +676,9 @@ not_exception:
->  	brne r9, event_IRQ2, 149f
->  
->  	;------------------------------------------------------------------
-> -	; if L2 IRQ interrupted a L1 ISR,  we'd disbaled preemption earlier
-> -	; so that sched doesnt move to new task, causing L1 to be delayed
-> -	; undeterministically. Now that we've achieved that, lets reset
-> +	; if L2 IRQ interrupted a L1 ISR,  we'd disabled preemption earlier
+> Did you look at fanotify closely? I don't think it could be used for
+> this task -- does not notify linka dn unlink events, difficult to set
+> up recursive monitoring, etc.
 
-I would write:                  an L1 ISR,
-
-anyway:
-Acked-by: Randy Dunlap <rdunlap@infradead.org>
-
-
-> +	; so that sched doesn't move to new task, causing L1 to be delayed
-> +	; undeterministically. Now that we've achieved that, let's reset
->  	; things to what they were, before returning from L2 context
->  	;----------------------------------------------------------------
->  
-> @@ -734,7 +734,7 @@ ENTRY(ret_from_fork)
->  	; put last task in scheduler queue
->  	bl   @schedule_tail
->  
-> -	; If kernel thread, jump to it's entry-point
-> +	; If kernel thread, jump to its entry-point
->  	ld   r9, [sp, PT_status32]
->  	brne r9, 0, 1f
->  
-> 
-
+It would appear you are correct.
 
 -- 
-~Randy
+Len Sorensen
