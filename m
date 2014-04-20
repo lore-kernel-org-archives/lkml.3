@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161103AbaDTIEU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 04:04:20 -0400
-Received: from mail-la0-f44.google.com ([209.85.215.44]:43174 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932110AbaDTIEE (ORCPT
+	id S1161134AbaDTIE1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 04:04:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55742 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932111AbaDTIEH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 04:04:04 -0400
+	Sun, 20 Apr 2014 04:04:07 -0400
+Date: Sun, 20 Apr 2014 01:03:33 -0700
+From: tip-bot for Alexander Yarygin <tipbot@zytor.com>
+Message-ID: <tip-acb61fc8ed73eb477a9044272d7a1b1f5a572f91@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        borntraeger@de.ibm.com, jolsa@redhat.com, yarygin@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        borntraeger@de.ibm.com, jolsa@redhat.com, yarygin@linux.vnet.ibm.com,
+        dsahern@gmail.com, tglx@linutronix.de
+In-Reply-To: <1397053319-2130-3-git-send-email-borntraeger@de.ibm.com>
+References: <1397053319-2130-3-git-send-email-borntraeger@de.ibm.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf kvm: Fix 'Min time'
+  counting in report command
+Git-Commit-ID: acb61fc8ed73eb477a9044272d7a1b1f5a572f91
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1397960791-16320-3-git-send-email-davidlohr@hp.com>
-References: <1397960791-16320-1-git-send-email-davidlohr@hp.com>
-	<1397960791-16320-3-git-send-email-davidlohr@hp.com>
-Date: Sun, 20 Apr 2014 10:04:02 +0200
-X-Google-Sender-Auth: 4xkgZlq9SUcvdwLiFIrByfEPiUo
-Message-ID: <CAMuHMdVBZSC3Kvwsw5pa-m8ZAUCjpkF8gjJH1XbOK2iFbU1KEg@mail.gmail.com>
-Subject: Re: [PATCH 2/6] m68k: call find_vma with the mmap_sem held in sys_cacheflush()
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Davidlohr Bueso <davidlohr@hp.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, zeus@gnu.org,
-        Aswin Chandramouleeswaran <aswin@hp.com>,
-        Linux MM <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+Commit-ID:  acb61fc8ed73eb477a9044272d7a1b1f5a572f91
+Gitweb:     http://git.kernel.org/tip/acb61fc8ed73eb477a9044272d7a1b1f5a572f91
+Author:     Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+AuthorDate: Wed, 9 Apr 2014 16:21:59 +0200
+Committer:  Jiri Olsa <jolsa@redhat.com>
+CommitDate: Sun, 20 Apr 2014 00:14:08 +0200
 
-On Sun, Apr 20, 2014 at 4:26 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
-> Performing vma lookups without taking the mm->mmap_sem is asking
-> for trouble. While doing the search, the vma in question can be
-> modified or even removed before returning to the caller. Take the
-> lock (shared) in order to avoid races while iterating through
-> the vmacache and/or rbtree.
+perf kvm: Fix 'Min time' counting in report command
 
-Thanks for your patch!
+Every event in the perf-kvm has a 'stats' structure, which contains
+max/min/average/etc times of handling this event.
+The problem is that the 'perf-kvm stat report' command always shows
+that 'min time' is 0us for every event. Example:
 
-> This patch is completely *untested*.
->
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
-> Cc: linux-m68k@lists.linux-m68k.org
-> ---
->  arch/m68k/kernel/sys_m68k.c | 18 ++++++++++++------
->  1 file changed, 12 insertions(+), 6 deletions(-)
->
-> diff --git a/arch/m68k/kernel/sys_m68k.c b/arch/m68k/kernel/sys_m68k.c
-> index 3a480b3..d2263a0 100644
-> --- a/arch/m68k/kernel/sys_m68k.c
-> +++ b/arch/m68k/kernel/sys_m68k.c
-> @@ -376,7 +376,6 @@ cache_flush_060 (unsigned long addr, int scope, int cache, unsigned long len)
->  asmlinkage int
->  sys_cacheflush (unsigned long addr, int scope, int cache, unsigned long len)
->  {
-> -       struct vm_area_struct *vma;
->         int ret = -EINVAL;
->
->         if (scope < FLUSH_SCOPE_LINE || scope > FLUSH_SCOPE_ALL ||
-> @@ -389,16 +388,23 @@ sys_cacheflush (unsigned long addr, int scope, int cache, unsigned long len)
->                 if (!capable(CAP_SYS_ADMIN))
->                         goto out;
->         } else {
-> +               struct vm_area_struct *vma;
-> +               bool invalid;
-> +
-> +               /* Check for overflow.  */
-> +               if (addr + len < addr)
-> +                       goto out;
-> +
->                 /*
->                  * Verify that the specified address region actually belongs
->                  * to this process.
->                  */
-> -               vma = find_vma (current->mm, addr);
->                 ret = -EINVAL;
-> -               /* Check for overflow.  */
-> -               if (addr + len < addr)
-> -                       goto out;
-> -               if (vma == NULL || addr < vma->vm_start || addr + len > vma->vm_end)
-> +               down_read(&current->mm->mmap_sem);
-> +               vma = find_vma(current->mm, addr);
-> +               invalid = !vma || addr < vma->vm_start || addr + len > vma->vm_end;
-> +               up_read(&current->mm->mmap_sem);
-> +               if (invalid)
->                         goto out;
->         }
+ # perf kvm stat report
 
-Shouldn't the up_read() be moved to the end of the function?
-The vma may still be modified or destroyed between the call to find_vma(),
-and the actual cache flush?
+ Analyze events for all VCPUs:
 
-Am I missing something?
+    VM-EXIT    Samples  Samples%     Time%   Min Time   Max Time Avg time
+  [..]
+  0xB2 MSCH         12     0.07%     0.00%        0us        8us 7.31us ( +-   2.11% )
+  0xB2 CHSC         12     0.07%     0.00%        0us       18us 9.39us ( +-   9.49% )
+  0xB2 STPX          8     0.05%     0.00%        0us        2us 1.88us ( +-   7.18% )
+  0xB2 STSI          7     0.04%     0.00%        0us       44us 16.49us ( +-  38.20% )
+  [..]
 
-Gr{oetje,eeting}s,
+This happens because the 'stats' structure is not initialized and
+stats->min equals to 0. Lets initialize the structure for every
+event after its allocation using init_stats() function. This initializes
+stats->min to -1 and makes 'Min time' statistics counting work:
 
-                        Geert
+ # perf kvm stat report
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+ Analyze events for all VCPUs:
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+    VM-EXIT    Samples  Samples%     Time%   Min Time   Max Time Avg time
+  [..]
+  0xB2 MSCH         12     0.07%     0.00%        6us        8us 7.31us ( +-   2.11% )
+  0xB2 CHSC         12     0.07%     0.00%        7us       18us 9.39us ( +-   9.49% )
+  0xB2 STPX          8     0.05%     0.00%        1us        2us 1.88us ( +-   7.18% )
+  0xB2 STSI          7     0.04%     0.00%        1us       44us 16.49us ( +-  38.20% )
+  [..]
+
+Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Reviewed-by: David Ahern <dsahern@gmail.com>
+Link: http://lkml.kernel.org/r/1397053319-2130-3-git-send-email-borntraeger@de.ibm.com
+[ Fixing the perf examples changelog output ]
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/builtin-kvm.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
+index 21c164b..0f1e5a2 100644
+--- a/tools/perf/builtin-kvm.c
++++ b/tools/perf/builtin-kvm.c
+@@ -404,6 +404,7 @@ static struct kvm_event *kvm_alloc_init_event(struct event_key *key)
+ 	}
+ 
+ 	event->key = *key;
++	init_stats(&event->total.stats);
+ 	return event;
+ }
+ 
