@@ -1,120 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932075AbaDTFhq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 01:37:46 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:64231 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751103AbaDTFhf (ORCPT
+	id S932088AbaDTFlY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 01:41:24 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41762 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103AbaDTFlQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 01:37:35 -0400
-Message-ID: <53535D1C.200@lwfinger.net>
-Date: Sun, 20 Apr 2014 00:37:32 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Sun, 20 Apr 2014 01:41:16 -0400
+Date: Sun, 20 Apr 2014 06:41:08 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andy Lutomirski <luto@amacapital.net>, Rob Landley <rob@landley.net>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Christoph Hellwig <hch@infradead.org>, Karel Zak <kzak@redhat.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Fengguang Wu <fengguang.wu@intel.com>, tytso@mit.edu
+Subject: Re: [GIT PULL] Detaching mounts on unlink for 3.15
+Message-ID: <20140420054108.GQ18016@ZenIV.linux.org.uk>
+References: <20140413053956.GM18016@ZenIV.linux.org.uk>
+ <87zjjp3e7w.fsf@x220.int.ebiederm.org>
+ <87ppkl1xb7.fsf@x220.int.ebiederm.org>
+ <20140413215242.GP18016@ZenIV.linux.org.uk>
+ <87y4z8uzqw.fsf_-_@x220.int.ebiederm.org>
+ <87ppkhc4pp.fsf@x220.int.ebiederm.org>
+ <87ha5r3emw.fsf_-_@x220.int.ebiederm.org>
+ <20140417202237.GA18016@ZenIV.linux.org.uk>
+ <87tx9rwsz4.fsf@x220.int.ebiederm.org>
+ <20140417221203.GC18016@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, Tony Luck <tony.luck@intel.com>,
-        Gong Chen <gong.chen@intel.com>
-CC: Larry Finger <Larry.Finger@lwfinger.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Bug in 3.15-rc1: Scheduling while atomic splats filling log -
- bisected to commit 27f6c57
-References: <53502886.6020107@lwfinger.net>
-In-Reply-To: <53502886.6020107@lwfinger.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417221203.GC18016@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2014 02:16 PM, Larry Finger wrote:
-> On kernel 3.15-rc1, I get log entries for scheduling while atomic. These BUG
-> splats are repeated many times, and start early in the boot. I tried to bisect
-> this problem, but the bug does not always show on every boot, and I must have
-> had a faulty kernel boot without error. In any case, I ended up at a merge pull.
-> What I can definitively report is that a kernel generated from commit fd1df00 is
-> bad.
->
-> Fortunately, I have retained the kernels from the bisection onward, and I will
-> retry them to see if I reported any of them incorrectly. As far as I know, the
-> configuration was unchanged during the bisection.
->
-> The logged messages are as follows:
->
-> 2014-04-16T10:51:25.205576-05:00 larrylap systemd[1]: Starting Name Service
-> Cache Daemon...
-> 2014-04-16T10:51:25.197425-05:00 larrylap kernel: [   27.176133] Call Trace:
-> 2014-04-16T10:51:25.205599-05:00 larrylap kernel: [   27.176139]
-> [<ffffffff81607386>] dump_stack+0x4e/0x71
-> 2014-04-16T10:51:25.205605-05:00 larrylap kernel: [   27.176144]
-> [<ffffffff816009e2>] __schedule_bug+0x5d/0x6d
-> 2014-04-16T10:51:25.205615-05:00 larrylap kernel: [   27.176149]
-> [<ffffffff8160a8d5>] __schedule+0x775/0x810
-> 2014-04-16T10:51:25.205618-05:00 larrylap kernel: [   27.176154]
-> [<ffffffff8160aa34>] schedule+0x24/0x70
-> 2014-04-16T10:51:25.205620-05:00 larrylap kernel: [   27.176159]
-> [<ffffffff8160adc1>] schedule_preempt_disabled+0x11/0x20
-> 2014-04-16T10:51:25.205623-05:00 larrylap kernel: [   27.176164]
-> [<ffffffff810941a3>] cpu_startup_entry+0x123/0x430
-> 2014-04-16T10:51:25.205625-05:00 larrylap kernel: [   27.176170]
-> [<ffffffff8102dcb3>] start_secondary+0x1d3/0x290
-> 2014-04-16T10:51:25.205627-05:00 larrylap kernel: [   27.176175]
-> [<ffffffff813aa118>] ? acpi_ps_parse_aml+0x186/0x476
-> 2014-04-16T10:51:25.205629-05:00 larrylap kernel: [   27.177033] BUG: scheduling
-> while atomic: swapper/1/0/0x00000004
-> 2014-04-16T10:51:25.205638-05:00 larrylap kernel: [   27.177037] no locks held
-> by swapper/1/0.
-> 2014-04-16T10:51:25.205641-05:00 larrylap kernel: [   27.177039] Modules linked
-> in: arc4 b43 mac80211 cfg80211 snd_hda_codec_generic snd_hda_intel snd_hda_co
-> ntroller snd_hda_codec snd_hwdep snd_pcm snd_seq powernow_k8 kvm_amd kvm rfkill
-> bcma snd_timer snd_seq_device snd r852 pcspkr ssb serio_raw sdhci_pci sm_comm
-> on sdhci nand forcedeth mmc_core sg mtd r592 nand_ids nand_bch memstick bch
-> nand_ecc sr_mod cdrom soundcore battery ac autofs4 nouveau ttm drm_kms_helper drm
->   i2c_algo_bit i2c_core thermal wmi video processor button thermal_sys hwmon
-> ata_generic pata_amd
+On Thu, Apr 17, 2014 at 11:12:03PM +0100, Al Viro wrote:
 
-This bug has now been bisected to commit 27f6c57 by Chen, Gong entitled "x86, 
-CMCI: Add proper detection of end of CMCI storms".
+> I'd probably turn mntput_no_expire() into something like
+> static struct mount *__mntput(struct mount *m)
+> that would return NULL if nothing needs to be killed and returned m
+> if m really needs killing.  Leaving the caller to decide what to do
+> with that puppy.  We have, as it is, exactly two callers - exit path
+> in sys_umount() and mntput().  So we add two more functions:
+> static void kill_mnt_async(struct mount *m)
+> and
+> static void kill_mnt_sync(struct mount *m)
+> both being no-op on NULL.  Then in sys_umount() and mntput() we do
+> 	kill_mnt_async(__mntput(mnt));
+> and in mntput_sync() - kill_mnt_sync(__mntput(mnt));
+> For that matter, kill_mnt_sync() (basically, your variant with completions)
+> can be folded into mntput_sync().
 
-The problem may not affect the system during a warm reboot, but it is much more 
-likely to show during a cold boot.
+Actually, all kern_unmount() callers are doing that from fairly shallow
+stack depth and all simple_release_fs() ones are dealing with rather
+trivial ->kill_sb().  So mntput_sync() is an overkill; all we need is
+	if (mnt->mnt_flags & MNT_INTERNAL) {
+		cleanup_mnt(mnt);
+		return;
+	}
+	<do task_work_add or schedule_delayed_work song and dance>
+right in the end of mntput_no_expire().  OK, now I have something that
+looks like a complete solution.  The last missing bit is to take all
+filp_close() of acct->file to kernel thread, and have them done via
+__fput_sync() there.  Then auto-close (done from cleanup_mnt()) will
+consist of shutting down all affected acct and waiting for that kernel
+thread to run through everything currently in its queue.  That'll take
+care of waiting until acct(NULL) done by somebody else gets through closing
+the file and through corresponding mntput().  And *those* mntput() also
+can be synchronous - they are clones of the one we hadn't finished shutting
+down yet, so both dput() and deactivate_super() will bugger off immediately.
+So we just mark those instead-of-mnt_pin() clones as MNT_INTERNAL.  Voila.
+After that ->mnt_pinned crap dies, acct auto-close ought to be race-free
+and we get the actual fs shutdown guaranteed to be on shallow stack, without
+extra context switches, etc. in the normal case.
 
-My CPUs are as follows:
-
-finger@larrylap:~/wireless-testing> hwinfo --cpu
-01: None 00.0: 10103 CPU
-   [Created at cpu.374]
-   Unique ID: rdCR.j8NaKXDZtZ6
-   Hardware Class: cpu
-   Arch: X86-64
-   Vendor: "AuthenticAMD"
-   Model: 15.104.2 "AMD Turion(tm) 64 X2 TL-60"
-   Features: 
-fpu,vme,de,pse,tsc,msr,pae,mce,cx8,apic,sep,mtrr,pge,mca,cmov,pat,pse36,clflush,mmx,fxsr,sse,sse2,ht,syscall,nx,mmxext,fxsr_opt,rdtscp,lm,3dnowext,3dnow,rep_good,nopl,extd_apicid,pni,cx16,lahf_lm,cmp_legacy,svm,extapic,cr8_legacy,3dnowprefetch,lbrv
-   Clock: 800 MHz
-   BogoMips: 1600.16
-   Cache: 512 kb
-   Units/Processor: 2
-   Config Status: cfg=no, avail=yes, need=no, active=unknown
-
-02: None 01.0: 10103 CPU
-   [Created at cpu.374]
-   Unique ID: wkFv.j8NaKXDZtZ6
-   Hardware Class: cpu
-   Arch: X86-64
-   Vendor: "AuthenticAMD"
-   Model: 15.104.2 "AMD Turion(tm) 64 X2 TL-60"
-   Features: 
-fpu,vme,de,pse,tsc,msr,pae,mce,cx8,apic,sep,mtrr,pge,mca,cmov,pat,pse36,clflush,mmx,fxsr,sse,sse2,ht,syscall,nx,mmxext,fxsr_opt,rdtscp,lm,3dnowext,3dnow,rep_good,nopl,extd_apicid,pni,cx16,lahf_lm,cmp_legacy,svm,extapic,cr8_legacy,3dnowprefetch,lbrv
-   Clock: 800 MHz
-   BogoMips: 1600.16
-   Cache: 512 kb
-   Units/Processor: 2
-   Config Status: cfg=no, avail=yes, need=no, active=unknown
-finger@larrylap:~/wireless-testing>
-
-Thank you,
-
-Larry
-
-
-
+	Let's see if that survives testing...
