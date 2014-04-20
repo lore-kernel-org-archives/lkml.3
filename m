@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751167AbaDTV0b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 17:26:31 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751039AbaDTV01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 17:26:27 -0400
-Message-ID: <53543B76.2080405@nod.at>
-Date: Sun, 20 Apr 2014 23:26:14 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751246AbaDTV0r (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 17:26:47 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:50739 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751046AbaDTV0o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Apr 2014 17:26:44 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Linux PM list <linux-pm@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Aubrey Li <aubrey.li@intel.com>,
+        Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Subject: [PATCH] PM / suspend: Make cpuidle work in the "freeze" state
+Date: Sun, 20 Apr 2014 23:43:01 +0200
+Message-ID: <4271849.XeOTooWnSN@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Tristan Schmelcher <tschmelcher@google.com>,
-        "Anton Ivanov (antivano)" <antivano@cisco.com>,
-        user-mode-linux-devel <user-mode-linux-devel@lists.sourceforge.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] UML fixes
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 
-The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
+The "freeze" system sleep state introduced by commit 7e73c5ae6e79
+(PM: Introduce suspend state PM_SUSPEND_FREEZE) requires cpuidle
+to be functional when freeze_enter() is executed to work correctly
+(that is, to be able to save any more energy than runtime idle),
+but that is impossible after commit 8651f97bd951d (PM / cpuidle:
+System resume hang fix with cpuidle) which caused cpuidle to be
+paused in dpm_suspend_noirq() and resumed in dpm_resume_noirq().
 
-  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
+To avoid that problem, add cpuidle_resume() and cpuidle_pause()
+to the beginning and the end of freeze_enter(), respectively.
 
-are available in the git repository at:
+Reported-by: Zhang Rui <rui.zhang@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+---
+ kernel/power/suspend.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git for-linus
+Index: linux-pm/kernel/power/suspend.c
+===================================================================
+--- linux-pm.orig/kernel/power/suspend.c
++++ linux-pm/kernel/power/suspend.c
+@@ -14,6 +14,7 @@
+ #include <linux/init.h>
+ #include <linux/console.h>
+ #include <linux/cpu.h>
++#include <linux/cpuidle.h>
+ #include <linux/syscalls.h>
+ #include <linux/gfp.h>
+ #include <linux/io.h>
+@@ -53,7 +54,9 @@ static void freeze_begin(void)
+ 
+ static void freeze_enter(void)
+ {
++	cpuidle_resume();
+ 	wait_event(suspend_freeze_wait_head, suspend_freeze_wake);
++	cpuidle_pause();
+ }
+ 
+ void freeze_wake(void)
 
-for you to fetch changes up to a8c60be4f1bb3a4eead20e3fa19ce645f818014a:
-
-  um: Memory corruption on startup (2014-04-20 23:13:36 +0200)
-
-----------------------------------------------------------------
-Assorted fixes for UML.
-----------------------------------------------------------------
-Anton Ivanov (2):
-      um: Missing pipe handling
-      um: Memory corruption on startup
-
-Tristan Schmelcher (1):
-      uml: Simplify tempdir logic.
-
- arch/um/include/shared/os.h |   1 +
- arch/um/kernel/physmem.c    |   1 +
- arch/um/os-Linux/file.c     |   6 +
- arch/um/os-Linux/main.c     |   1 +
- arch/um/os-Linux/mem.c      | 372 +++++++++-----------------------------------
- 5 files changed, 84 insertions(+), 297 deletions(-)
-
-Thanks,
-//richard
