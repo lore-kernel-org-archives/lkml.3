@@ -1,113 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755253AbaDTDSQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 23:18:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41552 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755193AbaDTDSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 23:18:12 -0400
-Date: Sat, 19 Apr 2014 22:15:17 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-CC: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 1/8] usb: host: xhci-plat: Allow to register glue code
- using the device tree
-Message-ID: <20140420031517.GA26893@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
- <1397816563-9000-2-git-send-email-gregory.clement@free-electrons.com>
+	id S1161030AbaDTDWl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 23:22:41 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:56123 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755193AbaDTDWg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 23:22:36 -0400
+Message-ID: <53533D74.6020004@redhat.com>
+Date: Sat, 19 Apr 2014 23:22:28 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LZvS9be/3tNcYl/X"
-Content-Disposition: inline
-In-Reply-To: <1397816563-9000-2-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Bandan Das <bsd@redhat.com>, kvm@vger.kernel.org
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] KVM: x86: Check for host supported fields in shadow vmcs
+References: <jpgha5olwq2.fsf@nelium.bos.redhat.com>
+In-Reply-To: <jpgha5olwq2.fsf@nelium.bos.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---LZvS9be/3tNcYl/X
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Fri, Apr 18, 2014 at 12:22:36PM +0200, Gregory CLEMENT wrote:
-> This patch allow to register specific glue code for xhci controller.
-> It creates a structure called xhci_plat_ops to register functions
-> specific to an SoC. Currently there are only probe() and remove() but
-
-What SoC-specific code do you need ?
-
-> it can be extended later, it was the point to create such a structure.
->=20
-> Each compatible string can then be associated to an instance of this
-> structure. In the non device tree case a default structure is used.
->=20
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Il 19/04/2014 19:34, Bandan Das ha scritto:
+>
+> We track shadow vmcs fields through two static lists,
+> one for read only fields and another for r/w. However, with
+> addition of new vmcs fields, not all fields may be supported on
+> all hosts. If so, copy_vmcs12_to_shadow() trying to vmwrite on older
+> hosts will result in a vmwrite error. For example, commit
+> 36be0b9deb23161 introduced GUEST_BNDCFGS, which is not supported
+> for all processors. Create new lists based out of intersection of
+> static lists and host support and use them for tracking
+> shadow fields instead
+>
+> Signed-off-by: Bandan Das <bsd@redhat.com>
 > ---
->  drivers/usb/host/xhci-plat.c | 72 ++++++++++++++++++++++++++++++++++++++=
-+++---
->  drivers/usb/host/xhci.h      |  4 +++
->  2 files changed, 72 insertions(+), 4 deletions(-)
->=20
-> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-> index 151901ce1ba9..8029cc82edc4 100644
-> --- a/drivers/usb/host/xhci-plat.c
-> +++ b/drivers/usb/host/xhci-plat.c
-> @@ -16,6 +16,7 @@
->  #include <linux/slab.h>
->  #include <linux/of.h>
->  #include <linux/dma-mapping.h>
-> +#include <linux/of_device.h>
-> =20
->  #include "xhci.h"
-> =20
-> @@ -85,7 +86,7 @@ static const struct hc_driver xhci_plat_xhci_driver =3D=
- {
->  	.bus_resume =3D		xhci_bus_resume,
+>  arch/x86/kvm/vmx.c | 98 +++++++++++++++++++++++++++++++++++++++++++-----------
+>  1 file changed, 79 insertions(+), 19 deletions(-)
+>
+> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+> index 7bed3e3..ffc2232 100644
+> --- a/arch/x86/kvm/vmx.c
+> +++ b/arch/x86/kvm/vmx.c
+> @@ -502,7 +502,10 @@ static inline struct vcpu_vmx *to_vmx(struct kvm_vcpu *vcpu)
+>  #define FIELD64(number, name)	[number] = VMCS12_OFFSET(name), \
+>  				[number##_HIGH] = VMCS12_OFFSET(name)+4
+>
+> -
+> +/*
+> + * Do not use the two lists below directly
+> + * Use vmcs_shadow_fields instead
+> + */
+>  static const unsigned long shadow_read_only_fields[] = {
+>  	/*
+>  	 * We do NOT shadow fields that are modified when L0
+> @@ -526,8 +529,6 @@ static const unsigned long shadow_read_only_fields[] = {
+>  	GUEST_LINEAR_ADDRESS,
+>  	GUEST_PHYSICAL_ADDRESS
 >  };
-> =20
-> -static int xhci_plat_probe(struct platform_device *pdev)
-> +int common_xhci_plat_probe(struct platform_device *pdev, void *priv)
+> -static const int max_shadow_read_only_fields =
+> -	ARRAY_SIZE(shadow_read_only_fields);
+>
+>  static const unsigned long shadow_read_write_fields[] = {
+>  	GUEST_RIP,
+> @@ -558,8 +559,18 @@ static const unsigned long shadow_read_write_fields[] = {
+>  	HOST_FS_SELECTOR,
+>  	HOST_GS_SELECTOR
+>  };
+> -static const int max_shadow_read_write_fields =
+> -	ARRAY_SIZE(shadow_read_write_fields);
 
-no, I rather not see this sort of hack.
+Can we just remove the "const" here, and compress the arrays down 
+similar to what kvm_init_msr_list does.
 
---=20
-balbi
+> +/* If new shadow fields are added, these should be modified appropriately */
+> +#define VMCS_MAX_RO_FIELDS 10
+> +#define VMCS_MAX_RW_FIELDS 30
+> +
+> +struct vmcs_shadow_fields_data {
+> +	int shadow_ro_fields_len;
+> +	int shadow_rw_fields_len;
+> +	unsigned long shadow_read_only_fields[VMCS_MAX_RO_FIELDS];
+> +	unsigned long shadow_read_write_fields[VMCS_MAX_RW_FIELDS];
+> +};
+> +static struct vmcs_shadow_fields_data vmcs_shadow_fields;
+>
+>  static const unsigned short vmcs_field_to_offset_table[] = {
+>  	FIELD(VIRTUAL_PROCESSOR_ID, virtual_processor_id),
+> @@ -3027,6 +3038,56 @@ static __init int alloc_kvm_area(void)
+>  	return 0;
+>  }
+>
+> +static void cleanup_vmcs_shadow_fields(void)
+> +{
+> +	memset(&vmcs_shadow_fields, 0,
+> +	       sizeof(struct vmcs_shadow_fields_data));
+> +}
+> +
+> +static void init_vmcs_shadow_fields(void)
+> +{
+> +	struct vmcs_shadow_fields_data *vmcs_ptr = &vmcs_shadow_fields;
+> +	int max_shadow_read_write_fields = ARRAY_SIZE(shadow_read_write_fields);
+> +	int max_shadow_read_only_fields = ARRAY_SIZE(shadow_read_only_fields);
+> +	int i, j;
+> +
+> +	for (i = 0, j = 0; i < max_shadow_read_write_fields; i++) {
+> +		if (i >= VMCS_MAX_RW_FIELDS) {
+> +			WARN(1, "Shadow RW fields index out of bounds\n");
+> +			break;
+> +		}
+> +		if ((shadow_read_write_fields[i] == GUEST_BNDCFGS) &&
+> +		    !vmx_mpx_supported())
+> +			continue;
 
---LZvS9be/3tNcYl/X
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Please code this as a "switch" statement for easier future 
+extensibility.  Again, this would be similar to kvm_init_msr_list.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+How did you find this?  Do you have access to a machine with shadow 
+VMCS?  Is that Ivy Bridge Xeon E5 or does some lower-end Haswell have it?
 
-iQIcBAEBAgAGBQJTUzvFAAoJEIaOsuA1yqREEoMP/ihPOo8wrZ6Pt2iEGqC6/48A
-kcBk/BkqmzfCBtj2MMOvrvA9qF7VC2dzVlo3QTKiiullp2ogzA2tWxRtjA1ky1Mx
-vqbsr2fs84OjuTMxtOYwUWBcUHXIb2B6lSMomVYvcOrm4AkQ//R5ikYprkdw/dSq
-OBI0wgnsCyALm1sM5ngjraSVyQZakUhBJ3SyUaCiVQgZ2bf75d5JoKzQO+5l9hUI
-Q8UG5pfoNlUebbw//aX8hc0Ewi+QYPWzJP3hGeaduHquV9RQuKRCs3gaPo4okPAB
-EzcG8htpryDZCkye0umznICzGfzkdLNE+0ANiuOPihVEbZITC+nCSVlJN1mBVf59
-fGAPrI+jowyRKmJ20KVeCOmNqFenCEnv+nGyKmb6sBgY58kjAsOZ4Eq3N96YBxuF
-YTQUAVEQ3odJ6Eq30qmIAczaFw6OcFB9DRHiDpm7uBfKrI+P6EcgZ3K8U8NlrccE
-RqG/eKFfiYj3dRlz/KJrr1xADqrDIBd+XRjdTjILTSfaDIar8um65OCpBqPAjTOK
-WbWBUtvICLRM3uqv4hg4CqkN9VdkZdpHhqPePjApWO6aO8zep7RGAEbMlzMFEdcJ
-UcGi/PVm8rEVhBhTkO9A6dths5l6jfXjymZFOjbpl3KGKFD8nx+BcQzUB3ruQXmS
-nvFByDnNFgDEuGY89T48
-=qD3P
------END PGP SIGNATURE-----
+Paolo
 
---LZvS9be/3tNcYl/X--
+> +		vmcs_ptr->shadow_read_write_fields[j++] =
+> +			shadow_read_write_fields[i];
+> +		vmcs_ptr->shadow_rw_fields_len++;
+> +	}
+> +
+> +	for (i = 0, j = 0; i < max_shadow_read_only_fields; i++) {
+> +		if (i >= VMCS_MAX_RO_FIELDS) {
+> +			WARN(1, "Shadow RO fields index out of bounds\n");
+> +			break;
+> +		}
+> +		vmcs_ptr->shadow_read_only_fields[j++] =
+> +			shadow_read_only_fields[i];
+> +		vmcs_ptr->shadow_ro_fields_len++;
+> +	}
+> +
+> +	/* shadowed read/write fields */
+> +	for (i = 0; i < vmcs_ptr->shadow_rw_fields_len; i++) {
+> +		clear_bit(vmcs_ptr->shadow_read_write_fields[i],
+> +			  vmx_vmwrite_bitmap);
+> +		clear_bit(vmcs_ptr->shadow_read_write_fields[i],
+> +			  vmx_vmread_bitmap);
+> +	}
+> +	/* shadowed read only fields */
+> +	for (i = 0; i < vmcs_ptr->shadow_ro_fields_len; i++)
+> +		clear_bit(vmcs_ptr->shadow_read_only_fields[i],
+> +			  vmx_vmread_bitmap);
+> +
+> +}
+> +
+>  static __init int hardware_setup(void)
+>  {
+>  	if (setup_vmcs_config(&vmcs_config) < 0)
+> @@ -3039,6 +3100,8 @@ static __init int hardware_setup(void)
+>  		enable_vpid = 0;
+>  	if (!cpu_has_vmx_shadow_vmcs())
+>  		enable_shadow_vmcs = 0;
+> +	if (enable_shadow_vmcs)
+> +		init_vmcs_shadow_fields();
+>
+>  	if (!cpu_has_vmx_ept() ||
+>  	    !cpu_has_vmx_ept_4levels()) {
+> @@ -3084,6 +3147,8 @@ static __init int hardware_setup(void)
+>
+>  static __exit void hardware_unsetup(void)
+>  {
+> +	if (enable_shadow_vmcs)
+> +		cleanup_vmcs_shadow_fields();
+>  	free_kvm_area();
+>  }
+>
+> @@ -6159,8 +6224,9 @@ static void copy_shadow_to_vmcs12(struct vcpu_vmx *vmx)
+>  	unsigned long field;
+>  	u64 field_value;
+>  	struct vmcs *shadow_vmcs = vmx->nested.current_shadow_vmcs;
+> -	const unsigned long *fields = shadow_read_write_fields;
+> -	const int num_fields = max_shadow_read_write_fields;
+> +	const unsigned long *fields =
+> +		vmcs_shadow_fields.shadow_read_write_fields;
+> +	const int num_fields = vmcs_shadow_fields.shadow_rw_fields_len;
+>
+>  	vmcs_load(shadow_vmcs);
+>
+> @@ -6189,13 +6255,15 @@ static void copy_shadow_to_vmcs12(struct vcpu_vmx *vmx)
+>
+>  static void copy_vmcs12_to_shadow(struct vcpu_vmx *vmx)
+>  {
+> +	struct vmcs_shadow_fields_data *ptr = &vmcs_shadow_fields;
+> +
+>  	const unsigned long *fields[] = {
+> -		shadow_read_write_fields,
+> -		shadow_read_only_fields
+> +		ptr->shadow_read_write_fields,
+> +		ptr->shadow_read_only_fields
+>  	};
+>  	const int max_fields[] = {
+> -		max_shadow_read_write_fields,
+> -		max_shadow_read_only_fields
+> +		ptr->shadow_rw_fields_len,
+> +		ptr->shadow_ro_fields_len
+>  	};
+>  	int i, q;
+>  	unsigned long field;
+> @@ -8817,14 +8885,6 @@ static int __init vmx_init(void)
+>
+>  	memset(vmx_vmread_bitmap, 0xff, PAGE_SIZE);
+>  	memset(vmx_vmwrite_bitmap, 0xff, PAGE_SIZE);
+> -	/* shadowed read/write fields */
+> -	for (i = 0; i < max_shadow_read_write_fields; i++) {
+> -		clear_bit(shadow_read_write_fields[i], vmx_vmwrite_bitmap);
+> -		clear_bit(shadow_read_write_fields[i], vmx_vmread_bitmap);
+> -	}
+> -	/* shadowed read only fields */
+> -	for (i = 0; i < max_shadow_read_only_fields; i++)
+> -		clear_bit(shadow_read_only_fields[i], vmx_vmread_bitmap);
+>
+>  	/*
+>  	 * Allow direct access to the PC debug port (it is often used for I/O
+>
+
