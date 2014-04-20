@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478AbaDTPMK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 11:12:10 -0400
-Received: from mx.insigma.com.cn ([115.236.48.170]:45771 "EHLO
+	id S1755493AbaDTPMS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 11:12:18 -0400
+Received: from mx.insigma.com.cn ([115.236.48.170]:46953 "EHLO
 	WX-Ex2010Edge01.insigma.com.cn" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755461AbaDTPLp (ORCPT
+	by vger.kernel.org with ESMTP id S1755463AbaDTPL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 11:11:45 -0400
+	Sun, 20 Apr 2014 11:11:56 -0400
 From: Jiaxing Wang <wangjiaxing@insigma.com.cn>
 To: Steven Rostedt <rostedt@goodmis.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ingo Molnar <mingo@redhat.com>
 CC: <linux-kernel@vger.kernel.org>, Jiaxing Wang <wangjiaxing@insigma.com.cn>
-Subject: [PATCH 1/2] tracing/trace_stack:Skip 4 instead of 3 when using ftrace_ops_list_func
-Date: Sun, 20 Apr 2014 23:10:43 +0800
-Message-ID: <1398006644-5935-2-git-send-email-wangjiaxing@insigma.com.cn>
+Subject: [PATCH 2/2] Correct documentation of ftrace_set_global_filter and ftrace_set_global_notrace
+Date: Sun, 20 Apr 2014 23:10:44 +0800
+Message-ID: <1398006644-5935-3-git-send-email-wangjiaxing@insigma.com.cn>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398006644-5935-1-git-send-email-wangjiaxing@insigma.com.cn>
 References: <1398006644-5935-1-git-send-email-wangjiaxing@insigma.com.cn>
@@ -25,75 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When using ftrace_ops_list_func, we should skip 4 instead of 3,
-to avoid ftrace_call+0x5/0xb appearing in the stack trace:
-
-        Depth    Size   Location    (110 entries)
-        -----    ----   --------
-  0)     2956       0   update_curr+0xe/0x1e0
-  1)     2956      68   ftrace_call+0x5/0xb
-  2)     2888      92   enqueue_entity+0x53/0xe80
-  3)     2796      80   enqueue_task_fair+0x47/0x7e0
-  4)     2716      28   enqueue_task+0x45/0x70
-  5)     2688      12   activate_task+0x22/0x30
-
-Add a function using_ftrace_ops_list_func() to test for this while keeping
-ftrace_ops_list_func to remain static.
-
 Signed-off-by: Jiaxing Wang <wangjiaxing@insigma.com.cn>
 ---
- kernel/trace/ftrace.c      | 5 +++++
- kernel/trace/trace.h       | 1 +
- kernel/trace/trace_stack.c | 8 ++++++--
- 3 files changed, 12 insertions(+), 2 deletions(-)
+ kernel/trace/ftrace.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 1fd4b94..e7e7302 100644
+index e7e7302..57cdaba 100644
 --- a/kernel/trace/ftrace.c
 +++ b/kernel/trace/ftrace.c
-@@ -373,6 +373,11 @@ static void update_ftrace_function(void)
- 	ftrace_trace_function = func;
+@@ -3644,8 +3644,7 @@ int ftrace_set_notrace(struct ftrace_ops *ops, unsigned char *buf,
  }
+ EXPORT_SYMBOL_GPL(ftrace_set_notrace);
+ /**
+- * ftrace_set_filter - set a function to filter on in ftrace
+- * @ops - the ops to set the filter with
++ * ftrace_set_global_filter - set a function to filter on with global tracers
+  * @buf - the string that holds the function filter text.
+  * @len - the length of the string.
+  * @reset - non zero to reset all filters before applying this filter.
+@@ -3660,8 +3659,7 @@ void ftrace_set_global_filter(unsigned char *buf, int len, int reset)
+ EXPORT_SYMBOL_GPL(ftrace_set_global_filter);
  
-+int using_ftrace_ops_list_func(void)
-+{
-+	return ftrace_trace_function == ftrace_ops_list_func;
-+}
-+
- static void add_ftrace_ops(struct ftrace_ops **list, struct ftrace_ops *ops)
- {
- 	ops->next = *list;
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index ffc314b..920c0a5 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -822,6 +822,7 @@ extern int ftrace_is_dead(void);
- int ftrace_create_function_files(struct trace_array *tr,
- 				 struct dentry *parent);
- void ftrace_destroy_function_files(struct trace_array *tr);
-+int using_ftrace_ops_list_func(void);
- #else
- static inline int ftrace_trace_task(struct task_struct *task)
- {
-diff --git a/kernel/trace/trace_stack.c b/kernel/trace/trace_stack.c
-index 21b320e..5aa9a5b 100644
---- a/kernel/trace/trace_stack.c
-+++ b/kernel/trace/trace_stack.c
-@@ -85,8 +85,12 @@ check_stack(unsigned long ip, unsigned long *stack)
- 
- 	max_stack_size = this_size;
- 
--	max_stack_trace.nr_entries	= 0;
--	max_stack_trace.skip		= 3;
-+	max_stack_trace.nr_entries = 0;
-+
-+	if (using_ftrace_ops_list_func())
-+		max_stack_trace.skip = 4;
-+	else
-+		max_stack_trace.skip = 3;
- 
- 	save_stack_trace(&max_stack_trace);
- 
+ /**
+- * ftrace_set_notrace - set a function to not trace in ftrace
+- * @ops - the ops to set the notrace filter with
++ * ftrace_set_global_notrace - set a function to not trace with global tracers
+  * @buf - the string that holds the function notrace text.
+  * @len - the length of the string.
+  * @reset - non zero to reset all filters before applying this filter.
 -- 
 1.8.3.2
 
