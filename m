@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073AbaDTGY6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 02:24:58 -0400
-Received: from 1wt.eu ([62.212.114.60]:9874 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044AbaDTGYr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 02:24:47 -0400
-Date: Sun, 20 Apr 2014 08:24:37 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Bastien Armand <armand.bastien@laposte.net>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jake Champlin <jake.champlin.27@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 0/2] staging: panel: fix sparse warnings.
-Message-ID: <20140420062437.GB4037@1wt.eu>
-References: <20140418160918.GA1258@plop.dartybox.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S932092AbaDTGZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 02:25:59 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:45652 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589AbaDTGYx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Apr 2014 02:24:53 -0400
+Date: Sun, 20 Apr 2014 08:24:50 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Dave Airlie <airlied@linux.ie>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
+Subject: Re: [git pull] drm fixes
+Message-ID: <20140420062450.GA281@x4>
+References: <alpine.DEB.2.00.1404190810001.7507@skynet.skynet.ie>
+ <20140419190305.GA267@x4>
+ <CADnq5_M9COdOJhOu4_9yRpDoFt3bcc9HVqrvQqnYM3YuTLv15A@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140418160918.GA1258@plop.dartybox.com>
-User-Agent: Mutt/1.4.2.3i
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CADnq5_M9COdOJhOu4_9yRpDoFt3bcc9HVqrvQqnYM3YuTLv15A@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bastien,
-
-On Fri, Apr 18, 2014 at 06:09:18PM +0200, Bastien Armand wrote:
-> This serie of two patch fix the following sparse warnings in panel.c :
-> panel.c:1235:26: warning: incorrect type in argument 1 (different address spaces)
-> panel.c:1235:26:    expected void const volatile [noderef] <asn:1>*<noident>
-> panel.c:1235:26:    got char const *tmp
-> panel.c:1353:20: warning: incorrect type in initializer (incompatible argument 2 (different address spaces))
-> panel.c:1353:20:    expected int ( *write )( ... )
-> panel.c:1353:20:    got int ( static [toplevel] *<noident> )( ... )
-> panel.c:1591:17: warning: incorrect type in argument 1 (different address spaces)
-> panel.c:1591:17:    expected void const volatile [noderef] <asn:1>*<noident>
-> panel.c:1591:17:    got char *tmp
-> panel.c:1620:20: warning: incorrect type in initializer (incompatible argument 2 (different address spaces))
-> panel.c:1620:20:    expected int ( *read )( ... )
-> panel.c:1620:20:    got int ( static [toplevel] *<noident> )( ... )
+On 2014.04.19 at 21:21 -0400, Alex Deucher wrote:
+> On Sat, Apr 19, 2014 at 3:03 PM, Markus Trippelsdorf
+> <markus@trippelsdorf.de> wrote:
+> > On 2014.04.19 at 08:19 +0100, Dave Airlie wrote:
+> >>
+> >> Unfortunately this contains no easter eggs, its a bit larger than I'd
+> >> like, but I included a patch that just moves code from one file to another
+> >> and I'd like to avoid merge conflicts with that later, so it makes it seem
+> >> worse than it is,
+> >
+> >> Christian König (2):
+> >>       drm/radeon: apply more strict limits for PLL params v2
+> >>       drm/radeon: improve PLL params if we don't match exactly v2
+> >
+> > commit f8a2645ecede4eaf90b3d785f2805c8ecb76d43e
+> > Author: Christian König <christian.koenig@amd.com>
+> > Date:   Wed Apr 16 11:54:21 2014 +0200
+> >
+> >     drm/radeon: improve PLL params if we don't match exactly v2
+> >
+> > The commit above causes my monitor to just stay blank after boot.
+> > No framebuffer, no Xorg, no nothing. I'm using a Radeon RS780.
 > 
-> Changes since v1 :
-> - splitted patch in two
-> 
-> Bastien Armand (2):
->   staging: panel: fix sparse warnings in keypad_read
->   staging: panel: fix sparse warnings in lcd_write
+> Can you try the patch on:
+> https://bugs.freedesktop.org/show_bug.cgi?id=77673
 
-Just reviewed them both and I'm fine with these patches. You can
-add my :
+I did and it doesn't fix the issue.
 
-    Acked-by: Willy Tarreau <w@1wt.eu>
-
-Willy
-
+-- 
+Markus
