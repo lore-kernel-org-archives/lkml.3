@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499AbaDTSF6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 14:05:58 -0400
-Received: from host171.canaca.com ([67.55.55.225]:47384 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751380AbaDTSFu (ORCPT
+	id S1755399AbaDTS15 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 14:27:57 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:36704 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbaDTS1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 14:05:50 -0400
-Message-ID: <8621559ed516260f3a624e1aef6668a6.squirrel@mungewell.org>
-In-Reply-To: <1545736.mMj2y7JqSb@sigyn>
-References: <1609685.QRL9N9sQvX@sigyn> <1545736.mMj2y7JqSb@sigyn>
-Date: Sun, 20 Apr 2014 13:27:46 -0400
-Subject: Re: [PATCH 23/24] Port hid-lg4ff to ff-memless-next
-From: simon@mungewell.org
-To: =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
-	<madcatxster@devoid-pointer.net>
-Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Elias Vanderstuyft" <elias.vds@gmail.com>
-User-Agent: SquirrelMail/1.4.22
+	Sun, 20 Apr 2014 14:27:55 -0400
+Message-ID: <535411A8.7040401@lwfinger.net>
+Date: Sun, 20 Apr 2014 13:27:52 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Tony Luck <tony.luck@intel.com>, Gong Chen <gong.chen@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Bug in 3.15-rc1: Scheduling while atomic splats filling log -
+ bisected to commit 27f6c57
+References: <53502886.6020107@lwfinger.net>	<53535D1C.200@lwfinger.net> <CA+55aFxsDvc=3j9TFgEV7W7f-PMRn2UfqStHPXDVqCRXyPXzEg@mail.gmail.com>
+In-Reply-To: <CA+55aFxsDvc=3j9TFgEV7W7f-PMRn2UfqStHPXDVqCRXyPXzEg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Port hid-lg4ff to ff-memless-next
+On 04/20/2014 12:45 AM, Linus Torvalds wrote:
+> Should be fixed in current git by commit ea431643d6c.
 
-Signed-off-by: Simon Wood <simon@mungewell.org>
+Yes, that commit did fix my issue.
+
+Thanks,
+
+Larry
+
+
 
