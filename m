@@ -1,143 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755312AbaDTKjn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 06:39:43 -0400
-Received: from relay.parallels.com ([195.214.232.42]:56565 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905AbaDTKje (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 06:39:34 -0400
-Message-ID: <5353A3E3.4020302@parallels.com>
-Date: Sun, 20 Apr 2014 14:39:31 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	id S1755326AbaDTKyg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 06:54:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40750 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754911AbaDTKy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Apr 2014 06:54:28 -0400
+Date: Sun, 20 Apr 2014 12:54:19 +0200
+From: Borislav Petkov <bp@suse.de>
+To: Myron Stowe <myron.stowe@redhat.com>
+Cc: bhelgaas@google.com, linux-pci@vger.kernel.org,
+        suravee.suthikulpanit@amd.com, aravind.gopalakrishnan@amd.com,
+        kim.naru@amd.com, daniel@numascale.com, tglx@linutronix.de,
+        mingo@redhat.com, hpa@zytor.com, x86@kernel.org, sp@numascale.com,
+        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/5] PCI: Remove redundant 'quirk_amd_nb_node'
+Message-ID: <20140420105419.GB19676@pd.tnic>
+References: <20140419025308.2408.51252.stgit@amt.stowe>
+ <20140419025345.2408.99229.stgit@amt.stowe>
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Glauber Costa <glommer@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Linux Memory Management List" <linux-mm@kvack.org>,
-        <devel@openvz.org>
-Subject: [RFC] how should we deal with dead memcgs' kmem caches?
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [81.5.110.170]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20140419025345.2408.99229.stgit@amt.stowe>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Apr 18, 2014 at 08:53:46PM -0600, Myron Stowe wrote:
+> With the amd_bus.c updates to support additional AMD processors (11h, 12h,
+> 14h 15h  and 16h) 'quirk_amd_nb_node' seems to be redundant.  This patch
+> removes it.
+> 
+> Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
 
->From my pov one of the biggest problems in kmemcg implementation is how
-to handle per memcg kmem caches that have objects when the owner memcg
-is turned offline. Actually there are two issues here. First, when and
-where we should initiate cache destruction (e.g. schedule destruction
-work from kmem_cache_free when the last object goes away, or reap them
-periodically). Second, how to prevent races between kmem_cache_destroy
-and kmem_cache_free for a dead cache: the point is kmem_cache_free may
-want to access the kmem_cache structure after it releases the object
-potentially making the cache destroyable.
+Good idea. Has this been tested, though? There are a bunch of places
+using dev_to_node() which this quirk corrects, especially 'local_cpus'
+in a bunch of sysfs nodes in the PCI hierarchy /sys/devices/pci*.
 
-Here I'd like to present possible ways of sorting out this problem,
-their pros and cons, in the hope that you will share your thoughts on
-them and perhaps we will be able to come to a consensus about which way
-we should choose.
+We want to make sure this doesn't break that and other dev_to_node()
+callsites.
 
+Thanks.
 
-* How it works now *
+-- 
+Regards/Gruss,
+    Boris.
 
-We count pages (slabs) allocated to a per memcg cache in
-memcg_cache_params::nr_pages. When a memcg is turned offline, we set the
-memcg_cache_params::dead flag, which makes slab freeing functions
-schedule the memcg_cache_params::destroy work, which destroys the cache
-(see memcg_release_pages), as soon as nr_pages reaches 0.
-
-Actually, it does not work as expected: kmem caches that have objects on
-memcg offline will be leaked, because both slab and slub designs never
-free all pages on kmem_cache_free to speed up further allocs/frees.
-
-Furthermore, currently we don't handle possible races between
-kmem_cache_free/shrink and the destruction work - we can still use the
-cache in kmem_cache_free/shrink after we freed the last page and
-initiated destruction.
-
-
-* Way #1 - prevent dead kmem caches from caching slabs on free *
-
-We can modify sl[au]b implementation so that it won't cache any objects
-on free if the kmem cache belongs to a dead memcg. Then it'd be enough
-to drain per-cpu pools of all dead kmem caches on css offline - no new
-slabs will be added there on further frees, and the last object will go
-away along with the last slab.
-
-Pros: don't see any
-Cons:
- - have to intrude into sl[au]b internals
- - frees to dead caches will be noticeably slowed down
-
-We still have to solve kmem_cache_free vs destroy race somehow, e.g. by
-rearranging operations in kmem_cache_free so that nr_pages is always
-decremented in the end.
-
-
-* Way #2 - reap caches periodically or on vmpressure *
-
-We can remove the async work scheduling from kmem_cache_free completely,
-and instead walk over all dead kmem caches either periodically or on
-vmpressure to shrink and destroy those of them that become empty.
-
-That is what I had in mind when submitting the patch set titled "kmemcg:
-simplify work-flow":
-	https://lkml.org/lkml/2014/4/18/42
-
-Pros: easy to implement
-Cons: instead of being destroyed asap, dead caches will hang around
-until some point in time or, even worse, memory pressure condition.
-
-Again, it has nothing to say about the free-vs-destroy race. I was
-planning to rearrange operations in kmem_cache_free as I described above.
-
-
-* Way #3 - re-parent individual slabs *
-
-Theoretically, we could move all slab pages belonging to a kmem cache of
-a dead memcg to its parent memcg's cache. Then we could remove all dead
-caches immediately on css offline.
-
-Pros:
- - slabs of dead caches could be reused by parent memcg
- - should solve the cache free-vs-destroy race
-Cons:
- - difficult to implement - requires deep knowledge of sl[au]b design
-   and individual approach to both algorithms
- - will require heavy intrusion into sl[au]b internals
-
-
-* Way #4 - count active objects per memcg cache *
-
-We could count not pages allocated to per memcg kmem caches, but
-individual objects. To minimize performance impact we could use percpu
-counters (something like percpu_ref).
-
-Pros:
- - very simple and clear implementation independent of slab algorithm
- - caches are destroyed as soon as they become empty
- - solves the problem with free-vs-destroy race automatically - cache
-   destruction will be initiated in the end of the last kfree, so that
-   no races are possible
-Cons:
- - will impact performance of alloc/free for per memcg caches,
-   especially for dead ones, for which we have to switch to an atomic
-   counter
- - existing implementation of percpu_ref can only hold 2^31-1 values;
-   although currently we can hardly have 2G kmem objects of one kind
-   even in a global cache, not speaking of per memcg, we should use
-   long counter to avoid overflows in future; therefore we should
-   either extend the existing implementation or introduce new percpu
-   long counter or use in-place solution
-
-
-I'd appreciate if you could vote for the solution you like most or
-propose other approaches.
-
-Thank you.
+Sent from a fat crate under my desk. Formatting is fine.
+--
