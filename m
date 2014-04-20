@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755285AbaDTIsV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 04:48:21 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:48706 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbaDTIsP (ORCPT
+	id S1755314AbaDTIso (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 04:48:44 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:42686 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751641AbaDTIsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 04:48:15 -0400
+	Sun, 20 Apr 2014 04:48:35 -0400
 From: navin patidar <navin.patidar@gmail.com>
 To: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
         navin patidar <navin.patidar@gmail.com>
-Subject: [PATCH 02/10] staging: rtl8188eu: Remove rtw_led_blink_cmd() function.
-Date: Sun, 20 Apr 2014 14:17:10 +0530
-Message-Id: <1397983638-10752-2-git-send-email-navin.patidar@gmail.com>
+Subject: [PATCH 03/10] staging: rtl8188eu: Remove _ReadLEDSetting() function.
+Date: Sun, 20 Apr 2014 14:17:11 +0530
+Message-Id: <1397983638-10752-3-git-send-email-navin.patidar@gmail.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1397983638-10752-1-git-send-email-navin.patidar@gmail.com>
 References: <1397983638-10752-1-git-send-email-navin.patidar@gmail.com>
@@ -21,72 +21,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-rtw_led_blink_cmd() isn't being used by driver.
+_ReadLEDSetting() doesn't read led settings this function actually
+initialize  member variables of struct led_priv, we should do that
+inside rtl8188eu_InitSwLeds().
 
 Signed-off-by: navin patidar <navin.patidar@gmail.com>
 ---
- drivers/staging/rtl8188eu/core/rtw_cmd.c    |   35 ---------------------------
- drivers/staging/rtl8188eu/include/rtw_cmd.h |    1 -
- 2 files changed, 36 deletions(-)
+ drivers/staging/rtl8188eu/hal/rtl8188eu_led.c |    4 ++++
+ drivers/staging/rtl8188eu/hal/usb_halinit.c   |   12 ------------
+ 2 files changed, 4 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/rtl8188eu/core/rtw_cmd.c b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-index c2fb050..1e0b8b4 100644
---- a/drivers/staging/rtl8188eu/core/rtw_cmd.c
-+++ b/drivers/staging/rtl8188eu/core/rtw_cmd.c
-@@ -1431,41 +1431,6 @@ exit:
- 	return res;
- }
+diff --git a/drivers/staging/rtl8188eu/hal/rtl8188eu_led.c b/drivers/staging/rtl8188eu/hal/rtl8188eu_led.c
+index 08dfd94..01eeb70 100644
+--- a/drivers/staging/rtl8188eu/hal/rtl8188eu_led.c
++++ b/drivers/staging/rtl8188eu/hal/rtl8188eu_led.c
+@@ -92,8 +92,12 @@ exit:
+ void rtl8188eu_InitSwLeds(struct adapter *padapter)
+ {
+ 	struct led_priv *pledpriv = &(padapter->ledpriv);
++	struct hal_data_8188e   *haldata = GET_HAL_DATA(padapter);
  
--u8 rtw_led_blink_cmd(struct adapter *padapter, struct LED_871x *pLed)
++	pledpriv->bRegUseLed = true;
++	pledpriv->LedStrategy = SW_LED_MODE1;
+ 	pledpriv->LedControlHandler = LedControl8188eu;
++	haldata->bLedOpenDrain = true;
+ 
+ 	InitLed871x(padapter, &(pledpriv->SwLed0), LED_PIN_LED0);
+ 
+diff --git a/drivers/staging/rtl8188eu/hal/usb_halinit.c b/drivers/staging/rtl8188eu/hal/usb_halinit.c
+index c92067f..0dfd62b 100644
+--- a/drivers/staging/rtl8188eu/hal/usb_halinit.c
++++ b/drivers/staging/rtl8188eu/hal/usb_halinit.c
+@@ -1129,16 +1129,6 @@ static unsigned int rtl8188eu_inirp_deinit(struct adapter *Adapter)
+ /*	EEPROM/EFUSE Content Parsing */
+ /*  */
+ /*  */
+-static void _ReadLEDSetting(struct adapter *Adapter, u8 *PROMContent, bool AutoloadFail)
 -{
--	struct	cmd_obj *pcmdobj;
--	struct	LedBlink_param *ledBlink_param;
--	struct	cmd_priv   *pcmdpriv = &padapter->cmdpriv;
+-	struct led_priv *pledpriv = &(Adapter->ledpriv);
+-	struct hal_data_8188e	*haldata = GET_HAL_DATA(Adapter);
 -
--	u8	res = _SUCCESS;
--
--
--	RT_TRACE(_module_rtl871x_cmd_c_, _drv_notice_, ("+rtw_led_blink_cmd\n"));
--
--	pcmdobj = (struct cmd_obj *)rtw_zmalloc(sizeof(struct	cmd_obj));
--	if (pcmdobj == NULL) {
--		res = _FAIL;
--		goto exit;
--	}
--
--	ledBlink_param = (struct	LedBlink_param *)rtw_zmalloc(sizeof(struct	LedBlink_param));
--	if (ledBlink_param == NULL) {
--		kfree(pcmdobj);
--		res = _FAIL;
--		goto exit;
--	}
--
--	ledBlink_param->pLed = pLed;
--
--	init_h2fwcmd_w_parm_no_rsp(pcmdobj, ledBlink_param, GEN_CMD_CODE(_LedBlink));
--	res = rtw_enqueue_cmd(pcmdpriv, pcmdobj);
--
--exit:
--
--
--	return res;
+-	pledpriv->bRegUseLed = true;
+-	pledpriv->LedStrategy = SW_LED_MODE1;
+-	haldata->bLedOpenDrain = true;/*  Support Open-drain arrangement for controlling the LED. */
 -}
 -
- u8 rtw_set_csa_cmd(struct adapter *padapter, u8 new_ch_no)
+ static void Hal_EfuseParsePIDVID_8188EU(struct adapter *adapt, u8 *hwinfo, bool AutoLoadFail)
  {
- 	struct	cmd_obj *pcmdobj;
-diff --git a/drivers/staging/rtl8188eu/include/rtw_cmd.h b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-index 3d34702..66467f7 100644
---- a/drivers/staging/rtl8188eu/include/rtw_cmd.h
-+++ b/drivers/staging/rtl8188eu/include/rtw_cmd.h
-@@ -807,7 +807,6 @@ u8 rtw_chk_hi_queue_cmd(struct adapter *padapter);
- u8 rtw_set_ch_cmd(struct adapter *padapter, u8 ch, u8 bw, u8 ch_offset,
- 		  u8 enqueue);
- u8 rtw_set_chplan_cmd(struct adapter *padapter, u8 chplan, u8 enqueue);
--u8 rtw_led_blink_cmd(struct adapter *padapter, struct LED_871x *pLed);
- u8 rtw_set_csa_cmd(struct adapter *padapter, u8 new_ch_no);
- u8 rtw_tdls_cmd(struct adapter *padapter, u8 *addr, u8 option);
+ 	struct hal_data_8188e	*haldata = GET_HAL_DATA(adapt);
+@@ -1215,8 +1205,6 @@ readAdapterInfo_8188EU(
+ 	/*  */
+ 	Hal_InitChannelPlan(adapt);
+ 	Hal_CustomizeByCustomerID_8188EU(adapt);
+-
+-	_ReadLEDSetting(adapt, eeprom->efuse_eeprom_data, eeprom->bautoload_fail_flag);
+ }
  
+ static void _ReadPROMContent(
 -- 
 1.7.10.4
 
