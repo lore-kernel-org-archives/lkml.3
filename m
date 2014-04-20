@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161134AbaDTIE1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 04:04:27 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55742 "EHLO
+	id S1161158AbaDTIEn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 04:04:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:55744 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111AbaDTIEH (ORCPT
+	with ESMTP id S1161074AbaDTIEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 04:04:07 -0400
-Date: Sun, 20 Apr 2014 01:03:33 -0700
-From: tip-bot for Alexander Yarygin <tipbot@zytor.com>
-Message-ID: <tip-acb61fc8ed73eb477a9044272d7a1b1f5a572f91@git.kernel.org>
+	Sun, 20 Apr 2014 04:04:13 -0400
+Date: Sun, 20 Apr 2014 01:03:45 -0700
+From: tip-bot for Vladimir Nikulichev <tipbot@zytor.com>
+Message-ID: <tip-922d0e4d9f042f68baea28e5b3bd7bb708875f2e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        borntraeger@de.ibm.com, jolsa@redhat.com, yarygin@linux.vnet.ibm.com,
-        dsahern@gmail.com, tglx@linutronix.de
+        nvs@tbricks.com, namhyung@kernel.org, jolsa@redhat.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        borntraeger@de.ibm.com, jolsa@redhat.com, yarygin@linux.vnet.ibm.com,
-        dsahern@gmail.com, tglx@linutronix.de
-In-Reply-To: <1397053319-2130-3-git-send-email-borntraeger@de.ibm.com>
-References: <1397053319-2130-3-git-send-email-borntraeger@de.ibm.com>
+        nvs@tbricks.com, namhyung@kernel.org, jolsa@redhat.com,
+        adrian.hunter@intel.com, tglx@linutronix.de
+In-Reply-To: <969812.163009436-sendEmail@nvs>
+References: <969812.163009436-sendEmail@nvs>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf kvm: Fix 'Min time'
-  counting in report command
-Git-Commit-ID: acb61fc8ed73eb477a9044272d7a1b1f5a572f91
+Subject: [tip:perf/urgent] perf tools: Adjust symbols in VDSO
+Git-Commit-ID: 922d0e4d9f042f68baea28e5b3bd7bb708875f2e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,68 +33,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  acb61fc8ed73eb477a9044272d7a1b1f5a572f91
-Gitweb:     http://git.kernel.org/tip/acb61fc8ed73eb477a9044272d7a1b1f5a572f91
-Author:     Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-AuthorDate: Wed, 9 Apr 2014 16:21:59 +0200
+Commit-ID:  922d0e4d9f042f68baea28e5b3bd7bb708875f2e
+Gitweb:     http://git.kernel.org/tip/922d0e4d9f042f68baea28e5b3bd7bb708875f2e
+Author:     Vladimir Nikulichev <nvs@tbricks.com>
+AuthorDate: Thu, 17 Apr 2014 08:27:01 -0700
 Committer:  Jiri Olsa <jolsa@redhat.com>
-CommitDate: Sun, 20 Apr 2014 00:14:08 +0200
+CommitDate: Sun, 20 Apr 2014 00:15:11 +0200
 
-perf kvm: Fix 'Min time' counting in report command
+perf tools: Adjust symbols in VDSO
 
-Every event in the perf-kvm has a 'stats' structure, which contains
-max/min/average/etc times of handling this event.
-The problem is that the 'perf-kvm stat report' command always shows
-that 'min time' is 0us for every event. Example:
+pert-report doesn't resolve function names in VDSO:
 
- # perf kvm stat report
+$ perf report --stdio -g flat,0.0,15,callee --sort pid
+...
+            8.76%
+               0x7fff6b1fe861
+               __gettimeofday
+               ACE_OS::gettimeofday()
+...
 
- Analyze events for all VCPUs:
+In this case symbol values should be adjusted the same way as for executables,
+relocatable objects and prelinked libraries.
 
-    VM-EXIT    Samples  Samples%     Time%   Min Time   Max Time Avg time
-  [..]
-  0xB2 MSCH         12     0.07%     0.00%        0us        8us 7.31us ( +-   2.11% )
-  0xB2 CHSC         12     0.07%     0.00%        0us       18us 9.39us ( +-   9.49% )
-  0xB2 STPX          8     0.05%     0.00%        0us        2us 1.88us ( +-   7.18% )
-  0xB2 STSI          7     0.04%     0.00%        0us       44us 16.49us ( +-  38.20% )
-  [..]
+After fix:
 
-This happens because the 'stats' structure is not initialized and
-stats->min equals to 0. Lets initialize the structure for every
-event after its allocation using init_stats() function. This initializes
-stats->min to -1 and makes 'Min time' statistics counting work:
+$ perf report --stdio -g flat,0.0,15,callee --sort pid
+...
+            8.76%
+               __vdso_gettimeofday
+               __gettimeofday
+               ACE_OS::gettimeofday()
 
- # perf kvm stat report
-
- Analyze events for all VCPUs:
-
-    VM-EXIT    Samples  Samples%     Time%   Min Time   Max Time Avg time
-  [..]
-  0xB2 MSCH         12     0.07%     0.00%        6us        8us 7.31us ( +-   2.11% )
-  0xB2 CHSC         12     0.07%     0.00%        7us       18us 9.39us ( +-   9.49% )
-  0xB2 STPX          8     0.05%     0.00%        1us        2us 1.88us ( +-   7.18% )
-  0xB2 STSI          7     0.04%     0.00%        1us       44us 16.49us ( +-  38.20% )
-  [..]
-
-Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-Reviewed-by: David Ahern <dsahern@gmail.com>
-Link: http://lkml.kernel.org/r/1397053319-2130-3-git-send-email-borntraeger@de.ibm.com
-[ Fixing the perf examples changelog output ]
+Signed-off-by: Vladimir Nikulichev <nvs@tbricks.com>
+Tested-by: Namhyung Kim <namhyung@kernel.org>
+Reviewed-by: Adrian Hunter <adrian.hunter@intel.com>
+Link: http://lkml.kernel.org/r/969812.163009436-sendEmail@nvs
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/perf/builtin-kvm.c | 1 +
- 1 file changed, 1 insertion(+)
+ tools/perf/util/symbol-elf.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 21c164b..0f1e5a2 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -404,6 +404,7 @@ static struct kvm_event *kvm_alloc_init_event(struct event_key *key)
- 	}
+diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
+index 3b7dbf5..6864661 100644
+--- a/tools/perf/util/symbol-elf.c
++++ b/tools/perf/util/symbol-elf.c
+@@ -6,6 +6,7 @@
+ #include <inttypes.h>
  
- 	event->key = *key;
-+	init_stats(&event->total.stats);
- 	return event;
- }
+ #include "symbol.h"
++#include "vdso.h"
+ #include <symbol/kallsyms.h>
+ #include "debug.h"
  
+@@ -618,6 +619,7 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
+ 		GElf_Shdr shdr;
+ 		ss->adjust_symbols = (ehdr.e_type == ET_EXEC ||
+ 				ehdr.e_type == ET_REL ||
++				is_vdso_map(dso->short_name) ||
+ 				elf_section_by_name(elf, &ehdr, &shdr,
+ 						     ".gnu.prelink_undo",
+ 						     NULL) != NULL);
