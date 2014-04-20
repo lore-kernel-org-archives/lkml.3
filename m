@@ -1,126 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1161046AbaDTICv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 04:02:51 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:59969 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932086AbaDTICp (ORCPT
+	id S1161103AbaDTIEU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 04:04:20 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:43174 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932110AbaDTIEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 04:02:45 -0400
-Date: Sun, 20 Apr 2014 10:02:35 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20140420080235.GA23749@gmail.com>
+	Sun, 20 Apr 2014 04:04:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397960791-16320-3-git-send-email-davidlohr@hp.com>
+References: <1397960791-16320-1-git-send-email-davidlohr@hp.com>
+	<1397960791-16320-3-git-send-email-davidlohr@hp.com>
+Date: Sun, 20 Apr 2014 10:04:02 +0200
+X-Google-Sender-Auth: 4xkgZlq9SUcvdwLiFIrByfEPiUo
+Message-ID: <CAMuHMdVBZSC3Kvwsw5pa-m8ZAUCjpkF8gjJH1XbOK2iFbU1KEg@mail.gmail.com>
+Subject: Re: [PATCH 2/6] m68k: call find_vma with the mmap_sem held in sys_cacheflush()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, zeus@gnu.org,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        Linux MM <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Hi David,
 
-Please pull the latest perf-urgent-for-linus git tree from:
+On Sun, Apr 20, 2014 at 4:26 AM, Davidlohr Bueso <davidlohr@hp.com> wrote:
+> Performing vma lookups without taking the mm->mmap_sem is asking
+> for trouble. While doing the search, the vma in question can be
+> modified or even removed before returning to the caller. Take the
+> lock (shared) in order to avoid races while iterating through
+> the vmacache and/or rbtree.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git perf-urgent-for-linus
+Thanks for your patch!
 
-   # HEAD: fd741edc25600e1660abd00b5c1bbe967018c6a0 Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/urgent
+> This patch is completely *untested*.
+>
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> Cc: Geert Uytterhoeven <geert@linux-m68k.org>
+> Cc: linux-m68k@lists.linux-m68k.org
+> ---
+>  arch/m68k/kernel/sys_m68k.c | 18 ++++++++++++------
+>  1 file changed, 12 insertions(+), 6 deletions(-)
+>
+> diff --git a/arch/m68k/kernel/sys_m68k.c b/arch/m68k/kernel/sys_m68k.c
+> index 3a480b3..d2263a0 100644
+> --- a/arch/m68k/kernel/sys_m68k.c
+> +++ b/arch/m68k/kernel/sys_m68k.c
+> @@ -376,7 +376,6 @@ cache_flush_060 (unsigned long addr, int scope, int cache, unsigned long len)
+>  asmlinkage int
+>  sys_cacheflush (unsigned long addr, int scope, int cache, unsigned long len)
+>  {
+> -       struct vm_area_struct *vma;
+>         int ret = -EINVAL;
+>
+>         if (scope < FLUSH_SCOPE_LINE || scope > FLUSH_SCOPE_ALL ||
+> @@ -389,16 +388,23 @@ sys_cacheflush (unsigned long addr, int scope, int cache, unsigned long len)
+>                 if (!capable(CAP_SYS_ADMIN))
+>                         goto out;
+>         } else {
+> +               struct vm_area_struct *vma;
+> +               bool invalid;
+> +
+> +               /* Check for overflow.  */
+> +               if (addr + len < addr)
+> +                       goto out;
+> +
+>                 /*
+>                  * Verify that the specified address region actually belongs
+>                  * to this process.
+>                  */
+> -               vma = find_vma (current->mm, addr);
+>                 ret = -EINVAL;
+> -               /* Check for overflow.  */
+> -               if (addr + len < addr)
+> -                       goto out;
+> -               if (vma == NULL || addr < vma->vm_start || addr + len > vma->vm_end)
+> +               down_read(&current->mm->mmap_sem);
+> +               vma = find_vma(current->mm, addr);
+> +               invalid = !vma || addr < vma->vm_start || addr + len > vma->vm_end;
+> +               up_read(&current->mm->mmap_sem);
+> +               if (invalid)
+>                         goto out;
+>         }
 
-Three small tooling fixes.
+Shouldn't the up_read() be moved to the end of the function?
+The vma may still be modified or destroyed between the call to find_vma(),
+and the actual cache flush?
 
- Thanks,
+Am I missing something?
 
-	Ingo
+Gr{oetje,eeting}s,
 
------------------->
-Adrien BAK (1):
-      perf tools: Improve error reporting
+                        Geert
 
-Alexander Yarygin (1):
-      perf kvm: Fix 'Min time' counting in report command
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Vladimir Nikulichev (1):
-      perf tools: Adjust symbols in VDSO
-
-
- tools/perf/builtin-kvm.c     | 1 +
- tools/perf/builtin-record.c  | 2 +-
- tools/perf/util/data.c       | 9 ++++++++-
- tools/perf/util/symbol-elf.c | 2 ++
- 4 files changed, 12 insertions(+), 2 deletions(-)
-
-diff --git a/tools/perf/builtin-kvm.c b/tools/perf/builtin-kvm.c
-index 21c164b..0f1e5a2 100644
---- a/tools/perf/builtin-kvm.c
-+++ b/tools/perf/builtin-kvm.c
-@@ -404,6 +404,7 @@ static struct kvm_event *kvm_alloc_init_event(struct event_key *key)
- 	}
- 
- 	event->key = *key;
-+	init_stats(&event->total.stats);
- 	return event;
- }
- 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index eb524f9..8ce62ef 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -374,7 +374,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
- 
- 	session = perf_session__new(file, false, NULL);
- 	if (session == NULL) {
--		pr_err("Not enough memory for reading perf file header\n");
-+		pr_err("Perf session creation failed.\n");
- 		return -1;
- 	}
- 
-diff --git a/tools/perf/util/data.c b/tools/perf/util/data.c
-index 1fbcd8b..55de44e 100644
---- a/tools/perf/util/data.c
-+++ b/tools/perf/util/data.c
-@@ -86,10 +86,17 @@ static int open_file_read(struct perf_data_file *file)
- 
- static int open_file_write(struct perf_data_file *file)
- {
-+	int fd;
-+
- 	if (check_backup(file))
- 		return -1;
- 
--	return open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-+	fd = open(file->path, O_CREAT|O_RDWR|O_TRUNC, S_IRUSR|S_IWUSR);
-+
-+	if (fd < 0)
-+		pr_err("failed to open %s : %s\n", file->path, strerror(errno));
-+
-+	return fd;
- }
- 
- static int open_file(struct perf_data_file *file)
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 3b7dbf5..6864661 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -6,6 +6,7 @@
- #include <inttypes.h>
- 
- #include "symbol.h"
-+#include "vdso.h"
- #include <symbol/kallsyms.h>
- #include "debug.h"
- 
-@@ -618,6 +619,7 @@ int symsrc__init(struct symsrc *ss, struct dso *dso, const char *name,
- 		GElf_Shdr shdr;
- 		ss->adjust_symbols = (ehdr.e_type == ET_EXEC ||
- 				ehdr.e_type == ET_REL ||
-+				is_vdso_map(dso->short_name) ||
- 				elf_section_by_name(elf, &ehdr, &shdr,
- 						     ".gnu.prelink_undo",
- 						     NULL) != NULL);
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
