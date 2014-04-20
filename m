@@ -1,127 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217AbaDTBhM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 21:37:12 -0400
-Received: from 7.mo4.mail-out.ovh.net ([178.33.253.54]:33144 "EHLO
-	mo4.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754793AbaDTBhG (ORCPT
+	id S1755228AbaDTC0t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 22:26:49 -0400
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:57898 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754793AbaDTC0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 21:37:06 -0400
-X-Greylist: delayed 16798 seconds by postgrey-1.27 at vger.kernel.org; Sat, 19 Apr 2014 21:37:06 EDT
-MIME-Version: 1.0
-In-Reply-To: <CAOCHtYjkUnWiGHG6v5Op-=3AxEW9sJ9xaSWkmu6Bg-6q23L2=g@mail.gmail.com>
-References: <1397814309-32160-1-git-send-email-jjhiblot@traphandler.com>
-	<1397814309-32160-4-git-send-email-jjhiblot@traphandler.com>
-	<CAOCHtYjkUnWiGHG6v5Op-=3AxEW9sJ9xaSWkmu6Bg-6q23L2=g@mail.gmail.com>
-Date: Sat, 19 Apr 2014 21:07:41 +0200
-Message-ID: <CACh+v5MyeCkCz=8w-5iNRrgxRiOdPsQV5zExMiZmdFTYX9dJ3Q@mail.gmail.com>
-Subject: Re: [RFC 3/3] atmel: dt: Add supports for the lcdc support on the sama5d36ek
-From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-To: Robert Nelson <robertcnelson@gmail.com>
-Cc: Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        dri-devel@lists.freedesktop.org, airlied@linux.ie,
-        Rob Clark <robdclark@gmail.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-X-Ovh-Tracer-Id: 14533115998480324632
-X-Ovh-Remote: 209.85.223.176 (mail-ie0-f176.google.com)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-OVH-SPAMSTATE: OK
-X-OVH-SPAMSCORE: -100
-X-OVH-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -100
-X-VR-SPAMCAUSE: gggruggvucftvghtrhhoucdtuddrfeejvddrtdekucetufdoteggodetrfcurfhrohhfihhlvgemucfqggfjnecuuegrihhlohhuthemuceftddtnecusecvtfgvtghiphhivghnthhsucdlqddutddtmd
+	Sat, 19 Apr 2014 22:26:43 -0400
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: akpm@linux-foundation.org
+Cc: zeus@gnu.org, aswin@hp.com, davidlohr@hp.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/6] mm: audit find_vma() callers
+Date: Sat, 19 Apr 2014 19:26:25 -0700
+Message-Id: <1397960791-16320-1-git-send-email-davidlohr@hp.com>
+X-Mailer: git-send-email 1.8.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2014-04-18 16:48 GMT+02:00 Robert Nelson <robertcnelson@gmail.com>:
->
-> On Fri, Apr 18, 2014 at 4:45 AM, Jean-Jacques Hiblot
-> <jjhiblot@traphandler.com> wrote:
->> Signed-off-by: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
->> ---
->>  arch/arm/boot/dts/sama5d36ek.dts | 27 ++++++++++++++++++++++++++-
->>  1 file changed, 26 insertions(+), 1 deletion(-)
->>
->> diff --git a/arch/arm/boot/dts/sama5d36ek.dts b/arch/arm/boot/dts/sama5d36ek.dts
->> index 59576c6..df01037 100644
->> --- a/arch/arm/boot/dts/sama5d36ek.dts
->> +++ b/arch/arm/boot/dts/sama5d36ek.dts
->> @@ -11,12 +11,17 @@
->>  #include "sama5d3xmb.dtsi"
->>  #include "sama5d3xdm.dtsi"
->>
->> +
->
-> extra space
->
->>  / {
->>         model = "Atmel SAMA5D36-EK";
->>         compatible = "atmel,sama5d36ek", "atmel,sama5d3xmb", "atmel,sama5d3xcm", "atmel,sama5d36", "atmel,sama5d3", "atmel,sama5";
->>
->>         ahb {
->>                 apb {
->> +                       hlcdc: hlcdc@f0030000 {
->> +                               status = "okay";
->> +                       };
->> +
->>                         spi0: spi@f0004000 {
->>                                 status = "okay";
->>                         };
->> @@ -46,7 +51,27 @@
->>                         };
->>                 };
->>         };
->> -
->> +       panel {
->> +               compatible = "atmel,hlcdc,panel";
->> +               invert-hsync;
->> +               invert-vsync;
->> +               status = "okay";
->> +               display-timings {
->> +                       800x480p60 {
->> +                               clock-frequency = <33260000>;
->> +                               hactive = <800>;
->> +                               vactive = <480>;
->> +                               hfront-porch = <168>;
->> +                               hback-porch = <88>;
->> +                               hsync-len = <64>;
->> +                               vback-porch = <8>;
->> +                               vfront-porch = <37>;
->> +                               vsync-len = <2>;
->> +                               hsync-active = <1>;
->> +                               vsync-active = <1>;
->> +                       };
->> +               };
->> +       };
->>         sound {
->>                 status = "okay";
->>         };
->> --
->> 1.9.1
->
-> Feel free to merge in this patch:
->
-> https://github.com/RobertCNelson/armv7_devel/blob/v3.15.x-sama5-armv7/patches/drm/0005-atmel-dt-Add-supports-for-the-lcdc-support-on-the-sa.patch
->
-Thanks for the patch.
-> With this commit..
->
-> All tested with sama5d31/33/34/36ek board's..
+Ensure find_vma() callers do so with the mmap_sem held. 
 
-and many thanks for the testing.
+I'm sure there are a few more places left to fix, but 
+this is a pretty good start. Following the call chain,
+some users become all tangled up, but I believe these
+fixes are correct. Furthermore, the bulk of the callers
+of find_vma are in a lot of functions where it is well
+known that the mmap_sem is taken way before, such as
+get_unmapped_area() family.
 
->
-> Regards,
->
-> --
-> Robert Nelson
-> http://www.rcn-ee.com/
+Please note that none of the patches are tested.
+
+Thanks!
+
+  blackfin/ptrace: call find_vma with the mmap_sem held
+  m68k: call find_vma with the mmap_sem held in sys_cacheflush()
+  mips: call find_vma with the mmap_sem held
+  arc: call find_vma with the mmap_sem held
+  drivers/misc/sgi-gru/grufault.c: call find_vma with the mmap_sem held
+  drm/exynos: call find_vma with the mmap_sem held
+
+ arch/arc/kernel/troubleshoot.c          |  7 ++++---
+ arch/blackfin/kernel/ptrace.c           |  8 ++++++--
+ arch/m68k/kernel/sys_m68k.c             | 18 ++++++++++++------
+ arch/mips/kernel/traps.c                |  2 ++
+ arch/mips/mm/c-octeon.c                 |  2 ++
+ drivers/gpu/drm/exynos/exynos_drm_g2d.c |  6 ++++++
+ drivers/misc/sgi-gru/grufault.c         | 13 +++++++++----
+ 7 files changed, 41 insertions(+), 15 deletions(-)
+
+-- 
+1.8.1.4
+
