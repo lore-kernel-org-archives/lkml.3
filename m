@@ -1,92 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108AbaDTA2Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 20:28:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38272 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754594AbaDTA2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 20:28:18 -0400
-Date: Sun, 20 Apr 2014 02:28:11 +0200
-From: Borislav Petkov <bp@suse.de>
-To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        ricardo.neri-calderon@linux.intel.com, tglx@linutronix.de, bp@suse.de,
-        matt.fleming@intel.com
-Cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/efi] x86/efi: Save and restore FPU context around
- efi_calls (x86_64)
-Message-ID: <20140420002811.GA18663@pd.tnic>
-References: <tip-de05764e0b2a3d9559e099a2e134f8cef4500fdd@git.kernel.org>
+	id S1755207AbaDTBVe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 19 Apr 2014 21:21:34 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:42136 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754793AbaDTBVP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 19 Apr 2014 21:21:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <tip-de05764e0b2a3d9559e099a2e134f8cef4500fdd@git.kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140419190305.GA267@x4>
+References: <alpine.DEB.2.00.1404190810001.7507@skynet.skynet.ie>
+	<20140419190305.GA267@x4>
+Date: Sat, 19 Apr 2014 21:21:14 -0400
+Message-ID: <CADnq5_M9COdOJhOu4_9yRpDoFt3bcc9HVqrvQqnYM3YuTLv15A@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Dave Airlie <airlied@linux.ie>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 03:50:44PM -0700, tip-bot for Ricardo Neri wrote:
-> Commit-ID:  de05764e0b2a3d9559e099a2e134f8cef4500fdd
-> Gitweb:     http://git.kernel.org/tip/de05764e0b2a3d9559e099a2e134f8cef4500fdd
-> Author:     Ricardo Neri <ricardo.neri-calderon@linux.intel.com>
-> AuthorDate: Thu, 27 Mar 2014 15:10:42 -0700
-> Committer:  Matt Fleming <matt.fleming@intel.com>
-> CommitDate: Thu, 17 Apr 2014 13:26:32 +0100
-> 
-> x86/efi: Save and restore FPU context around efi_calls (x86_64)
-> 
-> Do a complete FPU context save/restore around the EFI calls. This required
-> as runtime EFI firmware may potentially use the FPU.
-> 
-> This change covers only the x86_64 configuration.
-> 
-> Signed-off-by: Ricardo Neri <ricardo.neri-calderon@linux.intel.com>
-> Cc: Borislav Petkov <bp@suse.de>
-> Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-> ---
->  arch/x86/include/asm/efi.h | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
-> index 19292e7..0b19187 100644
-> --- a/arch/x86/include/asm/efi.h
-> +++ b/arch/x86/include/asm/efi.h
-> @@ -1,6 +1,7 @@
->  #ifndef _ASM_X86_EFI_H
->  #define _ASM_X86_EFI_H
->  
-> +#include <asm/i387.h>
->  /*
->   * We map the EFI regions needed for runtime services non-contiguously,
->   * with preserved alignment on virtual addresses starting from -4G down
-> @@ -54,7 +55,9 @@ extern u64 asmlinkage efi_call(void *fp, ...);
->  									\
->  	efi_sync_low_kernel_mappings();					\
->  	preempt_disable();						\
-> +	__kernel_fpu_begin();						\
->  	__s = efi_call((void *)efi.systab->runtime->f, __VA_ARGS__);	\
-> +	__kernel_fpu_end();						\
->  	preempt_enable();						\
+On Sat, Apr 19, 2014 at 3:03 PM, Markus Trippelsdorf
+<markus@trippelsdorf.de> wrote:
+> On 2014.04.19 at 08:19 +0100, Dave Airlie wrote:
+>>
+>> Unfortunately this contains no easter eggs, its a bit larger than I'd
+>> like, but I included a patch that just moves code from one file to another
+>> and I'd like to avoid merge conflicts with that later, so it makes it seem
+>> worse than it is,
+>
+>> Christian König (2):
+>>       drm/radeon: apply more strict limits for PLL params v2
+>>       drm/radeon: improve PLL params if we don't match exactly v2
+>
+> commit f8a2645ecede4eaf90b3d785f2805c8ecb76d43e
+> Author: Christian König <christian.koenig@amd.com>
+> Date:   Wed Apr 16 11:54:21 2014 +0200
+>
+>     drm/radeon: improve PLL params if we don't match exactly v2
+>
+> The commit above causes my monitor to just stay blank after boot.
+> No framebuffer, no Xorg, no nothing. I'm using a Radeon RS780.
 
-I guess you can use the kernel_fpu_begin/end() variants here (i.e.,
-without the "__") which disable and enable preemption and thus drop the
-preempt_* calls:
+Can you try the patch on:
+https://bugs.freedesktop.org/show_bug.cgi?id=77673
 
-	efi_sync_low_kernel_mappings();
-	kernel_fpu_begin();
-	 __s = efi_call((void *)efi.systab->runtime->f, __VA_ARGS__);
-	 kernel_fpu_end();
-	 __s;
+Alex
 
-I'm not sure about the
-
-	WARN_ON_ONCE(!irq_fpu_usable());
-
-thing in kernel_fpu_begin() though, I guess it wouldn't hurt...
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+>
+>
+> Apr 19 20:55:45 x4 kernel: Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+> Apr 19 20:55:45 x4 kernel: [drm] Initialized drm 1.1.0 20060810
+> Apr 19 20:55:45 x4 kernel: [drm] radeon kernel modesetting enabled.
+> Apr 19 20:55:45 x4 kernel: [drm] initializing kernel modesetting (RS780 0x1002:0x9614 0x1043:0x834D).
+> Apr 19 20:55:45 x4 kernel: [drm] register mmio base: 0xFBEE0000
+> Apr 19 20:55:45 x4 kernel: [drm] register mmio size: 65536
+> Apr 19 20:55:45 x4 kernel: ATOM BIOS: 113
+> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: VRAM: 128M 0x00000000C0000000 - 0x00000000C7FFFFFF (128M used)
+> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: GTT: 512M 0x00000000A0000000 - 0x00000000BFFFFFFF
+> Apr 19 20:55:45 x4 kernel: [drm] Detected VRAM RAM=128M, BAR=128M
+> Apr 19 20:55:45 x4 kernel: [drm] RAM width 32bits DDR
+> Apr 19 20:55:45 x4 kernel: [TTM] Zone  kernel: Available graphics memory: 4083362 kiB
+> Apr 19 20:55:45 x4 kernel: [TTM] Zone   dma32: Available graphics memory: 2097152 kiB
+> Apr 19 20:55:45 x4 kernel: [TTM] Initializing pool allocator
+> Apr 19 20:55:45 x4 kernel: [TTM] Initializing DMA pool allocator
+> Apr 19 20:55:45 x4 kernel: [drm] radeon: 128M of VRAM memory ready
+> Apr 19 20:55:45 x4 kernel: [drm] radeon: 512M of GTT memory ready.
+> Apr 19 20:55:45 x4 kernel: [drm] Loading RS780 Microcode
+> Apr 19 20:55:45 x4 kernel: == power state 0 ==
+> Apr 19 20:55:45 x4 kernel:      ui class: none
+> Apr 19 20:55:45 x4 kernel:      internal class: boot
+> Apr 19 20:55:45 x4 kernel:      caps: video
+> Apr 19 20:55:45 x4 kernel:      uvd    vclk: 0 dclk: 0
+> Apr 19 20:55:45 x4 kernel:              power level 0    sclk: 50000 vddc_index: 2
+> Apr 19 20:55:45 x4 kernel:              power level 1    sclk: 50000 vddc_index: 2
+> Apr 19 20:55:45 x4 kernel:      status: c r b
+> Apr 19 20:55:45 x4 kernel: == power state 1 ==
+> Apr 19 20:55:45 x4 kernel:      ui class: performance
+> Apr 19 20:55:45 x4 kernel:      internal class: none
+> Apr 19 20:55:45 x4 kernel:      caps: video
+> Apr 19 20:55:45 x4 kernel:      uvd    vclk: 0 dclk: 0
+> Apr 19 20:55:45 x4 kernel:              power level 0    sclk: 50000 vddc_index: 1
+> Apr 19 20:55:45 x4 kernel:              power level 1    sclk: 70000 vddc_index: 2
+> Apr 19 20:55:45 x4 kernel:      status:
+> Apr 19 20:55:45 x4 kernel: == power state 2 ==
+> Apr 19 20:55:45 x4 kernel:      ui class: none
+> Apr 19 20:55:45 x4 kernel:      internal class: uvd
+> Apr 19 20:55:45 x4 kernel:      caps: video
+> Apr 19 20:55:45 x4 kernel:      uvd    vclk: 53300 dclk: 40000
+> Apr 19 20:55:45 x4 kernel:              power level 0    sclk: 50000 vddc_index: 1
+> Apr 19 20:55:45 x4 kernel:              power level 1    sclk: 50000 vddc_index: 1
+> Apr 19 20:55:45 x4 kernel:      status:
+> Apr 19 20:55:45 x4 kernel: [drm] radeon: dpm initialized
+> Apr 19 20:55:45 x4 kernel: [drm] GART: num cpu pages 131072, num gpu pages 131072
+> Apr 19 20:55:45 x4 kernel: [drm] PCIE GART of 512M enabled (table at 0x00000000C0040000).
+> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: WB enabled
+> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: fence driver on ring 0 use gpu addr 0x00000000a0000c00 and cpu addr 0xffff8800db8d0c00
+> Apr 19 20:55:45 x4 kernel: [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
+> Apr 19 20:55:45 x4 kernel: [drm] Driver supports precise vblank timestamp query.
+> Apr 19 20:55:45 x4 kernel: [drm] radeon: irq initialized.
+> Apr 19 20:55:45 x4 kernel: [drm] ring test on 0 succeeded in 1 usecs
+> Apr 19 20:55:45 x4 kernel: [drm] ib test on ring 0 succeeded in 0 usecs
+> Apr 19 20:55:45 x4 kernel: [drm] Radeon Display Connectors
+> Apr 19 20:55:45 x4 kernel: [drm] Connector 0:
+> Apr 19 20:55:45 x4 kernel: [drm]   VGA-1
+> Apr 19 20:55:45 x4 kernel: [drm]   DDC: 0x7e40 0x7e40 0x7e44 0x7e44 0x7e48 0x7e48 0x7e4c 0x7e4c
+> Apr 19 20:55:45 x4 kernel: [drm]   Encoders:
+> Apr 19 20:55:45 x4 kernel: [drm]     CRT1: INTERNAL_KLDSCP_DAC1
+> Apr 19 20:55:45 x4 kernel: [drm] Connector 1:
+> Apr 19 20:55:45 x4 kernel: [drm]   DVI-D-1
+> Apr 19 20:55:45 x4 kernel: [drm]   HPD3
+> Apr 19 20:55:45 x4 kernel: [drm]   DDC: 0x7e50 0x7e50 0x7e54 0x7e54 0x7e58 0x7e58 0x7e5c 0x7e5c
+> Apr 19 20:55:45 x4 kernel: [drm]   Encoders:
+> Apr 19 20:55:45 x4 kernel: [drm]     DFP3: INTERNAL_KLDSCP_LVTMA
+> Apr 19 20:55:45 x4 kernel: switching from power state:
+> Apr 19 20:55:45 x4 kernel:      ui class: none
+> Apr 19 20:55:45 x4 kernel:      internal class: boot
+> Apr 19 20:55:45 x4 kernel:      caps: video
+> Apr 19 20:55:45 x4 kernel:      uvd    vclk: 0 dclk: 0
+> Apr 19 20:55:45 x4 kernel:              power level 0    sclk: 50000 vddc_index: 2
+> Apr 19 20:55:45 x4 kernel:              power level 1    sclk: 50000 vddc_index: 2
+> Apr 19 20:55:45 x4 kernel:      status: c b
+> Apr 19 20:55:45 x4 kernel: switching to power state:
+> Apr 19 20:55:45 x4 kernel:      ui class: performance
+> Apr 19 20:55:45 x4 kernel:      internal class: none
+> Apr 19 20:55:45 x4 kernel:      caps: video
+> Apr 19 20:55:45 x4 kernel:      uvd    vclk: 0 dclk: 0
+> Apr 19 20:55:45 x4 kernel:              power level 0    sclk: 50000 vddc_index: 1
+> Apr 19 20:55:45 x4 kernel:              power level 1    sclk: 70000 vddc_index: 2
+> Apr 19 20:55:45 x4 kernel:      status: r
+> Apr 19 20:55:45 x4 kernel: [drm] fb mappable at 0xF0141000
+> Apr 19 20:55:45 x4 kernel: [drm] vram apper at 0xF0000000
+> Apr 19 20:55:45 x4 kernel: [drm] size 7299072
+> Apr 19 20:55:45 x4 kernel: [drm] fb depth is 24
+> Apr 19 20:55:45 x4 kernel: [drm]    pitch is 6912
+> Apr 19 20:55:45 x4 kernel: fbcon: radeondrmfb (fb0) is primary device
+> Apr 19 20:55:45 x4 kernel: Console: switching to colour frame buffer device 131x105
+> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: fb0: radeondrmfb frame buffer device
+> Apr 19 20:55:45 x4 kernel: radeon 0000:01:05.0: registered panic notifier
+> Apr 19 20:55:45 x4 kernel: [drm] Initialized radeon 2.38.0 20080528 for 0000:01:05.0 on minor 0
+>
+> --
+> Markus
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
