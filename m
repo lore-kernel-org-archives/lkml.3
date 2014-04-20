@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755267AbaDTD4J (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 19 Apr 2014 23:56:09 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:64566 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752049AbaDTD4D (ORCPT
+	id S1751754AbaDTEtg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 00:49:36 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:52749 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750707AbaDTEtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 19 Apr 2014 23:56:03 -0400
+	Sun, 20 Apr 2014 00:49:25 -0400
+Message-ID: <535351CA.8000201@gmail.com>
+Date: Sun, 20 Apr 2014 10:19:14 +0530
+From: Kumar Gaurav <kumargauravgupta3@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <20140419235104.GE3277@htj.dyndns.org>
-References: <1397825404-12039-1-git-send-email-laijs@cn.fujitsu.com>
-	<1397907496-5993-1-git-send-email-laijs@cn.fujitsu.com>
-	<1397907496-5993-10-git-send-email-laijs@cn.fujitsu.com>
-	<20140419235104.GE3277@htj.dyndns.org>
-Date: Sun, 20 Apr 2014 11:56:02 +0800
-X-Google-Sender-Auth: XDbVFrHDM3yhhJuB9btII8Edbd4
-Message-ID: <CACvQF533C6+afNCrpkJbVWVaMaSq7EmajzSDqmCj1FS3BCayCQ@mail.gmail.com>
-Subject: Re: [PATCH 9/9 V2] idr: remove useless C-PreProcessor branch
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Andreas Gruenbacher <agruen@linbit.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-Content-Type: text/plain; charset=UTF-8
+CC: gregkh@linuxfoundation.org, lidza.louina@gmail.com,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Staging:dgap:dgap_tty.c: Upgraded driver to use Mutex
+ instead of semaphore
+References: <1397750132-21296-1-git-send-email-kumargauravgupta3@gmail.com>
+In-Reply-To: <1397750132-21296-1-git-send-email-kumargauravgupta3@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 20, 2014 at 7:51 AM, Tejun Heo <tj@kernel.org> wrote:
-> $SUBJ: idr: remove useless #ifndef TEST
+Hi All,
+
+Any update on below patch. Do i need to make any modification?
+
+On Thursday 17 April 2014 09:25 PM, Kumar Gaurav wrote:
+> dgap driver uses semaphore for obtaining lock. I upgraded it to use MUTEX.
 >
-> On Sat, Apr 19, 2014 at 07:38:16PM +0800, Lai Jiangshan wrote:
->> "#ifndef TEST" can't work for user space test now, just remove it.
->>
->> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
+> ---
+>   drivers/staging/dgap/dgap_tty.c |   17 +++++------------
+>   1 file changed, 5 insertions(+), 12 deletions(-)
 >
-> Acked-by: Tejun Heo <tj@kernel.org>
+> diff --git a/drivers/staging/dgap/dgap_tty.c b/drivers/staging/dgap/dgap_tty.c
+> index 2a7a372..0ca72a2 100755
+> --- a/drivers/staging/dgap/dgap_tty.c
+> +++ b/drivers/staging/dgap/dgap_tty.c
+> @@ -52,7 +52,7 @@
+>   #include <asm/uaccess.h>	/* For copy_from_user/copy_to_user */
+>   #include <asm/io.h>		/* For read[bwl]/write[bwl] */
+>   #include <linux/pci.h>
+> -
+> +#include<linux/mutex.h>
+>   #include "dgap_driver.h"
+>   #include "dgap_tty.h"
+>   #include "dgap_types.h"
+> @@ -61,18 +61,12 @@
+>   #include "dgap_conf.h"
+>   #include "dgap_sysfs.h"
+>   
+> -#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37)
+> -#define init_MUTEX(sem)         sema_init(sem, 1)
+> -#define DECLARE_MUTEX(name)     \
+> -        struct semaphore name = __SEMAPHORE_INITIALIZER(name, 1)
+> -#endif
+> -
+>   /*
+>    * internal variables
+>    */
+>   static struct board_t	*dgap_BoardsByMajor[256];
+>   static uchar		*dgap_TmpWriteBuf = NULL;
+> -static DECLARE_MUTEX(dgap_TmpWriteSem);
+> +static DEFINE_MUTEX(dgap_TmpWriteSem);
+>   
+>   /*
+>    * Default transparent print information.
+> @@ -2004,12 +1998,11 @@ static int dgap_tty_write(struct tty_struct *tty, const unsigned char *buf, int
+>   		 * the board.
+>   		 */
+>   		/* we're allowed to block if it's from_user */
+> -		if (down_interruptible(&dgap_TmpWriteSem)) {
+> +		if (mutex_lock_interruptible(&dgap_TmpWriteSem))
+>   			return (-EINTR);
+> -		}
+>   
+>   		if (copy_from_user(dgap_TmpWriteBuf, (const uchar __user *) buf, count)) {
+> -			up(&dgap_TmpWriteSem);
+> +			mutex_unlock(&dgap_TmpWriteSem);
+>   			printk("Write: Copy from user failed!\n");
+>   			return -EFAULT;
+>   		}
+> @@ -2093,7 +2086,7 @@ static int dgap_tty_write(struct tty_struct *tty, const unsigned char *buf, int
+>   
+>   	if (from_user) {
+>   		DGAP_UNLOCK(ch->ch_lock, lock_flags);
+> -		up(&dgap_TmpWriteSem);
+> +		mutex_unlock(&dgap_TmpWriteSem);
+>   	}
+>   	else {
+>   		DGAP_UNLOCK(ch->ch_lock, lock_flags);
 
-Hi, Tejun
-
-Will you accept the acked patches into your tj/misc.git tree?
-(Or somebody else accepts the idr patches?).
-
-5/9 will be sent later (in other patchset)
-6/8 will be dropped.
-
-Thanks,
-Lai
-
->
-> Thanks.
->
-> --
-> tejun
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
