@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751182AbaDTVE0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 17:04:26 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:65066 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751096AbaDTVEY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 17:04:24 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Pavel Machek <pavel@ucw.cz>,
-        Rodolfo =?ISO-8859-1?Q?Garc=EDa_Pe=F1as?= <kix@kix.es>
-Cc: Linux-pm mailing list <linux-pm@lists.osdl.org>,
-        kernel list <linux-kernel@vger.kernel.org>, rafael.j.wysocki@intel.com
-Subject: Re: Rodolfo =?UTF-8?B?R2FyY8OtYSBQZcOxYXM=?= now maintains suspend-utils
-Date: Sun, 20 Apr 2014 23:20:41 +0200
-Message-ID: <1533059.lWkovzjqWS@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20140420144549.GA15431@amd.pavel.ucw.cz>
-References: <20140420144549.GA15431@amd.pavel.ucw.cz>
+	id S1751198AbaDTVNP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 17:13:15 -0400
+Received: from b-pb-sasl-quonix.pobox.com ([208.72.237.35]:51408 "EHLO
+	smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750971AbaDTVNL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Apr 2014 17:13:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:references:date:in-reply-to:message-id:mime-version
+	:content-type; q=dns; s=sasl; b=b2tSFF3FKTnpO+MvhcoIxNI7bNqWmYNL
+	MwAxv536+lClqYxuYHc8cMIV41WZJwV0uSItpkft0o/OWdyNOZ1Nmq8xhZuWAdcq
+	TyPWb3W9BcccwgOxIgKkhiIcPyJnEklyu7Ekb7fE0SOp9HG6u3GcPUDousNPeiJS
+	JvPxHN8ARUU=
+From: Junio C Hamano <gitster@pobox.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: git@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [ANNOUNCE] Git v2.0.0-rc0
+References: <xmqqk3ambf9k.fsf@gitster.dls.corp.google.com>
+	<53541b1214393_1f08dd12ece5@nysa.notmuch>
+Date: Sun, 20 Apr 2014 14:14:50 -0700
+In-Reply-To: <53541b1214393_1f08dd12ece5@nysa.notmuch> (Felipe Contreras's
+	message of "Sun, 20 Apr 2014 14:08:02 -0500")
+Message-ID: <7vk3ajln3p.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+X-Pobox-Relay-ID: 92B862E2-C8D0-11E3-9026-0731802839F8-77302942!b-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, April 20, 2014 04:45:49 PM Pavel Machek wrote:
-> Hi!
-> 
-> Subject pretty much says it all, git should be at
-> 
-> https://gitorious.org/suspend-utils/suspend-utils/
-> 
-> . (Rodolfo was too shy to announce it himself, and sorry it took me so
-> long.)
+Felipe Contreras <felipe.contreras@gmail.com> writes:
 
-Well, in fact I should have done that.
+> Junio C Hamano wrote:
+>>  * transport-helper, fast-import and fast-export have been updated to
+>>    allow the ref mapping and ref deletion in a way similar to the
+>>    natively supported transports.
+>
+> Have they?
 
-Rodolfo is the new maintainer now, please send future suspend-utils patches
-to him.
+Yikes, no.  This was me mischaracterizingg the merge at 90e6255a6d01
+(Merge branch 'fc/transport-helper-fixes', 2014-03-18).  It was
+about letting the transport respond to 'force', and not about ref
+mapping, I think.
 
-And, Rodolfo, many thanks for stepping up to this!
+Thanks for spotting.
 
-Rafael
-
+Will remove that section from the release notes in the meantime.  As
+to the resurrection of the series, that will have to cook outside
+'master' at least for the remainder of this cycle.
