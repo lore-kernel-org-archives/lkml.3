@@ -1,111 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755385AbaDTMsF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 08:48:05 -0400
-Received: from pegasos-out.vodafone.de ([80.84.1.38]:50305 "EHLO
-	pegasos-out.vodafone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755196AbaDTMsA (ORCPT
+	id S1755369AbaDTM5F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 08:57:05 -0400
+Received: from mail-lb0-f177.google.com ([209.85.217.177]:46102 "EHLO
+	mail-lb0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196AbaDTM44 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 08:48:00 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -0.045
-Authentication-Results: rohrpostix1.prod.vfnet.de (amavisd-new); dkim=pass
-	header.i=@vodafone.de
-X-DKIM: OpenDKIM Filter v2.6.8 pegasos-out.vodafone.de 7C0842600D3
-X-DKIM: OpenDKIM Filter v2.0.2 smtp-03.vodafone.de 5551EE6D48
-Message-ID: <5353C1EF.80407@vodafone.de>
-Date: Sun, 20 Apr 2014 14:47:43 +0200
-From: =?UTF-8?B?Q2hyaXN0aWFuIEvDtm5pZw==?= <deathsimple@vodafone.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Sun, 20 Apr 2014 08:56:56 -0400
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, Alex Deucher <alexdeucher@gmail.com>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: more radeon fun: uvd this time
-References: <20140420122621.GE19667@pd.tnic>
-In-Reply-To: <20140420122621.GE19667@pd.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5353A1F6.60602@linux.intel.com>
+References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
+	<CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
+	<5353A1F6.60602@linux.intel.com>
+Date: Sun, 20 Apr 2014 08:56:55 -0400
+Message-ID: <CAN+gG=E9UZBfKzou8-JbLyuUVhd2nY+GW9GegSH6=Y_SxJWc8g@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on ASUS T100TA
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: "Jin, Yao" <yao.jin@linux.intel.com>
+Cc: Adam Williamson <awilliam@redhat.com>,
+        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
+        mathias.nyman@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Is this a regression? UVD is released for quite a while.
+On Sun, Apr 20, 2014 at 6:31 AM, Jin, Yao <yao.jin@linux.intel.com> wrote:
+>
+>
+> On 2014/4/19 4:44, Benjamin Tissoires wrote:
+>> On Wed, Apr 16, 2014 at 8:05 AM, Jin Yao <yao.jin@linux.intel.com> wrote:
+>>> A crash is triggered on the ASUS T100TA Baytrail-T because of a irq
+>>> descriptor conflict. There are two gpio triggered acpi events in this
+>>> device, GPIO 6 and 18. These gpios are translated to irqs by calling
+>>> gpio_to_irq which in turn will call irq_create_mapping(vg->domain, offset).
+>>> irq_create_mapping will take care of allocating the irq descriptor, taking
+>>> the first available number starting from the given value (6 in our case).
+>>> The 0-15 are already reserved by legacy ISA code, so it gets the first
+>>> free irq descriptor which is number 16. The i915 driver also uses irq 16,
+>>> it loads later than gpio and crashes in probe.
+>>>
+>>> The bug is reported here:
+>>> https://bugzilla.kernel.org/show_bug.cgi?id=68291
+>>
+>> Adam, the reporter of this bug told me that his touchscreen was broken
+>> in its tablet.
+> This bug is triggered when system boots, or rather, it's triggered in
+> i915 probe, because i915 still uses irq 16 but it's allocated for gpio
+> yet. It's not a touchscreen case.
+>
+>> I strongly suspect this patch to be the root cause of this, because
+>> the touchscreen uses i2c_hid. i2c_hid relies on an IRQ declared in the
+>> DSDT when it is acpi enumerated, and since the inclusion of this
+>> patch, no irq are triggered from a driver point of view.
+>>
+>> Adam should still confirm that the revert of the patch makes the
+>> touchscreen back alive, but if I understood correctly the bug report,
+>> without the patch, his tablet oopses at boot.
+> Do you mean this patch cause the touchscreen doesn't work? I suspect
+> that because the touch screen works on my T100 with this patch.
 
-Make sure you have updated firmware installed as well.
+I think this patch breaks his touchscreen, yes.
+Adam has a Dell Venue Pro 8 with a touchscreen connected through
+i2c-hid, which IRQ is declared in plain in the DSDT (I'll check that
+with Adam what is this exact irq in his DSDT).
 
-Christian.
+>
+>>
+>> Still, it would be good if you could check that shifting the irqs in
+>> the pinctrl is or is not a problem with the irqs used for i2c devices
+>> (and others) declared in the dsdt.
+> I checked DSDT of ASUS T100, looks no irq conflict after irq shifting.
 
-Am 20.04.2014 14:26, schrieb Borislav Petkov:
-> Hey guys,
->
-> while we're on the topic, I'm seeing this on an older F14h laptop
-> (E-350). I'm guessing the UVD won't get up on that machine, maybe we
-> want to tone down the output a bit. I mean, for your sake, before it
-> hits a release and people flood you with bug reports.
->
-> :-)
->
-> [    1.448294] [drm] Initialized drm 1.1.0 20060810
-> [   11.669812] [drm] radeon kernel modesetting enabled.
-> [   11.676972] [drm] initializing kernel modesetting (PALM 0x1002:0x9802 0x17AA:0x21EC).
-> [   11.677301] [drm] register mmio base: 0xF0300000
-> [   11.677426] [drm] register mmio size: 262144
-> [   11.678243] [drm] Detected VRAM RAM=384M, BAR=256M
-> [   11.678321] [drm] RAM width 32bits DDR
-> [   11.681367] [drm] radeon: 384M of VRAM memory ready
-> [   11.681520] [drm] radeon: 1024M of GTT memory ready.
-> [   11.681751] [drm] Loading PALM Microcode
-> [   11.981767] [drm] Internal thermal controller without fan control
-> [   11.982742] [drm] Found smc ucode version: 0x00010601
-> [   11.983189] [drm] radeon: dpm initialized
-> [   12.011690] [drm] GART: num cpu pages 262144, num gpu pages 262144
-> [   12.096379] [drm] PCIE GART of 1024M enabled (table at 0x0000000000273000).
-> [   12.116168] [drm] Supports vblank timestamp caching Rev 2 (21.10.2013).
-> [   12.116356] [drm] Driver supports precise vblank timestamp query.
-> [   12.117470] [drm] radeon: irq initialized.
-> [   12.186579] [drm] ring test on 0 succeeded in 0 usecs
-> [   12.186826] [drm] ring test on 3 succeeded in 1 usecs
-> [   14.029987] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
-> [   15.084697] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
-> [   16.098856] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
-> [   17.110795] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
-> [   18.122720] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
-> [   19.134692] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
-> [   20.146596] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
-> [   21.158570] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
-> [   22.171389] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
-> [   23.184846] [drm:uvd_v1_0_start] *ERROR* UVD not responding, trying to reset the VCPU!!!
-> [   23.204904] [drm:uvd_v1_0_start] *ERROR* UVD not responding, giving up!!!
-> [   23.224948] [drm:evergreen_startup] *ERROR* radeon: error initializing UVD (-1).
-> [   23.226911] [drm] ib test on ring 0 succeeded in 0 usecs
-> [   23.227165] [drm] ib test on ring 3 succeeded in 0 usecs
-> [   23.284404] [drm] radeon atom DIG backlight initialized
-> [   23.284625] [drm] Radeon Display Connectors
-> [   23.284772] [drm] Connector 0:
-> [   23.284917] [drm]   LVDS-1
-> [   23.285057] [drm]   HPD1
-> [   23.285200] [drm]   DDC: 0x6430 0x6430 0x6434 0x6434 0x6438 0x6438 0x643c 0x643c
-> [   23.285390] [drm]   Encoders:
-> [   23.285531] [drm]     LCD1: INTERNAL_UNIPHY
-> [   23.285675] [drm] Connector 1:
-> [   23.285817] [drm]   HDMI-A-1
-> [   23.285957] [drm]   HPD2
-> [   23.286098] [drm]   DDC: 0x6440 0x6440 0x6444 0x6444 0x6448 0x6448 0x644c 0x644c
-> [   23.286287] [drm]   Encoders:
-> [   23.286428] [drm]     DFP1: INTERNAL_UNIPHY
-> [   23.286571] [drm] Connector 2:
-> [   23.286713] [drm]   VGA-1
-> [   23.286855] [drm]   DDC: 0x64d8 0x64d8 0x64dc 0x64dc 0x64e0 0x64e0 0x64e4 0x64e4
-> [   23.287044] [drm]   Encoders:
-> [   23.287184] [drm]     CRT1: INTERNAL_KLDSCP_DAC1
-> [   23.720985] [drm] fb mappable at 0xE0477000
-> [   23.721185] [drm] vram apper at 0xE0000000
-> [   23.721318] [drm] size 4325376
-> [   23.721400] [drm] fb depth is 24
-> [   23.721482] [drm]    pitch is 5632
-> [   23.725697] fbcon: radeondrmfb (fb0) is primary device
-> [   24.296791] radeon 0000:00:01.0: fb0: radeondrmfb frame buffer device
-> [   24.299140] [drm] Initialized radeon 2.38.0 20080528 for 0000:00:01.0 on minor 0
->
->
+I meant: "Can you check if shifting the irqs in the pinctrl is a
+problem if irqs are generally declared in the DSDT?"
+I understand that you do not see a conflict with your Asus, otherwise
+you wouldn't have proposed the patch. But is the patch _really_ safe
+when the OEM uses irqs in the DSDT?
 
+Another way of seeing this is: shouldn't we also patch an other part
+of the acpi which retrieve the irqs when dealing with the enumaration
+of the devices?
+
+Cheers,
+Benjamin
