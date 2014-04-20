@@ -1,98 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751754AbaDTEtg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 00:49:36 -0400
-Received: from mail-pb0-f52.google.com ([209.85.160.52]:52749 "EHLO
-	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750707AbaDTEtZ (ORCPT
+	id S1754099AbaDTE4U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 00:56:20 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:38348 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbaDTE4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 00:49:25 -0400
-Message-ID: <535351CA.8000201@gmail.com>
-Date: Sun, 20 Apr 2014 10:19:14 +0530
-From: Kumar Gaurav <kumargauravgupta3@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
-MIME-Version: 1.0
-CC: gregkh@linuxfoundation.org, lidza.louina@gmail.com,
-        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] Staging:dgap:dgap_tty.c: Upgraded driver to use Mutex
- instead of semaphore
-References: <1397750132-21296-1-git-send-email-kumargauravgupta3@gmail.com>
-In-Reply-To: <1397750132-21296-1-git-send-email-kumargauravgupta3@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	Sun, 20 Apr 2014 00:56:08 -0400
+From: Jinqiang Zeng <jinqiangzeng@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Elena Ufimtseva <ufimtseva@gmail.com>,
+        Daeseok Youn <daeseok.youn@gmail.com>, Joe Perches <joe@perches.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Jinqiang Zeng <jinqiangzeng@gmail.com>
+Subject: [PATCH] ced1401 coding style fixes
+Date: Sun, 20 Apr 2014 12:55:28 +0800
+Message-Id: <1397969728-11159-1-git-send-email-jinqiangzeng@gmail.com>
+X-Mailer: git-send-email 1.7.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
 
-Any update on below patch. Do i need to make any modification?
+Signed-off-by: Jinqiang Zeng <jinqiangzeng@gmail.com>
+---
+ drivers/staging/ced1401/usb1401.c   |    8 ++++++--
+ drivers/staging/ced1401/use14_ioc.h |    4 ----
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-On Thursday 17 April 2014 09:25 PM, Kumar Gaurav wrote:
-> dgap driver uses semaphore for obtaining lock. I upgraded it to use MUTEX.
->
-> Signed-off-by: Kumar Gaurav <kumargauravgupta3@gmail.com>
-> ---
->   drivers/staging/dgap/dgap_tty.c |   17 +++++------------
->   1 file changed, 5 insertions(+), 12 deletions(-)
->
-> diff --git a/drivers/staging/dgap/dgap_tty.c b/drivers/staging/dgap/dgap_tty.c
-> index 2a7a372..0ca72a2 100755
-> --- a/drivers/staging/dgap/dgap_tty.c
-> +++ b/drivers/staging/dgap/dgap_tty.c
-> @@ -52,7 +52,7 @@
->   #include <asm/uaccess.h>	/* For copy_from_user/copy_to_user */
->   #include <asm/io.h>		/* For read[bwl]/write[bwl] */
->   #include <linux/pci.h>
-> -
-> +#include<linux/mutex.h>
->   #include "dgap_driver.h"
->   #include "dgap_tty.h"
->   #include "dgap_types.h"
-> @@ -61,18 +61,12 @@
->   #include "dgap_conf.h"
->   #include "dgap_sysfs.h"
->   
-> -#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,37)
-> -#define init_MUTEX(sem)         sema_init(sem, 1)
-> -#define DECLARE_MUTEX(name)     \
-> -        struct semaphore name = __SEMAPHORE_INITIALIZER(name, 1)
-> -#endif
-> -
->   /*
->    * internal variables
->    */
->   static struct board_t	*dgap_BoardsByMajor[256];
->   static uchar		*dgap_TmpWriteBuf = NULL;
-> -static DECLARE_MUTEX(dgap_TmpWriteSem);
-> +static DEFINE_MUTEX(dgap_TmpWriteSem);
->   
->   /*
->    * Default transparent print information.
-> @@ -2004,12 +1998,11 @@ static int dgap_tty_write(struct tty_struct *tty, const unsigned char *buf, int
->   		 * the board.
->   		 */
->   		/* we're allowed to block if it's from_user */
-> -		if (down_interruptible(&dgap_TmpWriteSem)) {
-> +		if (mutex_lock_interruptible(&dgap_TmpWriteSem))
->   			return (-EINTR);
-> -		}
->   
->   		if (copy_from_user(dgap_TmpWriteBuf, (const uchar __user *) buf, count)) {
-> -			up(&dgap_TmpWriteSem);
-> +			mutex_unlock(&dgap_TmpWriteSem);
->   			printk("Write: Copy from user failed!\n");
->   			return -EFAULT;
->   		}
-> @@ -2093,7 +2086,7 @@ static int dgap_tty_write(struct tty_struct *tty, const unsigned char *buf, int
->   
->   	if (from_user) {
->   		DGAP_UNLOCK(ch->ch_lock, lock_flags);
-> -		up(&dgap_TmpWriteSem);
-> +		mutex_unlock(&dgap_TmpWriteSem);
->   	}
->   	else {
->   		DGAP_UNLOCK(ch->ch_lock, lock_flags);
+diff --git a/drivers/staging/ced1401/usb1401.c b/drivers/staging/ced1401/usb1401.c
+index 284abc0..5028318 100644
+--- a/drivers/staging/ced1401/usb1401.c
++++ b/drivers/staging/ced1401/usb1401.c
+@@ -896,7 +896,7 @@ static bool ReadWord(unsigned short *pWord, char *pBuf, unsigned int *pdDone,
+ ** to indicate three byte total.
+ **
+ *****************************************************************************/
+-static bool ReadHuff(volatile unsigned int *pDWord, char *pBuf,
++static bool ReadHuff(unsigned int *pDWord, char *pBuf,
+ 		     unsigned int *pdDone, unsigned int dGot)
+ {
+ 	unsigned char ucData;	/* for each read to ReadChar */
+@@ -941,7 +941,7 @@ static bool ReadHuff(volatile unsigned int *pDWord, char *pBuf,
+ **  we start handling the data at offset zero.
+ **
+ *****************************************************************************/
+-static bool ReadDMAInfo(volatile DMADESC *pDmaDesc, DEVICE_EXTENSION *pdx,
++static bool ReadDMAInfo(DMADESC *pDmaDesc, DEVICE_EXTENSION *pdx,
+ 			char *pBuf, unsigned int dwCount)
+ {
+ 	bool bResult = false;	/*  assume we won't succeed */
+@@ -1122,6 +1122,7 @@ static void ced_readchar_callback(struct urb *pUrb)
+ 			spin_lock(&pdx->charInLock);	/*  already at irq level */
+ 			if (nGot > 0) {
+ 				unsigned int i;
++
+ 				if (nGot < INBUF_SZ) {
+ 					pdx->pCoherCharIn[nGot] = 0;	/*  tidy the string */
+ 					dev_dbg(&pdx->interface->dev,
+@@ -1514,6 +1515,7 @@ static void ced_disconnect(struct usb_interface *interface)
+ void ced_draw_down(DEVICE_EXTENSION *pdx)
+ {
+ 	int time;
++
+ 	dev_dbg(&pdx->interface->dev, "%s: called\n", __func__);
+ 
+ 	pdx->bInDrawDown = true;
+@@ -1548,6 +1550,7 @@ static int ced_resume(struct usb_interface *intf)
+ static int ced_pre_reset(struct usb_interface *intf)
+ {
+ 	DEVICE_EXTENSION *pdx = usb_get_intfdata(intf);
++
+ 	dev_dbg(&pdx->interface->dev, "%s\n", __func__);
+ 	mutex_lock(&pdx->io_mutex);
+ 	ced_draw_down(pdx);
+@@ -1557,6 +1560,7 @@ static int ced_pre_reset(struct usb_interface *intf)
+ static int ced_post_reset(struct usb_interface *intf)
+ {
+ 	DEVICE_EXTENSION *pdx = usb_get_intfdata(intf);
++
+ 	dev_dbg(&pdx->interface->dev, "%s\n", __func__);
+ 
+ 	/* we are sure no URBs are active - no locking needed */
+diff --git a/drivers/staging/ced1401/use14_ioc.h b/drivers/staging/ced1401/use14_ioc.h
+index 42d2e4e..c27b3b9 100644
+--- a/drivers/staging/ced1401/use14_ioc.h
++++ b/drivers/staging/ced1401/use14_ioc.h
+@@ -267,15 +267,11 @@ typedef union     /* to communicate with 1401 driver status & control funcs */
+ 	T1401REGISTERS registers;
+ } TCSBLOCK;
+ 
+-typedef TCSBLOCK*  LPTCSBLOCK;
+-
+ typedef struct paramBlk {
+ 	 short       sState;
+ 	 TCSBLOCK    csBlock;
+ } PARAMBLK;
+ 
+-typedef PARAMBLK*   PPARAMBLK;
+-
+ struct transfer_area_desc          /* Structure and type for SetTransArea */
+ {
+ 	unsigned short        wArea;            /* number of transfer area to set up       */
+-- 
+1.7.7.6
 
