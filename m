@@ -1,53 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751580AbaDUDoR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 23:44:17 -0400
-Received: from [65.55.169.136] ([65.55.169.136]:25195 "EHLO
-	na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751293AbaDUDoO convert rfc822-to-8bit (ORCPT
+	id S1751609AbaDUDyN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 23:54:13 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:39732 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293AbaDUDyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 23:44:14 -0400
-X-Greylist: delayed 1031 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Apr 2014 23:44:14 EDT
-Message-ID: <1398050801.7753.7.camel@leyfoon-vm>
-Subject: Re: [PATCH 01/28] nios2: Build infrastructure
-From: Ley Foon Tan <lftan@altera.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <lftan.linux@gmail.com>,
-        <cltang@codesourcery.com>
-Date: Mon, 21 Apr 2014 11:26:41 +0800
-In-Reply-To: <1397850104.4750.8.camel@x220>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	 <1397824031-4892-2-git-send-email-lftan@altera.com>
-	 <1397850104.4750.8.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.8.4-0ubuntu1 
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(24454002)(51704005)(189002)(199002)(377424004)(74502001)(74662001)(77982001)(31966008)(77156001)(89996001)(16796002)(87936001)(33716001)(33646001)(87286001)(99396002)(76482001)(83072002)(85852003)(2009001)(20776003)(47776003)(79102001)(42186004)(83322001)(92726001)(92566001)(88136002)(6806004)(44976005)(23676002)(80022001)(46102001)(93916002)(97736001)(86362001)(50226001)(4396001)(81342001)(50986999)(81542001)(76176999)(62966002)(80976001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB035;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:F3D364A2.93F2A705.3DECB77E.88E13477.200C4;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 0188D66E61
+	Sun, 20 Apr 2014 23:54:10 -0400
+From: "Son P. Nguyen" <fastmutex@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, "Son P. Nguyen" <fastmutex@gmail.com>
+Subject: [PATCH v2 1/2] Staging: dgnc: dgnc_driver: fixed dgnc_pci_tbl definition
+Date: Sun, 20 Apr 2014 18:05:38 +0000
+Message-Id: <1398017139-22231-1-git-send-email-fastmutex@gmail.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1397947691-19232-2-git-send-email-fastmutex@gmail.com>
+References: <1397947691-19232-2-git-send-email-fastmutex@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jum, 2014-04-18 at 21:41 +0200, Paul Bolle wrote:
-> On Fri, 2014-04-18 at 20:26 +0800, Ley Foon Tan wrote:
-> > diff --git a/arch/nios2/kernel/Makefile b/arch/nios2/kernel/Makefile
-> [...]
-> > +obj-$(CONFIG_CONSOLE)		+= console.o
-> 
-> CONFIG_CONSOLE seems never to be defined. And there appears to be no
-> arch/nios2/console.c or .../console.S anyway.
-> 
-> 
-> Paul Bolle
-> 
-Good catch. Will remove this.
-Thanks.
+From: "Son P. Nguyen" <fastmutex@gmail.com>
 
-Regards
-Ley Foon
+Fixed dgnc_pci_tbl definition for correct coding style
+
+PS: This is for task 10 of eudyptula-challenge.
+
+Signed-off-by: Son P. Nguyen <fastmutex@gmail.com>
+---
+ drivers/staging/dgnc/dgnc_driver.c | 39 +++++++++++++++++++++-----------------
+ 1 file changed, 22 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/staging/dgnc/dgnc_driver.c b/drivers/staging/dgnc/dgnc_driver.c
+index b1a39b2..6af1ab3 100644
+--- a/drivers/staging/dgnc/dgnc_driver.c
++++ b/drivers/staging/dgnc/dgnc_driver.c
+@@ -125,26 +125,31 @@ static uint		dgnc_poll_stop;				/* Used to tell poller to stop */
+ static struct timer_list dgnc_poll_timer;
+ 
+ 
++
++#define DIGIVID_PCI_DEVICE_ID(subdevice, driver_data) \
++	{ DIGI_VID, PCI_DEVICE_##subdevice, PCI_ANY_ID, 0, 0, driver_data }
++
+ static struct pci_device_id dgnc_pci_tbl[] = {
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	0 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_4_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	1 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	2 },
+-	{	DIGI_VID, PCI_DEVICE_CLASSIC_8_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	3 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,		4 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,		5 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_2DB9_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	6 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_2DB9PRI_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	7 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_2RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	8 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_2RJ45PRI_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	9 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_1_422_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	10 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_1_422_485_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	11 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_2_422_485_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	12 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_8_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	 13 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_4_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	14 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_4RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	15 },
+-	{	DIGI_VID, PCI_DEVICE_NEO_EXPRESS_8RJ45_DID, PCI_ANY_ID, PCI_ANY_ID, 0, 0,	16 },
++	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_4_DID,		0) },
++	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_4_422_DID,	1) },
++	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_8_DID,		2) },
++	{ DIGIVID_PCI_DEVICE_ID(CLASSIC_8_422_DID,	3) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_4_DID,		4) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_8_DID,		5) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_2DB9_DID,		6) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_2DB9PRI_DID,	7) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_2RJ45_DID,		8) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_2RJ45PRI_DID,	9) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_1_422_DID,		10) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_1_422_485_DID,	11) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_2_422_485_DID,	12) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_8_DID,	13) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_4_DID,	14) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_4RJ45_DID,	15) },
++	{ DIGIVID_PCI_DEVICE_ID(NEO_EXPRESS_8RJ45_DID,	16) },
+ 	{0,}						/* 0 terminated list. */
+ };
++
+ MODULE_DEVICE_TABLE(pci, dgnc_pci_tbl);
+ 
+ struct board_id {
+-- 
+1.8.1.2
 
