@@ -1,105 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453AbaDUCr2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 22:47:28 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:25070 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751284AbaDUCrZ (ORCPT
+	id S1751529AbaDUDDR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 23:03:17 -0400
+Received: from mail-bn1bbn0102.outbound.protection.outlook.com ([157.56.111.102]:47345
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751284AbaDUDDM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 22:47:25 -0400
-X-AuditID: cbfee61b-b7f766d00000646c-a8-535486b879e0
-From: Weijie Yang <weijie.yang@samsung.com>
-To: "'Dan Streetman'" <ddstreet@ieee.org>,
-        "'Seth Jennings'" <sjennings@variantweb.net>,
-        "'Minchan Kim'" <minchan@kernel.org>,
-        "'Nitin Gupta'" <ngupta@vflare.org>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Bob Liu'" <bob.liu@oracle.com>, "'Hugh Dickins'" <hughd@google.com>,
-        "'Mel Gorman'" <mgorman@suse.de>, "'Rik van Riel'" <riel@redhat.com>,
-        "'Johannes Weiner'" <hannes@cmpxchg.org>,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Linux-MM'" <linux-mm@kvack.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-References: <1397922764-1512-1-git-send-email-ddstreet@ieee.org>
-In-reply-to: <1397922764-1512-1-git-send-email-ddstreet@ieee.org>
-Subject: RE: [PATCH 0/4] mm: zpool: add common api for zswap to use
- zbud/zsmalloc
-Date: Mon, 21 Apr 2014 10:47:16 +0800
-Message-id: <000001cf5d0c$03f348e0$0bd9daa0$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=gb2312
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9cCGiDWe1WhoShT7uUlnZYBrxB9ABABRmg
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrIIsWRmVeSWpSXmKPExsVy+t9jAd0dbSHBBi2H1S3mrF/DZtF1aiqL
-	xYW23SwWqzf5Wjz91MdicXnXHDaLe2v+s1pMfveM0WLZ1/fsFhtaZrFb/L2ynsVi7efH7Baf
-	jj5ic+D1OPzmPbPHzll32T0WbCr1eDrhIJPHplWdbB6bPk1i9zgx4zeLx8ent1g83u+7yuax
-	+XS1x/VvRR47P21m9fi8SS6AN4rLJiU1J7MstUjfLoEro2XbLeaCXUIVC3/NYmpgfMPbxcjJ
-	ISFgIjGj+zkzhC0mceHeerYuRi4OIYFFjBLrL86Fcv4wStw50sgOUsUmoC1xt38jK0hCRGAe
-	o8SsU5fYQRxmgddMElvnLATKcAC1OEhc2mkK0sAp4CixrusJE4gtLBAssXFVB9g6FgFVid9T
-	j7CB2LwCdhK7X19mhLAFJX5MvscCYjMLaEj0L9rABmHLS2xe85YZZLyEgLrEo7+6IKaIgJHE
-	3vXBEBXiEhuP3GKZwCg0C8mgWUgGzUIyaBaSlgWMLKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLz
-	czcxgiP2mfQOxlUNFocYBTgYlXh4X+SHBAuxJpYVV+YeYpTgYFYS4RVvBArxpiRWVqUW5ccX
-	leakFh9ilOZgURLnPdhqHSgkkJ5YkpqdmlqQWgSTZeLglGpgtHPOnqf++d3q6CcF11eKenxK
-	2lJ02UXk/fPm2ul1b3nD1iUpangciz1uFqpfuaxMrSB06Z93bd7mWleXeKhPlKxfEF/LnNAv
-	OOlppWd34Y+G3PKkycKp7l93Mx1ZFr1x5kIVk5PnmMP7j13cULr1+TnfaRpr9GTY2F7y2U+T
-	/nKkJ1nHLXK3EktxRqKhFnNRcSIAwOK7wdQCAAA=
+	Sun, 20 Apr 2014 23:03:12 -0400
+Message-ID: <1398049388.7753.6.camel@leyfoon-vm>
+Subject: Re: [PATCH 01/28] nios2: Build infrastructure
+From: Ley Foon Tan <lftan@altera.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <lftan.linux@gmail.com>,
+        <cltang@codesourcery.com>
+Date: Mon, 21 Apr 2014 11:03:08 +0800
+In-Reply-To: <20140418143553.GB8589@ravnborg.org>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	 <1397824031-4892-2-git-send-email-lftan@altera.com>
+	 <20140418143553.GB8589@ravnborg.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(377424004)(24454002)(51704005)(189002)(199002)(80022001)(92726001)(92566001)(575784001)(62966002)(86362001)(80976001)(93916002)(33646001)(4396001)(50226001)(81542001)(33716001)(87286001)(89996001)(85852003)(83072002)(81342001)(87936001)(99396002)(88136002)(50986999)(97736001)(2009001)(23676002)(77156001)(31966008)(74502001)(74662001)(16796002)(19580395003)(19580405001)(44976005)(42186004)(83322001)(76176999)(79102001)(6806004)(76482001)(77982001)(20776003)(47776003)(46102001)(21314002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2FFO11HUB023;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:C007E3E6.A03AC5D9.4AC7650E.98E8CE45.2035D;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 0188D66E61
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Sat, Apr 19, 2014 at 11:52 PM, Dan Streetman <ddstreet@ieee.org> wrote:
-> In order to allow zswap users to choose between zbud and zsmalloc for
-> the compressed storage pool, this patch set adds a new api "zpool" that
-> provides an interface to both zbud and zsmalloc.  Only a minor change
-> to zbud's interface was needed, as detailed in the first patch;
-> zsmalloc required shrinking to be added and a minor interface change,
-> as detailed in the second patch.
+On Jum, 2014-04-18 at 16:35 +0200, Sam Ravnborg wrote:
+> It is good practice to add build infrastructure last - so build is not broken.
+> But for a new architecture it matters only little.
 > 
-> I believe Seth originally was using zsmalloc for swap, but there were
-> concerns about how significant the impact of shrinking zsmalloc would
-> be when zswap had to start reclaiming pages.  That still may be an
-> issue, but this at least allows users to choose themselves whether
-> they want a lower-density or higher-density compressed storage medium.
-> At least for situations where zswap reclaim is never or rarely reached,
-> it probably makes sense to use the higher density of zsmalloc.
+> Some comments in the following.
 > 
-> Note this patch series does not change zram to use zpool, although that
-> change should be possible as well.
+> 	Sam
+Noted. But, I will keep the patch # for this time for consistency.
+Thanks. 
+> > 
+> > Signed-off-by: Ley Foon Tan <lftan@altera.com>
+> > ---
+> > 
+> > diff --git a/arch/nios2/Kconfig b/arch/nios2/Kconfig
+> > new file mode 100644
+> > index 0000000..2bd0d0d7160f31a5c5890cf8a059b9f53378be6e
+> > --- /dev/null
+> > +++ b/arch/nios2/Kconfig
+> > @@ -0,0 +1,213 @@
+> > +config NIOS2
+> > +	def_bool y
+> > +	select OF
+> > +	select OF_EARLY_FLATTREE
+> > +	select USB_ARCH_HAS_HCD if USB_SUPPORT
+> > +	select ARCH_WANT_OPTIONAL_GPIOLIB
+> > +	select GENERIC_IRQ_PROBE
+> > +	select GENERIC_IRQ_SHOW
+> > +	select GENERIC_CPU_DEVICES
+> > +	select GENERIC_ATOMIC64
+> > +	select MODULES_USE_ELF_RELA
+> > +	select IRQ_DOMAIN
+> > +	select SOC_BUS
+> > +	select CLKSRC_OF
+> If you keep this list sorted then merge issues are less likely.
+Noted, will sort this list.
 
-I think this idea is acceptable, because for embedded devices reclaiming is
-risky due to its write lifetime. By using zsmalloc, zswap user can not only take
-the benefit of higher-density compressed storage but aslo supporting the
-GFP_HIGHMEM in 32bit system.
+> > +config KERNEL_MMU_REGION_BASE_BOOL
+> > +	bool "Set custom kernel MMU region base address"
+> > +	depends on ADVANCED_OPTIONS
+> > +	help
+> > +	  This option allows you to set the virtual address of the kernel MMU region.
+> > +
+> > +	  Say N here unless you know what you are doing.
+> 
+> All Nios2 specific options should be prefixed with NIOS2_
+> This is what is done for all new arch specific symbols.
+Noted, will add NIOS2 prefix to these CONFIGs.
+> 
+> > diff --git a/arch/nios2/boot/Makefile b/arch/nios2/boot/Makefile
 
-I will pay attention to this patch set and give my opinion after my review.
-
-Thanks for your work
+> > +	$(call if_changed,gzip)
+> > +
+> > +$(obj)/vmImage: $(obj)/vmlinux.gz
+> > +	$(call if_changed,uimage)
+> > +	@$(kecho) 'Kernel: $@ is ready'
+> 
+> Add:
+> targets += vmlinux.bin vmlinux.gz vmImage
+> to make $(call if_changed ... actually work.
+Sure, will change to this way.
 
 > 
-> Dan Streetman (4):
->   mm: zpool: zbud_alloc() minor param change
->   mm: zpool: implement zsmalloc shrinking
->   mm: zpool: implement common zpool api to zbud/zsmalloc
->   mm: zpool: update zswap to use zpool
 > 
->  drivers/block/zram/zram_drv.c |   2 +-
->  include/linux/zbud.h          |   3 +-
->  include/linux/zpool.h         | 166 ++++++++++++++++++
->  include/linux/zsmalloc.h      |   7 +-
->  mm/Kconfig                    |  43 +++--
->  mm/Makefile                   |   1 +
->  mm/zbud.c                     |  28 ++--
->  mm/zpool.c                    | 380 ++++++++++++++++++++++++++++++++++++++++++
->  mm/zsmalloc.c                 | 168 +++++++++++++++++--
->  mm/zswap.c                    |  70 ++++----
->  10 files changed, 787 insertions(+), 81 deletions(-)
->  create mode 100644 include/linux/zpool.h
->  create mode 100644 mm/zpool.c
+> > +obj-y += cpuinfo.o insnemu.o irq.o nios2_ksyms.o process.o prom.o ptrace.o \
+> > +	 setup.o signal.o sys_nios2.o syscall_table.o time.o traps.o
 > 
-> --
-> 1.8.3.1
-
+> In new stuff try to avoid using ... \
+> to contatenate lines.
+> Use:
+> obj-y += xxx
+> 
+> This is much more readable.
+> 
+Will fix this.
