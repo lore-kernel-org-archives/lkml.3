@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688AbaDUVVu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 17:21:50 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:50880 "HELO
+	id S1754576AbaDUVYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 17:24:09 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:52826 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754493AbaDUVVr (ORCPT
+	with SMTP id S1754027AbaDUVYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 17:21:47 -0400
+	Mon, 21 Apr 2014 17:24:03 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Lan Tianyu <tianyu.lan@intel.com>
-Cc: wsa@the-dreams.de, lenb@kernel.org, mika.westerberg@linux.intel.com,
-        awilliam@redhat.com, robert.moore@intel.com, lv.zheng@intel.com,
-        rafael.j.wysocki@intel.com, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-        devel@acpica.org
-Subject: Re: [PATCH 1/9] ACPICA: Executer: Fix buffer allocation issue for generic_serial_bus region field accesses.
-Date: Mon, 21 Apr 2014 23:38:05 +0200
-Message-ID: <5269843.b915ubdT5E@vostro.rjw.lan>
+To: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Aaron Lu <aaron.lu@intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Zheng Z Yan <zheng.z.yan@intel.com>, Dave Jones <davej@redhat.com>,
+        Rui Zhang <rui.zhang@intel.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH] PNP: Work around BIOS defects in Intel MCH area reporting
+Date: Mon, 21 Apr 2014 23:40:22 +0200
+Message-ID: <5211225.3aS3KszjfE@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1397654682-7094-2-git-send-email-tianyu.lan@intel.com>
-References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com> <1397654682-7094-2-git-send-email-tianyu.lan@intel.com>
+In-Reply-To: <CAErSpo4fvfXPJzC2=ixdXO_OO7_syBCC-hXQNRH4Cu-_EkV6Cg@mail.gmail.com>
+References: <20140417202033.7057.98414.stgit@bhelgaas-glaptop.roam.corp.google.com> <1702309.mG1EHfKp35@vostro.rjw.lan> <CAErSpo4fvfXPJzC2=ixdXO_OO7_syBCC-hXQNRH4Cu-_EkV6Cg@mail.gmail.com>
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
@@ -27,183 +31,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wednesday, April 16, 2014 09:24:34 PM Lan Tianyu wrote:
-> From: Lv Zheng <lv.zheng@intel.com>
+On Monday, April 21, 2014 02:57:20 PM Bjorn Helgaas wrote:
+> On Mon, Apr 21, 2014 at 2:44 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
+> > Hi Bjorn,
+> >
+> > On Thursday, April 17, 2014 02:20:33 PM Bjorn Helgaas wrote:
+> >> Work around BIOSes that don't report the entire Intel MCH area.
+> >>
+> >> MCHBAR is not an architected PCI BAR, so MCH space is usually reported as a
+> >> PNP0C02 resource.  The MCH space was once 16KB, but is 32KB in newer parts.
+> >> Some BIOSes still report a PNP0C02 resource that is only 16KB, which means
+> >> the rest of the MCH space is consumed but unreported.
+> >>
+> >> This can cause resource map sanity check warnings or (theoretically) a
+> >> device conflict if we assigned the unreported space to another device.
+> >>
+> >> The Intel perf event uncore driver tripped over this when it claimed the
+> >> MCH region:
+> >>
+> >>   resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
+> >>   Info: mapping multiple BARs. Your kernel is fine.
+> >>
+> >> To prevent this, if we find a PNP0C02 resource that covers part of the MCH
+> >> space, extend it to cover the entire space.
+> >>
+> >> Link: http://lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
+> >> Reported-by: Borislav Petkov <bp@alien8.de>
+> >> Tested-by: Borislav Petkov <bp@suse.de>
+> >> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> >> Acked-by: Borislav Petkov <bp@suse.de>
+> >
+> > Do you want me to take this patch for PNP, or are you planning to take it
+> > into your tree?
 > 
-> The size of the buffer allocated for generic_serial_bus region access
-> is not correct.  This patch introduces acpi_ex_get_serial_access_length()
-> to be invoked to obtain correct data buffer length.  Reported by
-> Lan Tianyu, Fixed by Lv Zheng.
-> 
-> Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+> I figured it was more of a PNP thing than a PCI thing, so I was
+> thinking you would take it.  But if you'd rather I take it, just let
+> me know.
 
-I'm queueing up this patch as a fix for 3.15, but can you please resend the
-whole series with a CC to linux-acpi?
+OK, I can apply it.  I'll have some more stuff for 3.15-rc anyway.
+
+Thanks!
 
 
-> ---
->  drivers/acpi/acpica/exfield.c | 104 +++++++++++++++++++++++++++++++++++++++---
->  1 file changed, 97 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/acpi/acpica/exfield.c b/drivers/acpi/acpica/exfield.c
-> index 68d9744..12878e1 100644
-> --- a/drivers/acpi/acpica/exfield.c
-> +++ b/drivers/acpi/acpica/exfield.c
-> @@ -45,10 +45,71 @@
->  #include "accommon.h"
->  #include "acdispat.h"
->  #include "acinterp.h"
-> +#include "amlcode.h"
->  
->  #define _COMPONENT          ACPI_EXECUTER
->  ACPI_MODULE_NAME("exfield")
->  
-> +/* Local prototypes */
-> +static u32
-> +acpi_ex_get_serial_access_length(u32 accessor_type, u32 access_length);
-> +
-> +/*******************************************************************************
-> + *
-> + * FUNCTION:    acpi_get_serial_access_bytes
-> + *
-> + * PARAMETERS:  accessor_type   - The type of the protocol indicated by region
-> + *                                field access attributes
-> + *              access_length   - The access length of the region field
-> + *
-> + * RETURN:      Decoded access length
-> + *
-> + * DESCRIPTION: This routine returns the length of the generic_serial_bus
-> + *              protocol bytes
-> + *
-> + ******************************************************************************/
-> +
-> +static u32
-> +acpi_ex_get_serial_access_length(u32 accessor_type, u32 access_length)
-> +{
-> +	u32 length;
-> +
-> +	switch (accessor_type) {
-> +	case AML_FIELD_ATTRIB_QUICK:
-> +
-> +		length = 0;
-> +		break;
-> +
-> +	case AML_FIELD_ATTRIB_SEND_RCV:
-> +	case AML_FIELD_ATTRIB_BYTE:
-> +
-> +		length = 1;
-> +		break;
-> +
-> +	case AML_FIELD_ATTRIB_WORD:
-> +	case AML_FIELD_ATTRIB_WORD_CALL:
-> +
-> +		length = 2;
-> +		break;
-> +
-> +	case AML_FIELD_ATTRIB_MULTIBYTE:
-> +	case AML_FIELD_ATTRIB_RAW_BYTES:
-> +	case AML_FIELD_ATTRIB_RAW_PROCESS:
-> +
-> +		length = access_length;
-> +		break;
-> +
-> +	case AML_FIELD_ATTRIB_BLOCK:
-> +	case AML_FIELD_ATTRIB_BLOCK_CALL:
-> +	default:
-> +
-> +		length = ACPI_GSBUS_BUFFER_SIZE;
-> +		break;
-> +	}
-> +
-> +	return (length);
-> +}
-> +
->  /*******************************************************************************
->   *
->   * FUNCTION:    acpi_ex_read_data_from_field
-> @@ -63,8 +124,9 @@ ACPI_MODULE_NAME("exfield")
->   *              Buffer, depending on the size of the field.
->   *
->   ******************************************************************************/
-> +
->  acpi_status
-> -acpi_ex_read_data_from_field(struct acpi_walk_state *walk_state,
-> +acpi_ex_read_data_from_field(struct acpi_walk_state * walk_state,
->  			     union acpi_operand_object *obj_desc,
->  			     union acpi_operand_object **ret_buffer_desc)
->  {
-> @@ -73,6 +135,7 @@ acpi_ex_read_data_from_field(struct acpi_walk_state *walk_state,
->  	acpi_size length;
->  	void *buffer;
->  	u32 function;
-> +	u16 accessor_type;
->  
->  	ACPI_FUNCTION_TRACE_PTR(ex_read_data_from_field, obj_desc);
->  
-> @@ -116,9 +179,22 @@ acpi_ex_read_data_from_field(struct acpi_walk_state *walk_state,
->  			    ACPI_READ | (obj_desc->field.attribute << 16);
->  		} else if (obj_desc->field.region_obj->region.space_id ==
->  			   ACPI_ADR_SPACE_GSBUS) {
-> -			length = ACPI_GSBUS_BUFFER_SIZE;
-> -			function =
-> -			    ACPI_READ | (obj_desc->field.attribute << 16);
-> +			accessor_type = obj_desc->field.attribute;
-> +			length = acpi_ex_get_serial_access_length(accessor_type,
-> +								  obj_desc->
-> +								  field.
-> +								  access_length);
-> +
-> +			/*
-> +			 * Add additional 2 bytes for modeled generic_serial_bus data buffer:
-> +			 * typedef struct {
-> +			 *     BYTEStatus; // Byte 0 of the data buffer
-> +			 *     BYTELength; // Byte 1 of the data buffer
-> +			 *     BYTE[x-1]Data; // Bytes 2-x of the arbitrary length data buffer,
-> +			 * }
-> +			 */
-> +			length += 2;
-> +			function = ACPI_READ | (accessor_type << 16);
->  		} else {	/* IPMI */
->  
->  			length = ACPI_IPMI_BUFFER_SIZE;
-> @@ -231,6 +307,7 @@ acpi_ex_write_data_to_field(union acpi_operand_object *source_desc,
->  	void *buffer;
->  	union acpi_operand_object *buffer_desc;
->  	u32 function;
-> +	u16 accessor_type;
->  
->  	ACPI_FUNCTION_TRACE_PTR(ex_write_data_to_field, obj_desc);
->  
-> @@ -284,9 +361,22 @@ acpi_ex_write_data_to_field(union acpi_operand_object *source_desc,
->  			    ACPI_WRITE | (obj_desc->field.attribute << 16);
->  		} else if (obj_desc->field.region_obj->region.space_id ==
->  			   ACPI_ADR_SPACE_GSBUS) {
-> -			length = ACPI_GSBUS_BUFFER_SIZE;
-> -			function =
-> -			    ACPI_WRITE | (obj_desc->field.attribute << 16);
-> +			accessor_type = obj_desc->field.attribute;
-> +			length = acpi_ex_get_serial_access_length(accessor_type,
-> +								  obj_desc->
-> +								  field.
-> +								  access_length);
-> +
-> +			/*
-> +			 * Add additional 2 bytes for modeled generic_serial_bus data buffer:
-> +			 * typedef struct {
-> +			 *     BYTEStatus; // Byte 0 of the data buffer
-> +			 *     BYTELength; // Byte 1 of the data buffer
-> +			 *     BYTE[x-1]Data; // Bytes 2-x of the arbitrary length data buffer,
-> +			 * }
-> +			 */
-> +			length += 2;
-> +			function = ACPI_WRITE | (accessor_type << 16);
->  		} else {	/* IPMI */
->  
->  			length = ACPI_IPMI_BUFFER_SIZE;
-> 
+> >> ---
+> >>  drivers/pnp/quirks.c |   74 ++++++++++++++++++++++++++++++++++++++++++++++++++
+> >>  1 file changed, 74 insertions(+)
+> >>
+> >> diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
+> >> index 258fef272ea7..90b8c12c220d 100644
+> >> --- a/drivers/pnp/quirks.c
+> >> +++ b/drivers/pnp/quirks.c
+> >> @@ -334,6 +334,79 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
+> >>  }
+> >>  #endif
+> >>
+> >> +/* Device IDs of parts that have 32KB MCH space */
+> >> +static const unsigned int mch_quirk_devices[] = {
+> >> +     0x0154, /* Ivy Bridge */
+> >> +     0x0c00, /* Haswell */
+> >> +};
+> >> +
+> >> +static struct pci_dev *get_intel_host(void)
+> >> +{
+> >> +     int i;
+> >> +     struct pci_dev *host;
+> >> +
+> >> +     for (i = 0; i < ARRAY_SIZE(mch_quirk_devices); i++) {
+> >> +             host = pci_get_device(PCI_VENDOR_ID_INTEL, mch_quirk_devices[i],
+> >> +                                   NULL);
+> >> +             if (host)
+> >> +                     return host;
+> >> +     }
+> >> +     return NULL;
+> >> +}
+> >> +
+> >> +static void quirk_intel_mch(struct pnp_dev *dev)
+> >> +{
+> >> +     struct pci_dev *host;
+> >> +     u32 addr_lo, addr_hi;
+> >> +     struct pci_bus_region region;
+> >> +     struct resource mch;
+> >> +     struct pnp_resource *pnp_res;
+> >> +     struct resource *res;
+> >> +
+> >> +     host = get_intel_host();
+> >> +     if (!host)
+> >> +             return;
+> >> +
+> >> +     /*
+> >> +      * MCHBAR is not an architected PCI BAR, so MCH space is usually
+> >> +      * reported as a PNP0C02 resource.  The MCH space was originally
+> >> +      * 16KB, but is 32KB in newer parts.  Some BIOSes still report a
+> >> +      * PNP0C02 resource that is only 16KB, which means the rest of the
+> >> +      * MCH space is consumed but unreported.
+> >> +      */
+> >> +
+> >> +     /*
+> >> +      * Read MCHBAR for Host Member Mapped Register Range Base
+> >> +      * https://www-ssl.intel.com/content/www/us/en/processors/core/4th-gen-core-family-desktop-vol-2-datasheet
+> >> +      * Sec 3.1.12.
+> >> +      */
+> >> +     pci_read_config_dword(host, 0x48, &addr_lo);
+> >> +     region.start = addr_lo & ~0x7fff;
+> >> +     pci_read_config_dword(host, 0x4c, &addr_hi);
+> >> +     region.start |= (dma_addr_t) addr_hi << 32;
+> >> +     region.end = region.start + 32*1024 - 1;
+> >> +
+> >> +     memset(&mch, 0, sizeof(mch));
+> >> +     mch.flags = IORESOURCE_MEM;
+> >> +     pcibios_bus_to_resource(host->bus, &mch, &region);
+> >> +
+> >> +     list_for_each_entry(pnp_res, &dev->resources, list) {
+> >> +             res = &pnp_res->res;
+> >> +             if (res->end < mch.start || res->start > mch.end)
+> >> +                     continue;       /* no overlap */
+> >> +             if (res->start == mch.start && res->end == mch.end)
+> >> +                     continue;       /* exact match */
+> >> +
+> >> +             dev_info(&dev->dev, FW_BUG "PNP resource %pR covers only part of %s Intel MCH; extending to %pR\n",
+> >> +                      res, pci_name(host), &mch);
+> >> +             res->start = mch.start;
+> >> +             res->end = mch.end;
+> >> +             break;
+> >> +     }
+> >> +
+> >> +     pci_dev_put(host);
+> >> +}
+> >> +
+> >>  /*
+> >>   *  PnP Quirks
+> >>   *  Cards or devices that need some tweaking due to incomplete resource info
+> >> @@ -364,6 +437,7 @@ static struct pnp_fixup pnp_fixups[] = {
+> >>  #ifdef CONFIG_AMD_NB
+> >>       {"PNP0c01", quirk_amd_mmconfig_area},
+> >>  #endif
+> >> +     {"PNP0c02", quirk_intel_mch},
+> >>       {""}
+> >>  };
+> >>
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
+> > --
+> > I speak only for myself.
+> > Rafael J. Wysocki, Intel Open Source Technology Center.
 
 -- 
 I speak only for myself.
