@@ -1,131 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370AbaDUNJs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 09:09:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17107 "EHLO mx1.redhat.com"
+	id S1752169AbaDUNRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 09:17:05 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35037 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751134AbaDUNJo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 09:09:44 -0400
-Date: Mon, 21 Apr 2014 09:09:32 -0400
-From: Brian Foster <bfoster@redhat.com>
-To: Jeff Liu <jeff.liu@oracle.com>
-Cc: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH] xfs: Fix wrong error codes being returned
-Message-ID: <20140421130931.GB24813@bfoster.bfoster>
-References: <1398074687-26548-1-git-send-email-tuomas.tynkkynen@iki.fi>
- <5355132F.4070303@oracle.com>
+	id S1751734AbaDUNRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 09:17:02 -0400
+Message-ID: <53551A2C.8060404@ti.com>
+Date: Mon, 21 Apr 2014 08:16:28 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5355132F.4070303@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <balbi@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>
+CC: Tony Lindgren <tony@atomide.com>, Sricharan R <r.sricharan@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 05/19] bus: omap_l3_noc: switch over to relaxed variants
+ of readl/writel
+References: <1397492726-17203-1-git-send-email-nm@ti.com> <1397767775-10965-1-git-send-email-nm@ti.com> <1397767775-10965-6-git-send-email-nm@ti.com> <20140417215228.GD8504@saruman.home> <53504DFF.7090907@ti.com> <20140417220329.GF8504@saruman.home>
+In-Reply-To: <20140417220329.GF8504@saruman.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 08:46:39PM +0800, Jeff Liu wrote:
-> Hi Tuomas,
+On 04/17/2014 05:03 PM, Felipe Balbi wrote:
+> On Thu, Apr 17, 2014 at 05:56:15PM -0400, Santosh Shilimkar wrote:
+>> On Thursday 17 April 2014 05:52 PM, Felipe Balbi wrote:
+>>> Hi,
+>>>
+>>> On Thu, Apr 17, 2014 at 03:49:21PM -0500, Nishanth Menon wrote:
+>>>> Currently we use __raw_readl and writel in this driver, however, there
+>>>
+>>> __raw_* and *_relaxed variants are the same, just have a look <asm/io.h>
+>>>
+>> Except the relaxed version can take care of endian conversion if
+>> needed. :-)
 > 
-> On 04/21 2014 18:04 PM, Tuomas Tynkkynen wrote:
-> > xfs_{compat_,}attrmulti_by_handle could return an errno with incorrect
-> > sign in some cases. While at it, make sure ENOMEM is returned instead of
-> > E2BIG if kmalloc fails.
-> > 
-> > Signed-off-by: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
-> > ---
-> > Compile tested only. For the ERANGE case, I also wonder if it should
-> > be assigning to ops[i].am_error instead of error, and/or have a break.
-> 
-> If I understand right, ops[i].am_error is used to save the internal operation result,
-> i.e, xfs_attrmult_attr_get{set}... but error is used for the ioctl call results.
-> Therefore, assign ERANGE to error is compatible with the VFS set{get}xattr syscalls in
-> case of "if (ops[i].am_error == 0 || ops[i].am_error == MAXNAMELEN)".
-> 
-
-But we set 'error' in this case and effectively try to continue the operation
-whereas the traditional vfs path returns...
-
-> It seems that we don't need to have a break in this case because xfs_attrmulti_by_handle()
-> is used to process multiple attrs.  Hence if a given attrname in ops array is invalid,
-> the am_error will indicate that with ENOATTR or EFAULT...but it should proceed to loop
-> through the left array members.
+> right, but according to commit log, this commit is more concerned about
+> the memory barriers which writel()/readl() add, not endianness. Just a
+> matter of fixing up commit log.
 > 
 
-Perhaps so if am_error == 0, but it depends on what attr_name contains
-at that point (stale data?). Otherwise, we try to proceed with a
-truncated name. It looks like the consistent thing to do would be set
-am_error to ERANGE and continue (i.e., skip the op and move on to the
-next).
+yep, this patch does replace writel with writel_relaxed there is no
+strong need for barriers in the operations that we perform here.
 
-Brian
+I agree that the commit message should probably be a little more
+detailed at this point.
 
-> Also, looks there is another minor issue at xfs_attrmulti_attr_set(), we should return
-> -PTR_ERR(kbuf) if call memdup_user() failed.
-> 
-> > 
-> >  fs/xfs/xfs_ioctl.c   |    5 +++--
-> >  fs/xfs/xfs_ioctl32.c |    5 +++--
-> >  2 files changed, 6 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
-> > index 0b18776..2d8f4fd 100644
-> > --- a/fs/xfs/xfs_ioctl.c
-> > +++ b/fs/xfs/xfs_ioctl.c
-> > @@ -543,10 +543,11 @@ xfs_attrmulti_by_handle(
-> >  
-> >  	ops = memdup_user(am_hreq.ops, size);
-> >  	if (IS_ERR(ops)) {
-> > -		error = PTR_ERR(ops);
-> > +		error = -PTR_ERR(ops);
-> >  		goto out_dput;
-> >  	}
-> >  
-> > +	error = ENOMEM;
-> >  	attr_name = kmalloc(MAXNAMELEN, GFP_KERNEL);
-> >  	if (!attr_name)
-> >  		goto out_kfree_ops;
-> > @@ -556,7 +557,7 @@ xfs_attrmulti_by_handle(
-> >  		ops[i].am_error = strncpy_from_user((char *)attr_name,
-> >  				ops[i].am_attrname, MAXNAMELEN);
-> >  		if (ops[i].am_error == 0 || ops[i].am_error == MAXNAMELEN)
-> > -			error = -ERANGE;
-> > +			error = ERANGE;
-> >  		if (ops[i].am_error < 0)
-> >  			break;
-> >  
-> > diff --git a/fs/xfs/xfs_ioctl32.c b/fs/xfs/xfs_ioctl32.c
-> > index a7992f8..944d5ba 100644
-> > --- a/fs/xfs/xfs_ioctl32.c
-> > +++ b/fs/xfs/xfs_ioctl32.c
-> > @@ -424,10 +424,11 @@ xfs_compat_attrmulti_by_handle(
-> >  
-> >  	ops = memdup_user(compat_ptr(am_hreq.ops), size);
-> >  	if (IS_ERR(ops)) {
-> > -		error = PTR_ERR(ops);
-> > +		error = -PTR_ERR(ops);
-> >  		goto out_dput;
-> >  	}
-> >  
-> > +	error = ENOMEM;
-> >  	attr_name = kmalloc(MAXNAMELEN, GFP_KERNEL);
-> >  	if (!attr_name)
-> >  		goto out_kfree_ops;
-> > @@ -438,7 +439,7 @@ xfs_compat_attrmulti_by_handle(
-> >  				compat_ptr(ops[i].am_attrname),
-> >  				MAXNAMELEN);
-> >  		if (ops[i].am_error == 0 || ops[i].am_error == MAXNAMELEN)
-> > -			error = -ERANGE;
-> > +			error = ERANGE;
-> >  		if (ops[i].am_error < 0)
-> >  			break;
-> >  
-> 
-> Thanks,
-> -Jeff
-> 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
+
+How about:
+Currently we use __raw_readl and writel in this driver. Considering
+there is no specific need for a memory barrier, replacing writel with
+endian-neutral writel_relaxed and replacing __raw_readls with the
+corresponding endian-neutral readl_relaxed allows us to have a
+standard set of register operations for the driver.
+
+While at it, simplify address computation using variables for register.
+
+
+-- 
+Regards,
+Nishanth Menon
