@@ -1,175 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754346AbaDUTBO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 15:01:14 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:52805 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775AbaDUTBI (ORCPT
+	id S1754385AbaDUTBt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 15:01:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40942 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753801AbaDUTBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 15:01:08 -0400
-Message-ID: <53556AF1.2030608@gmail.com>
-Date: Mon, 21 Apr 2014 14:01:05 -0500
-From: Rob Herring <robherring2@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Rob Herring <robh+dt@kernel.org>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 2/2] dt: platform driver: Fill the resources before
- probe and defer if needed
-References: <20140320161118.B7075C4067A@trevor.secretlab.ca> <1395413185-29763-1-git-send-email-jjhiblot@traphandler.com> <1395413185-29763-3-git-send-email-jjhiblot@traphandler.com> <CAL_Jsq+aU+rs28gV=Gesb_-Dy6Ht7zuKrRA6_hmqp94Uun23Yg@mail.gmail.com> <20140418205213.GA21823@atomide.com> <CAL_JsqJvVvo6R-qNXxur7wiZERKbi52xyKoWnmzJTfKS2iKK7A@mail.gmail.com> <20140418215848.GD21823@atomide.com> <20140418230335.GI24070@n2100.arm.linux.org.uk> <20140418232407.GQ21823@atomide.com> <CAL_JsqLvLTJwgsB-m0W72WxSUoTV4ubMdvM_a784J4k2eiK9AQ@mail.gmail.com> <20140421155424.GD23945@atomide.com>
-In-Reply-To: <20140421155424.GD23945@atomide.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Apr 2014 15:01:44 -0400
+Date: Mon, 21 Apr 2014 12:01:12 -0700
+Message-Id: <201404211901.s3LJ1Cra010895@terminus.zytor.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] x86/vdso fix for v3.15-rc3
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Thomas Gleixner <tglx@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 10:54 AM, Tony Lindgren <tony@atomide.com> wrote:
-> * Rob Herring <robherring2@gmail.com> [140421 06:47]:
->> On Fri, Apr 18, 2014 at 6:24 PM, Tony Lindgren <tony@atomide.com> wrote:
->> > * Russell King - ARM Linux <linux@arm.linux.org.uk> [140418 16:04]:
->> >> On Fri, Apr 18, 2014 at 02:58:48PM -0700, Tony Lindgren wrote:
->> >> > Oh come on, let's stop pretending it's not broken. And it's way worse with
->> >> > device tree as there's nothing making sure the resources for a driver
->> >> > are set up before the driver probes. And we've been unable to fix just
->> >> > this issue alone for about six months now. It's also broken beyond that.
->> >> > It's called of_platform_bus yet it won't even pass the platform_data
->> >> > as auxdata to the devices on a sub-bus instantatiated like I2C.
->> >>
->> >> Isn't there a much simpler solution to the platform device IRQ problem?
->> >>
->> >> Rather than trying to fix it at the point where the resources are
->> >> created, why not just *not* have DT create the IRQ resources in the
->> >> first place, and instead have platform_get_irq() (which is the function
->> >> which should be used to get an IRQ) be the actor to do whatever is
->> >> necessary to return the IRQ(s) ?
->> >
->> > Yeah why not. I don't see why we would need to do all this of_* special
->> > trickery for much anything beyond parsing the binding.
->>
->> That can work, but it will still need something like
->> of_find_irq_domain() to determine whether to return -EPROBE_DEFER or
->> not.
->
-> Right. Naturally let's do whatever it takes to first fix this issue
-> in a minimal way first for the -rc cycle so we can do the longer term
-> changes needed.
+Hi Linus,
 
-I'm not really convinced there is a simple and safe enough solution for
-3.15. We should also be willing to tag a solution for stable if we take
-it for -rc (although that decision could be deferred).
+This is a single build fix for building with gold as opposed to GNU
+ld.  It got queued up separately and was expected to be pushed during
+the merge window, but it got left behind.
 
->> You could also go in the other direction and don't create the device
->> until the resources can be resolved. Unlike any of the other
->> solutions, that would work for amba bus as well although we may never
->> have a case where we need this with the amba bus. This would require
->> making of_platform_populate be callable multiple times, but there are
->> already some other reasons for wanting to do that. Specifically, I
->> would like the core code to call of_platform_populate with default
->> options and then only platforms with non-default options need a call
->> to of_platform_populate.
->
-> I like this idea as this would also probably remove the the numerous
-> dmesg errors we are currently getting for drivers reprobing with
-> -EPROBE_DEFER.
+The following changes since commit 37c975545ec63320789962bf307f000f08fabd48:
 
-One issue with my proposal is with supporting modules. IIUC, deferred
-probe will continue trying forever and loading modules can cause probe
-to succeed. If devices are not created and on the deferred probe list,
-then they will not get probed when a module load fixes the dependency.
+  x86, vdso: Fix the symbol versions on the 32-bit vDSO (2014-03-30 10:08:38 -0700)
 
-> In the long term we should have platform bus just call a set of
-> standardized functions implemented by whatever the data source might
-> be. That way we can limit the use of of_* functions in device drivers
-> to just parsing of custom bindings in the drivers and use bus specific
-> functions for everything else.
->
->> >> Yes, I know we have some drivers which use platform_get_resources() with
->> >> IORESOURCE_IRQ, but they should really use the right accessor.  And those
->> >> who just dereference the resource array directly... get what's coming
->> >> (though of course they have to be fixed.)
->> >
->> > $ git grep IORESOURCE_IRQ drivers/ | grep platform_get_resource | wc -l
->> > 179
->>
->> Certainly, this is worthwhile clean-up no matter what the solution.
->
-> Yeah agreed. But let's also consider the IORESOURCE_IRQ as just another
-> source for for the bus or driver data in addition to the DT parsed data.
-> Both sources of data should work just fine with platform_bus even
-> without cleaning up the drivers
+are available in the git repository at:
 
-Ah, right. Except for those drivers you need to work with deferred probe
-would have to use platform_get_irq. That fact makes this solution quite
-a bit easier.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/tip.git x86-vdso-for-linus
 
-Something like this is what you had in mind?
+  x86, vdso: Make the vdso linker script compatible with Gold (2014-04-03 12:03:59 -0700)
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index e714709..5b47210 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -13,6 +13,7 @@
- #include <linux/string.h>
- #include <linux/platform_device.h>
- #include <linux/of_device.h>
-+#include <linux/of_irq.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/dma-mapping.h>
-@@ -87,7 +88,11 @@ int platform_get_irq(struct platform_device *dev,
-unsigned int num)
- 		return -ENXIO;
- 	return dev->archdata.irqs[num];
- #else
--	struct resource *r = platform_get_resource(dev, IORESOURCE_IRQ, num);
-+	struct resource *r;
-+	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
-+		return of_irq_get(dev->dev.of_node, num);
-+
-+	r = platform_get_resource(dev, IORESOURCE_IRQ, num);
+----------------------------------------------------------------
+Andy Lutomirski (1):
+      x86, vdso: Make the vdso linker script compatible with Gold
 
- 	return r ? r->start : -ENXIO;
+ arch/x86/vdso/vdso-layout.lds.S | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/vdso/vdso-layout.lds.S b/arch/x86/vdso/vdso-layout.lds.S
+index 2e263f367b13..9df017ab2285 100644
+--- a/arch/x86/vdso/vdso-layout.lds.S
++++ b/arch/x86/vdso/vdso-layout.lds.S
+@@ -9,12 +9,9 @@ SECTIONS
+ #ifdef BUILD_VDSO32
+ #include <asm/vdso32.h>
+ 
+-	.hpet_sect : {
+-		hpet_page = . - VDSO_OFFSET(VDSO_HPET_PAGE);
+-	} :text :hpet_sect
++	hpet_page = . - VDSO_OFFSET(VDSO_HPET_PAGE);
+ 
+-	.vvar_sect : {
+-		vvar = . - VDSO_OFFSET(VDSO_VVAR_PAGE);
++	vvar = . - VDSO_OFFSET(VDSO_VVAR_PAGE);
+ 
+ 	/* Place all vvars at the offsets in asm/vvar.h. */
+ #define EMIT_VVAR(name, offset) vvar_ ## name = vvar + offset;
+@@ -22,7 +19,6 @@ SECTIONS
+ #include <asm/vvar.h>
+ #undef __VVAR_KERNEL_LDS
+ #undef EMIT_VVAR
+-	} :text :vvar_sect
  #endif
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 7d3184f..30449ad 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -400,6 +400,26 @@ int of_irq_to_resource(struct device_node *dev, int
-index, struct resource *r)
- EXPORT_SYMBOL_GPL(of_irq_to_resource);
-
- /**
-+ * of_irq_get - Decode a node's IRQ and return it as a Linux irq number
-+ * @dev: pointer to device tree node
-+ * @index: zero-based index of the irq
-+ *
-+ * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
-+ * is not yet created.
-+ *
-+ */
-+int of_irq_get(struct device_node *dev, int index)
-+{
-+	int irq = irq_of_parse_and_map(dev, index);
+ 	. = SIZEOF_HEADERS;
+ 
+@@ -61,7 +57,12 @@ SECTIONS
+ 	 */
+ 	. = ALIGN(0x100);
+ 
+-	.text		: { *(.text*) }			:text	=0x90909090
++	.text		: { *(.text*) }			:text	=0x90909090,
 +
-+	if (!irq && of_find_irq_domain(dev, index) == NULL)
-+		return -EPROBE_DEFER;
-+
-+	return irq;
-+}
-+EXPORT_SYMBOL_GPL(of_irq_get);
-+
-+/**
-  * of_irq_count - Count the number of IRQs a node uses
-  * @dev: pointer to device tree node
-  */
++	/*
++	 * The comma above works around a bug in gold:
++	 * https://sourceware.org/bugzilla/show_bug.cgi?id=16804
++	 */
+ 
+ 	/DISCARD/ : {
+ 		*(.discard)
+@@ -84,8 +85,4 @@ PHDRS
+ 	dynamic		PT_DYNAMIC	FLAGS(4);		/* PF_R */
+ 	note		PT_NOTE		FLAGS(4);		/* PF_R */
+ 	eh_frame_hdr	PT_GNU_EH_FRAME;
+-#ifdef BUILD_VDSO32
+-	vvar_sect	PT_NULL		FLAGS(4);		/* PF_R */
+-	hpet_sect	PT_NULL		FLAGS(4);		/* PF_R */
+-#endif
+ }
