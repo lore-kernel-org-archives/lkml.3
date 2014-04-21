@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656AbaDUFYp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 01:24:45 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:36061 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbaDUFYl convert rfc822-to-8bit (ORCPT
+	id S1751592AbaDUFbc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 01:31:32 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:44392 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751243AbaDUFb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 01:24:41 -0400
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-To: Randy Dunlap <rdunlap@infradead.org>,
-        Terence Eden <terence.eden@gmail.com>,
-        Jiri Kosina <trivial@kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "trivial@rustcorp.com.au" <trivial@rustcorp.com.au>,
-        "kernel@shkspr.mobi" <kernel@shkspr.mobi>,
-        Terence Eden <github.com@shkspr.mobi>,
-        Jiri Kosina <trivial@kernel.org>
-Subject: Re: [PATCH] Fixed spelling errors within comments
-Thread-Topic: [PATCH] Fixed spelling errors within comments
-Thread-Index: AQHPXJTXO9GeYGlvR0aHq4bgyGgL4g==
-Date: Mon, 21 Apr 2014 05:24:30 +0000
-Message-ID: <C2D7FE5348E1B147BCA15975FBA230751AFC43@IN01WEMBXA.internal.synopsys.com>
-References: <1397997228-2701-1-git-send-email-terence.eden@gmail.com>
- <5353FD09.6000701@infradead.org>
-Accept-Language: en-US, en-IN
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.12.196.93]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Mon, 21 Apr 2014 01:31:29 -0400
+From: Andy Gross <agross@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andy Gross <agross@codeaurora.org>
+Subject: [PATCH 0/4] Introduce drivers/soc and add QCOM GSBI driver
+Date: Mon, 21 Apr 2014 00:30:40 -0500
+Message-Id: <1398058244-14099-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Terence,
+The first patch in this set adds the drivers/soc directory and all the necessary
+plumbing.  These changes were discussed at the kernel summit and also were
+introduced in an earlier patch set from Santosh Shilimkar.
 
-Thanks for the fixes.
+Reference the following set of patches:
+https://lkml.org/lkml/2014/2/28/567
 
-On Sunday 20 April 2014 10:30 PM, Randy Dunlap wrote:
-> On 04/20/2014 05:33 AM, Terence Eden wrote:
->> > From: Terence Eden <github.com@shkspr.mobi>
->> > 
->> > This is my first patch submission. Please let me know if I have made a mistake anywhere.
->> > 
->> ...
-> I would write:                  an L1 ISR,
->
-> anyway:
-> Acked-by: Randy Dunlap <rdunlap@infradead.org>
+The remaining patches add the QCOM GSBI (General Serial Bus Interface) driver,
+device tree binding information for both the GSBI and child node interaction,
+and lastly a patch to fix the current MSM serial driver to work correctly with
+the GSBI changes.
 
-Applied to ARC for-next with Randy's ACK.
+Before this patch series, serial drivers (UART, I2C, and SPI) were all directly
+accessing the overarching mux control settings for the parent GSBI device.  This
+leads to unfortunate interactions when you want a UART and I2C device which
+share the same GSBI interface.  By moving the serial devices to child nodes of
+the GSBI, we can get the right mode setting for the ports and keep the children
+from accessing the GSBI directly.
 
--Vineet
+Andy Gross (4):
+  soc: Placeholder files for drivers/soc
+  soc: qcom: Add GSBI driver
+  soc: qcom: Add device tree binding for GSBI
+  tty: serial: msm: Remove direct access to GSBI
+
+ .../devicetree/bindings/soc/qcom/qcom,gsbi.txt     |   78 +++++++++++++++
+ drivers/Kconfig                                    |    2 +
+ drivers/Makefile                                   |    4 +
+ drivers/soc/Kconfig                                |    5 +
+ drivers/soc/Makefile                               |    5 +
+ drivers/soc/qcom/Kconfig                           |   11 +++
+ drivers/soc/qcom/Makefile                          |    1 +
+ drivers/soc/qcom/qcom_gsbi.c                       |  101 ++++++++++++++++++++
+ drivers/tty/serial/msm_serial.c                    |   48 +---------
+ drivers/tty/serial/msm_serial.h                    |    5 -
+ 10 files changed, 209 insertions(+), 51 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,gsbi.txt
+ create mode 100644 drivers/soc/Kconfig
+ create mode 100644 drivers/soc/Makefile
+ create mode 100644 drivers/soc/qcom/Kconfig
+ create mode 100644 drivers/soc/qcom/Makefile
+ create mode 100644 drivers/soc/qcom/qcom_gsbi.c
+
+-- 
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
