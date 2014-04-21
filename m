@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaDUU3I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 16:29:08 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:51054 "HELO
+	id S1754483AbaDUUfP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 16:35:15 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:60365 "HELO
 	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754531AbaDUU2k convert rfc822-to-8bit (ORCPT
+	with SMTP id S1753542AbaDUUfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 16:28:40 -0400
+	Mon, 21 Apr 2014 16:35:12 -0400
 From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Semen Protsenko <semen.protsenko@linaro.org>
-Cc: Len Brown <lenb@kernel.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] acpi: respect const qualifier
-Date: Mon, 21 Apr 2014 22:44:59 +0200
-Message-ID: <3334700.hi79274ifW@vostro.rjw.lan>
+To: Baoquan He <bhe@redhat.com>
+Cc: linux-kernel@vger.kernel.org, lenb@kernel.org, linux-acpi@vger.kernel.org,
+        jiang.liu@linux.intel.com, vgoyal@redhat.com
+Subject: Re: [PATCH] acpi: try to trust cpu_index from x86_cpu_to_apicid
+Date: Mon, 21 Apr 2014 22:51:31 +0200
+Message-ID: <11963454.DotWb00OAa@vostro.rjw.lan>
 User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1397750006-17463-1-git-send-email-semen.protsenko@linaro.org>
-References: <1397750006-17463-1-git-send-email-semen.protsenko@linaro.org>
+In-Reply-To: <1397519754-10205-1-git-send-email-bhe@redhat.com>
+References: <1397519754-10205-1-git-send-email-bhe@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7Bit
 Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, April 17, 2014 06:53:26 PM Semen Protsenko wrote:
-> This patch fixes next warning:
+On Tuesday, April 15, 2014 07:55:54 AM Baoquan He wrote:
+> In smp with multi cpus, when enter into kdump kernel with only 1 cpu,
+> a warning message is printed out:
 > 
-> <------------------------------- cut here --------------------------------->
-> drivers/acpi/property.c: In function ‘acpi_free_properties’:
-> drivers/acpi/property.c:35:2: warning: passing argument 1 of ‘acpi_os_free’
->                               discards ‘const’ qualifier from pointer
->                               target type [enabled by default]
+> acpi LNXCPU:0a: BIOS reported wrong ACPI id 0 for the processor
 > 
->   ACPI_FREE(adev->properties);
-> <------------------------------- cut here --------------------------------->
+> In this case kdump kernel use the same ACPI tables as 1st kernel,
+> means lapic information is got from MADT. The acpi_id related to
+> this cpu index and lapic_id may not be 0, so the code to assign
+> value to cpu_index is not correct in this case per cpu0_initialized.
+> cpu index stored in x86_cpu_to_apicid need be respected.
+> 
+> Now fix it in this patch per boot_cpu_physical_apicid. When cpu index
+> related to boot_cpu_physical_apicid is not stored in x86_cpu_to_apicid,
+> then we can say this is UP system running SMP kernel with no LAPIC in MADT
 
-This is not a mainline kernel problem, surely?
+Why don't you fix the warning message instead to cover this case too? 
 
-> 
-> The problem is next:
-> 
->  - acpi_free_properties() calls ACPI_FREE(), passing "const *"
->    parameter to it
->  - ACPI_FREE() is macro for acpi_os_free()
->  - acpi_os_free() takes "void *" parameter
->  - acpi_os_free() calls kfree()
->  - but kfree() requires "const void *" parameter
-> 
-> So acpi_os_free() should require "const void *" parameter as well.
-> 
-> Signed-off-by: Semen Protsenko <semen.protsenko@linaro.org>
+> Signed-off-by: Baoquan He <bhe@redhat.com>
 > ---
->  include/acpi/platform/aclinux.h | 2 +-
+>  drivers/acpi/acpi_processor.c | 2 +-
 >  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-> index 93c55ed..c6fa763 100644
-> --- a/include/acpi/platform/aclinux.h
-> +++ b/include/acpi/platform/aclinux.h
-> @@ -174,7 +174,7 @@ static inline void *acpi_os_allocate_zeroed(acpi_size size)
->  #define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_allocate_zeroed
->  #define USE_NATIVE_ALLOCATE_ZEROED
+> diff --git a/drivers/acpi/acpi_processor.c b/drivers/acpi/acpi_processor.c
+> index c29c2c3..1ae460c 100644
+> --- a/drivers/acpi/acpi_processor.c
+> +++ b/drivers/acpi/acpi_processor.c
+> @@ -267,7 +267,7 @@ static int acpi_processor_get_info(struct acpi_device *device)
+>  	pr->apic_id = apic_id;
 >  
-> -static inline void acpi_os_free(void *memory)
-> +static inline void acpi_os_free(const void *memory)
->  {
->  	kfree(memory);
->  }
+>  	cpu_index = acpi_map_cpuid(pr->apic_id, pr->acpi_id);
+> -	if (!cpu0_initialized) {
+> +	if (!cpu0_initialized && (boot_cpu_physical_apicid == pr->apic_id)) {
+>  		cpu0_initialized = 1;
+>  		/* Handle UP system running SMP kernel, with no LAPIC in MADT */
+>  		if ((cpu_index == -1) && (num_online_cpus() == 1))
 > 
 
 -- 
