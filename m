@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751803AbaDUJ4N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 05:56:13 -0400
-Received: from mail-we0-f174.google.com ([74.125.82.174]:49229 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460AbaDUJzm (ORCPT
+	id S1751847AbaDUJ4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 05:56:19 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:62008 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751468AbaDUJzs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 05:55:42 -0400
+	Mon, 21 Apr 2014 05:55:48 -0400
 From: Viresh Kumar <viresh.kumar@linaro.org>
 To: tglx@linutronix.de
 Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
         linux-kernel@vger.kernel.org, fweisbec@gmail.com,
         Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH V2 03/19] tick: rearrange members of 'struct tick_sched'
-Date: Mon, 21 Apr 2014 15:24:59 +0530
-Message-Id: <985a0da459304c2df3894ce56c24831fbe14a611.1398072824.git.viresh.kumar@linaro.org>
+Subject: [PATCH V2 04/19] tick: move declaration of 'tick_cpu_device' to tick.h
+Date: Mon, 21 Apr 2014 15:25:00 +0530
+Message-Id: <a09cbeb8e209f2beae2f8efb515bbba704525a72.1398072824.git.viresh.kumar@linaro.org>
 X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 In-Reply-To: <cover.1398072824.git.viresh.kumar@linaro.org>
 References: <cover.1398072824.git.viresh.kumar@linaro.org>
@@ -24,93 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rearrange members of 'struct tick_sched' to make it more readable. i.e. By
-keeping all ktime_t members together, similarly 'unsigned long' and 'int' as
-well. I couldn't figure out breaking any logical blocks here which we wanted to
-keep together.
-
-Change in footprints of this structure:
-For x86: size reduced to 232 from 240 bytes
-For ARM: no change
+'tick_cpu_device' isn't local to kernel/time/ directory as it is declared in
+hrtimer.h as well. Move its declaration to tick.h.
 
 Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
 ---
- include/linux/tick.h | 34 +++++++++++++++++-----------------
- 1 file changed, 17 insertions(+), 17 deletions(-)
+ include/linux/hrtimer.h     | 3 ---
+ include/linux/tick.h        | 2 ++
+ kernel/time/tick-internal.h | 1 -
+ 3 files changed, 2 insertions(+), 4 deletions(-)
 
+diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
+index e7a8d3f..a31f83e 100644
+--- a/include/linux/hrtimer.h
++++ b/include/linux/hrtimer.h
+@@ -332,9 +332,6 @@ extern ktime_t ktime_get_clocktai(void);
+ extern ktime_t ktime_get_update_offsets(ktime_t *offs_real, ktime_t *offs_boot,
+ 					 ktime_t *offs_tai);
+ 
+-DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+-
+-
+ /* Exported timer functions: */
+ 
+ /* Initialize timers: */
 diff --git a/include/linux/tick.h b/include/linux/tick.h
-index 8cc804c..edabc7d 100644
+index edabc7d..1a9908a 100644
 --- a/include/linux/tick.h
 +++ b/include/linux/tick.h
-@@ -35,19 +35,17 @@ enum tick_nohz_mode {
-  * struct tick_sched - sched tick emulation and no idle tick control/stats
-  * @sched_timer:	hrtimer to schedule the periodic tick in high
-  *			resolution mode
-- * @check_clocks:	tracks if clockevent device is recently changed
-  * @nohz_mode:		Current NOHZ mode
-+ * @check_clocks:	tracks if clockevent device is recently changed
-+ * @idle_jiffies:	jiffies at the entry to idle for idle time accounting
-+ * @idle_calls:		Total number of idle calls
-+ * @idle_sleeps:	Number of idle calls, where the sched tick was stopped
-+ * @last_jiffies:	Last updated value of jiffies
-+ * @next_jiffies:	Next jiffie for which timer is requested
-  * @last_tick:		Store the last tick expiry time when the tick
-  *			timer is modified for nohz sleeps. This is necessary
-  *			to resume the tick timer operation in the timeline
-  *			when the CPU returns from nohz sleep.
-- * @inidle:		CPU is currently executing from within the idle loop
-- * @tick_stopped:	Indicator that the idle tick has been stopped
-- * @idle_jiffies:	jiffies at the entry to idle for idle time accounting
-- * @idle_calls:		Total number of idle calls
-- * @idle_sleeps:	Number of idle calls, where the sched tick was stopped
-- * @idle_active:	similar to inidle, but is reset when we get an interrupt
-- *			while being in idle
-  * @idle_entrytime:	Time when the idle call was entered
-  * @idle_waketime:	Time when the idle was interrupted
-  * @idle_exittime:	Time when the idle state was left
-@@ -55,31 +53,33 @@ enum tick_nohz_mode {
-  * @iowait_sleeptime:	Sum of the time slept in idle with sched tick stopped,
-  *			with IO outstanding
-  * @sleep_length:	Duration of the current idle sleep
-- * @last_jiffies:	Last updated value of jiffies
-- * @next_jiffies:	Next jiffie for which timer is requested
-  * @idle_expires:	Time when we should come out of idle or next timer event
-+ * @inidle:		CPU is currently executing from within the idle loop
-+ * @idle_active:	similar to inidle, but is reset when we get an interrupt
-+ *			while being in idle
-+ * @tick_stopped:	Indicator that the idle tick has been stopped
-  * @do_timer_last:	CPU was the last one doing do_timer before going idle
-  */
- struct tick_sched {
- 	struct hrtimer			sched_timer;
--	unsigned long			check_clocks;
- 	enum tick_nohz_mode		nohz_mode;
--	ktime_t				last_tick;
--	int				inidle;
--	int				tick_stopped;
-+	unsigned long			check_clocks;
- 	unsigned long			idle_jiffies;
- 	unsigned long			idle_calls;
- 	unsigned long			idle_sleeps;
--	int				idle_active;
-+	unsigned long			last_jiffies;
-+	unsigned long			next_jiffies;
-+	ktime_t				last_tick;
- 	ktime_t				idle_entrytime;
- 	ktime_t				idle_waketime;
- 	ktime_t				idle_exittime;
- 	ktime_t				idle_sleeptime;
- 	ktime_t				iowait_sleeptime;
- 	ktime_t				sleep_length;
--	unsigned long			last_jiffies;
--	unsigned long			next_jiffies;
- 	ktime_t				idle_expires;
-+	int				inidle;
-+	int				idle_active;
-+	int				tick_stopped;
- 	int				do_timer_last;
- };
+@@ -85,6 +85,8 @@ struct tick_sched {
  
+ extern void __init tick_init(void);
+ extern int tick_is_oneshot_available(void);
++
++DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+ extern struct tick_device *tick_get_device(int cpu);
+ 
+ # ifdef CONFIG_HIGH_RES_TIMERS
+diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+index 855c513..57c1a76 100644
+--- a/kernel/time/tick-internal.h
++++ b/kernel/time/tick-internal.h
+@@ -13,7 +13,6 @@ extern seqlock_t jiffies_lock;
+ #define TICK_DO_TIMER_NONE	-1
+ #define TICK_DO_TIMER_BOOT	-2
+ 
+-DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+ extern ktime_t tick_next_period;
+ extern ktime_t tick_period;
+ extern int tick_do_timer_cpu __read_mostly;
 -- 
 1.7.12.rc2.18.g61b472e
 
