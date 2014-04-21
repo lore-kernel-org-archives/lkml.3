@@ -1,39 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198AbaDUQ3c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 12:29:32 -0400
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:55654 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753166AbaDUQ3X (ORCPT
+	id S1753049AbaDUQbB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 12:31:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:47145 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751543AbaDUQa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 12:29:23 -0400
-Date: Mon, 21 Apr 2014 11:29:20 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@gentwo.org
-To: Vladimir Davydov <vdavydov@parallels.com>
-cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Glauber Costa <glommer@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>, devel@openvz.org
-Subject: Re: [RFC] how should we deal with dead memcgs' kmem caches?
-In-Reply-To: <5353A3E3.4020302@parallels.com>
-Message-ID: <alpine.DEB.2.10.1404211128450.28094@gentwo.org>
-References: <5353A3E3.4020302@parallels.com>
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 21 Apr 2014 12:30:59 -0400
+Date: Mon, 21 Apr 2014 17:30:58 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening
+ /proc/pid/fd/N
+Message-ID: <20140421163058.GS18016@ZenIV.linux.org.uk>
+References: <cover.1398097304.git.luto@amacapital.net>
+ <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 20 Apr 2014, Vladimir Davydov wrote:
+On Mon, Apr 21, 2014 at 09:22:48AM -0700, Andy Lutomirski wrote:
 
-> * Way #1 - prevent dead kmem caches from caching slabs on free *
->
-> We can modify sl[au]b implementation so that it won't cache any objects
-> on free if the kmem cache belongs to a dead memcg. Then it'd be enough
-> to drain per-cpu pools of all dead kmem caches on css offline - no new
-> slabs will be added there on further frees, and the last object will go
-> away along with the last slab.
+> +static int proc_may_follow(struct nameidata *nd, struct file *f)
+> +{
+> +	if (!nd)
+> +		return 0;  /* This is readlink, */
+> +
+> +	if ((nd->flags & LOOKUP_WRITE) && !(f->f_mode & FMODE_WRITE))
+> +		return -EACCES;
+> +
+> +	return 0;
+> +}
 
-You can call kmem_cache_shrink() to force slab allocators to drop cached
-objects after a free.
+And this is just plain wrong.  WTF are you making the traversal of symlink
+in the middle of pathname dependent on the open flags?
+
+NAK.
