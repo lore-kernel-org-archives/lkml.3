@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660AbaDUEgd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:36:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58728 "EHLO
+	id S1752607AbaDUEg1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:36:27 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58724 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044AbaDUEe5 (ORCPT
+	with ESMTP id S1752042AbaDUEez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:34:57 -0400
+	Mon, 21 Apr 2014 00:34:55 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>,
+        Jayachandran C <jchandra@broadcom.com>,
         Kamlakant Patel <kamlakant.patel@broadcom.com>,
         Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.13 25/32] jffs2: Fix crash due to truncation of csize
-Date: Sun, 20 Apr 2014 19:13:42 -0700
-Message-Id: <20140421021137.296606614@linuxfoundation.org>
+Subject: [PATCH 3.13 24/32] jffs2: Fix segmentation fault found in stress test
+Date: Sun, 20 Apr 2014 19:13:41 -0700
+Message-Id: <20140421021137.162337857@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
 References: <20140421021133.865086647@linuxfoundation.org>
@@ -28,81 +28,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
+From: Kamlakant Patel <kamlakant.patel@broadcom.com>
 
-commit 41bf1a24c1001f4d0d41a78e1ac575d2f14789d7 upstream.
+commit 3367da5610c50e6b83f86d366d72b41b350b06a2 upstream.
 
-mounting JFFS2 partition sometimes crashes with this call trace:
+Creating a large file on a JFFS2 partition sometimes crashes with this call
+trace:
 
-[ 1322.240000] Kernel bug detected[#1]:
-[ 1322.244000] Cpu 2
-[ 1322.244000] $ 0   : 0000000000000000 0000000000000018 000000003ff00070 0000000000000001
-[ 1322.252000] $ 4   : 0000000000000000 c0000000f3980150 0000000000000000 0000000000010000
-[ 1322.260000] $ 8   : ffffffffc09cd5f8 0000000000000001 0000000000000088 c0000000ed300de8
-[ 1322.268000] $12   : e5e19d9c5f613a45 ffffffffc046d464 0000000000000000 66227ba5ea67b74e
-[ 1322.276000] $16   : c0000000f1769c00 c0000000ed1e0200 c0000000f3980150 0000000000000000
-[ 1322.284000] $20   : c0000000f3a80000 00000000fffffffc c0000000ed2cfbd8 c0000000f39818f0
-[ 1322.292000] $24   : 0000000000000004 0000000000000000
-[ 1322.300000] $28   : c0000000ed2c0000 c0000000ed2cfab8 0000000000010000 ffffffffc039c0b0
-[ 1322.308000] Hi    : 000000000000023c
-[ 1322.312000] Lo    : 000000000003f802
-[ 1322.316000] epc   : ffffffffc039a9f8 check_tn_node+0x88/0x3b0
-[ 1322.320000]     Not tainted
-[ 1322.324000] ra    : ffffffffc039c0b0 jffs2_do_read_inode_internal+0x1250/0x1e48
-[ 1322.332000] Status: 5400f8e3    KX SX UX KERNEL EXL IE
-[ 1322.336000] Cause : 00800034
-[ 1322.340000] PrId  : 000c1004 (Netlogic XLP)
-[ 1322.344000] Modules linked in:
-[ 1322.348000] Process jffs2_gcd_mtd7 (pid: 264, threadinfo=c0000000ed2c0000, task=c0000000f0e68dd8, tls=0000000000000000)
-[ 1322.356000] Stack : c0000000f1769e30 c0000000ed010780 c0000000ed010780 c0000000ed300000
-        c0000000f1769c00 c0000000f3980150 c0000000f3a80000 00000000fffffffc
-        c0000000ed2cfbd8 ffffffffc039c0b0 ffffffffc09c6340 0000000000001000
-        0000000000000dec ffffffffc016c9d8 c0000000f39805a0 c0000000f3980180
-        0000008600000000 0000000000000000 0000000000000000 0000000000000000
-        0001000000000dec c0000000f1769d98 c0000000ed2cfb18 0000000000010000
-        0000000000010000 0000000000000044 c0000000f3a80000 c0000000f1769c00
-        c0000000f3d207a8 c0000000f1769d98 c0000000f1769de0 ffffffffc076f9c0
-        0000000000000009 0000000000000000 0000000000000000 ffffffffc039cf90
-        0000000000000017 ffffffffc013fbdc 0000000000000001 000000010003e61c
+[  306.476000] CPU 13 Unable to handle kernel paging request at virtual address c0000000dfff8002, epc == ffffffffc03a80a8, ra == ffffffffc03a8044
+[  306.488000] Oops[#1]:
+[  306.488000] Cpu 13
+[  306.492000] $ 0   : 0000000000000000 0000000000000000 0000000000008008 0000000000008007
+[  306.500000] $ 4   : c0000000dfff8002 000000000000009f c0000000e0007cde c0000000ee95fa58
+[  306.508000] $ 8   : 0000000000000001 0000000000008008 0000000000010000 ffffffffffff8002
+[  306.516000] $12   : 0000000000007fa9 000000000000ff0e 000000000000ff0f 80e55930aebb92bb
+[  306.524000] $16   : c0000000e0000000 c0000000ee95fa5c c0000000efc80000 ffffffffc09edd70
+[  306.532000] $20   : ffffffffc2b60000 c0000000ee95fa58 0000000000000000 c0000000efc80000
+[  306.540000] $24   : 0000000000000000 0000000000000004
+[  306.548000] $28   : c0000000ee950000 c0000000ee95f738 0000000000000000 ffffffffc03a8044
+[  306.556000] Hi    : 00000000000574a5
+[  306.560000] Lo    : 6193b7a7e903d8c9
+[  306.564000] epc   : ffffffffc03a80a8 jffs2_rtime_compress+0x98/0x198
+[  306.568000]     Tainted: G        W
+[  306.572000] ra    : ffffffffc03a8044 jffs2_rtime_compress+0x34/0x198
+[  306.580000] Status: 5000f8e3    KX SX UX KERNEL EXL IE
+[  306.584000] Cause : 00800008
+[  306.588000] BadVA : c0000000dfff8002
+[  306.592000] PrId  : 000c1100 (Netlogic XLP)
+[  306.596000] Modules linked in:
+[  306.596000] Process dd (pid: 170, threadinfo=c0000000ee950000, task=c0000000ee6e0858, tls=0000000000c47490)
+[  306.608000] Stack : 7c547f377ddc7ee4 7ffc7f967f5d7fae 7f617f507fc37ff4 7e7d7f817f487f5f
+        7d8e7fec7ee87eb3 7e977ff27eec7f9e 7d677ec67f917f67 7f3d7e457f017ed7
+        7fd37f517f867eb2 7fed7fd17ca57e1d 7e5f7fe87f257f77 7fd77f0d7ede7fdb
+        7fba7fef7e197f99 7fde7fe07ee37eb5 7f5c7f8c7fc67f65 7f457fb87f847e93
+        7f737f3e7d137cd9 7f8e7e9c7fc47d25 7dbb7fac7fb67e52 7ff17f627da97f64
+        7f6b7df77ffa7ec5 80057ef17f357fb3 7f767fa27dfc7fd5 7fe37e8e7fd07e53
+        7e227fcf7efb7fa1 7f547e787fa87fcc 7fcb7fc57f5a7ffb 7fc07f6c7ea97e80
+        7e2d7ed17e587ee0 7fb17f9d7feb7f31 7f607e797e887faa 7f757fdd7c607ff3
+        7e877e657ef37fbd 7ec17fd67fe67ff7 7ff67f797ff87dc4 7eef7f3a7c337fa6
+        7fe57fc97ed87f4b 7ebe7f097f0b8003 7fe97e2a7d997cba 7f587f987f3c7fa9
         ...
-[ 1322.424000] Call Trace:
-[ 1322.428000] [<ffffffffc039a9f8>] check_tn_node+0x88/0x3b0
-[ 1322.432000] [<ffffffffc039c0b0>] jffs2_do_read_inode_internal+0x1250/0x1e48
-[ 1322.440000] [<ffffffffc039cf90>] jffs2_do_crccheck_inode+0x70/0xd0
-[ 1322.448000] [<ffffffffc03a1b80>] jffs2_garbage_collect_pass+0x160/0x870
-[ 1322.452000] [<ffffffffc03a392c>] jffs2_garbage_collect_thread+0xdc/0x1f0
-[ 1322.460000] [<ffffffffc01541c8>] kthread+0xb8/0xc0
-[ 1322.464000] [<ffffffffc0106d18>] kernel_thread_helper+0x10/0x18
-[ 1322.472000]
-[ 1322.472000]
-Code: 67bd0050  94a4002c  2c830001 <00038036> de050218  2403fffc  0080a82d  00431824  24630044
-[ 1322.480000] ---[ end trace b052bb90e97dfbf5 ]---
+[  306.676000] Call Trace:
+[  306.680000] [<ffffffffc03a80a8>] jffs2_rtime_compress+0x98/0x198
+[  306.684000] [<ffffffffc0394f10>] jffs2_selected_compress+0x110/0x230
+[  306.692000] [<ffffffffc039508c>] jffs2_compress+0x5c/0x388
+[  306.696000] [<ffffffffc039dc58>] jffs2_write_inode_range+0xd8/0x388
+[  306.704000] [<ffffffffc03971bc>] jffs2_write_end+0x16c/0x2d0
+[  306.708000] [<ffffffffc01d3d90>] generic_file_buffered_write+0xf8/0x2b8
+[  306.716000] [<ffffffffc01d4e7c>] __generic_file_aio_write+0x1ac/0x350
+[  306.720000] [<ffffffffc01d50a0>] generic_file_aio_write+0x80/0x168
+[  306.728000] [<ffffffffc021f7dc>] do_sync_write+0x94/0xf8
+[  306.732000] [<ffffffffc021ff6c>] vfs_write+0xa4/0x1a0
+[  306.736000] [<ffffffffc02202e8>] SyS_write+0x50/0x90
+[  306.744000] [<ffffffffc0116cc0>] handle_sys+0x180/0x1a0
+[  306.748000]
+[  306.748000]
+Code: 020b202d  0205282d  90a50000 <90840000> 14a40038  00000000  0060602d  0000282d  016c5823
+[  306.760000] ---[ end trace 79dd088435be02d0 ]---
+Segmentation fault
 
-The variable csize in structure jffs2_tmp_dnode_info is of type uint16_t, but it
-is used to hold the compressed data length(csize) which is declared as uint32_t.
-So, when the value of csize exceeds 16bits, it gets truncated when assigned to
-tn->csize. This is causing a kernel BUG.
-Changing the definition of csize in jffs2_tmp_dnode_info to uint32_t fixes the issue.
+This crash is caused because the 'positions' is declared as an array of signed
+short. The value of position is in the range 0..65535, and will be converted
+to a negative number when the position is greater than 32767 and causes a
+corruption and crash. Changing the definition to 'unsigned short' fixes this
+issue
 
-Signed-off-by: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
+Signed-off-by: Jayachandran C <jchandra@broadcom.com>
 Signed-off-by: Kamlakant Patel <kamlakant.patel@broadcom.com>
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/nodelist.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/jffs2/compr_rtime.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/jffs2/nodelist.h
-+++ b/fs/jffs2/nodelist.h
-@@ -231,7 +231,7 @@ struct jffs2_tmp_dnode_info
- 	uint32_t version;
- 	uint32_t data_crc;
- 	uint32_t partial_crc;
--	uint16_t csize;
-+	uint32_t csize;
- 	uint16_t overlapped;
- };
+--- a/fs/jffs2/compr_rtime.c
++++ b/fs/jffs2/compr_rtime.c
+@@ -33,7 +33,7 @@ static int jffs2_rtime_compress(unsigned
+ 				unsigned char *cpage_out,
+ 				uint32_t *sourcelen, uint32_t *dstlen)
+ {
+-	short positions[256];
++	unsigned short positions[256];
+ 	int outpos = 0;
+ 	int pos=0;
+ 
+@@ -74,7 +74,7 @@ static int jffs2_rtime_decompress(unsign
+ 				  unsigned char *cpage_out,
+ 				  uint32_t srclen, uint32_t destlen)
+ {
+-	short positions[256];
++	unsigned short positions[256];
+ 	int outpos = 0;
+ 	int pos=0;
  
 
 
