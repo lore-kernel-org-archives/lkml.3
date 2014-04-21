@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171AbaDUPOT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 11:14:19 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46715 "EHLO arroyo.ext.ti.com"
+	id S1752282AbaDUPST (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 11:18:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22569 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751275AbaDUPOO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 11:14:14 -0400
-Message-ID: <535535A1.4020501@ti.com>
-Date: Mon, 21 Apr 2014 11:13:37 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and
- dma-coherent
-References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com> <CAL_JsqLogKfqHyw4zYBkPrYh=f6tVibtmX25oYB1Q2hO11Whcw@mail.gmail.com>
-In-Reply-To: <CAL_JsqLogKfqHyw4zYBkPrYh=f6tVibtmX25oYB1Q2hO11Whcw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+	id S1751287AbaDUPSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 11:18:12 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>, linux-pci@vger.kernel.org
+Subject: [PATCH RESEND 1/2] skd: Use pci_enable_msix_exact() instead of pci_enable_msix_range()
+Date: Mon, 21 Apr 2014 17:19:31 +0200
+Message-Id: <b673482f9449adc4e659e4f68fa52626c5775124.1398093399.git.agordeev@redhat.com>
+In-Reply-To: <cover.1398093399.git.agordeev@redhat.com>
+References: <cover.1398093399.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+Function pci_enable_msix_exact() is a variation of
+pci_enable_msix_range() that allows a device driver
+to request a particular number of MSI-X interrupts,
+rather than any number within a specified range.
 
-On Monday 21 April 2014 10:37 AM, Rob Herring wrote:
-> On Sat, Apr 19, 2014 at 9:32 AM, Santosh Shilimkar
-> <santosh.shilimkar@ti.com> wrote:
->> Here is an updated version of [2] based on discussion. Series introduces
->> support for setting up dma parameters based on device tree properties
->> like 'dma-ranges' and 'dma-coherent' and also update to ARM 32 bit port.
->> Earlier version of the same series is here [1].
->>
->> The 'dma-ranges' helps to take care of few DMAable system memory restrictions
->> by use of dma_pfn_offset which we maintain now per device. Arch code then
->> uses it for dma address translations for such cases. We update the
->> dma_pfn_offset accordingly during DT the device creation process.The
->> 'dma-coherent' property is used to setup arch's coherent dma_ops.
->>
->> After some off-list discussion with RMK and Arnd, I have now dropped the
->> controversial dma_mask setup code from the series which actually isn't blocking
->> me as such. Considering rest of the parts of the series are already aligned,
->> am hoping to get this version merged for 3.16 merge window.
-> 
-> Can you briefly describe what the h/w looks like in terms of addresses
-> for the problem you are trying to solve? Something like: Cpu view of
-> RAM is X to Y address, X corresponds to DMA address Z. Max DMA address
-> is ?
-> 
-Let me try with say 8 GB RAM example
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/block/skd_main.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-CPU view of memory : 0x0000 0008 0000 0000 to 0x0000 000a 0000 0000
-
->From above memory range, first 2 GB of memory has an alias 32 bit
-view in the hardware. Hardware internally map the address issued within
-that first 2 GB to same memory. 
-
-DMA view of first 2 GB [ 0x0000 0008 0000 0000 to 0x0000 0008 7fff ffff]
-is : 0x8000 0000 to 0xffff fffff.
-
-Regards,
-Santosh 
-
+diff --git a/drivers/block/skd_main.c b/drivers/block/skd_main.c
+index a69dd93..c244c5bc 100644
+--- a/drivers/block/skd_main.c
++++ b/drivers/block/skd_main.c
+@@ -3945,15 +3945,14 @@ static int skd_acquire_msix(struct skd_device *skdev)
+ 	for (i = 0; i < SKD_MAX_MSIX_COUNT; i++)
+ 		entries[i].entry = i;
+ 
+-	rc = pci_enable_msix_range(pdev, entries,
+-				   SKD_MIN_MSIX_COUNT, SKD_MAX_MSIX_COUNT);
+-	if (rc < 0) {
++	rc = pci_enable_msix_exact(pdev, entries, SKD_MAX_MSIX_COUNT);
++	if (rc) {
+ 		pr_err("(%s): failed to enable MSI-X %d\n",
+ 		       skd_name(skdev), rc);
+ 		goto msix_out;
+ 	}
+ 
+-	skdev->msix_count = rc;
++	skdev->msix_count = SKD_MAX_MSIX_COUNT;
+ 	skdev->msix_entries = kzalloc(sizeof(struct skd_msix_entry) *
+ 				      skdev->msix_count, GFP_KERNEL);
+ 	if (!skdev->msix_entries) {
+-- 
+1.7.7.6
 
