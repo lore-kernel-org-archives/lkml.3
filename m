@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753500AbaDUEhw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:37:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58829 "EHLO
+	id S1753440AbaDUEhu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:37:50 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58824 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082AbaDUEfU (ORCPT
+	with ESMTP id S1752087AbaDUEfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:35:20 -0400
+	Mon, 21 Apr 2014 00:35:18 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Sree Harsha Totakura <sreeharsha@totakura.in>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jeff Dike <jdike@addtoit.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrey Vagin <avagin@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.13 26/32] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
-Date: Sun, 20 Apr 2014 19:13:43 -0700
-Message-Id: <20140421021137.429999427@linuxfoundation.org>
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.13 32/32] exit: call disassociate_ctty() before exit_task_namespaces()
+Date: Sun, 20 Apr 2014 19:13:49 -0700
+Message-Id: <20140421021138.230974343@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
 References: <20140421021133.865086647@linuxfoundation.org>
@@ -29,73 +33,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit 13b546d96207c131eeae15dc7b26c6e7d0f1cad7 upstream.
+commit c39df5fa37b0623589508c95515b4aa1531c524e upstream.
 
-We triggered soft-lockup under stress test on 2.6.34 kernel.
+Commit 8aac62706ada ("move exit_task_namespaces() outside of
+exit_notify()") breaks pppd and the exiting service crashes the kernel:
 
-BUG: soft lockup - CPU#1 stuck for 60009ms! [lockf2.test:14488]
-...
-[<bf09a4d4>] (jffs2_do_reserve_space+0x420/0x440 [jffs2])
-[<bf09a528>] (jffs2_reserve_space_gc+0x34/0x78 [jffs2])
-[<bf0a1350>] (jffs2_garbage_collect_dnode.isra.3+0x264/0x478 [jffs2])
-[<bf0a2078>] (jffs2_garbage_collect_pass+0x9c0/0xe4c [jffs2])
-[<bf09a670>] (jffs2_reserve_space+0x104/0x2a8 [jffs2])
-[<bf09dc48>] (jffs2_write_inode_range+0x5c/0x4d4 [jffs2])
-[<bf097d8c>] (jffs2_write_end+0x198/0x2c0 [jffs2])
-[<c00e00a4>] (generic_file_buffered_write+0x158/0x200)
-[<c00e14f4>] (__generic_file_aio_write+0x3a4/0x414)
-[<c00e15c0>] (generic_file_aio_write+0x5c/0xbc)
-[<c012334c>] (do_sync_write+0x98/0xd4)
-[<c0123a84>] (vfs_write+0xa8/0x150)
-[<c0123d74>] (sys_write+0x3c/0xc0)]
+    BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+    IP: ppp_register_channel+0x13/0x20 [ppp_generic]
+    Call Trace:
+      ppp_asynctty_open+0x12b/0x170 [ppp_async]
+      tty_ldisc_open.isra.2+0x27/0x60
+      tty_ldisc_hangup+0x1e3/0x220
+      __tty_hangup+0x2c4/0x440
+      disassociate_ctty+0x61/0x270
+      do_exit+0x7f2/0xa50
 
-Fix this by adding a cond_resched() in the while loop.
+ppp_register_channel() needs ->net_ns and current->nsproxy == NULL.
 
-[akpm@linux-foundation.org: don't initialize `ret']
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Move disassociate_ctty() before exit_task_namespaces(), it doesn't make
+sense to delay it after perf_event_exit_task() or cgroup_exit().
+
+This also allows to use task_work_add() inside the (nontrivial) code
+paths in disassociate_ctty().
+
+Investigated by Peter Hurley.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Sree Harsha Totakura <sreeharsha@totakura.in>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Cc: Sree Harsha Totakura <sreeharsha@totakura.in>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Jeff Dike <jdike@addtoit.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Andrey Vagin <avagin@openvz.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/nodemgmt.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ kernel/exit.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -211,20 +211,25 @@ out:
- int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
- 			   uint32_t *len, uint32_t sumsize)
- {
--	int ret = -EAGAIN;
-+	int ret;
- 	minsize = PAD(minsize);
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -790,6 +790,8 @@ void do_exit(long code)
+ 	exit_shm(tsk);
+ 	exit_files(tsk);
+ 	exit_fs(tsk);
++	if (group_dead)
++		disassociate_ctty(1);
+ 	exit_task_namespaces(tsk);
+ 	exit_task_work(tsk);
+ 	check_stack_usage();
+@@ -805,13 +807,9 @@ void do_exit(long code)
  
- 	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
+ 	cgroup_exit(tsk, 1);
  
--	spin_lock(&c->erase_completion_lock);
--	while(ret == -EAGAIN) {
-+	while (true) {
-+		spin_lock(&c->erase_completion_lock);
- 		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
- 		if (ret) {
- 			jffs2_dbg(1, "%s(): looping, ret is %d\n",
- 				  __func__, ret);
- 		}
-+		spin_unlock(&c->erase_completion_lock);
-+
-+		if (ret == -EAGAIN)
-+			cond_resched();
-+		else
-+			break;
- 	}
--	spin_unlock(&c->erase_completion_lock);
- 	if (!ret)
- 		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
+-	if (group_dead)
+-		disassociate_ctty(1);
+-
+ 	module_put(task_thread_info(tsk)->exec_domain->module);
  
+ 	proc_exit_connector(tsk);
+-
+ 	/*
+ 	 * FIXME: do that only when needed, using sched_exit tracepoint
+ 	 */
 
 
