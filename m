@@ -1,122 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754819AbaDUWKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 18:10:55 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:33905 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752896AbaDUWKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 18:10:52 -0400
-Date: Mon, 21 Apr 2014 17:08:19 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: <srinivas.kandagatla@linaro.org>
-CC: <linux-mmc@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        <linux-kernel@vger.kernel.org>, <agross@quicinc.com>,
-        <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH RFC 06/12] mmc: mmci: Add write delay to variant
- structure.
-Message-ID: <20140421220819.GA4468@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
- <1398116898-31478-1-git-send-email-srinivas.kandagatla@linaro.org>
+	id S1754781AbaDUWRc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 18:17:32 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:58315 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754560AbaDUWRZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 18:17:25 -0400
+Subject: [PATCH 2] PNP: Work around BIOS defects in Intel MCH area reporting
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Aaron Lu <aaron.lu@intel.com>, linux-pci@vger.kernel.org, x86@kernel.org,
+        linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+        linux-acpi@vger.kernel.org, Borislav Petkov <bp@alien8.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Zheng Z Yan <zheng.z.yan@intel.com>,
+        Dave Jones <davej@redhat.com>, Rui Zhang <rui.zhang@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>
+Date: Mon, 21 Apr 2014 16:17:21 -0600
+Message-ID: <20140421221721.26308.1891.stgit@bhelgaas-glaptop.roam.corp.google.com>
+User-Agent: StGit/0.16
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="UlVJffcvxoiEqYs2"
-Content-Disposition: inline
-In-Reply-To: <1398116898-31478-1-git-send-email-srinivas.kandagatla@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---UlVJffcvxoiEqYs2
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Work around BIOSes that don't report the entire Intel MCH area.
 
-Hi,
+MCHBAR is not an architected PCI BAR, so MCH space is usually reported as a
+PNP0C02 resource.  The MCH space was once 16KB, but is 32KB in newer parts.
+Some BIOSes still report a PNP0C02 resource that is only 16KB, which means
+the rest of the MCH space is consumed but unreported.
 
-On Mon, Apr 21, 2014 at 10:48:18PM +0100, srinivas.kandagatla@linaro.org wr=
-ote:
-> From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->=20
-> This patch adds write delay parameter required after each write to contro=
-ller
-> registers on some of the SOCs like Qualcomm ones. The delay parameter will
-> provide information on how many clock cycle delay required after each wri=
-te.
->=20
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-> ---
->  drivers/mmc/host/mmci.c |    8 ++++++++
->  1 file changed, 8 insertions(+)
->=20
-> diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-> index 4f8d0ba..86bf330 100644
-> --- a/drivers/mmc/host/mmci.c
-> +++ b/drivers/mmc/host/mmci.c
-> @@ -55,6 +55,8 @@ static unsigned int fmax =3D 515633;
->   *	      is asserted (likewise for RX)
->   * @fifohalfsize: number of bytes that can be written when MCI_TXFIFOHAL=
-FEMPTY
->   *		  is asserted (likewise for RX)
-> + * @reg_write_delay: delay in number of clock cycles required after each=
- write
-> + *		     to controller registers.
->   * @sdio: variant supports SDIO
->   * @st_clkdiv: true if using a ST-specific clock divider algorithm
->   * @blksz_datactrl16: true if Block size is at b16..b30 position in data=
-ctrl register
-> @@ -72,6 +74,7 @@ struct variant_data {
->  	unsigned int		datalength_bits;
->  	unsigned int		fifosize;
->  	unsigned int		fifohalfsize;
-> +	unsigned int		reg_write_delay;
->  	bool			sdio;
->  	bool			st_clkdiv;
->  	bool			blksz_datactrl16;
-> @@ -178,7 +181,12 @@ static inline u32 mmci_readl(struct mmci_host *host,=
- u32 off)
-> =20
->  static inline void mmci_writel(struct mmci_host *host, u32 data, u32 off)
->  {
-> +	struct variant_data *var =3D host->variant;
-> +
->  	writel(data, host->base + off);
-> +
-> +	if (var->reg_write_delay && host->mclk)
-> +		udelay(1 + ((var->reg_write_delay * USEC_PER_SEC)/host->mclk));
+This can cause resource map sanity check warnings or (theoretically) a
+device conflict if we assigned the unreported space to another device.
 
-looks like this should be quirk flag instead of a write delay... No
-strong feelings though, but it looks like the following would be better,
-perhaps:
+The Intel perf event uncore driver tripped over this when it claimed the
+MCH region:
 
-	if (host_is_qualcom(host))
-		udelay(1 + ((3 * USEC_PER_SEC)/host->mclk));
+  resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
+  Info: mapping multiple BARs. Your kernel is fine.
 
---=20
-balbi
+To prevent this, if we find a PNP0C02 resource that covers part of the MCH
+space, extend it to cover the entire space.
 
---UlVJffcvxoiEqYs2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Link: http://lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
+Reported-by: Borislav Petkov <bp@alien8.de>
+Tested-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+---
+ drivers/pnp/quirks.c |   75 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 75 insertions(+)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
+index 258fef272ea7..0d679068ef1b 100644
+--- a/drivers/pnp/quirks.c
++++ b/drivers/pnp/quirks.c
+@@ -15,6 +15,7 @@
+ 
+ #include <linux/types.h>
+ #include <linux/kernel.h>
++#include <linux/pci.h>
+ #include <linux/string.h>
+ #include <linux/slab.h>
+ #include <linux/pnp.h>
+@@ -334,6 +335,79 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
+ }
+ #endif
+ 
++/* Device IDs of parts that have 32KB MCH space */
++static const unsigned int mch_quirk_devices[] = {
++	0x0154,	/* Ivy Bridge */
++	0x0c00,	/* Haswell */
++};
++
++static struct pci_dev *get_intel_host(void)
++{
++	int i;
++	struct pci_dev *host;
++
++	for (i = 0; i < ARRAY_SIZE(mch_quirk_devices); i++) {
++		host = pci_get_device(PCI_VENDOR_ID_INTEL, mch_quirk_devices[i],
++				      NULL);
++		if (host)
++			return host;
++	}
++	return NULL;
++}
++
++static void quirk_intel_mch(struct pnp_dev *dev)
++{
++	struct pci_dev *host;
++	u32 addr_lo, addr_hi;
++	struct pci_bus_region region;
++	struct resource mch;
++	struct pnp_resource *pnp_res;
++	struct resource *res;
++
++	host = get_intel_host();
++	if (!host)
++		return;
++
++	/*
++	 * MCHBAR is not an architected PCI BAR, so MCH space is usually
++	 * reported as a PNP0C02 resource.  The MCH space was originally
++	 * 16KB, but is 32KB in newer parts.  Some BIOSes still report a
++	 * PNP0C02 resource that is only 16KB, which means the rest of the
++	 * MCH space is consumed but unreported.
++	 */
++
++	/*
++	 * Read MCHBAR for Host Member Mapped Register Range Base
++	 * https://www-ssl.intel.com/content/www/us/en/processors/core/4th-gen-core-family-desktop-vol-2-datasheet
++	 * Sec 3.1.12.
++	 */
++	pci_read_config_dword(host, 0x48, &addr_lo);
++	region.start = addr_lo & ~0x7fff;
++	pci_read_config_dword(host, 0x4c, &addr_hi);
++	region.start |= (u64) addr_hi << 32;
++	region.end = region.start + 32*1024 - 1;
++
++	memset(&mch, 0, sizeof(mch));
++	mch.flags = IORESOURCE_MEM;
++	pcibios_bus_to_resource(host->bus, &mch, &region);
++
++	list_for_each_entry(pnp_res, &dev->resources, list) {
++		res = &pnp_res->res;
++		if (res->end < mch.start || res->start > mch.end)
++			continue;	/* no overlap */
++		if (res->start == mch.start && res->end == mch.end)
++			continue;	/* exact match */
++
++		dev_info(&dev->dev, FW_BUG "PNP resource %pR covers only part of %s Intel MCH; extending to %pR\n",
++			 res, pci_name(host), &mch);
++		res->start = mch.start;
++		res->end = mch.end;
++		break;
++	}
++
++	pci_dev_put(host);
++}
++
+ /*
+  *  PnP Quirks
+  *  Cards or devices that need some tweaking due to incomplete resource info
+@@ -364,6 +438,7 @@ static struct pnp_fixup pnp_fixups[] = {
+ #ifdef CONFIG_AMD_NB
+ 	{"PNP0c01", quirk_amd_mmconfig_area},
+ #endif
++	{"PNP0c02", quirk_intel_mch},
+ 	{""}
+ };
+ 
 
-iQIcBAEBAgAGBQJTVZbTAAoJEIaOsuA1yqRE8YAP/jjgALhJzj3GPy/mjHJ4bVwc
-kDRI3NMSaXcN1CwAFtVXtAfIkHXt+ec9QYQjBgXybAHjbQJ/RcHe70YTSkx16X2C
-KGK0kOju6ELO/svnnVBrd5LX5UZo4HRMdfHfnN9cXDGBI2Zob1HNTg32GRRfmw0j
-CtudKCf8sk27L8SFt8hsg0+d2Z0bR/cFFrkEyb+V/aXa4dg3UYEGq8X5dKa3ZWzN
-W2ktvdEyJCJYXNMscdw7ofLjoVEiW7Omka98IjicDusap5FHoaoLADp2qK4NWmSY
-6Y8RTHtEPjfBulReZubpCNuvOWQHjbzD6Znz+VW6ksZDBXslkUNdhyI0/5EuTjQy
-Wvlw0fFN7N6IZcG1iMAfnDlQ7nlhD5LmvGYzz65MoqMcH1bmJ3YUSCmXP82SPUAI
-zWqYctCx87Bki7148lfovC13O9TzozH4aC4+FnvqMvQLdn6iT3vst9QxmgUQ9QZp
-5yOxwS1S8LHabSkKG5Ke65lcerJ4LYtqvCFonbci+KTzO0tGCSWaX/Or7VPzBUCf
-9YAX/wkPuLKex0a3lOgqt9TNeuhF+fFdWkF+Fts9yOivlKZ2DDT/mAufhFDKeaKn
-wnv8NlBNPfsYJP9n7XfME2jz6ZmKYFQr2paaAm8SsgkxdKI6NZz4V5TrKfUChlBc
-vqd4l2xo3rbzCvkS7tvv
-=R5rq
------END PGP SIGNATURE-----
-
---UlVJffcvxoiEqYs2--
