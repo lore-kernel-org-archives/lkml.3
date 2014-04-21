@@ -1,124 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920AbaDUQ5W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 12:57:22 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:55225 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaDUQ5S (ORCPT
+	id S1752876AbaDURBW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 13:01:22 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:64312 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373AbaDURBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 12:57:18 -0400
-Date: Mon, 21 Apr 2014 11:54:00 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: Andy Gross <agross@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-arm-msm@vger.kernel.org,
-        Kumar Gala <galak@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH 2/4] soc: qcom: Add GSBI driver
-Message-ID: <20140421165400.GA11778@joshc.qualcomm.com>
-References: <1398058244-14099-1-git-send-email-agross@codeaurora.org>
- <1398058244-14099-3-git-send-email-agross@codeaurora.org>
+	Mon, 21 Apr 2014 13:01:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398058244-14099-3-git-send-email-agross@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140421163058.GS18016@ZenIV.linux.org.uk>
+References: <cover.1398097304.git.luto@amacapital.net> <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+ <20140421163058.GS18016@ZenIV.linux.org.uk>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 21 Apr 2014 10:00:55 -0700
+Message-ID: <CALCETrUJNv48UXPNSXcdnsFZSLwhRtA0s03bJHamXQmr6vs3fQ@mail.gmail.com>
+Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        David Herrmann <dh.herrmann@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 12:30:42AM -0500, Andy Gross wrote:
-> The GSBI (General Serial Bus Interface) driver controls the overarching
-> configuration of the shared serial bus infrastructure on APQ8064, IPQ8064, and
-> earlier QCOM processors.  The GSBI supports UART, I2C, SPI, and UIM
-> functionality in various combinations.
-> 
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
-[..]
-> +++ b/drivers/soc/qcom/qcom_gsbi.c
-[..]
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_platform.h>
-> +#include <linux/platform_device.h>
-> +
-> +#define GSBI_CTRL_REG		0x0000
-> +#define GSBI_PROTOCOL_SHIFT	4
-> +
-> +struct gsbi_dev {
-> +	struct device	*dev;
-> +	void __iomem	*base;
+On Mon, Apr 21, 2014 at 9:30 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Mon, Apr 21, 2014 at 09:22:48AM -0700, Andy Lutomirski wrote:
+>
+>> +static int proc_may_follow(struct nameidata *nd, struct file *f)
+>> +{
+>> +     if (!nd)
+>> +             return 0;  /* This is readlink, */
+>> +
+>> +     if ((nd->flags & LOOKUP_WRITE) && !(f->f_mode & FMODE_WRITE))
+>> +             return -EACCES;
+>> +
+>> +     return 0;
+>> +}
+>
+> And this is just plain wrong.  WTF are you making the traversal of symlink
+> in the middle of pathname dependent on the open flags?
 
-You don't really need these.
+Can you give me a hint?  There are three cases that I need to
+distinguish, I think:
 
-> +
-> +	struct clk	*hclk;
-> +};
-> +
-> +static int gsbi_probe(struct platform_device *pdev)
-> +{
-> +	struct device_node *node = pdev->dev.of_node;
-> +	struct gsbi_dev *gsbi;
-> +	struct resource *res;
-> +	u32 mode;
-> +
-> +	gsbi = devm_kzalloc(&pdev->dev, sizeof(*gsbi), GFP_KERNEL);
-> +	if (!gsbi)
-> +		return -ENOMEM;
-> +
-> +	gsbi->dev = &pdev->dev;
-> +	platform_set_drvdata(pdev, gsbi);
-> +
-> +	if (of_property_read_u32(node, "qcom,mode", &mode)) {
-> +		dev_err(gsbi->dev, "missing mode configuration\n");
-> +		return -EINVAL;
-> +	}
+1. readlink.  Currently handled by nd == NULL.  It's ugly, and I'll clean it up.
 
-I'm wondering if you should really be a (very simple) pinctrl driver
-proper.
+2. Traversal in the middle of a path.  This can be either literally in
+the middle (e.g. "/proc/self/fd/3/something_else") or in a symlink
+that's the last component of the literal path (e.g. "fd3null" where
+"fd3null" is a symlink to "/proc/self/fd/3/null" and "null" is either
+a file or a symlink to /dev/null).  I have the latter type wrong in
+this patch.
 
-> +
-> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	gsbi->base = devm_ioremap_resource(gsbi->dev, res);
-> +	if (IS_ERR(gsbi->base))
-> +		return PTR_ERR(gsbi->base);
-> +
-> +	gsbi->hclk = devm_clk_get(gsbi->dev, "iface");
-> +	if (IS_ERR(gsbi->hclk)) {
-> +		dev_err(gsbi->dev, "Could not get core clock\n");
-> +		return PTR_ERR(gsbi->hclk);
-> +	}
-> +	clk_prepare_enable(gsbi->hclk);
-> +
-> +	writel_relaxed((mode << GSBI_PROTOCOL_SHIFT), gsbi + GSBI_CTRL_REG);
+3. Actually opening /proc/self/fd/N.  This can be direct or by opening
+a symlink to /proc/self/fd/N.  I think I have this case correct.
 
-Did you mean: gsbi->base + GSBI_CTRL_REG ?
+What's the best way to fix this?  Should I be checking nd->depth?
 
-> +
-> +	/* make sure the gsbi control write is not reordered */
-> +	wmb();
-> +
-> +	return of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
-> +}
-> +
-> +static int gsbi_remove(struct platform_device *pdev)
-> +{
-> +	struct gsbi_dev *gsbi = platform_get_drvdata(pdev);
-> +
-> +	clk_disable_unprepare(gsbi->hclk);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct of_device_id gsbi_dt_match[] = {
+--Andy
 
-const
+>
+> NAK.
+
+
 
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+Andy Lutomirski
+AMA Capital Management, LLC
