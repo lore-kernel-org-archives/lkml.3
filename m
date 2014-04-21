@@ -1,99 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751351AbaDUG7f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 02:59:35 -0400
-Received: from [207.46.100.109] ([207.46.100.109]:49179 "EHLO
-	na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750902AbaDUG73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 02:59:29 -0400
-X-Greylist: delayed 11018 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Apr 2014 02:59:29 EDT
-From: Tien Hock Loh <thloh@altera.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: Dinh Nguyen <dinguyen@altera.com>, Ley Foon Tan <lftan@altera.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "thloh.linux@gmail.com" <thloh.linux@gmail.com>
-Subject: Re: [PATCH V7 1/1] drivers/gpio: Altera soft IP GPIO driver and
- devicetree binding
-Thread-Topic: [PATCH V7 1/1] drivers/gpio: Altera soft IP GPIO driver and
- devicetree binding
-Thread-Index: AQHPXQhcsq16BvDmc0+h1Q5oLf7Jvg==
-Date: Mon, 21 Apr 2014 02:21:11 +0000
-Message-ID: <1CCADEFFEC58A54CACEDCA3F6E1E1A4C01573F@PG-ITEXCH02.altera.priv.altera.com>
-References: <1393842463-5206-1-git-send-email-thloh@altera.com>
- <20140307151455.GI18529@joshc.qualcomm.com>
- <CAOLUe6aspffO1PUjKWW7ejpbxnYtb+RKRQrK=y30kuF7KXUUhA@mail.gmail.com>
- <CAOLUe6aPWmkJJSiBLL8tmw2MNfpaeLpSp3CSwP1u7q+qXxCh9Q@mail.gmail.com>
- <20140407171115.GA3956@joshc.qualcomm.com>
-In-Reply-To: <20140407171115.GA3956@joshc.qualcomm.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [137.57.103.64]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.227;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(377454003)(377424004)(51164003)(24454002)(51704005)(189002)(199002)(66066001)(80022001)(92566001)(86362001)(80976001)(92726001)(4396001)(2656002)(81542001)(85852003)(83072002)(99396002)(33656001)(50986999)(87936001)(81342001)(97736001)(2009001)(23676002)(54356999)(55846006)(76176999)(74502001)(74662001)(31966008)(19580395003)(19580405001)(44976005)(83322001)(79102001)(6806004)(76482001)(77982001)(20776003)(47776003)(46102001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1AFFO11HUB045;H:sj-itexedge03.altera.priv.altera.com;FPR:E722F066.9ED0571B.BCFB5DAF.80E0D08D.202F2;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 0188D66E61
+	id S1751165AbaDUHDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 03:03:42 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:23658 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750774AbaDUHDj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 03:03:39 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-01-5354c2c9557f
+Message-id: <5354C2CF.5020206@samsung.com>
+Date: Mon, 21 Apr 2014 16:03:43 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Tomasz Figa <t.figa@samsung.com>, Sachin Kamat <sachin.kamat@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCH 1/2] cpufreq: exynos: Use dev_err/info function instead of
+ pr_err/info
+References: <1397787634-9334-1-git-send-email-cw00.choi@samsung.com>
+ <1397787634-9334-2-git-send-email-cw00.choi@samsung.com>
+ <CAKohpo=-Oxu6ZoB4B2H4552meq46iXrVzKbP5ZwnG==sCc2_MA@mail.gmail.com>
+In-reply-to: <CAKohpo=-Oxu6ZoB4B2H4552meq46iXrVzKbP5ZwnG==sCc2_MA@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPIsWRmVeSWpSXmKPExsWyRsSkQPfkoZBgg5/bxCyeNv1gt+hdcJXN
+	4mzTG3aLTY+vsVpc3jWHzeJz7xFGixnn9zFZnDl9idXi5J9eRov1M16zWGz86uHA7XHn2h42
+	j81L6j22XG1n8ejbsorR4/MmuQDWKC6blNSczLLUIn27BK6Mn9fbmApOsVbMaL/N3sB4hqWL
+	kZNDQsBEon3mPShbTOLCvfVsXYxcHEICSxklXjaeYupi5AAr+riHFSI+nVHi4sprUEWvGSX+
+	zTjCBtLNK6AlMb/nLROIzSKgKvHq7kZWEJsNKL7/xQ2wGlGBMImV06+wQNQLSvyYDLKZg0ME
+	qOblzVSQmcwC/5gl/t/qYAWJCwvESPQf14fYdYxRYsLv7WwgcU6BYIkZu4xAxjALqEtMmreI
+	GcKWl9i85i0zSL2EwFt2iQNHehkh7hGQ+Db5EAvEM7ISmw4wQzwsKXFwxQ2WCYxis5BcNAvJ
+	2FlIxi5gZF7FKJpakFxQnJReZKJXnJhbXJqXrpecn7uJERiZp/89m7CD8d4B60OMyUArJzJL
+	iSbnAyM7ryTe0NjMyMLUxNTYyNzSjDRhJXFetUdJQUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4
+	pRoYWw9dXzHTs+Ws1wHblWWd/JERtqtvVPLUeFWxb5LcsqziFqNmX9kFGclpQjserUrpXa9/
+	WdCd71bKkY4NLAvf3726JDZrreHnd2UXnIJCLzWpzlF3eSsedOVn789v9vdOHtqxfdus9ec5
+	a2eaZa1JlGQ3ObeabfoszZJ/h3aeZ7JWWLJB+dWMNCWW4oxEQy3mouJEAO1x9qHiAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrDKsWRmVeSWpSXmKPExsVy+t9jQd2Th0KCDWbO5bN42vSD3aJ3wVU2
+	i7NNb9gtNj2+xmpxedccNovPvUcYLWac38dkceb0JVaLk396GS3Wz3jNYrHxq4cDt8eda3vY
+	PDYvqffYcrWdxaNvyypGj8+b5AJYoxoYbTJSE1NSixRS85LzUzLz0m2VvIPjneNNzQwMdQ0t
+	LcyVFPISc1NtlVx8AnTdMnOALlNSKEvMKQUKBSQWFyvp22GaEBripmsB0xih6xsSBNdjZIAG
+	EtYwZvy83sZUcIq1Ykb7bfYGxjMsXYwcHBICJhIf97B2MXICmWISF+6tZ+ti5OIQEpjOKHFx
+	5TUo5zWjxL8ZR9hAqngFtCTm97xlArFZBFQlXt3dCNbNBhTf/+IGWI2oQJjEyulXWCDqBSV+
+	TL4HtkwEqOblzVSQmcwC/5gl/t/qYAWJCwvESPQf14fYdYxRYsLv7WwgcU6BYIkZu4xAxjAL
+	qEtMmreIGcKWl9i85i3zBEaBWUg2zEJSNgtJ2QJG5lWMoqkFyQXFSem5RnrFibnFpXnpesn5
+	uZsYwXH/THoH46oGi0OMAhyMSjy8L/JDgoVYE8uKK3MPMUpwMCuJ8EasBwrxpiRWVqUW5ccX
+	leakFh9iTAYGwERmKdHkfGBKyiuJNzQ2MTOyNDI3tDAyNidNWEmc92CrdaCQQHpiSWp2ampB
+	ahHMFiYOTqkGxvQfkZpXlivHmhaffP63f757xS6Tb48nPu44fMtl+7c7ngaXPhcvKs/6mTnL
+	YAnz1p/FT0quqis72iiuM2vSeND0RPf2Ho3L8gcW2jwTez/Ve/er8rafXo/nzrwrn/Oi72x7
+	kc9xTtXz0tOeWz6RPH5/VobNUT81va9Zn93qvCw3eqvYLfu7/Z4SS3FGoqEWc1FxIgBEhrN8
+	PwMAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3L6xhpr031065
 
-On Isn, 2014-04-07 at 12:11 -0500, Josh Cartwright wrote:
-> On Mon, Apr 07, 2014 at 04:00:43PM +0800, Tien Hock Loh wrote:
-> > On Wed, Mar 19, 2014 at 6:09 PM, Tien Hock Loh <thloh@altera.com> wrote:
-> > > On Fri, Mar 7, 2014 at 11:14 PM, Josh Cartwright <joshc@codeaurora.org> wrote:
-> > >> On Mon, Mar 03, 2014 at 06:27:43PM +0800, thloh@altera.com wrote:
-> > >>> From: Tien Hock Loh <thloh@altera.com>
-> [..]
-> > >>> +     altera_gc->mapped_irq = irq_of_parse_and_map(node, 0);
-> > >>>
-> > >>
-> > >> platform_get_irq(pdev, 0);
-> > >>
-> > > OK.
-> > >
-> >
-> > platform_get_irq doesn't create the irq mapping which is needed by the
-> > driver. Since this driver is targeted at using of, should I be using
-> > irq_of_parse_and_map or should I still redo the codes with
-> > platform_get_irq and irq_create_mapping? I think the latter would be
-> > introducing code redundancy. Please advice.
->
-> Yes, it is technically true that platform_get_irq() doesn't do the
-> mapping directly, but that's because the mapping is setup earlier, when
-> of_device_alloc() (drivers/of/platform.c) allocates resources for your
-> platform device.
->
-> Calling irq_of_parse_and_map() should be unnecessary.
+On 04/21/2014 03:05 PM, Viresh Kumar wrote:
+> On 18 April 2014 07:50, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>> This patch uses dev_err/info function to show accurate log message with device name
+>> instead of pr_err/info function.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> ---
+>>  drivers/cpufreq/exynos-cpufreq.c | 21 ++++++++++++---------
+>>  drivers/cpufreq/exynos-cpufreq.h |  1 +
+>>  2 files changed, 13 insertions(+), 9 deletions(-)
+> 
+> This still looks fine even if we don't take the new driver ?
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
 
-I checked and tried running the without irq_create_mapping but it seems
-the mapping is not done. What I've seen other GPIO driver is doing is to
-create the mapping during the gpio_to_irq call. However Linus suggested
-we are avoiding that route, thus the use of irq_of_parse_and_map.
+Thanks for your review.
 
-Do you agree with my findings?
+Best regards,
+Chanwoo Choi
 
->
-
-
-________________________________
-
-Confidentiality Notice.
-This message may contain information that is confidential or otherwise protected from disclosure. If you are not the intended recipient, you are hereby notified that any use, disclosure, dissemination, distribution, or copying of this message, or any attachments, is strictly prohibited. If you have received this message in error, please advise the sender by reply e-mail, and delete the message and any attachments. Thank you.
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
