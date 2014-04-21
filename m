@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004AbaDURPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 13:15:50 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:41601 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaDURPq (ORCPT
+	id S1753131AbaDURX4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 13:23:56 -0400
+Received: from mail-qg0-f48.google.com ([209.85.192.48]:39690 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751658AbaDURXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 13:15:46 -0400
-Message-ID: <53555240.70806@lwfinger.net>
-Date: Mon, 21 Apr 2014 12:15:44 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Mon, 21 Apr 2014 13:23:53 -0400
 MIME-Version: 1.0
-To: Colin King <colin.king@canonical.com>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] rtlwifi: rtl8188ee: initialize packet_beacon
-References: <1398098324-5193-1-git-send-email-colin.king@canonical.com>
-In-Reply-To: <1398098324-5193-1-git-send-email-colin.king@canonical.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAMuHMdXvLLNXQXYRD71Uv7F-Fh_E6EmF7_OvBUYF513cMfy8sw@mail.gmail.com>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<1397824031-4892-13-git-send-email-lftan@altera.com>
+	<CAMuHMdXvLLNXQXYRD71Uv7F-Fh_E6EmF7_OvBUYF513cMfy8sw@mail.gmail.com>
+Date: Tue, 22 Apr 2014 01:23:52 +0800
+X-Google-Sender-Auth: WBL2ZJ4_gBBv5HbCIXfDftKa7No
+Message-ID: <CAFiDJ5_ExhQAqMa5WMyug0Gz3KTVQhfZvonyCuErKBU4icu4tw@mail.gmail.com>
+Subject: Re: [PATCH 16/28] nios2: System calls handling
+From: Ley Foon Tan <lftan@altera.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com, Pavel Machek <pavel@denx.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2014 11:38 AM, Colin King wrote:
-> From: Colin Ian King <colin.king@canonical.com>
+On Sun, Apr 20, 2014 at 4:12 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+>> +        */
+>> +       vma = find_vma(current->mm, addr);
+>> +       if (vma == NULL || addr < vma->vm_start || addr + len > vma->vm_end)
+>> +               return -EFAULT;
+>> +
+>> +       /* Ignore the scope and cache arguments. */
 >
-> static code analysis from cppcheck reports:
->
-> [drivers/net/wireless/rtlwifi/rtl8188ee/trx.c:322]:
->    (error) Uninitialized variable: packet_beacon
->
-> packet_beacon is not initialized and hence packet_beacon
-> contains garbage from the stack, so set it to false.
->
-> Signed-off-by: Colin Ian King <colin.king@canonical.com>
-> ---
->   drivers/net/wireless/rtlwifi/rtl8188ee/trx.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+> This function doesn't have scope and cache arguments
+> (sys_cacheflush() on m68k does have them ;-)
 
-This change should have a "Cc: Stable <stable@vger.kernel.org> [3.10+] notation.
+Missed out the comment after rename the arguments.:) Will update the
+comment above.
 
-Other than that, Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-
-John: Is it possible for you to add stable, or do you want Colin to resubmit.
-
-Larry
-
+> On Sat, Apr 19, 2014 at 6:09 PM, Pavel Machek <pavel@denx.de> wrote:
+>> Also... explanation why you need this syscall while other
+>> architectures live happily without it would be nice.
 >
-> diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c b/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c
-> index 06ef47c..5b4c225 100644
-> --- a/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c
-> +++ b/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c
-> @@ -293,7 +293,7 @@ static void _rtl88ee_translate_rx_signal_stuff(struct ieee80211_hw *hw,
->   	u8 *psaddr;
->   	__le16 fc;
->   	u16 type, ufc;
-> -	bool match_bssid, packet_toself, packet_beacon, addr;
-> +	bool match_bssid, packet_toself, packet_beacon = false, addr;
+> 12 our of 28 architectures provide such a syscall...
 >
->   	tmp_buf = skb->data + pstatus->rx_drvinfo_size + pstatus->rx_bufshift;
->
->
+> Is flushing the cache a privileged operation on nios2?
+Yes.
 
+Thanks.
+
+Regards
+Ley Foon
