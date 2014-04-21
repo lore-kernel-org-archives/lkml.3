@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824AbaDUL0d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 07:26:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:55340 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaDUL02 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 07:26:28 -0400
-Date: Mon, 21 Apr 2014 12:26:01 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: David Miller <davem@davemloft.net>
-Cc: zoltan.kiss@citrix.com, jesse@nicira.com, pshelar@nicira.com,
-        tgraf@redhat.com, dev@openvswitch.org, pablo@netfilter.org,
-        kadlec@blackhole.kfki.hu, edumazet@google.com, dborkman@redhat.com,
-        therbert@google.com, jasowang@redhat.com, fw@strlen.de,
-        joe@perches.com, horms@verge.net.au, jiri@resnulli.us, mst@redhat.com,
-        Paul.Durrant@citrix.com, JBeulich@suse.com,
-        herbert@gondor.apana.org.au, mszeredi@suse.cz,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH v5] core, nfqueue, openvswitch: Orphan frags in
- skb_zerocopy and handle errors
-Message-ID: <20140421112601.GC3200@hercules>
-References: <1395873465-22282-1-git-send-email-zoltan.kiss@citrix.com>
- <20140327.152956.1528740039185894234.davem@davemloft.net>
+	id S1751958AbaDUL2P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 07:28:15 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40049 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750906AbaDUL2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 07:28:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,896,1389772800"; 
+   d="scan'208";a="524689545"
+Message-ID: <53550106.8080907@intel.com>
+Date: Mon, 21 Apr 2014 19:29:10 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140327.152956.1528740039185894234.davem@davemloft.net>
+To: Pavel Machek <pavel@ucw.cz>, Ilia Mirkin <imirkin@alum.mit.edu>
+CC: Stefan Lippers-Hollmann <s.L-H@gmx.de>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.14-rc: /proc/acpi/battery gone?
+References: <20140314211456.GA23213@amd.pavel.ucw.cz> <201403150217.50526.s.L-H@gmx.de> <532471EC.1070107@intel.com> <201403160357.53858.s.L-H@gmx.de> <CAKb7UvjeW_vKQn_WjCawD7HDe7BKMYdH_HauFxFvUySkj1yvew@mail.gmail.com> <20140420130930.GD12135@amd.pavel.ucw.cz>
+In-Reply-To: <20140420130930.GD12135@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On 04/20/2014 09:09 PM, Pavel Machek wrote:
+> Hi!
+>
+>>>>        I just glance wmbattery code. I find the code in the acpi.c is already
+>>>> using the new sysfs battery interfaces, right?
+>>>
+>>> By default, wmbattery appears to default to using upower as abstraction
+>>> level, instead of querying sysfs itself directly.
+>>>
+>>> http://git.kitenet.net/?p=wmbattery.git;a=blob;f=autoconf/makeinfo.in;hb=HEAD
+>>>
+>>> which sets USE_UPOWER=1 by default.
+>>>
+>>> If USE_UPOWER=0 is set explicitly for the build, it reverts back to
+>>> direct sysfs parsing - and yes, it does appear to adhere to the current
+>>> sysfs API properly.
+>>>
+>>> The last remains, and the ability to parse procfs (which hasn't been
+>>> default for quite some time already, in favour of using hal as
+>>> abstraction layer) has finally been removed in
+>>>
+>>> http://git.kitenet.net/?p=wmbattery.git;a=commitdiff;h=833eb63a5ce4f2fb712a201b1db4f2db1700fddb
+>>>
+>>> The switch from procfs parsing to hal (by default at least) in turn
+>>> happened with
+>>>
+>>> http://git.kitenet.net/?p=wmbattery.git;a=commitdiff;h=63c3d1a0b11e8ade1a5612bb5baa3d92e153bbbe
+>>>
+>>> in 2008 (before Debian squeeze/ oldstable). I have not investigated if
+>>> hal then read from procfs or sysfs, but wmbattery at least didn't read
+>>> from procfs itself, unless explicitly told to do so (USE_HAL=0) during
+>>> the build since mid 2008.
+>>>
+>>> The current version of wmbattery however will never try to access
+>>> /proc/acpi, the current version no longer knows of its existence.
+>>>
+>>> [Again, I'm not familiar with wmbattery myself and have never run it]
+>>
+>> Stefan,
+>>
+>> Thanks for looking into this. The newest wmbattery version indeed
+>> supports upower. However, I haven't figured out how to get it to work.
+>> That's obviously not the kernel's fault, but an unfortunate reality.
+>> It seems to really want dbus to be running, but when I start dbus
+>> (which nothing else on my system needs, apparently), it just hangs. My
+>> knowledge of these things is, (un)fortunately non-existent, so I just
+>> gave up on the upower approach. Running something as heavy as dbus
+>> just for a silly dock app seems... silly as well.
+>
+> Any news on this one?
+>
+> It seems that delaying fsck on battery power also relies on
+> /proc/acpi/battery...
 
-On Thu, Mar 27, 2014 at 03:29:56PM -0400, David Miller wrote:
-> From: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Date: Wed, 26 Mar 2014 22:37:45 +0000
-> 
-> > skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
-> > orphan them. Also, it doesn't handle errors, so this patch takes care of that
-> > as well, and modify the callers accordingly. skb_tx_error() is also added to
-> > the callers so they will signal the failed delivery towards the creator of the
-> > skb.
-> > 
-> > Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> 
-> Fingers crossed :-)  Applied, thanks Zoltan.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Ok. I will prepare a patch to recover /proc/acpi/battery.
 
-Could you please queue this for stable as well?  It has CVE-2014-2568
-assigned to it and I believe it is applicable to some of the trees.
+>
+> https://bbs.archlinux.org/viewtopic.php?id=12168
+>
+> 									Pavel
+>
 
-Cheers,
---
-Luís
