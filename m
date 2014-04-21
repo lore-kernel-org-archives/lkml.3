@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865AbaDUK1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 06:27:54 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:46025 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaDUK1w (ORCPT
+	id S1751802AbaDUK2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 06:28:53 -0400
+Received: from mailout-8.websupport.sk ([37.9.172.137]:15584 "EHLO
+	mailout-8.websupport.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906AbaDUK2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 06:27:52 -0400
-Date: Mon, 21 Apr 2014 12:27:50 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: tthayer@altera.com
-Cc: robherring2@gmail.com, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org, galak@codeaurora.org, rob@landley.net,
-        linux@arm.linux.org.uk, dinguyen@altera.com, dougthompson@xmission.com,
-        grant.likely@linaro.org, tthayer.linux@gmail.com,
-        Borislav Petkov <bp@alien8.de>, devicetree@vger.kernel.org,
-        linux-edac@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 3/3] edac: altera: Add SDRAM EDAC support for
- CycloneV/ArriaV
-Message-ID: <20140421102750.GA27209@amd.pavel.ucw.cz>
-References: <1397604610-20931-1-git-send-email-tthayer@altera.com>
- <1397604610-20931-5-git-send-email-tthayer@altera.com>
+	Mon, 21 Apr 2014 06:28:51 -0400
+X-Greylist: delayed 682 seconds by postgrey-1.27 at vger.kernel.org; Mon, 21 Apr 2014 06:28:51 EDT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397604610-20931-5-git-send-email-tthayer@altera.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Mon, 21 Apr 2014 03:16:58 -0700
+From: Webmail Adminstrador 2014 <jana.cunderlikova@atena.sk>
+To: undisclosed-recipients:;
+Subject: Estimado E-mail del usuario;
+Message-ID: <d2dae9d32545f21df0ec50574e9cbc4c@atena.sk>
+User-Agent: RoundCube Webmail/0.5.2
+X-ESET-AntiSpam: OK;50;calc;2014-04-21 12:20:02;1404211220029224;82E7
+X-EsetResult: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
 
-> From: Thor Thayer <tthayer@altera.com>
-> 
-> Added EDAC support for reporting ECC errors of CycloneV
-> and ArriaV SDRAM controller.
-> - The SDRAM Controller registers are used by the FPGA bridge so
->   these are accessed through the syscon interface.
-> - The configuration of the SDRAM memory size for the EDAC framework
->   is discovered from the SDRAM Controller registers.
-> - Documentation of the bindings in devicetree/bindings/arm/altera/
->   socfpga-sdram-edac.txt
-> - Correction of single bit errors, detection of double bit errors.
-> 
-> ---
-> v2: Use the SDRAM controller registers to calculate memory size
->     instead of the Device Tree. Update To & Cc list. Add maintainer 
->     information.
+Estimado E-mail del usuario;
 
-I'd reduce number of *s in the messages, otherwise
+Se ha superado 23.432 Repositorio para el conjunto buzón
+Servicios Web / Administrador, y habrás problemas al enviar y
+recepción de correo, mientras que volver a verificar. Debe actualizar
+haciendo clic en enlace de abajo y complete la información para 
+verificar su cuenta.
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
 
-for whole series.
-								Pavel
+http://stananzanleonsin.net/predzenie-ujrarvnyestst.html/
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
+Por favor, haga clic en el siguiente enlace para actualizar la bandeja 
+de
+entrada.
+¡Atención!
+De no hacerlo, tendrá acceso limitado a su buzón de correo.
+Si no actualiza su cuenta dentro de los tres días posteriores a la
+actualización
+aviso, su cuenta será cerrada permanentemente.
