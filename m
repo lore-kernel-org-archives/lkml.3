@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346AbaDUEgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:36:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58690 "EHLO
+	id S1752286AbaDUEf5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:35:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58686 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991AbaDUEer (ORCPT
+	with ESMTP id S1751987AbaDUEeq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:34:47 -0400
+	Mon, 21 Apr 2014 00:34:46 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.13 07/32] ACPI / button: Add ACPI Button event via netlink routine
-Date: Sun, 20 Apr 2014 19:13:24 -0700
-Message-Id: <20140421021134.874432521@linuxfoundation.org>
+        Mohit Kumar <mohit.kumar@st.com>,
+        Ajay Khandelwal <ajay.khandelwal@st.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 3.13 06/32] PCI: designware: Fix iATU programming for cfg1, io and mem viewport
+Date: Sun, 20 Apr 2014 19:13:23 -0700
+Message-Id: <20140421021134.738081122@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
 References: <20140421021133.865086647@linuxfoundation.org>
@@ -27,38 +28,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Mohit Kumar <mohit.kumar@st.com>
 
-commit 0bf6368ee8f25826d0645c0f7a4f17c8845356a4 upstream.
+commit 017fcdc30cdae18c0946eef1ece1f14b4c7897ba upstream.
 
-Commit 1696d9d (ACPI: Remove the old /proc/acpi/event interface)
-removed ACPI Button event which originally was sent to userspace via
-/proc/acpi/event. This caused ACPI shutdown regression on gentoo
-in VirtualBox. Now ACPI events are sent to userspace via netlink,
-so add ACPI Button event back via netlink routine.
+This patch corrects iATU programming for cfg1, io and mem viewport.  Enable
+ATU only after configuring it.
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=71721
-Reported-and-tested-by: Richard Musil <richard.musil@gmail.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Mohit Kumar <mohit.kumar@st.com>
+Signed-off-by: Ajay Khandelwal <ajay.khandelwal@st.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/button.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/pci/host/pcie-designware.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/acpi/button.c
-+++ b/drivers/acpi/button.c
-@@ -302,6 +302,10 @@ static void acpi_button_notify(struct ac
- 			input_sync(input);
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -498,13 +498,13 @@ static void dw_pcie_prog_viewport_cfg1(s
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
+ 			  PCIE_ATU_VIEWPORT);
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
+-	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ 	dw_pcie_writel_rc(pp, pp->cfg1_base, PCIE_ATU_LOWER_BASE);
+ 	dw_pcie_writel_rc(pp, (pp->cfg1_base >> 32), PCIE_ATU_UPPER_BASE);
+ 	dw_pcie_writel_rc(pp, pp->cfg1_base + pp->config.cfg1_size - 1,
+ 			  PCIE_ATU_LIMIT);
+ 	dw_pcie_writel_rc(pp, busdev, PCIE_ATU_LOWER_TARGET);
+ 	dw_pcie_writel_rc(pp, 0, PCIE_ATU_UPPER_TARGET);
++	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ }
  
- 			pm_wakeup_event(&device->dev, 0);
-+			acpi_bus_generate_netlink_event(
-+					device->pnp.device_class,
-+					dev_name(&device->dev),
-+					event, ++button->pushed);
- 		}
- 		break;
- 	default:
+ static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
+@@ -513,7 +513,6 @@ static void dw_pcie_prog_viewport_mem_ou
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0,
+ 			  PCIE_ATU_VIEWPORT);
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
+-	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ 	dw_pcie_writel_rc(pp, pp->mem_base, PCIE_ATU_LOWER_BASE);
+ 	dw_pcie_writel_rc(pp, (pp->mem_base >> 32), PCIE_ATU_UPPER_BASE);
+ 	dw_pcie_writel_rc(pp, pp->mem_base + pp->config.mem_size - 1,
+@@ -521,6 +520,7 @@ static void dw_pcie_prog_viewport_mem_ou
+ 	dw_pcie_writel_rc(pp, pp->config.mem_bus_addr, PCIE_ATU_LOWER_TARGET);
+ 	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.mem_bus_addr),
+ 			  PCIE_ATU_UPPER_TARGET);
++	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ }
+ 
+ static void dw_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
+@@ -529,7 +529,6 @@ static void dw_pcie_prog_viewport_io_out
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
+ 			  PCIE_ATU_VIEWPORT);
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_IO, PCIE_ATU_CR1);
+-	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ 	dw_pcie_writel_rc(pp, pp->io_base, PCIE_ATU_LOWER_BASE);
+ 	dw_pcie_writel_rc(pp, (pp->io_base >> 32), PCIE_ATU_UPPER_BASE);
+ 	dw_pcie_writel_rc(pp, pp->io_base + pp->config.io_size - 1,
+@@ -537,6 +536,7 @@ static void dw_pcie_prog_viewport_io_out
+ 	dw_pcie_writel_rc(pp, pp->config.io_bus_addr, PCIE_ATU_LOWER_TARGET);
+ 	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.io_bus_addr),
+ 			  PCIE_ATU_UPPER_TARGET);
++	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ }
+ 
+ static int dw_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
 
 
