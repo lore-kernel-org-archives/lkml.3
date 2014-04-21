@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380AbaDUVyd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 17:54:33 -0400
-Received: from mail-yk0-f170.google.com ([209.85.160.170]:52855 "EHLO
-	mail-yk0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755299AbaDUVxs (ORCPT
+	id S1754646AbaDUVzF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 17:55:05 -0400
+Received: from mail-yh0-f50.google.com ([209.85.213.50]:62151 "EHLO
+	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755266AbaDUVxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 17:53:48 -0400
+	Mon, 21 Apr 2014 17:53:37 -0400
 From: Alex Elder <elder@linaro.org>
 To: bcm@fixthebug.org, mporter@linaro.org
 Cc: bcm-kernel-feedback-list@broadcom.com,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 10/10] ARM: bcm: rename "kona.h" and "kona.c"
-Date: Mon, 21 Apr 2014 16:53:11 -0500
-Message-Id: <1398117191-2433-11-git-send-email-elder@linaro.org>
+Subject: [PATCH v2 07/10] ARM: bcm: tidy up a few includes
+Date: Mon, 21 Apr 2014 16:53:08 -0500
+Message-Id: <1398117191-2433-8-git-send-email-elder@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398117191-2433-1-git-send-email-elder@linaro.org>
 References: <1398117191-2433-1-git-send-email-elder@linaro.org>
@@ -21,70 +21,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These source files contain only level-2 cache initialization code,
-so rename them to make that fact more obvious.
+Clean up a few header file includes, eliminating a few that are not
+really needed and putting in their place some that are.
 
 Signed-off-by: Alex Elder <elder@linaro.org>
-Reviewed-by: Tim Kryger <tim.kryger@linaro.org>
-Reviewed-by: Markus Mayer <markus.mayer@linaro.org>
 Reviewed-by: Matt Porter <mporter@linaro.org>
 ---
- arch/arm/mach-bcm/Makefile                    | 2 +-
- arch/arm/mach-bcm/board_bcm21664.c            | 2 +-
- arch/arm/mach-bcm/board_bcm281xx.c            | 2 +-
- arch/arm/mach-bcm/{kona.c => kona_l2_cache.c} | 0
- arch/arm/mach-bcm/{kona.h => kona_l2_cache.h} | 0
- 5 files changed, 3 insertions(+), 3 deletions(-)
- rename arch/arm/mach-bcm/{kona.c => kona_l2_cache.c} (100%)
- rename arch/arm/mach-bcm/{kona.h => kona_l2_cache.h} (100%)
+ arch/arm/mach-bcm/board_bcm21664.c | 3 +--
+ arch/arm/mach-bcm/kona.c           | 5 +++--
+ arch/arm/mach-bcm/kona.h           | 3 +--
+ 3 files changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arm/mach-bcm/Makefile b/arch/arm/mach-bcm/Makefile
-index d5b60fe..7312921 100644
---- a/arch/arm/mach-bcm/Makefile
-+++ b/arch/arm/mach-bcm/Makefile
-@@ -17,7 +17,7 @@ obj-$(CONFIG_ARCH_BCM_281XX)	+= board_bcm281xx.o
- obj-$(CONFIG_ARCH_BCM_21664)	+= board_bcm21664.o
- 
- # BCM281XX and BCM21664 L2 cache control
--obj-$(CONFIG_ARCH_BCM_MOBILE_L2_CACHE) += kona.o
-+obj-$(CONFIG_ARCH_BCM_MOBILE_L2_CACHE) += kona_l2_cache.o
- 
- # Support for secure monitor traps
- obj-$(CONFIG_ARCH_BCM_MOBILE_SMC) += bcm_kona_smc.o
 diff --git a/arch/arm/mach-bcm/board_bcm21664.c b/arch/arm/mach-bcm/board_bcm21664.c
-index 1091637..f0521cc 100644
+index acc1573..1091637 100644
 --- a/arch/arm/mach-bcm/board_bcm21664.c
 +++ b/arch/arm/mach-bcm/board_bcm21664.c
-@@ -17,7 +17,7 @@
+@@ -11,13 +11,12 @@
+  * GNU General Public License for more details.
+  */
+ 
+-#include <linux/clocksource.h>
+ #include <linux/of_address.h>
+ #include <linux/of_platform.h>
++#include <linux/io.h>
  
  #include <asm/mach/arch.h>
  
--#include "kona.h"
-+#include "kona_l2_cache.h"
+-#include "bcm_kona_smc.h"
+ #include "kona.h"
  
  #define RSTMGR_DT_STRING		"brcm,bcm21664-resetmgr"
+diff --git a/arch/arm/mach-bcm/kona.c b/arch/arm/mach-bcm/kona.c
+index 60b5dd5..b319703 100644
+--- a/arch/arm/mach-bcm/kona.c
++++ b/arch/arm/mach-bcm/kona.c
+@@ -11,11 +11,12 @@
+  * GNU General Public License for more details.
+  */
  
-diff --git a/arch/arm/mach-bcm/board_bcm281xx.c b/arch/arm/mach-bcm/board_bcm281xx.c
-index 6be54c1..1ac59fc 100644
---- a/arch/arm/mach-bcm/board_bcm281xx.c
-+++ b/arch/arm/mach-bcm/board_bcm281xx.c
-@@ -17,7 +17,7 @@
+-#include <linux/of_platform.h>
++
++#include <linux/init.h>
++#include <linux/printk.h>
+ #include <asm/hardware/cache-l2x0.h>
  
- #include <asm/mach/arch.h>
- 
+ #include "bcm_kona_smc.h"
 -#include "kona.h"
-+#include "kona_l2_cache.h"
  
- #define SECWDOG_OFFSET			0x00000000
- #define SECWDOG_RESERVED_MASK		0xe2000000
-diff --git a/arch/arm/mach-bcm/kona.c b/arch/arm/mach-bcm/kona_l2_cache.c
-similarity index 100%
-rename from arch/arm/mach-bcm/kona.c
-rename to arch/arm/mach-bcm/kona_l2_cache.c
-diff --git a/arch/arm/mach-bcm/kona.h b/arch/arm/mach-bcm/kona_l2_cache.h
-similarity index 100%
-rename from arch/arm/mach-bcm/kona.h
-rename to arch/arm/mach-bcm/kona_l2_cache.h
+ void __init kona_l2_cache_init(void)
+ {
+diff --git a/arch/arm/mach-bcm/kona.h b/arch/arm/mach-bcm/kona.h
+index 110185f..46f84a9 100644
+--- a/arch/arm/mach-bcm/kona.h
++++ b/arch/arm/mach-bcm/kona.h
+@@ -12,8 +12,7 @@
+  */
+ 
+ #ifdef CONFIG_ARCH_BCM_MOBILE_L2_CACHE
+-
+-void __init kona_l2_cache_init(void);
++void	kona_l2_cache_init(void);
+ #else
+ #define kona_l2_cache_init() ((void)0)
+ #endif
 -- 
 1.9.1
 
