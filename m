@@ -1,72 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752876AbaDURBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 13:01:22 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:64312 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373AbaDURBS (ORCPT
+	id S1753098AbaDURDd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 13:03:33 -0400
+Received: from mail-vc0-f176.google.com ([209.85.220.176]:65474 "EHLO
+	mail-vc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752052AbaDURD3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 13:01:18 -0400
+	Mon, 21 Apr 2014 13:03:29 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140421163058.GS18016@ZenIV.linux.org.uk>
-References: <cover.1398097304.git.luto@amacapital.net> <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
- <20140421163058.GS18016@ZenIV.linux.org.uk>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 21 Apr 2014 10:00:55 -0700
-Message-ID: <CALCETrUJNv48UXPNSXcdnsFZSLwhRtA0s03bJHamXQmr6vs3fQ@mail.gmail.com>
-Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Pavel Machek <pavel@ucw.cz>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        David Herrmann <dh.herrmann@gmail.com>
+In-Reply-To: <20140421161442.GC22794@saruman.home>
+References: <1396649891-2880-1-git-send-email-tim.bird@sonymobile.com>
+	<20140421161442.GC22794@saruman.home>
+Date: Mon, 21 Apr 2014 10:03:28 -0700
+Message-ID: <CA+bK7J7Psj=7nORhidbV6MrifmCY9ZgE0GjYzAPaaKK7=wHgvg@mail.gmail.com>
+Subject: Re: [PATCH] usb: phy: msm: Select secondary PHY via TCSR
+From: Tim Bird <tbird20d@gmail.com>
+To: balbi@ti.com
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, linux-arm-msm@vger.kernel.org,
+        Kumar Gala <galak@codeaurora.org>, David Brown <davidb@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-usb@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 9:30 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> On Mon, Apr 21, 2014 at 09:22:48AM -0700, Andy Lutomirski wrote:
+On Mon, Apr 21, 2014 at 9:14 AM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
 >
->> +static int proc_may_follow(struct nameidata *nd, struct file *f)
->> +{
->> +     if (!nd)
->> +             return 0;  /* This is readlink, */
->> +
->> +     if ((nd->flags & LOOKUP_WRITE) && !(f->f_mode & FMODE_WRITE))
->> +             return -EACCES;
->> +
->> +     return 0;
->> +}
+> On Fri, Apr 04, 2014 at 03:18:11PM -0700, Tim Bird wrote:
+>> Select the secondary PHY using the TCSR register, if phy-num=1
+>> in the DTS (or phy_number is set in the platform data).  The
+>> SOC has 2 PHYs which can be used with the OTG port, and this
+>> code allows configuring the correct one.
+>>
+>> Note: This resolves the problem I was seeing where I couldn't
+>> get the USB driver working at all on a dragonboard, from cold
+>> boot.  This patch depends on patch 5/14 from Ivan's msm USB
+>> patch set.  It does not use DT for the register address, as
+>> there's no evidence that this address changes between SoC
+>> versions.
+>>
+>> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
 >
-> And this is just plain wrong.  WTF are you making the traversal of symlink
-> in the middle of pathname dependent on the open flags?
-
-Can you give me a hint?  There are three cases that I need to
-distinguish, I think:
-
-1. readlink.  Currently handled by nd == NULL.  It's ugly, and I'll clean it up.
-
-2. Traversal in the middle of a path.  This can be either literally in
-the middle (e.g. "/proc/self/fd/3/something_else") or in a symlink
-that's the last component of the literal path (e.g. "fd3null" where
-"fd3null" is a symlink to "/proc/self/fd/3/null" and "null" is either
-a file or a symlink to /dev/null).  I have the latter type wrong in
-this patch.
-
-3. Actually opening /proc/self/fd/N.  This can be direct or by opening
-a symlink to /proc/self/fd/N.  I think I have this case correct.
-
-What's the best way to fix this?  Should I be checking nd->depth?
-
---Andy
-
+> doesn't apply:
 >
-> NAK.
+> checking file drivers/usb/phy/phy-msm-usb.c
+> Hunk #1 succeeded at 1412 with fuzz 2 (offset -106 lines).
+> Hunk #2 FAILED at 1581.
+> 1 out of 2 hunks FAILED
+> checking file include/linux/usb/msm_hsusb_hw.h
 
+Sorry about that.
 
+Did you apply this on top of Ivan's USB patch set?  That's a pre-requisite.
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+I've communicated privately with Ivan, and he's preparing an updated
+patch set which incorporates this fix and a few other things. This should
+be showing up soon-ish.
+ -- Tim
+
+Senior Software Engineer, Sony Mobile
+Architecture Group Chair, CE Workgroup, Linux Foundation
