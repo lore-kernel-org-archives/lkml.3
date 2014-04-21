@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100AbaDUSUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 14:20:20 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:36910 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753937AbaDUSUL (ORCPT
+	id S1754023AbaDUSUR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 14:20:17 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:35104 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753810AbaDUSUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 14:20:11 -0400
-From: Terence Eden <terence.eden@gmail.com>
-To: linux-scsi@vger.kernel.org
-Cc: target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        trivial@kernel.org, Terence Eden <github.com@shkspr.mobi>
-Subject: [PATCH 2/2] Correcting a spelling mistake which was causing some confusion - "recieved_value" should be "received_value".
-Date: Mon, 21 Apr 2014 19:19:46 +0100
-Message-Id: <1398104386-15313-1-git-send-email-terence.eden@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Mon, 21 Apr 2014 14:20:10 -0400
+Message-ID: <53556157.7000001@gmail.com>
+Date: Mon, 21 Apr 2014 20:20:07 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>
+CC: mtk.manpages@gmail.com, Rich Felker <dalias@libc.org>,
+        Jeff Layton <jlayton@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        "Stefan (metze) Metzmacher" <metze@samba.org>
+Subject: Re: [PATCH] locks: rename file-private locks to file-description
+ locks
+References: <1398087935-14001-1-git-send-email-jlayton@redhat.com> <20140421140246.GB26358@brightrain.aerifal.cx> <535529FA.8070709@gmail.com> <20140421160927.GA19653@infradead.org>
+In-Reply-To: <20140421160927.GA19653@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Terence Eden <github.com@shkspr.mobi>
+Christoph,
+
+On 04/21/2014 06:09 PM, Christoph Hellwig wrote:
+> On Mon, Apr 21, 2014 at 04:23:54PM +0200, Michael Kerrisk (man-pages) wrote:
+>>
+>> There's at least two problems to solve here:
+>>
+>> 1) "File private locks" is _meaningless_ as a term. Elsewhere
+>>    (http://thread.gmane.org/gmane.network.samba.internals/76414/focus=1685376),
+> 
+> It's indeed not a very good choice, but the new name is even worse.
+> Just call them non-broken locks? :)  Or not give them a name an just
+> append a 2 to the fcntls? :)
+
+As Jeff points out, they must have a name, or we can't have sensible
+discussions about them ;-).
+
+>> 2) The new API constants (F_SETLKP, F_SETLKPW, F_GETLKP) have names
+>>    that are visually very close to the traditional POSIX lock names 
+>>    (F_SETLK, F_SETLKW, F_GETLK). That's an accident waiting to happen
+>>    when someone mistypes in code and/or misses such a misttyping
+>>    when reading code. That really must be fixed.
+> 
+> I don't think so.  They also should have a name very similar because
+> they have the same semantics with a major bug fixed.  In fact I can't
+> think of anyone who would actually want the old behavior.
+
+They should have a name that is similar, but not so similar that 
+one is easily confused for the other. Some people will inevitably
+want the other behavior. Other people will be working on alternatively
+legacy and new applications. We should choose some constant names
+that minimize the chance of silly mistakes. Names that differ by 
+just a single letter (in one case, inside the name) are a poor 
+choice from that perspective.
+
+But, solving the naming of the constants is somewhat orthogonal
+to solving the name of the entity. At the least let's have something
+more visually distinctive, even if we stay with the current 
+terminology. (See my other mail, just sent.)
+
+Cheers,
+
+Michael
 
 
-Signed-off-by: Terence Eden <github.com@shkspr.mobi>
----
- drivers/target/iscsi/iscsi_target_parameters.c |   10 +++++-----
- 1 file changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
-index 4d2e23f..ce88892 100644
---- a/drivers/target/iscsi/iscsi_target_parameters.c
-+++ b/drivers/target/iscsi/iscsi_target_parameters.c
-@@ -1240,7 +1240,7 @@ static int iscsi_check_proposer_state(struct iscsi_param *param, char *value)
- 	}
- 
- 	if (IS_TYPE_NUMBER_RANGE(param)) {
--		u32 left_val = 0, right_val = 0, recieved_value = 0;
-+		u32 left_val = 0, right_val = 0, received_value = 0;
- 		char *left_val_ptr = NULL, *right_val_ptr = NULL;
- 		char *tilde_ptr = NULL;
- 
-@@ -1268,15 +1268,15 @@ static int iscsi_check_proposer_state(struct iscsi_param *param, char *value)
- 		right_val_ptr = param->value + strlen(left_val_ptr) + 1;
- 		left_val = simple_strtoul(left_val_ptr, NULL, 0);
- 		right_val = simple_strtoul(right_val_ptr, NULL, 0);
--		recieved_value = simple_strtoul(value, NULL, 0);
-+		received_value = simple_strtoul(value, NULL, 0);
- 
- 		*tilde_ptr = '~';
- 
--		if ((recieved_value < left_val) ||
--		    (recieved_value > right_val)) {
-+		if ((received_value < left_val) ||
-+		    (received_value > right_val)) {
- 			pr_err("Illegal response \"%s=%u\", value must"
- 				" be between %u and %u.\n", param->name,
--				recieved_value, left_val, right_val);
-+				received_value, left_val, right_val);
- 			return -1;
- 		}
- 	} else if (IS_TYPE_VALUE_LIST(param)) {
 -- 
-1.7.9.5
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
