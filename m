@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751399AbaDUODT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 10:03:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42501 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751136AbaDUODR (ORCPT
+	id S1751475AbaDUOEq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 10:04:46 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:49709 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136AbaDUOEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 10:03:17 -0400
-Date: Mon, 21 Apr 2014 10:03:16 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Oliver Neukum <oliver@neukum.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: question on read_barrier_depends
-In-Reply-To: <1398073259.9256.3.camel@linux-fkkt.site>
-Message-ID: <Pine.LNX.4.44L0.1404211002080.1201-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 21 Apr 2014 10:04:42 -0400
+From: Fengwei Yin <yfw.kernel@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix seq_read dead loop and trigger memory allocation failure.
+Date: Mon, 21 Apr 2014 22:12:42 +0800
+Message-Id: <1398089562-5925-1-git-send-email-yfw.kernel@gmail.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Apr 2014, Oliver Neukum wrote:
+When dump /proc/xxx/maps, if d_path return error in seq_path, the
+buffer will be exhaust and trigger dead loop in seq_read. Till
+kmalloc fails with -ENOMEM.
 
-> > In addition, the following code in kfifo_get() does this:
-> > 
-> > 			*(typeof(__tmp->type))__val = \
-> > 				(__is_kfifo_ptr(__tmp) ? \
-> > 				((typeof(__tmp->type))__kfifo->data) : \
-> > 				(__tmp->buf) \
-> > 				)[__kfifo->out & __tmp->kfifo.mask]; \
-> > 			smp_wmb(); \
-> > 			__kfifo->out++; \
-> > 
-> > It looks like the smp_wmb() should really be smp_mb(), because it 
-> > separates the _read_ for val from the _write_ of kfifo->out.
-> 
-> On the third hand, I now think wmb() is sufficient, because
-> there's also a write to __val. It does depend on the read
-> of buf[out & mask], but if no CPU does speculative writes
-> it must be correct.
+Saving and restoring the m->count to avoid the dead loop in seq_read
+if d_path return error.
 
-You are right; I missed that.  Good point.
+Signed-off-by: Fengwei Yin <yfw.kernel@gmail.com>
+---
+ fs/proc/task_mmu.c   | 10 +++++++++-
+ fs/proc/task_nommu.c | 10 +++++++++-
+ 2 files changed, 18 insertions(+), 2 deletions(-)
 
-Alan Stern
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 442177b..a080531 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -295,8 +295,16 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
+ 	 * special [heap] marker for the heap:
+ 	 */
+ 	if (file) {
++		size_t sz;
+ 		seq_pad(m, ' ');
+-		seq_path(m, &file->f_path, "\n");
++		/* Save current count. Once seq_path return negtive value,
++		 * we need to restore saved count. Otherwise, seq_path will
++		 * exhaust the buffer and make seq_read dead loop till
++		 * m->buff allocation failure.
++		 */
++		sz = m->count;
++		if (seq_path(m, &file->f_path, "\n") < 0)
++			m->count = sz;
+ 		goto done;
+ 	}
+ 
+diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
+index 678455d..0d4d6e0 100644
+--- a/fs/proc/task_nommu.c
++++ b/fs/proc/task_nommu.c
+@@ -160,8 +160,16 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
+ 		   MAJOR(dev), MINOR(dev), ino);
+ 
+ 	if (file) {
++		size_t sz;
+ 		seq_pad(m, ' ');
+-		seq_path(m, &file->f_path, "");
++		/* Save current count. Once seq_path return negtive value,
++		 * we need to restore saved count. Otherwise, seq_path will
++		 * exhaust the buffer and make seq_read dead loop till
++		 * m->buff allocation failure.
++		 */
++		sz = m->count;
++		if (seq_path(m, &file->f_path, "\n") < 0)
++			m->count = sz;
+ 	} else if (mm) {
+ 		pid_t tid = vm_is_stack(priv->task, vma, is_pid);
+ 
+-- 
+1.8.3.2
 
