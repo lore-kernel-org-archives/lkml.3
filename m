@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840AbaDUQRO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 12:17:14 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:51748 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751307AbaDUQRL (ORCPT
+	id S1752916AbaDUQRW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 12:17:22 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:55081 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752856AbaDUQRP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 12:17:11 -0400
-Date: Mon, 21 Apr 2014 11:14:42 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Tim Bird <tbird20d@gmail.com>
-CC: <iivanov@mm-sol.com>, <linux-arm-msm@vger.kernel.org>,
-        <galak@codeaurora.org>, <balbi@ti.com>, <davidb@codeaurora.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        Tim Bird <tim.bird@sonymobile.com>
-Subject: Re: [PATCH] usb: phy: msm: Select secondary PHY via TCSR
-Message-ID: <20140421161442.GC22794@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1396649891-2880-1-git-send-email-tim.bird@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uXxzq0nDebZQVNAZ"
-Content-Disposition: inline
-In-Reply-To: <1396649891-2880-1-git-send-email-tim.bird@sonymobile.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 21 Apr 2014 12:17:15 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: rdunlap@infradead.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] doc: drm: Fix typo in drm.tmpl
+Date: Tue, 22 Apr 2014 01:17:06 +0900
+Message-Id: <1398097026-13800-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 1.9.2.468.g3f0c02a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---uXxzq0nDebZQVNAZ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Fix spelling typo in DocBook/drm.tmpl
 
-Hi,
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ Documentation/DocBook/drm.tmpl | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-On Fri, Apr 04, 2014 at 03:18:11PM -0700, Tim Bird wrote:
-> Select the secondary PHY using the TCSR register, if phy-num=3D1
-> in the DTS (or phy_number is set in the platform data).  The
-> SOC has 2 PHYs which can be used with the OTG port, and this
-> code allows configuring the correct one.
->=20
-> Note: This resolves the problem I was seeing where I couldn't
-> get the USB driver working at all on a dragonboard, from cold
-> boot.  This patch depends on patch 5/14 from Ivan's msm USB
-> patch set.  It does not use DT for the register address, as
-> there's no evidence that this address changes between SoC
-> versions.
->=20
-> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+diff --git a/Documentation/DocBook/drm.tmpl b/Documentation/DocBook/drm.tmpl
+index 702c4474..bdb932f 100644
+--- a/Documentation/DocBook/drm.tmpl
++++ b/Documentation/DocBook/drm.tmpl
+@@ -79,7 +79,7 @@
+   <partintro>
+     <para>
+       This first part of the DRM Developer's Guide documents core DRM code,
+-      helper libraries for writting drivers and generic userspace interfaces
++      helper libraries for writing drivers and generic userspace interfaces
+       exposed by DRM drivers.
+     </para>
+   </partintro>
+@@ -459,7 +459,7 @@ char *date;</synopsis>
+       providing a solution to every graphics memory-related problems, GEM
+       identified common code between drivers and created a support library to
+       share it. GEM has simpler initialization and execution requirements than
+-      TTM, but has no video RAM management capabitilies and is thus limited to
++      TTM, but has no video RAM management capabilities and is thus limited to
+       UMA devices.
+     </para>
+     <sect2>
+@@ -889,7 +889,7 @@ int (*prime_fd_to_handle)(struct drm_device *dev,
+ 	    vice versa. Drivers must use the kernel dma-buf buffer sharing framework
+ 	    to manage the PRIME file descriptors. Similar to the mode setting
+ 	    API PRIME is agnostic to the underlying buffer object manager, as
+-	    long as handles are 32bit unsinged integers.
++	    long as handles are 32bit unsigned integers.
+ 	  </para>
+ 	  <para>
+ 	    While non-GEM drivers must implement the operations themselves, GEM
+@@ -2351,7 +2351,7 @@ void intel_crt_init(struct drm_device *dev)
+       first create properties and then create and associate individual instances
+       of those properties to objects. A property can be instantiated multiple
+       times and associated with different objects. Values are stored in property
+-      instances, and all other property information are stored in the propery
++      instances, and all other property information are stored in the property
+       and shared between all instances of the property.
+     </para>
+     <para>
+@@ -2692,10 +2692,10 @@ int num_ioctls;</synopsis>
+   <sect1>
+     <title>Legacy Support Code</title>
+     <para>
+-      The section very brievely covers some of the old legacy support code which
++      The section very briefly covers some of the old legacy support code which
+       is only used by old DRM drivers which have done a so-called shadow-attach
+       to the underlying device instead of registering as a real driver. This
+-      also includes some of the old generic buffer mangement and command
++      also includes some of the old generic buffer management and command
+       submission code. Do not use any of this in new and modern drivers.
+     </para>
+ 
+-- 
+1.9.2.468.g3f0c02a
 
-doesn't apply:
-
-checking file drivers/usb/phy/phy-msm-usb.c
-Hunk #1 succeeded at 1412 with fuzz 2 (offset -106 lines).
-Hunk #2 FAILED at 1581.
-1 out of 2 hunks FAILED
-checking file include/linux/usb/msm_hsusb_hw.h
-
---=20
-balbi
-
---uXxzq0nDebZQVNAZ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTVUPyAAoJEIaOsuA1yqREYcgP/RDpQuqIuIIuY3UOA1hQHnWh
-MX60PGqK/5/7jBBXleZobBPkpf+s8XKdt9PnObaMQBmVaOG0gNn9HVX7qd4rEMOr
-vGgTVqfRyG0i8IcISj+28tNHNT4wEGLEPl+T59VHuoZxQRfGLXjAmUaohlb6hopM
-FUHm7TJJf3kaIwbTF7X3IzskmCM268SPWi0JJTJiDBreWI9OVlChKU3C25bnbiqU
-dEme/lrHmYjsO5ET3P08ozesWo/itfTequJrzBrqlhDjcB1EmlYr6/eevfNdati3
-Rst/QXQkl1Tr2/M7YsX9ORguTHI5ed3MTJS+6b+7CBS4yICIgtpUHeWlJ0OQqYxL
-hdOZSGL8Zb3mtl6+KQUG+j+gp5PWAzDhAy97EgjxrDAhZP+HejLm/DtMQwwV21Cz
-f5z2D4p/wxfaDlmcd3zZeVYXuU/owI8xiF1vbVeDDU+jRG9Q+rqq23Hxme+PCY7U
-dlLOnNhI7OkSjM9bBztZ0MkVJlFW3xhBgRPeAYBlLQt2jigMj1FmmFGyQgsYlUj5
-48L5MBjrVXW0RQRDOdf7aJERZbHWdUtKvVS5GdXYQS2V1nt79tvmng8gav7DdWPR
-O8dJjpWK7R45AxXwZ1B0XSYlb/j7gAbhnWciLfjCoLGcXDAOOXWI6pF86afe5M9K
-zOYnG34LvnDipMwbyhA+
-=PJoG
------END PGP SIGNATURE-----
-
---uXxzq0nDebZQVNAZ--
