@@ -1,167 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaDUP3T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 11:29:19 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:34385 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521AbaDUP3M (ORCPT
+	id S1751839AbaDUPb5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 11:31:57 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:49302 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaDUPbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 11:29:12 -0400
+	Mon, 21 Apr 2014 11:31:53 -0400
+Date: Mon, 21 Apr 2014 10:31:13 -0500
+From: Nishanth Menon <nm@ti.com>
+To: Felipe Balbi <balbi@ti.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Sricharan R <r.sricharan@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        Peter Ujfalusi <peter.ujfalusi@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 05/19] bus: omap_l3_noc: switch over to relaxed
+ variants of readl/writel
+Message-ID: <20140421153113.GA32641@kahuna>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
+ <1397767775-10965-1-git-send-email-nm@ti.com>
+ <1397767775-10965-6-git-send-email-nm@ti.com>
+ <20140417215228.GD8504@saruman.home>
+ <53504DFF.7090907@ti.com>
+ <20140417220329.GF8504@saruman.home>
+ <53551A2C.8060404@ti.com>
+ <20140421150919.GE27341@saruman.home>
 MIME-Version: 1.0
-In-Reply-To: <1397917972-6293-3-git-send-email-santosh.shilimkar@ti.com>
-References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
-	<1397917972-6293-3-git-send-email-santosh.shilimkar@ti.com>
-Date: Mon, 21 Apr 2014 10:29:11 -0500
-Message-ID: <CAL_Jsq+9dZiAndnbC3fZDjZWU90K4BBR=ckuDxfy5_mBcRL=nA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/7] of: introduce of_dma_get_range() helper
-From: Rob Herring <robherring2@gmail.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20140421150919.GE27341@saruman.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 9:32 AM, Santosh Shilimkar
-<santosh.shilimkar@ti.com> wrote:
-> From: Grygorii Strashko <grygorii.strashko@ti.com>
->
-> The of_dma_get_range() allows to find "dma-range" property for
-> the specified device and parse it.
->  dma-ranges format:
->    DMA addr (dma_addr)          : naddr cells
->    CPU addr (phys_addr_t)       : pna cells
->    size                         : nsize cells
->
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: Olof Johansson <olof@lixom.net>
-> Cc: Grant Likely <grant.likely@linaro.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  drivers/of/platform.c       |   85 +++++++++++++++++++++++++++++++++++++++++++
->  include/linux/of_platform.h |    8 ++++
+On 10:09-20140421, Felipe Balbi wrote:
+> On Mon, Apr 21, 2014 at 08:16:28AM -0500, Nishanth Menon wrote:
+> > On 04/17/2014 05:03 PM, Felipe Balbi wrote:
+> > > On Thu, Apr 17, 2014 at 05:56:15PM -0400, Santosh Shilimkar wrote:
+> > >> On Thursday 17 April 2014 05:52 PM, Felipe Balbi wrote:
+> > >>> Hi,
+> > >>>
+> > >>> On Thu, Apr 17, 2014 at 03:49:21PM -0500, Nishanth Menon wrote:
+> > >>>> Currently we use __raw_readl and writel in this driver, however, there
+> > >>>
+> > >>> __raw_* and *_relaxed variants are the same, just have a look <asm/io.h>
+> > >>>
+> > >> Except the relaxed version can take care of endian conversion if
+> > >> needed. :-)
+> > > 
+> > > right, but according to commit log, this commit is more concerned about
+> > > the memory barriers which writel()/readl() add, not endianness. Just a
+> > > matter of fixing up commit log.
+> > > 
+> > 
+> > yep, this patch does replace writel with writel_relaxed there is no
+> > strong need for barriers in the operations that we perform here.
+> > 
+> > I agree that the commit message should probably be a little more
+> > detailed at this point.
+> > 
+> > 
+> > How about:
+> > Currently we use __raw_readl and writel in this driver. Considering
+> > there is no specific need for a memory barrier, replacing writel with
+> > endian-neutral writel_relaxed and replacing __raw_readls with the
+> > corresponding endian-neutral readl_relaxed allows us to have a
+> > standard set of register operations for the driver.
+> > 
+> > While at it, simplify address computation using variables for register.
+> 
+> reads a lot better, thanks
+> 
+> Acked-by: Felipe Balbi <balbi@ti.com>
 
-This belongs in drivers/of/address.c and of_address.h.
+Thanks.
+Updated branch with patches with Acked-bys pickedup is available here:
+https://github.com/nmenon/linux-2.6-playground/commits/l3noc/driver-fixes-v2-repost
 
->  2 files changed, 93 insertions(+)
->
-> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> index 404d1da..2265a55 100644
-> --- a/drivers/of/platform.c
-> +++ b/drivers/of/platform.c
-> @@ -485,4 +485,89 @@ int of_platform_populate(struct device_node *root,
->         return rc;
->  }
->  EXPORT_SYMBOL_GPL(of_platform_populate);
-> +
-> +/**
-> + * of_dma_get_range - Get DMA range info
-> + * @np:                device node to get DMA range info
-> + * @dma_addr:  pointer to store initial DMA address of DMA range
-> + * @paddr:     pointer to store initial CPU address of DMA range
-> + * @size:      pointer to store size of DMA range
-> + *
-> + * Look in bottom up direction for the first "dma-range" property
+I have dropped the empty commit while at it.
 
-dma-ranges
+Updated patch below for the record:
+------------------8<-----------------8<----------------------------
+>From a8198b8c78f2a2731fdd4df1ac540887a4c464be Mon Sep 17 00:00:00 2001
+From: Nishanth Menon <nm@ti.com>
+Date: Fri, 11 Apr 2014 11:21:47 -0500
+Subject: [PATCH V2 UPDATE 05/19] bus: omap_l3_noc: switch over to relaxed variants of
+ readl/writel
 
-> + * and parse it.
-> + *  dma-ranges format:
-> + *     DMA addr (dma_addr)     : naddr cells
-> + *     CPU addr (phys_addr_t)  : pna cells
-> + *     size                    : nsize cells
-> + *
-> + * It returns -ENODEV if "dma-ranges" property was not found
-> + * for this device in DT.
-> + */
-> +extern int of_dma_get_range(struct device_node *np, dma_addr_t *dma_addr,
+Currently we use __raw_readl and writel in this driver. Considering
+there is no specific need for a memory barrier, replacing writel
+with endian-neutral writel_relaxed and replacing __raw_readls with
+the corresponding endian-neutral readl_relaxed allows us to have a
+standard set of register operations for the driver.
 
-drop extern.
+While at it, simplify address computation using variables for
+register.
 
-> +               phys_addr_t *paddr, phys_addr_t *size)
-> +{
-> +       struct device_node *node = np;
-> +       const u32 *ranges = NULL;
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Acked-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/bus/omap_l3_noc.c |   26 ++++++++++++++------------
+ 1 file changed, 14 insertions(+), 12 deletions(-)
 
-__be32
+diff --git a/drivers/bus/omap_l3_noc.c b/drivers/bus/omap_l3_noc.c
+index 37d71b7..c8facb0 100644
+--- a/drivers/bus/omap_l3_noc.c
++++ b/drivers/bus/omap_l3_noc.c
+@@ -55,6 +55,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 	int err_src = 0;
+ 	u32 std_err_main, err_reg, clear, masterid;
+ 	void __iomem *base, *l3_targ_base;
++	void __iomem *l3_targ_stderr, *l3_targ_slvofslsb, *l3_targ_mstaddr;
+ 	char *target_name, *master_name = "UN IDENTIFIED";
+ 
+ 	/* Get the Type of interrupt */
+@@ -66,8 +67,8 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 		 * to determine the source
+ 		 */
+ 		base = l3->l3_base[i];
+-		err_reg = __raw_readl(base + l3_flagmux[i] +
+-					+ L3_FLAGMUX_REGERR0 + (inttype << 3));
++		err_reg = readl_relaxed(base + l3_flagmux[i] +
++					L3_FLAGMUX_REGERR0 + (inttype << 3));
+ 
+ 		/* Get the corresponding error and analyse */
+ 		if (err_reg) {
+@@ -76,10 +77,14 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 
+ 			/* Read the stderrlog_main_source from clk domain */
+ 			l3_targ_base = base + *(l3_targ[i] + err_src);
+-			std_err_main =  __raw_readl(l3_targ_base +
+-					L3_TARG_STDERRLOG_MAIN);
+-			masterid = __raw_readl(l3_targ_base +
+-					L3_TARG_STDERRLOG_MSTADDR);
++			l3_targ_stderr = l3_targ_base + L3_TARG_STDERRLOG_MAIN;
++			l3_targ_slvofslsb = l3_targ_base +
++					    L3_TARG_STDERRLOG_SLVOFSLSB;
++			l3_targ_mstaddr = l3_targ_base +
++					  L3_TARG_STDERRLOG_MSTADDR;
++
++			std_err_main = readl_relaxed(l3_targ_stderr);
++			masterid = readl_relaxed(l3_targ_mstaddr);
+ 
+ 			switch (std_err_main & CUSTOM_ERROR) {
+ 			case STANDARD_ERROR:
+@@ -87,12 +92,10 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 					l3_targ_inst_name[i][err_src];
+ 				WARN(true, "L3 standard error: TARGET:%s at address 0x%x\n",
+ 					target_name,
+-					__raw_readl(l3_targ_base +
+-						L3_TARG_STDERRLOG_SLVOFSLSB));
++					readl_relaxed(l3_targ_slvofslsb));
+ 				/* clear the std error log*/
+ 				clear = std_err_main | CLEAR_STDERR_LOG;
+-				writel(clear, l3_targ_base +
+-					L3_TARG_STDERRLOG_MAIN);
++				writel_relaxed(clear, l3_targ_stderr);
+ 				break;
+ 
+ 			case CUSTOM_ERROR:
+@@ -107,8 +110,7 @@ static irqreturn_t l3_interrupt_handler(int irq, void *_l3)
+ 					master_name, target_name);
+ 				/* clear the std error log*/
+ 				clear = std_err_main | CLEAR_STDERR_LOG;
+-				writel(clear, l3_targ_base +
+-					L3_TARG_STDERRLOG_MAIN);
++				writel_relaxed(clear, l3_targ_stderr);
+ 				break;
+ 
+ 			default:
+-- 
+1.7.9.5
 
-> +       int len, naddr, nsize, pna;
-> +       int ret = 0;
-> +
-> +       if (!node)
-> +               return -EINVAL;
-> +
-> +       while (1) {
-> +               naddr = of_n_addr_cells(node);
-> +               nsize = of_n_size_cells(node);
-> +               node = of_get_next_parent(node);
-> +               if (!node)
-> +                       break;
-> +
-> +               ranges = of_get_property(node, "dma-ranges", &len);
-> +
-> +               /* Ignore empty ranges, they imply no translation required */
-> +               if (ranges && len > 0)
-> +                       break;
-> +
-> +               /*
-> +                * At least empty ranges has to be defined for parent node if
-> +                * DMA is supported
-> +                */
-> +               if (!ranges)
-> +                       break;
 
-You need an of_node_put here if you are getting the next parent.
 
-> +       }
-> +
-> +       if (!ranges) {
-> +               pr_debug("%s: no dma-ranges found for node(%s)\n",
-> +                        __func__, np->full_name);
-> +               ret = -ENODEV;
-> +               goto out;
-> +       }
-> +
-> +       len /= sizeof(u32);
-> +
-> +       pna = of_n_addr_cells(node);
-> +
-> +       /* dma-ranges format:
-> +        * DMA addr     : naddr cells
-> +        * CPU addr     : pna cells
-> +        * size         : nsize cells
-> +        */
-> +       *dma_addr = of_read_number(ranges, naddr);
 
-You should set this after the following call succeeds.
-
-> +       *paddr = of_translate_dma_address(np, ranges);
-
-This is going to search for dma-ranges again, but you have already
-done that. Is there a case that just reading the CPU addr will not
-work? I suppose we could have more than one level of translation. It
-also seems a bit abusive that the DMA address is the ranges property.
-I don't really have a better suggestion though.
-
-> +       if (*paddr == OF_BAD_ADDR) {
-
-As I mentioned, this is potentially a size mismatch.
-
-Rob
+-- 
+Regards,
+Nishanth Menon
