@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754913AbaDUWiL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 18:38:11 -0400
-Received: from mail-qg0-f43.google.com ([209.85.192.43]:57779 "EHLO
-	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754667AbaDUWiI (ORCPT
+	id S1754845AbaDUWpJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 18:45:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:37446 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493AbaDUWpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 18:38:08 -0400
-Date: Mon, 21 Apr 2014 18:38:04 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        rafael.j.wysocki@intel.com, toshi.kani@hp.com
-Subject: Re: [RFC PATCH v5 1/2] Use lock_device_hotplug() in
- cpu_probe_store() and cpu_release_store()
-Message-ID: <20140421223804.GD22730@htj.dyndns.org>
-References: <20140411102649.GB26252@mtj.dyndns.org>
- <1397461649.12943.1.camel@ThinkPad-T5421.cn.ibm.com>
- <20140414201315.GD16835@htj.dyndns.org>
- <1397529877.13188.68.camel@ThinkPad-T5421.cn.ibm.com>
- <20140415145017.GK1863@htj.dyndns.org>
- <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
- <20140416151749.GE1257@htj.dyndns.org>
- <1397717444.4034.15.camel@ThinkPad-T5421>
- <20140417151728.GK15326@htj.dyndns.org>
- <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Apr 2014 18:45:07 -0400
+Date: Mon, 21 Apr 2014 15:45:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Li Zefan <lizefan@huawei.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
+        Andrew Shewmaker <agshew@gmail.com>, Andi Kleen <ak@linux.intel.com>,
+        Jens Axboe <axboe@fb.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        Michael Ellerman <michael@ellerman.id.au>
+Subject: Re: [PATCH v2 3/4] sysctl: allow for strict write position handling
+Message-Id: <20140421154505.eef405f0a23e2ff8a1c7536e@linux-foundation.org>
+In-Reply-To: <1397780183-24633-4-git-send-email-keescook@chromium.org>
+References: <1397780183-24633-1-git-send-email-keescook@chromium.org>
+	<1397780183-24633-4-git-send-email-keescook@chromium.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, 17 Apr 2014 17:16:22 -0700 Kees Cook <keescook@chromium.org> wrote:
 
-On Mon, Apr 21, 2014 at 05:20:59PM +0800, Li Zhong wrote:
-> While auditing the usage of lock_device_hotplug_sysfs() for implementing
-> it in another way in following patch, it seems to me that the code here
-> is to add/remove device, and the files probe/release for cpu bus
-> themselves won't be removed. 
+> When writing to a sysctl string, each write, regardless of VFS position,
+> begins writing the string from the start. This means the contents of
+> the last write to the sysctl controls the string contents instead of
+> the first:
 > 
-> So it seems to me there is no s_active related deadlock here, and we
-> could just use lock_device_hotplug().
+> open("/proc/sys/kernel/modprobe", O_WRONLY)   = 1
+> write(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"..., 4096) = 4096
+> write(1, "/bin/true", 9)                = 9
+> close(1)                                = 0
+> 
+> $ cat /proc/sys/kernel/modprobe
+> /bin/true
+> 
+> Expected behaviour would be to have the sysctl be "AAAA..." capped at
+> maxlen (in this case KMOD_PATH_LEN: 256), instead of truncating to the
+> contents of the second write. Similarly, multiple short writes would not
+> append to the sysctl.
+> 
+> This provides CONFIG_PROC_SYSCTL_STRICT_WRITES as a way to make this
+> behavior act in a less surprising manner for strings, and disallows
+> non-zero file position when writing numeric sysctls (similar to what is
+> already done when reading from non-zero file positions).
 
-It may still cause issue if offlining ends up removing sysfs files or
-gets involved with the same lock used during cpu hot[un]plug
-operations (e.g. offlining racing against cpu hotunplug) and offlining
-a cpu does remove files.  Has this change been tested?
+Adding a Kconfig knob to alter the behavior of procfs writes creeps me
+out.  I wonder why.
 
-Thanks.
+- I doubt if many people have a sufficient amount of control over
+  their entire systems to be able to confidently set
+  CONFIG_PROC_SYSCTL_STRICT_WRITES.
 
--- 
-tejun
+- Software will be shipped which runs OK with one setting but breaks
+  with the other setting.
+
+So what to do?
+
+I think we can *detect* this situation easily enough.  So some options are
+
+a) change the behaviour and add code which detects when userspace is
+   doing a write whose behaviour is now altered.  Print a warning.   Or
+
+b) leave the behaviour as-is.  Add a detector which tells people
+   "hey, your userspace is probably broken - please fix".  Wait N
+   years.  Then alter the behaviour as in a).
+
+In either case the detector should display current->comm, the procfs
+pathname and the contents of the write, to aid people in hunting down
+and fixing their userspace.
+
