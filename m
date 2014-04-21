@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751772AbaDUEhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:37:31 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58784 "EHLO
+	id S1753132AbaDUEh0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:37:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58702 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752070AbaDUEfK (ORCPT
+	with ESMTP id S1752006AbaDUEew (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:35:10 -0400
+	Mon, 21 Apr 2014 00:34:52 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Claudio Takahasi <claudio.takahasi@openbossa.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [PATCH 3.13 14/32] Bluetooth: Fix removing Long Term Key
-Date: Sun, 20 Apr 2014 19:13:31 -0700
-Message-Id: <20140421021135.821158652@linuxfoundation.org>
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        Werner Fink <werner@suse.de>, Hannes Reinecke <hare@suse.de>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH 3.13 10/32] tty: Set correct tty name in active sysfs attribute
+Date: Sun, 20 Apr 2014 19:13:27 -0700
+Message-Id: <20140421021135.278393101@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
 References: <20140421021133.865086647@linuxfoundation.org>
@@ -27,101 +29,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Claudio Takahasi <claudio.takahasi@openbossa.org>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 5981a8821b774ada0be512fd9bad7c241e17657e upstream.
+commit 723abd87f6e536f1353c8f64f621520bc29523a3 upstream.
 
-This patch fixes authentication failure on LE link re-connection when
-BlueZ acts as slave (peripheral). LTK is removed from the internal list
-after its first use causing PIN or Key missing reply when re-connecting
-the link. The LE Long Term Key Request event indicates that the master
-is attempting to encrypt or re-encrypt the link.
+The 'active' sysfs attribute should refer to the currently active tty
+devices the console is running on, not the currently active console. The
+console structure doesn't refer to any device in sysfs, only the tty the
+console is running on has. So we need to print out the tty names in
+'active', not the console names.
 
-Pre-condition: BlueZ host paired and running as slave.
-How to reproduce(master):
+There is one special-case, which is tty0. If the console is directed to
+it, we want 'tty0' to show up in the file, so user-space knows that the
+messages get forwarded to the active VT. The ->device() callback would
+resolve tty0, though. Hence, treat it special and don't call into the VT
+layer to resolve it (plymouth is known to depend on it).
 
-  1) Establish an ACL LE encrypted link
-  2) Disconnect the link
-  3) Try to re-establish the ACL LE encrypted link (fails)
-
-> HCI Event: LE Meta Event (0x3e) plen 19
-      LE Connection Complete (0x01)
-        Status: Success (0x00)
-        Handle: 64
-        Role: Slave (0x01)
-...
-@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
-> HCI Event: LE Meta Event (0x3e) plen 13
-      LE Long Term Key Request (0x05)
-        Handle: 64
-        Random number: 875be18439d9aa37
-        Encryption diversifier: 0x76ed
-< HCI Command: LE Long Term Key Request Reply (0x08|0x001a) plen 18
-        Handle: 64
-        Long term key: 2aa531db2fce9f00a0569c7d23d17409
-> HCI Event: Command Complete (0x0e) plen 6
-      LE Long Term Key Request Reply (0x08|0x001a) ncmd 1
-        Status: Success (0x00)
-        Handle: 64
-> HCI Event: Encryption Change (0x08) plen 4
-        Status: Success (0x00)
-        Handle: 64
-        Encryption: Enabled with AES-CCM (0x01)
-...
-@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 3
-< HCI Command: LE Set Advertise Enable (0x08|0x000a) plen 1
-        Advertising: Enabled (0x01)
-> HCI Event: Command Complete (0x0e) plen 4
-      LE Set Advertise Enable (0x08|0x000a) ncmd 1
-        Status: Success (0x00)
-> HCI Event: LE Meta Event (0x3e) plen 19
-      LE Connection Complete (0x01)
-        Status: Success (0x00)
-        Handle: 64
-        Role: Slave (0x01)
-...
-@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
-> HCI Event: LE Meta Event (0x3e) plen 13
-      LE Long Term Key Request (0x05)
-        Handle: 64
-        Random number: 875be18439d9aa37
-        Encryption diversifier: 0x76ed
-< HCI Command: LE Long Term Key Request Neg Reply (0x08|0x001b) plen 2
-        Handle: 64
-> HCI Event: Command Complete (0x0e) plen 6
-      LE Long Term Key Request Neg Reply (0x08|0x001b) ncmd 1
-        Status: Success (0x00)
-        Handle: 64
-> HCI Event: Disconnect Complete (0x05) plen 4
-        Status: Success (0x00)
-        Handle: 64
-        Reason: Authentication Failure (0x05)
-@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 0
-
-Signed-off-by: Claudio Takahasi <claudio.takahasi@openbossa.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Cc: Lennart Poettering <lennart@poettering.net>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Werner Fink <werner@suse.de>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ drivers/tty/tty_io.c |   23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3596,7 +3596,13 @@ static void hci_le_ltk_request_evt(struc
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1271,12 +1271,13 @@ static void pty_line_name(struct tty_dri
+  *
+  *	Locking: None
+  */
+-static void tty_line_name(struct tty_driver *driver, int index, char *p)
++static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+ {
+ 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
+-		strcpy(p, driver->name);
++		return sprintf(p, "%s", driver->name);
+ 	else
+-		sprintf(p, "%s%d", driver->name, index + driver->name_base);
++		return sprintf(p, "%s%d", driver->name,
++			       index + driver->name_base);
+ }
  
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
- 
--	if (ltk->type & HCI_SMP_STK) {
-+	/* Ref. Bluetooth Core SPEC pages 1975 and 2004. STK is a
-+	 * temporary key used to encrypt a connection following
-+	 * pairing. It is used during the Encrypted Session Setup to
-+	 * distribute the keys. Later, security can be re-established
-+	 * using a distributed LTK.
-+	 */
-+	if (ltk->type == HCI_SMP_STK_SLAVE) {
- 		list_del(&ltk->list);
- 		kfree(ltk);
+ /**
+@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct d
+ 		if (i >= ARRAY_SIZE(cs))
+ 			break;
  	}
+-	while (i--)
+-		count += sprintf(buf + count, "%s%d%c",
+-				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
++	while (i--) {
++		int index = cs[i]->index;
++		struct tty_driver *drv = cs[i]->device(cs[i], &index);
++
++		/* don't resolve tty0 as some programs depend on it */
++		if (drv && (cs[i]->index > 0 || drv->major != TTY_MAJOR))
++			count += tty_line_name(drv, index, buf + count);
++		else
++			count += sprintf(buf + count, "%s%d",
++					 cs[i]->name, cs[i]->index);
++
++		count += sprintf(buf + count, "%c", i ? ' ':'\n');
++	}
+ 	console_unlock();
+ 
+ 	return count;
 
 
