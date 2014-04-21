@@ -1,89 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214AbaDUREj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 13:04:39 -0400
-Received: from elasmtp-scoter.atl.sa.earthlink.net ([209.86.89.67]:33493 "EHLO
-	elasmtp-scoter.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751373AbaDUREe (ORCPT
+	id S1753289AbaDURFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 13:05:04 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:65192 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188AbaDURFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 13:04:34 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=MYNajLnkat3eNTRaTr6Ffn5a8kb6anvnpkTibKsbv7HHrvcqrJSe9sRlVXjZiWqu;
-  h=Received:From:To:Cc:References:In-Reply-To:Subject:Date:Message-ID:MIME-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:Thread-Index:Content-Language:X-Antivirus-Status:X-ELNK-Trace:X-Originating-IP;
-From: "Frank Filz" <ffilzlnx@mindspring.com>
-To: "'Christoph Hellwig'" <hch@infradead.org>,
-        "'Michael Kerrisk \(man-pages\)'" <mtk.manpages@gmail.com>
-Cc: "'Rich Felker'" <dalias@libc.org>,
-        "'libc-alpha'" <libc-alpha@sourceware.org>,
-        "'Jeff Layton'" <jlayton@redhat.com>,
-        "'Carlos O'Donell'" <carlos@redhat.com>,
-        <samba-technical@lists.samba.org>, <linux-kernel@vger.kernel.org>,
-        "'Stefan \(metze\) Metzmacher'" <metze@samba.org>,
-        <linux-fsdevel@vger.kernel.org>,
-        "'Ganesha NFS List'" <nfs-ganesha-devel@lists.sourceforge.net>
-References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>	<20140421140246.GB26358@brightrain.aerifal.cx>	<535529FA.8070709@gmail.com> <20140421160927.GA19653@infradead.org>
-In-Reply-To: <20140421160927.GA19653@infradead.org>
-Subject: RE: [Nfs-ganesha-devel] [PATCH] locks: rename file-private locks to file-description locks
-Date: Mon, 21 Apr 2014 10:03:33 -0700
-Message-ID: <0e9701cf5d83$af0ff030$0d2fd090$@mindspring.com>
+	Mon, 21 Apr 2014 13:05:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 15.0
-Thread-Index: AQGhXQr6VmqC09Ptl+VBODKb+XvaFwJqhFOOAbrSvasCHwqK1ptGKPHQ
-Content-Language: en-us
-X-Antivirus: avast! (VPS 140421-0, 04/21/2014), Outbound message
-X-Antivirus-Status: Clean
-X-ELNK-Trace: 136157f01908a8929c7f779228e2f6aeda0071232e20db4d4b76be2c88d2973008cfc8c4ac3dd6b1350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.236.153.111
+In-Reply-To: <CALCETrUJNv48UXPNSXcdnsFZSLwhRtA0s03bJHamXQmr6vs3fQ@mail.gmail.com>
+References: <cover.1398097304.git.luto@amacapital.net> <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+ <20140421163058.GS18016@ZenIV.linux.org.uk> <CALCETrUJNv48UXPNSXcdnsFZSLwhRtA0s03bJHamXQmr6vs3fQ@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 21 Apr 2014 10:04:38 -0700
+Message-ID: <CALCETrVbGZWvF=2X8zoejEGZTGyai_HjVoozXV6f39YTdG4i-A@mail.gmail.com>
+Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Pavel Machek <pavel@ucw.cz>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        David Herrmann <dh.herrmann@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, Apr 21, 2014 at 04:23:54PM +0200, Michael Kerrisk (man-pages)
-> wrote:
-> >
-> > There's at least two problems to solve here:
-> >
-> > 1) "File private locks" is _meaningless_ as a term. Elsewhere
-> >
-> >
-> (http://thread.gmane.org/gmane.network.samba.internals/76414/focus=16
-> 8
-> > 5376),
-> 
-> It's indeed not a very good choice, but the new name is even worse.
-> Just call them non-broken locks? :)  Or not give them a name an just
-append
-> a 2 to the fcntls? :)
+On Mon, Apr 21, 2014 at 10:00 AM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Mon, Apr 21, 2014 at 9:30 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
+>> On Mon, Apr 21, 2014 at 09:22:48AM -0700, Andy Lutomirski wrote:
+>>
+>>> +static int proc_may_follow(struct nameidata *nd, struct file *f)
+>>> +{
+>>> +     if (!nd)
+>>> +             return 0;  /* This is readlink, */
+>>> +
+>>> +     if ((nd->flags & LOOKUP_WRITE) && !(f->f_mode & FMODE_WRITE))
+>>> +             return -EACCES;
+>>> +
+>>> +     return 0;
+>>> +}
+>>
+>> And this is just plain wrong.  WTF are you making the traversal of symlink
+>> in the middle of pathname dependent on the open flags?
+>
+> Can you give me a hint?  There are three cases that I need to
+> distinguish, I think:
+>
+> 1. readlink.  Currently handled by nd == NULL.  It's ugly, and I'll clean it up.
+>
+> 2. Traversal in the middle of a path.  This can be either literally in
+> the middle (e.g. "/proc/self/fd/3/something_else") or in a symlink
+> that's the last component of the literal path (e.g. "fd3null" where
+> "fd3null" is a symlink to "/proc/self/fd/3/null" and "null" is either
+> a file or a symlink to /dev/null).  I have the latter type wrong in
+> this patch.
+>
+> 3. Actually opening /proc/self/fd/N.  This can be direct or by opening
+> a symlink to /proc/self/fd/N.  I think I have this case correct.
+>
+> What's the best way to fix this?  Should I be checking nd->depth?
 
-The folder name I've been archiving e-mails on this subject in is called
-"good locks"...
+No, I think that's wrong, too.  I think that will cause me to screw up
+symlinks to /proc/self/fd/3.  What's the right way to tell that
+follow_link is happening on the very last pathname component?
 
-I'd also be happy with "non-broken locks"...
+Hmm.  I wonder what happens, or even what should happen, if the file
+descriptor is a symlink opened with O_PATH | O_NOFOLLOW.
 
-I could also be happy with private locks (since in addition to resolving
-broken POSIX behavior, they will ALSO allow user space servers to keep
-separate sets of locks for each client lock owner - if I remember, the
-addition of that capability prompted the private name).
-
-:-)
-
-> > 2) The new API constants (F_SETLKP, F_SETLKPW, F_GETLKP) have names
-> >    that are visually very close to the traditional POSIX lock names
-> >    (F_SETLK, F_SETLKW, F_GETLK). That's an accident waiting to happen
-> >    when someone mistypes in code and/or misses such a misttyping
-> >    when reading code. That really must be fixed.
-> 
-> I don't think so.  They also should have a name very similar because they
-> have the same semantics with a major bug fixed.  In fact I can't think of
-> anyone who would actually want the old behavior.
-
-I'm nervous about such close names, but it's easy enough to use grep or
-cscope to check a code base for typos in this case.
-
-Frank
-
-
+--Andy
