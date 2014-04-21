@@ -1,134 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614AbaDUInh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 04:43:37 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:41592 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533AbaDUInf (ORCPT
+	id S1751311AbaDUJVM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 05:21:12 -0400
+Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:59465 "EHLO
+	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaDUJVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 04:43:35 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3L8h31o014101, This message is accepted by code: ctloc85258
-Message-ID: <5354DB0A.7060706@realsil.com.cn>
-Date: Mon, 21 Apr 2014 16:47:06 +0800
-From: micky <micky_ching@realsil.com.cn>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: lkml <linux-kernel@vger.kernel.org>, Chris Ball <chris@printf.net>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Subject: Re: rtsx_pci_sdmmc lockdep splat
-References: <20140415174934.GD4826@pd.tnic> <534DE1D7.3000308@realsil.com.cn> <20140420122055.GD19667@pd.tnic>
-In-Reply-To: <20140420122055.GD19667@pd.tnic>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Mon, 21 Apr 2014 05:21:09 -0400
+Message-ID: <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: [RFC PATCH v5 1/2] Use lock_device_hotplug() in cpu_probe_store()
+ and cpu_release_store()
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        rafael.j.wysocki@intel.com, toshi.kani@hp.com
+Date: Mon, 21 Apr 2014 17:20:59 +0800
+In-Reply-To: <20140417151728.GK15326@htj.dyndns.org>
+References: <20140410133116.GB25308@htj.dyndns.org>
+	 <1397189445.3649.14.camel@ThinkPad-T5421>
+	 <20140411102649.GB26252@mtj.dyndns.org>
+	 <1397461649.12943.1.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140414201315.GD16835@htj.dyndns.org>
+	 <1397529877.13188.68.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140415145017.GK1863@htj.dyndns.org>
+	 <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140416151749.GE1257@htj.dyndns.org>
+	 <1397717444.4034.15.camel@ThinkPad-T5421>
+	 <20140417151728.GK15326@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.29.41.103]
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042109-3548-0000-0000-000008CE6481
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Borislav
+While auditing the usage of lock_device_hotplug_sysfs() for implementing
+it in another way in following patch, it seems to me that the code here
+is to add/remove device, and the files probe/release for cpu bus
+themselves won't be removed. 
 
-Thank you for test the patch. It seems we can't use tasklet here due to 
-mutex_lock.
-And the spinlock may removed, I'm prepare to resend a different patch later.
+So it seems to me there is no s_active related deadlock here, and we
+could just use lock_device_hotplug().
 
-Best Regards.
-micky
-On 04/20/2014 08:20 PM, Borislav Petkov wrote:
-> Hi,
->
-> On Wed, Apr 16, 2014 at 09:50:15AM +0800, micky wrote:
->> From: Micky Ching<micky_ching@realsil.com.cn>
->>
->> To avoid dead lock, we need make sure host->lock is always acquire
->> before pcr->lock. But in irq handler, we acquired pcr->lock in rtsx mfd
->> driver, and sd_isr_done_transfer() is called during pcr->lock already
->> acquired. Since in sd_isr_done_transfer() the only work we do is schdule
->> tasklet, the cmd_tasklet and data_tasklet never conflict, so it is safe
->> to remove spin_lock() here.
->>
->> Signed-off-by: Micky Ching<micky_ching@realsil.com.cn>
->> ---
->>   drivers/mmc/host/rtsx_pci_sdmmc.c |    4 +---
->>   1 file changed, 1 insertion(+), 3 deletions(-)
->>
->> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
->> index 453e1d4..40695e0 100644
->> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
->> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
->> @@ -108,12 +108,10 @@ static void sd_isr_done_transfer(struct platform_device *pdev)
->>   {
->>   	struct realtek_pci_sdmmc *host = platform_get_drvdata(pdev);
->> -	spin_lock(&host->lock);
->>   	if (host->cmd)
->>   		tasklet_schedule(&host->cmd_tasklet);
->> -	if (host->data)
->> +	else if (host->data)
->>   		tasklet_schedule(&host->data_tasklet);
->> -	spin_unlock(&host->lock);
->>   }
->>   static void sd_request_timeout(unsigned long host_addr)
->> -- 
-> Patch wouldn't apply against rc1, so I had to add it by hand, diff
-> below.
->
-> ---
-> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
-> index 5fb994f9a653..d1d65c0d8d2e 100644
-> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
-> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
-> @@ -109,12 +109,10 @@ static void sd_isr_done_transfer(struct platform_device *pdev)
->   {
->   	struct realtek_pci_sdmmc *host = platform_get_drvdata(pdev);
->   
-> -	spin_lock(&host->lock);
->   	if (host->cmd)
->   		tasklet_schedule(&host->cmd_tasklet);
-> -	if (host->data)
-> +	else if (host->data)
->   		tasklet_schedule(&host->data_tasklet);
-> -	spin_unlock(&host->lock);
->   }
->   
->   static void sd_request_timeout(unsigned long host_addr)
-> --
->
-> Still needs more love:
->
-> [   95.112797] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: sdmmc_get_cd: RTSX_BIPR = 0x00010000
-> [   95.115700] mmc0: mmc_rescan_try_freq: trying to init card at 400000 Hz
-> [   95.118040] mmc0: clock 0Hz busmode 2 powermode 1 cs 0 Vdd 21 width 0 timing 0
-> [   95.122504] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: sdmmc_switch_voltage: signal_voltage = 0
-> [   95.139469] mmc0: clock 400000Hz busmode 2 powermode 2 cs 0 Vdd 21 width 0 timing 0
-> [   95.155461] mmc0: starting CMD52 arg 00000c00 flags 00000195
-> [   95.158617] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: sd_send_cmd: SD/MMC CMD 52, arg = 0x00000c00
-> [   95.255497] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: timeout for request
-> [   95.258412] ------------[ cut here ]------------
-> [   95.261163] WARNING: CPU: 0 PID: 3 at kernel/locking/mutex.c:698 __mutex_unlock_slowpath+0x124/0x180()
-> [   95.264120] DEBUG_LOCKS_WARN_ON(in_interrupt())
-> [   95.264222] Modules linked in: cpufreq_stats cpufreq_conservative cpufreq_powersave cpufreq_userspace binfmt_misc uinput ipv6 vfat fat rtsx_pci_sdmmc mmc_core arc4 radeon rtl8192ce snd_hda_codec_conexant snd_hda_codec_generic snd_hda_codec_hdmi snd_hda_intel rtl_pci rtlwifi snd_hda_controller snd_hda_codec mac80211 cfg80211 snd_hwdep snd_pcm drm_kms_helper pcspkr k10temp evdev snd_seq thermal thinkpad_acpi ehci_pci nvram rtsx_pci mfd_core snd_seq_device rtl8192c_common snd_timer ohci_pci ohci_hcd ehci_hcd snd battery ttm ac video button soundcore
-> [   95.264231] CPU: 0 PID: 3 Comm: ksoftirqd/0 Not tainted 3.15.0-rc1+ #1
-> [   95.264235] Hardware name: LENOVO 30515QG/30515QG, BIOS 8RET30WW (1.12 ) 09/15/2011
-> [   95.264246]  0000000000000009 ffff8801198f3c50 ffffffff81522644 ffff8801198f3c98
-> [   95.264254]  ffff8801198f3c88 ffffffff810701fc ffff8800c0ec1230 ffff8800c28b5c30
-> [   95.264262]  ffff8800c0ec1000 ffff8800bea267b0 0000000000000000 ffff8801198f3ce8
-> [   95.264264] Call Trace:
-> [   95.264277]  [<ffffffff81522644>] dump_stack+0x4e/0x7a
-> [   95.264288]  [<ffffffff810701fc>] warn_slowpath_common+0x8c/0xc0
-> [   95.264297]  [<ffffffff8107027c>] warn_slowpath_fmt+0x4c/0x50
-> [   95.264305]  [<ffffffff815294c4>] __mutex_unlock_slowpath+0x124/0x180
-> [   95.264311]  [<ffffffff8152952e>] mutex_unlock+0xe/0x10
-> [   95.264324]  [<ffffffffa0067119>] sd_finish_request+0xd9/0x1c0 [rtsx_pci_sdmmc]
-> [   95.264332]  [<ffffffff810751a0>] tasklet_action+0x110/0x170
-> [   95.264338]  [<ffffffff810756ba>] __do_softirq+0x12a/0x320
-> [   95.264345]  [<ffffffff810758dd>] run_ksoftirqd+0x2d/0x50
-> [   95.264354]  [<ffffffff8109be75>] smpboot_thread_fn+0x175/0x2b0
-> [   95.264363]  [<ffffffff8109bd00>] ? SyS_setgroups+0x150/0x150
-> [   95.264372]  [<ffffffff8109497c>] kthread+0xfc/0x120
-> [   95.264382]  [<ffffffff81094880>] ? kthread_create_on_node+0x1f0/0x1f0
-> [   95.264390]  [<ffffffff8152bfec>] ret_from_fork+0x7c/0xb0
-> [   95.264398]  [<ffffffff81094880>] ? kthread_create_on_node+0x1f0/0x1f0
-> [   95.264403] ---[ end trace e7e46e1611dc934d ]---
->
->
+Signed-off-by: Li Zhong <zhong@linux.vnet.ibm.com>
+---
+ drivers/base/cpu.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/base/cpu.c b/drivers/base/cpu.c
+index 006b1bc..9483225 100644
+--- a/drivers/base/cpu.c
++++ b/drivers/base/cpu.c
+@@ -88,9 +88,7 @@ static ssize_t cpu_probe_store(struct device *dev,
+ 	ssize_t cnt;
+ 	int ret;
+ 
+-	ret = lock_device_hotplug_sysfs();
+-	if (ret)
+-		return ret;
++	lock_device_hotplug();
+ 
+ 	cnt = arch_cpu_probe(buf, count);
+ 
+@@ -106,9 +104,7 @@ static ssize_t cpu_release_store(struct device *dev,
+ 	ssize_t cnt;
+ 	int ret;
+ 
+-	ret = lock_device_hotplug_sysfs();
+-	if (ret)
+-		return ret;
++	lock_device_hotplug();
+ 
+ 	cnt = arch_cpu_release(buf, count);
+ 
+
 
