@@ -1,61 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457AbaDURcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 13:32:22 -0400
-Received: from mail-qc0-f181.google.com ([209.85.216.181]:52109 "EHLO
-	mail-qc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752443AbaDURcQ (ORCPT
+	id S1753551AbaDURdN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 13:33:13 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:60552 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752443AbaDURdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 13:32:16 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140419160947.GA27776@amd.pavel.ucw.cz>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<1397824031-4892-13-git-send-email-lftan@altera.com>
-	<20140419160947.GA27776@amd.pavel.ucw.cz>
-Date: Tue, 22 Apr 2014 01:32:15 +0800
-X-Google-Sender-Auth: 3maNBLwUBo6W2VA4LYnH93Fhn3I
-Message-ID: <CAFiDJ5-e=vRLxyKuzSQO0vg4HBHessv3xE9SdCQ9zFOqYOreZg@mail.gmail.com>
-Subject: Re: [PATCH 16/28] nios2: System calls handling
-From: Ley Foon Tan <lftan@altera.com>
-To: Pavel Machek <pavel@denx.de>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, cltang@codesourcery.com,
-        mtk.manpages@gmail.com
-Content-Type: text/plain; charset=UTF-8
+	Mon, 21 Apr 2014 13:33:09 -0400
+Date: Mon, 21 Apr 2014 13:33:07 -0400 (EDT)
+Message-Id: <20140421.133307.1175284703130571341.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next,v4] hyperv: Add support for virtual Receive
+ Side Scaling (vRSS)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1398100828-4027-1-git-send-email-haiyangz@microsoft.com>
+References: <1398100828-4027-1-git-send-email-haiyangz@microsoft.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 21 Apr 2014 10:33:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 20, 2014 at 12:09 AM, Pavel Machek <pavel@denx.de> wrote:
->> +/* Additional Nios II specific syscalls. */
->> +#define __NR_cacheflush (__NR_arch_specific_syscall)
->> +__SYSCALL(__NR_cacheflush, sys_cacheflush)
->
-> I guess you should Cc: Michael Kerrisk on this one.
-CC him this email.
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Mon, 21 Apr 2014 10:20:28 -0700
 
->
-> Also... explanation why you need this syscall while other
-> architectures live happily without it would be nice.
-This syscall exist in nios2 port since old days and some users already
-used it for sometimes.
-Like mentioned by Greet, 12 our of 28 architectures provide such a syscall.
+> This feature allows multiple channels to be used by each virtual NIC.
+> It is available on Hyper-V host 2012 R2.
+> 
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
->> +/* sys_cacheflush -- flush the processor cache. */
->> +asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len,
->> +                             unsigned int op)
->> +{
->> +     struct vm_area_struct *vma;
->> +
->> +     if (len == 0)
->> +             return 0;
->
-> op is being ignored? You should remove it... or if (op) return -EINVAL
-> if you want future extensions.
-Yes, op argument is being ignored. Okay, will add the return -EINVAL
-if op is non-zero.
-
-Thanks.
-
-Regards
-Ley Foon
+Applied, th anks.
