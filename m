@@ -1,23 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbaDUEgU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:36:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58719 "EHLO
+	id S1752478AbaDUEgP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:36:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58697 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752041AbaDUEey (ORCPT
+	with ESMTP id S1751997AbaDUEeu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:34:54 -0400
+	Mon, 21 Apr 2014 00:34:50 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Tomas Cech <tcech@suse.cz>,
-        Corey Minyard <minyard@acm.org>,
-        openipmi-developer@lists.sourceforge.net,
-        Corey Minyard <cminyard@mvista.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 02/32] Char: ipmi_bt_sm, fix infinite loop
-Date: Sun, 20 Apr 2014 19:13:19 -0700
-Message-Id: <20140421021134.212611245@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.13 09/32] staging: comedi: 8255_pci: initialize MITE data window
+Date: Sun, 20 Apr 2014 19:13:26 -0700
+Message-Id: <20140421021135.142306539@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
 References: <20140421021133.865086647@linuxfoundation.org>
@@ -30,47 +26,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Slaby <jslaby@suse.cz>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit a94cdd1f4d30f12904ab528152731fb13a812a16 upstream.
+commit 268d1e799663b795cba15c64f5d29407786a9dd4 upstream.
 
-In read_all_bytes, we do
+According to National Instruments' PCI-DIO-96/PXI-6508/PCI-6503 User
+Manual, the physical address in PCI BAR1 needs to be OR'ed with 0x80 and
+written to register offset 0xC0 in the "MITE" registers (BAR0).  Do so
+during initialization of the National Instruments boards handled by the
+"8255_pci" driver.  The boards were previously handled by the
+"ni_pcidio" driver, where the initialization was done by `mite_setup()`
+in the "mite" module.  The "mite" module comes with too much extra
+baggage for the "8255_pci" driver to deal with so use a local, simpler
+initialization function.
 
-  unsigned char i;
-  ...
-  bt->read_data[0] = BMC2HOST;
-  bt->read_count = bt->read_data[0];
-  ...
-  for (i = 1; i <= bt->read_count; i++)
-    bt->read_data[i] = BMC2HOST;
-
-If bt->read_data[0] == bt->read_count == 255, we loop infinitely in the
-'for' loop.  Make 'i' an 'int' instead of 'char' to get rid of the
-overflow and finish the loop after 255 iterations every time.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Reported-and-debugged-by: Rui Hui Dian <rhdian@novell.com>
-Cc: Tomas Cech <tcech@suse.cz>
-Cc: Corey Minyard <minyard@acm.org>
-Cc: <openipmi-developer@lists.sourceforge.net>
-Signed-off-by: Corey Minyard <cminyard@mvista.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/char/ipmi/ipmi_bt_sm.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/comedi/drivers/8255_pci.c |   34 ++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
---- a/drivers/char/ipmi/ipmi_bt_sm.c
-+++ b/drivers/char/ipmi/ipmi_bt_sm.c
-@@ -352,7 +352,7 @@ static inline void write_all_bytes(struc
+--- a/drivers/staging/comedi/drivers/8255_pci.c
++++ b/drivers/staging/comedi/drivers/8255_pci.c
+@@ -56,6 +56,7 @@ Configuration Options: not applicable, u
+ #include "../comedidev.h"
  
- static inline int read_all_bytes(struct si_sm_data *bt)
+ #include "8255.h"
++#include "mite.h"
+ 
+ enum pci_8255_boardid {
+ 	BOARD_ADLINK_PCI7224,
+@@ -79,6 +80,7 @@ struct pci_8255_boardinfo {
+ 	const char *name;
+ 	int dio_badr;
+ 	int n_8255;
++	unsigned int has_mite:1;
+ };
+ 
+ static const struct pci_8255_boardinfo pci_8255_boards[] = {
+@@ -126,36 +128,43 @@ static const struct pci_8255_boardinfo p
+ 		.name		= "ni_pci-dio-96",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 4,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PCIDIO96B] = {
+ 		.name		= "ni_pci-dio-96b",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 4,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PXI6508] = {
+ 		.name		= "ni_pxi-6508",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 4,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PCI6503] = {
+ 		.name		= "ni_pci-6503",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 1,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PCI6503B] = {
+ 		.name		= "ni_pci-6503b",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 1,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PCI6503X] = {
+ 		.name		= "ni_pci-6503x",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 1,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PXI_6503] = {
+ 		.name		= "ni_pxi-6503",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 1,
++		.has_mite	= 1,
+ 	},
+ };
+ 
+@@ -163,6 +172,25 @@ struct pci_8255_private {
+ 	void __iomem *mmio_base;
+ };
+ 
++static int pci_8255_mite_init(struct pci_dev *pcidev)
++{
++	void __iomem *mite_base;
++	u32 main_phys_addr;
++
++	/* ioremap the MITE registers (BAR 0) temporarily */
++	mite_base = pci_ioremap_bar(pcidev, 0);
++	if (!mite_base)
++		return -ENOMEM;
++
++	/* set data window to main registers (BAR 1) */
++	main_phys_addr = pci_resource_start(pcidev, 1);
++	writel(main_phys_addr | WENAB, mite_base + MITE_IODWBSR);
++
++	/* finished with MITE registers */
++	iounmap(mite_base);
++	return 0;
++}
++
+ static int pci_8255_mmio(int dir, int port, int data, unsigned long iobase)
  {
--	unsigned char i;
-+	unsigned int i;
+ 	void __iomem *mmio_base = (void __iomem *)iobase;
+@@ -201,6 +229,12 @@ static int pci_8255_auto_attach(struct c
+ 	if (ret)
+ 		return ret;
  
- 	/*
- 	 * length is "framing info", minimum = 4: NetFn, Seq, Cmd, cCode.
++	if (board->has_mite) {
++		ret = pci_8255_mite_init(pcidev);
++		if (ret)
++			return ret;
++	}
++
+ 	is_mmio = (pci_resource_flags(pcidev, board->dio_badr) &
+ 		   IORESOURCE_MEM) != 0;
+ 	if (is_mmio) {
 
 
