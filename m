@@ -1,113 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751438AbaDUCTE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 22:19:04 -0400
-Received: from mga11.intel.com ([192.55.52.93]:48860 "EHLO mga11.intel.com"
+	id S1751446AbaDUCcR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 22:32:17 -0400
+Received: from imap.thunk.org ([74.207.234.97]:51098 "EHLO imap.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751196AbaDUCTC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 22:19:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,895,1389772800"; 
-   d="scan'208";a="516457808"
-Message-ID: <53548008.3040504@intel.com>
-Date: Mon, 21 Apr 2014 10:18:48 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751132AbaDUCcM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Apr 2014 22:32:12 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: [GIT PULL] ext4 fixes for 3.15
+Date: Sun, 20 Apr 2014 22:32:08 -0400
+Message-ID: <nsx4n1nbefr.fsf@closure.thunk.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-CC: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, acme@infradead.org,
-        eranian@google.com, andi@firstfloor.org
-Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
-References: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com> <20140418105354.GA29167@gmail.com>
-In-Reply-To: <20140418105354.GA29167@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@mit.edu
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/18/2014 06:53 PM, Ingo Molnar wrote:
-> 
-> * Yan, Zheng <zheng.z.yan@intel.com> wrote:
-> 
->> This patch adds support for building Intel uncore driver as module.
->> It adds clean-up code and config option for the Intel uncore driver
->>
->> Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
->> ---
->> Changes since v1:
->>  move config option to "General setup/Kernel Performance Events and Counters"
->>
->>  arch/x86/kernel/cpu/Makefile                  |  3 +-
->>  arch/x86/kernel/cpu/perf_event_intel_uncore.c | 48 ++++++++++++++++++++++++---
->>  init/Kconfig                                  | 10 ++++++
->>  3 files changed, 56 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
->> index 7fd54f0..5d3da70 100644
->> --- a/arch/x86/kernel/cpu/Makefile
->> +++ b/arch/x86/kernel/cpu/Makefile
->> @@ -36,7 +36,8 @@ obj-$(CONFIG_CPU_SUP_AMD)		+= perf_event_amd_iommu.o
->>  endif
->>  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_p6.o perf_event_knc.o perf_event_p4.o
->>  obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_lbr.o perf_event_intel_ds.o perf_event_intel.o
->> -obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_uncore.o perf_event_intel_rapl.o
->> +obj-$(CONFIG_CPU_SUP_INTEL)		+= perf_event_intel_rapl.o
->> +obj-$(CONFIG_PERF_X86_INTEL_UNCORE)	+= perf_event_intel_uncore.o
->>  endif
->>  
->>  
->> diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> index 618d502..fd5e883 100644
->> --- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
->> +++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
-> 
-> So I'm not willing to apply this patch until the documentation of 
-> perf_event_intel_uncore.c is improved. Right now the file starts 
-> without a single comment (!). Just lines after lines of code, without 
-> any explanation what it does, what its scope is, etc.
 
-there are comments mark the scope of code for different CPU.
+The following changes since commit d15e03104eb9a4f8e244ab6ed3ca5a107e46db13:
 
-> 
-> How should even a knowledgable user know about what it's all about?
-> 
-> That problem percolates to the Kconfig entry as well:
-> 
+  Merge tag 'xfs-for-linus-3.15-rc1' of git://oss.sgi.com/xfs/xfs (2014-04-04 15:50:08 -0700)
 
-Most of the codes without comments are hardware specific codes. The corresponding
-contents in Intel uncore documents are big tables/lists, nothing tricky/interesting.
-I really don't know how to comment these code.
+are available in the git repository at:
 
-Regards
-Yan, Zheng
- 
 
->> --- a/init/Kconfig
->> +++ b/init/Kconfig
->> @@ -1502,6 +1502,16 @@ config PERF_EVENTS
->>  
->>  	  Say Y if unsure.
->>  
->> +config PERF_X86_INTEL_UNCORE
->> +	default y
->> +	tristate "Intel uncore performance monitoring support"
->> +	depends on PERF_EVENTS && CPU_SUP_INTEL && PCI
->> +	help
->> +	  This option allows kernel to access the Uncore performance
->> +	  monitoring units of Intel processors.
->> +
->> +	  Say Y if unsure.
-> 
-> Firstly, it should probably not be 'default y'.
-> 
-> Secondly, the description is essentially non-existent. What does the 
-> hardware do? Why should users care about uncore PMUs?
-> 
-> This needs to be fixed before we can make this modular.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+  git://git.kernel.org/pub/scm/linux/kernel/git/tytso/ext4.git tags/ext4_for_linus_stable
 
+for you to fetch changes up to 0a04b248532b358b27a8da050642da6f5f304b03:
+
+  ext4: disable COLLAPSE_RANGE for bigalloc (2014-04-19 16:38:21 -0400)
+
+----------------------------------------------------------------
+These are regression and bug fixes for ext4.
+
+We had a number of new features in ext4 during this merge window
+(ZERO_RANGE and COLLAPSE_RANGE fallocate modes, renameat, etc.) so
+there were many more regression and bug fixes this time around.  It
+didn't help that xfstests hadn't been fully updated to fully stress
+test COLLAPSE_RANGE until after -rc1.
+
+----------------------------------------------------------------
+Azat Khuzhin (2):
+      ext4: initialize multi-block allocator before checking block descriptors
+      ext4: fix ext4_count_free_clusters() with EXT4FS_DEBUG and bigalloc enabled
+
+Chen Gang (1):
+      ext4: fix 64-bit number truncation warning
+
+Dmitry Monakhov (2):
+      ext4: fix error handling in ext4_ext_shift_extents
+      ext4: always check ext4_ext_find_extent result
+
+Jan Kara (1):
+      ext4: fix jbd2 warning under heavy xattr load
+
+Kazuya Mio (1):
+      ext4: FIBMAP ioctl causes BUG_ON due to handle EXT_MAX_BLOCKS
+
+Lukas Czerner (10):
+      ext4: remove unnecessary check for APPEND and IMMUTABLE
+      fs: prevent doing FALLOC_FL_ZERO_RANGE on append only file
+      fs: move falloc collapse range check into the filesystem methods
+      fs: disallow all fallocate operation on active swapfile
+      ext4: use truncate_pagecache() in collapse range
+      ext4: use filemap_write_and_wait_range() correctly in collapse range
+      ext4: fix removing status extents in ext4_collapse_range()
+      ext4: no need to truncate pagecache twice in collapse range
+      ext4: discard preallocations after removing space
+      ext4: fix extent merging in ext4_ext_shift_path_extents()
+
+Matthew Wilcox (1):
+      ext4: note the error in ext4_end_bio()
+
+Namjae Jeon (3):
+      ext4: fix COLLAPSE_RANGE test failure in data journalling mode
+      ext4: fix COLLAPSE_RANGE failure with 1KB block size
+      ext4: disable COLLAPSE_RANGE for bigalloc
+
+Theodore Ts'o (6):
+      ext4: update PF_MEMALLOC handling in ext4_write_inode()
+      ext4: move ext4_update_i_disksize() into mpage_map_and_submit_extent()
+      ext4: use i_size_read in ext4_unaligned_aio()
+      ext4: COLLAPSE_RANGE only works on extent-based files
+      ext4: remove temporary shim used to merge COLLAPSE_RANGE and ZERO_RANGE
+      ext4: use EINVAL if not a regular file in ext4_collapse_range()
+
+Younger Liu (1):
+      ext4: return ENOMEM rather than EIO when find_###_page() fails
+
+Zheng Liu (1):
+      ext4: fix byte order problems introduced by the COLLAPSE_RANGE patches
+
+jon ernst (2):
+      ext4: silence sparse check warning for function ext4_trim_extent
+      ext4: enforce we are operating on a regular file in ext4_zero_range()
+
+ fs/ceph/file.c              |   3 --
+ fs/ext4/balloc.c            |   2 +-
+ fs/ext4/ext4.h              |  17 -------
+ fs/ext4/extents.c           | 109 ++++++++++++++++++++++++++++++-------------
+ fs/ext4/extents_status.c    |   2 +-
+ fs/ext4/file.c              |   2 +-
+ fs/ext4/inode.c             |  53 +++++++++++----------
+ fs/ext4/mballoc.c           |  18 +++++--
+ fs/ext4/page-io.c           |   5 +-
+ fs/ext4/super.c             |  51 ++++++++++----------
+ fs/ext4/xattr.c             |  23 +++++++--
+ fs/open.c                   |  21 ++++-----
+ fs/xfs/xfs_file.c           |  10 +++-
+ include/trace/events/ext4.h |   9 ----
+ 14 files changed, 188 insertions(+), 137 deletions(-)
