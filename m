@@ -1,63 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160AbaDUVvE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 17:51:04 -0400
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:38144 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754902AbaDUVsv (ORCPT
+	id S1755181AbaDUVwI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 17:52:08 -0400
+Received: from v094114.home.net.pl ([79.96.170.134]:51583 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753489AbaDUVwC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 17:48:51 -0400
-From: srinivas.kandagatla@linaro.org
-To: linux-mmc@vger.kernel.org
-Cc: Russell King <linux@arm.linux.org.uk>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
-        agross@quicinc.com, linux-arm-msm@vger.kernel.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH RFC 08/12] mmc: mmci: move ST specific register extensions access under condition.
-Date: Mon, 21 Apr 2014 22:48:42 +0100
-Message-Id: <1398116922-31556-1-git-send-email-srinivas.kandagatla@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
-References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
+	Mon, 21 Apr 2014 17:52:02 -0400
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Viresh Kumar <viresh.kumar@linaro.org>,
+        Shawn Guo <shawn.guo@freescale.com>, cpufreq@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel@pengutronix.de
+Subject: Re: [PATCH RESEND 1/2] cpufreq: imx6q: Drop devm_clk/regulator_get usage
+Date: Tue, 22 Apr 2014 00:08:20 +0200
+Message-ID: <6608663.Uaf3xkE0GI@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1397468817-23266-1-git-send-email-p.zabel@pengutronix.de>
+References: <1397468817-23266-1-git-send-email-p.zabel@pengutronix.de>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+On Monday, April 14, 2014 11:46:56 AM Philipp Zabel wrote:
+> This driver is using devres managed calls incorrectly, giving the cpu0
+> device as first parameter instead of the cpufreq platform device.
+> This results in resources not being freed if the cpufreq platform device
+> is unbound, for example if probing has to be deferred for a missing
+> regulator.
+> Supporting probe deferral properly is a prerequisite to enabling the
+> internal LDO bypass on i.MX6 and regulating the CPU voltage with an
+> external regulator.
+> 
+> Acked-by: Viresh Kumar <viresh.kumar@linaro.org>
+> Acked-by: Shawn Guo <shawn.guo@freescale.com>
+> Signed-off-by: Philipp Zabel <p.zabel@pengutronix.de>
+> ---
+> This didn't turn up in v3.15-rc1. Resend in case it fell through the cracks.
 
-This patch moves some of the ST specific register extensions access under
-condition, so that other SOCs like Qualcomm or ARM would not a side effect of
-writing to those reserved/different purpose bits.
+Please resend with a CC to linux-pm@vger.kernel.org (and you can drop cpufreq
+from the CC list).
 
-Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
----
- drivers/mmc/host/mmci.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+> ---
+>  drivers/cpufreq/imx6q-cpufreq.c | 53 ++++++++++++++++++++++++++++++-----------
+>  1 file changed, 39 insertions(+), 14 deletions(-)
+> 
+> diff --git a/drivers/cpufreq/imx6q-cpufreq.c b/drivers/cpufreq/imx6q-cpufreq.c
+> index e27fca8..92a82ec 100644
+> --- a/drivers/cpufreq/imx6q-cpufreq.c
+> +++ b/drivers/cpufreq/imx6q-cpufreq.c
+> @@ -170,25 +170,25 @@ static int imx6q_cpufreq_probe(struct platform_device *pdev)
+>  		return -ENOENT;
+>  	}
+>  
+> -	arm_clk = devm_clk_get(cpu_dev, "arm");
+> -	pll1_sys_clk = devm_clk_get(cpu_dev, "pll1_sys");
+> -	pll1_sw_clk = devm_clk_get(cpu_dev, "pll1_sw");
+> -	step_clk = devm_clk_get(cpu_dev, "step");
+> -	pll2_pfd2_396m_clk = devm_clk_get(cpu_dev, "pll2_pfd2_396m");
+> +	arm_clk = clk_get(cpu_dev, "arm");
+> +	pll1_sys_clk = clk_get(cpu_dev, "pll1_sys");
+> +	pll1_sw_clk = clk_get(cpu_dev, "pll1_sw");
+> +	step_clk = clk_get(cpu_dev, "step");
+> +	pll2_pfd2_396m_clk = clk_get(cpu_dev, "pll2_pfd2_396m");
+>  	if (IS_ERR(arm_clk) || IS_ERR(pll1_sys_clk) || IS_ERR(pll1_sw_clk) ||
+>  	    IS_ERR(step_clk) || IS_ERR(pll2_pfd2_396m_clk)) {
+>  		dev_err(cpu_dev, "failed to get clocks\n");
+>  		ret = -ENOENT;
+> -		goto put_node;
+> +		goto put_clk;
+>  	}
+>  
+> -	arm_reg = devm_regulator_get(cpu_dev, "arm");
+> -	pu_reg = devm_regulator_get(cpu_dev, "pu");
+> -	soc_reg = devm_regulator_get(cpu_dev, "soc");
+> +	arm_reg = regulator_get(cpu_dev, "arm");
+> +	pu_reg = regulator_get(cpu_dev, "pu");
+> +	soc_reg = regulator_get(cpu_dev, "soc");
+>  	if (IS_ERR(arm_reg) || IS_ERR(pu_reg) || IS_ERR(soc_reg)) {
+>  		dev_err(cpu_dev, "failed to get regulators\n");
+>  		ret = -ENOENT;
+> -		goto put_node;
+> +		goto put_reg;
+>  	}
+>  
+>  	/*
+> @@ -201,21 +201,21 @@ static int imx6q_cpufreq_probe(struct platform_device *pdev)
+>  		ret = of_init_opp_table(cpu_dev);
+>  		if (ret < 0) {
+>  			dev_err(cpu_dev, "failed to init OPP table: %d\n", ret);
+> -			goto put_node;
+> +			goto put_reg;
+>  		}
+>  
+>  		num = dev_pm_opp_get_opp_count(cpu_dev);
+>  		if (num < 0) {
+>  			ret = num;
+>  			dev_err(cpu_dev, "no OPP table is found: %d\n", ret);
+> -			goto put_node;
+> +			goto put_reg;
+>  		}
+>  	}
+>  
+>  	ret = dev_pm_opp_init_cpufreq_table(cpu_dev, &freq_table);
+>  	if (ret) {
+>  		dev_err(cpu_dev, "failed to init cpufreq table: %d\n", ret);
+> -		goto put_node;
+> +		goto put_reg;
+>  	}
+>  
+>  	/* Make imx6_soc_volt array's size same as arm opp number */
+> @@ -301,7 +301,24 @@ soc_opp_out:
+>  
+>  free_freq_table:
+>  	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
+> -put_node:
+> +put_reg:
+> +	if (!IS_ERR(arm_reg))
+> +		regulator_put(arm_reg);
+> +	if (!IS_ERR(pu_reg))
+> +		regulator_put(pu_reg);
+> +	if (!IS_ERR(soc_reg))
+> +		regulator_put(soc_reg);
+> +put_clk:
+> +	if (!IS_ERR(arm_clk))
+> +		clk_put(arm_clk);
+> +	if (!IS_ERR(pll1_sys_clk))
+> +		clk_put(pll1_sys_clk);
+> +	if (!IS_ERR(pll1_sw_clk))
+> +		clk_put(pll1_sw_clk);
+> +	if (!IS_ERR(step_clk))
+> +		clk_put(step_clk);
+> +	if (!IS_ERR(pll2_pfd2_396m_clk))
+> +		clk_put(pll2_pfd2_396m_clk);
+>  	of_node_put(np);
+>  	return ret;
+>  }
+> @@ -310,6 +327,14 @@ static int imx6q_cpufreq_remove(struct platform_device *pdev)
+>  {
+>  	cpufreq_unregister_driver(&imx6q_cpufreq_driver);
+>  	dev_pm_opp_free_cpufreq_table(cpu_dev, &freq_table);
+> +	regulator_put(arm_reg);
+> +	regulator_put(pu_reg);
+> +	regulator_put(soc_reg);
+> +	clk_put(arm_clk);
+> +	clk_put(pll1_sys_clk);
+> +	clk_put(pll1_sw_clk);
+> +	clk_put(step_clk);
+> +	clk_put(pll2_pfd2_396m_clk);
+>  
+>  	return 0;
+>  }
+> 
 
-diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 2dc7581..179abfb 100644
---- a/drivers/mmc/host/mmci.c
-+++ b/drivers/mmc/host/mmci.c
-@@ -270,7 +270,8 @@ static void mmci_write_pwrreg(struct mmci_host *host, u32 pwr)
- static void mmci_write_datactrlreg(struct mmci_host *host, u32 datactrl)
- {
- 	/* Keep ST Micro busy mode if enabled */
--	datactrl |= host->datactrl_reg & MCI_ST_DPSM_BUSYMODE;
-+	if (host->hw_designer == AMBA_VENDOR_ST)
-+		datactrl |= host->datactrl_reg & MCI_ST_DPSM_BUSYMODE;
- 
- 	if (host->datactrl_reg != datactrl) {
- 		host->datactrl_reg = datactrl;
-@@ -816,7 +817,8 @@ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
- 			mmci_write_clkreg(host, clk);
- 		}
- 
--	if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50)
-+	if (host->mmc->ios.timing == MMC_TIMING_UHS_DDR50 &&
-+	    host->hw_designer == AMBA_VENDOR_ST)
- 		datactrl |= MCI_ST_DPSM_DDRMODE;
- 
- 	/*
 -- 
-1.7.9.5
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
