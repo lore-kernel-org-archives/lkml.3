@@ -1,54 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454AbaDUOct (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 10:32:49 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:33331 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbaDUObn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 10:31:43 -0400
-From: Manfred Spraul <manfred@colorfullife.com>
-To: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
-        aswin@hp.com, linux-mm@kvack.org,
-        Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH 1/4] ipc/shm.c: check for ulong overflows in shmat
-Date: Mon, 21 Apr 2014 16:26:34 +0200
-Message-Id: <1398090397-2397-2-git-send-email-manfred@colorfullife.com>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+	id S1751620AbaDUOgt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 10:36:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25435 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751073AbaDUOgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 10:36:46 -0400
+Date: Mon, 21 Apr 2014 10:36:30 -0400
+From: Brian Foster <bfoster@redhat.com>
+To: Jeff Liu <jeff.liu@oracle.com>
+Cc: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH] xfs: Fix wrong error codes being returned
+Message-ID: <20140421143629.GB4371@laptop.bfoster>
+References: <1398074687-26548-1-git-send-email-tuomas.tynkkynen@iki.fi>
+ <5355132F.4070303@oracle.com>
+ <20140421130931.GB24813@bfoster.bfoster>
+ <535524BE.7070704@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535524BE.7070704@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-find_vma_intersection does not work as intended if addr+size overflows.
-The patch adds a manual check before the call to find_vma_intersection.
+On Mon, Apr 21, 2014 at 10:01:34PM +0800, Jeff Liu wrote:
+> 
+> On 04/21 2014 21:09 PM, Brian Foster wrote:
+> > On Mon, Apr 21, 2014 at 08:46:39PM +0800, Jeff Liu wrote:
+> >> Hi Tuomas,
+> >>
+> >> On 04/21 2014 18:04 PM, Tuomas Tynkkynen wrote:
+> >>> xfs_{compat_,}attrmulti_by_handle could return an errno with incorrect
+> >>> sign in some cases. While at it, make sure ENOMEM is returned instead of
+> >>> E2BIG if kmalloc fails.
+> >>>
+> >>> Signed-off-by: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
+> >>> ---
+> >>> Compile tested only. For the ERANGE case, I also wonder if it should
+> >>> be assigning to ops[i].am_error instead of error, and/or have a break.
+> >>
+> >> If I understand right, ops[i].am_error is used to save the internal operation result,
+> >> i.e, xfs_attrmult_attr_get{set}... but error is used for the ioctl call results.
+> >> Therefore, assign ERANGE to error is compatible with the VFS set{get}xattr syscalls in
+> >> case of "if (ops[i].am_error == 0 || ops[i].am_error == MAXNAMELEN)".
+> >>
+> > 
+> > But we set 'error' in this case and effectively try to continue the operation
+> > whereas the traditional vfs path returns...
+> 
+> So the error would always be set to ERANGE if one or more attrname is/are invalid.
+> 
 
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
----
- ipc/shm.c | 3 +++
- 1 file changed, 3 insertions(+)
+Right...
 
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 7645961..382e2fb 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -1160,6 +1160,9 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
- 	down_write(&current->mm->mmap_sem);
- 	if (addr && !(shmflg & SHM_REMAP)) {
- 		err = -EINVAL;
-+		if (addr + size < addr)
-+			goto invalid;
-+
- 		if (find_vma_intersection(current->mm, addr, addr + size))
- 			goto invalid;
- 		/*
--- 
-1.9.0
+> > 
+> >> It seems that we don't need to have a break in this case because xfs_attrmulti_by_handle()
+> >> is used to process multiple attrs.  Hence if a given attrname in ops array is invalid,
+> >> the am_error will indicate that with ENOATTR or EFAULT...but it should proceed to loop
+> >> through the left array members.
+> >>
+> > 
+> > Perhaps so if am_error == 0, but it depends on what attr_name contains
+> > at that point (stale data?). Otherwise, we try to proceed with a
+> > truncated name. It looks like the consistent thing to do would be set
+> > am_error to ERANGE and continue (i.e., skip the op and move on to the
+> > next).
+> 
+> If we continue to process a truncated name in case of MAXNAMELEN, it would return
+> EFAULT for SET/REMOVE operations, and ENOATTR for GET operation, which would be
+> set back to am_error, but error still keep as ERANGE which is consistently.
+> 
 
+Ah, we should hit an error in the xfs_attr_name_to_xname() call
+deeper in the callchain, so the truncated name case should not be an
+issue. The am_error == 0 case still looks weird to me.
+
+So we return an error and set am_error if there's an issue with the attr
+name. If there's another error in the op path, we set am_error only and
+continue on. Not being familiar with the interface, I'm curious if there
+is any particular reason for that difference in behavior. It seems like
+the caller should process all of the return codes anyways.
+
+Brian
+
+> 
+> Thanks,
+> -Jeff
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
