@@ -1,85 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751874AbaDUEnm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:43:42 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:24393 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444AbaDUEgM (ORCPT
+	id S1752398AbaDUEgJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:36:09 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58694 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751994AbaDUEet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:36:12 -0400
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <broonie@kernel.org>, <robh+dt@kernel.org>,
-        <linux@arm.linux.org.u>
-CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <wenyou.yang@atmel.com>
-Subject: [PATCH] ARM: dts: at91-sama5d3_xplained: add the regulator device node
-Date: Mon, 21 Apr 2014 12:29:07 +0800
-Message-ID: <1398054547-5834-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 21 Apr 2014 00:34:49 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: [PATCH 3.13 08/32] PCI: Enable INTx in pci_reenable_device() only when MSI/MSI-X not enabled
+Date: Sun, 20 Apr 2014 19:13:25 -0700
+Message-Id: <20140421021135.009538358@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
+References: <20140421021133.865086647@linuxfoundation.org>
+User-Agent: quilt/0.60-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
- arch/arm/boot/dts/at91-sama5d3_xplained.dts |   42 +++++++++++++++++++++++++++
- 1 file changed, 42 insertions(+)
+3.13-stable review patch.  If anyone has any objections, please let me know.
 
-diff --git a/arch/arm/boot/dts/at91-sama5d3_xplained.dts b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-index ce13755..57cdd83 100644
---- a/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-+++ b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-@@ -48,6 +48,48 @@
+------------------
+
+From: Bjorn Helgaas <bhelgaas@google.com>
+
+commit 866d54177b4e671cd52bed1fb487d140d7b691f5 upstream.
+
+Andreas reported that after 1f42db786b14 ("PCI: Enable INTx if BIOS left
+them disabled"), pciehp surprise removal stopped working.
+
+This happens because pci_reenable_device() on the hotplug bridge (used in
+the pciehp_configure_device() path) clears the Interrupt Disable bit, which
+apparently breaks the bridge's MSI hotplug event reporting.
+
+Previously we cleared the Interrupt Disable bit in do_pci_enable_device(),
+which is used by both pci_enable_device() and pci_reenable_device().  But
+we use pci_reenable_device() after the driver may have enabled MSI or
+MSI-X, and we *set* Interrupt Disable as part of enabling MSI/MSI-X.
+
+This patch clears Interrupt Disable only when MSI/MSI-X has not been
+enabled.
+
+Fixes: 1f42db786b14 PCI: Enable INTx if BIOS left them disabled
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=71691
+Reported-and-tested-by: Andreas Noever <andreas.noever@gmail.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/pci/pci.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1134,6 +1134,9 @@ static int do_pci_enable_device(struct p
+ 	if (dev->msi_enabled || dev->msix_enabled)
+ 		return 0;
  
- 			i2c1: i2c@f0018000 {
- 				status = "okay";
++	if (dev->msi_enabled || dev->msix_enabled)
++		return 0;
 +
-+				pmic: act8865@5b {
-+					compatible = "active-semi,act8865";
-+					reg = <0x5b>;
-+					status = "okay";
-+
-+					regulators {
-+						vcc_1v8_reg: DCDC_REG1 {
-+							regulator-name = "VCC_1V8";
-+							regulator-min-microvolt = <1800000>;
-+							regulator-max-microvolt = <1800000>;
-+							regulator-always-on;
-+						};
-+
-+						vcc_1v2_reg: DCDC_REG2 {
-+							regulator-name = "VCC_1V2";
-+							regulator-min-microvolt = <1200000>;
-+							regulator-max-microvolt = <1200000>;
-+							regulator-always-on;
-+						};
-+
-+						vcc_3v3_reg: DCDC_REG3 {
-+							regulator-name = "VCC_3V3";
-+							regulator-min-microvolt = <3300000>;
-+							regulator-max-microvolt = <3300000>;
-+							regulator-always-on;
-+						};
-+
-+						vddfuse_reg: LDO_REG1 {
-+							regulator-name = "FUSE_2V5";
-+							regulator-min-microvolt = <2500000>;
-+							regulator-max-microvolt = <2500000>;
-+						};
-+
-+						vddana_reg: LDO_REG2 {
-+							regulator-name = "VDDANA";
-+							regulator-min-microvolt = <3300000>;
-+							regulator-max-microvolt = <3300000>;
-+							regulator-always-on;
-+						};
-+					};
-+				};
- 			};
- 
- 			macb0: ethernet@f0028000 {
--- 
-1.7.9.5
+ 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+ 	if (pin) {
+ 		pci_read_config_word(dev, PCI_COMMAND, &cmd);
+
 
