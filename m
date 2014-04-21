@@ -1,96 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752342AbaDUPrw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 11:47:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53650 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751178AbaDUPrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 11:47:49 -0400
-Date: Mon, 21 Apr 2014 11:47:46 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Aaron Tomlin <atomlin@redhat.com>, mingo@redhat.com, mingo@kernel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4 v2] nmi: Provide the option to issue an NMI back
- trace to every cpu but current
-Message-ID: <20140421154746.GZ8488@redhat.com>
-References: <20140415075650.GG2195@atomlin.usersys.redhat.com>
- <20140415170202.GA7948@redhat.com>
- <20140415172649.GA10152@redhat.com>
- <20140421132100.GW8488@redhat.com>
- <20140421134154.GA13766@redhat.com>
+	id S1752549AbaDUPsQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 11:48:16 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:36942 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751376AbaDUPsM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 11:48:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140421134154.GA13766@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140421150307.GA4367@redhat.com>
+References: <CALCETrXj6kD3E+vsaWmkrSbaQYTu=c-Hsw640jh4O+FbojYk2g@mail.gmail.com>
+ <20140417171256.GB25334@redhat.com> <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
+ <1397756025.2628.64.camel@willson.li.ssimo.org> <CALCETrVBJFgKwRKBE2jAG6kiGgkJ+MyQiw2nyz5yj0h68kCk9A@mail.gmail.com>
+ <1397759013.2628.86.camel@willson.li.ssimo.org> <20140417185023.GA32527@redhat.com>
+ <1397761817.2628.113.camel@willson.li.ssimo.org> <20140417191646.GA2461@redhat.com>
+ <CALCETrW3F1+3qF3thrAmuoWVbRveBJ2=owpigh4mv6iAafoQCw@mail.gmail.com> <20140421150307.GA4367@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Mon, 21 Apr 2014 08:47:51 -0700
+Message-ID: <CALCETrW5RvbW-Hz_Y7oULP6sEfdhGBh51+mTj4RwobHV-ji+Kg@mail.gmail.com>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Simo Sorce <ssorce@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
+        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 03:41:54PM +0200, Oleg Nesterov wrote:
-> On 04/21, Don Zickus wrote:
-> >
-> > On Tue, Apr 15, 2014 at 07:26:49PM +0200, Oleg Nesterov wrote:
-> > > On 04/15, Oleg Nesterov wrote:
-> > > >
-> > > > Looking at https://lkml.org/lkml/2014/4/4/469... It seems that 2/4 can be
-> > > > simplified, you can simply remove smp_processor_id() from backtrace_mask
-> > > > if !include_self and use apic->send_IPI_mask(backtrace_mask). But this is
-> > > > minor, I won't insist.
-> > >
-> > > And in fact, I do not understand why arch_trigger_all_cpu_backtrace() doesn't
-> > > disable preemption. OK, probably we can simply ignore the race with cpu hotplug.
-> > >
-> > > But it seems that your patch makes the things worse. Lets look at, say,
-> > > numachip_send_IPI_mask_allbutself(). The usage of smp_processor_id() is
-> > > obviously racy but perhaps we do not care again. But we do not want a warning
-> > > from debug_smp_processor_id().
-> >
-> > Good point.  I forgot that going from all cpus down to allbutself,
-> > preemption now matters.
-> 
-> I am not sure it actually matters wrt "show other CPU's traces". If the preemption
-> is possible then the caller can be preempted even before it sends ipi.
-> 
-> OTOH I think it does matter anyway, even without your patch, otherwise the usage
-> of cpu_online_mask is racy and we can hit the "Wait for up to 10 seconds" case.
+On Mon, Apr 21, 2014 at 8:03 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> So what happened to logger use case where logger accepts stream
+> connections and logs the cgroup of client too.
+>
+> W.r.t systemd, looks like journald is accepting connections at
+> /run/systemd/journal/stdout. (stdout_stream_new() and
+> server_open_stdout_socket()).
 
-Hmm,  I understand what you are saying now.
+See stdout_stream_line.  As far as I can tell, journald already
+implements this in mostly sensible manner, with no help from the
+kernel required.
 
-> 
-> Btw...
-> 
-> 	/* Wait for up to 10 seconds for all CPUs to do the backtrace */
-> 	for (i = 0; i < 10 * 1000; i++) {
-> 		if (cpumask_empty(to_cpumask(backtrace_mask)))
-> 			break;
-> 		mdelay(1);
-> 	}
-> 
-> OK, but perhaps we should clear backtrace_mask if we return due to timeout.
+On my system, journalctl -f -o verbose says:
 
-I can look at that.
+Mon 2014-04-21 08:34:52.732065 PDT
+[s=4970edca25b4456d80b00e6e4cefd94b;i=2010;b=2d2454632c0f4f998a8d0158156ab743;m=66f5d274a;t=4f78f3d9a11a1;x=9902671f5a7e7bcc]
+    _UID=0
+    _BOOT_ID=2d2454632c0f4f998a8d0158156ab743
+[...]
+    _GID=500
+    _AUDIT_SESSION=1
+    _AUDIT_LOGINUID=500
+    _SYSTEMD_CGROUP=/user.slice/user-500.slice/session-1.scope
+    _SYSTEMD_SESSION=1
+    _SYSTEMD_OWNER_UID=500
+    _SYSTEMD_UNIT=session-1.scope
+    _SYSTEMD_SLICE=user-500.slice
+    SYSLOG_IDENTIFIER=sudo
+    _COMM=sudo
+    _EXE=/usr/bin/sudo
+    _SELINUX_CONTEXT=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
+    MESSAGE=luto : TTY=pts/1 ; PWD=/home/luto/apps/systemd ; USER=root
+; COMMAND=/usr/bin/journalctl -f -a
+    _PID=32393
+    _CMDLINE=sudo journalctl -f -a
+    _SOURCE_REALTIME_TIMESTAMP=1398094492732065
 
-> 
-> > does disabling preemption help in the cpu
-> > hotplug case?
-> 
-> Yes. But I'd suggest to change your patch to use get_cpu() instead of
-> preempt_disable/smp_processor_id.
+Unfortunately, the code in journald seems to be rather buggy and
+prefers the unit that it derives from the (racy!) cg_path_get_unit
+hack over the unit that is *already knows* (search the journald
+sources for STDOUT_STREAM_UNIT_ID), but the right fix is the FIX THE
+FSCKING JOURNALD BUG, not to change the kernel.
 
-ok.  Originally I was thinking of the remote hotplug cpu case, which
-pre-emption won't block.  But forgot about the local cpu hotplug case.
+To summarize from my reading of how this crap words:
 
+When a unit is created, systemd opens a stream socket pointing at
+/run/systemd/journal/stdout.  It tells journald the unit, along with
+lots of other useful information.  journald records this association
+between the socket and the unit.  Systemd could tell journald the
+cgroup here, too, if it wanted it.
 
-> 
-> And I think it would be better to not discuss this off-list, I added lkml.
-> 
-> Oleg.
-> 
+Systemd then starts the unit, passing it the socket as stdout, if
+configured to do so.
 
-Thanks!
+That unit logs something.  Journald then uses the crappy, racy ucred
+mechanism to resolve the cgroup, login id, unit, etc.
 
-Cheers,
-Don
+Your proposals are to either (a) replace that with an almost-as-buggy
+SO_PASSCGROUP option or to add SO_PEERCGROUP.  The latter would allow
+journald to figure out the cgroup that opened the socket.  The problem
+here is two-fold.  One: systemd already knows the cgroup it intends to
+use, and it can tell journald without kernel help.  Two: Systemd seems
+to open the stdout socket right before setting the cgroup, so the
+kernel's idea of what cgroup opened the socket is crap.
 
+The solution to all of this seems straightforward: fix journald to use
+the information it already has, trusted, without races, from systemd.
+
+--Andy
