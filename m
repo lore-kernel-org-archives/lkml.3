@@ -1,74 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754051AbaDUXsI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 19:48:08 -0400
-Received: from mail-qc0-f174.google.com ([209.85.216.174]:36068 "EHLO
-	mail-qc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752778AbaDUXsF (ORCPT
+	id S1754231AbaDUXwS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 19:52:18 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45447 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaDUXwP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 19:48:05 -0400
+	Mon, 21 Apr 2014 19:52:15 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Tue, 22 Apr 2014 08:53:19 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm/compaction: cleanup isolate_freepages()
+Message-ID: <20140421235319.GD7178@bbox>
+References: <5342BA34.8050006@suse.cz>
+ <1397553507-15330-1-git-send-email-vbabka@suse.cz>
+ <1397553507-15330-2-git-send-email-vbabka@suse.cz>
+ <20140417000745.GF27534@bbox>
+ <20140421124146.c8beacf0d58aafff2085a461@linux-foundation.org>
+ <535590FC.10607@suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CAKb7UviQ6s8wRqwLVnE_A0NOw=WcVdFXG_wWmnZypwuaW_hnuw@mail.gmail.com>
-References: <1398060142-7937-1-git-send-email-acourbot@nvidia.com>
-	<1398060142-7937-8-git-send-email-acourbot@nvidia.com>
-	<CAKb7UviQ6s8wRqwLVnE_A0NOw=WcVdFXG_wWmnZypwuaW_hnuw@mail.gmail.com>
-Date: Tue, 22 Apr 2014 09:48:03 +1000
-Message-ID: <CACAvsv7J7yUaug=CoUfsPg5PXf=ZmwUD9XvCt4CqAvnamQNN9A@mail.gmail.com>
-Subject: Re: [PATCH v2 07/10] drm/nouveau/graph: pad firmware code at load time
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535590FC.10607@suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 4:03 AM, Ilia Mirkin <imirkin@alum.mit.edu> wrote:
-> On Mon, Apr 21, 2014 at 2:02 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->> Pad the microcode to a multiple of 0x40 bytes, otherwise firmware will
->
-> bytes or u32's? From the code, I'm guessing the latter. (Similar
-> concern about comment in the code.)
->
->> fail to run from non-prepadded firmware files.
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> Reviewed-by: Thierry Reding <treding@nvidia.com>
->> ---
->>  drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c | 4 ++++
->>  1 file changed, 4 insertions(+)
->>
->> diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
->> index e5b75f189988..013475c62986 100644
->> --- a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
->> +++ b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
->> @@ -894,6 +894,10 @@ nvc0_graph_init_fw(struct nvc0_graph_priv *priv, u32 fuc_base,
->>                         nv_wr32(priv, fuc_base + 0x0188, i >> 6);
->>                 nv_wr32(priv, fuc_base + 0x0184, code->data[i]);
->>         }
->> +
->> +       /* code must be padded to 0x40 bytes */
->> +       for (; i & 0x3f; i++)
->> +               nv_wr32(priv, fuc_base + 0x0184, 0);
-It's 256 bytes indeed.
+On Mon, Apr 21, 2014 at 11:43:24PM +0200, Vlastimil Babka wrote:
+> On 21.4.2014 21:41, Andrew Morton wrote:
+> >On Thu, 17 Apr 2014 09:07:45 +0900 Minchan Kim <minchan@kernel.org> wrote:
+> >
+> >>Hi Vlastimil,
+> >>
+> >>Below just nitpicks.
+> >It seems you were ignored ;)
+> 
+> Oops, I managed to miss your e-mail, sorry.
+> 
+> >>>  {
+> >>>  	struct page *page;
+> >>>-	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
+> >>>+	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
+> >>Could you add comment for each variable?
+> >>
+> >>unsigned long pfn; /* scanning cursor */
+> >>unsigned long low_pfn; /* lowest pfn free scanner is able to scan */
+> >>unsigned long next_free_pfn; /* start pfn for scaning at next truen */
+> >>unsigned long z_end_pfn; /* zone's end pfn */
+> >>
+> >>
+> >>>@@ -688,11 +688,10 @@ static void isolate_freepages(struct zone *zone,
+> >>>  	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+> >>>  	/*
+> >>>-	 * Take care that if the migration scanner is at the end of the zone
+> >>>-	 * that the free scanner does not accidentally move to the next zone
+> >>>-	 * in the next isolation cycle.
+> >>>+	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
+> >>>+	 * none, the pfn < low_pfn check will kick in.
+> >>        "none" what? I'd like to clear more.
+> 
+> If there are no updates to next_free_pfn within the for cycle. Which
+> matches Andrew's formulation below.
+> 
+> >I did this:
+> 
+> Thanks!
+> 
+> >
+> >--- a/mm/compaction.c~mm-compaction-cleanup-isolate_freepages-fix
+> >+++ a/mm/compaction.c
+> >@@ -662,7 +662,10 @@ static void isolate_freepages(struct zon
+> >  				struct compact_control *cc)
+> >  {
+> >  	struct page *page;
+> >-	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
+> >+	unsigned long pfn;	     /* scanning cursor */
+> >+	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
+> >+	unsigned long next_free_pfn; /* start pfn for scaning at next round */
+> >+	unsigned long z_end_pfn;     /* zone's end pfn */
+> 
+> Yes that works.
+> 
+> >  	int nr_freepages = cc->nr_freepages;
+> >  	struct list_head *freelist = &cc->freepages;
+> >@@ -679,8 +682,8 @@ static void isolate_freepages(struct zon
+> >  	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+> >  	/*
+> >-	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
+> >-	 * none, the pfn < low_pfn check will kick in.
+> >+	 * Seed the value for max(next_free_pfn, pfn) updates. If no pages are
+> >+	 * isolated, the pfn < low_pfn check will kick in.
+> 
+> OK.
+> 
+> >  	 */
+> >  	next_free_pfn = 0;
+> >>>@@ -766,9 +765,9 @@ static void isolate_freepages(struct zone *zone,
+> >>>  	 * so that compact_finished() may detect this
+> >>>  	 */
+> >>>  	if (pfn < low_pfn)
+> >>>-		cc->free_pfn = max(pfn, zone->zone_start_pfn);
+> >>>-	else
+> >>>-		cc->free_pfn = high_pfn;
+> >>>+		next_free_pfn = max(pfn, zone->zone_start_pfn);
+> >>Why we need max operation?
+> >>IOW, what's the problem if we do (next_free_pfn = pfn)?
+> >An answer to this would be useful, thanks.
+> 
+> The idea (originally, not new here) is that the free scanner wants
+> to remember the highest-pfn
+> block where it managed to isolate some pages. If the following page
+> migration fails, these isolated
+> pages might be put back and would be skipped in further compaction
+> attempt if we used just
+> "next_free_pfn = pfn", until the scanners get reset.
+> 
+> The question of course is if such situations are frequent and makes
+> any difference to compaction
+> outcome. And the downsides are potentially useless rescans and code
+> complexity. Maybe Mel
+> remembers how important this is? It should probably be profiled
+> before changes are made.
 
->>  }
->>
->>  static void
->> --
->> 1.9.2
->>
->> _______________________________________________
->> dri-devel mailing list
->> dri-devel@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/dri-devel
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+I didn't mean it. What I mean is code snippet you introduced in 7ed695e069c3c.
+At that time, I didn't Cced so I missed that code so let's ask this time.
+In that patch, you added this.
+
+if (pfn < low_pfn)
+  cc->free_pfn = max(pfn, zone->zone_start_pfn);
+else
+  cc->free_pfn = high_pfn;
+
+So the purpose of max(pfn, zone->zone_start_pfn) is to be detected by
+compact_finished to stop compaction. And your [1/2] patch in this patchset
+always makes free page scanner start on pageblock boundary so when the
+loop in isolate_freepages is finished and pfn is lower low_pfn, the pfn
+would be lower than migration scanner so compact_finished will always detect
+it so I think you could just do
+
+if (pfn < low_pfn)
+  next_free_pfn = pfn;
+
+cc->free_pfn = next_free_pfn;
+
+Or, if you want to clear *reset*,
+if (pfn < lown_pfn)
+  next_free_pfn = zone->zone_start_pfn;
+
+cc->free_pfn = next_free_pfn;
+
+That's why I asked about max operation. What am I missing?
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+-- 
+Kind regards,
+Minchan Kim
