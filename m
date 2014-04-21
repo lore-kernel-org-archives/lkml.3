@@ -1,26 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388AbaDUEhq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:37:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58812 "EHLO
+	id S1753335AbaDUEhn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:37:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58804 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080AbaDUEfR (ORCPT
+	with ESMTP id S1752079AbaDUEfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:35:17 -0400
+	Mon, 21 Apr 2014 00:35:16 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Oleg Nesterov <oleg@redhat.com>,
-        Jan Kratochvil <jan.kratochvil@redhat.com>,
-        Michal Schmidt <mschmidt@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Lennart Poettering <lpoetter@redhat.com>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.13 31/32] wait: fix reparent_leader() vs EXIT_DEAD->EXIT_ZOMBIE race
-Date: Sun, 20 Apr 2014 19:13:48 -0700
-Message-Id: <20140421021138.094644395@linuxfoundation.org>
+        "Fabio M. Di Nitto" <fabbione@fabbione.net>,
+        Jan Engelhardt <jengelh@inai.de>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 3.13 30/32] sparc64: Make sure %pil interrupts are enabled during hypervisor yield.
+Date: Sun, 20 Apr 2014 19:13:47 -0700
+Message-Id: <20140421021137.958964731@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
 References: <20140421021133.865086647@linuxfoundation.org>
@@ -33,78 +28,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: "David S. Miller" <davem@davemloft.net>
 
-commit dfccbb5e49a621c1b21a62527d61fc4305617aca upstream.
+[ Upstream commit cb3042d609e30e6144024801c89be3925106752b ]
 
-wait_task_zombie() first does EXIT_ZOMBIE->EXIT_DEAD transition and
-drops tasklist_lock.  If this task is not the natural child and it is
-traced, we change its state back to EXIT_ZOMBIE for ->real_parent.
+In arch_cpu_idle() we must enable %pil based interrupts before
+potentially invoking the hypervisor cpu yield call.
 
-The last transition is racy, this is even documented in 50b8d257486a
-"ptrace: partially fix the do_wait(WEXITED) vs EXIT_DEAD->EXIT_ZOMBIE
-race".  wait_consider_task() tries to detect this transition and clear
-->notask_error but we can't rely on ptrace_reparented(), debugger can
-exit and do ptrace_unlink() before its sub-thread sets EXIT_ZOMBIE.
+As per the Hypervisor API documentation for cpu_yield:
 
-And there is another problem which were missed before: this transition
-can also race with reparent_leader() which doesn't reset >exit_signal if
-EXIT_DEAD, assuming that this task must be reaped by someone else.  So
-the tracee can be re-parented with ->exit_signal != SIGCHLD, and if
-/sbin/init doesn't use __WALL it becomes unreapable.
+	Interrupts which are blocked by some mechanism other that
+	pstate.ie (for example %pil) are not guaranteed to cause
+	a return from this service.
 
-Change reparent_leader() to update ->exit_signal even if EXIT_DEAD.
-Note: this is the simple temporary hack for -stable, it doesn't try to
-solve all problems, it will be reverted by the next changes.
+It seems that only first generation Niagara chips are hit by this
+bug.  My best guess is that later chips implement this in hardware
+and wake up anyways from %pil events, whereas in first generation
+chips the yield is implemented completely in hypervisor code and
+requires %pil to be enabled in order to wake properly from this
+call.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Jan Kratochvil <jan.kratochvil@redhat.com>
-Reported-by: Michal Schmidt <mschmidt@redhat.com>
-Tested-by: Michal Schmidt <mschmidt@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Lennart Poettering <lpoetter@redhat.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Fixes: 87fa05aeb3a5 ("sparc: Use generic idle loop")
+Reported-by: Fabio M. Di Nitto <fabbione@fabbione.net>
+Reported-by: Jan Engelhardt <jengelh@inai.de>
+Tested-by: Jan Engelhardt <jengelh@inai.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/exit.c |   15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ arch/sparc/kernel/process_64.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -559,9 +559,6 @@ static void reparent_leader(struct task_
- 				struct list_head *dead)
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -58,9 +58,12 @@ void arch_cpu_idle(void)
  {
- 	list_move_tail(&p->sibling, &p->real_parent->children);
--
--	if (p->exit_state == EXIT_DEAD)
--		return;
- 	/*
- 	 * If this is a threaded reparent there is no need to
- 	 * notify anyone anything has happened.
-@@ -569,9 +566,19 @@ static void reparent_leader(struct task_
- 	if (same_thread_group(p->real_parent, father))
- 		return;
+ 	if (tlb_type != hypervisor) {
+ 		touch_nmi_watchdog();
++		local_irq_enable();
+ 	} else {
+ 		unsigned long pstate;
  
--	/* We don't want people slaying init.  */
-+	/*
-+	 * We don't want people slaying init.
-+	 *
-+	 * Note: we do this even if it is EXIT_DEAD, wait_task_zombie()
-+	 * can change ->exit_state to EXIT_ZOMBIE. If this is the final
-+	 * state, do_notify_parent() was already called and ->exit_signal
-+	 * doesn't matter.
-+	 */
- 	p->exit_signal = SIGCHLD;
- 
-+	if (p->exit_state == EXIT_DEAD)
-+		return;
++		local_irq_enable();
 +
- 	/* If it has exited notify the new parent about this child's death. */
- 	if (!p->ptrace &&
- 	    p->exit_state == EXIT_ZOMBIE && thread_group_empty(p)) {
+                 /* The sun4v sleeping code requires that we have PSTATE.IE cleared over
+                  * the cpu sleep hypervisor call.
+                  */
+@@ -82,7 +85,6 @@ void arch_cpu_idle(void)
+ 			: "=&r" (pstate)
+ 			: "i" (PSTATE_IE));
+ 	}
+-	local_irq_enable();
+ }
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
 
 
