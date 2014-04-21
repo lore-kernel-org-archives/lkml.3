@@ -1,62 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754585AbaDUUsj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 16:48:39 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:39483 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754469AbaDUUsg (ORCPT
+	id S1754528AbaDUUyR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 16:54:17 -0400
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:36678 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754467AbaDUUyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 16:48:36 -0400
-Date: Mon, 21 Apr 2014 22:48:35 +0200
-From: Pavel Machek <pavel@denx.de>
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: Ley Foon Tan <lftan@altera.com>, Linux-Arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
-Subject: Re: [PATCH 16/28] nios2: System calls handling
-Message-ID: <20140421204835.GB22181@amd.pavel.ucw.cz>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
- <1397824031-4892-13-git-send-email-lftan@altera.com>
- <20140419160947.GA27776@amd.pavel.ucw.cz>
- <CAFiDJ5-e=vRLxyKuzSQO0vg4HBHessv3xE9SdCQ9zFOqYOreZg@mail.gmail.com>
- <CAFLxGvxXfJNKK=n5tSkjt=zjBT-Auo2mCMf7PQr5skOVxYeW+w@mail.gmail.com>
+	Mon, 21 Apr 2014 16:54:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFLxGvxXfJNKK=n5tSkjt=zjBT-Auo2mCMf7PQr5skOVxYeW+w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140421203207.GA27025@milliways>
+References: <20140421203207.GA27025@milliways>
+Date: Mon, 21 Apr 2014 16:54:15 -0400
+Message-ID: <CADnq5_OhN7B2FG_tHSJq-FCnqVUz4Bwh1EDXwTqCtv0zrAiDKQ@mail.gmail.com>
+Subject: Re: 3.15.0-rc2 radeon HD 7480D [Aruba] blank display
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>> +/* sys_cacheflush -- flush the processor cache. */
-> >>> +asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len,
-> >>> +                             unsigned int op)
-> >>> +{
-> >>> +     struct vm_area_struct *vma;
-> >>> +
-> >>> +     if (len == 0)
-> >>> +             return 0;
-> >>
-> >> op is being ignored? You should remove it... or if (op) return -EINVAL
-> >> if you want future extensions.
-> > Yes, op argument is being ignored. Okay, will add the return -EINVAL
-> > if op is non-zero.
-> 
-> Be careful. If existing applications already use this and maybe pass a
-> dummy value
-> to it you break them.
+On Mon, Apr 21, 2014 at 4:32 PM, Ken Moffat <zarniwhoop@ntlworld.com> wrote:
+>  I've just built 3.15.0-rc2 on this box, and discovered that I get a
+> blank screen.  The boot appears to complete (it sends me information
+> from SMART which is from my last bootscript), and it responds to
+> MagicSysRQ to reboot.  I tried to login and run startx, but that
+> didn't seem to make any difference - possibly something went wrong,
+> it wasn't in my history when I booted a good kernel.
+>
+>  This machine uses a regular old VGA cable to connect it, the
+> following lines in dmesg make me think it has chosen the wrong
+> connector:
 
-Well.. of course, but passing ignored integer to syscall, that can be
-never used is beyond ugly. NAK-level ugly.
+VGA is implemented as a DP to VGA bridge on APUs.
 
-If it is so, you can never ever use the argument, and might as well
-remove it (depending on your calling convention, it should not break
-anything.)
+>
+> Apr 21 19:32:45 bluesbreaker kernel: [    1.273246]
+> [drm:radeon_dp_link_train_cr] *ERROR* displayport link status failed
+> Apr 21 19:32:45 bluesbreaker kernel: [    1.273247]
+> [drm:radeon_dp_link_train_cr] *ERROR* clock recovery failed
+> Apr 21 19:32:45 bluesbreaker kernel: [    1.295116] Console:
+> switching to colour frame buffer device 85x34
+>
+>  On a boot with 3.14.0 and earlier I get a different console size -
+> Apr 21 20:42:44 bluesbreaker kernel: [    1.445992] Console:
+> switching to colour frame buffer device 133x54
+>
+>  My console font is 12x22, and my screen is 1600x1200 but it looks
+> as if 3.15-rc2 has fallen back to trying to use 1024x768.
+>
+>  I'm attaching what look like the relevant parts of the messages
+> from the system logs for 3.15-rc2 and 3.14.0.
+>
+>  Any ideas, please ?  This is an AMD A4-5300 APU and not the world's
+> fastest machine for bisecting :-(
 
-								Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+I'd guess it's either the pll rework patches or the switch to the
+common dp helper code patches.  It would be helpful if you could
+bisect.
+
+Alex
