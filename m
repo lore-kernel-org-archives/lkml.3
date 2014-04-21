@@ -1,77 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754504AbaDUUD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 16:03:59 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:41761 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891AbaDUUDy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 16:03:54 -0400
-Message-ID: <535579A5.2060603@wwwdotorg.org>
-Date: Mon, 21 Apr 2014 14:03:49 -0600
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1754453AbaDUUIK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 16:08:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7790 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754113AbaDUUII (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 16:08:08 -0400
+Date: Mon, 21 Apr 2014 16:07:50 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: acme@kernel.org, jolsa@redhat.com, eranian@google.com,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 0/5] perf: Create hist_entry groups
+Message-ID: <20140421200750.GF8488@redhat.com>
+References: <1397160661-33395-1-git-send-email-dzickus@redhat.com>
+ <878ur7thwh.fsf@sejong.aot.lge.com>
+ <20140415160841.GT8488@redhat.com>
+ <87sipdsmne.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-To: Doug Anderson <dianders@chromium.org>
-CC: Lee Jones <lee.jones@linaro.org>, Stephen Warren <swarren@nvidia.com>,
-        Wolfram Sang <wsa@the-dreams.de>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Dylan Reid <dgreid@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Simon Glass <sjg@chromium.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/7] ARM: tegra: Add the EC i2c tunnel to tegra124-venice2
-References: <1397757570-19750-1-git-send-email-dianders@chromium.org>	<1397757570-19750-8-git-send-email-dianders@chromium.org>	<535560E9.5040108@wwwdotorg.org> <CAD=FV=W8=SLxF=goYm9p3Dr0ZQYy9FzN0hbE+MwWFYGarZB9tw@mail.gmail.com>
-In-Reply-To: <CAD=FV=W8=SLxF=goYm9p3Dr0ZQYy9FzN0hbE+MwWFYGarZB9tw@mail.gmail.com>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87sipdsmne.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2014 01:35 PM, Doug Anderson wrote:
-> Stephen,
+On Wed, Apr 16, 2014 at 05:29:09PM +0900, Namhyung Kim wrote:
+> Hi Don,
 > 
-> On Mon, Apr 21, 2014 at 11:18 AM, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 04/17/2014 11:59 AM, Doug Anderson wrote:
->>> This adds the EC i2c tunnel (and devices under it) to the
->>> tegra124-venice2 device tree.
+> On Tue, 15 Apr 2014 12:08:41 -0400, Don Zickus wrote:
+> > On Tue, Apr 15, 2014 at 12:01:50PM +0900, Namhyung Kim wrote:
+> >> Hi Don,
+> >> 
+> >> On Thu, 10 Apr 2014 16:10:56 -0400, Don Zickus wrote:
+> >> > This patchset creates a new layer of hist entry objects called
+> >> > hist_entry_groups.  The purpose is to help organize the hist_entries
+> >> > into groups before sorting them.  As a result you can gain a
+> >> > new perspective on the data by organizing the groups into cpu, pid
+> >> > or cacheline.  See patch 5 for sample output.
+> >> >
+> >> > The main driver for this patchset is to find a way to sort and display
+> >> > cacheline data in a way that is useful.  My previous attempts seemed
+> >> > hackish until I realized cacheline sorting is really just a collection
+> >> > of hist_entries.  Anyway that was my focus for doing this.
+> >> >
+> >> > The overall idea looks like:
+> >> >
+> >> > evlist
+> >> >   evsel
+> >> >     hists
+> >> >         hist_entry_group  <<< new object
+> >> >           hist_entry
+> >> >
+> >> >
+> >> > Implementing this was not pretty.  I tried to seperate the patches the
+> >> > best I could.  But in order for each patch to compile, patch 4 turned into
+> >> > a 1400 line diff that is mostly noise.
+> >> >
+> >> > Also, this patchset breaks most tools (mainly because I don't understand
+> >> > all the interactions), hence the RFC.  I mostly tested with 'perf report
+> >> >  --stdio' and 'perf mem report --stdio'.
+> >> >
+> >> > Please let me know if this is an interesting idea to go forward with or not.
+> >> 
+> >> I'd like to show you my previous two patchsets.
+> >> 
+> >> The first one is for adding --field option and changing the sort
+> >> behavior little different [1].  I'm about to send a new version to the
+> >> list soon.
+> >> 
+> >> I think what you want to do is sorting output by an order of sort keys
+> >> not just by the overhead.  So with the patchset applied, you can do it
+> >> like:
+> >> 
+> >>   $ perf report --field overhead,pid,dso,sym --sort pid
+> >> 
+> >>   # Overhead         Command:  Pid      Shared Object                             
+> >>   # ........  ....................  .................  ...........................
+> >>   #
+> >>       32.93%         swapper:    0  [kernel.kallsyms]  [k] intel_idle             
+> >>        6.79%         swapper:    0  [kernel.kallsyms]  [k] enqueue_entity         
+> >>        1.42%         swapper:    0  [kernel.kallsyms]  [k] update_sd_lb_stats     
+> >>        1.30%         swapper:    0  [kernel.kallsyms]  [k] timekeeping_max_deferme
+> >>        1.18%         swapper:    0  [kernel.kallsyms]  [k] update_cfs_shares      
+> >>        1.07%         swapper:    0  [kernel.kallsyms]  [k] __irq_work_run         
+> >>        0.96%         swapper:    0  [kernel.kallsyms]  [k] rcu_check_callbacks    
+> >>        0.64%         swapper:    0  [kernel.kallsyms]  [k] irqtime_account_process
+> >>        0.50%         swapper:    0  [kernel.kallsyms]  [k] int_sqrt               
+> >>        0.47%         swapper:    0  [kernel.kallsyms]  [k] __tick_nohz_idle_enter 
+> >>        0.47%         swapper:    0  [kernel.kallsyms]  [k] menu_select            
+> >>        0.35%         swapper:    0  [kernel.kallsyms]  [k] run_timer_softirq      
+> >>        0.16%         swapper:    0  [kernel.kallsyms]  [k] __perf_event_enable    
+> >>        0.12%         swapper:    0  [kernel.kallsyms]  [k] rcu_eqs_exit_common.isr
+> >>        0.50%      watchdog/6:   37  [kernel.kallsyms]  [k] update_sd_lb_stats     
+> >>        3.45%            Xorg: 1335  [kernel.kallsyms]  [k] schedule               
+> >>        6.55%  gnome-terminal: 1903  libc-2.17.so       [.] __strcmp_sse42         
+> >>        1.59%         firefox: 2137  [kernel.kallsyms]  [k] cpuacct_charge         
+> >>        0.50%           emacs: 2473  emacs-24.1         [.] 0x000000000012241a     
+> >>        0.38%           emacs: 2473  emacs-24.1         [.] 0x00000000000bfbf7     
+> >>        0.31%           emacs: 2473  emacs-24.1         [.] 0x00000000001780dd     
+> >>        0.29%           emacs: 2473  emacs-24.1         [.] 0x000000000002eb48     
+> >>        4.40%     kworker/7:1:11028  [kernel.kallsyms]  [k] generic_exec_single    
+> >>        1.30%     kworker/0:0:25667  [kernel.kallsyms]  [k] generic_exec_single    
+> >>        5.93%     kworker/5:1:26447  [kernel.kallsyms]  [k] generic_exec_single    
+> >>        2.06%     kworker/1:2:26653  [kernel.kallsyms]  [k] generic_exec_single    
+> >> 
+> >> As you can see the output is now sorted by pid value (and then overhead,
+> >> dso, sym if previous key resulted in a same value), so swapper (pid 0)
+> >> comes first and then watchdog/6, Xorg, and so on..
+> >
+> > This is probably a workable solution for our c2c tool.  I can play with
+> > this some more.
+> 
+> Cool. :)
 
->>> diff --git a/arch/arm/boot/dts/tegra124-venice2.dts b/arch/arm/boot/dts/tegra124-venice2.dts
->>
->>>       aliases {
->>> +             i2c20 = "/spi@0,7000d400/cros-ec@0/i2c-tunnel";
->>
->> Is that needed? I'd prefer not to add it unless there's a specific
->> reason. I don't think I2C buses need specific names, do they?
-> 
-> It is not strictly needed, but from a usability standpoint it is
-> terribly helpful.  It serves to make it obvious to someone looking at
-> the device that it's _not_ an i2c bus associated with the main SoC.
-> If you don't include a number I believe that the i2c core will pick
-> the first available number.
-> 
-> It seems worth it to save a few people a few hours of head scratching.
-> 
-> ...but this is your dts and if you think it's a terrible idea then
-> I'll remove it.  It looks to be less critical on tegra than it is on
-> exynos (which has ~9 i2c busses, they are numbered in the user manual,
-> and if you have one set to "disable" in the dts then the tunnel will
-> end up getting a very confusing number).
+Sorry for the long delay, I was out last week at our summit.  Not much for
+stable internet access...  Will try to test these patches tomorrow.
 
-My opinion is that the in-kernel I2C bus numbering is an entirely
-unrelated numbering space to the HW controller numbering space precisely
-because of issues like that. DT aliases are more useful for user-visible
-port numbering (e.g. HDMI 0, 1 connectors on a case) than purely
-internal details like this. So, I would leave it out.
+> 
+> >
+> >> 
+> >> But it's not guarantee that the hottest pid comes always first on the
+> >> output, it just sorted it by pid and it gets the result simply because
+> >> the system was idle mostly.  I think you can handle it in your c2c tool
+> >> properly though.
+> >> 
+> >> Another one I'd like to introduce is somewhat similar to your work.
+> >> It's called hierarchy view and groups each entries according to sort
+> >> keys [2].  But it only supported --gtk output at that time (in order not
+> >> to make the hands dirty unnecessarily ;-) and (thus?) didn't get much
+> >> review.  But I think the idea is same and requires less change by just
+> >> adding few fields (rb_root) to hist_entry instead of new data structure.
+> >
+> > Looks promising.
+> >
+> > I keep thinking with all these hist_entry hacks to support flexibility, if
+> > we should just do some bigger changes to the design.  I was thinking along
+> > the lines of combining hist_entries and callchain stuff and maybe output
+> > changes into a unified heirarchy somehow.  This way we could re-use alot
+> > of code and throw away all the silly callchain special cases and just
+> > treat it like a sort_entry.
+> >
+> > I am not sure how that would work (or if really possible), but I was
+> > playing with ideas in my head based on Jiri's suggestion, of something
+> > like a tree layout where 'struct hists' would be sorta like a directory
+> > and would dictate the data type in the 'files' of 'struct hist_entry'.
+> >
+> > The idea was 'struct hists' would normally have a HIST data type and
+> > contain the specific sort_entry(ies) for its heirarchy.  The 'struct
+> > hist_entries' below it would all be the normal HIST data type.  For
+> > callchain support, there would be a 'struct hist' under each 'hist_entry'
+> > that would be of data type CALLCHAIN and its sort specific rules.
+> >
+> > This way we could add display a callchain anywhere in the heirarchy
+> > (instead of the normal last position).
+> 
+> I don't understand what you want to do - having callchains in the middle
+> is not intuitive to me.  Btw, you may want to check my cumulative (or
+> children) work which adds callchains into normal output.
+
+Callchains in the middle was to mimic what I did with our c2c tool.  First
+we sorted with such granularity, there was basically few in any duplicate
+entries.  So displaying a callchain with our tool would look messy.
+Instead we were displaying on 'cachelines'.  As a result I 'merged' each
+entries callchain (after filtering out non-HITMs but kept stores) into a
+cacheline callchain and displayed that.
+
+So the idea was to sort on a cacheline, sort on callchains, then sort on
+additional granularity like iaddr, data source, tids, etc.. so if the user
+wanted to display them, they look sorted.  But it wasn't going to affect
+the overall output.
+
+It may not be the most thought out idea, it was something we had with our
+tool and I was going for flexibility.
+
+> 
+> https://lkml.org/lkml/2014/3/20/50
+
+I think I understand what you are doing here, but I am confused because I
+thought the original call graph percentages were the weighted percents of
+each path.  But now your patch is adding those explicitly.  So I don't
+understand the difference with the original behaviour. :-(
+
+Cheers,
+Don
