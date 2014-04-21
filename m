@@ -1,99 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaDUOYT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 10:24:19 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:62671 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751073AbaDUOYL (ORCPT
+	id S1751603AbaDUOYo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 10:24:44 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:50307 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751120AbaDUOYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 10:24:11 -0400
-Message-ID: <535529FA.8070709@gmail.com>
-Date: Mon, 21 Apr 2014 16:23:54 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Rich Felker <dalias@libc.org>, Jeff Layton <jlayton@redhat.com>
-CC: mtk.manpages@gmail.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        libc-alpha <libc-alpha@sourceware.org>,
-        "Stefan (metze) Metzmacher" <metze@samba.org>
-Subject: Re: [PATCH] locks: rename file-private locks to file-description
- locks
-References: <1398087935-14001-1-git-send-email-jlayton@redhat.com> <20140421140246.GB26358@brightrain.aerifal.cx>
-In-Reply-To: <20140421140246.GB26358@brightrain.aerifal.cx>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Apr 2014 10:24:39 -0400
+Message-ID: <1398090269.3624.116.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: [PATCH 3.13 08/32] PCI: Enable INTx in pci_reenable_device()
+ only when MSI/MSI-X not enabled
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Date: Mon, 21 Apr 2014 15:24:29 +0100
+In-Reply-To: <20140421021135.009538358@linuxfoundation.org>
+References: <20140421021133.865086647@linuxfoundation.org>
+	 <20140421021135.009538358@linuxfoundation.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-b7kC8XaBIV8yPepcPocN"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2014 04:02 PM, Rich Felker wrote:
-> On Mon, Apr 21, 2014 at 09:45:35AM -0400, Jeff Layton wrote:
->> File-private locks have been merged into Linux for v3.15, and *now*
->> people are commenting that the name and macro definitions for the new
->> file-private locks suck.
->>
->> ....and I can't even disagree. The names and command macros do suck.
->>
->> We're going to have to live with these for a long time, so it's
->> important that we be happy with the names before we're stuck with them.
->>
->> The consensus on the lists so far is that they should be rechristened as
->> "file-description locks".
->>
->> This patch makes the following changes that I think are necessary before
->> v3.15 ships:
->>
->> 1) rename the command macros to their new names. These end up in the uapi
->>    headers and so are part of the external-facing API. It turns out that
->>    glibc doesn't actually use the fcntl.h uapi header, but it's hard to
->>    be sure that something else won't. Changing it now is safest.
->>
->> 2) make the the /proc/locks output display these as type "FDLOCK"
->>
->> The rest of the renaming can wait until v3.16, since everything else
->> isn't visible outside of the kernel.
-> 
-> I'm sorry I didn't chime in on this earlier, but I really prefer the
-> (somewhat bad) current naming ("private") to the
-> ridiculously-confusing use of "FD" to mean "file descriptION" when
-> everybody is used to it meaning "file descriptOR". The potential for
-> confusion that these are "file descriptOR locks" (they're not) is much
-> more of a problem, IMO, than the confusion about what "private" means
-> (since it doesn't have an established meaning in this context.
-> 
-> Thus my vote is for leaving things the way the kernel did it already.
 
-There's at least two problems to solve here:
+--=-b7kC8XaBIV8yPepcPocN
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-1) "File private locks" is _meaningless_ as a term. Elsewhere
-   (http://thread.gmane.org/gmane.network.samba.internals/76414/focus=1685376),
-   I suggested various alternatives. "File-handle locks [*]" was my
-   initial preference, and I also suggested "file-description locks"
-   and noted the drawbacks of that term. I think it's insufficient
-   to say "stick with the existing poor name"--if you have
-   something better, then please propose it. (Note by the way
-   that for nearly a decade now, the open(2) man page has followed
-   POSIX in using the term "open file description. Full disclosure:
-   of course, I'm responsible for that change in the man page.)
+On Sun, 2014-04-20 at 19:13 -0700, Greg Kroah-Hartman wrote:
+> 3.13-stable review patch.  If anyone has any objections, please let me kn=
+ow.
+>=20
+> ------------------
+>=20
+> From: Bjorn Helgaas <bhelgaas@google.com>
+>=20
+> commit 866d54177b4e671cd52bed1fb487d140d7b691f5 upstream.
+>=20
+> Andreas reported that after 1f42db786b14 ("PCI: Enable INTx if BIOS left
+> them disabled"), pciehp surprise removal stopped working.
+>=20
+> This happens because pci_reenable_device() on the hotplug bridge (used in
+> the pciehp_configure_device() path) clears the Interrupt Disable bit, whi=
+ch
+> apparently breaks the bridge's MSI hotplug event reporting.
+>=20
+> Previously we cleared the Interrupt Disable bit in do_pci_enable_device()=
+,
+> which is used by both pci_enable_device() and pci_reenable_device().  But
+> we use pci_reenable_device() after the driver may have enabled MSI or
+> MSI-X, and we *set* Interrupt Disable as part of enabling MSI/MSI-X.
+>=20
+> This patch clears Interrupt Disable only when MSI/MSI-X has not been
+> enabled.
+>=20
+> Fixes: 1f42db786b14 PCI: Enable INTx if BIOS left them disabled
+> Link: https://bugzilla.kernel.org/show_bug.cgi?id=3D71691
+> Reported-and-tested-by: Andreas Noever <andreas.noever@gmail.com>
+> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+> CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+>=20
+> ---
+>  drivers/pci/pci.c |    3 +++
+>  1 file changed, 3 insertions(+)
+>=20
+> --- a/drivers/pci/pci.c
+> +++ b/drivers/pci/pci.c
+> @@ -1134,6 +1134,9 @@ static int do_pci_enable_device(struct p
+>  	if (dev->msi_enabled || dev->msix_enabled)
+>  		return 0;
+> =20
+> +	if (dev->msi_enabled || dev->msix_enabled)
+> +		return 0;
+> +
 
-2) The new API constants (F_SETLKP, F_SETLKPW, F_GETLKP) have names
-   that are visually very close to the traditional POSIX lock names 
-   (F_SETLK, F_SETLKW, F_GETLK). That's an accident waiting to happen
-   when someone mistypes in code and/or misses such a misttyping
-   when reading code. That really must be fixed.
+This fix seems to have been applied to two upstream branches and you
+have already applied one instance.
 
-Cheers,
+Ben.
 
-Michael
+>  	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
+>  	if (pin) {
+>  		pci_read_config_word(dev, PCI_COMMAND, &cmd);
+>=20
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe stable" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-[*] "File-handle locks" was considered by Jeff to be a little
-confusing because of the term elsewhere, such as NFS. I take 
-the point, though I'd still prefer it over "File-handle locks".
+--=20
+Ben Hutchings
+Knowledge is power.  France is bacon.
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+--=-b7kC8XaBIV8yPepcPocN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAU1UqHee/yOyVhhEJAQpSxw//eRaI4yr+vda65tSM5coD7wp52PziC+eL
+dH6mhyubPvW8KlBpYGPWoYacI2u46Vy19/8Z8cplc5+eR6TnwHFxEL7+hH60d7eZ
+PtyjYxOAOM2KJheQV7sfPBWh9qVnyID4vzHGoZrssi08QhvvdKg6UUPnue8/FG/0
+/dXD81hjlyiJwOvRu6jJJp7eU53bVW1dDIqUKvTkJlZbbFoVnulZZGc5DZ7k6gf9
+tHL33xRjvflh13Sy5GEL8CQPLlbNsS5icPq1KQQK9KhXHict9wlyJ1ksONYZkfpc
+Mvv8Ig6FRuZ+T98TMSWaq2j3/bxONOkk7KtQVksoHH3eKTr6vOeUwpedu22UtMEC
+vGdktaPlgPY/2F2INfFge2WVa1aUD0iTtytuLSrfYhXRD9a/GAp4vi0EQRjilF1E
+R0Z7RDR1i1TO8Hdk/TwlUamw+Jf2Bgi+QR7RFwRZEjM5PPea72+WVJaRKyLz/8ZW
+Nth0zLdKp6nDdKOeIC1OPMiIOAd/hdiwv/kGLtNb8HnKUzCA8O8zjrPonUXP+S8I
+Lunb5TVRWegRx2K0la2dKgrfxshOibpQELnp3sihLhPAXISIgzUVDGfkcDKNxU7T
+u9okqX0ng/b++kdhR1BJwlUCGvIeMQ1BCoXwoU2z4iWX2u9Qn/hnucJf44yG+oS6
+F4tZqeNW8G0=
+=oFBd
+-----END PGP SIGNATURE-----
+
+--=-b7kC8XaBIV8yPepcPocN--
