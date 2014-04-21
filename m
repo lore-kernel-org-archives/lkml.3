@@ -1,75 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751494AbaDUKwt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 06:52:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57502 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824AbaDUKwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 06:52:47 -0400
-Date: Mon, 21 Apr 2014 18:52:32 +0800
-From: WANG Chao <chaowang@redhat.com>
-To: Kees Cook <keescook@chromium.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: kaslr relocation incompitable with kernel loaded high
-Message-ID: <20140421105232.GB4564@dhcp-17-89.nay.redhat.com>
+	id S1751424AbaDULCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 07:02:24 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:64175 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906AbaDULCW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 07:02:22 -0400
+Message-ID: <5354FAD8.6090402@linaro.org>
+Date: Mon, 21 Apr 2014 19:02:48 +0800
+From: "kefeng.wang" <kefeng.wang@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Will Deacon <will.deacon@arm.com>, Robert Richter <rric@kernel.org>
+CC: Kefeng Wang <kefeng.wang@linaro.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>, oprofile-list@lists.sf.net,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arm: oprofile: add ARMv7 cortex-a15 support
+References: <1398075064-4906-1-git-send-email-kefeng.wang@linaro.org>
+In-Reply-To: <1398075064-4906-1-git-send-email-kefeng.wang@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Kees
+Sorry, please ignore, we have operf tool, this is unnecessary.
 
-When I'm testing kaslr with kdump, I find that when 2nd kernel is loaded
-high, it doesn't boot.
+On 2014-4-21 18:11, Kefeng Wang wrote:
+> ARMv7 cortex-a15 supports Performance Monitor Units, and
+> it could be used by oprofile, add perf_pmu_name pair.
+> 
+> Simply tested on hisilicon hip04 soc.
+> 
+> Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
+> ---
+>  arch/arm/oprofile/common.c |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+> index 99c63d4b..9ede34b 100644
+> --- a/arch/arm/oprofile/common.c
+> +++ b/arch/arm/oprofile/common.c
+> @@ -39,6 +39,7 @@ static struct op_perf_name {
+>  	{ "v6mpcore",		"arm/mpcore"	},
+>  	{ "ARMv7 Cortex-A8",	"arm/armv7"	},
+>  	{ "ARMv7 Cortex-A9",	"arm/armv7-ca9"	},
+> +	{ "ARMv7 Cortex-A15",	"arm/armv7-ca15"},
+>  };
+>  
+>  char *op_name_from_perf_id(void)
+> 
 
-I reserved 128M memory at high with kernel cmdline
-"crashkernel=128M,high crashkernel=0,low", and for which I got:
-
-[    0.000000] Reserving 128MB of memory at 6896MB for crashkernel (System RAM: 6013MB)
-
-Then I load kdump kernel into the reserved memory region, using a local
-modified kexec-tools which is passing e820 in boot_params.
-
-The e820 map of system RAM passed to 2nd kernel:
-
-E820 memmap (of RAM):
-0000000000001000-000000000009e3ff (1)
-00000001af000000-00000001b6f5dfff (1)
-00000001b6fff400-00000001b6ffffff (1)
-
-In which, 2nd kernel is loaded at 0x1b5000000.
-
-After triggerred a system crash, 2nd kernel doesn't boot even with
-"nokaslr" cmdline:
-
-# echo c > /proc/sysrq-trigger
-[..]
-
-I'm in purgatory
-early console in decompress_kernel
-KASLR disabled...
-
-Decompressing Linux... Parsing ELF... Performing relocations... 
-
-32-bit relocation outside of kernel!
-
-
- -- System halted
-
-
-I know 32bit relocation code has recently moved to misc.c and it's a
-ground work for kaslr on x86_64. However it doesn't work out on a kernel
-high loaded case.
-
-I'm not quite familiar with this. But I'm wondering if it makes sense to
-skip handle_relocation() if kaslr doesn't take effects (nokaslr or
-kaslr failed to find suitable area).
-
-Thanks
-WANG Chao
