@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877AbaDUST1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 14:19:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:43520 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753794AbaDUSTR (ORCPT
+	id S1754100AbaDUSUU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 14:20:20 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:36910 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937AbaDUSUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 14:19:17 -0400
-Date: Mon, 21 Apr 2014 20:19:11 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Gregory =?UTF-8?B?Q2zDqW1lbnQ=?= 
-	<gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>
-Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and
- dma-coherent
-Message-ID: <20140421201911.10783191@skate>
-In-Reply-To: <53551E9D.9080107@ti.com>
-References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
-	<20140419182528.414b9b2e@skate>
-	<53551E9D.9080107@ti.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 21 Apr 2014 14:20:11 -0400
+From: Terence Eden <terence.eden@gmail.com>
+To: linux-scsi@vger.kernel.org
+Cc: target-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org, Terence Eden <github.com@shkspr.mobi>
+Subject: [PATCH 2/2] Correcting a spelling mistake which was causing some confusion - "recieved_value" should be "received_value".
+Date: Mon, 21 Apr 2014 19:19:46 +0100
+Message-Id: <1398104386-15313-1-git-send-email-terence.eden@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Santosh Shilimkar,
+From: Terence Eden <github.com@shkspr.mobi>
 
-On Mon, 21 Apr 2014 09:35:25 -0400, Santosh Shilimkar wrote:
 
-> > In mach-mvebu, what we do is that we register a bus notifier on the
-> > platform bus, so that we can set our custom DMA operations for all
-> > platform devices in the system. Should this be done in a different way
-> > after your series?
-> > 
-> Nope. Since you have a very custom SOC specific case, you can continue
-> what you are doing.
+Signed-off-by: Terence Eden <github.com@shkspr.mobi>
+---
+ drivers/target/iscsi/iscsi_target_parameters.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
-True, but as you said, the goal is to remove machine code. So instead
-of having just a 'dma-coherent' property, shouldn't we have a
-dma-method property, which could be dma-method = "coherent" or
-dma-method = "marvell,io-coherent" and therefore allow the DT binding
-to cover more use cases than just the default non-coherent and coherent
-DMA operations?
-
-Best regards,
-
-Thomas
+diff --git a/drivers/target/iscsi/iscsi_target_parameters.c b/drivers/target/iscsi/iscsi_target_parameters.c
+index 4d2e23f..ce88892 100644
+--- a/drivers/target/iscsi/iscsi_target_parameters.c
++++ b/drivers/target/iscsi/iscsi_target_parameters.c
+@@ -1240,7 +1240,7 @@ static int iscsi_check_proposer_state(struct iscsi_param *param, char *value)
+ 	}
+ 
+ 	if (IS_TYPE_NUMBER_RANGE(param)) {
+-		u32 left_val = 0, right_val = 0, recieved_value = 0;
++		u32 left_val = 0, right_val = 0, received_value = 0;
+ 		char *left_val_ptr = NULL, *right_val_ptr = NULL;
+ 		char *tilde_ptr = NULL;
+ 
+@@ -1268,15 +1268,15 @@ static int iscsi_check_proposer_state(struct iscsi_param *param, char *value)
+ 		right_val_ptr = param->value + strlen(left_val_ptr) + 1;
+ 		left_val = simple_strtoul(left_val_ptr, NULL, 0);
+ 		right_val = simple_strtoul(right_val_ptr, NULL, 0);
+-		recieved_value = simple_strtoul(value, NULL, 0);
++		received_value = simple_strtoul(value, NULL, 0);
+ 
+ 		*tilde_ptr = '~';
+ 
+-		if ((recieved_value < left_val) ||
+-		    (recieved_value > right_val)) {
++		if ((received_value < left_val) ||
++		    (received_value > right_val)) {
+ 			pr_err("Illegal response \"%s=%u\", value must"
+ 				" be between %u and %u.\n", param->name,
+-				recieved_value, left_val, right_val);
++				received_value, left_val, right_val);
+ 			return -1;
+ 		}
+ 	} else if (IS_TYPE_VALUE_LIST(param)) {
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.7.9.5
+
