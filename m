@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbaDUPrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 11:47:24 -0400
-Received: from mail-pb0-f44.google.com ([209.85.160.44]:49259 "EHLO
-	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751178AbaDUPrV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 11:47:21 -0400
-Message-ID: <1398095238.19600.36.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: Performance problem with bond interface
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>,
-        =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org,
-        Rama Nichanamatlu <rama.nichanamatlu@oracle.com>,
-        Sergey Linetskiy <sergey.linetskiy@oracle.com>,
-        Vadim Makhervaks <vadim.makhervaks@oracle.com>,
-        Guangyu Sun <guangyu.sun@oracle.com>
-Date: Mon, 21 Apr 2014 08:47:18 -0700
-In-Reply-To: <5e9e32bb-b60e-44d1-82be-28c4d6ec82d5@default>
-References: <5e9e32bb-b60e-44d1-82be-28c4d6ec82d5@default>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
-Mime-Version: 1.0
+	id S1752342AbaDUPrw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 11:47:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53650 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751178AbaDUPrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 11:47:49 -0400
+Date: Mon, 21 Apr 2014 11:47:46 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Aaron Tomlin <atomlin@redhat.com>, mingo@redhat.com, mingo@kernel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4 v2] nmi: Provide the option to issue an NMI back
+ trace to every cpu but current
+Message-ID: <20140421154746.GZ8488@redhat.com>
+References: <20140415075650.GG2195@atomlin.usersys.redhat.com>
+ <20140415170202.GA7948@redhat.com>
+ <20140415172649.GA10152@redhat.com>
+ <20140421132100.GW8488@redhat.com>
+ <20140421134154.GA13766@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140421134154.GA13766@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-21 at 07:23 -0700, Venkat Venkatsubra wrote:
-> We see a performance problem when the slaves of the bond 
-> don't support checksum offload features. What we see is
-> tcp_sendmsg's skb_add_data_nocache ending up not using the
-> csum_and_copy_from_user which would have computed the
-> checksum while copying from user buffer to kernel buffer.
-> Instead it computes later in dev_hard_start_xmit when it
-> figures out the slave doesn't support checksum offload and
-> ends up expensive . 
+On Mon, Apr 21, 2014 at 03:41:54PM +0200, Oleg Nesterov wrote:
+> On 04/21, Don Zickus wrote:
+> >
+> > On Tue, Apr 15, 2014 at 07:26:49PM +0200, Oleg Nesterov wrote:
+> > > On 04/15, Oleg Nesterov wrote:
+> > > >
+> > > > Looking at https://lkml.org/lkml/2014/4/4/469... It seems that 2/4 can be
+> > > > simplified, you can simply remove smp_processor_id() from backtrace_mask
+> > > > if !include_self and use apic->send_IPI_mask(backtrace_mask). But this is
+> > > > minor, I won't insist.
+> > >
+> > > And in fact, I do not understand why arch_trigger_all_cpu_backtrace() doesn't
+> > > disable preemption. OK, probably we can simply ignore the race with cpu hotplug.
+> > >
+> > > But it seems that your patch makes the things worse. Lets look at, say,
+> > > numachip_send_IPI_mask_allbutself(). The usage of smp_processor_id() is
+> > > obviously racy but perhaps we do not care again. But we do not want a warning
+> > > from debug_smp_processor_id().
+> >
+> > Good point.  I forgot that going from all cpus down to allbutself,
+> > preemption now matters.
 > 
-> The bonding interface's "features" has  NETIF_F_HW_CSUM 
-> (or NETIF_F_NO_CSUM in 2.6.39) set which makes the 
-> stack think checksum need not be computed in software.
-> /*
-> * Check whether we can use HW checksum.
-> */
-> if (sk->sk_route_caps & NETIF_F_ALL_CSUM)
->      skb->ip_summed = CHECKSUM_PARTIAL;
+> I am not sure it actually matters wrt "show other CPU's traces". If the preemption
+> is possible then the caller can be preempted even before it sends ipi.
 > 
-> But later in dev_hard_start_xmit it finds out the slave does not
-> support checksumming and decides to compute in software.
-> 
-> /* If packet is not checksummed and device does not
-> * support checksumming for this protocol, complete
-> * checksumming here.
-> */
-> if (skb->ip_summed == CHECKSUM_PARTIAL) {
->          skb_set_transport_header(skb,
->               skb_checksum_start_offset(skb));
->         if (!(features & NETIF_F_ALL_CSUM) &&
->              skb_checksum_help(skb))
->                goto out_kfree_skb;
-> }
-> 
-> We see this problem after this commit:
-> commit 1742f183fc218798dab6fcf0ded25b6608fc0a48
-> Author: MichaÅ<82> MirosÅ<82>aw <mirq-linux@rere.qmqm.pl>
-> Date:   Fri Apr 22 06:31:16 2011 +0000
-> 
->     net: fix netdev_increment_features()
-> 
->     Simplify and fix netdev_increment_features() to conform to what is
->     stated in netdevice.h comments about NETIF_F_ONE_FOR_ALL.
->     Include FCoE segmentation and VLAN-challedged flags in computation.
-> 
->     Signed-off-by: MichaÅ<82> MirosÅ<82>aw <mirq-linux@rere.qmqm.pl>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
-> Prior to that the below code in netdev_increment_features was helping in
-> turning off NETIF_F_NO_CSUM on bond when the slaves don't support it: 
-> /* If device needs checksumming, downgrade to it. */
-> if (all & NETIF_F_NO_CSUM && !(one & NETIF_F_NO_CSUM))
->         all ^= NETIF_F_NO_CSUM | (one & NETIF_F_ALL_CSUM);
-> 
-> The slaves are Mellanox IB adapters. This is on x86_64 platform.
-> 
-> Please let us know if you need any additional information.
+> OTOH I think it does matter anyway, even without your patch, otherwise the usage
+> of cpu_online_mask is racy and we can hit the "Wait for up to 10 seconds" case.
 
-Please CC patch author (I did), instead of sending this to hundred of
-people (linux-kernel ??? netdev is more appropriate...)
+Hmm,  I understand what you are saying now.
 
-Do these NIC really not support TX checksum ?
+> 
+> Btw...
+> 
+> 	/* Wait for up to 10 seconds for all CPUs to do the backtrace */
+> 	for (i = 0; i < 10 * 1000; i++) {
+> 		if (cpumask_empty(to_cpumask(backtrace_mask)))
+> 			break;
+> 		mdelay(1);
+> 	}
+> 
+> OK, but perhaps we should clear backtrace_mask if we return due to timeout.
 
-You did not provide kernel version you use.
+I can look at that.
 
-Please also provide : (using a recent ethtool to get extended offload
-info)
+> 
+> > does disabling preemption help in the cpu
+> > hotplug case?
+> 
+> Yes. But I'd suggest to change your patch to use get_cpu() instead of
+> preempt_disable/smp_processor_id.
 
-ethtool -k bond0 # or the bonding device name
+ok.  Originally I was thinking of the remote hotplug cpu case, which
+pre-emption won't block.  But forgot about the local cpu hotplug case.
 
-ethtool -k eth1  # or the slave name
 
-ethtool -i eth1
+> 
+> And I think it would be better to not discuss this off-list, I added lkml.
+> 
+> Oleg.
+> 
 
-Thanks !
+Thanks!
 
+Cheers,
+Don
 
