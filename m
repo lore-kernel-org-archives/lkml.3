@@ -1,158 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752475AbaDUKNQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 06:13:16 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:11066 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715AbaDUKKT (ORCPT
+	id S1751873AbaDUKY4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 06:24:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55084 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751494AbaDUKYa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 06:10:19 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-d4-5354ee89f452
-From: Sangjung Woo <sangjung.woo@samsung.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Sangjung Woo <sangjung.woo@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Seung-Woo Kim <sw0312.kim@samsung.com>
-Subject: [PATCHv4 2/8] extcon: adc-jack: Use devm_extcon_dev_register()
-Date: Mon, 21 Apr 2014 19:10:09 +0900
-Message-id: <1398075015-19211-3-git-send-email-sangjung.woo@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1398075015-19211-1-git-send-email-sangjung.woo@samsung.com>
-References: <1398075015-19211-1-git-send-email-sangjung.woo@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrHLMWRmVeSWpSXmKPExsWyRsSkULfzXUiwQesuPovrX56zWrx+YWhx
-	edccNovbjSvYLBbsKbGYMfklmwObR9+WVYwenzfJBTBFcdmkpOZklqUW6dslcGV82neQpeCt
-	eMXzaTtZGxi3C3cxcnJICJhIXJn5khXCFpO4cG89G4gtJLCUUeL0ZekuRg6wmrcT/bsYuYDC
-	ixgl9ndOYodw2pgkplxtZwRpYBPQlXhy4DIziC0iECzRcfI4E0gRs8ASRol/J2+xgUwSFnCX
-	eP4qGKSGRUBV4sOePrB6XgEPiZafzxghlilIzJlkAxLmFPCUWDR1ISPEPR4Spz/NZwYZKSHw
-	n01iSfN0Zog5AhLfJh9igeiVldh0gBniF0mJgytusExgFF7AyLCKUTS1ILmgOCm9yFSvODG3
-	uDQvXS85P3cTIzBsT/97NnEH4/0D1ocYk4HGTWSWEk3OB4Z9Xkm8obGZkYWpiamxkbmlGWnC
-	SuK86Y+SgoQE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwTtE9JTjZkjVMPXT5g4Wfv+q1CIeZ
-	Ki7UL+zSn+rUmr2/5btu9l3GC0/LV7dd5n6953Lyi3B3Q072q0vZGee1aKXkaAf7RRrkckUv
-	cPhz5rNQ1hqzymfrypv4zh3IWldz5nZFRODcaumFzDNYRefJbN+lx5LitGvb4VuyC5ZZmQQ/
-	PBL7ME1NiaU4I9FQi7moOBEA3a0WZ3ECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrDIsWRmVeSWpSXmKPExsVy+t9jAd3OdyHBBhums1pc//Kc1eL1C0OL
-	y7vmsFncblzBZrFgT4nFjMkv2RzYPPq2rGL0+LxJLoApqoHRJiM1MSW1SCE1Lzk/JTMv3VbJ
-	OzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdoo5JCWWJOKVAoILG4WEnfDtOE0BA3XQuY
-	xghd35AguB4jAzSQsIYx49O+gywFb8Urnk/bydrAuF24i5GDQ0LAROLtRP8uRk4gU0ziwr31
-	bF2MXBxCAosYJfZ3TmKHcNqYJKZcbWcEqWIT0JV4cuAyM4gtIhAs0XHyOBNIEbPAEkaJfydv
-	sYFMFRZwl3j+KhikhkVAVeLDnj6wel4BD4mWn88YIRYrSMyZZAMS5hTwlFg0dSHYeCGgktOf
-	5jNPYORdwMiwilE0tSC5oDgpPddIrzgxt7g0L10vOT93EyM4Lp5J72Bc1WBxiFGAg1GJh/dF
-	fkiwEGtiWXFl7iFGCQ5mJRHeiPVAId6UxMqq1KL8+KLSnNTiQ4zJQEdNZJYSTc4HxmxeSbyh
-	sYmZkaWRuaGFkbE5acJK4rwHW60DhQTSE0tSs1NTC1KLYLYwcXBKNTBaHTm0+t/s1afapt3J
-	z09dwDBfrkZzSXTor/dCwXdP9e1/Xfva54q0YIQSd+aPo7ZMT6tazt/tvL0xR2/7TIvGXyGb
-	rJSt+V4EvZ9z6Mv6vGS5uuaV376JNko+ufToHNfCLfdb5PyP5O0KNK70VbKYIDn7Rd2KW6/V
-	Zj/12fTasNW5SNv9SeoZJZbijERDLeai4kQAZkguxc8CAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 21 Apr 2014 06:24:30 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: lwn@lwn.net
+Subject: [3.11.y.z extended stable] Linux 3.11.10.8
+Date: Mon, 21 Apr 2014 11:24:25 +0100
+Message-Id: <1398075866-24444-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+X-Extended-Stable: 3.11
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the resource-managed extcon device register function (i.e.
-devm_extcon_dev_register()) instead of extcon_dev_register(). If extcon device
-is attached with this function, that extcon device is automatically unregistered
-on driver detach. That reduces tiresome managing code.
+I am announcing the release of the Linux 3.11.10.8 kernel.
 
-Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
----
- drivers/extcon/extcon-adc-jack.c |   30 +++++++++---------------------
- 1 file changed, 9 insertions(+), 21 deletions(-)
+The updated 3.11.y tree can be found at: 
+  git://kernel.ubuntu.com/ubuntu/linux.git linux-3.11.y
+and can be browsed at:
+  http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=refs/heads/linux-3.11.y;a=shortlog
 
-diff --git a/drivers/extcon/extcon-adc-jack.c b/drivers/extcon/extcon-adc-jack.c
-index e23f1c2..549d820 100644
---- a/drivers/extcon/extcon-adc-jack.c
-+++ b/drivers/extcon/extcon-adc-jack.c
-@@ -105,9 +105,8 @@ static int adc_jack_probe(struct platform_device *pdev)
- 	data->edev.name = pdata->name;
- 
- 	if (!pdata->cable_names) {
--		err = -EINVAL;
- 		dev_err(&pdev->dev, "error: cable_names not defined.\n");
--		goto out;
-+		return -EINVAL;
- 	}
- 
- 	data->edev.dev.parent = &pdev->dev;
-@@ -117,18 +116,16 @@ static int adc_jack_probe(struct platform_device *pdev)
- 	for (i = 0; data->edev.supported_cable[i]; i++)
- 		;
- 	if (i == 0 || i > SUPPORTED_CABLE_MAX) {
--		err = -EINVAL;
- 		dev_err(&pdev->dev, "error: pdata->cable_names size = %d\n",
- 				i - 1);
--		goto out;
-+		return -EINVAL;
- 	}
- 	data->num_cables = i;
- 
- 	if (!pdata->adc_conditions ||
- 			!pdata->adc_conditions[0].state) {
--		err = -EINVAL;
- 		dev_err(&pdev->dev, "error: adc_conditions not defined.\n");
--		goto out;
-+		return -EINVAL;
- 	}
- 	data->adc_conditions = pdata->adc_conditions;
- 
-@@ -138,10 +135,8 @@ static int adc_jack_probe(struct platform_device *pdev)
- 	data->num_conditions = i;
- 
- 	data->chan = iio_channel_get(&pdev->dev, pdata->consumer_channel);
--	if (IS_ERR(data->chan)) {
--		err = PTR_ERR(data->chan);
--		goto out;
--	}
-+	if (IS_ERR(data->chan))
-+		return PTR_ERR(data->chan);
- 
- 	data->handling_delay = msecs_to_jiffies(pdata->handling_delay_ms);
- 
-@@ -149,15 +144,14 @@ static int adc_jack_probe(struct platform_device *pdev)
- 
- 	platform_set_drvdata(pdev, data);
- 
--	err = extcon_dev_register(&data->edev);
-+	err = devm_extcon_dev_register(&pdev->dev, &data->edev);
- 	if (err)
--		goto out;
-+		return err;
- 
- 	data->irq = platform_get_irq(pdev, 0);
- 	if (!data->irq) {
- 		dev_err(&pdev->dev, "platform_get_irq failed\n");
--		err = -ENODEV;
--		goto err_irq;
-+		return -ENODEV;
- 	}
- 
- 	err = request_any_context_irq(data->irq, adc_jack_irq_thread,
-@@ -165,15 +159,10 @@ static int adc_jack_probe(struct platform_device *pdev)
- 
- 	if (err < 0) {
- 		dev_err(&pdev->dev, "error: irq %d\n", data->irq);
--		goto err_irq;
-+		return err;
- 	}
- 
- 	return 0;
--
--err_irq:
--	extcon_dev_unregister(&data->edev);
--out:
--	return err;
- }
- 
- static int adc_jack_remove(struct platform_device *pdev)
-@@ -182,7 +171,6 @@ static int adc_jack_remove(struct platform_device *pdev)
- 
- 	free_irq(data->irq, data);
- 	cancel_work_sync(&data->handler.work);
--	extcon_dev_unregister(&data->edev);
- 
- 	return 0;
- }
+The diff from v3.11.10.7 is posted as a follow-up to this email.
+
+The 3.11.y extended stable tree is maintained by the Ubuntu Kernel Team.
+For more info, see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+
+ -Luis
+
 -- 
-1.7.9.5
+ Makefile                                    |   2 +-
+ arch/m68k/Kconfig                           |   1 +
+ arch/s390/Kconfig                           |   1 +
+ arch/sparc/Kconfig                          |   2 +-
+ arch/sparc/include/asm/uaccess_64.h         |   4 +-
+ arch/sparc/kernel/pci.c                     |   4 +-
+ arch/sparc/kernel/process_64.c              |   4 +-
+ arch/sparc/kernel/syscalls.S                |   4 +-
+ arch/x86/crypto/ghash-clmulni-intel_asm.S   |  29 ------
+ arch/x86/crypto/ghash-clmulni-intel_glue.c  |  14 ++-
+ drivers/cpufreq/cpufreq_governor.c          |   3 +
+ drivers/cpufreq/powernow-k6.c               | 147 +++++++++++++++++++++++-----
+ drivers/cpuidle/driver.c                    |   3 +-
+ drivers/input/mouse/cypress_ps2.c           |   1 -
+ drivers/isdn/isdnloop/isdnloop.c            |  23 +++--
+ drivers/net/ethernet/broadcom/tg3.c         |   5 +-
+ drivers/net/usb/usbnet.c                    |  33 ++++---
+ drivers/net/vxlan.c                         |   3 +
+ drivers/net/xen-netback/netback.c           |   4 +-
+ drivers/vhost/net.c                         |  20 +++-
+ include/linux/futex.h                       |   4 +
+ include/linux/usb/usbnet.h                  |   2 +-
+ include/net/netfilter/nf_conntrack_extend.h |   4 +-
+ include/net/sock.h                          |   5 +
+ init/Kconfig                                |   7 ++
+ kernel/futex.c                              |  14 ++-
+ lib/nlattr.c                                |  10 +-
+ net/8021q/vlan.c                            |   4 +-
+ net/8021q/vlan_dev.c                        |   6 +-
+ net/bridge/br_multicast.c                   |   6 ++
+ net/bridge/netfilter/ebtables.c             |   5 +-
+ net/core/netpoll.c                          |   2 +-
+ net/core/rtnetlink.c                        |  10 +-
+ net/core/sock.c                             |   5 +-
+ net/ipv4/inet_fragment.c                    |   5 +-
+ net/ipv4/ipmr.c                             |  13 ++-
+ net/ipv4/netfilter/arp_tables.c             |   6 +-
+ net/ipv4/netfilter/ip_tables.c              |   6 +-
+ net/ipv4/tcp_output.c                       |  11 +++
+ net/ipv6/addrconf.c                         |   5 +-
+ net/ipv6/exthdrs_offload.c                  |   4 +-
+ net/ipv6/icmp.c                             |   2 +-
+ net/ipv6/ip6_output.c                       |  18 ++--
+ net/ipv6/ip6mr.c                            |  13 ++-
+ net/ipv6/mcast.c                            |  11 ++-
+ net/ipv6/netfilter/ip6_tables.c             |   6 +-
+ net/ipv6/ping.c                             |   4 +-
+ net/ipv6/route.c                            |   2 +-
+ net/netfilter/nf_conntrack_proto_dccp.c     |   6 +-
+ net/rds/iw.c                                |   3 +-
+ net/sctp/sm_make_chunk.c                    |   4 +-
+ net/sctp/sm_statefuns.c                     |   5 -
+ net/socket.c                                |   4 +
+ net/unix/af_unix.c                          |  17 +++-
+ security/selinux/hooks.c                    |  36 +++++--
+ 55 files changed, 391 insertions(+), 181 deletions(-)
+
+Andrey Vagin (1):
+      netfilter: nf_conntrack: reserve two bytes for nf_ct_ext->len
+
+Anton Nayshtut (1):
+      ipv6: Fix exthdrs offload registration.
+
+Ard Biesheuvel (1):
+      crypto: ghash-clmulni-intel - use C implementation for setkey()
+
+Dan Carpenter (1):
+      isdnloop: several buffer overflows
+
+Daniel Borkmann (2):
+      netfilter: nf_conntrack_dccp: fix skb_header_pointer API usages
+      net: sctp: fix skb leakage in COOKIE ECHO path of chunk->auth_chunk
+
+Daniel Fu (1):
+      cpuidle: Check the result of cpuidle_get_driver() against NULL
+
+Dave Kleikamp (2):
+      Revert "sparc64: Fix __copy_{to,from}_user_inatomic defines."
+      sparc64: don't treat 64-bit syscall return codes as 32-bit
+
+David S. Miller (1):
+      sparc64: Make sure %pil interrupts are enabled during hypervisor yield.
+
+David Stevens (1):
+      vxlan: fix potential NULL dereference in arp_reduce()
+
+Eric Dumazet (2):
+      net: unix: non blocking recvmsg() should not return -EINTR
+      tcp: tcp_release_cb() should release socket ownership
+
+Finn Thain (1):
+      m68k: Skip futex_atomic_cmpxchg_inatomic() test
+
+Florian Westphal (1):
+      inet: frag: make sure forced eviction removes all frags
+
+Hannes Frederic Sowa (1):
+      ipv6: some ipv6 statistic counters failed to disable bh
+
+Hans de Goede (1):
+      Input: cypress_ps2 - don't report as a button pads
+
+Heiko Carstens (1):
+      futex: Allow architectures to skip futex_atomic_cmpxchg_inatomic() test
+
+Heiner Kallweit (1):
+      ipv6: Avoid unnecessary temporary addresses being generated
+
+Li RongQing (1):
+      netpoll: fix the skb check in pkt_is_ns
+
+Linus Lüssing (1):
+      bridge: multicast: add sanity check for query source addresses
+
+Luis Henriques (1):
+      Linux 3.11.10.8
+
+Matthew Leach (1):
+      net: socket: error on a negative msg_namelen
+
+Michael S. Tsirkin (2):
+      vhost: fix total length when packets are too short
+      vhost: validate vhost_get_vq_desc return value
+
+Mikulas Patocka (3):
+      powernow-k6: disable cache when changing frequency
+      powernow-k6: correctly initialize default parameters
+      powernow-k6: reorder frequencies
+
+Nicolas Dichtel (3):
+      rtnetlink: fix fdb notification flags
+      ipmr: fix mfc notification flags
+      ip6mr: fix mfc notification flags
+
+Nikolay Aleksandrov (1):
+      net: fix for a race condition in the inet frag code
+
+Oliver Neukum (1):
+      usbnet: include wait queue head in device structure
+
+Pablo Neira (1):
+      netlink: don't compare the nul-termination in nla_strcmp
+
+Paul Durrant (1):
+      xen-netback: remove pointless clause from if statement
+
+Paul Gortmaker (1):
+      sparc32: fix build failure for arch_jump_label_transform
+
+Paul Moore (1):
+      selinux: correctly label /proc inodes in use before the policy is loaded
+
+Peter Boström (1):
+      vlan: Set correct source MAC address with TX VLAN offload enabled
+
+Sabrina Dubroca (1):
+      ipv6: don't set DST_NOCOUNT for remotely added routes
+
+Sasha Levin (1):
+      rds: prevent dereference of a NULL device in rds_iw_laddr_check
+
+Stephen Boyd (1):
+      cpufreq: Fix timer/workqueue corruption due to double queueing
+
+Thomas Graf (1):
+      netfilter: Can't fail and free after table replacement
+
+Vlad Yasevich (2):
+      tg3: Do not include vlan acceleration features in vlan_features
+      vlan: Set hard_header_len according to available acceleration
+
+YOSHIFUJI Hideaki / 吉藤英明 (1):
+      isdnloop: Validate NUL-terminated strings from user.
+
+lucien (1):
+      ipv6: ip6_append_data_mtu do not handle the mtu of the second fragment properly
+
+oftedal (1):
+      sparc: PCI: Fix incorrect address calculation of PCI Bridge windows on Simba-bridges
 
