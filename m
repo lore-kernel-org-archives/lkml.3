@@ -1,72 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833AbaDUV2Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 17:28:16 -0400
-Received: from mail-bn1bon0143.outbound.protection.outlook.com ([157.56.111.143]:28870
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754482AbaDUV1p convert rfc822-to-8bit (ORCPT
+	id S1754850AbaDUV2k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 17:28:40 -0400
+Received: from mail-yk0-f175.google.com ([209.85.160.175]:65472 "EHLO
+	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754696AbaDUV0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 17:27:45 -0400
-Message-ID: <1398116021.12716.1.camel@dinh-ubuntu>
-Subject: Re: [PATCHv2 3/3] edac: altera: Add SDRAM EDAC support for
- CycloneV/ArriaV
-From: Thor Thayer <tthayer@altera.com>
-To: Pavel Machek <pavel@ucw.cz>
-CC: <robherring2@gmail.com>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org>, <galak@codeaurora.org>,
-        <rob@landley.net>, <linux@arm.linux.org.uk>, <dinguyen@altera.com>,
-        <dougthompson@xmission.com>, <grant.likely@linaro.org>,
-        <tthayer.linux@gmail.com>, Borislav Petkov <bp@alien8.de>,
-        <devicetree@vger.kernel.org>, <linux-edac@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Mon, 21 Apr 2014 16:33:41 -0500
-In-Reply-To: <20140421102750.GA27209@amd.pavel.ucw.cz>
-References: <1397604610-20931-1-git-send-email-tthayer@altera.com>
-	 <1397604610-20931-5-git-send-email-tthayer@altera.com>
-	 <20140421102750.GA27209@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(24454002)(199002)(51704005)(189002)(377424004)(74502001)(16796002)(74662001)(19580395003)(19580405001)(76176999)(31966008)(76482001)(77982001)(46102001)(20776003)(47776003)(42186004)(44976005)(83322001)(77156001)(6806004)(79102001)(33646001)(50226001)(4396001)(93916002)(87286001)(84676001)(33716001)(81542001)(92726001)(92566001)(80022001)(86362001)(62966002)(80976001)(2009001)(97736001)(50466002)(23676002)(81342001)(87936001)(89996001)(83072002)(85852003)(99396002)(50986999)(88136002)(217873001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1AFFO11HUB015;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:ADF2FE6D.AD281F18.49E19F93.90FFDBD9.201AD;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 0188D66E61
+	Mon, 21 Apr 2014 17:26:38 -0400
+From: Alex Elder <elder@linaro.org>
+To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org,
+        devicetree@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 RESEND 2/5] ARM: dts: revise kona clock binding document
+Date: Mon, 21 Apr 2014 16:26:24 -0500
+Message-Id: <1398115587-32529-3-git-send-email-elder@linaro.org>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398115587-32529-1-git-send-email-elder@linaro.org>
+References: <1398115587-32529-1-git-send-email-elder@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-21 at 12:27 +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > From: Thor Thayer <tthayer@altera.com>
-> > 
-> > Added EDAC support for reporting ECC errors of CycloneV
-> > and ArriaV SDRAM controller.
-> > - The SDRAM Controller registers are used by the FPGA bridge so
-> >   these are accessed through the syscon interface.
-> > - The configuration of the SDRAM memory size for the EDAC framework
-> >   is discovered from the SDRAM Controller registers.
-> > - Documentation of the bindings in devicetree/bindings/arm/altera/
-> >   socfpga-sdram-edac.txt
-> > - Correction of single bit errors, detection of double bit errors.
-> > 
-> > ---
-> > v2: Use the SDRAM controller registers to calculate memory size
-> >     instead of the Device Tree. Update To & Cc list. Add maintainer 
-> >     information.
-> 
-> I'd reduce number of *s in the messages, otherwise
-> 
-> Reviewed-by: Pavel Machek <pavel@ucw.cz>
-> 
-> for whole series.
-> 								Pavel
-> 
-Hi Pavel.
+The next patch defines a binding for a new Broadcom SoC that uses
+Kona style CCUs for its clocks.  Update the generic Kona clock
+binding document so it's more natural to accomodate the definitions
+of additional SoC families.
 
-Noted - I will make the change. Thank you for reviewing.
+Specifically:
+    - Define the compatible string values generically, referring
+      to specific per-model values later in the document.
+    - Put the device tree example immediately after the required
+      properties listing, before the tables of SoC-specific values.
+    - Clearly identify the start of the section defining specific
+      values related to the BCM281XX family
+    - Add a list of the specific BCM281XX family compatible strings.
+    - Reword the description of the table slightly.
 
-Thor
+Signed-off-by: Alex Elder <elder@linaro.org>
+---
+ .../devicetree/bindings/clock/bcm-kona-clock.txt   | 87 ++++++++++++----------
+ 1 file changed, 47 insertions(+), 40 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+index 56d1f49..ebe3ab6 100644
+--- a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
++++ b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
+@@ -10,12 +10,12 @@ This binding uses the common clock binding:
+ 
+ Required properties:
+ - compatible
+-	Shall have one of the following values:
+-	- "brcm,bcm11351-root-ccu"
+-	- "brcm,bcm11351-aon-ccu"
+-	- "brcm,bcm11351-hub-ccu"
+-	- "brcm,bcm11351-master-ccu"
+-	- "brcm,bcm11351-slave-ccu"
++	Shall have a value of the form "brcm,<model>-<which>-ccu",
++	where <model> is a Broadcom SoC model number and <which> is
++	the name of a defined CCU.  For example:
++	    "brcm,bcm11351-root-ccu"
++	The compatible strings used for each supported SoC family
++	are defined below.
+ - reg
+ 	Shall define the base and range of the address space
+ 	containing clock control registers
+@@ -26,12 +26,48 @@ Required properties:
+ 	Shall be an ordered list of strings defining the names of
+ 	the clocks provided by the CCU.
+ 
++Device tree example:
+ 
+-BCM281XX family SoCs use Kona CCUs.  The following table defines
+-the set of CCUs and clock specifiers for BCM281XX clocks.  When
+-a clock consumer references a clocks, its symbolic specifier
+-(rather than its numeric index value) should be used.  These
+-specifiers are defined in "include/dt-bindings/clock/bcm281xx.h".
++	slave_ccu: slave_ccu {
++		compatible = "brcm,bcm11351-slave-ccu";
++		reg = <0x3e011000 0x0f00>;
++		#clock-cells = <1>;
++		clock-output-names = "uartb",
++				     "uartb2",
++				     "uartb3",
++				     "uartb4";
++	};
++
++	ref_crystal_clk: ref_crystal {
++		#clock-cells = <0>;
++		compatible = "fixed-clock";
++		clock-frequency = <26000000>;
++	};
++
++	uart@3e002000 {
++		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
++		status = "disabled";
++		reg = <0x3e002000 0x1000>;
++		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
++		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
++		reg-shift = <2>;
++		reg-io-width = <4>;
++	};
++
++BCM281XX family
++---------------
++CCU compatible string values for SoCs in the BCM281XX family are:
++    "brcm,bcm11351-root-ccu"
++    "brcm,bcm11351-aon-ccu"
++    "brcm,bcm11351-hub-ccu"
++    "brcm,bcm11351-master-ccu"
++    "brcm,bcm11351-slave-ccu"
++
++The following table defines the set of CCUs and clock specifiers for
++BCM281XX family clocks.  When a clock consumer references a clocks,
++its symbolic specifier (rather than its numeric index value) should
++be used.  These specifiers are defined in:
++    "include/dt-bindings/clock/bcm281xx.h"
+ 
+     CCU     Clock           Type    Index   Specifier
+     ---     -----           ----    -----   ---------
+@@ -62,32 +98,3 @@ specifiers are defined in "include/dt-bindings/clock/bcm281xx.h".
+     slave   bsc2            peri      7     BCM281XX_SLAVE_CCU_BSC2
+     slave   bsc3            peri      8     BCM281XX_SLAVE_CCU_BSC3
+     slave   pwm             peri      9     BCM281XX_SLAVE_CCU_PWM
+-
+-
+-Device tree example:
+-
+-	slave_ccu: slave_ccu {
+-		compatible = "brcm,bcm11351-slave-ccu";
+-		reg = <0x3e011000 0x0f00>;
+-		#clock-cells = <1>;
+-		clock-output-names = "uartb",
+-				     "uartb2",
+-				     "uartb3",
+-				     "uartb4";
+-	};
+-
+-	ref_crystal_clk: ref_crystal {
+-		#clock-cells = <0>;
+-		compatible = "fixed-clock";
+-		clock-frequency = <26000000>;
+-	};
+-
+-	uart@3e002000 {
+-		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
+-		status = "disabled";
+-		reg = <0x3e002000 0x1000>;
+-		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
+-		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
+-		reg-shift = <2>;
+-		reg-io-width = <4>;
+-	};
+-- 
+1.9.1
 
