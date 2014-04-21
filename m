@@ -1,107 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751404AbaDUJy7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 05:54:59 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41566 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750824AbaDUJy4 (ORCPT
+	id S1751560AbaDUJz7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 05:55:59 -0400
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:45885 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbaDUJzY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 05:54:56 -0400
-Date: Mon, 21 Apr 2014 11:54:43 +0200
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Wenyou Yang <wenyou.yang@atmel.com>
-Cc: nicolas.ferre@atmel.com, broonie@kernel.org, robh+dt@kernel.org,
-        linux@arm.linux.org.u, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: dts: at91-sama5d3_xplained: add the regulator
- device node
-Message-ID: <20140421095443.GA3461@piout.net>
-References: <1398054547-5834-1-git-send-email-wenyou.yang@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398054547-5834-1-git-send-email-wenyou.yang@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Apr 2014 05:55:24 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de
+Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 00/19] tick: cleanups (Shouldn't change code behavior)
+Date: Mon, 21 Apr 2014 15:24:56 +0530
+Message-Id: <cover.1398072824.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+As suggested by you (https://lkml.org/lkml/2014/4/14/797), this is the second
+lot of changes I have. I have divided the earlier patchset into three parts:
+- Bugfixes, already merged
+- Code cleanups which shouldn't have any functional change
+- Code cleanups which may have any functional change
 
-On 21/04/2014 at 12:29:07 +0800, Wenyou Yang wrote :
-> Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-> ---
->  arch/arm/boot/dts/at91-sama5d3_xplained.dts |   42 +++++++++++++++++++++++++++
->  1 file changed, 42 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/at91-sama5d3_xplained.dts b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-> index ce13755..57cdd83 100644
-> --- a/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-> +++ b/arch/arm/boot/dts/at91-sama5d3_xplained.dts
-> @@ -48,6 +48,48 @@
->  
->  			i2c1: i2c@f0018000 {
->  				status = "okay";
-> +
-> +				pmic: act8865@5b {
-> +					compatible = "active-semi,act8865";
-> +					reg = <0x5b>;
-> +					status = "okay";
-> +
-> +					regulators {
-> +						vcc_1v8_reg: DCDC_REG1 {
-> +							regulator-name = "VCC_1V8";
-> +							regulator-min-microvolt = <1800000>;
-> +							regulator-max-microvolt = <1800000>;
-> +							regulator-always-on;
-> +						};
-> +
-> +						vcc_1v2_reg: DCDC_REG2 {
-> +							regulator-name = "VCC_1V2";
-> +							regulator-min-microvolt = <1200000>;
-> +							regulator-max-microvolt = <1200000>;
-> +							regulator-always-on;
-> +						};
-> +
-> +						vcc_3v3_reg: DCDC_REG3 {
-> +							regulator-name = "VCC_3V3";
-> +							regulator-min-microvolt = <3300000>;
-> +							regulator-max-microvolt = <3300000>;
-> +							regulator-always-on;
-> +						};
-> +
-> +						vddfuse_reg: LDO_REG1 {
-> +							regulator-name = "FUSE_2V5";
-> +							regulator-min-microvolt = <2500000>;
-> +							regulator-max-microvolt = <2500000>;
-> +						};
-> +
-> +						vddana_reg: LDO_REG2 {
-> +							regulator-name = "VDDANA";
-> +							regulator-min-microvolt = <3300000>;
-> +							regulator-max-microvolt = <3300000>;
-> +							regulator-always-on;
+This patchset is targeting the second part now. Its just about moving the code
+around to make it more readable and obvious. Not removing any code at all, that
+will be addressed in next series.
 
-I'm pretty sure that one is not always on as you actually have to
-configure it to get any voltage. Are you sure you want to set the
-regulator-always-on property here ?
+V1->V2: Actually V1 was never reviewed and so it is mostly a resend of V1. Some
+rearrangement of patches is done though.
 
-> +						};
-> +					};
-> +				};
->  			};
->  
->  			macb0: ethernet@f0028000 {
-> -- 
-> 1.7.9.5
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+Viresh Kumar (19):
+  tick: trivial cleanups
+  tick: update doc style comments for 'struct tick_sched'
+  tick: rearrange members of 'struct tick_sched'
+  tick: move declaration of 'tick_cpu_device' to tick.h
+  tick: move definition of tick_get_device() to tick.h
+  tick: create tick_get_cpu_device() to get tick_cpu_device on this cpu
+  tick: initialize variables during their definitions
+  tick-oneshot: move tick_is_oneshot_available() to tick-oneshot.c
+  tick-oneshot: remove tick_resume_oneshot()
+  tick-common: call tick_check_percpu() from tick_check_preferred()
+  tick-common: remove tick_check_replacement()
+  tick-common: don't pass 'cpu' & 'cpumask' to tick_setup_device()
+  tick-common: remove local variable 'broadcast' from tick_resume()
+  tick-sched: add comment about 'idle_active' in tick_nohz_idle_exit()
+  tick-sched: define 'delta' inside 'if' block in
+    update_ts_time_stats()
+  tick-sched: remove parameters to {__}tick_nohz_task_switch() routines
+  tick-sched: remove local variable 'now' from tick_setup_sched_timer()
+  tick-sched: invert parameter of tick_check_oneshot_change()
+  tick-sched: rearrange code in tick_do_update_jiffies64()
+
+ include/linux/hrtimer.h      |  3 --
+ include/linux/tick.h         | 62 +++++++++++++++++++-----------
+ kernel/hrtimer.c             |  4 +-
+ kernel/sched/core.c          |  2 +-
+ kernel/time/clockevents.c    | 12 +++---
+ kernel/time/clocksource.c    | 14 +++----
+ kernel/time/tick-broadcast.c | 48 +++++++++--------------
+ kernel/time/tick-common.c    | 90 ++++++++++++++------------------------------
+ kernel/time/tick-internal.h  | 15 ++++----
+ kernel/time/tick-oneshot.c   | 34 +++++++++--------
+ kernel/time/tick-sched.c     | 80 +++++++++++++++++++++++----------------
+ kernel/time/timekeeping.c    | 10 ++---
+ 12 files changed, 177 insertions(+), 197 deletions(-)
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+1.7.12.rc2.18.g61b472e
+
