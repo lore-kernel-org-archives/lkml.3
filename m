@@ -1,235 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246AbaDUNzd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 09:55:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032AbaDUNzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 09:55:31 -0400
-From: Bandan Das <bsd@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] KVM: x86: Check for host supported fields in shadow vmcs
-References: <jpgha5olwq2.fsf@nelium.bos.redhat.com>
-	<53533D74.6020004@redhat.com>
-Date: Mon, 21 Apr 2014 09:55:27 -0400
-In-Reply-To: <53533D74.6020004@redhat.com> (Paolo Bonzini's message of "Sat,
-	19 Apr 2014 23:22:28 -0400")
-Message-ID: <jpgioq2lrcg.fsf@nelium.bos.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S1751322AbaDUOB6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 10:01:58 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:34828 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136AbaDUOB4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 10:01:56 -0400
+Message-ID: <535524BE.7070704@oracle.com>
+Date: Mon, 21 Apr 2014 22:01:34 +0800
+From: Jeff Liu <jeff.liu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Brian Foster <bfoster@redhat.com>
+CC: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH] xfs: Fix wrong error codes being returned
+References: <1398074687-26548-1-git-send-email-tuomas.tynkkynen@iki.fi>	<5355132F.4070303@oracle.com> <20140421130931.GB24813@bfoster.bfoster>
+In-Reply-To: <20140421130931.GB24813@bfoster.bfoster>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
 
-> Il 19/04/2014 19:34, Bandan Das ha scritto:
+On 04/21 2014 21:09 PM, Brian Foster wrote:
+> On Mon, Apr 21, 2014 at 08:46:39PM +0800, Jeff Liu wrote:
+>> Hi Tuomas,
 >>
->> We track shadow vmcs fields through two static lists,
->> one for read only fields and another for r/w. However, with
->> addition of new vmcs fields, not all fields may be supported on
->> all hosts. If so, copy_vmcs12_to_shadow() trying to vmwrite on older
->> hosts will result in a vmwrite error. For example, commit
->> 36be0b9deb23161 introduced GUEST_BNDCFGS, which is not supported
->> for all processors. Create new lists based out of intersection of
->> static lists and host support and use them for tracking
->> shadow fields instead
+>> On 04/21 2014 18:04 PM, Tuomas Tynkkynen wrote:
+>>> xfs_{compat_,}attrmulti_by_handle could return an errno with incorrect
+>>> sign in some cases. While at it, make sure ENOMEM is returned instead of
+>>> E2BIG if kmalloc fails.
+>>>
+>>> Signed-off-by: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
+>>> ---
+>>> Compile tested only. For the ERANGE case, I also wonder if it should
+>>> be assigning to ops[i].am_error instead of error, and/or have a break.
 >>
->> Signed-off-by: Bandan Das <bsd@redhat.com>
->> ---
->>  arch/x86/kvm/vmx.c | 98 +++++++++++++++++++++++++++++++++++++++++++-----------
->>  1 file changed, 79 insertions(+), 19 deletions(-)
+>> If I understand right, ops[i].am_error is used to save the internal operation result,
+>> i.e, xfs_attrmult_attr_get{set}... but error is used for the ioctl call results.
+>> Therefore, assign ERANGE to error is compatible with the VFS set{get}xattr syscalls in
+>> case of "if (ops[i].am_error == 0 || ops[i].am_error == MAXNAMELEN)".
 >>
->> diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
->> index 7bed3e3..ffc2232 100644
->> --- a/arch/x86/kvm/vmx.c
->> +++ b/arch/x86/kvm/vmx.c
->> @@ -502,7 +502,10 @@ static inline struct vcpu_vmx *to_vmx(struct kvm_vcpu *vcpu)
->>  #define FIELD64(number, name)	[number] = VMCS12_OFFSET(name), \
->>  				[number##_HIGH] = VMCS12_OFFSET(name)+4
->>
->> -
->> +/*
->> + * Do not use the two lists below directly
->> + * Use vmcs_shadow_fields instead
->> + */
->>  static const unsigned long shadow_read_only_fields[] = {
->>  	/*
->>  	 * We do NOT shadow fields that are modified when L0
->> @@ -526,8 +529,6 @@ static const unsigned long shadow_read_only_fields[] = {
->>  	GUEST_LINEAR_ADDRESS,
->>  	GUEST_PHYSICAL_ADDRESS
->>  };
->> -static const int max_shadow_read_only_fields =
->> -	ARRAY_SIZE(shadow_read_only_fields);
->>
->>  static const unsigned long shadow_read_write_fields[] = {
->>  	GUEST_RIP,
->> @@ -558,8 +559,18 @@ static const unsigned long shadow_read_write_fields[] = {
->>  	HOST_FS_SELECTOR,
->>  	HOST_GS_SELECTOR
->>  };
->> -static const int max_shadow_read_write_fields =
->> -	ARRAY_SIZE(shadow_read_write_fields);
->
-> Can we just remove the "const" here, and compress the arrays down
-> similar to what kvm_init_msr_list does.
+> 
+> But we set 'error' in this case and effectively try to continue the operation
+> whereas the traditional vfs path returns...
 
-Yep, agreed. That makes sense. Thanks for the pointer.
+So the error would always be set to ERANGE if one or more attrname is/are invalid.
 
->> +/* If new shadow fields are added, these should be modified appropriately */
->> +#define VMCS_MAX_RO_FIELDS 10
->> +#define VMCS_MAX_RW_FIELDS 30
->> +
->> +struct vmcs_shadow_fields_data {
->> +	int shadow_ro_fields_len;
->> +	int shadow_rw_fields_len;
->> +	unsigned long shadow_read_only_fields[VMCS_MAX_RO_FIELDS];
->> +	unsigned long shadow_read_write_fields[VMCS_MAX_RW_FIELDS];
->> +};
->> +static struct vmcs_shadow_fields_data vmcs_shadow_fields;
+> 
+>> It seems that we don't need to have a break in this case because xfs_attrmulti_by_handle()
+>> is used to process multiple attrs.  Hence if a given attrname in ops array is invalid,
+>> the am_error will indicate that with ENOATTR or EFAULT...but it should proceed to loop
+>> through the left array members.
 >>
->>  static const unsigned short vmcs_field_to_offset_table[] = {
->>  	FIELD(VIRTUAL_PROCESSOR_ID, virtual_processor_id),
->> @@ -3027,6 +3038,56 @@ static __init int alloc_kvm_area(void)
->>  	return 0;
->>  }
->>
->> +static void cleanup_vmcs_shadow_fields(void)
->> +{
->> +	memset(&vmcs_shadow_fields, 0,
->> +	       sizeof(struct vmcs_shadow_fields_data));
->> +}
->> +
->> +static void init_vmcs_shadow_fields(void)
->> +{
->> +	struct vmcs_shadow_fields_data *vmcs_ptr = &vmcs_shadow_fields;
->> +	int max_shadow_read_write_fields = ARRAY_SIZE(shadow_read_write_fields);
->> +	int max_shadow_read_only_fields = ARRAY_SIZE(shadow_read_only_fields);
->> +	int i, j;
->> +
->> +	for (i = 0, j = 0; i < max_shadow_read_write_fields; i++) {
->> +		if (i >= VMCS_MAX_RW_FIELDS) {
->> +			WARN(1, "Shadow RW fields index out of bounds\n");
->> +			break;
->> +		}
->> +		if ((shadow_read_write_fields[i] == GUEST_BNDCFGS) &&
->> +		    !vmx_mpx_supported())
->> +			continue;
->
-> Please code this as a "switch" statement for easier future
-> extensibility.  Again, this would be similar to kvm_init_msr_list.
+> 
+> Perhaps so if am_error == 0, but it depends on what attr_name contains
+> at that point (stale data?). Otherwise, we try to proceed with a
+> truncated name. It looks like the consistent thing to do would be set
+> am_error to ERANGE and continue (i.e., skip the op and move on to the
+> next).
 
-Ok.
+If we continue to process a truncated name in case of MAXNAMELEN, it would return
+EFAULT for SET/REMOVE operations, and ENOATTR for GET operation, which would be
+set back to am_error, but error still keep as ERANGE which is consistently.
 
-> How did you find this?  Do you have access to a machine with shadow
-> VMCS?  Is that Ivy Bridge Xeon E5 or does some lower-end Haswell have
-> it?
 
-Yeah, it seems the DIY grade Haswells do indeed have shadow vmcs support.
-The system I am using has i7-4770 and I found this while testing my Xen 
-as L1 changes on top of 3.15-rc1.
-
-> Paolo
->
->> +		vmcs_ptr->shadow_read_write_fields[j++] =
->> +			shadow_read_write_fields[i];
->> +		vmcs_ptr->shadow_rw_fields_len++;
->> +	}
->> +
->> +	for (i = 0, j = 0; i < max_shadow_read_only_fields; i++) {
->> +		if (i >= VMCS_MAX_RO_FIELDS) {
->> +			WARN(1, "Shadow RO fields index out of bounds\n");
->> +			break;
->> +		}
->> +		vmcs_ptr->shadow_read_only_fields[j++] =
->> +			shadow_read_only_fields[i];
->> +		vmcs_ptr->shadow_ro_fields_len++;
->> +	}
->> +
->> +	/* shadowed read/write fields */
->> +	for (i = 0; i < vmcs_ptr->shadow_rw_fields_len; i++) {
->> +		clear_bit(vmcs_ptr->shadow_read_write_fields[i],
->> +			  vmx_vmwrite_bitmap);
->> +		clear_bit(vmcs_ptr->shadow_read_write_fields[i],
->> +			  vmx_vmread_bitmap);
->> +	}
->> +	/* shadowed read only fields */
->> +	for (i = 0; i < vmcs_ptr->shadow_ro_fields_len; i++)
->> +		clear_bit(vmcs_ptr->shadow_read_only_fields[i],
->> +			  vmx_vmread_bitmap);
->> +
->> +}
->> +
->>  static __init int hardware_setup(void)
->>  {
->>  	if (setup_vmcs_config(&vmcs_config) < 0)
->> @@ -3039,6 +3100,8 @@ static __init int hardware_setup(void)
->>  		enable_vpid = 0;
->>  	if (!cpu_has_vmx_shadow_vmcs())
->>  		enable_shadow_vmcs = 0;
->> +	if (enable_shadow_vmcs)
->> +		init_vmcs_shadow_fields();
->>
->>  	if (!cpu_has_vmx_ept() ||
->>  	    !cpu_has_vmx_ept_4levels()) {
->> @@ -3084,6 +3147,8 @@ static __init int hardware_setup(void)
->>
->>  static __exit void hardware_unsetup(void)
->>  {
->> +	if (enable_shadow_vmcs)
->> +		cleanup_vmcs_shadow_fields();
->>  	free_kvm_area();
->>  }
->>
->> @@ -6159,8 +6224,9 @@ static void copy_shadow_to_vmcs12(struct vcpu_vmx *vmx)
->>  	unsigned long field;
->>  	u64 field_value;
->>  	struct vmcs *shadow_vmcs = vmx->nested.current_shadow_vmcs;
->> -	const unsigned long *fields = shadow_read_write_fields;
->> -	const int num_fields = max_shadow_read_write_fields;
->> +	const unsigned long *fields =
->> +		vmcs_shadow_fields.shadow_read_write_fields;
->> +	const int num_fields = vmcs_shadow_fields.shadow_rw_fields_len;
->>
->>  	vmcs_load(shadow_vmcs);
->>
->> @@ -6189,13 +6255,15 @@ static void copy_shadow_to_vmcs12(struct vcpu_vmx *vmx)
->>
->>  static void copy_vmcs12_to_shadow(struct vcpu_vmx *vmx)
->>  {
->> +	struct vmcs_shadow_fields_data *ptr = &vmcs_shadow_fields;
->> +
->>  	const unsigned long *fields[] = {
->> -		shadow_read_write_fields,
->> -		shadow_read_only_fields
->> +		ptr->shadow_read_write_fields,
->> +		ptr->shadow_read_only_fields
->>  	};
->>  	const int max_fields[] = {
->> -		max_shadow_read_write_fields,
->> -		max_shadow_read_only_fields
->> +		ptr->shadow_rw_fields_len,
->> +		ptr->shadow_ro_fields_len
->>  	};
->>  	int i, q;
->>  	unsigned long field;
->> @@ -8817,14 +8885,6 @@ static int __init vmx_init(void)
->>
->>  	memset(vmx_vmread_bitmap, 0xff, PAGE_SIZE);
->>  	memset(vmx_vmwrite_bitmap, 0xff, PAGE_SIZE);
->> -	/* shadowed read/write fields */
->> -	for (i = 0; i < max_shadow_read_write_fields; i++) {
->> -		clear_bit(shadow_read_write_fields[i], vmx_vmwrite_bitmap);
->> -		clear_bit(shadow_read_write_fields[i], vmx_vmread_bitmap);
->> -	}
->> -	/* shadowed read only fields */
->> -	for (i = 0; i < max_shadow_read_only_fields; i++)
->> -		clear_bit(shadow_read_only_fields[i], vmx_vmread_bitmap);
->>
->>  	/*
->>  	 * Allow direct access to the PC debug port (it is often used for I/O
->>
+Thanks,
+-Jeff
