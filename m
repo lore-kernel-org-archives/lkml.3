@@ -1,94 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439AbaDUSBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 14:01:23 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:49536 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752755AbaDUSBU (ORCPT
+	id S1753684AbaDUSBf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 14:01:35 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:41132 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753497AbaDUSBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 14:01:20 -0400
+	Mon, 21 Apr 2014 14:01:24 -0400
+Message-ID: <53555CF0.8030405@mit.edu>
+Date: Mon, 21 Apr 2014 11:01:20 -0700
+From: Andy Lutomirski <luto@amacapital.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <CAE9FiQWf+3hMZbt7Ac+vgL+8kqqQS4LKVGmWgrd5fJ4nkSgmPA@mail.gmail.com>
-References: <20140421105232.GB4564@dhcp-17-89.nay.redhat.com>
-	<CAE9FiQWf+3hMZbt7Ac+vgL+8kqqQS4LKVGmWgrd5fJ4nkSgmPA@mail.gmail.com>
-Date: Mon, 21 Apr 2014 11:01:19 -0700
-X-Google-Sender-Auth: mvguTZcbKMMbRHNRjyzycow4GyE
-Message-ID: <CAGXu5j+-Aqe3H04mK=3wRQ-rhpvNVPm1yOKgZrd=Yc3gqrGq0w@mail.gmail.com>
-Subject: Re: kaslr relocation incompitable with kernel loaded high
-From: Kees Cook <keescook@chromium.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: WANG Chao <chaowang@redhat.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
-        Vivek Goyal <vgoyal@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jeff Layton <jlayton@redhat.com>, Rich Felker <dalias@libc.org>
+CC: libc-alpha <libc-alpha@sourceware.org>,
+        "Carlos O'Donell" <carlos@redhat.com>, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org,
+        "Stefan (metze) Metzmacher" <metze@samba.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        linux-fsdevel@vger.kernel.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>
+Subject: Re: [PATCH] locks: rename file-private locks to file-description
+ locks
+References: <1398087935-14001-1-git-send-email-jlayton@redhat.com> <20140421140246.GB26358@brightrain.aerifal.cx> <535529FA.8070709@gmail.com>	<20140421161004.GC26358@brightrain.aerifal.cx> <20140421124508.4f2c9ca7@tlielax.poochiereds.net>
+In-Reply-To: <20140421124508.4f2c9ca7@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 10:56 AM, Yinghai Lu <yinghai@kernel.org> wrote:
-> On Mon, Apr 21, 2014 at 3:52 AM, WANG Chao <chaowang@redhat.com> wrote:
->> Hi, Kees
+On 04/21/2014 09:45 AM, Jeff Layton wrote:
+> On Mon, 21 Apr 2014 12:10:04 -0400
+> Rich Felker <dalias@libc.org> wrote:
+>> I'm well aware of that. The problem is that the proposed API is using
+>> the two-letter abbreviation FD, which ALWAYS means file descriptor and
+>> NEVER means file description (in existing usage) to mean file
+>> description. That's what's wrong.
 >>
->> When I'm testing kaslr with kdump, I find that when 2nd kernel is loaded
->> high, it doesn't boot.
->>
->> I reserved 128M memory at high with kernel cmdline
->> "crashkernel=128M,high crashkernel=0,low", and for which I got:
->>
->> [    0.000000] Reserving 128MB of memory at 6896MB for crashkernel (System RAM: 6013MB)
->>
->> Then I load kdump kernel into the reserved memory region, using a local
->> modified kexec-tools which is passing e820 in boot_params.
->>
->> The e820 map of system RAM passed to 2nd kernel:
->>
->> E820 memmap (of RAM):
->> 0000000000001000-000000000009e3ff (1)
->> 00000001af000000-00000001b6f5dfff (1)
->> 00000001b6fff400-00000001b6ffffff (1)
->>
->> In which, 2nd kernel is loaded at 0x1b5000000.
->>
->> After triggerred a system crash, 2nd kernel doesn't boot even with
->> "nokaslr" cmdline:
->>
->> # echo c > /proc/sysrq-trigger
->> [..]
->>
->> I'm in purgatory
->> early console in decompress_kernel
->> KASLR disabled...
->>
->> Decompressing Linux... Parsing ELF... Performing relocations...
->>
->> 32-bit relocation outside of kernel!
->
-> Interesting, when kernel get at "early console in decompress_kernel"
-> kernel already in 64 bit...
->
-> what does it mean "32-bit relocation outside of kernel" ?
->
-> why 32-bit is involved ?
+> 
+> Fair enough. Assuming we kept "file-description locks" as a name, what
+> would you propose as new macro names?
 
-The 64-bit kernel has both 64 and 32 bit relocations (there are two
-tables at the end of the kernel image). The error means that the
-resulting relocation is believed to be outside the kernel image:
+F_OFD_...?  F_OPENFILE_...?
 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/x86/boot/compressed/misc.c#n283
+If you said "file description" to me, I'd assume you made a typo.  If,
+on the other hand, you said "open file" or "open file description" or,
+ugh, "struct file", I think I'd understand.
 
-Which means there is likely something wrong with this calculation in
-your situation:
-
-/*
- * Calculate the delta between where vmlinux was linked to load
- * and where it was actually loaded.
- */
-delta = min_addr - LOAD_PHYSICAL_ADDR;
-
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
+--Andy
