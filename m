@@ -1,46 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751518AbaDUIm7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 04:42:59 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750902AbaDUIm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 04:42:56 -0400
-Message-ID: <5354DA0B.2060204@nod.at>
-Date: Mon, 21 Apr 2014 10:42:51 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1751614AbaDUInh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 04:43:37 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:41592 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533AbaDUInf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 04:43:35 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3L8h31o014101, This message is accepted by code: ctloc85258
+Message-ID: <5354DB0A.7060706@realsil.com.cn>
+Date: Mon, 21 Apr 2014 16:47:06 +0800
+From: micky <micky_ching@realsil.com.cn>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-CC: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Jos Huisken <jos.huisken@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: inotify, new idea?
-References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com> <20140417212834.GC17769@csclub.uwaterloo.ca> <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com> <CAFLxGvxx8_gJ+NAGVn_vZmkVfey45_1qTqAQnxKDCZD0gQsr5w@mail.gmail.com> <CAHO5Pa1hfp+uLiQ78-pn2RJ6SytSYqXTniyx3UvaTwU_=ECWjA@mail.gmail.com>
-In-Reply-To: <CAHO5Pa1hfp+uLiQ78-pn2RJ6SytSYqXTniyx3UvaTwU_=ECWjA@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@alien8.de>
+CC: lkml <linux-kernel@vger.kernel.org>, Chris Ball <chris@printf.net>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Subject: Re: rtsx_pci_sdmmc lockdep splat
+References: <20140415174934.GD4826@pd.tnic> <534DE1D7.3000308@realsil.com.cn> <20140420122055.GD19667@pd.tnic>
+In-Reply-To: <20140420122055.GD19667@pd.tnic>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.04.2014 09:24, schrieb Michael Kerrisk:
->> Does recursive monitoring even work with inotify?
->> Last time I've tried it did failed as soon I did a mkdir -p a/b/c/d because
->> mkdir() raced against the thread which installes the new watches.
-> 
-> As I understand it, you have to program to deal with the races (rescan
-> directories after adding watches). I recently did a lot of work
-> updating the inotify(7) man page to discuss all the issues that I know
-> of, and their remedies. If I missed anything, I'd appreciate a note on
-> it, so that it can be added. See
-> http://man7.org/linux/man-pages/man7/inotify.7.html#NOTES
+Hi Borislav
 
-I'm aware of the rescan hack, but in my case it does not help
-because my program must not miss any event.
-Currently I'm using a fuse overlay filesystem to log everything.
-Not perfect but works... :-)
+Thank you for test the patch. It seems we can't use tasklet here due to 
+mutex_lock.
+And the spinlock may removed, I'm prepare to resend a different patch later.
 
-Thanks,
-//richard
+Best Regards.
+micky
+On 04/20/2014 08:20 PM, Borislav Petkov wrote:
+> Hi,
+>
+> On Wed, Apr 16, 2014 at 09:50:15AM +0800, micky wrote:
+>> From: Micky Ching<micky_ching@realsil.com.cn>
+>>
+>> To avoid dead lock, we need make sure host->lock is always acquire
+>> before pcr->lock. But in irq handler, we acquired pcr->lock in rtsx mfd
+>> driver, and sd_isr_done_transfer() is called during pcr->lock already
+>> acquired. Since in sd_isr_done_transfer() the only work we do is schdule
+>> tasklet, the cmd_tasklet and data_tasklet never conflict, so it is safe
+>> to remove spin_lock() here.
+>>
+>> Signed-off-by: Micky Ching<micky_ching@realsil.com.cn>
+>> ---
+>>   drivers/mmc/host/rtsx_pci_sdmmc.c |    4 +---
+>>   1 file changed, 1 insertion(+), 3 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+>> index 453e1d4..40695e0 100644
+>> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
+>> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+>> @@ -108,12 +108,10 @@ static void sd_isr_done_transfer(struct platform_device *pdev)
+>>   {
+>>   	struct realtek_pci_sdmmc *host = platform_get_drvdata(pdev);
+>> -	spin_lock(&host->lock);
+>>   	if (host->cmd)
+>>   		tasklet_schedule(&host->cmd_tasklet);
+>> -	if (host->data)
+>> +	else if (host->data)
+>>   		tasklet_schedule(&host->data_tasklet);
+>> -	spin_unlock(&host->lock);
+>>   }
+>>   static void sd_request_timeout(unsigned long host_addr)
+>> -- 
+> Patch wouldn't apply against rc1, so I had to add it by hand, diff
+> below.
+>
+> ---
+> diff --git a/drivers/mmc/host/rtsx_pci_sdmmc.c b/drivers/mmc/host/rtsx_pci_sdmmc.c
+> index 5fb994f9a653..d1d65c0d8d2e 100644
+> --- a/drivers/mmc/host/rtsx_pci_sdmmc.c
+> +++ b/drivers/mmc/host/rtsx_pci_sdmmc.c
+> @@ -109,12 +109,10 @@ static void sd_isr_done_transfer(struct platform_device *pdev)
+>   {
+>   	struct realtek_pci_sdmmc *host = platform_get_drvdata(pdev);
+>   
+> -	spin_lock(&host->lock);
+>   	if (host->cmd)
+>   		tasklet_schedule(&host->cmd_tasklet);
+> -	if (host->data)
+> +	else if (host->data)
+>   		tasklet_schedule(&host->data_tasklet);
+> -	spin_unlock(&host->lock);
+>   }
+>   
+>   static void sd_request_timeout(unsigned long host_addr)
+> --
+>
+> Still needs more love:
+>
+> [   95.112797] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: sdmmc_get_cd: RTSX_BIPR = 0x00010000
+> [   95.115700] mmc0: mmc_rescan_try_freq: trying to init card at 400000 Hz
+> [   95.118040] mmc0: clock 0Hz busmode 2 powermode 1 cs 0 Vdd 21 width 0 timing 0
+> [   95.122504] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: sdmmc_switch_voltage: signal_voltage = 0
+> [   95.139469] mmc0: clock 400000Hz busmode 2 powermode 2 cs 0 Vdd 21 width 0 timing 0
+> [   95.155461] mmc0: starting CMD52 arg 00000c00 flags 00000195
+> [   95.158617] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: sd_send_cmd: SD/MMC CMD 52, arg = 0x00000c00
+> [   95.255497] rtsx_pci_sdmmc rtsx_pci_sdmmc.0: timeout for request
+> [   95.258412] ------------[ cut here ]------------
+> [   95.261163] WARNING: CPU: 0 PID: 3 at kernel/locking/mutex.c:698 __mutex_unlock_slowpath+0x124/0x180()
+> [   95.264120] DEBUG_LOCKS_WARN_ON(in_interrupt())
+> [   95.264222] Modules linked in: cpufreq_stats cpufreq_conservative cpufreq_powersave cpufreq_userspace binfmt_misc uinput ipv6 vfat fat rtsx_pci_sdmmc mmc_core arc4 radeon rtl8192ce snd_hda_codec_conexant snd_hda_codec_generic snd_hda_codec_hdmi snd_hda_intel rtl_pci rtlwifi snd_hda_controller snd_hda_codec mac80211 cfg80211 snd_hwdep snd_pcm drm_kms_helper pcspkr k10temp evdev snd_seq thermal thinkpad_acpi ehci_pci nvram rtsx_pci mfd_core snd_seq_device rtl8192c_common snd_timer ohci_pci ohci_hcd ehci_hcd snd battery ttm ac video button soundcore
+> [   95.264231] CPU: 0 PID: 3 Comm: ksoftirqd/0 Not tainted 3.15.0-rc1+ #1
+> [   95.264235] Hardware name: LENOVO 30515QG/30515QG, BIOS 8RET30WW (1.12 ) 09/15/2011
+> [   95.264246]  0000000000000009 ffff8801198f3c50 ffffffff81522644 ffff8801198f3c98
+> [   95.264254]  ffff8801198f3c88 ffffffff810701fc ffff8800c0ec1230 ffff8800c28b5c30
+> [   95.264262]  ffff8800c0ec1000 ffff8800bea267b0 0000000000000000 ffff8801198f3ce8
+> [   95.264264] Call Trace:
+> [   95.264277]  [<ffffffff81522644>] dump_stack+0x4e/0x7a
+> [   95.264288]  [<ffffffff810701fc>] warn_slowpath_common+0x8c/0xc0
+> [   95.264297]  [<ffffffff8107027c>] warn_slowpath_fmt+0x4c/0x50
+> [   95.264305]  [<ffffffff815294c4>] __mutex_unlock_slowpath+0x124/0x180
+> [   95.264311]  [<ffffffff8152952e>] mutex_unlock+0xe/0x10
+> [   95.264324]  [<ffffffffa0067119>] sd_finish_request+0xd9/0x1c0 [rtsx_pci_sdmmc]
+> [   95.264332]  [<ffffffff810751a0>] tasklet_action+0x110/0x170
+> [   95.264338]  [<ffffffff810756ba>] __do_softirq+0x12a/0x320
+> [   95.264345]  [<ffffffff810758dd>] run_ksoftirqd+0x2d/0x50
+> [   95.264354]  [<ffffffff8109be75>] smpboot_thread_fn+0x175/0x2b0
+> [   95.264363]  [<ffffffff8109bd00>] ? SyS_setgroups+0x150/0x150
+> [   95.264372]  [<ffffffff8109497c>] kthread+0xfc/0x120
+> [   95.264382]  [<ffffffff81094880>] ? kthread_create_on_node+0x1f0/0x1f0
+> [   95.264390]  [<ffffffff8152bfec>] ret_from_fork+0x7c/0xb0
+> [   95.264398]  [<ffffffff81094880>] ? kthread_create_on_node+0x1f0/0x1f0
+> [   95.264403] ---[ end trace e7e46e1611dc934d ]---
+>
+>
+
