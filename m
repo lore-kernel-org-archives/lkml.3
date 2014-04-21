@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751776AbaDUGEa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 02:04:30 -0400
-Received: from hqemgate16.nvidia.com ([216.228.121.65]:14791 "EHLO
-	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507AbaDUGES (ORCPT
+	id S1751750AbaDUGE1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 02:04:27 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3877 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751620AbaDUGEF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 02:04:18 -0400
+	Mon, 21 Apr 2014 02:04:05 -0400
 X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Sun, 20 Apr 2014 22:56:06 -0700
+	by hqnvupgp08.nvidia.com on Sun, 20 Apr 2014 22:58:40 -0700
 From: Alexandre Courbot <acourbot@nvidia.com>
 To: Ben Skeggs <bskeggs@redhat.com>
 CC: Thierry Reding <thierry.reding@gmail.com>, <nouveau@lists.freedesktop.org>,
         <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
         <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
         Alexandre Courbot <acourbot@nvidia.com>
-Subject: [PATCH v2 10/10] drm/nouveau: support for probing GK20A
-Date: Mon, 21 Apr 2014 15:02:22 +0900
-Message-ID: <1398060142-7937-11-git-send-email-acourbot@nvidia.com>
+Subject: [PATCH v2 06/10] drm/nouveau/graph: enable when using external firmware
+Date: Mon, 21 Apr 2014 15:02:18 +0900
+Message-ID: <1398060142-7937-7-git-send-email-acourbot@nvidia.com>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398060142-7937-1-git-send-email-acourbot@nvidia.com>
 References: <1398060142-7937-1-git-send-email-acourbot@nvidia.com>
@@ -28,44 +28,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set the correct subdev/engine classes when GK20A (0xea) is probed.
+nvc0_graph_ctor() would only let the graphics engine be enabled if its
+oclass has a proper microcode linked to it. This prevents GR from being
+enabled at all on chips that rely exclusively on external firmware, even
+though such a use-case is valid.
+
+Relax the conditions enabling the GR engine to also include the case
+where an external firmware has also been loaded.
 
 Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
 ---
- drivers/gpu/drm/nouveau/core/engine/device/nve0.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+ drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-index 9784cbf8a9d2..b014928286d6 100644
---- a/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-+++ b/drivers/gpu/drm/nouveau/core/engine/device/nve0.c
-@@ -156,6 +156,26 @@ nve0_identify(struct nouveau_device *device)
- 		device->oclass[NVDEV_ENGINE_PPP    ] = &nvc0_ppp_oclass;
- 		device->oclass[NVDEV_ENGINE_PERFMON] = &nve0_perfmon_oclass;
- 		break;
-+	case 0xea:
-+		device->cname = "GK20A";
-+		device->oclass[NVDEV_SUBDEV_MC     ] =  nvc3_mc_oclass;
-+		device->oclass[NVDEV_SUBDEV_BUS    ] =  nvc0_bus_oclass;
-+		device->oclass[NVDEV_SUBDEV_TIMER  ] = &gk20a_timer_oclass;
-+		device->oclass[NVDEV_SUBDEV_FB     ] =  gk20a_fb_oclass;
-+		device->oclass[NVDEV_SUBDEV_IBUS   ] = &gk20a_ibus_oclass;
-+		device->oclass[NVDEV_SUBDEV_INSTMEM] = nv50_instmem_oclass;
-+		device->oclass[NVDEV_SUBDEV_VM     ] = &nvc0_vmmgr_oclass;
-+		device->oclass[NVDEV_SUBDEV_BAR    ] = &nvc0_bar_oclass;
-+		device->oclass[NVDEV_ENGINE_DMAOBJ ] = &nvd0_dmaeng_oclass;
-+		device->oclass[NVDEV_ENGINE_FIFO   ] =  gk20a_fifo_oclass;
-+		/* TODO will need an implementation for this at some point... */
-+#if 0
-+		device->oclass[NVDEV_ENGINE_SW     ] =  nvc0_software_oclass;
-+#endif
-+		device->oclass[NVDEV_ENGINE_GR     ] =  gk20a_graph_oclass;
-+		device->oclass[NVDEV_ENGINE_COPY2  ] = &nve0_copy2_oclass;
-+		device->oclass[NVDEV_ENGINE_PERFMON] = &nve0_perfmon_oclass;
-+		break;
- 	case 0xf0:
- 		device->cname = "GK110";
- 		device->oclass[NVDEV_SUBDEV_VBIOS  ] = &nouveau_bios_oclass;
+diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
+index f3c7329da0a0..e5b75f189988 100644
+--- a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
++++ b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
+@@ -1259,10 +1259,13 @@ nvc0_graph_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+ 	struct nvc0_graph_oclass *oclass = (void *)bclass;
+ 	struct nouveau_device *device = nv_device(parent);
+ 	struct nvc0_graph_priv *priv;
++	bool use_ext_fw, enable;
+ 	int ret, i;
+ 
+-	ret = nouveau_graph_create(parent, engine, bclass,
+-				   (oclass->fecs.ucode != NULL), &priv);
++	use_ext_fw = nouveau_boolopt(device->cfgopt, "NvGrUseFW", false);
++	enable = use_ext_fw || oclass->fecs.ucode != NULL;
++
++	ret = nouveau_graph_create(parent, engine, bclass, enable, &priv);
+ 	*pobject = nv_object(priv);
+ 	if (ret)
+ 		return ret;
+@@ -1272,7 +1275,7 @@ nvc0_graph_ctor(struct nouveau_object *parent, struct nouveau_object *engine,
+ 
+ 	priv->base.units = nvc0_graph_units;
+ 
+-	if (nouveau_boolopt(device->cfgopt, "NvGrUseFW", false)) {
++	if (use_ext_fw) {
+ 		nv_info(priv, "using external firmware\n");
+ 		if (nvc0_graph_ctor_fw(priv, "fuc409c", &priv->fuc409c) ||
+ 		    nvc0_graph_ctor_fw(priv, "fuc409d", &priv->fuc409d) ||
 -- 
 1.9.2
 
