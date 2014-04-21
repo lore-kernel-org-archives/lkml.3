@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751493AbaDUExh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:53:37 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:50373 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750744AbaDUExb (ORCPT
+	id S1751707AbaDUEzY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:55:24 -0400
+Received: from mail-ob0-f178.google.com ([209.85.214.178]:44888 "EHLO
+	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751604AbaDUEzT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:53:31 -0400
+	Mon, 21 Apr 2014 00:55:19 -0400
 MIME-Version: 1.0
-In-Reply-To: <5354175B.3070109@pengutronix.de>
-References: <7aed4ee6-69e7-4f9f-9f45-675bc695089c@CO9EHSMHS031.ehs.local>
-	<5354175B.3070109@pengutronix.de>
-Date: Mon, 21 Apr 2014 10:23:30 +0530
-X-Google-Sender-Auth: fVX-WVRMXUMm_5EccdxiBXzu4b4
-Message-ID: <CAGnW=Bav_Q_ZpkFq0gG7m9+OBnPWyPhOoBTNnP=VdErzcwe2dQ@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/2] usb: Reuse fsl driver code for synopsys usb controller
-From: punnaiah choudary kalluri <punnaia@xilinx.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>,
-        leoli@freescale.com, balbi@ti.com,
-        "michal.simek@xilinx.com" <michal.simek@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org,
-        linux-usb@vger.kernel.org, Punnaiah Choudary <kpc528@gmail.com>,
-        Peter Chen <peter.chen@freescale.com>
+In-Reply-To: <1397795756-23283-1-git-send-email-andi@firstfloor.org>
+References: <1397795756-23283-1-git-send-email-andi@firstfloor.org>
+Date: Mon, 21 Apr 2014 10:25:18 +0530
+Message-ID: <CAKohpond9DbNqWHLi9ZdL0BJRwZjeDZcar7KYuC2kAvWZp96-Q@mail.gmail.com>
+Subject: Re: [PATCH] Kbuild, lto: Avoid reported warning with strtoul
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: mmarek@suse.cz, "H. Peter Anvin" <hpa@zytor.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 12:22 AM, Marc Kleine-Budde <mkl@pengutronix.de> wrote:
-> On 04/20/2014 06:27 PM, Punnaiah Choudary Kalluri wrote:
->> Zynq soc contains a dual role usb controller and this IP is from synopsys. We
->> observed that there is driver available for this controller from freescale and
->> decided to reuse this driver for zynq use.
+On 18 April 2014 10:05, Andi Kleen <andi@firstfloor.org> wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 >
-> Have a look drivers/usb/chipidea. It's maintained by Peter Chen (Cc'ed)
-> and is in better shape than the freescale driver.
+> Apparently someone's C library declares strtoul with warn_unused_result.
+> Cast to void to avoid the warning. Error handling is not useful here.
 
-Thanks. I will check this implementation and also check with Peter Chen if
-i have any concerns about this implementation.
+I just did a x86_64 compilation without a CROSS_COMPILE= option
+(My .config also had a empty string) and so gcc must be used for it?
 
-Punnaiah.
+$ gcc --version
+gcc (Ubuntu/Linaro 4.6.3-1ubuntu5) 4.6.3
+Copyright (C) 2011 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+> Cc: Viresh Kumar <viresh.kumar@linaro.org>
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  scripts/mod/modpost.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> Marc
+> diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+> index 0663556..b9cf439 100644
+> --- a/scripts/mod/modpost.c
+> +++ b/scripts/mod/modpost.c
+> @@ -1707,7 +1707,7 @@ static char *remove_dot(char *s)
+>         int n = strcspn(s, ".");
 >
-> --
-> Pengutronix e.K.                  | Marc Kleine-Budde           |
-> Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-> Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-> Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
->
+>         if (n > 0 && s[n] != 0) {
+> -               strtoul(s + n + 1, &end, 10);
+> +               (void)strtoul(s + n + 1, &end, 10);
+
+I tried this earlier before reporting and it still had the same problem :(
+I tried it again just to cross check and still getting this:
+
+scripts/mod/modpost.c: In function ‘remove_dot’:
+scripts/mod/modpost.c:1710:3: warning: ignoring return value of
+‘strtoul’, declared with attribute warn_unused_result
+[-Wunused-result]
