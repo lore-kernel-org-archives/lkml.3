@@ -1,102 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378AbaDUGbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 02:31:45 -0400
-Received: from g2t1383g.austin.hp.com ([15.217.136.92]:11220 "EHLO
-	g2t1383g.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751076AbaDUGbn (ORCPT
+	id S1751287AbaDUG6O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 02:58:14 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:37995 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751091AbaDUG6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 02:31:43 -0400
-Message-ID: <5354BAEE.9000005@hp.com>
-Date: Mon, 21 Apr 2014 14:30:06 +0800
-From: "Li, ZhenHua" <zhen-hual@hp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/17.0 Thunderbird/17.0
+	Mon, 21 Apr 2014 02:58:11 -0400
+Message-ID: <5354C082.6020908@linux.vnet.ibm.com>
+Date: Mon, 21 Apr 2014 12:23:54 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Jiri Pirko <jiri@resnulli.us>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Jerry Chu <hkchu@google.com>, Sathya Perla <sathya.perla@emulex.com>,
-        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
-        Ajit Khaparde <ajit.khaparde@emulex.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] net: Add rtnl_lock for netif_device_attach/detach
-References: <1397632082-18453-1-git-send-email-zhen-hual@hp.com> <5351767E.6000404@cogentembedded.com>
-In-Reply-To: <5351767E.6000404@cogentembedded.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Zhang Rui <rui.zhang@intel.com>, Aubrey Li <aubrey.li@intel.com>
+Subject: Re: [PATCH] PM / suspend: Make cpuidle work in the "freeze" state
+References: <4271849.XeOTooWnSN@vostro.rjw.lan>
+In-Reply-To: <4271849.XeOTooWnSN@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042106-7164-0000-0000-0000012B9D90
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The comment is trying to explain why add a lock here.
-
-On 04/19/2014 03:01 AM, Sergei Shtylyov wrote:
-> Hello.
->
-> On 04/16/2014 11:08 AM, Li, Zhen-Hua wrote:
->
->> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
->
->> As netif_running is called in netif_device_attach/detach. There 
->> should be
->> rtnl_lock/unlock called, to avoid dev stat change during 
->> netif_device_attach
->> and detach being called.
->> I checked NIC some drivers,  some of them have 
->> netif_device_attach/detach
->> called between rtnl_lock/unlock, while some drivers do not.
->
->> This patch is tring to find a generic way to fix this for all NIC 
->> drivers.
->
->> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
->> ---
->>   net/core/dev.c |   18 ++++++++++++++++++
->>   1 file changed, 18 insertions(+)
->
->> diff --git a/net/core/dev.c b/net/core/dev.c
->> index 5b3042e..795bbc5 100644
->> --- a/net/core/dev.c
->> +++ b/net/core/dev.c
->> @@ -2190,10 +2190,19 @@ EXPORT_SYMBOL(__dev_kfree_skb_any);
->>    */
->>   void netif_device_detach(struct net_device *dev)
->>   {
->> +    /**
->
->   Hm, why kernel-doc style comment here?
->
->> +     * As netif_running is called , rtnl_lock and unlock are needed to
->> +     * avoid __LINK_STATE_START bit changes during this function call.
->> +     */
->> +    int need_unlock;
->> +
->> +    need_unlock = rtnl_trylock();
->>       if (test_and_clear_bit(__LINK_STATE_PRESENT, &dev->state) &&
->>           netif_running(dev)) {
->>           netif_tx_stop_all_queues(dev);
->>       }
->> +    if (need_unlock)
->> +        rtnl_unlock();
->>   }
->>   EXPORT_SYMBOL(netif_device_detach);
->>
->> @@ -2205,11 +2214,20 @@ EXPORT_SYMBOL(netif_device_detach);
->>    */
->>   void netif_device_attach(struct net_device *dev)
->>   {
->> +    /**
->
->   ... and here?
->
->> +     * As netif_running is called , rtnl_lock and unlock are needed to
->> +     * avoid __LINK_STATE_START bit changes during this function call.
->> +     */
->
-> WBR, Sergei
->
+On 04/21/2014 03:13 AM, Rafael J. Wysocki wrote:
+> From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> 
+> The "freeze" system sleep state introduced by commit 7e73c5ae6e79
+> (PM: Introduce suspend state PM_SUSPEND_FREEZE) requires cpuidle
+> to be functional when freeze_enter() is executed to work correctly
+> (that is, to be able to save any more energy than runtime idle),
+> but that is impossible after commit 8651f97bd951d (PM / cpuidle:
+> System resume hang fix with cpuidle) which caused cpuidle to be
+> paused in dpm_suspend_noirq() and resumed in dpm_resume_noirq().
+> 
+> To avoid that problem, add cpuidle_resume() and cpuidle_pause()
+> to the beginning and the end of freeze_enter(), respectively.
+> 
+> Reported-by: Zhang Rui <rui.zhang@intel.com>
+> Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> ---
+>  kernel/power/suspend.c |    3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> Index: linux-pm/kernel/power/suspend.c
+> ===================================================================
+> --- linux-pm.orig/kernel/power/suspend.c
+> +++ linux-pm/kernel/power/suspend.c
+> @@ -14,6 +14,7 @@
+>  #include <linux/init.h>
+>  #include <linux/console.h>
+>  #include <linux/cpu.h>
+> +#include <linux/cpuidle.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/gfp.h>
+>  #include <linux/io.h>
+> @@ -53,7 +54,9 @@ static void freeze_begin(void)
+> 
+>  static void freeze_enter(void)
+>  {
+> +	cpuidle_resume();
+>  	wait_event(suspend_freeze_wait_head, suspend_freeze_wake);
+> +	cpuidle_pause();
+>  }
+> 
+>  void freeze_wake(void)
+> 
+Reviewed-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 
