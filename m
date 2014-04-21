@@ -1,74 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751208AbaDUGBK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 02:01:10 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:42680 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750887AbaDUGBG (ORCPT
+	id S1751391AbaDUGDj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 02:03:39 -0400
+Received: from hqemgate15.nvidia.com ([216.228.121.64]:3823 "EHLO
+	hqemgate15.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076AbaDUGDe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 02:01:06 -0400
+	Mon, 21 Apr 2014 02:03:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Sun, 20 Apr 2014 22:58:08 -0700
+From: Alexandre Courbot <acourbot@nvidia.com>
+To: Ben Skeggs <bskeggs@redhat.com>
+CC: Thierry Reding <thierry.reding@gmail.com>, <nouveau@lists.freedesktop.org>,
+        <dri-devel@lists.freedesktop.org>, <linux-tegra@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <gnurou@gmail.com>,
+        Alexandre Courbot <acourbot@nvidia.com>
+Subject: [PATCH v2 00/10] drm/nouveau: support for GK20A, cont'd
+Date: Mon, 21 Apr 2014 15:02:12 +0900
+Message-ID: <1398060142-7937-1-git-send-email-acourbot@nvidia.com>
+X-Mailer: git-send-email 1.9.2
+X-NVConfidentiality: public
 MIME-Version: 1.0
-In-Reply-To: <1397728407-13909-3-git-send-email-geert+renesas@glider.be>
-References: <1397728407-13909-1-git-send-email-geert+renesas@glider.be>
-	<1397728407-13909-3-git-send-email-geert+renesas@glider.be>
-Date: Mon, 21 Apr 2014 11:31:05 +0530
-Message-ID: <CAKohpo=GZxUBA63k8-vAQWvoUEikCBNGNrWK87vzn=geVL3_gQ@mail.gmail.com>
-Subject: Re: [PATCH 3/3] cpufreq: ppc: Fix handling of non-existent clocks
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Mike Turquette <mike.turquette@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17 April 2014 15:23, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
-> If the clock doesn't exist, clk_get_rate() returns -EINVAL
+Hi everyone,
 
-You clk_get_rate() isn't written well then, it should return zero.
-@Mike: I didn't see this clearly mentioned in clk.h, should we fix
-that?
+Way overdue v2 of the final patches that enable basic GK20A support. Hopefully
+all the issues raised with v1 have been addressed.
 
->, which becomes
-> a large number (freq is u32), failing the "freq < min_cpufreq" test.
-> Explicitly test for "(u32)-EINVAL" to fix this.
+Changes since v1:
+- Use gk20a clock driver by Ben instead of twiddling nv04's
+- Name new classes after gk20a instead of nvea
+- Addressed comments about BAR initialization code factorization
+- Removed non-essential code which only purpose was to avoid warnings
+- Use nv_wait in ibus driver
 
-That's a bad check. We should have done this instead:
+Alexandre Courbot (10):
+  drm/nouveau/bar: only ioremap BAR3 if it exists
+  drm/nouveau/bar/nvc0: support chips without BAR3
+  drm/nouveau/ibus: add GK20A support
+  drm/nouveau/fb: add GK20A support
+  drm/nouveau/fifo: add GK20A support
+  drm/nouveau/graph: enable when using external firmware
+  drm/nouveau/graph: pad firmware code at load time
+  drm/nouveau/graph: add GK20A support
+  drm/nouveau: support GK20A in nouveau_accel_init()
+  drm/nouveau: support for probing GK20A
 
-(s32)freq < 0; but that would be true for high values of clock. And that's
-why clk_get_rate() must return zero for errors.
+ drivers/gpu/drm/nouveau/Makefile                   |   6 +
+ drivers/gpu/drm/nouveau/core/engine/device/nve0.c  |  20 +++
+ drivers/gpu/drm/nouveau/core/engine/fifo/gk20a.c   |  35 +++++
+ drivers/gpu/drm/nouveau/core/engine/fifo/nve0.h    |   1 +
+ .../gpu/drm/nouveau/core/engine/graph/ctxgk20a.c   |  53 +++++++
+ .../gpu/drm/nouveau/core/engine/graph/ctxnvc0.h    |   9 ++
+ .../gpu/drm/nouveau/core/engine/graph/ctxnve4.c    |  14 +-
+ drivers/gpu/drm/nouveau/core/engine/graph/gk20a.c  |  47 ++++++
+ drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c   |  13 +-
+ drivers/gpu/drm/nouveau/core/engine/graph/nvc0.h   |   2 +
+ drivers/gpu/drm/nouveau/core/engine/graph/nve4.c   |   4 +-
+ drivers/gpu/drm/nouveau/core/include/engine/fifo.h |   1 +
+ .../gpu/drm/nouveau/core/include/engine/graph.h    |   1 +
+ drivers/gpu/drm/nouveau/core/include/subdev/fb.h   |   1 +
+ drivers/gpu/drm/nouveau/core/include/subdev/ibus.h |   1 +
+ drivers/gpu/drm/nouveau/core/subdev/bar/base.c     |   6 +-
+ drivers/gpu/drm/nouveau/core/subdev/bar/nvc0.c     | 114 +++++++-------
+ drivers/gpu/drm/nouveau/core/subdev/fb/gk20a.c     |  56 +++++++
+ drivers/gpu/drm/nouveau/core/subdev/fb/priv.h      |   1 +
+ drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c  | 168 +++++++++++++++++++++
+ drivers/gpu/drm/nouveau/core/subdev/ibus/gk20a.c   | 103 +++++++++++++
+ drivers/gpu/drm/nouveau/nouveau_drm.c              |   5 +
+ 22 files changed, 592 insertions(+), 69 deletions(-)
+ create mode 100644 drivers/gpu/drm/nouveau/core/engine/fifo/gk20a.c
+ create mode 100644 drivers/gpu/drm/nouveau/core/engine/graph/ctxgk20a.c
+ create mode 100644 drivers/gpu/drm/nouveau/core/engine/graph/gk20a.c
+ create mode 100644 drivers/gpu/drm/nouveau/core/subdev/fb/gk20a.c
+ create mode 100644 drivers/gpu/drm/nouveau/core/subdev/fb/ramgk20a.c
+ create mode 100644 drivers/gpu/drm/nouveau/core/subdev/ibus/gk20a.c
 
-> Update the comment, and fix a grammer issue while we're at it.
->
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> ---
->  drivers/cpufreq/ppc-corenet-cpufreq.c |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/cpufreq/ppc-corenet-cpufreq.c b/drivers/cpufreq/ppc-corenet-cpufreq.c
-> index 53881d78a931..7027eab814ce 100644
-> --- a/drivers/cpufreq/ppc-corenet-cpufreq.c
-> +++ b/drivers/cpufreq/ppc-corenet-cpufreq.c
-> @@ -179,10 +179,11 @@ static int corenet_cpufreq_cpu_init(struct cpufreq_policy *policy)
->                 clk = of_clk_get(data->parent, i);
->                 freq = clk_get_rate(clk);
->                 /*
-> -                * the clock is valid if its frequency is not masked
-> -                * and large than minimum allowed frequency.
-> +                * the clock is valid if it exists, its frequency is not
-> +                * masked, and larger than minimum allowed frequency.
->                  */
-> -               if (freq < min_cpufreq || (mask & (1 << i)))
-> +               if (freq == (u32)-EINVAL || freq < min_cpufreq ||
-> +                   (mask & (1 << i)))
->                         table[i].frequency = CPUFREQ_ENTRY_INVALID;
->                 else
->                         table[i].frequency = freq / 1000;
-> --
-> 1.7.9.5
->
+-- 
+1.9.2
+
