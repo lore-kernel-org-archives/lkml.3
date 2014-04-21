@@ -1,68 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754506AbaDUVRG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 17:17:06 -0400
-Received: from mail-yh0-f42.google.com ([209.85.213.42]:37816 "EHLO
-	mail-yh0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896AbaDUVRC (ORCPT
+	id S1754662AbaDUVRa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 17:17:30 -0400
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.180]:54384 "EHLO
+	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752896AbaDUVRX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 17:17:02 -0400
-From: Alex Elder <elder@linaro.org>
-To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v4 RESEND 0/7] clk: bcm281xx: updates
-Date: Mon, 21 Apr 2014 16:11:36 -0500
-Message-Id: <1398114703-32410-1-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
+	Mon, 21 Apr 2014 17:17:23 -0400
+X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h2IziqwDGkR4xBpp5/1yhxcz4UyLhZNCg3nAHE7RDjuT0O1IE=
+X-RZG-CLASS-ID: mo05
+Message-ID: <53558A73.3010602@samba.org>
+Date: Mon, 21 Apr 2014 23:15:31 +0200
+From: "Stefan (metze) Metzmacher" <metze@samba.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+CC: Rich Felker <dalias@libc.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] locks: rename file-private locks to file-description
+ locks
+References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>	<20140421140246.GB26358@brightrain.aerifal.cx>	<535529FA.8070709@gmail.com>	<20140421161004.GC26358@brightrain.aerifal.cx>	<5355644C.7000801@gmail.com>	<20140421184640.GD26358@brightrain.aerifal.cx>	<535573E0.9080106@gmail.com> <20140421155520.3b33fbef@ipyr.poochiereds.net>
+In-Reply-To: <20140421155520.3b33fbef@ipyr.poochiereds.net>
+X-Enigmail-Version: 1.5.2
+OpenPGP: id=0E53083F
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series includes updates for the bcm281xx clock code.  It is
-dependent on the following patch, which has been taken into the
-clk-fixes tree:
-    clk: bcm281xx: don't use unnamed structs or unions
-    https://lkml.org/lkml/2014/4/7/322
+Am 21.04.2014 21:55, schrieb Jeff Layton:
+> On Mon, 21 Apr 2014 21:39:12 +0200
+> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
+> 
+>> On 04/21/2014 08:46 PM, Rich Felker wrote:
+>>> On Mon, Apr 21, 2014 at 08:32:44PM +0200, Michael Kerrisk (man-pages) wrote:
+>>>> On 04/21/2014 06:10 PM, Rich Felker wrote:
+>>>>> I'm well aware of that. The problem is that the proposed API is using
+>>>>> the two-letter abbreviation FD, which ALWAYS means file descriptor and
+>>>>> NEVER means file description (in existing usage) to mean file
+>>>>> description. That's what's wrong.
+>>>>
+>>>> So, can you *please* answer this question: what do you call (i.e., 
+>>>> what  everyday technical language term do use for) the thing
+>>>> that sits between a file descriptor and an i-node? 
+>>>>
+>>>> (Please don't say 'struct file' -- that is not is an implementation 
+>>>> detail, and does not qualify as the kind of term that I could use 
+>>>> when documenting this feature in man pages.)
+>>>
+>>> "Open file description".
+>>
+>> Oh! I didn't realize we agreed :-).
+>>
+>>>> POSIX uses (or invented, I am not sure which) the term file description
+>>>> for a good reason: it is unambiguous, and therefore precise. I do agree
+>>>> that there's a risk of confusion between 'open file descriptor" and 
+>>>> 'and file description'--it's the same kind of risk as between English 
+>>>> terms such as 'arbitrator' and 'arbitration' (and any number of other
+>>>> examples), and as language speakers we deal with this every day.
+>>>
+>>> There's not a problem when the full word is used. On the other hand,
+>>> if you use "arb" as an abbreviation for "arbitration" in a context
+>>> where it was already universally understood as meaning "arbitrator",
+>>> that would be a big problem.
+>>>
+>>> Likewise the problem here isn't that "open file description" is a bad
+>>> term. It's that using "FD" to mean "[open] file description" is
+>>> utterly confusing, even moreso than just making up a new completely
+>>> random word.
+>>
+>> Ohh -- I had thought you a problem not just with "FD" but also
+>> "(open) file description".
+>>
+>>>>>> 2) The new API constants (F_SETLKP, F_SETLKPW, F_GETLKP) have names
+>>>>>>    that are visually very close to the traditional POSIX lock names 
+>>>>>>    (F_SETLK, F_SETLKW, F_GETLK). That's an accident waiting to happen
+>>>>>>    when someone mistypes in code and/or misses such a misttyping
+>>>>>>    when reading code. That really must be fixed.
+>>>>>
+>>>>> I agree, but I don't think making it worse is a solution.
+>>>>
+>>>> I don't agree that it's making it worse. The real problem here is 
+>>>> that people use no good unambiguous term for the thing between a file
+>>>> descriptor and an inode. POSIX provides us with a solution that may
+>>>> not seem perfect, but it is unambiguous, and I think it might feel
+>>>> more comfortable if we used it often enough.
+>>>
+>>> I would like to see it used more too, and in particular, I think it
+>>> belongs in the documentation for these new locking interfaces. But
+>>> that still doesn't answer the question of what to call them (the
+>>> macros) unless you want:
+>>>
+>>> F_OPEN_FILE_DESCRIPTION_GETLK
+>>> F_OPEN_FILE_DESCRIPTION_SETLK
+>>> F_OPEN_FILE_DESCRIPTION_SETLKW
+>>
+>> Or just 'F_OFD_*'?
+>>
+>>> Perhaps "OP" (for open-private, i.e. private to the particular open)
+>>> would be a sensible choice; OTOH people are likely to misread it as
+>>> OPeration. The general principle I have in mind though is that it
+>>> might be nice to highlight the word "open" in "open file description"
+>>
+>> (Fair enough.)
+>>
+>>> since it (1) contrasts with file descriptor, despite file descriptors
+>>> also dealing with open files, and (2) contrasts well with legacy fcntl
+>>> locks, which are (this is the whole bug) associated with the
+>>> underlying file and not the open file description.
+>>
+>> Makes sense to me. (We are in more agreement that I realized.)
+>>
+>> Cheers,
+>>
+>> Michael
+>>
+>>
+>>
+> 
+> So the motion is to call them "open file description locks" and change
+> the macros to read *_OFD_*. Does anyone object?
 
-There are three groups of patches:
-    - Some straightforward code cleanups
-    - Changing CCU and clock definitions so they're almost
-      completely initialized statically (i.e., not at run-time)
-    - Add two small features
+Works fine for me...
 
-Initially this series included support for "prerequisite clocks"
-but that has been removed so it can be discussed independently.
-
-The patches in this series--based on the current linus/master branch
-plus the patch mentioned above--are available here:
-    http://git.linaro.org/landing-teams/working/broadcom/kernel.git
-    Branch review/bcm-clk-next-v4
-
-    					-Alex
-
-History:
-  - v4: Rebased on current linus/master and reworked to account
-  	for the no-longer-unnamed union and struct members.
-  - v3: Dropped prerequisite clock support so resolving how
-	best to handle that can be resolved separately.  As
-	a result, bus clock support is no longer included.
-  - v2: Removed one unrelated patch from the series.
-
-Alex Elder (7):
-  clk: bcm281xx: warn if ccu_wait_bit() fails
-  clk: bcm281xx: use init_data.name for clock name
-  clk: bcm281xx: change some symbol names
-  clk: bcm281xx: initialize CCU structures statically
-  clk: bcm281xx: define CCU clock data statically
-  clk: bcm281xx: add clock policy support
-  clk: bcm281xx: add clock hysteresis support
-
- drivers/clk/bcm/clk-bcm281xx.c   | 243 +++++++++++++++++----------------------
- drivers/clk/bcm/clk-kona-setup.c | 229 ++++++++++++++++++++++++++----------
- drivers/clk/bcm/clk-kona.c       | 212 ++++++++++++++++++++++++++++++++--
- drivers/clk/bcm/clk-kona.h       | 160 +++++++++++++++++++++-----
- 4 files changed, 611 insertions(+), 233 deletions(-)
-
--- 
-1.9.1
-
+metze
