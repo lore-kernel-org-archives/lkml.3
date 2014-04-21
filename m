@@ -1,156 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850AbaDUV2k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 17:28:40 -0400
-Received: from mail-yk0-f175.google.com ([209.85.160.175]:65472 "EHLO
-	mail-yk0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754696AbaDUV0i (ORCPT
+	id S1754728AbaDUV35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 17:29:57 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:33536 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754027AbaDUV3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 17:26:38 -0400
-From: Alex Elder <elder@linaro.org>
-To: mturquette@linaro.org, mporter@linaro.org, bcm@fixthebug.org,
-        devicetree@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 RESEND 2/5] ARM: dts: revise kona clock binding document
-Date: Mon, 21 Apr 2014 16:26:24 -0500
-Message-Id: <1398115587-32529-3-git-send-email-elder@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398115587-32529-1-git-send-email-elder@linaro.org>
-References: <1398115587-32529-1-git-send-email-elder@linaro.org>
+	Mon, 21 Apr 2014 17:29:54 -0400
+X-Auth-Info: 4orBAbtNI5hwJA61HdUBhJQ/+k6wYLVxqnnl4tbppoA=
+From: Marek Vasut <marex@denx.de>
+To: Brian Norris <computersforpeace@gmail.com>
+Subject: Re: [PATCH 0/5] defconfigs: add MTD_SPI_NOR (dependency for M25P80)
+Date: Mon, 21 Apr 2014 16:52:39 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mtd@lists.infradead.org, Russell King <linux@arm.linux.org.uk>,
+        Shawn Guo <shawn.guo@freescale.com>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        linux-tegra@vger.kernel.org, Steven Miao <realmz6@gmail.com>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-sh@vger.kernel.org
+References: <1397719309-2022-1-git-send-email-computersforpeace@gmail.com> <20140417105302.GA32603@ulmo> <20140418063054.GK5512@norris-Latitude-E6410>
+In-Reply-To: <20140418063054.GK5512@norris-Latitude-E6410>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404211652.39704.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The next patch defines a binding for a new Broadcom SoC that uses
-Kona style CCUs for its clocks.  Update the generic Kona clock
-binding document so it's more natural to accomodate the definitions
-of additional SoC families.
+On Friday, April 18, 2014 at 08:30:54 AM, Brian Norris wrote:
+> Hi,
+> 
+> On Thu, Apr 17, 2014 at 12:53:03PM +0200, Thierry Reding wrote:
+> > On Thu, Apr 17, 2014 at 12:21:44AM -0700, Brian Norris wrote:
+> > > We are introducing a new SPI-NOR library/framework for MTD, to support
+> > > various types of SPI-NOR flash controllers which require (or benefit
+> > > from) intimate knowledge of the flash interface, rather than just the
+> > > relatively dumb SPI interface. This library borrows much of the m25p80
+> > > driver for its abstraction and moves this code into a spi-nor module.
+> > 
+> > If this is a common library, then the more common approach to solve this
+> > would be to have each driver that uses it to select MTD_SPI_NOR rather
+> > than depend on it. That way you can drop this whole series to update the
+> > default configurations.
+> 
+> But does MTD_SPI_NOR (and drivers/mtd/spi-nor/) qualify as a "library"
+> or as a "subsystem"? I thought the latter were typically expected to be
+> user-selectable options, not automatically-"select"ed.
 
-Specifically:
-    - Define the compatible string values generically, referring
-      to specific per-model values later in the document.
-    - Put the device tree example immediately after the required
-      properties listing, before the tables of SoC-specific values.
-    - Clearly identify the start of the section defining specific
-      values related to the BCM281XX family
-    - Add a list of the specific BCM281XX family compatible strings.
-    - Reword the description of the table slightly.
+I agree the "subsystem" is user-selectable while the "library" is to be 
+'select'ed .
 
-Signed-off-by: Alex Elder <elder@linaro.org>
----
- .../devicetree/bindings/clock/bcm-kona-clock.txt   | 87 ++++++++++++----------
- 1 file changed, 47 insertions(+), 40 deletions(-)
+> I would say that, except for its age, MTD_SPI_NOR is very similar in to
+> MTD_NAND (driver/mtd/nand/), which I'd consider a kind of subsystem, and
+> which users must select before they are asked about drivers which fall
+> under its category.
+> 
+> Perhaps my usage of the word "library" in the description was a mistake,
+> as I don't exactly consider it like a library in the sense of many other
+> "select"ed libraries.
 
-diff --git a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-index 56d1f49..ebe3ab6 100644
---- a/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/bcm-kona-clock.txt
-@@ -10,12 +10,12 @@ This binding uses the common clock binding:
- 
- Required properties:
- - compatible
--	Shall have one of the following values:
--	- "brcm,bcm11351-root-ccu"
--	- "brcm,bcm11351-aon-ccu"
--	- "brcm,bcm11351-hub-ccu"
--	- "brcm,bcm11351-master-ccu"
--	- "brcm,bcm11351-slave-ccu"
-+	Shall have a value of the form "brcm,<model>-<which>-ccu",
-+	where <model> is a Broadcom SoC model number and <which> is
-+	the name of a defined CCU.  For example:
-+	    "brcm,bcm11351-root-ccu"
-+	The compatible strings used for each supported SoC family
-+	are defined below.
- - reg
- 	Shall define the base and range of the address space
- 	containing clock control registers
-@@ -26,12 +26,48 @@ Required properties:
- 	Shall be an ordered list of strings defining the names of
- 	the clocks provided by the CCU.
- 
-+Device tree example:
- 
--BCM281XX family SoCs use Kona CCUs.  The following table defines
--the set of CCUs and clock specifiers for BCM281XX clocks.  When
--a clock consumer references a clocks, its symbolic specifier
--(rather than its numeric index value) should be used.  These
--specifiers are defined in "include/dt-bindings/clock/bcm281xx.h".
-+	slave_ccu: slave_ccu {
-+		compatible = "brcm,bcm11351-slave-ccu";
-+		reg = <0x3e011000 0x0f00>;
-+		#clock-cells = <1>;
-+		clock-output-names = "uartb",
-+				     "uartb2",
-+				     "uartb3",
-+				     "uartb4";
-+	};
-+
-+	ref_crystal_clk: ref_crystal {
-+		#clock-cells = <0>;
-+		compatible = "fixed-clock";
-+		clock-frequency = <26000000>;
-+	};
-+
-+	uart@3e002000 {
-+		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
-+		status = "disabled";
-+		reg = <0x3e002000 0x1000>;
-+		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
-+		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
-+		reg-shift = <2>;
-+		reg-io-width = <4>;
-+	};
-+
-+BCM281XX family
-+---------------
-+CCU compatible string values for SoCs in the BCM281XX family are:
-+    "brcm,bcm11351-root-ccu"
-+    "brcm,bcm11351-aon-ccu"
-+    "brcm,bcm11351-hub-ccu"
-+    "brcm,bcm11351-master-ccu"
-+    "brcm,bcm11351-slave-ccu"
-+
-+The following table defines the set of CCUs and clock specifiers for
-+BCM281XX family clocks.  When a clock consumer references a clocks,
-+its symbolic specifier (rather than its numeric index value) should
-+be used.  These specifiers are defined in:
-+    "include/dt-bindings/clock/bcm281xx.h"
- 
-     CCU     Clock           Type    Index   Specifier
-     ---     -----           ----    -----   ---------
-@@ -62,32 +98,3 @@ specifiers are defined in "include/dt-bindings/clock/bcm281xx.h".
-     slave   bsc2            peri      7     BCM281XX_SLAVE_CCU_BSC2
-     slave   bsc3            peri      8     BCM281XX_SLAVE_CCU_BSC3
-     slave   pwm             peri      9     BCM281XX_SLAVE_CCU_PWM
--
--
--Device tree example:
--
--	slave_ccu: slave_ccu {
--		compatible = "brcm,bcm11351-slave-ccu";
--		reg = <0x3e011000 0x0f00>;
--		#clock-cells = <1>;
--		clock-output-names = "uartb",
--				     "uartb2",
--				     "uartb3",
--				     "uartb4";
--	};
--
--	ref_crystal_clk: ref_crystal {
--		#clock-cells = <0>;
--		compatible = "fixed-clock";
--		clock-frequency = <26000000>;
--	};
--
--	uart@3e002000 {
--		compatible = "brcm,bcm11351-dw-apb-uart", "snps,dw-apb-uart";
--		status = "disabled";
--		reg = <0x3e002000 0x1000>;
--		clocks = <&slave_ccu BCM281XX_SLAVE_CCU_UARTB3>;
--		interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
--		reg-shift = <2>;
--		reg-io-width = <4>;
--	};
--- 
-1.9.1
+It did look like a library to me at first, but it's rather a subsystem that 
+contains a small library in it. Thus, I retract my previous comment about using 
+'select' and add :
 
+Acked-by: Marek Vasut <marex@denx.de>
+
+Best regards,
+Marek Vasut
