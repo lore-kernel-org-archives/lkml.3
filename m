@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973AbaDUQdy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 12:33:54 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39456 "EHLO mail.zytor.com"
+	id S1752692AbaDUQh1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 12:37:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48406 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752746AbaDUQdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 12:33:52 -0400
-Message-ID: <53554846.3070608@zytor.com>
-Date: Mon, 21 Apr 2014 09:33:10 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751318AbaDUQhX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 12:37:23 -0400
+Date: Mon, 21 Apr 2014 11:50:20 -0400
+From: Dave Jones <davej@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>, Al Viro <viro@ZenIV.linux.org.uk>,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH] vfs: rw_copy_check_uvector() - free iov on error
+Message-ID: <20140421155020.GB13709@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Miklos Szeredi <miklos@szeredi.hu>,
+	Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <20140415145749.GF10187@tucsk.piliscsaba.szeredi.hu>
+ <20140416180422.GA20907@redhat.com>
 MIME-Version: 1.0
-To: Hui Zhu <teawater@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, eparis@redhat.com,
-        ak@linux.intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "gdb@sourceware.org" <gdb@sourceware.org>
-Subject: Re: [PATCH] Fix get ERESTARTSYS with m32 in x86_64 when debug by
- GDB
-References: <CANFwon0oLO+qCtpewc=BxKBOm05aBMpV=yG0CxwW1isWHfnZqw@mail.gmail.com>
-In-Reply-To: <CANFwon0oLO+qCtpewc=BxKBOm05aBMpV=yG0CxwW1isWHfnZqw@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140416180422.GA20907@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2014 09:19 AM, Hui Zhu wrote:
-> }
-> Now ax is in 32 bits now, need sign-extend to 64 bits.  But
-> current_thread_info()->status TS_COMPAT is cleared when GDB call "call func1()".
-> Linux kernel don't know this is a 32 bits task and will not extend it.
-> Then -ERESTARTSYS is not be handled and go back to user space.
-> 
-> Then the syscall "read" get a errno in ERESTARTSYS.
-> 
-> To fix this issue, I tried to add a local variable to "do_signal" but
-> it is not works.  The stack is cleared before GDB "continue".
-> so I make a patch that add "test_thread_flag (TIF_IA32)" to syscall_get_error.
-> 
-> Signed-off-by: Hui Zhu <hui@codesourcery.com>
-> ---
-> --- a/arch/x86/include/asm/syscall.h
-> +++ b/arch/x86/include/asm/syscall.h
-> @@ -48,7 +48,8 @@ static inline long syscall_get_error(str
->   * TS_COMPAT is set for 32-bit syscall entries and then
->   * remains set until we return to user mode.
->   */
-> - if (task_thread_info(task)->status & TS_COMPAT)
-> + if ((task_thread_info(task)->status & TS_COMPAT)
-> +    || test_thread_flag (TIF_IA32))
->   /*
->   * Sign-extend the value so (int)-EFOO becomes (long)-EFOO
->   * and will match correctly in comparisons.
-> 
+On Wed, Apr 16, 2014 at 02:04:22PM -0400, Dave Jones wrote:
+ > On Tue, Apr 15, 2014 at 04:57:49PM +0200, Miklos Szeredi wrote:
+ > 
+ >  > Some callers (aio_run_iocb, vmsplice_to_user) forget to free the iov on
+ >  > error.  This seems to be a recurring problem, with most callers being buggy
+ >  > initially.
+ > 
+ > Your patch looks a lot more complete than the quick hack I did a few
+ > days ago when coverity first started nagging about this, but in testing
+ > I've found that something really ugly starts showing up when you patch this
+ > 
+ > The symptoms vary, but always are some kind of slab corruption.
+ > Here's the last example:
+ > 
+ > =============================================================================
+ > BUG kmalloc-256 (Not tainted): Invalid object pointer 0xffff8802407adc60
+ > -----------------------------------------------------------------------------
+ > 
+ > Disabling lock debugging due to kernel taint
+ > INFO: Slab 0xffffea000901eb00 objects=28 used=22 fp=0xffff8802407ad6d0 flags=0x20000000004081
+ > CPU: 1 PID: 1185 Comm: trinity-c1 Tainted: G    B         3.15.0-rc1+ #191
+ >  ffff880243c073c0 00000000f952f249 ffff8800a1a2bc10 ffffffffbd74686d
+ >  ffffea000901eb00 ffff8800a1a2bce8 ffffffffbd1b0cd4 ffffffff00000020
+ >  ffff8800a1a2bcf8 ffff8800a1a2bca8 61766e4943c00a18 656a626f2064696c
+ > Call Trace:
+ >  [<ffffffffbd74686d>] dump_stack+0x4e/0x7a
+ >  [<ffffffffbd1b0cd4>] slab_err+0xb4/0xe0
+ >  [<ffffffffbd0bf3ae>] ? put_lock_stats.isra.23+0xe/0x30
+ >  [<ffffffffbd1b0da6>] ? slab_pad_check.part.44+0xa6/0x170
+ >  [<ffffffffbd744e7f>] free_debug_processing+0x88/0x22a
+ >  [<ffffffffbd1c7041>] ? compat_do_readv_writev+0xe1/0x250
+ >  [<ffffffffbd74506d>] __slab_free+0x4c/0x2c3
+ >  [<ffffffffbd1c6679>] ? do_sync_readv_writev+0x59/0xa0
+ >  [<ffffffffbd1b2614>] kfree+0x214/0x220
+ >  [<ffffffffbd1c7041>] ? compat_do_readv_writev+0xe1/0x250
+ >  [<ffffffffbd1c7041>] compat_do_readv_writev+0xe1/0x250
+ >  [<ffffffffbd0bf716>] ? lock_release_holdtime.part.24+0xe6/0x160
+ >  [<ffffffffbd0a3ccd>] ? get_parent_ip+0xd/0x50
+ >  [<ffffffffbd75642b>] ? preempt_count_sub+0x6b/0xf0
+ >  [<ffffffffbd751a01>] ? _raw_spin_unlock+0x31/0x50
+ >  [<ffffffffbd349883>] ? __this_cpu_preempt_check+0x13/0x20
+ >  [<ffffffffbd1c730a>] compat_writev+0x3a/0x80
+ >  [<ffffffffbd1c85d8>] compat_SyS_writev+0x58/0xd0
+ >  [<ffffffffbd75c6a9>] ia32_do_call+0x13/0x13
+ > FIX kmalloc-256: Object at 0xffff8802407adc60 not freed
+ > 
+ > 
+ > I also had an incomplete trace that showed vmsplice causing a bug in mm/slub.c:3396
+ > on an earlier run.
+ > 
+ > The crash happens very quickly (within a few seconds of running trinity) for me.
 
-No, this is definitely not the right fix.  Your description is
-incredibly hard to follow, but I feel pretty strongly that the above is
-at the very best a last resort fix.  TS_COMPAT is a local property
-whereas TIF_IA32 is global; it is important to keep their respective
-uses correct.  Mixing them is almost guaranteed to be just plain wrong.
+Al, Miklos ?
 
-	-hpa
+	Dave
 
