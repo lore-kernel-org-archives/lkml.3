@@ -1,46 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753049AbaDUQbB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 12:31:01 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:47145 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543AbaDUQa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 12:30:59 -0400
-Date: Mon, 21 Apr 2014 17:30:58 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening
- /proc/pid/fd/N
-Message-ID: <20140421163058.GS18016@ZenIV.linux.org.uk>
-References: <cover.1398097304.git.luto@amacapital.net>
- <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+	id S1752973AbaDUQdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 12:33:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39456 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752746AbaDUQdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 12:33:52 -0400
+Message-ID: <53554846.3070608@zytor.com>
+Date: Mon, 21 Apr 2014 09:33:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Hui Zhu <teawater@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org, eparis@redhat.com,
+        ak@linux.intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "gdb@sourceware.org" <gdb@sourceware.org>
+Subject: Re: [PATCH] Fix get ERESTARTSYS with m32 in x86_64 when debug by
+ GDB
+References: <CANFwon0oLO+qCtpewc=BxKBOm05aBMpV=yG0CxwW1isWHfnZqw@mail.gmail.com>
+In-Reply-To: <CANFwon0oLO+qCtpewc=BxKBOm05aBMpV=yG0CxwW1isWHfnZqw@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 09:22:48AM -0700, Andy Lutomirski wrote:
+On 04/21/2014 09:19 AM, Hui Zhu wrote:
+> }
+> Now ax is in 32 bits now, need sign-extend to 64 bits.  But
+> current_thread_info()->status TS_COMPAT is cleared when GDB call "call func1()".
+> Linux kernel don't know this is a 32 bits task and will not extend it.
+> Then -ERESTARTSYS is not be handled and go back to user space.
+> 
+> Then the syscall "read" get a errno in ERESTARTSYS.
+> 
+> To fix this issue, I tried to add a local variable to "do_signal" but
+> it is not works.  The stack is cleared before GDB "continue".
+> so I make a patch that add "test_thread_flag (TIF_IA32)" to syscall_get_error.
+> 
+> Signed-off-by: Hui Zhu <hui@codesourcery.com>
+> ---
+> --- a/arch/x86/include/asm/syscall.h
+> +++ b/arch/x86/include/asm/syscall.h
+> @@ -48,7 +48,8 @@ static inline long syscall_get_error(str
+>   * TS_COMPAT is set for 32-bit syscall entries and then
+>   * remains set until we return to user mode.
+>   */
+> - if (task_thread_info(task)->status & TS_COMPAT)
+> + if ((task_thread_info(task)->status & TS_COMPAT)
+> +    || test_thread_flag (TIF_IA32))
+>   /*
+>   * Sign-extend the value so (int)-EFOO becomes (long)-EFOO
+>   * and will match correctly in comparisons.
+> 
 
-> +static int proc_may_follow(struct nameidata *nd, struct file *f)
-> +{
-> +	if (!nd)
-> +		return 0;  /* This is readlink, */
-> +
-> +	if ((nd->flags & LOOKUP_WRITE) && !(f->f_mode & FMODE_WRITE))
-> +		return -EACCES;
-> +
-> +	return 0;
-> +}
+No, this is definitely not the right fix.  Your description is
+incredibly hard to follow, but I feel pretty strongly that the above is
+at the very best a last resort fix.  TS_COMPAT is a local property
+whereas TIF_IA32 is global; it is important to keep their respective
+uses correct.  Mixing them is almost guaranteed to be just plain wrong.
 
-And this is just plain wrong.  WTF are you making the traversal of symlink
-in the middle of pathname dependent on the open flags?
+	-hpa
 
-NAK.
