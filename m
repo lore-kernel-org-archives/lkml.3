@@ -1,111 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611AbaDULyu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 07:54:50 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:54374 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaDULyq (ORCPT
+	id S1752019AbaDUL4H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 07:56:07 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:60774 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751836AbaDUL4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 07:54:46 -0400
-Message-ID: <53550702.80807@cogentembedded.com>
-Date: Mon, 21 Apr 2014 15:54:42 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 21 Apr 2014 07:56:05 -0400
+X-IronPort-AV: E=Sophos;i="4.97,896,1389715200"; 
+   d="scan'208";a="29519611"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: Tejun Heo <tj@kernel.org>, <linux-kernel@vger.kernel.org>
+CC: Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 2/2 V3] workqueue: simple refactor pwq_adjust_max_active()
+Date: Mon, 21 Apr 2014 19:59:21 +0800
+Message-ID: <1398081561-12618-2-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1398081561-12618-1-git-send-email-laijs@cn.fujitsu.com>
+References: <1398081561-12618-1-git-send-email-laijs@cn.fujitsu.com>
 MIME-Version: 1.0
-To: "Li, ZhenHua" <zhen-hual@hp.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Jiri Pirko <jiri@resnulli.us>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Jerry Chu <hkchu@google.com>, Sathya Perla <sathya.perla@emulex.com>,
-        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
-        Ajit Khaparde <ajit.khaparde@emulex.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] net: Add rtnl_lock for netif_device_attach/detach
-References: <1397632082-18453-1-git-send-email-zhen-hual@hp.com> <5351767E.6000404@cogentembedded.com> <5354BAEE.9000005@hp.com>
-In-Reply-To: <5354BAEE.9000005@hp.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Caculate the value(max_active) for pwq->max_active earlier.
 
-On 21-04-2014 10:30, Li, ZhenHua wrote:
+Fast exit for max_active is not changed.
+	"if (!freezable && pwq->max_active == wq->saved_max_active)" is hardly
+	hit after __WQ_FREEZING was introduced. So we change the exit-condition
+	to a more possible condition.
 
-> The comment is trying to explain why add a lock here.
+Reduce wake_up_worker() rate.
 
-    I can read, thanks. :-)
-    I was wondering about the kernel-doc comment style you've used; AFAIK, 
-it's only good for documenting functions and data structures. The normal 
-multi-line comment style in the networking code is this:
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ kernel/workqueue.c |   21 +++++++++++----------
+ 1 files changed, 11 insertions(+), 10 deletions(-)
 
-/* bla
-  * bla
-  */
-
->>> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
-
->>> As netif_running is called in netif_device_attach/detach. There should be
->>> rtnl_lock/unlock called, to avoid dev stat change during netif_device_attach
->>> and detach being called.
->>> I checked NIC some drivers,  some of them have netif_device_attach/detach
->>> called between rtnl_lock/unlock, while some drivers do not.
-
->>> This patch is tring to find a generic way to fix this for all NIC drivers.
-
->>> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
->>> ---
->>>   net/core/dev.c |   18 ++++++++++++++++++
->>>   1 file changed, 18 insertions(+)
-
->>> diff --git a/net/core/dev.c b/net/core/dev.c
->>> index 5b3042e..795bbc5 100644
->>> --- a/net/core/dev.c
->>> +++ b/net/core/dev.c
->>> @@ -2190,10 +2190,19 @@ EXPORT_SYMBOL(__dev_kfree_skb_any);
->>>    */
->>>   void netif_device_detach(struct net_device *dev)
->>>   {
->>> +    /**
-
->>   Hm, why kernel-doc style comment here?
-
->>> +     * As netif_running is called , rtnl_lock and unlock are needed to
-
-    Space before comma not needed.
-
->>> +     * avoid __LINK_STATE_START bit changes during this function call.
->>> +     */
->>> +    int need_unlock;
->>> +
->>> +    need_unlock = rtnl_trylock();
->>>       if (test_and_clear_bit(__LINK_STATE_PRESENT, &dev->state) &&
->>>           netif_running(dev)) {
->>>           netif_tx_stop_all_queues(dev);
->>>       }
->>> +    if (need_unlock)
->>> +        rtnl_unlock();
->>>   }
->>>   EXPORT_SYMBOL(netif_device_detach);
->>>
->>> @@ -2205,11 +2214,20 @@ EXPORT_SYMBOL(netif_device_detach);
->>>    */
->>>   void netif_device_attach(struct net_device *dev)
->>>   {
->>> +    /**
-
->>   ... and here?
-
->>> +     * As netif_running is called , rtnl_lock and unlock are needed to
-
-    Space before comma not needed.
-
->>> +     * avoid __LINK_STATE_START bit changes during this function call.
->>> +     */
-
-WBR, Sergei
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index beca98b..59bad6e 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -198,7 +198,7 @@ struct pool_workqueue {
+ 	int			nr_in_flight[WORK_NR_COLORS];
+ 						/* L: nr of in_flight works */
+ 	int			nr_active;	/* L: nr of active works */
+-	int			max_active;	/* L: max active works */
++	int			max_active;	/* L&WQ: max active works */
+ 	struct list_head	delayed_works;	/* L: delayed works */
+ 	struct list_head	pwqs_node;	/* WR: node on wq->pwqs */
+ 	struct list_head	mayday_node;	/* MD: node on wq->maydays */
+@@ -3756,20 +3756,23 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
+ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
+ {
+ 	struct workqueue_struct *wq = pwq->wq;
+-	bool freezable = wq->flags & WQ_FREEZABLE;
++	int max_active = wq->saved_max_active;
+ 
+ 	/* for @wq->saved_max_active and @wq->flags */
+ 	lockdep_assert_held(&wq->mutex);
+ 
+-	/* fast exit for non-freezable wqs */
+-	if (!freezable && pwq->max_active == wq->saved_max_active)
++	if (wq->flags & __WQ_FREEZING) {
++		if (!WARN_ON_ONCE(!(wq->flags & WQ_FREEZABLE)))
++			max_active = 0;
++	}
++
++	/* fast exit for max_active is not changed */
++	if (pwq->max_active == max_active)
+ 		return;
+ 
+ 	spin_lock_irq(&pwq->pool->lock);
+-
+-	if (!freezable || !(wq->flags & __WQ_FREEZING)) {
+-		pwq->max_active = wq->saved_max_active;
+-
++	pwq->max_active = max_active;
++	if (pwq->nr_active < pwq->max_active) {
+ 		while (!list_empty(&pwq->delayed_works) &&
+ 		       pwq->nr_active < pwq->max_active)
+ 			pwq_activate_first_delayed(pwq);
+@@ -3779,8 +3782,6 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
+ 		 * max_active is bumped.  It's a slow path.  Do it always.
+ 		 */
+ 		wake_up_worker(pwq->pool);
+-	} else {
+-		pwq->max_active = 0;
+ 	}
+ 
+ 	spin_unlock_irq(&pwq->pool->lock);
+-- 
+1.7.4.4
 
