@@ -1,111 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752168AbaDUPWP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 11:22:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47114 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287AbaDUPWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 11:22:13 -0400
-Date: Mon, 21 Apr 2014 10:18:57 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Punnaiah Choudary Kalluri <punnaiah.choudary.kalluri@xilinx.com>
-CC: <leoli@freescale.com>, <balbi@ti.com>, <michal.simek@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-usb@vger.kernel.org>,
-        <kalluripunnaiahchoudary@gmail.com>, <kpc528@gmail.com>,
-        Punnaiah Choudary Kalluri <punnaia@xilinx.com>
-Subject: Re: [RFC PATCH 0/2] usb: Reuse fsl driver code for synopsys usb
- controller
-Message-ID: <20140421151857.GH27341@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <7aed4ee6-69e7-4f9f-9f45-675bc695089c@CO9EHSMHS031.ehs.local>
+	id S1751925AbaDUP3T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 11:29:19 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:34385 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751521AbaDUP3M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 11:29:12 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+sHJum3is6Tsg7/J"
-Content-Disposition: inline
-In-Reply-To: <7aed4ee6-69e7-4f9f-9f45-675bc695089c@CO9EHSMHS031.ehs.local>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1397917972-6293-3-git-send-email-santosh.shilimkar@ti.com>
+References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
+	<1397917972-6293-3-git-send-email-santosh.shilimkar@ti.com>
+Date: Mon, 21 Apr 2014 10:29:11 -0500
+Message-ID: <CAL_Jsq+9dZiAndnbC3fZDjZWU90K4BBR=ckuDxfy5_mBcRL=nA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/7] of: introduce of_dma_get_range() helper
+From: Rob Herring <robherring2@gmail.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---+sHJum3is6Tsg7/J
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, Apr 19, 2014 at 9:32 AM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> From: Grygorii Strashko <grygorii.strashko@ti.com>
+>
+> The of_dma_get_range() allows to find "dma-range" property for
+> the specified device and parse it.
+>  dma-ranges format:
+>    DMA addr (dma_addr)          : naddr cells
+>    CPU addr (phys_addr_t)       : pna cells
+>    size                         : nsize cells
+>
+> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: Olof Johansson <olof@lixom.net>
+> Cc: Grant Likely <grant.likely@linaro.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> ---
+>  drivers/of/platform.c       |   85 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/of_platform.h |    8 ++++
 
-On Sun, Apr 20, 2014 at 09:57:03PM +0530, Punnaiah Choudary Kalluri wrote:
-> Zynq soc contains a dual role usb controller and this IP is from synopsys=
-=2E We
-> observed that there is driver available for this controller from freescal=
-e and
-> decided to reuse this driver for zynq use.
->=20
-> Here is the link for zynq soc TRM. Please refer chapter 15 for usb contro=
-ller
-> related information.
-> http://www.xilinx.com/support/documentation/user_guides/ug585-Zynq-7000-T=
-RM.pdf
->=20
-> The following series of patches add initial support for zynq soc in fsl g=
-adget controller
-> driver and fsl host controller driver.
->=20
-> Based on these patches, I have the following concerns and sugesstions
->=20
-> Since the freescale usb driver is for synopsys IP, Please consider rebran=
-ding
-> this driver name and config options to reflect that it is a sysnopsys IP.=
- So
-> that other vendors who using this IP can reuse thie driver.
->=20
-> Also the ehci-fsl.c is for powerpc based soc's, and zynq is ARM based, i =
-have
-> protected the code which is specifc to freescale with CONFIG_FSL_SOC. Ple=
-ase
-> suggest if there is a better way of doing this?
->=20
-> Punnaiah Choudary Kalluri (2):
->   usb: gadget: fsl_udc: Add support for zynq usb device controller
->   usb: ehci-fsl: Add support for zynq usb host controller
->=20
->  drivers/usb/gadget/Kconfig        |    2 +-
->  drivers/usb/gadget/Makefile       |    1 +
->  drivers/usb/gadget/fsl_mxc_udc.c  |   21 ++++++++++++
->  drivers/usb/gadget/fsl_udc_core.c |    5 +++
->  drivers/usb/gadget/fsl_usb2_udc.h |    2 +-
->  drivers/usb/host/Kconfig          |    2 +-
->  drivers/usb/host/ehci-fsl.c       |   63 +++++++++++++++++++++++++++++++=
-+++++-
->  drivers/usb/host/fsl-mph-dr-of.c  |    9 +++++
->  8 files changed, 101 insertions(+), 4 deletions(-)
+This belongs in drivers/of/address.c and of_address.h.
 
-as somebody else already mentioned, chipidea is the way to go.
+>  2 files changed, 93 insertions(+)
+>
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 404d1da..2265a55 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -485,4 +485,89 @@ int of_platform_populate(struct device_node *root,
+>         return rc;
+>  }
+>  EXPORT_SYMBOL_GPL(of_platform_populate);
+> +
+> +/**
+> + * of_dma_get_range - Get DMA range info
+> + * @np:                device node to get DMA range info
+> + * @dma_addr:  pointer to store initial DMA address of DMA range
+> + * @paddr:     pointer to store initial CPU address of DMA range
+> + * @size:      pointer to store size of DMA range
+> + *
+> + * Look in bottom up direction for the first "dma-range" property
 
+dma-ranges
 
---=20
-balbi
+> + * and parse it.
+> + *  dma-ranges format:
+> + *     DMA addr (dma_addr)     : naddr cells
+> + *     CPU addr (phys_addr_t)  : pna cells
+> + *     size                    : nsize cells
+> + *
+> + * It returns -ENODEV if "dma-ranges" property was not found
+> + * for this device in DT.
+> + */
+> +extern int of_dma_get_range(struct device_node *np, dma_addr_t *dma_addr,
 
---+sHJum3is6Tsg7/J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+drop extern.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+> +               phys_addr_t *paddr, phys_addr_t *size)
+> +{
+> +       struct device_node *node = np;
+> +       const u32 *ranges = NULL;
 
-iQIcBAEBAgAGBQJTVTbhAAoJEIaOsuA1yqREs6cP/iu8JzXHJcyXk6gQtkt3OymZ
-pa5N6Crh1p0r+6uS9L6hkrI0ipESYJMFg2GOxB1IC9YM+NIWRki7E7EHIjo/9wt6
-36hATXYE+lFiuksCexk8HGpyrftRd1KqCJOj5ma5ppZf6vP2nhhx1tgASIwHFZav
-rDDGw3LfEEa9m07aJayXzmQ1Fk9Yr18FkExwq7H6x4R886RU15BrpO3hWukjdTbM
-yivgDbCLxlKsYZbXQlKx4f3Q89g9xjoJ7F30lo5yZwq6u17lr8vjBA4nCTHa+Em+
-WT6KuhsNzVMw5Ga3SulvjNsgi1FnHlckHEzW/7fclY6jWEeG5OvZY+Ab6PaGqAOf
-M9a3WY6lZJ+0GcjMs20NgEOquounvT80iaTAAceULWJ4hEnsLvXrRU8XgkAYjzl7
-fX75lPfSXgjt/1GGgLPi9VMDdK35HsT7Ty1k+8rpuZGpfwm6ldqYJ0thwsgca8H+
-BjgQDnDg29nW90rzrKRj0KRpDWkcPL3aQS+tak2g9sibQ1Rf4pmccgqbTzYAF6Dg
-pofgzkgNA5WjuFoPexeL3i8smjLRF1itmo7DAG0EVNo9MqAWtKooNvSWRW2kbYPj
-wR932yhN45d5cWasd9RUy81eO2gEDmdWEJ9RUI1GtFcxcQWzXxrYpEK3Shw69vFa
-e0osVxJGFzWZNFxIXZA9
-=cO9c
------END PGP SIGNATURE-----
+__be32
 
---+sHJum3is6Tsg7/J--
+> +       int len, naddr, nsize, pna;
+> +       int ret = 0;
+> +
+> +       if (!node)
+> +               return -EINVAL;
+> +
+> +       while (1) {
+> +               naddr = of_n_addr_cells(node);
+> +               nsize = of_n_size_cells(node);
+> +               node = of_get_next_parent(node);
+> +               if (!node)
+> +                       break;
+> +
+> +               ranges = of_get_property(node, "dma-ranges", &len);
+> +
+> +               /* Ignore empty ranges, they imply no translation required */
+> +               if (ranges && len > 0)
+> +                       break;
+> +
+> +               /*
+> +                * At least empty ranges has to be defined for parent node if
+> +                * DMA is supported
+> +                */
+> +               if (!ranges)
+> +                       break;
+
+You need an of_node_put here if you are getting the next parent.
+
+> +       }
+> +
+> +       if (!ranges) {
+> +               pr_debug("%s: no dma-ranges found for node(%s)\n",
+> +                        __func__, np->full_name);
+> +               ret = -ENODEV;
+> +               goto out;
+> +       }
+> +
+> +       len /= sizeof(u32);
+> +
+> +       pna = of_n_addr_cells(node);
+> +
+> +       /* dma-ranges format:
+> +        * DMA addr     : naddr cells
+> +        * CPU addr     : pna cells
+> +        * size         : nsize cells
+> +        */
+> +       *dma_addr = of_read_number(ranges, naddr);
+
+You should set this after the following call succeeds.
+
+> +       *paddr = of_translate_dma_address(np, ranges);
+
+This is going to search for dma-ranges again, but you have already
+done that. Is there a case that just reading the CPU addr will not
+work? I suppose we could have more than one level of translation. It
+also seems a bit abusive that the DMA address is the ranges property.
+I don't really have a better suggestion though.
+
+> +       if (*paddr == OF_BAD_ADDR) {
+
+As I mentioned, this is potentially a size mismatch.
+
+Rob
