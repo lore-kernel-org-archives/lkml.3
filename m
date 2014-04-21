@@ -1,173 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619AbaDUU5r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 16:57:47 -0400
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:46473 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562AbaDUU5m (ORCPT
+	id S1754651AbaDUU67 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 16:58:59 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:33769 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754502AbaDUU6y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 16:57:42 -0400
+	Mon, 21 Apr 2014 16:58:54 -0400
 MIME-Version: 1.0
-In-Reply-To: <1702309.mG1EHfKp35@vostro.rjw.lan>
-References: <20140417202033.7057.98414.stgit@bhelgaas-glaptop.roam.corp.google.com>
- <1702309.mG1EHfKp35@vostro.rjw.lan>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 21 Apr 2014 14:57:20 -0600
-Message-ID: <CAErSpo4fvfXPJzC2=ixdXO_OO7_syBCC-hXQNRH4Cu-_EkV6Cg@mail.gmail.com>
-Subject: Re: [PATCH] PNP: Work around BIOS defects in Intel MCH area reporting
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Aaron Lu <aaron.lu@intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Zheng Z Yan <zheng.z.yan@intel.com>, Dave Jones <davej@redhat.com>,
-        Rui Zhang <rui.zhang@intel.com>, Yinghai Lu <yinghai@kernel.org>
+Date: Mon, 21 Apr 2014 22:58:53 +0200
+Message-ID: <CAHuzUScfp19c_th_pfsZs05+yDz34MuEH-P1f+FF1dcivfH=5Q@mail.gmail.com>
+Subject: rm -f * on large files very slow on XFS + MD RAID 6 volume of 15x 4TB
+ of HDDs (52TB)
+From: Speedy Milan <speedy.milan@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ivan Pantovic <gyro.ivan@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 2:44 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> Hi Bjorn,
->
-> On Thursday, April 17, 2014 02:20:33 PM Bjorn Helgaas wrote:
->> Work around BIOSes that don't report the entire Intel MCH area.
->>
->> MCHBAR is not an architected PCI BAR, so MCH space is usually reported as a
->> PNP0C02 resource.  The MCH space was once 16KB, but is 32KB in newer parts.
->> Some BIOSes still report a PNP0C02 resource that is only 16KB, which means
->> the rest of the MCH space is consumed but unreported.
->>
->> This can cause resource map sanity check warnings or (theoretically) a
->> device conflict if we assigned the unreported space to another device.
->>
->> The Intel perf event uncore driver tripped over this when it claimed the
->> MCH region:
->>
->>   resource map sanity check conflict: 0xfed10000 0xfed15fff 0xfed10000 0xfed13fff pnp 00:01
->>   Info: mapping multiple BARs. Your kernel is fine.
->>
->> To prevent this, if we find a PNP0C02 resource that covers part of the MCH
->> space, extend it to cover the entire space.
->>
->> Link: http://lkml.kernel.org/r/20140224162400.GE16457@pd.tnic
->> Reported-by: Borislav Petkov <bp@alien8.de>
->> Tested-by: Borislav Petkov <bp@suse.de>
->> Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
->> Acked-by: Borislav Petkov <bp@suse.de>
->
-> Do you want me to take this patch for PNP, or are you planning to take it
-> into your tree?
+I want to report very slow deletion of 24 50GB files (in total 12 TB),
+all present in the same folder.
 
-I figured it was more of a PNP thing than a PCI thing, so I was
-thinking you would take it.  But if you'd rather I take it, just let
-me know.
+OS is CentOS 6.4, with upgraded kernel 3.13.1.
 
->> ---
->>  drivers/pnp/quirks.c |   74 ++++++++++++++++++++++++++++++++++++++++++++++++++
->>  1 file changed, 74 insertions(+)
->>
->> diff --git a/drivers/pnp/quirks.c b/drivers/pnp/quirks.c
->> index 258fef272ea7..90b8c12c220d 100644
->> --- a/drivers/pnp/quirks.c
->> +++ b/drivers/pnp/quirks.c
->> @@ -334,6 +334,79 @@ static void quirk_amd_mmconfig_area(struct pnp_dev *dev)
->>  }
->>  #endif
->>
->> +/* Device IDs of parts that have 32KB MCH space */
->> +static const unsigned int mch_quirk_devices[] = {
->> +     0x0154, /* Ivy Bridge */
->> +     0x0c00, /* Haswell */
->> +};
->> +
->> +static struct pci_dev *get_intel_host(void)
->> +{
->> +     int i;
->> +     struct pci_dev *host;
->> +
->> +     for (i = 0; i < ARRAY_SIZE(mch_quirk_devices); i++) {
->> +             host = pci_get_device(PCI_VENDOR_ID_INTEL, mch_quirk_devices[i],
->> +                                   NULL);
->> +             if (host)
->> +                     return host;
->> +     }
->> +     return NULL;
->> +}
->> +
->> +static void quirk_intel_mch(struct pnp_dev *dev)
->> +{
->> +     struct pci_dev *host;
->> +     u32 addr_lo, addr_hi;
->> +     struct pci_bus_region region;
->> +     struct resource mch;
->> +     struct pnp_resource *pnp_res;
->> +     struct resource *res;
->> +
->> +     host = get_intel_host();
->> +     if (!host)
->> +             return;
->> +
->> +     /*
->> +      * MCHBAR is not an architected PCI BAR, so MCH space is usually
->> +      * reported as a PNP0C02 resource.  The MCH space was originally
->> +      * 16KB, but is 32KB in newer parts.  Some BIOSes still report a
->> +      * PNP0C02 resource that is only 16KB, which means the rest of the
->> +      * MCH space is consumed but unreported.
->> +      */
->> +
->> +     /*
->> +      * Read MCHBAR for Host Member Mapped Register Range Base
->> +      * https://www-ssl.intel.com/content/www/us/en/processors/core/4th-gen-core-family-desktop-vol-2-datasheet
->> +      * Sec 3.1.12.
->> +      */
->> +     pci_read_config_dword(host, 0x48, &addr_lo);
->> +     region.start = addr_lo & ~0x7fff;
->> +     pci_read_config_dword(host, 0x4c, &addr_hi);
->> +     region.start |= (dma_addr_t) addr_hi << 32;
->> +     region.end = region.start + 32*1024 - 1;
->> +
->> +     memset(&mch, 0, sizeof(mch));
->> +     mch.flags = IORESOURCE_MEM;
->> +     pcibios_bus_to_resource(host->bus, &mch, &region);
->> +
->> +     list_for_each_entry(pnp_res, &dev->resources, list) {
->> +             res = &pnp_res->res;
->> +             if (res->end < mch.start || res->start > mch.end)
->> +                     continue;       /* no overlap */
->> +             if (res->start == mch.start && res->end == mch.end)
->> +                     continue;       /* exact match */
->> +
->> +             dev_info(&dev->dev, FW_BUG "PNP resource %pR covers only part of %s Intel MCH; extending to %pR\n",
->> +                      res, pci_name(host), &mch);
->> +             res->start = mch.start;
->> +             res->end = mch.end;
->> +             break;
->> +     }
->> +
->> +     pci_dev_put(host);
->> +}
->> +
->>  /*
->>   *  PnP Quirks
->>   *  Cards or devices that need some tweaking due to incomplete resource info
->> @@ -364,6 +437,7 @@ static struct pnp_fixup pnp_fixups[] = {
->>  #ifdef CONFIG_AMD_NB
->>       {"PNP0c01", quirk_amd_mmconfig_area},
->>  #endif
->> +     {"PNP0c02", quirk_intel_mch},
->>       {""}
->>  };
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+The hardware is a Supermicro server with 15x 4TB WD Se drives in MD
+RAID 6, totalling 52TB of free space.
+
+XFS is formated directly on the RAID volume, without LVM layers.
+
+Deletion was done with rm -f * command, and it took upwards of 1 hour
+to delete the files.
+
+File system was filled completely prior to deletion.
+
+rm was mostly waiting (D state), probably for kworker threads, and
+iostat was showing big HDD utilization numbers and very low throughput
+so it looked like a random HDD workload was in effect.
+
+rm was the only IO task at the moment.
+
+I found it strange that deleting large files should take such a long
+time, so I thought it would be wise to report.
+
+Thanks,
+Milan
