@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525AbaDUUJf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 16:09:35 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38398 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891AbaDUUJc (ORCPT
+	id S1754537AbaDUUK4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 16:10:56 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:46866 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750891AbaDUUKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 16:09:32 -0400
-Date: Mon, 21 Apr 2014 22:09:30 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Chen Gang <gang.chen.5i5j@gmail.com>
-Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        len.brown@intel.com,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel/power/hibernate.c: be sure of 'start' is not
- bigger than 'stop'
-Message-ID: <20140421200930.GA9880@amd.pavel.ucw.cz>
-References: <53551FCB.3030109@gmail.com>
+	Mon, 21 Apr 2014 16:10:51 -0400
+Message-ID: <53557B39.8080208@gmail.com>
+Date: Mon, 21 Apr 2014 22:10:33 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <53551FCB.3030109@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>,
+        Rich Felker <dalias@libc.org>, Jeff Layton <jlayton@redhat.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        "Stefan (metze) Metzmacher" <metze@samba.org>
+CC: mtk.manpages@gmail.com
+Subject: Re: [PATCH] locks: rename file-private locks to file-description
+ locks
+References: <1398087935-14001-1-git-send-email-jlayton@redhat.com> <20140421140246.GB26358@brightrain.aerifal.cx> <535529FA.8070709@gmail.com> <20140421161004.GC26358@brightrain.aerifal.cx> <5355644C.7000801@gmail.com> <20140421184841.GA5105@thunk.org> <20140421185144.GF26358@brightrain.aerifal.cx> <20140421190410.GC5105@thunk.org> <20140421190659.GA10884@infradead.org>
+In-Reply-To: <20140421190659.GA10884@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-04-21 21:40:27, Chen Gang wrote:
-> For do_div(), it need 'u64' type, which means the outside must be sure
-> of 'start' is not bigger than 'stop', or it will report warning.
+On 04/21/2014 09:06 PM, Christoph Hellwig wrote:
+> On Mon, Apr 21, 2014 at 03:04:10PM -0400, Theodore Ts'o wrote:
+>> I think what you mean is that there is no need that we expose the name
+>> "struct file".  My point is that "struct file" is actually a much
+>> _better_ name than "file description".  Heck, "open file object" would
+>> be better name than "file description".
 > 
-> The related warning (with allmodconfig for unicore32):
-> 
->     CC      kernel/power/hibernate.o
->   kernel/power/hibernate.c: In function ‘swsusp_show_speed’:
->   kernel/power/hibernate.c:237: warning: comparison of distinct pointer types lacks a cast
-> 
-> Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+> Open file description is what all current standards use.  I'm pretty
+> sure really old ones just used open file, 
 
->  {
-> -	s64 elapsed_centisecs64;
-> +	u64 elapsed_centisecs64;
->  	int centisecs;
->  	int k;
->  	int kps;
->  
->  	elapsed_centisecs64 = timeval_to_ns(stop) - timeval_to_ns(start);
-> +	if ((s64)elapsed_centisecs64 < 0) {
-> +		printk(KERN_ERR "PM: stop: %llu < start %llu\n",
-> +			timeval_to_ns(stop), timeval_to_ns(start));
-> +		return;
-> +	}
->  	do_div(elapsed_centisecs64, NSEC_PER_SEC / 100);
->  	centisecs = elapsed_centisecs64;
->  	if (centisecs == 0)
+("open file description" was already in SUSv1 (1994))
 
-Quite a lot of code to shut up warning in mostly debugging
-function... is there alternative method of shutting it up? Have you
-seen < 0 values in wild? Is it worth handing that situation?
-									Pavel
+> but struct file has never
+> been used in an API description.  
+
+Exactly.
+
+> Introducing it now entirely out of
+> context is not helpful at all.
+
+In principle, I agree, though it might be helpful for some
+people to mention this term in a side-note in, say, open(2).
+
+Cheers,
+
+Michael
+
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
