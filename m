@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751693AbaDUIOO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 04:14:14 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:56078 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaDUIOJ (ORCPT
+	id S1751332AbaDUIlF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 04:41:05 -0400
+Received: from fep17.mx.upcmail.net ([62.179.121.37]:36986 "EHLO
+	fep17.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaDUIlD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 04:14:09 -0400
-Message-ID: <5354D34B.4030607@mentor.com>
-Date: Mon, 21 Apr 2014 16:14:03 +0800
-From: Chung-Lin Tang <chunglin_tang@mentor.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 21 Apr 2014 04:41:03 -0400
+X-SourceIP: 77.56.27.120
+X-Authenticated-Sender: odi.ch@hispeed.ch
+Message-ID: <5354D997.70604@odi.ch>
+Date: Mon, 21 Apr 2014 10:40:55 +0200
+From: =?UTF-8?B?T3J0d2luIEdsw7xjaw==?= <odi@odi.ch>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Ley Foon Tan <lftan@altera.com>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, Chung-Lin Tang <cltang@CODESOURCERY.COM>
-Subject: Re: [PATCH 00/28] nios2 Linux kernel port
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>	<53518FAC.8020504@zytor.com>	<201404191730.54400.arnd@arndb.de> <CAFiDJ5-PiUWetRMp65VTo4pvZM65r3WBjCZVWmxW0XnqAyO-GA@mail.gmail.com> <5354AD36.5090809@zytor.com>
-In-Reply-To: <5354AD36.5090809@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Apr 2014 08:14:07.0180 (UTC) FILETIME=[AA7BE8C0:01CF5D39]
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, gerben@daybyday.nl,
+        Vlad Yasevich <vyasevic@redhat.com>
+Subject: Re: 3.14 regression: huge latency in read/select on tun
+References: <533C381E.9090103@odi.ch>		 <1396456973.3989.41.camel@edumazet-glaptop2.roam.corp.google.com>		 <533D133A.3090008@odi.ch>		 <1396531176.12330.6.camel@edumazet-glaptop2.roam.corp.google.com>	 <1396533026.12330.9.camel@edumazet-glaptop2.roam.corp.google.com>	 <5352D8FF.6070305@odi.ch> <1398011495.19600.22.camel@edumazet-glaptop2.roam.corp.google.com>
+In-Reply-To: <1398011495.19600.22.camel@edumazet-glaptop2.roam.corp.google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/4/21 1:31 PM, H. Peter Anvin wrote:
-> On 04/20/2014 10:23 PM, Ley Foon Tan wrote:
->> On Sat, Apr 19, 2014 at 11:30 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>> On Friday 18 April 2014, H. Peter Anvin wrote:
->>>> Did the generic headers ever get updated to match Linus' guidance that
->>>> any new architecture ports should use a 64-bit time_t?
->>>
->>> No, unfortunately not. With my rule that every architecture that gets
->>> added needs to clean up asm-generic some more, to make it easier to add
->>> the next one, we should probably do for nios2.
->>>
->>>         Arnd
+
+
+On 20.04.2014 18:31, Eric Dumazet wrote:> On Sat, 2014-04-19 at 22:13
++0200, Ortwin Glück wrote:
+>> On 03.04.2014 15:50, Eric Dumazet wrote:
 >>
->> Can you give me the documentation on this new guidance and point me
->> any architecture have implemented this?
->> Thanks.
+>> I finally found time to bisect this:
 >>
-> 
-> We implemented it in the x32 ABI for x86.  In generic code this is keyed
-> by COMPAT_USE_64BIT_TIME, but in your case it isn't actually a matter of
-> compat, so it should be easier.
-> 
-> See this thread including the discussion about time_t:
-> 
-> https://lkml.org/lkml/2011/8/26/415
-> 
-> 	-hpa
+>> commit 53d6471cef17262d3ad1c7ce8982a234244f68ec
+>> Author: Vlad Yasevich <vyasevic@redhat.com>
+>> Date:   Thu Mar 27 17:26:18 2014 -0400
+>>
+>>     net: Account for all vlan headers in skb_mac_gso_segment
+>
+> Hmm.. probably already solved by commit
+> 1e785f48d29a09b6cf96db7b49b6320dada332e1
+> ("net: Start with correct mac_len in skb_network_protocol")
 
-
-I'm not sure why we need CONFIG_USE_64BIT_TIME? We don't have any
-32-on-64 problems.
-
-My understanding of what Arnd meant, was to clean up
-asm-generic/posix_types.h such that for example, time_t should be
-defined as a 'long long' type, which should be 64-bit almost everywhere.
-At least AFAIK, that should work for all current asm-generic users.
+Indeed that fixes it. I have cherry picked that onto 3.14 and it works.
+That means 1e785f48 should be applied to stable 3.13.y and 3.14.y too.
 
 Thanks,
-Chung-Lin
+
+Ortwin
 
