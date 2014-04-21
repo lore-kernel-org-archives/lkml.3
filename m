@@ -1,100 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751389AbaDUB3z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 21:29:55 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:46478 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751217AbaDUB3x (ORCPT
+	id S1751416AbaDUBd7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 21:33:59 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:50010 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751123AbaDUBd5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 21:29:53 -0400
-X-IronPort-AV: E=Sophos;i="4.97,894,1389715200"; 
-   d="scan'208";a="29499096"
-Message-ID: <53547574.4090207@cn.fujitsu.com>
-Date: Mon, 21 Apr 2014 09:33:40 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Sun, 20 Apr 2014 21:33:57 -0400
+Subject: [PATCH v3] kernel/panic: Add "crash_kexec_post_notifiers" option
+ for kdump after panic_notifers
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+To: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Eric Biederman <ebiederm@xmission.com>
+Cc: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Satoru MORIYA <satoru.moriya.br@hitachi.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+Date: Mon, 21 Apr 2014 10:33:48 +0900
+Message-ID: <20140421013348.6719.6959.stgit@ltc230.yrl.intra.hitachi.co.jp>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/6] workqueue: simpler&better workers management synchronization
-References: <1397299543-12012-1-git-send-email-laijs@cn.fujitsu.com> <53491A85.70004@cn.fujitsu.com>
-In-Reply-To: <53491A85.70004@cn.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/12/2014 06:50 PM, Lai Jiangshan wrote:
-> Sorry,
-> the cover letter was forgotten to send to LKML.
+Add a "crash_kexec_post_notifiers" option to run kdump after running
+panic_notifiers and dump kmsg. This can help rare situations which
+kdump drops in failure because of unstable crashed kernel or hardware
+failure (memory corruption on critical data/code), or the 2nd kernel
+is already broken by the 1st kernel (it's a broken behavior, but who
+can guarantee that the "crashed" kernel works correctly?).
 
-Hi, Tejun
+Usage: add "crash_kexec_post_notifiers" to kernel boot option.
 
-Any comments about the patchset.
-(general comments, high level comments)
+Note that this actually increases risks of the failure of kdump.
+This option should be set only if you worry about the rare case
+of kdump failure rather than increasing the chance of success.
 
-Thanks.
-Lai
+Changes from v2:
+ - Remove warning message according to Vivek's comment.
 
-> 
-> On 04/12/2014 06:45 PM, Lai Jiangshan wrote:
->> Each patches remove codes!
->>
->> Patch1&2 are the basic patches. They add a *united* mechanism for managing
->> percpu pools' workers' & unbound pools' workers' & rescuers' CPUMASK.
->>
->> Patch1&4 make workers-concurrency-enabling atomically when cpu_online()
->> and create_worker(). after this, workers-concurrency-enabling-disabling
->> are all atomically.
->>
->> Old manager_mutex protects:
->> 1) workers creation&destruction
->> 2) workers cpumask managing when cpu_online()/workers-creation
->> 3) workers concurrency enabling&disabling.
->>
->> Now, the above three things' synchronization are separated.
->> 1) We don't need manager_mutex protects workers creation&destruction
->>    1.1) creation is only happened when the cpu is first online, the unbound pool
->> 	is just created, and manage_workers(). they have their one synchronization.
->>    1.2) destruction only happens on idle-timeout handler, protected by pool->lock.
->>    1.3) put_unbound_pool() uses manager_arb&workers_leave(new) to synchronize
->> 	with workers creation&destruction.
->>
->> 2) bind_mutex and bind_list handle all the workers'(percpu,unbound,
->>    normal,rescuer) cpumask when cpu_online()/workers-creation/worker-destrution.
->>    we don't need manager_mutex.
->>
->> 3) pool->lock and worker_idr handle workers concurrency enabling&disabling.
->>
->> Note, bind_list is always a super set of worker_idr, and when cpu-online or
->> workers-creation, cpumask is set at first and then concurrency-enabling.
->> concurrency-management depends on local-wakeup which depends on cpumask
->> is properly set for all the workers.
->>
->> This patchset depends on previous patch:
->> "workqueue: fix possible race condition when rescuer VS pwq-release"
->>
->> Thanks,
->> Lai
->>
->>
->> Lai Jiangshan (6):
->>   workqueue: generic routine to restore percpu/unbound pools' workers'
->>     cpumask
->>   workqueue: generic framework to manage normal&rescuer workers'
->>     cpumask
->>   workqueue: make destroy_worker() atomically
->>   workqueue: commit worker to pool's concurrency setting atomically.
->>   workqueue: remove manager_mutex
->>   workqueue: destroy worker directly in idle timeout handler
->>
->>  kernel/workqueue.c          |  366 ++++++++++++------------------------------
->>  kernel/workqueue_internal.h |    1 +
->>  2 files changed, 106 insertions(+), 261 deletions(-)
->>
-> 
-> .
-> 
+Changes from v1:
+ - Rename late_kdump option to crash_kexec_post_notifiers.
+ - Remove unneeded warning message.
+
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Acked-by: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
+Cc: Eric Biederman <ebiederm@xmission.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
+Cc: Satoru MORIYA <satoru.moriya.br@hitachi.com>
+Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+---
+ Documentation/kernel-parameters.txt |    8 ++++++++
+ kernel/panic.c                      |   23 +++++++++++++++++++++--
+ 2 files changed, 29 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 03e50b4..1df416b 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2339,6 +2339,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+ 			timeout < 0: reboot immediately
+ 			Format: <timeout>
+ 
++	crash_kexec_post_notifiers
++			Run kdump after running panic-notifiers and dumping
++			kmsg. This only for the users who doubt kdump always
++			succeeds in any situation.
++			Note that this also increases risks of kdump failure,
++			because some panic notifiers can make the crashed
++			kernel more unstable.
++
+ 	parkbd.port=	[HW] Parallel port number the keyboard adapter is
+ 			connected to, default is 0.
+ 			Format: <parport#>
+diff --git a/kernel/panic.c b/kernel/panic.c
+index d02fa9f..30c4a1c 100644
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -32,6 +32,7 @@ static unsigned long tainted_mask;
+ static int pause_on_oops;
+ static int pause_on_oops_flag;
+ static DEFINE_SPINLOCK(pause_on_oops_lock);
++static bool crash_kexec_post_notifiers;
+ 
+ int panic_timeout = CONFIG_PANIC_TIMEOUT;
+ EXPORT_SYMBOL_GPL(panic_timeout);
+@@ -112,9 +113,11 @@ void panic(const char *fmt, ...)
+ 	/*
+ 	 * If we have crashed and we have a crash kernel loaded let it handle
+ 	 * everything else.
+-	 * Do we want to call this before we try to display a message?
++	 * If we want to run this after calling panic_notifiers, pass
++	 * the "crash_kexec_post_notifiers" option to the kernel.
+ 	 */
+-	crash_kexec(NULL);
++	if (!crash_kexec_post_notifiers)
++		crash_kexec(NULL);
+ 
+ 	/*
+ 	 * Note smp_send_stop is the usual smp shutdown function, which
+@@ -131,6 +134,15 @@ void panic(const char *fmt, ...)
+ 
+ 	kmsg_dump(KMSG_DUMP_PANIC);
+ 
++	/*
++	 * If you doubt kdump always works fine in any situation,
++	 * "crash_kexec_post_notifiers" offers you a chance to run 
++	 * panic_notifiers and dumping kmsg before kdump.
++	 * Note: since some panic_notifiers can make crashed kernel
++	 * more unstable, it can increase risks of the kdump failure too.
++	 */
++	crash_kexec(NULL);
++
+ 	bust_spinlocks(0);
+ 
+ 	if (!panic_blink)
+@@ -472,6 +484,13 @@ EXPORT_SYMBOL(__stack_chk_fail);
+ core_param(panic, panic_timeout, int, 0644);
+ core_param(pause_on_oops, pause_on_oops, int, 0644);
+ 
++static int __init setup_crash_kexec_post_notifiers(char *s)
++{
++	crash_kexec_post_notifiers = true;
++	return 0;
++}
++early_param("crash_kexec_post_notifiers", setup_crash_kexec_post_notifiers);
++
+ static int __init oops_setup(char *s)
+ {
+ 	if (!s)
+
 
