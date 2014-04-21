@@ -1,161 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752770AbaDUQnw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 12:43:52 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:37102 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaDUQns (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 12:43:48 -0400
+	id S1752941AbaDUQpb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 12:45:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55608 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752055AbaDUQp2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 12:45:28 -0400
+Date: Mon, 21 Apr 2014 12:45:08 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Rich Felker <dalias@libc.org>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        "Stefan (metze) Metzmacher" <metze@samba.org>
+Subject: Re: [PATCH] locks: rename file-private locks to file-description
+ locks
+Message-ID: <20140421124508.4f2c9ca7@tlielax.poochiereds.net>
+In-Reply-To: <20140421161004.GC26358@brightrain.aerifal.cx>
+References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>
+	<20140421140246.GB26358@brightrain.aerifal.cx>
+	<535529FA.8070709@gmail.com>
+	<20140421161004.GC26358@brightrain.aerifal.cx>
 MIME-Version: 1.0
-In-Reply-To: <1396053110-21639-10-git-send-email-sre@kernel.org>
-References: <1396053110-21639-1-git-send-email-sre@kernel.org>
-	<1396053110-21639-10-git-send-email-sre@kernel.org>
-Date: Mon, 21 Apr 2014 11:43:47 -0500
-Message-ID: <CAL_Jsq+jGeuM+Vmb8uzz3-ZUvKQu=kDv3RqVY0Dudmc9XTm-BA@mail.gmail.com>
-Subject: Re: [PATCHv3 09/14] Documentation: DT: omap-ssi binding documentation
-From: Rob Herring <robherring2@gmail.com>
-To: Sebastian Reichel <sre@kernel.org>
-Cc: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        =?UTF-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
-        =?UTF-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Mar 28, 2014 at 7:31 PM, Sebastian Reichel <sre@kernel.org> wrote:
-> Create device tree binding documentation for
-> OMAP Synchronous Serial Interface (SSI) device.
->
-> Signed-off-by: Sebastian Reichel <sre@kernel.org>
-> ---
->  Documentation/devicetree/bindings/hsi/omap-ssi.txt | 85 ++++++++++++++++++++++
->  1 file changed, 85 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/hsi/omap-ssi.txt
->
-> diff --git a/Documentation/devicetree/bindings/hsi/omap-ssi.txt b/Documentation/devicetree/bindings/hsi/omap-ssi.txt
-> new file mode 100644
-> index 0000000..709419b
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/hsi/omap-ssi.txt
-> @@ -0,0 +1,85 @@
-> +OMAP SSI controller bindings
-> +
-> +OMAP Synchronous Serial Interface (SSI) controller implements a legacy
-> +variant of MIPI's High Speed Synchronous Serial Interface (HSI).
-> +
-> +Required properties:
-> +- compatible:          Should include "ti,omap3-ssi".
-> +- reg-names:           Contains the values "sys" and "gdd".
-> +- reg:                 Contains a register specifier for each entry in
-> +                       reg-names.
+On Mon, 21 Apr 2014 12:10:04 -0400
+Rich Felker <dalias@libc.org> wrote:
 
-You need to define the order here unless you have a strong argument
-why you can't.
+> On Mon, Apr 21, 2014 at 04:23:54PM +0200, Michael Kerrisk (man-pages) wrote:
+> > On 04/21/2014 04:02 PM, Rich Felker wrote:
+> > > On Mon, Apr 21, 2014 at 09:45:35AM -0400, Jeff Layton wrote:
+> > >> File-private locks have been merged into Linux for v3.15, and *now*
+> > >> people are commenting that the name and macro definitions for the new
+> > >> file-private locks suck.
+> > >>
+> > >> ....and I can't even disagree. The names and command macros do suck.
+> > >>
+> > >> We're going to have to live with these for a long time, so it's
+> > >> important that we be happy with the names before we're stuck with them.
+> > >>
+> > >> The consensus on the lists so far is that they should be rechristened as
+> > >> "file-description locks".
+> > >>
+> > >> This patch makes the following changes that I think are necessary before
+> > >> v3.15 ships:
+> > >>
+> > >> 1) rename the command macros to their new names. These end up in the uapi
+> > >>    headers and so are part of the external-facing API. It turns out that
+> > >>    glibc doesn't actually use the fcntl.h uapi header, but it's hard to
+> > >>    be sure that something else won't. Changing it now is safest.
+> > >>
+> > >> 2) make the the /proc/locks output display these as type "FDLOCK"
+> > >>
+> > >> The rest of the renaming can wait until v3.16, since everything else
+> > >> isn't visible outside of the kernel.
+> > > 
+> > > I'm sorry I didn't chime in on this earlier, but I really prefer the
+> > > (somewhat bad) current naming ("private") to the
+> > > ridiculously-confusing use of "FD" to mean "file descriptION" when
+> > > everybody is used to it meaning "file descriptOR". The potential for
+> > > confusion that these are "file descriptOR locks" (they're not) is much
+> > > more of a problem, IMO, than the confusion about what "private" means
+> > > (since it doesn't have an established meaning in this context.
+> > > 
+> > > Thus my vote is for leaving things the way the kernel did it already.
+> > 
+> > There's at least two problems to solve here:
+> > 
+> > 1) "File private locks" is _meaningless_ as a term. Elsewhere
+> 
+> That's the benefit of it: it doesn't clash with any
+> already-established meaning. I agree it's less than ideal, but all the
+> alternatives I've seen so far are worse.
+> 
+> >    (http://thread.gmane.org/gmane.network.samba.internals/76414/focus=1685376),
+> >    I suggested various alternatives. "File-handle locks [*]" was my
+> 
+> This is also bad. "Handle" also has a defined meaning in POSIX. See
+> XSH 2.5.1:
+> 
+> http://pubs.opengroup.org/onlinepubs/9699919799/functions/V2_chap02.html
+> 
 
-> +- interrupt-names:      Contains the value "gdd_mpu".
-> +- interrupts:          Contains interrupt information for each entry in
-> +                       interrupt-names.
-> +- ranges:              Represents the bus address mapping between the main
-> +                       controller node and the child nodes below.
-> +- clocks:              Contains clock specifiers for each entry in
-> +                        clock-names.
-> +- clock-names:         Must include the following entries:
-> +  "ssi_ssr_fck": The OMAP clock of that name
-> +  "ssi_sst_fck": The OMAP clock of that name
-> +  "ssi_ick": The OMAP clock of that name
-> +- #address-cells:      Should be set to <1>
-> +- #size-cells:         Should be set to <1>
-> +
-> +Each port is represented as a sub-node of the ti,omap3-ssi device.
-> +
-> +Required Port sub-node properties:
-> +- compatible:          Should be set to the following value
-> +                        ti,omap3-ssi-port (applicable to OMAP34xx devices)
-> +- reg-names:           Contains the values "rx" and "tx".
-> +- reg:                 Contains a register specifier for each entry in
-> +                       reg-names.
+Not to mention that "filehandle" has a different meaning altogether in
+NFS parlance. I think we should avoid "handle" altogether in the name.
 
-You need to define the order here unless you have a strong argument
-why you can't.
+> >    initial preference, and I also suggested "file-description locks"
+> >    and noted the drawbacks of that term. I think it's insufficient
+> >    to say "stick with the existing poor name"--if you have
+> >    something better, then please propose it. (Note by the way
+> >    that for nearly a decade now, the open(2) man page has followed
+> >    POSIX in using the term "open file description. Full disclosure:
+> >    of course, I'm responsible for that change in the man page.)
+> 
+> I'm well aware of that. The problem is that the proposed API is using
+> the two-letter abbreviation FD, which ALWAYS means file descriptor and
+> NEVER means file description (in existing usage) to mean file
+> description. That's what's wrong.
+> 
 
-> +- interrupt-parent     Should be a phandle for the interrupt controller
-> +- interrupt-names:     Contains the values "mpu_irq0" and "mpu_irq1".
+Fair enough. Assuming we kept "file-description locks" as a name, what
+would you propose as new macro names?
 
-Those names aren't exactly useful.
+> > 2) The new API constants (F_SETLKP, F_SETLKPW, F_GETLKP) have names
+> >    that are visually very close to the traditional POSIX lock names 
+> >    (F_SETLK, F_SETLKW, F_GETLK). That's an accident waiting to happen
+> >    when someone mistypes in code and/or misses such a misttyping
+> >    when reading code. That really must be fixed.
+> 
+> I agree, but I don't think making it worse is a solution.
+> 
 
-> +- interrupts:          Contains interrupt information for each entry in
-> +                       interrupt-names.
-
-You need to define the order here unless you have a strong argument
-why you can't.
-
-> +- ti,ssi-cawake-gpio:  Defines which GPIO pin is used to signify CAWAKE
-> +                       events for the port. This is an optional board-specific
-> +                       property. If it's missing the port will not be
-> +                       enabled.
-> +
-> +Example for Nokia N900:
-> +
-> +ssi-controller@48058000 {
-> +       compatible = "ti,omap3-ssi";
-> +
-> +       /* needed until hwmod is updated to use the compatible string */
-> +       ti,hwmods = "ssi";
-> +
-> +       reg = <0x48058000 0x1000>,
-> +             <0x48059000 0x1000>;
-> +       reg-names = "sys",
-> +                   "gdd";
-> +
-> +       interrupts = <55>;
-> +       interrupt-names = "gdd_mpu";
-> +
-> +       clocks = <&ssi_ssr_fck>,
-> +                <&ssi_sst_fck>,
-> +                <&ssi_ick>;
-> +       clock-names = "ssi_ssr_fck",
-> +                     "ssi_sst_fck",
-> +                     "ssi_ick";
-> +
-> +       #address-cells = <1>;
-> +       #size-cells = <1>;
-> +       ranges;
-> +
-> +       ssi-port@0 {
-
-Does this h/w really have more than 1 port?
-
-This should really be "ssi-port@4805a800" Or you need to fill in
-ranges to have a local offset.
-
-> +               compatible = "ti,omap3-ssi-port";
-> +
-> +               reg = <0x4805a000 0x800>,
-> +                     <0x4805a800 0x800>;
-> +               reg-names = "tx",
-> +                           "rx";
-> +
-> +               interrupt-parent = <&intc>;
-> +               interrupts = <51>,
-> +                            <52>;
-> +               interrupt-names = "mpu_irq0",
-> +                                 "mpu_irq1";
-> +
-> +               ti,ssi-cawake-gpio = <&gpio5 23 GPIO_ACTIVE_HIGH>; /* 151 */
-> +       }
-> +}
-> --
-> 1.9.0
->
+-- 
+Jeff Layton <jlayton@redhat.com>
