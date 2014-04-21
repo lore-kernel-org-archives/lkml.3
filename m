@@ -1,125 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753071AbaDUQXW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 12:23:22 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:41115 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937AbaDUQXH (ORCPT
+	id S1752823AbaDUQ02 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 12:26:28 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:33220 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667AbaDUQ0Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 12:23:07 -0400
-From: Andy Lutomirski <luto@amacapital.net>
-To: Pavel Machek <pavel@ucw.cz>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        David Herrmann <dh.herrmann@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Subject: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
-Date: Mon, 21 Apr 2014 09:22:48 -0700
-Message-Id: <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <cover.1398097304.git.luto@amacapital.net>
-References: <cover.1398097304.git.luto@amacapital.net>
-In-Reply-To: <cover.1398097304.git.luto@amacapital.net>
-References: <cover.1398097304.git.luto@amacapital.net>
+	Mon, 21 Apr 2014 12:26:25 -0400
+Message-ID: <535546AF.6000002@infradead.org>
+Date: Mon, 21 Apr 2014 09:26:23 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Masanari Iida <standby24x7@gmail.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] doc: drm: Fix typo in drm.tmpl
+References: <1398097026-13800-1-git-send-email-standby24x7@gmail.com>
+In-Reply-To: <1398097026-13800-1-git-send-email-standby24x7@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch does this:
+On 04/21/2014 09:17 AM, Masanari Iida wrote:
+> Fix spelling typo in DocBook/drm.tmpl
+> 
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 
-    # (echo asdf >/proc/self/fd/3) 3</dev/null
-    bash: /proc/self/fd/3: Permission denied
+Applied.  Thanks.
 
-I'm not confident that my use of nd->flags is correct.  I'm also not
-confident that this hooks in to path lookup in the right place.
+> ---
+>  Documentation/DocBook/drm.tmpl | 12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
+> 
+> diff --git a/Documentation/DocBook/drm.tmpl b/Documentation/DocBook/drm.tmpl
+> index 702c4474..bdb932f 100644
+> --- a/Documentation/DocBook/drm.tmpl
+> +++ b/Documentation/DocBook/drm.tmpl
+> @@ -79,7 +79,7 @@
+>    <partintro>
+>      <para>
+>        This first part of the DRM Developer's Guide documents core DRM code,
+> -      helper libraries for writting drivers and generic userspace interfaces
+> +      helper libraries for writing drivers and generic userspace interfaces
+>        exposed by DRM drivers.
+>      </para>
+>    </partintro>
+> @@ -459,7 +459,7 @@ char *date;</synopsis>
+>        providing a solution to every graphics memory-related problems, GEM
+>        identified common code between drivers and created a support library to
+>        share it. GEM has simpler initialization and execution requirements than
+> -      TTM, but has no video RAM management capabitilies and is thus limited to
+> +      TTM, but has no video RAM management capabilities and is thus limited to
+>        UMA devices.
+>      </para>
+>      <sect2>
+> @@ -889,7 +889,7 @@ int (*prime_fd_to_handle)(struct drm_device *dev,
+>  	    vice versa. Drivers must use the kernel dma-buf buffer sharing framework
+>  	    to manage the PRIME file descriptors. Similar to the mode setting
+>  	    API PRIME is agnostic to the underlying buffer object manager, as
+> -	    long as handles are 32bit unsinged integers.
+> +	    long as handles are 32bit unsigned integers.
+>  	  </para>
+>  	  <para>
+>  	    While non-GEM drivers must implement the operations themselves, GEM
+> @@ -2351,7 +2351,7 @@ void intel_crt_init(struct drm_device *dev)
+>        first create properties and then create and associate individual instances
+>        of those properties to objects. A property can be instantiated multiple
+>        times and associated with different objects. Values are stored in property
+> -      instances, and all other property information are stored in the propery
+> +      instances, and all other property information are stored in the property
+>        and shared between all instances of the property.
+>      </para>
+>      <para>
+> @@ -2692,10 +2692,10 @@ int num_ioctls;</synopsis>
+>    <sect1>
+>      <title>Legacy Support Code</title>
+>      <para>
+> -      The section very brievely covers some of the old legacy support code which
+> +      The section very briefly covers some of the old legacy support code which
+>        is only used by old DRM drivers which have done a so-called shadow-attach
+>        to the underlying device instead of registering as a real driver. This
+> -      also includes some of the old generic buffer mangement and command
+> +      also includes some of the old generic buffer management and command
+>        submission code. Do not use any of this in new and modern drivers.
+>      </para>
+>  
+> 
 
-It is not complete.  It doesn't handle FMODE_READ.  It also doesn't
-handle FMODE_EXEC or FMODE_PATH, but the desired semantics there are
-less clear.  For example, this should probably continue to work:
 
-    (/proc/self/fd/3 Hello) 3</bin/echo
-
-This patch does not do anything to /proc/self/exe.  It probably should.
-
-Something like this can possibly fix the accidental flink-via-proc
-thing, too.
-
-This may break userspace.  If so, I would guess that anything broken
-by it is either an actual exploit or is so broken that it doesn't
-deserve to continue working.  If it breaks something important, then
-maybe it will need a sysctl.
-
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
----
- fs/namei.c            |  3 +++
- fs/proc/fd.c          | 19 ++++++++++++++++---
- include/linux/namei.h |  1 +
- 3 files changed, 20 insertions(+), 3 deletions(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index c6157c8..3f01836 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2894,6 +2894,9 @@ static int do_last(struct nameidata *nd, struct path *path,
- 		goto finish_open;
- 	}
- 
-+	if (open_flag & (O_WRONLY | O_RDWR))
-+		nd->flags |= LOOKUP_WRITE;
-+
- 	if (!(open_flag & O_CREAT)) {
- 		if (nd->last.name[nd->last.len])
- 			nd->flags |= LOOKUP_FOLLOW | LOOKUP_DIRECTORY;
-diff --git a/fs/proc/fd.c b/fs/proc/fd.c
-index deca407..ab3373c 100644
---- a/fs/proc/fd.c
-+++ b/fs/proc/fd.c
-@@ -139,6 +139,17 @@ static const struct dentry_operations tid_fd_dentry_operations = {
- 	.d_delete	= pid_delete_dentry,
- };
- 
-+static int proc_may_follow(struct nameidata *nd, struct file *f)
-+{
-+	if (!nd)
-+		return 0;  /* This is readlink, */
-+
-+	if ((nd->flags & LOOKUP_WRITE) && !(f->f_mode & FMODE_WRITE))
-+		return -EACCES;
-+
-+	return 0;
-+}
-+
- static int proc_fd_link(struct nameidata *nd,
- 			struct dentry *dentry, struct path *path)
- {
-@@ -159,9 +170,11 @@ static int proc_fd_link(struct nameidata *nd,
- 		spin_lock(&files->file_lock);
- 		fd_file = fcheck_files(files, fd);
- 		if (fd_file) {
--			*path = fd_file->f_path;
--			path_get(&fd_file->f_path);
--			ret = 0;
-+			ret = proc_may_follow(nd, fd_file);
-+			if (ret == 0) {
-+				*path = fd_file->f_path;
-+				path_get(&fd_file->f_path);
-+			}
- 		}
- 		spin_unlock(&files->file_lock);
- 		put_files_struct(files);
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 492de72..5077201 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -51,6 +51,7 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
- #define LOOKUP_CREATE		0x0200
- #define LOOKUP_EXCL		0x0400
- #define LOOKUP_RENAME_TARGET	0x0800
-+#define LOOKUP_WRITE		0x8000
- 
- #define LOOKUP_JUMPED		0x1000
- #define LOOKUP_ROOT		0x2000
 -- 
-1.9.0
-
+~Randy
