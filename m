@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752858AbaDUEg6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:36:58 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58764 "EHLO
+	id S1751725AbaDUEgp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:36:45 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58735 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059AbaDUEfD (ORCPT
+	with ESMTP id S1752051AbaDUEe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:35:03 -0400
+	Mon, 21 Apr 2014 00:34:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Josef Bacik <jbacik@fb.com>
-Subject: [PATCH 3.13 19/32] Btrfs: skip submitting barrier for missing device
-Date: Sun, 20 Apr 2014 19:13:36 -0700
-Message-Id: <20140421021136.500319760@linuxfoundation.org>
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH 3.13 15/32] ima: restore the original behavior for sending data with ima template
+Date: Sun, 20 Apr 2014 19:13:32 -0700
+Message-Id: <20140421021135.952655383@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
 References: <20140421021133.865086647@linuxfoundation.org>
@@ -27,53 +27,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+From: Roberto Sassu <roberto.sassu@polito.it>
 
-commit f88ba6a2a44ee98e8d59654463dc157bb6d13c43 upstream.
+commit c019e307ad82a8ee652b8ccbacf69ae94263b07b upstream.
 
-I got an error on v3.13:
- BTRFS error (device sdf1) in write_all_supers:3378: errno=-5 IO failure (errors while submitting device barriers.)
+With the new template mechanism introduced in IMA since kernel 3.13,
+the format of data sent through the binary_runtime_measurements interface
+is slightly changed. Now, for a generic measurement, the format of
+template data (after the template name) is:
 
-how to reproduce:
-  > mkfs.btrfs -f -d raid1 /dev/sdf1 /dev/sdf2
-  > wipefs -a /dev/sdf2
-  > mount -o degraded /dev/sdf1 /mnt
-  > btrfs balance start -f -sconvert=single -mconvert=single -dconvert=single /mnt
+template_len | field1_len | field1 | ... | fieldN_len | fieldN
 
-The reason of the error is that barrier_all_devices() failed to submit
-barrier to the missing device.  However it is clear that we cannot do
-anything on missing device, and also it is not necessary to care chunks
-on the missing device.
+In addition, fields containing a string now include the '\0' termination
+character.
 
-This patch stops sending/waiting barrier if device is missing.
+Instead, the format for the 'ima' template should be:
 
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
+SHA1 digest | event name length | event name
+
+It must be noted that while in the IMA 3.13 code 'event name length' is
+'IMA_EVENT_NAME_LEN_MAX + 1' (256 bytes), so that the template digest
+is calculated correctly, and 'event name' contains '\0', in the pre 3.13
+code 'event name length' is exactly the string length and 'event name'
+does not contain the termination character.
+
+The patch restores the behavior of the IMA code pre 3.13 for the 'ima'
+template so that legacy userspace tools obtain a consistent behavior
+when receiving data from the binary_runtime_measurements interface
+regardless of which kernel version is used.
+
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/disk-io.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ security/integrity/ima/ima.h              |    2 +-
+ security/integrity/ima/ima_fs.c           |    2 ++
+ security/integrity/ima/ima_template_lib.c |   10 +++++++---
+ 3 files changed, 10 insertions(+), 4 deletions(-)
 
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -3238,6 +3238,8 @@ static int barrier_all_devices(struct bt
- 	/* send down all the barriers */
- 	head = &info->fs_devices->devices;
- 	list_for_each_entry_rcu(dev, head, dev_list) {
-+		if (dev->missing)
-+			continue;
- 		if (!dev->bdev) {
- 			errors_send++;
- 			continue;
-@@ -3252,6 +3254,8 @@ static int barrier_all_devices(struct bt
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -27,7 +27,7 @@
+ #include "../integrity.h"
  
- 	/* wait for all the barriers */
- 	list_for_each_entry_rcu(dev, head, dev_list) {
-+		if (dev->missing)
-+			continue;
- 		if (!dev->bdev) {
- 			errors_wait++;
- 			continue;
+ enum ima_show_type { IMA_SHOW_BINARY, IMA_SHOW_BINARY_NO_FIELD_LEN,
+-		     IMA_SHOW_ASCII };
++		     IMA_SHOW_BINARY_OLD_STRING_FMT, IMA_SHOW_ASCII };
+ enum tpm_pcrs { TPM_PCR0 = 0, TPM_PCR8 = 8 };
+ 
+ /* digest size for IMA, fits SHA1 or MD5 */
+--- a/security/integrity/ima/ima_fs.c
++++ b/security/integrity/ima/ima_fs.c
+@@ -160,6 +160,8 @@ static int ima_measurements_show(struct
+ 
+ 		if (is_ima_template && strcmp(field->field_id, "d") == 0)
+ 			show = IMA_SHOW_BINARY_NO_FIELD_LEN;
++		if (is_ima_template && strcmp(field->field_id, "n") == 0)
++			show = IMA_SHOW_BINARY_OLD_STRING_FMT;
+ 		field->field_show(m, show, &e->template_data[i]);
+ 	}
+ 	return 0;
+--- a/security/integrity/ima/ima_template_lib.c
++++ b/security/integrity/ima/ima_template_lib.c
+@@ -109,13 +109,16 @@ static void ima_show_template_data_binar
+ 					  enum data_formats datafmt,
+ 					  struct ima_field_data *field_data)
+ {
++	u32 len = (show == IMA_SHOW_BINARY_OLD_STRING_FMT) ?
++	    strlen(field_data->data) : field_data->len;
++
+ 	if (show != IMA_SHOW_BINARY_NO_FIELD_LEN)
+-		ima_putc(m, &field_data->len, sizeof(u32));
++		ima_putc(m, &len, sizeof(len));
+ 
+-	if (!field_data->len)
++	if (!len)
+ 		return;
+ 
+-	ima_putc(m, field_data->data, field_data->len);
++	ima_putc(m, field_data->data, len);
+ }
+ 
+ static void ima_show_template_field_data(struct seq_file *m,
+@@ -129,6 +132,7 @@ static void ima_show_template_field_data
+ 		break;
+ 	case IMA_SHOW_BINARY:
+ 	case IMA_SHOW_BINARY_NO_FIELD_LEN:
++	case IMA_SHOW_BINARY_OLD_STRING_FMT:
+ 		ima_show_template_data_binary(m, show, datafmt, field_data);
+ 		break;
+ 	default:
 
 
