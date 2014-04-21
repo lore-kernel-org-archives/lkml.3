@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008AbaDUPDQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 11:03:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39599 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287AbaDUPDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 11:03:13 -0400
-Date: Mon, 21 Apr 2014 11:03:07 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Simo Sorce <ssorce@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
-        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-Message-ID: <20140421150307.GA4367@redhat.com>
-References: <CALCETrXj6kD3E+vsaWmkrSbaQYTu=c-Hsw640jh4O+FbojYk2g@mail.gmail.com>
- <20140417171256.GB25334@redhat.com>
- <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
- <1397756025.2628.64.camel@willson.li.ssimo.org>
- <CALCETrVBJFgKwRKBE2jAG6kiGgkJ+MyQiw2nyz5yj0h68kCk9A@mail.gmail.com>
- <1397759013.2628.86.camel@willson.li.ssimo.org>
- <20140417185023.GA32527@redhat.com>
- <1397761817.2628.113.camel@willson.li.ssimo.org>
- <20140417191646.GA2461@redhat.com>
- <CALCETrW3F1+3qF3thrAmuoWVbRveBJ2=owpigh4mv6iAafoQCw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrW3F1+3qF3thrAmuoWVbRveBJ2=owpigh4mv6iAafoQCw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752272AbaDUPEM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 11:04:12 -0400
+Received: from smtprelay03.ispgateway.de ([80.67.31.26]:40569 "EHLO
+	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaDUPEK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 11:04:10 -0400
+From: Christoph Jaeger <christophjaeger@linux.com>
+To: swise@chelsio.com, roland@kernel.org, sean.hefty@intel.com,
+        hal.rosenstock@gmail.com
+Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Jaeger <christophjaeger@linux.com>
+Subject: [PATCH] RDMA/cxgb4: Fix memory leaks in c4iw_alloc() error paths
+Date: Mon, 21 Apr 2014 17:02:42 +0200
+Message-Id: <1398092562-11116-1-git-send-email-christophjaeger@linux.com>
+X-Mailer: git-send-email 1.9.0
+X-Df-Sender: MTg4NDM4Mw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 12:46:22PM -0700, Andy Lutomirski wrote:
-> On Thu, Apr 17, 2014 at 12:16 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> > On Thu, Apr 17, 2014 at 03:10:17PM -0400, Simo Sorce wrote:
-> >
-> > [..]
-> >> At this point I think journald people need to give a little bit more
-> >> details on how they plan to use SO_PASSCGROUP.
-> >>
-> >> For my use cases I care only about streams and SO_PEERCGROUP that does
-> >> not have any of the (perceived) issues of SO_PASSCGROUP.
-> >
-> > Ok, so we agree that SO_PEERCGROUP is not a problem. And it solves the
-> > problem for some of the use cases.
-> >
-> > And there is lot of contention on the SO_PASSCGROUP option.
-> >
-> > So how about taking one step at a time. Get SO_PEERCGROUP in first and
-> > then get into more details on how SO_PASSCGROUP will exactly be used and
-> > then decide what to do.
-> 
-> My only objection to SO_PEERCGROUP is that I don't believe that a
-> legitimate use case exists.  I think the feature itself is safe to
-> add.
+c4iw_alloc() bails out without freeing the storage that 'devp' points to.
 
-So what happened to logger use case where logger accepts stream
-connections and logs the cgroup of client too.
+Picked up by Coverity - CID 1204241.
 
-W.r.t systemd, looks like journald is accepting connections at
-/run/systemd/journal/stdout. (stdout_stream_new() and
-server_open_stdout_socket()).
+Fixes: fa658a98a2 ("RDMA/cxgb4: Use the BAR2/WC path for kernel QPs and T5 devices")
+Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
+---
+ drivers/infiniband/hw/cxgb4/device.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Thanks
-Vivek
+diff --git a/drivers/infiniband/hw/cxgb4/device.c b/drivers/infiniband/hw/cxgb4/device.c
+index f4fa50a..8914ea9 100644
+--- a/drivers/infiniband/hw/cxgb4/device.c
++++ b/drivers/infiniband/hw/cxgb4/device.c
+@@ -736,6 +736,7 @@ static struct c4iw_dev *c4iw_alloc(const struct cxgb4_lld_info *infop)
+ 			pci_resource_len(devp->rdev.lldi.pdev, 2));
+ 		if (!devp->rdev.bar2_kva) {
+ 			pr_err(MOD "Unable to ioremap BAR2\n");
++			ib_dealloc_device(&devp->ibdev);
+ 			return ERR_PTR(-EINVAL);
+ 		}
+ 	} else if (ocqp_supported(infop)) {
+@@ -747,6 +748,7 @@ static struct c4iw_dev *c4iw_alloc(const struct cxgb4_lld_info *infop)
+ 			devp->rdev.lldi.vr->ocq.size);
+ 		if (!devp->rdev.oc_mw_kva) {
+ 			pr_err(MOD "Unable to ioremap onchip mem\n");
++			ib_dealloc_device(&devp->ibdev);
+ 			return ERR_PTR(-EINVAL);
+ 		}
+ 	}
+-- 
+1.9.0
+
