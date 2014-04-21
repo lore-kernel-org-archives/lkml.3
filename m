@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754159AbaDUSt5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 14:49:57 -0400
-Received: from imap.thunk.org ([74.207.234.97]:52140 "EHLO imap.thunk.org"
+	id S1754181AbaDUSvg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 14:51:36 -0400
+Received: from mout.gmx.net ([212.227.15.15]:51505 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752779AbaDUStu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 14:49:50 -0400
-Date: Mon, 21 Apr 2014 14:48:41 -0400
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Rich Felker <dalias@libc.org>, Jeff Layton <jlayton@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        samba-technical@lists.samba.org,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        libc-alpha <libc-alpha@sourceware.org>,
-        "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] locks: rename file-private locks to file-description
- locks
-Message-ID: <20140421184841.GA5105@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-	Rich Felker <dalias@libc.org>, Jeff Layton <jlayton@redhat.com>,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-	samba-technical@lists.samba.org,
-	Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-	Carlos O'Donell <carlos@redhat.com>,
-	libc-alpha <libc-alpha@sourceware.org>,
-	"Stefan (metze) Metzmacher" <metze@samba.org>,
-	Christoph Hellwig <hch@infradead.org>
-References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>
- <20140421140246.GB26358@brightrain.aerifal.cx>
- <535529FA.8070709@gmail.com>
- <20140421161004.GC26358@brightrain.aerifal.cx>
- <5355644C.7000801@gmail.com>
+	id S1752775AbaDUSvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 14:51:33 -0400
+Date: Mon, 21 Apr 2014 20:44:39 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: tim.c.chen@linux.intel.com
+Cc: herbert@gondor.apana.org.au, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] Cleanup ressource leaks in test_aead_speed()
+Message-ID: <20140421204439.7999f1c6@spike>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5355644C.7000801@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/6w5g8g+IuHqg1aLNmIkwpza"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:w4oTe9JEGEUBocD9QBBpvAlQ2KbLB5I5q37tl7AvjpynUPB4PuM
+ fboxbBQAOWqMuHj17eO27oxJp93o5R+wepNBRxrq/Ri8SiuuKyTkjFaVUknqIO7oWZhCejQ
+ ffx1L/MvevSCgn52F9MN7OYoziAsmJC4seh4x+HBRyQes1rrU1v9L/QoPkFMGHXrkRLkJw8
+ z1MKLRK0wMK914nyKsixA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 08:32:44PM +0200, Michael Kerrisk (man-pages) wrote:
-> So, can you *please* answer this question: what do you call (i.e., 
-> what  everyday technical language term do use for) the thing
-> that sits between a file descriptor and an i-node? 
-> 
-> (Please don't say 'struct file' -- that is not is an implementation 
-> detail, and does not qualify as the kind of term that I could use 
-> when documenting this feature in man pages.)
+--Sig_/6w5g8g+IuHqg1aLNmIkwpza
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-At least in a few places, if you are going to use "file description",
-could you at least add a parenthetical comment:
+This is a cleanup of Coverity ressource leak findings for the quick & dirty
+crypto testing module crypto/tcrypt.c.
 
-	(commonly called a "struct file" by Linux kernel developers)
+All 3 changesets address function test_aead_speed() that was introduced in
+53f52d7a (crypto: tcrypt - Added speed tests for AEAD crypto alogrithms in
+tcrypt test suite)
 
-Yes, it's an implementation detail, but it's one that's been around
-for over two decades, and IMHO highly unlikely to change in the
-future.  So if you really want to use the POSIX terminology, it would
-probably be a good idea to also use the term of art which is in common
-use by the kernel developers, and I suspect has leaked out beyond
-that.
+The series applies against v3.15-rc2 as well as branch master in tree
+git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git and is
+compile tested only.
 
-I think it's actually a better and more functional name than what
-POSIX uses, so maybe the best compromise is to use both, to make sure
-there is no confusion.  In particular, if we have text in the man
-pages where we have "file description" and "file descriptor" in the
-close proximity it would probably be good to add "(i.e., a struct file
-by Linux kernel developers)" just for clarity.
+Christian Engelmayer (3):
+  crypto: Fix potential leak in test_aead_speed() if aad_size is too big
+  crypto: Fix potential leak in test_aead_speed() if crypto_alloc_aead() fa=
+ils
+  crypto: Fix leak of struct aead_request in test_aead_speed()
 
-Cheers,
+ crypto/tcrypt.c | 21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
 
-							- Ted
+--=20
+1.9.1
+
+--Sig_/6w5g8g+IuHqg1aLNmIkwpza
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTVWcXAAoJEKssnEpaPQKEhoYP/iO8O8yYBmWB+5S30QjXDMYN
+RowxWQregKplXPrS8zrNGI3+K8eI5pgRq8sGx2Or8T8oneAQeVOT+2XE3S7+OFjZ
+4creShbrGZTvhyVULymTiQe8oPB5fJ/QaSFJBquGGQGp1ILH8q165BktKidL01TQ
+LXak8x9EphNW+7guI1iXpQv3xIvKRzKqPzegqkrKl0lSVmihk2a9VI4/XVh1M7Rn
+7YwIjddiOFNIN177+u4dkXkClJh0NiXix6su7mOJamJOeprcI2S+q/XCZrqP2zyz
+8/nA2NhOP4orABTWAudOQP9AU8X2SY9Gt3H5AuMmCBfxsYQIqJ1hff8jc20Sh8t/
+iY2dDM0CdZaaMd5eAm3+UCeGNyrNFTc7rZ8ZtBr3DRhNOdQzAoTqqY7FjgSInUR5
+MvAh1yMfo02+wuAAR40hoqI6Gvle98/4vJjO4KbP3Qs3ewtLIZGnUa4ISjEZFWQs
+xFONfZyMoClQm0gaI7F680YbdaB+nB7v/olRwQ7n+SIeuhjqXW8JOfVk2Upcc3fr
+N88Y0B+fHNXv0eYt+yzPOet2Cm31LToi84qEF7miIijyHDRbZQHrEDGbKlDJ8FQL
+RX9X12cm8iGI2Is49j/WG0uAjWrt90YvNEPqR/4jIBZEt7ey2RwA9dirqmAbWW7y
+zZvP677mwYEJ9l7dtSiA
+=Gz9K
+-----END PGP SIGNATURE-----
+
+--Sig_/6w5g8g+IuHqg1aLNmIkwpza--
