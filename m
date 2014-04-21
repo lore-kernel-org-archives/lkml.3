@@ -1,90 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751366AbaDUOXJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 10:23:09 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:26530 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032AbaDUOXH convert rfc822-to-8bit (ORCPT
+	id S1751493AbaDUOYT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 10:24:19 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:62671 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073AbaDUOYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 10:23:07 -0400
+	Mon, 21 Apr 2014 10:24:11 -0400
+Message-ID: <535529FA.8070709@gmail.com>
+Date: Mon, 21 Apr 2014 16:23:54 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Message-ID: <5e9e32bb-b60e-44d1-82be-28c4d6ec82d5@default>
-Date: Mon, 21 Apr 2014 07:23:04 -0700 (PDT)
-From: Venkat Venkatsubra <venkat.x.venkatsubra@oracle.com>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org,
-        Rama Nichanamatlu <rama.nichanamatlu@oracle.com>,
-        Sergey Linetskiy <sergey.linetskiy@oracle.com>,
-        Vadim Makhervaks <vadim.makhervaks@oracle.com>,
-        Guangyu Sun <guangyu.sun@oracle.com>
-Subject: Performance problem with bond interface
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.8  (707110) [OL
- 12.0.6691.5000 (x86)]
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+To: Rich Felker <dalias@libc.org>, Jeff Layton <jlayton@redhat.com>
+CC: mtk.manpages@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        "Stefan (metze) Metzmacher" <metze@samba.org>
+Subject: Re: [PATCH] locks: rename file-private locks to file-description
+ locks
+References: <1398087935-14001-1-git-send-email-jlayton@redhat.com> <20140421140246.GB26358@brightrain.aerifal.cx>
+In-Reply-To: <20140421140246.GB26358@brightrain.aerifal.cx>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We see a performance problem when the slaves of the bond 
-don't support checksum offload features. What we see is
-tcp_sendmsg's skb_add_data_nocache ending up not using the
-csum_and_copy_from_user which would have computed the
-checksum while copying from user buffer to kernel buffer.
-Instead it computes later in dev_hard_start_xmit when it
-figures out the slave doesn't support checksum offload and
-ends up expensive . 
+On 04/21/2014 04:02 PM, Rich Felker wrote:
+> On Mon, Apr 21, 2014 at 09:45:35AM -0400, Jeff Layton wrote:
+>> File-private locks have been merged into Linux for v3.15, and *now*
+>> people are commenting that the name and macro definitions for the new
+>> file-private locks suck.
+>>
+>> ....and I can't even disagree. The names and command macros do suck.
+>>
+>> We're going to have to live with these for a long time, so it's
+>> important that we be happy with the names before we're stuck with them.
+>>
+>> The consensus on the lists so far is that they should be rechristened as
+>> "file-description locks".
+>>
+>> This patch makes the following changes that I think are necessary before
+>> v3.15 ships:
+>>
+>> 1) rename the command macros to their new names. These end up in the uapi
+>>    headers and so are part of the external-facing API. It turns out that
+>>    glibc doesn't actually use the fcntl.h uapi header, but it's hard to
+>>    be sure that something else won't. Changing it now is safest.
+>>
+>> 2) make the the /proc/locks output display these as type "FDLOCK"
+>>
+>> The rest of the renaming can wait until v3.16, since everything else
+>> isn't visible outside of the kernel.
+> 
+> I'm sorry I didn't chime in on this earlier, but I really prefer the
+> (somewhat bad) current naming ("private") to the
+> ridiculously-confusing use of "FD" to mean "file descriptION" when
+> everybody is used to it meaning "file descriptOR". The potential for
+> confusion that these are "file descriptOR locks" (they're not) is much
+> more of a problem, IMO, than the confusion about what "private" means
+> (since it doesn't have an established meaning in this context.
+> 
+> Thus my vote is for leaving things the way the kernel did it already.
 
-The bonding interface's "features" has †NETIF_F_HW_CSUM 
-(or NETIF_F_NO_CSUM in 2.6.39) set which makes the 
-stack think checksum need not be computed in software.
-/*
-* Check whether we can use HW checksum.
-*/
-if (sk->sk_route_caps & NETIF_F_ALL_CSUM)
-†††† skb->ip_summed = CHECKSUM_PARTIAL;
+There's at least two problems to solve here:
 
-But later in dev_hard_start_xmit it finds out the slave does not
-support checksumming and decides to compute in software.
+1) "File private locks" is _meaningless_ as a term. Elsewhere
+   (http://thread.gmane.org/gmane.network.samba.internals/76414/focus=1685376),
+   I suggested various alternatives. "File-handle locks [*]" was my
+   initial preference, and I also suggested "file-description locks"
+   and noted the drawbacks of that term. I think it's insufficient
+   to say "stick with the existing poor name"--if you have
+   something better, then please propose it. (Note by the way
+   that for nearly a decade now, the open(2) man page has followed
+   POSIX in using the term "open file description. Full disclosure:
+   of course, I'm responsible for that change in the man page.)
 
-/* If packet is not checksummed and device does not
-* support checksumming for this protocol, complete
-* checksumming here.
-*/
-if (skb->ip_summed == CHECKSUM_PARTIAL) {
-†††††† ††skb_set_transport_header(skb,
-†††††† †††††††skb_checksum_start_offset(skb));
-††††††††if (!(features & NETIF_F_ALL_CSUM) &&
-††††††† †††††skb_checksum_help(skb))
-†††††††† ††††††goto out_kfree_skb;
-}
+2) The new API constants (F_SETLKP, F_SETLKPW, F_GETLKP) have names
+   that are visually very close to the traditional POSIX lock names 
+   (F_SETLK, F_SETLKW, F_GETLK). That's an accident waiting to happen
+   when someone mistypes in code and/or misses such a misttyping
+   when reading code. That really must be fixed.
 
-We see this problem after this commit:
-commit 1742f183fc218798dab6fcf0ded25b6608fc0a48
-Author: Micha≈<82> Miros≈<82>aw <mirq-linux@rere.qmqm.pl>
-Date:†† Fri Apr 22 06:31:16 2011 +0000
+Cheers,
 
-††† net: fix netdev_increment_features()
+Michael
 
-††† Simplify and fix netdev_increment_features() to conform to what is
-††† stated in netdevice.h comments about NETIF_F_ONE_FOR_ALL.
-††† Include FCoE segmentation and VLAN-challedged flags in computation.
+[*] "File-handle locks" was considered by Jeff to be a little
+confusing because of the term elsewhere, such as NFS. I take 
+the point, though I'd still prefer it over "File-handle locks".
 
-††† Signed-off-by: Micha≈<82> Miros≈<82>aw <mirq-linux@rere.qmqm.pl>
-††† Signed-off-by: David S. Miller <davem@davemloft.net>
-
-Prior to that the below code in netdev_increment_features was helping in
-turning off NETIF_F_NO_CSUM on bond when the slaves don't support it: 
-/* If device needs checksumming, downgrade to it. */
-if (all & NETIF_F_NO_CSUM && !(one & NETIF_F_NO_CSUM))
-††††††† all ^= NETIF_F_NO_CSUM | (one & NETIF_F_ALL_CSUM);
-
-The slaves are Mellanox IB adapters. This is on x86_64 platform.
-
-Please let us know if you need any additional information.
-
-Thanks.
-
-Venkat
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
