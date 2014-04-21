@@ -1,101 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752549AbaDUPsQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 11:48:16 -0400
-Received: from mail-lb0-f179.google.com ([209.85.217.179]:36942 "EHLO
-	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376AbaDUPsM (ORCPT
+	id S1751682AbaDUPvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 11:51:06 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:44644 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751056AbaDUPvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 11:48:12 -0400
+	Mon, 21 Apr 2014 11:51:02 -0400
+Date: Mon, 21 Apr 2014 08:50:55 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Pranith Kumar <bobby.prani@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] rcu: cleanup: make rcutorture specific definitions
+ depend on config value
+Message-ID: <20140421155055.GU4496@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <53546158.3020906@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20140421150307.GA4367@redhat.com>
-References: <CALCETrXj6kD3E+vsaWmkrSbaQYTu=c-Hsw640jh4O+FbojYk2g@mail.gmail.com>
- <20140417171256.GB25334@redhat.com> <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
- <1397756025.2628.64.camel@willson.li.ssimo.org> <CALCETrVBJFgKwRKBE2jAG6kiGgkJ+MyQiw2nyz5yj0h68kCk9A@mail.gmail.com>
- <1397759013.2628.86.camel@willson.li.ssimo.org> <20140417185023.GA32527@redhat.com>
- <1397761817.2628.113.camel@willson.li.ssimo.org> <20140417191646.GA2461@redhat.com>
- <CALCETrW3F1+3qF3thrAmuoWVbRveBJ2=owpigh4mv6iAafoQCw@mail.gmail.com> <20140421150307.GA4367@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Mon, 21 Apr 2014 08:47:51 -0700
-Message-ID: <CALCETrW5RvbW-Hz_Y7oULP6sEfdhGBh51+mTj4RwobHV-ji+Kg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Simo Sorce <ssorce@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
-        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53546158.3020906@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042115-8236-0000-0000-000001AF2896
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 8:03 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> So what happened to logger use case where logger accepts stream
-> connections and logs the cgroup of client too.
->
-> W.r.t systemd, looks like journald is accepting connections at
-> /run/systemd/journal/stdout. (stdout_stream_new() and
-> server_open_stdout_socket()).
+On Sun, Apr 20, 2014 at 08:07:52PM -0400, Pranith Kumar wrote:
+> Seems that my previous mail was borked while copying the patch. Please find the fixed patch below:
+> 
+> make rcutorture specific variables in tree.c depend on CONFIG_RCU_TORTURE_TEST
+> This avoid having to have them when no torture tests are running.
+> Also cleanup some macros which are rcutorture specific.
+> 
+> Tested with rcutorture both in-built and as a module
+> 
+> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
 
-See stdout_stream_line.  As far as I can tell, journald already
-implements this in mostly sensible manner, with no help from the
-kernel required.
+Good observation, but this approach prevents someone from building an
+rcutorture module after the fact for a kernel that was built with
+CONFIG_RCU_TORTURE_TEST=n.  So I have to say "no" on this one.
 
-On my system, journalctl -f -o verbose says:
+							Thanx, Paul
 
-Mon 2014-04-21 08:34:52.732065 PDT
-[s=4970edca25b4456d80b00e6e4cefd94b;i=2010;b=2d2454632c0f4f998a8d0158156ab743;m=66f5d274a;t=4f78f3d9a11a1;x=9902671f5a7e7bcc]
-    _UID=0
-    _BOOT_ID=2d2454632c0f4f998a8d0158156ab743
-[...]
-    _GID=500
-    _AUDIT_SESSION=1
-    _AUDIT_LOGINUID=500
-    _SYSTEMD_CGROUP=/user.slice/user-500.slice/session-1.scope
-    _SYSTEMD_SESSION=1
-    _SYSTEMD_OWNER_UID=500
-    _SYSTEMD_UNIT=session-1.scope
-    _SYSTEMD_SLICE=user-500.slice
-    SYSLOG_IDENTIFIER=sudo
-    _COMM=sudo
-    _EXE=/usr/bin/sudo
-    _SELINUX_CONTEXT=unconfined_u:unconfined_r:unconfined_t:s0-s0:c0.c1023
-    MESSAGE=luto : TTY=pts/1 ; PWD=/home/luto/apps/systemd ; USER=root
-; COMMAND=/usr/bin/journalctl -f -a
-    _PID=32393
-    _CMDLINE=sudo journalctl -f -a
-    _SOURCE_REALTIME_TIMESTAMP=1398094492732065
+> ---
+>  include/linux/rcupdate.h | 13 +++---------
+>  kernel/rcu/tree.c        | 54 ++++++++++++++++++++++++++----------------------
+>  kernel/rcu/tree_trace.c  |  7 +++++++
+>  3 files changed, 39 insertions(+), 35 deletions(-)
+> 
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 00a7fd6..b49e46b 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -49,16 +49,8 @@
+>  extern int rcu_expedited; /* for sysctl */
+>  #ifdef CONFIG_RCU_TORTURE_TEST
+>  extern int rcutorture_runnable; /* for sysctl */
+> -#endif /* #ifdef CONFIG_RCU_TORTURE_TEST */
+> -
+> -#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
+>  void rcutorture_record_test_transition(void);
+>  void rcutorture_record_progress(unsigned long vernum);
+> -void do_trace_rcu_torture_read(const char *rcutorturename,
+> -			       struct rcu_head *rhp,
+> -			       unsigned long secs,
+> -			       unsigned long c_old,
+> -			       unsigned long c);
+>  #else
+>  static inline void rcutorture_record_test_transition(void)
+>  {
+> @@ -66,7 +58,9 @@ static inline void rcutorture_record_test_transition(void)
+>  static inline void rcutorture_record_progress(unsigned long vernum)
+>  {
+>  }
+> -#ifdef CONFIG_RCU_TRACE
+> +#endif /* CONFIG_RCU_TORTURE_TEST */
+> +
+> +#if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU) || defined(CONFIG_RCU_TRACE)
+>  void do_trace_rcu_torture_read(const char *rcutorturename,
+>  			       struct rcu_head *rhp,
+>  			       unsigned long secs,
+> @@ -76,7 +70,6 @@ void do_trace_rcu_torture_read(const char *rcutorturename,
+>  #define do_trace_rcu_torture_read(rcutorturename, rhp, secs, c_old, c) \
+>  	do { } while (0)
+>  #endif
+> -#endif
+> 
+>  #define UINT_CMP_GE(a, b)	(UINT_MAX / 2 >= (a) - (b))
+>  #define UINT_CMP_LT(a, b)	(UINT_MAX / 2 < (a) - (b))
+> diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+> index 0c47e30..b455cd4 100644
+> --- a/kernel/rcu/tree.c
+> +++ b/kernel/rcu/tree.c
+> @@ -160,6 +160,8 @@ static void rcu_boost_kthread_setaffinity(struct rcu_node *rnp, int outgoingcpu)
+>  static void invoke_rcu_core(void);
+>  static void invoke_rcu_callbacks(struct rcu_state *rsp, struct rcu_data *rdp);
+> 
+> +#ifdef CONFIG_RCU_TORTURE_TEST
+> +
+>  /*
+>   * Track the rcutorture test sequence number and the update version
+>   * number within a given test.  The rcutorture_testseq is incremented
+> @@ -173,6 +175,33 @@ unsigned long rcutorture_testseq;
+>  unsigned long rcutorture_vernum;
+> 
+>  /*
+> + * Record the number of times rcutorture tests have been initiated and
+> + * terminated.  This information allows the debugfs tracing stats to be
+> + * correlated to the rcutorture messages, even when the rcutorture module
+> + * is being repeatedly loaded and unloaded.  In other words, we cannot
+> + * store this state in rcutorture itself.
+> + */
+> +void rcutorture_record_test_transition(void)
+> +{
+> +	rcutorture_testseq++;
+> +	rcutorture_vernum = 0;
+> +}
+> +EXPORT_SYMBOL_GPL(rcutorture_record_test_transition);
+> +
+> +/*
+> + * Record the number of writer passes through the current rcutorture test.
+> + * This is also used to correlate debugfs tracing stats with the rcutorture
+> + * messages.
+> + */
+> +void rcutorture_record_progress(unsigned long vernum)
+> +{
+> +	rcutorture_vernum++;
+> +}
+> +EXPORT_SYMBOL_GPL(rcutorture_record_progress);
+> +
+> +#endif /* CONFIG_RCU_TORTURE_TEST */
+> +
+> +/*
+>   * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
+>   * permit this function to be invoked without holding the root rcu_node
+>   * structure's ->lock, but of course results can be subject to change.
+> @@ -280,31 +309,6 @@ void rcu_bh_force_quiescent_state(void)
+>  EXPORT_SYMBOL_GPL(rcu_bh_force_quiescent_state);
+> 
+>  /*
+> - * Record the number of times rcutorture tests have been initiated and
+> - * terminated.  This information allows the debugfs tracing stats to be
+> - * correlated to the rcutorture messages, even when the rcutorture module
+> - * is being repeatedly loaded and unloaded.  In other words, we cannot
+> - * store this state in rcutorture itself.
+> - */
+> -void rcutorture_record_test_transition(void)
+> -{
+> -	rcutorture_testseq++;
+> -	rcutorture_vernum = 0;
+> -}
+> -EXPORT_SYMBOL_GPL(rcutorture_record_test_transition);
+> -
+> -/*
+> - * Record the number of writer passes through the current rcutorture test.
+> - * This is also used to correlate debugfs tracing stats with the rcutorture
+> - * messages.
+> - */
+> -void rcutorture_record_progress(unsigned long vernum)
+> -{
+> -	rcutorture_vernum++;
+> -}
+> -EXPORT_SYMBOL_GPL(rcutorture_record_progress);
+> -
+> -/*
+>   * Force a quiescent state for RCU-sched.
+>   */
+>  void rcu_sched_force_quiescent_state(void)
+> diff --git a/kernel/rcu/tree_trace.c b/kernel/rcu/tree_trace.c
+> index 5cdc62e..3d10505 100644
+> --- a/kernel/rcu/tree_trace.c
+> +++ b/kernel/rcu/tree_trace.c
+> @@ -397,6 +397,8 @@ static const struct file_operations rcu_pending_fops = {
+>  	.release = seq_release,
+>  };
+> 
+> +#ifdef CONFIG_RCU_TORTURE_TEST
+> +
+>  static int show_rcutorture(struct seq_file *m, void *unused)
+>  {
+>  	seq_printf(m, "rcutorture test sequence: %lu %s\n",
+> @@ -420,6 +422,8 @@ static const struct file_operations rcutorture_fops = {
+>  	.release = single_release,
+>  };
+> 
+> +#endif /* CONFIG_RCU_TORTURE_TEST */
+> +
+>  static struct dentry *rcudir;
+> 
+>  static int __init rcutree_trace_init(void)
+> @@ -477,10 +481,13 @@ static int __init rcutree_trace_init(void)
+>  			goto free_out;
+>  	}
+> 
+> +#ifdef CONFIG_RCU_TORTURE_TEST
+>  	retval = debugfs_create_file("rcutorture", 0444, rcudir,
+>  						NULL, &rcutorture_fops);
+>  	if (!retval)
+>  		goto free_out;
+> +#endif
+> +
+>  	return 0;
+>  free_out:
+>  	debugfs_remove_recursive(rcudir);
+> -- 
+> 1.9.1
+> 
 
-Unfortunately, the code in journald seems to be rather buggy and
-prefers the unit that it derives from the (racy!) cg_path_get_unit
-hack over the unit that is *already knows* (search the journald
-sources for STDOUT_STREAM_UNIT_ID), but the right fix is the FIX THE
-FSCKING JOURNALD BUG, not to change the kernel.
-
-To summarize from my reading of how this crap words:
-
-When a unit is created, systemd opens a stream socket pointing at
-/run/systemd/journal/stdout.  It tells journald the unit, along with
-lots of other useful information.  journald records this association
-between the socket and the unit.  Systemd could tell journald the
-cgroup here, too, if it wanted it.
-
-Systemd then starts the unit, passing it the socket as stdout, if
-configured to do so.
-
-That unit logs something.  Journald then uses the crappy, racy ucred
-mechanism to resolve the cgroup, login id, unit, etc.
-
-Your proposals are to either (a) replace that with an almost-as-buggy
-SO_PASSCGROUP option or to add SO_PEERCGROUP.  The latter would allow
-journald to figure out the cgroup that opened the socket.  The problem
-here is two-fold.  One: systemd already knows the cgroup it intends to
-use, and it can tell journald without kernel help.  Two: Systemd seems
-to open the stdout socket right before setting the cgroup, so the
-kernel's idea of what cgroup opened the socket is crap.
-
-The solution to all of this seems straightforward: fix journald to use
-the information it already has, trusted, without races, from systemd.
-
---Andy
