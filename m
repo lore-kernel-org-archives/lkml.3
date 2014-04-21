@@ -1,147 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751656AbaDUPAa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 11:00:30 -0400
-Received: from relay.parallels.com ([195.214.232.42]:37861 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376AbaDUPAX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 11:00:23 -0400
-Message-ID: <53553283.7020709@parallels.com>
-Date: Mon, 21 Apr 2014 19:00:19 +0400
-From: Vladimir Davydov <vdavydov@parallels.com>
+	id S1751936AbaDUPBN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 11:01:13 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1660 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751805AbaDUPBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 11:01:10 -0400
+Message-ID: <535532B3.6060800@nod.at>
+Date: Mon, 21 Apr 2014 17:01:07 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Glauber Costa <glommer@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>, <devel@openvz.org>
-Subject: Re: [RFC] how should we deal with dead memcgs' kmem caches?
-References: <5353A3E3.4020302@parallels.com> <20140421121840.GA11622@cmpxchg.org>
-In-Reply-To: <20140421121840.GA11622@cmpxchg.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+CC: Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
+        Jos Huisken <jos.huisken@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: inotify, new idea?
+References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com> <20140417212834.GC17769@csclub.uwaterloo.ca> <CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com> <CAFLxGvxx8_gJ+NAGVn_vZmkVfey45_1qTqAQnxKDCZD0gQsr5w@mail.gmail.com> <CAHO5Pa1hfp+uLiQ78-pn2RJ6SytSYqXTniyx3UvaTwU_=ECWjA@mail.gmail.com> <5354DA0B.2060204@nod.at> <53551DB0.6030302@gmail.com>
+In-Reply-To: <53551DB0.6030302@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2014 04:18 PM, Johannes Weiner wrote:
-> On Sun, Apr 20, 2014 at 02:39:31PM +0400, Vladimir Davydov wrote:
->> * Way #2 - reap caches periodically or on vmpressure *
+
+
+Am 21.04.2014 15:31, schrieb Michael Kerrisk (man-pages):
+> On 04/21/2014 10:42 AM, Richard Weinberger wrote:
+>> Am 21.04.2014 09:24, schrieb Michael Kerrisk:
+>>>> Does recursive monitoring even work with inotify?
+>>>> Last time I've tried it did failed as soon I did a mkdir -p a/b/c/d because
+>>>> mkdir() raced against the thread which installes the new watches.
+>>>
+>>> As I understand it, you have to program to deal with the races (rescan
+>>> directories after adding watches). I recently did a lot of work
+>>> updating the inotify(7) man page to discuss all the issues that I know
+>>> of, and their remedies. If I missed anything, I'd appreciate a note on
+>>> it, so that it can be added. See
+>>> http://man7.org/linux/man-pages/man7/inotify.7.html#NOTES
 >>
->> We can remove the async work scheduling from kmem_cache_free completely,
->> and instead walk over all dead kmem caches either periodically or on
->> vmpressure to shrink and destroy those of them that become empty.
->>
->> That is what I had in mind when submitting the patch set titled "kmemcg:
->> simplify work-flow":
->> 	https://lkml.org/lkml/2014/4/18/42
->>
->> Pros: easy to implement
->> Cons: instead of being destroyed asap, dead caches will hang around
->> until some point in time or, even worse, memory pressure condition.
+>> I'm aware of the rescan hack, but in my case it does not help
+>> because my program must not miss any event.
 > 
-> This would continue to pin css after cgroup destruction indefinitely,
-> or at least for an arbitrary amount of time.  To reduce the waste from
-> such pinning, we currently have to tear down other parts of the memcg
-> optimistically from css_offline(), which is called before the last
-> reference disappears and out of hierarchy order, making the teardown
-> unnecessarily complicated and error prone.
-
-I don't think that re-parenting kmem caches on css offline would be
-complicated in such a scheme. We just need to walk over the memcg's
-memcg_slab_caches list and move them to the list of its parent along
-with changing the memcg_params::memcg ptr. Also, we have to assure that
-all readers of memcg_params::memcg are protected with RCU and handle
-re-parenting properly. AFAIU, we'd have to do approximately the same if
-we decided to go with individual slabs reparenting.
-
-To me the most disgusting part is that after css offline we'll have
-pointless dead caches hanging for indefinite time w/o any chance to get
-reused.
-
-> So I think "easy to implement" is misleading.  What we really care
-> about is "easy to maintain", and this basically excludes any async
-> schemes.
+> Then, we're understand the same thing: you're out of luck :-}.
 > 
-> As far as synchronous cache teardown goes, I think everything that
-> introduces object accounting into the slab hotpaths will also be a
-> tough sell.
+>> Currently I'm using a fuse overlay filesystem to log everything.
+>> Not perfect but works... :-)
+> 
+> Interesting notion. I need to get to grips with FUSE...
 
-Agree, so ways #1 and #4 don't seem to be an option.
+e.g. http://loggedfs.sourceforge.net/
 
-> Personally, I would prefer the cache merging, where remaining child
-> slab pages are moved to the parent's cache on cgroup destruction.
-
-Your point is clear to me and sounds quite reasonable, but I'm afraid
-that moving slabs from one active kmem cache to another would be really
-difficult to implement, since kmem_cache_free is mostly lock-less. Also
-we'll have to intrude into the free fast path to handle concurrent cache
-merging. That's why I'm trying to find another way around.
-
-There is another idea that has just sprung into my mind. Actually, it's
-based on Way #2, but has one significant difference - dead caches can be
-reused. Below goes the full picture.
-
-First, for re-parenting of kmem charges, there will be a kmem context
-object per each kmem-enabled memcg. All kmem pages (including slabs)
-that are charged to a memcg will point to the context object of the
-memcg through the page cgroup, not to the memcg itself as it works now.
-When a kmem page is freed, it will be discharged against the memcg of
-the context it points to. The context will look like this:
-
-struct memcg_kmem_context {
-	struct mem_cgroup *memcg; /* owner memcg */
-	atomic_long_t nr_pages;   /* nr pages charged to the memcg
-				     through this context */
-	struct list_head list;	  /* list of all memcg's contexts */
-};
-
-struct mem_cgroup {
-	[...]
-	struct memcg_kmem_context *kmem_ctx;
-
-On memcg offline we'll reparent its context to the parent memcg by
-changing the memcg_kmem_context::memcg ptr to the parent so that all
-previously allocated objects will be discharged properly against its
-parent. Regarding the memcg's caches, no re-parenting is necessary -
-we'll just mark them as orphaned (e.g. by clearing memcg_params::memcg).
-We won't clear the orphaned caches from root caches'
-memcg_params::memcg_caches arrays although we will release the dead
-memcg along with its kmemcg_id. The orphaned caches won't have any
-references to the dead memcg and therefore won't pin the css.
-
-Then, if the kmemcg_id is relocated to another memcg, the new memcg will
-just adopt such an orphaned cache and allocate objects from it. Note,
-some of the pages the new memcg will be allocating from may be accounted
-to the parent of the previous owner memcg.
-
-On vmpressure we will walk over orphaned caches to shrink them and
-optionally destroy those of them that become empty.
-
-To sum up what we will have in such a design:
-Pros:
- - no css pinning: kmem caches just marked orphaned while the kmem
-   context is re-parented, so that the dead css can go away
- - simple teardown procedure on css offline: re-parenting of kmem
-   contexts would be just changing memcg_kmem_context::memcg while
-   orphaning the caches is just clearing the pointer to the owner memcg;
-   since no concurrent allocations from the caches is possible, no
-   sophisticated synchronizations is needed
- - reaping of orphaned caches on vmpressure will look quite natural,
-   because the caches may be reused at any time
- - slab internals independent
-Cons:
- - objects belonging to different memcgs may be located on the same
-   slab of the same cache - the slab will be accounted to only one of
-   the cgroups though; AFAIU we would have the same picture if we moved
-   slabs from dead cache to its parent
- - kmem context objects will hang around until all pages accounted
-   through them are gone, which may take indefinitely long, but that
-   shouldn't be a big problem, because their size is rather small.
-
-What do you think about that?
-
-Thank you.
+Thanks,
+//richard
