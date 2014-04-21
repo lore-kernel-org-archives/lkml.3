@@ -1,124 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714AbaDUU7s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 16:59:48 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:44842
-	"EHLO p3plsmtps2ded03.prod.phx3.secureserver.net"
+	id S1754724AbaDUVBP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 17:01:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52083 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754697AbaDUU7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 16:59:38 -0400
-x-originating-ip: 72.167.245.219
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org
-Cc: haiyangz@microsoft.com, kys@microsoft.com, olaf@aepfle.de,
-        jasowang@redhat.com, linux-kernel@vger.kernel.org,
-        driverdev-devel@linuxdriverproject.org
-Subject: [PATCH net-next,v2,2/2] hyperv: Simplify the send_completion variables
-Date: Mon, 21 Apr 2014 14:54:44 -0700
-Message-Id: <1398117284-5236-2-git-send-email-haiyangz@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1398117284-5236-1-git-send-email-haiyangz@microsoft.com>
-References: <1398117284-5236-1-git-send-email-haiyangz@microsoft.com>
+	id S1754502AbaDUVBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 17:01:11 -0400
+Date: Mon, 21 Apr 2014 17:12:56 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Paolo Bonzini <pbonzini@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [RFC PATCH 0/6] KVM: x86: speedups for emulator memory accesses
+Message-ID: <20140421201256.GA1615@amt.cnet>
+References: <1396366006-22227-1-git-send-email-pbonzini@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1396366006-22227-1-git-send-email-pbonzini@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The union contains only one member now, so we use the variables in it directly.
+On Tue, Apr 01, 2014 at 05:26:40PM +0200, Paolo Bonzini wrote:
+> Another emulator speedup series, shaving up to 400 cycles (25%) off
+> RMW instructions.
+> 
+> The performance of various instructions is now relatively flat:
+> 
+>  jump  919  (down from 2300)
+>  move  1075 (down from 2700)
+>  arith 1081 (down from 2600)
+>  load  1267 (down from 2800, 1400 after previous round)
+>  store 1213 (down from 2900, 1300 after previous round)
+>  RMW   1310 (down from 3200, 1700 after previous round)
+> 
+> The next low-hanging fruit is fetching instructions and initializing
+> the context.  Similar optimizations to those done here could be made
+> for instruction fetch.
+> 
+> Paolo Bonzini (6):
+>   KVM: emulate: simplify writeback
+>   KVM: emulate: abstract handling of memory operands
+>   KVM: export mark_page_dirty_in_slot
+>   KVM: emulate: introduce memory_prepare callback to speed up memory access
+>   KVM: emulate: activate memory access optimization
+>   KVM: emulate: extend memory access optimization to stores
+> 
+>  arch/x86/include/asm/kvm_emulate.h |  28 ++++++++++
+>  arch/x86/kvm/emulate.c             | 107 +++++++++++++++++++++++++++----------
+>  arch/x86/kvm/x86.c                 |  67 +++++++++++++++++++++++
+>  include/linux/kvm_host.h           |   6 +++
+>  virt/kvm/kvm_main.c                |  17 ++----
+>  5 files changed, 185 insertions(+), 40 deletions(-)
+> 
+> -- 
+> 1.8.3.1
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
----
- drivers/net/hyperv/hyperv_net.h   |   10 +++-------
- drivers/net/hyperv/netvsc.c       |    7 +++----
- drivers/net/hyperv/netvsc_drv.c   |    8 ++++----
- drivers/net/hyperv/rndis_filter.c |    2 +-
- 4 files changed, 11 insertions(+), 16 deletions(-)
-
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index a1af0f7..d1f7826 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -136,13 +136,9 @@ struct hv_netvsc_packet {
- 	u16 q_idx;
- 	struct vmbus_channel *channel;
- 
--	union {
--		struct {
--			u64 send_completion_tid;
--			void *send_completion_ctx;
--			void (*send_completion)(void *context);
--		} send;
--	} completion;
-+	u64 send_completion_tid;
-+	void *send_completion_ctx;
-+	void (*send_completion)(void *context);
- 
- 	/* This points to the memory after page_buf */
- 	struct rndis_message *rndis_msg;
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index b103347..bbee446 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -479,9 +479,8 @@ static void netvsc_send_completion(struct netvsc_device *net_device,
- 		if (nvsc_packet) {
- 			q_idx = nvsc_packet->q_idx;
- 			channel = nvsc_packet->channel;
--			nvsc_packet->completion.send.send_completion(
--				nvsc_packet->completion.send.
--				send_completion_ctx);
-+			nvsc_packet->send_completion(nvsc_packet->
-+						     send_completion_ctx);
- 		}
- 
- 		num_outstanding_sends =
-@@ -534,7 +533,7 @@ int netvsc_send(struct hv_device *device,
- 		0xFFFFFFFF;
- 	sendMessage.msg.v1_msg.send_rndis_pkt.send_buf_section_size = 0;
- 
--	if (packet->completion.send.send_completion)
-+	if (packet->send_completion)
- 		req_id = (ulong)packet;
- 	else
- 		req_id = 0;
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index 8f6d53a..c76b665 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -235,7 +235,7 @@ static void netvsc_xmit_completion(void *context)
- {
- 	struct hv_netvsc_packet *packet = (struct hv_netvsc_packet *)context;
- 	struct sk_buff *skb = (struct sk_buff *)
--		(unsigned long)packet->completion.send.send_completion_tid;
-+		(unsigned long)packet->send_completion_tid;
- 
- 	kfree(packet);
- 
-@@ -425,9 +425,9 @@ static int netvsc_start_xmit(struct sk_buff *skb, struct net_device *net)
- 				(num_data_pgs * sizeof(struct hv_page_buffer)));
- 
- 	/* Set the completion routine */
--	packet->completion.send.send_completion = netvsc_xmit_completion;
--	packet->completion.send.send_completion_ctx = packet;
--	packet->completion.send.send_completion_tid = (unsigned long)skb;
-+	packet->send_completion = netvsc_xmit_completion;
-+	packet->send_completion_ctx = packet;
-+	packet->send_completion_tid = (unsigned long)skb;
- 
- 	isvlan = packet->vlan_tci & VLAN_TAG_PRESENT;
- 
-diff --git a/drivers/net/hyperv/rndis_filter.c b/drivers/net/hyperv/rndis_filter.c
-index 48f5a0f..99c527a 100644
---- a/drivers/net/hyperv/rndis_filter.c
-+++ b/drivers/net/hyperv/rndis_filter.c
-@@ -236,7 +236,7 @@ static int rndis_filter_send_request(struct rndis_device *dev,
- 			packet->page_buf[0].len;
- 	}
- 
--	packet->completion.send.send_completion = NULL;
-+	packet->send_completion = NULL;
- 
- 	ret = netvsc_send(dev->net_dev->dev, packet);
- 	return ret;
--- 
-1.7.4.1
+Reviewed-by: Marcelo Tosatti <mtosatti@redhat.com>
 
