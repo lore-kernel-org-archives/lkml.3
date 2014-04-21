@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088AbaDUQBl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 12:01:41 -0400
-Received: from smtprelay01.ispgateway.de ([80.67.31.35]:53405 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751056AbaDUQBk (ORCPT
+	id S1751646AbaDUQGJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 12:06:09 -0400
+Received: from mo4-p05-ob.smtp.rzone.de ([81.169.146.180]:40018 "EHLO
+	mo4-p05-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750772AbaDUQGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 12:01:40 -0400
-From: Christoph Jaeger <christophjaeger@linux.com>
-To: petr@vandrovec.name
-Cc: linux-kernel@vger.kernel.org, Christoph Jaeger <christophjaeger@linux.com>
-Subject: [PATCH] ncpfs: use list_for_each_entry() for list iteration
-Date: Mon, 21 Apr 2014 18:01:00 +0200
-Message-Id: <1398096060-12725-1-git-send-email-christophjaeger@linux.com>
-X-Mailer: git-send-email 1.9.0
-X-Df-Sender: MTg4NDM4Mw==
+	Mon, 21 Apr 2014 12:06:08 -0400
+X-RZG-AUTH: :IWkQb0WIdvqIIwNfJfyiKBgoQwjwJ7eL6yL6M6h2IziqwDGkR4xBpp54gShxcz4UZpp5X0IKitUVKzTXYq+eMNM=
+X-RZG-CLASS-ID: mo05
+Message-ID: <535541DA.8040601@samba.org>
+Date: Mon, 21 Apr 2014 18:05:46 +0200
+From: "Stefan (metze) Metzmacher" <metze@samba.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Jeff Layton <jlayton@redhat.com>, linux-fsdevel@vger.kernel.org
+CC: linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>
+Subject: Re: [PATCH] locks: rename file-private locks to file-description
+ locks
+References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>
+In-Reply-To: <1398087935-14001-1-git-send-email-jlayton@redhat.com>
+X-Enigmail-Version: 1.5.2
+OpenPGP: id=0E53083F
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use list_for_each_entry() for the sake of simplicity and readability.
+Am 21.04.2014 15:45, schrieb Jeff Layton:
+> File-private locks have been merged into Linux for v3.15, and *now*
+> people are commenting that the name and macro definitions for the new
+> file-private locks suck.
+> 
+> ...and I can't even disagree. The names and command macros do suck.
+> 
+> We're going to have to live with these for a long time, so it's
+> important that we be happy with the names before we're stuck with them.
+> 
+> The consensus on the lists so far is that they should be rechristened as
+> "file-description locks".
+> 
+> This patch makes the following changes that I think are necessary before
+> v3.15 ships:
+> 
+> 1) rename the command macros to their new names. These end up in the uapi
+>    headers and so are part of the external-facing API. It turns out that
+>    glibc doesn't actually use the fcntl.h uapi header, but it's hard to
+>    be sure that something else won't. Changing it now is safest.
+> 
+> 2) make the the /proc/locks output display these as type "FDLOCK"
+> 
+> The rest of the renaming can wait until v3.16, since everything else
+> isn't visible outside of the kernel.
+> 
+> Cc: Michael Kerrisk <mtk.manpages@gmail.com>
+> Signed-off-by: Jeff Layton <jlayton@redhat.com>
 
-Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
----
- fs/ncpfs/dir.c           |  6 +-----
- fs/ncpfs/ncplib_kernel.h | 14 ++------------
- 2 files changed, 3 insertions(+), 17 deletions(-)
-
-diff --git a/fs/ncpfs/dir.c b/fs/ncpfs/dir.c
-index 08b8ea8..314e7ad 100644
---- a/fs/ncpfs/dir.c
-+++ b/fs/ncpfs/dir.c
-@@ -388,7 +388,6 @@ static struct dentry *
- ncp_dget_fpos(struct dentry *dentry, struct dentry *parent, unsigned long fpos)
- {
- 	struct dentry *dent = dentry;
--	struct list_head *next;
- 
- 	if (d_validate(dent, parent)) {
- 		if (dent->d_name.len <= NCP_MAXPATHLEN &&
-@@ -404,9 +403,7 @@ ncp_dget_fpos(struct dentry *dentry, struct dentry *parent, unsigned long fpos)
- 
- 	/* If a pointer is invalid, we search the dentry. */
- 	spin_lock(&parent->d_lock);
--	next = parent->d_subdirs.next;
--	while (next != &parent->d_subdirs) {
--		dent = list_entry(next, struct dentry, d_u.d_child);
-+	list_for_each_entry(dent, &parent->d_subdirs, d_u.d_child) {
- 		if ((unsigned long)dent->d_fsdata == fpos) {
- 			if (dent->d_inode)
- 				dget(dent);
-@@ -415,7 +412,6 @@ ncp_dget_fpos(struct dentry *dentry, struct dentry *parent, unsigned long fpos)
- 			spin_unlock(&parent->d_lock);
- 			goto out;
- 		}
--		next = next->next;
- 	}
- 	spin_unlock(&parent->d_lock);
- 	return NULL;
-diff --git a/fs/ncpfs/ncplib_kernel.h b/fs/ncpfs/ncplib_kernel.h
-index 32c0658..52cb19d 100644
---- a/fs/ncpfs/ncplib_kernel.h
-+++ b/fs/ncpfs/ncplib_kernel.h
-@@ -188,20 +188,14 @@ static inline void
- ncp_renew_dentries(struct dentry *parent)
- {
- 	struct ncp_server *server = NCP_SERVER(parent->d_inode);
--	struct list_head *next;
- 	struct dentry *dentry;
- 
- 	spin_lock(&parent->d_lock);
--	next = parent->d_subdirs.next;
--	while (next != &parent->d_subdirs) {
--		dentry = list_entry(next, struct dentry, d_u.d_child);
--
-+	list_for_each_entry(dentry, &parent->d_subdirs, d_u.d_child) {
- 		if (dentry->d_fsdata == NULL)
- 			ncp_age_dentry(server, dentry);
- 		else
- 			ncp_new_dentry(dentry);
--
--		next = next->next;
- 	}
- 	spin_unlock(&parent->d_lock);
- }
-@@ -210,16 +204,12 @@ static inline void
- ncp_invalidate_dircache_entries(struct dentry *parent)
- {
- 	struct ncp_server *server = NCP_SERVER(parent->d_inode);
--	struct list_head *next;
- 	struct dentry *dentry;
- 
- 	spin_lock(&parent->d_lock);
--	next = parent->d_subdirs.next;
--	while (next != &parent->d_subdirs) {
--		dentry = list_entry(next, struct dentry, d_u.d_child);
-+	list_for_each_entry(dentry, &parent->d_subdirs, d_u.d_child) {
- 		dentry->d_fsdata = NULL;
- 		ncp_age_dentry(server, dentry);
--		next = next->next;
- 	}
- 	spin_unlock(&parent->d_lock);
- }
--- 
-1.9.0
-
+Reviewed-by: Stefan Metzmacher <metze@samba.org>
