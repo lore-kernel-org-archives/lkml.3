@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751626AbaDUDbX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 23:31:23 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:60595 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbaDUDbV (ORCPT
+	id S1751580AbaDUDoR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 23:44:17 -0400
+Received: from [65.55.169.136] ([65.55.169.136]:25195 "EHLO
+	na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751293AbaDUDoO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 23:31:21 -0400
-Message-ID: <1398051078.4437.6.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Date: Mon, 21 Apr 2014 05:31:18 +0200
-In-Reply-To: <1397918766.5436.16.camel@marge.simpson.net>
-References: <20140411185739.GA6644@linutronix.de>
-	 <1397918766.5436.16.camel@marge.simpson.net>
+	Sun, 20 Apr 2014 23:44:14 -0400
+X-Greylist: delayed 1031 seconds by postgrey-1.27 at vger.kernel.org; Sun, 20 Apr 2014 23:44:14 EDT
+Message-ID: <1398050801.7753.7.camel@leyfoon-vm>
+Subject: Re: [PATCH 01/28] nios2: Build infrastructure
+From: Ley Foon Tan <lftan@altera.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <lftan.linux@gmail.com>,
+        <cltang@codesourcery.com>
+Date: Mon, 21 Apr 2014 11:26:41 +0800
+In-Reply-To: <1397850104.4750.8.camel@x220>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	 <1397824031-4892-2-git-send-email-lftan@altera.com>
+	 <1397850104.4750.8.camel@x220>
 Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.8.4-0ubuntu1 
+MIME-Version: 1.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(24454002)(51704005)(189002)(199002)(377424004)(74502001)(74662001)(77982001)(31966008)(77156001)(89996001)(16796002)(87936001)(33716001)(33646001)(87286001)(99396002)(76482001)(83072002)(85852003)(2009001)(20776003)(47776003)(79102001)(42186004)(83322001)(92726001)(92566001)(88136002)(6806004)(44976005)(23676002)(80022001)(46102001)(93916002)(97736001)(86362001)(50226001)(4396001)(81342001)(50986999)(81542001)(76176999)(62966002)(80976001);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2FFO11HUB035;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:F3D364A2.93F2A705.3DECB77E.88E13477.200C4;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 0188D66E61
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2014-04-19 at 16:46 +0200, Mike Galbraith wrote: 
-> Hi Sebastian,
+On Jum, 2014-04-18 at 21:41 +0200, Paul Bolle wrote:
+> On Fri, 2014-04-18 at 20:26 +0800, Ley Foon Tan wrote:
+> > diff --git a/arch/nios2/kernel/Makefile b/arch/nios2/kernel/Makefile
+> [...]
+> > +obj-$(CONFIG_CONSOLE)		+= console.o
 > 
-> On Fri, 2014-04-11 at 20:57 +0200, Sebastian Andrzej Siewior wrote: 
-> > Dear RT folks!
-> > 
-> > I'm pleased to announce the v3.14-rt1 patch set.
+> CONFIG_CONSOLE seems never to be defined. And there appears to be no
+> arch/nios2/console.c or .../console.S anyway.
 > 
-> This hunk in hotplug-light-get-online-cpus.patch looks like a bug.
 > 
-> @@ -333,7 +449,7 @@ static int __ref _cpu_down(unsigned int
->                 /* CPU didn't die: tell everyone.  Can't complain. */
->                 smpboot_unpark_threads(cpu);
->                 cpu_notify_nofail(CPU_DOWN_FAILED | mod, hcpu);
-> -               goto out_release;
-> +               goto out_cancel;
->         }
->         BUG_ON(cpu_online(cpu));
+> Paul Bolle
 > 
+Good catch. Will remove this.
+Thanks.
 
-Another little bug.  This hunk of patches/stomp-machine-raw-lock.patch
-should be while (atomic_read(&done.nr_todo)) 
-
-@@ -647,7 +671,7 @@ int stop_machine_from_inactive_cpu(int (
-        ret = multi_cpu_stop(&msdata);
-
-        /* Busy wait for completion. */
--       while (!completion_done(&done.completion))
-+       while (!atomic_read(&done.nr_todo))
-                cpu_relax();
-
-        mutex_unlock(&stop_cpus_mutex);
-                                        
+Regards
+Ley Foon
 
