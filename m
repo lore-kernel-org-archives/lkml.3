@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134AbaDUKKw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 06:10:52 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:10471 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaDUKKW (ORCPT
+	id S1752072AbaDUKKn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 06:10:43 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:28482 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751826AbaDUKKV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 06:10:22 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-dc-5354ee89aa2e
+	Mon, 21 Apr 2014 06:10:21 -0400
+X-AuditID: cbfee68e-b7fd86d0000038e3-2c-5354ee893be3
 From: Sangjung Woo <sangjung.woo@samsung.com>
 To: MyungJoo Ham <myungjoo.ham@samsung.com>,
         Chanwoo Choi <cw00.choi@samsung.com>
 Cc: linux-kernel@vger.kernel.org, Sangjung Woo <sangjung.woo@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Seung-Woo Kim <sw0312.kim@samsung.com>
-Subject: [PATCHv4 8/8] extcon: arizona: Use devm_extcon_dev_register()
-Date: Mon, 21 Apr 2014 19:10:15 +0900
-Message-id: <1398075015-19211-9-git-send-email-sangjung.woo@samsung.com>
+Subject: [PATCHv4 7/8] extcon: palmas: Use devm_extcon_dev_register()
+Date: Mon, 21 Apr 2014 19:10:14 +0900
+Message-id: <1398075015-19211-8-git-send-email-sangjung.woo@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1398075015-19211-1-git-send-email-sangjung.woo@samsung.com>
 References: <1398075015-19211-1-git-send-email-sangjung.woo@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsWyRsSkSLfzXUiwwfd+ZYvrX56zWrx+YWhx
-	edccNovbjSvYLBbsKbGYMfklmwObR9+WVYwenzfJBTBFcdmkpOZklqUW6dslcGWc2vaCsWCX
-	QMWC3vPsDYy3eLsYOTgkBEwkjp8J6mLkBDLFJC7cW88GYgsJLGWUuHKTHSJuItHzspu5i5EL
-	KL6IUeLIxR9MEE4bk8S19SfBOtgEdCWeHLjMDGKLCARLdJw8DlbELLCEUeLfyVtgRcICbhK/
-	ej6DjWURUJXoXriPEcTmFfCQuLznEzvERQoScybZgIQ5BTwlFk1dyAhxkYfE6U/zwa6QEPjN
-	JvF412dmiDkCEt8mH2KB6JWV2HSAGeJqSYmDK26wTGAUXsDIsIpRNLUguaA4Kb3IVK84Mbe4
-	NC9dLzk/dxMjMHBP/3s2cQfj/QPWhxiTgcZNZJYSTc4HBn5eSbyhsZmRhamJqbGRuaUZacJK
-	4rzpj5KChATSE0tSs1NTC1KL4otKc1KLDzEycXBKNTDW7OcJLv+it23Rh9QDryLC4lckv3d5
-	vGJf6tEk5r2f44w6NkTfOKpp9qjh3oJLfAvMjGa8u5j4Ndx4TuWlK1NuG3WEvSi67cS7be76
-	n5V1Czbs+uv90TD08sQK/yYH654Lmrn6f690zd2091KbHvu5V/t5jKv2cks1BgpurOP+4fZC
-	+bKwSHihEktxRqKhFnNRcSIAajagCnICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrHIsWRmVeSWpSXmKPExsVy+t9jAd3OdyHBBu8nS1tc//Kc1eL1C0OL
-	y7vmsFncblzBZrFgT4nFjMkv2RzYPPq2rGL0+LxJLoApqoHRJiM1MSW1SCE1Lzk/JTMv3VbJ
-	OzjeOd7UzMBQ19DSwlxJIS8xN9VWycUnQNctMwdoo5JCWWJOKVAoILG4WEnfDtOE0BA3XQuY
-	xghd35AguB4jAzSQsIYx49S2F4wFuwQqFvSeZ29gvMXbxcjJISFgItHzspsZwhaTuHBvPVsX
-	IxeHkMAiRokjF38wQThtTBLX1p9kA6liE9CVeHLgMliHiECwRMfJ42BFzAJLGCX+nbwFViQs
-	4Cbxq+czO4jNIqAq0b1wHyOIzSvgIXF5zyegOAfQOgWJOZNsQMKcAp4Si6YuBCsRAio5/Wk+
-	8wRG3gWMDKsYRVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgmPjmdQOxpUNFocYBTgYlXh4Z5SE
-	BAuxJpYVV+YeYpTgYFYS4Y1YDxTiTUmsrEotyo8vKs1JLT7EmAx01ERmKdHkfGDc5pXEGxqb
-	mBlZGpkbWhgZm5MmrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QDY6Np1478GomlsyoLZyVc
-	4i1/t+zkxyTbL1f/7ZssKnl1M8vqz37bumx1tqddOuDlVvKLyeJa+oR/XFm31+20YK9bpFzP
-	mndDaV9ckdkMp6vNXi9vG362/8Z9se15npiOXPTSP0f/J3Ae1Pg00eCe9S23giaJWZUZC43E
-	9s3hzbx3tJOJh2fFVyWW4oxEQy3mouJEAAg3pzPRAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPLMWRmVeSWpSXmKPExsWyRsSkRLfzXUiwwdxpyhbXvzxntXj9wtDi
+	8q45bBa3G1ewWSzYU2IxY/JLNgc2j74tqxg9Pm+SC2CK4rJJSc3JLEst0rdL4MroXXOQsWCv
+	QMWWaRwNjDd5uxg5OSQETCSWTZ7KDGGLSVy4t54NxBYSWMoo8XyjCEzNgzcf2LsYuYDiixgl
+	1t08ywzhtDFJXFt/EqyDTUBX4smBy2CTRASCJTpOHmcCKWIWWMIo8e/kLbAiYQFXiWV3T7OA
+	2CwCqhKfOhrA4rwCHhJnLt5k7GLkAFqnIDFnkg1ImFPAU2LR1IWMEBd5SJz+NB9ssYTAfzaJ
+	BXfmMELMEZD4NvkQC0SvrMSmA1DfSEocXHGDZQKj8AJGhlWMoqkFyQXFSelFRnrFibnFpXnp
+	esn5uZsYgYF7+t+zvh2MNw9YH2JMBho3kVlKNDkfGPh5JfGGxmZGFqYmpsZG5pZmpAkrifMu
+	epgUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoGxdHvWgymV69f5vQlVV2z/KdfNuebDMo/z
+	R4/zLpq1bOLTiZy5WveebZO6GLr/+ttTWju+L9jWWTAxPMRt9tauCrafBu2zIm8bu6llyB6y
+	ijHfK7PGfqbmv7MzHjjsOvWbibcx71T9nwfXHj1bvH1R7GkLv+wSNcHLGV2p7l9E4vi+m1zY
+	8DjHXImlOCPRUIu5qDgRAAie7OVyAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsVy+t9jAd3OdyHBBkt7pC2uf3nOavH6haHF
+	5V1z2CxuN65gs1iwp8RixuSXbA5sHn1bVjF6fN4kF8AU1cBok5GamJJapJCal5yfkpmXbqvk
+	HRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQO0UUmhLDGnFCgUkFhcrKRvh2lCaIibrgVM
+	Y4Sub0gQXI+RARpIWMOY0bvmIGPBXoGKLdM4Ghhv8nYxcnJICJhIPHjzgR3CFpO4cG89Wxcj
+	F4eQwCJGiXU3zzJDOG1MEtfWn2QDqWIT0JV4cuAyM4gtIhAs0XHyOBNIEbPAEkaJfydvgRUJ
+	C7hKLLt7mgXEZhFQlfjU0QAW5xXwkDhz8SZjFyMH0DoFiTmTbEDCnAKeEoumLmQEsYWASk5/
+	ms88gZF3ASPDKkbR1ILkguKk9FwjveLE3OLSvHS95PzcTYzgyHgmvYNxVYPFIUYBDkYlHt4X
+	+SHBQqyJZcWVuYcYJTiYlUR4I9YDhXhTEiurUovy44tKc1KLDzEmAx01kVlKNDkfGLV5JfGG
+	xiZmRpZG5oYWRsbmpAkrifMebLUOFBJITyxJzU5NLUgtgtnCxMEp1cCovu2a8rGeuATDQ0HJ
+	zy9xnGZ9wa23janv+tlLpwJXlGQJPJvGzbXo1l/HCqYQfpF8nbI1zdJyATptSX0lczJkfu9i
+	LVj3JSW6sbreK7mRy2K/dVmodDfLLssDh8OzUybEL3T92aGsmcXYVfpzeWG14pa70w8+UTko
+	vHVHztQWl/2qZadVryixFGckGmoxFxUnAgDmxTFz0AIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,62 +57,61 @@ on driver detach. That reduces tiresome managing code.
 
 Signed-off-by: Sangjung Woo <sangjung.woo@samsung.com>
 ---
- drivers/extcon/extcon-arizona.c |   12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/extcon/extcon-palmas.c |   15 +++++----------
+ 1 file changed, 5 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index 98a14f6..f63fa6f 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -1105,15 +1105,14 @@ static int arizona_extcon_probe(struct platform_device *pdev)
- 	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
- 	if (!info) {
- 		dev_err(&pdev->dev, "Failed to allocate memory\n");
--		ret = -ENOMEM;
--		goto err;
-+		return -ENOMEM;
+diff --git a/drivers/extcon/extcon-palmas.c b/drivers/extcon/extcon-palmas.c
+index 51db5bc..1a770e0 100644
+--- a/drivers/extcon/extcon-palmas.c
++++ b/drivers/extcon/extcon-palmas.c
+@@ -192,7 +192,7 @@ static int palmas_usb_probe(struct platform_device *pdev)
+ 	palmas_usb->edev.name = kstrdup(node->name, GFP_KERNEL);
+ 	palmas_usb->edev.mutually_exclusive = mutually_exclusive;
+ 
+-	status = extcon_dev_register(&palmas_usb->edev);
++	status = devm_extcon_dev_register(&pdev->dev, &palmas_usb->edev);
+ 	if (status) {
+ 		dev_err(&pdev->dev, "failed to register extcon device\n");
+ 		kfree(palmas_usb->edev.name);
+@@ -209,7 +209,8 @@ static int palmas_usb_probe(struct platform_device *pdev)
+ 		if (status < 0) {
+ 			dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
+ 					palmas_usb->id_irq, status);
+-			goto fail_extcon;
++			kfree(palmas_usb->edev.name);
++			return status;
+ 		}
  	}
  
- 	info->micvdd = devm_regulator_get(arizona->dev, "MICVDD");
- 	if (IS_ERR(info->micvdd)) {
- 		ret = PTR_ERR(info->micvdd);
- 		dev_err(arizona->dev, "Failed to get MICVDD: %d\n", ret);
--		goto err;
-+		return ret;
+@@ -223,26 +224,20 @@ static int palmas_usb_probe(struct platform_device *pdev)
+ 		if (status < 0) {
+ 			dev_err(&pdev->dev, "can't get IRQ %d, err %d\n",
+ 					palmas_usb->vbus_irq, status);
+-			goto fail_extcon;
++			kfree(palmas_usb->edev.name);
++			return status;
+ 		}
  	}
  
- 	mutex_init(&info->lock);
-@@ -1155,11 +1154,11 @@ static int arizona_extcon_probe(struct platform_device *pdev)
- 	info->edev.dev.parent = arizona->dev;
- 	info->edev.supported_cable = arizona_cable;
- 
--	ret = extcon_dev_register(&info->edev);
-+	ret = devm_extcon_dev_register(&pdev->dev, &info->edev);
- 	if (ret < 0) {
- 		dev_err(arizona->dev, "extcon_dev_register() failed: %d\n",
- 			ret);
--		goto err;
-+		return ret;
- 	}
- 
- 	info->input = devm_input_allocate_device(&pdev->dev);
-@@ -1410,8 +1409,6 @@ err_rise:
- err_input:
- err_register:
- 	pm_runtime_disable(&pdev->dev);
--	extcon_dev_unregister(&info->edev);
--err:
- 	return ret;
+ 	palmas_enable_irq(palmas_usb);
+ 	device_set_wakeup_capable(&pdev->dev, true);
+ 	return 0;
+-
+-fail_extcon:
+-	extcon_dev_unregister(&palmas_usb->edev);
+-	kfree(palmas_usb->edev.name);
+-
+-	return status;
  }
  
-@@ -1445,7 +1442,6 @@ static int arizona_extcon_remove(struct platform_device *pdev)
- 	regmap_update_bits(arizona->regmap, ARIZONA_JACK_DETECT_ANALOGUE,
- 			   ARIZONA_JD1_ENA, 0);
- 	arizona_clk32k_disable(arizona);
--	extcon_dev_unregister(&info->edev);
+ static int palmas_usb_remove(struct platform_device *pdev)
+ {
+ 	struct palmas_usb *palmas_usb = platform_get_drvdata(pdev);
+ 
+-	extcon_dev_unregister(&palmas_usb->edev);
+ 	kfree(palmas_usb->edev.name);
  
  	return 0;
- }
 -- 
 1.7.9.5
 
