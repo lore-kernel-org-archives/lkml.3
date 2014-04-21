@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755197AbaDUXBT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 19:01:19 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:48645 "EHLO
+	id S1755221AbaDUXBi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 19:01:38 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:48648 "EHLO
 	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754743AbaDUXBO (ORCPT
+	with ESMTP id S1754743AbaDUXBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 19:01:14 -0400
-Message-ID: <5355A336.5000401@semaphore.gr>
-Date: Tue, 22 Apr 2014 02:01:10 +0300
+	Mon, 21 Apr 2014 19:01:32 -0400
+Message-ID: <5355A349.50908@semaphore.gr>
+Date: Tue, 22 Apr 2014 02:01:29 +0300
 From: Stratos Karafotis <stratosk@semaphore.gr>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@deeprootsystems.com>,
-        Russell King <linux@arm.linux.org.uk>,
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+CC: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        davinci-linux-open-source@linux.davincidsp.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4 3/8] ARM: davinci: da850: Use cpufreq_for_each_entry macro
+Subject: [PATCH v4 5/8] mfd: db8500-prcmu: Use cpufreq_for_each_entry macro
  for iteration
-References: <53553AD8.5080901@semaphore.gr>
-In-Reply-To: <53553AD8.5080901@semaphore.gr>
-X-Forwarded-Message-Id: <53553AD8.5080901@semaphore.gr>
+References: <534DB213.7080802@semaphore.gr>
+In-Reply-To: <534DB213.7080802@semaphore.gr>
+X-Forwarded-Message-Id: <534DB213.7080802@semaphore.gr>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -39,38 +36,63 @@ It should have no functional changes.
 
 Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
 ---
- arch/arm/mach-davinci/da850.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ drivers/mfd/db8500-prcmu.c | 19 ++++++++-----------
+ 1 file changed, 8 insertions(+), 11 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/da850.c b/arch/arm/mach-davinci/da850.c
-index 85399c9..45ce065 100644
---- a/arch/arm/mach-davinci/da850.c
-+++ b/arch/arm/mach-davinci/da850.c
-@@ -1092,20 +1092,21 @@ int da850_register_cpufreq(char *async_clk)
+diff --git a/drivers/mfd/db8500-prcmu.c b/drivers/mfd/db8500-prcmu.c
+index 7694e07..b11fdd6 100644
+--- a/drivers/mfd/db8500-prcmu.c
++++ b/drivers/mfd/db8500-prcmu.c
+@@ -1734,18 +1734,17 @@ static struct cpufreq_frequency_table db8500_cpufreq_table[] = {
  
- static int da850_round_armrate(struct clk *clk, unsigned long rate)
+ static long round_armss_rate(unsigned long rate)
  {
--	int i, ret = 0, diff;
-+	int ret = 0, diff;
- 	unsigned int best = (unsigned int) -1;
- 	struct cpufreq_frequency_table *table = cpufreq_info.freq_table;
 +	struct cpufreq_frequency_table *pos;
+ 	long freq = 0;
+-	int i = 0;
  
- 	rate /= 1000; /* convert to kHz */
+ 	/* cpufreq table frequencies is in KHz. */
+ 	rate = rate / 1000;
  
--	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
--		diff = table[i].frequency - rate;
-+	cpufreq_for_each_entry(pos, table) {
-+		diff = pos->frequency - rate;
- 		if (diff < 0)
- 			diff = -diff;
- 
- 		if (diff < best) {
- 			best = diff;
--			ret = table[i].frequency;
-+			ret = pos->frequency;
- 		}
+ 	/* Find the corresponding arm opp from the cpufreq table. */
+-	while (db8500_cpufreq_table[i].frequency != CPUFREQ_TABLE_END) {
+-		freq = db8500_cpufreq_table[i].frequency;
++	cpufreq_for_each_entry(pos, db8500_cpufreq_table) {
++		freq = pos->frequency;
+ 		if (freq == rate)
+ 			break;
+-		i++;
  	}
  
+ 	/* Return the last valid value, even if a match was not found. */
+@@ -1886,23 +1885,21 @@ static void set_clock_rate(u8 clock, unsigned long rate)
+ 
+ static int set_armss_rate(unsigned long rate)
+ {
+-	int i = 0;
++	struct cpufreq_frequency_table *pos;
+ 
+ 	/* cpufreq table frequencies is in KHz. */
+ 	rate = rate / 1000;
+ 
+ 	/* Find the corresponding arm opp from the cpufreq table. */
+-	while (db8500_cpufreq_table[i].frequency != CPUFREQ_TABLE_END) {
+-		if (db8500_cpufreq_table[i].frequency == rate)
++	cpufreq_for_each_entry(pos, db8500_cpufreq_table)
++		if (pos->frequency == rate)
+ 			break;
+-		i++;
+-	}
+ 
+-	if (db8500_cpufreq_table[i].frequency != rate)
++	if (pos->frequency != rate)
+ 		return -EINVAL;
+ 
+ 	/* Set the new arm opp. */
+-	return db8500_prcmu_set_arm_opp(db8500_cpufreq_table[i].driver_data);
++	return db8500_prcmu_set_arm_opp(pos->driver_data);
+ }
+ 
+ static int set_plldsi_rate(unsigned long rate)
 -- 
 1.9.0
