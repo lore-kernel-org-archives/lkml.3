@@ -1,139 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416AbaDUBd7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 21:33:59 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:50010 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123AbaDUBd5 (ORCPT
+	id S1751388AbaDUBxp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 21:53:45 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:54690 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbaDUBxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 21:33:57 -0400
-Subject: [PATCH v3] kernel/panic: Add "crash_kexec_post_notifiers" option
- for kdump after panic_notifers
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-To: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Eric Biederman <ebiederm@xmission.com>
-Cc: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
-        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
-        Satoru MORIYA <satoru.moriya.br@hitachi.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tomoki Sekiyama <tomoki.sekiyama@hds.com>
-Date: Mon, 21 Apr 2014 10:33:48 +0900
-Message-ID: <20140421013348.6719.6959.stgit@ltc230.yrl.intra.hitachi.co.jp>
-User-Agent: StGit/0.17-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Sun, 20 Apr 2014 21:53:40 -0400
+From: Wei Yang <weiyang@linux.vnet.ibm.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Cc: xiaoguangrong@linux.vnet.ibm.com, Wei Yang <weiyang@linux.vnet.ibm.com>
+Subject: [PATCH] drivercore: fix a corner case for deferred probe
+Date: Mon, 21 Apr 2014 09:53:22 +0800
+Message-Id: <1398045202-5714-1-git-send-email-weiyang@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.9.5
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042101-8256-0000-0000-00000CAF6D17
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a "crash_kexec_post_notifiers" option to run kdump after running
-panic_notifiers and dump kmsg. This can help rare situations which
-kdump drops in failure because of unstable crashed kernel or hardware
-failure (memory corruption on critical data/code), or the 2nd kernel
-is already broken by the 1st kernel (it's a broken behavior, but who
-can guarantee that the "crashed" kernel works correctly?).
+There is one corner case in deferred probe which will lead a device in
+"dream" in the deferred_probe_pending_list.
 
-Usage: add "crash_kexec_post_notifiers" to kernel boot option.
+Suppose we have three devices, Tom, Jerry and Spike. Tom and Jerry have a
+close relationship, Tom could be up until Jerry is up. Spike is an
+independent device.
 
-Note that this actually increases risks of the failure of kdump.
-This option should be set only if you worry about the rare case
-of kdump failure rather than increasing the chance of success.
+Device probe sequence: Tom -> Spike -> Jerry
 
-Changes from v2:
- - Remove warning message according to Vivek's comment.
+1. Tom probes, fails for deferred probe
+   adds itself to pending list
+2. Spike probes, succeed
+   move devices in pending list to active list
+   trigger deferred probe
+3. Tom is taken off from active list
+   probes and still fails, scheduled out
+   not added to pending list this time
+   (Tom is not in pending list neither in active list)
+4. Jerry probes, succeed
+   move devices in pending list to active list(but Tom is not there)
+   trigger deferred probe
+   go through the active list
+5. Tom add itself to pending list
+   and wait
 
-Changes from v1:
- - Rename late_kdump option to crash_kexec_post_notifiers.
- - Remove unneeded warning message.
+Tom will be trapped in the pending list until someone else help it out.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Acked-by: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
-Cc: Eric Biederman <ebiederm@xmission.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Satoru MORIYA <satoru.moriya.br@hitachi.com>
-Cc: Tomoki Sekiyama <tomoki.sekiyama@hds.com>
+This patch adds a counter of success probe. Every time a driver probe succeeds,
+this is increased by 1. In the deferred_probe_work_func, when probe fails and
+returns EPROBE_DEFER, it checks this counter. If some driver succeed to probe
+during this period, it adds itself to active list again.
+
+Signed-off-by: Wei Yang <weiyang@linux.vnet.ibm.com>
 ---
- Documentation/kernel-parameters.txt |    8 ++++++++
- kernel/panic.c                      |   23 +++++++++++++++++++++--
- 2 files changed, 29 insertions(+), 2 deletions(-)
+ drivers/base/base.h |    2 +-
+ drivers/base/bus.c  |    3 ++-
+ drivers/base/dd.c   |   14 +++++++++++++-
+ 3 files changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 03e50b4..1df416b 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2339,6 +2339,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 			timeout < 0: reboot immediately
- 			Format: <timeout>
+diff --git a/drivers/base/base.h b/drivers/base/base.h
+index 24f4242..6315207 100644
+--- a/drivers/base/base.h
++++ b/drivers/base/base.h
+@@ -105,7 +105,7 @@ extern void container_dev_init(void);
+ struct kobject *virtual_device_parent(struct device *dev);
  
-+	crash_kexec_post_notifiers
-+			Run kdump after running panic-notifiers and dumping
-+			kmsg. This only for the users who doubt kdump always
-+			succeeds in any situation.
-+			Note that this also increases risks of kdump failure,
-+			because some panic notifiers can make the crashed
-+			kernel more unstable.
-+
- 	parkbd.port=	[HW] Parallel port number the keyboard adapter is
- 			connected to, default is 0.
- 			Format: <parport#>
-diff --git a/kernel/panic.c b/kernel/panic.c
-index d02fa9f..30c4a1c 100644
---- a/kernel/panic.c
-+++ b/kernel/panic.c
-@@ -32,6 +32,7 @@ static unsigned long tainted_mask;
- static int pause_on_oops;
- static int pause_on_oops_flag;
- static DEFINE_SPINLOCK(pause_on_oops_lock);
-+static bool crash_kexec_post_notifiers;
+ extern int bus_add_device(struct device *dev);
+-extern void bus_probe_device(struct device *dev);
++extern int bus_probe_device(struct device *dev);
+ extern void bus_remove_device(struct device *dev);
  
- int panic_timeout = CONFIG_PANIC_TIMEOUT;
- EXPORT_SYMBOL_GPL(panic_timeout);
-@@ -112,9 +113,11 @@ void panic(const char *fmt, ...)
- 	/*
- 	 * If we have crashed and we have a crash kernel loaded let it handle
- 	 * everything else.
--	 * Do we want to call this before we try to display a message?
-+	 * If we want to run this after calling panic_notifiers, pass
-+	 * the "crash_kexec_post_notifiers" option to the kernel.
- 	 */
--	crash_kexec(NULL);
-+	if (!crash_kexec_post_notifiers)
-+		crash_kexec(NULL);
- 
- 	/*
- 	 * Note smp_send_stop is the usual smp shutdown function, which
-@@ -131,6 +134,15 @@ void panic(const char *fmt, ...)
- 
- 	kmsg_dump(KMSG_DUMP_PANIC);
- 
-+	/*
-+	 * If you doubt kdump always works fine in any situation,
-+	 * "crash_kexec_post_notifiers" offers you a chance to run 
-+	 * panic_notifiers and dumping kmsg before kdump.
-+	 * Note: since some panic_notifiers can make crashed kernel
-+	 * more unstable, it can increase risks of the kdump failure too.
-+	 */
-+	crash_kexec(NULL);
-+
- 	bust_spinlocks(0);
- 
- 	if (!panic_blink)
-@@ -472,6 +484,13 @@ EXPORT_SYMBOL(__stack_chk_fail);
- core_param(panic, panic_timeout, int, 0644);
- core_param(pause_on_oops, pause_on_oops, int, 0644);
- 
-+static int __init setup_crash_kexec_post_notifiers(char *s)
-+{
-+	crash_kexec_post_notifiers = true;
-+	return 0;
-+}
-+early_param("crash_kexec_post_notifiers", setup_crash_kexec_post_notifiers);
-+
- static int __init oops_setup(char *s)
+ extern int bus_add_driver(struct device_driver *drv);
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 59dc808..a050946 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -543,7 +543,7 @@ out_put:
+  *
+  * - Automatically probe for a driver if the bus allows it.
+  */
+-void bus_probe_device(struct device *dev)
++int bus_probe_device(struct device *dev)
  {
- 	if (!s)
-
+ 	struct bus_type *bus = dev->bus;
+ 	struct subsys_interface *sif;
+@@ -562,6 +562,7 @@ void bus_probe_device(struct device *dev)
+ 		if (sif->add_dev)
+ 			sif->add_dev(dev, sif);
+ 	mutex_unlock(&bus->p->mutex);
++	return ret;
+ }
+ 
+ /**
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index 0605176..a10526d 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -52,6 +52,7 @@ static DEFINE_MUTEX(deferred_probe_mutex);
+ static LIST_HEAD(deferred_probe_pending_list);
+ static LIST_HEAD(deferred_probe_active_list);
+ static struct workqueue_struct *deferred_wq;
++static u32 success_probe;
+ 
+ /**
+  * deferred_probe_work_func() - Retry probing devices in the active list.
+@@ -60,6 +61,8 @@ static void deferred_probe_work_func(struct work_struct *work)
+ {
+ 	struct device *dev;
+ 	struct device_private *private;
++	u32 old_success;
++	int ret = 0;
+ 	/*
+ 	 * This block processes every device in the deferred 'active' list.
+ 	 * Each device is removed from the active list and passed to
+@@ -80,6 +83,7 @@ static void deferred_probe_work_func(struct work_struct *work)
+ 		list_del_init(&private->deferred_probe);
+ 
+ 		get_device(dev);
++		old_success = ACCESS_ONCE(success_probe);
+ 
+ 		/*
+ 		 * Drop the mutex while probing each device; the probe path may
+@@ -98,7 +102,14 @@ static void deferred_probe_work_func(struct work_struct *work)
+ 		device_pm_unlock();
+ 
+ 		dev_dbg(dev, "Retrying from deferred list\n");
+-		bus_probe_device(dev);
++		ret = bus_probe_device(dev);
++		if (ret == -EPROBE_DEFER) {
++			mutex_lock(&deferred_probe_mutex);
++			if (old_success != success_probe)
++				list_move(&private->deferred_probe,
++					  &deferred_probe_active_list);
++			mutex_unlock(&deferred_probe_mutex);
++		}
+ 
+ 		mutex_lock(&deferred_probe_mutex);
+ 
+@@ -147,6 +158,7 @@ static void driver_deferred_probe_trigger(void)
+ 	 * into the active list so they can be retried by the workqueue
+ 	 */
+ 	mutex_lock(&deferred_probe_mutex);
++	success_probe++;
+ 	list_splice_tail_init(&deferred_probe_pending_list,
+ 			      &deferred_probe_active_list);
+ 	mutex_unlock(&deferred_probe_mutex);
+-- 
+1.7.9.5
 
