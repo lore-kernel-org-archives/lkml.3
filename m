@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753132AbaDUEh0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:37:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58702 "EHLO
+	id S1752912AbaDUEhD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:37:03 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58770 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006AbaDUEew (ORCPT
+	with ESMTP id S1752062AbaDUEfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:34:52 -0400
+	Mon, 21 Apr 2014 00:35:05 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
-        Werner Fink <werner@suse.de>, Hannes Reinecke <hare@suse.de>,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH 3.13 10/32] tty: Set correct tty name in active sysfs attribute
-Date: Sun, 20 Apr 2014 19:13:27 -0700
-Message-Id: <20140421021135.278393101@linuxfoundation.org>
+        Zach Brown <zab@redhat.com>, Josef Bacik <jbacik@fb.com>,
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.13 20/32] Btrfs: fix deadlock with nested trans handles
+Date: Sun, 20 Apr 2014 19:13:37 -0700
+Message-Id: <20140421021136.632021489@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
 References: <20140421021133.865086647@linuxfoundation.org>
@@ -29,75 +27,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Josef Bacik <jbacik@fb.com>
 
-commit 723abd87f6e536f1353c8f64f621520bc29523a3 upstream.
+commit 3bbb24b20a8800158c33eca8564f432dd14d0bf3 upstream.
 
-The 'active' sysfs attribute should refer to the currently active tty
-devices the console is running on, not the currently active console. The
-console structure doesn't refer to any device in sysfs, only the tty the
-console is running on has. So we need to print out the tty names in
-'active', not the console names.
+Zach found this deadlock that would happen like this
 
-There is one special-case, which is tty0. If the console is directed to
-it, we want 'tty0' to show up in the file, so user-space knows that the
-messages get forwarded to the active VT. The ->device() callback would
-resolve tty0, though. Hence, treat it special and don't call into the VT
-layer to resolve it (plymouth is known to depend on it).
+btrfs_end_transaction <- reduce trans->use_count to 0
+  btrfs_run_delayed_refs
+    btrfs_cow_block
+      find_free_extent
+	btrfs_start_transaction <- increase trans->use_count to 1
+          allocate chunk
+	btrfs_end_transaction <- decrease trans->use_count to 0
+	  btrfs_run_delayed_refs
+	    lock tree block we are cowing above ^^
 
-Cc: Lennart Poettering <lennart@poettering.net>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Werner Fink <werner@suse.de>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+We need to only decrease trans->use_count if it is above 1, otherwise leave it
+alone.  This will make nested trans be the only ones who decrease their added
+ref, and will let us get rid of the trans->use_count++ hack if we have to commit
+the transaction.  Thanks,
+
+Reported-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Tested-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_io.c |   23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+ fs/btrfs/transaction.c |   14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1271,12 +1271,13 @@ static void pty_line_name(struct tty_dri
-  *
-  *	Locking: None
-  */
--static void tty_line_name(struct tty_driver *driver, int index, char *p)
-+static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
- {
- 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
--		strcpy(p, driver->name);
-+		return sprintf(p, "%s", driver->name);
- 	else
--		sprintf(p, "%s%d", driver->name, index + driver->name_base);
-+		return sprintf(p, "%s%d", driver->name,
-+			       index + driver->name_base);
- }
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -685,7 +685,8 @@ static int __btrfs_end_transaction(struc
+ 	int lock = (trans->type != TRANS_JOIN_NOLOCK);
+ 	int err = 0;
  
- /**
-@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct d
- 		if (i >= ARRAY_SIZE(cs))
- 			break;
+-	if (--trans->use_count) {
++	if (trans->use_count > 1) {
++		trans->use_count--;
+ 		trans->block_rsv = trans->orig_rsv;
+ 		return 0;
  	}
--	while (i--)
--		count += sprintf(buf + count, "%s%d%c",
--				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
-+	while (i--) {
-+		int index = cs[i]->index;
-+		struct tty_driver *drv = cs[i]->device(cs[i], &index);
-+
-+		/* don't resolve tty0 as some programs depend on it */
-+		if (drv && (cs[i]->index > 0 || drv->major != TTY_MAJOR))
-+			count += tty_line_name(drv, index, buf + count);
-+		else
-+			count += sprintf(buf + count, "%s%d",
-+					 cs[i]->name, cs[i]->index);
-+
-+		count += sprintf(buf + count, "%c", i ? ' ':'\n');
-+	}
- 	console_unlock();
+@@ -733,17 +734,10 @@ static int __btrfs_end_transaction(struc
+ 	}
  
- 	return count;
+ 	if (lock && ACCESS_ONCE(cur_trans->state) == TRANS_STATE_BLOCKED) {
+-		if (throttle) {
+-			/*
+-			 * We may race with somebody else here so end up having
+-			 * to call end_transaction on ourselves again, so inc
+-			 * our use_count.
+-			 */
+-			trans->use_count++;
++		if (throttle)
+ 			return btrfs_commit_transaction(trans, root);
+-		} else {
++		else
+ 			wake_up_process(info->transaction_kthread);
+-		}
+ 	}
+ 
+ 	if (trans->type & __TRANS_FREEZABLE)
 
 
