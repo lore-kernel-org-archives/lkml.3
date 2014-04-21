@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755018AbaDUVti (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 17:49:38 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:45890 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754992AbaDUVte (ORCPT
+	id S1755071AbaDUVty (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 17:49:54 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:49238 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755032AbaDUVtq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 17:49:34 -0400
+	Mon, 21 Apr 2014 17:49:46 -0400
 From: srinivas.kandagatla@linaro.org
 To: linux-mmc@vger.kernel.org
 Cc: Russell King <linux@arm.linux.org.uk>, Chris Ball <chris@printf.net>,
         Ulf Hansson <ulf.hansson@linaro.org>, linux-kernel@vger.kernel.org,
         agross@quicinc.com, linux-arm-msm@vger.kernel.org,
         Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Subject: [PATCH RFC 11/12] mmc: mmci: Add Qcom variations to MCICommand register.
-Date: Mon, 21 Apr 2014 22:49:25 +0100
-Message-Id: <1398116965-31732-1-git-send-email-srinivas.kandagatla@linaro.org>
+Subject: [PATCH RFC 12/12] mmc: mmci: Add Qcom specific pio_read function.
+Date: Mon, 21 Apr 2014 22:49:38 +0100
+Message-Id: <1398116978-31772-1-git-send-email-srinivas.kandagatla@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
 References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org>
@@ -25,48 +25,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 
-Some bits which control Command Path State Machine (CPSM) are new in Qcom
-integration, so this patch adds support to those bits.
+MCIFIFOCNT register behaviour on Qcom chips is very different than the other
+pl180 integrations. MCIFIFOCNT register contains the number of
+words that are still waiting to be transferred through the FIFO. It keeps
+decrementing once the host CPU reads the MCIFIFO. With the existing logic and
+the MCIFIFOCNT behaviour, mmci_pio_read will loop forever, as the FIFOCNT
+register will always return transfer size before reading the FIFO.
+
+This patch implements qcom_pio_read function so as existing mmci_pio_read is
+not suitable for Qcom SOCs.
 
 Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
 ---
- drivers/mmc/host/mmci.c |    4 ++++
- drivers/mmc/host/mmci.h |    7 +++++++
- 2 files changed, 11 insertions(+)
+ drivers/mmc/host/mmci.c |   31 +++++++++++++++++++++++++++++--
+ 1 file changed, 29 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
-index 2cd3a8f..8fcd8ef 100644
+index 8fcd8ef..585888e 100644
 --- a/drivers/mmc/host/mmci.c
 +++ b/drivers/mmc/host/mmci.c
-@@ -910,6 +910,10 @@ mmci_start_command(struct mmci_host *host, struct mmc_command *cmd, u32 c)
- 	if (/*interrupt*/0)
- 		c |= MCI_CPSM_INTERRUPT;
+@@ -1047,6 +1047,29 @@ mmci_cmd_irq(struct mmci_host *host, struct mmc_command *cmd,
+ 	}
+ }
  
-+	if (host->hw_designer == AMBA_VENDOR_QCOM &&
-+	    mmc_cmd_type(cmd) == MMC_CMD_ADTC)
-+		c |= MCI_CSPM_QCOM_DATCMD;
++static int mmci_qcom_pio_read(struct mmci_host *host, char *buffer,
++			 unsigned int remain)
++{
++	uint32_t	*ptr = (uint32_t *) buffer;
++	int		count = 0;
++	struct variant_data *variant = host->variant;
++	int		fifo_size = variant->fifosize;
 +
- 	host->cmd = cmd;
++	if (remain % 4)
++		remain = ((remain >> 2) + 1) << 2;
++
++	while (readl(host->base + MMCISTATUS) & MCI_RXDATAAVLBL) {
++		*ptr = readl(host->base + MMCIFIFO + (count % fifo_size));
++		ptr++;
++		count += sizeof(uint32_t);
++
++		remain -=  sizeof(uint32_t);
++		if (remain == 0)
++			break;
++	}
++	return count;
++}
++
+ static int mmci_pio_read(struct mmci_host *host, char *buffer, unsigned int remain)
+ {
+ 	void __iomem *base = host->base;
+@@ -1168,8 +1191,12 @@ static irqreturn_t mmci_pio_irq(int irq, void *dev_id)
+ 		remain = sg_miter->length;
  
- 	mmci_writel(host, cmd->arg, MMCIARGUMENT);
-diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
-index 0a6de1c..2ba0834 100644
---- a/drivers/mmc/host/mmci.h
-+++ b/drivers/mmc/host/mmci.h
-@@ -64,6 +64,13 @@
- #define MCI_ST_ENCMD_COMPL	(1 << 12)
- #define MCI_ST_NIEN		(1 << 13)
- #define MCI_ST_CE_ATACMD	(1 << 14)
-+/* Modified on Qualcomm Integrations */
-+#define MCI_CSPM_QCOM_DATCMD		(1 << 12)
-+#define MCI_CSPM_QCOM_MCIABORT		(1 << 13)
-+#define MCI_CSPM_QCOM_CCSENABLE		(1 << 14)
-+#define MCI_CSPM_QCOM_CCSDISABLE	(1 << 15)
-+#define MCI_CSPM_QCOM_AUTO_CMD19	(1 << 16)
-+#define MCI_CSPM_QCOM_AUTO_CMD21	(1 << 21)
+ 		len = 0;
+-		if (status & MCI_RXACTIVE)
+-			len = mmci_pio_read(host, buffer, remain);
++		if (status & MCI_RXACTIVE) {
++			if (host->hw_designer == AMBA_VENDOR_QCOM)
++				len = mmci_qcom_pio_read(host, buffer, remain);
++			else
++				len = mmci_pio_read(host, buffer, remain);
++		}
+ 		if (status & MCI_TXACTIVE)
+ 			len = mmci_pio_write(host, buffer, remain, status);
  
- #define MMCIRESPCMD		0x010
- #define MMCIRESPONSE0		0x014
 -- 
 1.7.9.5
 
