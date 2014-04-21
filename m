@@ -1,84 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916AbaDUQRW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 12:17:22 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:55081 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752856AbaDUQRP (ORCPT
+	id S1752696AbaDUQU1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 12:20:27 -0400
+Received: from mail-oa0-f53.google.com ([209.85.219.53]:62291 "EHLO
+	mail-oa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbaDUQUX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 12:17:15 -0400
-From: Masanari Iida <standby24x7@gmail.com>
-To: rdunlap@infradead.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] doc: drm: Fix typo in drm.tmpl
-Date: Tue, 22 Apr 2014 01:17:06 +0900
-Message-Id: <1398097026-13800-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 1.9.2.468.g3f0c02a
+	Mon, 21 Apr 2014 12:20:23 -0400
+MIME-Version: 1.0
+From: Hui Zhu <teawater@gmail.com>
+Date: Tue, 22 Apr 2014 00:19:42 +0800
+Message-ID: <CANFwon0oLO+qCtpewc=BxKBOm05aBMpV=yG0CxwW1isWHfnZqw@mail.gmail.com>
+Subject: [PATCH] Fix get ERESTARTSYS with m32 in x86_64 when debug by GDB
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org, eparis@redhat.com,
+        ak@linux.intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: "gdb@sourceware.org" <gdb@sourceware.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix spelling typo in DocBook/drm.tmpl
+#cat gdb.base/interrupt.c
+#include <errno.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+#ifdef SIGNALS
+#include <signal.h>
+
+static void
+sigint_handler (int signo)
+{
+}
+#endif
+
+int
+main ()
+{
+  char x;
+  int nbytes;
+#ifdef SIGNALS
+  signal (SIGINT, sigint_handler);
+#endif
+  printf ("talk to me baby\n");
+  while (1)
+    {
+      nbytes = read (0, &x, 1);
+      if (nbytes < 0)
+{
+#ifdef EINTR
+ if (errno != EINTR)
+#endif
+   {
+     perror ("");
+     return 1;
+   }
+}
+      else if (nbytes == 0)
+{
+ printf ("end of file\n");
+ exit (0);
+}
+      else
+write (1, &x, 1);
+    }
+  return 0;
+}
+
+int
+func1 ()
+{
+  return 4;
+}
+#gcc -g -m32 gdb.base/interrupt.c
+#gdb ./a.out
+(gdb) r
+Starting program: /home/teawater/gdb/binutils-gdb/gdb/testsuite/a.out
+talk to me baby
+data
+data
+^C
+Program received signal SIGINT, Interrupt.
+0xf7ffd430 in __kernel_vsyscall ()
+(gdb) c
+Continuing.
+^C
+Program received signal SIGINT, Interrupt.
+0xf7ffd430 in __kernel_vsyscall ()
+(gdb) p func1()
+$1 = 4
+(gdb) c
+Continuing.
+Unknown error 512
+[Inferior 1 (process 7953) exited with code 01]
+
+      nbytes = read (0, &x, 1);
+      if (nbytes < 0)
+{
+#ifdef EINTR
+ if (errno != EINTR)
+#endif
+After GDB call a function "func1()" by hands, "read" will get
+errno 512(ERESTARTSYS) that should handled by Linux kernel.
+
+The root cause of this issue is:
+When user use ctrl-c stop the inferior, the signal will be handled in
+Linux kernel function "do_signal" in arch/x86/kernel/signal.c.
+The inferior will be stoped by function "ptrace_stop".  The call trace is:
+#0  freezable_schedule () at include/linux/freezer.h:172
+#1  ptrace_stop (exit_code=exit_code@entry=5, why=why@entry=262148,
+    clear_code=clear_code@entry=0, info=info@entry=0xffff88001d833e78)
+    at kernel/signal.c:1920
+#2  0xffffffff8107ec33 in ptrace_signal (info=0xffff88001d833e78, signr=5)
+    at kernel/signal.c:2157
+#3  get_signal_to_deliver (info=info@entry=0xffff88001d833e78,
+    return_ka=return_ka@entry=0xffff88001d833e58, regs=<optimized out>,
+    cookie=cookie@entry=0x0 <irq_stack_union>) at kernel/signal.c:2269
+#4  0xffffffff81013438 in do_signal (regs=regs@entry=0xffff88001d833f58)
+    at arch/x86/kernel/signal.c:696
+#5  0xffffffff81013a40 in do_notify_resume (regs=0xffff88001d833f58,
+    unused=<optimized out>, thread_info_flags=4) at arch/x86/kernel/signal.c:747
+#6  <signal handler called>
+#7  0x0000000000000000 in irq_stack_union ()
+
+When GDB "call func1()", to control inferior execute the function func1()
+and go back to old ip.  GDB need set all the registers by GDB function
+"amd64_collect_native_gregset" that will zero-extend most of 32 bits registers
+to 64 bits and set to inferior.
+And execute from ptrace_stop and got back to do_signal.
+current_thread_info()->status TS_COMPAT will be clean by function
+"int_with_check" when it return to user space.
+
+When GDB "continue", inferior will execute from ptrace_stop and got back
+to do_signal again.
+Because this signal interrupt a syscall, go back to function do_signal
+will use function "syscall_get_error" check if this is a syscall and got
+error:
+static inline long syscall_get_error(struct task_struct *task,
+    struct pt_regs *regs)
+{
+unsigned long error = regs->ax;
+#ifdef CONFIG_IA32_EMULATION
+/*
+* TS_COMPAT is set for 32-bit syscall entries and then
+* remains set until we return to user mode.
+*/
+if (task_thread_info(task)->status & TS_COMPAT)
+/*
+* Sign-extend the value so (int)-EFOO becomes (long)-EFOO
+* and will match correctly in comparisons.
+*/
+error = (long) (int) error;
+#endif
+return IS_ERR_VALUE(error) ? error : 0;
+}
+Now ax is in 32 bits now, need sign-extend to 64 bits.  But
+current_thread_info()->status TS_COMPAT is cleared when GDB call "call func1()".
+Linux kernel don't know this is a 32 bits task and will not extend it.
+Then -ERESTARTSYS is not be handled and go back to user space.
+
+Then the syscall "read" get a errno in ERESTARTSYS.
+
+To fix this issue, I tried to add a local variable to "do_signal" but
+it is not works.  The stack is cleared before GDB "continue".
+so I make a patch that add "test_thread_flag (TIF_IA32)" to syscall_get_error.
+
+Signed-off-by: Hui Zhu <hui@codesourcery.com>
 ---
- Documentation/DocBook/drm.tmpl | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/DocBook/drm.tmpl b/Documentation/DocBook/drm.tmpl
-index 702c4474..bdb932f 100644
---- a/Documentation/DocBook/drm.tmpl
-+++ b/Documentation/DocBook/drm.tmpl
-@@ -79,7 +79,7 @@
-   <partintro>
-     <para>
-       This first part of the DRM Developer's Guide documents core DRM code,
--      helper libraries for writting drivers and generic userspace interfaces
-+      helper libraries for writing drivers and generic userspace interfaces
-       exposed by DRM drivers.
-     </para>
-   </partintro>
-@@ -459,7 +459,7 @@ char *date;</synopsis>
-       providing a solution to every graphics memory-related problems, GEM
-       identified common code between drivers and created a support library to
-       share it. GEM has simpler initialization and execution requirements than
--      TTM, but has no video RAM management capabitilies and is thus limited to
-+      TTM, but has no video RAM management capabilities and is thus limited to
-       UMA devices.
-     </para>
-     <sect2>
-@@ -889,7 +889,7 @@ int (*prime_fd_to_handle)(struct drm_device *dev,
- 	    vice versa. Drivers must use the kernel dma-buf buffer sharing framework
- 	    to manage the PRIME file descriptors. Similar to the mode setting
- 	    API PRIME is agnostic to the underlying buffer object manager, as
--	    long as handles are 32bit unsinged integers.
-+	    long as handles are 32bit unsigned integers.
- 	  </para>
- 	  <para>
- 	    While non-GEM drivers must implement the operations themselves, GEM
-@@ -2351,7 +2351,7 @@ void intel_crt_init(struct drm_device *dev)
-       first create properties and then create and associate individual instances
-       of those properties to objects. A property can be instantiated multiple
-       times and associated with different objects. Values are stored in property
--      instances, and all other property information are stored in the propery
-+      instances, and all other property information are stored in the property
-       and shared between all instances of the property.
-     </para>
-     <para>
-@@ -2692,10 +2692,10 @@ int num_ioctls;</synopsis>
-   <sect1>
-     <title>Legacy Support Code</title>
-     <para>
--      The section very brievely covers some of the old legacy support code which
-+      The section very briefly covers some of the old legacy support code which
-       is only used by old DRM drivers which have done a so-called shadow-attach
-       to the underlying device instead of registering as a real driver. This
--      also includes some of the old generic buffer mangement and command
-+      also includes some of the old generic buffer management and command
-       submission code. Do not use any of this in new and modern drivers.
-     </para>
- 
--- 
-1.9.2.468.g3f0c02a
-
+--- a/arch/x86/include/asm/syscall.h
++++ b/arch/x86/include/asm/syscall.h
+@@ -48,7 +48,8 @@ static inline long syscall_get_error(str
+  * TS_COMPAT is set for 32-bit syscall entries and then
+  * remains set until we return to user mode.
+  */
+- if (task_thread_info(task)->status & TS_COMPAT)
++ if ((task_thread_info(task)->status & TS_COMPAT)
++    || test_thread_flag (TIF_IA32))
+  /*
+  * Sign-extend the value so (int)-EFOO becomes (long)-EFOO
+  * and will match correctly in comparisons.
