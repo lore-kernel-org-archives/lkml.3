@@ -1,96 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620AbaDUOgt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 10:36:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25435 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751073AbaDUOgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 10:36:46 -0400
-Date: Mon, 21 Apr 2014 10:36:30 -0400
-From: Brian Foster <bfoster@redhat.com>
-To: Jeff Liu <jeff.liu@oracle.com>
-Cc: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH] xfs: Fix wrong error codes being returned
-Message-ID: <20140421143629.GB4371@laptop.bfoster>
-References: <1398074687-26548-1-git-send-email-tuomas.tynkkynen@iki.fi>
- <5355132F.4070303@oracle.com>
- <20140421130931.GB24813@bfoster.bfoster>
- <535524BE.7070704@oracle.com>
+	id S1751874AbaDUOhP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 10:37:15 -0400
+Received: from mail-vc0-f182.google.com ([209.85.220.182]:38952 "EHLO
+	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751398AbaDUOhK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 10:37:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535524BE.7070704@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
+Date: Mon, 21 Apr 2014 09:37:08 -0500
+Message-ID: <CAL_JsqLogKfqHyw4zYBkPrYh=f6tVibtmX25oYB1Q2hO11Whcw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and dma-coherent
+From: Rob Herring <robherring2@gmail.com>
+To: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 10:01:34PM +0800, Jeff Liu wrote:
-> 
-> On 04/21 2014 21:09 PM, Brian Foster wrote:
-> > On Mon, Apr 21, 2014 at 08:46:39PM +0800, Jeff Liu wrote:
-> >> Hi Tuomas,
-> >>
-> >> On 04/21 2014 18:04 PM, Tuomas Tynkkynen wrote:
-> >>> xfs_{compat_,}attrmulti_by_handle could return an errno with incorrect
-> >>> sign in some cases. While at it, make sure ENOMEM is returned instead of
-> >>> E2BIG if kmalloc fails.
-> >>>
-> >>> Signed-off-by: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
-> >>> ---
-> >>> Compile tested only. For the ERANGE case, I also wonder if it should
-> >>> be assigning to ops[i].am_error instead of error, and/or have a break.
-> >>
-> >> If I understand right, ops[i].am_error is used to save the internal operation result,
-> >> i.e, xfs_attrmult_attr_get{set}... but error is used for the ioctl call results.
-> >> Therefore, assign ERANGE to error is compatible with the VFS set{get}xattr syscalls in
-> >> case of "if (ops[i].am_error == 0 || ops[i].am_error == MAXNAMELEN)".
-> >>
-> > 
-> > But we set 'error' in this case and effectively try to continue the operation
-> > whereas the traditional vfs path returns...
-> 
-> So the error would always be set to ERANGE if one or more attrname is/are invalid.
-> 
+On Sat, Apr 19, 2014 at 9:32 AM, Santosh Shilimkar
+<santosh.shilimkar@ti.com> wrote:
+> Here is an updated version of [2] based on discussion. Series introduces
+> support for setting up dma parameters based on device tree properties
+> like 'dma-ranges' and 'dma-coherent' and also update to ARM 32 bit port.
+> Earlier version of the same series is here [1].
+>
+> The 'dma-ranges' helps to take care of few DMAable system memory restrictions
+> by use of dma_pfn_offset which we maintain now per device. Arch code then
+> uses it for dma address translations for such cases. We update the
+> dma_pfn_offset accordingly during DT the device creation process.The
+> 'dma-coherent' property is used to setup arch's coherent dma_ops.
+>
+> After some off-list discussion with RMK and Arnd, I have now dropped the
+> controversial dma_mask setup code from the series which actually isn't blocking
+> me as such. Considering rest of the parts of the series are already aligned,
+> am hoping to get this version merged for 3.16 merge window.
 
-Right...
+Can you briefly describe what the h/w looks like in terms of addresses
+for the problem you are trying to solve? Something like: Cpu view of
+RAM is X to Y address, X corresponds to DMA address Z. Max DMA address
+is ?
 
-> > 
-> >> It seems that we don't need to have a break in this case because xfs_attrmulti_by_handle()
-> >> is used to process multiple attrs.  Hence if a given attrname in ops array is invalid,
-> >> the am_error will indicate that with ENOATTR or EFAULT...but it should proceed to loop
-> >> through the left array members.
-> >>
-> > 
-> > Perhaps so if am_error == 0, but it depends on what attr_name contains
-> > at that point (stale data?). Otherwise, we try to proceed with a
-> > truncated name. It looks like the consistent thing to do would be set
-> > am_error to ERANGE and continue (i.e., skip the op and move on to the
-> > next).
-> 
-> If we continue to process a truncated name in case of MAXNAMELEN, it would return
-> EFAULT for SET/REMOVE operations, and ENOATTR for GET operation, which would be
-> set back to am_error, but error still keep as ERANGE which is consistently.
-> 
-
-Ah, we should hit an error in the xfs_attr_name_to_xname() call
-deeper in the callchain, so the truncated name case should not be an
-issue. The am_error == 0 case still looks weird to me.
-
-So we return an error and set am_error if there's an issue with the attr
-name. If there's another error in the op path, we set am_error only and
-continue on. Not being familiar with the interface, I'm curious if there
-is any particular reason for that difference in behavior. It seems like
-the caller should process all of the return codes anyways.
-
-Brian
-
-> 
-> Thanks,
-> -Jeff
-> 
-> _______________________________________________
-> xfs mailing list
-> xfs@oss.sgi.com
-> http://oss.sgi.com/mailman/listinfo/xfs
+Rob
