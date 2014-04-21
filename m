@@ -1,153 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149AbaDURHb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 13:07:31 -0400
-Received: from mail-ie0-f202.google.com ([209.85.223.202]:61097 "EHLO
-	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751370AbaDURHY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 13:07:24 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jason Wessel <jason.wessel@windriver.com>,
-        linux-samsung-soc@vger.kernel.org, olof@lixom.net,
-        Doug Anderson <dianders@chromium.org>, jslaby@suse.cz,
-        paul.gortmaker@windriver.com, jg1.han@samsung.com, asierra@xes-inc.com,
-        swarren@nvidia.com, heikki.krogerus@linux.intel.com,
-        jschultz@xes-inc.com, kyle@infradead.org, mingo@elte.hu,
-        linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] serial_core: Commonalize crlf when working w/ a non open console port
-Date: Mon, 21 Apr 2014 10:06:43 -0700
-Message-Id: <1398100003-4172-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1397841448-12942-1-git-send-email-dianders@chromium.org>
-References: <1397841448-12942-1-git-send-email-dianders@chromium.org>
+	id S1753355AbaDURLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 13:11:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:52627 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752900AbaDURLH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 13:11:07 -0400
+Date: Mon, 21 Apr 2014 12:08:40 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Tim Bird <tbird20d@gmail.com>
+CC: <balbi@ti.com>, "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        <linux-arm-msm@vger.kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>, Tim Bird <tim.bird@sonymobile.com>
+Subject: Re: [PATCH] usb: phy: msm: Select secondary PHY via TCSR
+Message-ID: <20140421170833.GG22794@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1396649891-2880-1-git-send-email-tim.bird@sonymobile.com>
+ <20140421161442.GC22794@saruman.home>
+ <CA+bK7J7Psj=7nORhidbV6MrifmCY9ZgE0GjYzAPaaKK7=wHgvg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AGZzQgpsuUlWC1xT"
+Content-Disposition: inline
+In-Reply-To: <CA+bK7J7Psj=7nORhidbV6MrifmCY9ZgE0GjYzAPaaKK7=wHgvg@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In (efe2f29 kgdboc,kdb: Allow kdb to work on a non open console port)
-support was added to directly use the "write_char" functions when
-doing kdb over a non-open console port.  This is great, but it ends up
-bypassing the normal code in uart_console_write() that adds a carriage
-return before any newlines.
+--AGZzQgpsuUlWC1xT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-There appears to have been a trend to add this support directly in
-some console driver's poll_put_char() functions.  This had a few side
-effects, including:
-- In this case we were doing LFCR, not CRLF.  This was fixed in
-  uart_console_write() back in (d358788 [SERIAL] kernel console should
-  send CRLF not LFCR)
-- Not all serial drivers had the LFCR code in their poll_put_char()
-  functions.  In my case I was running serial/samsung.c which lacked
-  it.
+On Mon, Apr 21, 2014 at 10:03:28AM -0700, Tim Bird wrote:
+> On Mon, Apr 21, 2014 at 9:14 AM, Felipe Balbi <balbi@ti.com> wrote:
+> > Hi,
+> >
+> > On Fri, Apr 04, 2014 at 03:18:11PM -0700, Tim Bird wrote:
+> >> Select the secondary PHY using the TCSR register, if phy-num=3D1
+> >> in the DTS (or phy_number is set in the platform data).  The
+> >> SOC has 2 PHYs which can be used with the OTG port, and this
+> >> code allows configuring the correct one.
+> >>
+> >> Note: This resolves the problem I was seeing where I couldn't
+> >> get the USB driver working at all on a dragonboard, from cold
+> >> boot.  This patch depends on patch 5/14 from Ivan's msm USB
+> >> patch set.  It does not use DT for the register address, as
+> >> there's no evidence that this address changes between SoC
+> >> versions.
+> >>
+> >> Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+> >
+> > doesn't apply:
+> >
+> > checking file drivers/usb/phy/phy-msm-usb.c
+> > Hunk #1 succeeded at 1412 with fuzz 2 (offset -106 lines).
+> > Hunk #2 FAILED at 1581.
+> > 1 out of 2 hunks FAILED
+> > checking file include/linux/usb/msm_hsusb_hw.h
+>=20
+> Sorry about that.
+>=20
+> Did you apply this on top of Ivan's USB patch set?  That's a pre-requisit=
+e.
 
-I've moved the handling to uart_poll_put_char() to fix the above
-problems.  Now when I use kdb (and don't point console= to the same
-UART) I no longer get:
+hehe, probably not :-)
 
-[0]kdb>
-       [0]kdb>
-              [0]kdb>
+> I've communicated privately with Ivan, and he's preparing an updated
+> patch set which incorporates this fix and a few other things. This should
+> be showing up soon-ish.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
-Changes in v2:
-- Moved from kdb to serial_core
+alright, thanks
 
- drivers/tty/serial/8250/8250_core.c | 5 -----
- drivers/tty/serial/pch_uart.c       | 5 -----
- drivers/tty/serial/pxa.c            | 5 -----
- drivers/tty/serial/serial_core.c    | 3 +++
- drivers/tty/serial/serial_txx9.c    | 5 -----
- 5 files changed, 3 insertions(+), 20 deletions(-)
+--=20
+balbi
 
-diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-index 81f909c..ffee982 100644
---- a/drivers/tty/serial/8250/8250_core.c
-+++ b/drivers/tty/serial/8250/8250_core.c
-@@ -1926,13 +1926,8 @@ static void serial8250_put_poll_char(struct uart_port *port,
- 	wait_for_xmitr(up, BOTH_EMPTY);
- 	/*
- 	 *	Send the character out.
--	 *	If a LF, also do CR...
- 	 */
- 	serial_port_out(port, UART_TX, c);
--	if (c == 10) {
--		wait_for_xmitr(up, BOTH_EMPTY);
--		serial_port_out(port, UART_TX, 13);
--	}
- 
- 	/*
- 	 *	Finally, wait for transmitter to become empty
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 0931b3f..11e631d 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -1588,13 +1588,8 @@ static void pch_uart_put_poll_char(struct uart_port *port,
- 	wait_for_xmitr(priv, UART_LSR_THRE);
- 	/*
- 	 * Send the character out.
--	 * If a LF, also do CR...
- 	 */
- 	iowrite8(c, priv->membase + PCH_UART_THR);
--	if (c == 10) {
--		wait_for_xmitr(priv, UART_LSR_THRE);
--		iowrite8(13, priv->membase + PCH_UART_THR);
--	}
- 
- 	/*
- 	 * Finally, wait for transmitter to become empty
-diff --git a/drivers/tty/serial/pxa.c b/drivers/tty/serial/pxa.c
-index f9f20f3..9e7ee39 100644
---- a/drivers/tty/serial/pxa.c
-+++ b/drivers/tty/serial/pxa.c
-@@ -711,13 +711,8 @@ static void serial_pxa_put_poll_char(struct uart_port *port,
- 	wait_for_xmitr(up);
- 	/*
- 	 *	Send the character out.
--	 *	If a LF, also do CR...
- 	 */
- 	serial_out(up, UART_TX, c);
--	if (c == 10) {
--		wait_for_xmitr(up);
--		serial_out(up, UART_TX, 13);
--	}
- 
- 	/*
- 	 *	Finally, wait for transmitter to become empty
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index f26834d..5dba976 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2236,6 +2236,9 @@ static void uart_poll_put_char(struct tty_driver *driver, int line, char ch)
- 		return;
- 
- 	port = state->uart_port;
-+
-+	if (ch == '\n')
-+		port->ops->poll_put_char(port, '\r');
- 	port->ops->poll_put_char(port, ch);
- }
- #endif
-diff --git a/drivers/tty/serial/serial_txx9.c b/drivers/tty/serial/serial_txx9.c
-index 90a080b..60f49b9 100644
---- a/drivers/tty/serial/serial_txx9.c
-+++ b/drivers/tty/serial/serial_txx9.c
-@@ -535,13 +535,8 @@ static void serial_txx9_put_poll_char(struct uart_port *port, unsigned char c)
- 	wait_for_xmitr(up);
- 	/*
- 	 *	Send the character out.
--	 *	If a LF, also do CR...
- 	 */
- 	sio_out(up, TXX9_SITFIFO, c);
--	if (c == 10) {
--		wait_for_xmitr(up);
--		sio_out(up, TXX9_SITFIFO, 13);
--	}
- 
- 	/*
- 	 *	Finally, wait for transmitter to become empty
--- 
-1.9.1.423.g4596e3a
+--AGZzQgpsuUlWC1xT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTVVCRAAoJEIaOsuA1yqRE4UwQALCPts0f1pc5sxwdsiTXVCXd
+vHvtoYvwAH5FWWGXP3g/kLfz01ArQp/Hyc7ToF4jUhGBcjs95trCcaOORX+NYyn7
+shXNzO3c5Hooz787/YXuy5rJjyMPuYSSGC2KrwYUZ6C+MGR8SAZMuiZuFz1GAat3
+75HoJs3JOEjiQIKu+smokjfngEdjC+3+44kXEQ1tQCbkdDNhq57A6QaamZ82um3q
+1UaIBi+6DppEwGcqtMq//PWyI1vOjQvs89nE2iXJ/8IAzBhhGhWkrHClv/Bo2ghQ
+WCu81spIQea1GIOy57emUBm8afy17BiyE3MU0o4HqfSr4b8rq26Fr1XpHnQHy+ox
+VLHojsQGFCk+d8iNa1znugcZ+L5p6wuMUY8UxvxuQARmr77HObX4f+gQHHA7QcHa
+JVcUrOBgqUUg6gh9j4fmfqoyHWrz83zWraQ64e042jApbvgq86+ly6KXtBMoXa8d
+4IIfpqfBO9ig7QxZfd0F+HmYXvf4+zf0yKdM1kJA5+cQAOM3f/Q7V/kORHBQvBIp
+ZpDQ+1T6YKrHY5Yo7E0Gdcrgk9aPTCUZViz5Ra7cAXJT+pMRiESuIRewtBxxcnCt
+30//Cz225yxW70AuIxsqOZD2csXV7SQonqoX7EZahIuPZFb2mijXa1Dlq8YICRSY
+H1qKwkovK6iA6Hjbc2uf
+=Vd3C
+-----END PGP SIGNATURE-----
+
+--AGZzQgpsuUlWC1xT--
