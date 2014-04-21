@@ -1,152 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751417AbaDUBYN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 21:24:13 -0400
-Received: from mga03.intel.com ([143.182.124.21]:32121 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751123AbaDUBYF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 21:24:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,894,1389772800"; 
-   d="scan'208";a="421363981"
-From: Jason Chen <jason.cj.chen@intel.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Jason Chen <jason.cj.chen@intel.com>
-Subject: [RFC PATCH 1/1] x86/apic: add apic_irqs bitmap to identify irqs from apic
-Date: Mon, 21 Apr 2014 09:18:27 +0800
-Message-Id: <511b8dc7848513496067fb68d979d248f04235ad.1397838739.git.jason.cj.chen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <cover.1397838739.git.jason.cj.chen@intel.com>
-References: <cover.1397838739.git.jason.cj.chen@intel.com>
-In-Reply-To: <cover.1397838739.git.jason.cj.chen@intel.com>
-References: <cover.1397838739.git.jason.cj.chen@intel.com>
+	id S1751389AbaDUB3z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 21:29:55 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:46478 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751217AbaDUB3x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 20 Apr 2014 21:29:53 -0400
+X-IronPort-AV: E=Sophos;i="4.97,894,1389715200"; 
+   d="scan'208";a="29499096"
+Message-ID: <53547574.4090207@cn.fujitsu.com>
+Date: Mon, 21 Apr 2014 09:33:40 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/6] workqueue: simpler&better workers management synchronization
+References: <1397299543-12012-1-git-send-email-laijs@cn.fujitsu.com> <53491A85.70004@cn.fujitsu.com>
+In-Reply-To: <53491A85.70004@cn.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function irq_force_complete_move() might handle irqs based on
-the non-apic irq_chip the way apic does, which has the structure
-irq_cfg as its chip_data.
-Wrong operations on non-apic irq_chip might make its chip_data changed
-and bring unexpected issues.
-Add apic_irqs bitmap to identify irqs from apic, and filter out all other
-irq_chips by checking this bitmap.
+On 04/12/2014 06:50 PM, Lai Jiangshan wrote:
+> Sorry,
+> the cover letter was forgotten to send to LKML.
 
-Signed-off-by: Jason Chen <jason.cj.chen@intel.com>
----
- arch/x86/kernel/apic/io_apic.c | 21 ++++++++++++++++++++-
- include/linux/irqdesc.h        |  6 ++++++
- kernel/irq/internals.h         |  6 ------
- 3 files changed, 26 insertions(+), 7 deletions(-)
+Hi, Tejun
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 6ad4658..1e2bcb5 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -37,6 +37,7 @@
- #include <linux/kthread.h>
- #include <linux/jiffies.h>	/* time_after() */
- #include <linux/slab.h>
-+#include <linux/irqdesc.h>
- #include <linux/bootmem.h>
- #include <linux/dmar.h>
- #include <linux/hpet.h>
-@@ -74,6 +75,8 @@ int sis_apic_bug = -1;
- static DEFINE_RAW_SPINLOCK(ioapic_lock);
- static DEFINE_RAW_SPINLOCK(vector_lock);
- 
-+static DECLARE_BITMAP(apic_irqs, IRQ_BITMAP_BITS);
-+
- static struct ioapic {
- 	/*
- 	 * # of IRQ routing registers
-@@ -1158,6 +1161,10 @@ next:
- 		err = 0;
- 		break;
- 	}
-+
-+	if (err == 0)
-+		set_bit(irq, apic_irqs);
-+
- 	free_cpumask_var(tmp_mask);
- 	return err;
- }
-@@ -1185,6 +1192,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
- 
- 	cfg->vector = 0;
- 	cpumask_clear(cfg->domain);
-+	clear_bit(irq, apic_irqs);
- 
- 	if (likely(!cfg->move_in_progress))
- 		return;
-@@ -1213,6 +1221,9 @@ void __setup_vector_irq(int cpu)
- 	raw_spin_lock(&vector_lock);
- 	/* Mark the inuse vectors */
- 	for_each_active_irq(irq) {
-+		if (!test_bit(irq, apic_irqs))
-+			continue;
-+
- 		cfg = irq_get_chip_data(irq);
- 		if (!cfg)
- 			continue;
-@@ -2268,7 +2279,12 @@ static void irq_complete_move(struct irq_cfg *cfg)
- 
- void irq_force_complete_move(int irq)
- {
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg;
-+
-+	if (!test_bit(irq, apic_irqs))
-+		return;
-+
-+	cfg = irq_get_chip_data(irq);
- 
- 	if (!cfg)
- 		return;
-@@ -2541,6 +2557,9 @@ static inline void init_IO_APIC_traps(void)
- 	 * 0x80, because int 0x80 is hm, kind of importantish. ;)
- 	 */
- 	for_each_active_irq(irq) {
-+		if (!test_bit(irq, apic_irqs))
-+			continue;
-+
- 		cfg = irq_get_chip_data(irq);
- 		if (IO_APIC_IRQ(irq) && cfg && !cfg->vector) {
- 			/*
-diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-index 26e2661..1b20979 100644
---- a/include/linux/irqdesc.h
-+++ b/include/linux/irqdesc.h
-@@ -1,6 +1,12 @@
- #ifndef _LINUX_IRQDESC_H
- #define _LINUX_IRQDESC_H
- 
-+#ifdef CONFIG_SPARSE_IRQ
-+# define IRQ_BITMAP_BITS	(NR_IRQS + 8196)
-+#else
-+# define IRQ_BITMAP_BITS	NR_IRQS
-+#endif
-+
- /*
-  * Core internal functions to deal with irq descriptors
-  *
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index ddf1ffe..b2fb994 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -8,12 +8,6 @@
- #include <linux/irqdesc.h>
- #include <linux/kernel_stat.h>
- 
--#ifdef CONFIG_SPARSE_IRQ
--# define IRQ_BITMAP_BITS	(NR_IRQS + 8196)
--#else
--# define IRQ_BITMAP_BITS	NR_IRQS
--#endif
--
- #define istate core_internal_state__do_not_mess_with_it
- 
- extern bool noirqdebug;
--- 
-1.8.1.2
+Any comments about the patchset.
+(general comments, high level comments)
+
+Thanks.
+Lai
+
+> 
+> On 04/12/2014 06:45 PM, Lai Jiangshan wrote:
+>> Each patches remove codes!
+>>
+>> Patch1&2 are the basic patches. They add a *united* mechanism for managing
+>> percpu pools' workers' & unbound pools' workers' & rescuers' CPUMASK.
+>>
+>> Patch1&4 make workers-concurrency-enabling atomically when cpu_online()
+>> and create_worker(). after this, workers-concurrency-enabling-disabling
+>> are all atomically.
+>>
+>> Old manager_mutex protects:
+>> 1) workers creation&destruction
+>> 2) workers cpumask managing when cpu_online()/workers-creation
+>> 3) workers concurrency enabling&disabling.
+>>
+>> Now, the above three things' synchronization are separated.
+>> 1) We don't need manager_mutex protects workers creation&destruction
+>>    1.1) creation is only happened when the cpu is first online, the unbound pool
+>> 	is just created, and manage_workers(). they have their one synchronization.
+>>    1.2) destruction only happens on idle-timeout handler, protected by pool->lock.
+>>    1.3) put_unbound_pool() uses manager_arb&workers_leave(new) to synchronize
+>> 	with workers creation&destruction.
+>>
+>> 2) bind_mutex and bind_list handle all the workers'(percpu,unbound,
+>>    normal,rescuer) cpumask when cpu_online()/workers-creation/worker-destrution.
+>>    we don't need manager_mutex.
+>>
+>> 3) pool->lock and worker_idr handle workers concurrency enabling&disabling.
+>>
+>> Note, bind_list is always a super set of worker_idr, and when cpu-online or
+>> workers-creation, cpumask is set at first and then concurrency-enabling.
+>> concurrency-management depends on local-wakeup which depends on cpumask
+>> is properly set for all the workers.
+>>
+>> This patchset depends on previous patch:
+>> "workqueue: fix possible race condition when rescuer VS pwq-release"
+>>
+>> Thanks,
+>> Lai
+>>
+>>
+>> Lai Jiangshan (6):
+>>   workqueue: generic routine to restore percpu/unbound pools' workers'
+>>     cpumask
+>>   workqueue: generic framework to manage normal&rescuer workers'
+>>     cpumask
+>>   workqueue: make destroy_worker() atomically
+>>   workqueue: commit worker to pool's concurrency setting atomically.
+>>   workqueue: remove manager_mutex
+>>   workqueue: destroy worker directly in idle timeout handler
+>>
+>>  kernel/workqueue.c          |  366 ++++++++++++------------------------------
+>>  kernel/workqueue_internal.h |    1 +
+>>  2 files changed, 106 insertions(+), 261 deletions(-)
+>>
+> 
+> .
+> 
 
