@@ -1,91 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbaDUM4c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 08:56:32 -0400
-Received: from mail-vc0-f179.google.com ([209.85.220.179]:62967 "EHLO
-	mail-vc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbaDUM4X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 08:56:23 -0400
+	id S1752420AbaDUNBp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 09:01:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6177 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752271AbaDUNBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 09:01:41 -0400
+Date: Mon, 21 Apr 2014 09:01:14 -0400
+From: Brian Foster <bfoster@redhat.com>
+To: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH] xfs: Fix wrong error codes being returned
+Message-ID: <20140421130113.GA24813@bfoster.bfoster>
+References: <1398074687-26548-1-git-send-email-tuomas.tynkkynen@iki.fi>
 MIME-Version: 1.0
-In-Reply-To: <20140418125924.GF5904@bivouac.eciton.net>
-References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
-	<1397756521-29387-4-git-send-email-leif.lindholm@linaro.org>
-	<CAMuHMdXBNWum7UJ95uT2hwTd1b5C8ebF2LQ4T-A+RS80p7MH=A@mail.gmail.com>
-	<20140418125924.GF5904@bivouac.eciton.net>
-Date: Mon, 21 Apr 2014 07:56:22 -0500
-Message-ID: <CAL_JsqJTMWKh3gsv0TnRap82+7BM4XaT4ZAWkQmyfvzTqOq12g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] of: Handle memory@0 node on PPC32 only
-From: Rob Herring <robherring2@gmail.com>
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398074687-26548-1-git-send-email-tuomas.tynkkynen@iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 7:59 AM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> Hi Geert,
->
-> On Fri, Apr 18, 2014 at 10:04:15AM +0200, Geert Uytterhoeven wrote:
->> On Thu, Apr 17, 2014 at 7:42 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
->> > In order to deal with an firmware bug on a specific ppc32 platform
->> > (longtrail), early_init_dt_scan_memory() looks for a node called
->> > memory@0 on all platforms. Restrict this quirk to ppc32 kernels only.
->>
->> This breaks backwards compatibilty with old DTSes (at least on ARM/MIPS,
->> where you added the missing property in patches 1 and 2 of the series)?
->
-> As Rob said in response to 0/3, the MIPSs would likely not be affected,
-> since they embed the DT.
->
->> For the Longtrail, I don't care much anymore, as mine died in 2004.
->> AFAIK, there have never been many users anyway.
->
-> There are still a few mentions of it under arch/powerpc/, so I wouldn't
-> want to be the one to kill it off...
->
-> How about the below v2 3/3 to address the ARM platform?
->
-> Regards,
->
-> Leif
->
-> From 6fa0b837ad71780334eb97d63c507165b6c57add Mon Sep 17 00:00:00 2001
-> From: Leif Lindholm <leif.lindholm@linaro.org>
-> Date: Thu, 17 Apr 2014 14:24:47 +0100
-> Subject: [PATCH] of: arm: powerpc: Restrict memory@0 node handling to
->  affected platforms
->
-> In order to deal with a firmware bug on a specific ppc32 platform
-> (longtrail), early_init_dt_scan_memory() looks for a node called
-> memory@0 on all platforms, for all nodes lacking a device_type.
-> Restrict this quirk to ppc32 and the arm mach-ux500 platforms (one of
-> which has depended on this special handling).
+On Mon, Apr 21, 2014 at 01:04:47PM +0300, Tuomas Tynkkynen wrote:
+> xfs_{compat_,}attrmulti_by_handle could return an errno with incorrect
+> sign in some cases. While at it, make sure ENOMEM is returned instead of
+> E2BIG if kmalloc fails.
+> 
+> Signed-off-by: Tuomas Tynkkynen <tuomas.tynkkynen@iki.fi>
+> ---
 
+The fix looks good to me. There has been talk recently of starting to
+fix up our internal positive-to-negative error conversions to be more
+consistent with the rest of the kernel. Given that, I wonder if it's
+better here to go the other way. E.g., remove the negation in the
+out_dput path and convert the positive error codes (and thus we don't
+need to add more negative-to-positive-to-negative conversions here).
+Thoughts?
 
-> diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
-> index 889005f..230c747 100644
-> --- a/drivers/of/Kconfig
-> +++ b/drivers/of/Kconfig
-> @@ -77,4 +77,7 @@ config OF_RESERVED_MEM
->         help
->           Helpers to allow for reservation of memory regions
->
-> +config OF_MEMORY_AT_0_QUIRK
-> +       def_bool n
+Brian
 
-I do not like this because it would not scale to many quirks. As I
-said,, my preference here would be to just add a WARN.
-
-The other option is get approval to break compatibility on the ST
-platform. It may not be a concern on certain platforms.
-
-Rob
+> Compile tested only. For the ERANGE case, I also wonder if it should
+> be assigning to ops[i].am_error instead of error, and/or have a break.
+> 
+>  fs/xfs/xfs_ioctl.c   |    5 +++--
+>  fs/xfs/xfs_ioctl32.c |    5 +++--
+>  2 files changed, 6 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/xfs/xfs_ioctl.c b/fs/xfs/xfs_ioctl.c
+> index 0b18776..2d8f4fd 100644
+> --- a/fs/xfs/xfs_ioctl.c
+> +++ b/fs/xfs/xfs_ioctl.c
+> @@ -543,10 +543,11 @@ xfs_attrmulti_by_handle(
+>  
+>  	ops = memdup_user(am_hreq.ops, size);
+>  	if (IS_ERR(ops)) {
+> -		error = PTR_ERR(ops);
+> +		error = -PTR_ERR(ops);
+>  		goto out_dput;
+>  	}
+>  
+> +	error = ENOMEM;
+>  	attr_name = kmalloc(MAXNAMELEN, GFP_KERNEL);
+>  	if (!attr_name)
+>  		goto out_kfree_ops;
+> @@ -556,7 +557,7 @@ xfs_attrmulti_by_handle(
+>  		ops[i].am_error = strncpy_from_user((char *)attr_name,
+>  				ops[i].am_attrname, MAXNAMELEN);
+>  		if (ops[i].am_error == 0 || ops[i].am_error == MAXNAMELEN)
+> -			error = -ERANGE;
+> +			error = ERANGE;
+>  		if (ops[i].am_error < 0)
+>  			break;
+>  
+> diff --git a/fs/xfs/xfs_ioctl32.c b/fs/xfs/xfs_ioctl32.c
+> index a7992f8..944d5ba 100644
+> --- a/fs/xfs/xfs_ioctl32.c
+> +++ b/fs/xfs/xfs_ioctl32.c
+> @@ -424,10 +424,11 @@ xfs_compat_attrmulti_by_handle(
+>  
+>  	ops = memdup_user(compat_ptr(am_hreq.ops), size);
+>  	if (IS_ERR(ops)) {
+> -		error = PTR_ERR(ops);
+> +		error = -PTR_ERR(ops);
+>  		goto out_dput;
+>  	}
+>  
+> +	error = ENOMEM;
+>  	attr_name = kmalloc(MAXNAMELEN, GFP_KERNEL);
+>  	if (!attr_name)
+>  		goto out_kfree_ops;
+> @@ -438,7 +439,7 @@ xfs_compat_attrmulti_by_handle(
+>  				compat_ptr(ops[i].am_attrname),
+>  				MAXNAMELEN);
+>  		if (ops[i].am_error == 0 || ops[i].am_error == MAXNAMELEN)
+> -			error = -ERANGE;
+> +			error = ERANGE;
+>  		if (ops[i].am_error < 0)
+>  			break;
+>  
+> -- 
+> 1.7.9.5
+> 
+> _______________________________________________
+> xfs mailing list
+> xfs@oss.sgi.com
+> http://oss.sgi.com/mailman/listinfo/xfs
