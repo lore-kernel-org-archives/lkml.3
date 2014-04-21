@@ -1,54 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaDUQiz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 12:38:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:56588 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaDUQiw (ORCPT
+	id S1753019AbaDUQjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 12:39:23 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43728 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752775AbaDUQjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 12:38:52 -0400
-From: Colin King <colin.king@canonical.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Chaoming Li <chaoming_li@realsil.com.cn>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] rtlwifi: rtl8188ee: initialize packet_beacon
-Date: Mon, 21 Apr 2014 17:38:44 +0100
-Message-Id: <1398098324-5193-1-git-send-email-colin.king@canonical.com>
-X-Mailer: git-send-email 1.9.1
+	Mon, 21 Apr 2014 12:39:17 -0400
+Date: Mon, 21 Apr 2014 12:39:15 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: sundeep subbaraya <sundeep.lkml@gmail.com>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Simek <michals@xilinx.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
+In-Reply-To: <20140421160802.GA22794@saruman.home>
+Message-ID: <Pine.LNX.4.44L0.1404211228190.1201-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Colin Ian King <colin.king@canonical.com>
+On Mon, 21 Apr 2014, Felipe Balbi wrote:
 
-static code analysis from cppcheck reports:
+> Hi,
+> 
+> On Fri, Apr 18, 2014 at 07:34:08PM +0530, sundeep subbaraya wrote:
+> 
+> <snip>
+> 
+> > >> in ep_queue driver starts dma transfer from/to IP buffer to/from req->buf.
+> > >> If transfer is completed then request is not added to ep request queue
+> > >> and returns from ep_queue.
+> > >> If transfer is not completed (actual < length) then request is added
+> > >> to queue and returns from ep_queue.
+> > >
+> > > This is wrong. Why wouldn't you give gadget driver the chance to decide
+> > > if it needs to queue the request again or not ?
+> > 
+> > When does gadget driver decides to queue the same request again?
+> > if -EBUSY is returned from ep_queue or req.status != 0 in completion
+> > routine?
+> 
+> whenever it so decides. Different gadget drivers might have different
+> requirements. The code is open and sits under drivers/usb/gadget/ why
+> don't you have a read ?
 
-[drivers/net/wireless/rtlwifi/rtl8188ee/trx.c:322]:
-  (error) Uninitialized variable: packet_beacon
+I get the impression that the two of you are arguing past each other.
+It appears that Sundeep is talking about transferring data from the 
+gadget driver's buffer to an internal buffer in the UDC hardware, but 
+Felipe is talking about transferring data from the UDC to the host.
 
-packet_beacon is not initialized and hence packet_beacon
-contains garbage from the stack, so set it to false.
+As I understand it, Sundeep said that when the gadget driver queues a
+data-IN request, the UDC driver copies as much of the data buffer as
+possible into a hardware FIFO.  If it succeeds in copying all the data
+into the FIFO then the request's completion routine gets called
+immediately, even though the data doesn't get sent from the FIFO to the
+host until the host asks for it.
 
-Signed-off-by: Colin Ian King <colin.king@canonical.com>
----
- drivers/net/wireless/rtlwifi/rtl8188ee/trx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+If only part of the data can be copied into the FIFO then the request
+is added to the ep's request queue before the usb_ep_queue() call
+returns.  When space becomes available in the FIFO, the data will be
+copied and eventually sent to the host.  When all the data has been
+copied to the FIFO, the request's completion routine will be called.
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c b/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c
-index 06ef47c..5b4c225 100644
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/trx.c
-@@ -293,7 +293,7 @@ static void _rtl88ee_translate_rx_signal_stuff(struct ieee80211_hw *hw,
- 	u8 *psaddr;
- 	__le16 fc;
- 	u16 type, ufc;
--	bool match_bssid, packet_toself, packet_beacon, addr;
-+	bool match_bssid, packet_toself, packet_beacon = false, addr;
- 
- 	tmp_buf = skb->data + pstatus->rx_drvinfo_size + pstatus->rx_bufshift;
- 
--- 
-1.9.1
+Thus there never is any need for the gadget driver to queue the request
+again.  An incomplete transfer means the FIFO didn't have enough room
+when the request was submitted; it doesn't mean that the data didn't
+eventually get sent to the host.
+
+HTH,
+
+Alan Stern
 
