@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272AbaDUPEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 11:04:12 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.31.26]:40569 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561AbaDUPEK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 11:04:10 -0400
-From: Christoph Jaeger <christophjaeger@linux.com>
-To: swise@chelsio.com, roland@kernel.org, sean.hefty@intel.com,
-        hal.rosenstock@gmail.com
-Cc: linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Jaeger <christophjaeger@linux.com>
-Subject: [PATCH] RDMA/cxgb4: Fix memory leaks in c4iw_alloc() error paths
-Date: Mon, 21 Apr 2014 17:02:42 +0200
-Message-Id: <1398092562-11116-1-git-send-email-christophjaeger@linux.com>
-X-Mailer: git-send-email 1.9.0
-X-Df-Sender: MTg4NDM4Mw==
+	id S1752408AbaDUPEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 11:04:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21680 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751376AbaDUPEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 11:04:45 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org
+Subject: [PATCH v2 RESEND] portdrv: Use pci_enable_msix_exact() instead of pci_enable_msix()
+Date: Mon, 21 Apr 2014 17:06:06 +0200
+Message-Id: <1398092766-30078-1-git-send-email-agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-c4iw_alloc() bails out without freeing the storage that 'devp' points to.
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
 
-Picked up by Coverity - CID 1204241.
-
-Fixes: fa658a98a2 ("RDMA/cxgb4: Use the BAR2/WC path for kernel QPs and T5 devices")
-Signed-off-by: Christoph Jaeger <christophjaeger@linux.com>
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-pci@vger.kernel.org
 ---
- drivers/infiniband/hw/cxgb4/device.c | 2 ++
- 1 file changed, 2 insertions(+)
+ drivers/pci/pcie/portdrv_core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/infiniband/hw/cxgb4/device.c b/drivers/infiniband/hw/cxgb4/device.c
-index f4fa50a..8914ea9 100644
---- a/drivers/infiniband/hw/cxgb4/device.c
-+++ b/drivers/infiniband/hw/cxgb4/device.c
-@@ -736,6 +736,7 @@ static struct c4iw_dev *c4iw_alloc(const struct cxgb4_lld_info *infop)
- 			pci_resource_len(devp->rdev.lldi.pdev, 2));
- 		if (!devp->rdev.bar2_kva) {
- 			pr_err(MOD "Unable to ioremap BAR2\n");
-+			ib_dealloc_device(&devp->ibdev);
- 			return ERR_PTR(-EINVAL);
- 		}
- 	} else if (ocqp_supported(infop)) {
-@@ -747,6 +748,7 @@ static struct c4iw_dev *c4iw_alloc(const struct cxgb4_lld_info *infop)
- 			devp->rdev.lldi.vr->ocq.size);
- 		if (!devp->rdev.oc_mw_kva) {
- 			pr_err(MOD "Unable to ioremap onchip mem\n");
-+			ib_dealloc_device(&devp->ibdev);
- 			return ERR_PTR(-EINVAL);
- 		}
+diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
+index 986f8ea..0b1efb2 100644
+--- a/drivers/pci/pcie/portdrv_core.c
++++ b/drivers/pci/pcie/portdrv_core.c
+@@ -99,7 +99,7 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
+ 	for (i = 0; i < nr_entries; i++)
+ 		msix_entries[i].entry = i;
+ 
+-	status = pci_enable_msix(dev, msix_entries, nr_entries);
++	status = pci_enable_msix_exact(dev, msix_entries, nr_entries);
+ 	if (status)
+ 		goto Exit;
+ 
+@@ -171,7 +171,7 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
+ 		pci_disable_msix(dev);
+ 
+ 		/* Now allocate the MSI-X vectors for real */
+-		status = pci_enable_msix(dev, msix_entries, nvec);
++		status = pci_enable_msix_exact(dev, msix_entries, nvec);
+ 		if (status)
+ 			goto Exit;
  	}
 -- 
-1.9.0
+1.7.7.6
 
