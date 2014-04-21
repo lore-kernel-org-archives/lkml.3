@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753091AbaDUEhU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:37:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58780 "EHLO
+	id S1753211AbaDUEhd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:37:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58789 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752069AbaDUEfJ (ORCPT
+	with ESMTP id S1752072AbaDUEfM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:35:09 -0400
+	Mon, 21 Apr 2014 00:35:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Whitney <enwlinux@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.13 23/32] ext4: fix premature freeing of partial clusters split across leaf blocks
-Date: Sun, 20 Apr 2014 19:13:40 -0700
-Message-Id: <20140421021137.033762999@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.13 27/32] jffs2: remove from wait queue after schedule()
+Date: Sun, 20 Apr 2014 19:13:44 -0700
+Message-Id: <20140421021137.564675917@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
 References: <20140421021133.865086647@linuxfoundation.org>
@@ -26,58 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Whitney <enwlinux@gmail.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit ad6599ab3ac98a4474544086e048ce86ec15a4d1 upstream.
+commit 3ead9578443b66ddb3d50ed4f53af8a0c0298ec5 upstream.
 
-Xfstests generic/311 and shared/298 fail when run on a bigalloc file
-system.  Kernel error messages produced during the tests report that
-blocks to be freed are already on the to-be-freed list.  When e2fsck
-is run at the end of the tests, it typically reports bad i_blocks and
-bad free blocks counts.
+@wait is a local variable, so if we don't remove it from the wait queue
+list, later wake_up() may end up accessing invalid memory.
 
-The bug that causes these failures is located in ext4_ext_rm_leaf().
-Code at the end of the function frees a partial cluster if it's not
-shared with an extent remaining in the leaf.  However, if all the
-extents in the leaf have been removed, the code dereferences an
-invalid extent pointer (off the front of the leaf) when the check for
-sharing is made.  This generally has the effect of unconditionally
-freeing the partial cluster, which leads to the observed failures
-when the partial cluster is shared with the last extent in the next
-leaf.
+This was spotted by eyes.
 
-Fix this by attempting to free the cluster only if extents remain in
-the leaf.  Any remaining partial cluster will be freed if possible
-when the next leaf is processed or when leaf removal is complete.
-
-Signed-off-by: Eric Whitney <enwlinux@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ fs/jffs2/nodemgmt.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2731,10 +2731,15 @@ ext4_ext_rm_leaf(handle_t *handle, struc
- 		err = ext4_ext_correct_indexes(handle, inode, path);
+--- a/fs/jffs2/nodemgmt.c
++++ b/fs/jffs2/nodemgmt.c
+@@ -179,6 +179,7 @@ int jffs2_reserve_space(struct jffs2_sb_
+ 					spin_unlock(&c->erase_completion_lock);
  
- 	/*
--	 * Free the partial cluster only if the current extent does not
--	 * reference it. Otherwise we might free used cluster.
-+	 * If there's a partial cluster and at least one extent remains in
-+	 * the leaf, free the partial cluster if it isn't shared with the
-+	 * current extent.  If there's a partial cluster and no extents
-+	 * remain in the leaf, it can't be freed here.  It can only be
-+	 * freed when it's possible to determine if it's not shared with
-+	 * any other extent - when the next leaf is processed or when space
-+	 * removal is complete.
- 	 */
--	if (*partial_cluster > 0 &&
-+	if (*partial_cluster > 0 && eh->eh_entries &&
- 	    (EXT4_B2C(sbi, ext4_ext_pblock(ex) + ex_ee_len - 1) !=
- 	     *partial_cluster)) {
- 		int flags = get_default_free_blocks_flags(inode);
+ 					schedule();
++					remove_wait_queue(&c->erase_wait, &wait);
+ 				} else
+ 					spin_unlock(&c->erase_completion_lock);
+ 			} else if (ret)
 
 
