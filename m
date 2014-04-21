@@ -1,57 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaDUIMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 04:12:54 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:49766 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750902AbaDUIMv (ORCPT
+	id S1751693AbaDUIOO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 04:14:14 -0400
+Received: from relay1.mentorg.com ([192.94.38.131]:56078 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaDUIOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 04:12:51 -0400
-Message-ID: <5354D422.8010606@linux.vnet.ibm.com>
-Date: Mon, 21 Apr 2014 13:47:38 +0530
-From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
-Organization: IBM
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	Mon, 21 Apr 2014 04:14:09 -0400
+Message-ID: <5354D34B.4030607@mentor.com>
+Date: Mon, 21 Apr 2014 16:14:03 +0800
+From: Chung-Lin Tang <chunglin_tang@mentor.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: lizefan@huawei.com, containers@lists.linux-foundation.org,
-        cgroups@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 12/12] cgroup: implement dynamic subtree controller enable/disable
- on the default hierarchy
-References: <1397511430-2673-1-git-send-email-tj@kernel.org> <1397511430-2673-13-git-send-email-tj@kernel.org> <CAC4Lta0tD=FbtVpGnLw2sKMY69+AnqYqaOvCQdFs88JeR5Pemw@mail.gmail.com> <20140418204108.GL23576@htj.dyndns.org>
-In-Reply-To: <20140418204108.GL23576@htj.dyndns.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: "H. Peter Anvin" <hpa@zytor.com>, Ley Foon Tan <lftan@altera.com>,
+        Arnd Bergmann <arnd@arndb.de>
+CC: <linux-arch@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, Chung-Lin Tang <cltang@CODESOURCERY.COM>
+Subject: Re: [PATCH 00/28] nios2 Linux kernel port
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>	<53518FAC.8020504@zytor.com>	<201404191730.54400.arnd@arndb.de> <CAFiDJ5-PiUWetRMp65VTo4pvZM65r3WBjCZVWmxW0XnqAyO-GA@mail.gmail.com> <5354AD36.5090809@zytor.com>
+In-Reply-To: <5354AD36.5090809@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042108-9264-0000-0000-000005E5D8A4
+X-OriginalArrivalTime: 21 Apr 2014 08:14:07.0180 (UTC) FILETIME=[AA7BE8C0:01CF5D39]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2014 02:11 AM, Tejun Heo wrote:
-> Hello,
->
-> On Thu, Apr 17, 2014 at 11:33:50PM +0530, Raghavendra KT wrote:
->> On Tue, Apr 15, 2014 at 3:07 AM, Tejun Heo <tj@kernel.org> wrote:
->> I undertsand that with the above parsing we could do
->> echo "-blkio +blkio" > cgroup.subtree_control and honor last enable/disable.
->
-> Yeah, and the behavior is described in the following document.
->
+On 14/4/21 1:31 PM, H. Peter Anvin wrote:
+> On 04/20/2014 10:23 PM, Ley Foon Tan wrote:
+>> On Sat, Apr 19, 2014 at 11:30 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>> On Friday 18 April 2014, H. Peter Anvin wrote:
+>>>> Did the generic headers ever get updated to match Linus' guidance that
+>>>> any new architecture ports should use a 64-bit time_t?
+>>>
+>>> No, unfortunately not. With my rule that every architecture that gets
+>>> added needs to clean up asm-generic some more, to make it easier to add
+>>> the next one, we should probably do for nios2.
+>>>
+>>>         Arnd
+>>
+>> Can you give me the documentation on this new guidance and point me
+>> any architecture have implemented this?
+>> Thanks.
+>>
+> 
+> We implemented it in the x32 ABI for x86.  In generic code this is keyed
+> by COMPAT_USE_64BIT_TIME, but in your case it isn't actually a matter of
+> compat, so it should be easier.
+> 
+> See this thread including the discussion about time_t:
+> 
+> https://lkml.org/lkml/2011/8/26/415
+> 
+> 	-hpa
 
-Hello Tejun, Thanks for the kind reply. The document has helped me a
-lot while reviewing,testing the unified hierarchy code.
 
->   http://lkml.kernel.org/g/20140416145248.GD1257@htj.dyndns.org
->
->> It confused me while testing. do you think we should return -EINVAL in
->> such case?
->
-> Hmmm... I think whatever comes later wins is a pretty clear and easy
-> rule, no?
+I'm not sure why we need CONFIG_USE_64BIT_TIME? We don't have any
+32-on-64 problems.
 
-Very much correct. and if there is a feeling to check multiple entry
-later I would happy to update the code.
+My understanding of what Arnd meant, was to clean up
+asm-generic/posix_types.h such that for example, time_t should be
+defined as a 'long long' type, which should be 64-bit almost everywhere.
+At least AFAIK, that should work for all current asm-generic users.
+
+Thanks,
+Chung-Lin
 
