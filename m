@@ -1,109 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238AbaDUS01 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 14:26:27 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13397 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753276AbaDUSYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 14:24:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,897,1389772800"; 
-   d="scan'208";a="496887639"
-Subject: [PATCH 1/6] x86: mm: clean up tlb flushing code
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        mgorman@suse.de, ak@linux.intel.com, riel@redhat.com,
-        alex.shi@linaro.org, Dave Hansen <dave@sr71.net>,
-        dave.hansen@linux.intel.com
-From: Dave Hansen <dave@sr71.net>
-Date: Mon, 21 Apr 2014 11:24:20 -0700
-References: <20140421182418.81CF7519@viggo.jf.intel.com>
-In-Reply-To: <20140421182418.81CF7519@viggo.jf.intel.com>
-Message-Id: <20140421182420.307A0C57@viggo.jf.intel.com>
+	id S1753961AbaDUSas (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 14:30:48 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:43615 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753711AbaDUSap (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 14:30:45 -0400
+Date: Mon, 21 Apr 2014 20:30:37 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: Andrew Lunn <andrew@lunn.ch>, Kevin Hilman <khilman@linaro.org>,
+        Jason Cooper <jason@lakedaemon.net>, Arnd Bergmann <arnd@arndb.de>,
+        Chao Xie <xiechao.mail@gmail.com>, linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        Olof Johansson <olof@lixom.net>, Eric Miao <eric.y.miao@gmail.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/5] fixing regressions caused by Dove in MULTI_V7
+Message-ID: <20140421203037.6ab02445@skate>
+In-Reply-To: <1397585763-23482-1-git-send-email-sebastian.hesselbarth@gmail.com>
+References: <20140414151236.75f8816d@skate>
+	<1397585763-23482-1-git-send-email-sebastian.hesselbarth@gmail.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sebastian, Russell,
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+On Tue, 15 Apr 2014 20:15:58 +0200, Sebastian Hesselbarth wrote:
+> This is a patch set fixing regressions in v3.15-rc1 ultimately caused
+> by adding DT-enabled Marvell Dove to MULTI_V7. There was a fix
+> introduced late in the merge window to fix a related regression for
+> non-PJ4 architectures, that turned out to introduce another regression
+> on PJ4B-based Armada 370/XP.
 
-The
+[...]
 
-	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
+> Russell, please let me know if/when you are happy with the fixes
+> and the improvement. I'll be adding them to your patch tracker then.
 
-line of code is not exactly the easiest to audit, especially when
-it ends up at two different indentation levels.  This eliminates
-one of the the copy-n-paste versions.  It also gives us a unified
-exit point for each path through this function.  We need this in
-a minute for our tracepoint.
+Any plans towards merging those patches, or at least PATCH 1 to 4 ?
+They fix a regression on 3.15-r1 affecting mvebu platforms, and it
+would be good to have that fixed by 3.15 final.
 
+Thanks!
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
----
-
- b/arch/x86/mm/tlb.c |   23 +++++++++++------------
- 1 file changed, 11 insertions(+), 12 deletions(-)
-
-diff -puN arch/x86/mm/tlb.c~simplify-tlb-code arch/x86/mm/tlb.c
---- a/arch/x86/mm/tlb.c~simplify-tlb-code	2014-04-21 11:10:34.431818610 -0700
-+++ b/arch/x86/mm/tlb.c	2014-04-21 11:10:34.435818791 -0700
-@@ -161,23 +161,24 @@ void flush_tlb_current_task(void)
- void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 				unsigned long end, unsigned long vmflag)
- {
-+	int need_flush_others_all = 1;
- 	unsigned long addr;
- 	unsigned act_entries, tlb_entries = 0;
- 	unsigned long nr_base_pages;
- 
- 	preempt_disable();
- 	if (current->active_mm != mm)
--		goto flush_all;
-+		goto out;
- 
- 	if (!current->mm) {
- 		leave_mm(smp_processor_id());
--		goto flush_all;
-+		goto out;
- 	}
- 
- 	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1
- 					|| vmflag & VM_HUGETLB) {
- 		local_flush_tlb();
--		goto flush_all;
-+		goto out;
- 	}
- 
- 	/* In modern CPU, last level tlb used for both data/ins */
-@@ -196,22 +197,20 @@ void flush_tlb_mm_range(struct mm_struct
- 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
- 		local_flush_tlb();
- 	} else {
-+		need_flush_others_all = 0;
- 		/* flush range by one by one 'invlpg' */
- 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
- 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
- 			__flush_tlb_single(addr);
- 		}
--
--		if (cpumask_any_but(mm_cpumask(mm),
--				smp_processor_id()) < nr_cpu_ids)
--			flush_tlb_others(mm_cpumask(mm), mm, start, end);
--		preempt_enable();
--		return;
- 	}
--
--flush_all:
-+out:
-+	if (need_flush_others_all) {
-+		start = 0UL;
-+		end = TLB_FLUSH_ALL;
-+	}
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
--		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
-+		flush_tlb_others(mm_cpumask(mm), mm, start, end);
- 	preempt_enable();
- }
- 
-_
+Thomas
+-- 
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
