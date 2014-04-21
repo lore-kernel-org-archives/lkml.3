@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbaDUJh3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 05:37:29 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:60998 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363AbaDUJg3 (ORCPT
+	id S1751816AbaDUJhR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 05:37:17 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:21881 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751362AbaDUJg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 21 Apr 2014 05:36:29 -0400
-X-AuditID: cbfee68f-b7eff6d000002b70-43-5354e69abdf1
+X-AuditID: cbfee691-b7f3e6d000002ce8-ab-5354e698ed13
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: myungjoo.ham@samsung.com, gg@slimlogic.co.uk, kishon@ti.com, balbi@ti.com,
         ckeepax@opensource.wolfsonmicro.com, broonie@kernel.org,
         k.kozlowski@samsung.com, kyungmin.park@samsung.com,
         sangjung.woo@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH 9/9] extcon: gpio: Use devm_extcon_dev_allocate for extcon_dev
-Date: Mon, 21 Apr 2014 18:36:26 +0900
-Message-id: <1398072986-17386-10-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 5/9] extcon: max14577: Use devm_extcon_dev_allocate for
+ extcon_dev
+Date: Mon, 21 Apr 2014 18:36:22 +0900
+Message-id: <1398072986-17386-6-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1398072986-17386-1-git-send-email-cw00.choi@samsung.com>
 References: <1398072986-17386-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSrDvrWUiwwb8fihYH79dbTH34hM3i
-	35Qb7BbXvzxntejf4mLx+oWhxYWnPWwWZ5vesFtc3jWHzeJ24wo2iwV7Shy4PTat6mTzeDnx
-	N5tH35ZVjB5Tp/xl9Dh+YzuTx+dNcgFsUVw2Kak5mWWpRfp2CVwZs889Yi6YKFlxf9ZktgbG
-	maJdjJwcEgImErO2f2aHsMUkLtxbz9bFyMUhJLCUUWLP+ycsMEWff59khkgsYpSYcGExlNPE
-	JDGn+wQzSBWbgJbE/hc32EBsEQEFic29z1hBipgFGoCKPi1gAkkIC/hJNPzeD2azCKhKPHs4
-	B2w3r4CbxO7Jd1kh1slJfNjzCCzOCRRf96MbLC4k4CrR8b6PEWSohMA2domWvduYIQYJSHyb
-	fAjoVg6ghKzEpgPMEHMkJQ6uuMEygVF4ASPDKkbR1ILkguKk9CJjveLE3OLSvHS95PzcTYzA
-	qDj971n/Dsa7B6wPMSYDjZvILCWanA+MqrySeENjMyMLUxNTYyNzSzPShJXEee8/TAoSEkhP
-	LEnNTk0tSC2KLyrNSS0+xMjEwSnVwBi2tk/C1WjtD0m2WRWi1srVN8/9fcvxW/CJucRpZqZL
-	SlEr+hs8l85k7miaOzv3nML06WUa/6c2S3rxOb7QdhU/W6tsI7Zqo2brPc+buZHS33X2XEpK
-	83pwMXPflcIfBq3GYclvfPW4oqd9mv4qM9vwrovtusNfWB4WzGoJ3HJ9Kl9lEpP2LCWW4oxE
-	Qy3mouJEAA6qnpagAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t9jAd1Zz0KCDVpfS1ocvF9vMfXhEzaL
-	f1NusFtc//Kc1aJ/i4vF6xeGFhee9rBZnG16w25xedccNovbjSvYLBbsKXHg9ti0qpPN4+XE
-	32wefVtWMXpMnfKX0eP4je1MHp83yQWwRTUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY
-	6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHaekUJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7H
-	yAANJKxhzJh97hFzwUTJivuzJrM1MM4U7WLk5JAQMJH4/PskM4QtJnHh3nq2LkYuDiGBRYwS
-	Ey4sZoZwmpgk5nSfAKtiE9CS2P/iBhuILSKgILG59xkrSBGzQANQ0acFTCAJYQE/iYbf+8Fs
-	FgFViWcP57CD2LwCbhK7J99lhVgnJ/FhzyOwOCdQfN2PbrC4kICrRMf7PsYJjLwLGBlWMYqm
-	FiQXFCel5xrpFSfmFpfmpesl5+duYgTH3DPpHYyrGiwOMQpwMCrx8L7IDwkWYk0sK67MPcQo
-	wcGsJMIbsR4oxJuSWFmVWpQfX1Sak1p8iDEZ6KqJzFKiyfnAdJBXEm9obGJmZGlkbmhhZGxO
-	mrCSOO/BVutAIYH0xJLU7NTUgtQimC1MHJxSDYyLHi9Qfm1o1f2KXzG1TjhW/75yRlPmjf/B
-	Ao9uai/dffly5YcyPoWGv4XrLGuy5dqSS3qP6Hia1qdWLn4mr+zNv4tF8uV3rjRHi7jymKXl
-	pzJ+zLylk6pl6FxQ9CCjQpFpb2HdyntM3xSn6p1RMbM99nD5/Uftsc5PtFRjlaXSwk6tOi9x
-	S4mlOCPRUIu5qDgRAEZHDav9AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuphkeLIzCtJLcpLzFFi42JZI2JSqDvjWUiwQc9WTYuD9+stpj58wmbx
+	b8oNdovrX56zWvRvcbF4/cLQ4sLTHjaLs01v2C0u75rDZnG7cQWbxYI9JQ7cHptWdbJ5vJz4
+	m82jb8sqRo+pU/4yehy/sZ3J4/MmuQC2KC6blNSczLLUIn27BK6Mnt0X2Aoec1Q8+HCGpYFx
+	A3sXIyeHhICJxOszW1ggbDGJC/fWs4HYQgJLGSVmrbaBqTm5ciZzFyMXUHwRo8TJ9TtYIZwm
+	JolZ35eBdbMJaEnsf3EDrFtEQEFic+8zsCJmgQYmiTmfFjCBJIQFQiRuTJrGDGKzCKhK3F+w
+	FSzOK+AqMeXeA0aIdXISH/Y8AjuPU8BNYt2PblaIk1wlOt73MYIMlRDYxy7R8qKDCWKQgMS3
+	yYeAruAASshKbDrADDFHUuLgihssExiFFzAyrGIUTS1ILihOSi8y1StOzC0uzUvXS87P3cQI
+	jInT/55N3MF4/4D1IcZkoHETmaVEk/OBMZVXEm9obGZkYWpiamxkbmlGmrCSOG/6o6QgIYH0
+	xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYx62RfO83Ft386dxNy3Mdx0Je9ys1O6ES93HBaXi9ti
+	5pUe/UTuTyZnB6dE6uIPK56feD/j9YRXxyd+tPv38ufzy1dtt9obsx1iEq3s+3ymdn1FkJlV
+	uza7c8DlGeqnZ+3+WbBcy/E0X2POnkOyu0zyWWR277900S1qD1e7tYZeU+YFfS/f9D1KLMUZ
+	iYZazEXFiQDIosZTnwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t9jAd0Zz0KCDWY+VrQ4eL/eYurDJ2wW
+	/6bcYLe4/uU5q0X/FheL1y8MLS487WGzONv0ht3i8q45bBa3G1ewWSzYU+LA7bFpVSebx8uJ
+	v9k8+rasYvSYOuUvo8fxG9uZPD5vkgtgi2pgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw
+	1DW0tDBXUshLzE21VXLxCdB1y8wBOk5JoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyP
+	kQEaSFjDmNGz+wJbwWOOigcfzrA0MG5g72Lk5JAQMJE4uXImM4QtJnHh3nq2LkYuDiGBRYwS
+	J9fvYIVwmpgkZn1fxgJSxSagJbH/xQ02EFtEQEFic+8zsCJmgQYmiTmfFjCBJIQFQiRuTJoG
+	NpZFQFXi/oKtYHFeAVeJKfceMEKsk5P4sOcR2BmcAm4S6350s4LYQkA1He/7GCcw8i5gZFjF
+	KJpakFxQnJSea6RXnJhbXJqXrpecn7uJERxzz6R3MK5qsDjEKMDBqMTD+yI/JFiINbGsuDL3
+	EKMEB7OSCG/EeqAQb0piZVVqUX58UWlOavEhxmSgqyYyS4km5wPTQV5JvKGxiZmRpZG5oYWR
+	sTlpwkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MG7dOGexmy+HuP6De57sTG1N6x5/tgqa
+	rnuTN23WK6YE/TC3narSX1Y75/OtFsw6cWFTAdMnhp7pXw+0n+ibIKQsv/ee/Dr1HzIzrye7
+	8t95Hn9/wqS8KxMyEssE7gobFV39H73ve69zi8dTqTOHz+5pXVP36kS8tZdUVqXyxrev5C7N
+	lJl1NE+JpTgj0VCLuag4EQB8N3cY/QIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -55,98 +56,33 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 This patch use devm_extcon_dev_allocate() to simplify the memory control
 of extcon device.
 
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 ---
- drivers/extcon/extcon-gpio.c | 27 +++++++++++++++++----------
- 1 file changed, 17 insertions(+), 10 deletions(-)
+ drivers/extcon/extcon-max14577.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/extcon/extcon-gpio.c b/drivers/extcon/extcon-gpio.c
-index 13d5222..567eba2 100644
---- a/drivers/extcon/extcon-gpio.c
-+++ b/drivers/extcon/extcon-gpio.c
-@@ -32,7 +32,7 @@
- #include <linux/extcon/extcon-gpio.h>
- 
- struct gpio_extcon_data {
--	struct extcon_dev edev;
-+	struct extcon_dev *edev;
- 	unsigned gpio;
- 	bool gpio_active_low;
- 	const char *state_on;
-@@ -53,7 +53,7 @@ static void gpio_extcon_work(struct work_struct *work)
- 	state = gpio_get_value(data->gpio);
- 	if (data->gpio_active_low)
- 		state = !state;
--	extcon_set_state(&data->edev, state);
-+	extcon_set_state(data->edev, state);
- }
- 
- static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
-@@ -67,9 +67,10 @@ static irqreturn_t gpio_irq_handler(int irq, void *dev_id)
- 
- static ssize_t extcon_gpio_print_state(struct extcon_dev *edev, char *buf)
- {
--	struct gpio_extcon_data	*extcon_data =
--		container_of(edev, struct gpio_extcon_data, edev);
-+	struct device *dev = edev->dev.parent;
-+	struct gpio_extcon_data *extcon_data = dev_get_drvdata(dev);
- 	const char *state;
-+
- 	if (extcon_get_state(edev))
- 		state = extcon_data->state_on;
- 	else
-@@ -98,15 +99,21 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 	if (!extcon_data)
- 		return -ENOMEM;
- 
--	extcon_data->edev.name = pdata->name;
--	extcon_data->edev.dev.parent = &pdev->dev;
-+	extcon_data->edev = devm_extcon_dev_allocate(&pdev->dev, NULL);
-+	if (!extcon_data->edev) {
-+		dev_err(&pdev->dev, "failed to allocate extcon device\n");
-+		return -ENOMEM;
-+	}
-+	extcon_data->edev->name = pdata->name;
-+	extcon_data->edev->dev.parent = &pdev->dev;
-+
- 	extcon_data->gpio = pdata->gpio;
- 	extcon_data->gpio_active_low = pdata->gpio_active_low;
- 	extcon_data->state_on = pdata->state_on;
- 	extcon_data->state_off = pdata->state_off;
- 	extcon_data->check_on_resume = pdata->check_on_resume;
- 	if (pdata->state_on && pdata->state_off)
--		extcon_data->edev.print_state = extcon_gpio_print_state;
-+		extcon_data->edev->print_state = extcon_gpio_print_state;
- 
- 	ret = devm_gpio_request_one(&pdev->dev, extcon_data->gpio, GPIOF_DIR_IN,
- 				    pdev->name);
-@@ -121,7 +128,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 				msecs_to_jiffies(pdata->debounce);
+diff --git a/drivers/extcon/extcon-max14577.c b/drivers/extcon/extcon-max14577.c
+index 1fef08d..c869a86 100644
+--- a/drivers/extcon/extcon-max14577.c
++++ b/drivers/extcon/extcon-max14577.c
+@@ -668,13 +668,14 @@ static int max14577_muic_probe(struct platform_device *pdev)
  	}
  
--	ret = extcon_dev_register(&extcon_data->edev);
-+	ret = extcon_dev_register(extcon_data->edev);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -146,7 +153,7 @@ static int gpio_extcon_probe(struct platform_device *pdev)
- 	return 0;
- 
- err:
--	extcon_dev_unregister(&extcon_data->edev);
-+	extcon_dev_unregister(extcon_data->edev);
- 
- 	return ret;
- }
-@@ -157,7 +164,7 @@ static int gpio_extcon_remove(struct platform_device *pdev)
- 
- 	cancel_delayed_work_sync(&extcon_data->work);
- 	free_irq(extcon_data->irq, extcon_data);
--	extcon_dev_unregister(&extcon_data->edev);
-+	extcon_dev_unregister(extcon_data->edev);
- 
- 	return 0;
- }
+ 	/* Initialize extcon device */
+-	info->edev = devm_kzalloc(&pdev->dev, sizeof(*info->edev), GFP_KERNEL);
++	info->edev = devm_extcon_dev_allocate(&pdev->dev,
++					      max14577_extcon_cable);
+ 	if (!info->edev) {
+ 		dev_err(&pdev->dev, "failed to allocate memory for extcon\n");
+ 		return -ENOMEM;
+ 	}
+ 	info->edev->name = DEV_NAME;
+-	info->edev->supported_cable = max14577_extcon_cable;
++
+ 	ret = extcon_dev_register(info->edev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to register extcon device\n");
 -- 
 1.8.0
 
