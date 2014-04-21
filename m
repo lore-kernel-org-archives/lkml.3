@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753030AbaDUEhN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 00:37:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58776 "EHLO
+	id S1753091AbaDUEhU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 00:37:20 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58780 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065AbaDUEfH (ORCPT
+	with ESMTP id S1752069AbaDUEfJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 00:35:07 -0400
+	Mon, 21 Apr 2014 00:35:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Eric Whitney <enwlinux@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.13 22/32] ext4: fix partial cluster handling for bigalloc file systems
-Date: Sun, 20 Apr 2014 19:13:39 -0700
-Message-Id: <20140421021136.899280056@linuxfoundation.org>
+Subject: [PATCH 3.13 23/32] ext4: fix premature freeing of partial clusters split across leaf blocks
+Date: Sun, 20 Apr 2014 19:13:40 -0700
+Message-Id: <20140421021137.033762999@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
 References: <20140421021133.865086647@linuxfoundation.org>
@@ -28,62 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric Whitney <enwlinux@gmail.com>
 
-commit c06344939422bbd032ac967223a7863de57496b5 upstream.
+commit ad6599ab3ac98a4474544086e048ce86ec15a4d1 upstream.
 
-Commit 9cb00419fa, which enables hole punching for bigalloc file
-systems, exposed a bug introduced by commit 6ae06ff51e in an earlier
-release.  When run on a bigalloc file system, xfstests generic/013, 068,
-075, 083, 091, 100, 112, 127, 263, 269, and 270 fail with e2fsck errors
-or cause kernel error messages indicating that previously freed blocks
-are being freed again.
+Xfstests generic/311 and shared/298 fail when run on a bigalloc file
+system.  Kernel error messages produced during the tests report that
+blocks to be freed are already on the to-be-freed list.  When e2fsck
+is run at the end of the tests, it typically reports bad i_blocks and
+bad free blocks counts.
 
-The latter commit optimizes the selection of the starting extent in
-ext4_ext_rm_leaf() when hole punching by beginning with the extent
-supplied in the path argument rather than with the last extent in the
-leaf node (as is still done when truncating).  However, the code in
-rm_leaf that initially sets partial_cluster to track cluster sharing on
-extent boundaries is only guaranteed to run if rm_leaf starts with the
-last node in the leaf.  Consequently, partial_cluster is not correctly
-initialized when hole punching, and a cluster on the boundary of a
-punched region that should be retained may instead be deallocated.
+The bug that causes these failures is located in ext4_ext_rm_leaf().
+Code at the end of the function frees a partial cluster if it's not
+shared with an extent remaining in the leaf.  However, if all the
+extents in the leaf have been removed, the code dereferences an
+invalid extent pointer (off the front of the leaf) when the check for
+sharing is made.  This generally has the effect of unconditionally
+freeing the partial cluster, which leads to the observed failures
+when the partial cluster is shared with the last extent in the next
+leaf.
+
+Fix this by attempting to free the cluster only if extents remain in
+the leaf.  Any remaining partial cluster will be freed if possible
+when the next leaf is processed or when leaf removal is complete.
 
 Signed-off-by: Eric Whitney <enwlinux@gmail.com>
 Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ fs/ext4/extents.c |   11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
 
 --- a/fs/ext4/extents.c
 +++ b/fs/ext4/extents.c
-@@ -2585,6 +2585,27 @@ ext4_ext_rm_leaf(handle_t *handle, struc
- 	ex_ee_block = le32_to_cpu(ex->ee_block);
- 	ex_ee_len = ext4_ext_get_actual_len(ex);
+@@ -2731,10 +2731,15 @@ ext4_ext_rm_leaf(handle_t *handle, struc
+ 		err = ext4_ext_correct_indexes(handle, inode, path);
  
-+	/*
-+	 * If we're starting with an extent other than the last one in the
-+	 * node, we need to see if it shares a cluster with the extent to
-+	 * the right (towards the end of the file). If its leftmost cluster
-+	 * is this extent's rightmost cluster and it is not cluster aligned,
-+	 * we'll mark it as a partial that is not to be deallocated.
-+	 */
-+
-+	if (ex != EXT_LAST_EXTENT(eh)) {
-+		ext4_fsblk_t current_pblk, right_pblk;
-+		long long current_cluster, right_cluster;
-+
-+		current_pblk = ext4_ext_pblock(ex) + ex_ee_len - 1;
-+		current_cluster = (long long)EXT4_B2C(sbi, current_pblk);
-+		right_pblk = ext4_ext_pblock(ex + 1);
-+		right_cluster = (long long)EXT4_B2C(sbi, right_pblk);
-+		if (current_cluster == right_cluster &&
-+			EXT4_PBLK_COFF(sbi, right_pblk))
-+			*partial_cluster = -right_cluster;
-+	}
-+
- 	trace_ext4_ext_rm_leaf(inode, start, ex, *partial_cluster);
- 
- 	while (ex >= EXT_FIRST_EXTENT(eh) &&
+ 	/*
+-	 * Free the partial cluster only if the current extent does not
+-	 * reference it. Otherwise we might free used cluster.
++	 * If there's a partial cluster and at least one extent remains in
++	 * the leaf, free the partial cluster if it isn't shared with the
++	 * current extent.  If there's a partial cluster and no extents
++	 * remain in the leaf, it can't be freed here.  It can only be
++	 * freed when it's possible to determine if it's not shared with
++	 * any other extent - when the next leaf is processed or when space
++	 * removal is complete.
+ 	 */
+-	if (*partial_cluster > 0 &&
++	if (*partial_cluster > 0 && eh->eh_entries &&
+ 	    (EXT4_B2C(sbi, ext4_ext_pblock(ex) + ex_ee_len - 1) !=
+ 	     *partial_cluster)) {
+ 		int flags = get_default_free_blocks_flags(inode);
 
 
