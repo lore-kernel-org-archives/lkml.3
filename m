@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242AbaDUS5z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 14:57:55 -0400
-Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:41850 "EHLO
-	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754116AbaDUS5v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 14:57:51 -0400
-Date: Mon, 21 Apr 2014 14:51:44 -0400
-From: Rich Felker <dalias@libc.org>
-To: "Theodore Ts'o" <tytso@mit.edu>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        libc-alpha <libc-alpha@sourceware.org>,
-        "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Christoph Hellwig <hch@infradead.org>
-Subject: Re: [PATCH] locks: rename file-private locks to file-description
- locks
-Message-ID: <20140421185144.GF26358@brightrain.aerifal.cx>
-References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>
- <20140421140246.GB26358@brightrain.aerifal.cx>
- <535529FA.8070709@gmail.com>
- <20140421161004.GC26358@brightrain.aerifal.cx>
- <5355644C.7000801@gmail.com>
- <20140421184841.GA5105@thunk.org>
+	id S1754290AbaDUS7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 14:59:49 -0400
+Received: from mout.web.de ([212.227.17.11]:58131 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753328AbaDUS7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 14:59:47 -0400
+From: =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+To: netdev@vger.kernel.org
+Cc: bridge@lists.linux-foundation.org,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        =?UTF-8?q?Linus=20L=C3=BCssing?= <linus.luessing@web.de>
+Subject: [PATCH] bridge: simplify a br_multicast_query_received() function call
+Date: Mon, 21 Apr 2014 20:59:35 +0200
+Message-Id: <1398106775-14857-1-git-send-email-linus.luessing@web.de>
+X-Mailer: git-send-email 1.9.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140421184841.GA5105@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:zBLrb2aRRtCbgthWWTdgUiPSDehZmzeDFkLHbjQyK6zeVEQ7bwh
+ kZ1ZQTYLUVd6Ck3/U1IK/6WH44ASZ6eOd96/71X2aM8RoxEftT7T4HKcDdPTHw2L96I9+ZL
+ 96dpcD+ks06dUde0kHoOEqVkN+yedcuY9uK4qetJphkRI1vq73xvn2TzMfiUuRObMxvokXN
+ Nvm+oIC+/p6RYQ523qSng==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 02:48:41PM -0400, Theodore Ts'o wrote:
-> On Mon, Apr 21, 2014 at 08:32:44PM +0200, Michael Kerrisk (man-pages) wrote:
-> > So, can you *please* answer this question: what do you call (i.e., 
-> > what  everyday technical language term do use for) the thing
-> > that sits between a file descriptor and an i-node? 
-> > 
-> > (Please don't say 'struct file' -- that is not is an implementation 
-> > detail, and does not qualify as the kind of term that I could use 
-> > when documenting this feature in man pages.)
-> 
-> At least in a few places, if you are going to use "file description",
-> could you at least add a parenthetical comment:
-> 
-> 	(commonly called a "struct file" by Linux kernel developers)
-> 
-> Yes, it's an implementation detail, but it's one that's been around
-> for over two decades, and IMHO highly unlikely to change in the
-> future.  So if you really want to use the POSIX terminology, it would
-> probably be a good idea to also use the term of art which is in common
-> use by the kernel developers, and I suspect has leaked out beyond
-> that.
+The call from the IPv6 part can be simplified as the beginning of the
+calling function ensures that we end up here when having a proper IPv6
+source address only.
 
-I don't think "struct file" has any meaning to any userspace
-developers, and as such doesn't belong in documentation for userspace
-programming. It's an implementation detail of the kernel that
-userspace developers have no need to be aware of. There's already
-enough leakage of broken kernel internals (e.g. tid vs pid vs tgid)
-into userspace documentation that's immensely confusing for new
-developers without adding more of it.
+Introduced by 6565b9eeef194afbb3beec80d6dd2447f4091f8c
+("bridge: multicast: add sanity check for query source addresses")
 
-Rich
+Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Linus Lüssing <linus.luessing@web.de>
+---
+ net/bridge/br_multicast.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
+index 7b757b5..d2c3aae 100644
+--- a/net/bridge/br_multicast.c
++++ b/net/bridge/br_multicast.c
+@@ -1282,8 +1282,7 @@ static int br_ip6_multicast_query(struct net_bridge *br,
+ 		goto out;
+ 	}
+ 
+-	br_multicast_query_received(br, port, &br->ip6_querier,
+-				    !ipv6_addr_any(&ip6h->saddr),
++	br_multicast_query_received(br, port, &br->ip6_querier, 1,
+ 				    is_general_query, max_delay);
+ 
+ 	if (!group)
+-- 
+1.7.10.4
+
