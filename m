@@ -1,139 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390AbaDUJ7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 05:59:20 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:20796 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997AbaDUJ6y (ORCPT
+	id S1751886AbaDUJ4Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 05:56:25 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:60952 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750824AbaDUJzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 05:58:54 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-5b-5354ebddbd44
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Arnd Bergmann'" <arnd@arndb.de>, "'Liviu Dudau'" <Liviu.Dudau@arm.com>
-Cc: "'linux-pci'" <linux-pci@vger.kernel.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, "'Kukjin Kim'" <kgene.kim@samsung.com>,
-        "'Jason Gunthorpe'" <jgunthorpe@obsidianresearch.com>,
-        "'Mohit KUMAR DCG'" <Mohit.KUMAR@st.com>,
-        "'Pratyush Anand'" <pratyush.anand@st.com>,
-        "'Marek Vasut'" <marex@denx.de>,
-        "'Richard Zhu'" <r65037@freescale.com>,
-        "'Kishon Vijay Abraham I'" <kishon@ti.com>,
-        "'Byungho An'" <bh74.an@samsung.com>,
-        "'Rob Herring'" <robherring2@gmail.com>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <000801cf592e$30b7bff0$92273fd0$%han@samsung.com>
- <000901cf592e$563bc8c0$02b35a40$%han@samsung.com>
- <20140416165724.GG7802@e106497-lin.cambridge.arm.com>
- <16730530.rJ9T0MsYmt@wuerfel> <000001cf5d04$982a6000$c87f2000$%han@samsung.com>
-In-reply-to: <000001cf5d04$982a6000$c87f2000$%han@samsung.com>
-Subject: Re: [RFC PATCH 1/2] PCI: designware: Add ARM64 PCI support
-Date: Mon, 21 Apr 2014 18:58:52 +0900
-Message-id: <000501cf5d48$4cf707c0$e6e51740$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9ZoV9F7nOBrq3kQta8LMyyVpoKWwDYDJxgABEzhHA=
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrFKsWRmVeSWpSXmKPExsVy+t8zY927r0OCDVoms1v8nXSM3eLquWOM
-	FkuaMixeHtK0uLzwEqvF9xumFr0LrrJZXHjaw2bx/tAzZotNj6+xWlzeNYfN4uy842wWB5a2
-	s1i8aWtktNg49RejRfslZYvHs4Qtvn/7xuYg5LFm3hpGj9+/JjF6zJt1gsXj3+F+Jo+ds+6y
-	eyzYVOqxeUm9x+1/j5k9vu/oZfTo27KK0ePpj73MHsdvbGfy+LxJLoA3issmJTUnsyy1SN8u
-	gSvjwYHogulCFavnJzUwLubrYuTkkBAwkVj0cAU7hC0mceHeerYuRi4OIYFljBLbZ/WwwxQd
-	7F3NBJGYzihx5VYvlPObUWLy2xcsIFVsAmoSX74cBusQEfCQ+PFgOTtIEbPAZRaJK8v+ssB1
-	HLk4lwmkilPATmJb/xWwDmEBZ4kTz1vB4iwCqhJ/e3aATeUVsJWY23WJEcIWlPgx+R5YnFlA
-	S2L9zuNMELa8xOY1b5m7GDmAblWXePRXF+IIK4lNk66zQ5SISOx78Y4R5AYJgSccEmtOt7NA
-	7BKQ+Db5EAtEr6zEpgPMEC9LShxccYNlAqPELCSbZyHZPAvJ5llIVixgZFnFKJpakFxQnJRe
-	ZKRXnJhbXJqXrpecn7uJEZJu+nYw3jxgfYgxGWj9RGYp0eR8YLrKK4k3NDYzsjA1MTU2Mrc0
-	I01YSZx30cOkICGB9MSS1OzU1ILUovii0pzU4kOMTBycUg2MsuHNvCqf36+MPXU5dFuwVqZE
-	/iHOuX8Db1wW0ZKztT99tEMgKfjg9dKz3RbPHKYuuXSOe+7EHI7DuzcHF5xaKeHRE5J+YF7c
-	Yxld+QIOTtXnS08nJ6xUTMlPiflmmSZwkCOy+Vkaj0H2vU98N+Y9rlIKytab8ml9zauGbdzy
-	+4tbQ9hd3ZiUWIozEg21mIuKEwGCXzgsTQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGJsWRmVeSWpSXmKPExsVy+t9jQd27r0OCDW6YWvyddIzd4uq5Y4wW
-	S5oyLF4e0rS4vPASq8V3oFTvgqtsFhee9rBZvD/0jNli0+NrrBaXd81hszg77zibxYGl7SwW
-	b9oaGS02Tv3FaNF+Sdni8Sxhi+/fvrE5CHmsmbeG0eP3r0mMHvNmnWDx+He4n8lj56y77B4L
-	NpV6bF5S73H732Nmj+87ehk9+rasYvR4+mMvs8fxG9uZPD5vkgvgjWpgtMlITUxJLVJIzUvO
-	T8nMS7dV8g6Od443NTMw1DW0tDBXUshLzE21VXLxCdB1y8wBek9JoSwxpxQoFJBYXKykb4dp
-	QmiIm64FTGOErm9IEFyPkQEaSFjHmPHgQHTBdKGK1fOTGhgX83UxcnJICJhIHOxdzQRhi0lc
-	uLeerYuRi0NIYDqjxJVbvUwQzm9GiclvX7CAVLEJqEl8+XKYHcQWEfCQ+PFgOTtIEbPAZRaJ
-	K8v+ssB1HLk4F2wup4CdxLb+K2AdwgLOEieet4LFWQRUJf727ACbyitgKzG36xIjhC0o8WPy
-	PbA4s4CWxPqdx5kgbHmJzWveMncxcgDdqi7x6K8uxBFWEpsmXWeHKBGR2PfiHeMERqFZSCbN
-	QjJpFpJJs5C0LGBkWcUomlqQXFCclJ5rqFecmFtcmpeul5yfu4kRnMqeSe1gXNlgcYhRgINR
-	iYd3RklIsBBrYllxZe4hRgkOZiUR3oj1QCHelMTKqtSi/Pii0pzU4kOMyUCPTmSWEk3OB6bZ
-	vJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7RaBwoJpCeWpGanphakFsFsYeLglGpgrAy9+//8tfAt
-	SkW8leJHp8VHfbwRNrXriyOvXfDFu6qKjgHi3yd80JyfFZIkFfK44M6XlEbL/VdV5s67HVq9
-	t6/M9/zJFZPvnLfY0VgYYB/5IOPxLSenDIt/LLEtTsu+RFlPTv3nfOGvs+zvxd6Tw9Z2vd6j
-	wvZvj8zZH2cv3Nuh83qCbcLWFUosxRmJhlrMRcWJAAKgssSpAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Mon, 21 Apr 2014 05:55:54 -0400
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: tglx@linutronix.de
+Cc: linaro-kernel@lists.linaro.org, linaro-networking@linaro.org,
+        linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH V2 05/19] tick: move definition of tick_get_device() to tick.h
+Date: Mon, 21 Apr 2014 15:25:01 +0530
+Message-Id: <2565ee70b249641746606702238580bd40b4e595.1398072824.git.viresh.kumar@linaro.org>
+X-Mailer: git-send-email 1.7.12.rc2.18.g61b472e
+In-Reply-To: <cover.1398072824.git.viresh.kumar@linaro.org>
+References: <cover.1398072824.git.viresh.kumar@linaro.org>
+In-Reply-To: <cover.1398072824.git.viresh.kumar@linaro.org>
+References: <cover.1398072824.git.viresh.kumar@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 21, 2014 10:54 AM, Jingoo Han wrote:
-> On Thursday, April 17, 2014 3:26 AM, Arnd Bergmann wrote:
-> > On Wednesday 16 April 2014 17:57:24 Liviu Dudau wrote:
-> > > Jingoo,
-> > >
-> > > Thanks for taking a stab at trying to convert a host bridge
-> > > driver to use the new generic host bridge code.
-> > >
-> > > I do however have concerns on the direction you took. You have split
-> > > your driver in two, depending on whether it was CONFIG_ARM or CONFIG_ARM64,
-> > > even if (with my series) it should be no reason why the host bridge
-> > > driver should not work on other architectures as well once they are
-> > > converted.
-> >
-> > Right.
-> >
-> > > Also, some of the functions that you use have identical names but different
-> > > signatures depending on what arch you have selected. This is really bad
-> > > in my books!
+There are multiple users of tick_get_device() which are currently using
+&per_cpu(tick_cpu_device, cpu) directly. Would be better if we use
+tick_get_device() consistently. Move definition of tick_get_device() to tick.h
+and update others to use it.
 
-[.....]
+This change reduced size of bzImage for x86 by 96 bytes.
 
-> > > What about creating functions that use my series directly if CONFIG_ARM64 is
-> > > defined (or any CONFIG_ you want to create for your driver that you select
-> > > from CONFIG_ARM64) and otherwise implement the CONFIG_ARM version? That
-> > > way your driver will call only one API without any #ifdef and when arm code
-> > > gets converted you drop your adaptation functions. Or (better yet), have a
-> > > stab at converting bios32 (Rob Herring has already provided some hints on
-> > > how to do it for arch/arm).
-> 
-> To: Liviu Dudau
-> 
-> Sorry, but I will not implement this.
-> At first, you had to think the compatibility with ARM32 PCIe.
-> Why do you want other engineers to take this load?
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+---
+ include/linux/tick.h         |  5 ++++-
+ kernel/time/clockevents.c    |  6 +++---
+ kernel/time/tick-broadcast.c | 12 ++++++------
+ kernel/time/tick-common.c    |  9 ++-------
+ 4 files changed, 15 insertions(+), 17 deletions(-)
 
-(+cc Rob Herring)
-
-Um, I am looking at Rob Herring's patchset for Versatile PCI. [1]
-Then, do you mean the following?
-
-1. Add Rob Herring's patch converting bios32. [2]
-2. Reference Rob Herring's patch in order to know how to
-    handle "of_create_pci_host_bridge()" directly in ARM32. [3]
-3. Use of_create_pci_host_bridge() for the designware PCIe
-    driver in ARM32.
-4. Also, use of_create_pci_host_bridge() for the designware PCIe
-    driver in "ARM64".
-
-
-[1] http://www.spinics.net/lists/linux-pci/msg30084.html
-[2] http://www.spinics.net/lists/linux-pci/msg30083.html
-[3] http://www.spinics.net/lists/linux-pci/msg30086.html
-
-Best regards,
-Jingoo Han
-
-> 
-> >
-> > That would of course be best.
-> >
-
-[.....]
+diff --git a/include/linux/tick.h b/include/linux/tick.h
+index 1a9908a..45e1331 100644
+--- a/include/linux/tick.h
++++ b/include/linux/tick.h
+@@ -87,7 +87,10 @@ extern void __init tick_init(void);
+ extern int tick_is_oneshot_available(void);
+ 
+ DECLARE_PER_CPU(struct tick_device, tick_cpu_device);
+-extern struct tick_device *tick_get_device(int cpu);
++static inline struct tick_device *tick_get_device(int cpu)
++{
++	return &per_cpu(tick_cpu_device, cpu);
++}
+ 
+ # ifdef CONFIG_HIGH_RES_TIMERS
+ extern int tick_init_highres(void);
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 2ba812bc..a3e9333 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -326,7 +326,7 @@ static int __clockevents_try_unbind(struct clock_event_device *ced, int cpu)
+ 		return 0;
+ 	}
+ 
+-	return ced == per_cpu(tick_cpu_device, cpu).evtdev ? -EAGAIN : -EBUSY;
++	return ced == tick_get_device(cpu)->evtdev ? -EAGAIN : -EBUSY;
+ }
+ 
+ /*
+@@ -675,7 +675,7 @@ static struct device tick_bc_dev = {
+ static struct tick_device *tick_get_tick_dev(struct device *dev)
+ {
+ 	return dev == &tick_bc_dev ? tick_get_broadcast_device() :
+-		&per_cpu(tick_cpu_device, dev->id);
++		tick_get_device(dev->id);
+ }
+ 
+ static __init int tick_broadcast_init_sysfs(void)
+@@ -689,7 +689,7 @@ static __init int tick_broadcast_init_sysfs(void)
+ #else
+ static struct tick_device *tick_get_tick_dev(struct device *dev)
+ {
+-	return &per_cpu(tick_cpu_device, dev->id);
++	return tick_get_device(dev->id);
+ }
+ static inline int tick_broadcast_init_sysfs(void) { return 0; }
+ #endif
+diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
+index b1c7b21..6289680 100644
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -262,7 +262,7 @@ static void tick_do_broadcast(struct cpumask *mask)
+ 	 */
+ 	if (cpumask_test_cpu(cpu, mask)) {
+ 		cpumask_clear_cpu(cpu, mask);
+-		td = &per_cpu(tick_cpu_device, cpu);
++		td = tick_get_device(cpu);
+ 		td->evtdev->event_handler(td->evtdev);
+ 	}
+ 
+@@ -273,7 +273,7 @@ static void tick_do_broadcast(struct cpumask *mask)
+ 		 * one of the first device. This works as long as we have this
+ 		 * misfeature only on x86 (lapic)
+ 		 */
+-		td = &per_cpu(tick_cpu_device, cpumask_first(mask));
++		td = tick_get_device(cpumask_first(mask));
+ 		td->evtdev->broadcast(mask);
+ 	}
+ }
+@@ -337,7 +337,7 @@ static void tick_do_broadcast_on_off(unsigned long *reason)
+ 	raw_spin_lock_irqsave(&tick_broadcast_lock, flags);
+ 
+ 	cpu = smp_processor_id();
+-	td = &per_cpu(tick_cpu_device, cpu);
++	td = tick_get_device(cpu);
+ 	dev = td->evtdev;
+ 	bc = tick_broadcast_device.evtdev;
+ 
+@@ -581,7 +581,7 @@ again:
+ 	now = ktime_get();
+ 	/* Find all expired events */
+ 	for_each_cpu(cpu, tick_broadcast_oneshot_mask) {
+-		td = &per_cpu(tick_cpu_device, cpu);
++		td = tick_get_device(cpu);
+ 		if (td->evtdev->next_event.tv64 <= now.tv64) {
+ 			cpumask_set_cpu(cpu, tmpmask);
+ 			/*
+@@ -700,7 +700,7 @@ int tick_broadcast_oneshot_control(unsigned long reason)
+ 	 * idle code, so we can't be moved away.
+ 	 */
+ 	cpu = smp_processor_id();
+-	td = &per_cpu(tick_cpu_device, cpu);
++	td = tick_get_device(cpu);
+ 	dev = td->evtdev;
+ 
+ 	if (!(dev->features & CLOCK_EVT_FEAT_C3STOP))
+@@ -824,7 +824,7 @@ static void tick_broadcast_init_next_event(struct cpumask *mask,
+ 	int cpu;
+ 
+ 	for_each_cpu(cpu, mask) {
+-		td = &per_cpu(tick_cpu_device, cpu);
++		td = tick_get_device(cpu);
+ 		if (td->evtdev)
+ 			td->evtdev->next_event = expires;
+ 	}
+diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+index 0a0608e..3f3aa86 100644
+--- a/kernel/time/tick-common.c
++++ b/kernel/time/tick-common.c
+@@ -53,11 +53,6 @@ int tick_do_timer_cpu __read_mostly = TICK_DO_TIMER_BOOT;
+ /*
+  * Debugging: see timer_list.c
+  */
+-struct tick_device *tick_get_device(int cpu)
+-{
+-	return &per_cpu(tick_cpu_device, cpu);
+-}
+-
+ /**
+  * tick_is_oneshot_available - check for a oneshot capable event device
+  */
+@@ -296,7 +291,7 @@ void tick_check_new_device(struct clock_event_device *newdev)
+ 	if (!cpumask_test_cpu(cpu, newdev->cpumask))
+ 		goto out_bc;
+ 
+-	td = &per_cpu(tick_cpu_device, cpu);
++	td = tick_get_device(cpu);
+ 	curdev = td->evtdev;
+ 
+ 	/* cpu local device ? */
+@@ -356,7 +351,7 @@ void tick_handover_do_timer(int *cpup)
+  */
+ void tick_shutdown(unsigned int *cpup)
+ {
+-	struct tick_device *td = &per_cpu(tick_cpu_device, *cpup);
++	struct tick_device *td = tick_get_device(*cpup);
+ 	struct clock_event_device *dev = td->evtdev;
+ 
+ 	td->mode = TICKDEV_MODE_PERIODIC;
+-- 
+1.7.12.rc2.18.g61b472e
 
