@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893AbaDULZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 07:25:13 -0400
-Received: from mail-ve0-f171.google.com ([209.85.128.171]:49909 "EHLO
-	mail-ve0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751785AbaDULZK (ORCPT
+	id S1751824AbaDUL0d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 07:26:33 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:55340 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908AbaDUL02 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 07:25:10 -0400
+	Mon, 21 Apr 2014 07:26:28 -0400
+Date: Mon, 21 Apr 2014 12:26:01 +0100
+From: Luis Henriques <luis.henriques@canonical.com>
+To: David Miller <davem@davemloft.net>
+Cc: zoltan.kiss@citrix.com, jesse@nicira.com, pshelar@nicira.com,
+        tgraf@redhat.com, dev@openvswitch.org, pablo@netfilter.org,
+        kadlec@blackhole.kfki.hu, edumazet@google.com, dborkman@redhat.com,
+        therbert@google.com, jasowang@redhat.com, fw@strlen.de,
+        joe@perches.com, horms@verge.net.au, jiri@resnulli.us, mst@redhat.com,
+        Paul.Durrant@citrix.com, JBeulich@suse.com,
+        herbert@gondor.apana.org.au, mszeredi@suse.cz,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH v5] core, nfqueue, openvswitch: Orphan frags in
+ skb_zerocopy and handle errors
+Message-ID: <20140421112601.GC3200@hercules>
+References: <1395873465-22282-1-git-send-email-zoltan.kiss@citrix.com>
+ <20140327.152956.1528740039185894234.davem@davemloft.net>
 MIME-Version: 1.0
-In-Reply-To: <9307026b9160edfb785b894fe6d539b7.squirrel@mungewell.org>
-References: <1609685.QRL9N9sQvX@sigyn>
-	<c49c4ad2bfabfe75ac065f8ad878d697.squirrel@mungewell.org>
-	<CADbOyBSxHj80zA7UNq+yAtmSPgTqCXgOUUsQ30DQQ66cGw9egw@mail.gmail.com>
-	<9307026b9160edfb785b894fe6d539b7.squirrel@mungewell.org>
-Date: Mon, 21 Apr 2014 13:25:09 +0200
-Message-ID: <CADbOyBRDbScJ-gG=vqc4boq8kkuJ_9Xt_6Kt5MkgbcTy2Mbvpw@mail.gmail.com>
-Subject: Re: [PATCH 0/24] Introduce ff-memless-next as an improved replacement
- for ff-memless
-From: Elias Vanderstuyft <elias.vds@gmail.com>
-To: Simon Wood <simon@mungewell.org>
-Cc: =?UTF-8?B?TWljaGFsIE1hbMODwr0=?= <madcatxster@devoid-pointer.net>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140327.152956.1528740039185894234.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 12:29 AM,  <simon@mungewell.org> wrote:
->
->> Did the WiiWheel have working FF_CONSTANT before this patchset?
->> It would be weird if yes, because lg4ff is also used for MOMO-Black
->> which works fine.
->
-> Yes, I think that the force requested by fftest was just too weak to
-> actually move the wheel. ffcfstress (or whatever it is called) works OK.
+Hi David,
 
-Ah, nice to hear.
+On Thu, Mar 27, 2014 at 03:29:56PM -0400, David Miller wrote:
+> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Date: Wed, 26 Mar 2014 22:37:45 +0000
+> 
+> > skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+> > orphan them. Also, it doesn't handle errors, so this patch takes care of that
+> > as well, and modify the callers accordingly. skb_tx_error() is also added to
+> > the callers so they will signal the failed delivery towards the creator of the
+> > skb.
+> > 
+> > Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> 
+> Fingers crossed :-)  Applied, thanks Zoltan.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-I had some additional questions that might benefit to the porting of
-the lgff and sony driver, concerning the optimal value for
-FF_UPDATE_RATE (at the moment it defaults to a safe 50ms):
-- Could you try to sniff FF command USB traffic with the Windows
-driver of the WingMan Force, just to learn what the update interval is
-when playing a ConstantForce effect with an envelope (I'm only
-interested in the envelope part)?
-- If official/decent Windows drivers are present for one of the Sony
-controllers you have, can you please do the same, but now when playing
-a vibration effect (using XInput)?
+Could you please queue this for stable as well?  It has CVE-2014-2568
+assigned to it and I believe it is applicable to some of the trees.
 
-Elias
+Cheers,
+--
+Luís
