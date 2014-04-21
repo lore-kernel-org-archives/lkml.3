@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751329AbaDUA4r (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 20 Apr 2014 20:56:47 -0400
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:56335 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751098AbaDUA4n (ORCPT
+	id S1751430AbaDUA7Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 20 Apr 2014 20:59:16 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:57802 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751098AbaDUA7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 20 Apr 2014 20:56:43 -0400
+	Sun, 20 Apr 2014 20:59:14 -0400
+Message-ID: <53546D5B.5050206@hitachi.com>
+Date: Mon, 21 Apr 2014 09:59:07 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-X-Originating-IP: [95.21.51.154]
-In-Reply-To: <1397704685.14062.14.camel@joe-AO725>
-References: <1397702368-4846-1-git-send-email-isubramanian@apm.com>
-	<1397702368-4846-2-git-send-email-isubramanian@apm.com>
-	<1397704685.14062.14.camel@joe-AO725>
-Date: Mon, 21 Apr 2014 02:56:41 +0200
-Message-ID: <CABxcv=mj+phHmyg2U2jW51mLTwBN9Au791m-GtqU5BXDPy7Gtg@mail.gmail.com>
-Subject: Re: [PATCH v3 1/4] MAINTAINERS: Add entry for APM X-Gene SoC ethernet driver
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Joe Perches <joe@perches.com>
-Cc: Iyappan Subramanian <isubramanian@apm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        jcm@redhat.com, netdev@vger.kernel.org, patches@apm.com,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Keyur Chudgar <kchudgar@apm.com>, davem@davemloft.net,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Ravi Patel <rapatel@apm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Satoru MORIYA <satoru.moriya.br@hitachi.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Takenori Nagano <t-nagano@ah.jp.nec.com>,
+        Eric Biederman <ebiederm@xmission.com>,
+        Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Re: [PATCH] kernel/panic: Add "late_kdump" option for kdump
+ in unstable condition
+References: <20140414045158.10846.35462.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140416134830.GA31074@redhat.com> <534F3572.2040801@hitachi.com> <20140417134338.GB15749@redhat.com> <53509762.3040908@hitachi.com>
+In-Reply-To: <53509762.3040908@hitachi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lyappan,
-
-On Thu, Apr 17, 2014 at 5:18 AM, Joe Perches <joe@perches.com> wrote:
-> On Wed, 2014-04-16 at 19:39 -0700, Iyappan Subramanian wrote:
->> This patch adds a MAINTAINERS entry for APM X-Gene SoC
->> ethernet driver.
-> []
->> diff --git a/MAINTAINERS b/MAINTAINERS
-> []
->> @@ -686,6 +686,14 @@ S:       Maintained
->>  F:   drivers/net/appletalk/
->>  F:   net/appletalk/
+(2014/04/18 12:09), Masami Hiramatsu wrote:
+> (2014/04/17 22:43), Vivek Goyal wrote:
+>> On Thu, Apr 17, 2014 at 10:59:14AM +0900, Masami Hiramatsu wrote:
 >>
->> +APPLIED MICRO (APM) X-GENE SOC ETHERNET DRIVER
->> +M:   Iyappan Subramanian <isubramanian@apm.com>
->> +M:   Keyur Chudgar <kchudgar@apm.com>
->> +M:   Ravi Patel <rapatel@apm.com>
->> +S:   Maintained
->> +F:   drivers/net/ethernet/apm/xgene
->
-> Please add a terminating slash to show this is a directory.
->
-> F:      drivers/net/ethernet/apm/xgene/
->
+>> [..]
+>>>>> @@ -112,9 +113,14 @@ void panic(const char *fmt, ...)
+>>>>>  	/*
+>>>>>  	 * If we have crashed and we have a crash kernel loaded let it handle
+>>>>>  	 * everything else.
+>>>>> -	 * Do we want to call this before we try to display a message?
+>>>>> +	 * If we want to call this after we try to display a message, pass
+>>>>> +	 * the "late_kdump" option to the kernel.
+>>>>>  	 */
+>>>>> -	crash_kexec(NULL);
+>>>>> +	if (!late_kdump)
+>>>>> +		crash_kexec(NULL);
+>>>>> +	else
+>>>>> +		pr_emerg("Warning: late_kdump option is set. Please DO NOT "
+>>>>> +			"report bugs about kdump failure with this option.\n");
+>>>>
+>>>> I think above message about DO NOT report bugs seems unnecessary. 
+>>>
+>>> OK, so I just notify the option is set as below.
+>>> "Warning: crash_kexec_post_notifiers is set.\n"
+>>
+>> I would say for the time being don't put any extra message. User will
+>> think what this warning is supposed to mean. We can introduce one if
+>> we run into many issues.
+> 
+> Ah, I see.
+> 
+>> For the time being we can just look at kernel logs and look at command
+>> line options and see whether crash_kexec_post_notifiers was set or not.
+> 
+> Yeah, I know. However since the kernel command line is shown in very early
+> part of kernel logs, I worried about the case that it is pushed out from
+> kmsg buffer. And usually users will send a bug report with the very last
+> of the kernel logs because it becomes too long.
 
-Also if you are maintaining this driver as a part of your daily work
-(i.e: actually being paid for it by your company) the status should be
-"Supported" instead.
+Anyway, I'll send v3 soon to remove that message completely :)
 
-If you are doing it on your own time but still using your company
-email address then "Maintained" is correct.
+Thank you!
 
-Best regards,
-Javier
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
