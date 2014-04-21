@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129AbaDUMSM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 08:18:12 -0400
-Received: from mail-pb0-f46.google.com ([209.85.160.46]:50884 "EHLO
-	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854AbaDUMRP (ORCPT
+	id S1752007AbaDUMSE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 08:18:04 -0400
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:50976 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751836AbaDUMRK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 08:17:15 -0400
+	Mon, 21 Apr 2014 08:17:10 -0400
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
         stern@rowland.harvard.edu, balbi@ti.com, kgene.kim@samsung.com,
         Vivek Gautam <gautam.vivek@samsung.com>,
-        Anton Tikhomirov <av.tikhomirov@samsung.com>
-Subject: [PATCH 3/3] usb: dwc3-exynos: Make provision for vdd regulators
-Date: Mon, 21 Apr 2014 17:46:44 +0530
-Message-Id: <1398082604-3013-3-git-send-email-gautam.vivek@samsung.com>
+        Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 2/3] usb: ehci-exynos: Make provision for vdd regulators
+Date: Mon, 21 Apr 2014 17:46:43 +0530
+Message-Id: <1398082604-3013-2-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
 References: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
@@ -25,7 +25,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Facilitate getting required 3.3V and 1.0V VDD supply for
-DWC3 controller on Exynos.
+EHCI controller on Exynos.
 
 With patches for regulators' nodes merged in 3.15:
 c8c253f ARM: dts: Add regulator entries to smdk5420
@@ -36,122 +36,113 @@ they request VDD regulators in their drivers, and enable
 them so as to make them working.
 
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-Cc: Anton Tikhomirov <av.tikhomirov@samsung.com>
+Cc: Jingoo Han <jg1.han@samsung.com>
 ---
 
-Based on 'usb-next' branch of Greg's USB tree.
-Also cleanly applies on 'next' branch of Balbi's USB tree.
+Based on 'usb-next' branch of Greg's usb tree.
 
- drivers/usb/dwc3/dwc3-exynos.c |   51 ++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 49 insertions(+), 2 deletions(-)
+ drivers/usb/host/ehci-exynos.c |   47 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
 
-diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-exynos.c
-index 28c8ad7..c9d9102 100644
---- a/drivers/usb/dwc3/dwc3-exynos.c
-+++ b/drivers/usb/dwc3/dwc3-exynos.c
-@@ -27,6 +27,7 @@
- #include <linux/usb/usb_phy_gen_xceiv.h>
+diff --git a/drivers/usb/host/ehci-exynos.c b/drivers/usb/host/ehci-exynos.c
+index d1d8c47..a3ca8cc 100644
+--- a/drivers/usb/host/ehci-exynos.c
++++ b/drivers/usb/host/ehci-exynos.c
+@@ -20,6 +20,7 @@
  #include <linux/of.h>
- #include <linux/of_platform.h>
+ #include <linux/of_gpio.h>
+ #include <linux/platform_device.h>
 +#include <linux/regulator/consumer.h>
- 
- struct dwc3_exynos {
- 	struct platform_device	*usb2_phy;
-@@ -34,6 +35,8 @@ struct dwc3_exynos {
- 	struct device		*dev;
- 
- 	struct clk		*clk;
-+	struct regulator	*vdd33;
-+	struct regulator	*vdd10;
+ #include <linux/usb/phy.h>
+ #include <linux/usb/samsung_usb_phy.h>
+ #include <linux/usb.h>
+@@ -46,6 +47,8 @@ struct exynos_ehci_hcd {
+ 	struct clk *clk;
+ 	struct usb_phy *phy;
+ 	struct usb_otg *otg;
++	struct regulator *vdd33;
++	struct regulator *vdd10;
  };
  
- static int dwc3_exynos_register_phys(struct dwc3_exynos *exynos)
-@@ -144,20 +147,46 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
- 
- 	clk_prepare_enable(exynos->clk);
- 
-+	exynos->vdd33 = devm_regulator_get(dev, "vdd33");
-+	if (IS_ERR(exynos->vdd33)) {
-+		ret = PTR_ERR(exynos->vdd33);
-+		goto err2;
-+	}
-+	ret = regulator_enable(exynos->vdd33);
-+	if (ret) {
-+		dev_err(dev, "Failed to enable VDD33 supply\n");
-+		goto err2;
-+	}
-+
-+	exynos->vdd10 = devm_regulator_get(dev, "vdd10");
-+	if (IS_ERR(exynos->vdd10)) {
-+		ret = PTR_ERR(exynos->vdd10);
-+		goto err3;
-+	}
-+	ret = regulator_enable(exynos->vdd10);
-+	if (ret) {
-+		dev_err(dev, "Failed to enable VDD10 supply\n");
-+		goto err3;
-+	}
-+
- 	if (node) {
- 		ret = of_platform_populate(node, NULL, NULL, dev);
- 		if (ret) {
- 			dev_err(dev, "failed to add dwc3 core\n");
--			goto err2;
-+			goto err4;
- 		}
- 	} else {
- 		dev_err(dev, "no device node, failed to add dwc3 core\n");
- 		ret = -ENODEV;
--		goto err2;
-+		goto err4;
+ #define to_exynos_ehci(hcd) (struct exynos_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
+@@ -112,6 +115,28 @@ static int exynos_ehci_probe(struct platform_device *pdev)
+ 		exynos_ehci->otg = phy->otg;
  	}
  
- 	return 0;
- 
-+err4:
-+	regulator_disable(exynos->vdd10);
-+err3:
-+	regulator_disable(exynos->vdd33);
- err2:
- 	clk_disable_unprepare(clk);
- err1:
-@@ -174,6 +203,9 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
- 
- 	clk_disable_unprepare(exynos->clk);
- 
-+	regulator_disable(exynos->vdd33);
-+	regulator_disable(exynos->vdd10);
++	exynos_ehci->vdd33 = devm_regulator_get(&pdev->dev, "vdd33");
++	if (IS_ERR(exynos_ehci->vdd33)) {
++		err = PTR_ERR(exynos_ehci->vdd33);
++		goto fail_regulator1;
++	}
++	err = regulator_enable(exynos_ehci->vdd33);
++	if (err) {
++		dev_err(&pdev->dev, "Failed to enable VDD33 supply\n");
++		goto fail_regulator1;
++	}
 +
++	exynos_ehci->vdd10 = devm_regulator_get(&pdev->dev, "vdd10");
++	if (IS_ERR(exynos_ehci->vdd10)) {
++		err = PTR_ERR(exynos_ehci->vdd10);
++		goto fail_regulator2;
++	}
++	err = regulator_enable(exynos_ehci->vdd10);
++	if (err) {
++		dev_err(&pdev->dev, "Failed to enable VDD10 supply\n");
++		goto fail_regulator2;
++	}
++
+ skip_phy:
+ 
+ 	exynos_ehci->clk = devm_clk_get(&pdev->dev, "usbhost");
+@@ -178,6 +203,10 @@ fail_add_hcd:
+ fail_io:
+ 	clk_disable_unprepare(exynos_ehci->clk);
+ fail_clk:
++	regulator_disable(exynos_ehci->vdd10);
++fail_regulator2:
++	regulator_disable(exynos_ehci->vdd33);
++fail_regulator1:
+ 	usb_put_hcd(hcd);
+ 	return err;
+ }
+@@ -197,6 +226,9 @@ static int exynos_ehci_remove(struct platform_device *pdev)
+ 
+ 	clk_disable_unprepare(exynos_ehci->clk);
+ 
++	regulator_disable(exynos_ehci->vdd10);
++	regulator_disable(exynos_ehci->vdd33);
++
+ 	usb_put_hcd(hcd);
+ 
  	return 0;
+@@ -221,6 +253,9 @@ static int exynos_ehci_suspend(struct device *dev)
+ 
+ 	clk_disable_unprepare(exynos_ehci->clk);
+ 
++	regulator_disable(exynos_ehci->vdd10);
++	regulator_disable(exynos_ehci->vdd33);
++
+ 	return rc;
  }
  
-@@ -192,12 +224,27 @@ static int dwc3_exynos_suspend(struct device *dev)
- 
- 	clk_disable(exynos->clk);
- 
-+	regulator_disable(exynos->vdd33);
-+	regulator_disable(exynos->vdd10);
-+
- 	return 0;
- }
- 
- static int dwc3_exynos_resume(struct device *dev)
+@@ -228,6 +263,18 @@ static int exynos_ehci_resume(struct device *dev)
  {
- 	struct dwc3_exynos *exynos = dev_get_drvdata(dev);
+ 	struct usb_hcd *hcd = dev_get_drvdata(dev);
+ 	struct exynos_ehci_hcd *exynos_ehci = to_exynos_ehci(hcd);
 +	int ret;
 +
-+	ret = regulator_enable(exynos->vdd33);
++	ret = regulator_enable(exynos_ehci->vdd33);
 +	if (ret) {
 +		dev_err(dev, "Failed to enable VDD33 supply\n");
 +		return ret;
 +	}
-+	ret = regulator_enable(exynos->vdd10);
++	ret = regulator_enable(exynos_ehci->vdd10);
 +	if (ret) {
 +		dev_err(dev, "Failed to enable VDD10 supply\n");
 +		return ret;
 +	}
  
- 	clk_enable(exynos->clk);
+ 	clk_prepare_enable(exynos_ehci->clk);
  
 -- 
 1.7.10.4
