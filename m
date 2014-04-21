@@ -1,70 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145AbaDUTTy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 15:19:54 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60859 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891AbaDUTTw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 15:19:52 -0400
-Message-ID: <53556EB2.80503@ti.com>
-Date: Mon, 21 Apr 2014 15:17:06 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754213AbaDUTUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 15:20:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41398 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750891AbaDUTUa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 15:20:30 -0400
+From: Bandan Das <bsd@redhat.com>
+To: kvm@vger.kernel.org
+Cc: Paolo Bonzini <pbonzini@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
+Subject: [PATCH v2] KVM: x86: Check for host supported fields in shadow vmcs
+Date: Mon, 21 Apr 2014 15:20:14 -0400
+Message-ID: <jpgk3aiv6a9.fsf@nelium.bos.redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Strashko, Grygorii" <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        =?ISO-8859-1?Q?Gregory_Cl=E9ment?= 
-	<gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>
-Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and
- dma-coherent
-References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>	<20140419182528.414b9b2e@skate>	<53551E9D.9080107@ti.com> <20140421201911.10783191@skate>
-In-Reply-To: <20140421201911.10783191@skate>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 April 2014 02:19 PM, Thomas Petazzoni wrote:
-> Dear Santosh Shilimkar,
-> 
-> On Mon, 21 Apr 2014 09:35:25 -0400, Santosh Shilimkar wrote:
-> 
->>> In mach-mvebu, what we do is that we register a bus notifier on the
->>> platform bus, so that we can set our custom DMA operations for all
->>> platform devices in the system. Should this be done in a different way
->>> after your series?
->>>
->> Nope. Since you have a very custom SOC specific case, you can continue
->> what you are doing.
-> 
-> True, but as you said, the goal is to remove machine code. So instead
-> of having just a 'dma-coherent' property, shouldn't we have a
-> dma-method property, which could be dma-method = "coherent" or
-> dma-method = "marvell,io-coherent" and therefore allow the DT binding
-> to cover more use cases than just the default non-coherent and coherent
-> DMA operations?
-> 
-Please remember the infrastructure we are adding is not really for machines
-(sub arch's) but for architectures. I don't think its worth adding methods
-The whole reason of dma_ops being exported is take care of cases like yours
-so we are just fine with that. If we see more cases likes your, we can
-think about that.
 
-regards,
-Santosh
+We track shadow vmcs fields through two static lists,
+one for read only and another for r/w fields. However, with
+addition of new vmcs fields, not all fields may be supported on
+all hosts. If so, copy_vmcs12_to_shadow() trying to vmwrite on
+unsupported hosts will result in a vmwrite error. For example, commit
+36be0b9deb23161 introduced GUEST_BNDCFGS, which is not supported
+by all processors. Filter out host unsupported fields before
+letting guests use shadow vmcs
+
+Signed-off-by: Bandan Das <bsd@redhat.com>
+---
+v2:
+  - Just compress the original lists instead of creating new ones
+  - Change commit message slightly to reflect this change
+
+ arch/x86/kvm/vmx.c | 54 ++++++++++++++++++++++++++++++++++++++++++------------
+ 1 file changed, 42 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 7bed3e3..26a632f 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -503,7 +503,7 @@ static inline struct vcpu_vmx *to_vmx(struct kvm_vcpu *vcpu)
+ 				[number##_HIGH] = VMCS12_OFFSET(name)+4
+ 
+ 
+-static const unsigned long shadow_read_only_fields[] = {
++static unsigned long shadow_read_only_fields[] = {
+ 	/*
+ 	 * We do NOT shadow fields that are modified when L0
+ 	 * traps and emulates any vmx instruction (e.g. VMPTRLD,
+@@ -526,10 +526,10 @@ static const unsigned long shadow_read_only_fields[] = {
+ 	GUEST_LINEAR_ADDRESS,
+ 	GUEST_PHYSICAL_ADDRESS
+ };
+-static const int max_shadow_read_only_fields =
++static int max_shadow_read_only_fields =
+ 	ARRAY_SIZE(shadow_read_only_fields);
+ 
+-static const unsigned long shadow_read_write_fields[] = {
++static unsigned long shadow_read_write_fields[] = {
+ 	GUEST_RIP,
+ 	GUEST_RSP,
+ 	GUEST_CR0,
+@@ -558,7 +558,7 @@ static const unsigned long shadow_read_write_fields[] = {
+ 	HOST_FS_SELECTOR,
+ 	HOST_GS_SELECTOR
+ };
+-static const int max_shadow_read_write_fields =
++static int max_shadow_read_write_fields =
+ 	ARRAY_SIZE(shadow_read_write_fields);
+ 
+ static const unsigned short vmcs_field_to_offset_table[] = {
+@@ -3009,6 +3009,42 @@ static void free_kvm_area(void)
+ 	}
+ }
+ 
++static void init_vmcs_shadow_fields(void)
++{
++	int i, j;
++
++	/* No checks for read only fields yet */
++
++	for (i = j = 0; i < max_shadow_read_write_fields; i++) {
++
++		switch (shadow_read_write_fields[i]) {
++		case GUEST_BNDCFGS:
++			if (!vmx_mpx_supported())
++				continue;
++			break;
++		default:
++			break;
++		}
++
++		if (j < i)
++			shadow_read_write_fields[j] =
++				shadow_read_write_fields[i];
++		j++;
++	}
++	max_shadow_read_write_fields = j;
++
++	/* shadowed fields guest access without vmexit */
++	for (i = 0; i < max_shadow_read_write_fields; i++) {
++		clear_bit(shadow_read_write_fields[i],
++			  vmx_vmwrite_bitmap);
++		clear_bit(shadow_read_write_fields[i],
++			  vmx_vmread_bitmap);
++	}
++	for (i = 0; i < max_shadow_read_only_fields; i++)
++		clear_bit(shadow_read_only_fields[i],
++			  vmx_vmread_bitmap);
++}
++
+ static __init int alloc_kvm_area(void)
+ {
+ 	int cpu;
+@@ -3039,6 +3075,8 @@ static __init int hardware_setup(void)
+ 		enable_vpid = 0;
+ 	if (!cpu_has_vmx_shadow_vmcs())
+ 		enable_shadow_vmcs = 0;
++	if (enable_shadow_vmcs)
++		init_vmcs_shadow_fields();
+ 
+ 	if (!cpu_has_vmx_ept() ||
+ 	    !cpu_has_vmx_ept_4levels()) {
+@@ -8817,14 +8855,6 @@ static int __init vmx_init(void)
+ 
+ 	memset(vmx_vmread_bitmap, 0xff, PAGE_SIZE);
+ 	memset(vmx_vmwrite_bitmap, 0xff, PAGE_SIZE);
+-	/* shadowed read/write fields */
+-	for (i = 0; i < max_shadow_read_write_fields; i++) {
+-		clear_bit(shadow_read_write_fields[i], vmx_vmwrite_bitmap);
+-		clear_bit(shadow_read_write_fields[i], vmx_vmread_bitmap);
+-	}
+-	/* shadowed read only fields */
+-	for (i = 0; i < max_shadow_read_only_fields; i++)
+-		clear_bit(shadow_read_only_fields[i], vmx_vmread_bitmap);
+ 
+ 	/*
+ 	 * Allow direct access to the PC debug port (it is often used for I/O
+-- 
+1.8.3.1
 
