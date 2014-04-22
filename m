@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757514AbaDVQ3E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:29:04 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50357 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756944AbaDVQ25 convert rfc822-to-8bit (ORCPT
+	id S1757380AbaDVQaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:30:23 -0400
+Received: from host171.canaca.com ([67.55.55.225]:54644 "EHLO
+	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756188AbaDVQaV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:28:57 -0400
-Date: Tue, 22 Apr 2014 18:28:44 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Antoine =?UTF-8?B?VMOpbmFydA==?= 
-	<antoine.tenart@free-electrons.com>
-Cc: sebastian.hesselbarth@gmail.com, tj@kernel.org, zmxu@marvell.com,
-        jszhang@marvell.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        alexandre.belloni@free-electrons.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/6] ARM: berlin: add the AHCI node for the BG2Q
-Message-ID: <20140422182844.3f2eb558@skate>
-In-Reply-To: <1398181105-19714-4-git-send-email-antoine.tenart@free-electrons.com>
-References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1398181105-19714-4-git-send-email-antoine.tenart@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 Apr 2014 12:30:21 -0400
+Message-ID: <9d9a3af40f8a0da293e52610524674c8.squirrel@mungewell.org>
+In-Reply-To: <1398137612-9714-4-git-send-email-rusty@rustcorp.com.au>
+References: <1398137612-9714-1-git-send-email-rusty@rustcorp.com.au>
+    <1398137612-9714-4-git-send-email-rusty@rustcorp.com.au>
+Date: Tue, 22 Apr 2014 12:30:19 -0400
+Subject: Re: [PATCH 3/9] drivers/hid/hid-lg4ff.c: avoid world-writable sysfs
+ files.
+From: simon@mungewell.org
+To: "Rusty Russell" <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, "Rusty Russell" <rusty@rustcorp.com.au>,
+        "Simon Wood" <simon@mungewell.org>
+User-Agent: SquirrelMail/1.4.22
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host171.canaca.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - mungewell.org
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Antoine Ténart,
+> In line with practice for module parameters, we're adding a build-time
+> check that sysfs files aren't world-writable.
 
-On Tue, 22 Apr 2014 17:38:22 +0200, Antoine Ténart wrote:
+So this is the equivalent of 'chmod 774 ...' rather than 'chmod 777...'?
 
-> +		ahci: sata@e90000 {
-> +			compatible = "marvell,berlin-ahci";
-> +			reg = <0xe90000 0x10000>;
-> +			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
-> +			status = "disable";
+Yep I'm OK with that, however what it the recommended way to make sure
+that the end user is able to send changes to this /sys portal? I asked the
+same question before regarding the led class /sys interface, but never got
+any suggestions.
 
-Should be:
+Signed-off-by: Simon Wood <simon@mungewell.org>
 
-			status = "disabled";
 
-And ditto for patches 5 and 6.
-
-Thanks,
-
-Thomas
--- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
