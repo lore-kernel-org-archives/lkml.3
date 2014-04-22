@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932945AbaDVPBJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:01:09 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:40635 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932736AbaDVPBE (ORCPT
+	id S1756736AbaDVPA0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:00:26 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:46621 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656AbaDVPAS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:01:04 -0400
+	Tue, 22 Apr 2014 11:00:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140422142613.GA14535@infradead.org>
-References: <20140422142419.GD21121@dreric01-Precision-T1600>
-	<20140422142613.GA14535@infradead.org>
-Date: Tue, 22 Apr 2014 11:01:03 -0400
-X-Google-Sender-Auth: ceImxjvXx1XUCCBErN63BJdGkhY
-Message-ID: <CA+5PVA7TFXdK-KjbwUtqMPF6=Ot1yhKycg5naV6N_gALWVN7cg@mail.gmail.com>
-Subject: Re: [PATCH] Export irq tracepoints for use by kernel modules
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Drew Richardson <drew.richardson@arm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Ben Greear <greearb@candelatech.com>,
-        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, mathieu.desnoyers@efficios.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1397544101-18135-3-git-send-email-wens@csie.org>
+References: <1397544101-18135-1-git-send-email-wens@csie.org>
+	<1397544101-18135-3-git-send-email-wens@csie.org>
+Date: Tue, 22 Apr 2014 17:00:17 +0200
+Message-ID: <CACRpkdZ+3dnhoj1TS4KSVUP8iFHsjjwop-FG2Nf07YtH6aSO_Q@mail.gmail.com>
+Subject: Re: [PATCH 2/7] gpiolib: Support purely name based gpiod lookup in
+ device trees
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Chen-Yu Tsai <wens@csie.org>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 10:26 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Tue, Apr 22, 2014 at 07:24:20AM -0700, Drew Richardson wrote:
->> After commit de7b2973903c6cc50b31ee5682a69b2219b9919d ("tracepoint:
->> Use struct pointer instead of name hash for reg/unreg tracepoints"),
->> any tracepoints used in a kernel module must be exported.
+On Tue, Apr 15, 2014 at 8:41 AM, Chen-Yu Tsai <wens@csie.org> wrote:
+
+> This patch enables gpio-names based gpiod lookup in device tree usage,
+> which ignores the index passed to gpiod_get_index. If this fails, fall
+> back to the original function-index ("con_id"-gpios) based lookup scheme,
+> for backward compatibility and any drivers needing more than one GPIO
+> for any function.
 >
-> How does this matter given that there aren't any modular users?
+> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
 
-We had a bug report about this breaking systemtap type usage[1].  In
-there, Matthieu suggested that the new for_each_kernel_tracepoint
-interface be used.
+This looks a bit scary and I cannot claim to realize the entire semantic
+effect of this patch, but if it's the way to go then OK.
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
-Drew, it would have been proper to CC the author of the change you're
-referencing on all of your patches to export these symbols.
+Shall I just apply this to the GPIO tree or are you carrying it along with
+the other stuff?
 
-josh
-
-[1] https://bugzilla.redhat.com/show_bug.cgi?id=1087623
+Yours,
+Linus Walleij
