@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155AbaDVVCG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:02:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36404 "EHLO
+	id S1757976AbaDVVCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:02:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36390 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752280AbaDVUV2 (ORCPT
+	with ESMTP id S1751417AbaDVUVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:21:28 -0400
+	Tue, 22 Apr 2014 16:21:21 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kinglong Mee <kinglongmee@gmail.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 100/133] NFSD: Traverse unconfirmed client through hash-table
-Date: Tue, 22 Apr 2014 13:13:58 -0700
-Message-Id: <1398197671-12786-101-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 031/133] matroxfb: restore the registers M_ACCESS and M_PITCH
+Date: Tue, 22 Apr 2014 13:12:49 -0700
+Message-Id: <1398197671-12786-32-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,187 +28,161 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kinglong Mee <kinglongmee@gmail.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 2b9056359889c78ea5decb5b654a512c2e8a945c upstream.
+commit a772d4736641ec1b421ad965e13457c17379fc86 upstream.
 
-When stopping nfsd, I got BUG messages, and soft lockup messages,
-The problem is cuased by double rb_erase() in nfs4_state_destroy_net()
-and destroy_client().
+When X11 is running and the user switches back to console, the card
+modifies the content of registers M_MACCESS and M_PITCH in periodic
+intervals.
 
-This patch just let nfsd traversing unconfirmed client through
-hash-table instead of rbtree.
+This patch fixes it by restoring the content of these registers before
+issuing any accelerator command.
 
-[ 2325.021995] BUG: unable to handle kernel NULL pointer dereference at
-          (null)
-[ 2325.022809] IP: [<ffffffff8133c18c>] rb_erase+0x14c/0x390
-[ 2325.022982] PGD 7a91b067 PUD 7a33d067 PMD 0
-[ 2325.022982] Oops: 0000 [#1] SMP DEBUG_PAGEALLOC
-[ 2325.022982] Modules linked in: nfsd(OF) cfg80211 rfkill bridge stp
-llc snd_intel8x0 snd_ac97_codec ac97_bus auth_rpcgss nfs_acl serio_raw
-e1000 i2c_piix4 ppdev snd_pcm snd_timer lockd pcspkr joydev parport_pc
-snd parport i2c_core soundcore microcode sunrpc ata_generic pata_acpi
-[last unloaded: nfsd]
-[ 2325.022982] CPU: 1 PID: 2123 Comm: nfsd Tainted: GF          O
-3.14.0-rc8+ #2
-[ 2325.022982] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS
-VirtualBox 12/01/2006
-[ 2325.022982] task: ffff88007b384800 ti: ffff8800797f6000 task.ti:
-ffff8800797f6000
-[ 2325.022982] RIP: 0010:[<ffffffff8133c18c>]  [<ffffffff8133c18c>]
-rb_erase+0x14c/0x390
-[ 2325.022982] RSP: 0018:ffff8800797f7d98  EFLAGS: 00010246
-[ 2325.022982] RAX: ffff880079c1f010 RBX: ffff880079f4c828 RCX:
-0000000000000000
-[ 2325.022982] RDX: 0000000000000000 RSI: ffff880079bcb070 RDI:
-ffff880079f4c810
-[ 2325.022982] RBP: ffff8800797f7d98 R08: 0000000000000000 R09:
-ffff88007964fc70
-[ 2325.022982] R10: 0000000000000000 R11: 0000000000000400 R12:
-ffff880079f4c800
-[ 2325.022982] R13: ffff880079bcb000 R14: ffff8800797f7da8 R15:
-ffff880079f4c860
-[ 2325.022982] FS:  0000000000000000(0000) GS:ffff88007f900000(0000)
-knlGS:0000000000000000
-[ 2325.022982] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[ 2325.022982] CR2: 0000000000000000 CR3: 000000007a3ef000 CR4:
-00000000000006e0
-[ 2325.022982] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[ 2325.022982] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7:
-0000000000000400
-[ 2325.022982] Stack:
-[ 2325.022982]  ffff8800797f7de0 ffffffffa0191c6e ffff8800797f7da8
-ffff8800797f7da8
-[ 2325.022982]  ffff880079f4c810 ffff880079bcb000 ffffffff81cc26c0
-ffff880079c1f010
-[ 2325.022982]  ffff880079bcb070 ffff8800797f7e28 ffffffffa01977f2
-ffff8800797f7df0
-[ 2325.022982] Call Trace:
-[ 2325.022982]  [<ffffffffa0191c6e>] destroy_client+0x32e/0x3b0 [nfsd]
-[ 2325.022982]  [<ffffffffa01977f2>] nfs4_state_shutdown_net+0x1a2/0x220
-[nfsd]
-[ 2325.022982]  [<ffffffffa01700b8>] nfsd_shutdown_net+0x38/0x70 [nfsd]
-[ 2325.022982]  [<ffffffffa017013e>] nfsd_last_thread+0x4e/0x80 [nfsd]
-[ 2325.022982]  [<ffffffffa001f1eb>] svc_shutdown_net+0x2b/0x30 [sunrpc]
-[ 2325.022982]  [<ffffffffa017064b>] nfsd_destroy+0x5b/0x80 [nfsd]
-[ 2325.022982]  [<ffffffffa0170773>] nfsd+0x103/0x130 [nfsd]
-[ 2325.022982]  [<ffffffffa0170670>] ? nfsd_destroy+0x80/0x80 [nfsd]
-[ 2325.022982]  [<ffffffff810a8232>] kthread+0xd2/0xf0
-[ 2325.022982]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
-[ 2325.022982]  [<ffffffff816c493c>] ret_from_fork+0x7c/0xb0
-[ 2325.022982]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
-[ 2325.022982] Code: 48 83 e1 fc 48 89 10 0f 84 02 01 00 00 48 3b 41 10
-0f 84 08 01 00 00 48 89 51 08 48 89 fa e9 74 ff ff ff 0f 1f 40 00 48 8b
-50 10 <f6> 02 01 0f 84 93 00 00 00 48 8b 7a 10 48 85 ff 74 05 f6 07 01
-[ 2325.022982] RIP  [<ffffffff8133c18c>] rb_erase+0x14c/0x390
-[ 2325.022982]  RSP <ffff8800797f7d98>
-[ 2325.022982] CR2: 0000000000000000
-[ 2325.022982] ---[ end trace 28c27ed011655e57 ]---
-
-[  228.064071] BUG: soft lockup - CPU#0 stuck for 22s! [nfsd:558]
-[  228.064428] Modules linked in: ip6t_rpfilter ip6t_REJECT cfg80211
-xt_conntrack rfkill ebtable_nat ebtable_broute bridge stp llc
-ebtable_filter ebtables ip6table_nat nf_conntrack_ipv6 nf_defrag_ipv6
-nf_nat_ipv6 ip6table_mangle ip6table_security ip6table_raw
-ip6table_filter ip6_tables iptable_nat nf_conntrack_ipv4 nf_defrag_ipv4
-nf_nat_ipv4 nf_nat nf_conntrack iptable_mangle iptable_security
-iptable_raw nfsd(OF) auth_rpcgss nfs_acl lockd snd_intel8x0
-snd_ac97_codec ac97_bus joydev snd_pcm snd_timer e1000 sunrpc snd ppdev
-parport_pc serio_raw pcspkr i2c_piix4 microcode parport soundcore
-i2c_core ata_generic pata_acpi
-[  228.064539] CPU: 0 PID: 558 Comm: nfsd Tainted: GF          O
-3.14.0-rc8+ #2
-[  228.064539] Hardware name: innotek GmbH VirtualBox/VirtualBox, BIOS
-VirtualBox 12/01/2006
-[  228.064539] task: ffff880076adec00 ti: ffff880074616000 task.ti:
-ffff880074616000
-[  228.064539] RIP: 0010:[<ffffffff8133ba17>]  [<ffffffff8133ba17>]
-rb_next+0x27/0x50
-[  228.064539] RSP: 0018:ffff880074617de0  EFLAGS: 00000282
-[  228.064539] RAX: ffff880074478010 RBX: ffff88007446f860 RCX:
-0000000000000014
-[  228.064539] RDX: ffff880074478010 RSI: 0000000000000000 RDI:
-ffff880074478010
-[  228.064539] RBP: ffff880074617de0 R08: 0000000000000000 R09:
-0000000000000012
-[  228.064539] R10: 0000000000000001 R11: ffffffffffffffec R12:
-ffffea0001d11a00
-[  228.064539] R13: ffff88007f401400 R14: ffff88007446f800 R15:
-ffff880074617d50
-[  228.064539] FS:  0000000000000000(0000) GS:ffff88007f800000(0000)
-knlGS:0000000000000000
-[  228.064539] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  228.064539] CR2: 00007fe9ac6ec000 CR3: 000000007a5d6000 CR4:
-00000000000006f0
-[  228.064539] DR0: 0000000000000000 DR1: 0000000000000000 DR2:
-0000000000000000
-[  228.064539] DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7:
-0000000000000400
-[  228.064539] Stack:
-[  228.064539]  ffff880074617e28 ffffffffa01ab7db ffff880074617df0
-ffff880074617df0
-[  228.064539]  ffff880079273000 ffffffff81cc26c0 ffffffff81cc26c0
-0000000000000000
-[  228.064539]  0000000000000000 ffff880074617e48 ffffffffa01840b8
-ffffffff81cc26c0
-[  228.064539] Call Trace:
-[  228.064539]  [<ffffffffa01ab7db>] nfs4_state_shutdown_net+0x18b/0x220
-[nfsd]
-[  228.064539]  [<ffffffffa01840b8>] nfsd_shutdown_net+0x38/0x70 [nfsd]
-[  228.064539]  [<ffffffffa018413e>] nfsd_last_thread+0x4e/0x80 [nfsd]
-[  228.064539]  [<ffffffffa00aa1eb>] svc_shutdown_net+0x2b/0x30 [sunrpc]
-[  228.064539]  [<ffffffffa018464b>] nfsd_destroy+0x5b/0x80 [nfsd]
-[  228.064539]  [<ffffffffa0184773>] nfsd+0x103/0x130 [nfsd]
-[  228.064539]  [<ffffffffa0184670>] ? nfsd_destroy+0x80/0x80 [nfsd]
-[  228.064539]  [<ffffffff810a8232>] kthread+0xd2/0xf0
-[  228.064539]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
-[  228.064539]  [<ffffffff816c493c>] ret_from_fork+0x7c/0xb0
-[  228.064539]  [<ffffffff810a8160>] ? insert_kthread_work+0x40/0x40
-[  228.064539] Code: 1f 44 00 00 55 48 8b 17 48 89 e5 48 39 d7 74 3b 48
-8b 47 08 48 85 c0 75 0e eb 25 66 0f 1f 84 00 00 00 00 00 48 89 d0 48 8b
-50 10 <48> 85 d2 75 f4 5d c3 66 90 48 3b 78 08 75 f6 48 8b 10 48 89 c7
-
-Fixes: ac55fdc408039 (nfsd: move the confirmed and unconfirmed hlists...)
-Signed-off-by: Kinglong Mee <kinglongmee@gmail.com>
-Reviewed-by: Jeff Layton <jlayton@redhat.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfsd/nfs4state.c | 13 +++++--------
- 1 file changed, 5 insertions(+), 8 deletions(-)
+ drivers/video/matrox/matroxfb_accel.c | 38 ++++++++++++++++++++++++++---------
+ drivers/video/matrox/matroxfb_base.h  |  2 ++
+ 2 files changed, 30 insertions(+), 10 deletions(-)
 
-diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-index 53a7c64..1e7527a 100644
---- a/fs/nfsd/nfs4state.c
-+++ b/fs/nfsd/nfs4state.c
-@@ -4877,7 +4877,6 @@ nfs4_state_destroy_net(struct net *net)
- 	int i;
- 	struct nfs4_client *clp = NULL;
- 	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
--	struct rb_node *node, *tmp;
+diff --git a/drivers/video/matrox/matroxfb_accel.c b/drivers/video/matrox/matroxfb_accel.c
+index 8335a6f..0d5cb85 100644
+--- a/drivers/video/matrox/matroxfb_accel.c
++++ b/drivers/video/matrox/matroxfb_accel.c
+@@ -192,10 +192,18 @@ void matrox_cfbX_init(struct matrox_fb_info *minfo)
+ 	minfo->accel.m_dwg_rect = M_DWG_TRAP | M_DWG_SOLID | M_DWG_ARZERO | M_DWG_SGNZERO | M_DWG_SHIFTZERO;
+ 	if (isMilleniumII(minfo)) minfo->accel.m_dwg_rect |= M_DWG_TRANSC;
+ 	minfo->accel.m_opmode = mopmode;
++	minfo->accel.m_access = maccess;
++	minfo->accel.m_pitch = mpitch;
+ }
  
- 	for (i = 0; i < CLIENT_HASH_SIZE; i++) {
- 		while (!list_empty(&nn->conf_id_hashtbl[i])) {
-@@ -4886,13 +4885,11 @@ nfs4_state_destroy_net(struct net *net)
- 		}
+ EXPORT_SYMBOL(matrox_cfbX_init);
+ 
++static void matrox_accel_restore_maccess(struct matrox_fb_info *minfo)
++{
++	mga_outl(M_MACCESS, minfo->accel.m_access);
++	mga_outl(M_PITCH, minfo->accel.m_pitch);
++}
++
+ static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
+ 			       int sx, int dy, int dx, int height, int width)
+ {
+@@ -207,7 +215,8 @@ static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
+ 	CRITBEGIN
+ 
+ 	if ((dy < sy) || ((dy == sy) && (dx <= sx))) {
+-		mga_fifo(2);
++		mga_fifo(4);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_SGNZERO |
+ 			 M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_AR5, vxres);
+@@ -215,7 +224,8 @@ static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
+ 		start = sy*vxres+sx+curr_ydstorg(minfo);
+ 		end = start+width;
+ 	} else {
+-		mga_fifo(3);
++		mga_fifo(5);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_SGN, 5);
+ 		mga_outl(M_AR5, -vxres);
+@@ -224,7 +234,8 @@ static void matrox_accel_bmove(struct matrox_fb_info *minfo, int vxres, int sy,
+ 		start = end+width;
+ 		dy += height-1;
  	}
+-	mga_fifo(4);
++	mga_fifo(6);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_outl(M_AR0, end);
+ 	mga_outl(M_AR3, start);
+ 	mga_outl(M_FXBNDRY, ((dx+width)<<16) | dx);
+@@ -246,7 +257,8 @@ static void matrox_accel_bmove_lin(struct matrox_fb_info *minfo, int vxres,
+ 	CRITBEGIN
  
--	node = rb_first(&nn->unconf_name_tree);
--	while (node != NULL) {
--		tmp = node;
--		node = rb_next(tmp);
--		clp = rb_entry(tmp, struct nfs4_client, cl_namenode);
--		rb_erase(tmp, &nn->unconf_name_tree);
--		destroy_client(clp);
-+	for (i = 0; i < CLIENT_HASH_SIZE; i++) {
-+		while (!list_empty(&nn->unconf_id_hashtbl[i])) {
-+			clp = list_entry(nn->unconf_id_hashtbl[i].next, struct nfs4_client, cl_idhash);
-+			destroy_client(clp);
-+		}
+ 	if ((dy < sy) || ((dy == sy) && (dx <= sx))) {
+-		mga_fifo(2);
++		mga_fifo(4);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_SGNZERO |
+ 			M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_AR5, vxres);
+@@ -254,7 +266,8 @@ static void matrox_accel_bmove_lin(struct matrox_fb_info *minfo, int vxres,
+ 		start = sy*vxres+sx+curr_ydstorg(minfo);
+ 		end = start+width;
+ 	} else {
+-		mga_fifo(3);
++		mga_fifo(5);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, M_DWG_BITBLT | M_DWG_SHIFTZERO | M_DWG_BFCOL | M_DWG_REPLACE);
+ 		mga_outl(M_SGN, 5);
+ 		mga_outl(M_AR5, -vxres);
+@@ -263,7 +276,8 @@ static void matrox_accel_bmove_lin(struct matrox_fb_info *minfo, int vxres,
+ 		start = end+width;
+ 		dy += height-1;
  	}
+-	mga_fifo(5);
++	mga_fifo(7);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_outl(M_AR0, end);
+ 	mga_outl(M_AR3, start);
+ 	mga_outl(M_FXBNDRY, ((dx+width)<<16) | dx);
+@@ -298,7 +312,8 @@ static void matroxfb_accel_clear(struct matrox_fb_info *minfo, u_int32_t color,
  
- 	kfree(nn->sessionid_hashtbl);
+ 	CRITBEGIN
+ 
+-	mga_fifo(5);
++	mga_fifo(7);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_outl(M_DWGCTL, minfo->accel.m_dwg_rect | M_DWG_REPLACE);
+ 	mga_outl(M_FCOL, color);
+ 	mga_outl(M_FXBNDRY, ((sx + width) << 16) | sx);
+@@ -341,7 +356,8 @@ static void matroxfb_cfb4_clear(struct matrox_fb_info *minfo, u_int32_t bgx,
+ 	width >>= 1;
+ 	sx >>= 1;
+ 	if (width) {
+-		mga_fifo(5);
++		mga_fifo(7);
++		matrox_accel_restore_maccess(minfo);
+ 		mga_outl(M_DWGCTL, minfo->accel.m_dwg_rect | M_DWG_REPLACE2);
+ 		mga_outl(M_FCOL, bgx);
+ 		mga_outl(M_FXBNDRY, ((sx + width) << 16) | sx);
+@@ -415,7 +431,8 @@ static void matroxfb_1bpp_imageblit(struct matrox_fb_info *minfo, u_int32_t fgx,
+ 
+ 	CRITBEGIN
+ 
+-	mga_fifo(3);
++	mga_fifo(5);
++	matrox_accel_restore_maccess(minfo);
+ 	if (easy)
+ 		mga_outl(M_DWGCTL, M_DWG_ILOAD | M_DWG_SGNZERO | M_DWG_SHIFTZERO | M_DWG_BMONOWF | M_DWG_LINEAR | M_DWG_REPLACE);
+ 	else
+@@ -425,7 +442,8 @@ static void matroxfb_1bpp_imageblit(struct matrox_fb_info *minfo, u_int32_t fgx,
+ 	fxbndry = ((xx + width - 1) << 16) | xx;
+ 	mmio = minfo->mmio.vbase;
+ 
+-	mga_fifo(6);
++	mga_fifo(8);
++	matrox_accel_restore_maccess(minfo);
+ 	mga_writel(mmio, M_FXBNDRY, fxbndry);
+ 	mga_writel(mmio, M_AR0, ar0);
+ 	mga_writel(mmio, M_AR3, 0);
+diff --git a/drivers/video/matrox/matroxfb_base.h b/drivers/video/matrox/matroxfb_base.h
+index 11ed57b..556d96c 100644
+--- a/drivers/video/matrox/matroxfb_base.h
++++ b/drivers/video/matrox/matroxfb_base.h
+@@ -307,6 +307,8 @@ struct matrox_accel_data {
+ #endif
+ 	u_int32_t	m_dwg_rect;
+ 	u_int32_t	m_opmode;
++	u_int32_t	m_access;
++	u_int32_t	m_pitch;
+ };
+ 
+ struct v4l2_queryctrl;
 -- 
 1.9.1
 
