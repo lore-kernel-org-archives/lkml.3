@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025AbaDVVSs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:18:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36204 "EHLO
+	id S1757362AbaDVUPY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:15:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36095 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757386AbaDVUP2 (ORCPT
+	with ESMTP id S1756756AbaDVUPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:15:28 -0400
+	Tue, 22 Apr 2014 16:15:07 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Sabrina Dubroca <sd@queasysnail.net>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 122/133] Skip intel_crt_init for Dell XPS 8700
-Date: Tue, 22 Apr 2014 13:14:20 -0700
-Message-Id: <1398197671-12786-123-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 005/133] ipv6: don't set DST_NOCOUNT for remotely added routes
+Date: Tue, 22 Apr 2014 13:12:23 -0700
+Message-Id: <1398197671-12786-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,40 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Giacomo Comes <comes@naic.edu>
+From: Sabrina Dubroca <sd@queasysnail.net>
 
-commit 10b6ee4a87811a110cb01eaca01eb04da6801baf upstream.
+[ Upstream commit c88507fbad8055297c1d1e21e599f46960cbee39 ]
 
-The Dell XPS 8700 has a onboard Display port and HDMI port and no VGA port.
-The call intel_crt_init freeze the machine, so skip such call.
+DST_NOCOUNT should only be used if an authorized user adds routes
+locally. In case of routes which are added on behalf of router
+advertisments this flag must not get used as it allows an unlimited
+number of routes getting added remotely.
 
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=73559
-Signed-off-by: Giacomo Comes <comes at naic.edu>
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_crt.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ net/ipv6/route.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_crt.c b/drivers/gpu/drm/i915/intel_crt.c
-index 8ed7c30..d384064 100644
---- a/drivers/gpu/drm/i915/intel_crt.c
-+++ b/drivers/gpu/drm/i915/intel_crt.c
-@@ -714,6 +714,14 @@ static const struct dmi_system_id intel_no_crt[] = {
- 			DMI_MATCH(DMI_PRODUCT_NAME, "ZGB"),
- 		},
- 	},
-+	{
-+		.callback = intel_no_crt_dmi_callback,
-+		.ident = "DELL XPS 8700",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Inc."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "XPS 8700"),
-+		},
-+	},
- 	{ }
- };
+diff --git a/net/ipv6/route.c b/net/ipv6/route.c
+index d8ba7c5..35cc19f 100644
+--- a/net/ipv6/route.c
++++ b/net/ipv6/route.c
+@@ -1442,7 +1442,7 @@ int ip6_route_add(struct fib6_config *cfg)
+ 	if (!table)
+ 		goto out;
  
+-	rt = ip6_dst_alloc(net, NULL, DST_NOCOUNT, table);
++	rt = ip6_dst_alloc(net, NULL, (cfg->fc_flags & RTF_ADDRCONF) ? 0 : DST_NOCOUNT, table);
+ 
+ 	if (!rt) {
+ 		err = -ENOMEM;
 -- 
 1.9.1
 
