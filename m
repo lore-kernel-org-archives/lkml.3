@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303AbaDVUwu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:52:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36523 "EHLO
+	id S1758092AbaDVUx2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:53:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36509 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756061AbaDVUXP (ORCPT
+	with ESMTP id S1757975AbaDVUXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:23:15 -0400
+	Tue, 22 Apr 2014 16:23:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 054/133] jffs2: remove from wait queue after schedule()
-Date: Tue, 22 Apr 2014 13:13:12 -0700
-Message-Id: <1398197671-12786-55-git-send-email-kamal@canonical.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 074/133] mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
+Date: Tue, 22 Apr 2014 13:13:32 -0700
+Message-Id: <1398197671-12786-75-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -30,37 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 3ead9578443b66ddb3d50ed4f53af8a0c0298ec5 upstream.
+commit 65aba1e04916d72b30c028730a1e31860c225412 upstream.
 
-@wait is a local variable, so if we don't remove it from the wait queue
-list, later wake_up() may end up accessing invalid memory.
+During probe the sec-core driver allocates dummy I2C device for RTC with
+i2c_new_dummy() but return value is not checked. In case of error
+(i2c_new_device(): memory allocation failure or I2C address cannot be
+used) this function returns NULL which is later used by
+devm_regmap_init_i2c() or i2c_unregister_device().
 
-This was spotted by eyes.
+If i2c_new_dummy() fails for RTC device, fail also the probe for main
+MFD driver.
 
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/jffs2/nodemgmt.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/mfd/sec-core.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/fs/jffs2/nodemgmt.c b/fs/jffs2/nodemgmt.c
-index 0331072..bbae5b1 100644
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -179,6 +179,7 @@ int jffs2_reserve_space(struct jffs2_sb_info *c, uint32_t minsize,
- 					spin_unlock(&c->erase_completion_lock);
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 49d361a..fe4038f 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -129,6 +129,10 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 	}
  
- 					schedule();
-+					remove_wait_queue(&c->erase_wait, &wait);
- 				} else
- 					spin_unlock(&c->erase_completion_lock);
- 			} else if (ret)
+ 	sec_pmic->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
++	if (!sec_pmic->rtc) {
++		dev_err(&i2c->dev, "Failed to allocate I2C for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(sec_pmic->rtc, sec_pmic);
+ 
+ 	if (pdata && pdata->cfg_pmic_irq)
 -- 
 1.9.1
 
