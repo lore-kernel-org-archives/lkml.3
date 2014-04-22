@@ -1,95 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394AbaDVB4X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 21:56:23 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:49648 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287AbaDVB4U (ORCPT
+	id S1753428AbaDVB6u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 21:58:50 -0400
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:45577 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267AbaDVB6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 21:56:20 -0400
-Date: Mon, 21 Apr 2014 18:56:14 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
-Subject: Re: [rcu] 10a94227ba2: -2.0% will-it-scale.per_process_ops
-Message-ID: <20140422015614.GA4496@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140419082622.GA29303@localhost>
+	Mon, 21 Apr 2014 21:58:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140419082622.GA29303@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042201-8236-0000-0000-000001B23097
+In-Reply-To: <CAKb7Uvg4kOfsE0gd4zLcwjShc4eVgVKA7zQM2r1aeatOybm8NQ@mail.gmail.com>
+References: <1398060142-7937-1-git-send-email-acourbot@nvidia.com>
+	<1398060142-7937-10-git-send-email-acourbot@nvidia.com>
+	<CAKb7Uvg4kOfsE0gd4zLcwjShc4eVgVKA7zQM2r1aeatOybm8NQ@mail.gmail.com>
+Date: Tue, 22 Apr 2014 11:58:48 +1000
+Message-ID: <CACAvsv4Dzx8DVbR+QVWFtw8h8ktey8OdiPA4bd8Xqmhvi5Vv8Q@mail.gmail.com>
+Subject: Re: [Nouveau] [PATCH v2 09/10] drm/nouveau: support GK20A in nouveau_accel_init()
+From: Ben Skeggs <skeggsb@gmail.com>
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+Cc: Alexandre Courbot <acourbot@nvidia.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 04:26:22PM +0800, Fengguang Wu wrote:
-> Paul,
-> 
-> FYI, we noticed the below changes on
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git next.2014.04.16b
-> commit 10a94227ba229f1b05672754dc318a8fe7982c95 ("rcu: Update cpu_needs_another_gp() for futures from non-NOCB CPUs")
-> 
-> test case: nhm4/micro/will-it-scale/lseek1
-> 
-> 11ba5ab363b9359  10a94227ba229f1b05672754d  
-> ---------------  -------------------------  
->   11210675 ~ 0%      -2.0%   10985451 ~ 0%  TOTAL will-it-scale.per_process_ops
->       1.24 ~ 5%     -33.4%       0.83 ~ 5%  TOTAL perf-profile.cpu-cycles.trace_hardirqs_off_caller.lseek64
->       3.88 ~ 2%     +49.0%       5.79 ~ 0%  TOTAL perf-profile.cpu-cycles.trace_hardirqs_on_thunk.lseek64
->        295 ~16%     +27.0%        375 ~ 8%  TOTAL cpuidle.C1E-NHM.usage
->      45061 ~ 2%     +16.7%      52590 ~ 2%  TOTAL cpuidle.C6-NHM.usage
->       1.21 ~ 4%      +5.8%       1.28 ~ 4%  TOTAL perf-profile.cpu-cycles.shmem_file_llseek.sys_lseek.system_call_fastpath.lseek64
->       4206 ~ 1%     -78.6%        900 ~ 8%  TOTAL interrupts.IWI
->      14303 ~ 1%     +26.7%      18120 ~ 1%  TOTAL interrupts.0:IO-APIC-edge.timer
->       3228 ~ 4%     -17.2%       2672 ~ 6%  TOTAL interrupts.RES
->        182 ~ 2%      -8.1%        167 ~ 3%  TOTAL time.user_time
->        235 ~ 2%      +6.2%        250 ~ 2%  TOTAL time.system_time
->     379471 ~ 0%      +1.2%     384127 ~ 0%  TOTAL interrupts.LOC
-> 
-> Legend:
-> 	~XX%    - stddev percent
-> 	[+-]XX% - change percent
-> 
-> It does effectively eliminate interrupts.IWI:
-> 
->                                    interrupts.IWI
-> 
->    4500 ++-*-----*-------*--------------------------------------------------+
->         |..   *.  +  .*.      .*..*.  .*..*..*..          .*..*..*..*.*..*..*
->    4000 *+         *.       *.      *.          *.. .*..*.                  |
->    3500 ++                                         *                        |
->         |                                                                   |
->    3000 ++                                                                  |
->    2500 ++                                                                  |
->         |                                                                   |
->    2000 ++                                                                  |
->    1500 ++                                                                  |
->         |                                                                   |
->    1000 ++                                              O  O  O  O    O  O  O
->     500 ++                                                          O       |
->         |                                                                   |
->       0 O+-O--O--O-O--O--O--O--O--O-O--O--O--O--O--O-O----------------------+
-> 
-> 
-> 	[*] bisect-good sample
-> 	[O] bisect-bad  sample
+On Tue, Apr 22, 2014 at 4:07 AM, Ilia Mirkin <imirkin@alum.mit.edu> wrote:
+> On Mon, Apr 21, 2014 at 2:02 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> Skip the creation of a software channel for GK20A as software methods
+>> are not yet supported.
+>
+> How is GK20A different from a nvc0+ card that lacks PDISPLAY (like all
+> the 3D Controller ones, and I guess even some that come up as VGA
+> controller in PCI but don't have any outputs in their VBIOS)? i.e.
+> what's wrong with just doing the same thing that GK1xx does? Note that
+> there are sw methods that don't deal with display as well.
+The mp_control() methods are the only ones I see, and, in my opinion,
+they should really have been implemented using reserved methods on a
+graphics class, and *not* in a purely software object..  If we need
+them on GK20A too, we should reimplement them in gr, and bump the
+minor version number so userspace knows.
 
-OK, so we get rid of interrupts.IWI (not sure what those are), and
-we also seem to increase the idle time (cpuidle.C1E-NHM.usage and
-cpuidle.C6-NHM.usage), which also seem like good things.  The overall
-benchmark number looks to get a bit worse, though.  Not sure why lseek()
-would incur more hardirqs, but also unsure what the units are (3.88 of
-what exactly?).  Not sure why there would be more timer interrutpts,
-unless my interpretation of the cpuidle stats is backwards, in which
-case it would be a natural consequence of there being less idle time.
+Ben.
 
-Any of this speculation at all relevant?  ;-)
-
-							Thanx, Paul
-
+>
+>   -ilia
+>
+>>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> ---
+>>  drivers/gpu/drm/nouveau/nouveau_drm.c | 5 +++++
+>>  1 file changed, 5 insertions(+)
+>>
+>> diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
+>> index ddd83756b9a2..5b46148ffd32 100644
+>> --- a/drivers/gpu/drm/nouveau/nouveau_drm.c
+>> +++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
+>> @@ -208,6 +208,10 @@ nouveau_accel_init(struct nouveau_drm *drm)
+>>                 return;
+>>         }
+>>
+>> +       /* Need to figure out how to handle sw for gk20a */
+>> +       if (device->chipset == 0xea)
+>> +               goto skip_sw_init;
+>> +
+>>         ret = nouveau_object_new(nv_object(drm), NVDRM_CHAN, NVDRM_NVSW,
+>>                                  nouveau_abi16_swclass(drm), NULL, 0, &object);
+>>         if (ret == 0) {
+>> @@ -234,6 +238,7 @@ nouveau_accel_init(struct nouveau_drm *drm)
+>>                 return;
+>>         }
+>>
+>> +skip_sw_init:
+>>         if (device->card_type < NV_C0) {
+>>                 ret = nouveau_gpuobj_new(drm->device, NULL, 32, 0, 0,
+>>                                         &drm->notify);
+>> --
+>> 1.9.2
+>>
+>> _______________________________________________
+>> Nouveau mailing list
+>> Nouveau@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/nouveau
+> _______________________________________________
+> Nouveau mailing list
+> Nouveau@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/nouveau
