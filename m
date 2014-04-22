@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033AbaDVNiQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:38:16 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48795 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751229AbaDVNiM (ORCPT
+	id S1756057AbaDVNip (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:38:45 -0400
+Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:33932 "EHLO
+	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751229AbaDVNim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:38:12 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        =?UTF-8?q?Emilio=20L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, Chen-Yu Tsai <wens@csie.org>,
-        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH] ARM: sunxi: dt: list all pinctrl compatible strings
-Date: Tue, 22 Apr 2014 15:38:06 +0200
-Message-Id: <1398173886-9376-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 22 Apr 2014 09:38:42 -0400
+Date: Tue, 22 Apr 2014 08:38:38 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@gentwo.org
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Subject: Re: vmstat: On demand vmstat workers V3
+In-Reply-To: <CAOh2x==yrBdFDcObdz+La0y=jDERj=sxOBMvU-Kk6eGEvvwZQw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1404220838090.4299@gentwo.org>
+References: <000001417f6834f1-32b83f22-8bde-4b9e-b591-bc31329660e4-000000@email.amazonses.com> <CAOh2x==yrBdFDcObdz+La0y=jDERj=sxOBMvU-Kk6eGEvvwZQw@mail.gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-List all sunxi pinctrl compatible strings in order to be able to grep for
-those values.
+On Tue, 22 Apr 2014, Viresh Kumar wrote:
 
-Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
----
- .../devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt      | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+> On Thu, Oct 3, 2013 at 11:10 PM, Christoph Lameter <cl@linux.com> wrote:
+> > V2->V3:
+> > - Introduce a new tick_get_housekeeping_cpu() function. Not sure
+> >   if that is exactly what we want but it is a start. Thomas?
+> > - Migrate the shepherd task if the output of
+> >   tick_get_housekeeping_cpu() changes.
+> > - Fixes recommended by Andrew.
+>
+> This vmstat interrupt is disturbing my core isolation :), have you got
+> any far with this patchset?
 
-diff --git a/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt b/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
-index dff0e5f..d8d0656 100644
---- a/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
-+++ b/Documentation/devicetree/bindings/pinctrl/allwinner,sunxi-pinctrl.txt
-@@ -6,8 +6,13 @@ the first two functions being GPIO in and out. The configuration on
- the pins includes drive strength and pull-up.
- 
- Required properties:
--- compatible: "allwinner,<soc>-pinctrl". Supported SoCs for now are:
--  sun5i-a13.
-+- compatible: Should be one of the followings (depending on you SoC):
-+  "allwinner,sun4i-a10-pinctrl"
-+  "allwinner,sun5i-a10s-pinctrl"
-+  "allwinner,sun5i-a13-pinctrl"
-+  "allwinner,sun6i-a31-pinctrl"
-+  "allwinner,sun6i-a31-r-pinctrl"
-+  "allwinner,sun7i-a20-pinctrl"
- - reg: Should contain the register physical address and length for the
-   pin controller.
- 
--- 
-1.8.3.2
+Sorry no too much other stuff. Would be glad if you could improve on it.
+Should have some time on Friday to look at it.
 
