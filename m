@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758272AbaDVUZN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:25:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36717 "EHLO
+	id S932231AbaDVUbH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:31:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36732 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757545AbaDVUZG (ORCPT
+	with ESMTP id S1758265AbaDVUZM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:25:06 -0400
+	Tue, 22 Apr 2014 16:25:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 048/133] rtlwifi: rtl8192cu: Fix too long disable of IRQs
-Date: Tue, 22 Apr 2014 13:13:06 -0700
-Message-Id: <1398197671-12786-49-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 036/133] tgafb: fix data copying
+Date: Tue, 22 Apr 2014 13:12:54 -0700
+Message-Id: <1398197671-12786-37-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,61 +28,343 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit a53268be0cb9763f11da4f6fe3fb924cbe3a7d4a upstream.
+commit 6b0df6827bb6fcacb158dff29ad0a62d6418b534 upstream.
 
-In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
-rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
-<olivier@trillion01.com> fixed a problem caused by an extra long disabling
-of interrupts. This patch makes the same fix for rtl8192cu.
+The functions for data copying copyarea_foreward_8bpp and
+copyarea_backward_8bpp are buggy, they produce screen corruption.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch fixes the functions and moves the logic to one function
+"copyarea_8bpp". For simplicity, the function only handles copying that
+is aligned on 8 pixes. If we copy an unaligned area, generic function
+cfb_copyarea is used.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8192cu/hw.c | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ drivers/video/tgafb.c | 264 ++++++++++----------------------------------------
+ 1 file changed, 51 insertions(+), 213 deletions(-)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-index c08d0f4..57e34ee 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c
-@@ -985,6 +985,17 @@ int rtl92cu_hw_init(struct ieee80211_hw *hw)
- 	struct rtl_ps_ctl *ppsc = rtl_psc(rtl_priv(hw));
- 	int err = 0;
- 	static bool iqk_initialized;
-+	unsigned long flags;
-+
-+	/* As this function can take a very long time (up to 350 ms)
-+	 * and can be called with irqs disabled, reenable the irqs
-+	 * to let the other devices continue being serviced.
-+	 *
-+	 * It is safe doing so since our own interrupts will only be enabled
-+	 * in a subsequent step.
-+	 */
-+	local_save_flags(flags);
-+	local_irq_enable();
- 
- 	rtlhal->hw_type = HARDWARE_TYPE_RTL8192CU;
- 	err = _rtl92cu_init_mac(hw);
-@@ -997,7 +1008,7 @@ int rtl92cu_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
- 			 "Failed to download FW. Init HW without FW now..\n");
- 		err = 1;
--		return err;
-+		goto exit;
- 	}
- 	rtlhal->last_hmeboxnum = 0; /* h2c */
- 	_rtl92cu_phy_param_tab_init(hw);
-@@ -1034,6 +1045,8 @@ int rtl92cu_hw_init(struct ieee80211_hw *hw)
- 	_InitPABias(hw);
- 	_update_mac_setting(hw);
- 	rtl92c_dm_init(hw);
-+exit:
-+	local_irq_restore(flags);
- 	return err;
+diff --git a/drivers/video/tgafb.c b/drivers/video/tgafb.c
+index 88a73b7..a78ca6a 100644
+--- a/drivers/video/tgafb.c
++++ b/drivers/video/tgafb.c
+@@ -1145,222 +1145,57 @@ copyarea_line_32bpp(struct fb_info *info, u32 dy, u32 sy,
+ 	__raw_writel(TGA_MODE_SBM_24BPP|TGA_MODE_SIMPLE, tga_regs+TGA_MODE_REG);
  }
+ 
+-/* The general case of forward copy in 8bpp mode.  */
++/* The (almost) general case of backward copy in 8bpp mode.  */
+ static inline void
+-copyarea_foreward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
+-		       u32 height, u32 width, u32 line_length)
++copyarea_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
++	      u32 height, u32 width, u32 line_length,
++	      const struct fb_copyarea *area)
+ {
+ 	struct tga_par *par = (struct tga_par *) info->par;
+-	unsigned long i, copied, left;
+-	unsigned long dpos, spos, dalign, salign, yincr;
+-	u32 smask_first, dmask_first, dmask_last;
+-	int pixel_shift, need_prime, need_second;
+-	unsigned long n64, n32, xincr_first;
++	unsigned i, yincr;
++	int depos, sepos, backward, last_step, step;
++	u32 mask_last;
++	unsigned n32;
+ 	void __iomem *tga_regs;
+ 	void __iomem *tga_fb;
+ 
+-	yincr = line_length;
+-	if (dy > sy) {
+-		dy += height - 1;
+-		sy += height - 1;
+-		yincr = -yincr;
+-	}
+-
+-	/* Compute the offsets and alignments in the frame buffer.
+-	   More than anything else, these control how we do copies.  */
+-	dpos = dy * line_length + dx;
+-	spos = sy * line_length + sx;
+-	dalign = dpos & 7;
+-	salign = spos & 7;
+-	dpos &= -8;
+-	spos &= -8;
+-
+-	/* Compute the value for the PIXELSHIFT register.  This controls
+-	   both non-co-aligned source and destination and copy direction.  */
+-	if (dalign >= salign)
+-		pixel_shift = dalign - salign;
+-	else
+-		pixel_shift = 8 - (salign - dalign);
+-
+-	/* Figure out if we need an additional priming step for the
+-	   residue register.  */
+-	need_prime = (salign > dalign);
+-	if (need_prime)
+-		dpos -= 8;
+-
+-	/* Begin by copying the leading unaligned destination.  Copy enough
+-	   to make the next destination address 32-byte aligned.  */
+-	copied = 32 - (dalign + (dpos & 31));
+-	if (copied == 32)
+-		copied = 0;
+-	xincr_first = (copied + 7) & -8;
+-	smask_first = dmask_first = (1ul << copied) - 1;
+-	smask_first <<= salign;
+-	dmask_first <<= dalign + need_prime*8;
+-	if (need_prime && copied > 24)
+-		copied -= 8;
+-	left = width - copied;
+-
+-	/* Care for small copies.  */
+-	if (copied > width) {
+-		u32 t;
+-		t = (1ul << width) - 1;
+-		t <<= dalign + need_prime*8;
+-		dmask_first &= t;
+-		left = 0;
+-	}
+-
+-	/* Attempt to use 64-byte copies.  This is only possible if the
+-	   source and destination are co-aligned at 64 bytes.  */
+-	n64 = need_second = 0;
+-	if ((dpos & 63) == (spos & 63)
+-	    && (height == 1 || line_length % 64 == 0)) {
+-		/* We may need a 32-byte copy to ensure 64 byte alignment.  */
+-		need_second = (dpos + xincr_first) & 63;
+-		if ((need_second & 32) != need_second)
+-			printk(KERN_ERR "tgafb: need_second wrong\n");
+-		if (left >= need_second + 64) {
+-			left -= need_second;
+-			n64 = left / 64;
+-			left %= 64;
+-		} else
+-			need_second = 0;
+-	}
+-
+-	/* Copy trailing full 32-byte sections.  This will be the main
+-	   loop if the 64 byte loop can't be used.  */
+-	n32 = left / 32;
+-	left %= 32;
+-
+-	/* Copy the trailing unaligned destination.  */
+-	dmask_last = (1ul << left) - 1;
+-
+-	tga_regs = par->tga_regs_base;
+-	tga_fb = par->tga_fb_base;
+-
+-	/* Set up the MODE and PIXELSHIFT registers.  */
+-	__raw_writel(TGA_MODE_SBM_8BPP|TGA_MODE_COPY, tga_regs+TGA_MODE_REG);
+-	__raw_writel(pixel_shift, tga_regs+TGA_PIXELSHIFT_REG);
+-	wmb();
+-
+-	for (i = 0; i < height; ++i) {
+-		unsigned long j;
+-		void __iomem *sfb;
+-		void __iomem *dfb;
+-
+-		sfb = tga_fb + spos;
+-		dfb = tga_fb + dpos;
+-		if (dmask_first) {
+-			__raw_writel(smask_first, sfb);
+-			wmb();
+-			__raw_writel(dmask_first, dfb);
+-			wmb();
+-			sfb += xincr_first;
+-			dfb += xincr_first;
+-		}
+-
+-		if (need_second) {
+-			__raw_writel(0xffffffff, sfb);
+-			wmb();
+-			__raw_writel(0xffffffff, dfb);
+-			wmb();
+-			sfb += 32;
+-			dfb += 32;
+-		}
+-
+-		if (n64 && (((unsigned long)sfb | (unsigned long)dfb) & 63))
+-			printk(KERN_ERR
+-			       "tgafb: misaligned copy64 (s:%p, d:%p)\n",
+-			       sfb, dfb);
+-
+-		for (j = 0; j < n64; ++j) {
+-			__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
+-			wmb();
+-			__raw_writel(dfb - tga_fb, tga_regs+TGA_COPY64_DST);
+-			wmb();
+-			sfb += 64;
+-			dfb += 64;
+-		}
+-
+-		for (j = 0; j < n32; ++j) {
+-			__raw_writel(0xffffffff, sfb);
+-			wmb();
+-			__raw_writel(0xffffffff, dfb);
+-			wmb();
+-			sfb += 32;
+-			dfb += 32;
+-		}
+-
+-		if (dmask_last) {
+-			__raw_writel(0xffffffff, sfb);
+-			wmb();
+-			__raw_writel(dmask_last, dfb);
+-			wmb();
+-		}
+-
+-		spos += yincr;
+-		dpos += yincr;
++	/* Do acceleration only if we are aligned on 8 pixels */
++	if ((dx | sx | width) & 7) {
++		cfb_copyarea(info, area);
++		return;
+ 	}
+ 
+-	/* Reset the MODE register to normal.  */
+-	__raw_writel(TGA_MODE_SBM_8BPP|TGA_MODE_SIMPLE, tga_regs+TGA_MODE_REG);
+-}
+-
+-/* The (almost) general case of backward copy in 8bpp mode.  */
+-static inline void
+-copyarea_backward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
+-		       u32 height, u32 width, u32 line_length,
+-		       const struct fb_copyarea *area)
+-{
+-	struct tga_par *par = (struct tga_par *) info->par;
+-	unsigned long i, left, yincr;
+-	unsigned long depos, sepos, dealign, sealign;
+-	u32 mask_first, mask_last;
+-	unsigned long n32;
+-	void __iomem *tga_regs;
+-	void __iomem *tga_fb;
+-
+ 	yincr = line_length;
+ 	if (dy > sy) {
+ 		dy += height - 1;
+ 		sy += height - 1;
+ 		yincr = -yincr;
+ 	}
++	backward = dy == sy && dx > sx && dx < sx + width;
+ 
+ 	/* Compute the offsets and alignments in the frame buffer.
+ 	   More than anything else, these control how we do copies.  */
+-	depos = dy * line_length + dx + width;
+-	sepos = sy * line_length + sx + width;
+-	dealign = depos & 7;
+-	sealign = sepos & 7;
+-
+-	/* ??? The documentation appears to be incorrect (or very
+-	   misleading) wrt how pixel shifting works in backward copy
+-	   mode, i.e. when PIXELSHIFT is negative.  I give up for now.
+-	   Do handle the common case of co-aligned backward copies,
+-	   but frob everything else back on generic code.  */
+-	if (dealign != sealign) {
+-		cfb_copyarea(info, area);
+-		return;
+-	}
+-
+-	/* We begin the copy with the trailing pixels of the
+-	   unaligned destination.  */
+-	mask_first = (1ul << dealign) - 1;
+-	left = width - dealign;
+-
+-	/* Care for small copies.  */
+-	if (dealign > width) {
+-		mask_first ^= (1ul << (dealign - width)) - 1;
+-		left = 0;
+-	}
++	depos = dy * line_length + dx;
++	sepos = sy * line_length + sx;
++	if (backward)
++		depos += width, sepos += width;
+ 
+ 	/* Next copy full words at a time.  */
+-	n32 = left / 32;
+-	left %= 32;
++	n32 = width / 32;
++	last_step = width % 32;
+ 
+ 	/* Finally copy the unaligned head of the span.  */
+-	mask_last = -1 << (32 - left);
++	mask_last = (1ul << last_step) - 1;
++
++	if (!backward) {
++		step = 32;
++		last_step = 32;
++	} else {
++		step = -32;
++		last_step = -last_step;
++		sepos -= 32;
++		depos -= 32;
++	}
+ 
+ 	tga_regs = par->tga_regs_base;
+ 	tga_fb = par->tga_fb_base;
+@@ -1377,25 +1212,33 @@ copyarea_backward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
+ 
+ 		sfb = tga_fb + sepos;
+ 		dfb = tga_fb + depos;
+-		if (mask_first) {
+-			__raw_writel(mask_first, sfb);
+-			wmb();
+-			__raw_writel(mask_first, dfb);
+-			wmb();
+-		}
+ 
+-		for (j = 0; j < n32; ++j) {
+-			sfb -= 32;
+-			dfb -= 32;
++		for (j = 0; j < n32; j++) {
++			if (j < 2 && j + 1 < n32 && !backward &&
++			    !(((unsigned long)sfb | (unsigned long)dfb) & 63)) {
++				do {
++					__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
++					wmb();
++					__raw_writel(dfb - tga_fb, tga_regs+TGA_COPY64_DST);
++					wmb();
++					sfb += 64;
++					dfb += 64;
++					j += 2;
++				} while (j + 1 < n32);
++				j--;
++				continue;
++			}
+ 			__raw_writel(0xffffffff, sfb);
+ 			wmb();
+ 			__raw_writel(0xffffffff, dfb);
+ 			wmb();
++			sfb += step;
++			dfb += step;
+ 		}
+ 
+ 		if (mask_last) {
+-			sfb -= 32;
+-			dfb -= 32;
++			sfb += last_step - step;
++			dfb += last_step - step;
+ 			__raw_writel(mask_last, sfb);
+ 			wmb();
+ 			__raw_writel(mask_last, dfb);
+@@ -1456,14 +1299,9 @@ tgafb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
+ 	else if (bpp == 32)
+ 		cfb_copyarea(info, area);
+ 
+-	/* Detect overlapping source and destination that requires
+-	   a backward copy.  */
+-	else if (dy == sy && dx > sx && dx < sx + width)
+-		copyarea_backward_8bpp(info, dx, dy, sx, sy, height,
+-				       width, line_length, area);
+ 	else
+-		copyarea_foreward_8bpp(info, dx, dy, sx, sy, height,
+-				       width, line_length);
++		copyarea_8bpp(info, dx, dy, sx, sy, height,
++			      width, line_length, area);
+ }
+ 
  
 -- 
 1.9.1
