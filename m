@@ -1,95 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751926AbaDVE5M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 00:57:12 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:27614 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750890AbaDVE5H (ORCPT
+	id S1751978AbaDVE5n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 00:57:43 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:21053 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbaDVE5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 00:57:07 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-0b-5355f6a19b3b
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
-        "'Chris Ball'" <chris@printf.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>,
-        "'Ulf Hansson'" <ulf.hansson@linaro.org>
-References: <20140422130655.51daec1807bde98ade65d691@canb.auug.org.au>
-In-reply-to: <20140422130655.51daec1807bde98ade65d691@canb.auug.org.au>
-Subject: RE: linux-next: build failure after merge of the mmc tree
-Date: Tue, 22 Apr 2014 13:57:04 +0900
-Message-id: <001001cf5de7$4e3728a0$eaa579e0$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=Windows-1252
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9d1/Zh+FrQNhxHR5+B4kcq66XxrwADY0PA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t8zA92F30KDDW6cZrGYcHk7o8WNX22s
-	Fpd3zWGzOLiwjdFi696r7BbH14Y7sHk03rjB5nHn2h42jxuvFjJ59G1ZxejxeZNcAGsUl01K
-	ak5mWWqRvl0CV8bVE1dYClZzVTyasI6pgXEDRxcjJ4eEgInE7P52ZghbTOLCvfVsXYxcHEIC
-	yxgl9v26xwJTdPbDASaIxCJGid9n/rFDOH8YJdYvvMMKUsUmoCXx980bsFEiAn4SD5d1MIMU
-	MQtMYpQ49mot2CghATeJj09vgDVwCrhLHPpxjRHEFhZwkjjz6zJQnIODRUBV4sczFZAwr4Ct
-	xO2Xa9khbEGJH5MhLmIW0JP4+Oc2I4QtL7F5zVtmkFYJAXWJR391IU4wklj8diVUiYjEvhfv
-	GEHOkRB4xC6x8t4ysDtZBAQkvk0+xALRKyux6QA0JCQlDq64wTKBUWIWks2zkGyehWTzLCQr
-	FjCyrGIUTS1ILihOSi8y1StOzC0uzUvXS87P3cQIidmJOxjvH7A+xJgMtH4is5Rocj4w5vNK
-	4g2NzYwsTE1MjY3MLc1IE1YS501/lBQkJJCeWJKanZpakFoUX1Sak1p8iJGJg1OqgTHVQPhc
-	444vlol7+8s3MRmpnVRenHolfmXg+cQ0hTkW5d+dgtNOvuuW+/TJf0HcxAMlnXtepHM/Fl1s
-	/T13xYyFXmoqPQu70s1+SH2XeSmyaWvFxF38e+eXr377iH/jkmqjN5UnP03S8AtdoXh9zZEy
-	t7L5L7d8O3ReYd3pxDwnRWFuFcvSidZKLMUZiYZazEXFiQAmvWVC7wIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBKsWRmVeSWpSXmKPExsVy+t9jAd2F30KDDZqsLCZc3s5oceNXG6vF
-	5V1z2CwOLmxjtNi69yq7xfG14Q5sHo03brB53Lm2h83jxquFTB59W1YxenzeJBfAGtXAaJOR
-	mpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGtoaWGupJCXmJtqq+TiE6DrlpkDdICSQlliTilQ
-	KCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0kLCOMePqiSssBau5Kh5NWMfUwLiBo4uRk0NC
-	wETi7IcDTBC2mMSFe+vZuhi5OIQEFjFK/D7zjx3C+cMosX7hHVaQKjYBLYm/b94wg9giAn4S
-	D5d1MIMUMQtMYpQ49motC0hCSMBN4uPTG2ANnALuEod+XGMEsYUFnCTO/LoMFOfgYBFQlfjx
-	TAUkzCtgK3H75Vp2CFtQ4sfke2BjmAX0JD7+uc0IYctLbF7zlhmkVUJAXeLRX12IE4wkFr9d
-	CVUiIrHvxTvGCYxCs5BMmoVk0iwkk2YhaVnAyLKKUTS1ILmgOCk911CvODG3uDQvXS85P3cT
-	IzgdPJPawbiyweIQowAHoxIPr4RBaLAQa2JZcWXuIUYJDmYlEd57D4BCvCmJlVWpRfnxRaU5
-	qcWHGJOB/pzILCWanA9MVXkl8YbGJmZGlkZmFkYm5uakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C
-	2cLEwSnVwJjKbK2/8bat47rfm2Z3reMKdfXY9H3lktzM050Z0TwO/A5Sq0wTJiW5n1BuW77x
-	/a3C75mXkhsvcM0IilGMFb5oscDqys0ft/nLEmb9/FHgcVDFrqDoZMxuG6YgZjXt5cwV6dMX
-	HNrNb3rWw/eFvH3ZQlsm1ZxWxgOXK+UjFY9VnT/wSDtFWImlOCPRUIu5qDgRAFKNQcVLAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 22 Apr 2014 00:57:40 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19F0v5L8K2tjIA4O+vlcT24
+Date: Mon, 21 Apr 2014 21:57:31 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robh+dt@kernel.org>,
+        Gregory Clement <gregory.clement@free-electrons.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v3 2/2] dt: platform driver: Fill the resources before
+ probe and defer if needed
+Message-ID: <20140422045730.GC26554@atomide.com>
+References: <20140418205213.GA21823@atomide.com>
+ <CAL_JsqJvVvo6R-qNXxur7wiZERKbi52xyKoWnmzJTfKS2iKK7A@mail.gmail.com>
+ <20140418215848.GD21823@atomide.com>
+ <20140418230335.GI24070@n2100.arm.linux.org.uk>
+ <20140418232407.GQ21823@atomide.com>
+ <CAL_JsqLvLTJwgsB-m0W72WxSUoTV4ubMdvM_a784J4k2eiK9AQ@mail.gmail.com>
+ <20140421155424.GD23945@atomide.com>
+ <53556AF1.2030608@gmail.com>
+ <20140421202546.GA26554@atomide.com>
+ <20140422030528.GB26554@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140422030528.GB26554@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, April 22, 2014, Stephen Rothwell wrote:
-> Hi Chris,
+* Tony Lindgren <tony@atomide.com> [140421 20:06]:
+> * Tony Lindgren <tony@atomide.com> [140421 13:26]:
+> > * Rob Herring <robherring2@gmail.com> [140421 12:01]:
+> > > Something like this is what you had in mind?
+... 
+> > > --- a/drivers/of/irq.c
+> > > +++ b/drivers/of/irq.c
+> > > @@ -400,6 +400,26 @@ int of_irq_to_resource(struct device_node *dev, int
+> > > index, struct resource *r)
+> > >  EXPORT_SYMBOL_GPL(of_irq_to_resource);
+> > > 
+> > >  /**
+> > > + * of_irq_get - Decode a node's IRQ and return it as a Linux irq number
+> > > + * @dev: pointer to device tree node
+> > > + * @index: zero-based index of the irq
+> > > + *
+> > > + * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
+> > > + * is not yet created.
+> > > + *
+> > > + */
+> > > +int of_irq_get(struct device_node *dev, int index)
+> > > +{
+> > > +	int irq = irq_of_parse_and_map(dev, index);
+> > > +
+> > > +	if (!irq && of_find_irq_domain(dev, index) == NULL)
+> > > +		return -EPROBE_DEFER;
+> > > +
+> > > +	return irq;
+> > > +}
+> > 
+> > Yeah something like that. That might also work as a pretty
+> > minimal fix as long as we fix the known broken drivers to use
+> > platform_get_irq().
 > 
-> After merging the mmc tree, today's linux-next build (x86_64 allmodconfig)
-> failed like this:
-> 
-> drivers/net/wireless/rsi/rsi_91x_sdio.c: In function 'rsi_reset_card':
-> drivers/net/wireless/rsi/rsi_91x_sdio.c:288:20: error: 'MMC_STATE_HIGHSPEED' undeclared (first use in
-> this function)
->     card->state &= ~MMC_STATE_HIGHSPEED;
->                     ^
-> drivers/net/wireless/rsi/rsi_91x_sdio.c:288:20: note: each undeclared identifier is reported only once
-> for each function it appears in
-> drivers/net/wireless/rsi/rsi_91x_sdio.c:299:4: error: implicit declaration of function
-> 'mmc_card_set_highspeed' [-Werror=implicit-function-declaration]
->     mmc_card_set_highspeed(card);
->     ^
-> drivers/net/wireless/rsi/rsi_91x_sdio.c:306:2: error: implicit declaration of function
-> 'mmc_card_highspeed' [-Werror=implicit-function-declaration]
->   if (mmc_card_highspeed(card))
->   ^
-> 
-> Caused by commit 395784826a81 ("mmc: drop the speed mode of card's state").
-> 
-> I have used the version of the mmc tree from next-20140417 for today.
+> Actually, the above code for of_irq_get() won't help as we're still
+> calling irq_of_parse_and_map() before we should. So the nasty warnings
+> are still there if the irqdomain is not yet found.
 
-I didn't detect usage out of mmc-sub for that.
-Let me fix and send a patch.
+OK so to fix the warning part of the problem we first need to not
+try to map uninitialized irqdomains and then downgrade the current
+warning to a dev_dbg.
 
-Thanks,
-Seungwon Jeon
+So looks like the current minimal fix to my original problem the
+first patch from Jean-Jacques in this series, and the following patch.
 
-> --
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+This works for drivers that currently do of_irq_parse_and_map(),
+then your patch is also needed to make things work properly with
+platform_get_irq().
 
+8< ------------------
+From: Tony Lindgren <tony@atomide.com>
+Date: Mon, 21 Apr 2014 19:33:43 -0700
+Subject: [PATCH] of/platform: Fix no irq domain found errors when populating interrupts
+
+Currently we get the following kind of errors if we try to use interrupt
+phandles to irqchips that have not yet initialized:
+
+irq: no irq domain found for /ocp/pinmux@48002030 !
+------------[ cut here ]------------
+WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_device_alloc+0x144/0x184()
+Modules linked in:
+CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-00038-g42a9708 #1012
+(show_stack+0x14/0x1c)
+(dump_stack+0x6c/0xa0)
+(warn_slowpath_common+0x64/0x84)
+(warn_slowpath_null+0x1c/0x24)
+(of_device_alloc+0x144/0x184)
+(of_platform_device_create_pdata+0x44/0x9c)
+(of_platform_bus_create+0xd0/0x170)
+(of_platform_bus_create+0x12c/0x170)
+(of_platform_populate+0x60/0x98)
+
+This is because we're wrongly trying to populate resources that are not
+yet available. It's perfectly valid to create irqchips dynamically, so
+let's fix up the issue by populating the interrupt resources at the
+driver probe time instead.
+
+Let's fix the problem by using of_find_irq_domain() recently introduced
+by Jean-Jacques Hiblot <jjhiblot@traphandler.com>. This way we can
+avoid calling irq_of_parse_and_map() unnecesssarily with incomplete
+data.
+
+And then we also need to accept the fact that some irqdomains do not
+exist that early on, and only get initialized later on. So we can
+make the current WARN_ON into just into a pr_debug().
+
+Note that this patch only solves the problem for drivers that are
+currently doing of_irq_parse_and_map(). A follow-up patch is needed
+to make platform_get_irq() to work without relying on the populated
+resources.
+
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -425,13 +425,17 @@ int of_irq_count(struct device_node *dev)
+ int of_irq_to_resource_table(struct device_node *dev, struct resource *res,
+ 		int nr_irqs)
+ {
+-	int i;
++	int i, found = 0;
+ 
+-	for (i = 0; i < nr_irqs; i++, res++)
++	for (i = 0; i < nr_irqs; i++, res++) {
++		if (!of_find_irq_domain(dev, i))
++			continue;
+ 		if (!of_irq_to_resource(dev, i, res))
+ 			break;
++		found++;
++	}
+ 
+-	return i;
++	return found;
+ }
+ EXPORT_SYMBOL_GPL(of_irq_to_resource_table);
+ 
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -168,7 +168,9 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ 			rc = of_address_to_resource(np, i, res);
+ 			WARN_ON(rc);
+ 		}
+-		WARN_ON(of_irq_to_resource_table(np, res, num_irq) != num_irq);
++		if (of_irq_to_resource_table(np, res, num_irq) != num_irq)
++			pr_debug("not all legacy IRQ resources mapped for %s\n",
++				 np->name);
+ 	}
+ 
+ 	dev->dev.of_node = of_node_get(np);
