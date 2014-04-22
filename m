@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775AbaDVOw6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:52:58 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40776 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932581AbaDVOwy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:52:54 -0400
-Date: Tue, 22 Apr 2014 09:50:33 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Roger Quadros <rogerq@ti.com>
-CC: <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH v2] usb: dwc3: core: Fix gadget for system suspend/resume
-Message-ID: <20140422145033.GG5524@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1395826989-5405-1-git-send-email-rogerq@ti.com>
- <53565F8C.4050100@ti.com>
+	id S932806AbaDVOxY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:53:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57042 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932661AbaDVOxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:53:18 -0400
+Date: Tue, 22 Apr 2014 11:53:01 -0300
+From: Rafael Aquini <aquini@redhat.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
+        Hugh Dickins <hughd@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, stable@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: commit 0bf1457f0cfca7b  " mm: vmscan: do not swap anon pages
+ just because free+file is low" causes heavy performance regression on paging
+Message-ID: <20140422145300.GA23630@localhost.localdomain>
+References: <53564AA9.3060905@de.ibm.com>
+ <53565922.1050709@de.ibm.com>
+ <53567F51.8050608@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="zq44+AAfm4giZpo5"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53565F8C.4050100@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53567F51.8050608@redhat.com>
+X-PGP-Key: http://people.redhat.com/~raquini/gpg-pubkey.asc
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---zq44+AAfm4giZpo5
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 22, 2014 at 10:40:17AM -0400, Rik van Riel wrote:
+> On 04/22/2014 07:57 AM, Christian Borntraeger wrote:
+> > On 22/04/14 12:55, Christian Borntraeger wrote:
+> >> While preparing/testing some KVM on s390 patches for the next merge window (target is kvm/next which is based on 3.15-rc1) I faced a very severe performance hickup on guest paging (all anonymous memory).
+> >>
+> >> All memory bound guests are in "D" state now and the system is barely unusable.
+> >>
+> >> Reverting commit 0bf1457f0cfca7bc026a82323ad34bcf58ad035d
+> >> "mm: vmscan: do not swap anon pages just because free+file is low" makes the problem go away.
+> >>
+> >> According to /proc/vmstat the system is now in direct reclaim almost all the time for every page fault (more than 10x more direct reclaims than kswap reclaims)
+> >> With the patch being reverted everything is fine again.
+> >>
+> >> Any ideas?
+> > 
+> > Here is an idea to tackle my problem and the original problem:
+> > 
+> > reverting  0bf1457f0cfca7bc026a82323ad34bcf58ad035d + checking against low, also seems to make my system usable.
+> > 
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1923,7 +1923,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+> >          */
+> >         if (global_reclaim(sc)) {
+> >                 free = zone_page_state(zone, NR_FREE_PAGES);
+> > -               if (unlikely(file + free <= high_wmark_pages(zone))) {
+> > +               if (unlikely(file + free <= low_wmark_pages(zone))) {
+> >                         scan_balance = SCAN_ANON;
+> >                         goto out;
+> >                 }
+> > 
+> 
+> Looks reasonable to me.
++1
 
-Hi,
-
-On Tue, Apr 22, 2014 at 03:24:44PM +0300, Roger Quadros wrote:
-> Looks like we missed this one. Could you please pick this up for -rc?
-
-see http://marc.info/?l=3Dlinux-usb&m=3D139809466025568&w=3D2 , it's already
-there
-
---=20
-balbi
-
---zq44+AAfm4giZpo5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTVoG5AAoJEIaOsuA1yqREQqwP/iGSve2m5NN8oc/XbNQj750C
-RDC3ct55Cpho//CYL8ZO6GvZNIOnivl/tAp5amAF7ujXYaKHpgx4A/KMFXy/wDkm
-ZRA6mUvXZkh3HCmV0XQKEhnOquD7SJp10Yi5Ad6/w6bS/MH7wKVASYYskdfGmlSk
-l5HtNNHRwGGdYS+gCBV4p+QdcgB8+Wrbh6/Sj8BjiEWG6DyoVt2Q8I0nTD9fqR69
-UEE1oG7gToqyt/U9oh/FYknolZ1wkTa6yycB157X1gxAEILpDUlMm1O5HlcqWNhO
-V4MKdwxhYFZFsyyPZExVOLMJ7nkRnt7HFgdXo9rKkYDY4TpsJPXmCFE+pCRmsOxg
-xiXOORf/dWZxRTr//RCyQVFjVFfJoU7Ux/ym0X1VYdsbZIbEe2KIiQi/XAT7btZw
-BSKlVg0ITTpExD+ci8sO/+a7FjPR/Ktx6ngB+0le0rlS1kmiNInErgshh6y9V+KT
-EW2ASktMeTl5QDxCifuJrmzPbDxq18H0YzkjX/mnIM26a0Qa69cO0mPuD5nniHWc
-Q2KYGLNhzM0bL9UEbZUHKasJD0FCxM+/iZfvfwFAWngrX4VLyf6qSx0P3cKxUw3l
-k5nIcvo4l4+lY32RXTIgBHBVHasrjye1PocuYY2bTNtWpMbZY7dc+23DQkXOLZ4h
-xbLuyOjDq/Pmjqxlq7o+
-=T16J
------END PGP SIGNATURE-----
-
---zq44+AAfm4giZpo5--
