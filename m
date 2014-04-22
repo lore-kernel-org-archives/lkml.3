@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087AbaDVQva (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:51:30 -0400
-Received: from www.linutronix.de ([62.245.132.108]:49523 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194AbaDVQv2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:51:28 -0400
-Message-ID: <53569E05.8010600@linutronix.de>
-Date: Tue, 22 Apr 2014 18:51:17 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	id S933197AbaDVQyY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:54:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28786 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932504AbaDVQyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 12:54:22 -0400
+Date: Tue, 22 Apr 2014 18:53:55 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 4/9] perf tools: Introduce hists__inc_dump_events()
+Message-ID: <20140422165355.GK1104@krava.brq.redhat.com>
+References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
+ <1398156591-11001-5-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Stanislav Meduna <stano@meduna.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
-References: <534C3606.7010206@meduna.org>	<534C731F.1050406@meduna.org>	<534DADF1.6060608@meduna.org>	<20140422115439.GA20669@linutronix.de> <20140422094657.5b6ca1e2@gandalf.local.home>
-In-Reply-To: <20140422094657.5b6ca1e2@gandalf.local.home>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398156591-11001-5-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 03:46 PM, Steven Rostedt wrote:
-> [ added Peter ]
-> 
-> On Tue, 22 Apr 2014 13:54:39 +0200
-> Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+On Tue, Apr 22, 2014 at 05:49:46PM +0900, Namhyung Kim wrote:
+
+SNIP
+
+> index f955ae5a41c5..883340d7d43e 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -333,6 +333,19 @@ void hists__inc_nr_events(struct hists *hists, u32 type)
+>  	__events_stats__add(&hists->stats, type, 1);
+>  }
 >  
->> this is, erm, harmless. We grab the timer lock via trylock in hardirq
->> context. If the lock is already taken then we fail to get it we go for
->> plan B. According to lockdep a trylock should not fail on UP. This is
->> true in general except for this timer case. I was thinking abour
->> disabling this lockdep check…
-> 
-> trylock not failing on UP, can that be an issue? I mean, if a hardirq
-> does a trylock to see if it can grab a lock that is not protected by
-> disabling irqs, and will go to plan B if it fails, on UP, it will
-> always get it.  But the issue is still there. That would mean that a
-> hardirq could have preempted a critical section and doing a trylock
-> here would succeed when it really should have failed.
+> +void hists__inc_dump_events(struct hists *hists)
+> +{
+> +	if (!dump_trace)
+> +		return;
+> +
+> +	/*
+> +	 * If dump_trace is enabled, perf will exit before accounting
+> +	 * sample events during hists__output_resort().  Thus it needs to
+> +	 * be done separately.
+> +	 */
+> +	__events_stats__add(&hists->stats, PERF_RECORD_SAMPLE, 1);
+> +}
 
-If you take a lock with irqs enabled and disabled then lockdep should
-complain about it.
+hum, we already clear all the stats before resorting for output so why done
+we call hists__inc_nr_entries from add_hist_entry? (at out label)
 
-This is the ->wait_lock of the timer base lock. This (sleeping) lock is
-usually taken with interrupts enabled. Except here, in the timer
-callback, we check if the lock is available or not. And this lock may
-be a) taken (and the ->wait_lock unlocked) or b) in process to be taken
-but the caller only succeeded to acquire the ->wait_lock before the
-interrupt occurred. This is the case here and we can't acquire the
-->wait_lock a second time the check if the lock is really taken. But
-since the wait_lock is occupied it is likely that the lock itself is
-occupied as well.
-
-> 
-> -- Steve
-
-Sebastian
+jirka
