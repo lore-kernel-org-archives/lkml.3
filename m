@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421AbaDVLyw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:54:52 -0400
-Received: from www.linutronix.de ([62.245.132.108]:46879 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932156AbaDVLyt convert rfc822-to-8bit (ORCPT
+	id S932434AbaDVLzJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:55:09 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:52900 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755594AbaDVLzE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:54:49 -0400
-Date: Tue, 22 Apr 2014 13:54:39 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Stanislav Meduna <stano@meduna.org>
-Cc: "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
-Message-ID: <20140422115439.GA20669@linutronix.de>
-References: <534C3606.7010206@meduna.org>
- <534C731F.1050406@meduna.org>
- <534DADF1.6060608@meduna.org>
+	Tue, 22 Apr 2014 07:55:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <534DADF1.6060608@meduna.org>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <535631EB.4060906@redhat.com>
+References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
+	<5343F2EC.3050508@redhat.com>
+	<CANq1E4TmtR=gSgR25PGC_EN=xrEEg1+F=zkTUGXZ4SHvjFNbag@mail.gmail.com>
+	<535631EB.4060906@redhat.com>
+Date: Tue, 22 Apr 2014 13:55:03 +0200
+Message-ID: <CANq1E4TufnELwEDZAkzH94Zn3gb46qvxfDboN5y2mK=Q2gk9-Q@mail.gmail.com>
+Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Florian Weimer <fweimer@redhat.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Kay Sievers <kay@vrfy.org>,
+        Daniel Mack <zonque@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stanislav Meduna | 2014-04-16 00:08:49 [+0200]:
+Hi
 
->Hmm... how is it in the rt-case guaranteed that the timer interrupt
->does not preempt someone trying to modify the timer? The run_local_timers
->looks to have arrived via hardirq context. The spinlock in the tvec_base
->is a normal one and spin_lock_irqsave does not disable interrupts
->on rt, right?
+On Tue, Apr 22, 2014 at 11:10 AM, Florian Weimer <fweimer@redhat.com> wrote:
+> Ah.  What do you recommend for recipient to recognize such descriptors?
+> Would they just try to seal them and reject them if this fails?
 
-this is, erm, harmless. We grab the timer lock via trylock in hardirq
-context. If the lock is already taken then we fail to get it we go for
-plan B. According to lockdep a trylock should not fail on UP. This is
-true in general except for this timer case. I was thinking abour
-disabling this lockdep check…
+This highly depends on your use-case. Please see the initial email in
+this thread. It describes 2 example use-cases. In both cases, the
+recipients read the current set of seals and verify that a given set
+of seals is set.
 
-Sebastian
+Thanks
+David
