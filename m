@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758976AbaDVVkN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:40:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36134 "EHLO
+	id S1758961AbaDVVkK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:40:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36137 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756769AbaDVUPI (ORCPT
+	with ESMTP id S1756779AbaDVUPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 16:15:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <edumazet@google.com>,
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 007/133] tcp: tcp_release_cb() should release socket ownership
-Date: Tue, 22 Apr 2014 13:12:25 -0700
-Message-Id: <1398197671-12786-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 019/133] ipv6: some ipv6 statistic counters failed to disable bh
+Date: Tue, 22 Apr 2014 13:12:37 -0700
+Message-Id: <1398197671-12786-20-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,129 +29,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit c3f9b01849ef3bc69024990092b9f42e20df7797 ]
+[ Upstream commit 43a43b6040165f7b40b5b489fe61a4cb7f8c4980 ]
 
-Lars Persson reported following deadlock :
+After commit c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify
+processing to workqueue") some counters are now updated in process context
+and thus need to disable bh before doing so, otherwise deadlocks can
+happen on 32-bit archs. Fabio Estevam noticed this while while mounting
+a NFS volume on an ARM board.
 
--000 |M:0x0:0x802B6AF8(asm) <-- arch_spin_lock
--001 |tcp_v4_rcv(skb = 0x8BD527A0) <-- sk = 0x8BE6B2A0
--002 |ip_local_deliver_finish(skb = 0x8BD527A0)
--003 |__netif_receive_skb_core(skb = 0x8BD527A0, ?)
--004 |netif_receive_skb(skb = 0x8BD527A0)
--005 |elk_poll(napi = 0x8C770500, budget = 64)
--006 |net_rx_action(?)
--007 |__do_softirq()
--008 |do_softirq()
--009 |local_bh_enable()
--010 |tcp_rcv_established(sk = 0x8BE6B2A0, skb = 0x87D3A9E0, th = 0x814EBE14, ?)
--011 |tcp_v4_do_rcv(sk = 0x8BE6B2A0, skb = 0x87D3A9E0)
--012 |tcp_delack_timer_handler(sk = 0x8BE6B2A0)
--013 |tcp_release_cb(sk = 0x8BE6B2A0)
--014 |release_sock(sk = 0x8BE6B2A0)
--015 |tcp_sendmsg(?, sk = 0x8BE6B2A0, ?, ?)
--016 |sock_sendmsg(sock = 0x8518C4C0, msg = 0x87D8DAA8, size = 4096)
--017 |kernel_sendmsg(?, ?, ?, ?, size = 4096)
--018 |smb_send_kvec()
--019 |smb_send_rqst(server = 0x87C4D400, rqst = 0x87D8DBA0)
--020 |cifs_call_async()
--021 |cifs_async_writev(wdata = 0x87FD6580)
--022 |cifs_writepages(mapping = 0x852096E4, wbc = 0x87D8DC88)
--023 |__writeback_single_inode(inode = 0x852095D0, wbc = 0x87D8DC88)
--024 |writeback_sb_inodes(sb = 0x87D6D800, wb = 0x87E4A9C0, work = 0x87D8DD88)
--025 |__writeback_inodes_wb(wb = 0x87E4A9C0, work = 0x87D8DD88)
--026 |wb_writeback(wb = 0x87E4A9C0, work = 0x87D8DD88)
--027 |wb_do_writeback(wb = 0x87E4A9C0, force_wait = 0)
--028 |bdi_writeback_workfn(work = 0x87E4A9CC)
--029 |process_one_work(worker = 0x8B045880, work = 0x87E4A9CC)
--030 |worker_thread(__worker = 0x8B045880)
--031 |kthread(_create = 0x87CADD90)
--032 |ret_from_kernel_thread(asm)
+As a compensation for missing this I looked after the other *_STATS_BH
+and found three other calls which need updating:
 
-Bug occurs because __tcp_checksum_complete_user() enables BH, assuming
-it is running from softirq context.
+1) icmp6_send: ip6_fragment -> icmpv6_send -> icmp6_send (error handling)
+2) ip6_push_pending_frames: rawv6_sendmsg -> rawv6_push_pending_frames -> ...
+   (only in case of icmp protocol with raw sockets in error handling)
+3) ping6_v6_sendmsg (error handling)
 
-Lars trace involved a NIC without RX checksum support but other points
-are problematic as well, like the prequeue stuff.
-
-Problem is triggered by a timer, that found socket being owned by user.
-
-tcp_release_cb() should call tcp_write_timer_handler() or
-tcp_delack_timer_handler() in the appropriate context :
-
-BH disabled and socket lock held, but 'owned' field cleared,
-as if they were running from timer handlers.
-
-Fixes: 6f458dfb4092 ("tcp: improve latencies of timer triggered events")
-Reported-by: Lars Persson <lars.persson@axis.com>
-Tested-by: Lars Persson <lars.persson@axis.com>
-Signed-off-by: Eric Dumazet <edumazet@google.com>
+Fixes: c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify processing to workqueue")
+Reported-by: Fabio Estevam <festevam@gmail.com>
+Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/net/sock.h    |  5 +++++
- net/core/sock.c       |  5 ++++-
- net/ipv4/tcp_output.c | 11 +++++++++++
- 3 files changed, 20 insertions(+), 1 deletion(-)
+ net/ipv6/icmp.c       |  2 +-
+ net/ipv6/ip6_output.c |  4 ++--
+ net/ipv6/mcast.c      | 11 ++++++-----
+ 3 files changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 94871cc..bea5d38 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1433,6 +1433,11 @@ static inline void sk_wmem_free_skb(struct sock *sk, struct sk_buff *skb)
-  */
- #define sock_owned_by_user(sk)	((sk)->sk_lock.owned)
+diff --git a/net/ipv6/icmp.c b/net/ipv6/icmp.c
+index 7463f05..9b3e4cb 100644
+--- a/net/ipv6/icmp.c
++++ b/net/ipv6/icmp.c
+@@ -517,7 +517,7 @@ void icmpv6_send(struct sk_buff *skb, u8 type, u8 code, __u32 info)
+ 			      np->tclass, NULL, &fl6, (struct rt6_info *)dst,
+ 			      MSG_DONTWAIT, np->dontfrag);
+ 	if (err) {
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTERRORS);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTERRORS);
+ 		ip6_flush_pending_frames(sk);
+ 	} else {
+ 		err = icmpv6_push_pending_frames(sk, &fl6, &tmp_hdr,
+diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
+index 84d7632..64809bd 100644
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1577,8 +1577,8 @@ int ip6_push_pending_frames(struct sock *sk)
+ 	if (proto == IPPROTO_ICMPV6) {
+ 		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
  
-+static inline void sock_release_ownership(struct sock *sk)
-+{
-+	sk->sk_lock.owned = 0;
-+}
-+
- /*
-  * Macro so as to not evaluate some arguments when
-  * lockdep is not enabled.
-diff --git a/net/core/sock.c b/net/core/sock.c
-index 68aad38..bf7985a 100644
---- a/net/core/sock.c
-+++ b/net/core/sock.c
-@@ -2296,10 +2296,13 @@ void release_sock(struct sock *sk)
- 	if (sk->sk_backlog.tail)
- 		__release_sock(sk);
+-		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
++		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
+ 	}
  
-+	/* Warning : release_cb() might need to release sk ownership,
-+	 * ie call sock_release_ownership(sk) before us.
-+	 */
- 	if (sk->sk_prot->release_cb)
- 		sk->sk_prot->release_cb(sk);
+ 	err = ip6_local_out(skb);
+diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
+index ac1b533..1f93b61 100644
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -1436,11 +1436,12 @@ static void mld_sendpack(struct sk_buff *skb)
+ 		      dst_output);
+ out:
+ 	if (!err) {
+-		ICMP6MSGOUT_INC_STATS_BH(net, idev, ICMPV6_MLD2_REPORT);
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
+-		IP6_UPD_PO_STATS_BH(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
+-	} else
+-		IP6_INC_STATS_BH(net, idev, IPSTATS_MIB_OUTDISCARDS);
++		ICMP6MSGOUT_INC_STATS(net, idev, ICMPV6_MLD2_REPORT);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
++		IP6_UPD_PO_STATS(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
++	} else {
++		IP6_INC_STATS(net, idev, IPSTATS_MIB_OUTDISCARDS);
++	}
  
--	sk->sk_lock.owned = 0;
-+	sock_release_ownership(sk);
- 	if (waitqueue_active(&sk->sk_lock.wq))
- 		wake_up(&sk->sk_lock.wq);
- 	spin_unlock_bh(&sk->sk_lock.slock);
-diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
-index 0c5b79a..dcc2dd4 100644
---- a/net/ipv4/tcp_output.c
-+++ b/net/ipv4/tcp_output.c
-@@ -920,6 +920,17 @@ void tcp_release_cb(struct sock *sk)
- 	if (flags & (1UL << TCP_TSQ_DEFERRED))
- 		tcp_tsq_handler(sk);
- 
-+	/* Here begins the tricky part :
-+	 * We are called from release_sock() with :
-+	 * 1) BH disabled
-+	 * 2) sk_lock.slock spinlock held
-+	 * 3) socket owned by us (sk->sk_lock.owned == 1)
-+	 *
-+	 * But following code is meant to be called from BH handlers,
-+	 * so we should keep BH disabled, but early release socket ownership
-+	 */
-+	sock_release_ownership(sk);
-+
- 	if (flags & (1UL << TCP_WRITE_TIMER_DEFERRED)) {
- 		tcp_write_timer_handler(sk);
- 		__sock_put(sk);
+ 	rcu_read_unlock();
+ 	return;
 -- 
 1.9.1
 
