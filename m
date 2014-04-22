@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758335AbaDVUZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:25:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36769 "EHLO
+	id S1758356AbaDVUZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:25:32 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36796 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758252AbaDVUZW (ORCPT
+	with ESMTP id S1758332AbaDVUZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:25:22 -0400
+	Tue, 22 Apr 2014 16:25:27 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wolfram Sang <wsa@the-dreams.de>, Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 040/133] [media] media: gspca: sn9c20x: add ID for Genius Look 1320 V2
-Date: Tue, 22 Apr 2014 13:12:58 -0700
-Message-Id: <1398197671-12786-41-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 037/133] hvc: ensure hvc_init is only ever called once in hvc_console.c
+Date: Tue, 22 Apr 2014 13:12:55 -0700
+Message-Id: <1398197671-12786-38-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,43 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
 
-commit 61f0319193c44adbbada920162d880b1fdb3aeb3 upstream.
+commit f76a1cbed18c86e2d192455f0daebb48458965f3 upstream.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Commit 3e6c6f630a5282df8f3393a59f10eb9c56536d23 ("Delay creation of
+khcvd thread") moved the call of hvc_init from being a device_initcall
+into hvc_alloc, and used a non-null hvc_driver as indication of whether
+hvc_init had already been called.
+
+The problem with this is that hvc_driver is only assigned a value
+at the bottom of hvc_init, and so there is a window where multiple
+hvc_alloc calls can be in progress at the same time and hence try
+and call hvc_init multiple times.  Previously the use of device_init
+guaranteed that hvc_init was only called once.
+
+This manifests itself as sporadic instances of two hvc_init calls
+racing each other, and with the loser of the race getting -EBUSY
+from tty_register_driver() and hence that virtual console fails:
+
+    Couldn't register hvc console driver
+    virtio-ports vport0p1: error -16 allocating hvc for port
+
+Here we add an atomic_t to guarantee we'll never run hvc_init twice.
+
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Fixes: 3e6c6f630a52 ("Delay creation of khcvd thread")
+Reported-by: Jim Somerville <Jim.Somerville@windriver.com>
+Tested-by: Jim Somerville <Jim.Somerville@windriver.com>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- Documentation/video4linux/gspca.txt | 1 +
- drivers/media/usb/gspca/sn9c20x.c   | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/tty/hvc/hvc_console.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/video4linux/gspca.txt b/Documentation/video4linux/gspca.txt
-index 1e6b653..d2ba80b 100644
---- a/Documentation/video4linux/gspca.txt
-+++ b/Documentation/video4linux/gspca.txt
-@@ -55,6 +55,7 @@ zc3xx		0458:700f	Genius VideoCam Web V2
- sonixj		0458:7025	Genius Eye 311Q
- sn9c20x		0458:7029	Genius Look 320s
- sonixj		0458:702e	Genius Slim 310 NB
-+sn9c20x		0458:7045	Genius Look 1320 V2
- sn9c20x		0458:704a	Genius Slim 1320
- sn9c20x		0458:704c	Genius i-Look 1321
- sn9c20x		045e:00f4	LifeCam VX-6000 (SN9C20x + OV9650)
-diff --git a/drivers/media/usb/gspca/sn9c20x.c b/drivers/media/usb/gspca/sn9c20x.c
-index 41f769f..9ccde23 100644
---- a/drivers/media/usb/gspca/sn9c20x.c
-+++ b/drivers/media/usb/gspca/sn9c20x.c
-@@ -2394,6 +2394,7 @@ static const struct usb_device_id device_table[] = {
- 	{USB_DEVICE(0x045e, 0x00f4), SN9C20X(OV9650, 0x30, 0)},
- 	{USB_DEVICE(0x145f, 0x013d), SN9C20X(OV7660, 0x21, 0)},
- 	{USB_DEVICE(0x0458, 0x7029), SN9C20X(HV7131R, 0x11, 0)},
-+	{USB_DEVICE(0x0458, 0x7045), SN9C20X(MT9M112, 0x5d, LED_REVERSE)},
- 	{USB_DEVICE(0x0458, 0x704a), SN9C20X(MT9M112, 0x5d, 0)},
- 	{USB_DEVICE(0x0458, 0x704c), SN9C20X(MT9M112, 0x5d, 0)},
- 	{USB_DEVICE(0xa168, 0x0610), SN9C20X(HV7131R, 0x11, 0)},
+diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
+index 13ee53b..89c1dd1 100644
+--- a/drivers/tty/hvc/hvc_console.c
++++ b/drivers/tty/hvc/hvc_console.c
+@@ -31,6 +31,7 @@
+ #include <linux/list.h>
+ #include <linux/module.h>
+ #include <linux/major.h>
++#include <linux/atomic.h>
+ #include <linux/sysrq.h>
+ #include <linux/tty.h>
+ #include <linux/tty_flip.h>
+@@ -70,6 +71,9 @@ static struct task_struct *hvc_task;
+ /* Picks up late kicks after list walk but before schedule() */
+ static int hvc_kicked;
+ 
++/* hvc_init is triggered from hvc_alloc, i.e. only when actually used */
++static atomic_t hvc_needs_init __read_mostly = ATOMIC_INIT(-1);
++
+ static int hvc_init(void);
+ 
+ #ifdef CONFIG_MAGIC_SYSRQ
+@@ -842,7 +846,7 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int data,
+ 	int i;
+ 
+ 	/* We wait until a driver actually comes along */
+-	if (!hvc_driver) {
++	if (atomic_inc_not_zero(&hvc_needs_init)) {
+ 		int err = hvc_init();
+ 		if (err)
+ 			return ERR_PTR(err);
 -- 
 1.9.1
 
