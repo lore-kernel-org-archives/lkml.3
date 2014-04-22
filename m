@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbaDVKL3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 06:11:29 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:35648 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368AbaDVKLU (ORCPT
+	id S1755542AbaDVKPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 06:15:06 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:37597 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752662AbaDVKPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 06:11:20 -0400
-Date: Tue, 22 Apr 2014 13:11:01 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: navin patidar <navin.patidar@gmail.com>
-Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/10] staging: rtl8188eu: Remove _ReadLEDSetting()
- function.
-Message-ID: <20140422101101.GG26890@mwanda>
-References: <1397983638-10752-1-git-send-email-navin.patidar@gmail.com>
- <1397983638-10752-3-git-send-email-navin.patidar@gmail.com>
+	Tue, 22 Apr 2014 06:15:00 -0400
+X-IronPort-AV: E=Sophos;i="4.97,900,1389715200"; 
+   d="scan'208";a="29566545"
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+To: <linux-kernel@vger.kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>
+Subject: [PATCH 0/4] idr: idr cleanups
+Date: Tue, 22 Apr 2014 18:16:17 +0800
+Message-ID: <1398161781-12105-1-git-send-email-laijs@cn.fujitsu.com>
+X-Mailer: git-send-email 1.7.4.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397983638-10752-3-git-send-email-navin.patidar@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+Content-Type: text/plain
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 20, 2014 at 02:17:11PM +0530, navin patidar wrote:
-> _ReadLEDSetting() doesn't read led settings this function actually
-> initialize  member variables of struct led_priv, we should do that
-> inside rtl8188eu_InitSwLeds().
-> 
+patch1 is the new version of previous pathset.(it is dropped by previous
+	patchset, this one is new)
 
-This seems like a bugfix or is it just a cleanup?  It's not clear to me
-from the patch description.  Have you tested this patch?
+patch2/3 save a lot memory
 
-regards,
-dan carpenter
+Lai Jiangshan (4):
+  idr: proper invalid argument handling
+  idr: reduce the number of MAX_IDR_FREE
+  ida: in-place ida allocation
+  idr: reorder the fields
+
+ include/linux/idr.h |   28 ++++--------
+ lib/idr.c           |  119 ++++++++++++++++++---------------------------------
+ 2 files changed, 51 insertions(+), 96 deletions(-)
+
+-- 
+1.7.4.4
 
