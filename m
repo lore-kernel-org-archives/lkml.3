@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758453AbaDVUrb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:47:31 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36593 "EHLO
+	id S1758473AbaDVUsK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:48:10 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36585 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758106AbaDVUY2 (ORCPT
+	with ESMTP id S1751182AbaDVUYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:28 -0400
+	Tue, 22 Apr 2014 16:24:23 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 086/133] mfd: tps65910: Fix possible invalid pointer dereference on regmap_add_irq_chip fail
-Date: Tue, 22 Apr 2014 13:13:44 -0700
-Message-Id: <1398197671-12786-87-git-send-email-kamal@canonical.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 060/133] virtio_balloon: don't softlockup on huge balloon changes.
+Date: Tue, 22 Apr 2014 13:13:18 -0700
+Message-Id: <1398197671-12786-61-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,46 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-commit 483e2dfdbc94751430e41db9973985f5b054d322 upstream.
+commit 1f74ef0f2d7d692fcd615621e0e734c3e7771413 upstream.
 
-Fixes: 4aab3fadad32 ("mfd: tps65910: Move interrupt implementation code to mfd file")
+When adding or removing 100G from a balloon:
 
-tps65910_irq_init() sets 'tps65910->chip_irq' before calling
-regmap_add_irq_chip(). If the regmap_add_irq_chip() call fails in
-memory allocation of regmap_irq_chip_data members then:
+    BUG: soft lockup - CPU#0 stuck for 22s! [vballoon:367]
 
-1. The 'tps65910->chip_irq' will still hold some value
-2. 'tps65910->irq_data' will be pointing to already freed memory
-   (because regmap_add_irq_chip() will free it on error)
+We have a wait_event_interruptible(), but the condition is always true
+(more ballooning to do) so we don't ever sleep.  We also have a
+wait_event() for the host to ack, but that is also always true as QEMU
+is synchronous for balloon operations.
 
-This results in invalid memory access during driver remove because the
-tps65910_irq_exit() tests whether 'tps65910->chip_irq' is not zero.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Reported-by: Gopesh Kumar Chaudhary <gopchaud@in.ibm.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/tps65910.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/virtio/virtio_balloon.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index d792772..de87eaf 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -254,8 +254,10 @@ static int tps65910_irq_init(struct tps65910 *tps65910, int irq,
- 	ret = regmap_add_irq_chip(tps65910->regmap, tps65910->chip_irq,
- 		IRQF_ONESHOT, pdata->irq_base,
- 		tps6591x_irqs_chip, &tps65910->irq_data);
--	if (ret < 0)
-+	if (ret < 0) {
- 		dev_warn(tps65910->dev, "Failed to add irq_chip %d\n", ret);
-+		tps65910->chip_irq = 0;
-+	}
- 	return ret;
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index 797e1c7..494e1f7 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -310,6 +310,12 @@ static int balloon(void *_vballoon)
+ 		else if (diff < 0)
+ 			leak_balloon(vb, -diff);
+ 		update_balloon_size(vb);
++
++		/*
++		 * For large balloon changes, we could spend a lot of time
++		 * and always have work to do.  Be nice if preempt disabled.
++		 */
++		cond_resched();
+ 	}
+ 	return 0;
  }
- 
 -- 
 1.9.1
 
