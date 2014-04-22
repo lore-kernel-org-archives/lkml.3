@@ -1,132 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573AbaDVNw4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:52:56 -0400
-Received: from smtp.devoid-pointer.net ([31.31.77.140]:49385 "EHLO
-	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756102AbaDVNqW (ORCPT
+	id S1755871AbaDVN5b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:57:31 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42502 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751180AbaDVN51 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:46:22 -0400
-From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
-        anssi.hannula@iki.fi, simon@mungewell.org
-Subject: [PATCH 02/24] Port arizona-haptics to ff-memless-next
-Date: Tue, 22 Apr 2014 15:45:52 +0200
-Message-Id: <1398174374-9501-3-git-send-email-madcatxster@devoid-pointer.net>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398174374-9501-1-git-send-email-madcatxster@devoid-pointer.net>
-References: <1398174374-9501-1-git-send-email-madcatxster@devoid-pointer.net>
+	Tue, 22 Apr 2014 09:57:27 -0400
+Date: Tue, 22 Apr 2014 09:57:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: sundeep subbaraya <sundeep.lkml@gmail.com>
+cc: Felipe Balbi <balbi@ti.com>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Simek <michals@xilinx.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
+In-Reply-To: <CALHRZur7+MaYXbWOfbvjggPN7_eYAE+th5VNbcLP=ehvm0HGsA@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1404220956210.1326-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
----
- drivers/input/misc/Kconfig           |  2 +-
- drivers/input/misc/arizona-haptics.c | 39 +++++++++++++++++++++++-------------
- 2 files changed, 26 insertions(+), 15 deletions(-)
+On Tue, 22 Apr 2014, sundeep subbaraya wrote:
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 7904ab0..33e0f5d 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -75,7 +75,7 @@ config INPUT_AD714X_SPI
- config INPUT_ARIZONA_HAPTICS
- 	tristate "Arizona haptics support"
- 	depends on MFD_ARIZONA && SND_SOC
--	select INPUT_FF_MEMLESS
-+	select INPUT_FF_MEMLESS_NEXT
- 	help
- 	  Say Y to enable support for the haptics module in Arizona CODECs.
- 
-diff --git a/drivers/input/misc/arizona-haptics.c b/drivers/input/misc/arizona-haptics.c
-index ef2e281..b4707cc 100644
---- a/drivers/input/misc/arizona-haptics.c
-+++ b/drivers/input/misc/arizona-haptics.c
-@@ -13,6 +13,7 @@
- #include <linux/module.h>
- #include <linux/platform_device.h>
- #include <linux/input.h>
-+#include <linux/input/ff-memless-next.h>
- #include <linux/slab.h>
- 
- #include <sound/soc.h>
-@@ -22,6 +23,8 @@
- #include <linux/mfd/arizona/pdata.h>
- #include <linux/mfd/arizona/registers.h>
- 
-+#define FF_UPDATE_RATE 50
-+
- struct arizona_haptics {
- 	struct arizona *arizona;
- 	struct input_dev *input_dev;
-@@ -108,29 +111,37 @@ static void arizona_haptics_work(struct work_struct *work)
- }
- 
- static int arizona_haptics_play(struct input_dev *input, void *data,
--				struct ff_effect *effect)
-+				const struct mlnx_effect_command *command)
- {
- 	struct arizona_haptics *haptics = input_get_drvdata(input);
- 	struct arizona *arizona = haptics->arizona;
-+	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 
- 	if (!arizona->dapm) {
- 		dev_err(arizona->dev, "No DAPM context\n");
- 		return -EBUSY;
- 	}
- 
--	if (effect->u.rumble.strong_magnitude) {
--		/* Scale the magnitude into the range the device supports */
--		if (arizona->pdata.hap_act) {
--			haptics->intensity =
--				effect->u.rumble.strong_magnitude >> 9;
--			if (effect->direction < 0x8000)
--				haptics->intensity += 0x7f;
-+	switch (command->cmd) {
-+	case MLNX_START_RUMBLE:
-+		if (rumble_force->strong) {
-+			/* Scale the magnitude into the range the device supports */
-+			if (arizona->pdata.hap_act) {
-+				haptics->intensity = rumble_force->strong >> 9;
-+				if (rumble_force->strong_dir < 0x8000)
-+					haptics->intensity += 0x7f;
-+			} else {
-+				haptics->intensity = rumble_force->strong >> 8;
-+			}
- 		} else {
--			haptics->intensity =
--				effect->u.rumble.strong_magnitude >> 8;
-+			haptics->intensity = 0;
- 		}
--	} else {
-+		break;
-+	case MLNX_STOP_RUMBLE:
- 		haptics->intensity = 0;
-+		break;
-+	default:
-+		return -EINVAL;
- 	}
- 
- 	schedule_work(&haptics->work);
-@@ -183,10 +194,10 @@ static int arizona_haptics_probe(struct platform_device *pdev)
- 	haptics->input_dev->close = arizona_haptics_close;
- 	__set_bit(FF_RUMBLE, haptics->input_dev->ffbit);
- 
--	ret = input_ff_create_memless(haptics->input_dev, NULL,
--				      arizona_haptics_play);
-+	ret = input_ff_create_mlnx(haptics->input_dev, NULL,
-+				   arizona_haptics_play, FF_UPDATE_RATE);
- 	if (ret < 0) {
--		dev_err(arizona->dev, "input_ff_create_memless() failed: %d\n",
-+		dev_err(arizona->dev, "input_ff_create_mlnx() failed: %d\n",
- 			ret);
- 		goto err_ialloc;
- 	}
--- 
-1.9.2
+> Hi,
+> 
+> On Mon, Apr 21, 2014 at 10:09 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> > On Mon, 21 Apr 2014, Felipe Balbi wrote:
+> >
+> >> Hi,
+> >>
+> >> On Fri, Apr 18, 2014 at 07:34:08PM +0530, sundeep subbaraya wrote:
+> >>
+> >> <snip>
+> >>
+> >> > >> in ep_queue driver starts dma transfer from/to IP buffer to/from req->buf.
+> >> > >> If transfer is completed then request is not added to ep request queue
+> >> > >> and returns from ep_queue.
+> >> > >> If transfer is not completed (actual < length) then request is added
+> >> > >> to queue and returns from ep_queue.
+> >> > >
+> >> > > This is wrong. Why wouldn't you give gadget driver the chance to decide
+> >> > > if it needs to queue the request again or not ?
+> >> >
+> >> > When does gadget driver decides to queue the same request again?
+> >> > if -EBUSY is returned from ep_queue or req.status != 0 in completion
+> >> > routine?
+> >>
+> >> whenever it so decides. Different gadget drivers might have different
+> >> requirements. The code is open and sits under drivers/usb/gadget/ why
+> >> don't you have a read ?
+> >
+> > I get the impression that the two of you are arguing past each other.
+> > It appears that Sundeep is talking about transferring data from the
+> > gadget driver's buffer to an internal buffer in the UDC hardware, but
+> > Felipe is talking about transferring data from the UDC to the host.
+> >
+> > As I understand it, Sundeep said that when the gadget driver queues a
+> > data-IN request, the UDC driver copies as much of the data buffer as
+> > possible into a hardware FIFO.  If it succeeds in copying all the data
+> > into the FIFO then the request's completion routine gets called
+> > immediately, even though the data doesn't get sent from the FIFO to the
+> > host until the host asks for it.
+> >
+> > If only part of the data can be copied into the FIFO then the request
+> > is added to the ep's request queue before the usb_ep_queue() call
+> > returns.  When space becomes available in the FIFO, the data will be
+> > copied and eventually sent to the host.  When all the data has been
+> > copied to the FIFO, the request's completion routine will be called.
+> >
+> > Thus there never is any need for the gadget driver to queue the request
+> > again.  An incomplete transfer means the FIFO didn't have enough room
+> > when the request was submitted; it doesn't mean that the data didn't
+> > eventually get sent to the host.
+> 
+> Exactly Alan,this is what I was trying to say. Probably I was not
+> clear in explaining. I didnt see
+> any harm this way and even this implementation is same like
+> at91_udc.c. I have been reading
+> mas_storage to understand when does gadget driver tries to enqueue a
+> request again. Since
+> different gadget drivers might have different requirements (agree with
+> Felipe), wanted to
+> know criteria for queuing a same request again.
+> 
+> I will change this implementation as per Felipe comments and test with
+> some of the gadgets.
+
+Wait until you hear what Felipe has to say about this discussion.  
+Maybe he will decide that the original implementation was correct.
+
+Alan Stern
 
