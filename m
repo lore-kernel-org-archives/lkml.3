@@ -1,71 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193AbaDVGio (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 02:38:44 -0400
-Received: from mga11.intel.com ([192.55.52.93]:16603 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752085AbaDVGik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 02:38:40 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,901,1389772800"; 
-   d="scan'208";a="524675473"
-Message-ID: <53560E6F.9000806@linux.intel.com>
-Date: Tue, 22 Apr 2014 14:38:39 +0800
-From: "Zhu, Lejun" <lejun.zhu@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1752378AbaDVGm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 02:42:58 -0400
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:46468 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaDVGm4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 02:42:56 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] soc_button_array: fix a crash during rmmod
-References: <53560DD1.5050805@linux.intel.com>
-In-Reply-To: <53560DD1.5050805@linux.intel.com>
-X-Forwarded-Message-Id: <53560DD1.5050805@linux.intel.com>
+In-Reply-To: <20140422060654.GB9133@gmail.com>
+References: <1398144517-9496-1-git-send-email-nasa4836@gmail.com> <20140422060654.GB9133@gmail.com>
+From: Jianyu Zhan <nasa4836@gmail.com>
+Date: Tue, 22 Apr 2014 14:42:16 +0800
+Message-ID: <CAHz2CGXzN3OhrjNnJhm_2j=h=y-Te_9yH=WQ4_Hzmco2-G895Q@mail.gmail.com>
+Subject: Re: [PATCH] perf-event/cgroup: explicitly init the early_init field
+To: Ingo Molnar <mingo@kernel.org>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the system has zero or one button available, trying to rmmod
-soc_button_array will cause crash. Fix this by properly handling -ENODEV
-in probe().
+On Tue, Apr 22, 2014 at 2:06 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> How can that field ever be nonzero?
+>
+> I.e. under what exact circumstances does this patch make sense?
 
-Signed-off-by: Lejun Zhu <lejun.zhu@linux.intel.com>
----
- drivers/input/misc/soc_button_array.c | 1 +
- 1 file changed, 1 insertion(+)
+Hi, Ingo,
 
-diff --git a/drivers/input/misc/soc_button_array.c
-b/drivers/input/misc/soc_button_array.c
-index 08ead2a..20c80f5 100644
---- a/drivers/input/misc/soc_button_array.c
-+++ b/drivers/input/misc/soc_button_array.c
-@@ -169,6 +169,7 @@ static int soc_button_pnp_probe(struct pnp_dev *pdev,
- 				soc_button_remove(pdev);
- 				return error;
- 			}
-+			continue;
- 		}
+For cpuset subsystem, this filed is nonzero; for other subsystems, this is zero.
+Actually none of these subsystem will change this field,  I just
+thought that  this is
+a little subtle. as the comment in patches says, this is mainly for
+document reason
+to inform other maintainers that css_alloc implementation should be
+taken care of ,
+depending on this field is zero or not.
 
- 		priv->children[i] = pd;
--- 
-1.8.3.2
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+Thanks,
+Jianyu Zhan
