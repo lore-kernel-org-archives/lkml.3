@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407AbaDVSkI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 14:40:08 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57648 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751577AbaDVSkF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 14:40:05 -0400
-Message-ID: <5356B769.1020306@ti.com>
-Date: Tue, 22 Apr 2014 14:39:37 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Joel Fernandes <joelf@ti.com>,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Russell King <linux@arm.linux.org.uk>, Nishanth Menon <nm@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH] ARM: OMAP5: Switch to THUMB mode if needed on secondary
- CPU
-References: <1398191506-3741-1-git-send-email-joelf@ti.com>
-In-Reply-To: <1398191506-3741-1-git-send-email-joelf@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1756189AbaDVSkj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 14:40:39 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:55901 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957AbaDVSka (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 14:40:30 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert+renesas@glider.be>,
+        Dinh Nguyen <dinguyen@altera.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org
+Subject: [PATCH 1/4] dt: bindings: Typo s/clocks-names/clock-names/g
+Date: Tue, 22 Apr 2014 20:40:22 +0200
+Message-Id: <1398192025-31523-1-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 April 2014 02:31 PM, Joel Fernandes wrote:
-> On my DRA7 system, when the kernel is built in THUMB mode, the secondary CPU
-> (Cortex A15) fails to come up causing SMP boot on second CPU to timeout. This
-> seems to be because the CPU is in ARM mode once the ROM hands over control to
-> the kernel.  Switch to THUMB mode if required once the kernel is control of
-> secondary CPU. On OMAP4 on the other hand, it appears to be in THUMB mode on
-> entry so this is not required and SMP boot works as is.
-> 
-> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> Cc: Russell King <linux@arm.linux.org.uk>
-> Cc: Nishanth Menon <nm@ti.com>
-> Cc: Tony Lindgren <tony@atomide.com>
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
->  arch/arm/mach-omap2/omap-headsmp.S |    8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-Looks fine to me ..
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Dinh Nguyen <dinguyen@altera.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: netdev@vger.kernel.org
+---
+ .../devicetree/bindings/net/socfpga-dwmac.txt      |    2 +-
+ Documentation/devicetree/bindings/net/stmmac.txt   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/Documentation/devicetree/bindings/net/socfpga-dwmac.txt b/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
+index 636f0ac4e223..2a60cd3e8d5d 100644
+--- a/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
++++ b/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
+@@ -23,5 +23,5 @@ gmac0: ethernet@ff700000 {
+ 	interrupt-names = "macirq";
+ 	mac-address = [00 00 00 00 00 00];/* Filled in by U-Boot */
+ 	clocks = <&emac_0_clk>;
+-	clocks-names = "stmmaceth";
++	clock-names = "stmmaceth";
+ };
+diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
+index 80c1fb8bfbb8..a2acd2b26baf 100644
+--- a/Documentation/devicetree/bindings/net/stmmac.txt
++++ b/Documentation/devicetree/bindings/net/stmmac.txt
+@@ -33,7 +33,7 @@ Optional properties:
+ - max-frame-size: See ethernet.txt file in the same directory
+ - clocks: If present, the first clock should be the GMAC main clock,
+   further clocks may be specified in derived bindings.
+-- clocks-names: One name for each entry in the clocks property, the
++- clock-names: One name for each entry in the clocks property, the
+   first one should be "stmmaceth".
+ 
+ Examples:
+-- 
+1.7.9.5
 
