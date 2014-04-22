@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753492AbaDVI1h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:27:37 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:46217 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751745AbaDVI1d (ORCPT
+	id S1754449AbaDVI2l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:28:41 -0400
+Received: from mail-qa0-f46.google.com ([209.85.216.46]:58388 "EHLO
+	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384AbaDVI2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:27:33 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/2] ARM: berlin: add SDHCI support
-Date: Tue, 22 Apr 2014 10:27:26 +0200
-Message-Id: <1398155248-1659-1-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	Tue, 22 Apr 2014 04:28:36 -0400
 MIME-Version: 1.0
+In-Reply-To: <000c01cf5df8$1fecf810$5fc6e830$%jun@samsung.com>
+References: <000c01cf5df8$1fecf810$5fc6e830$%jun@samsung.com>
+Date: Tue, 22 Apr 2014 10:28:35 +0200
+Message-ID: <CAPDyKFoMOJ_Eb3O5B-Sy-fF0Yx7Mp==3-Wyff=rTVNCO3YxCFg@mail.gmail.com>
+Subject: Re: [PATCH] linux-next: rsi: fix using of removed stuff from mmc
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Fariya Fatima <fariyaf@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>, Chris Ball <chris@printf.net>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds the Berlin BG2Q SDHCI nodes to support the 3 controllers
-available. The Berlin BG2Q SDHCI controllers are compatible with the pxav3
-driver. This patches also enable the SD Card reader and the eMMC of the
-BG2Q DMP.
+On 22 April 2014 08:57, Seungwon Jeon <tgih.jun@samsung.com> wrote:
+> As commit 3957848(mmc: drop the speed mode of card's state) applies,
+> this change should be followed.
+>
+> drivers/net/wireless/rsi/rsi_91x_sdio.c:288:20: error: 'MMC_STATE_HIGHSPEED' undeclared (first use in this function)
+> drivers/net/wireless/rsi/rsi_91x_sdio.c:299:4: error: implicit declaration of function 'mmc_card_set_highspeed' [-Werror=implicit-function-declaration]
+> drivers/net/wireless/rsi/rsi_91x_sdio.c:306:2: error: implicit declaration of function 'mmc_card_highspeed' [-Werror=implicit-function-declaration]
+>
+> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
 
-This series applies on top of Alexandre's patches for the Berlin's pll:
-https://patchwork.kernel.org/patch/3890341/
-https://patchwork.kernel.org/patch/3876271/
+Hi Seungwon,
 
-Changes since v1:
-	The v2 introduced a custom Berlin SDHCI driver. It turns out the
-	available pxav3 driver was compatible with the BG2Q SDHCI controllers.
-	- removed the unneeded custom driver
-	- switched to the pxav3 driver
-	- removed the board specific properties from the SoC device tree
+Thanks for responding quickly!
 
-Antoine Ténart (2):
-  ARM: dts: berlin: add the SDHCI nodes for the BG2Q
-  ARM: dts: berlin: enable SD card reader and eMMC for the BG2Q DMP
+> ---
+>  drivers/net/wireless/rsi/rsi_91x_sdio.c |    4 +---
+>  1 files changed, 1 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/net/wireless/rsi/rsi_91x_sdio.c b/drivers/net/wireless/rsi/rsi_91x_sdio.c
+> index 2e39d38..46e7af4 100644
+> --- a/drivers/net/wireless/rsi/rsi_91x_sdio.c
+> +++ b/drivers/net/wireless/rsi/rsi_91x_sdio.c
+> @@ -285,7 +285,6 @@ static void rsi_reset_card(struct sdio_func *pfunction)
+>                 if (err) {
+>                         rsi_dbg(ERR_ZONE, "%s: CCCR speed reg read failed: %d\n",
+>                                 __func__, err);
+> -                       card->state &= ~MMC_STATE_HIGHSPEED;
+>                 } else {
+>                         err = rsi_cmd52writebyte(card,
+>                                                  SDIO_CCCR_SPEED,
+> @@ -296,14 +295,13 @@ static void rsi_reset_card(struct sdio_func *pfunction)
+>                                         __func__, err);
+>                                 return;
+>                         }
+> -                       mmc_card_set_highspeed(card);
+>                         host->ios.timing = MMC_TIMING_SD_HS;
+>                         host->ops->set_ios(host, &host->ios);
+>                 }
+>         }
+>
+>         /* Set clock */
+> -       if (mmc_card_highspeed(card))
+> +       if (mmc_card_hs(card))
+>                 clock = 50000000;
+>         else
+>                 clock = card->cis.max_dtr;
+> --
+> 1.7.0.4
+>
+>
 
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 11 ++++++++++
- arch/arm/boot/dts/berlin2q.dtsi            | 32 ++++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+)
+I am not sure it's safe to carry this patch through Chris' mmc tree
+due to merge conflicts with John's wireless tree.
 
--- 
-1.8.3.2
+Though, since you have changed the mmc_card_highspeed() function to be
+named to mmc_card_hs(), we need to work out the dependency.
 
+We have some options to handle this, I suggest the following.
+
+Re-spin this patch to keep using mmc_card_highspeed() and let John
+take it through his wireless tree. Thus  you also need to keep the
+name mmc_card_highspeed() function from the patches to the mmc core -
+could you please re-spin and post new version of those patches as
+well!?
+
+Kind regards
+Ulf Hansson
