@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757788AbaDVUVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:21:41 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36414 "EHLO
+	id S1757802AbaDVUVx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:21:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36420 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752607AbaDVUVg (ORCPT
+	with ESMTP id S1757789AbaDVUVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:21:36 -0400
+	Tue, 22 Apr 2014 16:21:49 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 109/133] nfsd: check passed socket's net matches NFSd superblock's one
-Date: Tue, 22 Apr 2014 13:14:07 -0700
-Message-Id: <1398197671-12786-110-git-send-email-kamal@canonical.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 113/133] don't bother with {get,put}_write_access() on non-regular files
+Date: Tue, 22 Apr 2014 13:14:11 -0700
+Message-Id: <1398197671-12786-114-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,93 +26,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stanislav Kinsbursky <skinsbursky@parallels.com>
+From: Al Viro <viro@zeniv.linux.org.uk>
 
-commit 3064639423c48d6e0eb9ecc27c512a58e38c6c57 upstream.
+commit d23142c6271c499d913d0d5e668b5a4eb6dafcb0 upstream.
 
-There could be a case, when NFSd file system is mounted in network, different
-to socket's one, like below:
+it's pointless and actually leads to wrong behaviour in at least one
+moderately convoluted case (pipe(), close one end, try to get to
+another via /proc/*/fd and run into ETXTBUSY).
 
-"ip netns exec" creates new network and mount namespace, which duplicates NFSd
-mount point, created in init_net context. And thus NFS server stop in nested
-network context leads to RPCBIND client destruction in init_net.
-Then, on NFSd start in nested network context, rpc.nfsd process creates socket
-in nested net and passes it into "write_ports", which leads to RPCBIND sockets
-creation in init_net context because of the same reason (NFSd monut point was
-created in init_net context). An attempt to register passed socket in nested
-net leads to panic, because no RPCBIND client present in nexted network
-namespace.
-
-This patch add check that passed socket's net matches NFSd superblock's one.
-And returns -EINVAL error to user psace otherwise.
-
-v2: Put socket on exit.
-
-Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
-Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfsd/nfsctl.c               |  5 +++++
- include/linux/sunrpc/svcsock.h |  1 +
- net/sunrpc/svcsock.c           | 16 ++++++++++++++++
- 3 files changed, 22 insertions(+)
+ fs/file_table.c |  4 ++--
+ fs/open.c       | 26 +++++++-------------------
+ 2 files changed, 9 insertions(+), 21 deletions(-)
 
-diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
-index 7493428..dd80c0e 100644
---- a/fs/nfsd/nfsctl.c
-+++ b/fs/nfsd/nfsctl.c
-@@ -671,6 +671,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
- 	if (err != 0 || fd < 0)
- 		return -EINVAL;
+diff --git a/fs/file_table.c b/fs/file_table.c
+index de9e965..ff2d2e8 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -211,10 +211,10 @@ static void drop_file_write_access(struct file *file)
+ 	struct dentry *dentry = file->f_path.dentry;
+ 	struct inode *inode = dentry->d_inode;
  
-+	if (svc_alien_sock(net, fd)) {
-+		printk(KERN_ERR "%s: socket net is different to NFSd's one\n", __func__);
-+		return -EINVAL;
-+	}
+-	put_write_access(inode);
+-
+ 	if (special_file(inode->i_mode))
+ 		return;
 +
- 	err = nfsd_create_serv(net);
- 	if (err != 0)
- 		return err;
-diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
-index 62fd1b7..947009e 100644
---- a/include/linux/sunrpc/svcsock.h
-+++ b/include/linux/sunrpc/svcsock.h
-@@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
- int		svc_send(struct svc_rqst *);
- void		svc_drop(struct svc_rqst *);
- void		svc_sock_update_bufs(struct svc_serv *serv);
-+bool		svc_alien_sock(struct net *net, int fd);
- int		svc_addsock(struct svc_serv *serv, const int fd,
- 					char *name_return, const size_t len);
- void		svc_init_xprt_sock(void);
-diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
-index 305374d..422759b 100644
---- a/net/sunrpc/svcsock.c
-+++ b/net/sunrpc/svcsock.c
-@@ -1393,6 +1393,22 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
- 	return svsk;
++	put_write_access(inode);
+ 	if (file_check_writeable(file) != 0)
+ 		return;
+ 	__mnt_drop_write(mnt);
+diff --git a/fs/open.c b/fs/open.c
+index 9b33c0c..4a02b5a 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -641,23 +641,12 @@ out:
+ static inline int __get_file_write_access(struct inode *inode,
+ 					  struct vfsmount *mnt)
+ {
+-	int error;
+-	error = get_write_access(inode);
++	int error = get_write_access(inode);
+ 	if (error)
+ 		return error;
+-	/*
+-	 * Do not take mount writer counts on
+-	 * special files since no writes to
+-	 * the mount itself will occur.
+-	 */
+-	if (!special_file(inode->i_mode)) {
+-		/*
+-		 * Balanced in __fput()
+-		 */
+-		error = __mnt_want_write(mnt);
+-		if (error)
+-			put_write_access(inode);
+-	}
++	error = __mnt_want_write(mnt);
++	if (error)
++		put_write_access(inode);
+ 	return error;
  }
  
-+bool svc_alien_sock(struct net *net, int fd)
-+{
-+	int err;
-+	struct socket *sock = sockfd_lookup(fd, &err);
-+	bool ret = false;
-+
-+	if (!sock)
-+		goto out;
-+	if (sock_net(sock->sk) != net)
-+		ret = true;
-+	sockfd_put(sock);
-+out:
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(svc_alien_sock);
-+
- /**
-  * svc_addsock - add a listener socket to an RPC service
-  * @serv: pointer to RPC service to which to add a new listener
+@@ -690,12 +679,11 @@ static int do_dentry_open(struct file *f,
+ 
+ 	path_get(&f->f_path);
+ 	inode = f->f_path.dentry->d_inode;
+-	if (f->f_mode & FMODE_WRITE) {
++	if (f->f_mode & FMODE_WRITE && !special_file(inode->i_mode)) {
+ 		error = __get_file_write_access(inode, f->f_path.mnt);
+ 		if (error)
+ 			goto cleanup_file;
+-		if (!special_file(inode->i_mode))
+-			file_take_write(f);
++		file_take_write(f);
+ 	}
+ 
+ 	f->f_mapping = inode->i_mapping;
+@@ -737,7 +725,6 @@ cleanup_all:
+ 	fops_put(f->f_op);
+ 	file_sb_list_del(f);
+ 	if (f->f_mode & FMODE_WRITE) {
+-		put_write_access(inode);
+ 		if (!special_file(inode->i_mode)) {
+ 			/*
+ 			 * We don't consider this a real
+@@ -745,6 +732,7 @@ cleanup_all:
+ 			 * because it all happenend right
+ 			 * here, so just reset the state.
+ 			 */
++			put_write_access(inode);
+ 			file_reset_write(f);
+ 			__mnt_drop_write(f->f_path.mnt);
+ 		}
 -- 
 1.9.1
 
