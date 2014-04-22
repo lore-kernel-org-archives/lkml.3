@@ -1,86 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550AbaDVTnS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:43:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46994 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752280AbaDVTnQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:43:16 -0400
-Date: Tue, 22 Apr 2014 21:43:13 +0200
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Cc: Cong Wang <cwang@twopensource.com>, netdev <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kvm@vger.kernel.org, xen-devel@lists.xenproject.org,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        bridge@lists.linux-foundation.org
-Subject: Re: [PATCH 2/3] bridge: trigger a bridge calculation upon port
-	changes
-Message-ID: <20140422194313.GQ27882@wotan.suse.de>
-References: <1394680527-28970-1-git-send-email-mcgrof@do-not-panic.com> <1394680527-28970-3-git-send-email-mcgrof@do-not-panic.com> <CAHA+R7Pf6rM5h1uGiqrru5LkN9C7Nm7V42cucHSOV1s7_+F7Gw@mail.gmail.com> <20140315013940.GA28801@wotan.suse.de> <CAHA+R7MRVyjAN7w_qPxSxkrjo939bNEc3Ej+O3yH-oWj4gGJxw@mail.gmail.com> <20140318212243.GD28471@garbanzo.do-not-panic.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140318212243.GD28471@garbanzo.do-not-panic.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1755546AbaDVTq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:46:28 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48909 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970AbaDVTq1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 15:46:27 -0400
+Date: Tue, 22 Apr 2014 12:46:24 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>, <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, Jean Delvare <jdelvare@suse.de>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        Jeff Layton <jlayton@redhat.com>,
+        Andreas Gruenbacher <agruen@linbit.com>,
+        Stephen Hemminger <stephen@networkplumber.org>
+Subject: Re: [PATCH 1/4] idr: proper invalid argument handling
+Message-Id: <20140422124624.6297f6fddffd0110e2b12700@linux-foundation.org>
+In-Reply-To: <20140422121656.14d5e5534ae4888119787471@linux-foundation.org>
+References: <1398161781-12105-1-git-send-email-laijs@cn.fujitsu.com>
+	<1398161781-12105-2-git-send-email-laijs@cn.fujitsu.com>
+	<20140422121656.14d5e5534ae4888119787471@linux-foundation.org>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Mar 18, 2014 at 02:22:43PM -0700, Luis R. Rodriguez wrote:
-> On Tue, Mar 18, 2014 at 01:46:49PM -0700, Cong Wang wrote:
-> > On Fri, Mar 14, 2014 at 6:39 PM, Luis R. Rodriguez <mcgrof@suse.com> wrote:
-> > > On Thu, Mar 13, 2014 at 11:26:25AM -0700, Cong Wang wrote:
-> > >> On Wed, Mar 12, 2014 at 8:15 PM, Luis R. Rodriguez
-> > >> <mcgrof@do-not-panic.com> wrote:
-> > >> >                         spin_unlock_bh(&p->br->lock);
-> > >> > +                       if (changed)
-> > >> > +                               call_netdevice_notifiers(NETDEV_CHANGEADDR,
-> > >> > +                                                        p->br->dev);
-> > >> > +                       netdev_update_features(p->br->dev);
-> > >>
-> > >> I think this is supposed to be in netdev event handler of br->dev
-> > >> instead of here.
-> > >
-> > > Do you mean netdev_update_features() ? I mimic'd what was being done on
-> > > br_del_if() given that root blocking is doing something similar. If
-> > > we need to change something for the above then I suppose it means we need
-> > > to change br_del_if() too. Let me know if you see any reason for something
-> > > else.
-> > >
+On Tue, 22 Apr 2014 12:16:56 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Tue, 22 Apr 2014 18:16:18 +0800 Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+> 
+> > When the arguments passed by the caller are invalid, WARN_ON_ONCE()
+> > is proper than BUG_ON() which may crash the kernel.
 > > 
-> > Yeah, for me it looks like it's better to call netdev_update_features()
-> > in the event handler of br->dev, rather than where calling
-> > call_netdevice_notifiers(..., br->dev);.
+> > ida_remove()/idr_remove() add checks for "id < 0".
+> > BUG_ON() in ida_simple_remove() is simply removed, due to
+> > ida_remove() already checks for "id < 0".
+> > 
+> > In idr_alloc(), it still returns -ENOSPC when "start == end",
+> > but it returns -EINVAL when "max < start" while old code returns
+> > -ENOSPC. -EINVAL is proper here, the caller must passed wrong
+> > arguments.
+> > 
+> > ida_simple_get()'s argument-checks are changed as the same as
+> > idr_alloc().
 > 
-> I still don't see why, in fact trying to verify this I am wondering now
-> if instead we should actually fix br_features_recompute() to take into
-> consideration BR_ROOT_BLOCK as below. Notice how netdev_update_features()
-> is called above even if the MAC address did not change, just as is done
-> on br_del_if(). There is an NETDEV_FEAT_CHANGE event so would it be more
-> appropriate we just call
+> This patch doesn't apply.
 > 
-> call_netdevice_notifiers(NETDEV_FEAT_CHANGE, p->br->dev)
+> > @@ -551,10 +553,7 @@ void idr_remove(struct idr *idp, int id)
+> >  	struct idr_layer *p;
+> >  	struct idr_layer *to_free;
+> >  
+> > -	if (id < 0)
+> > -		return;
+> > -
+> > -	if (id > idr_max(idp->layers)) {
+> > +	if (id < 0 || id > idr_max(idp->layers)) {
+> >  		idr_remove_warning(id);
+> >  		return;
+> >  	}
 > 
-> for both the above then and also br_del_if()? How about the below
-> change?
-> 
-> diff --git a/net/bridge/br_if.c b/net/bridge/br_if.c
-> index 54d207d..dcd9378 100644
-> --- a/net/bridge/br_if.c
-> +++ b/net/bridge/br_if.c
-> @@ -315,6 +315,8 @@ netdev_features_t br_features_recompute(struct net_bridge *br,
->  	features &= ~NETIF_F_ONE_FOR_ALL;
->  
->  	list_for_each_entry(p, &br->port_list, list) {
-> +		if (p->flags & BR_ROOT_BLOCK)
-> +			continue;
->  		features = netdev_increment_features(features,
->  						     p->dev->features, mask);
->  	}
+> 3.15-rc2's idr_remove() has a call to sub_remove() in there, but
+> whatever-kernel-you're-using does not.
 
-Cong, can you provide feedback on this? I tried to grow confidence on the
-hunk above but its not clear but the other points still hold and I'd love
-your feedback on those.
-
-  Luis
+Ah, it's based on your other idr patchset.  That's what I get for
+working in reverse time order.
