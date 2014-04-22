@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428AbaDVTPT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:15:19 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48400 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754745AbaDVTPN (ORCPT
+	id S1755732AbaDVTP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:15:29 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:34766 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754745AbaDVTPV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:15:13 -0400
-Date: Tue, 22 Apr 2014 09:32:23 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: [PATCH 3.13 08/32] PCI: Enable INTx in pci_reenable_device()
- only when MSI/MSI-X not enabled
-Message-ID: <20140422163223.GA29085@kroah.com>
-References: <20140421021133.865086647@linuxfoundation.org>
- <20140421021135.009538358@linuxfoundation.org>
- <1398090269.3624.116.camel@deadeye.wl.decadent.org.uk>
+	Tue, 22 Apr 2014 15:15:21 -0400
+X-Sasl-enc: KqOx2RVqNWQlJxTrzTZ6s+WtYeJlk5EMi111+jsr4b7Q 1398194118
+Date: Tue, 22 Apr 2014 09:38:56 -0700
+From: Greg Kroah-Hartman <greg@kroah.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 8/9] samples/kobject/: avoid world-writable sysfs files.
+Message-ID: <20140422163856.GB23831@kroah.com>
+References: <1398137612-9714-1-git-send-email-rusty@rustcorp.com.au>
+ <1398137612-9714-9-git-send-email-rusty@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398090269.3624.116.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1398137612-9714-9-git-send-email-rusty@rustcorp.com.au>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 03:24:29PM +0100, Ben Hutchings wrote:
-> On Sun, 2014-04-20 at 19:13 -0700, Greg Kroah-Hartman wrote:
-> > 3.13-stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: Bjorn Helgaas <bhelgaas@google.com>
-> > 
-> > commit 866d54177b4e671cd52bed1fb487d140d7b691f5 upstream.
-> > 
-> > Andreas reported that after 1f42db786b14 ("PCI: Enable INTx if BIOS left
-> > them disabled"), pciehp surprise removal stopped working.
-> > 
-> > This happens because pci_reenable_device() on the hotplug bridge (used in
-> > the pciehp_configure_device() path) clears the Interrupt Disable bit, which
-> > apparently breaks the bridge's MSI hotplug event reporting.
-> > 
-> > Previously we cleared the Interrupt Disable bit in do_pci_enable_device(),
-> > which is used by both pci_enable_device() and pci_reenable_device().  But
-> > we use pci_reenable_device() after the driver may have enabled MSI or
-> > MSI-X, and we *set* Interrupt Disable as part of enabling MSI/MSI-X.
-> > 
-> > This patch clears Interrupt Disable only when MSI/MSI-X has not been
-> > enabled.
-> > 
-> > Fixes: 1f42db786b14 PCI: Enable INTx if BIOS left them disabled
-> > Link: https://bugzilla.kernel.org/show_bug.cgi?id=71691
-> > Reported-and-tested-by: Andreas Noever <andreas.noever@gmail.com>
-> > Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-> > CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> > 
-> > ---
-> >  drivers/pci/pci.c |    3 +++
-> >  1 file changed, 3 insertions(+)
-> > 
-> > --- a/drivers/pci/pci.c
-> > +++ b/drivers/pci/pci.c
-> > @@ -1134,6 +1134,9 @@ static int do_pci_enable_device(struct p
-> >  	if (dev->msi_enabled || dev->msix_enabled)
-> >  		return 0;
-> >  
-> > +	if (dev->msi_enabled || dev->msix_enabled)
-> > +		return 0;
-> > +
+On Tue, Apr 22, 2014 at 01:03:31PM +0930, Rusty Russell wrote:
+> In line with practice for module parameters, we're adding a build-time
+> check that sysfs files aren't world-writable.
 > 
-> This fix seems to have been applied to two upstream branches and you
-> have already applied one instance.
+> Cc: Greg Kroah-Hartman <greg@kroah.com>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> ---
+>  samples/kobject/kobject-example.c | 7 ++++---
+>  samples/kobject/kset-example.c    | 7 ++++---
+>  2 files changed, 8 insertions(+), 6 deletions(-)
+> 
+> diff --git a/samples/kobject/kobject-example.c b/samples/kobject/kobject-example.c
+> index 86ea0c3ad975..01562e0d4992 100644
+> --- a/samples/kobject/kobject-example.c
+> +++ b/samples/kobject/kobject-example.c
+> @@ -40,8 +40,9 @@ static ssize_t foo_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  	return count;
+>  }
+>  
+> +/* Sysfs attributes cannot be world-writable. */
+>  static struct kobj_attribute foo_attribute =
+> -	__ATTR(foo, 0666, foo_show, foo_store);
+> +	__ATTR(foo, 0664, foo_show, foo_store);
 
-Good catch, I've now removed it, thanks.
+__ATTR_RW()?
+
+>  
+>  /*
+>   * More complex function where we determine which variable is being accessed by
+> @@ -73,9 +74,9 @@ static ssize_t b_store(struct kobject *kobj, struct kobj_attribute *attr,
+>  }
+>  
+>  static struct kobj_attribute baz_attribute =
+> -	__ATTR(baz, 0666, b_show, b_store);
+> +	__ATTR(baz, 0664, b_show, b_store);
+>  static struct kobj_attribute bar_attribute =
+> -	__ATTR(bar, 0666, b_show, b_store);
+> +	__ATTR(bar, 0664, b_show, b_store);
+
+Same for these.
+
+>  
+>  
+>  /*
+> diff --git a/samples/kobject/kset-example.c b/samples/kobject/kset-example.c
+> index 5dce351f131f..ab5e447ec238 100644
+> --- a/samples/kobject/kset-example.c
+> +++ b/samples/kobject/kset-example.c
+> @@ -124,8 +124,9 @@ static ssize_t foo_store(struct foo_obj *foo_obj, struct foo_attribute *attr,
+>  	return count;
+>  }
+>  
+> +/* Sysfs attributes cannot be world-writable. */
+>  static struct foo_attribute foo_attribute =
+> -	__ATTR(foo, 0666, foo_show, foo_store);
+> +	__ATTR(foo, 0664, foo_show, foo_store);
+>  
+>  /*
+>   * More complex function where we determine which variable is being accessed by
+> @@ -157,9 +158,9 @@ static ssize_t b_store(struct foo_obj *foo_obj, struct foo_attribute *attr,
+>  }
+>  
+>  static struct foo_attribute baz_attribute =
+> -	__ATTR(baz, 0666, b_show, b_store);
+> +	__ATTR(baz, 0664, b_show, b_store);
+>  static struct foo_attribute bar_attribute =
+> -	__ATTR(bar, 0666, b_show, b_store);
+> +	__ATTR(bar, 0664, b_show, b_store);
+
+And these.
+
+Thanks for sweeping the tree for this type of thing, but we might as
+well get the macro usage right when we are doing it.
+
+thanks,
 
 greg k-h
