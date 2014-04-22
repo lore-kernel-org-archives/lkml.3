@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796AbaDVUfz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:35:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36696 "EHLO
+	id S1757652AbaDVUfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:35:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36697 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758220AbaDVUY7 (ORCPT
+	with ESMTP id S1758221AbaDVUY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 16:24:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Malcolm Priestley <tvboxspy@gmail.com>,
-        Michael Krufky <mkrufky@linuxtv.org>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 042/133] [media] m88rs2000: prevent frontend crash on continuous transponder scans
-Date: Tue, 22 Apr 2014 13:13:00 -0700
-Message-Id: <1398197671-12786-43-git-send-email-kamal@canonical.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 080/133] mfd: max77686: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Tue, 22 Apr 2014 13:13:38 -0700
+Message-Id: <1398197671-12786-81-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -29,62 +27,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Malcolm Priestley <tvboxspy@gmail.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 8272d0a0c0d374a01721e579df6e8add5577132b upstream.
+commit b9e183a1d495cd65412abe0f9df19b151716bfe7 upstream.
 
-Add m88rs2000_get_tune_settings, min delay of 2000 ms on symbol
-rate more than 3000000 and delay of 3000ms less than this.
+During probe the driver allocates dummy I2C device for RTC with
+i2c_new_dummy() but it does not check the return value of this call.
 
-Adding min delay prevents crashing the frontend on continuous
-transponder scans. Other dvb_frontend_tune_settings remain as default.
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
 
-This makes very little time difference to good channel scans, but slows down
-the set frontend where lock can never be achieved i.e. DVB-S2.
+If i2c_new_dummy() fails for RTC device, fail also the probe for main
+MFD driver.
 
-Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
-Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/dvb-frontends/m88rs2000.c | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+ drivers/mfd/max77686.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/media/dvb-frontends/m88rs2000.c b/drivers/media/dvb-frontends/m88rs2000.c
-index 483ffe7..c35670d 100644
---- a/drivers/media/dvb-frontends/m88rs2000.c
-+++ b/drivers/media/dvb-frontends/m88rs2000.c
-@@ -825,6 +825,22 @@ static int m88rs2000_get_frontend(struct dvb_frontend *fe)
- 	return 0;
- }
+diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+index 5b6f118..dbfd0f1 100644
+--- a/drivers/mfd/max77686.c
++++ b/drivers/mfd/max77686.c
+@@ -121,6 +121,10 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
+ 		dev_info(max77686->dev, "device found\n");
  
-+static int m88rs2000_get_tune_settings(struct dvb_frontend *fe,
-+	struct dvb_frontend_tune_settings *tune)
-+{
-+	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
-+
-+	if (c->symbol_rate > 3000000)
-+		tune->min_delay_ms = 2000;
-+	else
-+		tune->min_delay_ms = 3000;
-+
-+	tune->step_size = c->symbol_rate / 16000;
-+	tune->max_drift = c->symbol_rate / 2000;
-+
-+	return 0;
-+}
-+
- static int m88rs2000_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
- {
- 	struct m88rs2000_state *state = fe->demodulator_priv;
-@@ -877,6 +893,7 @@ static struct dvb_frontend_ops m88rs2000_ops = {
+ 	max77686->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
++	if (!max77686->rtc) {
++		dev_err(max77686->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max77686->rtc, max77686);
  
- 	.set_frontend = m88rs2000_set_frontend,
- 	.get_frontend = m88rs2000_get_frontend,
-+	.get_tune_settings = m88rs2000_get_tune_settings,
- };
- 
- struct dvb_frontend *m88rs2000_attach(const struct m88rs2000_config *config,
+ 	max77686_irq_init(max77686);
 -- 
 1.9.1
 
