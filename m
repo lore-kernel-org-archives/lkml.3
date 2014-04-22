@@ -1,134 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334AbaDVLY5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:24:57 -0400
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:43514 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932265AbaDVLYq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:24:46 -0400
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org, kishon@ti.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        t.figa@samsung.com, k.debski@samsung.com, sylvester.nawrocki@gmail.com
-Subject: [PATCH v6 2/2] phy: exynos5-usbdrd: Add facility for VBUS supply
-Date: Tue, 22 Apr 2014 16:54:30 +0530
-Message-Id: <1398165871-20326-2-git-send-email-gautam.vivek@samsung.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1398165871-20326-1-git-send-email-gautam.vivek@samsung.com>
-References: <1398165871-20326-1-git-send-email-gautam.vivek@samsung.com>
+	id S932357AbaDVLZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:25:21 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44389 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932275AbaDVLZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 07:25:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,903,1389772800"; 
+   d="scan'208";a="524797730"
+Message-ID: <1398165864.11914.241.camel@smile.fi.intel.com>
+Subject: Re: [PATCH v1] dma: imx-sdma: add support for sdma memory copy
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Robin Gong <b38343@freescale.com>
+Cc: "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        RandyDunlap <rdunlap@infradead.org>
+Date: Tue, 22 Apr 2014 14:24:24 +0300
+In-Reply-To: <20140422105142.GA9693@Robin-OptiPlex-780>
+References: <1397728870-22086-1-git-send-email-b38343@freescale.com>
+	 <1397730289.11914.225.camel@smile.fi.intel.com>
+	 <20140418094057.GA11496@Robin-OptiPlex-780>
+	 <1398162484.11914.234.camel@smile.fi.intel.com>
+	 <20140422105142.GA9693@Robin-OptiPlex-780>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support to enable/disable VBUS controlled by a
-regulator, to enable vbus supply on the port.
+On Tue, 2014-04-22 at 18:51 +0800, Robin Gong wrote:
+> On Tue, Apr 22, 2014 at 10:28:05AM +0000, Shevchenko, Andriy wrote:
+> > On Fri, 2014-04-18 at 17:41 +0800, Robin Gong wrote:
+> > > On Thu, Apr 17, 2014 at 10:24:50AM +0000, Shevchenko, Andriy wrote:
+> > > > On Thu, 2014-04-17 at 18:01 +0800, Robin Gong wrote:
+> > 
+> > []
+> > 
+> > > > > +	dev_dbg(sdma->dev, "memcpy: %x->%x, len=%d, channel=%d.\n",
+> > > > 
+> > > > %pad for dma_addr_t variables.
+> > > >
+> > > Yes, %x here is not proper, will be %#llx here to align with others similar
+> > > code in this file.
+> > 
+> > Why %#llx? You don't need the specific casting since kernel has special
+> > specifiers for phys_addr_t and dma_addr_t and their derivatives (see
+> > Documentation/printk-formats.txt)
+> >
+> I think both are ok, why I choose %llx is only for align the code style,
 
-Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
----
+Yes, but it was started being developed earlier than kernel gains the
+feature.
 
-Mistakenly sent a WIP patchset in v5 version of this patch, that gives
-build errors. So fixed those.
+>  you
+> can find the same code in sdma_prep_dma_cyclic function. below description also
+> copy from Documentation/printk-formats.txt:
+> 
+> 
+> If <type> is dependent on a config option for its size (e.g., sector_t,
+> blkcnt_t, phys_addr_t, resource_size_t) or is architecture-dependent
+> for its size (e.g., tcflag_t), use a format specifier of its largest
+> possible type and explicitly cast to it.  Example:
+> 
+> 	printk("test: sector number/total blocks: %llu/%llu\n",
+> 		(unsigned long long)sector, (unsigned long long)blockcount);
 
-Changes from v5:
- - Removed any mention about sclk_usbphy30* in the driver.
+Yeah, I think it requires to be updated accordingly to last changes
+regarding to new specifiers.
 
- drivers/phy/phy-exynos5-usbdrd.c |   34 +++++++++++++++++++++++++++++++++-
- 1 file changed, 33 insertions(+), 1 deletion(-)
++Cc Randy. Randy, do you think is a matter of fact that we have to
+update that paragraph somehow and recommend to prefer special specifiers
+over explicit casting to longest possible type?
 
-diff --git a/drivers/phy/phy-exynos5-usbdrd.c b/drivers/phy/phy-exynos5-usbdrd.c
-index ca1f6ab..ad94c98 100644
---- a/drivers/phy/phy-exynos5-usbdrd.c
-+++ b/drivers/phy/phy-exynos5-usbdrd.c
-@@ -23,6 +23,7 @@
- #include <linux/mutex.h>
- #include <linux/mfd/syscon.h>
- #include <linux/regmap.h>
-+#include <linux/regulator/consumer.h>
- 
- /* Exynos USB PHY registers */
- #define EXYNOS5_FSEL_9MHZ6		0x0
-@@ -171,6 +172,7 @@ struct exynos5_usbdrd_phy {
- 	unsigned int extrefclk;
- 	struct clk *ref_clk;
- 	unsigned long ref_rate;
-+	struct regulator *vbus;
- };
- 
- #define to_usbdrd_phy(inst) \
-@@ -441,6 +443,7 @@ static int exynos5_usbdrd_phy_exit(struct phy *phy)
- 
- static int exynos5_usbdrd_phy_power_on(struct phy *phy)
- {
-+	int ret;
- 	struct phy_usb_instance *inst = phy_get_drvdata(phy);
- 	struct exynos5_usbdrd_phy *phy_drd = to_usbdrd_phy(inst);
- 
-@@ -448,10 +451,24 @@ static int exynos5_usbdrd_phy_power_on(struct phy *phy)
- 
- 	clk_prepare_enable(phy_drd->ref_clk);
- 
-+	/* Enable VBUS supply */
-+	if (phy_drd->vbus) {
-+		ret = regulator_enable(phy_drd->vbus);
-+		if (ret) {
-+			dev_err(phy_drd->dev, "Failed to enable VBUS supply\n");
-+			goto fail_vbus;
-+		}
-+	}
-+
- 	/* Power-on PHY*/
- 	inst->phy_cfg->phy_isol(inst, 0);
- 
- 	return 0;
-+
-+fail_vbus:
-+	clk_disable_unprepare(phy_drd->ref_clk);
-+
-+	return ret;
- }
- 
- static int exynos5_usbdrd_phy_power_off(struct phy *phy)
-@@ -464,6 +481,10 @@ static int exynos5_usbdrd_phy_power_off(struct phy *phy)
- 	/* Power-off the PHY */
- 	inst->phy_cfg->phy_isol(inst, 1);
- 
-+	/* Disable VBUS supply */
-+	if (phy_drd->vbus)
-+		regulator_disable(phy_drd->vbus);
-+
- 	clk_disable_unprepare(phy_drd->ref_clk);
- 
- 	return 0;
-@@ -534,7 +555,7 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
- 	const struct exynos5_usbdrd_phy_drvdata *drv_data;
- 	struct regmap *reg_pmu;
- 	u32 pmu_offset;
--	int i;
-+	int i, ret;
- 
- 	phy_drd = devm_kzalloc(dev, sizeof(*phy_drd), GFP_KERNEL);
- 	if (!phy_drd)
-@@ -577,6 +598,17 @@ static int exynos5_usbdrd_phy_probe(struct platform_device *pdev)
- 		return PTR_ERR(reg_pmu);
- 	}
- 
-+	/* Get required GPIO for vbus */
-+	phy_drd->vbus = devm_regulator_get(dev, "vbus");
-+	if (IS_ERR(phy_drd->vbus)) {
-+		ret = PTR_ERR(phy_drd->vbus);
-+		if (ret == -EPROBE_DEFER)
-+			return ret;
-+
-+		dev_warn(dev, "Failed to get VBUS supply regulator\n");
-+		phy_drd->vbus = NULL;
-+	}
-+
- 	if (of_property_read_u32(node, "samsung,pmu-offset", &pmu_offset)) {
- 		dev_err(dev, "Missing pmu-offset for phy isolation\n");
- 		return -EINVAL;
+> > > > > +		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%08x %s%s\n",
+> > > > > +				i, count, sg_src->dma_address,
+> > > > 
+> > > > %pad for dma_addr_t.
+> > > > 
+> > > Accept the idea, same as the above.
+> > 
+> > Same as above.
+
+
 -- 
-1.7.10.4
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
 
