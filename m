@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755177AbaDVJcz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 05:32:55 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:33260 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753368AbaDVJcw (ORCPT
+	id S1755376AbaDVJdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 05:33:10 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:13495 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531AbaDVJcy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 05:32:52 -0400
-Date: Tue, 22 Apr 2014 12:32:34 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Michalis Pappas <mpappas@fastmail.fm>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] staging: gdm72xx: Minor cleanup
-Message-ID: <20140422093234.GB26890@mwanda>
-References: <532BF9B0.2080008@fastmail.fm>
- <20140418225229.GA28077@kroah.com>
- <53534051.2020504@fastmail.fm>
- <535340D6.9080604@fastmail.fm>
+	Tue, 22 Apr 2014 05:32:54 -0400
+Message-ID: <53563709.2000408@huawei.com>
+Date: Tue, 22 Apr 2014 17:31:53 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535340D6.9080604@fastmail.fm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+To: Jianyu Zhan <nasa4836@gmail.com>
+CC: Ingo Molnar <mingo@kernel.org>, <a.p.zijlstra@chello.nl>,
+        <paulus@samba.org>, <mingo@redhat.com>, <acme@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf-event/cgroup: explicitly init the early_init field
+References: <1398144517-9496-1-git-send-email-nasa4836@gmail.com> <20140422060654.GB9133@gmail.com> <CAHz2CGW0D6GpbP7Tps2KoN8av_OUEzO9xGvpV_XwoHgFQ36sOw@mail.gmail.com>
+In-Reply-To: <CAHz2CGW0D6GpbP7Tps2KoN8av_OUEzO9xGvpV_XwoHgFQ36sOw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 20, 2014 at 11:36:54AM +0800, Michalis Pappas wrote:
+On 2014/4/22 15:12, Jianyu Zhan wrote:
+> On Tue, Apr 22, 2014 at 2:06 PM, Ingo Molnar <mingo@kernel.org> wrote:
+>> How can that field ever be nonzero?
+>>
+>> I.e. under what exact circumstances does this patch make sense?
 > 
-> Removed line related to replacement of kernel_thread with kthread,
-> as issue was fixed on ff5e4a1d2702582614996f6f6d005e9b5caadeb8.
+> Hi, Ingo,
+> 
+> More explanation.
+> 
+> Sure, for this global variable struct, if not initailized, its all
+> fields will be initialized
+> to 0 or null(depending on its type).  The point here is no to deprive
+> the rights of compiler/linker of doing this initialization, it is mainly for
+> documentation reason. Actually this field's value would affect how ->css_alloc
+> should implemented.
+> 
+> Concretely, if early_init is nonzero, then ->css_alloc *must not* call kzalloc,
+> because in cgroup implementation, ->css_alloc will be called earlier before
+> mm_init().
+> 
+> I don't think that the value of one field(early_init) has a so subtle
+> restrition on the another field(css_alloc) is a good thing,
+> but since
+> it is there,
+> docment it should be needed.
+> 
+> I could resend the patch with  more comment.
 > 
 
-In the future, the way to specify a commit is:
-ff5e4a1d2702 ('Staging: gdm72xx: gdm_usb: fix deprecated function
-kernel_thread')
+nack
 
-It's hard to remember which git hash goes with which commit.
-
-regards,
-dan carpenter
+As I said in another mail thread, this change makes no sense.
 
