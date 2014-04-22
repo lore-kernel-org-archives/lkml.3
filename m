@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756430AbaDVNsO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:48:14 -0400
-Received: from smtp.devoid-pointer.net ([31.31.77.140]:49429 "EHLO
+	id S932078AbaDVNqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:46:37 -0400
+Received: from smtp.devoid-pointer.net ([31.31.77.140]:49399 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111AbaDVNqp (ORCPT
+	with ESMTP id S1756400AbaDVNq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:46:45 -0400
+	Tue, 22 Apr 2014 09:46:28 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org
-Subject: [PATCH 12/24] Port hid-lgff to ff-memless-next
-Date: Tue, 22 Apr 2014 15:46:02 +0200
-Message-Id: <1398174374-9501-13-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH 05/24] Port max8997_haptic to ff-memless-next
+Date: Tue, 22 Apr 2014 15:45:55 +0200
+Message-Id: <1398174374-9501-6-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398174374-9501-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398174374-9501-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -26,153 +26,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig    |  2 +-
- drivers/hid/hid-lgff.c | 70 +++++++++++++++++++++++++++++++++++---------------
- 2 files changed, 51 insertions(+), 21 deletions(-)
+ drivers/input/misc/Kconfig          |  2 +-
+ drivers/input/misc/max8997_haptic.c | 25 +++++++++++++++++++------
+ 2 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index d1d4e77..c7794ae 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -356,7 +356,7 @@ config HID_LOGITECH_DJ
- config LOGITECH_FF
- 	bool "Logitech force feedback support"
- 	depends on HID_LOGITECH
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 91dcae8..6ba327f 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -157,7 +157,7 @@ config INPUT_MAX8925_ONKEY
+ config INPUT_MAX8997_HAPTIC
+ 	tristate "MAXIM MAX8997 haptic controller support"
+ 	depends on PWM && HAVE_PWM && MFD_MAX8997
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	help
- 	  Say Y here if you have one of these devices:
- 	  - Logitech WingMan Cordless RumblePad
-diff --git a/drivers/hid/hid-lgff.c b/drivers/hid/hid-lgff.c
-index e1394af..96d418c 100644
---- a/drivers/hid/hid-lgff.c
-+++ b/drivers/hid/hid-lgff.c
-@@ -31,9 +31,12 @@
- 
- #include <linux/input.h>
- #include <linux/hid.h>
+ 	  This option enables device driver support for the haptic controller
+ 	  on MAXIM MAX8997 chip. This driver supports ff-memless interface
+diff --git a/drivers/input/misc/max8997_haptic.c b/drivers/input/misc/max8997_haptic.c
+index 1fea548..029ac8b 100644
+--- a/drivers/input/misc/max8997_haptic.c
++++ b/drivers/input/misc/max8997_haptic.c
+@@ -31,6 +31,7 @@
+ #include <linux/mfd/max8997-private.h>
+ #include <linux/mfd/max8997.h>
+ #include <linux/regulator/consumer.h>
 +#include <linux/input/ff-memless-next.h>
  
- #include "hid-lg.h"
+ /* Haptic configuration 2 register */
+ #define MAX8997_MOTOR_TYPE_SHIFT	7
+@@ -43,6 +44,8 @@
+ #define MAX8997_SIG_DUTY_SHIFT		2
+ #define MAX8997_PWM_DUTY_SHIFT		0
  
 +#define FF_UPDATE_RATE 50
 +
- struct dev_type {
- 	u16 idVendor;
- 	u16 idProduct;
-@@ -47,11 +50,25 @@ static const signed short ff_rumble[] = {
+ struct max8997_haptic {
+ 	struct device *dev;
+ 	struct i2c_client *client;
+@@ -219,13 +222,23 @@ static void max8997_haptic_play_effect_work(struct work_struct *work)
+ }
  
- static const signed short ff_joystick[] = {
- 	FF_CONSTANT,
-+	FF_RAMP,
-+	FF_PERIODIC,
-+	FF_SQUARE,
-+	FF_TRIANGLE,
-+	FF_SINE,
-+	FF_SAW_UP,
-+	FF_SAW_DOWN,
- 	-1
- };
- 
- static const signed short ff_joystick_ac[] = {
- 	FF_CONSTANT,
-+	FF_RAMP,
-+	FF_PERIODIC,
-+	FF_SQUARE,
-+	FF_TRIANGLE,
-+	FF_SINE,
-+	FF_SAW_UP,
-+	FF_SAW_DOWN,
- 	FF_AUTOCENTER,
- 	-1
- };
-@@ -66,45 +83,58 @@ static const struct dev_type devices[] = {
- 	{ 0x046d, 0xc295, ff_joystick },
- };
- 
--static int hid_lgff_play(struct input_dev *dev, void *data, struct ff_effect *effect)
-+static int hid_lgff_play(struct input_dev *dev, void *data,
-+			 const struct mlnx_effect_command *command)
+ static int max8997_haptic_play_effect(struct input_dev *dev, void *data,
+-				  struct ff_effect *effect)
++				  const struct mlnx_effect_command *command)
  {
- 	struct hid_device *hid = input_get_drvdata(dev);
- 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
--	int x, y;
--	unsigned int left, right;
+ 	struct max8997_haptic *chip = input_get_drvdata(dev);
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
  
--#define CLAMP(x) if (x < 0) x = 0; if (x > 0xff) x = 0xff
+-	chip->level = effect->u.rumble.strong_magnitude;
+-	if (!chip->level)
+-		chip->level = effect->u.rumble.weak_magnitude;
 +	switch (command->cmd) {
-+	case MLNX_START_COMBINED: {
-+		const struct mlnx_simple_force *simple_force = &command->u.simple_force;
-+		/* Scale down from MLNX range */
-+		const int x = 0x80 - (simple_force->x * 0xff / 0xffff);
-+		const int y = 0x80 - simple_force->y * 0xff / 0xffff;
- 
--	switch (effect->type) {
--	case FF_CONSTANT:
--		x = effect->u.ramp.start_level + 0x7f;	/* 0x7f is center */
--		y = effect->u.ramp.end_level + 0x7f;
--		CLAMP(x);
--		CLAMP(y);
- 		report->field[0]->value[0] = 0x51;
- 		report->field[0]->value[1] = 0x08;
- 		report->field[0]->value[2] = x;
- 		report->field[0]->value[3] = y;
- 		dbg_hid("(x, y)=(%04x, %04x)\n", x, y);
--		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
- 		break;
-+	}
-+	case MLNX_STOP_COMBINED:
-+		report->field[0]->value[0] = 0x51;
-+		report->field[0]->value[1] = 0x08;
-+		report->field[0]->value[2] = 0x80;
-+		report->field[0]->value[3] = 0x80;
++	case MLNX_START_RUMBLE:
++		chip->level = rumble_force->strong;
++		if (!chip->level)
++			chip->level = rumble_force->weak;
 +		break;
-+	case MLNX_START_RUMBLE: {
-+		const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
-+		/* Scale down from MLNX range */
-+		const unsigned int right = rumble_force->weak * 0xff / 0xffff;
-+		const unsigned int left = rumble_force->strong * 0xff / 0xffff;
- 
--	case FF_RUMBLE:
--		right = effect->u.rumble.strong_magnitude;
--		left = effect->u.rumble.weak_magnitude;
--		right = right * 0xff / 0xffff;
--		left = left * 0xff / 0xffff;
--		CLAMP(left);
--		CLAMP(right);
- 		report->field[0]->value[0] = 0x42;
- 		report->field[0]->value[1] = 0x00;
- 		report->field[0]->value[2] = left;
- 		report->field[0]->value[3] = right;
- 		dbg_hid("(left, right)=(%04x, %04x)\n", left, right);
--		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
- 		break;
- 	}
 +	case MLNX_STOP_RUMBLE:
-+		report->field[0]->value[0] = 0x42;
-+		report->field[0]->value[1] = 0x00;
-+		report->field[0]->value[2] = 0;
-+		report->field[0]->value[3] = 0;
++		chip->level = 0;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
-+
-+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+
- 	return 0;
- }
  
-@@ -148,7 +178,7 @@ int lgff_init(struct hid_device* hid)
- 	for (i = 0; ff_bits[i] >= 0; i++)
- 		set_bit(ff_bits[i], dev->ffbit);
+ 	schedule_work(&chip->work);
  
--	error = input_ff_create_memless(dev, NULL, hid_lgff_play);
-+	error = input_ff_create_mlnx(dev, NULL, hid_lgff_play, FF_UPDATE_RATE);
- 	if (error)
- 		return error;
+@@ -319,8 +332,8 @@ static int max8997_haptic_probe(struct platform_device *pdev)
+ 	input_set_drvdata(input_dev, chip);
+ 	input_set_capability(input_dev, EV_FF, FF_RUMBLE);
  
+-	error = input_ff_create_memless(input_dev, NULL,
+-				max8997_haptic_play_effect);
++	error = input_ff_create_mlnx(input_dev, NULL,
++				max8997_haptic_play_effect, FF_UPDATE_RATE);
+ 	if (error) {
+ 		dev_err(&pdev->dev,
+ 			"unable to create FF device, error: %d\n",
 -- 
 1.9.2
 
