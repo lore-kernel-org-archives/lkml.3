@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758355AbaDVUhR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:37:17 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36671 "EHLO
+	id S1758330AbaDVUhN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:37:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36689 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758212AbaDVUYy (ORCPT
+	with ESMTP id S1757543AbaDVUY5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:54 -0400
+	Tue, 22 Apr 2014 16:24:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Huang Rui <ray.huang@amd.com>, Felipe Balbi <balbi@ti.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 038/133] usb: dwc3: fix wrong bit mask in dwc3_event_devt
-Date: Tue, 22 Apr 2014 13:12:56 -0700
-Message-Id: <1398197671-12786-39-git-send-email-kamal@canonical.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 085/133] mfd: max77693: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Tue, 22 Apr 2014 13:13:43 -0700
+Message-Id: <1398197671-12786-86-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,60 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Huang Rui <ray.huang@amd.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 06f9b6e59661cee510b04513b13ea7927727d758 upstream.
+commit ad09dd6a1f5d6244bd89314015af506ba7f9810a upstream.
 
-Around DWC USB3 2.30a release another bit has been added to the
-Device-Specific Event (DEVT) Event Information (EvtInfo) bitfield.
+During probe the driver allocates dummy I2C devices for MUIC and haptic
+with i2c_new_dummy() but it does not check the return value of this
+calls.
 
-Because of that, what used to be 8 bits long, has become 9 bits long.
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by devm_regmap_init_i2c() and i2c_unregister_device().
 
-Per dwc3 2.30a+ spec in the Device-Specific Event (DEVT), the field of
-Event Information Bits(EvtInfo) uses [24:16] bits, and it has 9 bits
-not 8 bits. And the following reserved field uses [31:25] bits not
-[31:24] bits, and it has 7 bits.
+If i2c_new_dummy() fails for MUIC or haptic devices, fail also the probe
+for main MFD driver.
 
-So in dwc3_event_devt, the bit mask should be:
-event_info	[24:16]		9 bits
-reserved31_25	[31:25]		7 bits
-
-This patch makes sure that newer core releases will work fine with
-Linux and that we will decode the event information properly on new
-core releases.
-
-[ balbi@ti.com : improve commit log a bit ]
-
-Signed-off-by: Huang Rui <ray.huang@amd.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/usb/dwc3/core.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/mfd/max77693.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-index 17dcd98..7df353f 100644
---- a/drivers/usb/dwc3/core.h
-+++ b/drivers/usb/dwc3/core.h
-@@ -807,15 +807,15 @@ struct dwc3_event_depevt {
-  *	12	- VndrDevTstRcved
-  * @reserved15_12: Reserved, not used
-  * @event_info: Information about this event
-- * @reserved31_24: Reserved, not used
-+ * @reserved31_25: Reserved, not used
-  */
- struct dwc3_event_devt {
- 	u32	one_bit:1;
- 	u32	device_event:7;
- 	u32	type:4;
- 	u32	reserved15_12:4;
--	u32	event_info:8;
--	u32	reserved31_24:8;
-+	u32	event_info:9;
-+	u32	reserved31_25:7;
- } __packed;
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index 9e60fed..299970f 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -149,9 +149,18 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 		dev_info(max77693->dev, "device ID: 0x%x\n", reg_data);
  
- /**
+ 	max77693->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
++	if (!max77693->muic) {
++		dev_err(max77693->dev, "Failed to allocate I2C device for MUIC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max77693->muic, max77693);
+ 
+ 	max77693->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
++	if (!max77693->haptic) {
++		dev_err(max77693->dev, "Failed to allocate I2C device for Haptic\n");
++		ret = -ENODEV;
++		goto err_i2c_haptic;
++	}
+ 	i2c_set_clientdata(max77693->haptic, max77693);
+ 
+ 	/*
+@@ -187,8 +196,9 @@ err_mfd:
+ 	max77693_irq_exit(max77693);
+ err_irq:
+ err_regmap_muic:
+-	i2c_unregister_device(max77693->muic);
+ 	i2c_unregister_device(max77693->haptic);
++err_i2c_haptic:
++	i2c_unregister_device(max77693->muic);
+ 	return ret;
+ }
+ 
 -- 
 1.9.1
 
