@@ -1,83 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932487AbaDVM1Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 08:27:24 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:50050 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755662AbaDVM1V (ORCPT
+	id S932506AbaDVM2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 08:28:31 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:49581 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932301AbaDVM21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 08:27:21 -0400
+	Tue, 22 Apr 2014 08:28:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <1397174424-30855-1-git-send-email-tim.kryger@linaro.org>
-References: <1397174424-30855-1-git-send-email-tim.kryger@linaro.org>
-Date: Tue, 22 Apr 2014 14:27:20 +0200
-Message-ID: <CACRpkdav_7x9Ei1pG9JfUvBGzgCO+w3qe2m+_9o1FM9i8_4Jbw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: bcm-kona: Add irq_set_wake method
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Markus Mayer <markus.mayer@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Broadcom Kernel Feedback List 
-	<bcm-kernel-feedback-list@broadcom.com>,
-        Linux GPIO Mailing List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
+X-Originating-IP: [95.21.51.154]
+In-Reply-To: <CACRpkdYLaGXJ+O0rsL5+rjUsOvxCxK2b9QtH2j4FD0g21vx8_Q@mail.gmail.com>
+References: <1396981215-24888-1-git-send-email-javier.martinez@collabora.co.uk>
+	<CACRpkdYLaGXJ+O0rsL5+rjUsOvxCxK2b9QtH2j4FD0g21vx8_Q@mail.gmail.com>
+Date: Tue, 22 Apr 2014 14:28:25 +0200
+Message-ID: <CABxcv=mb+CXQbrS==hBayMQGsaJCPuLR=xyW_BJpZm2oSNBu-w@mail.gmail.com>
+Subject: Re: [RFC PATCH 0/5] add gpio_chip_ops to hold GPIO operations
+From: Javier Martinez Canillas <javier@dowhile0.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux-OMAP <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 2:00 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
+Hello Linus,
 
-> If a consumer of a GPIO-based IRQ identifies itself as wanting to
-> have the capability to wake up the system through that interrupt,
-> update the flags to keep that interrupt enabled in suspend.
+On Tue, Apr 22, 2014 at 1:36 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Tue, Apr 8, 2014 at 8:20 PM, Javier Martinez Canillas
+> <javier.martinez@collabora.co.uk> wrote:
 >
-> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-(...)
-> +#ifdef CONFIG_SUSPEND
-> +static int bcm_kona_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
-> +{
-> +
-> +       struct irq_desc *desc = container_of(d, struct irq_desc, irq_data);
-> +
-> +       if (on)
-> +               desc->action->flags |= IRQF_NO_SUSPEND;
-> +       else
-> +               desc->action->flags &= ~IRQF_NO_SUSPEND;
-> +
-> +       return 0;
-> +}
-> +#else
-> +#define bcm_kona_gpio_irq_set_wake NULL
-> +#endif
+>> So this is an RFC patch-set to add a virtual table to be used by
+>> GPIO chip controllers and consist of the following patches:
+>
+> Overall I like this.
+>
+> However I don't want to see any transitional phase. I prefer a BIG
+> fat patch converting everyone and its dog to the new vtable and
+> removing the old function pointers. This can be based on the HEAD
+> of my GPIO devel branch.
+>
 
-Tglx: is this generally speaking the right thing to do for a cascaded
-irqchip? (It looks a bit odd but makes some sense.)
+Ok, I was adding a commit per GPIO driver but the patch-set would have
+been very big (~200 patches).
 
->  static void bcm_kona_gpio_irq_mask(struct irq_data *d)
->  {
->         struct bcm_kona_gpio *kona_gpio;
-> @@ -494,6 +512,7 @@ static struct irq_chip bcm_gpio_irq_chip = {
->         .irq_set_type = bcm_kona_gpio_irq_set_type,
->         .irq_request_resources = bcm_kona_gpio_irq_reqres,
->         .irq_release_resources = bcm_kona_gpio_irq_relres,
-> +       .irq_set_wake = bcm_kona_gpio_irq_set_wake,
->  };
+> It may be a good idea to use coccinelle for this refactoring in order
+> not to miss any users.
+>
 
-So I have introduced the generic GPIO irqchip helpers in order to avoid
-fixing exactly this type of bug in 200 different places.
+Agreed, I was manually searching for users by using grep but I agree
+that is much safer to use coccinelle for this. I don't have previous
+experience writing coccinelle semantics patches though so it may take
+more time than I thought but it is the perfect excuse to finally learn
+how to do it :-)
 
-Can you take this action:
+Thanks a lot and best regards,
+Javier
 
-(A) Convert the BCM kona driver to use the genric GPIO irqchip
-helpers e.g. in the manner of this patch:
-http://marc.info/?l=linux-gpio&m=139696011031186&w=2
-
-(B) Make exactly this bug fix in the gpiolib irqchip helpers,
-by partching drivers/gpio/gpiolib.c instead?
-
-That way we solve the problem for *several* chips in one go.
-
-Yours,
-Linus Walleij
+> Yours,
+> Linus Walleij
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
