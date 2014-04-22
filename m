@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562AbaDVUPs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:15:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36279 "EHLO
+	id S1757549AbaDVUPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:15:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36285 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757509AbaDVUPf (ORCPT
+	with ESMTP id S1757512AbaDVUPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:15:35 -0400
+	Tue, 22 Apr 2014 16:15:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Michal Hocko <mhocko@suse.cz>,
-        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+Cc: Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 125/133] mm: hugetlb: fix softlockup when a large number of hugepages are freed.
-Date: Tue, 22 Apr 2014 13:14:23 -0700
-Message-Id: <1398197671-12786-126-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 120/133] ocfs2: dlm: fix recovery hung
+Date: Tue, 22 Apr 2014 13:14:18 -0700
+Message-Id: <1398197671-12786-121-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -34,91 +30,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 55f67141a8927b2be3e51840da37b8a2320143ed upstream.
+commit ded2cf71419b9353060e633b59e446c42a6a2a09 upstream.
 
-When I decrease the value of nr_hugepage in procfs a lot, softlockup
-happens.  It is because there is no chance of context switch during this
-process.
+There is a race window in dlm_do_recovery() between dlm_remaster_locks()
+and dlm_reset_recovery() when the recovery master nearly finish the
+recovery process for a dead node.  After the master sends FINALIZE_RECO
+message in dlm_remaster_locks(), another node may become the recovery
+master for another dead node, and then send the BEGIN_RECO message to
+all the nodes included the old master, in the handler of this message
+dlm_begin_reco_handler() of old master, dlm->reco.dead_node and
+dlm->reco.new_master will be set to the second dead node and the new
+master, then in dlm_reset_recovery(), these two variables will be reset
+to default value.  This will cause new recovery master can not finish
+the recovery process and hung, at last the whole cluster will hung for
+recovery.
 
-On the other hand, when I allocate a large number of hugepages, there is
-some chance of context switch.  Hence softlockup doesn't happen during
-this process.  So it's necessary to add the context switch in the
-freeing process as same as allocating process to avoid softlockup.
+old recovery master:                                 new recovery master:
+dlm_remaster_locks()
+                                                  become recovery master for
+                                                  another dead node.
+                                                  dlm_send_begin_reco_message()
+dlm_begin_reco_handler()
+{
+ if (dlm->reco.state & DLM_RECO_STATE_FINALIZE) {
+  return -EAGAIN;
+ }
+ dlm_set_reco_master(dlm, br->node_idx);
+ dlm_set_reco_dead_node(dlm, br->dead_node);
+}
+dlm_reset_recovery()
+{
+ dlm_set_reco_dead_node(dlm, O2NM_INVALID_NODE_NUM);
+ dlm_set_reco_master(dlm, O2NM_INVALID_NODE_NUM);
+}
+                                                  will hang in dlm_remaster_locks() for
+                                                  request dlm locks info
 
-When I freed 12 TB hugapages with kernel-2.6.32-358.el6, the freeing
-process occupied a CPU over 150 seconds and following softlockup message
-appeared twice or more.
+Before send FINALIZE_RECO message, recovery master should set
+DLM_RECO_STATE_FINALIZE for itself and clear it after the recovery done,
+this can break the race windows as the BEGIN_RECO messages will not be
+handled before DLM_RECO_STATE_FINALIZE flag is cleared.
 
-$ echo 6000000 > /proc/sys/vm/nr_hugepages
-$ cat /proc/sys/vm/nr_hugepages
-6000000
-$ grep ^Huge /proc/meminfo
-HugePages_Total:   6000000
-HugePages_Free:    6000000
-HugePages_Rsvd:        0
-HugePages_Surp:        0
-Hugepagesize:       2048 kB
-$ echo 0 > /proc/sys/vm/nr_hugepages
+A similar race may happen between new recovery master and normal node
+which is in dlm_finalize_reco_handler(), also fix it.
 
-BUG: soft lockup - CPU#16 stuck for 67s! [sh:12883] ...
-Pid: 12883, comm: sh Not tainted 2.6.32-358.el6.x86_64 #1
-Call Trace:
-  free_pool_huge_page+0xb8/0xd0
-  set_max_huge_pages+0x128/0x190
-  hugetlb_sysctl_handler_common+0x113/0x140
-  hugetlb_sysctl_handler+0x1e/0x20
-  proc_sys_call_handler+0x97/0xd0
-  proc_sys_write+0x14/0x20
-  vfs_write+0xb8/0x1a0
-  sys_write+0x51/0x90
-  __audit_syscall_exit+0x265/0x290
-  system_call_fastpath+0x16/0x1b
-
-I have not confirmed this problem with upstream kernels because I am not
-able to prepare the machine equipped with 12TB memory now.  However I
-confirmed that the amount of decreasing hugepages was directly
-proportional to the amount of required time.
-
-I measured required times on a smaller machine.  It showed 130-145
-hugepages decreased in a millisecond.
-
-  Amount of decreasing     Required time      Decreasing rate
-  hugepages                     (msec)         (pages/msec)
-  ------------------------------------------------------------
-  10,000 pages == 20GB         70 -  74          135-142
-  30,000 pages == 60GB        208 - 229          131-144
-
-It means decrement of 6TB hugepages will trigger softlockup with the
-default threshold 20sec, in this decreasing rate.
-
-Signed-off-by: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
-Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- mm/hugetlb.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ocfs2/dlm/dlmrecovery.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index 0f5e584..db8bc0a 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1464,6 +1464,7 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
- 	while (min_count < persistent_huge_pages(h)) {
- 		if (!free_pool_huge_page(h, nodes_allowed, 0))
- 			break;
-+		cond_resched_lock(&hugetlb_lock);
+diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
+index df3cfd3..d15b071 100644
+--- a/fs/ocfs2/dlm/dlmrecovery.c
++++ b/fs/ocfs2/dlm/dlmrecovery.c
+@@ -540,7 +540,10 @@ master_here:
+ 		/* success!  see if any other nodes need recovery */
+ 		mlog(0, "DONE mastering recovery of %s:%u here(this=%u)!\n",
+ 		     dlm->name, dlm->reco.dead_node, dlm->node_num);
+-		dlm_reset_recovery(dlm);
++		spin_lock(&dlm->spinlock);
++		__dlm_reset_recovery(dlm);
++		dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
++		spin_unlock(&dlm->spinlock);
  	}
- 	while (count < persistent_huge_pages(h)) {
- 		if (!adjust_pool_surplus(h, nodes_allowed, 1))
+ 	dlm_end_recovery(dlm);
+ 
+@@ -698,6 +701,14 @@ static int dlm_remaster_locks(struct dlm_ctxt *dlm, u8 dead_node)
+ 		if (all_nodes_done) {
+ 			int ret;
+ 
++			/* Set this flag on recovery master to avoid
++			 * a new recovery for another dead node start
++			 * before the recovery is not done. That may
++			 * cause recovery hung.*/
++			spin_lock(&dlm->spinlock);
++			dlm->reco.state |= DLM_RECO_STATE_FINALIZE;
++			spin_unlock(&dlm->spinlock);
++
+ 			/* all nodes are now in DLM_RECO_NODE_DATA_DONE state
+ 	 		 * just send a finalize message to everyone and
+ 	 		 * clean up */
+@@ -2872,8 +2883,8 @@ int dlm_finalize_reco_handler(struct o2net_msg *msg, u32 len, void *data,
+ 				BUG();
+ 			}
+ 			dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
++			__dlm_reset_recovery(dlm);
+ 			spin_unlock(&dlm->spinlock);
+-			dlm_reset_recovery(dlm);
+ 			dlm_kick_recovery_thread(dlm);
+ 			break;
+ 		default:
 -- 
 1.9.1
 
