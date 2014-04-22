@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933197AbaDVQyY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:54:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28786 "EHLO mx1.redhat.com"
+	id S933322AbaDVQzA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:55:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57989 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932504AbaDVQyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:54:22 -0400
-Date: Tue, 22 Apr 2014 18:53:55 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 4/9] perf tools: Introduce hists__inc_dump_events()
-Message-ID: <20140422165355.GK1104@krava.brq.redhat.com>
-References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
- <1398156591-11001-5-git-send-email-namhyung@kernel.org>
+	id S932504AbaDVQy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 12:54:58 -0400
+Message-ID: <53569ED3.2080206@redhat.com>
+Date: Tue, 22 Apr 2014 12:54:43 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398156591-11001-5-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Hansen <dave@sr71.net>, x86@kernel.org
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
+        mgorman@suse.de, ak@linux.intel.com, alex.shi@linaro.org,
+        dave.hansen@linux.intel.com
+Subject: Re: [PATCH 2/6] x86: mm: rip out complicated, out-of-date, buggy
+ TLB flushing
+References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182421.DFAAD16A@viggo.jf.intel.com>
+In-Reply-To: <20140421182421.DFAAD16A@viggo.jf.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 05:49:46PM +0900, Namhyung Kim wrote:
+On 04/21/2014 02:24 PM, Dave Hansen wrote:
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> I think the flush_tlb_mm_range() code that tries to tune the
+> flush sizes based on the CPU needs to get ripped out for
+> several reasons:
+> 
+> 1. It is obviously buggy.  It uses mm->total_vm to judge the
+>    task's footprint in the TLB.  It should certainly be using
+>    some measure of RSS, *NOT* ->total_vm since only resident
+>    memory can populate the TLB.
+> 2. Haswell, and several other CPUs are missing from the
+>    intel_tlb_flushall_shift_set() function.  Thus, it has been
+>    demonstrated to bitrot quickly in practice.
+> 3. It is plain wrong in my vm:
+> 	[    0.037444] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
+> 	[    0.037444] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0
+> 	[    0.037444] tlb_flushall_shift: 6
+>    Which leads to it to never use invlpg.
+> 4. The assumptions about TLB refill costs are wrong:
+> 	http://lkml.kernel.org/r/1337782555-8088-3-git-send-email-alex.shi@intel.com
+>     (more on this in later patches)
+> 5. I can not reproduce the original data: https://lkml.org/lkml/2012/5/17/59
+>    I believe the sample times were too short.  Running the
+>    benchmark in a loop yields times that vary quite a bit.
+> 
+> Note that this leaves us with a static ceiling of 1 page.  This
+> is a conservative, dumb setting, and will be revised in a later
+> patch.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-SNIP
+Acked-by: Rik van Riel <riel@redhat.com>
 
-> index f955ae5a41c5..883340d7d43e 100644
-> --- a/tools/perf/util/hist.c
-> +++ b/tools/perf/util/hist.c
-> @@ -333,6 +333,19 @@ void hists__inc_nr_events(struct hists *hists, u32 type)
->  	__events_stats__add(&hists->stats, type, 1);
->  }
->  
-> +void hists__inc_dump_events(struct hists *hists)
-> +{
-> +	if (!dump_trace)
-> +		return;
-> +
-> +	/*
-> +	 * If dump_trace is enabled, perf will exit before accounting
-> +	 * sample events during hists__output_resort().  Thus it needs to
-> +	 * be done separately.
-> +	 */
-> +	__events_stats__add(&hists->stats, PERF_RECORD_SAMPLE, 1);
-> +}
 
-hum, we already clear all the stats before resorting for output so why done
-we call hists__inc_nr_entries from add_hist_entry? (at out label)
-
-jirka
+-- 
+All rights reversed
