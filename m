@@ -1,132 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932AbaDVH46 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 03:56:58 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:46114
-	"EHLO am1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752280AbaDVH4y convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 03:56:54 -0400
-X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
-X-SpamScore: -4
-X-BigFish: VPS-4(zzbb2dI98dI9371I542I1432I4015Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h17326ah8275bh1de097h186068h18602ehz2fh95h109h839h944hc61hd24hf0ah119dh1220h1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h262fh268bh26d3h906i2673i1155h)
-From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-To: "monstr@monstr.eu" <monstr@monstr.eu>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>
-CC: "wg@grandegger.com" <wg@grandegger.com>,
-        "mkl@pengutronix.de" <mkl@pengutronix.de>,
-        Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: RE: [PATCH v7 1/2] can: xilinx CAN controller support
-Thread-Topic: [PATCH v7 1/2] can: xilinx CAN controller support
-Thread-Index: AQHPUi6MgKhFQ40Q102/VIe4iyjo45sdW5cg
-Date: Tue, 22 Apr 2014 07:56:46 +0000
-References: <3e750ec3-9d47-4b4e-8173-56698ab19786@CH1EHSMHS029.ehs.local>
- <53424C32.7090000@monstr.eu>
-In-Reply-To: <53424C32.7090000@monstr.eu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.18.45]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753150AbaDVH5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 03:57:08 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:39892 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbaDVH5B (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 03:57:01 -0400
+Message-ID: <535620C7.2080700@gmail.com>
+Date: Tue, 22 Apr 2014 15:56:55 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-Message-ID: <707ea084-ed82-407b-8967-1e82a994b784@AM1EHSMHS003.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+To: Pavel Machek <pavel@ucw.cz>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        len.brown@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v2] kernel/power/hibernate.c: use 'u64' instead of 's64'
+ to avoid warning
+References: <5355C5F0.6020606@gmail.com> <20140422072112.GB14108@amd.pavel.ucw.cz>
+In-Reply-To: <20140422072112.GB14108@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
+On 04/22/2014 03:21 PM, Pavel Machek wrote:
+> On Tue 2014-04-22 09:29:20, Chen Gang wrote:
+>> For do_div(), it need 'u64' type, which means the outside must be sure
+>> of 'start' is not bigger than 'stop', or it will report warning.
+>>
+>> Even if 'start' was really bigger than 'stop', it would print incorrect
+>> information, but for kernel, it still can continue, so use WARN_ON() is
+>> enough.
+>>
+>> The related warning (with allmodconfig for unicore32):
+>>
+>>     CC      kernel/power/hibernate.o
+>>   kernel/power/hibernate.c: In function ‘swsusp_show_speed’:
+>>   kernel/power/hibernate.c:237: warning: comparison of distinct pointer types lacks a cast
+>>
+>>
+> 
+> Certainly better, but
+> 
+>> -	s64 elapsed_centisecs64;
+>> +	u64 elapsed_centisecs64;
+>>  	int centisecs;
+>>  	int k;
+>>  	int kps;
+>>  
+>>  	elapsed_centisecs64 = timeval_to_ns(stop) - timeval_to_ns(start);
+>> +	WARN_ON((s64)elapsed_centisecs64 < 0);
+>>  	do_div(elapsed_centisecs64, NSEC_PER_SEC / 100);
+>>  	centisecs = elapsed_centisecs64;
+> 
+> ...do we need to do the WARN_ON()? Only result of underflow will be
+> very long elapsed time reported... that does not sound too
+> bad. ... and it will be quite obvious what went wrong.
+> 									Pavel
+> 
 
-> -----Original Message-----
-> From: Michal Simek [mailto:monstr@monstr.eu]
-> Sent: Monday, April 07, 2014 12:27 PM
-> To: Appana Durga Kedareswara Rao
-> Cc: wg@grandegger.com; mkl@pengutronix.de; Michal Simek;
-> grant.likely@linaro.org; robh+dt@kernel.org; linux-can@vger.kernel.org;
-> netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
-> kernel@vger.kernel.org; devicetree@vger.kernel.org; Appana Durga
-> Kedareswara Rao
-> Subject: Re: [PATCH v7 1/2] can: xilinx CAN controller support
->
-> On 04/02/2014 03:13 PM, Kedareswara rao Appana wrote:
-> > This patch adds xilinx CAN controller support.
-> > This driver supports both ZYNQ CANPS and Soft IP AXI CAN controller.
-> >
-> > Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
-> > ---
-> > Changes for v7:
-> > - Updated the driver with review comments.
-> > - Moved the driver bindings doc as a separte patch.
-> > Changes for v6:
-> > - Updated the driver with review comments.
-> > - Used the clock names specified in the data sheet.
-> > - Updated the devicetree bindings doc as per Rob suggestion.
-> > Changes for v5:
-> > - Updated the driver with the review comments.
-> > - Remove the check for the tx fifo full interrupt condition
-> >   form Tx interrupt routine as we are checking it in the _xmit
-> >   routine.
-> > - Clearing the txok interrupt in the tx interrupt routine for
-> >   every Tx can frame.
-> > Changes for v4:
-> > - Added check for the tx fifo full interrupt condition in Tx interrupt
-> > routine.
-> > - Added be iohelper functions.
-> > - Moved the clock enable/disable to probe/remove because of
-> >   Added big endian support for AXI CAN controller case(reading
-> >   a register during probe for that we need to enable clock).
-> > Changes for v3:
-> > - Updated the driver with the review comments.
-> > - Modified the tranmit logic as per Marc suggestion.
-> > - Enabling the clock when the interface is up to reduce the
-> >   Power consumption.
-> > Changes for v2:
-> > - Updated with the review comments.
-> > - Removed the unnecessary debug prints.
-> > - include tx,rx fifo depths in ZYNQ CANPS case also
-> > ---
-> >  drivers/net/can/Kconfig      |    7 +
-> >  drivers/net/can/Makefile     |    1 +
-> >  drivers/net/can/xilinx_can.c | 1176
-> > ++++++++++++++++++++++++++++++++++++++++++
-> >  3 files changed, 1184 insertions(+), 0 deletions(-)  create mode
-> > 100644 drivers/net/can/xilinx_can.c
->
-> Mark: Any update on this one?
-> BTW: When you apply these patches you should apply 2/2 before 1/2. There
-> is new checking for binding.
->
+Hmm... that sounds reasonable to me.  If no any other reply within 2
+days, I shall send patch v3 for it.
 
-Ping?
-
-Regards,
-Kedar.
-
-> Thanks,
-> Michal
->
-> --
-> Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-> w: www.monstr.eu p: +42-0-721842854
-> Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-> Maintainer of Linux kernel - Xilinx Zynq ARM architecture Microblaze U-
-> BOOT custodian and responsible for u-boot arm zynq platform
->
+BTW: sorry, I guess I can not finish allmodconfig for unicore32 within
+this month (2014-04-30) -- at present I only finish 40-50%, I
+will/should try to finish it within next month.
 
 
+Thanks.
+-- 
+Chen Gang
 
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
-
+Open, share, and attitude like air, water, and life which God blessed
