@@ -1,72 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733AbaDVOZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:25:29 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:39078 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751489AbaDVOZU (ORCPT
+	id S1756635AbaDVO0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:26:40 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:56488 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754015AbaDVO0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:25:20 -0400
-Date: Tue, 22 Apr 2014 09:22:56 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Felipe Balbi <balbi@ti.com>
-CC: Greg KH <gregkh@linuxfoundation.org>, <linux-serial@vger.kernel.org>,
-        <linux-bluetooth@vger.kernel.org>, <peter@hurleysoftware.com>,
-        <m-karicheri2@ti.com>, <b32955@freescale.com>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/11] tty: serial: add missing braces
-Message-ID: <20140422142256.GC5524@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1395343807-21618-1-git-send-email-balbi@ti.com>
+	Tue, 22 Apr 2014 10:26:36 -0400
+Date: Tue, 22 Apr 2014 07:26:13 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Drew Richardson <drew.richardson@arm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Ben Greear <greearb@candelatech.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: Re: [PATCH] Export irq tracepoints for use by kernel modules
+Message-ID: <20140422142613.GA14535@infradead.org>
+References: <20140422142419.GD21121@dreric01-Precision-T1600>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+B+y8wtTXqdUj1xM"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1395343807-21618-1-git-send-email-balbi@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140422142419.GD21121@dreric01-Precision-T1600>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---+B+y8wtTXqdUj1xM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 22, 2014 at 07:24:20AM -0700, Drew Richardson wrote:
+> After commit de7b2973903c6cc50b31ee5682a69b2219b9919d ("tracepoint:
+> Use struct pointer instead of name hash for reg/unreg tracepoints"),
+> any tracepoints used in a kernel module must be exported.
 
-Hi,
+How does this matter given that there aren't any modular users?
 
-On Thu, Mar 20, 2014 at 02:29:57PM -0500, Felipe Balbi wrote:
-> per CodingStyle we should have those braces, no
-> functional changes.
->=20
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
-
-Greg, do you want me to refresh and resend this series ?
-
---=20
-balbi
-
---+B+y8wtTXqdUj1xM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTVntAAAoJEIaOsuA1yqREYyUP/jA9FzIhfh8oc1uKvY4SuEA+
-MB4tjfDMN9z10dQqwsSnGp3fu9iTdcDfS8Ch5ujFEpQs6ufZ8L8FZCurjI5JW7nC
-Kh0uWeAgRbdAxRQUX2eZ1SQGN0Vs59hO5X5O0Uvi2sYfjLFUyhWSgVPSzccq/rcl
-lMwWYqaF/5NjRpdGMoOT5tUPT2ElC72JLLBzm0AVbyvFwlbl3hgA8420vGfiinNr
-dMV5UQl0YqdQpLdylDiv8RbplJVuEuucZPnMtHn07oO81loMOmk8YKgJV6w7fppP
-sWw7GmTrl+/h40kPKhzMFQbNZ7KTHOo0nsUAzafj/wcdFsh2ehhV3Ah82wT8G7L+
-q+YQN1rd5DjI7bQd0YqDoR7mFzKo9HMlNeXrKJZp4NFkHpbrO5mJr3LvA6s7wp4q
-E7GYIGy6oBJZ+k1UIX51Yot2z+iW/e9tdUXoWNt/3uL18YvBXbpkQlZjoc7vaY/i
-eOsc5cEkiRSYF5l87UBvpsf5JotPUnparWZysAR70bhrvSdZ9K6cVdNNQp1rdQiA
-MH5yhnU7MHuDrWIvs0HFGnilPqFoYB1H8oCrvmsqTGEy8gbElHaOyxjAeASU+mHw
-Uf+hcvD0ezaE+kCHyxxKKAxsxhZVoXy1n7d2zNVCNdijqNgDDJq6ed8m2lZLp6IQ
-NKbYgqTRGmBoOyEFUQRg
-=DQiI
------END PGP SIGNATURE-----
-
---+B+y8wtTXqdUj1xM--
