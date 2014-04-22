@@ -1,84 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932887AbaDVOz3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:55:29 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:12613 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932872AbaDVOzX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:55:23 -0400
-Date: Tue, 22 Apr 2014 15:54:50 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Olof Johansson <olof@lixom.net>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Gregory =?iso-8859-1?Q?Cl=E9ment?= 
-	<gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>
-Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and
- dma-coherent
-Message-ID: <20140422145450.GC10224@arm.com>
-References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
- <20140419182528.414b9b2e@skate>
+	id S932914AbaDVOzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:55:42 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57451 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932884AbaDVOzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:55:36 -0400
+Date: Tue, 22 Apr 2014 09:51:59 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Robert Baldyga <r.baldyga@samsung.com>
+CC: Aaro Koskinen <aaro.koskinen@iki.fi>, <robh+dt@kernel.org>,
+        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rob@landley.net>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
+        <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <balbi@ti.com>,
+        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
+        <ldewangan@nvidia.com>, <kishon@ti.com>, <gg@slimlogic.co.uk>,
+        <anton@enomsg.org>, <jonghwa3.lee@samsung.com>, <rongjun.ying@csr.com>,
+        <linux@roeck-us.net>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <patches@opensource.wolfsonmicro.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <m.szyprowski@samsung.com>,
+        <t.figa@samsung.com>
+Subject: Re: [PATCH v2 05/13] extcon: extcon-class: improve extcon client API
+Message-ID: <20140422145159.GH5524@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
+ <1397475984-28001-6-git-send-email-r.baldyga@samsung.com>
+ <20140419105225.GB976@ambient.musicnaut.iki.fi>
+ <53560A6F.8030909@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="9iyR+p8Z2cn535Lj"
 Content-Disposition: inline
-In-Reply-To: <20140419182528.414b9b2e@skate>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53560A6F.8030909@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 05:25:28PM +0100, Thomas Petazzoni wrote:
-> On Sat, 19 Apr 2014 10:32:45 -0400, Santosh Shilimkar wrote:
-> > Here is an updated version of [2] based on discussion. Series introduces
-> > support for setting up dma parameters based on device tree properties
-> > like 'dma-ranges' and 'dma-coherent' and also update to ARM 32 bit port.
-> > Earlier version of the same series is here [1].
-> > 
-> > The 'dma-ranges' helps to take care of few DMAable system memory restrictions
-> > by use of dma_pfn_offset which we maintain now per device. Arch code then
-> > uses it for dma address translations for such cases. We update the
-> > dma_pfn_offset accordingly during DT the device creation process.The
-> > 'dma-coherent' property is used to setup arch's coherent dma_ops.
-> > 
-> > After some off-list discussion with RMK and Arnd, I have now dropped the
-> > controversial dma_mask setup code from the series which actually isn't blocking
-> > me as such. Considering rest of the parts of the series are already aligned,
-> > am hoping to get this version merged for 3.16 merge window.
-> > 
-> > We agreed in last discussion that drivers have the ultimate
-> > responsibility to setup the correct dma mask but then we need to have some
-> > means to see if bus can support what driver has requested for a case where
-> > driver request for bigger mask than what bus supports. I can follow up on
-> > the mask topic if we have broken drivers.
-> 
-> I am not sure whether there is an intersection or not, but I wanted to
-> mention that the mvebu platform (in mach-mvebu) supports hardware I/O
-> coherency, which makes it a coherent DMA platform. However, we are not
-> able to use arm_coherent_dma_ops for this platform, because when a
-> transfer is being made DMA_FROM_DEVICE, at the end of the transfer, we
-> need to perform an I/O barrier to wait for the snooping unit to
-> complete its coherency work. So we're coherent, but not with
-> arm_coherent_dma_ops: we have our own dma operation implementation (see
-> arch/arm/mach-mvebu/coherency.c).
+--9iyR+p8Z2cn535Lj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ordering between I/O, DMA and CPU memory accesses is the reason we added
-rmb() to the readl() macro. The mvebu ops solve the DMA streaming case
-but not the dma_alloc() buffers case where you no longer have a change
-of ownership between device and CPU. We could handle this via per-SoC
-__io*mb() barriers as function pointers with a bit of overhead (though
-we already do an outer_sync() for wmb()).
+On Tue, Apr 22, 2014 at 08:21:35AM +0200, Robert Baldyga wrote:
+> On 04/19/2014 12:52 PM, Aaro Koskinen wrote:
+> > Hi,
+> >=20
+> > On Mon, Apr 14, 2014 at 01:46:16PM +0200, Robert Baldyga wrote:
+> >>  	dev_info(&pdev->dev,
+> >> -		 "OMAP USB OTG controller rev %d.%d (%s, id=3D%d, vbus=3D%d)\n",
+> >> -		 (rev >> 4) & 0xf, rev & 0xf, config->extcon, otg_dev->id,
+> >> +		 "OMAP USB OTG controller rev %d.%d (id=3D%d, vbus=3D%d)\n",
+> >> +		 (rev >> 4) & 0xf, rev & 0xf, otg_dev->id,
+> >>  		 otg_dev->vbus);
+> >=20
+> > This change is unrelated to the patch and not needed.
+> >
+>=20
+> It's related because we no longer use config->extcon since we have
+> cable-oriented API. We can keep displaying it, but this value is
+> actually meaningless.
 
--- 
-Catalin
+can you just add some note in the commit log ? "while at that, also
+remove config->extconf from debugging print because it won't contain
+valid data anymore" or something like that.
+
+Other than that:
+
+Acked-by: Felipe Balbi <balbi@ti.com>
+
+--=20
+balbi
+
+--9iyR+p8Z2cn535Lj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTVoIPAAoJEIaOsuA1yqRE1scP/iNK13I3OOL/+5I5/UQon06C
+T6ws3j9Ym6TFw4D/TM8fEjB+ALhO+W9G50CS8lkIJIomn367MzbQtYLsDXMZX7kS
+MPF2YCIDPRwQ9RnoUNwfKdF46muSDJ9aaSMM0o/moizXOTlB/4sdBitVP4GFV8Xd
+kylgq0EQ2fiaMA9CIWr2fgTfDSkA84FaeRcchuzePknTcP8Bq9wudK4KCod8HU03
+xevQ4Zr1/Na0h2HzGYtjPrDtjx3odo88kFxnjx4ePtoDom9+0UFwWX2/1vgSDcUJ
+viLxZHCBm5oqM8958yYVQGJYusBRBowLKagQ+Xr80w1LUvmhPYJf3Gt2gIpjDzPi
+tpQX8KDEdtjNG5SphYkPZajUFtSSZbRoOeb+N/aPtW8sO8yBun7c3JQb1mAzHa43
+DYL/1B+KgaJVyVtZsCs7AtloLRV0Vnt16b7f7AkasU/96SXRpavUApEdHqyTUt8D
+JTjSYB8nUQfctl8KPFjYo5iSHg1R2XovYawcrYtUxmLaOIhFzIp5haV5QE3ijIp1
+gajWzklxh57Uo/AQqDL+DgeCEc/V+mwPy8RDM3L+uUZJWi/3ng50wotnKomR2Zhv
+1FZdSMz6mtXCPvRiu+biV4atHLTFw/qvswat88xsHGyrOGXNxYJ+E+35mGr0m41F
+biowjxJv5Y3dYM1IVuup
+=e9+3
+-----END PGP SIGNATURE-----
+
+--9iyR+p8Z2cn535Lj--
