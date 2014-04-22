@@ -1,81 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754134AbaDVIJu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:09:50 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:50530 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033AbaDVIJp (ORCPT
+	id S1754244AbaDVIJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:09:57 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:52393 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065AbaDVIJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:09:45 -0400
-Date: Tue, 22 Apr 2014 09:09:39 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH 1/2] mfd: sec-core: Remove duplicated device type from
- sec_pmic
-Message-ID: <20140422080939.GE17657@lee--X1>
-References: <1397477015-13900-1-git-send-email-k.kozlowski@samsung.com>
- <20140417082628.GG28725@lee--X1>
- <1397807684.29800.8.camel@AMDC1943>
+	Tue, 22 Apr 2014 04:09:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397807684.29800.8.camel@AMDC1943>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140419160552.GA19577@amd.pavel.ucw.cz>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<1397824031-4892-7-git-send-email-lftan@altera.com>
+	<20140419160552.GA19577@amd.pavel.ucw.cz>
+Date: Tue, 22 Apr 2014 16:09:46 +0800
+X-Google-Sender-Auth: 13-SB0RRiO3e6N7giwUig-j5N5g
+Message-ID: <CAFiDJ5_gcSfJT1Dphc6kizkExssvkd4Pdd40iDZpr9J7Y55g-g@mail.gmail.com>
+Subject: Re: [PATCH 09/28] nios2: Page table management
+From: Ley Foon Tan <lftan@altera.com>
+To: Pavel Machek <pavel@denx.de>
+Cc: linux-arch@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-doc@vger.kernel.org, cltang@codesourcery.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > +	unsigned long device_type;
-> > >  	int ret;
-> > >  
-> > >  	sec_pmic = devm_kzalloc(&i2c->dev, sizeof(struct sec_pmic_dev),
-> > > @@ -262,7 +263,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
-> > >  	sec_pmic->dev = &i2c->dev;
-> > >  	sec_pmic->i2c = i2c;
-> > >  	sec_pmic->irq = i2c->irq;
-> > > -	sec_pmic->type = sec_i2c_get_driver_data(i2c, id);
-> > > +	device_type = sec_i2c_get_driver_data(i2c, id);
-> > 
-> > Better to change the return type of 'sec_i2c_get_driver_data()' than
-> > to rely on a cast later on.
-> 
-> Hmmm... it was like that before Pankaj Dubey change (8f695de515b9).
-> Solving that issue (-Wpointer-to-int-cast) along with keeping 'int' as
-> return type of sec_i2c_get_driver_data would lead to one of:
-> 1. Using temporary variable in ec_i2c_get_driver_data just for cast.
-> 
-> static inline int sec_i2c_get_driver_data(struct i2c_client *i2c,
-> 						const struct i2c_device_id *id)
-> {
-> 	unsigned long type;
-> 
-> 	if (i2c->dev.of_node) {
-> 		const struct of_device_id *match;
-> 		match = of_match_node(sec_dt_match, i2c->dev.of_node);
-> 		type = (unsigned long)match->data;
-> 	}
-> 	type = id->driver_data;
-> 
-> 	return (int)type;
-> }
-> 
-> or
-> 2. Double cast: (int)(unsigned long)match->data;
-> 
-> For me both are kind a ugly... What do you think?
+Hi
 
-I'm saying, why don't you change everything; the return value of
-sec_i2c_get_driver_data(), pdata->device_type and device_type to long
-or unsigned long? Then the only cast you need to do is from void*.
+On Sun, Apr 20, 2014 at 12:05 AM, Pavel Machek <pavel@denx.de> wrote:
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>> +static void pgd_init(pgd_t *pgd)
+>> +{
+>> +     unsigned long *p = (unsigned long *) pgd;
+>> +     int i;
+>> +
+>> +     for (i = 0; i < USER_PTRS_PER_PGD; i += 8) {
+>> +             p[i + 0] = (unsigned long) invalid_pte_table;
+>> +             p[i + 1] = (unsigned long) invalid_pte_table;
+>> +             p[i + 2] = (unsigned long) invalid_pte_table;
+>> +             p[i + 3] = (unsigned long) invalid_pte_table;
+>> +             p[i + 4] = (unsigned long) invalid_pte_table;
+>> +             p[i + 5] = (unsigned long) invalid_pte_table;
+>> +             p[i + 6] = (unsigned long) invalid_pte_table;
+>> +             p[i + 7] = (unsigned long) invalid_pte_table;
+>> +     }
+>
+> Umm. Manual loop unrolling. Does it really improve performance? Is the
+> code hot enough to warrant the uglyness?
+We can use the memset here because invalid_pte_table is full 32 bit value.
+BTW, arch for score and mips have the similar implementation as well.
+
+Regards
