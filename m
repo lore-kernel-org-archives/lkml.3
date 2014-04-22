@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933261AbaDVQnt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:43:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43224 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932250AbaDVQnr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:43:47 -0400
-Date: Tue, 22 Apr 2014 18:43:11 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 1/9] perf report: Count number of entries and samples
- separately
-Message-ID: <20140422164311.GJ1104@krava.brq.redhat.com>
-References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
- <1398156591-11001-2-git-send-email-namhyung@kernel.org>
+	id S933305AbaDVQn7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:43:59 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:60312 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932250AbaDVQn4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 12:43:56 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398156591-11001-2-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
+	<5355A9E9.9070102@zytor.com>
+	<CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
+	<1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com>
+	<CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
+	<a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com>
+	<CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
+	<ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com>
+	<CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
+	<20140422112312.GB15882@pd.tnic>
+	<20140422144659.GF15882@pd.tnic>
+	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
+	<53569467.1030809@zytor.com>
+	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
+Date: Tue, 22 Apr 2014 09:43:55 -0700
+X-Google-Sender-Auth: QW5RpyewieOeBG-cs8-grt45XiE
+Message-ID: <CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andrew Lutomirski <amluto@gmail.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 05:49:43PM +0900, Namhyung Kim wrote:
-> Those stats are counted counted in multiple places so that they can
-> confuse readers of the code.  This is a preparation of later change
-> and do not intend any functional difference.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
+On Tue, Apr 22, 2014 at 9:33 AM, Andrew Lutomirski <amluto@gmail.com> wrote:
+>
+> For the espfix_adjust_stack thing, when can it actually need to do
+> anything?  irqs should be off, I think, and MCE, NMI, and debug
+> exceptions use ist, so that leaves just #SS and #GP, I think.  How can
+> those actually occur?  Is there a way to trigger them deliberately
+> from userspace?  Why do you have three espfix_adjust_stack
 
-SNIP
+Yes, you can very much trigger GP deliberately.
 
->  
->  		/* Non-group events are considered as leader */
->  		if (symbol_conf.event_group &&
-> @@ -526,7 +533,7 @@ static u64 report__collapse_hists(struct report *rep)
->  
->  	ui_progress__finish();
->  
-> -	return nr_samples;
-> +	return rep->nr_samples;
+The way to do it is to just make an invalid segment descriptor on the
+iret stack. Or make it a valid 16-bit one, but make it a code segment
+for the stack pointer, or read-only, or whatever. All of which is
+trivial to do with a sigretun system call. But you can do it other
+ways too - enter with a SS that is valid, but do a load_ldt() system
+call that makes it invalid, so that by the time you exit it is no
+longer valid etc.
 
-so this ^^^ is the only usage for rep->nr_samples right?
+There's a reason we mark that "iretq" as taking faults with that
 
-and the output from report__collapse_hists is used
-as a bool if we have at least 1 sample:
+        _ASM_EXTABLE(native_iret, bad_iret)
 
-        nr_samples = report__collapse_hists(rep);
+and that "bad_iret" creates a GP fault.
 
-        if (session_done())
-                return 0;
+And that's a lot of kernel stack. The whole initial GP fault path,
+which goes to the C code that finds the exception table etc. See
+do_general_protection_fault() and fixup_exception().
 
-        if (nr_samples == 0) {
-                ui__error("The %s file has no samples!\n", file->path);
-                return 0;
-        }
-
-I think report__collapse_hists does not need to return anything
-and above code could use (rep->nr_entries > 0) instead, like:
-
-        report__collapse_hists(rep);
-
-        if (session_done())
-                return 0;
-
-        if (rep->nr_entries == 0) {
-                ui__error("The %s file has no samples!\n", file->path);
-                return 0;
-        }
-
-and we could get rid of rep->nr_samples
-
-thanks,
-jirka
+                Linus
