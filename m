@@ -1,72 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534AbaDVSTd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 14:19:33 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:54667 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751222AbaDVST0 (ORCPT
+	id S1753718AbaDVSVU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 14:21:20 -0400
+Received: from g2t2353.austin.hp.com ([15.217.128.52]:40189 "EHLO
+	g2t2353.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750811AbaDVSVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 14:19:26 -0400
-Message-ID: <5356B2AB.3020005@gmail.com>
-Date: Tue, 22 Apr 2014 20:19:23 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Jan Moskyto Matejka <mq@suse.cz>, Randy Dunlap <rdunlap@infradead.org>
-CC: mtk.manpages@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] proc: fix documentation for /proc/stat, line "intr"
-References: <1398180580-8089-1-git-send-email-mq@suse.cz>
-In-Reply-To: <1398180580-8089-1-git-send-email-mq@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Apr 2014 14:21:18 -0400
+Message-ID: <1398190871.2473.12.camel@buesod1.americas.hpqcorp.net>
+Subject: Re: [PATCH 4/4] ipc/shm.c: Increase the defaults for SHMALL, SHMMAX.
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
+        aswin@hp.com, linux-mm@kvack.org
+Date: Tue, 22 Apr 2014 11:21:11 -0700
+In-Reply-To: <1398090397-2397-5-git-send-email-manfred@colorfullife.com>
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+	 <1398090397-2397-2-git-send-email-manfred@colorfullife.com>
+	 <1398090397-2397-3-git-send-email-manfred@colorfullife.com>
+	 <1398090397-2397-4-git-send-email-manfred@colorfullife.com>
+	 <1398090397-2397-5-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 05:29 PM, Jan Moskyto Matejka wrote:
-> The sum at the beginning of line "intr" includes also unnumbered interrupts.
-> It implies that the sum at the beginning isn't the sum of the remainder of the
-> line, not even an estimation.
+On Mon, 2014-04-21 at 16:26 +0200, Manfred Spraul wrote:
+> System V shared memory
 > 
-> Fixed the documentation to mention that.
+> a) can be abused to trigger out-of-memory conditions and the standard
+>    measures against out-of-memory do not work:
+> 
+>     - it is not possible to use setrlimit to limit the size of shm segments.
+> 
+>     - segments can exist without association with any processes, thus
+>       the oom-killer is unable to free that memory.
+> 
+> b) is typically used for shared information - today often multiple GB.
+>    (e.g. database shared buffers)
+> 
+> The current default is a maximum segment size of 32 MB and a maximum total
+> size of 8 GB. This is often too much for a) and not enough for b), which
+> means that lots of users must change the defaults.
+> 
+> This patch increases the default limits (nearly) to the maximum, which is
+> perfect for case b). The defaults are used after boot and as the initial
+> value for each new namespace.
+> 
+> Admins/distros that need a protection against a) should reduce the limits
+> and/or enable shm_rmid_forced.
+> 
+> Further notes:
+> - The patch only changes default, overrides behave as before:
+>         # sysctl kernel.shmall=33554432
+>   would recreate the previous limit for SHMMAX (for the current namespace).
+> 
+> - Disabling sysv shm allocation is possible with:
+>         # sysctl kernel.shmall=0
+>   (not a new feature, also per-namespace)
+> 
+> - The limits are intentionally set to a value slightly less than ULONG_MAX,
+>   to avoid triggering overflows in user space apps.
+>   [not unreasonable, see http://marc.info/?l=linux-mm&m=139638334330127]
+> 
+> Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+> Reported-by: Davidlohr Bueso <davidlohr@hp.com>
+> Cc: mtk.manpages@gmail.com
 
-I'm not really doubting what you claim, Jan, but it would be really
-helpful if you provided some data to support the proposed change
-(Kernel source references, or notes about testing you've done, or 
-pointers to mailing list threads, authoritative note that you are
-the maintainer of some relevant kernel subsystem...). Do you have
-something like that? (It's also useful for the change log.)
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+
+With one comment below.
+
+> ---
+>  include/linux/shm.h      | 3 +--
+>  include/uapi/linux/shm.h | 8 +++-----
+>  2 files changed, 4 insertions(+), 7 deletions(-)
+> 
+> diff --git a/include/linux/shm.h b/include/linux/shm.h
+> index 1e2cd2e..57d7770 100644
+> --- a/include/linux/shm.h
+> +++ b/include/linux/shm.h
+> @@ -3,9 +3,8 @@
+>  
+>  #include <asm/page.h>
+>  #include <uapi/linux/shm.h>
+> -
+> -#define SHMALL (SHMMAX/PAGE_SIZE*(SHMMNI/16)) /* max shm system wide (pages) */
+>  #include <asm/shmparam.h>
+> +
+>  struct shmid_kernel /* private to the kernel */
+>  {	
+>  	struct kern_ipc_perm	shm_perm;
+> diff --git a/include/uapi/linux/shm.h b/include/uapi/linux/shm.h
+> index 78b6941..74e786d 100644
+> --- a/include/uapi/linux/shm.h
+> +++ b/include/uapi/linux/shm.h
+> @@ -9,15 +9,13 @@
+>  
+>  /*
+>   * SHMMAX, SHMMNI and SHMALL are upper limits are defaults which can
+> - * be increased by sysctl
+> + * be modified by sysctl.
+>   */
+>  
+> -#define SHMMAX 0x2000000		 /* max shared seg size (bytes) */
+>  #define SHMMIN 1			 /* min shared seg size (bytes) */
+>  #define SHMMNI 4096			 /* max num of segs system wide */
+> -#ifndef __KERNEL__
+> -#define SHMALL (SHMMAX/getpagesize()*(SHMMNI/16))
+> -#endif
+> +#define SHMMAX (ULONG_MAX - (1L<<24))	 /* max shared seg size (bytes) */
+> +#define SHMALL (ULONG_MAX - (1L<<24))	 /* max shm system wide (pages) */
+
+It's quite clear in the changelog, but could you please add a big fat
+comment explaining this option, and that there's no point in enlarging
+it. In fact if the user wants to make it bigger, we should display some
+printk_once mentioning that this is the upper limit.
 
 Thanks,
+Davidlohr
 
-Michael
-
-> Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
-> ---
->  Documentation/filesystems/proc.txt | 5 +++--
->  1 file changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
-> index f00bee1..4e6f9d0 100644
-> --- a/Documentation/filesystems/proc.txt
-> +++ b/Documentation/filesystems/proc.txt
-> @@ -1245,8 +1245,9 @@ second).  The meanings of the columns are as follows, from left to right:
->  
->  The "intr" line gives counts of interrupts  serviced since boot time, for each
->  of the  possible system interrupts.   The first  column  is the  total of  all
-> -interrupts serviced; each  subsequent column is the  total for that particular
-> -interrupt.
-> +interrupts serviced  including  unnumbered  architecture specific  interrupts;
-> +each  subsequent column is the  total for that particular numbered interrupt.
-> +Unnumbered interrupts are not shown, only summed into the total.
->  
->  The "ctxt" line gives the total number of context switches across all CPUs.
->  
-> 
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
