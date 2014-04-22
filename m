@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316AbaDVUPV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:15:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36121 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756766AbaDVUPH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:15:07 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Anton Nayshtut <anton@swortex.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 004/133] ipv6: Fix exthdrs offload registration.
-Date: Tue, 22 Apr 2014 13:12:22 -0700
-Message-Id: <1398197671-12786-5-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S932644AbaDVVV7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:21:59 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56708 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932310AbaDVVV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 17:21:56 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <netdev@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <devicetree@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        David Miller <davem@davemloft.net>, Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sandeep Nair <sandeep_n@ti.com>
+Subject: [PATCH 0/2] net: Add Keystone NetCP ethernet driver support 
+Date: Tue, 22 Apr 2014 17:21:13 -0400
+Message-ID: <1398201675-17379-1-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
+Couple of patches to add Keystone NetCP ethernet driver support.
 
-------------------
+The network coprocessor (NetCP) is a hardware accelerator that processes
+Ethernet packets. NetCP has a gigabit Ethernet (GbE) subsystem with a ethernet
+switch sub-module to send and receive packets. NetCP also includes a packet
+accelerator (PA) module to perform packet classification operations such as
+header matching, and packet modification operations such as checksum
+generation. NetCP can also optionally include a Security Accelerator(SA)
+capable of performing IPSec operations on ingress/egress packets.
+    
+Keystone SoC's also have a 10 Gigabit Ethernet Subsystem (XGbE) which
+includes a 3-port Ethernet switch sub-module capable of 10Gb/s and
+1Gb/s rates per Ethernet port.
+    
+NetCP driver has a plug-in module architecture where each of the NetCP
+sub-modules exist as a loadable kernel module which plug in to the netcp
+core. These sub-modules are represented as "netcp-devices" in the dts
+bindings. It is mandatory to have the ethernet switch sub-module for
+the ethernet interface to be operational. Any other sub-module like the
+PA is optional.
 
-From: Anton Nayshtut <anton@swortex.com>
+Both GBE and XGBE network processors supported using common driver. It
+is also designed to handle future variants of NetCP.
 
-[ Upstream commit d2d273ffabd315eecefce21a4391d44b6e156b73 ]
+Cc: David Miller <davem@davemloft.net>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Sandeep Nair <sandeep_n@ti.com>
 
-Without this fix, ipv6_exthdrs_offload_init doesn't register IPPROTO_DSTOPTS
-offload, but returns 0 (as the IPPROTO_ROUTING registration actually succeeds).
+Sandeep Nair (2):
+  Documentation: dt: net: Add binding doc for Keystone NetCP ethernet
+    driver
+  net: Add Keystone NetCP ethernet driver
 
-This then causes the ipv6_gso_segment to drop IPv6 packets with IPPROTO_DSTOPTS
-header.
+ .../devicetree/bindings/net/keystone-netcp.txt     |  197 ++
+ drivers/net/ethernet/ti/Kconfig                    |   16 +-
+ drivers/net/ethernet/ti/Makefile                   |    4 +
+ drivers/net/ethernet/ti/netcp.h                    |  226 ++
+ drivers/net/ethernet/ti/netcp_core.c               | 2194 ++++++++++++++++++++
+ drivers/net/ethernet/ti/netcp_ethss.c              | 2177 +++++++++++++++++++
+ drivers/net/ethernet/ti/netcp_sgmii.c              |  130 ++
+ drivers/net/ethernet/ti/netcp_xgbepcsr.c           |  502 +++++
+ 8 files changed, 5443 insertions(+), 3 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/net/keystone-netcp.txt
+ create mode 100644 drivers/net/ethernet/ti/netcp.h
+ create mode 100644 drivers/net/ethernet/ti/netcp_core.c
+ create mode 100644 drivers/net/ethernet/ti/netcp_ethss.c
+ create mode 100644 drivers/net/ethernet/ti/netcp_sgmii.c
+ create mode 100644 drivers/net/ethernet/ti/netcp_xgbepcsr.c
 
-The issue detected and the fix verified by running MS HCK Offload LSO test on
-top of QEMU Windows guests, as this test sends IPv6 packets with
-IPPROTO_DSTOPTS.
-
-Signed-off-by: Anton Nayshtut <anton@swortex.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- net/ipv6/exthdrs_offload.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/ipv6/exthdrs_offload.c b/net/ipv6/exthdrs_offload.c
-index cf77f3a..447a7fb 100644
---- a/net/ipv6/exthdrs_offload.c
-+++ b/net/ipv6/exthdrs_offload.c
-@@ -25,11 +25,11 @@ int __init ipv6_exthdrs_offload_init(void)
- 	int ret;
- 
- 	ret = inet6_add_offload(&rthdr_offload, IPPROTO_ROUTING);
--	if (!ret)
-+	if (ret)
- 		goto out;
- 
- 	ret = inet6_add_offload(&dstopt_offload, IPPROTO_DSTOPTS);
--	if (!ret)
-+	if (ret)
- 		goto out_rt;
- 
- out:
 -- 
-1.9.1
+1.7.9.5
 
