@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932506AbaDVM2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 08:28:31 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:49581 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301AbaDVM21 (ORCPT
+	id S932533AbaDVM2x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 08:28:53 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33402 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932415AbaDVM2t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 08:28:27 -0400
+	Tue, 22 Apr 2014 08:28:49 -0400
+Message-ID: <53566078.1070602@ti.com>
+Date: Tue, 22 Apr 2014 15:28:40 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-X-Originating-IP: [95.21.51.154]
-In-Reply-To: <CACRpkdYLaGXJ+O0rsL5+rjUsOvxCxK2b9QtH2j4FD0g21vx8_Q@mail.gmail.com>
-References: <1396981215-24888-1-git-send-email-javier.martinez@collabora.co.uk>
-	<CACRpkdYLaGXJ+O0rsL5+rjUsOvxCxK2b9QtH2j4FD0g21vx8_Q@mail.gmail.com>
-Date: Tue, 22 Apr 2014 14:28:25 +0200
-Message-ID: <CABxcv=mb+CXQbrS==hBayMQGsaJCPuLR=xyW_BJpZm2oSNBu-w@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/5] add gpio_chip_ops to hold GPIO operations
-From: Javier Martinez Canillas <javier@dowhile0.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Alexandre Courbot <acourbot@nvidia.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Linux-OMAP <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: <balbi@ti.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <bigeasy@linutronix.de>, <sergei.shtylyov@cogentembedded.com>,
+        "3.9+" <stable@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: gadget: zero: Fix SuperSpeed enumeration for
+ alternate setting 1
+References: <1395826086-5097-1-git-send-email-rogerq@ti.com> <1395852398-7578-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1395852398-7578-1-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+Hi Felipe,
 
-On Tue, Apr 22, 2014 at 1:36 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Apr 8, 2014 at 8:20 PM, Javier Martinez Canillas
-> <javier.martinez@collabora.co.uk> wrote:
->
->> So this is an RFC patch-set to add a virtual table to be used by
->> GPIO chip controllers and consist of the following patches:
->
-> Overall I like this.
->
-> However I don't want to see any transitional phase. I prefer a BIG
-> fat patch converting everyone and its dog to the new vtable and
-> removing the old function pointers. This can be based on the HEAD
-> of my GPIO devel branch.
->
+On 03/26/2014 06:46 PM, Roger Quadros wrote:
+> It was impossible to enumerate on a SuperSpeed (XHCI) host
+> with alternate setting = 1 due to the wrongly set 'bMaxBurst'
+> field in the SuperSpeed Endpoint Companion descriptor.
+> 
+> Testcase:
+> <host> modprobe -r usbtest; modprobe usbtest alt=1
+> <device> modprobe g_zero
+> plug device to SuperSpeed port on the host.
+> 
+> Without this patch the host always complains like so
+> "usb 12-2: Not enough bandwidth for new device state.
+>  usb 12-2: Not enough bandwidth for altsetting 1"
+> 
+> Bug was introduced by commit cf9a08ae in v3.9
+> 
+> Fixes: cf9a08ae5aec (usb: gadget: convert source sink and loopback to
+> new function interface)
+> 
+> Cc: 3.9+ <stable@vger.kernel.org> # 3.9+
+> Reviewed-by: Felipe Balbi <balbi@ti.com>
+> Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
 
-Ok, I was adding a commit per GPIO driver but the patch-set would have
-been very big (~200 patches).
+Can you please queue this for -rc fixes? Thanks.
 
-> It may be a good idea to use coccinelle for this refactoring in order
-> not to miss any users.
->
+cheers,
+-roger
 
-Agreed, I was manually searching for users by using grep but I agree
-that is much safer to use coccinelle for this. I don't have previous
-experience writing coccinelle semantics patches though so it may take
-more time than I thought but it is the perfect excuse to finally learn
-how to do it :-)
+> ---
+>  drivers/usb/gadget/zero.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/gadget/zero.c b/drivers/usb/gadget/zero.c
+> index 9f170c5..134f354 100644
+> --- a/drivers/usb/gadget/zero.c
+> +++ b/drivers/usb/gadget/zero.c
+> @@ -300,7 +300,7 @@ static int __init zero_bind(struct usb_composite_dev *cdev)
+>  	ss_opts->isoc_interval = gzero_options.isoc_interval;
+>  	ss_opts->isoc_maxpacket = gzero_options.isoc_maxpacket;
+>  	ss_opts->isoc_mult = gzero_options.isoc_mult;
+> -	ss_opts->isoc_maxburst = gzero_options.isoc_maxpacket;
+> +	ss_opts->isoc_maxburst = gzero_options.isoc_maxburst;
+>  	ss_opts->bulk_buflen = gzero_options.bulk_buflen;
+>  
+>  	func_ss = usb_get_function(func_inst_ss);
+> 
 
-Thanks a lot and best regards,
-Javier
-
-> Yours,
-> Linus Walleij
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-gpio" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
