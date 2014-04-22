@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933374AbaDVQ6y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:58:54 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:49142 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932504AbaDVQ6v (ORCPT
+	id S933223AbaDVQ6u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:58:50 -0400
+Received: from mail-out.m-online.net ([212.18.0.10]:48752 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932504AbaDVQ6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:58:51 -0400
-Date: Tue, 22 Apr 2014 17:58:15 +0100
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Subject: Re: [PATCH 04/15] arm64: __NR_compat_syscalls fix
-Message-ID: <20140422165814.GH10224@arm.com>
-References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
- <1397211951-20549-5-git-send-email-miklos@szeredi.hu>
+	Tue, 22 Apr 2014 12:58:48 -0400
+X-Auth-Info: N+T3Cb6T907QAx+VxqbIooegl/uHfd28unGyRPx/uIs=
+From: Marek Vasut <marex@denx.de>
+To: Graham Moore <grmoore@altera.com>
+Subject: Re: [PATCH V3] Add support for flag status register on Micron chips.
+Date: Tue, 22 Apr 2014 18:55:57 +0200
+User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
+Cc: ggrahammoore@gmail.com, David Woodhouse <dwmw2@infradead.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Sourav Poddar <sourav.poddar@ti.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Jingoo Han <jg1.han@samsung.com>,
+        Insop Song <insop.song@gainspeed.com>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>
+References: <1398175396-7560-1-git-send-email-grmoore@altera.com> <1398175396-7560-2-git-send-email-grmoore@altera.com>
+In-Reply-To: <1398175396-7560-2-git-send-email-grmoore@altera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397211951-20549-5-git-send-email-miklos@szeredi.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404221855.57247.marex@denx.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 11:25:40AM +0100, Miklos Szeredi wrote:
-> From: Miklos Szeredi <mszeredi@suse.cz>
-> 
-> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> ---
->  arch/arm64/include/asm/unistd32.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm64/include/asm/unistd32.h b/arch/arm64/include/asm/unistd32.h
-> index bb8eb8a78e67..faa0e1ce59df 100644
-> --- a/arch/arm64/include/asm/unistd32.h
-> +++ b/arch/arm64/include/asm/unistd32.h
-> @@ -404,7 +404,7 @@ __SYSCALL(379, sys_finit_module)
->  __SYSCALL(380, sys_sched_setattr)
->  __SYSCALL(381, sys_sched_getattr)
->  
-> -#define __NR_compat_syscalls		379
-> +#define __NR_compat_syscalls		382
+On Tuesday, April 22, 2014 at 04:03:16 PM, Graham Moore wrote:
+[...]
 
-I picked up this patch, together with a Cc: stable and longer comment.
+>  #define INFO(_jedec_id, _ext_id, _sector_size, _n_sectors, _flags)	\
+> @@ -488,6 +534,8 @@ const struct spi_device_id spi_nor_ids[] = {
+>  	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, 0) },
+>  	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K) },
+>  	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K) },
+> +	{ "n25q512ax3",  INFO(0x20ba20, 0, 64 * 1024, 1024, USE_FSR) },
+> +	{ "n25q00",      INFO(0x20ba21, 0, 64 * 1024, 2048, USE_FSR) },
 
-What's your plan with the other patches? Do you submit them as a series
-or would like the arch maintainers to pick them up?
+Are you sure the n25q512a doesn't use FSR ? Do n25q512a{1,8}3 share the same 
+IDs?
 
-Thanks.
-
--- 
-Catalin
+[...]
+Best regards,
+Marek Vasut
