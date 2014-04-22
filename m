@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753581AbaDVTI2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:08:28 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41673 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287AbaDVTI0 (ORCPT
+	id S1754584AbaDVTJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:09:34 -0400
+Received: from mail-la0-f53.google.com ([209.85.215.53]:33301 "EHLO
+	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751238AbaDVTJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:08:26 -0400
-Date: Tue, 22 Apr 2014 20:07:54 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, olof@lixom.net,
-        Sachin Kamat <sachin.kamat@linaro.org>, ajaykumar.rs@samsung.com,
-        linux-samsung-soc@vger.kernel.org, sameo@linux.intel.com,
-        lee.jones@linaro.org, Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        dwmw2@infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20140422190754.GF12304@sirena.org.uk>
-References: <1398180298-2018-4-git-send-email-dianders@chromium.org>
+	Tue, 22 Apr 2014 15:09:32 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="T0Q6x799hJWgQ1sc"
-Content-Disposition: inline
-In-Reply-To: <1398180298-2018-4-git-send-email-dianders@chromium.org>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RESEND PATCH v3 3/5] mfd: tps65090: Stop caching most registers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140422184908.GA16477@omega>
+References: <1397784176-15809-1-git-send-email-mcgrof@do-not-panic.com>
+ <1397784176-15809-2-git-send-email-mcgrof@do-not-panic.com>
+ <1398159886.4211.1.camel@jlt4.sipsolutions.net> <20140422095300.GA9241@omega>
+ <20140422175818.GN27882@wotan.suse.de> <1398192315.4211.25.camel@jlt4.sipsolutions.net>
+ <20140422184908.GA16477@omega>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Tue, 22 Apr 2014 12:09:09 -0700
+X-Google-Sender-Auth: MhXScIMhcIfKrB3UGSf2lM4FdAM
+Message-ID: <CAB=NE6UW23sjr0kNMtDLashm-=N6+Pekiw58rSdt5UcJXhG=5w@mail.gmail.com>
+Subject: Re: [PATCH 1/3] 6lowpan: add helper to get 6lowpan namespace
+To: Alexander Aring <alex.aring@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-zigbee-devel@lists.sourceforge.net,
+        David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 22, 2014 at 11:49 AM, Alexander Aring <alex.aring@gmail.com> wrote:
+> On Tue, Apr 22, 2014 at 08:45:15PM +0200, Johannes Berg wrote:
+>> On Tue, 2014-04-22 at 19:58 +0200, Luis R. Rodriguez wrote:
+>>
+>> > > > > +#if IS_ENABLED(CONFIG_IEEE802154_6LOWPAN)
+>> > > > > [...]
+>> > > > > +#else
+>> > > > > +static inline struct netns_ieee802154_lowpan *
+>> > > > > +net_ieee802154_lowpan(struct net *net)
+>> > > > > +{
+>> > > > > +     return NULL;
+>> > > > > +}
+>> > > > > +#endif
+>> > > >
+>> > > > Why would that be needed? If nobody compiles 802.15.4 then it seems
+>> > > > nothing should reference it?
+>> > > >
+>> > > Indeed I think this is unnecessary, also.
+>> >
+>> > I wanted to be sure, and I was not. Right now 6lowpan does not depend
+>> > on CONFIG_NET_NS, is this intentional? I think its fine without it
+>> > but I was not sure.
+>>
+>> I fail to see how !CONFIG_LOWPAN is related CONFIG_NET_NS?
+>>
+>
+> mhh, IEEE802154_6LOWPAN depends on IPV6 and I think IPV6 is related to
+> CONFIG_NET_NS.
 
---T0Q6x799hJWgQ1sc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Just test compiled IEEE802154_6LOWPAN without NET_NS and then also
+disabled IPV6 and it compiles, IEEE802154_6LOWPAN already depends on
+IPV6.
 
-On Tue, Apr 22, 2014 at 08:24:56AM -0700, Doug Anderson wrote:
-> Nearly all of the registers in tps65090 combine control bits and
-> status bits.  Turn off caching of all registers except the select few
-> that can be cached.
-
-Lee, I don't mind if I apply this and send a pull request to you or I
-pull a tag from you with this in - what's easiest for you?
-
---T0Q6x799hJWgQ1sc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTVr4HAAoJELSic+t+oim9+L0P/35kYdCKp0hqz29+ZVBX4P8C
-o4SjA8cysa1vg/X2d9O9LU2FNJAoA298WgQh/rsPTDNqyu7sInFiFqsbcOTBwMTu
-Rm4dgKhPjjSy2kphCr1E/2IpHTAVdB7pmcySwZhfxI/v4SSgabrRqua1UmDL/sXA
-Xb1uvd2l8IpBF1PpVrYrflcPsz1En3ygoE0zQfx8EuiiYQwvfnOt94VdvG1dhD11
-VjDOg/UrXVVyf+ndVfwiOxKKuBLA5KCf8Av/6DOGer+6XXveidz1VvjdIjHYczZj
-ckSI8wWfB480OdPkLnqMVlFWo+t0yilGfohj8fL3IMmVIagReBc8Pu+XStlpsBwb
-7+mJy896WLiluGLpVdb0lNUr2PYwdwGYeKP5fx/yz97HCRnuP0qnl6NWhUcUaJzj
-ZyUb+Dfgz9eq2/rdNWX9qguRPgUXh+7dM/Haxs+3z7v0f+nW7pzuCsqNOygR/0WD
-fbuMgVT1UM/xRBC0zZUY8JgcMF2cmz7vHBdIcOlNJe/aw7rLNhKRDrMQJsY5I1V9
-Ag/k+lEpYIBlBGBeGv/K5IQsq35jxQZiCaab9y57OPFYQuPPoNSNPNfXo2pjkAsO
-lLQPU6SJAnNhsI/jkte9BFGc6zFqXuY4Tgu0fyxLCJ/5jMIs0mRzy8feHKJcTJJS
-RC9wD2+NXrFl33ldKDF6
-=UoWO
------END PGP SIGNATURE-----
-
---T0Q6x799hJWgQ1sc--
+  Luis
