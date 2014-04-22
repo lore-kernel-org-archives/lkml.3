@@ -1,173 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945AbaDVVkH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:40:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36140 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756781AbaDVUPI (ORCPT
+	id S1759014AbaDVVlz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:41:55 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:44427 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756791AbaDVVkG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:15:08 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Oliver Neukum <oneukum@suse.de>, "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 015/133] usbnet: include wait queue head in device structure
-Date: Tue, 22 Apr 2014 13:12:33 -0700
-Message-Id: <1398197671-12786-16-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 22 Apr 2014 17:40:06 -0400
+Date: Tue, 22 Apr 2014 22:39:13 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org, Anders Berg <anders.berg@lsi.com>,
+        olof@lixom.net, mturquette@linaro.org, mark.rutland@arm.com,
+        dbaryshkov@gmail.com, linus.walleij@linaro.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] ARM: dts: Device tree for AXM55xx.
+Message-ID: <20140422213913.GB24070@n2100.arm.linux.org.uk>
+References: <cover.1397552154.git.anders.berg@lsi.com> <02c006a6fc64131df82981abbc1c71c7af52254e.1397552154.git.anders.berg@lsi.com> <8344066.GP0Bf5lvlE@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8344066.GP0Bf5lvlE@wuerfel>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Apr 15, 2014 at 02:45:48PM +0200, Arnd Bergmann wrote:
+> "uartclk" is not a valid string for pl011, as per binding:
+> 
+> | - clocks:  When present, must refer to exactly one clock named
+> |           "apb_pclk"
 
-------------------
+The binding document is basically *wrong*.
 
-From: Oliver Neukum <oneukum@suse.de>
-
-[ Upstream commit 14a0d635d18d0fb552dcc979d6d25106e6541f2e ]
-
-This fixes a race which happens by freeing an object on the stack.
-Quoting Julius:
-> The issue is
-> that it calls usbnet_terminate_urbs() before that, which temporarily
-> installs a waitqueue in dev->wait in order to be able to wait on the
-> tasklet to run and finish up some queues. The waiting itself looks
-> okay, but the access to 'dev->wait' is totally unprotected and can
-> race arbitrarily. I think in this case usbnet_bh() managed to succeed
-> it's dev->wait check just before usbnet_terminate_urbs() sets it back
-> to NULL. The latter then finishes and the waitqueue_t structure on its
-> stack gets overwritten by other functions halfway through the
-> wake_up() call in usbnet_bh().
-
-The fix is to just not allocate the data structure on the stack.
-As dev->wait is abused as a flag it also takes a runtime PM change
-to fix this bug.
-
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
-Reported-by: Grant Grundler <grundler@google.com>
-Tested-by: Grant Grundler <grundler@google.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/net/usb/usbnet.c   | 33 +++++++++++++++++++--------------
- include/linux/usb/usbnet.h |  2 +-
- 2 files changed, 20 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
-index e5812c0..03b1a24 100644
---- a/drivers/net/usb/usbnet.c
-+++ b/drivers/net/usb/usbnet.c
-@@ -668,14 +668,12 @@ EXPORT_SYMBOL_GPL(usbnet_unlink_rx_urbs);
- // precondition: never called in_interrupt
- static void usbnet_terminate_urbs(struct usbnet *dev)
- {
--	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(unlink_wakeup);
- 	DECLARE_WAITQUEUE(wait, current);
- 	int temp;
- 
- 	/* ensure there are no more active urbs */
--	add_wait_queue(&unlink_wakeup, &wait);
-+	add_wait_queue(&dev->wait, &wait);
- 	set_current_state(TASK_UNINTERRUPTIBLE);
--	dev->wait = &unlink_wakeup;
- 	temp = unlink_urbs(dev, &dev->txq) +
- 		unlink_urbs(dev, &dev->rxq);
- 
-@@ -689,15 +687,14 @@ static void usbnet_terminate_urbs(struct usbnet *dev)
- 				  "waited for %d urb completions\n", temp);
- 	}
- 	set_current_state(TASK_RUNNING);
--	dev->wait = NULL;
--	remove_wait_queue(&unlink_wakeup, &wait);
-+	remove_wait_queue(&dev->wait, &wait);
- }
- 
- int usbnet_stop (struct net_device *net)
- {
- 	struct usbnet		*dev = netdev_priv(net);
- 	struct driver_info	*info = dev->driver_info;
--	int			retval;
-+	int			retval, pm;
- 
- 	clear_bit(EVENT_DEV_OPEN, &dev->flags);
- 	netif_stop_queue (net);
-@@ -707,6 +704,8 @@ int usbnet_stop (struct net_device *net)
- 		   net->stats.rx_packets, net->stats.tx_packets,
- 		   net->stats.rx_errors, net->stats.tx_errors);
- 
-+	/* to not race resume */
-+	pm = usb_autopm_get_interface(dev->intf);
- 	/* allow minidriver to stop correctly (wireless devices to turn off
- 	 * radio etc) */
- 	if (info->stop) {
-@@ -733,6 +732,9 @@ int usbnet_stop (struct net_device *net)
- 	dev->flags = 0;
- 	del_timer_sync (&dev->delay);
- 	tasklet_kill (&dev->bh);
-+	if (!pm)
-+		usb_autopm_put_interface(dev->intf);
-+
- 	if (info->manage_power &&
- 	    !test_and_clear_bit(EVENT_NO_RUNTIME_PM, &dev->flags))
- 		info->manage_power(dev, 0);
-@@ -1274,11 +1276,12 @@ static void usbnet_bh (unsigned long param)
- 	/* restart RX again after disabling due to high error rate */
- 	clear_bit(EVENT_RX_KILL, &dev->flags);
- 
--	// waiting for all pending urbs to complete?
--	if (dev->wait) {
--		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
--			wake_up (dev->wait);
--		}
-+	/* waiting for all pending urbs to complete?
-+	 * only then can we forgo submitting anew
-+	 */
-+	if (waitqueue_active(&dev->wait)) {
-+		if (dev->txq.qlen + dev->rxq.qlen + dev->done.qlen == 0)
-+			wake_up_all(&dev->wait);
- 
- 	// or are we maybe short a few urbs?
- 	} else if (netif_running (dev->net) &&
-@@ -1415,6 +1418,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
- 	dev->driver_name = name;
- 	dev->msg_enable = netif_msg_init (msg_level, NETIF_MSG_DRV
- 				| NETIF_MSG_PROBE | NETIF_MSG_LINK);
-+	init_waitqueue_head(&dev->wait);
- 	skb_queue_head_init (&dev->rxq);
- 	skb_queue_head_init (&dev->txq);
- 	skb_queue_head_init (&dev->done);
-@@ -1606,9 +1610,10 @@ int usbnet_resume (struct usb_interface *intf)
- 		spin_unlock_irq(&dev->txq.lock);
- 
- 		if (test_bit(EVENT_DEV_OPEN, &dev->flags)) {
--			/* handle remote wakeup ASAP */
--			if (!dev->wait &&
--				netif_device_present(dev->net) &&
-+			/* handle remote wakeup ASAP
-+			 * we cannot race against stop
-+			 */
-+			if (netif_device_present(dev->net) &&
- 				!timer_pending(&dev->delay) &&
- 				!test_bit(EVENT_RX_HALT, &dev->flags))
- 					rx_alloc_submit(dev, GFP_NOIO);
-diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
-index 0e5ac93..a843bde 100644
---- a/include/linux/usb/usbnet.h
-+++ b/include/linux/usb/usbnet.h
-@@ -30,7 +30,7 @@ struct usbnet {
- 	struct driver_info	*driver_info;
- 	const char		*driver_name;
- 	void			*driver_priv;
--	wait_queue_head_t	*wait;
-+	wait_queue_head_t	wait;
- 	struct mutex		phy_mutex;
- 	unsigned char		suspend_count;
- 	unsigned char		pkt_cnt, pkt_err;
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
