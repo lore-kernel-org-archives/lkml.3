@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645AbaDVOSn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:18:43 -0400
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:36268 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756550AbaDVOR5 (ORCPT
+	id S1756650AbaDVOTj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:19:39 -0400
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:37302 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756066AbaDVOTf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:17:57 -0400
+	Tue, 22 Apr 2014 10:19:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALCETrUZfSrBPZ0Fok5WrG2zM5h3LchEfqnWP4nK37-0sQ8=6g@mail.gmail.com>
-References: <cover.1398097304.git.luto@amacapital.net>
-	<430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
-	<CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
-	<CALCETrUZfSrBPZ0Fok5WrG2zM5h3LchEfqnWP4nK37-0sQ8=6g@mail.gmail.com>
-Date: Tue, 22 Apr 2014 16:17:57 +0200
-Message-ID: <CANq1E4T+5Yekm1CpzM40D3C-4XDr+5PYU8d6ud3Zw7k5dcrmUA@mail.gmail.com>
-Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>
+In-Reply-To: <535679A4.4050507@kernel.dk>
+References: <1398144370-9236-1-git-send-email-nasa4836@gmail.com> <535679A4.4050507@kernel.dk>
+From: Jianyu Zhan <nasa4836@gmail.com>
+Date: Tue, 22 Apr 2014 22:18:55 +0800
+Message-ID: <CAHz2CGXcTZZHYK1WbOcF3S-O74dxE+yN9z527KhgOOEcfD_-DQ@mail.gmail.com>
+Subject: Re: [PATCH] blk-cgroup: explicitly init the early_init field
+To: Jens Axboe <axboe@kernel.dk>
+Cc: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Apr 22, 2014 at 10:16 PM, Jens Axboe <axboe@kernel.dk> wrote:
+> The rest of the members will be zero-filled by default, so your patch should
+> not change anything.
 
-On Tue, Apr 22, 2014 at 3:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> Anyone who opens a file read-only and sends it over SCM_RIGHTS is
-> likely broken.  They may think that it's read-only, so it can't be
-> written, but this /proc/fd issue means that whoever receives it can
-> reopen it.
->
-> It's true that, if the inode doesn't allow the recipient write access,
-> then the recipient can't reopen, but there are lots of cases where the
-> inode can't reliably be expected not to allow write.  For example, the
-> inode could be unlinked, an O_TMPFILE file, a memfd handle, or in a
-> non-world-executable directory, and the file mode should be respected.
+Hi, Jens
 
-I think it's safe to assume that any object you create is never
-world-accessible. So the worst you can get is 0600. So if we now take
-your example, your patch doesn't fix the problem at all. Imagine two
-processes, $sender and $receiver. If the receiver runs as a different
-user as the sender, it cannot open /proc/self/fd/ writable due to
-0600. So the only problematic case is if both run as the same user.
-However, in that case, the receiver can _always_ access
-/proc/$sender/fd/ and thus still gain writable access to the object,
-even if its own fd is read-only and your patch was applied. (ignoring
-the fact that they can kill() and ptrace each other..)
+I'm sorry I should have made this more clear.
 
-Protecting world-accessible objects by hiding them is imho wrong. And
-protecting users against themselves is even worse.
+Sure, for this global variable struct, if not initailized, its all
+fields will be initialized
+to 0 or null(depending on its type).  The point here is no to deprive
+the rights of compiler/linker of doing this initialization, it is mainly for
+documentation reason. Actually this field's value would affect how ->css_alloc
+should implemented.
 
->>
->> fd = open("/run", O_RDWR | O_TMPFILE);
->
-> Did you mean fd = open("/run", O_RDWR | O_TMPFILE, 0666)?  0600?
+Concretely, if early_init is nonzero, then ->css_alloc *must not* call kzalloc,
+because in cgroup implementation, ->css_alloc will be called earlier before
+mm_init().
 
-Sorry, I meant S_IWUSR | S_IRUSR (0600).
+I don't think that the value of one field(early_init) has a so subtle
+restrition on the another field(css_alloc) is a good thing, but since
+it is there, docment it should be needed.
 
-Thanks
-David
+Thanks,
+Jianyu Zhan
