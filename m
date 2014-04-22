@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932581AbaDVPCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:02:41 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:63700 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756209AbaDVPCi (ORCPT
+	id S933013AbaDVPDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:03:52 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:59096 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932828AbaDVPDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:02:38 -0400
+	Tue, 22 Apr 2014 11:03:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <1397544101-18135-2-git-send-email-wens@csie.org>
-References: <1397544101-18135-1-git-send-email-wens@csie.org>
-	<1397544101-18135-2-git-send-email-wens@csie.org>
-Date: Tue, 22 Apr 2014 17:02:38 +0200
-Message-ID: <CACRpkdZDjC1KxM2yJqsgpg2MxBamX1EObsuahB-2c+ShuBXm8A@mail.gmail.com>
-Subject: Re: [PATCH 1/7] gpiolib: gpiolib-of: Implement device tree gpio-names
- based lookup
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>
+In-Reply-To: <CALCETrWOTVk6wK7e5CwLCRS9XN=5oDT+QtSAPPi_eTMDKgYRFQ@mail.gmail.com>
+References: <cover.1398097304.git.luto@amacapital.net>
+	<430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+	<CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
+	<CALCETrUZfSrBPZ0Fok5WrG2zM5h3LchEfqnWP4nK37-0sQ8=6g@mail.gmail.com>
+	<CANq1E4T+5Yekm1CpzM40D3C-4XDr+5PYU8d6ud3Zw7k5dcrmUA@mail.gmail.com>
+	<CALCETrWOTVk6wK7e5CwLCRS9XN=5oDT+QtSAPPi_eTMDKgYRFQ@mail.gmail.com>
+Date: Tue, 22 Apr 2014 17:03:39 +0200
+Message-ID: <CANq1E4QWMw2oLakm-YAdbCsCNHrgfU=66U5Ox-tHzDroFN6avA@mail.gmail.com>
+Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 8:41 AM, Chen-Yu Tsai <wens@csie.org> wrote:
+Hi
 
-> This patch provides of_get_gpiod_flags_by_name(), which looks up GPIO
-> phandles by name only, through gpios/gpio-names, and not by index.
+On Tue, Apr 22, 2014 at 4:33 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Tue, Apr 22, 2014 at 7:17 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> I think it's safe to assume that any object you create is never
+>> world-accessible. So the worst you can get is 0600.
 >
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+> Can you explain what you mean?  I think that it's completely *unsafe*
+> to make this assumption unless you actually take some explicit action
+> to make sure it's correct.
 
-Like Alexandre I have no strong opinion on this alternative scheme.
+Which kernel-interface creates world-writable objects if a reasonable
+umask like 022 is set?
 
-However if I shall apply this patch I want ACKs from the DT maintainers
-with them expressing that they want things to look like this going
-forward.
+>> So if we now take
+>> your example, your patch doesn't fix the problem at all. Imagine two
+>> processes, $sender and $receiver. If the receiver runs as a different
+>> user as the sender, it cannot open /proc/self/fd/ writable due to
+>> 0600. So the only problematic case is if both run as the same user.
+>> However, in that case, the receiver can _always_ access
+>> /proc/$sender/fd/ and thus still gain writable access to the object,
+>> even if its own fd is read-only and your patch was applied. (ignoring
+>> the fact that they can kill() and ptrace each other..)
+>
+> Incorrect.  That is exactly what my patch changes.
 
-Otherwise the set is stalled right here.
+Are you sure? Note I wrote /proc/$sender/fd/ not /proc/$receiver/fd/.
+The lookup on /proc/$sender/fd/ is done with the file of the _sender_,
+which obviously is writable.
 
-Yours,
-Linus Walleij
+Thanks
+David
