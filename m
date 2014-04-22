@@ -1,184 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753588AbaDVGdy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 02:33:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60008 "EHLO mx2.suse.de"
+	id S1753654AbaDVGeV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 02:34:21 -0400
+Received: from mga01.intel.com ([192.55.52.88]:4260 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753516AbaDVGdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 02:33:32 -0400
-Message-ID: <53560D3F.2030002@suse.cz>
-Date: Tue, 22 Apr 2014 08:33:35 +0200
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Minchan Kim <minchan@kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dongjun Shin <d.j.shin@samsung.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm/compaction: cleanup isolate_freepages()
-References: <5342BA34.8050006@suse.cz> <1397553507-15330-1-git-send-email-vbabka@suse.cz> <1397553507-15330-2-git-send-email-vbabka@suse.cz> <20140417000745.GF27534@bbox> <20140421124146.c8beacf0d58aafff2085a461@linux-foundation.org> <535590FC.10607@suse.cz> <20140421235319.GD7178@bbox>
-In-Reply-To: <20140421235319.GD7178@bbox>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753291AbaDVGcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 02:32:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,901,1389772800"; 
+   d="scan'208";a="517067448"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
+        awilliam@redhat.com, lenb@kernel.org
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, tianyu.lan@intel.com
+Subject: [Resend Patch 6/9] I2C: Add smbus word/block process call helper function
+Date: Tue, 22 Apr 2014 14:24:12 +0800
+Message-Id: <1398147855-9868-7-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
+References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
+ <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.4.2014 1:53, Minchan Kim wrote:
-> On Mon, Apr 21, 2014 at 11:43:24PM +0200, Vlastimil Babka wrote:
->> On 21.4.2014 21:41, Andrew Morton wrote:
->>> On Thu, 17 Apr 2014 09:07:45 +0900 Minchan Kim <minchan@kernel.org> wrote:
->>>
->>>> Hi Vlastimil,
->>>>
->>>> Below just nitpicks.
->>> It seems you were ignored ;)
->> Oops, I managed to miss your e-mail, sorry.
->>
->>>>>   {
->>>>>   	struct page *page;
->>>>> -	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
->>>>> +	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
->>>> Could you add comment for each variable?
->>>>
->>>> unsigned long pfn; /* scanning cursor */
->>>> unsigned long low_pfn; /* lowest pfn free scanner is able to scan */
->>>> unsigned long next_free_pfn; /* start pfn for scaning at next truen */
->>>> unsigned long z_end_pfn; /* zone's end pfn */
->>>>
->>>>
->>>>> @@ -688,11 +688,10 @@ static void isolate_freepages(struct zone *zone,
->>>>>   	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
->>>>>   	/*
->>>>> -	 * Take care that if the migration scanner is at the end of the zone
->>>>> -	 * that the free scanner does not accidentally move to the next zone
->>>>> -	 * in the next isolation cycle.
->>>>> +	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
->>>>> +	 * none, the pfn < low_pfn check will kick in.
->>>>         "none" what? I'd like to clear more.
->> If there are no updates to next_free_pfn within the for cycle. Which
->> matches Andrew's formulation below.
->>
->>> I did this:
->> Thanks!
->>
->>> --- a/mm/compaction.c~mm-compaction-cleanup-isolate_freepages-fix
->>> +++ a/mm/compaction.c
->>> @@ -662,7 +662,10 @@ static void isolate_freepages(struct zon
->>>   				struct compact_control *cc)
->>>   {
->>>   	struct page *page;
->>> -	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
->>> +	unsigned long pfn;	     /* scanning cursor */
->>> +	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
->>> +	unsigned long next_free_pfn; /* start pfn for scaning at next round */
->>> +	unsigned long z_end_pfn;     /* zone's end pfn */
->> Yes that works.
->>
->>>   	int nr_freepages = cc->nr_freepages;
->>>   	struct list_head *freelist = &cc->freepages;
->>> @@ -679,8 +682,8 @@ static void isolate_freepages(struct zon
->>>   	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
->>>   	/*
->>> -	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
->>> -	 * none, the pfn < low_pfn check will kick in.
->>> +	 * Seed the value for max(next_free_pfn, pfn) updates. If no pages are
->>> +	 * isolated, the pfn < low_pfn check will kick in.
->> OK.
->>
->>>   	 */
->>>   	next_free_pfn = 0;
->>>>> @@ -766,9 +765,9 @@ static void isolate_freepages(struct zone *zone,
->>>>>   	 * so that compact_finished() may detect this
->>>>>   	 */
->>>>>   	if (pfn < low_pfn)
->>>>> -		cc->free_pfn = max(pfn, zone->zone_start_pfn);
->>>>> -	else
->>>>> -		cc->free_pfn = high_pfn;
->>>>> +		next_free_pfn = max(pfn, zone->zone_start_pfn);
->>>> Why we need max operation?
->>>> IOW, what's the problem if we do (next_free_pfn = pfn)?
->>> An answer to this would be useful, thanks.
->> The idea (originally, not new here) is that the free scanner wants
->> to remember the highest-pfn
->> block where it managed to isolate some pages. If the following page
->> migration fails, these isolated
->> pages might be put back and would be skipped in further compaction
->> attempt if we used just
->> "next_free_pfn = pfn", until the scanners get reset.
->>
->> The question of course is if such situations are frequent and makes
->> any difference to compaction
->> outcome. And the downsides are potentially useless rescans and code
->> complexity. Maybe Mel
->> remembers how important this is? It should probably be profiled
->> before changes are made.
-> I didn't mean it. What I mean is code snippet you introduced in 7ed695e069c3c.
-> At that time, I didn't Cced so I missed that code so let's ask this time.
-> In that patch, you added this.
->
-> if (pfn < low_pfn)
->    cc->free_pfn = max(pfn, zone->zone_start_pfn);
-> else
->    cc->free_pfn = high_pfn;
+Add i2c_smbus_word/block_proc_call() helper function. These will be used
+in the implementation of i2c ACPI address space handler.
 
-Oh, right, this max(), not the one in the for loop. Sorry, I should have 
-read more closely.
-But still maybe it's a good opportunity to kill the other max() as well. 
-I'll try some testing.
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+---
+ drivers/i2c/i2c-core.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/i2c.h    |  4 ++++
+ 2 files changed, 60 insertions(+)
 
-Anyway, this is what I answered to Mel when he asked the same thing when 
-I sent
-that 7ed695069c3c patch:
-
-If a zone starts in a middle of a pageblock and migrate scanner isolates
-enough pages early to stay within that pageblock, low_pfn will be at the
-end of that pageblock and after the for cycle in this function ends, pfn
-might be at the beginning of that pageblock. It might not be an actual
-problem (this compaction will finish at this point, and if someone else
-is racing, he will probably check the boundaries himself), but I played
-it safe.
-
-
-> So the purpose of max(pfn, zone->zone_start_pfn) is to be detected by
-> compact_finished to stop compaction. And your [1/2] patch in this patchset
-> always makes free page scanner start on pageblock boundary so when the
-> loop in isolate_freepages is finished and pfn is lower low_pfn, the pfn
-> would be lower than migration scanner so compact_finished will always detect
-> it so I think you could just do
->
-> if (pfn < low_pfn)
->    next_free_pfn = pfn;
->
-> cc->free_pfn = next_free_pfn;
-
-That could work. I was probably wrong about danger of racing in the 
-reply to Mel,
-because free_pfn is stored in cc (private), not zone (shared).
-
->
-> Or, if you want to clear *reset*,
-> if (pfn < lown_pfn)
->    next_free_pfn = zone->zone_start_pfn;
->
-> cc->free_pfn = next_free_pfn;
-
-That would work as well but is less straightforward I think. Might be 
-misleading if
-someone added tracepoints to track the free scanner progress with pfn's 
-(which
-might happen soon...)
-
-> That's why I asked about max operation. What am I missing?
->> --
->> To unsubscribe, send a message with 'unsubscribe linux-mm' in
->> the body to majordomo@kvack.org.  For more info on Linux MM,
->> see: http://www.linux-mm.org/ .
->> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 3bf0048..638befd 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -2306,6 +2306,30 @@ s32 i2c_smbus_write_word_data(const struct i2c_client *client, u8 command,
+ EXPORT_SYMBOL(i2c_smbus_write_word_data);
+ 
+ /**
++ * i2c_smbus_word_proc_call - SMBus "word proc call" protocol
++ * @client: Handle to slave device
++ * @command: Byte interpreted by slave
++ * @value: 16-bit "word" being written
++ *
++ * This executes the SMBus "word proc all" protocol, returning negative errno
++ * else a 16-bit unsigned "word" received from the device.
++ */
++s32 i2c_smbus_word_proc_call(const struct i2c_client *client, u8 command,
++			      u16 value)
++{
++	union i2c_smbus_data data;
++	int status;
++
++	data.word = value;
++	status = i2c_smbus_xfer(client->adapter, client->addr, client->flags,
++			      I2C_SMBUS_READ, command,
++			      I2C_SMBUS_PROC_CALL, &data);
++
++	return (status < 0) ? status : data.word;
++}
++EXPORT_SYMBOL(i2c_smbus_word_proc_call);
++
++/**
+  * i2c_smbus_read_block_data - SMBus "block read" protocol
+  * @client: Handle to slave device
+  * @command: Byte interpreted by slave
+@@ -2362,6 +2386,38 @@ s32 i2c_smbus_write_block_data(const struct i2c_client *client, u8 command,
+ }
+ EXPORT_SYMBOL(i2c_smbus_write_block_data);
+ 
++/**
++ * i2c_smbus_block_proc_call - SMBus "block write" protocol
++ * @client: Handle to slave device
++ * @command: Byte interpreted by slave
++ * @length: Size of data block; SMBus allows at most 32 bytes
++ * @values: Byte array which will be written.
++ *
++ * This executes the SMBus "block proc call" protocol, returning negative errno
++ * else the number of read bytes.
++ */
++s32 i2c_smbus_block_proc_call(const struct i2c_client *client, u8 command,
++			       u8 length, u8 *values)
++{
++	union i2c_smbus_data data;
++	int status;
++
++	if (length > I2C_SMBUS_BLOCK_MAX)
++		length = I2C_SMBUS_BLOCK_MAX;
++	data.block[0] = length;
++	memcpy(&data.block[1], values, length);
++	status = i2c_smbus_xfer(client->adapter, client->addr, client->flags,
++			      I2C_SMBUS_READ, command,
++			      I2C_SMBUS_BLOCK_PROC_CALL, &data);
++
++	if (status < 0)
++		return status;
++
++	memcpy(values, &data.block[1], data.block[0]);
++	return data.block[0];
++}
++EXPORT_SYMBOL(i2c_smbus_block_proc_call);
++
+ /* Returns the number of read bytes */
+ s32 i2c_smbus_read_i2c_block_data(const struct i2c_client *client, u8 command,
+ 				  u8 length, u8 *values)
+diff --git a/include/linux/i2c.h b/include/linux/i2c.h
+index 3e6ea90..724440a 100644
+--- a/include/linux/i2c.h
++++ b/include/linux/i2c.h
+@@ -94,6 +94,10 @@ extern s32 i2c_smbus_read_word_data(const struct i2c_client *client,
+ 				    u8 command);
+ extern s32 i2c_smbus_write_word_data(const struct i2c_client *client,
+ 				     u8 command, u16 value);
++extern s32 i2c_smbus_word_proc_call(const struct i2c_client *client,
++				    u8 command, u16 value);
++extern s32 i2c_smbus_block_proc_call(const struct i2c_client *client,
++				u8 command, u8 length, u8 *values);
+ 
+ static inline s32
+ i2c_smbus_read_word_swapped(const struct i2c_client *client, u8 command)
+-- 
+1.8.4.rc0.1.g8f6a3e5.dirty
 
