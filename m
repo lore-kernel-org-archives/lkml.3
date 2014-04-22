@@ -1,59 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238AbaDVLDg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:03:36 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:41796 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932165AbaDVLDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:03:33 -0400
-Date: Tue, 22 Apr 2014 07:02:36 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: davem@davemloft.net, lizefan@huawei.com, tj@kernel.org, aris@redhat.com,
-        dborkman@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netclassid_cgroup: explicitly init the early_init field
-Message-ID: <20140422110236.GC17116@hmsreliant.think-freely.org>
-References: <1398144676-9739-1-git-send-email-nasa4836@gmail.com>
+	id S932245AbaDVLE6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:04:58 -0400
+Received: from softlayer.compulab.co.il ([50.23.254.55]:56053 "EHLO
+	compulab.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755364AbaDVLEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 07:04:55 -0400
+Message-ID: <53564CCA.4070302@compulab.co.il>
+Date: Tue, 22 Apr 2014 14:04:42 +0300
+From: Denis Turischev <denis.turischev@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398144676-9739-1-git-send-email-nasa4836@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-Score: -2.9 (--)
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [RESEND] [PATCH] xhci: Switch Intel Lynx Point ports to EHCI
+ on shutdown.
+References: <532C0E0D.6070107@compulab.co.il> <532C2C36.2030808@linux.intel.com>
+In-Reply-To: <532C2C36.2030808@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Get-Message-Sender-Via: softlayer.compulab.co.il: acl_c_relayhosts_text_entry: -unknown-@compulab.co.il|compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 01:31:16PM +0800, Jianyu Zhan wrote:
-> For a cgroup subsystem who should init early, then it should carefully
-> take care of the implementation of css_alloc, because it will be called
-> before mm_init() setup the world.
+Hi Mathias,
+
+Just want to remind you about the patch, thanks.
+
+Denis
+
+On 03/21/2014 02:10 PM, Mathias Nyman wrote:
+> On 03/21/2014 12:01 PM, Denis Turischev wrote:
+>> The same issue like with Panther Point chipsets. If the USB ports are
+>> switched to xHCI on shutdown, the xHCI host will send a spurious interrupt,
+>> which will wake the system. Some BIOS have work around for this, but not all.
+>> One example is Compulab's mini-desktop, the Intense-PC2.
+>>
+>> The bug can be avoided if the USB ports are switched back to EHCI on
+>> shutdown.
+>>
 > 
-> Luckily we don't, and we better explicitly assign the early_init field
-> to 0, for document reason.
+> I'll queue this up and send it forward to Greg once 3.15-rc1 is out
 > 
-> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
-> ---
->  net/core/netclassid_cgroup.c | 1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/net/core/netclassid_cgroup.c b/net/core/netclassid_cgroup.c
-> index 22931e1..1b07dca 100644
-> --- a/net/core/netclassid_cgroup.c
-> +++ b/net/core/netclassid_cgroup.c
-> @@ -108,4 +108,5 @@ struct cgroup_subsys net_cls_cgrp_subsys = {
->  	.css_free		= cgrp_css_free,
->  	.attach			= cgrp_attach,
->  	.base_cftypes		= ss_files,
-> +	.early_init		= 0,
->  };
-> -- 
-> 2.0.0-rc0
+> -Mathias
 > 
 > 
-Agreed, this doesn't make sense, early_init is default assigned to zero.  What
-problem are you trying to solve?
-Neil
 
