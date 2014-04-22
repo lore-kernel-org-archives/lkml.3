@@ -1,41 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751606AbaDVETs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 00:19:48 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:56469 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750755AbaDVETo convert rfc822-to-8bit (ORCPT
+	id S1751765AbaDVEXi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 00:23:38 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:32973 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716AbaDVEXe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 00:19:44 -0400
+	Tue, 22 Apr 2014 00:23:34 -0400
+Message-ID: <5355EEC2.4010304@colorfullife.com>
+Date: Tue, 22 Apr 2014 06:23:30 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140421165050.GB8874@tassilo.jf.intel.com>
-References: <1397795756-23283-1-git-send-email-andi@firstfloor.org>
-	<CAKohpond9DbNqWHLi9ZdL0BJRwZjeDZcar7KYuC2kAvWZp96-Q@mail.gmail.com>
-	<20140421165050.GB8874@tassilo.jf.intel.com>
-Date: Tue, 22 Apr 2014 09:49:44 +0530
-Message-ID: <CAKohpo=jqjDKWjAyJ-d0an_nv7Fpg-JWtg0Mm6tWGhH20s5Gvw@mail.gmail.com>
-Subject: Re: [PATCH] Kbuild, lto: Avoid reported warning with strtoul
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Andi Kleen <andi@firstfloor.org>, mmarek@suse.cz,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Davidlohr Bueso <davidlohr@hp.com>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
+        aswin@hp.com, linux-mm@kvack.org
+Subject: Re: [PATCH 0/4] ipc/shm.c: increase the limits for SHMMAX, SHMALL
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com> <1398101106.2623.6.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1398101106.2623.6.camel@buesod1.americas.hpqcorp.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 April 2014 22:20, Andi Kleen <ak@linux.intel.com> wrote:
-> Hmm that's odd. I guess could assign it to a dummy variable
+On 04/21/2014 07:25 PM, Davidlohr Bueso wrote:
+> On Mon, 2014-04-21 at 16:26 +0200, Manfred Spraul wrote:
+>> Hi all,
+>>
+>> the increase of SHMMAX/SHMALL is now a 4 patch series.
+>> I don't have ideas how to improve it further.
+> Manfred, is there any difference between this set and the one you sent a
+> couple of days ago?
+a) I updated the comments.
+b) the initial set used TASK_SIZE, not I switch to ULONG_MAX-(1L<<24)
 
-That produces this:
+>>    - Using "0" as a magic value for infinity is even worse, because
+>>      right now 0 means 0, i.e. fail all allocations.
+> Sorry but I don't quite get this. Using 0 eliminates the need for all
+> these patches, no? I mean overflows have existed since forever, and
+> taking this route would naturally solve the problem. 0 allocations are a
+> no no anyways.
+No. The patches are required to handle e.g. shmget(,ULONG_MAX,):
+Right now, shmget(,ULONG_MAX,) results in a 0-byte segment.
 
-scripts/mod/modpost.c: In function ‘remove_dot’:
-scripts/mod/modpost.c:1708:16: warning: variable ‘ignore’ set but not
-used [-Wunused-but-set-variable]
+The risk of using 0 is that it reverses the current behavior:
+Up to now,
+     # sysctl kernel.shmall=0
+disables allocations.
+If we define 0 a infinity, then the same configuration would allow 
+unlimited allocations.
 
-> or use viro's variant.
-
-It looks fine but can't test if works exactly the same way as current
-implementation.
+--
+     Manfred
