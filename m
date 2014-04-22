@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757100AbaDVPbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:31:16 -0400
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:42716 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756982AbaDVPaY (ORCPT
+	id S1757156AbaDVPcZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:32:25 -0400
+Received: from mail-qa0-f52.google.com ([209.85.216.52]:52817 "EHLO
+	mail-qa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757140AbaDVPcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:30:24 -0400
-Message-ID: <53568B0C.3080107@linaro.org>
-Date: Tue, 22 Apr 2014 16:30:20 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 22 Apr 2014 11:32:18 -0400
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Felipe Balbi <balbi@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v6 06/19] usb: phy: msm: Fix checkpatch.pl warnings
-References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com> <1398158438-21579-7-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1398158438-21579-7-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <CAMuHMdUtPucUNXDt=o_avzSCMvL9bwn-A6WH5dY4ZazGPj2QnA@mail.gmail.com>
+References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
+	<1397211951-20549-7-git-send-email-miklos@szeredi.hu>
+	<CAMuHMdUtPucUNXDt=o_avzSCMvL9bwn-A6WH5dY4ZazGPj2QnA@mail.gmail.com>
+Date: Tue, 22 Apr 2014 17:32:16 +0200
+Message-ID: <CAJfpeguxmjzW93x-RzT0GahwhkchTMe2OdyfBtnBLCbB6zsc5Q@mail.gmail.com>
+Subject: Re: [PATCH 06/15] m68k: add renameat2 syscall
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 22/04/14 10:20, Ivan T. Ivanov wrote:
-> @@ -79,8 +78,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
->   		ret = regulator_set_voltage(motg->vddcx, 0,
->   			USB_PHY_VDD_DIG_VOL_MAX);
->   		if (ret)
-> -			dev_err(motg->phy.dev, "unable to set the voltage "
-> -					"for hsusb vddcx\n");
-> +			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
-
-
-> @@ -137,15 +133,13 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
->   		ret = regulator_set_optimum_mode(motg->v1p8,
->   				USB_PHY_1P8_HPM_LOAD);
->   		if (ret < 0) {
-> -			pr_err("%s: Unable to set HPM of the regulator "
-> -				"HSUSB_1p8\n", __func__);
-> +			pr_err("Could not set HPM for v1p8\n");
->   			return ret;
->   		}
-
-
-> @@ -390,8 +382,7 @@ static int msm_hsusb_config_vddcx(struct msm_otg *motg, int high)
+On Mon, Apr 21, 2014 at 10:10 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Hi Miklos,
 >
->   	ret = regulator_set_voltage(motg->vddcx, min_vol, max_vol);
->   	if (ret) {
-> -		pr_err("%s: unable to set the voltage for regulator "
-> -			"HSUSB_VDDCX\n", __func__);
-> +		dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
->   		return ret;
->   	}
+> On Fri, Apr 11, 2014 at 12:25 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>> --- a/arch/m68k/kernel/syscalltable.S
+>> +++ b/arch/m68k/kernel/syscalltable.S
+>> @@ -371,4 +371,5 @@ ENTRY(sys_call_table)
+>>         .long sys_finit_module
+>>         .long sys_sched_setattr
+>>         .long sys_sched_getattr         /* 350 */
+>> +       .long sys_sched_renameat2
 >
+> "sys_renameat2", please.
+>
+> Sorry for not noticing before I threw it at the compiler.
 
 
-I see some of pr_err not moved to dev_err?, while others have been moved.
+Fixed.  Thanks!
 
-Also noticed that the error messages are changed as part of this fix. 
-IMHO, changing an error message would have a side-effects on logging 
-tools, anyway Am not sure if its true in this case.
-
-
-Thanks,
-srini
+Miklos
