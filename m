@@ -1,110 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756629AbaDVOSP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:18:15 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:44803 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756571AbaDVOSA (ORCPT
+	id S1756645AbaDVOSn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:18:43 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:36268 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756550AbaDVOR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:18:00 -0400
-From: Leela Krishna Amudala <leela.krishna@linaro.org>
-To: linux-pm@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: daniel.lezcano@linaro.org, kgene.kim@samsung.com, amit.kucheria@linaro.org
-Subject: [PATCH] ARM: EXYNOS: cpu hotplug: use v7_exit_coherency_flush macro for cache disabling
-Date: Tue, 22 Apr 2014 19:48:00 +0530
-Message-Id: <1398176280-7258-1-git-send-email-leela.krishna@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 22 Apr 2014 10:17:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <CALCETrUZfSrBPZ0Fok5WrG2zM5h3LchEfqnWP4nK37-0sQ8=6g@mail.gmail.com>
+References: <cover.1398097304.git.luto@amacapital.net>
+	<430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+	<CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
+	<CALCETrUZfSrBPZ0Fok5WrG2zM5h3LchEfqnWP4nK37-0sQ8=6g@mail.gmail.com>
+Date: Tue, 22 Apr 2014 16:17:57 +0200
+Message-ID: <CANq1E4T+5Yekm1CpzM40D3C-4XDr+5PYU8d6ud3Zw7k5dcrmUA@mail.gmail.com>
+Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the duplicated code for cache disabling and use "v7_exit_coherency_flush"
-macro to do the same job.
+Hi
 
-Signed-off-by: Leela Krishna Amudala <leela.krishna@linaro.org>
+On Tue, Apr 22, 2014 at 3:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> Anyone who opens a file read-only and sends it over SCM_RIGHTS is
+> likely broken.  They may think that it's read-only, so it can't be
+> written, but this /proc/fd issue means that whoever receives it can
+> reopen it.
+>
+> It's true that, if the inode doesn't allow the recipient write access,
+> then the recipient can't reopen, but there are lots of cases where the
+> inode can't reliably be expected not to allow write.  For example, the
+> inode could be unlinked, an O_TMPFILE file, a memfd handle, or in a
+> non-world-executable directory, and the file mode should be respected.
 
----
-cpu hotplug is tested with 3.15-rc1 on Origen(which has cortex A9) and
-Arndale octa(which has cortex A7 and A15) boards.
+I think it's safe to assume that any object you create is never
+world-accessible. So the worst you can get is 0600. So if we now take
+your example, your patch doesn't fix the problem at all. Imagine two
+processes, $sender and $receiver. If the receiver runs as a different
+user as the sender, it cannot open /proc/self/fd/ writable due to
+0600. So the only problematic case is if both run as the same user.
+However, in that case, the receiver can _always_ access
+/proc/$sender/fd/ and thus still gain writable access to the object,
+even if its own fd is read-only and your patch was applied. (ignoring
+the fact that they can kill() and ptrace each other..)
 
- arch/arm/mach-exynos/hotplug.c |   56 ++--------------------------------------
- 1 file changed, 2 insertions(+), 54 deletions(-)
+Protecting world-accessible objects by hiding them is imho wrong. And
+protecting users against themselves is even worse.
 
-diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
-index 5eead53..9eb8d1b 100644
---- a/arch/arm/mach-exynos/hotplug.c
-+++ b/arch/arm/mach-exynos/hotplug.c
-@@ -24,56 +24,6 @@
- #include "common.h"
- #include "regs-pmu.h"
- 
--static inline void cpu_enter_lowpower_a9(void)
--{
--	unsigned int v;
--
--	asm volatile(
--	"	mcr	p15, 0, %1, c7, c5, 0\n"
--	"	mcr	p15, 0, %1, c7, c10, 4\n"
--	/*
--	 * Turn off coherency
--	 */
--	"	mrc	p15, 0, %0, c1, c0, 1\n"
--	"	bic	%0, %0, %3\n"
--	"	mcr	p15, 0, %0, c1, c0, 1\n"
--	"	mrc	p15, 0, %0, c1, c0, 0\n"
--	"	bic	%0, %0, %2\n"
--	"	mcr	p15, 0, %0, c1, c0, 0\n"
--	  : "=&r" (v)
--	  : "r" (0), "Ir" (CR_C), "Ir" (0x40)
--	  : "cc");
--}
--
--static inline void cpu_enter_lowpower_a15(void)
--{
--	unsigned int v;
--
--	asm volatile(
--	"	mrc	p15, 0, %0, c1, c0, 0\n"
--	"	bic	%0, %0, %1\n"
--	"	mcr	p15, 0, %0, c1, c0, 0\n"
--	  : "=&r" (v)
--	  : "Ir" (CR_C)
--	  : "cc");
--
--	flush_cache_louis();
--
--	asm volatile(
--	/*
--	* Turn off coherency
--	*/
--	"	mrc	p15, 0, %0, c1, c0, 1\n"
--	"	bic	%0, %0, %1\n"
--	"	mcr	p15, 0, %0, c1, c0, 1\n"
--	: "=&r" (v)
--	: "Ir" (0x40)
--	: "cc");
--
--	isb();
--	dsb();
--}
--
- static inline void cpu_leave_lowpower(void)
- {
- 	unsigned int v;
-@@ -141,10 +91,8 @@ void __ref exynos_cpu_die(unsigned int cpu)
- 	 * appropriate sequence for entering low power.
- 	 */
- 	asm("mrc p15, 0, %0, c0, c0, 0" : "=r"(primary_part) : : "cc");
--	if ((primary_part & 0xfff0) == 0xc0f0)
--		cpu_enter_lowpower_a15();
--	else
--		cpu_enter_lowpower_a9();
-+
-+	v7_exit_coherency_flush(louis);
- 
- 	platform_do_lowpower(cpu, &spurious);
- 
--- 
-1.7.9.5
+>>
+>> fd = open("/run", O_RDWR | O_TMPFILE);
+>
+> Did you mean fd = open("/run", O_RDWR | O_TMPFILE, 0666)?  0600?
 
+Sorry, I meant S_IWUSR | S_IRUSR (0600).
+
+Thanks
+David
