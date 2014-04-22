@@ -1,54 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626AbaDVDjx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 23:39:53 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:47628 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754359AbaDVDju (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 23:39:50 -0400
-From: Wenyou Yang <wenyou.yang@atmel.com>
-To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <wenyou.yang@atmel.com>
-Subject: [PATCH Resend] defconfig: sama5_defconfig: updated
-Date: Tue, 22 Apr 2014 11:32:54 +0800
-Message-ID: <1398137574-5790-1-git-send-email-wenyou.yang@atmel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1754224AbaDVDoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 23:44:30 -0400
+Received: from guitar.tcltek.co.il ([192.115.133.116]:51854 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751361AbaDVDo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 23:44:26 -0400
+Date: Tue, 22 Apr 2014 06:44:17 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Haojian Zhuang <haojian.zhuang@linaro.org>
+Cc: xuwei5@hisilicon.com, linus.walleij@linaro.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/2] gpio: pl061: get gpio base from alias id
+Message-ID: <20140422034417.GA4652@tarshish>
+References: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-due to enabling
-	-- CONFIG_REGULATOR
-	-- CONFIG_REGULATOR_ACT8865
+Hi Haojian Zhuang,
 
-Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
----
-Hi Nicolas,
+On Tue, Apr 22, 2014 at 09:35:42AM +0800, Haojian Zhuang wrote:
+> If gpio base number isn't specified, the gpio base will be find from
+> the end of gpio number. In order to keep with schematics, use alias
+> to get the ID of gpio chip.
+> 
+> Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+> ---
+>  .../devicetree/bindings/gpio/gpio-pl061.txt        | 31 ++++++++++++++++++++++
 
-It is a typo.
-This patch is based on the branch: at91-3.16-dt, not at91-3.10-dt of
-	git://github.com/at91linux/linux-at91.git
+Binding documentation should be done in a separate patch.
 
-Best Regards,
-Wenyou Yang
+>  drivers/gpio/gpio-pl061.c                          | 14 +++++++++-
+>  2 files changed, 44 insertions(+), 1 deletion(-)
+>  create mode 100644 Documentation/devicetree/bindings/gpio/gpio-pl061.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio-pl061.txt b/Documentation/devicetree/bindings/gpio/gpio-pl061.txt
+> new file mode 100644
+> index 0000000..164b5ba
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-pl061.txt
+> @@ -0,0 +1,31 @@
+> +PL061 GPIO controller bindings
+> +
+> +Required properties:
+> +- compatible:
+> +  - "arm,pl061", "arm,primecell".
+> +- #gpio-cells : Should be two.
+> +  - first cell is the gpio pin number
+> +  - second cell is used to specify the gpio polarity:
+> +      0 = active high
+> +      1 = active low
+> +- gpio-controller : Marks the device node as a GPIO controller.
+> +- interrupt-controller : Marks the device node as an interrupt controller.
+> +- #interrupt-cells : Should be two.
+> +  - first cell is the hw irq number
+> +  - second cell is used to specify the interrupt type:
+> +      0 = default, unspecified type
+> +      1 = rising edge triggered
+> +      2 = falling edge triggered
+> +      4 = high level triggered
+> +      8 = low level triggered
+> +
+> +Example:
+> +	gpio0: gpio@fc806000 {
+> +		compatible = "arm,pl061", "arm,primecell";
+> +		reg = <0xfc806000 0x1000>;
+> +		interrupts = <0 64 0x4>;
 
- arch/arm/configs/sama5_defconfig |    2 ++
- 1 file changed, 2 insertions(+)
+The "interrupts" property should be mentioned above.
 
-diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
-index dc3881e..2b9891e 100644
---- a/arch/arm/configs/sama5_defconfig
-+++ b/arch/arm/configs/sama5_defconfig
-@@ -201,3 +201,5 @@ CONFIG_CRYPTO_DEV_ATMEL_TDES=y
- CONFIG_CRYPTO_DEV_ATMEL_SHA=y
- CONFIG_CRC_CCITT=m
- CONFIG_CRC_ITU_T=m
-+CONFIG_REGULATOR=y
-+CONFIG_REGULATOR_ACT8865=y
+> +		gpio-controller;
+> +		#gpio-cells = <2>;
+> +		interrupt-controller;
+> +		#interrupt-cells = <2>;
+> +	};
+
+baruch
+
 -- 
-1.7.9.5
-
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
