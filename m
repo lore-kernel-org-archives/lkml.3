@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073AbaDVU5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:57:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36457 "EHLO
+	id S1757857AbaDVUWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:22:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36436 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756285AbaDVUWc (ORCPT
+	with ESMTP id S1757837AbaDVUWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:22:32 -0400
+	Tue, 22 Apr 2014 16:22:20 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "J. Bruce Fields" <bfields@redhat.com>,
+Cc: "Yan, Zheng" <zheng.z.yan@intel.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 097/133] nfsd: notify_change needs elevated write count
-Date: Tue, 22 Apr 2014 13:13:55 -0700
-Message-Id: <1398197671-12786-98-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 110/133] nfsd4: fix memory leak in nfsd4_encode_fattr()
+Date: Tue, 22 Apr 2014 13:14:08 -0700
+Message-Id: <1398197671-12786-111-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,53 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "J. Bruce Fields" <bfields@redhat.com>
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
 
-commit 9f67f189939eccaa54f3d2c9cf10788abaf2d584 upstream.
+commit 18df11d0eacf67bbcd8dda755b568bbbd7264735 upstream.
 
-Looks like this bug has been here since these write counts were
-introduced, not sure why it was just noticed now.
+fh_put() does not free the temporary file handle.
 
-Thanks also to Jan Kara for pointing out the problem.
-
-Reported-by: Matthew Rahtz <mrahtz@rapitasystems.com>
+Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/nfsd/vfs.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/nfsd/nfs4xdr.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index 59f1e77..ae1011a 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -406,6 +406,7 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
- 	umode_t		ftype = 0;
- 	__be32		err;
- 	int		host_err;
-+	bool		get_write_count;
- 	int		size_change = 0;
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index dc12d02..1418028 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -2430,8 +2430,10 @@ out_acl:
  
- 	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
-@@ -413,10 +414,18 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
- 	if (iap->ia_valid & ATTR_SIZE)
- 		ftype = S_IFREG;
- 
-+	/* Callers that do fh_verify should do the fh_want_write: */
-+	get_write_count = !fhp->fh_dentry;
-+
- 	/* Get inode */
- 	err = fh_verify(rqstp, fhp, ftype, accmode);
- 	if (err)
- 		goto out;
-+	if (get_write_count) {
-+		host_err = fh_want_write(fhp);
-+		if (host_err)
-+			return nfserrno(host_err);
+ out:
+ 	kfree(acl);
+-	if (fhp == &tempfh)
++	if (fhp == &tempfh) {
+ 		fh_put(&tempfh);
++		kfree(tempfh);
 +	}
- 
- 	dentry = fhp->fh_dentry;
- 	inode = dentry->d_inode;
+ 	return status;
+ out_nfserr:
+ 	status = nfserrno(err);
 -- 
 1.9.1
 
