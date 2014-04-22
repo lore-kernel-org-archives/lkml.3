@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753844AbaDVGfa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 02:35:30 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:51962 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaDVGfV (ORCPT
+	id S1753142AbaDVGhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 02:37:53 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:52450 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721AbaDVGhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 02:35:21 -0400
-X-SecurityPolicyCheck: OK by SHieldMailChecker v1.7.4
-Message-ID: <53560D81.90706@jp.fujitsu.com>
-Date: Tue, 22 Apr 2014 15:34:41 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.0; rv:24.0) Gecko/20100101 Thunderbird/24.0
+	Tue, 22 Apr 2014 02:37:51 -0400
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>, stable@vger.kernel.org
-Subject: Re: [PATCH v4 0/2] nohz: fix idle accounting in NO_HZ kernels
-References: <534FA04B.8080906@jp.fujitsu.com>
-In-Reply-To: <534FA04B.8080906@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Date: Tue, 22 Apr 2014 08:37:50 +0200
+Message-ID: <CACRpkdbWwMBgJ0v1bwo78scaKeGYJataWqy2yiKK8AY7Q9Ms+w@mail.gmail.com>
+Subject: [GIT PULL] GPIO fixes for the v3.15 rc series
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping?
+Hi Linus,
 
-(I'll have a week holidays from next week.
- So thank you if you could give me your comments soon!)
+here is a small batch of GPIO fixes for the v3.15 series. I expect more
+to come in but I'm a bit behind on mail, might as well get these to you
+right now.
 
-Thanks,
-H.Seto 
+Please pull them in!
 
-(2014/04/17 18:35), Hidetoshi Seto wrote:
-> Hi all,
-> 
-> This patch set (rebased on v3.15-rc1) is my 4th try to fix an issue
-> that idle/iowait of /proc/stat can go backward. Originally reported
-> by Tetsuo and Fernando at last year, Mar 2013.
-> 
-> This v4 updates v3's approach, and adds description/comments to
-> make patch's intent to be clear (I hope so).
-> 
-> Of course still reviews are welcome.
-> 
-> Thanks,
-> H.Seto
-> 
-> Hidetoshi Seto (2):
->       nohz: make updating sleep stats local
->       nohz: delayed iowait accounting for nohz idle time stats
-> 
->  include/linux/tick.h     |    6 +-
->  kernel/time/tick-sched.c |  179 ++++++++++++++++++++++++++++++++++------------
->  2 files changed, 136 insertions(+), 49 deletions(-)
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Yours,
+Linus Walleij
 
 
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+
+  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/gpio-v3.15-2
+
+for you to fetch changes up to b5539fa2d59d697b7b8e28b4d08da844ff60f7cf:
+
+  gpio / ACPI: Prevent potential wrap of GPIO value on OpRegion read
+(2014-04-14 10:22:36 +0200)
+
+----------------------------------------------------------------
+A few fixes for the GPIO tree:
+
+- Change a crucial semantic ordering in the GPIO irqchip
+  helpers.
+
+- Fix two nasty regressions in the ACPI gpiolib extensions.
+
+----------------------------------------------------------------
+Linus Walleij (1):
+      gpio: set data first, then chip and handler
+
+Mika Westerberg (2):
+      gpio / ACPI: Don't crash on NULL chip->dev
+      gpio / ACPI: Prevent potential wrap of GPIO value on OpRegion read
+
+ drivers/gpio/gpiolib-acpi.c | 12 +++++++++---
+ drivers/gpio/gpiolib.c      |  2 +-
+ 2 files changed, 10 insertions(+), 4 deletions(-)
