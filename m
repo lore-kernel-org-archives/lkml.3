@@ -1,314 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595AbaDVIE3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:04:29 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:51001 "EHLO
-	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138AbaDVIDp (ORCPT
+	id S1753212AbaDVID7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:03:59 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:54691 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751562AbaDVIDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:03:45 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: tj@kernel.org, lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nasa4836@gmail.com
-Subject: Re: [PATCH 4/4] cgroup: convert from per-cgroup id to per-subsys id
-Date: Tue, 22 Apr 2014 16:03:31 +0800
-Message-Id: <f478e92038bfbc1da2d03082641804e8acfdfad3.1398153537.git.nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc0
-In-Reply-To: <cover.1398147734.git.nasa4836@gmail.com>
-References: <cover.1398147734.git.nasa4836@gmail.com>
+	Tue, 22 Apr 2014 04:03:40 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org, kishon@ti.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
+        t.figa@samsung.com, k.debski@samsung.com, sylvester.nawrocki@gmail.com
+Subject: [PATCH v5 0/2] Add Exynos5 USB 3.0 phy driver based on generic PHY framework
+Date: Tue, 22 Apr 2014 13:33:13 +0530
+Message-Id: <1398153795-28475-1-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all.
+Based on 'next' branch of Kishon's phy tree (linux-phy).
+Tested on 'usb-next' of Greg's usb tree.
 
-Sorry, previous patch has a minor fault, and cause a unitialized variable warning.
-I've fixed it up in this.
+Changes from v4:
+1) Separated out the device tree related arch patches from this patch series.
+   Shall be posting these below mentioned patches (which were part of
+   V4 version of this series) in a separate patch series based on
+   Kgene's next branch.
+   [PATCH v4 2/5]dt: exynos5420: Enable support for USB 3.0 PHY controller
+   [PATCH v4 3/5]dt: exynos5420: Enable support for DWC3 controller
+   [PATCH v4 4/5]dt: exynos5250: Enable support for generic USB DRD phy
+   [PATCH v4 5/5]usb-phy: samsung-usb3: Remove older phy-samsung-usb3 driver
 
-Renewed patch:
----
+2) Also clubbed the reworked VBUS patch for usb3-drd phy, which was earlier
+   sent as a separate patch:
+   [PATCH] phy: exynos5-usbdrd: Add facility to toggle vbus gpio on/off.
+   https://lkml.org/lkml/2014/4/9/186
 
-Currently, cgrp->id is only used to look up css's.  As cgroup and
-css's lifetimes is now decoupled, it should be made per-subsystem
-and moved to css->css_id so that lookups are successful until the
-target css is released.
+1) Removed the mention of separate sclk_usbphy30*, instead this clock
+   will be used as 'ref' phy reference clock while adding the device
+   nodes.
+2) Reading the PHYCLKRST register to restore any previous settings,
+   instead of using a separate variable for saving/restoring purpose.
+3) Renamed 'samsung,syscon-phandle' property to 'samsung,pmu-syscon'.
+4) Removed unnecessary check for of_node property at the starting of
+   driver probe, since this is exclusively DT enabled driver.
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- include/linux/cgroup.h | 26 +++++++--------
- kernel/cgroup.c        | 88 ++++++++++++++++++++++++--------------------------
- 2 files changed, 56 insertions(+), 58 deletions(-)
+Changes from V3:
+1) Separated out the phy init sequences for utmi and pipe3 phys.
+2) Changed the nomenclature across the phy to 'usbdrd-phy' to
+   indicate USB 3.0 DRD PHY controller; and thereby changed the names                
+   of functions correspondingly, including specific functions for
+   utmi and pipe3 phys.                                                              
+3) Modified the DT nodes for the updated nomenclature.
+4) Using BIT macro for single bit definitions.                                       
+5) Keeping track of reference clock after getting till the removal of                
+   phy, and getting the ref clock using devm_clk_get() api.
+6) Removed aliases for mutiple channel PHYs, and instead using
+   'samsung,pmu-offset' property for PHY power control register offset.
+7) Keeping the phy_init() and phy_power_on() separately in order to
+   align with phy handling in the consumer (DWC3).
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index de31b2a..66085bd 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -62,6 +62,16 @@ struct cgroup_subsys_state {
- 	/* the parent css */
- 	struct cgroup_subsys_state *parent;
+Changes from v2:
+1) Added support for multiple PHYs (UTMI+ and PIPE3) and                   
+   related changes in the driver structuring.
+2) Added a xlate function to get the required phy out of
+   number of PHYs in mutiple PHY scenerio.
+3) Changed the names of few structures and variables to                
+   have a clearer meaning. 
+4) Added 'usb3phy_config' structure to take care of mutiple
+   phys for a SoC having 'exynos5_usb3phy_drv_data' driver data.      
+5) Not deleting support for old driver 'phy-samsung-usb3' until
+   required support for generic phy is added to DWC3.  
  
-+	/*
-+	 * per css id
-+	 *
-+	 * The css id of cgrp_dfl_root for each subsys is always 0, and
-+	 * a new css will be assigned with a smallest available ID.
-+	 *
-+	 * Allocating/Removing ID must be protected by cgroup_mutex.
-+	 */
-+	int css_id;
-+
- 	unsigned long flags;
- 
- 	/* percpu_ref killing and RCU release */
-@@ -141,16 +151,6 @@ enum {
- struct cgroup {
- 	unsigned long flags;		/* "unsigned long" so bitops work */
- 
--	/*
--	 * idr allocated in-hierarchy ID.
--	 *
--	 * The ID of the root cgroup is always 0, and a new cgroup
--	 * will be assigned with a smallest available ID.
--	 *
--	 * Allocating/Removing ID must be protected by cgroup_mutex.
--	 */
--	int id;
--
- 	/* the number of attached css's */
- 	int nr_css;
- 
-@@ -329,9 +329,6 @@ struct cgroup_root {
- 	/* Hierarchy-specific flags */
- 	unsigned long flags;
- 
--	/* IDs for cgroups in this hierarchy */
--	struct idr cgroup_idr;
--
- 	/* The path to use for release notifications. */
- 	char release_agent_path[PATH_MAX];
- 
-@@ -655,6 +652,9 @@ struct cgroup_subsys {
- 	/* link to parent, protected by cgroup_lock() */
- 	struct cgroup_root *root;
- 
-+	/* IDs for css'es of this subsys */
-+	struct idr css_idr;
-+
- 	/*
- 	 * List of cftypes.  Each entry is the first entry of an array
- 	 * terminated by zero length name.
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index f23cb67..9841a33 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -838,7 +838,6 @@ static void cgroup_free_root(struct cgroup_root *root)
- 		/* hierarhcy ID shoulid already have been released */
- 		WARN_ON_ONCE(root->hierarchy_id);
- 
--		idr_destroy(&root->cgroup_idr);
- 		kfree(root);
- 	}
- }
-@@ -1050,17 +1049,6 @@ static void cgroup_put(struct cgroup *cgrp)
- 	if (WARN_ON_ONCE(cgrp->parent && !cgroup_is_dead(cgrp)))
- 		return;
- 
--	/*
--	 * XXX: cgrp->id is only used to look up css's.  As cgroup and
--	 * css's lifetimes will be decoupled, it should be made
--	 * per-subsystem and moved to css->id so that lookups are
--	 * successful until the target css is released.
--	 */
--	mutex_lock(&cgroup_mutex);
--	idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
--	mutex_unlock(&cgroup_mutex);
--	cgrp->id = -1;
--
- 	call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
- }
- 
-@@ -1512,7 +1500,6 @@ static void init_cgroup_root(struct cgroup_root *root,
- 	atomic_set(&root->nr_cgrps, 1);
- 	cgrp->root = root;
- 	init_cgroup_housekeeping(cgrp);
--	idr_init(&root->cgroup_idr);
- 
- 	root->flags = opts->flags;
- 	if (opts->release_agent)
-@@ -1533,11 +1520,6 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned long ss_mask)
- 	lockdep_assert_held(&cgroup_tree_mutex);
- 	lockdep_assert_held(&cgroup_mutex);
- 
--	ret = idr_alloc(&root->cgroup_idr, root_cgrp, 0, 1, GFP_KERNEL);
--	if (ret < 0)
--		goto out;
--	root_cgrp->id = ret;
--
- 	/*
- 	 * We're accessing css_set_count without locking css_set_rwsem here,
- 	 * but that's OK - it can only be increased by someone holding
-@@ -4056,6 +4038,11 @@ static void css_free_work_fn(struct work_struct *work)
- 
- 	css->ss->css_free(css);
- 	cgroup_put(cgrp);
-+
-+	mutex_lock(&cgroup_mutex);
-+	idr_remove(&css->ss->css_idr, css->css_id);
-+	mutex_unlock(&cgroup_mutex);
-+	css->css_id = -1;
- }
- 
- static void css_free_rcu_fn(struct rcu_head *rcu_head)
-@@ -4152,9 +4139,18 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 	if (IS_ERR(css))
- 		return PTR_ERR(css);
- 
-+	/*
-+	 * Temporarily set the pointer to NULL, so idr_find() won't return
-+	 * a half-baked css.
-+	 */
-+	err = idr_alloc(&ss->css_idr, NULL, 1, 0, GFP_KERNEL);
-+	if (err < 0)
-+		goto err_free_css;
-+	css->css_id = err;
-+
- 	err = percpu_ref_init(&css->refcnt, css_release);
- 	if (err)
--		goto err_free_css;
-+		goto err_free_id;
- 
- 	init_css(css, ss, cgrp);
- 
-@@ -4166,6 +4162,12 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 	if (err)
- 		goto err_clear_dir;
- 
-+	/*
-+	 * @css is now fully operational.
-+	 * Nothing can fail from this point on.
-+	 */
-+	idr_replace(&ss->css_idr, css, css->css_id);
-+
- 	cgroup_get(cgrp);
- 	css_get(css->parent);
- 
-@@ -4184,6 +4186,8 @@ err_clear_dir:
- 	cgroup_clear_dir(css->cgroup, 1 << css->ss->id);
- err_free_percpu_ref:
- 	percpu_ref_cancel_init(&css->refcnt);
-+err_free_id:
-+	idr_remove(&ss->css_idr, css->css_id);
- err_free_css:
- 	ss->css_free(css);
- 	return err;
-@@ -4223,16 +4227,6 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 		goto err_unlock_tree;
- 	}
- 
--	/*
--	 * Temporarily set the pointer to NULL, so idr_find() won't return
--	 * a half-baked cgroup.
--	 */
--	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
--	if (cgrp->id < 0) {
--		err = -ENOMEM;
--		goto err_unlock;
--	}
--
- 	init_cgroup_housekeeping(cgrp);
- 
- 	cgrp->parent = parent;
-@@ -4249,7 +4243,7 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	kn = kernfs_create_dir(parent->kn, name, mode, cgrp);
- 	if (IS_ERR(kn)) {
- 		err = PTR_ERR(kn);
--		goto err_free_id;
-+		goto err_unlock;
- 	}
- 	cgrp->kn = kn;
- 
-@@ -4266,12 +4260,6 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	atomic_inc(&root->nr_cgrps);
- 	cgroup_get(parent);
- 
--	/*
--	 * @cgrp is now fully operational.  If something fails after this
--	 * point, it'll be released via the normal destruction path.
--	 */
--	idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
--
- 	err = cgroup_kn_set_ugid(kn);
- 	if (err)
- 		goto err_destroy;
-@@ -4303,8 +4291,6 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 
- 	return 0;
- 
--err_free_id:
--	idr_remove(&root->cgroup_idr, cgrp->id);
- err_unlock:
- 	mutex_unlock(&cgroup_mutex);
- err_unlock_tree:
-@@ -4617,6 +4603,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
- 	mutex_lock(&cgroup_tree_mutex);
- 	mutex_lock(&cgroup_mutex);
- 
-+	idr_init(&ss->css_idr);
- 	INIT_LIST_HEAD(&ss->cfts);
- 
- 	/* Create the root cgroup state for this subsystem */
-@@ -4707,9 +4694,25 @@ int __init cgroup_init(void)
- 	mutex_unlock(&cgroup_tree_mutex);
- 
- 	for_each_subsys(ss, ssid) {
-+		struct cgroup_subsys_state *css;
-+		int id;
-+
- 		if (!ss->early_init)
- 			cgroup_init_subsys(ss);
- 
-+		/*
-+		 * mm_init() runs lately after cgroup_init_early(), thus
-+		 * the world isn't set up yet for idr_alloc() to run, so
-+		 * we have to defer the id allocation to this point.
-+		 *
-+		 * And we don't gracefully handle early failure.
-+		 */
-+		css = init_css_set.subsys[ss->id];
-+		id = idr_alloc(&ss->css_idr, css, 0, 1, GFP_KERNEL);
-+		if (id < 0)
-+			BUG();
-+		css->css_id = id;
-+
- 		list_add_tail(&init_css_set.e_cset_node[ssid],
- 			      &cgrp_dfl_root.cgrp.e_csets[ssid]);
- 
-@@ -5160,7 +5163,7 @@ struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
-  */
- int css_to_id(struct cgroup_subsys_state *css)
- {
--	return css->cgroup->id;
-+	return css->css_id;
- }
- 
- /**
-@@ -5173,14 +5176,9 @@ int css_to_id(struct cgroup_subsys_state *css)
-  */
- struct cgroup_subsys_state *css_from_id(int id, struct cgroup_subsys *ss)
- {
--	struct cgroup *cgrp;
--
- 	cgroup_assert_mutexes_or_rcu_locked();
- 
--	cgrp = idr_find(&ss->root->cgroup_idr, id);
--	if (cgrp)
--		return cgroup_css(cgrp, ss);
--	return NULL;
-+	return idr_find(&ss->css_idr, id);
- }
- 
- #ifdef CONFIG_CGROUP_DEBUG
+Changes from RFC patch-set:
+1) fixes in documentation file
+ - added provision for syscon interface for using PMU register.
+ - added clock names and description
+ - modified description style for 'compatible property'                    
+ - made usb30_sclk as additional clock rather then making it optional, since
+   it is actually an additional clock for Exynos5420 Soc.
+2) fixes in phy-exynos5-usb3 driver file
+ - removed unnecessary #ifndef around KHZ and MHZ definitions            
+ - removed 'samsung_cpu_type', 'usb3phy_state' enums; and merged necessary
+   necessary from 'usb3phy_instance' structure to 'usb3phy_driver'.
+ - changed name 'sclk_usbphy30' to 'usb30_sclk_100m' since this is the name
+   indicated as input to the PHY block; and also added (!IS_ERR()) check for
+   using usb30_sclk.
+ - removed unnecessary 'state' check code.
+ - moved 'of_device_id' structure definitions before 'probe()' to avoid
+   unnecessary declaration.
+ - added (pdev->dev.of_node == NULL) check at the starting of probe()
+ - moved 'devm_of_phy_provider_register()' call to end of the probe().
+ - removed 'label' for usb3drd phy.
+ - corrected macros definition 'PHYCLKRST_MPLL_MULTIPLIER_50M_REF' from
+   0x02 to 0x32 after confirming same from PHY's data sheet.
+ - replaced pmu register handling, used for power-isolation, with syscon
+   interface api's.
+ - added '.init' and '.exit' callbacks and using them for one time
+   PHY-initialization and deinitialization.
+ - Filtering out the PHY 'power-on' and 'power-off' sequence to '.power_on"
+   and ".power_off" callbacks.
+ - Removed drivers/usb/phy/phy-samsung-usb3.c driver and related code.
+3) fixes in dt files
+ - added reference for 'samsung,syscon-phandle' to used for PMU register.
+ - removed second register field which was earlier used for PMU.
+
+Vivek Gautam (2):
+  phy: Add new Exynos5 USB 3.0 PHY driver
+  phy: exynos5-usbdrd: Add facility for VBUS supply
+
+ .../devicetree/bindings/phy/samsung-phy.txt        |   40 ++
+ drivers/phy/Kconfig                                |   11 +
+ drivers/phy/Makefile                               |    1 +
+ drivers/phy/phy-exynos5-usbdrd.c                   |  663 ++++++++++++++++++++
+ 4 files changed, 715 insertions(+)
+ create mode 100644 drivers/phy/phy-exynos5-usbdrd.c
+
 -- 
-2.0.0-rc0
+1.7.10.4
 
