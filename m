@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747AbaDVBGo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 21:06:44 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:61971 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752516AbaDVBGk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 21:06:40 -0400
-MIME-Version: 1.0
-In-Reply-To: <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com>
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com>
- <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
- <5355A9E9.9070102@zytor.com> <CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
- <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com>
-From: Andrew Lutomirski <amluto@gmail.com>
-Date: Mon, 21 Apr 2014 18:06:19 -0700
-Message-ID: <CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	id S1751419AbaDVBNx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 21:13:53 -0400
+Received: from pide.tip.net.au ([101.0.96.218]:41524 "EHLO pide.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751028AbaDVBNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 21:13:49 -0400
+Date: Tue, 22 Apr 2014 11:13:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: linux-next: manual merge of the vfs tree with the ext4 tree
+Message-Id: <20140422111342.b44f579c60d039f93f8730ab@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__22_Apr_2014_11_13_42_+1000_SHwIXmNjA3xo9YXI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 5:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> Well, if 2^17 CPUs are allocated we might 2K pages allocated.  We could easily do a bitmap here, of course.  NR_CPUS/64 is a small number, and would reduce the code complexity.
->
+--Signature=_Tue__22_Apr_2014_11_13_42_+1000_SHwIXmNjA3xo9YXI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Even simpler: just get rid of the check entirely.  That is, break out
-of the higher level loops once one of them is set (this should be a
-big speedup regardless) and don't allocate the page if the first PTE
-is already pointing at something.
+Hi Al,
 
-After all, espfix_already_there is mostly a duplicate of init_espfix_cpu.
+Today's linux-next merge of the vfs tree got a conflict in fs/ext4/file.c
+between rebased commits from the ext4 tree and commit 29a8196bc41c
+("convert ext4 to ->write_iter()") from the vfs tree.
 
---Andy
+I fixed it up (in this case I used the conflicting hunks from the vfs
+tree - I hope its right) and can carry the fix as necessary (no action is
+required).
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__22_Apr_2014_11_13_42_+1000_SHwIXmNjA3xo9YXI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTVcJLAAoJEMDTa8Ir7ZwV98AP/R76X1PklBZAN2OOjOY8pHNd
+oNb+hKreH+roKBghD4/AK5FGnRmvlK4S5HzUezF13wtReo1kOJAC3r0hqrDgdyzz
+yDzkBx0BfBgRRB9mVImPmQJBg17QFfJHkkPQPGbIt9PUWbes4k1DTm46wxt4bcpZ
+Wlu6NEM30Q/koEw+NOT00xHqAw35QAAIDRmWdEJ6y1GzOeSOprBv3HvpDr1Mi/Fa
+oOKfH61EmSvkEhNMHWEB+bBxBCaYALM6hFySgw9M1zW5D4FmLOJbmYfjMnlBQbat
+OY1/i4/xl3Q4yTqOQp9lAFoRNpawHKlLQ/KddtIorf9RliDi/Q/gvpsCkGShX/UA
+ulXFMbUJ0lqn7X9FGmsLc7AfQt7nAjPYDSD6KNezitQB3LPznsx8eqz+LcDIBHki
+SsWGt3WCmqxhInsiY8YADgrc1UKltfcTpizPnpZWUC7Mj4MTsFcseIw6pamEIF71
+cqO1YxJxgzxfGcJEtPEBDpVWF5bPojfMLdY8a5C3GrdVz/WncfAfRfmVVuFclzOW
+uuPbyMDra1o/C5AIwokSwc+239iPVYcpsuaoQpiz+S4MWDCljBiY6mGcvRgeOrK1
+09H/FO47BkZy+sR7SvOVUPN1XSavel0NagpqsooYscsfvJiJq8K4ANDRpnHBAI3a
+96rZ8pItL5C01GGSP1O5
+=rYRn
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__22_Apr_2014_11_13_42_+1000_SHwIXmNjA3xo9YXI--
