@@ -1,111 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758567AbaDVVJu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:09:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36262 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757463AbaDVUPa (ORCPT
+	id S1758036AbaDVVLp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:11:45 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:52500 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932639AbaDVVJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:15:30 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Bart Van Assche <bvanassche@acm.org>,
-        Mike Marciniszyn <mike.marciniszyn@intel.com>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 133/133] ib_srpt: Use correct ib_sg_dma primitives
-Date: Tue, 22 Apr 2014 13:14:31 -0700
-Message-Id: <1398197671-12786-134-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 22 Apr 2014 17:09:47 -0400
+Message-ID: <5356DAA7.6010107@kernel.dk>
+Date: Tue, 22 Apr 2014 15:09:59 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Fabian Frederick <fabf@skynet.be>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+CC: Viro <viro@zeniv.linux.org.uk>, akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH RESEND] fs/bio.c: remove nr_segs (unused function parameter)
+References: <20140422072157.66ca011625f37abda817b662@skynet.be>
+In-Reply-To: <20140422072157.66ca011625f37abda817b662@skynet.be>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
+On 04/21/2014 11:21 PM, Fabian Frederick wrote:
+> nr_segs is no longer used in bio_alloc_map_data since
 
-------------------
+Thanks, applied this one and your biovec_create_pool() patch for 3.16.
 
-From: Mike Marciniszyn <mike.marciniszyn@intel.com>
-
-commit b076808051f2c80d38e03fb2f1294f525c7a446d upstream.
-
-The code was incorrectly using sg_dma_address() and
-sg_dma_len() instead of ib_sg_dma_address() and
-ib_sg_dma_len().
-
-This prevents srpt from functioning with the
-Intel HCA and indeed will corrupt memory
-badly.
-
-Cc: Bart Van Assche <bvanassche@acm.org>
-Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Tested-by: Vinod Kumar <vinod.kumar@intel.com>
-Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/infiniband/ulp/srpt/ib_srpt.c | 16 ++++++++++------
- 1 file changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
-index fb8abcb..75e9d17 100644
---- a/drivers/infiniband/ulp/srpt/ib_srpt.c
-+++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
-@@ -1078,6 +1078,7 @@ static void srpt_unmap_sg_to_ib_sge(struct srpt_rdma_ch *ch,
- static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
- 				 struct srpt_send_ioctx *ioctx)
- {
-+	struct ib_device *dev = ch->sport->sdev->device;
- 	struct se_cmd *cmd;
- 	struct scatterlist *sg, *sg_orig;
- 	int sg_cnt;
-@@ -1124,7 +1125,7 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
- 
- 	db = ioctx->rbufs;
- 	tsize = cmd->data_length;
--	dma_len = sg_dma_len(&sg[0]);
-+	dma_len = ib_sg_dma_len(dev, &sg[0]);
- 	riu = ioctx->rdma_ius;
- 
- 	/*
-@@ -1155,7 +1156,8 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
- 					++j;
- 					if (j < count) {
- 						sg = sg_next(sg);
--						dma_len = sg_dma_len(sg);
-+						dma_len = ib_sg_dma_len(
-+								dev, sg);
- 					}
- 				}
- 			} else {
-@@ -1192,8 +1194,8 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
- 	tsize = cmd->data_length;
- 	riu = ioctx->rdma_ius;
- 	sg = sg_orig;
--	dma_len = sg_dma_len(&sg[0]);
--	dma_addr = sg_dma_address(&sg[0]);
-+	dma_len = ib_sg_dma_len(dev, &sg[0]);
-+	dma_addr = ib_sg_dma_address(dev, &sg[0]);
- 
- 	/* this second loop is really mapped sg_addres to rdma_iu->ib_sge */
- 	for (i = 0, j = 0;
-@@ -1216,8 +1218,10 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
- 					++j;
- 					if (j < count) {
- 						sg = sg_next(sg);
--						dma_len = sg_dma_len(sg);
--						dma_addr = sg_dma_address(sg);
-+						dma_len = ib_sg_dma_len(
-+								dev, sg);
-+						dma_addr = ib_sg_dma_address(
-+								dev, sg);
- 					}
- 				}
- 			} else {
 -- 
-1.9.1
+Jens Axboe
 
