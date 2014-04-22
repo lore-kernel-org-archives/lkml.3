@@ -1,184 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307AbaDVOGX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:06:23 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40514 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756231AbaDVOGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:06:18 -0400
-Message-ID: <5356831F.40006@ti.com>
-Date: Tue, 22 Apr 2014 17:56:31 +0300
-From: Grygorii Strashko <grygorii.strashko@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932545AbaDVOHL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:07:11 -0400
+Received: from devoid-pointer.net ([31.31.77.140]:49512 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199AbaDVOBR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:01:17 -0400
+From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
+        anssi.hannula@iki.fi, simon@mungewell.org
+Subject: [PATCH v2 15/24] input: Port hid-sjoy to ff-memless-next
+Date: Tue, 22 Apr 2014 16:00:00 +0200
+Message-Id: <1398175209-9565-16-git-send-email-madcatxster@devoid-pointer.net>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
+References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v2 2/7] of: introduce of_dma_get_range() helper
-References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>	<1397917972-6293-3-git-send-email-santosh.shilimkar@ti.com> <CAL_Jsq+9dZiAndnbC3fZDjZWU90K4BBR=ckuDxfy5_mBcRL=nA@mail.gmail.com>
-In-Reply-To: <CAL_Jsq+9dZiAndnbC3fZDjZWU90K4BBR=ckuDxfy5_mBcRL=nA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rob,
+Port hid-sjoy to ff-memless-next
 
-On 04/21/2014 06:29 PM, Rob Herring wrote:
-> On Sat, Apr 19, 2014 at 9:32 AM, Santosh Shilimkar
-> <santosh.shilimkar@ti.com> wrote:
->> From: Grygorii Strashko <grygorii.strashko@ti.com>
->>
->> The of_dma_get_range() allows to find "dma-range" property for
->> the specified device and parse it.
->>   dma-ranges format:
->>     DMA addr (dma_addr)          : naddr cells
->>     CPU addr (phys_addr_t)       : pna cells
->>     size                         : nsize cells
->>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Russell King <linux@arm.linux.org.uk>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: Olof Johansson <olof@lixom.net>
->> Cc: Grant Likely <grant.likely@linaro.org>
->> Cc: Rob Herring <robh+dt@kernel.org>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
->> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> ---
->>   drivers/of/platform.c       |   85 +++++++++++++++++++++++++++++++++++++++++++
->>   include/linux/of_platform.h |    8 ++++
->
-> This belongs in drivers/of/address.c and of_address.h.
->
->>   2 files changed, 93 insertions(+)
->>
->> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
->> index 404d1da..2265a55 100644
->> --- a/drivers/of/platform.c
->> +++ b/drivers/of/platform.c
->> @@ -485,4 +485,89 @@ int of_platform_populate(struct device_node *root,
->>          return rc;
->>   }
->>   EXPORT_SYMBOL_GPL(of_platform_populate);
->> +
->> +/**
->> + * of_dma_get_range - Get DMA range info
->> + * @np:                device node to get DMA range info
->> + * @dma_addr:  pointer to store initial DMA address of DMA range
->> + * @paddr:     pointer to store initial CPU address of DMA range
->> + * @size:      pointer to store size of DMA range
->> + *
->> + * Look in bottom up direction for the first "dma-range" property
->
-> dma-ranges
->
->> + * and parse it.
->> + *  dma-ranges format:
->> + *     DMA addr (dma_addr)     : naddr cells
->> + *     CPU addr (phys_addr_t)  : pna cells
->> + *     size                    : nsize cells
->> + *
->> + * It returns -ENODEV if "dma-ranges" property was not found
->> + * for this device in DT.
->> + */
->> +extern int of_dma_get_range(struct device_node *np, dma_addr_t *dma_addr,
->
-> drop extern.
->
->> +               phys_addr_t *paddr, phys_addr_t *size)
->> +{
->> +       struct device_node *node = np;
->> +       const u32 *ranges = NULL;
->
-> __be32
->
->> +       int len, naddr, nsize, pna;
->> +       int ret = 0;
->> +
->> +       if (!node)
->> +               return -EINVAL;
->> +
->> +       while (1) {
->> +               naddr = of_n_addr_cells(node);
->> +               nsize = of_n_size_cells(node);
->> +               node = of_get_next_parent(node);
->> +               if (!node)
->> +                       break;
->> +
->> +               ranges = of_get_property(node, "dma-ranges", &len);
->> +
->> +               /* Ignore empty ranges, they imply no translation required */
->> +               if (ranges && len > 0)
->> +                       break;
->> +
->> +               /*
->> +                * At least empty ranges has to be defined for parent node if
->> +                * DMA is supported
->> +                */
->> +               if (!ranges)
->> +                       break;
->
-> You need an of_node_put here if you are getting the next parent.
+Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
+---
+ drivers/hid/Kconfig    |  2 +-
+ drivers/hid/hid-sjoy.c | 35 +++++++++++++++++++++++++----------
+ 2 files changed, 26 insertions(+), 11 deletions(-)
 
-Seems, It's not needed, because of_get_next_parent() does following:
-	parent = of_node_get(node->parent);
-	of_node_put(node);
-
->
->> +       }
->> +
->> +       if (!ranges) {
->> +               pr_debug("%s: no dma-ranges found for node(%s)\n",
->> +                        __func__, np->full_name);
->> +               ret = -ENODEV;
->> +               goto out;
->> +       }
->> +
->> +       len /= sizeof(u32);
->> +
->> +       pna = of_n_addr_cells(node);
->> +
->> +       /* dma-ranges format:
->> +        * DMA addr     : naddr cells
->> +        * CPU addr     : pna cells
->> +        * size         : nsize cells
->> +        */
->> +       *dma_addr = of_read_number(ranges, naddr);
->
-> You should set this after the following call succeeds.
->
->> +       *paddr = of_translate_dma_address(np, ranges);
->
-> This is going to search for dma-ranges again, but you have already
-> done that. Is there a case that just reading the CPU addr will not
-> work? I suppose we could have more than one level of translation. It
-> also seems a bit abusive that the DMA address is the ranges property.
-> I don't really have a better suggestion though.
-
-I think, We need to keep using of_translate_dma_address(), because
-this code intended to be generic and, as result, there is no
-guarantee that we will always have one level of translations.
-
->
->> +       if (*paddr == OF_BAD_ADDR) {
->
-> As I mentioned, this is potentially a size mismatch.
-
-Thanks for your review.
-
-Regards,
-Grygorii
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 87a02cc..e76c36a 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -681,7 +681,7 @@ config HID_SMARTJOYPLUS
+ config SMARTJOYPLUS_FF
+ 	bool "SmartJoy PLUS PS2/USB adapter force feedback support"
+ 	depends on HID_SMARTJOYPLUS
+-	select INPUT_FF_MEMLESS
++	select INPUT_FF_MEMLESS_NEXT
+ 	---help---
+ 	Say Y here if you have a SmartJoy PLUS PS2/USB adapter and want to
+ 	enable force feedback support for it.
+diff --git a/drivers/hid/hid-sjoy.c b/drivers/hid/hid-sjoy.c
+index 37845ec..a6f8cfe 100644
+--- a/drivers/hid/hid-sjoy.c
++++ b/drivers/hid/hid-sjoy.c
+@@ -30,8 +30,11 @@
+ #include <linux/slab.h>
+ #include <linux/hid.h>
+ #include <linux/module.h>
++#include <linux/input/ff-memless-next.h>
+ #include "hid-ids.h"
+ 
++#define FF_UPDATE_RATE 50
++
+ #ifdef CONFIG_SMARTJOYPLUS_FF
+ 
+ struct sjoyff_device {
+@@ -39,21 +42,33 @@ struct sjoyff_device {
+ };
+ 
+ static int hid_sjoyff_play(struct input_dev *dev, void *data,
+-			 struct ff_effect *effect)
++			const struct mlnx_effect_command *command)
+ {
+ 	struct hid_device *hid = input_get_drvdata(dev);
+ 	struct sjoyff_device *sjoyff = data;
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
+ 	u32 left, right;
+ 
+-	left = effect->u.rumble.strong_magnitude;
+-	right = effect->u.rumble.weak_magnitude;
+-	dev_dbg(&dev->dev, "called with 0x%08x 0x%08x\n", left, right);
+-
+-	left = left * 0xff / 0xffff;
+-	right = (right != 0); /* on/off only */
++	switch (command->cmd) {
++	case MLNX_START_RUMBLE:
++		left = rumble_force->strong;
++		right = rumble_force->weak;
++		dev_dbg(&dev->dev, "called with 0x%08x 0x%08x\n", left, right);
++
++		left = left * 0xff / 0xffff;
++		right = (right != 0); /* on/off only */
++
++		sjoyff->report->field[0]->value[1] = right;
++		sjoyff->report->field[0]->value[2] = left;
++		break;
++	case MLNX_STOP_RUMBLE:
++		left = 0;
++		right = 0;
++		break;
++	default:
++		return -EINVAL;
++	}
+ 
+-	sjoyff->report->field[0]->value[1] = right;
+-	sjoyff->report->field[0]->value[2] = left;
+ 	dev_dbg(&dev->dev, "running with 0x%02x 0x%02x\n", left, right);
+ 	hid_hw_request(hid, sjoyff->report, HID_REQ_SET_REPORT);
+ 
+@@ -103,7 +118,7 @@ static int sjoyff_init(struct hid_device *hid)
+ 
+ 		set_bit(FF_RUMBLE, dev->ffbit);
+ 
+-		error = input_ff_create_memless(dev, sjoyff, hid_sjoyff_play);
++		error = input_ff_create_mlnx(dev, sjoyff, hid_sjoyff_play, FF_UPDATE_RATE);
+ 		if (error) {
+ 			kfree(sjoyff);
+ 			return error;
+-- 
+1.9.2
 
