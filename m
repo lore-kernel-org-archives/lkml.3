@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933592AbaDVRsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 13:48:08 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:14530 "EHLO
+	id S933595AbaDVRxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 13:53:43 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:28969 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932927AbaDVRsG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 13:48:06 -0400
-Date: Tue, 22 Apr 2014 13:48:02 -0400
+	by vger.kernel.org with ESMTP id S932927AbaDVRxm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 13:53:42 -0400
+Date: Tue, 22 Apr 2014 13:53:39 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Stanislav Meduna <stano@meduna.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
-Message-ID: <20140422134802.73fc1fa4@gandalf.local.home>
-In-Reply-To: <53569E05.8010600@linutronix.de>
-References: <534C3606.7010206@meduna.org>
-	<534C731F.1050406@meduna.org>
-	<534DADF1.6060608@meduna.org>
-	<20140422115439.GA20669@linutronix.de>
-	<20140422094657.5b6ca1e2@gandalf.local.home>
-	<53569E05.8010600@linutronix.de>
+To: bsegall@google.com
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
+        Peter Zijlstra <peterz@infradead.org>, <fweisbec@gmail.com>,
+        <mingo@redhat.com>, <acme@ghostprotocols.net>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/8] sched/core: Skip wakeup when task is already
+ running.
+Message-ID: <20140422135339.55a7b799@gandalf.local.home>
+In-Reply-To: <xm26sip55lyb.fsf@sword-of-the-dawn.mtv.corp.google.com>
+References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
+	<51238bf1648b1f4c66d3547a49cf949d1679d068.1397562542.git.yangds.fnst@cn.fujitsu.com>
+	<20140415135326.GV11096@twins.programming.kicks-ass.net>
+	<534E59FC.2090001@cn.fujitsu.com>
+	<535658DB.2090801@cn.fujitsu.com>
+	<xm26sip55lyb.fsf@sword-of-the-dawn.mtv.corp.google.com>
 X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 18:51:17 +0200
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
+On Tue, 22 Apr 2014 10:10:52 -0700
+bsegall@google.com wrote:
 
-> On 04/22/2014 03:46 PM, Steven Rostedt wrote:
-> > [ added Peter ]
-> > 
-> > On Tue, 22 Apr 2014 13:54:39 +0200
-> > Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
-> >  
-> >> this is, erm, harmless. We grab the timer lock via trylock in hardirq
-> >> context. If the lock is already taken then we fail to get it we go for
-> >> plan B. According to lockdep a trylock should not fail on UP. This is
-> >> true in general except for this timer case. I was thinking abour
-> >> disabling this lockdep check…
-> > 
-> > trylock not failing on UP, can that be an issue? I mean, if a hardirq
-> > does a trylock to see if it can grab a lock that is not protected by
-> > disabling irqs, and will go to plan B if it fails, on UP, it will
-> > always get it.  But the issue is still there. That would mean that a
-> > hardirq could have preempted a critical section and doing a trylock
-> > here would succeed when it really should have failed.
+
+> This is all expected behavior, and the somewhat less than useful trace
+> events are expected. A task setting p->state to TASK_RUNNING without
+> locks is fine if and only p == current. The standard deschedule loop is
+
+Sure, and if you are not current, then all you need is the rq lock of
+the rq that p's CPU is for.
+
+> basically:
 > 
-> If you take a lock with irqs enabled and disabled then lockdep should
-> complain about it.
+> while (1) {
+>   set_current_state(TASK_(UN)INTERRUPTIBLE);
 
-There's nothing wrong with taking locks with irqs enabled and disabled.
-It's only wrong if that lock (or a lock that is held when the lock is
-taken) is also taking in interrupt *context*.
+Yep, and set_current_state() implies a memory barrier.
+
+>   if (should_still_sleep)
+>     schedule();
+> }
+> set_current_state(TASK_RUNNING);
+
+The above can use __set_current_state() as there's no races to deal
+with when setting current's state to RUNNING.
 
 > 
-> This is the ->wait_lock of the timer base lock. This (sleeping) lock is
-> usually taken with interrupts enabled. Except here, in the timer
-> callback, we check if the lock is available or not. And this lock may
-> be a) taken (and the ->wait_lock unlocked) or b) in process to be taken
-> but the caller only succeeded to acquire the ->wait_lock before the
-> interrupt occurred. This is the case here and we can't acquire the
-> ->wait_lock a second time the check if the lock is really taken. But
-> since the wait_lock is occupied it is likely that the lock itself is
-> occupied as well.
+> Which can produce this in a race.
+> 
+> The only problem this causes is a wasted check_preempt_curr call in the
+> racing case, and a somewhat inaccurate sched:sched_wakeup trace event.
+> Note that even if you did recheck in ttwu_do_wakeup you could still race
+> and get an "inaccurate" trace event. Heck, even if the ttwu is
+> _necessary_ because p is currently trying to take rq->lock to
+> deschedule, you won't get a matching sched_switch event, because the
+> ttwu is running before schedule is.
+> 
+> You could sorta fix this I guess by tracking every write to p->state
+> with trace events, but that would be a somewhat different change, and
+> might be considered too expensive for all I know (and the trace events
+> could /still/ be resolved in a different order across cpus compared to
+> p->state's memory).
 
-I need to take a deeper look into the actual code. But as trylocks on
-UP are nops (always succeed), and if it expects to be able to do
-something in a critical section that is protected by spinlocks (again
-nops on UP), this would be broken for UP.
+Yeah, let's not do that.
 
 -- Steve
 
