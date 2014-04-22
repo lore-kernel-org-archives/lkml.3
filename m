@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758234AbaDVUZB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:25:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36681 "EHLO
+	id S1757796AbaDVUfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:35:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36696 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136AbaDVUYz (ORCPT
+	with ESMTP id S1758220AbaDVUY7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:55 -0400
+	Tue, 22 Apr 2014 16:24:59 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Himangi Saraogi <himangi774@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Malcolm Priestley <tvboxspy@gmail.com>,
+        Michael Krufky <mkrufky@linuxtv.org>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 052/133] staging:serqt_usb2: Fix sparse warning restricted __le16 degrades to integer
-Date: Tue, 22 Apr 2014 13:13:10 -0700
-Message-Id: <1398197671-12786-53-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 042/133] [media] m88rs2000: prevent frontend crash on continuous transponder scans
+Date: Tue, 22 Apr 2014 13:13:00 -0700
+Message-Id: <1398197671-12786-43-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,33 +29,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Himangi Saraogi <himangi774@gmail.com>
+From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit abe5d64d1a74195a44cd14624f8178b9f48b7cc7 upstream.
+commit 8272d0a0c0d374a01721e579df6e8add5577132b upstream.
 
-This patch fixes the following sparse warning :
-drivers/staging/serqt_usb2/serqt_usb2.c:727:40: warning: restricted __le16 degrades to integer
+Add m88rs2000_get_tune_settings, min delay of 2000 ms on symbol
+rate more than 3000000 and delay of 3000ms less than this.
 
-Signed-off-by: Himangi Saraogi <himangi774@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Adding min delay prevents crashing the frontend on continuous
+transponder scans. Other dvb_frontend_tune_settings remain as default.
+
+This makes very little time difference to good channel scans, but slows down
+the set frontend where lock can never be achieved i.e. DVB-S2.
+
+Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
+Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/staging/serqt_usb2/serqt_usb2.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/dvb-frontends/m88rs2000.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
-diff --git a/drivers/staging/serqt_usb2/serqt_usb2.c b/drivers/staging/serqt_usb2/serqt_usb2.c
-index 1b3e995..72d6fc2 100644
---- a/drivers/staging/serqt_usb2/serqt_usb2.c
-+++ b/drivers/staging/serqt_usb2/serqt_usb2.c
-@@ -739,7 +739,7 @@ static int qt_startup(struct usb_serial *serial)
- 		goto startup_error;
- 	}
+diff --git a/drivers/media/dvb-frontends/m88rs2000.c b/drivers/media/dvb-frontends/m88rs2000.c
+index 483ffe7..c35670d 100644
+--- a/drivers/media/dvb-frontends/m88rs2000.c
++++ b/drivers/media/dvb-frontends/m88rs2000.c
+@@ -825,6 +825,22 @@ static int m88rs2000_get_frontend(struct dvb_frontend *fe)
+ 	return 0;
+ }
  
--	switch (serial->dev->descriptor.idProduct) {
-+	switch (le16_to_cpu(serial->dev->descriptor.idProduct)) {
- 	case QUATECH_DSU100:
- 	case QUATECH_QSU100:
- 	case QUATECH_ESU100A:
++static int m88rs2000_get_tune_settings(struct dvb_frontend *fe,
++	struct dvb_frontend_tune_settings *tune)
++{
++	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
++
++	if (c->symbol_rate > 3000000)
++		tune->min_delay_ms = 2000;
++	else
++		tune->min_delay_ms = 3000;
++
++	tune->step_size = c->symbol_rate / 16000;
++	tune->max_drift = c->symbol_rate / 2000;
++
++	return 0;
++}
++
+ static int m88rs2000_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
+ {
+ 	struct m88rs2000_state *state = fe->demodulator_priv;
+@@ -877,6 +893,7 @@ static struct dvb_frontend_ops m88rs2000_ops = {
+ 
+ 	.set_frontend = m88rs2000_set_frontend,
+ 	.get_frontend = m88rs2000_get_frontend,
++	.get_tune_settings = m88rs2000_get_tune_settings,
+ };
+ 
+ struct dvb_frontend *m88rs2000_attach(const struct m88rs2000_config *config,
 -- 
 1.9.1
 
