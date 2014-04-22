@@ -1,76 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932601AbaDVOkr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:40:47 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43490 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756618AbaDVOkl (ORCPT
+	id S932682AbaDVOoN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:44:13 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:48009 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346AbaDVOoJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:40:41 -0400
-Date: Tue, 22 Apr 2014 16:40:39 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening
- /proc/pid/fd/N
-Message-ID: <20140422144039.GB23716@amd.pavel.ucw.cz>
-References: <cover.1398097304.git.luto@amacapital.net>
- <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
- <CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
- <CALCETrUZfSrBPZ0Fok5WrG2zM5h3LchEfqnWP4nK37-0sQ8=6g@mail.gmail.com>
- <CANq1E4T+5Yekm1CpzM40D3C-4XDr+5PYU8d6ud3Zw7k5dcrmUA@mail.gmail.com>
+	Tue, 22 Apr 2014 10:44:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CANq1E4T+5Yekm1CpzM40D3C-4XDr+5PYU8d6ud3Zw7k5dcrmUA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <53568641.2020300@ti.com>
+References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
+	<1397917972-6293-5-git-send-email-santosh.shilimkar@ti.com>
+	<CAL_JsqJJ4Cbh5poMa-KRwy+bp_t3VtRd7bCpcWey+DZ74eYHJQ@mail.gmail.com>
+	<53568641.2020300@ti.com>
+Date: Tue, 22 Apr 2014 09:44:08 -0500
+Message-ID: <CAL_JsqKe_L00P36UT7hizB=zAxCB0S_1kV3XEVGGbJOi27S84A@mail.gmail.com>
+Subject: Re: [PATCH v2 4/7] of: configure the platform device dma parameters
+From: Rob Herring <robherring2@gmail.com>
+To: Grygorii Strashko <grygorii.strashko@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2014-04-22 16:17:57, David Herrmann wrote:
-> Hi
-> 
-> On Tue, Apr 22, 2014 at 3:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> > Anyone who opens a file read-only and sends it over SCM_RIGHTS is
-> > likely broken.  They may think that it's read-only, so it can't be
-> > written, but this /proc/fd issue means that whoever receives it can
-> > reopen it.
-> >
-> > It's true that, if the inode doesn't allow the recipient write access,
-> > then the recipient can't reopen, but there are lots of cases where the
-> > inode can't reliably be expected not to allow write.  For example, the
-> > inode could be unlinked, an O_TMPFILE file, a memfd handle, or in a
-> > non-world-executable directory, and the file mode should be respected.
-> 
-> I think it's safe to assume that any object you create is never
-> world-accessible. So the worst you can get is 0600. So if we now take
-> your example, your patch doesn't fix the problem at all. Imagine two
-> processes, $sender and $receiver. If the receiver runs as a different
-> user as the sender, it cannot open /proc/self/fd/ writable due to
-> 0600. So the only problematic case is if both run as the same user.
-> However, in that case, the receiver can _always_ access
-> /proc/$sender/fd/ and thus still gain writable access to the object,
-> even if its own fd is read-only and your patch was applied. (ignoring
-> the fact that they can kill() and ptrace each other..)
-> 
-> Protecting world-accessible objects by hiding them is imho wrong. And
-> protecting users against themselves is even worse.
+On Tue, Apr 22, 2014 at 10:09 AM, Grygorii Strashko
+<grygorii.strashko@ti.com> wrote:
+> Hi Rob,
+>
+> On 04/21/2014 05:58 PM, Rob Herring wrote:
+>> On Sat, Apr 19, 2014 at 9:32 AM, Santosh Shilimkar
+>> <santosh.shilimkar@ti.com> wrote:
+>>> Retrieve DMA configuration from DT and setup platform device's DMA
+>>> parameters. The DMA configuration in DT has to be specified using
+>>> "dma-ranges" and "dma-coherent" properties if supported.
+>>>
+>>> We setup dma_pfn_offset using "dma-ranges" and dma_coherent_ops
+>>> using "dma-coherent" device tree properties.
+>>>
+>>> The set_arch_dma_coherent_ops macro has to be defined by arch if
+>>> it supports coherent dma_ops. Otherwise, set_arch_dma_coherent_ops() is
+>>> declared as nop.
 
-See the link for example where this matters in multi-user setting.
+[...]
 
-Agreed, protecting file using its directory's permissions is not
-practice to be recommended, but we should not be breaking it. (And we
-are not breaking it if /proc is not mounted...)
+>>>
+>>> +       ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
+>>> +       if (ret < 0) {
+>>
+>> Perhaps an error is not the right return for the default case. The
+>> default should probably be dma_addr and paddr equal to 0 and size 4GB.
+>
+> The error code is needed here to properly distinguish the case when
+> there are no "dma-ranges" defined in DT. Also, I think, that
+> of_dma_get_range() shouldn't return any default values - It just
+> has to get data from DT. And the caller should decide what to do
+> with this data and how to handle error cases.
+>
+> So, I prefer to keep behavior as is:
+> - in case of failure of_dma_get_range() will not touch values of
+>   &dma_addr, &paddr, &size.
 
-Enforcing read-only on file descriptor is IMO useful, and being able
-to work around it using /proc/self/fd is a security problem...
+Fine, but that is not how of_dma_get_range currently behaves:
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
++       *dma_addr = of_read_number(ranges, naddr);
++       *paddr = of_translate_dma_address(np, ranges);
++       if (*paddr == OF_BAD_ADDR) {
++               pr_err("%s: translation of DMA address(%pad) to CPU
+address failed node(%s)\n",
++                      __func__, dma_addr, np->full_name);
++               ret = -EINVAL;
++       }
+
+Rob
