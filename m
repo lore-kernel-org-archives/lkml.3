@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067AbaDVUYA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:24:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36561 "EHLO
+	id S1758173AbaDVUti (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:49:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36565 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757585AbaDVUXy (ORCPT
+	with ESMTP id S1758054AbaDVUX5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:23:54 -0400
+	Tue, 22 Apr 2014 16:23:57 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
+Cc: Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Brian Norris <computersforpeace@gmail.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 062/133] arm64: Make DMA coherent and strongly ordered mappings not executable
-Date: Tue, 22 Apr 2014 13:13:20 -0700
-Message-Id: <1398197671-12786-63-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 055/133] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
+Date: Tue, 22 Apr 2014 13:13:13 -0700
+Message-Id: <1398197671-12786-56-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,42 +30,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit de2db7432917a82b62d55bb59635586eeca6d1bd upstream.
+commit 13b546d96207c131eeae15dc7b26c6e7d0f1cad7 upstream.
 
-pgprot_{dmacoherent,writecombine,noncached} don't need to generate
-executable mappings with side-effects like __sync_icache_dcache() being
-called when the mapping is in user space.
+We triggered soft-lockup under stress test on 2.6.34 kernel.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Reported-by: Bharat Bhushan <Bharat.Bhushan@freescale.com>
-Tested-by: Laura Abbott <lauraa@codeaurora.org>
-Tested-by: Bharat Bhushan <Bharat.Bhushan@freescale.com>
+BUG: soft lockup - CPU#1 stuck for 60009ms! [lockf2.test:14488]
+...
+[<bf09a4d4>] (jffs2_do_reserve_space+0x420/0x440 [jffs2])
+[<bf09a528>] (jffs2_reserve_space_gc+0x34/0x78 [jffs2])
+[<bf0a1350>] (jffs2_garbage_collect_dnode.isra.3+0x264/0x478 [jffs2])
+[<bf0a2078>] (jffs2_garbage_collect_pass+0x9c0/0xe4c [jffs2])
+[<bf09a670>] (jffs2_reserve_space+0x104/0x2a8 [jffs2])
+[<bf09dc48>] (jffs2_write_inode_range+0x5c/0x4d4 [jffs2])
+[<bf097d8c>] (jffs2_write_end+0x198/0x2c0 [jffs2])
+[<c00e00a4>] (generic_file_buffered_write+0x158/0x200)
+[<c00e14f4>] (__generic_file_aio_write+0x3a4/0x414)
+[<c00e15c0>] (generic_file_aio_write+0x5c/0xbc)
+[<c012334c>] (do_sync_write+0x98/0xd4)
+[<c0123a84>] (vfs_write+0xa8/0x150)
+[<c0123d74>] (sys_write+0x3c/0xc0)]
+
+Fix this by adding a cond_resched() in the while loop.
+
+[akpm@linux-foundation.org: don't initialize `ret']
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm64/include/asm/pgtable.h | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ fs/jffs2/nodemgmt.c | 13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
-index feb0684..09a6b8f 100644
---- a/arch/arm64/include/asm/pgtable.h
-+++ b/arch/arm64/include/asm/pgtable.h
-@@ -182,11 +182,11 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
-  * Mark the prot value as uncacheable and unbufferable.
-  */
- #define pgprot_noncached(prot) \
--	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRnE))
-+	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRnE) | PTE_PXN | PTE_UXN)
- #define pgprot_writecombine(prot) \
--	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
-+	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC) | PTE_PXN | PTE_UXN)
- #define pgprot_dmacoherent(prot) \
--	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
-+	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC) | PTE_PXN | PTE_UXN)
- #define __HAVE_PHYS_MEM_ACCESS_PROT
- struct file;
- extern pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
+diff --git a/fs/jffs2/nodemgmt.c b/fs/jffs2/nodemgmt.c
+index bbae5b1..b6bd4af 100644
+--- a/fs/jffs2/nodemgmt.c
++++ b/fs/jffs2/nodemgmt.c
+@@ -212,20 +212,25 @@ out:
+ int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
+ 			   uint32_t *len, uint32_t sumsize)
+ {
+-	int ret = -EAGAIN;
++	int ret;
+ 	minsize = PAD(minsize);
+ 
+ 	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
+ 
+-	spin_lock(&c->erase_completion_lock);
+-	while(ret == -EAGAIN) {
++	while (true) {
++		spin_lock(&c->erase_completion_lock);
+ 		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
+ 		if (ret) {
+ 			jffs2_dbg(1, "%s(): looping, ret is %d\n",
+ 				  __func__, ret);
+ 		}
++		spin_unlock(&c->erase_completion_lock);
++
++		if (ret == -EAGAIN)
++			cond_resched();
++		else
++			break;
+ 	}
+-	spin_unlock(&c->erase_completion_lock);
+ 	if (!ret)
+ 		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
+ 
 -- 
 1.9.1
 
