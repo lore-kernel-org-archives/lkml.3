@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755584AbaDVJ0Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 05:26:25 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:53523 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754929AbaDVJVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 05:21:40 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH v6 10/19] usb: phy: msm: Properly check result from platform_get_irq()
-Date: Tue, 22 Apr 2014 12:20:29 +0300
-Message-Id: <1398158438-21579-11-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
-References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
+	id S1755177AbaDVJcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 05:32:55 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:33260 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753368AbaDVJcw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 05:32:52 -0400
+Date: Tue, 22 Apr 2014 12:32:34 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Michalis Pappas <mpappas@fastmail.fm>
+Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] staging: gdm72xx: Minor cleanup
+Message-ID: <20140422093234.GB26890@mwanda>
+References: <532BF9B0.2080008@fastmail.fm>
+ <20140418225229.GA28077@kroah.com>
+ <53534051.2020504@fastmail.fm>
+ <535340D6.9080604@fastmail.fm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535340D6.9080604@fastmail.fm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+On Sun, Apr 20, 2014 at 11:36:54AM +0800, Michalis Pappas wrote:
+> 
+> Removed line related to replacement of kernel_thread with kthread,
+> as issue was fixed on ff5e4a1d2702582614996f6f6d005e9b5caadeb8.
+> 
 
-Function return negative code on error.
+In the future, the way to specify a commit is:
+ff5e4a1d2702 ('Staging: gdm72xx: gdm_usb: fix deprecated function
+kernel_thread')
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- drivers/usb/phy/phy-msm-usb.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+It's hard to remember which git hash goes with which commit.
 
-diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 6b44826..2dc7948 100644
---- a/drivers/usb/phy/phy-msm-usb.c
-+++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -1412,7 +1412,7 @@ static int msm_otg_probe(struct platform_device *pdev)
- 	dev_info(&pdev->dev, "OTG regs = %p\n", motg->regs);
-
- 	motg->irq = platform_get_irq(pdev, 0);
--	if (!motg->irq) {
-+	if (motg->irq < 0) {
- 		dev_err(&pdev->dev, "platform_get_irq failed\n");
- 		return motg->irq;
- 	}
---
-1.8.3.2
+regards,
+dan carpenter
 
