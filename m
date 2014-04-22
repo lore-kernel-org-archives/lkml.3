@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932363AbaDVL0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:26:24 -0400
-Received: from mail-ig0-f173.google.com ([209.85.213.173]:35301 "EHLO
-	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121AbaDVL0V (ORCPT
+	id S932235AbaDVL1h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:27:37 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:61903 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755718AbaDVL1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:26:21 -0400
+	Tue, 22 Apr 2014 07:27:36 -0400
+Date: Tue, 22 Apr 2014 12:27:17 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Cc: Stratos Karafotis <stratosk@semaphore.gr>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        linux-arm-kernel@lists.infradead.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v4 5/8] mfd: db8500-prcmu: Use cpufreq_for_each_entry
+ macro for iteration
+Message-ID: <20140422112717.GA21613@lee--X1>
+References: <534DB213.7080802@semaphore.gr>
+ <5355A349.50908@semaphore.gr>
+ <20140422071541.GA17657@lee--X1>
+ <6612075.PRZcWcuj98@vostro.rjw.lan>
 MIME-Version: 1.0
-In-Reply-To: <20140422111906.GD17116@hmsreliant.think-freely.org>
-References: <1398144722-9864-1-git-send-email-nasa4836@gmail.com> <20140422111906.GD17116@hmsreliant.think-freely.org>
-From: Jianyu Zhan <nasa4836@gmail.com>
-Date: Tue, 22 Apr 2014 19:25:41 +0800
-Message-ID: <CAHz2CGWfwx+SOTurpW2fO4LsB08tp2ANw+k6aa6bGL=15LNScQ@mail.gmail.com>
-Subject: Re: [PATCH] netprio_cgroup: explicitly init the early_init field
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        daniel.wagner@bmw-carit.de, gaofeng@cn.fujitsu.com,
-        stephen@networkplumber.org,
-        =?UTF-8?B?SmnFmcOtIFDDrXJrbw==?= <jiri@resnulli.us>,
-        netdev@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <6612075.PRZcWcuj98@vostro.rjw.lan>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 7:19 PM, Neil Horman <nhorman@tuxdriver.com> wrote:
-> NACK, for the same reason that it doesn't make sense for net_classid.
-> Early_init should already be zero.  What problem are you trying to solve here?
+On Tue, 22 Apr 2014, Rafael J. Wysocki wrote:
 
-Hi, Neil,
+> On Tuesday, April 22, 2014 08:15:41 AM Lee Jones wrote:
+> > > The cpufreq core now supports the cpufreq_for_each_entry macro helper
+> > > for iteration over the cpufreq_frequency_table, so use it.
+> > > 
+> > > It should have no functional changes.
+> > 
+> > > Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+> > > ---
+> > 
+> > It would be good to have a changelog which describes the differences
+> > between the versions, so we can keep track.
+> > 
+> > >  drivers/mfd/db8500-prcmu.c | 19 ++++++++-----------
+> > >  1 file changed, 8 insertions(+), 11 deletions(-)
+> > 
+> > So it looks like I already applied v2 of this patch to my tree. What
+> > changed in v3 and v4? Should I remove that patch from MFD and apply
+> > this one instead?
+> 
+> The reason why v4 was sent is because I asked for it.
+> 
+> And if you applied [5/8] without [1/8], it won't work, because the macro is
+> introduced by that patch.
 
-I'm sorry I should have made this more clear.
+That's right, which is why I mailed you about it:
 
-Sure, for this global variable struct, if not initailized, its all
-fields will be initialized
-to 0 or null(depending on its type).  The point here is no to deprive
-the rights of compiler/linker of doing this initialization, it is mainly for
-documentation reason. Actually this field's value would affect how ->css_alloc
-should implemented.
+  > > > Applied untested by me.
+  > >
+  > > Wouldn't build. Let it go via Rafael.
+  >
+  > Rafael, would you mind creating a branch from this patch set that we
+  > can both pull from please?
 
-Concretely, if early_init is nonzero, then ->css_alloc *must not* call kzalloc,
-because in cgroup implementation, ->css_alloc will be called earlier before
-mm_init().
+> If that's the case, please drop [5/8] and let me handle the entire series.
 
-I don't think that the value of one field(early_init) has a so subtle
-restrition on the another field(css_alloc) is a good thing, but since
-it is there, docment it should be needed.
+I'm happy for you to apply the series and send me a pull-request for
+either a) the entire series or b) just the patches which touch MFD and
+any subsequent decencies. Or I can apply them and send you one.
 
-Thanks,
-Jianyu Zhan
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
