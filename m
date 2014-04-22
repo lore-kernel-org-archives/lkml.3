@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756991AbaDVPfH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:35:07 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:49055 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757008AbaDVPfC convert rfc822-to-8bit (ORCPT
+	id S1757110AbaDVPgH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:36:07 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49848 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756181AbaDVPgC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:35:02 -0400
+	Tue, 22 Apr 2014 11:36:02 -0400
+Date: Tue, 22 Apr 2014 12:35:22 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        lftan.linux@gmail.com, cltang@codesourcery.com
+Subject: Re: [PATCH 06/28] nios2: Memory management
+Message-ID: <20140422153522.GF15745@arch.cereza>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+ <1397824031-4892-5-git-send-email-lftan@altera.com>
+ <20140422142443.GB15745@arch.cereza>
+ <20140422151458.GC1053@distanz.ch>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdZ_TgS2XFHyEhkWTHsgdv-Yw2jj9342nDihiJjjGPh7Bw@mail.gmail.com>
-References: <1397531437-9104-1-git-send-email-agross@codeaurora.org>
-	<CACRpkdZ_TgS2XFHyEhkWTHsgdv-Yw2jj9342nDihiJjjGPh7Bw@mail.gmail.com>
-Date: Tue, 22 Apr 2014 08:35:02 -0700
-Message-ID: <CAJAp7Ojhmz4tNyrPNCB7QYM=pXKOq+cqo0x_ozCAJfUA6FU9cg@mail.gmail.com>
-Subject: Re: [PATCH 0/3] pinctrl: qcom: Add IPQ8064 pinctrl support
-From: Bjorn Andersson <bjorn@kryo.se>
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: Andy Gross <agross@codeaurora.org>,
-        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
-        David Brown <davidb@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140422151458.GC1053@distanz.ch>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 8:11 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Apr 15, 2014 at 5:10 AM, Andy Gross <agross@codeaurora.org> wrote:
->
->> This set of patches adds pinctrl support for the Qualcomm IPQ8064 platform.
->> The IPQ8064 uses the same TLMM block as the APQ8064, but has a different number
->> of pins, functions, and function assignments.  The second patch contains the
->> devicetree documentation.  The last patch selects PINCTRL for all ARCH_QCOM
->> platforms.  This allows for selection of pinctrl support via a make menuconfig.
->>
->> Andy Gross (3):
->>   pinctrl: qcom: Add definitions for IPQ8064
->>   dt: Document Qualcomm IPQ8064 pinctrl binding
->>   ARM: qcom: Select PINCTRL by default for ARCH_QCOM
->
-> BjÃ¶rn can you look at this series?
+On Apr 22, Tobias Klauser wrote:
+> On 2014-04-22 at 16:24:43 +0200, Ezequiel Garcia <ezequiel.garcia@free-electrons.com> wrote:
+> > Hi Ley Foon,
+> > 
+> > On Apr 18, Ley Foon Tan wrote:
+> > > +/*
+> > > + * PAGE_SHIFT determines the page size
+> > > + */
+> > > +#define PAGE_SHIFT	12
+> > > +#define PAGE_SIZE	4096
+> > > +#define PAGE_MASK	(~(PAGE_SIZE - 1))
+> > > +
+> > 
+> > How about something like this:
+> > 
+> > /* PAGE_SHIFT determines the page size */
+> > #define PAGE_SHIFT              12
+> > #define PAGE_SIZE               (_AC(1,UL) << PAGE_SHIFT)
+> > #define PAGE_MASK               (~((1 << PAGE_SHIFT) - 1))
+> > 
+> > Otherwise, the PAGE_SIZE macro above produces some warnings, IIRC.
+> 
+> AFAIR old nios2 GCC versions (the 4.1 version from Windriver, IIRC)
+> would complain about something like the above, that's the reason I added
+> an explicit value for PAGE_SIZE back then.
+> 
 
-I don't have access to documentation for this platform, but I think
-the "code" looks sane.
+Other than being "pretty" the above fix is to remove a mismatch type
+warning. You can get rid of the warning in different ways:
 
-I would however like to push for the sort order of the Makefile and
-Kconfig to be corrected (IPQ should come after APQ). Maybe you could
-do that while picking the patches up?
+ifdef __ASSEMBLY__
+define PAGE_SIZE       4096
+else
+define PAGE_SIZE       4096UL
+endif
 
-With that change I find this
+> I assume with the new nios2 GCC this should no longer be necessary and
+> Ezequiel's fix should be fine.
 
-Reviewed-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-
->
-> David/Bryan: can either of you ACK the changes hitting
-> arch/arm/mach-qcom/Kconfig
-> so I can merge this through the pinctrl tree?
-
-Maintainer for qcom-soc is Kumar, I added him to the To list.
-May I suggest that Kumar picks the last change in the series (addition
-of PINCTRL), as it is unrelated to the rest of the series?
-
->
-> Yours,
-> Linus Walleij
-
-Regards,
-Bjorn
+Speaking of GCC... is there a libc available to test this kernel port?
+(which I assume uses the generic syscall ABI)
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
