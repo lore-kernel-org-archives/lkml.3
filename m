@@ -1,46 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752605AbaDVBx7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 21:53:59 -0400
-Received: from mail-ve0-f169.google.com ([209.85.128.169]:54752 "EHLO
-	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240AbaDVBx5 (ORCPT
+	id S1753394AbaDVB4X (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 21:56:23 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:49648 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287AbaDVB4U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 21:53:57 -0400
+	Mon, 21 Apr 2014 21:56:20 -0400
+Date: Mon, 21 Apr 2014 18:56:14 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Fengguang Wu <fengguang.wu@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org
+Subject: Re: [rcu] 10a94227ba2: -2.0% will-it-scale.per_process_ops
+Message-ID: <20140422015614.GA4496@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140419082622.GA29303@localhost>
 MIME-Version: 1.0
-In-Reply-To: <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com>
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com>
- <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
- <5355A9E9.9070102@zytor.com> <CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
- <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com> <CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
- <a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com> <CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
- <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com>
-From: Andrew Lutomirski <amluto@gmail.com>
-Date: Mon, 21 Apr 2014 18:53:36 -0700
-Message-ID: <CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140419082622.GA29303@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042201-8236-0000-0000-000001B23097
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 6:47 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> Race condition (although with x86 being globally ordered, it probably can't actually happen.) The bitmask is probably the way to go.
+On Sat, Apr 19, 2014 at 04:26:22PM +0800, Fengguang Wu wrote:
+> Paul,
+> 
+> FYI, we noticed the below changes on
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git next.2014.04.16b
+> commit 10a94227ba229f1b05672754dc318a8fe7982c95 ("rcu: Update cpu_needs_another_gp() for futures from non-NOCB CPUs")
+> 
+> test case: nhm4/micro/will-it-scale/lseek1
+> 
+> 11ba5ab363b9359  10a94227ba229f1b05672754d  
+> ---------------  -------------------------  
+>   11210675 ~ 0%      -2.0%   10985451 ~ 0%  TOTAL will-it-scale.per_process_ops
+>       1.24 ~ 5%     -33.4%       0.83 ~ 5%  TOTAL perf-profile.cpu-cycles.trace_hardirqs_off_caller.lseek64
+>       3.88 ~ 2%     +49.0%       5.79 ~ 0%  TOTAL perf-profile.cpu-cycles.trace_hardirqs_on_thunk.lseek64
+>        295 ~16%     +27.0%        375 ~ 8%  TOTAL cpuidle.C1E-NHM.usage
+>      45061 ~ 2%     +16.7%      52590 ~ 2%  TOTAL cpuidle.C6-NHM.usage
+>       1.21 ~ 4%      +5.8%       1.28 ~ 4%  TOTAL perf-profile.cpu-cycles.shmem_file_llseek.sys_lseek.system_call_fastpath.lseek64
+>       4206 ~ 1%     -78.6%        900 ~ 8%  TOTAL interrupts.IWI
+>      14303 ~ 1%     +26.7%      18120 ~ 1%  TOTAL interrupts.0:IO-APIC-edge.timer
+>       3228 ~ 4%     -17.2%       2672 ~ 6%  TOTAL interrupts.RES
+>        182 ~ 2%      -8.1%        167 ~ 3%  TOTAL time.user_time
+>        235 ~ 2%      +6.2%        250 ~ 2%  TOTAL time.system_time
+>     379471 ~ 0%      +1.2%     384127 ~ 0%  TOTAL interrupts.LOC
+> 
+> Legend:
+> 	~XX%    - stddev percent
+> 	[+-]XX% - change percent
+> 
+> It does effectively eliminate interrupts.IWI:
+> 
+>                                    interrupts.IWI
+> 
+>    4500 ++-*-----*-------*--------------------------------------------------+
+>         |..   *.  +  .*.      .*..*.  .*..*..*..          .*..*..*..*.*..*..*
+>    4000 *+         *.       *.      *.          *.. .*..*.                  |
+>    3500 ++                                         *                        |
+>         |                                                                   |
+>    3000 ++                                                                  |
+>    2500 ++                                                                  |
+>         |                                                                   |
+>    2000 ++                                                                  |
+>    1500 ++                                                                  |
+>         |                                                                   |
+>    1000 ++                                              O  O  O  O    O  O  O
+>     500 ++                                                          O       |
+>         |                                                                   |
+>       0 O+-O--O--O-O--O--O--O--O--O-O--O--O--O--O--O-O----------------------+
+> 
+> 
+> 	[*] bisect-good sample
+> 	[O] bisect-bad  sample
 
-Does the race matter?  In the worst case you take the lock
-unnecessarily.  But yes, the bitmask is easy.
+OK, so we get rid of interrupts.IWI (not sure what those are), and
+we also seem to increase the idle time (cpuidle.C1E-NHM.usage and
+cpuidle.C6-NHM.usage), which also seem like good things.  The overall
+benchmark number looks to get a bit worse, though.  Not sure why lseek()
+would incur more hardirqs, but also unsure what the units are (3.88 of
+what exactly?).  Not sure why there would be more timer interrutpts,
+unless my interpretation of the cpuidle stats is backwards, in which
+case it would be a natural consequence of there being less idle time.
 
---Andy
+Any of this speculation at all relevant?  ;-)
+
+							Thanx, Paul
+
