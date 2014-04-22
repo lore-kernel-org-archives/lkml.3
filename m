@@ -1,95 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353AbaDVMKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 08:10:12 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:41409 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932156AbaDVMKK (ORCPT
+	id S932420AbaDVMKj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 08:10:39 -0400
+Received: from torres.zugschlus.de ([85.214.131.164]:58216 "EHLO
+	torres.zugschlus.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932156AbaDVMKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 08:10:10 -0400
-Date: Tue, 22 Apr 2014 13:09:48 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-Cc: Chew Chiau Ee <chiau.ee.chew@intel.com>, Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, linux-spi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20140422120948.GT12304@sirena.org.uk>
-References: <1397751967-20250-1-git-send-email-chiau.ee.chew@intel.com>
- <1397751967-20250-3-git-send-email-chiau.ee.chew@intel.com>
- <20140418163054.GH12304@sirena.org.uk>
- <20140422115716.GP30677@intel.com>
+	Tue, 22 Apr 2014 08:10:36 -0400
+Date: Tue, 22 Apr 2014 14:10:35 +0200
+From: Marc Haber <mh+linux-kernel@zugschlus.de>
+To: linux-kernel@vger.kernel.org
+Subject: probable cause found - 3.14 on Xenserver (non-HVM): "cannot allocate
+ memory")
+Message-ID: <20140422121035.GA23364@torres.zugschlus.de>
+References: <20140420205639.GA22293@torres.zugschlus.de>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="gMNETGfM6h1fx+eQ"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140422115716.GP30677@intel.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] spi/pxa2xx-pci: Pass host clock rate info from PCI
- glue layer
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140420205639.GA22293@torres.zugschlus.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---gMNETGfM6h1fx+eQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On Sun, Apr 20, 2014 at 10:56:39PM +0200, Marc Haber wrote:
+> Linux 3.14, however, does not yet beyond the initramfs state ("cannot
+> allocate memory". This also happens when i set cgroup_disable=memory.
 
-On Tue, Apr 22, 2014 at 02:57:17PM +0300, Mika Westerberg wrote:
-> On Fri, Apr 18, 2014 at 05:30:54PM +0100, Mark Brown wrote:
+After doing a bisect between "good 3.13" and "bad 3.14", I ended up
+with this commit:
 
-> > As you mention we already have a clock API for passing around
-> > information about clocks, it would be much better to fix the fact that
-> > this isn't enabled on x86 than to add custom code to deal with clocks
-> > (even simple things like this) - this is far from the only place where
-> > it causes issues.
+6145cfe394a7f138f6b64491c5663f97dba12450 is the first bad commit
+commit 6145cfe394a7f138f6b64491c5663f97dba12450
+Author: Kees Cook <keescook@chromium.org>
+Date:   Thu Oct 10 17:18:18 2013 -0700
 
-> We actually have clock API enabled on x86 if CONFIG_X86_INTEL_LPSS is
-> selected.
+    x86, kaslr: Raise the maximum virtual address to -1 GiB on x86_64
 
-Why is this conditional?  It's really unhelpful for writing generic code
-handling clocks that the API isn't available as standard.  Allowing the
-user to disable it if it's not required makes sense but not making it
-available at all is just unhelpful.
+    On 64-bit, this raises the maximum location to -1 GiB (from -1.5 GiB),
+    the upper limit currently, since the kernel fixmap page mappings need
+    to be moved to use the other 1 GiB (which would be the theoretical
+    limit when building with -mcmodel=kernel).
 
-> In this case the question is more like, where do we create clocks for PCI
-> enumerated devices? Surely we don't want to have board files to do this.
+    Signed-off-by: Kees Cook <keescook@chromium.org>
+    Link: http://lkml.kernel.org/r/1381450698-28710-7-git-send-email-keescook@chromium.org
+    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 
-> In ACPI mode, we do it in drivers/acpi/acpi_lpss.c but not sure where we
-> could do that in PCI code.
+:040000 040000 a48a6355e3ccd676027319ff520bf953cb07a0bb 7beb1fdd7478b6bec2555a364fbfac29d7a5a3c4 M       arch
 
-As far as I can tell the clock here is part of the same glue that allows
-the generic pxa2xx support to be instantiated from PCI.  I would
-therefore expect the glue to also instantiate the clock.  Or if it's a
-standard PCI clock then perhaps the PCI subsystem ought to be providing
-it.
+and, indeed, reverting this commit on plain 3.14.1 makes my Xenserver
+boot just fine. When reverting the patch, I took the liberty of
+ignoring the REJECT in arch/x86/Kconfig.
 
---gMNETGfM6h1fx+eQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+I am, however, a bit confused that this patch dates back to october
+while the breakage only occurred when 3.14 was released.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Greetings
+Marc
 
-iQIcBAEBAgAGBQJTVlwIAAoJELSic+t+oim9qpsP/jeFc6kle0Yzi176iN5SgdXa
-KIcDATpNyaYeJ7y5unDj7IbfqmKlT9fIzGstvQWrk37FeRKUIutfLM60ywVOJxaZ
-UOzqoVQjDpJNAqLH/+BNFT+pHMLVqjHPVtTPk7qckSGcAhqahDOmVmoiETVKPWj+
-PYyXQplm/EyrrmovF4gX9itg5i8DSfN7NhaAFSKmOI7S7IrUYQKcNvz6zs3tq1eu
-RdTZQvW/eatZY2cECy8kTcwHoxE9P9yl2BFrDzia5ZrKlRLiVDZ3knElwDqCLs6W
-HjTBM4exIRwlrRzil0QyRRZwRBnnigTEukpT+A0MXku7EmRPhhyNvGSwuUnW+n2N
-8UTqb6RfgveNFd9vAdurRVclIQNhuww/khs8LKDUHIJlWk7NV0IJrciJCj+Ng+G1
-y32prxpxPA2T0H8oerY5wsk6K71W5YfRnMabsiZAH4etqg8S8zYvsobqcAPfqMaV
-X7xmywpTxF1WIG3Vl/QKo1wPjkNNrn2RiqO7+PQdwLxLfN1f2Eid2Ly/bld8rR1q
-vKJAbi0Glr5yzWYVQBdoBaLxcpjODY5Vf5DXqizIgbwOCuh9UVsL53fHByx7SyH3
-FzwMUp4MaImda0fA+hXOYILiH4GThvVkgZdyB/ZezjX3uXjcgJPw/Xh+rTb3pGz0
-AZ98yEkEtSJ9C3q/zfQw
-=WEXI
------END PGP SIGNATURE-----
-
---gMNETGfM6h1fx+eQ--
+-- 
+-----------------------------------------------------------------------------
+Marc Haber         | "I don't trust Computers. They | Mailadresse im Header
+Mannheim, Germany  |  lose things."    Winona Ryder | Fon: *49 621 31958061
+Nordisch by Nature |  How to make an American Quilt | Fax: *49 621 31958062
