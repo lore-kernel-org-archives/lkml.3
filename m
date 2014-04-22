@@ -1,134 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755513AbaDVKVa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 06:21:30 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:21479 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754735AbaDVKV0 (ORCPT
+	id S1755570AbaDVKXO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 06:23:14 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52809 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755257AbaDVKXM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 06:21:26 -0400
-Date: Tue, 22 Apr 2014 13:21:05 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: navin patidar <navin.patidar@gmail.com>
-Cc: gregkh@linuxfoundation.org, Larry.Finger@lwfinger.net,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/10] staging: rtl8188eu: Simplify led blinking strategy
- code.
-Message-ID: <20140422102105.GH26890@mwanda>
-References: <1397983638-10752-1-git-send-email-navin.patidar@gmail.com>
- <1397983638-10752-5-git-send-email-navin.patidar@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397983638-10752-5-git-send-email-navin.patidar@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Tue, 22 Apr 2014 06:23:12 -0400
+Date: Tue, 22 Apr 2014 11:22:59 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        pmladek@suse.cz, Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
+ offloading
+Message-ID: <20140422112259.5f106a44@alan.etchedpixels.co.uk>
+In-Reply-To: <20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
+References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+	<1395770101-24534-9-git-send-email-jack@suse.cz>
+	<20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
+	<20140326192815.GC18118@quack.suse.cz>
+	<20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor white space complaints.
+On Fri, 18 Apr 2014 11:54:38 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-On Sun, Apr 20, 2014 at 02:17:13PM +0530, navin patidar wrote:
-> @@ -1334,7 +316,7 @@ static void SwLedControlMode4(struct adapter *padapter, enum LED_CTL_MODE LedAct
->  			else
->  				pLed->BlinkingLedState = RTW_LED_ON;
->  			_set_timer(&(pLed->BlinkTimer), LED_BLINK_SCAN_INTERVAL_ALPHA);
-> -		}
-> +		 }
->  		break;
->  	case LED_CTL_TX:
->  	case LED_CTL_RX:
-> @@ -1345,6 +327,10 @@ static void SwLedControlMode4(struct adapter *padapter, enum LED_CTL_MODE LedAct
+> On Wed, 26 Mar 2014 20:28:15 +0100 Jan Kara <jack@suse.cz> wrote:
+> 
+> > > All the afflicted consoles are serial, all go via the uart layer as far
+> > > as I can see.
+> > > 
+> > > The uart layer has a queue mechanism that could be used
+> >   I'm sorry, I don't follow here - what can the uart queueing be used for?
+> 
+> Alan, I'm desperate to avoid adding all this complexity to core printk
+> code to solve such a rare problem.  It'd be great if you could flesh out
+> any alternative ideas please.
 
-A stray space character was accidentally added here.  You can fix minor
-things like that in a later patch.
+It's not worth adding for upstream anyway - not in that form. If it just
+used schedule_work it would be way way cleaner anyway.
 
->  				_cancel_timer_ex(&(pLed->BlinkTimer));
->  				pLed->bLedNoLinkBlinkInProgress = false;
->  			}
-> +			if (pLed->bLedLinkBlinkInProgress) {
-> +				_cancel_timer_ex(&(pLed->BlinkTimer));
-> +				pLed->bLedLinkBlinkInProgress = false;
-> +			}
->  			pLed->bLedBlinkInProgress = true;
->  			pLed->CurrLedState = LED_BLINK_TXRX;
->  			pLed->BlinkTimes = 2;
-> @@ -1357,22 +343,15 @@ static void SwLedControlMode4(struct adapter *padapter, enum LED_CTL_MODE LedAct
->  		break;
->  	case LED_CTL_START_WPS: /* wait until xinpin finish */
->  	case LED_CTL_START_WPS_BOTTON:
-> -		if (pLed1->bLedWPSBlinkInProgress) {
-> -			pLed1->bLedWPSBlinkInProgress = false;
-> -			_cancel_timer_ex(&(pLed1->BlinkTimer));
-> -
-> -			pLed1->BlinkingLedState = RTW_LED_OFF;
-> -			pLed1->CurrLedState = RTW_LED_OFF;
-> -
-> -			if (pLed1->bLedOn)
-> -				_set_timer(&(pLed->BlinkTimer), 0);
-> -		}
-> -
-> -		if (!pLed->bLedWPSBlinkInProgress) {
-> +		 if (!pLed->bLedWPSBlinkInProgress) {
+For the general buffering case we already have tty_write_message(). It's
+only really intended for use by the old quota code so it's currently
+assuming nul terminated string but thats a trivial detail.
 
-And another here.
+For that matter I don't see why such systems can't implement a queuecon
+console which is a queue on the printk side and a fifo on the userspace
+side.
 
->  			if (pLed->bLedNoLinkBlinkInProgress) {
->  				_cancel_timer_ex(&(pLed->BlinkTimer));
->  				pLed->bLedNoLinkBlinkInProgress = false;
->  			}
-> +			if (pLed->bLedLinkBlinkInProgress) {
-> +				_cancel_timer_ex(&(pLed->BlinkTimer));
-> +				 pLed->bLedLinkBlinkInProgress = false;
-> +			}
->  			if (pLed->bLedBlinkInProgress) {
->  				_cancel_timer_ex(&(pLed->BlinkTimer));
->  				pLed->bLedBlinkInProgress = false;
-> @@ -1383,56 +362,44 @@ static void SwLedControlMode4(struct adapter *padapter, enum LED_CTL_MODE LedAct
->  			}
->  			pLed->bLedWPSBlinkInProgress = true;
->  			pLed->CurrLedState = LED_BLINK_WPS;
-> -			if (pLed->bLedOn) {
-> +			if (pLed->bLedOn)
->  				pLed->BlinkingLedState = RTW_LED_OFF;
-> -				_set_timer(&(pLed->BlinkTimer), LED_BLINK_SLOWLY_INTERVAL);
-> -			} else {
-> +			else
->  				pLed->BlinkingLedState = RTW_LED_ON;
-> -				_set_timer(&(pLed->BlinkTimer), LED_BLINK_NORMAL_INTERVAL);
-> -			}
-> -		}
-> +			_set_timer(&(pLed->BlinkTimer), LED_BLINK_SCAN_INTERVAL_ALPHA);
-> +		 }
->  		break;
-> -	case LED_CTL_STOP_WPS:	/* WPS connect success */
-> -		if (pLed->bLedWPSBlinkInProgress) {
-> +	case LED_CTL_STOP_WPS:
-> +		if (pLed->bLedNoLinkBlinkInProgress) {
->  			_cancel_timer_ex(&(pLed->BlinkTimer));
-> -			pLed->bLedWPSBlinkInProgress = false;
-> +			pLed->bLedNoLinkBlinkInProgress = false;
->  		}
-> -
-> -		pLed->bLedNoLinkBlinkInProgress = true;
-> -		pLed->CurrLedState = LED_BLINK_SLOWLY;
-> -		if (pLed->bLedOn)
-> -			pLed->BlinkingLedState = RTW_LED_OFF;
-> -		else
-> -			pLed->BlinkingLedState = RTW_LED_ON;
-> -		_set_timer(&(pLed->BlinkTimer), LED_BLINK_NO_LINK_INTERVAL_ALPHA);
-> -
-> -		break;
-> -	case LED_CTL_STOP_WPS_FAIL:		/* WPS authentication fail */
-> -		if (pLed->bLedWPSBlinkInProgress) {
-> +		if (pLed->bLedLinkBlinkInProgress) {
->  			_cancel_timer_ex(&(pLed->BlinkTimer));
-> -			pLed->bLedWPSBlinkInProgress = false;
-> +			 pLed->bLedLinkBlinkInProgress = false;
+The implementation then becomes trivial.
 
-Another here.
+If you want reliable crash logging then we need to be able to set a
+printk level mask per console and just set the serial console for
+"crit/err" and the queue console for the rest, with a 'cat
+>/dev/ttywhatever' running if this feature was in use ?
 
-regards,
-dan carpenter
-
+Alan
