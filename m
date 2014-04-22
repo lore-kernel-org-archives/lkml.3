@@ -1,120 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463AbaDVCmS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 22:42:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:58875 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751276AbaDVCmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 22:42:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,900,1389772800"; 
-   d="scan'208";a="497084525"
-Message-ID: <5355D6C8.7080200@intel.com>
-Date: Tue, 22 Apr 2014 10:41:12 +0800
-From: Jet Chen <jet.chen@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753374AbaDVC55 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 22:57:57 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:36863 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285AbaDVC5y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 22:57:54 -0400
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [sched,rcu] 9234566d3a3: +1.6% will-it-scale.scalability, +1302.6%
- time.involuntary_context_switches
-References: <5354BA85.6010003@intel.com> <20140422015958.GB4496@linux.vnet.ibm.com>
-In-Reply-To: <20140422015958.GB4496@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <CAG-99FPLOXWnjb_oiDbLmdrYnDnticN9r1drDm_8JHtG=4BSiA@mail.gmail.com>
+References: <1397137433-19106-1-git-send-email-chander.kashyap@linaro.org>
+	<CAG-99FPLOXWnjb_oiDbLmdrYnDnticN9r1drDm_8JHtG=4BSiA@mail.gmail.com>
+Date: Tue, 22 Apr 2014 08:27:53 +0530
+Message-ID: <CANuQgHFGTkT0h6_FmxRxg4kYQA2NWEuzch1pj4Ec+_XnRHV2EQ@mail.gmail.com>
+Subject: Re: [PATCH] cpuidle: governor: menu: move repeated correction factor
+ check to init
+From: Chander Kashyap <chander.kashyap@linaro.org>
+To: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rafael.j.wysocki@intel.com, Daniel Lezcano <daniel.lezcano@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 09:59 AM, Paul E. McKenney wrote:
-> On Mon, Apr 21, 2014 at 02:28:21PM +0800, Jet Chen wrote:
->> Hi Paul,
+ping
+
+On 10 April 2014 19:57, Tuukka Tikkanen <tuukka.tikkanen@linaro.org> wrote:
+> On 10 April 2014 16:43, Chander Kashyap <chander.kashyap@linaro.org> wrote:
+>> In menu_select function we check for correction factor every time.
+>> If it is zero we are initializing to unity. Hence move it to init function
+>> and initialise by unity, hence avoid repeated comparisons.
 >>
->> we noticed the below changes on
->> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git torture.2014.04.18a
->> commit 9234566d3a36c0aead8852e3c2ca94cd8ebfe219 ("sched,rcu: Make cond_resched() report RCU quiescent states")
+>> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+>> ---
+>>  drivers/cpuidle/governors/menu.c |   15 ++++++++-------
+>>  1 file changed, 8 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+>> index cf7f2f0..048f6d9 100644
+>> --- a/drivers/cpuidle/governors/menu.c
+>> +++ b/drivers/cpuidle/governors/menu.c
+>> @@ -315,13 +315,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+>>         multiplier = performance_multiplier();
+>>
+>>         /*
+>> -        * if the correction factor is 0 (eg first time init or cpu hotplug
+>> -        * etc), we actually want to start out with a unity factor.
+>> -        */
+>> -       if (data->correction_factor[data->bucket] == 0)
+>> -               data->correction_factor[data->bucket] = RESOLUTION * DECAY;
+>> -
+>> -       /*
+>>          * Force the result of multiplication to be 64 bits even if both
+>>          * operands are 32 bits.
+>>          * Make sure to round up for half microseconds.
+>> @@ -453,9 +446,17 @@ static int menu_enable_device(struct cpuidle_driver *drv,
+>>                                 struct cpuidle_device *dev)
+>>  {
+>>         struct menu_device *data = &per_cpu(menu_devices, dev->cpu);
+>> +       int i;
+>>
+>>         memset(data, 0, sizeof(struct menu_device));
+>>
+>> +       /*
+>> +        * if the correction factor is 0 (eg first time init or cpu hotplug
+>> +        * etc), we actually want to start out with a unity factor.
+>> +        */
+>> +       for(i = 0; i < BUCKETS; i++)
+>> +               data->correction_factor[i] = RESOLUTION * DECAY;
+>> +
+>>         return 0;
+>>  }
+>>
+>> --
+>> 1.7.9.5
+>>
 >
-> My impression of these statistics is that this commit results in huge
-> numbers of additional context switches and interrupts, but has a slightly
-> positive effect on performance and a larger negative effect on
-> scalability.
->
-> Is this a reasonable interpretation?
->
-Yes, you're right.
+> Reviewed-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
 
 
-> 							Thanx, Paul
->
->> Comparison 1 - parent commit of 9234566d3a36c0aead8852e3c2ca94cd8ebfe219 vs 9234566d3a36c0aead8852e3c2ca94cd8ebfe219
->>
->> e119454e74a852f  9234566d3a36c0aead8852e3c
->> ---------------  -------------------------
->>      1035948 ~ 0%      +1.6%    1052990 ~ 0%  TOTAL will-it-scale.per_thread_ops
->>      1271322 ~ 0%      +1.8%    1294004 ~ 0%  TOTAL will-it-scale.per_process_ops
->>         0.63 ~ 0%      -5.2%       0.60 ~ 0%  TOTAL will-it-scale.scalability
->>        22470 ~ 2%   +1302.6%     315168 ~ 2%  TOTAL time.involuntary_context_switches
->>        84265 ~ 5%   +1047.1%     966581 ~ 1%  TOTAL interrupts.IWI
->>         1828 ~44%    +189.6%       5295 ~13%  TOTAL time.voluntary_context_switches
->>         5337 ~ 1%     +82.1%       9720 ~ 1%  TOTAL vmstat.system.cs
->>       118599 ~ 0%     -30.4%      82545 ~ 0%  TOTAL interrupts.0:IO-APIC-edge.timer
->>       224021 ~ 4%     +34.7%     301858 ~ 2%  TOTAL interrupts.RES
->>        25148 ~ 0%      +7.0%      26917 ~ 0%  TOTAL vmstat.system.in
->>      7063439 ~ 0%      -5.2%    6694536 ~ 0%  TOTAL interrupts.LOC
->>       188866 ~ 0%      -3.1%     183008 ~ 0%  TOTAL interrupts.NMI
->>       188866 ~ 0%      -3.1%     183008 ~ 0%  TOTAL interrupts.PMI
->>         3720 ~ 0%      -1.5%       3665 ~ 0%  TOTAL time.system_time
->>         1215 ~ 0%      -1.4%       1198 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
->>
->>
->> Comparison 2 - b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 vs 9234566d3a36c0aead8852e3c2ca94cd8ebfe219
->>
->> Fengguang has reported stats changes about b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 to you days ago.
->> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git dev.2014.04.14a
->> commit b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 ("sched,rcu: Make cond_resched() report RCU quiescent states")
->>
->> Let's have a compare here.
->>
->> b84c4e08143c98d  9234566d3a36c0aead8852e3c
->> ---------------  -------------------------
->>       809309 ~ 0%      -2.6%     788400 ~ 0%  TOTAL will-it-scale.per_process_ops
->>         0.61 ~ 0%      -1.9%       0.60 ~ 0%  TOTAL will-it-scale.scalability
->>       434080 ~ 0%      -1.5%     427643 ~ 0%  TOTAL will-it-scale.per_thread_ops
->>            4 ~11%  +1.2e+05%       5249 ~ 2%  TOTAL interrupts.IWI
->>          607 ~ 7%     +28.0%        778 ~14%  TOTAL interrupts.47:PCI-MSI-edge.eth0
->>        12349 ~ 2%     -14.6%      10548 ~ 1%  TOTAL interrupts.0:IO-APIC-edge.timer
->>         3078 ~ 3%     +20.9%       3722 ~ 6%  TOTAL interrupts.RES
->>
->>
->> Comparison 3 - parent commit of b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 vs b84c4e08143c98dad4b4d139f08db0b98b0d3ec4
->>
->> Duplicated with Fengguang's report. Help you to see these info in a page :)
->>
->> ad86a04266f9b49  b84c4e08143c98dad4b4d139f
->> ---------------  -------------------------
->>       676264 ~ 0%      +3.3%     698461 ~ 0%  TOTAL will-it-scale.per_thread_ops
->>      1174547 ~ 0%      +3.0%    1209307 ~ 0%  TOTAL will-it-scale.per_process_ops
->>         1.67 ~ 0%      -2.3%       1.63 ~ 0%  TOTAL will-it-scale.scalability
->>        10522 ~ 2%    +921.2%     107463 ~ 1%  TOTAL time.involuntary_context_switches
->>        77671 ~ 3%     +67.0%     129688 ~ 3%  TOTAL interrupts.RES
->>        99502 ~ 0%     -27.8%      71813 ~ 0%  TOTAL interrupts.0:IO-APIC-edge.timer
->>         2554 ~ 0%     +49.1%       3809 ~ 1%  TOTAL vmstat.system.cs
->>        11524 ~ 0%      -2.3%      11259 ~ 0%  TOTAL vmstat.system.in
->>          213 ~ 0%      -4.3%        204 ~ 0%  TOTAL time.system_time
->>           74 ~ 0%      -4.1%         71 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
->>      3495099 ~ 0%      -3.1%    3387173 ~ 0%  TOTAL interrupts.LOC
->>
->>
->>
->>
->> Thanks,
->> Jet
->>
->>
->>
->
->> ./runtest.py open2 32 1 4 6 8
->>
->>
->
+
+-- 
+with warm regards,
+Chander Kashyap
