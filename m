@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933188AbaDVPU6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:20:58 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:54157 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932331AbaDVPUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:20:54 -0400
-Message-ID: <1398179997.4724.172.camel@iivanov-dev>
-Subject: Re: [PATCH v6 04/19] usb: phy: msm: Migrate to Managed Device
- Resource allocation
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Date: Tue, 22 Apr 2014 18:19:57 +0300
-In-Reply-To: <535685C0.5070800@linaro.org>
-References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
-	 <1398158438-21579-5-git-send-email-iivanov@mm-sol.com>
-	 <535685C0.5070800@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S933203AbaDVPVM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:21:12 -0400
+Received: from mail-la0-f51.google.com ([209.85.215.51]:56197 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932787AbaDVPU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 11:20:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <CANq1E4QWMw2oLakm-YAdbCsCNHrgfU=66U5Ox-tHzDroFN6avA@mail.gmail.com>
+References: <cover.1398097304.git.luto@amacapital.net> <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+ <CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
+ <CALCETrUZfSrBPZ0Fok5WrG2zM5h3LchEfqnWP4nK37-0sQ8=6g@mail.gmail.com>
+ <CANq1E4T+5Yekm1CpzM40D3C-4XDr+5PYU8d6ud3Zw7k5dcrmUA@mail.gmail.com>
+ <CALCETrWOTVk6wK7e5CwLCRS9XN=5oDT+QtSAPPi_eTMDKgYRFQ@mail.gmail.com> <CANq1E4QWMw2oLakm-YAdbCsCNHrgfU=66U5Ox-tHzDroFN6avA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 22 Apr 2014 08:20:35 -0700
+Message-ID: <CALCETrUGqZAZhepbpwZf+m56r08B6+vOiCgSXsZPgQKpH=8hXA@mail.gmail.com>
+Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-22 at 16:07 +0100, Srinivas Kandagatla wrote:
-> 
-> On 22/04/14 10:20, Ivan T. Ivanov wrote:
-> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> >
-> > Move memory, regulators, clocks and irq allocation to
-> > devm_* variants. Properly check for valid clk handles.
-> >
-> >
-> > -module_platform_driver_probe(msm_otg_driver, msm_otg_probe);
-> > +module_platform_driver(msm_otg_driver);
-> 
-> This change doesn’t match the log.
+On Tue, Apr 22, 2014 at 8:03 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
+>
+> On Tue, Apr 22, 2014 at 4:33 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Tue, Apr 22, 2014 at 7:17 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>> I think it's safe to assume that any object you create is never
+>>> world-accessible. So the worst you can get is 0600.
+>>
+>> Can you explain what you mean?  I think that it's completely *unsafe*
+>> to make this assumption unless you actually take some explicit action
+>> to make sure it's correct.
+>
+> Which kernel-interface creates world-writable objects if a reasonable
+> umask like 022 is set?
 
-Right, I have erroneously assumed that devm_ functions are those 
-which returns EPROBE_DEFER.
+That is an incredibly large "if".  Does Xorg change its umask when it
+starts?  Whenever you write a setuid program, do you reset the umask?
+Will every user of memfd_create who makes a read-only fd pointing at
+the same thing remember to reset the umask?  How about libraries that
+*can't* safely mess with umask because it's not thread-local?
 
-Will make it separate change.
+>
+>>> So if we now take
+>>> your example, your patch doesn't fix the problem at all. Imagine two
+>>> processes, $sender and $receiver. If the receiver runs as a different
+>>> user as the sender, it cannot open /proc/self/fd/ writable due to
+>>> 0600. So the only problematic case is if both run as the same user.
+>>> However, in that case, the receiver can _always_ access
+>>> /proc/$sender/fd/ and thus still gain writable access to the object,
+>>> even if its own fd is read-only and your patch was applied. (ignoring
+>>> the fact that they can kill() and ptrace each other..)
+>>
+>> Incorrect.  That is exactly what my patch changes.
+>
+> Are you sure? Note I wrote /proc/$sender/fd/ not /proc/$receiver/fd/.
+> The lookup on /proc/$sender/fd/ is done with the file of the _sender_,
+> which obviously is writable.
 
-Thanks,
-Ivan
+Sorry, I misread that.  This is a problem that people who design
+non-uid-manipulating sandboxes have to handle.  Or they can use pid
+namespaces.
 
+--Andy
