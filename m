@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932347AbaDVNVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:21:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39292 "EHLO mx2.suse.de"
+	id S1751125AbaDVNYA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:24:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39377 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755844AbaDVNVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:21:05 -0400
-Date: Tue, 22 Apr 2014 15:21:02 +0200
+	id S1750773AbaDVNX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 09:23:58 -0400
+Date: Tue, 22 Apr 2014 15:23:55 +0200
 From: Michal Hocko <mhocko@suse.cz>
 To: Oleg Nesterov <oleg@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -20,8 +20,8 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         "ebiederm@xmission.com" <ebiederm@xmission.com>,
         "guillaume@morinfr.org" <guillaume@morinfr.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] memcg: mm_update_next_owner() should skip kthreads
-Message-ID: <20140422132102.GN29311@dhcp22.suse.cz>
+Subject: Re: [PATCH 0/1] memcg: kill start_kernel()->mm_init_owner(init_mm)
+Message-ID: <20140422132355.GO29311@dhcp22.suse.cz>
 References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com>
  <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com>
  <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com>
@@ -31,32 +31,153 @@ References: <1397617379-26895-1-git-send-email-pchiang@nvidia.com>
  <20140418172631.GA13323@redhat.com>
  <20140418182444.GB22235@dhcp22.suse.cz>
  <20140418184441.GA26046@redhat.com>
- <20140422105228.GJ29311@dhcp22.suse.cz>
+ <20140418191259.GA7413@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140422105228.GJ29311@dhcp22.suse.cz>
+In-Reply-To: <20140418191259.GA7413@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 22-04-14 12:52:28, Michal Hocko wrote:
-> On Fri 18-04-14 20:44:41, Oleg Nesterov wrote:
-[...]
+On Fri 18-04-14 21:12:59, Oleg Nesterov wrote:
+> On 04/18, Oleg Nesterov wrote:
+> >
+> > OTOH, mm->owner is used by mm/memcontrol.c, so perhaps the prefix is fine?
+> >
 > > I do not even understand why do we have CONFIG_MM_OWNER, perhaps it should
 > > die?
 > 
-> I have to dig into history to check why it has been introduced in the
-> first place. It might be possible it is not relevant anymore.
+> Seriously what do you think about the patch below? Afaics CONFIG_MM_OWNER
+> is pointless.
 
-There didn't seem to be any other user of CONFIG_MM_OWNER outside of
-MEMCG so it seems that a separate config option seems like an overkill.
-Regarding the mm->owner itself it is hard to live without it at the
-moment. Most of the charging places do charge the current task_struct
-but there are some that rely on mm and we would need mm->task mapping.
-The last obstacle would be threads migration but that one should go away
-with unified hierarchy AFAIR.
+Yes, I do not see any reason for a separate config when it has a single
+user which cannot work without it. So feel free to add my
+Acked-by: Michal Hocko <mhocko@suse.cz>
+
+to the patch with your s-o-b and a simple changelog explaining there the
+config option didn't have any user outside of MEMCG which cannot work
+without it.
+
+> And I just noticed start_kernel()->mm_init_owner(). It looks simply wrong
+> even if this is harmless, or I missed something?
+> 
+> Could you review 1/1 as well?
+> 
+> Oleg.
+> ---
+> 
+> diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+> index 8967e20..de16272 100644
+> --- a/include/linux/mm_types.h
+> +++ b/include/linux/mm_types.h
+> @@ -406,7 +406,7 @@ struct mm_struct {
+>  	spinlock_t			ioctx_lock;
+>  	struct kioctx_table __rcu	*ioctx_table;
+>  #endif
+> -#ifdef CONFIG_MM_OWNER
+> +#ifdef CONFIG_MEMCG
+>  	/*
+>  	 * "owner" points to a task that is regarded as the canonical
+>  	 * user/owner of this mm. All of the following must be true in
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 82fe3da..570a325 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -2947,7 +2947,7 @@ static inline void inc_syscw(struct task_struct *tsk)
+>  #define TASK_SIZE_OF(tsk)	TASK_SIZE
+>  #endif
+>  
+> -#ifdef CONFIG_MM_OWNER
+> +#ifdef CONFIG_MEMCG
+>  extern void mm_update_next_owner(struct mm_struct *mm);
+>  extern void mm_init_owner(struct mm_struct *mm, struct task_struct *p);
+>  #else
+> @@ -2958,7 +2958,7 @@ static inline void mm_update_next_owner(struct mm_struct *mm)
+>  static inline void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
+>  {
+>  }
+> -#endif /* CONFIG_MM_OWNER */
+> +#endif /* CONFIG_MEMCG */
+>  
+>  static inline unsigned long task_rlimit(const struct task_struct *tsk,
+>  		unsigned int limit)
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 765018c..143119e 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -933,7 +933,6 @@ config RESOURCE_COUNTERS
+>  config MEMCG
+>  	bool "Memory Resource Controller for Control Groups"
+>  	depends on RESOURCE_COUNTERS
+> -	select MM_OWNER
+>  	select EVENTFD
+>  	help
+>  	  Provides a memory resource controller that manages both anonymous
+> @@ -951,9 +950,6 @@ config MEMCG
+>  	  disable memory resource controller and you can avoid overheads.
+>  	  (and lose benefits of memory resource controller)
+>  
+> -	  This config option also selects MM_OWNER config option, which
+> -	  could in turn add some fork/exit overhead.
+> -
+>  config MEMCG_SWAP
+>  	bool "Memory Resource Controller Swap Extension"
+>  	depends on MEMCG && SWAP
+> @@ -1173,9 +1169,6 @@ config SCHED_AUTOGROUP
+>  	  desktop applications.  Task group autogeneration is currently based
+>  	  upon task session.
+>  
+> -config MM_OWNER
+> -	bool
+> -
+>  config SYSFS_DEPRECATED
+>  	bool "Enable deprecated sysfs features to support old userspace tools"
+>  	depends on SYSFS
+> diff --git a/kernel/exit.c b/kernel/exit.c
+> index 429659c..e5c4668 100644
+> --- a/kernel/exit.c
+> +++ b/kernel/exit.c
+> @@ -313,7 +313,7 @@ kill_orphaned_pgrp(struct task_struct *tsk, struct task_struct *parent)
+>  	}
+>  }
+>  
+> -#ifdef CONFIG_MM_OWNER
+> +#ifdef CONFIG_MEMCG
+>  /*
+>   * A task is exiting.   If it owned this mm, find a new owner for the mm.
+>   */
+> @@ -399,7 +399,7 @@ assign_new_owner:
+>  	task_unlock(c);
+>  	put_task_struct(c);
+>  }
+> -#endif /* CONFIG_MM_OWNER */
+> +#endif /* CONFIG_MEMCG */
+>  
+>  /*
+>   * Turn us into a lazy TLB process if we
+> diff --git a/kernel/fork.c b/kernel/fork.c
+> index 54a8d26..ed75cf5 100644
+> --- a/kernel/fork.c
+> +++ b/kernel/fork.c
+> @@ -1099,12 +1099,12 @@ static void rt_mutex_init_task(struct task_struct *p)
+>  #endif
+>  }
+>  
+> -#ifdef CONFIG_MM_OWNER
+> +#ifdef CONFIG_MEMCG
+>  void mm_init_owner(struct mm_struct *mm, struct task_struct *p)
+>  {
+>  	mm->owner = p;
+>  }
+> -#endif /* CONFIG_MM_OWNER */
+> +#endif /* CONFIG_MEMCG */
+>  
+>  /*
+>   * Initialize POSIX timer handling for a single task.
+> 
+
 -- 
 Michal Hocko
 SUSE Labs
