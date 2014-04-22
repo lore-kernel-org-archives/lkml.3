@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756478AbaDVNtc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:49:32 -0400
-Received: from imap.devoid-pointer.net ([31.31.77.140]:49407 "EHLO
+	id S1756463AbaDVNt0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:49:26 -0400
+Received: from transparentnimenzy.cz ([31.31.77.140]:49414 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756413AbaDVNqd (ORCPT
+	with ESMTP id S1756419AbaDVNqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:46:33 -0400
+	Tue, 22 Apr 2014 09:46:35 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org
-Subject: [PATCH 07/24] Port hid-axff to ff-memless-next
-Date: Tue, 22 Apr 2014 15:45:57 +0200
-Message-Id: <1398174374-9501-8-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH 08/24] Port hid-emsff to ff-memless-next
+Date: Tue, 22 Apr 2014 15:45:58 +0200
+Message-Id: <1398174374-9501-9-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398174374-9501-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398174374-9501-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -26,90 +26,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig    |  2 +-
- drivers/hid/hid-axff.c | 32 +++++++++++++++++++++++---------
- 2 files changed, 24 insertions(+), 10 deletions(-)
+ drivers/hid/Kconfig     |  2 +-
+ drivers/hid/hid-emsff.c | 38 ++++++++++++++++++++++++++------------
+ 2 files changed, 27 insertions(+), 13 deletions(-)
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index f722001..68c19a0 100644
+index 68c19a0..6e233d2 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
-@@ -106,7 +106,7 @@ config HID_ACRUX
- config HID_ACRUX_FF
- 	bool "ACRUX force feedback support"
- 	depends on HID_ACRUX
+@@ -204,7 +204,7 @@ config DRAGONRISE_FF
+ config HID_EMS_FF
+ 	tristate "EMS Production Inc. force feedback support"
+ 	depends on HID
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	---help---
- 	Say Y here if you want to enable force feedback support for ACRUX
- 	game controllers.
-diff --git a/drivers/hid/hid-axff.c b/drivers/hid/hid-axff.c
-index a594e47..7fbfcbc 100644
---- a/drivers/hid/hid-axff.c
-+++ b/drivers/hid/hid-axff.c
-@@ -31,31 +31,45 @@
- #include <linux/slab.h>
+ 	Say Y here if you want to enable force feedback support for devices by
+ 	EMS Production Ltd.
+diff --git a/drivers/hid/hid-emsff.c b/drivers/hid/hid-emsff.c
+index d82d75b..c0cbe50 100644
+--- a/drivers/hid/hid-emsff.c
++++ b/drivers/hid/hid-emsff.c
+@@ -24,30 +24,44 @@
  #include <linux/hid.h>
+ #include <linux/input.h>
  #include <linux/module.h>
 +#include <linux/input/ff-memless-next.h>
  
  #include "hid-ids.h"
  
 +#define FF_UPDATE_RATE 50
- #ifdef CONFIG_HID_ACRUX_FF
- 
- struct axff_device {
++
+ struct emsff_device {
  	struct hid_report *report;
  };
  
--static int axff_play(struct input_dev *dev, void *data, struct ff_effect *effect)
-+static int axff_play(struct input_dev *dev, void *data,
-+		     const struct mlnx_effect_command *command)
+ static int emsff_play(struct input_dev *dev, void *data,
+-			 struct ff_effect *effect)
++			 const struct mlnx_effect_command *command)
  {
  	struct hid_device *hid = input_get_drvdata(dev);
- 	struct axff_device *axff = data;
- 	struct hid_report *report = axff->report;
+ 	struct emsff_device *emsff = data;
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 	int field_count = 0;
- 	int left, right;
- 	int i, j;
+ 	int weak, strong;
  
--	left = effect->u.rumble.strong_magnitude;
--	right = effect->u.rumble.weak_magnitude;
+-	weak = effect->u.rumble.weak_magnitude;
+-	strong = effect->u.rumble.strong_magnitude;
 -
--	dbg_hid("called with 0x%04x 0x%04x", left, right);
+-	dbg_hid("called with 0x%04x 0x%04x\n", strong, weak);
 -
--	left = left * 0xff / 0xffff;
--	right = right * 0xff / 0xffff;
+-	weak = weak * 0xff / 0xffff;
+-	strong = strong * 0xff / 0xffff;
+-
+-	emsff->report->field[0]->value[1] = weak;
+-	emsff->report->field[0]->value[2] = strong;
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		left = rumble_force->strong;
-+		right = rumble_force->weak;
++		weak = rumble_force->weak;
++		strong = rumble_force->strong;
 +
-+		dbg_hid("called with 0x%04x 0x%04x", left, right);
++		dbg_hid("called with 0x%04x 0x%04x\n", strong, weak);
 +
-+		left = left * 0xff / 0xffff;
-+		right = right * 0xff / 0xffff;
++		weak = weak * 0xff / 0xffff;
++		strong = strong * 0xff / 0xffff;
++
++		emsff->report->field[0]->value[1] = weak;
++		emsff->report->field[0]->value[2] = strong;
 +		break;
 +	case MLNX_STOP_RUMBLE:
-+		left = 0;
-+		right = 0;
++		weak = 0;
++		strong = 0;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
  
- 	for (i = 0; i < report->maxfield; i++) {
- 		for (j = 0; j < report->field[i]->report_count; j++) {
-@@ -107,7 +121,7 @@ static int axff_init(struct hid_device *hid)
+ 	dbg_hid("running with 0x%02x 0x%02x\n", strong, weak);
+ 	hid_hw_request(hid, emsff->report, HID_REQ_SET_REPORT);
+@@ -88,7 +102,7 @@ static int emsff_init(struct hid_device *hid)
  
  	set_bit(FF_RUMBLE, dev->ffbit);
  
--	error = input_ff_create_memless(dev, axff, axff_play);
-+	error = input_ff_create_mlnx(dev, axff, axff_play, FF_UPDATE_RATE);
- 	if (error)
- 		goto err_free_mem;
- 
+-	error = input_ff_create_memless(dev, emsff, emsff_play);
++	error = input_ff_create_mlnx(dev, emsff, emsff_play, FF_UPDATE_RATE);
+ 	if (error) {
+ 		kfree(emsff);
+ 		return error;
 -- 
 1.9.2
 
