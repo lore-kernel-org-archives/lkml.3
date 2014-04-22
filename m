@@ -1,106 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397AbaDVVuK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:50:10 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.242]:22627 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755868AbaDVVuG (ORCPT
+	id S1757555AbaDVVyU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:54:20 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:59543 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435AbaDVVyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 17:50:06 -0400
-Message-ID: <5356E406.40507@atmel.com>
-Date: Tue, 22 Apr 2014 23:49:58 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Tue, 22 Apr 2014 17:54:18 -0400
 MIME-Version: 1.0
-To: Jonathan Cameron <jic23@kernel.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        <linux-iio@vger.kernel.org>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Josh Wu <josh.wu@atmel.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] ARM: at91: at91sam9g45: change at91_adc name
-References: <1394038675-15809-1-git-send-email-alexandre.belloni@free-electrons.com> <1394038675-15809-3-git-send-email-alexandre.belloni@free-electrons.com> <5318C98C.1070702@kernel.org> <531DBD71.8040905@atmel.com> <532472B8.4090802@kernel.org>
-In-Reply-To: <532472B8.4090802@kernel.org>
-X-Enigmail-Version: 1.5.2
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <CA+55aFwbOQCcd1qsW0rA+bQxN2Vgm9x832ZKmB7fndFX7DBE3w@mail.gmail.com>
+References: <alpine.DEB.2.00.1404190810001.7507@skynet.skynet.ie>
+	<2619529.mEMJol0YfM@grover>
+	<1549585.kmUPduLgev@grover>
+	<10435496.M4aSBzoVye@grover>
+	<CA+55aFwbOQCcd1qsW0rA+bQxN2Vgm9x832ZKmB7fndFX7DBE3w@mail.gmail.com>
+Date: Wed, 23 Apr 2014 07:54:17 +1000
+Message-ID: <CAPM=9tyHwYJ4CTFPZD4zLNFQyct8A_UmoyUMgR_bBZR5bJB+Pw@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ed Tomlinson <edt@aei.ca>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        DRI mailing list <dri-devel@lists.freedesktop.org>,
+        =?UTF-8?Q?Christian_K=C3=B6nig?= <christian.koenig@amd.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/03/2014 16:33, Jonathan Cameron :
-> On 10/03/14 13:26, Nicolas Ferre wrote:
->> On 06/03/2014 20:16, Jonathan Cameron :
->>> On 05/03/14 16:57, Alexandre Belloni wrote:
->>>> We can't use "at91_adc" to refer to the at91_adc driver anymore as the name is
->>>> used to match an id_table.
->>>>
->>>> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
->>> As stated in previous email, I'll take this along with the fix that 'broke'
->>> this, if I get an Ack from one of the at91 maintainers.
->>
->> Jonathan,
->>
->> It is maybe more clear if I answer here:
->> - so, yes, you can take the 3 patches yourself (if you do not mind)
->> - you have, for the whole series::
->>
->> Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Applied to the fixes-togreg branch of iio.git
-> 
-> Timing wise, these will now hit immediately after the merge window closes.
+On Wed, Apr 23, 2014 at 1:59 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> Dave, mind sending me a pull request for drm fixes?
+>
+> There's now at least these two:
+>
+>  - "drm/radeon/aux: fix hpd assignment for aux bus"
+>  - "drm/radeon: use fixed PPL ref divider if needed"
+>
+> that look like fairly fatal regressions when they affect somebody.
+>
+> The fact that we already had *two* independent bugs be reported within
+> days of that last out-of-merge-window pull request makes me very
+> unhappy with the state of drm pulls.
+>
+> So please make sure that future fixes really are *fixes*. For
+> regressions only. No more games like this.
 
-Greg, Jonathan,
+The pll fallout is fixes for the initial feature that was in the merge window,
+Tuning plls for monitors is always a pain in the ass, the previous algorithm
+took a couple of kernels a few years back to get where it was, unfortunately
+HDMI came along and showed up a bunch of its shortcomings. I'm happy
+Alex and Christian are on top of things in terms of tracking regressions
+and making sure they get fixed,
 
-I saw the IIO pull request a week ago ([PULL] IIO fixes for 3.15 round
-1) but I do not see it in Linus' tree for the moment:
-http://article.gmane.org/gmane.linux.kernel.iio/11764
+the AUX fix yes I'm a bit pissed off about myself, but I missed a pull
+from a few
+weeks ago, felt guilty, and maybe should have chosen the other path and let it
+wait a merge,
 
-(sorry, I can't reply to the pull-request itself as I am not subscriber
-to iio mailing-list)
+Christian just sent me a -fixes pull with all of these in it and I'll
+send it on to you
+in a few mins.
 
-As the series contains a fix for a kernel Oops and that is was already
-delayed at the end of 3.14 cycle, will it be possible to include it
-pretty soon in 3.15 cycle?
-
-Thanks for your help, bye.
-
-> Jonathan
->>
->> Thanks for your help with this issue.
->>
->> Bye,
->>
->>>> ---
->>>>    arch/arm/mach-at91/at91sam9g45_devices.c | 2 +-
->>>>    1 file changed, 1 insertion(+), 1 deletion(-)
->>>>
->>>> diff --git a/arch/arm/mach-at91/at91sam9g45_devices.c b/arch/arm/mach-at91/at91sam9g45_devices.c
->>>> index cb36fa872d30..88554024eb2d 100644
->>>> --- a/arch/arm/mach-at91/at91sam9g45_devices.c
->>>> +++ b/arch/arm/mach-at91/at91sam9g45_devices.c
->>>> @@ -1203,7 +1203,7 @@ static struct resource adc_resources[] = {
->>>>    };
->>>>
->>>>    static struct platform_device at91_adc_device = {
->>>> -	.name		= "at91_adc",
->>>> +	.name		= "at91sam9g45-adc",
->>>>    	.id		= -1,
->>>>    	.dev		= {
->>>>    				.platform_data	= &adc_data,
->>>>
->>>
->>>
->>
->>
-> 
-> 
-
-
--- 
-Nicolas Ferre
+Dave.
