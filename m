@@ -1,57 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758929AbaDVViH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:38:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26578 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757527AbaDVVh7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 17:37:59 -0400
-Date: Tue, 22 Apr 2014 17:37:26 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, mtosatti@redhat.com,
-        aarcange@redhat.com, mgorman@suse.de, andi@firstfloor.org,
-        davidlohr@hp.com, rientjes@google.com, isimatu.yasuaki@jp.fujitsu.com,
-        yinghai@kernel.org, riel@redhat.com, n-horiguchi@ah.jp.nec.com,
-        kirill@shutemov.name
-Subject: Re: [PATCH v3 0/5] hugetlb: add support gigantic page allocation at
- runtime
-Message-ID: <20140422173726.738d0635@redhat.com>
-In-Reply-To: <20140417160110.3f36b972b25525fbbe23681b@linux-foundation.org>
-References: <1397152725-20990-1-git-send-email-lcapitulino@redhat.com>
-	<20140417160110.3f36b972b25525fbbe23681b@linux-foundation.org>
-Organization: Red Hat
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758905AbaDVVha (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:37:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36150 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756813AbaDVUPJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 16:15:09 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Thomas Graf <tgraf@suug.ch>, Nicolas Dichtel <nicolas.dichtel@6wind.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 014/133] ip6mr: fix mfc notification flags
+Date: Tue, 22 Apr 2014 13:12:32 -0700
+Message-Id: <1398197671-12786-15-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Apr 2014 16:01:10 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Thu, 10 Apr 2014 13:58:40 -0400 Luiz Capitulino <lcapitulino@redhat.com> wrote:
-> 
-> > The HugeTLB subsystem uses the buddy allocator to allocate hugepages during
-> > runtime. This means that hugepages allocation during runtime is limited to
-> > MAX_ORDER order. For archs supporting gigantic pages (that is, page sizes
-> > greater than MAX_ORDER), this in turn means that those pages can't be
-> > allocated at runtime.
-> 
-> Dumb question: what's wrong with just increasing MAX_ORDER?
+------------------
 
-To be honest I'm not a buddy allocator expert and I'm not familiar with
-what is involved in increasing MAX_ORDER. What I do know though is that it's
-not just a matter of increasing a macro's value. For example, for sparsemem
-support we have this check (include/linux/mmzone.h:1084):
+From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
 
-#if (MAX_ORDER - 1 + PAGE_SHIFT) > SECTION_SIZE_BITS
-#error Allocator MAX_ORDER exceeds SECTION_SIZE
-#endif
+[ Upstream commit f518338b16038beeb73e155e60d0f70beb9379f4 ]
 
-I _guess_ it's because we can't allocate more pages than what's within a
-section on sparsemem. Can sparsemem and the other stuff be changed to
-accommodate a bigger MAX_ORDER? I don't know. Is it worth it to increase
-MAX_ORDER and do all the required changes, given that a bigger MAX_ORDER is
-only useful for HugeTLB and the archs supporting gigantic pages? I'd guess not.
+Commit 812e44dd1829 ("ip6mr: advertise new mfc entries via rtnl") reuses the
+function ip6mr_fill_mroute() to notify mfc events.
+But this function was used only for dump and thus was always setting the
+flag NLM_F_MULTI, which is wrong in case of a single notification.
+
+Libraries like libnl will wait forever for NLMSG_DONE.
+
+CC: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+Acked-by: Thomas Graf <tgraf@suug.ch>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/ipv6/ip6mr.c | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/net/ipv6/ip6mr.c b/net/ipv6/ip6mr.c
+index 92b9b9f..0ae367c 100644
+--- a/net/ipv6/ip6mr.c
++++ b/net/ipv6/ip6mr.c
+@@ -2251,13 +2251,14 @@ int ip6mr_get_route(struct net *net,
+ }
+ 
+ static int ip6mr_fill_mroute(struct mr6_table *mrt, struct sk_buff *skb,
+-			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd)
++			     u32 portid, u32 seq, struct mfc6_cache *c, int cmd,
++			     int flags)
+ {
+ 	struct nlmsghdr *nlh;
+ 	struct rtmsg *rtm;
+ 	int err;
+ 
+-	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), NLM_F_MULTI);
++	nlh = nlmsg_put(skb, portid, seq, cmd, sizeof(*rtm), flags);
+ 	if (nlh == NULL)
+ 		return -EMSGSIZE;
+ 
+@@ -2325,7 +2326,7 @@ static void mr6_netlink_event(struct mr6_table *mrt, struct mfc6_cache *mfc,
+ 	if (skb == NULL)
+ 		goto errout;
+ 
+-	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd);
++	err = ip6mr_fill_mroute(mrt, skb, 0, 0, mfc, cmd, 0);
+ 	if (err < 0)
+ 		goto errout;
+ 
+@@ -2364,7 +2365,8 @@ static int ip6mr_rtm_dumproute(struct sk_buff *skb, struct netlink_callback *cb)
+ 				if (ip6mr_fill_mroute(mrt, skb,
+ 						      NETLINK_CB(cb->skb).portid,
+ 						      cb->nlh->nlmsg_seq,
+-						      mfc, RTM_NEWROUTE) < 0)
++						      mfc, RTM_NEWROUTE,
++						      NLM_F_MULTI) < 0)
+ 					goto done;
+ next_entry:
+ 				e++;
+@@ -2378,7 +2380,8 @@ next_entry:
+ 			if (ip6mr_fill_mroute(mrt, skb,
+ 					      NETLINK_CB(cb->skb).portid,
+ 					      cb->nlh->nlmsg_seq,
+-					      mfc, RTM_NEWROUTE) < 0) {
++					      mfc, RTM_NEWROUTE,
++					      NLM_F_MULTI) < 0) {
+ 				spin_unlock_bh(&mfc_unres_lock);
+ 				goto done;
+ 			}
+-- 
+1.9.1
+
