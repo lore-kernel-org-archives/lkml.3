@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758701AbaDVVQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:16:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36211 "EHLO
+	id S1758501AbaDVVQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:16:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36226 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757397AbaDVUP2 (ORCPT
+	with ESMTP id S1757407AbaDVUP2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 16:15:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Matt Fleming <matt.fleming@intel.com>, Paul Mundt <lethal@linux-sh.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 123/133] iscsi-target: Fix ERL=2 ASYNC_EVENT connection pointer bug
-Date: Tue, 22 Apr 2014 13:14:21 -0700
-Message-Id: <1398197671-12786-124-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 118/133] sh: fix format string bug in stack tracer
+Date: Tue, 22 Apr 2014 13:14:16 -0700
+Message-Id: <1398197671-12786-119-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,52 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nicholas Bellinger <nab@linux-iscsi.org>
+From: Matt Fleming <matt.fleming@intel.com>
 
-commit d444edc679e7713412f243b792b1f964e5cff1e1 upstream.
+commit a0c32761e73c9999cbf592b702f284221fea8040 upstream.
 
-This patch fixes a long-standing bug in iscsit_build_conn_drop_async_message()
-where during ERL=2 connection recovery, a bogus conn_p pointer could
-end up being used to send the ISCSI_OP_ASYNC_EVENT + DROPPING_CONNECTION
-notifying the initiator that cmd->logout_cid has failed.
+Kees reported the following error:
 
-The bug was manifesting itself as an OOPs in iscsit_allocate_cmd() with
-a bogus conn_p pointer in iscsit_build_conn_drop_async_message().
+   arch/sh/kernel/dumpstack.c: In function 'print_trace_address':
+   arch/sh/kernel/dumpstack.c:118:2: error: format not a string literal and no format arguments [-Werror=format-security]
 
-Reported-by: Arshad Hussain <arshad.hussain@calsoftinc.com>
-Reported-by: santosh kulkarni <santosh.kulkarni@calsoftinc.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Use the "%s" format so that it's impossible to interpret 'data' as a
+format string.
+
+Signed-off-by: Matt Fleming <matt.fleming@intel.com>
+Reported-by: Kees Cook <keescook@chromium.org>
+Acked-by: Kees Cook <keescook@chromium.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/iscsi/iscsi_target.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ arch/sh/kernel/dumpstack.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/target/iscsi/iscsi_target.c b/drivers/target/iscsi/iscsi_target.c
-index b489363..a6326f1 100644
---- a/drivers/target/iscsi/iscsi_target.c
-+++ b/drivers/target/iscsi/iscsi_target.c
-@@ -2327,6 +2327,7 @@ static void iscsit_build_conn_drop_async_message(struct iscsi_conn *conn)
+diff --git a/arch/sh/kernel/dumpstack.c b/arch/sh/kernel/dumpstack.c
+index 7617dc4..e11f197 100644
+--- a/arch/sh/kernel/dumpstack.c
++++ b/arch/sh/kernel/dumpstack.c
+@@ -115,7 +115,7 @@ static int print_trace_stack(void *data, char *name)
+  */
+ static void print_trace_address(void *data, unsigned long addr, int reliable)
  {
- 	struct iscsi_cmd *cmd;
- 	struct iscsi_conn *conn_p;
-+	bool found = false;
+-	printk(data);
++	printk("%s", (char *)data);
+ 	printk_address(addr, reliable);
+ }
  
- 	/*
- 	 * Only send a Asynchronous Message on connections whos network
-@@ -2335,11 +2336,12 @@ static void iscsit_build_conn_drop_async_message(struct iscsi_conn *conn)
- 	list_for_each_entry(conn_p, &conn->sess->sess_conn_list, conn_list) {
- 		if (conn_p->conn_state == TARG_CONN_STATE_LOGGED_IN) {
- 			iscsit_inc_conn_usage_count(conn_p);
-+			found = true;
- 			break;
- 		}
- 	}
- 
--	if (!conn_p)
-+	if (!found)
- 		return;
- 
- 	cmd = iscsit_allocate_cmd(conn_p, GFP_ATOMIC);
 -- 
 1.9.1
 
