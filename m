@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584AbaDVOb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:31:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49245 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756571AbaDVObF (ORCPT
+	id S932646AbaDVOb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:31:56 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43062 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932601AbaDVObx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:31:05 -0400
-Date: Tue, 22 Apr 2014 11:30:37 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
-        cltang@codesourcery.com
-Subject: Re: [PATCH 08/28] nios2: MMU Fault handling
-Message-ID: <20140422143036.GD15745@arch.cereza>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
- <1397824031-4892-6-git-send-email-lftan@altera.com>
+	Tue, 22 Apr 2014 10:31:53 -0400
+Date: Tue, 22 Apr 2014 16:31:52 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening
+ /proc/pid/fd/N
+Message-ID: <20140422143152.GA23716@amd.pavel.ucw.cz>
+References: <cover.1398097304.git.luto@amacapital.net>
+ <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+ <CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397824031-4892-6-git-send-email-lftan@altera.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ley Foon,
+Hi!
 
-On Apr 18, Ley Foon Tan wrote:
-> +
-> +bad_area_nosemaphore:
-> +	/* User mode accesses just cause a SIGSEGV */
-> +	if (user_mode(regs)) {
+> On Mon, Apr 21, 2014 at 6:22 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> > This patch does this:
+> 
+> I can see _what_ the patch does, but your patch lacks any discussion
+> _why_ it is needed. Can you provide at least one real example where
+> this fixes a security issue?
 
-I found that it's useful to add some printing here, just as ARM
-does. I carry this patch on my kernel:
+Such as here?
 
-+               printk(KERN_INFO "%s: unhandled page fault (%d) at 0x%08lx, cause %ld\n",
-+                      current->comm, SIGSEGV, address, cause);
-+               show_regs(regs);
+http://www.securityfocus.com/archive/1/507386
 
-Do you think we could do something like it? Maybe with a compile time option?
+> > This may break userspace.  If so, I would guess that anything broken
+> > by it is either an actual exploit or is so broken that it doesn't
+> > deserve to continue working.  If it breaks something important, then
+> > maybe it will need a sysctl.
+> 
+> This patch breaks the following use-case:
+> 
+> fd = open("/run", O_RDWR | O_TMPFILE);
+> sprintf(path, "/proc/self/fd/%d", fd);
+> fd2 = open(buf, O_RDONLY);
 
-> +		_exception(SIGSEGV, regs, code, address);
-> +		return;
-> +	}
-> +
+You meant open(path, ) here?
+
+> sprintf(path, "/proc/self/fd/%d", fd2);
+> linkat(AT_FDCWD, path, AT_FDCWD, "/run/some_lock_file", AT_FOLLOW_SYMLINK);
+> 
+> I mean I explicitly create the object as _writable_ but then keep a
+> read-only descriptor for debugging purposes (to make sure that the
+> program no longer writes to the file). This is no security feature,
+> but only a safety feature in case something goes wrong. But I still
+> want to be able to create hard-links (I _do_ have write-permissions on
+> the object/inode).
+
+Does some real code do it? I believe this deserves to be broken -- you
+explicitely opened that read-only...
+
+     	  							Pavel
 -- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
