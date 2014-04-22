@@ -1,53 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751923AbaDVSLW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 14:11:22 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:48695 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750811AbaDVSLT (ORCPT
+	id S1752138AbaDVSLs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 14:11:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47635 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507AbaDVSLp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 14:11:19 -0400
-Message-ID: <5356B0C2.6010708@gmail.com>
-Date: Tue, 22 Apr 2014 20:11:14 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-CC: Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ARM: berlin: add CPU_V7 to Marvell Armada 1500-mini (BG2CD)
-References: <1397587699-11023-1-git-send-email-sebastian.hesselbarth@gmail.com>
-In-Reply-To: <1397587699-11023-1-git-send-email-sebastian.hesselbarth@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 22 Apr 2014 14:11:45 -0400
+Date: Tue, 22 Apr 2014 11:11:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Kees Cook <keescook@chromium.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Li Zefan <lizefan@huawei.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
+        Andrew Shewmaker <agshew@gmail.com>, Andi Kleen <ak@linux.intel.com>,
+        Jens Axboe <axboe@fb.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Pavel Emelyanov <xemul@parallels.com>,
+        Andrey Vagin <avagin@openvz.org>,
+        Michael Ellerman <michael@ellerman.id.au>
+Subject: Re: [PATCH v2 3/4] sysctl: allow for strict write position handling
+Message-Id: <20140422111143.74a426009ee37027c948aebc@linux-foundation.org>
+In-Reply-To: <CAGXu5jLBJynt81Y0HqWkPzFpa6ToR4SZk2ZLLjS3SPNNczTXNw@mail.gmail.com>
+References: <1397780183-24633-1-git-send-email-keescook@chromium.org>
+	<1397780183-24633-4-git-send-email-keescook@chromium.org>
+	<20140421154505.eef405f0a23e2ff8a1c7536e@linux-foundation.org>
+	<CAGXu5jLBJynt81Y0HqWkPzFpa6ToR4SZk2ZLLjS3SPNNczTXNw@mail.gmail.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/15/2014 08:48 PM, Sebastian Hesselbarth wrote:
-> This selects missing CPU_V7 for ARM Cortex-A9 based Marvell Armada
-> 1500-mini (BG2CD).
-> 
-> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-> ---
+On Mon, 21 Apr 2014 21:52:48 -0700 Kees Cook <keescook@chromium.org> wrote:
 
-Applied to berlin/soc.
-
-> ---
->  arch/arm/mach-berlin/Kconfig | 1 +
->  1 file changed, 1 insertion(+)
+> >> This provides CONFIG_PROC_SYSCTL_STRICT_WRITES as a way to make this
+> >> behavior act in a less surprising manner for strings, and disallows
+> >> non-zero file position when writing numeric sysctls (similar to what is
+> >> already done when reading from non-zero file positions).
+> >
+> > Adding a Kconfig knob to alter the behavior of procfs writes creeps me
+> > out.  I wonder why.
+> >
+> > - I doubt if many people have a sufficient amount of control over
+> >   their entire systems to be able to confidently set
+> >   CONFIG_PROC_SYSCTL_STRICT_WRITES.
+> >
+> > - Software will be shipped which runs OK with one setting but breaks
+> >   with the other setting.
+> >
+> > So what to do?
+> >
+> > I think we can *detect* this situation easily enough.  So some options are
+> >
+> > a) change the behaviour and add code which detects when userspace is
+> >    doing a write whose behaviour is now altered.  Print a warning.   Or
+> >
+> > b) leave the behaviour as-is.  Add a detector which tells people
+> >    "hey, your userspace is probably broken - please fix".  Wait N
+> >    years.  Then alter the behaviour as in a).
+> >
+> > In either case the detector should display current->comm, the procfs
+> > pathname and the contents of the write, to aid people in hunting down
+> > and fixing their userspace.
 > 
-> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
-> index d3c5f14dc142..0add8350faf4 100644
-> --- a/arch/arm/mach-berlin/Kconfig
-> +++ b/arch/arm/mach-berlin/Kconfig
-> @@ -18,6 +18,7 @@ config MACH_BERLIN_BG2
->  config MACH_BERLIN_BG2CD
->  	bool "Marvell Armada 1500-mini (BG2CD)"
->  	select CACHE_L2X0
-> +	select CPU_V7
->  	select HAVE_ARM_TWD if SMP
->  
->  config MACH_BERLIN_BG2Q
-> 
+> How about a tri-state sysctl (har har control sysctl behavior with a
+> sysctl) that defaults ("1") to existing behavior (to not break
+> anything) with a warning. Mode "2" uses new behavior, and mode "0"
+> uses existing behavior without a warning? Then we can wait N years and
+> switch the default to "2"?
 
+Yes, I suppose that's more flexible.
+
+I do have my doubts about whether we'll ever be able to change the
+behaviour.  There will be soooo many random proc-pokers out there and
+the amount of dusty-deck software will only increase over time.
+
+I suppose the first thing to do is to get the warning in there and see
+if we can get an understanding of how much code is likely to be
+affected by the change.  Add "please email Kees" to the printk ;) I did
+that once, many years ago.  I got a lot of email.  Didn't do it again.
