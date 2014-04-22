@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757116AbaDVPbT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:31:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14457 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757070AbaDVPbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:31:12 -0400
-Message-ID: <53567F51.8050608@redhat.com>
-Date: Tue, 22 Apr 2014 10:40:17 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1757100AbaDVPbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:31:16 -0400
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:42716 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756982AbaDVPaY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 11:30:24 -0400
+Message-ID: <53568B0C.3080107@linaro.org>
+Date: Tue, 22 Apr 2014 16:30:20 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-CC: Rafael Aquini <aquini@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, stable@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: commit 0bf1457f0cfca7b  " mm: vmscan: do not swap anon pages
- just because free+file is low" causes heavy performance regression on paging
-References: <53564AA9.3060905@de.ibm.com> <53565922.1050709@de.ibm.com>
-In-Reply-To: <53565922.1050709@de.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Felipe Balbi <balbi@ti.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v6 06/19] usb: phy: msm: Fix checkpatch.pl warnings
+References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com> <1398158438-21579-7-git-send-email-iivanov@mm-sol.com>
+In-Reply-To: <1398158438-21579-7-git-send-email-iivanov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 07:57 AM, Christian Borntraeger wrote:
-> On 22/04/14 12:55, Christian Borntraeger wrote:
->> While preparing/testing some KVM on s390 patches for the next merge window (target is kvm/next which is based on 3.15-rc1) I faced a very severe performance hickup on guest paging (all anonymous memory).
->>
->> All memory bound guests are in "D" state now and the system is barely unusable.
->>
->> Reverting commit 0bf1457f0cfca7bc026a82323ad34bcf58ad035d
->> "mm: vmscan: do not swap anon pages just because free+file is low" makes the problem go away.
->>
->> According to /proc/vmstat the system is now in direct reclaim almost all the time for every page fault (more than 10x more direct reclaims than kswap reclaims)
->> With the patch being reverted everything is fine again.
->>
->> Any ideas?
-> 
-> Here is an idea to tackle my problem and the original problem:
-> 
-> reverting  0bf1457f0cfca7bc026a82323ad34bcf58ad035d + checking against low, also seems to make my system usable.
-> 
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1923,7 +1923,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
->          */
->         if (global_reclaim(sc)) {
->                 free = zone_page_state(zone, NR_FREE_PAGES);
-> -               if (unlikely(file + free <= high_wmark_pages(zone))) {
-> +               if (unlikely(file + free <= low_wmark_pages(zone))) {
->                         scan_balance = SCAN_ANON;
->                         goto out;
->                 }
-> 
 
-Looks reasonable to me.  Johannes?
 
--- 
-All rights reversed
+On 22/04/14 10:20, Ivan T. Ivanov wrote:
+> @@ -79,8 +78,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
+>   		ret = regulator_set_voltage(motg->vddcx, 0,
+>   			USB_PHY_VDD_DIG_VOL_MAX);
+>   		if (ret)
+> -			dev_err(motg->phy.dev, "unable to set the voltage "
+> -					"for hsusb vddcx\n");
+> +			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
+
+
+> @@ -137,15 +133,13 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
+>   		ret = regulator_set_optimum_mode(motg->v1p8,
+>   				USB_PHY_1P8_HPM_LOAD);
+>   		if (ret < 0) {
+> -			pr_err("%s: Unable to set HPM of the regulator "
+> -				"HSUSB_1p8\n", __func__);
+> +			pr_err("Could not set HPM for v1p8\n");
+>   			return ret;
+>   		}
+
+
+> @@ -390,8 +382,7 @@ static int msm_hsusb_config_vddcx(struct msm_otg *motg, int high)
+>
+>   	ret = regulator_set_voltage(motg->vddcx, min_vol, max_vol);
+>   	if (ret) {
+> -		pr_err("%s: unable to set the voltage for regulator "
+> -			"HSUSB_VDDCX\n", __func__);
+> +		dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
+>   		return ret;
+>   	}
+>
+
+
+I see some of pr_err not moved to dev_err?, while others have been moved.
+
+Also noticed that the error messages are changed as part of this fix. 
+IMHO, changing an error message would have a side-effects on logging 
+tools, anyway Am not sure if its true in this case.
+
+
+Thanks,
+srini
