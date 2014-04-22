@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173AbaDVUti (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:49:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36565 "EHLO
+	id S1758264AbaDVUuG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:50:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36556 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758054AbaDVUX5 (ORCPT
+	with ESMTP id S1758044AbaDVUXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:23:57 -0400
+	Tue, 22 Apr 2014 16:23:52 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 055/133] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
-Date: Tue, 22 Apr 2014 13:13:13 -0700
-Message-Id: <1398197671-12786-56-git-send-email-kamal@canonical.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Josef Bacik <jbacik@fb.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 053/133] Btrfs: skip submitting barrier for missing device
+Date: Tue, 22 Apr 2014 13:13:11 -0700
+Message-Id: <1398197671-12786-54-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -30,75 +27,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
-commit 13b546d96207c131eeae15dc7b26c6e7d0f1cad7 upstream.
+commit f88ba6a2a44ee98e8d59654463dc157bb6d13c43 upstream.
 
-We triggered soft-lockup under stress test on 2.6.34 kernel.
+I got an error on v3.13:
+ BTRFS error (device sdf1) in write_all_supers:3378: errno=-5 IO failure (errors while submitting device barriers.)
 
-BUG: soft lockup - CPU#1 stuck for 60009ms! [lockf2.test:14488]
-...
-[<bf09a4d4>] (jffs2_do_reserve_space+0x420/0x440 [jffs2])
-[<bf09a528>] (jffs2_reserve_space_gc+0x34/0x78 [jffs2])
-[<bf0a1350>] (jffs2_garbage_collect_dnode.isra.3+0x264/0x478 [jffs2])
-[<bf0a2078>] (jffs2_garbage_collect_pass+0x9c0/0xe4c [jffs2])
-[<bf09a670>] (jffs2_reserve_space+0x104/0x2a8 [jffs2])
-[<bf09dc48>] (jffs2_write_inode_range+0x5c/0x4d4 [jffs2])
-[<bf097d8c>] (jffs2_write_end+0x198/0x2c0 [jffs2])
-[<c00e00a4>] (generic_file_buffered_write+0x158/0x200)
-[<c00e14f4>] (__generic_file_aio_write+0x3a4/0x414)
-[<c00e15c0>] (generic_file_aio_write+0x5c/0xbc)
-[<c012334c>] (do_sync_write+0x98/0xd4)
-[<c0123a84>] (vfs_write+0xa8/0x150)
-[<c0123d74>] (sys_write+0x3c/0xc0)]
+how to reproduce:
+  > mkfs.btrfs -f -d raid1 /dev/sdf1 /dev/sdf2
+  > wipefs -a /dev/sdf2
+  > mount -o degraded /dev/sdf1 /mnt
+  > btrfs balance start -f -sconvert=single -mconvert=single -dconvert=single /mnt
 
-Fix this by adding a cond_resched() in the while loop.
+The reason of the error is that barrier_all_devices() failed to submit
+barrier to the missing device.  However it is clear that we cannot do
+anything on missing device, and also it is not necessary to care chunks
+on the missing device.
 
-[akpm@linux-foundation.org: don't initialize `ret']
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+This patch stops sending/waiting barrier if device is missing.
+
+Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/jffs2/nodemgmt.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ fs/btrfs/disk-io.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/fs/jffs2/nodemgmt.c b/fs/jffs2/nodemgmt.c
-index bbae5b1..b6bd4af 100644
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -212,20 +212,25 @@ out:
- int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
- 			   uint32_t *len, uint32_t sumsize)
- {
--	int ret = -EAGAIN;
-+	int ret;
- 	minsize = PAD(minsize);
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index a8f652d..5bb5f7c 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -2985,6 +2985,8 @@ static int barrier_all_devices(struct btrfs_fs_info *info)
+ 	/* send down all the barriers */
+ 	head = &info->fs_devices->devices;
+ 	list_for_each_entry_rcu(dev, head, dev_list) {
++		if (dev->missing)
++			continue;
+ 		if (!dev->bdev) {
+ 			errors_send++;
+ 			continue;
+@@ -2999,6 +3001,8 @@ static int barrier_all_devices(struct btrfs_fs_info *info)
  
- 	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
- 
--	spin_lock(&c->erase_completion_lock);
--	while(ret == -EAGAIN) {
-+	while (true) {
-+		spin_lock(&c->erase_completion_lock);
- 		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
- 		if (ret) {
- 			jffs2_dbg(1, "%s(): looping, ret is %d\n",
- 				  __func__, ret);
- 		}
-+		spin_unlock(&c->erase_completion_lock);
-+
-+		if (ret == -EAGAIN)
-+			cond_resched();
-+		else
-+			break;
- 	}
--	spin_unlock(&c->erase_completion_lock);
- 	if (!ret)
- 		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
- 
+ 	/* wait for all the barriers */
+ 	list_for_each_entry_rcu(dev, head, dev_list) {
++		if (dev->missing)
++			continue;
+ 		if (!dev->bdev) {
+ 			errors_wait++;
+ 			continue;
 -- 
 1.9.1
 
