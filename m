@@ -1,177 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222AbaDVLLy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:11:54 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45645 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932180AbaDVLLw (ORCPT
+	id S932248AbaDVLMQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:12:16 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:47881 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932180AbaDVLMG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:11:52 -0400
-Message-ID: <53564E63.4010803@pengutronix.de>
-Date: Tue, 22 Apr 2014 13:11:31 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	Tue, 22 Apr 2014 07:12:06 -0400
+Message-ID: <53564E80.1050006@linaro.org>
+Date: Tue, 22 Apr 2014 13:12:00 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Michal Simek <michals@xilinx.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "wg@grandegger.com" <wg@grandegger.com>
-Subject: Re: [PATCH v7 1/2] can: xilinx CAN controller support
-References: <3e750ec3-9d47-4b4e-8173-56698ab19786@CH1EHSMHS029.ehs.local> <53562E7D.7090509@pengutronix.de> <957b07ca-f74c-47fb-963a-084710d48c5a@AM1EHSMHS014.ehs.local> <535643D9.3070601@pengutronix.de> <9f70ceca-c6fd-4d57-a54a-8cbf9d888137@CH1EHSMHS016.ehs.local>
-In-Reply-To: <9f70ceca-c6fd-4d57-a54a-8cbf9d888137@CH1EHSMHS016.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="iRhW9Bx7nSvEMJ2bcB4mKRNamM4NR2vw2"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Chander Kashyap <chander.kashyap@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: lorenzo.pieralisi@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
+        Chander Kashyap <k.chander@samsung.org>
+Subject: Re: [PATCH 2/4] driver: cpuidle: cpuidle-big-little: init driver
+ for Exynos5420
+References: <1398080958-21677-1-git-send-email-chander.kashyap@linaro.org> <1398080958-21677-3-git-send-email-chander.kashyap@linaro.org>
+In-Reply-To: <1398080958-21677-3-git-send-email-chander.kashyap@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---iRhW9Bx7nSvEMJ2bcB4mKRNamM4NR2vw2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On 04/21/2014 01:49 PM, Chander Kashyap wrote:
+> Add "samsung,exynos5420" compatible string to initialize generic
+> big-little cpuidle driver for Exynos5420.
+>
+> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+> Signed-off-by: Chander Kashyap <k.chander@samsung.org>
+> ---
+>   drivers/cpuidle/cpuidle-big_little.c |    3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/drivers/cpuidle/cpuidle-big_little.c b/drivers/cpuidle/cpuidle-big_little.c
+> index b45fc62..d0fac53 100644
+> --- a/drivers/cpuidle/cpuidle-big_little.c
+> +++ b/drivers/cpuidle/cpuidle-big_little.c
+> @@ -170,7 +170,8 @@ static int __init bl_idle_init(void)
+>   	/*
+>   	 * Initialize the driver just for a compliant set of machines
+>   	 */
+> -	if (!of_machine_is_compatible("arm,vexpress,v2p-ca15_a7"))
+> +	if (!of_machine_is_compatible("arm,vexpress,v2p-ca15_a7") &&
+> +		(!of_machine_is_compatible("samsung,exynos5420")))
+>   		return -ENODEV;
+>   	/*
+>   	 * For now the differentiation between little and big cores
 
-On 04/22/2014 01:08 PM, Appana Durga Kedareswara Rao wrote:
-> Hi Marc,
->=20
->> -----Original Message-----
->> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
->> Sent: Tuesday, April 22, 2014 3:57 PM
->> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
->> grant.likely@linaro.org; robh+dt@kernel.org
->> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-
->> kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
->> devicetree@vger.kernel.org
->> Subject: Re: [PATCH v7 1/2] can: xilinx CAN controller support
->>
->> On 04/22/2014 12:06 PM, Appana Durga Kedareswara Rao wrote:
->>
->>>> Meanwhile Thomas Gleixner put some effort into the c_can driver and
->>>> found some problems in most of the can driver. See comments inline.
->>>>
->>> Ok will look into that patches
->>
->> I've commented the relevant parts of your patch. Although more
->> background information can be found in the c_can patches.
->>
-> Ok
->=20
->>>>> +/**
->>>>> + * xcan_tx_interrupt - Tx Done Isr
->>>>> + * @ndev:  net_device pointer
->>>>> + * @isr:   Interrupt status register value
->>>>> + */
->>>>> +static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
->>>>> +   struct xcan_priv *priv =3D netdev_priv(ndev);
->>>>> +   struct net_device_stats *stats =3D &ndev->stats;
->>>>> +
->>>>> +   while (priv->tx_head - priv->tx_tail > 0) {
->>>>> +           priv->write_reg(priv, XCAN_ICR_OFFSET,
->>>> XCAN_IXR_TXOK_MASK);
->>>>> +           if (!(isr & XCAN_IXR_TXOK_MASK))
->>>>> +                   break;
->>>>
->>>> This looks broken. I assume you have to issue the
->> XCAN_IXR_TXOK_MASK-
->>>> write once per tx-completed CAN frame. If you enter this loop you
->>>> write once, then isr is read, then you write again and may exit this=
-
->>>> loop if XCAN_IXR_TXOK_MASK is not set anymore.
->>
->> Let's assume you have put 3 CAN frames into the TX-queue and we're int=
-o
->> tx-complete interrupt for the first frame and the other 2 are still no=
-t
->> completed.
->>
->> This means the while() loop is not terminated by (priv->tx_head -
->> priv->tx_tail > 0), as it can loop 3 times.
->>
->> What happens is:
->>
->> - priv->write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MASK);
->> - if (!(isr & XCAN_IXR_TXOK_MASK)) -> no break
->> - can_get_echo_skb()
->> - ...
->> - isr =3D priv->read_reg(priv, XCAN_ISR_OFFSET);
->> - loop ->
->> - priv->write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MASK);
->> - if (!(isr & XCAN_IXR_TXOK_MASK)) -> break
->>
->> So you have 2x write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MASK),
->> but only a single TX completed CAN frame.
->>
->=20
-> Ok now got it :). Thanks for the explanation.
-> Will modify the loop logic like below.
->=20
-> while (priv->tx_head - priv->tx_tail > 0) {
->                  if ((isr & XCAN_IXR_TXOK_MASK)) {
->                 priv->write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MA=
-SK);
->                         can_get_echo_skb(ndev, priv->tx_tail %
->                                                 priv->tx_max);
->                         priv->tx_tail++;
->                         stats->tx_packets++;
->                 } else {
->                 break;
->         }
->                =20
->   }
-> Are you ok with this?
-
-what about this:
-
-while ((priv->tx_head - priv->tx_tail > 0) &&
-	(isr & XCAN_IXR_TXOK_MASK)) {
-
-	[...]
-
-	isr =3D priv->read_reg(priv, XCAN_ISR_OFFSET);
-}
-
-or even
-
-while ((priv->tx_head - priv->tx_tail > 0) &&
-	(priv->read_reg(priv, XCAN_ISR_OFFSET) & XCAN_IXR_TXOK_MASK)) {
-
-	[...]
-
-}
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+BTW, are the latencies the same than the TC2 ?
 
 
---iRhW9Bx7nSvEMJ2bcB4mKRNamM4NR2vw2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
-iEYEARECAAYFAlNWTmMACgkQjTAFq1RaXHMiQwCePMQgdCx7rNb+TRMjU/By+rDF
-EHIAn0kn/OuXK8C84eJpTErhieQKK9de
-=4mw0
------END PGP SIGNATURE-----
-
---iRhW9Bx7nSvEMJ2bcB4mKRNamM4NR2vw2--
