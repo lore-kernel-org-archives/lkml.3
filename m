@@ -1,59 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933092AbaDVPTB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:19:01 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:49812 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757080AbaDVPS4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:18:56 -0400
-Date: Tue, 22 Apr 2014 16:18:09 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Michal Simek <monstr@monstr.eu>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 18/18] asm-generic: io: define relaxed accessor macros
- unconditionally
-Message-ID: <20140422151809.GF9820@arm.com>
-References: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
- <1397742261-15621-19-git-send-email-will.deacon@arm.com>
- <5356782A.9050809@monstr.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5356782A.9050809@monstr.eu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1757042AbaDVPRj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:17:39 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:53914 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932681AbaDVPRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 11:17:32 -0400
+Message-ID: <1398179795.4724.170.camel@iivanov-dev>
+Subject: Re: [PATCH v6 01/19] usb: phy: msm: Make driver selectable on
+ ARCH_QCOM
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: balbi@ti.com
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Date: Tue, 22 Apr 2014 18:16:35 +0300
+In-Reply-To: <20140422145701.GI5524@saruman.home>
+References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
+	 <1398158438-21579-2-git-send-email-iivanov@mm-sol.com>
+	 <20140422145701.GI5524@saruman.home>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
 
-On Tue, Apr 22, 2014 at 03:09:46PM +0100, Michal Simek wrote:
-> On 04/17/2014 03:44 PM, Will Deacon wrote:
-> > Now that no architectures using asm-generic/io.h define their own relaxed
-> > accessors, the dummy definitions can be used unconditionally.
+Hi, 
+
+On Tue, 2014-04-22 at 09:57 -0500, Felipe Balbi wrote:
+> On Tue, Apr 22, 2014 at 12:20:20PM +0300, Ivan T. Ivanov wrote:
+> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 > > 
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Signed-off-by: Will Deacon <will.deacon@arm.com>
+> > Controller could be found on APQ and MSM platforms,
+> > make configuration description more generic.
+> > 
+> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 > > ---
-> >  include/asm-generic/io.h | 18 ------------------
-> >  1 file changed, 18 deletions(-)
+> >  drivers/usb/phy/Kconfig | 6 +++---
+> >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+> > index 416e0c8..0c668a3 100644
+> > --- a/drivers/usb/phy/Kconfig
+> > +++ b/drivers/usb/phy/Kconfig
+> > @@ -171,11 +171,11 @@ config USB_ISP1301
+> >  	  module will be called phy-isp1301.
+> > 
+> >  config USB_MSM_OTG
+> > -	tristate "OTG support for Qualcomm on-chip USB controller"
+> > -	depends on (USB || USB_GADGET) && ARCH_MSM
+> > +	tristate "Qualcomm on-chip USB OTG controller support"
+> > +	depends on (USB || USB_GADGET) && (ARCH_MSM || ARCH_QCOM)
 > 
-> Do we need this? I think there could be a need to overwrite them.
-> Currently we are just lucky that architecture which uses asm-generic/io.h
-> don't need to overwrite it.
-> But I expect that all archs should use asm-generic/io.h to clean
-> architecture io.h exactly I have done it for Microblaze.
+> I would actually drop USB || USB_GADGET dependency here just make it
+> easier to enable the driver on Kconfig, other you have to enable
+> USB_SUPPORT, then enable USB, go back one menu level, go down to PHY
+> menu, and choose this driver.
+> 
 
-I'm open to keeping the conditional definitions, but it introduces a
-discrepancy with the non-relaxed versions, which are defined unconditionally
-(although the underlying __raw_* accessors can be overridden).
+Because phy directory already depends on USB_SUPPORT?
 
-Will
+Regards,
+Ivan
+
