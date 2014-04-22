@@ -1,41 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753125AbaDVHFw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 03:05:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65376 "EHLO mx1.redhat.com"
+	id S1753313AbaDVHGF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 03:06:05 -0400
+Received: from mga01.intel.com ([192.55.52.88]:17579 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752990AbaDVHFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 03:05:43 -0400
-Date: Tue, 22 Apr 2014 08:10:57 +0100
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Kent Overstreet <kmo@daterainc.com>, Jens Axboe <axboe@kernel.dk>,
-        Shaohua Li <shli@kernel.org>, Nicholas Bellinger <nab@linux-iscsi.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
- stealing tags
-Message-ID: <20140422071057.GA13195@dhcp-26-169.brq.redhat.com>
-References: <cover.1395840483.git.agordeev@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1395840483.git.agordeev@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752990AbaDVHFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 03:05:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,902,1389772800"; 
+   d="scan'208";a="517081735"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
+        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: [Patch Part3 V1 06/22] iommu/vt-d: fix possible invalid memory access caused by free_dmar_iommu()
+Date: Tue, 22 Apr 2014 15:07:17 +0800
+Message-Id: <1398150453-28141-7-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1398150453-28141-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1398150453-28141-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 26, 2014 at 02:34:22PM +0100, Alexander Gordeev wrote:
-> But other systems (more dense?) showed increased cache-hit rate
-> up to 20%, i.e. this one:
+Static identity and virtual machine domains may be cached in
+iommu->domain_ids array after corresponding IOMMUs have been removed
+from domain->iommu_bmp. So we should check domain->iommu_bmp before
+decreasing domain->iommu_count in function free_dmar_iommu(), otherwise
+it may cause free of inuse domain data structure.
 
-Hello Gentlemen,
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/iommu/intel-iommu.c |   11 ++++-------
+ 1 file changed, 4 insertions(+), 7 deletions(-)
 
-Any feedback on this?
-
-Thanks!
-
+diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
+index 0ab0cd236b16..1f10fcd1c696 100644
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -425,6 +425,8 @@ static void domain_remove_one_dev_info(struct dmar_domain *domain,
+ 				       struct device *dev);
+ static void iommu_detach_dependent_devices(struct intel_iommu *iommu,
+ 					   struct device *dev);
++static int domain_detach_iommu(struct dmar_domain *domain,
++			       struct intel_iommu *iommu);
+ 
+ #ifdef CONFIG_INTEL_IOMMU_DEFAULT_ON
+ int dmar_disabled = 0;
+@@ -1467,8 +1469,7 @@ static int iommu_init_domains(struct intel_iommu *iommu)
+ static void free_dmar_iommu(struct intel_iommu *iommu)
+ {
+ 	struct dmar_domain *domain;
+-	int i, count;
+-	unsigned long flags;
++	int i;
+ 
+ 	if ((iommu->domains) && (iommu->domain_ids)) {
+ 		for_each_set_bit(i, iommu->domain_ids, cap_ndoms(iommu->cap)) {
+@@ -1481,11 +1482,7 @@ static void free_dmar_iommu(struct intel_iommu *iommu)
+ 
+ 			domain = iommu->domains[i];
+ 			clear_bit(i, iommu->domain_ids);
+-
+-			spin_lock_irqsave(&domain->iommu_lock, flags);
+-			count = --domain->iommu_count;
+-			spin_unlock_irqrestore(&domain->iommu_lock, flags);
+-			if (count == 0)
++			if (domain_detach_iommu(domain, iommu) == 0)
+ 				domain_exit(domain);
+ 		}
+ 	}
 -- 
-Regards,
-Alexander Gordeev
-agordeev@redhat.com
+1.7.10.4
+
