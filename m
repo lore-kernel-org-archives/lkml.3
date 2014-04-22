@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421AbaDVIkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:40:10 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:41394 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689AbaDVIkI (ORCPT
+	id S1754760AbaDVIki (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:40:38 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:49686 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531AbaDVIkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:40:08 -0400
-Date: Tue, 22 Apr 2014 11:39:17 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: hans.verkuil@cisco.com, m.chehab@samsung.com, ext-eero.nurkkala@nokia.com,
-        nils.faerber@kernelconcepts.de, joni.lapilainen@gmail.com,
-        freemangordon@abv.bg, sre@ring0.de, pali.rohar@gmail.com,
-        Greg KH <greg@kroah.com>, trivial@kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] radio-bcm2048.c: fix wrong overflow check
-Message-ID: <20140422083917.GS4963@mwanda>
-References: <20140420145622.GA15567@amd.pavel.ucw.cz>
+	Tue, 22 Apr 2014 04:40:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140420145622.GA15567@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+In-Reply-To: <20140422130655.51daec1807bde98ade65d691@canb.auug.org.au>
+References: <20140422130655.51daec1807bde98ade65d691@canb.auug.org.au>
+Date: Tue, 22 Apr 2014 10:40:32 +0200
+Message-ID: <CAPDyKFqeEsDpamUksmgyEBhMN+xLih-Hv_bczbZv43m8ApHDvA@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the mmc tree
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Chris Ball <chris@printf.net>
+Cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Fariya Fatima <fariyaf@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Apr 20, 2014 at 04:56:22PM +0200, Pavel Machek wrote:
-> 
-> Fix wrong overflow check in radio-bcm2048.
-> 
-> Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+On 22 April 2014 05:06, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Chris,
+>
+> After merging the mmc tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+>
+> drivers/net/wireless/rsi/rsi_91x_sdio.c: In function 'rsi_reset_card':
+> drivers/net/wireless/rsi/rsi_91x_sdio.c:288:20: error: 'MMC_STATE_HIGHSPEED' undeclared (first use in this function)
+>     card->state &= ~MMC_STATE_HIGHSPEED;
+>                     ^
+> drivers/net/wireless/rsi/rsi_91x_sdio.c:288:20: note: each undeclared identifier is reported only once for each function it appears in
+> drivers/net/wireless/rsi/rsi_91x_sdio.c:299:4: error: implicit declaration of function 'mmc_card_set_highspeed' [-Werror=implicit-function-declaration]
+>     mmc_card_set_highspeed(card);
+>     ^
+> drivers/net/wireless/rsi/rsi_91x_sdio.c:306:2: error: implicit declaration of function 'mmc_card_highspeed' [-Werror=implicit-function-declaration]
+>   if (mmc_card_highspeed(card))
+>   ^
+>
+> Caused by commit 395784826a81 ("mmc: drop the speed mode of card's state").
+>
+> I have used the version of the mmc tree from next-20140417 for today.
 
-Signed off means like you're signing a legal document to show that you
-didn't do anything illegal when you handled the patch.  Was this patch
-authored by Pali?  If so, then use the From: header.
+Hi Chris,
 
-Btw, I reported this bug on Dec 10 last year.  It's better that we fix
-it now than not fix it at all but we could have done better.  Was the
-kbuild-zero-day bug report format confusing or how could I have helped
-out there?
+Until we work out the dependency issue caused by the above commit,
+could you please drop the following patches from your mmc-next
+branch!?
 
-regards,
-dan carpenter
+df1a292 mmc: add support for HS400 mode of eMMC5.0
+f27a5d7 mmc: rework selection of bus speed mode
+e64f275 mmc: step power class after final selection of bus mode
+6371adf mmc: identify available device type to select
+3957848 mmc: drop the speed mode of card's state
 
+Kind regards
+Ulf Hansson
+
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
