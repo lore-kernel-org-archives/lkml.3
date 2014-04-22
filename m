@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751378AbaDVBoE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 21:44:04 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:4366 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751117AbaDVBoB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 21:44:01 -0400
-X-IronPort-AV: E=Sophos;i="4.97,899,1389715200"; 
-   d="scan'208";a="29544870"
-Message-ID: <5355CA43.5040608@cn.fujitsu.com>
-Date: Tue, 22 Apr 2014 09:47:47 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	id S1751496AbaDVBtG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 21:49:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44249 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751028AbaDVBtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 21:49:03 -0400
+User-Agent: K-9 Mail for Android
+In-Reply-To: <CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com> <5355A9E9.9070102@zytor.com> <CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com> <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com> <CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com> <a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com> <CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2 V3] workqueue: substitute POOL_FREEZING with __WQ_FREEZING
-References: <1398081561-12618-1-git-send-email-laijs@cn.fujitsu.com> <20140421222035.GA22730@htj.dyndns.org>
-In-Reply-To: <20140421222035.GA22730@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain;
+ charset=UTF-8
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, 21 Apr 2014 18:47:52 -0700
+To: Andrew Lutomirski <amluto@gmail.com>
+CC: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 06:20 AM, Tejun Heo wrote:
-> On Mon, Apr 21, 2014 at 07:59:20PM +0800, Lai Jiangshan wrote:
->> Only workqueues have freezable or freezing attribution/state, not worker pools.
->> But POOL_FREEZING adds a suspicious state and makes reviewers confused.
->>
->> And it causes freeze_workqueues_begin() and thaw_workqueues() much complicated,
->> they need to travel all the pools besides wqs.
->>
->> Since freezable is workqueue instance's attribution, and freezing
->> is workqueue instance's state, so we introduce __WQ_FREEZING
->> to wq->flags instead and remove POOL_FREEZING.
->>
->> It is different from POOL_FREEZING, POOL_FREEZING is simply set
->> all over the world(all pools), while __WQ_FREEZING is only set for freezable wq.
->> freeze_workqueues_begin()/thaw_workqueues() skip to handle non-freezable wqs
->> and don't touch the non-freezable wqs' flags.
-> 
-> I was about to apply the patch and have updated the patch description.
-> 
->   While freezing takes place globally, its execution is per-workqueue;
->   however, the current implementation makes use of the per-worker_pool
->   POOL_FREEZING flag.  While it's not broken, the flag makes the code
->   more confusing and complicates freeze_workqueues_begin() and
->   thaw_workqueues() by requiring them to walk through all pools.
-> 
->   Since freezable is a workqueue's attribute, and freezing is a
->   workqueue's state, let's introduce __WQ_FREEZING to wq->flags instead
->   and remove POOL_FREEZING.
-> 
->   It is different from POOL_FREEZING in that __WQ_FREEZING is only set
->   for freezable workqueues while POOL_FREEZING is set globally over all
->   pools.  freeze_workqueues_begin() and thaw_workqueues() now skip
->   non-freezable workqueues.
-> 
-> But looking at the patch, why do we need __WQ_FREEZING at all?  We
-> should be able to test workqueue_freezing in pwq_adjust_max_active(),
-> right?  The only requirement there would be that
+Race condition (although with x86 being globally ordered, it probably can't actually happen.) The bitmask is probably the way to go.
 
-Testing workqueue_freezing requires wq_pool_mutex held.
-Although almost-all pwq_adjust_max_active() are called with wq_pool_mutex held,
-except workqueue_set_max_active(). But I hope pwq_adjust_max_active()
-don't require the heavy wq_pool_mutex.
+On April 21, 2014 6:28:12 PM PDT, Andrew Lutomirski <amluto@gmail.com> wrote:
+>On Mon, Apr 21, 2014 at 6:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> I wanted to avoid the "another cpu made this allocation, now I have
+>to free" crap, but I also didn't want to grab the lock if there was no
+>work needed.
+>
+>I guess you also want to avoid bouncing all these cachelines around on
+>boot on bit multicore machines.
+>
+>I'd advocate using the bitmap approach or simplifying the existing
+>code.  For example:
+>
+>+       for (n = 0; n < ESPFIX_PUD_CLONES; n++) {
+>+               pud = ACCESS_ONCE(pud_p[n]);
+>+               if (!pud_present(pud))
+>+                       return false;
+>+       }
+>
+>I don't see why that needs to be a loop.  How can one clone exist but
+>not the others?
+>
+>--Andy
 
-> pwq_adjust_max_active() is invoked at least once after
-> workqueue_freezing is changed, which is already guaranteed.
-> 
-> Thanks.
-> 
-
+-- 
+Sent from my mobile phone.  Please pardon brevity and lack of formatting.
