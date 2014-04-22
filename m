@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174AbaDVU0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:26:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36783 "EHLO
+	id S932196AbaDVU11 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:27:27 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36781 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758307AbaDVUZY (ORCPT
+	with ESMTP id S1758305AbaDVUZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 16:25:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleksij Rempel <linux@rempel-privat.de>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 045/133] [media] uvcvideo: Do not use usb_set_interface on bulk EP
-Date: Tue, 22 Apr 2014 13:13:03 -0700
-Message-Id: <1398197671-12786-46-git-send-email-kamal@canonical.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Felipe Balbi <balbi@ti.com>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 046/133] usb: gadget: atmel_usba: fix crashed during stopping when DEBUG is enabled
+Date: Tue, 22 Apr 2014 13:13:04 -0700
+Message-Id: <1398197671-12786-47-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -29,73 +27,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleksij Rempel <linux@rempel-privat.de>
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 
-commit b1e43f232698274871e1358c276d7b0242a7d607 upstream.
+commit d8eb6c653ef6b323d630de3c5685478469e248bc upstream.
 
-The UVC specification uses alternate setting selection to notify devices
-of stream start/stop. This breaks when using bulk-based devices, as the
-video streaming interface has a single alternate setting in that case,
-making video stream start and video stream stop events to appear
-identical to the device. Bulk-based devices are thus not well supported
-by UVC.
+commit 511f3c5 (usb: gadget: udc-core: fix a regression during gadget driver
+unbinding) introduced a crash when DEBUG is enabled.
 
-The webcam built in the Asus Zenbook UX302LA ignores the set interface
-request and will keep the video stream enabled when the driver tries to
-stop it. If USB autosuspend is enabled the device will then be suspended
-and will crash, requiring a cold reboot.
+The debug trace in the atmel_usba_stop function made the assumption that the
+driver pointer passed in parameter was not NULL, but since the commit above,
+such assumption was no longer always true.
 
-USB trace capture showed that Windows sends a CLEAR_FEATURE(HALT)
-request to the bulk endpoint when stopping the stream instead of
-selecting alternate setting 0. The camera then behaves correctly, and
-thus seems to require that behaviour.
+This commit now uses the driver pointer stored in udc which fixes this
+issue.
 
-Replace selection of alternate setting 0 with clearing of the endpoint
-halt feature at video stream stop for bulk-based devices. Let's refrain
-from blaming Microsoft this time, as it's not clear whether this
-Windows-specific but USB-compliant behaviour was specifically developed
-to handle bulkd-based UVC devices, or if the camera just took advantage
-of it.
+[ balbi@ti.com : improved commit log a bit ]
 
-Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/media/usb/uvc/uvc_video.c | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ drivers/usb/gadget/atmel_usba_udc.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
-index 3394c34..e1c5bf3e 100644
---- a/drivers/media/usb/uvc/uvc_video.c
-+++ b/drivers/media/usb/uvc/uvc_video.c
-@@ -1846,7 +1846,25 @@ int uvc_video_enable(struct uvc_streaming *stream, int enable)
+diff --git a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+index a7aed84..e3eb013 100644
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -1841,13 +1841,13 @@ static int atmel_usba_stop(struct usb_gadget *gadget,
+ 	toggle_bias(0);
+ 	usba_writel(udc, CTRL, USBA_DISABLE_MASK);
  
- 	if (!enable) {
- 		uvc_uninit_video(stream, 1);
--		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
-+		if (stream->intf->num_altsetting > 1) {
-+			usb_set_interface(stream->dev->udev,
-+					  stream->intfnum, 0);
-+		} else {
-+			/* UVC doesn't specify how to inform a bulk-based device
-+			 * when the video stream is stopped. Windows sends a
-+			 * CLEAR_FEATURE(HALT) request to the video streaming
-+			 * bulk endpoint, mimic the same behaviour.
-+			 */
-+			unsigned int epnum = stream->header.bEndpointAddress
-+					   & USB_ENDPOINT_NUMBER_MASK;
-+			unsigned int dir = stream->header.bEndpointAddress
-+					 & USB_ENDPOINT_DIR_MASK;
-+			unsigned int pipe;
+-	udc->gadget.dev.driver = NULL;
+-	udc->driver = NULL;
+-
+ 	clk_disable(udc->hclk);
+ 	clk_disable(udc->pclk);
+ 
+-	DBG(DBG_GADGET, "unregistered driver `%s'\n", driver->driver.name);
++	DBG(DBG_GADGET, "unregistered driver `%s'\n", udc->driver->driver.name);
 +
-+			pipe = usb_sndbulkpipe(stream->dev->udev, epnum) | dir;
-+			usb_clear_halt(stream->dev->udev, pipe);
-+		}
-+
- 		uvc_queue_enable(&stream->queue, 0);
- 		uvc_video_clock_cleanup(stream);
- 		return 0;
++	udc->gadget.dev.driver = NULL;
++	udc->driver = NULL;
+ 
+ 	return 0;
+ }
 -- 
 1.9.1
 
