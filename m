@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758319AbaDVUZZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:25:25 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36767 "EHLO
+	id S1758403AbaDVU0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:26:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36785 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758296AbaDVUZV (ORCPT
+	with ESMTP id S1758313AbaDVUZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:25:21 -0400
+	Tue, 22 Apr 2014 16:25:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 050/133] rtlwifi: rtl8723ae: Fix too long disable of IRQs
-Date: Tue, 22 Apr 2014 13:13:08 -0700
-Message-Id: <1398197671-12786-51-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 039/133] x86, AVX-512: AVX-512 Feature Detection
+Date: Tue, 22 Apr 2014 13:12:57 -0700
+Message-Id: <1398197671-12786-40-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,72 +27,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Fenghua Yu <fenghua.yu@intel.com>
 
-commit bfc1010c418a22cbebd8b1bd1e75dad6a527a609 upstream.
+commit 8e5780fdeef7dc490b3f0b3a62704593721fa4f3 upstream.
 
-In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
-rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
-<olivier@trillion01.com> fixed a problem caused by an extra long disabling
-of interrupts. This patch makes the same fix for rtl8723ae.
+AVX-512 is an extention of AVX2. Its spec can be found at:
+http://download-software.intel.com/sites/default/files/managed/71/2e/319433-017.pdf
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+This patch detects AVX-512 features by CPUID.
+
+Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+Link: http://lkml.kernel.org/r/1392931491-33237-1-git-send-email-fenghua.yu@intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8723ae/hw.c | 18 +++++++++++++++---
- 1 file changed, 15 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/cpufeature.h | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-index 0a8c038..f0532c6 100644
---- a/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8723ae/hw.c
-@@ -846,14 +846,25 @@ int rtl8723ae_hw_init(struct ieee80211_hw *hw)
- 	bool rtstatus = true;
- 	int err;
- 	u8 tmp_u1b;
-+	unsigned long flags;
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index d3f0db1..0480fb9 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -211,9 +211,13 @@
+ #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
+ #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
+ #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
++#define X86_FEATURE_AVX512F	(9*32+16) /* AVX-512 Foundation */
+ #define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
+ #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
+ #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access Prevention */
++#define X86_FEATURE_AVX512PF	(9*32+26) /* AVX-512 Prefetch */
++#define X86_FEATURE_AVX512ER	(9*32+27) /* AVX-512 Exponential and Reciprocal */
++#define X86_FEATURE_AVX512CD	(9*32+28) /* AVX-512 Conflict Detection */
  
- 	rtlpriv->rtlhal.being_init_adapter = true;
-+	/* As this function can take a very long time (up to 350 ms)
-+	 * and can be called with irqs disabled, reenable the irqs
-+	 * to let the other devices continue being serviced.
-+	 *
-+	 * It is safe doing so since our own interrupts will only be enabled
-+	 * in a subsequent step.
-+	 */
-+	local_save_flags(flags);
-+	local_irq_enable();
-+
- 	rtlpriv->intf_ops->disable_aspm(hw);
- 	rtstatus = _rtl8712e_init_mac(hw);
- 	if (rtstatus != true) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
- 		err = 1;
--		return err;
-+		goto exit;
- 	}
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
  
- 	err = rtl8723ae_download_fw(hw);
-@@ -861,8 +872,7 @@ int rtl8723ae_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
- 			 "Failed to download FW. Init HW without FW now..\n");
- 		err = 1;
--		rtlhal->fw_ready = false;
--		return err;
-+		goto exit;
- 	} else {
- 		rtlhal->fw_ready = true;
- 	}
-@@ -937,6 +947,8 @@ int rtl8723ae_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_INIT, DBG_TRACE, "under 1.5V\n");
- 	}
- 	rtl8723ae_dm_init(hw);
-+exit:
-+	local_irq_restore(flags);
- 	rtlpriv->rtlhal.being_init_adapter = false;
- 	return err;
- }
 -- 
 1.9.1
 
