@@ -1,81 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793AbaDVOKa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:10:30 -0400
-Received: from mail-ee0-f48.google.com ([74.125.83.48]:62126 "EHLO
-	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932745AbaDVOJ7 (ORCPT
+	id S932742AbaDVOJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:09:57 -0400
+Received: from smtp.devoid-pointer.net ([31.31.77.140]:49479 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756248AbaDVOAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:09:59 -0400
-Message-ID: <5356782A.9050809@monstr.eu>
-Date: Tue, 22 Apr 2014 16:09:46 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 22 Apr 2014 10:00:32 -0400
+From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
+        anssi.hannula@iki.fi, simon@mungewell.org
+Subject: [PATCH v2 08/24] input: Port hid-emsff to ff-memless-next
+Date: Tue, 22 Apr 2014 15:59:53 +0200
+Message-Id: <1398175209-9565-9-git-send-email-madcatxster@devoid-pointer.net>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
+References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
-        dhowells@redhat.com, broonie@linaro.org, benh@kernel.crashing.org,
-        peterz@infradead.org, paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 18/18] asm-generic: io: define relaxed accessor macros
- unconditionally
-References: <1397742261-15621-1-git-send-email-will.deacon@arm.com> <1397742261-15621-19-git-send-email-will.deacon@arm.com>
-In-Reply-To: <1397742261-15621-19-git-send-email-will.deacon@arm.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="tiDH4Mqrch3wXrvoNuUH4amjGcTWUvO9I"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---tiDH4Mqrch3wXrvoNuUH4amjGcTWUvO9I
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Port hid-emsff to ff-memless-next
 
-On 04/17/2014 03:44 PM, Will Deacon wrote:
-> Now that no architectures using asm-generic/io.h define their own relax=
-ed
-> accessors, the dummy definitions can be used unconditionally.
->=20
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Will Deacon <will.deacon@arm.com>
-> ---
->  include/asm-generic/io.h | 18 ------------------
->  1 file changed, 18 deletions(-)
+Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
+---
+ drivers/hid/Kconfig     |  2 +-
+ drivers/hid/hid-emsff.c | 38 ++++++++++++++++++++++++++------------
+ 2 files changed, 27 insertions(+), 13 deletions(-)
 
-Do we need this? I think there could be a need to overwrite them.
-Currently we are just lucky that architecture which uses asm-generic/io.h=
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 68c19a0..6e233d2 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -204,7 +204,7 @@ config DRAGONRISE_FF
+ config HID_EMS_FF
+ 	tristate "EMS Production Inc. force feedback support"
+ 	depends on HID
+-	select INPUT_FF_MEMLESS
++	select INPUT_FF_MEMLESS_NEXT
+ 	---help---
+ 	Say Y here if you want to enable force feedback support for devices by
+ 	EMS Production Ltd.
+diff --git a/drivers/hid/hid-emsff.c b/drivers/hid/hid-emsff.c
+index d82d75b..c0cbe50 100644
+--- a/drivers/hid/hid-emsff.c
++++ b/drivers/hid/hid-emsff.c
+@@ -24,30 +24,44 @@
+ #include <linux/hid.h>
+ #include <linux/input.h>
+ #include <linux/module.h>
++#include <linux/input/ff-memless-next.h>
+ 
+ #include "hid-ids.h"
+ 
++#define FF_UPDATE_RATE 50
++
+ struct emsff_device {
+ 	struct hid_report *report;
+ };
+ 
+ static int emsff_play(struct input_dev *dev, void *data,
+-			 struct ff_effect *effect)
++			 const struct mlnx_effect_command *command)
+ {
+ 	struct hid_device *hid = input_get_drvdata(dev);
+ 	struct emsff_device *emsff = data;
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
+ 	int weak, strong;
+ 
+-	weak = effect->u.rumble.weak_magnitude;
+-	strong = effect->u.rumble.strong_magnitude;
+-
+-	dbg_hid("called with 0x%04x 0x%04x\n", strong, weak);
+-
+-	weak = weak * 0xff / 0xffff;
+-	strong = strong * 0xff / 0xffff;
+-
+-	emsff->report->field[0]->value[1] = weak;
+-	emsff->report->field[0]->value[2] = strong;
++	switch (command->cmd) {
++	case MLNX_START_RUMBLE:
++		weak = rumble_force->weak;
++		strong = rumble_force->strong;
++
++		dbg_hid("called with 0x%04x 0x%04x\n", strong, weak);
++
++		weak = weak * 0xff / 0xffff;
++		strong = strong * 0xff / 0xffff;
++
++		emsff->report->field[0]->value[1] = weak;
++		emsff->report->field[0]->value[2] = strong;
++		break;
++	case MLNX_STOP_RUMBLE:
++		weak = 0;
++		strong = 0;
++		break;
++	default:
++		return -EINVAL;
++	}
+ 
+ 	dbg_hid("running with 0x%02x 0x%02x\n", strong, weak);
+ 	hid_hw_request(hid, emsff->report, HID_REQ_SET_REPORT);
+@@ -88,7 +102,7 @@ static int emsff_init(struct hid_device *hid)
+ 
+ 	set_bit(FF_RUMBLE, dev->ffbit);
+ 
+-	error = input_ff_create_memless(dev, emsff, emsff_play);
++	error = input_ff_create_mlnx(dev, emsff, emsff_play, FF_UPDATE_RATE);
+ 	if (error) {
+ 		kfree(emsff);
+ 		return error;
+-- 
+1.9.2
 
-don't need to overwrite it.
-But I expect that all archs should use asm-generic/io.h to clean
-architecture io.h exactly I have done it for Microblaze.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---tiDH4Mqrch3wXrvoNuUH4amjGcTWUvO9I
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNWeCoACgkQykllyylKDCHL7QCfZHY0AEPJpupieO3TTKRh9VXj
-VN4AnRtRl3pIh5H8pVJrJxaX+V08i19U
-=7Mr8
------END PGP SIGNATURE-----
-
---tiDH4Mqrch3wXrvoNuUH4amjGcTWUvO9I--
