@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbaDVGVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 02:21:52 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:36012 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711AbaDVGVo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 02:21:44 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-5d-53560a75e869
-Message-id: <53560A6F.8030909@samsung.com>
-Date: Tue, 22 Apr 2014 08:21:35 +0200
-From: Robert Baldyga <r.baldyga@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Aaro Koskinen <aaro.koskinen@iki.fi>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        myungjoo.ham@samsung.com, cw00.choi@samsung.com, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, balbi@ti.com, gregkh@linuxfoundation.org,
-        grant.likely@linaro.org, ldewangan@nvidia.com, kishon@ti.com,
-        gg@slimlogic.co.uk, anton@enomsg.org, jonghwa3.lee@samsung.com,
-        rongjun.ying@csr.com, linux@roeck-us.net, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, m.szyprowski@samsung.com,
-        t.figa@samsung.com
-Subject: Re: [PATCH v2 05/13] extcon: extcon-class: improve extcon client API
-References: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
- <1397475984-28001-6-git-send-email-r.baldyga@samsung.com>
- <20140419105225.GB976@ambient.musicnaut.iki.fi>
-In-reply-to: <20140419105225.GB976@ambient.musicnaut.iki.fi>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA02Sa0iTYRTHefZedknj9RZPUkSTypaZitGTDPND4PshoxAj+mJTl0qbyuZM
-	A2teVjrSeammy8ylps6ppBZOvM6Vhhe0kSJeRqCVUzPF1NAst33x2++c8zvn/+WwMFcL7smK
-	T0gWShIEIi7JwQd3+7+clXFuhPttWHyQ/kcI6n13GvVaHqKJ9e8EKppbwdAr0wiBCuuKMaRa
-	0hJI1XoZ9ey0AZRV2USiEWsdQLnDcxganX9CouquehxpH1XhyNxeRqIXVSocvX6jwNCcdoiB
-	GkwzTFQ9McZAUxm1JKpZ/keiAnUDjhoX1DhSdJqYqGt0h0BNJYt4yFFaX64HtDk/j0G3G8oI
-	ukC1BmiDZoZJ19Wsk3Tfby1Ot9Ty6GZdLklb60sJenq8g6S7X+qZdF7WT5JeKNwmacOmnEnn
-	t+rANbdbHH6MUBSfIpScC77NiXucnQmSTETq16dX5ECHKwGLBalA+NfoowTsPTwER2ebSCXg
-	sFypagCbh6sIR7EKYHnOAmaznCkezFRO4zbGqRPQsjFJ2pikfGDrZgGwsQd1E85m9BEO3wVu
-	Fc/afXfKG1q7VPajGFVNwI5fnQzbwI0Kg8PjE7gjrQVAdYXBvs2m+DBzstG+je0ldCuekw4+
-	Blv0y1gBoDT7QjT7NM0+rQJgOuAhlEUnSaNixf6+UoFYKkuI9Y1OFDcDx1Ost4HKj0FGQLEA
-	18kZ+kWEuxKCFGma2AggC+O6O8fu7LWcYwRp94WSxEiJTCSUGgGDxfaUg8g/bZ/CrBsRqVuf
-	U86IQsN050OT00mv9JxVj+trAaecZC4Dkcqx/u0j0o27S4dLPgwWjX4zvVdzglbaoy4GL87c
-	SdUEbJqvPuv3Kudvr8Lx4eQtNuxJcRe/9Z0/uLh7csqbP1RlFhx/MDBwIvvCmqU0XXSAN41F
-	axWBVuOle3IuLo0T+PMwiVTwH4XVonTyAgAA
+	id S1752604AbaDVGWU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 02:22:20 -0400
+Received: from ozlabs.org ([103.22.144.67]:38086 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751711AbaDVGWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 02:22:13 -0400
+Date: Tue, 22 Apr 2014 16:22:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Briggs <rgb@redhat.com>, sparclinux@vger.kernel.org
+Subject: linux-next: build failure after merge of the audit tree
+Message-Id: <20140422162207.55e3d9f09244de281b9798cc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Tue__22_Apr_2014_16_22_07_+1000_Hfowe9C_s3T5UyXP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/19/2014 12:52 PM, Aaro Koskinen wrote:
-> Hi,
-> 
-> On Mon, Apr 14, 2014 at 01:46:16PM +0200, Robert Baldyga wrote:
->>  	dev_info(&pdev->dev,
->> -		 "OMAP USB OTG controller rev %d.%d (%s, id=%d, vbus=%d)\n",
->> -		 (rev >> 4) & 0xf, rev & 0xf, config->extcon, otg_dev->id,
->> +		 "OMAP USB OTG controller rev %d.%d (id=%d, vbus=%d)\n",
->> +		 (rev >> 4) & 0xf, rev & 0xf, otg_dev->id,
->>  		 otg_dev->vbus);
-> 
-> This change is unrelated to the patch and not needed.
->
+--Signature=_Tue__22_Apr_2014_16_22_07_+1000_Hfowe9C_s3T5UyXP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-It's related because we no longer use config->extcon since we have
-cable-oriented API. We can keep displaying it, but this value is
-actually meaningless.
+Hi Eric,
 
-Best regards
-Robert Baldyga
-Samsung R&D Institute Poland
+After merging the audit tree, today's linux-next build (sparc defconfig)
+failed like this:
+
+In file included from include/linux/audit.h:29:0,
+                 from mm/mmap.c:33:
+arch/sparc/include/asm/syscall.h: In function 'syscall_get_arch':
+arch/sparc/include/asm/syscall.h:131:9: error: 'TIF_32BIT' undeclared (firs=
+t use in this function)
+arch/sparc/include/asm/syscall.h:131:9: note: each undeclared identifier is=
+ reported only once for each function it appears in
+
+And many more ...
+
+Caused by commit 374c0c054122 ("ARCH: AUDIT: implement syscall_get_arch
+for all arches").
+
+I applied this patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 22 Apr 2014 16:18:53 +1000
+Subject: [PATCH] fix ARCH: AUDIT: implement syscall_get_arch for all arches
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/sparc/include/asm/syscall.h | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/sparc/include/asm/syscall.h b/arch/sparc/include/asm/sysc=
+all.h
+index fed3d511b108..a5a8153766b3 100644
+--- a/arch/sparc/include/asm/syscall.h
++++ b/arch/sparc/include/asm/syscall.h
+@@ -128,8 +128,12 @@ static inline void syscall_set_arguments(struct task_s=
+truct *task,
+=20
+ static inline int syscall_get_arch(void)
+ {
++#if defined(__sparc__) && defined(__arch64__)
+ 	return test_thread_flag(TIF_32BIT) ? AUDIT_ARCH_SPARC
+ 					   : AUDIT_ARCH_SPARC64;
++#else
++	return AUDIT_ARCH_SPARC;
++#endif
+ }
+=20
+ #endif /* __ASM_SPARC_SYSCALL_H */
+--=20
+1.9.2
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Tue__22_Apr_2014_16_22_07_+1000_Hfowe9C_s3T5UyXP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTVgqTAAoJEMDTa8Ir7ZwV9xkP/inpB6dDFQh9mZ4IrcTDuJ5y
+mLg/Hw8ozo6TJmPCsCVFaCZ7U77fVqjW2W59N7kYnOdeqKQfcutgXWc4Bc7SwyGV
+89B+yS5kVUwNl423hBnPzhXY8cKFahZpKRdRRMyHuylhYweGVLMvwvoHbfxsnuq+
+ljWoikZOK6JDBOvsXmLwOIXSFUTHWCYZUFCQsmEvim6nkumSrpaQIeYHhUiZb5Kx
+COslWdBzvMtmgSE+Y4fOZItlkHHz0OLn3wBi+yKmQamSN6fHW4v0DzKNg5lPdNg8
+Ow8C/StPnGLvWpAKkDM/rWLJGwQYS0l8Ujj1q5goxgF9hUiUWu94wgiDSX6iljz5
+SOwgxBrVGuuBPkwGym3UENSTuW2/HvRlyni36K3nc30oWYTNwC8L+X1JzPRLgtl2
+mxLtvv8JKQhIsQN3jzwsCq0qMVohG+NYuMcrCm/vBGlOOP4rZ7NjYzO03BuWMnB8
+a2TG0URTDU+kcqcx3aNb6hwb/hHvgccz/egwX8Vx7sd16Cvr6jpjIVKy9fSUvQ5B
+fICUIVrDiUerNNR1etq7akKkx53R3c9wO9YH0lLJfodxRl2T6I2cj6CW2Lgp6rdC
+BikmxR1p8BVA2U2tASwifPuD1weI1d+nHTFpHp99LMEGBfZHHjfYZhPrNA/icSyx
+/uPJscp6c7M/luSdwOoz
+=dO/q
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__22_Apr_2014_16_22_07_+1000_Hfowe9C_s3T5UyXP--
