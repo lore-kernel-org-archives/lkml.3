@@ -1,78 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303AbaDVQBg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:01:36 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:38548 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756902AbaDVQBa (ORCPT
+	id S1757317AbaDVQBz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:01:55 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:24825 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756902AbaDVQBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:01:30 -0400
-Message-ID: <5356924E.7020605@codesourcery.com>
-Date: Wed, 23 Apr 2014 00:01:18 +0800
-From: Chung-Lin Tang <cltang@codesourcery.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 22 Apr 2014 12:01:41 -0400
+Date: Tue, 22 Apr 2014 17:01:03 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Gregory =?iso-8859-1?Q?Cl=E9ment?= 
+	<gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>
+Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and
+ dma-coherent
+Message-ID: <20140422160103.GG10224@arm.com>
+References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
+ <20140419182528.414b9b2e@skate>
+ <201404221702.19842.arnd@arndb.de>
+ <20140422152529.GE10224@arm.com>
+ <CAL_JsqJktpEBE1rAXDKX8uNSrWzgP1Scucvzrtw0auQSC=SO_g@mail.gmail.com>
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Tobias Klauser <tklauser@distanz.ch>
-CC: Ley Foon Tan <lftan@altera.com>, <linux-arch@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
-        <lftan.linux@gmail.com>
-Subject: Re: [PATCH 06/28] nios2: Memory management
-References: <1397824031-4892-1-git-send-email-lftan@altera.com> <1397824031-4892-5-git-send-email-lftan@altera.com> <20140422142443.GB15745@arch.cereza> <20140422151458.GC1053@distanz.ch> <20140422153522.GF15745@arch.cereza>
-In-Reply-To: <20140422153522.GF15745@arch.cereza>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 22 Apr 2014 16:01:28.0828 (UTC) FILETIME=[1F0593C0:01CF5E44]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL_JsqJktpEBE1rAXDKX8uNSrWzgP1Scucvzrtw0auQSC=SO_g@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/22 下午 11:35, Ezequiel Garcia wrote:
-> On Apr 22, Tobias Klauser wrote:
->> On 2014-04-22 at 16:24:43 +0200, Ezequiel Garcia <ezequiel.garcia@free-electrons.com> wrote:
->>> Hi Ley Foon,
->>>
->>> On Apr 18, Ley Foon Tan wrote:
->>>> +/*
->>>> + * PAGE_SHIFT determines the page size
->>>> + */
->>>> +#define PAGE_SHIFT	12
->>>> +#define PAGE_SIZE	4096
->>>> +#define PAGE_MASK	(~(PAGE_SIZE - 1))
->>>> +
->>>
->>> How about something like this:
->>>
->>> /* PAGE_SHIFT determines the page size */
->>> #define PAGE_SHIFT              12
->>> #define PAGE_SIZE               (_AC(1,UL) << PAGE_SHIFT)
->>> #define PAGE_MASK               (~((1 << PAGE_SHIFT) - 1))
->>>
->>> Otherwise, the PAGE_SIZE macro above produces some warnings, IIRC.
->>
->> AFAIR old nios2 GCC versions (the 4.1 version from Windriver, IIRC)
->> would complain about something like the above, that's the reason I added
->> an explicit value for PAGE_SIZE back then.
->>
+On Tue, Apr 22, 2014 at 04:30:36PM +0100, Rob Herring wrote:
+> On Tue, Apr 22, 2014 at 10:25 AM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > On Tue, Apr 22, 2014 at 04:02:19PM +0100, Arnd Bergmann wrote:
+> >> On Saturday 19 April 2014, Thomas Petazzoni wrote:
 > 
-> Other than being "pretty" the above fix is to remove a mismatch type
-> warning. You can get rid of the warning in different ways:
+> [...]
 > 
-> ifdef __ASSEMBLY__
-> define PAGE_SIZE       4096
-> else
-> define PAGE_SIZE       4096UL
-> endif
+> >> I would hope we can find a way to avoid the platform notifiers for
+> >> mvebu as well and come up with a generic way to express this
+> >> 'semi-coherent' mode. I believe x-gene has a similar issue, and
+> >> I wouldn't be surprised if there are others like this.
+> >
+> > The solution is for the snooping unit to detect the DSB instruction
+> > (which is propagated outside the CPU) and wait for the completion of the
+> > coherency work (but we need more information from the hardware guys).
 > 
->> I assume with the new nios2 GCC this should no longer be necessary and
->> Ezequiel's fix should be fine.
-> 
-> Speaking of GCC... is there a libc available to test this kernel port?
-> (which I assume uses the generic syscall ABI)
+> If the solution was fixing broken h/w, we'd all be retired (or h/w
+> designers). :)
 
-It's submitted to libc-alpha, also still review in progress.
+At least they could admit it's a hardware bug and hopefully won't do the
+same mistake in the future (wishful thinking ;)).
 
-Chung-Lin
-
-
-
+-- 
+Catalin
