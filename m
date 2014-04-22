@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753469AbaDVHbY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 03:31:24 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:64572 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248AbaDVHbU (ORCPT
+	id S1753536AbaDVHbr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 03:31:47 -0400
+Received: from nasmtp02.atmel.com ([204.2.163.16]:45182 "EHLO
+	SJOEDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753024AbaDVHbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 03:31:20 -0400
+	Tue, 22 Apr 2014 03:31:06 -0400
+From: Leilei Zhao <leilei.zhao@atmel.com>
+To: <herbert@gondor.apana.org.au>, <davem@davemloft.net>
+CC: <linux-crypto@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <nicolas@eukrea.com>, <nicolas.ferre@atmel.com>,
+        <leilei.zhao@atmel.com>
+Subject: [PATCH 2/2] crypto: atmel-aes: check alignment of cfb64 mode
+Date: Tue, 22 Apr 2014 15:23:24 +0800
+Message-ID: <1398151404-23408-3-git-send-email-leilei.zhao@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398151404-23408-1-git-send-email-leilei.zhao@atmel.com>
+References: <1398151404-23408-1-git-send-email-leilei.zhao@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <1398151791-24689-1-git-send-email-geert@linux-m68k.org>
-References: <1398151791-24689-1-git-send-email-geert@linux-m68k.org>
-Date: Tue, 22 Apr 2014 09:31:18 +0200
-X-Google-Sender-Auth: WnYOI8RHHPxRc2GLn0AULpTT3H4
-Message-ID: <CAMuHMdUvj2T7vWJrQqtBrQRAxcooJT2q9kp5hRHMA_vKtqFadQ@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.15-rc2
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 9:29 AM, Geert Uytterhoeven
-<geert@linux-m68k.org> wrote:
-> JFYI, when comparing v3.15-rc2[1]  to v3.15-rc1[3], the summaries are:
->   - build errors: +4/-24
+The length shoule be 64 bit alignment and the block size shoule be 64 bit in aes cfb64 mode.
 
-Nothing serious, just some known randconfig sound bits:
+Signed-off-by: Leilei Zhao <leilei.zhao@atmel.com>
+---
+ drivers/crypto/atmel-aes.c |    6 ++++++
+ 1 file changed, 6 insertions(+)
 
-  + error: No rule to make target /etc/sound/dsp001.ld:  => N/A
-  + error: No rule to make target /etc/sound/msndinit.bin:  => N/A
-  + error: No rule to make target /etc/sound/msndperm.bin:  => N/A
-  + error: No rule to make target /etc/sound/trxpro.hex:  => N/A
+diff --git a/drivers/crypto/atmel-aes.c b/drivers/crypto/atmel-aes.c
+index 12628a7..a083474 100644
+--- a/drivers/crypto/atmel-aes.c
++++ b/drivers/crypto/atmel-aes.c
+@@ -716,6 +716,12 @@ static int atmel_aes_crypt(struct ablkcipher_request *req, unsigned long mode)
+ 			return -EINVAL;
+ 		}
+ 		ctx->block_size = CFB32_BLOCK_SIZE;
++	} else if (mode & AES_FLAGS_CFB64) {
++		if (!IS_ALIGNED(req->nbytes, CFB64_BLOCK_SIZE)) {
++			pr_err("request size is not exact amount of CFB64 blocks\n");
++			return -EINVAL;
++		}
++		ctx->block_size = CFB64_BLOCK_SIZE;
+ 	} else {
+ 		if (!IS_ALIGNED(req->nbytes, AES_BLOCK_SIZE)) {
+ 			pr_err("request size is not exact amount of AES blocks\n");
+-- 
+1.7.9.5
 
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
