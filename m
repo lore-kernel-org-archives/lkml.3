@@ -1,120 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758467AbaDVUje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:39:34 -0400
-Received: from mail-ee0-f47.google.com ([74.125.83.47]:56307 "EHLO
-	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758446AbaDVUja (ORCPT
+	id S1758489AbaDVUkI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:40:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36651 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758189AbaDVUYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:39:30 -0400
-Message-ID: <5356D37E.4040306@gmail.com>
-Date: Tue, 22 Apr 2014 22:39:26 +0200
-From: poma <pomidorabelisima@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Linux Kernel list <linux-kernel@vger.kernel.org>
-CC: AceLan Kao <acelan.kao@canonical.com>,
-        Matthew Garrett <matthew.garrett@nebula.com>,
-        Corentin Chary <corentin.chary@gmail.com>
-Subject: asus-nb-wmi: set wapf=4 for ASUSTeK COMPUTER INC. X75VBP
-Content-Type: multipart/mixed;
- boundary="------------010703080304000609090204"
+	Tue, 22 Apr 2014 16:24:49 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 078/133] mfd: Include all drivers in subsystem menu
+Date: Tue, 22 Apr 2014 13:13:36 -0700
+Message-Id: <1398197671-12786-79-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------010703080304000609090204
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
 
+------------------
 
-Ahoy!
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Need to set wapf to 4 for ASUSTeK COMPUTER INC. X75VBP, so that
-the device is enabled.
+commit a6e6e660baa5c583022e3e48c85316bace027825 upstream.
 
-The corresponding /sys/class/dmi/id/* values via dmesg:
-DMI: ASUSTeK COMPUTER INC. X75VBP/X75VBP, BIOS X75VBP.304 06/04/2013
+It is currently not possible to select the SA1100 or Vexpress
+drivers in the MFD subsystem, because the menu for the entire
+subsystem ends before these options are presented.
 
-Tested with WAPF values 0, 1 and 4.
-The values 1 and 4 have the same effect regarding wireless network
-adapter enablement.
-A value of 0 has no effect.
-The corresponding command line:
-Kernel command line: BOOT_IMAGE=/isolinux/vmlinuz0
-root=live:LABEL=Fedora-Live-Xfce-x86_64-rawhide- ro rd.live.image
-selinux=0 biosdevname=0 asus-nb-wmi.wapf=4
+Move the main menu closing and the endif for HAS_IOMEM to the
+end of the file so these are selectable again.
 
-rfkill list - vulgaris:
-1: asus-wlan: Wireless LAN
-	Soft blocked: no
-	Hard blocked: no
-2: asus-bluetooth: Bluetooth
-	Soft blocked: no
-	Hard blocked: no
-3: phy0: Wireless LAN
-	Soft blocked: no
-	Hard blocked: yes
-4: hci0: Bluetooth
-	Soft blocked: no
-	Hard blocked: no
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/mfd/Kconfig | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-rfkill list - asus-nb-wmi.wapf=1,
-              asus-nb-wmi.wapf=4:
-0: hci0: Bluetooth
-	Soft blocked: no
-	Hard blocked: no
-1: phy0: Wireless LAN
-	Soft blocked: no
-	Hard blocked: no
-2: asus-wlan: Wireless LAN
-	Soft blocked: no
-	Hard blocked: no
-3: asus-bluetooth: Bluetooth
-	Soft blocked: no
-	Hard blocked: no
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index ff553ba..d102685 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -1114,9 +1114,6 @@ config MFD_AS3711
+ 	help
+ 	  Support for the AS3711 PMIC from AMS
+ 
+-endmenu
+-endif
+-
+ menu "Multimedia Capabilities Port drivers"
+ 	depends on ARCH_SA1100
+ 
+@@ -1146,3 +1143,6 @@ config VEXPRESS_CONFIG
+ 	help
+ 	  Platform configuration infrastructure for the ARM Ltd.
+ 	  Versatile Express.
++
++endmenu
++endif
+-- 
+1.9.1
 
-Regardless of the values ​​of the WAPF parameter,
-<Fn><F2> key combination does not give any results,
-i.e. does not toggles The Internal Wireless LAN ON or OFF.
-Also the WLAN LED is always ON, no matter what.
-
-
-poma
-
-
-
---------------010703080304000609090204
-Content-Type: text/x-patch;
- name="asus-nb-wmi.wapf4-ASUSTeK-X75VBP.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="asus-nb-wmi.wapf4-ASUSTeK-X75VBP.diff"
-
-diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
-index 563f59e..674793d 100644
---- a/drivers/platform/x86/asus-nb-wmi.c
-+++ b/drivers/platform/x86/asus-nb-wmi.c
-@@ -182,6 +182,15 @@ static struct dmi_system_id asus_quirks[] = {
- 	},
- 	{
- 		.callback = dmi_matched,
-+		.ident = "ASUSTeK COMPUTER INC. X75VBP",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X75VBP"),
-+		},
-+		.driver_data = &quirk_asus_x401u,
-+	},
-+	{
-+		.callback = dmi_matched,
- 		.ident = "ASUSTeK COMPUTER INC. 1015E",
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
-
-
-
-
-
---------------010703080304000609090204--
