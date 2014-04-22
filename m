@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110AbaDVPgH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:36:07 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49848 "EHLO
+	id S933069AbaDVPjO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:39:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49891 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756181AbaDVPgC (ORCPT
+	with ESMTP id S933056AbaDVPjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:36:02 -0400
-Date: Tue, 22 Apr 2014 12:35:22 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Tobias Klauser <tklauser@distanz.ch>
-Cc: Ley Foon Tan <lftan@altera.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        lftan.linux@gmail.com, cltang@codesourcery.com
-Subject: Re: [PATCH 06/28] nios2: Memory management
-Message-ID: <20140422153522.GF15745@arch.cereza>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
- <1397824031-4892-5-git-send-email-lftan@altera.com>
- <20140422142443.GB15745@arch.cereza>
- <20140422151458.GC1053@distanz.ch>
+	Tue, 22 Apr 2014 11:39:02 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, tj@kernel.org
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/6] ARM: berlin: add the AHCI node for the BG2
+Date: Tue, 22 Apr 2014 17:38:24 +0200
+Message-Id: <1398181105-19714-6-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140422151458.GC1053@distanz.ch>
-User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 22, Tobias Klauser wrote:
-> On 2014-04-22 at 16:24:43 +0200, Ezequiel Garcia <ezequiel.garcia@free-electrons.com> wrote:
-> > Hi Ley Foon,
-> > 
-> > On Apr 18, Ley Foon Tan wrote:
-> > > +/*
-> > > + * PAGE_SHIFT determines the page size
-> > > + */
-> > > +#define PAGE_SHIFT	12
-> > > +#define PAGE_SIZE	4096
-> > > +#define PAGE_MASK	(~(PAGE_SIZE - 1))
-> > > +
-> > 
-> > How about something like this:
-> > 
-> > /* PAGE_SHIFT determines the page size */
-> > #define PAGE_SHIFT              12
-> > #define PAGE_SIZE               (_AC(1,UL) << PAGE_SHIFT)
-> > #define PAGE_MASK               (~((1 << PAGE_SHIFT) - 1))
-> > 
-> > Otherwise, the PAGE_SIZE macro above produces some warnings, IIRC.
-> 
-> AFAIR old nios2 GCC versions (the 4.1 version from Windriver, IIRC)
-> would complain about something like the above, that's the reason I added
-> an explicit value for PAGE_SIZE back then.
-> 
+The BG2 has an AHCI SATA controller. Add the corresponding node
+in its device tree.
 
-Other than being "pretty" the above fix is to remove a mismatch type
-warning. You can get rid of the warning in different ways:
+Signed-off-by: Antoine TÃ©nart <antoine.tenart@free-electrons.com>
+---
+ arch/arm/boot/dts/berlin2.dtsi | 7 +++++++
+ 1 file changed, 7 insertions(+)
 
-ifdef __ASSEMBLY__
-define PAGE_SIZE       4096
-else
-define PAGE_SIZE       4096UL
-endif
-
-> I assume with the new nios2 GCC this should no longer be necessary and
-> Ezequiel's fix should be fine.
-
-Speaking of GCC... is there a libc available to test this kernel port?
-(which I assume uses the generic syscall ABI)
+diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
+index 56a1af2f1052..3e98d9fa9ec7 100644
+--- a/arch/arm/boot/dts/berlin2.dtsi
++++ b/arch/arm/boot/dts/berlin2.dtsi
+@@ -176,6 +176,13 @@
+ 			};
+ 		};
+ 
++		ahci: sata@e90000 {
++			compatible = "marvell,berlin-ahci";
++			reg = <0xe90000 0x10000>;
++			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
++			status = "disable";
++		};
++
+ 		apb@fc0000 {
+ 			compatible = "simple-bus";
+ 			#address-cells = <1>;
 -- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+1.8.3.2
+
