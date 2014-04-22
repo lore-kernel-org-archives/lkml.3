@@ -1,83 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933595AbaDVRxn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 13:53:43 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:28969 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932927AbaDVRxm (ORCPT
+	id S933622AbaDVRyl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 13:54:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53883 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933600AbaDVRyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 13:53:42 -0400
-Date: Tue, 22 Apr 2014 13:53:39 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: bsegall@google.com
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>,
-        Peter Zijlstra <peterz@infradead.org>, <fweisbec@gmail.com>,
-        <mingo@redhat.com>, <acme@ghostprotocols.net>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/8] sched/core: Skip wakeup when task is already
- running.
-Message-ID: <20140422135339.55a7b799@gandalf.local.home>
-In-Reply-To: <xm26sip55lyb.fsf@sword-of-the-dawn.mtv.corp.google.com>
-References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
-	<51238bf1648b1f4c66d3547a49cf949d1679d068.1397562542.git.yangds.fnst@cn.fujitsu.com>
-	<20140415135326.GV11096@twins.programming.kicks-ass.net>
-	<534E59FC.2090001@cn.fujitsu.com>
-	<535658DB.2090801@cn.fujitsu.com>
-	<xm26sip55lyb.fsf@sword-of-the-dawn.mtv.corp.google.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+	Tue, 22 Apr 2014 13:54:37 -0400
+Message-ID: <1398189237.7767.77.camel@deadeye.wl.decadent.org.uk>
+Subject: Re: in kernel 2.6.x, tun/tap nic supports vlan packets
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Willy Tarreau <w@1wt.eu>
+Cc: zhuyj <zyjzyj2000@gmail.com>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, joe@perches.com, julia.lawall@lip6.fr,
+        dingtianhong@huawei.com, linux-kernel@vger.kernel.org,
+        jasowang@redhat.com, mst@redhat.com,
+        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
+        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
+        "Tao, Yue" <Yue.Tao@windriver.com>
+Date: Tue, 22 Apr 2014 18:53:57 +0100
+In-Reply-To: <20140417050228.GC8243@1wt.eu>
+References: <534F4C1E.1000006@gmail.com> <20140417050228.GC8243@1wt.eu>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-EKrvnL+w9SpD0N48zO4a"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 192.168.4.249
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 10:10:52 -0700
-bsegall@google.com wrote:
 
+--=-EKrvnL+w9SpD0N48zO4a
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> This is all expected behavior, and the somewhat less than useful trace
-> events are expected. A task setting p->state to TASK_RUNNING without
-> locks is fine if and only p == current. The standard deschedule loop is
+On Thu, 2014-04-17 at 07:02 +0200, Willy Tarreau wrote:
+> Hi Zhu,
+>=20
+> On Thu, Apr 17, 2014 at 11:35:58AM +0800, zhuyj wrote:
+> > Hi, all
+> >=20
+> > In kernel 2.6.x, linux depends on nic vlan hardware acceleration to=20
+> > insert/extract
+> > vlan tag.
 
-Sure, and if you are not current, then all you need is the rq lock of
-the rq that p's CPU is for.
+This is a gross overstatement.
 
-> basically:
-> 
-> while (1) {
->   set_current_state(TASK_(UN)INTERRUPTIBLE);
+The problem I know of is that prior to Linux 2.6.37 the RX path behaved
+differently for VLAN-tagged packets depending on whether they were
+extracted by the driver/hardware.
 
-Yep, and set_current_state() implies a memory barrier.
+If you put a bridge (or bond) and VLAN device on top of a single
+physical device that doesn't do VLAN tag extraction, the VLAN device
+didn't get any packets because the bridge packet handler was called
+first.  Whereas, if the driver called the 'VLAN accelerated' RX path,
+the VLAN packet handler was called first.  (Linux 2.6.37 actually
+standardised on the former behaviour, and 3.2 fixed it to be the
+latter.)
 
->   if (should_still_sleep)
->     schedule();
-> }
-> set_current_state(TASK_RUNNING);
+I don't know whether that's the problem zhuyj has run into.
 
-The above can use __set_current_state() as there's no races to deal
-with when setting current's state to RUNNING.
+[...]
+> Well, 2.6.32.x is in deep freeze mode and it receives only critical fixes
+> once in a while. While I can appreciate that the patch above might solve
+> the issue you're facing, I'm wondering if there are not any acceptable
+> workarounds for such a deep freeze kernel. You patch is not huge,
 
-> 
-> Which can produce this in a race.
-> 
-> The only problem this causes is a wasted check_preempt_curr call in the
-> racing case, and a somewhat inaccurate sched:sched_wakeup trace event.
-> Note that even if you did recheck in ttwu_do_wakeup you could still race
-> and get an "inaccurate" trace event. Heck, even if the ttwu is
-> _necessary_ because p is currently trying to take rq->lock to
-> deschedule, you won't get a matching sched_switch event, because the
-> ttwu is running before schedule is.
-> 
-> You could sorta fix this I guess by tracking every write to p->state
-> with trace events, but that would be a somewhat different change, and
-> might be considered too expensive for all I know (and the trace events
-> could /still/ be resolved in a different order across cpus compared to
-> p->state's memory).
+I think it's huge by the standards of 2.6.32.y.
 
-Yeah, let's not do that.
+> but it
+> definitely affects a working driver, and I wouldn't like risking to break
+> the tap driver for other users, and I reall don't have the skills to audi=
+t
+> it completely to ensure this is not the case. And if it breaks, I'll have
+> to revert it or seek for some help on netdev.
+>=20
+> So I'd say that I'd rather not merge it unless I get an Acked-by from som=
+e
+> netdev people who are willing to help in case of any future regression,
+> which is unlikely but still possible.
+[...]
 
--- Steve
+For what it's worth, I would recommend against applying this.  I don't
+think even Red Hat has backported the VLAN changes, and they have been
+quite aggressive about backporting features to RHEL 6.
 
+Ben.
+
+--=20
+Ben Hutchings
+Beware of programmers who carry screwdrivers. - Leonard Brandwein
+
+--=-EKrvnL+w9SpD0N48zO4a
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIVAwUAU1astee/yOyVhhEJAQoFlhAAmYNy3LP5cfNP5uANfK24BqbKQTYFH5HK
+TaMk77EzjAQ4R9vhLPjwgUt5ZVkYCsT+11Xp6D3jL/ioYwzfQRK6iPR1QO36sSbQ
+ONQm9CT5wcWDgtxU3Db4QEpYbReTfus+7WFhvn4YT5GXeUc5UXu/uyrBjPyebCtZ
+pcEq9BsWi0YfepzDwNM9q5m2Q7IVd4oxKTSlR0soumBhspZDqel+2oXJUWRxkOwm
+Wimhv24rNIXPLTyGNbHlILqC3FCmjQtAw0mTj9NhAkjlr2g7qFN0iH7agrHSOCEX
+1XBvQ/8hldiGyKB+dCKqA1ix11s761sIAKKeGHMwtxl3WjUdP5OI4js2NWmhs+dv
+vujefL5lUlVEApTAHraJ9XZZeRP/t4o2aG3T4r8nH990wxxxy4jXHmr9HSwM2H1x
+m6DYR9O1VhWX4xQHO7GvSncmkr2Kxl32mF/N9J763DrHChcDGTZGiTYAJ8zpv3lq
+1eiUzlZQ/WP7KI4TwGfznKCDy8WMlhCa6CwNUlWRAnZDxjfMM3bBi6wMJkARHwss
+/i4PoEndCy1EtXr44hqkwCBuf1FYuAMa3A8KRX7IL0cMlxV1W/A3FsxB4m2QrygS
+0wwo/FXezs5awepCbLn3SFk1cSPg+eLdGES8iwwsFh/4cAGocGa8+4KCEPTMcDt0
+onp7pKr+jpY=
+=zDCF
+-----END PGP SIGNATURE-----
+
+--=-EKrvnL+w9SpD0N48zO4a--
