@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756635AbaDVO0k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:26:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:56488 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015AbaDVO0g (ORCPT
+	id S1756298AbaDVO1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:27:55 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53256 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755428AbaDVO1t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:26:36 -0400
-Date: Tue, 22 Apr 2014 07:26:13 -0700
-From: Christoph Hellwig <hch@infradead.org>
-To: Drew Richardson <drew.richardson@arm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Ben Greear <greearb@candelatech.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        Pawel Moll <pawel.moll@arm.com>
-Subject: Re: [PATCH] Export irq tracepoints for use by kernel modules
-Message-ID: <20140422142613.GA14535@infradead.org>
-References: <20140422142419.GD21121@dreric01-Precision-T1600>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140422142419.GD21121@dreric01-Precision-T1600>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 22 Apr 2014 10:27:49 -0400
+Date: Tue, 22 Apr 2014 15:27:23 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Chew Chiau Ee <chiau.ee.chew@intel.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] spi/pxa2xx-pci: Pass host clock rate info from PCI
+ glue layer
+Message-ID: <20140422152723.7542a3bc@alan.etchedpixels.co.uk>
+In-Reply-To: <20140422120948.GT12304@sirena.org.uk>
+References: <1397751967-20250-1-git-send-email-chiau.ee.chew@intel.com>
+	<1397751967-20250-3-git-send-email-chiau.ee.chew@intel.com>
+	<20140418163054.GH12304@sirena.org.uk>
+	<20140422115716.GP30677@intel.com>
+	<20140422120948.GT12304@sirena.org.uk>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 07:24:20AM -0700, Drew Richardson wrote:
-> After commit de7b2973903c6cc50b31ee5682a69b2219b9919d ("tracepoint:
-> Use struct pointer instead of name hash for reg/unreg tracepoints"),
-> any tracepoints used in a kernel module must be exported.
+> Why is this conditional?  It's really unhelpful for writing generic code
+> handling clocks that the API isn't available as standard.  Allowing the
+> user to disable it if it's not required makes sense but not making it
+> available at all is just unhelpful.
 
-How does this matter given that there aren't any modular users?
+KConfig allows drivers to select features they need - this seems to be a
+non issue ?
+
+> As far as I can tell the clock here is part of the same glue that allows
+> the generic pxa2xx support to be instantiated from PCI.  I would
+> therefore expect the glue to also instantiate the clock.  Or if it's a
+> standard PCI clock then perhaps the PCI subsystem ought to be providing
+> it.
+
+For most cases it probably makes sense to do something of that form,
+although as clk_enable/clk_disable allow NULL it's much less of an issue
+than it might otherwise be for some of the other drivers.
+
+Alan
 
