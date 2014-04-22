@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749AbaDVKhw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 06:37:52 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39324 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755718AbaDVKhp (ORCPT
+	id S1755794AbaDVKiH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 06:38:07 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:34349 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755760AbaDVKiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 06:37:45 -0400
-Date: Tue, 22 Apr 2014 11:37:44 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Jean Pihet <jean.pihet@linaro.org>
-Cc: Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Steve Capper <steve.capper@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on
- ARM64
-Message-ID: <20140422103744.GG7484@arm.com>
-References: <1395222155-22205-1-git-send-email-jean.pihet@linaro.org>
- <1395222155-22205-2-git-send-email-jean.pihet@linaro.org>
- <20140321151126.GR23372@e106331-lin.cambridge.arm.com>
- <CAFrcx1=TSsaDK0xgtJSQUtvUnwicrXNU-nYAcMOi4B=nTU_Qwg@mail.gmail.com>
- <CAFrcx1m_iH1ivWdTi7tbMXxEq1KYqHOAQS3hh3hnJh2ZgEDP3Q@mail.gmail.com>
+	Tue, 22 Apr 2014 06:38:00 -0400
+Message-ID: <535646A1.1020201@linaro.org>
+Date: Tue, 22 Apr 2014 12:38:25 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFrcx1m_iH1ivWdTi7tbMXxEq1KYqHOAQS3hh3hnJh2ZgEDP3Q@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Chander Kashyap <chander.kashyap@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: lorenzo.pieralisi@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
+        Chander Kashyap <k.chander@samsung.com>
+Subject: Re: [PATCH 3/4] exynos: cpuidle: do not allow cpuidle registration
+ for Exynos5420
+References: <1398080958-21677-1-git-send-email-chander.kashyap@linaro.org> <1398080958-21677-4-git-send-email-chander.kashyap@linaro.org>
+In-Reply-To: <1398080958-21677-4-git-send-email-chander.kashyap@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 09:13:33AM +0100, Jean Pihet wrote:
-> Hi Mark, Will,
+On 04/21/2014 01:49 PM, Chander Kashyap wrote:
+> Exynos5420 is big.Little Soc. It uses cpuidle-big-litle generic cpuidle driver.
+> Hence do not allow exynos cpuidle driver registration for Exynos5420.
+>
+> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
+> ---
 
-Hi Jean,
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-> Ping on this series. Can you please check? I
+but will conflict with:
 
-Do you have a pointer to the latest version of your code please? The email
-backlog I have seems to end with MarkR saying he would take a look.
+http://www.spinics.net/lists/arm-kernel/msg319862.html
 
-Will
+>   arch/arm/mach-exynos/cpuidle.c |    3 +++
+>   1 file changed, 3 insertions(+)
+>
+> diff --git a/arch/arm/mach-exynos/cpuidle.c b/arch/arm/mach-exynos/cpuidle.c
+> index c57cae0..242f75d 100644
+> --- a/arch/arm/mach-exynos/cpuidle.c
+> +++ b/arch/arm/mach-exynos/cpuidle.c
+> @@ -219,6 +219,9 @@ static int exynos_cpuidle_probe(struct platform_device *pdev)
+>   	int cpu_id, ret;
+>   	struct cpuidle_device *device;
+>
+> +	if (soc_is_exynos5420())
+> +		return -ENODEV;
+> +
+>   	if (soc_is_exynos5250())
+>   		exynos5_core_down_clk();
+>
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
