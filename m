@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758595AbaDVVJz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:09:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36240 "EHLO
+	id S1758579AbaDVVJx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:09:53 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36244 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757418AbaDVUP3 (ORCPT
+	with ESMTP id S1757428AbaDVUP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 16:15:29 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Liu Hua <sdu.liu@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 131/133] x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
-Date: Tue, 22 Apr 2014 13:14:29 -0700
-Message-Id: <1398197671-12786-132-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 127/133] hung_task: check the value of "sysctl_hung_task_timeout_sec"
+Date: Tue, 22 Apr 2014 13:14:25 -0700
+Message-Id: <1398197671-12786-128-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,52 +28,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "H. Peter Anvin" <hpa@linux.intel.com>
+From: Liu Hua <sdu.liu@huawei.com>
 
-commit b3b42ac2cbae1f3cecbb6229964a4d48af31d382 upstream.
+commit 80df28476505ed4e6701c3448c63c9229a50c655 upstream.
 
-The IRET instruction, when returning to a 16-bit segment, only
-restores the bottom 16 bits of the user space stack pointer.  We have
-a software workaround for that ("espfix") for the 32-bit kernel, but
-it relies on a nonzero stack segment base which is not available in
-32-bit mode.
+As sysctl_hung_task_timeout_sec is unsigned long, when this value is
+larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
+watchdog will return immediately without sleep and with print :
 
-Since 16-bit support is somewhat crippled anyway on a 64-bit kernel
-(no V86 mode), and most (if not quite all) 64-bit processors support
-virtualization for the users who really need it, simply reject
-attempts at creating a 16-bit segment when running on top of a 64-bit
-kernel.
+  schedule_timeout: wrong timeout value ffffffffffffff83
 
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Link: http://lkml.kernel.org/n/tip-kicdm89kzw9lldryb1br9od0@git.kernel.org
+and then the funtion watchdog will call schedule_timeout_interruptible
+again and again.  The screen will be filled with
+
+	"schedule_timeout: wrong timeout value ffffffffffffff83"
+
+This patch does some check and correction in sysctl, to let the function
+schedule_timeout_interruptible allways get the valid parameter.
+
+Signed-off-by: Liu Hua <sdu.liu@huawei.com>
+Tested-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/ldt.c | 11 +++++++++++
- 1 file changed, 11 insertions(+)
+ kernel/sysctl.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
-index ebc9873..af1d14a 100644
---- a/arch/x86/kernel/ldt.c
-+++ b/arch/x86/kernel/ldt.c
-@@ -229,6 +229,17 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
- 		}
- 	}
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 585015f..e17ddf6 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -145,6 +145,11 @@ static int min_percpu_pagelist_fract = 8;
+ static int ngroups_max = NGROUPS_MAX;
+ static const int cap_last_cap = CAP_LAST_CAP;
  
-+	/*
-+	 * On x86-64 we do not support 16-bit segments due to
-+	 * IRET leaking the high bits of the kernel stack address.
-+	 */
-+#ifdef CONFIG_X86_64
-+	if (!ldt_info.seg_32bit) {
-+		error = -EINVAL;
-+		goto out_unlock;
-+	}
++/*this is needed for proc_doulongvec_minmax of sysctl_hung_task_timeout_secs */
++#ifdef CONFIG_DETECT_HUNG_TASK
++static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
 +#endif
 +
- 	fill_ldt(&ldt, &ldt_info);
- 	if (oldmode)
- 		ldt.avl = 0;
+ #ifdef CONFIG_INOTIFY_USER
+ #include <linux/inotify.h>
+ #endif
+@@ -950,6 +955,7 @@ static struct ctl_table kern_table[] = {
+ 		.maxlen		= sizeof(unsigned long),
+ 		.mode		= 0644,
+ 		.proc_handler	= proc_dohung_task_timeout_secs,
++		.extra2		= &hung_task_timeout_max,
+ 	},
+ 	{
+ 		.procname	= "hung_task_warnings",
 -- 
 1.9.1
 
