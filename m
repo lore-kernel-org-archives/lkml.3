@@ -1,51 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716AbaDVJ2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 05:28:15 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:49797 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753546AbaDVJ2M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 05:28:12 -0400
-Date: Tue, 22 Apr 2014 12:27:54 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: "Son P. Nguyen" <fastmutex@gmail.com>
-Cc: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
-        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] Staging: dgnc: dgnc_driver: fixed dgnc_pci_tbl
- definition
-Message-ID: <20140422092754.GA26890@mwanda>
-References: <1397947691-19232-2-git-send-email-fastmutex@gmail.com>
- <1398017139-22231-1-git-send-email-fastmutex@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398017139-22231-1-git-send-email-fastmutex@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	id S1755605AbaDVJ02 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 05:26:28 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:53510 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754855AbaDVJVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 05:21:40 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: David Brown <davidb@codeaurora.org>, Daniel Walker <dwalker@fifo99.com>,
+        Russell King <linux@arm.linux.org.uk>, Felipe Balbi <balbi@ti.com>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Subject: [PATCH v6 07/19] usb: phy: msm: Replace custom enum usb_mode_type with enum usb_dr_mode
+Date: Tue, 22 Apr 2014 12:20:26 +0300
+Message-Id: <1398158438-21579-8-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
+References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I like the idea of this patch but the v2 version still doesn't compile.
-I don't understand how you can write such a nice patch and not even test
-that it compiles.  Twice.  That's not ok.
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-On Sun, Apr 20, 2014 at 06:05:38PM +0000, Son P. Nguyen wrote:
-> From: "Son P. Nguyen" <fastmutex@gmail.com>
+Use enum usb_dr_mode and drop default usb_dr_mode from platform data.
 
-Don't include this when you are sending your own patch.
+USB DT bindings states: dr_mode: "...In case this attribute isn't
+passed via DT, USB DRD controllers should default to OTG...",
+so remove redundand field.
 
-> 
-> Fixed dgnc_pci_tbl definition for correct coding style
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+Acked-by: David Brown <davidb@codeaurora.org>
+---
+ arch/arm/mach-msm/board-msm7x30.c |  2 +-
+ arch/arm/mach-msm/board-qsd8x50.c |  2 +-
+ drivers/usb/phy/phy-msm-usb.c     | 41 ++++++++++++++++-----------------------
+ include/linux/usb/msm_hsusb.h     | 20 +------------------
+ 4 files changed, 20 insertions(+), 45 deletions(-)
 
-This description is not enough.
+diff --git a/arch/arm/mach-msm/board-msm7x30.c b/arch/arm/mach-msm/board-msm7x30.c
+index 46de789..0c4c200 100644
+--- a/arch/arm/mach-msm/board-msm7x30.c
++++ b/arch/arm/mach-msm/board-msm7x30.c
+@@ -95,7 +95,7 @@ static int hsusb_phy_clk_reset(struct clk *phy_clk)
 
-> 
-> PS: This is for task 10 of eudyptula-challenge.
+ static struct msm_otg_platform_data msm_otg_pdata = {
+ 	.phy_init_seq		= hsusb_phy_init_seq,
+-	.mode                   = USB_PERIPHERAL,
++	.mode                   = USB_DR_MODE_PERIPHERAL,
+ 	.otg_control		= OTG_PHY_CONTROL,
+ 	.link_clk_reset		= hsusb_link_clk_reset,
+ 	.phy_clk_reset		= hsusb_phy_clk_reset,
+diff --git a/arch/arm/mach-msm/board-qsd8x50.c b/arch/arm/mach-msm/board-qsd8x50.c
+index 9169ec3..4c74861 100644
+--- a/arch/arm/mach-msm/board-qsd8x50.c
++++ b/arch/arm/mach-msm/board-qsd8x50.c
+@@ -116,7 +116,7 @@ static int hsusb_phy_clk_reset(struct clk *phy_clk)
 
-Don't include this line.
+ static struct msm_otg_platform_data msm_otg_pdata = {
+ 	.phy_init_seq		= hsusb_phy_init_seq,
+-	.mode                   = USB_PERIPHERAL,
++	.mode                   = USB_DR_MODE_PERIPHERAL,
+ 	.otg_control		= OTG_PHY_CONTROL,
+ 	.link_clk_reset		= hsusb_link_clk_reset,
+ 	.phy_clk_reset		= hsusb_phy_clk_reset,
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index 1629247..b87f33a 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -348,10 +348,10 @@ static int msm_otg_reset(struct usb_phy *phy)
 
-regards,
-dan carpenter
+ 	if (pdata->otg_control == OTG_PHY_CONTROL) {
+ 		val = readl(USB_OTGSC);
+-		if (pdata->mode == USB_OTG) {
++		if (pdata->mode == USB_DR_MODE_OTG) {
+ 			ulpi_val = ULPI_INT_IDGRD | ULPI_INT_SESS_VALID;
+ 			val |= OTGSC_IDIE | OTGSC_BSVIE;
+-		} else if (pdata->mode == USB_PERIPHERAL) {
++		} else if (pdata->mode == USB_DR_MODE_PERIPHERAL) {
+ 			ulpi_val = ULPI_INT_SESS_VALID;
+ 			val |= OTGSC_BSVIE;
+ 		}
+@@ -637,7 +637,7 @@ static int msm_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
+ 	 * Fail host registration if this board can support
+ 	 * only peripheral configuration.
+ 	 */
+-	if (motg->pdata->mode == USB_PERIPHERAL) {
++	if (motg->pdata->mode == USB_DR_MODE_PERIPHERAL) {
+ 		dev_info(otg->phy->dev, "Host mode is not supported\n");
+ 		return -ENODEV;
+ 	}
+@@ -666,7 +666,7 @@ static int msm_otg_set_host(struct usb_otg *otg, struct usb_bus *host)
+ 	 * Kick the state machine work, if peripheral is not supported
+ 	 * or peripheral is already registered with us.
+ 	 */
+-	if (motg->pdata->mode == USB_HOST || otg->gadget) {
++	if (motg->pdata->mode == USB_DR_MODE_HOST || otg->gadget) {
+ 		pm_runtime_get_sync(otg->phy->dev);
+ 		schedule_work(&motg->sm_work);
+ 	}
+@@ -710,7 +710,7 @@ static int msm_otg_set_peripheral(struct usb_otg *otg,
+ 	 * Fail peripheral registration if this board can support
+ 	 * only host configuration.
+ 	 */
+-	if (motg->pdata->mode == USB_HOST) {
++	if (motg->pdata->mode == USB_DR_MODE_HOST) {
+ 		dev_info(otg->phy->dev, "Peripheral mode is not supported\n");
+ 		return -ENODEV;
+ 	}
+@@ -735,7 +735,7 @@ static int msm_otg_set_peripheral(struct usb_otg *otg,
+ 	 * Kick the state machine work, if host is not supported
+ 	 * or host is already registered with us.
+ 	 */
+-	if (motg->pdata->mode == USB_PERIPHERAL || otg->host) {
++	if (motg->pdata->mode == USB_DR_MODE_PERIPHERAL || otg->host) {
+ 		pm_runtime_get_sync(otg->phy->dev);
+ 		schedule_work(&motg->sm_work);
+ 	}
+@@ -1056,7 +1056,7 @@ static void msm_otg_init_sm(struct msm_otg *motg)
+ 	u32 otgsc = readl(USB_OTGSC);
+
+ 	switch (pdata->mode) {
+-	case USB_OTG:
++	case USB_DR_MODE_OTG:
+ 		if (pdata->otg_control == OTG_PHY_CONTROL) {
+ 			if (otgsc & OTGSC_ID)
+ 				set_bit(ID, &motg->inputs);
+@@ -1068,21 +1068,14 @@ static void msm_otg_init_sm(struct msm_otg *motg)
+ 			else
+ 				clear_bit(B_SESS_VLD, &motg->inputs);
+ 		} else if (pdata->otg_control == OTG_USER_CONTROL) {
+-			if (pdata->default_mode == USB_HOST) {
+-				clear_bit(ID, &motg->inputs);
+-			} else if (pdata->default_mode == USB_PERIPHERAL) {
+-				set_bit(ID, &motg->inputs);
+-				set_bit(B_SESS_VLD, &motg->inputs);
+-			} else {
+ 				set_bit(ID, &motg->inputs);
+ 				clear_bit(B_SESS_VLD, &motg->inputs);
+-			}
+ 		}
+ 		break;
+-	case USB_HOST:
++	case USB_DR_MODE_HOST:
+ 		clear_bit(ID, &motg->inputs);
+ 		break;
+-	case USB_PERIPHERAL:
++	case USB_DR_MODE_PERIPHERAL:
+ 		set_bit(ID, &motg->inputs);
+ 		if (otgsc & OTGSC_BSV)
+ 			set_bit(B_SESS_VLD, &motg->inputs);
+@@ -1258,7 +1251,7 @@ static ssize_t msm_otg_mode_write(struct file *file, const char __user *ubuf,
+ 	char buf[16];
+ 	struct usb_otg *otg = motg->phy.otg;
+ 	int status = count;
+-	enum usb_mode_type req_mode;
++	enum usb_dr_mode req_mode;
+
+ 	memset(buf, 0x00, sizeof(buf));
+
+@@ -1268,18 +1261,18 @@ static ssize_t msm_otg_mode_write(struct file *file, const char __user *ubuf,
+ 	}
+
+ 	if (!strncmp(buf, "host", 4)) {
+-		req_mode = USB_HOST;
++		req_mode = USB_DR_MODE_HOST;
+ 	} else if (!strncmp(buf, "peripheral", 10)) {
+-		req_mode = USB_PERIPHERAL;
++		req_mode = USB_DR_MODE_PERIPHERAL;
+ 	} else if (!strncmp(buf, "none", 4)) {
+-		req_mode = USB_NONE;
++		req_mode = USB_DR_MODE_UNKNOWN;
+ 	} else {
+ 		status = -EINVAL;
+ 		goto out;
+ 	}
+
+ 	switch (req_mode) {
+-	case USB_NONE:
++	case USB_DR_MODE_UNKNOWN:
+ 		switch (otg->phy->state) {
+ 		case OTG_STATE_A_HOST:
+ 		case OTG_STATE_B_PERIPHERAL:
+@@ -1290,7 +1283,7 @@ static ssize_t msm_otg_mode_write(struct file *file, const char __user *ubuf,
+ 			goto out;
+ 		}
+ 		break;
+-	case USB_PERIPHERAL:
++	case USB_DR_MODE_PERIPHERAL:
+ 		switch (otg->phy->state) {
+ 		case OTG_STATE_B_IDLE:
+ 		case OTG_STATE_A_HOST:
+@@ -1301,7 +1294,7 @@ static ssize_t msm_otg_mode_write(struct file *file, const char __user *ubuf,
+ 			goto out;
+ 		}
+ 		break;
+-	case USB_HOST:
++	case USB_DR_MODE_HOST:
+ 		switch (otg->phy->state) {
+ 		case OTG_STATE_B_IDLE:
+ 		case OTG_STATE_B_PERIPHERAL:
+@@ -1516,7 +1509,7 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 	platform_set_drvdata(pdev, motg);
+ 	device_init_wakeup(&pdev->dev, 1);
+
+-	if (motg->pdata->mode == USB_OTG &&
++	if (motg->pdata->mode == USB_DR_MODE_OTG &&
+ 			motg->pdata->otg_control == OTG_USER_CONTROL) {
+ 		ret = msm_otg_debugfs_init(motg);
+ 		if (ret)
+diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
+index 8705b01..72c5830 100644
+--- a/include/linux/usb/msm_hsusb.h
++++ b/include/linux/usb/msm_hsusb.h
+@@ -23,21 +23,6 @@
+ #include <linux/clk.h>
+
+ /**
+- * Supported USB modes
+- *
+- * USB_PERIPHERAL       Only peripheral mode is supported.
+- * USB_HOST             Only host mode is supported.
+- * USB_OTG              OTG mode is supported.
+- *
+- */
+-enum usb_mode_type {
+-	USB_NONE = 0,
+-	USB_PERIPHERAL,
+-	USB_HOST,
+-	USB_OTG,
+-};
+-
+-/**
+  * OTG control
+  *
+  * OTG_NO_CONTROL	Id/VBUS notifications not required. Useful in host
+@@ -121,8 +106,6 @@ enum usb_chg_type {
+  * @power_budget: VBUS power budget in mA (0 will be treated as 500mA).
+  * @mode: Supported mode (OTG/peripheral/host).
+  * @otg_control: OTG switch controlled by user/Id pin
+- * @default_mode: Default operational mode. Applicable only if
+- *              OTG switch is controller by user.
+  * @pclk_src_name: pclk is derived from ebi1_usb_clk in case of 7x27 and 8k
+  *              dfab_usb_hs_clk in case of 8660 and 8960.
+  */
+@@ -130,9 +113,8 @@ struct msm_otg_platform_data {
+ 	int *phy_init_seq;
+ 	void (*vbus_power)(bool on);
+ 	unsigned power_budget;
+-	enum usb_mode_type mode;
++	enum usb_dr_mode mode;
+ 	enum otg_control_type otg_control;
+-	enum usb_mode_type default_mode;
+ 	enum msm_usb_phy_type phy_type;
+ 	void (*setup_gpio)(enum usb_otg_state state);
+ 	char *pclk_src_name;
+--
+1.8.3.2
 
