@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517AbaDVOFx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:05:53 -0400
-Received: from devoid-pointer.net ([31.31.77.140]:49526 "EHLO
+	id S1756493AbaDVOFv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:05:51 -0400
+Received: from imap.devoid-pointer.net ([31.31.77.140]:49529 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932385AbaDVOBY (ORCPT
+	with ESMTP id S932416AbaDVOB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:01:24 -0400
+	Tue, 22 Apr 2014 10:01:29 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org
-Subject: [PATCH v2 18/24] input: Port hid-wiimote-modules to ff-memless-next
-Date: Tue, 22 Apr 2014 16:00:03 +0200
-Message-Id: <1398175209-9565-19-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v2 20/24] input: Port gamecon to ff-memless-next
+Date: Tue, 22 Apr 2014 16:00:05 +0200
+Message-Id: <1398175209-9565-21-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -24,146 +24,129 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-wiimote-modules to ff-memless-next
+Port gamecon to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig               |  2 +-
- drivers/hid/hid-wiimote-modules.c | 74 ++++++++++++++++++++++++---------------
- 2 files changed, 46 insertions(+), 30 deletions(-)
+ drivers/input/joystick/Kconfig   |  2 +-
+ drivers/input/joystick/gamecon.c | 57 ++++++++++++++++++++++------------------
+ 2 files changed, 33 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index ee999bc..d1cbad6 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -738,7 +738,7 @@ config HID_WIIMOTE
- 	depends on HID
- 	depends on LEDS_CLASS
- 	select POWER_SUPPLY
+diff --git a/drivers/input/joystick/Kconfig b/drivers/input/joystick/Kconfig
+index 56eb471..2dd3ba1 100644
+--- a/drivers/input/joystick/Kconfig
++++ b/drivers/input/joystick/Kconfig
+@@ -221,7 +221,7 @@ config JOYSTICK_DB9
+ config JOYSTICK_GAMECON
+ 	tristate "Multisystem, NES, SNES, N64, PSX joysticks and gamepads"
+ 	depends on PARPORT
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	---help---
- 	Support for Nintendo Wii and Wii U Bluetooth peripherals. Supported
- 	devices are the Wii Remote and its extension devices, but also devices
-diff --git a/drivers/hid/hid-wiimote-modules.c b/drivers/hid/hid-wiimote-modules.c
-index 6b61f01..95b20ea 100644
---- a/drivers/hid/hid-wiimote-modules.c
-+++ b/drivers/hid/hid-wiimote-modules.c
-@@ -37,8 +37,11 @@
- #include <linux/hid.h>
+ 	  Say Y here if you have a Nintendo Entertainment System gamepad,
+ 	  Super Nintendo Entertainment System gamepad, Nintendo 64 gamepad,
+diff --git a/drivers/input/joystick/gamecon.c b/drivers/input/joystick/gamecon.c
+index e68e497..209d0fb 100644
+--- a/drivers/input/joystick/gamecon.c
++++ b/drivers/input/joystick/gamecon.c
+@@ -40,6 +40,7 @@
  #include <linux/input.h>
- #include <linux/spinlock.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
 +#include <linux/input/ff-memless-next.h>
- #include "hid-wiimote.h"
  
+ MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
+ MODULE_DESCRIPTION("NES, SNES, N64, MultiSystem, PSX gamepad driver");
+@@ -47,6 +48,7 @@ MODULE_LICENSE("GPL");
+ 
+ #define GC_MAX_PORTS		3
+ #define GC_MAX_DEVICES		5
 +#define FF_UPDATE_RATE 50
-+
- /*
-  * Keys
-  * The initial Wii Remote provided a bunch of buttons that are reported as
-@@ -131,21 +134,27 @@ static void wiimod_rumble_worker(struct work_struct *work)
+ 
+ struct gc_config {
+ 	int args[GC_MAX_DEVICES + 1];
+@@ -263,43 +265,48 @@ static void gc_n64_process_packet(struct gc *gc)
  }
  
- static int wiimod_rumble_play(struct input_dev *dev, void *data,
--			      struct ff_effect *eff)
+ static int gc_n64_play_effect(struct input_dev *dev, void *data,
+-			      struct ff_effect *effect)
 +			      const struct mlnx_effect_command *command)
  {
- 	struct wiimote_data *wdata = input_get_drvdata(dev);
--	__u8 value;
--
--	/*
--	 * The wiimote supports only a single rumble motor so if any magnitude
--	 * is set to non-zero then we start the rumble motor. If both are set to
--	 * zero, we stop the rumble motor.
--	 */
--
--	if (eff->u.rumble.strong_magnitude || eff->u.rumble.weak_magnitude)
--		value = 1;
--	else
--		value = 0;
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
-+	__u8 value = 0;
-+
+ 	int i;
+ 	unsigned long flags;
+ 	struct gc *gc = input_get_drvdata(dev);
+ 	struct gc_subdev *sdev = data;
+ 	unsigned char target = 1 << sdev->idx; /* select desired pin */
++	unsigned int cmd;
+ 
+-	if (effect->type == FF_RUMBLE) {
+-		struct ff_rumble_effect *rumble = &effect->u.rumble;
+-		unsigned int cmd =
+-			rumble->strong_magnitude || rumble->weak_magnitude ?
+-			GC_N64_CMD_01 : GC_N64_CMD_00;
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		/*
-+		 * The wiimote supports only a single rumble motor so if any magnitude
-+		 * is set to non-zero then we start the rumble motor. If both are set to
-+		 * zero, we stop the rumble motor.
-+		 */
-+		if (rumble_force->strong || rumble_force->weak)
-+			value = 1;
++		cmd = (rumble_force->strong || rumble_force->weak) ? GC_N64_CMD_01 : GC_N64_CMD_00;
 +		break;
 +	case MLNX_STOP_RUMBLE:
++		cmd = GC_N64_CMD_00;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
  
- 	/* Locking state.lock here might deadlock with input_event() calls.
- 	 * schedule_work acts as barrier. Merging multiple changes is fine. */
-@@ -161,7 +170,7 @@ static int wiimod_rumble_probe(const struct wiimod_ops *ops,
- 	INIT_WORK(&wdata->rumble_worker, wiimod_rumble_worker);
+-		local_irq_save(flags);
++	local_irq_save(flags);
  
- 	set_bit(FF_RUMBLE, wdata->input->ffbit);
--	if (input_ff_create_memless(wdata->input, NULL, wiimod_rumble_play))
-+	if (input_ff_create_mlnx(wdata->input, NULL, wiimod_rumble_play, FF_UPDATE_RATE))
- 		return -ENOMEM;
+-		/* Init Rumble - 0x03, 0x80, 0x01, (34)0x80 */
+-		gc_n64_send_command(gc, GC_N64_CMD_03, target);
++	/* Init Rumble - 0x03, 0x80, 0x01, (34)0x80 */
++	gc_n64_send_command(gc, GC_N64_CMD_03, target);
++	gc_n64_send_command(gc, GC_N64_CMD_80, target);
++	gc_n64_send_command(gc, GC_N64_CMD_01, target);
++	for (i = 0; i < 32; i++)
+ 		gc_n64_send_command(gc, GC_N64_CMD_80, target);
+-		gc_n64_send_command(gc, GC_N64_CMD_01, target);
+-		for (i = 0; i < 32; i++)
+-			gc_n64_send_command(gc, GC_N64_CMD_80, target);
+-		gc_n64_send_stop_bit(gc, target);
++	gc_n64_send_stop_bit(gc, target);
+ 
+-		udelay(GC_N64_DELAY);
+-
+-		/* Now start or stop it - 0x03, 0xc0, 0zx1b, (32)0x01/0x00 */
+-		gc_n64_send_command(gc, GC_N64_CMD_03, target);
+-		gc_n64_send_command(gc, GC_N64_CMD_c0, target);
+-		gc_n64_send_command(gc, GC_N64_CMD_1b, target);
+-		for (i = 0; i < 32; i++)
+-			gc_n64_send_command(gc, cmd, target);
+-		gc_n64_send_stop_bit(gc, target);
++	udelay(GC_N64_DELAY);
+ 
+-		local_irq_restore(flags);
++	/* Now start or stop it - 0x03, 0xc0, 0zx1b, (32)0x01/0x00 */
++	gc_n64_send_command(gc, GC_N64_CMD_03, target);
++	gc_n64_send_command(gc, GC_N64_CMD_c0, target);
++	gc_n64_send_command(gc, GC_N64_CMD_1b, target);
++	for (i = 0; i < 32; i++)
++		gc_n64_send_command(gc, cmd, target);
++	gc_n64_send_stop_bit(gc, target);
+ 
+-	}
++	local_irq_restore(flags);
  
  	return 0;
-@@ -1771,21 +1780,28 @@ static void wiimod_pro_close(struct input_dev *dev)
  }
+@@ -317,7 +324,7 @@ static int __init gc_n64_init_ff(struct input_dev *dev, int i)
  
- static int wiimod_pro_play(struct input_dev *dev, void *data,
--			   struct ff_effect *eff)
-+			   const struct mlnx_effect_command *command)
- {
- 	struct wiimote_data *wdata = input_get_drvdata(dev);
--	__u8 value;
--
--	/*
--	 * The wiimote supports only a single rumble motor so if any magnitude
--	 * is set to non-zero then we start the rumble motor. If both are set to
--	 * zero, we stop the rumble motor.
--	 */
--
--	if (eff->u.rumble.strong_magnitude || eff->u.rumble.weak_magnitude)
--		value = 1;
--	else
--		value = 0;
-+	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
-+	__u8 value = 0;
-+
-+	switch (command->cmd) {
-+	case MLNX_START_RUMBLE:
-+		/*
-+		 * The wiimote supports only a single rumble motor so if any magnitude
-+		 * is set to non-zero then we start the rumble motor. If both are set to
-+		 * zero, we stop the rumble motor.
-+		 */
-+
-+		if (rumble_force->strong || rumble_force->weak)
-+			value = 1;
-+		break;
-+	case MLNX_STOP_RUMBLE:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
+ 	input_set_capability(dev, EV_FF, FF_RUMBLE);
  
- 	/* Locking state.lock here might deadlock with input_event() calls.
- 	 * schedule_work acts as barrier. Merging multiple changes is fine. */
-@@ -1867,8 +1883,8 @@ static int wiimod_pro_probe(const struct wiimod_ops *ops,
- 	set_bit(FF_RUMBLE, wdata->extension.input->ffbit);
- 	input_set_drvdata(wdata->extension.input, wdata);
- 
--	if (input_ff_create_memless(wdata->extension.input, NULL,
--				    wiimod_pro_play)) {
-+	if (input_ff_create_mlnx(wdata->extension.input, NULL,
-+				 wiimod_pro_play, FF_UPDATE_RATE)) {
- 		ret = -ENOMEM;
- 		goto err_free;
- 	}
+-	err = input_ff_create_memless(dev, sdev, gc_n64_play_effect);
++	err = input_ff_create_mlnx(dev, sdev, gc_n64_play_effect, FF_UPDATE_RATE);
+ 	if (err) {
+ 		kfree(sdev);
+ 		return err;
 -- 
 1.9.2
 
