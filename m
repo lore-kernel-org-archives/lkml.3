@@ -1,58 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754531AbaDVSyf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 14:54:35 -0400
-Received: from mail-vc0-f182.google.com ([209.85.220.182]:63809 "EHLO
-	mail-vc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaDVSye convert rfc822-to-8bit (ORCPT
+	id S1753600AbaDVS5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 14:57:53 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:61227 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbaDVS5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 14:54:34 -0400
+	Tue, 22 Apr 2014 14:57:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAL_JsqKE_Z3kBhS1VaQADV5ob8x6AKHhbHaQEGoVSwkwdd50zA@mail.gmail.com>
-References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1398181105-19714-2-git-send-email-antoine.tenart@free-electrons.com>
-	<CAL_JsqKE_Z3kBhS1VaQADV5ob8x6AKHhbHaQEGoVSwkwdd50zA@mail.gmail.com>
-Date: Tue, 22 Apr 2014 13:54:33 -0500
-Message-ID: <CAL_JsqJwC2xcZakXiJXJscK7tN7xt2OotBKyr9u+aK3bOP+7GQ@mail.gmail.com>
-Subject: Re: [PATCH 1/6] ata: ahci: add AHCI support for Berlin SoCs
-From: Rob Herring <robherring2@gmail.com>
-To: =?UTF-8?Q?Antoine_T=C3=A9nart?= <antoine.tenart@free-electrons.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Tejun Heo <tj@kernel.org>, zmxu@marvell.com,
-        Jisheng Zhang <jszhang@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140422180308.GA19038@redhat.com>
+References: <20140422180308.GA19038@redhat.com>
+Date: Tue, 22 Apr 2014 11:57:50 -0700
+X-Google-Sender-Auth: 4d3la84i0cRHqJ9gHthaIn1W148
+Message-ID: <CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
+Subject: Re: 3.15rc2 hanging processes on exit.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>
+Content-Type: multipart/mixed; boundary=089e0158a82a4b5d7704f7a63140
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 1:47 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On Tue, Apr 22, 2014 at 10:38 AM, Antoine Ténart
-> <antoine.tenart@free-electrons.com> wrote:
->> Add support for the Berlin SoCs AHCI SATA controller allowing to
->> interface with devices like external hard drives.
+--089e0158a82a4b5d7704f7a63140
+Content-Type: text/plain; charset=UTF-8
 
-One more thing.
+On Tue, Apr 22, 2014 at 11:03 AM, Dave Jones <davej@redhat.com> wrote:
+> I've got a test box that's running my fuzzer that is in an odd state.
+> The processes are about to end, but they don't seem to be making any
+> progress.  They've been spinning in the same state for a few hours now..
+>
+> perf top -a is showing a lot of time is being spent in page_fault and bad_gs
+>
+> there's a large trace file here from the function tracer:
+> http://codemonkey.org.uk/junk/trace.out
 
->> +       nports = readl(hpriv->mmio + HOST_PORTS_IMPL);
->> +
->> +       /* force_map is modified only if the property is found */
->> +       of_property_read_u32(np, "marvell,force-port-map", &force_map);
+The trace says that it's one of the infinite loops that do
 
-This property does not appear to be documented.
+ - cmpxchg_futex_value_locked() fails
+ - we do fault_in_user_writeable(FAULT_FLAG_WRITE) and that succeeds
+ - so we try again
 
->> +       if (force_map)
->> +               nports = force_map;
+So it implies that handle_mm_fault() returned without VM_FAULT_ERROR,
+but the page still isn't actually writable.
 
-You don't need this as your comment says, you can just do:
+And to me that smells like (vm_flags & VM_WRITE) isn't set. We'll
+fault in the page all right, but the resulting page table entry still
+isn't writable.
 
-of_property_read_u32(np, "marvell,force-port-map", &nports);
+Are you testing anything new? Or is this strictly new to 3.15? The
+only thing in this area we do differently is commit cda540ace6a1 ("mm:
+get_user_pages(write,force) refuse to COW in shared areas"), but
+fault_in_user_writeable() never used the force bit afaik. Adding Hugh
+just in case.
 
-nports will only be changed if property is present.
+So I think we should make fault_in_user_writeable() just check the
+vm_flags. Something like the attached (UNTESTED!) patch.
 
-Rob
+Guys? Comments?
+
+                    Linus
+
+--089e0158a82a4b5d7704f7a63140
+Content-Type: text/plain; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_hubk1h2i0
+
+IG1tL21lbW9yeS5jIHwgNSArKysrKwogMSBmaWxlIGNoYW5nZWQsIDUgaW5zZXJ0aW9ucygrKQoK
+ZGlmZiAtLWdpdCBhL21tL21lbW9yeS5jIGIvbW0vbWVtb3J5LmMKaW5kZXggZDBmMGJlZjNiZTQ4
+Li45MWEzZTg0ODc0NWQgMTAwNjQ0Ci0tLSBhL21tL21lbW9yeS5jCisrKyBiL21tL21lbW9yeS5j
+CkBAIC0xOTU1LDEyICsxOTU1LDE3IEBAIGludCBmaXh1cF91c2VyX2ZhdWx0KHN0cnVjdCB0YXNr
+X3N0cnVjdCAqdHNrLCBzdHJ1Y3QgbW1fc3RydWN0ICptbSwKIAkJICAgICB1bnNpZ25lZCBsb25n
+IGFkZHJlc3MsIHVuc2lnbmVkIGludCBmYXVsdF9mbGFncykKIHsKIAlzdHJ1Y3Qgdm1fYXJlYV9z
+dHJ1Y3QgKnZtYTsKKwl1bnNpZ25lZCB2bV9mbGFnczsKIAlpbnQgcmV0OwogCiAJdm1hID0gZmlu
+ZF9leHRlbmRfdm1hKG1tLCBhZGRyZXNzKTsKIAlpZiAoIXZtYSB8fCBhZGRyZXNzIDwgdm1hLT52
+bV9zdGFydCkKIAkJcmV0dXJuIC1FRkFVTFQ7CiAKKwl2bV9mbGFncyA9IChmYXVsdF9mbGFncyAm
+IEZBVUxUX0ZMQUdfV1JJVEUpID8gVk1fV1JJVEUgOiBWTV9SRUFEOworCWlmICghKHZtX2ZsYWdz
+ICYgdm1hLT52bV9mbGFncykpCisJCXJldHVybiAtRUZBVUxUOworCiAJcmV0ID0gaGFuZGxlX21t
+X2ZhdWx0KG1tLCB2bWEsIGFkZHJlc3MsIGZhdWx0X2ZsYWdzKTsKIAlpZiAocmV0ICYgVk1fRkFV
+TFRfRVJST1IpIHsKIAkJaWYgKHJldCAmIFZNX0ZBVUxUX09PTSkK
+--089e0158a82a4b5d7704f7a63140--
