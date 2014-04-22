@@ -1,93 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752314AbaDVH2Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 03:28:16 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:60151 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaDVH2N (ORCPT
+	id S1752727AbaDVH2q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 03:28:46 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:45398 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752329AbaDVH2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 03:28:13 -0400
-Message-ID: <53561A06.9050405@hitachi.com>
-Date: Tue, 22 Apr 2014 16:28:06 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 22 Apr 2014 03:28:43 -0400
 MIME-Version: 1.0
-To: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: rusty@rustcorp.com.au, rostedt@goodmis.org, fweisbec@gmail.com,
-        mingo@redhat.com, ananth@in.ibm.com, anil.s.keshavamurthy@intel.com,
-        davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: Re: Re: ftrace/kprobes: Warning when insmod two modules
-References: <1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com> <5330164D.6030507@hitachi.com> <20140324105939.7f823b81@gandalf.local.home> <87bnvunhs9.fsf@rustcorp.com.au> <5355FE49.3030502@jp.fujitsu.com>
-In-Reply-To: <5355FE49.3030502@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <Pine.LNX.4.44L0.1404211228190.1201-100000@iolanthe.rowland.org>
+References: <20140421160802.GA22794@saruman.home>
+	<Pine.LNX.4.44L0.1404211228190.1201-100000@iolanthe.rowland.org>
+Date: Tue, 22 Apr 2014 12:58:41 +0530
+Message-ID: <CALHRZur7+MaYXbWOfbvjggPN7_eYAE+th5VNbcLP=ehvm0HGsA@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
+From: sundeep subbaraya <sundeep.lkml@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Simek <michals@xilinx.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/22 14:29), Takao Indoh wrote:
-> (2014/04/22 12:51), Rusty Russell wrote:
->> Steven Rostedt <rostedt@goodmis.org> writes:
->>> On Mon, 24 Mar 2014 20:26:05 +0900
->>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>>
->>>
->>>> Thank you for reporting with this pretty backtrace :)
->>>> Steven, I think this is not the kprobe bug but ftrace (and perhaps, module).
->>>
->>> Looks to be more of a module issue than a ftrace issue.
->>>
->>>>
->>>> If the ftrace can set loading module text read only before the module subsystem
->>>> expected, I think it should be protected by the module subsystem itself
->>>> (e.g. set_all_modules_text_ro(rw) skips the modules which is MODULE_STATE_COMING)
->>>>
->>>
->>> Does this patch fix it?
->>>
->>> In-review-off-by: Steven Rostedt <rostedt@goodmis.org>
+Hi,
+
+On Mon, Apr 21, 2014 at 10:09 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Mon, 21 Apr 2014, Felipe Balbi wrote:
+>
+>> Hi,
 >>
->> Sorry, was on paternity leave.
+>> On Fri, Apr 18, 2014 at 07:34:08PM +0530, sundeep subbaraya wrote:
 >>
->> I'm always nervous about adding more states, since every place which
->> examines the state has to be audited.
+>> <snip>
 >>
->> We set the mod->state to MOD_STATE_COMING in complete_formation;
->> why don't we set NX there instead?  It also makes more sense to
->> set NX before we hit parse_args() which can execute code in the module.
+>> > >> in ep_queue driver starts dma transfer from/to IP buffer to/from req->buf.
+>> > >> If transfer is completed then request is not added to ep request queue
+>> > >> and returns from ep_queue.
+>> > >> If transfer is not completed (actual < length) then request is added
+>> > >> to queue and returns from ep_queue.
+>> > >
+>> > > This is wrong. Why wouldn't you give gadget driver the chance to decide
+>> > > if it needs to queue the request again or not ?
+>> >
+>> > When does gadget driver decides to queue the same request again?
+>> > if -EBUSY is returned from ep_queue or req.status != 0 in completion
+>> > routine?
 >>
->> In fact, we should probably call the notifier there too, so people
->> can breakpoint/tracepoint/etc parameter calls.
->>
->> Of course, this means that we set NX before the notifier; does anything
->> break?
-> 
-> This does not work. ftrace_process_locs() is called from the notifier,
-> and it tries to change its text like this.
-> 
-> load_module
->   blocking_notifier_call_chain
->     ftrace_module_notify_enter
->       ftrace_init_module
->         ftrace_process_locs
->           sort
->             ftrace_swap_ips
-> 
-> But the text is already RO, so it causes panic. We need to call notifier
-> before setting it RO. Or should we unset RO temporarily in
-> ftrace_process_locs()?
+>> whenever it so decides. Different gadget drivers might have different
+>> requirements. The code is open and sits under drivers/usb/gadget/ why
+>> don't you have a read ?
+>
+> I get the impression that the two of you are arguing past each other.
+> It appears that Sundeep is talking about transferring data from the
+> gadget driver's buffer to an internal buffer in the UDC hardware, but
+> Felipe is talking about transferring data from the UDC to the host.
+>
+> As I understand it, Sundeep said that when the gadget driver queues a
+> data-IN request, the UDC driver copies as much of the data buffer as
+> possible into a hardware FIFO.  If it succeeds in copying all the data
+> into the FIFO then the request's completion routine gets called
+> immediately, even though the data doesn't get sent from the FIFO to the
+> host until the host asks for it.
+>
+> If only part of the data can be copied into the FIFO then the request
+> is added to the ep's request queue before the usb_ep_queue() call
+> returns.  When space becomes available in the FIFO, the data will be
+> copied and eventually sent to the host.  When all the data has been
+> copied to the FIFO, the request's completion routine will be called.
+>
+> Thus there never is any need for the gadget driver to queue the request
+> again.  An incomplete transfer means the FIFO didn't have enough room
+> when the request was submitted; it doesn't mean that the data didn't
+> eventually get sent to the host.
 
-Perhaps, IMHO, ftrace needs to change the module RW in ftrace_init_module and
-makes it RO after modifying the module text.
+Exactly Alan,this is what I was trying to say. Probably I was not
+clear in explaining. I didnt see
+any harm this way and even this implementation is same like
+at91_udc.c. I have been reading
+mas_storage to understand when does gadget driver tries to enqueue a
+request again. Since
+different gadget drivers might have different requirements (agree with
+Felipe), wanted to
+know criteria for queuing a same request again.
 
-Thank you,
+I will change this implementation as per Felipe comments and test with
+some of the gadgets.
 
+Thanks Alan and Felipe,
+Sundeep
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+>
+> HTH,
+>
+> Alan Stern
+>
