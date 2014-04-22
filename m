@@ -1,89 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753784AbaDVInB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:43:01 -0400
-Received: from mail-qc0-f182.google.com ([209.85.216.182]:46590 "EHLO
-	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225AbaDVImx (ORCPT
+	id S1754872AbaDVInq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:43:46 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:44887 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753241AbaDVInm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:42:53 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140421155020.GB13709@redhat.com>
-References: <20140415145749.GF10187@tucsk.piliscsaba.szeredi.hu>
-	<20140416180422.GA20907@redhat.com>
-	<20140421155020.GB13709@redhat.com>
-Date: Tue, 22 Apr 2014 10:42:52 +0200
-Message-ID: <CAJfpegs9cgVgxbYZSM=SxyJqj=N1QA5npp7ic6i80CMec+3sZw@mail.gmail.com>
-Subject: Re: [PATCH] vfs: rw_copy_check_uvector() - free iov on error
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Dave Jones <davej@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Apr 2014 04:43:42 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-f0-53562bbb8802
+Message-id: <53562BA4.6020902@samsung.com>
+Date: Tue, 22 Apr 2014 10:43:16 +0200
+From: Andrzej Hajda <a.hajda@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.4.0
+MIME-version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: dri-devel@lists.freedesktop.org,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Inki Dae <inki.dae@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-samsung-soc@vger.kernel.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        David Airlie <airlied@linux.ie>,
+        open list <linux-kernel@vger.kernel.org>,
+        "moderated list:ARM/S5P EXYNOS AR..." 
+	<linux-arm-kernel@lists.infradead.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH RFC 3/3] drm/exynos: use pending_components for	components
+ tracking
+References: <1397734130-21019-1-git-send-email-a.hajda@samsung.com>
+ <1397734130-21019-4-git-send-email-a.hajda@samsung.com>
+ <20140417214709.GY24070@n2100.arm.linux.org.uk> <53510C39.1020205@samsung.com>
+ <20140418124202.GD24070@n2100.arm.linux.org.uk>
+In-reply-to: <20140418124202.GD24070@n2100.arm.linux.org.uk>
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMLMWRmVeSWpSXmKPExsVy+t/xy7q7tcOCDZac4LLoPXeSyeLvpGPs
+	Fle+vmezaF68ns1i0v0JLBZnm96wW2x6fI3V4vKuOWwWM87vY7K4fZnXYu2Ru+wW62e8ZnHg
+	8Whp7mHz+P1rEqPH9m8PWD32z13D7nG/+ziTx+Yl9R59W1YxenzeJBfAEcVlk5Kak1mWWqRv
+	l8CVsXW1dcEZ8YrmB9+YGxhvC3UxcnBICJhI9J0S62LkBDLFJC7cW8/WxcjFISSwlFHixvST
+	TBDOJ0aJZXdvM4M08ApoSaz47QzSwCKgKtF+aQ0riM0moCnxd/NNNhBbVCBC4l7jYbA4r4Cg
+	xI/J91hAbBEBU4lrj54xg8xkFmhikZhzdQZYQlggUmLl3lUsEMsamCROTZnPDJLgFLCRmLiy
+	mRHEZhbQkdjfOo0NwpaX2LzmLfMERoFZSJbMQlI2C0nZAkbmVYyiqaXJBcVJ6blGesWJucWl
+	eel6yfm5mxghEfN1B+PSY1aHGAU4GJV4eCUMQoOFWBPLiitzDzFKcDArifA2aYYFC/GmJFZW
+	pRblxxeV5qQWH2Jk4uCUamC8FiwWubxVKuJwv3hmWZPtxRLzG8JLD6ZMXni379nLk5GxH+xr
+	l7zZF8x0bmVpRlfY67jz+XGcGU46yRKsGecr34mtFXE0Uqo08dfwOuMRP+8t34L7+2O/rjRr
+	fBxiuMnSP45xMl/BMQVdDq6EN+GJxVuuixf2flAQ0euf0SKkelHIcat7jBJLcUaioRZzUXEi
+	AH1llWp2AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 5:50 PM, Dave Jones <davej@redhat.com> wrote:
-> On Wed, Apr 16, 2014 at 02:04:22PM -0400, Dave Jones wrote:
->  > On Tue, Apr 15, 2014 at 04:57:49PM +0200, Miklos Szeredi wrote:
->  >
->  >  > Some callers (aio_run_iocb, vmsplice_to_user) forget to free the iov on
->  >  > error.  This seems to be a recurring problem, with most callers being buggy
->  >  > initially.
->  >
->  > Your patch looks a lot more complete than the quick hack I did a few
->  > days ago when coverity first started nagging about this, but in testing
->  > I've found that something really ugly starts showing up when you patch this
->  >
->  > The symptoms vary, but always are some kind of slab corruption.
->  > Here's the last example:
->  >
->  > =============================================================================
->  > BUG kmalloc-256 (Not tainted): Invalid object pointer 0xffff8802407adc60
->  > -----------------------------------------------------------------------------
->  >
->  > Disabling lock debugging due to kernel taint
->  > INFO: Slab 0xffffea000901eb00 objects=28 used=22 fp=0xffff8802407ad6d0 flags=0x20000000004081
->  > CPU: 1 PID: 1185 Comm: trinity-c1 Tainted: G    B         3.15.0-rc1+ #191
->  >  ffff880243c073c0 00000000f952f249 ffff8800a1a2bc10 ffffffffbd74686d
->  >  ffffea000901eb00 ffff8800a1a2bce8 ffffffffbd1b0cd4 ffffffff00000020
->  >  ffff8800a1a2bcf8 ffff8800a1a2bca8 61766e4943c00a18 656a626f2064696c
->  > Call Trace:
->  >  [<ffffffffbd74686d>] dump_stack+0x4e/0x7a
->  >  [<ffffffffbd1b0cd4>] slab_err+0xb4/0xe0
->  >  [<ffffffffbd0bf3ae>] ? put_lock_stats.isra.23+0xe/0x30
->  >  [<ffffffffbd1b0da6>] ? slab_pad_check.part.44+0xa6/0x170
->  >  [<ffffffffbd744e7f>] free_debug_processing+0x88/0x22a
->  >  [<ffffffffbd1c7041>] ? compat_do_readv_writev+0xe1/0x250
->  >  [<ffffffffbd74506d>] __slab_free+0x4c/0x2c3
->  >  [<ffffffffbd1c6679>] ? do_sync_readv_writev+0x59/0xa0
->  >  [<ffffffffbd1b2614>] kfree+0x214/0x220
->  >  [<ffffffffbd1c7041>] ? compat_do_readv_writev+0xe1/0x250
->  >  [<ffffffffbd1c7041>] compat_do_readv_writev+0xe1/0x250
->  >  [<ffffffffbd0bf716>] ? lock_release_holdtime.part.24+0xe6/0x160
->  >  [<ffffffffbd0a3ccd>] ? get_parent_ip+0xd/0x50
->  >  [<ffffffffbd75642b>] ? preempt_count_sub+0x6b/0xf0
->  >  [<ffffffffbd751a01>] ? _raw_spin_unlock+0x31/0x50
->  >  [<ffffffffbd349883>] ? __this_cpu_preempt_check+0x13/0x20
->  >  [<ffffffffbd1c730a>] compat_writev+0x3a/0x80
->  >  [<ffffffffbd1c85d8>] compat_SyS_writev+0x58/0xd0
->  >  [<ffffffffbd75c6a9>] ia32_do_call+0x13/0x13
->  > FIX kmalloc-256: Object at 0xffff8802407adc60 not freed
->  >
->  >
->  > I also had an incomplete trace that showed vmsplice causing a bug in mm/slub.c:3396
->  > on an earlier run.
->  >
->  > The crash happens very quickly (within a few seconds of running trinity) for me.
+Hi Russel,
+
+My answer little bit later due to Easter.
+
+On 04/18/2014 02:42 PM, Russell King - ARM Linux wrote:
+> On Fri, Apr 18, 2014 at 01:27:53PM +0200, Andrzej Hajda wrote:
+>> Hi Russel,
+>>
+>> Thanks for comments.
+>>
+>> On 04/17/2014 11:47 PM, Russell King - ARM Linux wrote:
+>>> On Thu, Apr 17, 2014 at 01:28:50PM +0200, Andrzej Hajda wrote:
+>>>> +out:
+>>>> +	if (ret != -EPROBE_DEFER)
+>>>> +		exynos_drm_dev_ready(&pdev->dev);
+>>> So we end up with everyone needing a "ready" call in each sub-driver
+>>> back into the main driver... this makes it impossible to write a
+>>> generic subcomponent driver which is not tied in any way to the
+>>> main driver.
+>>>
+>>> That is quite some restriction, and would prevent, for example, the
+>>> TDA998x driver being used both with Armada DRM, tilcdc and any other
+>>> driver.
+>> As I see in armada driver drm is deferred in case tda998x is not yet
+>> available. The same solution can be still used with pending_devices
+>> approach - the main driver will not report its readiness until tda998x
+>> is present.
+>>
+>> Anyway it still seems to be better than componentize every driver which can
+>> probably become a part of some superdevice.
+>>
+>> If you want to get rid of deferred probe one can make global list of
+>> 'ready' devices with notifications systems for master devices.
+>>
+>> Maybe it would be good to consider notification system for devices probe
+>> result,
+>> it will require that driver register all its interfaces in probe, ie its
+>> readiness cannot
+>> be reported later but will not require to add new framework. I hope just
+>> extending current
+>> notification system should be enough.
+> You aren't addressing my point.  If I were to convert tda998x to use
+> your infrastructure, then I would have to add in ifdefs to tie it into
+> armada DRM _and_ a different set of ifdefs to tie it into tilcdc.  Then
+> when someone else wanted to use it in their driver, they'd have to add
+> yet more ifdefs into it to tie it into their driver.
 >
-> Al, Miklos ?
+> This does not scale.
 
-I probably am blind, but I can't see how that will cause slab corruption.
+As I already answered, you should not use 'my' framework for tda998x
+driver, you can still use current approach with deferred probe. I am not
+sure
+why have you used ifdefs in armada, tilcdc also uses tda998x and without
+ifdefs.
 
-Have you verified that it's just that single patch and no other change?
+'My' framework (I think helper library is a better name) was created to
+use with
+devices which are closely tied together by another framework - case
+of some SoC devices.
 
-Thanks,
-Miklos
+
+>
+> So, please address my point: in your system, how can a single component
+> be shared between multiple different master drivers?
+>
+
+I have answered this question above, again. But your question suggests
+you want to componentize
+also drivers which are shared by different DRMs. How do you want to do it?
+- componentize all DRM drivers sharing given driver?
+- componentize shared device in a way that it can used by
+non-componentized devices? how? I guess it
+will be possible but will have some price.
+
+Regards
+Andrzej
+
+
+
