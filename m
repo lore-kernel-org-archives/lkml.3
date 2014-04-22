@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758109AbaDVUY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:24:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36581 "EHLO
+	id S1758453AbaDVUrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:47:31 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36593 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752026AbaDVUYT (ORCPT
+	with ESMTP id S1758106AbaDVUY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:19 -0400
+	Tue, 22 Apr 2014 16:24:28 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>,
-        Kamlakant Patel <kamlakant.patel@broadcom.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 057/133] jffs2: Fix crash due to truncation of csize
-Date: Tue, 22 Apr 2014 13:13:15 -0700
-Message-Id: <1398197671-12786-58-git-send-email-kamal@canonical.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 086/133] mfd: tps65910: Fix possible invalid pointer dereference on regmap_add_irq_chip fail
+Date: Tue, 22 Apr 2014 13:13:44 -0700
+Message-Id: <1398197671-12786-87-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -29,82 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 41bf1a24c1001f4d0d41a78e1ac575d2f14789d7 upstream.
+commit 483e2dfdbc94751430e41db9973985f5b054d322 upstream.
 
-mounting JFFS2 partition sometimes crashes with this call trace:
+Fixes: 4aab3fadad32 ("mfd: tps65910: Move interrupt implementation code to mfd file")
 
-[ 1322.240000] Kernel bug detected[#1]:
-[ 1322.244000] Cpu 2
-[ 1322.244000] $ 0   : 0000000000000000 0000000000000018 000000003ff00070 0000000000000001
-[ 1322.252000] $ 4   : 0000000000000000 c0000000f3980150 0000000000000000 0000000000010000
-[ 1322.260000] $ 8   : ffffffffc09cd5f8 0000000000000001 0000000000000088 c0000000ed300de8
-[ 1322.268000] $12   : e5e19d9c5f613a45 ffffffffc046d464 0000000000000000 66227ba5ea67b74e
-[ 1322.276000] $16   : c0000000f1769c00 c0000000ed1e0200 c0000000f3980150 0000000000000000
-[ 1322.284000] $20   : c0000000f3a80000 00000000fffffffc c0000000ed2cfbd8 c0000000f39818f0
-[ 1322.292000] $24   : 0000000000000004 0000000000000000
-[ 1322.300000] $28   : c0000000ed2c0000 c0000000ed2cfab8 0000000000010000 ffffffffc039c0b0
-[ 1322.308000] Hi    : 000000000000023c
-[ 1322.312000] Lo    : 000000000003f802
-[ 1322.316000] epc   : ffffffffc039a9f8 check_tn_node+0x88/0x3b0
-[ 1322.320000]     Not tainted
-[ 1322.324000] ra    : ffffffffc039c0b0 jffs2_do_read_inode_internal+0x1250/0x1e48
-[ 1322.332000] Status: 5400f8e3    KX SX UX KERNEL EXL IE
-[ 1322.336000] Cause : 00800034
-[ 1322.340000] PrId  : 000c1004 (Netlogic XLP)
-[ 1322.344000] Modules linked in:
-[ 1322.348000] Process jffs2_gcd_mtd7 (pid: 264, threadinfo=c0000000ed2c0000, task=c0000000f0e68dd8, tls=0000000000000000)
-[ 1322.356000] Stack : c0000000f1769e30 c0000000ed010780 c0000000ed010780 c0000000ed300000
-        c0000000f1769c00 c0000000f3980150 c0000000f3a80000 00000000fffffffc
-        c0000000ed2cfbd8 ffffffffc039c0b0 ffffffffc09c6340 0000000000001000
-        0000000000000dec ffffffffc016c9d8 c0000000f39805a0 c0000000f3980180
-        0000008600000000 0000000000000000 0000000000000000 0000000000000000
-        0001000000000dec c0000000f1769d98 c0000000ed2cfb18 0000000000010000
-        0000000000010000 0000000000000044 c0000000f3a80000 c0000000f1769c00
-        c0000000f3d207a8 c0000000f1769d98 c0000000f1769de0 ffffffffc076f9c0
-        0000000000000009 0000000000000000 0000000000000000 ffffffffc039cf90
-        0000000000000017 ffffffffc013fbdc 0000000000000001 000000010003e61c
-        ...
-[ 1322.424000] Call Trace:
-[ 1322.428000] [<ffffffffc039a9f8>] check_tn_node+0x88/0x3b0
-[ 1322.432000] [<ffffffffc039c0b0>] jffs2_do_read_inode_internal+0x1250/0x1e48
-[ 1322.440000] [<ffffffffc039cf90>] jffs2_do_crccheck_inode+0x70/0xd0
-[ 1322.448000] [<ffffffffc03a1b80>] jffs2_garbage_collect_pass+0x160/0x870
-[ 1322.452000] [<ffffffffc03a392c>] jffs2_garbage_collect_thread+0xdc/0x1f0
-[ 1322.460000] [<ffffffffc01541c8>] kthread+0xb8/0xc0
-[ 1322.464000] [<ffffffffc0106d18>] kernel_thread_helper+0x10/0x18
-[ 1322.472000]
-[ 1322.472000]
-Code: 67bd0050  94a4002c  2c830001 <00038036> de050218  2403fffc  0080a82d  00431824  24630044
-[ 1322.480000] ---[ end trace b052bb90e97dfbf5 ]---
+tps65910_irq_init() sets 'tps65910->chip_irq' before calling
+regmap_add_irq_chip(). If the regmap_add_irq_chip() call fails in
+memory allocation of regmap_irq_chip_data members then:
 
-The variable csize in structure jffs2_tmp_dnode_info is of type uint16_t, but it
-is used to hold the compressed data length(csize) which is declared as uint32_t.
-So, when the value of csize exceeds 16bits, it gets truncated when assigned to
-tn->csize. This is causing a kernel BUG.
-Changing the definition of csize in jffs2_tmp_dnode_info to uint32_t fixes the issue.
+1. The 'tps65910->chip_irq' will still hold some value
+2. 'tps65910->irq_data' will be pointing to already freed memory
+   (because regmap_add_irq_chip() will free it on error)
 
-Signed-off-by: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
-Signed-off-by: Kamlakant Patel <kamlakant.patel@broadcom.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+This results in invalid memory access during driver remove because the
+tps65910_irq_exit() tests whether 'tps65910->chip_irq' is not zero.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/jffs2/nodelist.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/tps65910.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/fs/jffs2/nodelist.h b/fs/jffs2/nodelist.h
-index e4619b0..fa35ff7 100644
---- a/fs/jffs2/nodelist.h
-+++ b/fs/jffs2/nodelist.h
-@@ -231,7 +231,7 @@ struct jffs2_tmp_dnode_info
- 	uint32_t version;
- 	uint32_t data_crc;
- 	uint32_t partial_crc;
--	uint16_t csize;
-+	uint32_t csize;
- 	uint16_t overlapped;
- };
+diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
+index d792772..de87eaf 100644
+--- a/drivers/mfd/tps65910.c
++++ b/drivers/mfd/tps65910.c
+@@ -254,8 +254,10 @@ static int tps65910_irq_init(struct tps65910 *tps65910, int irq,
+ 	ret = regmap_add_irq_chip(tps65910->regmap, tps65910->chip_irq,
+ 		IRQF_ONESHOT, pdata->irq_base,
+ 		tps6591x_irqs_chip, &tps65910->irq_data);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		dev_warn(tps65910->dev, "Failed to add irq_chip %d\n", ret);
++		tps65910->chip_irq = 0;
++	}
+ 	return ret;
+ }
  
 -- 
 1.9.1
