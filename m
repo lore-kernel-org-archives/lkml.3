@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933298AbaDVQy6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:54:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63784 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932504AbaDVQy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:54:56 -0400
-Message-ID: <53569EA4.2000308@redhat.com>
-Date: Tue, 22 Apr 2014 12:53:56 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S933374AbaDVQ6y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:58:54 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:49142 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932504AbaDVQ6v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 12:58:51 -0400
+Date: Tue, 22 Apr 2014 17:58:15 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>
+Subject: Re: [PATCH 04/15] arm64: __NR_compat_syscalls fix
+Message-ID: <20140422165814.GH10224@arm.com>
+References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
+ <1397211951-20549-5-git-send-email-miklos@szeredi.hu>
 MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        mgorman@suse.de, ak@linux.intel.com, alex.shi@linaro.org,
-        dave.hansen@linux.intel.com
-Subject: Re: [PATCH 1/6] x86: mm: clean up tlb flushing code
-References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182420.307A0C57@viggo.jf.intel.com>
-In-Reply-To: <20140421182420.307A0C57@viggo.jf.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397211951-20549-5-git-send-email-miklos@szeredi.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2014 02:24 PM, Dave Hansen wrote:
-> From: Dave Hansen <dave.hansen@linux.intel.com>
+On Fri, Apr 11, 2014 at 11:25:40AM +0100, Miklos Szeredi wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
 > 
-> The
+> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> ---
+>  arch/arm64/include/asm/unistd32.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
-> 
-> line of code is not exactly the easiest to audit, especially when
-> it ends up at two different indentation levels.  This eliminates
-> one of the the copy-n-paste versions.  It also gives us a unified
-> exit point for each path through this function.  We need this in
-> a minute for our tracepoint.
-> 
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+> diff --git a/arch/arm64/include/asm/unistd32.h b/arch/arm64/include/asm/unistd32.h
+> index bb8eb8a78e67..faa0e1ce59df 100644
+> --- a/arch/arm64/include/asm/unistd32.h
+> +++ b/arch/arm64/include/asm/unistd32.h
+> @@ -404,7 +404,7 @@ __SYSCALL(379, sys_finit_module)
+>  __SYSCALL(380, sys_sched_setattr)
+>  __SYSCALL(381, sys_sched_getattr)
+>  
+> -#define __NR_compat_syscalls		379
+> +#define __NR_compat_syscalls		382
 
-Acked-by: Rik van Riel <riel@redhat.com>
+I picked up this patch, together with a Cc: stable and longer comment.
 
+What's your plan with the other patches? Do you submit them as a series
+or would like the arch maintainers to pick them up?
+
+Thanks.
 
 -- 
-All rights reversed
+Catalin
