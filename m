@@ -1,96 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425AbaDVJzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 05:55:38 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:59156 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753429AbaDVJze (ORCPT
+	id S1755495AbaDVJ4F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 05:56:05 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:36803 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755233AbaDVJ4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 05:55:34 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, rafael.j.wysocki@intel.com,
-        toshi.kani@hp.com
-Subject: Re: [RFC PATCH v5 2/2] Use kernfs_break_active_protection() for device online store callbacks
-Date: Tue, 22 Apr 2014 12:11:53 +0200
-Message-ID: <24546121.zVbmBfcmRG@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1398137679.2805.28.camel@ThinkPad-T5421.cn.ibm.com>
-References: <1397461649.12943.1.camel@ThinkPad-T5421.cn.ibm.com> <20140421224606.GE22730@htj.dyndns.org> <1398137679.2805.28.camel@ThinkPad-T5421.cn.ibm.com>
+	Tue, 22 Apr 2014 05:56:03 -0400
+Date: Tue, 22 Apr 2014 11:55:57 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 0/9] perf tools: Fixup for the --percentage change
+Message-ID: <20140422095557.GB10813@gmail.com>
+References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 22, 2014 11:34:39 AM Li Zhong wrote:
-> On Mon, 2014-04-21 at 18:46 -0400, Tejun Heo wrote:
-> > Hello,
-> > 
-> > On Mon, Apr 21, 2014 at 05:23:50PM +0800, Li Zhong wrote:
-> > 
-> > Proper /** function comment would be nice.
-> 
-> Ok, will try to write some in next version.
-> 
-> > 
-> > > +struct kernfs_node *lock_device_hotplug_sysfs(struct device *dev,
-> > > +					       struct device_attribute *attr)
-> > 
-> > I can see why you did this but let's please not require the user of
-> > this function to see how the thing is working internally.  Let's
-> > return int and keep track of (or look up again) the kernfs_node
-> > internally.
-> 
-> Ok, it also makes the prototype of lock and unlock look more consistent
-> and comfortable. 
-> 
-> > 
-> > >  {
-> > ...
-> > > +	/*
-> > > +	 * We assume device_hotplug_lock must be acquired before removing
-> > 
-> > Is this assumption true?  If so, can we add lockdep assertions in
-> > places to verify and enforce this?  If not, aren't we just feeling
-> > good when the reality is broken?
-> 
-> It seems not true ... I think there are devices that don't have the
-> online/offline concept, we just need to add it, remove it, like ethernet
-> cards. 
 
-Well, I haven't been following this closely (I was travelling, sorry), but
-there certainly are devices without online/offline.  That currently is only
-present for CPUs, memory blocks and ACPI containers (if I remember correctly).
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
+> Hello,
 > 
-> Maybe we could change the comments above, like:
-> 	/* We assume device_hotplug_lock must be acquired before 
-> 	 * removing devices, which have online/offline sysfs knob, 
-> 	 * and some locks are needed to serialize the online/offline
-> 	 * callbacks and device removing. ...
-> ? 
-
-Lockdep assertions would be better than this in my opinion.
-
+> This patchset tries to fix bugs in percentage handling which is
+> recently changed.  The perf top with symbol filter could cause a
+> segfault (NULL pointer dereference) if the filter found no entry.
 > 
-> And we could add lockdep assertions in cpu and memory related code? e.g.
-> remove_memory(), unregister_cpu()
+> In this patchset, I moved accounting of various histogram stats to be
+> calculated at the time it actually shown to users.  Although I tested
+> it on my system for a while, it needs more testing since it'll affect
+> behaviors of many commands/usages.
 > 
-> Currently, remove_memory() has comments for the function:
+> It's available at 'perf/percentage-v10' branch on my tree:
 > 
->  * NOTE: The caller must call lock_device_hotplug() to serialize hotplug
->  * and online/offline operations before this call, as required by
->  * try_offline_node().
->  */
->     
-> maybe it could be removed with the lockdep assertion.
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> Any comments, review and testing are welcomed.
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+> Namhyung Kim (9):
+>   perf report: Count number of entries and samples separately
+>   perf hists: Introduce hists__add_nr_events()
+>   perf tools: Account entry stats when it's added to the output tree
+>   perf tools: Introduce hists__inc_dump_events()
+>   perf hists: Add missing update on nr_non_filtered_entries
+>   perf ui/tui: Fix off-by-one in hist_browser__update_nr_entries()
+>   perf ui/tui: Rename hist_browser__update_nr_entries()
+>   perf top/tui: Update nr_entries properly after a filter is applied
+>   perf hists/tui: Count callchain rows separately
+> 
+>  tools/perf/builtin-annotate.c  | 27 ++++++--------
+>  tools/perf/builtin-report.c    | 51 +++++++++++++-------------
+>  tools/perf/builtin-top.c       |  4 ---
+>  tools/perf/ui/browsers/hists.c | 81 ++++++++++++++++++++++++++++--------------
+>  tools/perf/util/hist.c         | 53 ++++++++++++++++++++-------
+>  tools/perf/util/hist.h         |  7 ++++
+>  6 files changed, 137 insertions(+), 86 deletions(-)
 
-No, please don't remove it.  It is there to explain where the locking requirement
-comes from.
+I gave it some quick testing and after fixing a trivial merge conflict 
+in tools/lib/lockdep/Makefile all seems to be working fine.
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+But while looking at it I remembered one of my old UI complains about 
+perf top and report, the hard to read nature of:
+
+   Event count (approx.): 226958779
+
+the values displayed are typically way too large to be easily human 
+readable. More importantly, they are also nonsensical! That we have a 
+sampling interval and can sum up all the intervals sampled has very 
+little meaning to the overwhelming majority of humans looking at the 
+data.
+
+And printing that just spams the visual field and confuses people.
+
+People care about the quality and speed of sampling itself, not 
+directly the interval of sampling (which will often be variable with 
+auto-freq sampling).
+
+So instead of:
+
+  Samples: 42K of event 'cycles', Event count (approx.): 226958779
+
+How about only printing this in 'perf top' and 'perf report':
+
+  Captured 42.1K 'cycles' event samples
+
+Note the extra decimal (which helps monitor smaller changes as well), 
+and note the different wording.
+
+Thoughts?
+
+Thanks,
+
+	Ingo
