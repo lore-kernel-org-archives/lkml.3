@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757197AbaDVQDm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:03:42 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:51627 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756396AbaDVQDi (ORCPT
+	id S1757320AbaDVQET (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:04:19 -0400
+Received: from mail-ve0-f182.google.com ([209.85.128.182]:59823 "EHLO
+	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757038AbaDVQEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:03:38 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Olof Johansson <olof@lixom.net>, Andrew Lunn <andrew@lunn.ch>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Gregory Clement <gregory.clement@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Chao Xie <xiechao.mail@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/5] fixing regressions caused by Dove in MULTI_V7
-References: <20140414151236.75f8816d@skate>
-	<1397585763-23482-1-git-send-email-sebastian.hesselbarth@gmail.com>
-Date: Tue, 22 Apr 2014 09:03:35 -0700
-In-Reply-To: <1397585763-23482-1-git-send-email-sebastian.hesselbarth@gmail.com>
-	(Sebastian Hesselbarth's message of "Tue, 15 Apr 2014 20:15:58 +0200")
-Message-ID: <7hd2g9fj1k.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	Tue, 22 Apr 2014 12:04:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140422144659.GF15882@pd.tnic>
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
+ <5355A9E9.9070102@zytor.com> <CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
+ <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com> <CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
+ <a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com> <CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
+ <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com> <CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
+ <20140422112312.GB15882@pd.tnic> <20140422144659.GF15882@pd.tnic>
+From: Andrew Lutomirski <amluto@gmail.com>
+Date: Tue, 22 Apr 2014 09:03:55 -0700
+Message-ID: <CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com> writes:
+On Tue, Apr 22, 2014 at 7:46 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Apr 22, 2014 at 01:23:12PM +0200, Borislav Petkov wrote:
+>> I wonder if it would be workable to use a bit in the espfix PGD to
+>> denote that it has been initialized already... I hear, near NX there's
+>> some room :-)
+>
+> Ok, I realized this won't work when I hit send... Oh well.
+>
+> Anyway, another dumb idea: have we considered making this lazy? I.e.,
+> preallocate pages to fit the stack of NR_CPUS after smp init is done but
+> not setup the percpu espfix stack. Only do that in espfix_fix_stack the
+> first time we land there and haven't been setup yet on this cpu.
+>
+> This should cover the 1% out there who still use 16-bit segments and the
+> rest simply doesn't use it and get to save themselves the PT-walk in
+> start_secondary().
+>
+> Hmmm...
 
-> This is a patch set fixing regressions in v3.15-rc1 ultimately caused
-> by adding DT-enabled Marvell Dove to MULTI_V7. There was a fix
-> introduced late in the merge window to fix a related regression for
-> non-PJ4 architectures, that turned out to introduce another regression
-> on PJ4B-based Armada 370/XP.
+I'm going to try to do the math to see what's actually going on.
 
-Tested-by: Kevin Hilman <khilman@linaro.org>
+Each 4G slice contains 64kB of ministacks, which corresponds to 1024
+ministacks.  Virtual addresses are divided up as:
 
-FWIW, I tested this series on top of v3.15-rc1 using multi_v7_defconfig
-on all of multi-platform boards I have (20), and they all passed the
-boot test.  Full boot report below.
+12 bits (0..11): address within page.
+9 bits (12..20): identifies the PTE within the level 1 directory
+9 bits (21..29): identifies the level 1 directory (pmd?) within the
+level 2 directory
+9 bits (30..38): identifies the level 2 directory (pud) within the
+level 3 directory
 
-Kevin
+Critically, each 1024 CPUs can share the same level 1 directory --
+there are just a bunch of copies of the same thing in there.
+Similarly, they can share the same level 2 directory, and each slot in
+that directory will point to the same level 1 directory.
 
+For the level 3 directory, there is only one globally.  It needs 8
+entries per 1024 CPUs.
 
-Subject: test/dove-regression boot: 20 pass, 0 fail (v3.15-rc1-5-gc1d3c1beba74)
+I imagine there's a scalability problem here, too: it's okay if each
+of a very large number of CPUs waits while shared structures are
+allocated, but owners of big systems won't like it if they all
+serialize on the way out.
 
-Tree/Branch: test/dove-regression
-Git describe: v3.15-rc1-5-gc1d3c1beba74
-Commit: c1d3c1beba ARM: iwmmxt: allow to build iWMMXt on Marvell PJ4B
+So maybe it would make sense to refactor this into two separate
+functions.  First, before we start the first non-boot CPU:
 
-Full Report
-===========
+static pte_t *slice_pte_tables[NR_CPUS / 1024];
+Allocate and initialize them all;
 
-arm-multi_v7_defconfig
-----------------------
-    qcom-apq8074-dragonboard     0 min 15.7 sec:     PASS
-                ste-snowball     1 min 20.5 sec:     PASS
-              tegra30-beaver     0 min 17.1 sec:     PASS
-            am335x-boneblack     0 min 37.7 sec:     PASS
-             omap3-beagle-xm     0 min 47.5 sec:     PASS
-       sun7i-a20-cubieboard2     0 min 12.4 sec:     PASS
-          armada-370-mirabox     0 min 22.4 sec:     PASS
-                 omap4-panda     0 min 58.2 sec:     PASS
-  armada-xp-openblocks-ax3-4     0 min 25.2 sec:     PASS
-        sun4i-a10-cubieboard     0 min 19.1 sec:     PASS
-                 bcm28155-ap     0 min 27.8 sec:     PASS
-            omap3-overo-tobi     0 min 22.3 sec:     PASS  (Warnings: 1)
-  imx6dl-wandboard,wand-solo     0 min 18.2 sec:     PASS
-                 am335x-bone     0 min 26.7 sec:     PASS
-      omap3-overo-storm-tobi     0 min 20.9 sec:     PASS
-                  omap5-uevm     1 min 40.0 sec:     PASS  (Warnings: 1)
-                  omap3-n900     0 min 34.5 sec:     PASS  (Warnings: 1)
-             imx6q-wandboard     0 min 17.2 sec:     PASS
-              omap4-panda-es     0 min 54.5 sec:     PASS
-  imx6dl-wandboard,wand-dual     0 min 18.1 sec:     PASS
+It might even make sense to do this at build time instead of run time.
+ I can't imagine that parallelizing this would provide any benefit
+unless it were done *very* carefully and there were hundreds of
+thousands of CPUs.  At worst, we're wasting 4 bytes per CPU not
+present.
 
+Then, for the per-CPU part, have one init-once structure (please tell
+me the kernel has one of these) per 64 possible CPUs.  Each CPU will
+make sure that its group of 64 cpus is initialized, using the init
+once mechanism, and then it will set its percpu variable accordingly.
+
+There are only 64 CPUs per slice, so mutexes may no be so bad here.
+
+--Andy
