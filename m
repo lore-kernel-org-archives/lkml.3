@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125AbaDVKhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 06:37:16 -0400
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:50349 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754432AbaDVKhM (ORCPT
+	id S932143AbaDVKjJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 06:39:09 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:61174 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755831AbaDVKjE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 06:37:12 -0400
+	Tue, 22 Apr 2014 06:39:04 -0400
+Message-ID: <535646E1.80205@linaro.org>
+Date: Tue, 22 Apr 2014 12:39:29 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <5354AD36.5090809@zytor.com>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<53518FAC.8020504@zytor.com>
-	<201404191730.54400.arnd@arndb.de>
-	<CAFiDJ5-PiUWetRMp65VTo4pvZM65r3WBjCZVWmxW0XnqAyO-GA@mail.gmail.com>
-	<5354AD36.5090809@zytor.com>
-Date: Tue, 22 Apr 2014 18:37:11 +0800
-X-Google-Sender-Auth: GeEEtw8HwARADINclYmi5NYVqIo
-Message-ID: <CAFiDJ5861HE4AXtio-8uNJppWE2oaPt9_OKyGV=Myb_3vPrOVA@mail.gmail.com>
-Subject: Re: [PATCH 00/28] nios2 Linux kernel port
-From: Ley Foon Tan <lftan@altera.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
-Content-Type: text/plain; charset=UTF-8
+To: Chander Kashyap <chander.kashyap@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: lorenzo.pieralisi@arm.com, rjw@rjwysocki.net, kgene.kim@samsung.com,
+        Chander Kashyap <k.chander@samsung.org>
+Subject: Re: [PATCH 2/4] driver: cpuidle: cpuidle-big-little: init driver
+ for Exynos5420
+References: <1398080958-21677-1-git-send-email-chander.kashyap@linaro.org> <1398080958-21677-3-git-send-email-chander.kashyap@linaro.org>
+In-Reply-To: <1398080958-21677-3-git-send-email-chander.kashyap@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd and Peter Anvin,
-
-Other than 64-bit time_t, clock_t and suseconds_t, can you confirm
-that we don't need to have 64 bit off_t? See detail in link below.
-I can submit the patches for 64-bit time changes
-(include/asm-generic/posix_types.h and other archs) if everyone is
-agreed on this.
-
-Excerpt from https://lkml.org/lkml/2012/11/14/358 :
-"Obviously, we want to use 64-bit off_t, but this is achieved already
-through loff_t, which is used in all places in the asm-generic
-ABI anyway (the syscalls using off_t are stripped out). I don't
-think we want to have the other ones set to 64 bit on ARC or Meta,
-although I'm not 100% sure about ino_t and nlink_t. "
-
-Thanks.
-
-Regards
-Ley Foon
-
-On Mon, Apr 21, 2014 at 1:31 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/20/2014 10:23 PM, Ley Foon Tan wrote:
->> On Sat, Apr 19, 2014 at 11:30 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>> On Friday 18 April 2014, H. Peter Anvin wrote:
->>>> Did the generic headers ever get updated to match Linus' guidance that
->>>> any new architecture ports should use a 64-bit time_t?
->>>
->>> No, unfortunately not. With my rule that every architecture that gets
->>> added needs to clean up asm-generic some more, to make it easier to add
->>> the next one, we should probably do for nios2.
->>>
->>>         Arnd
->>
->> Can you give me the documentation on this new guidance and point me
->> any architecture have implemented this?
->> Thanks.
->>
+On 04/21/2014 01:49 PM, Chander Kashyap wrote:
+> Add "samsung,exynos5420" compatible string to initialize generic
+> big-little cpuidle driver for Exynos5420.
 >
-> We implemented it in the x32 ABI for x86.  In generic code this is keyed
-> by COMPAT_USE_64BIT_TIME, but in your case it isn't actually a matter of
-> compat, so it should be easier.
+> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
+> Signed-off-by: Chander Kashyap <k.chander@samsung.org>
+> ---
+
+To be migrated to platform_driver but until that:
+
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+
+>   drivers/cpuidle/cpuidle-big_little.c |    3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
 >
-> See this thread including the discussion about time_t:
+> diff --git a/drivers/cpuidle/cpuidle-big_little.c b/drivers/cpuidle/cpuidle-big_little.c
+> index b45fc62..d0fac53 100644
+> --- a/drivers/cpuidle/cpuidle-big_little.c
+> +++ b/drivers/cpuidle/cpuidle-big_little.c
+> @@ -170,7 +170,8 @@ static int __init bl_idle_init(void)
+>   	/*
+>   	 * Initialize the driver just for a compliant set of machines
+>   	 */
+> -	if (!of_machine_is_compatible("arm,vexpress,v2p-ca15_a7"))
+> +	if (!of_machine_is_compatible("arm,vexpress,v2p-ca15_a7") &&
+> +		(!of_machine_is_compatible("samsung,exynos5420")))
+>   		return -ENODEV;
+>   	/*
+>   	 * For now the differentiation between little and big cores
 >
-> https://lkml.org/lkml/2011/8/26/415
->
->         -hpa
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
