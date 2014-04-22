@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753654AbaDVGeV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 02:34:21 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4260 "EHLO mga01.intel.com"
+	id S1753252AbaDVGcm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 02:32:42 -0400
+Received: from mga01.intel.com ([192.55.52.88]:47119 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753291AbaDVGcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 02:32:45 -0400
+	id S1752630AbaDVGcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 02:32:33 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,901,1389772800"; 
-   d="scan'208";a="517067448"
+   d="scan'208";a="524673093"
 From: Lan Tianyu <tianyu.lan@intel.com>
 To: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
         awilliam@redhat.com, lenb@kernel.org
 Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-acpi@vger.kernel.org, tianyu.lan@intel.com
-Subject: [Resend Patch 6/9] I2C: Add smbus word/block process call helper function
-Date: Tue, 22 Apr 2014 14:24:12 +0800
-Message-Id: <1398147855-9868-7-git-send-email-tianyu.lan@intel.com>
+Subject: [Resend Patch 5/9] I2C: Add smbus quick read/write helper function
+Date: Tue, 22 Apr 2014 14:24:11 +0800
+Message-Id: <1398147855-9868-6-git-send-email-tianyu.lan@intel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
 References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
@@ -25,104 +25,69 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add i2c_smbus_word/block_proc_call() helper function. These will be used
+Add i2c_smbus_quick_write/read() helper function. These will be used
 in the implementation of i2c ACPI address space handler.
 
 Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
 ---
- drivers/i2c/i2c-core.c | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/i2c.h    |  4 ++++
- 2 files changed, 60 insertions(+)
+ drivers/i2c/i2c-core.c | 30 ++++++++++++++++++++++++++++++
+ include/linux/i2c.h    |  2 ++
+ 2 files changed, 32 insertions(+)
 
 diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 3bf0048..638befd 100644
+index 7c7f4b8..3bf0048 100644
 --- a/drivers/i2c/i2c-core.c
 +++ b/drivers/i2c/i2c-core.c
-@@ -2306,6 +2306,30 @@ s32 i2c_smbus_write_word_data(const struct i2c_client *client, u8 command,
- EXPORT_SYMBOL(i2c_smbus_write_word_data);
+@@ -2162,6 +2162,36 @@ static int i2c_smbus_check_pec(u8 cpec, struct i2c_msg *msg)
+ }
  
  /**
-+ * i2c_smbus_word_proc_call - SMBus "word proc call" protocol
++ * i2c_smbus_quick_write - SMBus "quick write" protocol
 + * @client: Handle to slave device
-+ * @command: Byte interpreted by slave
-+ * @value: 16-bit "word" being written
 + *
-+ * This executes the SMBus "word proc all" protocol, returning negative errno
-+ * else a 16-bit unsigned "word" received from the device.
++ * This executes the SMBus "quick write" protocol, returning negative errno
++ * else zero on success.
 + */
-+s32 i2c_smbus_word_proc_call(const struct i2c_client *client, u8 command,
-+			      u16 value)
++s32 i2c_smbus_quick_write(const struct i2c_client *client)
 +{
-+	union i2c_smbus_data data;
-+	int status;
-+
-+	data.word = value;
-+	status = i2c_smbus_xfer(client->adapter, client->addr, client->flags,
-+			      I2C_SMBUS_READ, command,
-+			      I2C_SMBUS_PROC_CALL, &data);
-+
-+	return (status < 0) ? status : data.word;
++	return i2c_smbus_xfer(client->adapter, client->addr, client->flags,
++				I2C_SMBUS_WRITE, 0,
++				I2C_SMBUS_QUICK, NULL);
 +}
-+EXPORT_SYMBOL(i2c_smbus_word_proc_call);
++EXPORT_SYMBOL_GPL(i2c_smbus_quick_write);
 +
 +/**
-  * i2c_smbus_read_block_data - SMBus "block read" protocol
++ * i2c_smbus_quick_read - SMBus "quick read" protocol
++ * @client: Handle to slave device
++ *
++ * This executes the SMBus "quick read" protocol, returning negative errno
++ * else zero on success.
++ */
++s32 i2c_smbus_quick_read(const struct i2c_client *client)
++{
++	return i2c_smbus_xfer(client->adapter, client->addr, client->flags,
++				I2C_SMBUS_READ, 0,
++				I2C_SMBUS_QUICK, NULL);
++}
++EXPORT_SYMBOL_GPL(i2c_smbus_quick_read);
++
++/**
+  * i2c_smbus_read_byte - SMBus "receive byte" protocol
   * @client: Handle to slave device
-  * @command: Byte interpreted by slave
-@@ -2362,6 +2386,38 @@ s32 i2c_smbus_write_block_data(const struct i2c_client *client, u8 command,
- }
- EXPORT_SYMBOL(i2c_smbus_write_block_data);
- 
-+/**
-+ * i2c_smbus_block_proc_call - SMBus "block write" protocol
-+ * @client: Handle to slave device
-+ * @command: Byte interpreted by slave
-+ * @length: Size of data block; SMBus allows at most 32 bytes
-+ * @values: Byte array which will be written.
-+ *
-+ * This executes the SMBus "block proc call" protocol, returning negative errno
-+ * else the number of read bytes.
-+ */
-+s32 i2c_smbus_block_proc_call(const struct i2c_client *client, u8 command,
-+			       u8 length, u8 *values)
-+{
-+	union i2c_smbus_data data;
-+	int status;
-+
-+	if (length > I2C_SMBUS_BLOCK_MAX)
-+		length = I2C_SMBUS_BLOCK_MAX;
-+	data.block[0] = length;
-+	memcpy(&data.block[1], values, length);
-+	status = i2c_smbus_xfer(client->adapter, client->addr, client->flags,
-+			      I2C_SMBUS_READ, command,
-+			      I2C_SMBUS_BLOCK_PROC_CALL, &data);
-+
-+	if (status < 0)
-+		return status;
-+
-+	memcpy(values, &data.block[1], data.block[0]);
-+	return data.block[0];
-+}
-+EXPORT_SYMBOL(i2c_smbus_block_proc_call);
-+
- /* Returns the number of read bytes */
- s32 i2c_smbus_read_i2c_block_data(const struct i2c_client *client, u8 command,
- 				  u8 length, u8 *values)
+  *
 diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index 3e6ea90..724440a 100644
+index b556e0a..3e6ea90 100644
 --- a/include/linux/i2c.h
 +++ b/include/linux/i2c.h
-@@ -94,6 +94,10 @@ extern s32 i2c_smbus_read_word_data(const struct i2c_client *client,
- 				    u8 command);
- extern s32 i2c_smbus_write_word_data(const struct i2c_client *client,
- 				     u8 command, u16 value);
-+extern s32 i2c_smbus_word_proc_call(const struct i2c_client *client,
-+				    u8 command, u16 value);
-+extern s32 i2c_smbus_block_proc_call(const struct i2c_client *client,
-+				u8 command, u8 length, u8 *values);
+@@ -82,6 +82,8 @@ extern s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr,
+ /* Now follow the 'nice' access routines. These also document the calling
+    conventions of i2c_smbus_xfer. */
  
- static inline s32
- i2c_smbus_read_word_swapped(const struct i2c_client *client, u8 command)
++extern s32 i2c_smbus_quick_write(const struct i2c_client *client);
++extern s32 i2c_smbus_quick_read(const struct i2c_client *client);
+ extern s32 i2c_smbus_read_byte(const struct i2c_client *client);
+ extern s32 i2c_smbus_write_byte(const struct i2c_client *client, u8 value);
+ extern s32 i2c_smbus_read_byte_data(const struct i2c_client *client,
 -- 
 1.8.4.rc0.1.g8f6a3e5.dirty
 
