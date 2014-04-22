@@ -1,53 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751986AbaDVFpB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 01:45:01 -0400
-Received: from mail-pb0-f54.google.com ([209.85.160.54]:55225 "EHLO
-	mail-pb0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750781AbaDVFo5 (ORCPT
+	id S1752061AbaDVFq0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 01:46:26 -0400
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:53922 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751215AbaDVFqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 01:44:57 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: tj@kernel.org, lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nasa4836@gmail.com
-Subject: [PATCH] cgroup: use uninitialized_var() for may-be uninitialized variable
-Date: Tue, 22 Apr 2014 13:44:39 +0800
-Message-Id: <1398145479-11400-1-git-send-email-nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc0
+	Tue, 22 Apr 2014 01:46:24 -0400
 MIME-Version: 1.0
+Date: Tue, 22 Apr 2014 13:46:23 +0800
+Message-ID: <CAFiDJ58CYnW4fK2iQvXK_8TBgAvTFdfwXx671AHOFT4JK1_COQ@mail.gmail.com>
+Subject: min() and max() have warning: comparison of distinct pointer types
+ lacks a cast
+From: "LF.Tan" <lftan.linux@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To suppress this warning:
+Hi all
 
- warning: ‘err’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-  int err;
-	^
+Have these warning messages when compiling kernel.
+Anyone know what's wrong?
 
-Use the uninitialized_var() to decalre err. It also serves to be good documetation.
+Regards.
+----------------------------
+In file included from mm/readahead.c:10:0:
+mm/readahead.c: In function 'max_sane_readahead':
+include/linux/kernel.h:713:17: warning: comparison of distinct pointer
+types lacks a cast [enabled by default]
+  (void) (&_min1 == &_min2);  \
+                 ^
+mm/readahead.c:242:9: note: in expansion of macro 'min'
+  return min(nr, MAX_READAHEAD);
+         ^
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- kernel/cgroup.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 24675f5..930569c 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4144,7 +4144,7 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- {
- 	struct cgroup *parent = cgrp->parent;
- 	struct cgroup_subsys_state *css;
--	int err;
-+	int uninitialized_var(err);
- 
- 	lockdep_assert_held(&cgroup_mutex);
- 
--- 
-2.0.0-rc0
-
+-------------------------------------------------------------------------------
+mm/rmap.c:1279:22: note: in expansion of macro 'min'
+ #define CLUSTER_SIZE min(32*PAGE_SIZE, PMD_SIZE)
+                      ^
+mm/rmap.c:1280:25: note: in expansion of macro 'CLUSTER_SIZE'
+ #define CLUSTER_MASK (~(CLUSTER_SIZE - 1))
+                         ^
+mm/rmap.c:1298:39: note: in expansion of macro 'CLUSTER_MASK'
+  address = (vma->vm_start + cursor) & CLUSTER_MASK;
+                                       ^
