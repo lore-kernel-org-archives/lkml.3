@@ -1,118 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497AbaDVCAH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 22:00:07 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53620 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240AbaDVCAE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 22:00:04 -0400
-Date: Mon, 21 Apr 2014 18:59:58 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jet Chen <jet.chen@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
-        Fengguang Wu <fengguang.wu@intel.com>
-Subject: Re: [sched,rcu] 9234566d3a3: +1.6% will-it-scale.scalability,
- +1302.6% time.involuntary_context_switches
-Message-ID: <20140422015958.GB4496@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <5354BA85.6010003@intel.com>
+	id S1753167AbaDVCCH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 22:02:07 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25423 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175AbaDVCCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 22:02:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,900,1389772800"; 
+   d="scan'208";a="524583856"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Subject: RE: [PATCH 1/4] ACPICA: Add <acpi/platform/aclinuxxf.h> to remove
+ mis-ordered inclusion of <acpi/actypes.h> from <acpi/platform/aclinux.h>.
+Thread-Topic: [PATCH 1/4] ACPICA: Add <acpi/platform/aclinuxxf.h> to remove
+ mis-ordered inclusion of <acpi/actypes.h> from <acpi/platform/aclinux.h>.
+Thread-Index: AQHPXaI9lV/jhfK5X0Sgd13es7oQhpsc3PXg
+Date: Tue, 22 Apr 2014 02:01:57 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E8802556F33@SHSMSX101.ccr.corp.intel.com>
+References: <cover.1385110130.git.lv.zheng@intel.com>
+ <cover.1396930406.git.lv.zheng@intel.com>
+ <330810301fa94a244fe1a755e99246a2a5778153.1396930406.git.lv.zheng@intel.com>
+ <3086544.JUcChlMM9C@vostro.rjw.lan>
+In-Reply-To: <3086544.JUcChlMM9C@vostro.rjw.lan>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5354BA85.6010003@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042202-1542-0000-0000-0000013FA814
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3M22Hw9003300
 
-On Mon, Apr 21, 2014 at 02:28:21PM +0800, Jet Chen wrote:
-> Hi Paul,
-> 
-> we noticed the below changes on
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git torture.2014.04.18a
-> commit 9234566d3a36c0aead8852e3c2ca94cd8ebfe219 ("sched,rcu: Make cond_resched() report RCU quiescent states")
+Hi,
 
-My impression of these statistics is that this commit results in huge
-numbers of additional context switches and interrupts, but has a slightly
-positive effect on performance and a larger negative effect on
-scalability.
+<skip>
 
-Is this a reasonable interpretation?
+> > +#define ACPI_NATIVE_INTERFACE_HEADER	<acpi/platform/aclinuxxf.h>
+> 
+> This is not good.
+> 
+> We don't do things like this in the kernel, because they are confusing and hard
+> to debug if necessary, so please find a different way to make this work.
 
-							Thanx, Paul
+I use this extra header file to collect:
+1. static inline OSL functions
+2. divergences of prototypes that haven't been back ported to ACPICA.
+This file is useful for ACPICA release automation.
 
-> Comparison 1 - parent commit of 9234566d3a36c0aead8852e3c2ca94cd8ebfe219 vs 9234566d3a36c0aead8852e3c2ca94cd8ebfe219
-> 
-> e119454e74a852f  9234566d3a36c0aead8852e3c
-> ---------------  -------------------------
->     1035948 ~ 0%      +1.6%    1052990 ~ 0%  TOTAL will-it-scale.per_thread_ops
->     1271322 ~ 0%      +1.8%    1294004 ~ 0%  TOTAL will-it-scale.per_process_ops
->        0.63 ~ 0%      -5.2%       0.60 ~ 0%  TOTAL will-it-scale.scalability
->       22470 ~ 2%   +1302.6%     315168 ~ 2%  TOTAL time.involuntary_context_switches
->       84265 ~ 5%   +1047.1%     966581 ~ 1%  TOTAL interrupts.IWI
->        1828 ~44%    +189.6%       5295 ~13%  TOTAL time.voluntary_context_switches
->        5337 ~ 1%     +82.1%       9720 ~ 1%  TOTAL vmstat.system.cs
->      118599 ~ 0%     -30.4%      82545 ~ 0%  TOTAL interrupts.0:IO-APIC-edge.timer
->      224021 ~ 4%     +34.7%     301858 ~ 2%  TOTAL interrupts.RES
->       25148 ~ 0%      +7.0%      26917 ~ 0%  TOTAL vmstat.system.in
->     7063439 ~ 0%      -5.2%    6694536 ~ 0%  TOTAL interrupts.LOC
->      188866 ~ 0%      -3.1%     183008 ~ 0%  TOTAL interrupts.NMI
->      188866 ~ 0%      -3.1%     183008 ~ 0%  TOTAL interrupts.PMI
->        3720 ~ 0%      -1.5%       3665 ~ 0%  TOTAL time.system_time
->        1215 ~ 0%      -1.4%       1198 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
-> 
-> 
-> Comparison 2 - b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 vs 9234566d3a36c0aead8852e3c2ca94cd8ebfe219
-> 
-> Fengguang has reported stats changes about b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 to you days ago.
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git dev.2014.04.14a
-> commit b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 ("sched,rcu: Make cond_resched() report RCU quiescent states")
-> 
-> Let's have a compare here.
-> 
-> b84c4e08143c98d  9234566d3a36c0aead8852e3c
-> ---------------  -------------------------
->      809309 ~ 0%      -2.6%     788400 ~ 0%  TOTAL will-it-scale.per_process_ops
->        0.61 ~ 0%      -1.9%       0.60 ~ 0%  TOTAL will-it-scale.scalability
->      434080 ~ 0%      -1.5%     427643 ~ 0%  TOTAL will-it-scale.per_thread_ops
->           4 ~11%  +1.2e+05%       5249 ~ 2%  TOTAL interrupts.IWI
->         607 ~ 7%     +28.0%        778 ~14%  TOTAL interrupts.47:PCI-MSI-edge.eth0
->       12349 ~ 2%     -14.6%      10548 ~ 1%  TOTAL interrupts.0:IO-APIC-edge.timer
->        3078 ~ 3%     +20.9%       3722 ~ 6%  TOTAL interrupts.RES
-> 
-> 
-> Comparison 3 - parent commit of b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 vs b84c4e08143c98dad4b4d139f08db0b98b0d3ec4
-> 
-> Duplicated with Fengguang's report. Help you to see these info in a page :)
-> 
-> ad86a04266f9b49  b84c4e08143c98dad4b4d139f
-> ---------------  -------------------------
->      676264 ~ 0%      +3.3%     698461 ~ 0%  TOTAL will-it-scale.per_thread_ops
->     1174547 ~ 0%      +3.0%    1209307 ~ 0%  TOTAL will-it-scale.per_process_ops
->        1.67 ~ 0%      -2.3%       1.63 ~ 0%  TOTAL will-it-scale.scalability
->       10522 ~ 2%    +921.2%     107463 ~ 1%  TOTAL time.involuntary_context_switches
->       77671 ~ 3%     +67.0%     129688 ~ 3%  TOTAL interrupts.RES
->       99502 ~ 0%     -27.8%      71813 ~ 0%  TOTAL interrupts.0:IO-APIC-edge.timer
->        2554 ~ 0%     +49.1%       3809 ~ 1%  TOTAL vmstat.system.cs
->       11524 ~ 0%      -2.3%      11259 ~ 0%  TOTAL vmstat.system.in
->         213 ~ 0%      -4.3%        204 ~ 0%  TOTAL time.system_time
->          74 ~ 0%      -4.1%         71 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
->     3495099 ~ 0%      -3.1%    3387173 ~ 0%  TOTAL interrupts.LOC
-> 
-> 
-> 
-> 
-> Thanks,
-> Jet
-> 
-> 
-> 
+There are the following concerns that lead to the use of this solution:
+1. for this extra header file itself
+    A. The new header file is OSPM specific, thus it needn't be upstreamed to ACPICA;
+    B. Since it needn't be upstreamed to ACPICA, ACPICA needn't determine the name of this extra header;
+    C. It has to be the last file included by <acpi/acpi.h>.
+2. for the file that includes this extra header file
+    A. Currently there is no OSPM specific code in <acpi/acpi.h>.
+Thus I use a macro so that there is still no OSPM specific code in <acpi/acpi.h> and the name of the extra header can be determined by OSPM.
 
-> ./runtest.py open2 32 1 4 6 8
-> 
-> 
+If you want another solution, is the following acceptable?
+1. In <acpi/platform/aclinux.h>
+    #define ACPI_INCLUDE_EXTRA_NATIVE_HEADER	1
+2. In <acpi/acpi.h> <- this is an ACPICA header file, 
+    #ifdef ACPI_INCLUDE_EXTRA_NATIVE_HEADER
+    #include <acpi/platform/acextra.h>
+    #endif
+Note that in this solution, the name of the extra header file will be determined by ACPICA.
 
+> And the name aclinuxxf.h is not one of my favourite.
+
+Since this file needn't be upstreamed into ACPICA, could you help to determine it if the acextra.h was still not acceptable?
+
+Thanks and best regards
+-Lv
+
+> 
+> Thanks!
+> 
+> --
+> I speak only for myself.
+> Rafael J. Wysocki, Intel Open Source Technology Center.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
