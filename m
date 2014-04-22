@@ -1,64 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757430AbaDVQdZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:33:25 -0400
-Received: from mail-ve0-f176.google.com ([209.85.128.176]:56942 "EHLO
-	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757153AbaDVQdV (ORCPT
+	id S1757416AbaDVQgA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:36:00 -0400
+Received: from natasha.panasas.com ([209.166.131.148]:46482 "EHLO
+	natasha.panasas.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756642AbaDVQfy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:33:21 -0400
+	Tue, 22 Apr 2014 12:35:54 -0400
+From: Jim Lieb <jlieb@panasas.com>
+To: Boaz Harrosh <openosd@gmail.com>
+CC: Florian Weimer <fweimer@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <bfields@redhat.com>
+Subject: Re: Re: Thoughts on credential switching
+Date: Tue, 22 Apr 2014 09:35:40 -0700
+Message-ID: <3188256.8buApyBF7d@jlieb-e6410>
+Organization: Panasas Inc.
+User-Agent: KMail/4.11.5 (Linux/3.13.9-100.fc19.x86_64; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <53565D29.6010503@gmail.com>
+References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com> <53565491.702@redhat.com> <53565D29.6010503@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <53569467.1030809@zytor.com>
-References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
- <5355A9E9.9070102@zytor.com> <CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
- <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com> <CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
- <a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com> <CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
- <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com> <CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
- <20140422112312.GB15882@pd.tnic> <20140422144659.GF15882@pd.tnic>
- <CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com> <53569467.1030809@zytor.com>
-From: Andrew Lutomirski <amluto@gmail.com>
-Date: Tue, 22 Apr 2014 09:33:00 -0700
-Message-ID: <CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="UTF-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 9:10 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> Honestly, guys... you're painting the bikeshed at the moment.
->
-> Initialization is the easiest bit of all this code.  The tricky part is
-> *the rest of the code*, i.e. the stuff in entry_64.S.
+On Tuesday, April 22, 2014 15:14:33 Boaz Harrosh wrote:
+> On 04/22/2014 02:37 PM, Florian Weimer wrote:
+> > On 03/27/2014 02:33 PM, Boaz Harrosh wrote:
+> >> POSIX or not it just does not have any real programming mining
+> >> at all.
+> > 
+> > What do you mean with "mining" in this context?
+> 
+> Sorry I saw this mistake after I posted. I meant "meaning".
+> 
+> What I'm saying is that the mess starts when you are trying
+> to keep patching a very wrong API. the POSIX politics aside,
+> in regard to user switching (and current directory and etc...)
+> this API is plain WRONG. I mean in the mathematical sense wrong.
+> 
+> All these application mess is not the application programmers
+> fault. He had to do what he had to do. The mess starts when you
+> are trying to keep a mathematical contradiction in your proof.
+> 
+> It is glibc mess for trying to maintain compatibility with
+> these "PROCESS WIDE OPERATIONS". And naming it holy names like
+> POSIX will not cover the mess that they are. As long as you try
+> to keep them there will be mess. If you want to honestly clean
+> things up is by throwing the true garbage out. Convert all legacy
+> code to new mathematically sound API's.
+> 
+> Peace
+> Boaz
 
-That's because the initialization code is much simpler, so it's easy
-to pick on :)  Sorry.
+I don't want to keep this churning thread going.  I'd rather solve today's 
+problems.  So let's put this in perspective and move on.  Our project has a 
+problem to solve.
 
-For the espfix_adjust_stack thing, when can it actually need to do
-anything?  irqs should be off, I think, and MCE, NMI, and debug
-exceptions use ist, so that leaves just #SS and #GP, I think.  How can
-those actually occur?  Is there a way to trigger them deliberately
-from userspace?  Why do you have three espfix_adjust_stack
+I wouldn't necessarily say wrong, simply very out of date.  All of these 
+issues with POSIX and pthreads in particular come from one common source, the 
+actual capabilities of the systems, BSD, and SysV at the time.  The goofy 
+localtime_r and friends were (and still are) hacks to work around the 
+simplistic interfaces in the original Bell Labs code that deeply assumed a 
+single process with a single thread, i.e. there were only 3 segments, no 
+shared libraries or shared r/w memory and definitely no (real) TLS.  The 
+pthreads interfaces deeply assumed the same.  Even worse, it had to also run 
+on VMS which (I don't believe) ever had kernel support for multiple user space 
+theads.  ASTs are nasty enough and only worked because everybody knew that you 
+were either in app code or the AST...  So all of this stuff is based on lowest 
+common denominator.  The "Single UNIX Specification" was a peace treaty among 
+warring computer companies out looking for lock-ins and competitive advantages 
+while reluctantly realizing that the ISV community (Oracle) really didn't care 
+about anything but a common base.
 
-What happens on the IST entries?  If I've read your patch right,
-you're still switching back to the normal stack, which looks
-questionable.
+Let's move on.  Glibc has to keep some semblance of POSIX in order to cope 
+with legacy code from that era and I commend them for their perseverance.  But 
+that should not hold us back from leveraging today's architectures and, more 
+importantly, today's multi-client workloads.  If that means extensions to 
+POSIX fine.  But if POSIX gets hung up because *BSD doesn't have kernel support 
+for thread level creds and *bsd.org doesn't want to do it, we just do what fits 
+today's requirements and what Linux is capable of,
 
-Also, if you want to same some register abuse on each exception entry,
-could you check the saved RIP instead of the current RSP?  I.e. use
-the test instruction with offset(%rsp)?  Maybe there are multiple
-possible values, though, and just testing some bits doesn't help.
+Jim
+-- 
+Jim Lieb
+Linux Systems Engineer
+Panasas Inc.
 
---Andy
+"If ease of use was the only requirement, we would all be riding tricycles"
+- Douglas Engelbart 1925–2013
