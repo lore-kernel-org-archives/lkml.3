@@ -1,70 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932806AbaDVOxY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:53:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57042 "EHLO mx1.redhat.com"
+	id S932838AbaDVOx4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:53:56 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:35228 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932661AbaDVOxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:53:18 -0400
-Date: Tue, 22 Apr 2014 11:53:01 -0300
-From: Rafael Aquini <aquini@redhat.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mgorman@suse.de>,
-        Hugh Dickins <hughd@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, stable@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: commit 0bf1457f0cfca7b  " mm: vmscan: do not swap anon pages
- just because free+file is low" causes heavy performance regression on paging
-Message-ID: <20140422145300.GA23630@localhost.localdomain>
-References: <53564AA9.3060905@de.ibm.com>
- <53565922.1050709@de.ibm.com>
- <53567F51.8050608@redhat.com>
+	id S932661AbaDVOxv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:53:51 -0400
+Message-ID: <53568E4C.3050305@ti.com>
+Date: Tue, 22 Apr 2014 18:44:12 +0300
+From: Grygorii Strashko <grygorii.strashko@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53567F51.8050608@redhat.com>
-X-PGP-Key: http://people.redhat.com/~raquini/gpg-pubkey.asc
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Rob Herring <robherring2@gmail.com>
+CC: Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: Re: [PATCH v2 4/7] of: configure the platform device dma parameters
+References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>	<1397917972-6293-5-git-send-email-santosh.shilimkar@ti.com>	<CAL_JsqJJ4Cbh5poMa-KRwy+bp_t3VtRd7bCpcWey+DZ74eYHJQ@mail.gmail.com>	<53568641.2020300@ti.com> <CAL_JsqKe_L00P36UT7hizB=zAxCB0S_1kV3XEVGGbJOi27S84A@mail.gmail.com>
+In-Reply-To: <CAL_JsqKe_L00P36UT7hizB=zAxCB0S_1kV3XEVGGbJOi27S84A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 10:40:17AM -0400, Rik van Riel wrote:
-> On 04/22/2014 07:57 AM, Christian Borntraeger wrote:
-> > On 22/04/14 12:55, Christian Borntraeger wrote:
-> >> While preparing/testing some KVM on s390 patches for the next merge window (target is kvm/next which is based on 3.15-rc1) I faced a very severe performance hickup on guest paging (all anonymous memory).
-> >>
-> >> All memory bound guests are in "D" state now and the system is barely unusable.
-> >>
-> >> Reverting commit 0bf1457f0cfca7bc026a82323ad34bcf58ad035d
-> >> "mm: vmscan: do not swap anon pages just because free+file is low" makes the problem go away.
-> >>
-> >> According to /proc/vmstat the system is now in direct reclaim almost all the time for every page fault (more than 10x more direct reclaims than kswap reclaims)
-> >> With the patch being reverted everything is fine again.
-> >>
-> >> Any ideas?
-> > 
-> > Here is an idea to tackle my problem and the original problem:
-> > 
-> > reverting  0bf1457f0cfca7bc026a82323ad34bcf58ad035d + checking against low, also seems to make my system usable.
-> > 
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -1923,7 +1923,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-> >          */
-> >         if (global_reclaim(sc)) {
-> >                 free = zone_page_state(zone, NR_FREE_PAGES);
-> > -               if (unlikely(file + free <= high_wmark_pages(zone))) {
-> > +               if (unlikely(file + free <= low_wmark_pages(zone))) {
-> >                         scan_balance = SCAN_ANON;
-> >                         goto out;
-> >                 }
-> > 
-> 
-> Looks reasonable to me.
-+1
+On 04/22/2014 05:44 PM, Rob Herring wrote:
+> On Tue, Apr 22, 2014 at 10:09 AM, Grygorii Strashko
+> <grygorii.strashko@ti.com> wrote:
+>> Hi Rob,
+>>
+>> On 04/21/2014 05:58 PM, Rob Herring wrote:
+>>> On Sat, Apr 19, 2014 at 9:32 AM, Santosh Shilimkar
+>>> <santosh.shilimkar@ti.com> wrote:
+>>>> Retrieve DMA configuration from DT and setup platform device's DMA
+>>>> parameters. The DMA configuration in DT has to be specified using
+>>>> "dma-ranges" and "dma-coherent" properties if supported.
+>>>>
+>>>> We setup dma_pfn_offset using "dma-ranges" and dma_coherent_ops
+>>>> using "dma-coherent" device tree properties.
+>>>>
+>>>> The set_arch_dma_coherent_ops macro has to be defined by arch if
+>>>> it supports coherent dma_ops. Otherwise, set_arch_dma_coherent_ops() is
+>>>> declared as nop.
+>
+> [...]
+>
+>>>>
+>>>> +       ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
+>>>> +       if (ret < 0) {
+>>>
+>>> Perhaps an error is not the right return for the default case. The
+>>> default should probably be dma_addr and paddr equal to 0 and size 4GB.
+>>
+>> The error code is needed here to properly distinguish the case when
+>> there are no "dma-ranges" defined in DT. Also, I think, that
+>> of_dma_get_range() shouldn't return any default values - It just
+>> has to get data from DT. And the caller should decide what to do
+>> with this data and how to handle error cases.
+>>
+>> So, I prefer to keep behavior as is:
+>> - in case of failure of_dma_get_range() will not touch values of
+>>    &dma_addr, &paddr, &size.
+>
+> Fine, but that is not how of_dma_get_range currently behaves:
 
+Yep. That's will be fixed as you've commented :)
+
+>
+> +       *dma_addr = of_read_number(ranges, naddr);
+> +       *paddr = of_translate_dma_address(np, ranges);
+> +       if (*paddr == OF_BAD_ADDR) {
+> +               pr_err("%s: translation of DMA address(%pad) to CPU
+> address failed node(%s)\n",
+> +                      __func__, dma_addr, np->full_name);
+> +               ret = -EINVAL;
+> +       }
+>
+> Rob
+>
+
+Regards
+Grygorii
