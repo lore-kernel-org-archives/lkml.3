@@ -1,173 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755635AbaDVSfL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 14:35:11 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52923 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753564AbaDVSfD (ORCPT
+	id S1755529AbaDVSfJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 14:35:09 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:62228 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755383AbaDVSfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 14:35:03 -0400
-Date: Tue, 22 Apr 2014 11:34:30 -0700
-From: tip-bot for Don Zickus <tipbot@zytor.com>
-Message-ID: <tip-4b6279579c84cca7f162cfbcb98f66418f3062f3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        lizf@cn.fujitsu.com, namhyung@kernel.org, jolsa@redhat.com,
-        tglx@linutronix.de, dzickus@redhat.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        lizf@cn.fujitsu.com, namhyung@kernel.org, jolsa@redhat.com,
-        tglx@linutronix.de, dzickus@redhat.com
-In-Reply-To: <1396896924-129847-4-git-send-email-dzickus@redhat.com>
-References: <1396896924-129847-4-git-send-email-dzickus@redhat.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf kmem: Utilize the new generic cpunode_map
-Git-Commit-ID: 4b6279579c84cca7f162cfbcb98f66418f3062f3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	Tue, 22 Apr 2014 14:35:05 -0400
+Message-ID: <5356B654.8050504@gmail.com>
+Date: Tue, 22 Apr 2014 20:35:00 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: Rob Herring <robherring2@gmail.com>
+CC: Russell King <linux@arm.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: berlin: add CPU_V7 to Marvell Armada 1500-mini (BG2CD)
+References: <1397587699-11023-1-git-send-email-sebastian.hesselbarth@gmail.com> <5356B0C2.6010708@gmail.com> <CAL_JsqKvBWk3bD3=G=kY+8yitV6M7Gx=7JnwJeH=yns5dvXbnA@mail.gmail.com>
+In-Reply-To: <CAL_JsqKvBWk3bD3=G=kY+8yitV6M7Gx=7JnwJeH=yns5dvXbnA@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4b6279579c84cca7f162cfbcb98f66418f3062f3
-Gitweb:     http://git.kernel.org/tip/4b6279579c84cca7f162cfbcb98f66418f3062f3
-Author:     Don Zickus <dzickus@redhat.com>
-AuthorDate: Mon, 7 Apr 2014 14:55:23 -0400
-Committer:  Jiri Olsa <jolsa@redhat.com>
-CommitDate: Tue, 22 Apr 2014 17:39:20 +0200
+On 04/22/2014 08:29 PM, Rob Herring wrote:
+> On Tue, Apr 22, 2014 at 1:11 PM, Sebastian Hesselbarth
+> <sebastian.hesselbarth@gmail.com> wrote:
+>> On 04/15/2014 08:48 PM, Sebastian Hesselbarth wrote:
+>>> This selects missing CPU_V7 for ARM Cortex-A9 based Marvell Armada
+>>> 1500-mini (BG2CD).
+>>>
+>>> Signed-off-by: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+>>> ---
+>>
+>> Applied to berlin/soc.
+>>
+>>> ---
+>>>  arch/arm/mach-berlin/Kconfig | 1 +
+>>>  1 file changed, 1 insertion(+)
+>>>
+>>> diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+>>> index d3c5f14dc142..0add8350faf4 100644
+>>> --- a/arch/arm/mach-berlin/Kconfig
+>>> +++ b/arch/arm/mach-berlin/Kconfig
+>>> @@ -18,6 +18,7 @@ config MACH_BERLIN_BG2
+>>>  config MACH_BERLIN_BG2CD
+>>>       bool "Marvell Armada 1500-mini (BG2CD)"
+>>>       select CACHE_L2X0
+>>> +     select CPU_V7
+> 
+> This should not be needed. This gets selected by multi-platform with
+> ARCH_MULTI_V7.
 
-perf kmem: Utilize the new generic cpunode_map
+Ok, you are right.
 
-Use the previous patch implementation of cpunode_map for builtin-kmem.c
-Should not be any functional difference.
+Currently, I have three different SoCs for MACH_BERLIN. One selects
+CPU_PJ4B, one also selects CPU_V7. This would add CPU_V7 to BG2CD
+just to make it symmetrical.
 
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-Reviewed-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Link: http://lkml.kernel.org/r/1396896924-129847-4-git-send-email-dzickus@redhat.com
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/builtin-kmem.c | 78 ++---------------------------------------------
- 1 file changed, 3 insertions(+), 75 deletions(-)
+I can also remove it from BG2Q and only select CPU_PJ4B for the one
+that is different.
 
-diff --git a/tools/perf/builtin-kmem.c b/tools/perf/builtin-kmem.c
-index bd91de0..f91fa437 100644
---- a/tools/perf/builtin-kmem.c
-+++ b/tools/perf/builtin-kmem.c
-@@ -14,6 +14,7 @@
- #include "util/parse-options.h"
- #include "util/trace-event.h"
- #include "util/data.h"
-+#include "util/cpumap.h"
- 
- #include "util/debug.h"
- 
-@@ -31,9 +32,6 @@ static int			caller_lines = -1;
- 
- static bool			raw_ip;
- 
--static int			*cpunode_map;
--static int			max_cpu_num;
--
- struct alloc_stat {
- 	u64	call_site;
- 	u64	ptr;
-@@ -55,76 +53,6 @@ static struct rb_root root_caller_sorted;
- static unsigned long total_requested, total_allocated;
- static unsigned long nr_allocs, nr_cross_allocs;
- 
--#define PATH_SYS_NODE	"/sys/devices/system/node"
--
--static int init_cpunode_map(void)
--{
--	FILE *fp;
--	int i, err = -1;
--
--	fp = fopen("/sys/devices/system/cpu/kernel_max", "r");
--	if (!fp) {
--		max_cpu_num = 4096;
--		return 0;
--	}
--
--	if (fscanf(fp, "%d", &max_cpu_num) < 1) {
--		pr_err("Failed to read 'kernel_max' from sysfs");
--		goto out_close;
--	}
--
--	max_cpu_num++;
--
--	cpunode_map = calloc(max_cpu_num, sizeof(int));
--	if (!cpunode_map) {
--		pr_err("%s: calloc failed\n", __func__);
--		goto out_close;
--	}
--
--	for (i = 0; i < max_cpu_num; i++)
--		cpunode_map[i] = -1;
--
--	err = 0;
--out_close:
--	fclose(fp);
--	return err;
--}
--
--static int setup_cpunode_map(void)
--{
--	struct dirent *dent1, *dent2;
--	DIR *dir1, *dir2;
--	unsigned int cpu, mem;
--	char buf[PATH_MAX];
--
--	if (init_cpunode_map())
--		return -1;
--
--	dir1 = opendir(PATH_SYS_NODE);
--	if (!dir1)
--		return 0;
--
--	while ((dent1 = readdir(dir1)) != NULL) {
--		if (dent1->d_type != DT_DIR ||
--		    sscanf(dent1->d_name, "node%u", &mem) < 1)
--			continue;
--
--		snprintf(buf, PATH_MAX, "%s/%s", PATH_SYS_NODE, dent1->d_name);
--		dir2 = opendir(buf);
--		if (!dir2)
--			continue;
--		while ((dent2 = readdir(dir2)) != NULL) {
--			if (dent2->d_type != DT_LNK ||
--			    sscanf(dent2->d_name, "cpu%u", &cpu) < 1)
--				continue;
--			cpunode_map[cpu] = mem;
--		}
--		closedir(dir2);
--	}
--	closedir(dir1);
--	return 0;
--}
--
- static int insert_alloc_stat(unsigned long call_site, unsigned long ptr,
- 			     int bytes_req, int bytes_alloc, int cpu)
- {
-@@ -235,7 +163,7 @@ static int perf_evsel__process_alloc_node_event(struct perf_evsel *evsel,
- 	int ret = perf_evsel__process_alloc_event(evsel, sample);
- 
- 	if (!ret) {
--		int node1 = cpunode_map[sample->cpu],
-+		int node1 = cpu__get_node(sample->cpu),
- 		    node2 = perf_evsel__intval(evsel, sample, "node");
- 
- 		if (node1 != node2)
-@@ -772,7 +700,7 @@ int cmd_kmem(int argc, const char **argv, const char *prefix __maybe_unused)
- 	if (!strncmp(argv[0], "rec", 3)) {
- 		return __cmd_record(argc, argv);
- 	} else if (!strcmp(argv[0], "stat")) {
--		if (setup_cpunode_map())
-+		if (cpu__setup_cpunode_map())
- 			return -1;
- 
- 		if (list_empty(&caller_sort))
+Sebastian
+
