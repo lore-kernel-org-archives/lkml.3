@@ -1,80 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191AbaDVK7t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 06:59:49 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:65411 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755457AbaDVK7p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 06:59:45 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
+	id S932201AbaDVLAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:00:37 -0400
+Received: from mail-bl2lp0206.outbound.protection.outlook.com ([207.46.163.206]:41433
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755257AbaDVLAd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 07:00:33 -0400
+X-Greylist: delayed 892 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Apr 2014 07:00:32 EDT
+Date: Tue, 22 Apr 2014 18:51:44 +0800
+From: Robin Gong <b38343@freescale.com>
+To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
+CC: "Koul, Vinod" <vinod.koul@intel.com>,
+        "Williams, Dan J" <dan.j.williams@intel.com>,
+        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [PATCH 1/4] ACPICA: Add <acpi/platform/aclinuxxf.h> to remove mis-ordered inclusion of <acpi/actypes.h> from <acpi/platform/aclinux.h>.
-Date: Tue, 22 Apr 2014 13:16:02 +0200
-Message-ID: <1465848.IEpXGNryLP@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E8802556F33@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1385110130.git.lv.zheng@intel.com> <3086544.JUcChlMM9C@vostro.rjw.lan> <1AE640813FDE7649BE1B193DEA596E8802556F33@SHSMSX101.ccr.corp.intel.com>
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v1] dma: imx-sdma: add support for sdma memory copy
+Message-ID: <20140422105142.GA9693@Robin-OptiPlex-780>
+References: <1397728870-22086-1-git-send-email-b38343@freescale.com>
+ <1397730289.11914.225.camel@smile.fi.intel.com>
+ <20140418094057.GA11496@Robin-OptiPlex-780>
+ <1398162484.11914.234.camel@smile.fi.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1398162484.11914.234.camel@smile.fi.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(189002)(199002)(51704005)(24454002)(377424004)(44976005)(74662001)(83322001)(92726001)(80976001)(19580395003)(31966008)(74502001)(19580405001)(87936001)(92566001)(6806004)(85852003)(46406003)(83072002)(76482001)(80022001)(81342001)(81542001)(23726002)(97756001)(20776003)(47776003)(76176999)(54356999)(77096999)(50466002)(77982001)(99396002)(50986999)(46102001)(83506001)(4396001)(33656001)(33716001)(42262001);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR03MB031;H:az84smr01.freescale.net;FPR:FC08F088.AC0690D9.B0E35F86.4CE662C5.2031E;MLV:sfv;PTR:gate-az5.freescale.com;MX:1;A:1;LANG:en;
+X-Forefront-PRVS: 01894AD3B8
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 22, 2014 02:01:57 AM Zheng, Lv wrote:
-> Hi,
+On Tue, Apr 22, 2014 at 10:28:05AM +0000, Shevchenko, Andriy wrote:
+> On Fri, 2014-04-18 at 17:41 +0800, Robin Gong wrote:
+> > On Thu, Apr 17, 2014 at 10:24:50AM +0000, Shevchenko, Andriy wrote:
+> > > On Thu, 2014-04-17 at 18:01 +0800, Robin Gong wrote:
 > 
-> <skip>
+> []
 > 
-> > > +#define ACPI_NATIVE_INTERFACE_HEADER	<acpi/platform/aclinuxxf.h>
-> > 
-> > This is not good.
-> > 
-> > We don't do things like this in the kernel, because they are confusing and hard
-> > to debug if necessary, so please find a different way to make this work.
+> > > > +	dev_dbg(sdma->dev, "memcpy: %x->%x, len=%d, channel=%d.\n",
+> > > 
+> > > %pad for dma_addr_t variables.
+> > >
+> > Yes, %x here is not proper, will be %#llx here to align with others similar
+> > code in this file.
 > 
-> I use this extra header file to collect:
+> Why %#llx? You don't need the specific casting since kernel has special
+> specifiers for phys_addr_t and dma_addr_t and their derivatives (see
+> Documentation/printk-formats.txt)
+>
+I think both are ok, why I choose %llx is only for align the code style, you
+can find the same code in sdma_prep_dma_cyclic function. below description also
+copy from Documentation/printk-formats.txt:
 
-I was not talking about the new header, which is basically OK, but about the
-#define above, which is just too confusing to live.
 
-Please use header file paths directly with #include.
+If <type> is dependent on a config option for its size (e.g., sector_t,
+blkcnt_t, phys_addr_t, resource_size_t) or is architecture-dependent
+for its size (e.g., tcflag_t), use a format specifier of its largest
+possible type and explicitly cast to it.  Example:
 
-> 1. static inline OSL functions
-> 2. divergences of prototypes that haven't been back ported to ACPICA.
-> This file is useful for ACPICA release automation.
+	printk("test: sector number/total blocks: %llu/%llu\n",
+		(unsigned long long)sector, (unsigned long long)blockcount);
+> > > > +		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%08x %s%s\n",
+> > > > +				i, count, sg_src->dma_address,
+> > > 
+> > > %pad for dma_addr_t.
+> > > 
+> > Accept the idea, same as the above.
 > 
-> There are the following concerns that lead to the use of this solution:
-> 1. for this extra header file itself
->     A. The new header file is OSPM specific, thus it needn't be upstreamed to ACPICA;
->     B. Since it needn't be upstreamed to ACPICA, ACPICA needn't determine the name of this extra header;
->     C. It has to be the last file included by <acpi/acpi.h>.
-> 2. for the file that includes this extra header file
->     A. Currently there is no OSPM specific code in <acpi/acpi.h>.
-> Thus I use a macro so that there is still no OSPM specific code in <acpi/acpi.h> and the name of the extra header can be determined by OSPM.
+> Same as above.
 > 
-> If you want another solution, is the following acceptable?
-> 1. In <acpi/platform/aclinux.h>
->     #define ACPI_INCLUDE_EXTRA_NATIVE_HEADER	1
-> 2. In <acpi/acpi.h> <- this is an ACPICA header file, 
->     #ifdef ACPI_INCLUDE_EXTRA_NATIVE_HEADER
->     #include <acpi/platform/acextra.h>
->     #endif
-> Note that in this solution, the name of the extra header file will be determined by ACPICA.
-
-I think I see what you're trying to do now.  And I see that this ACPI_NATIVE_INTERFACE_HEADER
-thing is already there in the Linus' tree which is not good at all.
-
-I probably would create an extra ACPICA header, something like <acpios_opt.h>,
-that would be empty for all hosts except for Linux and that would contain the
-stuff you want to put into acextra.h in Linux.
-
-That would be clean enough I suppose?
-
-Rafael
-
+> -- 
+> Andy Shevchenko <andriy.shevchenko@intel.com>
+> Intel Finland Oy
+> ---------------------------------------------------------------------
+> Intel Finland Oy
+> Registered Address: PL 281, 00181 Helsinki 
+> Business Identity Code: 0357606 - 4 
+> Domiciled in Helsinki 
+> 
+> This e-mail and any attachments may contain confidential material for
+> the sole use of the intended recipient(s). Any review or distribution
+> by others is strictly prohibited. If you are not the intended
+> recipient, please contact the sender and delete all copies.
