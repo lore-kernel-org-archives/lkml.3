@@ -1,44 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966AbaDVNDH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:03:07 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:44395 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751383AbaDVNDD (ORCPT
+	id S1755976AbaDVNES (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:04:18 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:42956 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438AbaDVNEQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:03:03 -0400
-Date: Tue, 22 Apr 2014 16:02:19 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        hans.verkuil@cisco.com, m.chehab@samsung.com,
-        ext-eero.nurkkala@nokia.com, nils.faerber@kernelconcepts.de,
-        joni.lapilainen@gmail.com, freemangordon@abv.bg, sre@ring0.de,
-        Greg KH <greg@kroah.com>, trivial@kernel.org,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] radio-bcm2048.c: fix wrong overflow check
-Message-ID: <20140422130219.GW4963@mwanda>
-References: <20140420145622.GA15567@amd.pavel.ucw.cz>
- <20140422083917.GS4963@mwanda>
- <201404221055.54799@pali>
- <20140422091656.GV4963@mwanda>
- <20140422093836.GA16686@amd.pavel.ucw.cz>
+	Tue, 22 Apr 2014 09:04:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140422093836.GA16686@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <1397325554-1439-1-git-send-email-colin.king@canonical.com>
+References: <1397325554-1439-1-git-send-email-colin.king@canonical.com>
+Date: Tue, 22 Apr 2014 15:04:16 +0200
+Message-ID: <CACRpkdYq9q=WinNb8+R15KjbpAji_wK_Dhe5qPXO-qbu7QN3BQ@mail.gmail.com>
+Subject: Re: [PATCH] clk: versatile: free icst on error return
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Colin King <colin.king@canonical.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 11:38:36AM +0200, Pavel Machek wrote:
-> Feel free to resubmit the patch yourself.
+On Sat, Apr 12, 2014 at 7:59 PM, Colin King <colin.king@canonical.com> wrote:
 
-No problem.  Happy to help.
+> From: Colin Ian King <colin.king@canonical.com>
+>
+> commit a183da63 introduced a new error return path that does
+> not kfree icst if the kmemdup of desc->params fails.
+>
+> Signed-off-by: Colin Ian King <colin.king@canonical.com>
 
-regards,
-dan carpenter
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
+Yours,
+Linus Walleij
