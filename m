@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933449AbaDVRLS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 13:11:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49516 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933025AbaDVRLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 13:11:15 -0400
-Date: Tue, 22 Apr 2014 19:10:49 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 3/9] perf tools: Account entry stats when it's added to
- the output tree
-Message-ID: <20140422171048.GL1104@krava.brq.redhat.com>
-References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
- <1398156591-11001-4-git-send-email-namhyung@kernel.org>
+	id S933464AbaDVRL1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 13:11:27 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:35994 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933025AbaDVRLZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 13:11:25 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398156591-11001-4-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
+ <5355A9E9.9070102@zytor.com> <CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
+ <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com> <CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
+ <a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com> <CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
+ <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com> <CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
+ <20140422112312.GB15882@pd.tnic> <20140422144659.GF15882@pd.tnic>
+ <CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
+ <53569467.1030809@zytor.com> <CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
+ <CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
+ <CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com> <CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>
+From: Andrew Lutomirski <amluto@gmail.com>
+Date: Tue, 22 Apr 2014 10:11:04 -0700
+Message-ID: <CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 05:49:45PM +0900, Namhyung Kim wrote:
+On Tue, Apr 22, 2014 at 10:04 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Apr 22, 2014 at 10:00 AM, Andrew Lutomirski <amluto@gmail.com> wrote:
+>>
+>> My point is that it may be safe to remove the special espfix fixup
+>> from #PF, which is probably the most performance-critical piece here,
+>> aside from iret itself.
+>
+> Actually, even that is unsafe.
+>
+> Why?
+>
+> The segment table is shared for a process. So you can have one thread
+> doing a load_ldt() that invalidates a segment, while another thread is
+> busy taking a page fault. The segment was valid at page fault time and
+> is saved on the kernel stack, but by the time the page fault returns,
+> it is no longer valid and the iretq will fault.
 
-SNIP
+Let me try that again: I think it should be safe to remove the check
+for "did we fault from the espfix stack" from the #PF entry.  You can
+certainly have all kinds of weird things happen on return from #PF,
+but the overhead that I'm talking about is a test on exception *entry*
+to see whether the fault happened on the espfix stack so that we can
+switch back to running on a real stack.
 
->  
-> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> index 1c77714f668d..f955ae5a41c5 100644
-> --- a/tools/perf/util/hist.c
-> +++ b/tools/perf/util/hist.c
-> @@ -344,9 +344,11 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
->  		hists__calc_col_len(hists, h);
->  		hists->nr_non_filtered_entries++;
->  		hists->stats.total_non_filtered_period += h->stat.period;
-> +		hists->stats.nr_non_filtered_samples += h->stat.nr_events;
->  	}
->  	hists->nr_entries++;
->  	hists->stats.total_period += h->stat.period;
-> +	hists__add_nr_events(hists, PERF_RECORD_SAMPLE, h->stat.nr_events);
+If the espfix code and the iret at the end can't cause #PF, then the
+check in #PF entry can be removed, I think.
 
-while at it.. could hists__remove_entry_filter call hists__inc_nr_entries too?
+>
+> Anyway, if done correctly, this whole espfix should be totally free
+> for normal processes, since it should only trigger if SS is a LDT
+> entry (bit #2 set in the segment descriptor). So the normal fast-path
+> should just have a simple test for that.
 
-not sure about those 2 extra lines in hists__remove_entry_filter:
+How?  Doesn't something still need to check whether SS is funny before
+doing iret?
 
-        if (h->ms.unfolded)
-                hists->nr_non_filtered_entries += h->nr_rows;
-        h->row_offset = 0;
-
-maybe they should be added into hists__inc_nr_entries?
-
-
-thanks,
-jirka
+--Andy
