@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289AbaDVNql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:46:41 -0400
-Received: from transparentnimenzy.cz ([31.31.77.140]:49417 "EHLO
-	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932111AbaDVNqi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:46:38 -0400
+	id S932425AbaDVNqt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:46:49 -0400
+Received: from prifuk.cz ([31.31.77.140]:49426 "EHLO smtp.devoid-pointer.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932317AbaDVNqm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 09:46:42 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org
-Subject: [PATCH 09/24] Port hid-dr to ff-memless-next
-Date: Tue, 22 Apr 2014 15:45:59 +0200
-Message-Id: <1398174374-9501-10-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH 11/24] Port hid-holtekff to ff-memless-next
+Date: Tue, 22 Apr 2014 15:46:01 +0200
+Message-Id: <1398174374-9501-12-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398174374-9501-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398174374-9501-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -26,118 +25,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/hid/Kconfig  |  2 +-
- drivers/hid/hid-dr.c | 59 ++++++++++++++++++++++++++++++++--------------------
- 2 files changed, 37 insertions(+), 24 deletions(-)
+ drivers/hid/Kconfig        |  2 +-
+ drivers/hid/hid-holtekff.c | 47 +++++++++++++++++++++++++++++-----------------
+ 2 files changed, 31 insertions(+), 18 deletions(-)
 
 diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index 6e233d2..0ba1962 100644
+index 24b336e..d1d4e77 100644
 --- a/drivers/hid/Kconfig
 +++ b/drivers/hid/Kconfig
-@@ -196,7 +196,7 @@ config HID_DRAGONRISE
- config DRAGONRISE_FF
- 	bool "DragonRise Inc. force feedback"
- 	depends on HID_DRAGONRISE
+@@ -247,7 +247,7 @@ config HID_HOLTEK
+ config HOLTEK_FF
+ 	bool "Holtek On Line Grip force feedback support"
+ 	depends on HID_HOLTEK
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	---help---
- 	Say Y here if you want to enable force feedback support for DragonRise Inc.
- 	game controllers.
-diff --git a/drivers/hid/hid-dr.c b/drivers/hid/hid-dr.c
-index ce06444..b95c676 100644
---- a/drivers/hid/hid-dr.c
-+++ b/drivers/hid/hid-dr.c
-@@ -31,8 +31,10 @@
- #include <linux/slab.h>
- #include <linux/hid.h>
+ 	  Say Y here if you have a Holtek On Line Grip based game controller
+ 	  and want to have force feedback support for it.
+diff --git a/drivers/hid/hid-holtekff.c b/drivers/hid/hid-holtekff.c
+index 9325545..9c6064d 100644
+--- a/drivers/hid/hid-holtekff.c
++++ b/drivers/hid/hid-holtekff.c
+@@ -27,9 +27,12 @@
+ #include <linux/input.h>
  #include <linux/module.h>
+ #include <linux/slab.h>
 +#include <linux/input/ff-memless-next.h>
  
  #include "hid-ids.h"
+ 
 +#define FF_UPDATE_RATE 50
++
+ #ifdef CONFIG_HOLTEK_FF
  
- #ifdef CONFIG_DRAGONRISE_FF
+ MODULE_LICENSE("GPL");
+@@ -104,34 +107,44 @@ static void holtekff_send(struct holtekff_device *holtekff,
+ }
  
-@@ -41,38 +43,49 @@ struct drff_device {
- };
- 
- static int drff_play(struct input_dev *dev, void *data,
--				 struct ff_effect *effect)
-+			const struct mlnx_effect_command *command)
+ static int holtekff_play(struct input_dev *dev, void *data,
+-			 struct ff_effect *effect)
++			 const struct mlnx_effect_command *command)
  {
  	struct hid_device *hid = input_get_drvdata(dev);
- 	struct drff_device *drff = data;
+ 	struct holtekff_device *holtekff = data;
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 	int strong, weak;
+ 	int left, right;
+ 	/* effect type 1, length 65535 msec */
+ 	u8 buf[HOLTEKFF_MSG_LENGTH] =
+ 		{ 0x01, 0x01, 0xff, 0xff, 0x10, 0xe0, 0x00 };
  
--	strong = effect->u.rumble.strong_magnitude;
--	weak = effect->u.rumble.weak_magnitude;
-+	strong = rumble_force->strong;
-+	weak = rumble_force->weak;
- 
- 	dbg_hid("called with 0x%04x 0x%04x", strong, weak);
- 
--	if (strong || weak) {
--		strong = strong * 0xff / 0xffff;
--		weak = weak * 0xff / 0xffff;
--
--		/* While reverse engineering this device, I found that when
--		   this value is set, it causes the strong rumble to function
--		   at a near maximum speed, so we'll bypass it. */
--		if (weak == 0x0a)
--			weak = 0x0b;
--
--		drff->report->field[0]->value[0] = 0x51;
--		drff->report->field[0]->value[1] = 0x00;
--		drff->report->field[0]->value[2] = weak;
--		drff->report->field[0]->value[4] = strong;
--		hid_hw_request(hid, drff->report, HID_REQ_SET_REPORT);
--
--		drff->report->field[0]->value[0] = 0xfa;
--		drff->report->field[0]->value[1] = 0xfe;
--	} else {
+-	left = effect->u.rumble.strong_magnitude;
+-	right = effect->u.rumble.weak_magnitude;
+-	dbg_hid("called with 0x%04x 0x%04x\n", left, right);
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		if (strong || weak) {
-+			strong = strong * 0xff / 0xffff;
-+			weak = weak * 0xff / 0xffff;
-+
-+			/* While reverse engineering this device, I found that when
-+			this value is set, it causes the strong rumble to function
-+			at a near maximum speed, so we'll bypass it. */
-+			if (weak == 0x0a)
-+				weak = 0x0b;
-+
-+			drff->report->field[0]->value[0] = 0x51;
-+			drff->report->field[0]->value[1] = 0x00;
-+			drff->report->field[0]->value[2] = weak;
-+			drff->report->field[0]->value[4] = strong;
-+			hid_hw_request(hid, drff->report, HID_REQ_SET_REPORT);
-+
-+			drff->report->field[0]->value[0] = 0xfa;
-+			drff->report->field[0]->value[1] = 0xfe;
-+		} else {
-+			drff->report->field[0]->value[0] = 0xf3;
-+			drff->report->field[0]->value[1] = 0x00;
++		left = rumble_force->strong;
++		right = rumble_force->weak;
++		dbg_hid("called with 0x%04x 0x%04x\n", left, right);
+ 
+-	if (!left && !right) {
+-		holtekff_send(holtekff, hid, stop_all6);
+-		return 0;
+-	}
++		if (!left && !right) {
++			holtekff_send(holtekff, hid, stop_all6);
++			return 0;
 +		}
-+		break;
+ 
+-	if (left)
+-		buf[1] |= 0x80;
+-	if (right)
+-		buf[1] |= 0x40;
++		if (left)
++			buf[1] |= 0x80;
++		if (right)
++			buf[1] |= 0x40;
+ 
+-	/* The device takes a single magnitude, so we just sum them up. */
+-	buf[6] = min(0xf, (left >> 12) + (right >> 12));
++		/* The device takes a single magnitude, so we just sum them up. */
++		buf[6] = min(0xf, (left >> 12) + (right >> 12));
+ 
+-	holtekff_send(holtekff, hid, buf);
+-	holtekff_send(holtekff, hid, start_effect_1);
++		holtekff_send(holtekff, hid, buf);
++		holtekff_send(holtekff, hid, start_effect_1);
++		return 0;
 +	case MLNX_STOP_RUMBLE:
- 		drff->report->field[0]->value[0] = 0xf3;
- 		drff->report->field[0]->value[1] = 0x00;
-+		break;
++		holtekff_send(holtekff, hid, stop_all6);
++		return 0;
 +	default:
 +		return -EINVAL;
- 	}
++	}
  
- 	drff->report->field[0]->value[2] = 0x00;
-@@ -116,7 +129,7 @@ static int drff_init(struct hid_device *hid)
+ 	return 0;
+ }
+@@ -171,7 +184,7 @@ static int holtekff_init(struct hid_device *hid)
+ 	holtekff_send(holtekff, hid, stop_all4);
+ 	holtekff_send(holtekff, hid, stop_all6);
  
- 	set_bit(FF_RUMBLE, dev->ffbit);
- 
--	error = input_ff_create_memless(dev, drff, drff_play);
-+	error = input_ff_create_mlnx(dev, drff, drff_play, FF_UPDATE_RATE);
+-	error = input_ff_create_memless(dev, holtekff, holtekff_play);
++	error = input_ff_create_mlnx(dev, holtekff, holtekff_play, FF_UPDATE_RATE);
  	if (error) {
- 		kfree(drff);
+ 		kfree(holtekff);
  		return error;
 -- 
 1.9.2
