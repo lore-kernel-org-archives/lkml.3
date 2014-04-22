@@ -1,99 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295AbaDVCbj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 22:31:39 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:6035 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751287AbaDVCbg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 22:31:36 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Mon, 21 Apr 2014 19:23:19 -0700
-Message-ID: <5355D485.6030301@nvidia.com>
-Date: Tue, 22 Apr 2014 11:31:33 +0900
-From: Alexandre Courbot <acourbot@nvidia.com>
-Organization: NVIDIA
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1753942AbaDVCeP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 22:34:15 -0400
+Received: from know-smtprelay-omc-8.server.virginmedia.net ([80.0.253.72]:53759
+	"EHLO know-smtprelay-omc-8.server.virginmedia.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751371AbaDVCeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 22:34:13 -0400
+X-Originating-IP: [81.106.150.188]
+X-Spam: 0
+X-Authority: v=2.1 cv=TM7LSjVa c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
+ a=DGj713NdaxKrsjjgQne7PA==:17 a=J0QyKEt1u0cA:10 a=BdtlclQ1lucA:10
+ a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=pGLkceISAAAA:8
+ a=zd2uoN0lAAAA:8 a=Z4Rwk6OoAAAA:8 a=VwQbUJbxAAAA:8 a=FuE5Ay7eAgbjKXUaVF8A:9
+ a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=wu_e27o_rKQA:10 a=jbrJJM5MRmoA:10
+Date: Tue, 22 Apr 2014 03:34:10 +0100
+From: Ken Moffat <zarniwhoop@ntlworld.com>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: Alex Deucher <alexdeucher@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 3.15.0-rc2 radeon HD 7480D [Aruba] blank display
+Message-ID: <20140422023410.GB1709@milliways>
+References: <20140421203207.GA27025@milliways>
+ <5549363.XIKIYZeGzc@grover>
+ <20140422023106.GA1709@milliways>
 MIME-Version: 1.0
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-CC: Ben Skeggs <bskeggs@redhat.com>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: Re: [Nouveau] [PATCH v2 09/10] drm/nouveau: support GK20A in nouveau_accel_init()
-References: <1398060142-7937-1-git-send-email-acourbot@nvidia.com>	<1398060142-7937-10-git-send-email-acourbot@nvidia.com> <CAKb7Uvg4kOfsE0gd4zLcwjShc4eVgVKA7zQM2r1aeatOybm8NQ@mail.gmail.com>
-In-Reply-To: <CAKb7Uvg4kOfsE0gd4zLcwjShc4eVgVKA7zQM2r1aeatOybm8NQ@mail.gmail.com>
-X-NVConfidentiality: public
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140422023106.GA1709@milliways>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 03:07 AM, Ilia Mirkin wrote:
-> On Mon, Apr 21, 2014 at 2:02 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->> Skip the creation of a software channel for GK20A as software methods
->> are not yet supported.
->
-> How is GK20A different from a nvc0+ card that lacks PDISPLAY (like all
-> the 3D Controller ones, and I guess even some that come up as VGA
-> controller in PCI but don't have any outputs in their VBIOS)? i.e.
-> what's wrong with just doing the same thing that GK1xx does? Note that
-> there are sw methods that don't deal with display as well.
+On Tue, Apr 22, 2014 at 03:31:06AM +0100, Ken Moffat wrote:
 
-Well, as it turns out... I have tried reverting this patch and enabling 
-nvc0_software_oclass for GK20A and things worked like a charm. 0_o
+[ resending, somehow lkml dropped out of the Cc. ]
 
-This is definitely different from when I first drafted this patch 
-series, where a software class could not be used on GK20A due to hard 
-dependencies on display. But it seems like today's code can accommodate 
-much better with that situation.
+> On Tue, Apr 22, 2014 at 12:19:40AM +0100, Ken Moffat wrote:
+> > On Mon, Apr 21, 2014 at 05:29:27PM -0400, Ed Tomlinson wrote:
+> 
+> > > Ken,
+> > > 
+> > > You might want to try reverting:
+> > > 
+> > > commit 379dfc25e257ffe10eb53b86d2375f7c0f4f33ef
+> > > Author: Alex Deucher <alexdeucher@gmail.com>
+> > > Date:   Mon Apr 7 10:33:46 2014 -0400
+> > > 
+> > >     drm/radeon/dp: switch to the common i2c over aux code
+> > >     
+> > >     Provides a nice cleanup in radeon.
+> > >     
+> > >     Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+> > >     Signed-off-by: Christian König <christian.koenig@amd.com>
+> > > 
+> > > This fixed a similar problem here (see the drm pull thread for rc1)
+> > > 
+> > > Thanks
+> > > Ed Tomlinson
+> > 
+> >  Tried reverting that from rc2, but it didn't help.  Thanks anyway.
+> > 
+> 
+>  Well, I *believed* I had created a patch for that commit, and
+> reverted it from -rc2 with patch -R.  But I've now bisected through
+> drivers/gpu/drm between v3.14.0 and v3.15-rc2 and the bisection
+> pointed to that same commit, so I guess I did something wrong.
+> 
+>  There were a couple of other issues along the way (mounting nfs
+> hung on one commit, startx hung on several of the commits, but I've
+> marked those as "good" because I had a display, even if the system
+> was not usable).
+> 
+>  I've now gone back to linus' tree that I cloned a few hours ago,
+> i.e.
+> commit c089b229dfdd09d59a11d8bc2344bf8196d575ce
+> Merge: 9ac03675010a 0565103d1adb
+> Author: Linus Torvalds <torvalds@linux-foundation.org>
+> Date:   Mon Apr 21 10:05:35 2014 -0700
+> 
+>     Merge branch 'for-linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml
+> 
+> created a branch, and *definitely* reverted
+> 379dfc25e257ffe10eb53b86d2375f7c0f4f33ef (using git revert) in that
+> branch.  And this version works fine.
+> 
+>  So belatedly I see that I seem to have the same problem as Ed.  Or
+> at least that the same commit is causing both our problems.
+> 
+>  Alex - do you need any more information from me to help with this ?
+> 
+> ĸen
+> -- 
+> das eine Mal als Tragödie, dieses Mal als Farce
 
-That's great - this will allow us to get rid of this ungraceful patch. 
-Thanks for making me check it again.
-
-Probably a v3 will be necessary to enable the software class in patch 10 
-(and fix the byte/word typo in patch 7). I will just wait a bit to see 
-if this v2 gets more comments before sending it.
-
->
->    -ilia
->
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->>   drivers/gpu/drm/nouveau/nouveau_drm.c | 5 +++++
->>   1 file changed, 5 insertions(+)
->>
->> diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
->> index ddd83756b9a2..5b46148ffd32 100644
->> --- a/drivers/gpu/drm/nouveau/nouveau_drm.c
->> +++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
->> @@ -208,6 +208,10 @@ nouveau_accel_init(struct nouveau_drm *drm)
->>                  return;
->>          }
->>
->> +       /* Need to figure out how to handle sw for gk20a */
->> +       if (device->chipset == 0xea)
->> +               goto skip_sw_init;
->> +
->>          ret = nouveau_object_new(nv_object(drm), NVDRM_CHAN, NVDRM_NVSW,
->>                                   nouveau_abi16_swclass(drm), NULL, 0, &object);
->>          if (ret == 0) {
->> @@ -234,6 +238,7 @@ nouveau_accel_init(struct nouveau_drm *drm)
->>                  return;
->>          }
->>
->> +skip_sw_init:
->>          if (device->card_type < NV_C0) {
->>                  ret = nouveau_gpuobj_new(drm->device, NULL, 32, 0, 0,
->>                                          &drm->notify);
->> --
->> 1.9.2
->>
->> _______________________________________________
->> Nouveau mailing list
->> Nouveau@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/nouveau
-
+-- 
+das eine Mal als Tragödie, dieses Mal als Farce
