@@ -1,82 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195AbaDVUYu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:24:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36630 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136AbaDVUYh (ORCPT
+	id S1758467AbaDVUje (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:39:34 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:56307 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758446AbaDVUja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:37 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Brian Austin <brian.austin@cirrus.com>, Mark Brown <broonie@linaro.org>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 087/133] ASoC: cs42l51: Fix SOC_DOUBLE_R_SX_TLV shift values for ADC, PCM, and Analog kcontrols
-Date: Tue, 22 Apr 2014 13:13:45 -0700
-Message-Id: <1398197671-12786-88-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 22 Apr 2014 16:39:30 -0400
+Message-ID: <5356D37E.4040306@gmail.com>
+Date: Tue, 22 Apr 2014 22:39:26 +0200
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Linux Kernel list <linux-kernel@vger.kernel.org>
+CC: AceLan Kao <acelan.kao@canonical.com>,
+        Matthew Garrett <matthew.garrett@nebula.com>,
+        Corentin Chary <corentin.chary@gmail.com>
+Subject: asus-nb-wmi: set wapf=4 for ASUSTeK COMPUTER INC. X75VBP
+Content-Type: multipart/mixed;
+ boundary="------------010703080304000609090204"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
+This is a multi-part message in MIME format.
+--------------010703080304000609090204
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-------------------
 
-From: Brian Austin <brian.austin@cirrus.com>
+Ahoy!
 
-commit 7272e051157ccd5871b5d939548d0ba5a94a2965 upstream.
+Need to set wapf to 4 for ASUSTeK COMPUTER INC. X75VBP, so that
+the device is enabled.
 
-The shift values for the ADC,PCM, and Analog kcontrols were wrong causing wrong values for the SOC_DOUBLE_R_SX_TLV macros
-Fixed the TLV for aout_tlv to show -102dB correctly
+The corresponding /sys/class/dmi/id/* values via dmesg:
+DMI: ASUSTeK COMPUTER INC. X75VBP/X75VBP, BIOS X75VBP.304 06/04/2013
 
-Fixes: 1d99f2436d (ASoC: core: Rework SOC_DOUBLE_R_SX_TLV add SOC_SINGLE_SX_TLV)
-Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- sound/soc/codecs/cs42l51.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+Tested with WAPF values 0, 1 and 4.
+The values 1 and 4 have the same effect regarding wireless network
+adapter enablement.
+A value of 0 has no effect.
+The corresponding command line:
+Kernel command line: BOOT_IMAGE=/isolinux/vmlinuz0
+root=live:LABEL=Fedora-Live-Xfce-x86_64-rawhide- ro rd.live.image
+selinux=0 biosdevname=0 asus-nb-wmi.wapf=4
 
-diff --git a/sound/soc/codecs/cs42l51.c b/sound/soc/codecs/cs42l51.c
-index 1e0fa3b..e1dfebb 100644
---- a/sound/soc/codecs/cs42l51.c
-+++ b/sound/soc/codecs/cs42l51.c
-@@ -124,9 +124,8 @@ static int cs42l51_set_chan_mix(struct snd_kcontrol *kcontrol,
- 
- static const DECLARE_TLV_DB_SCALE(adc_pcm_tlv, -5150, 50, 0);
- static const DECLARE_TLV_DB_SCALE(tone_tlv, -1050, 150, 0);
--/* This is a lie. after -102 db, it stays at -102 */
--/* maybe a range would be better */
--static const DECLARE_TLV_DB_SCALE(aout_tlv, -11550, 50, 0);
-+
-+static const DECLARE_TLV_DB_SCALE(aout_tlv, -10200, 50, 0);
- 
- static const DECLARE_TLV_DB_SCALE(boost_tlv, 1600, 1600, 0);
- static const char *chan_mix[] = {
-@@ -141,7 +140,7 @@ static const struct soc_enum cs42l51_chan_mix =
- static const struct snd_kcontrol_new cs42l51_snd_controls[] = {
- 	SOC_DOUBLE_R_SX_TLV("PCM Playback Volume",
- 			CS42L51_PCMA_VOL, CS42L51_PCMB_VOL,
--			6, 0x19, 0x7F, adc_pcm_tlv),
-+			0, 0x19, 0x7F, adc_pcm_tlv),
- 	SOC_DOUBLE_R("PCM Playback Switch",
- 			CS42L51_PCMA_VOL, CS42L51_PCMB_VOL, 7, 1, 1),
- 	SOC_DOUBLE_R_SX_TLV("Analog Playback Volume",
-@@ -149,7 +148,7 @@ static const struct snd_kcontrol_new cs42l51_snd_controls[] = {
- 			0, 0x34, 0xE4, aout_tlv),
- 	SOC_DOUBLE_R_SX_TLV("ADC Mixer Volume",
- 			CS42L51_ADCA_VOL, CS42L51_ADCB_VOL,
--			6, 0x19, 0x7F, adc_pcm_tlv),
-+			0, 0x19, 0x7F, adc_pcm_tlv),
- 	SOC_DOUBLE_R("ADC Mixer Switch",
- 			CS42L51_ADCA_VOL, CS42L51_ADCB_VOL, 7, 1, 1),
- 	SOC_SINGLE("Playback Deemphasis Switch", CS42L51_DAC_CTL, 3, 1, 0),
--- 
-1.9.1
+rfkill list - vulgaris:
+1: asus-wlan: Wireless LAN
+	Soft blocked: no
+	Hard blocked: no
+2: asus-bluetooth: Bluetooth
+	Soft blocked: no
+	Hard blocked: no
+3: phy0: Wireless LAN
+	Soft blocked: no
+	Hard blocked: yes
+4: hci0: Bluetooth
+	Soft blocked: no
+	Hard blocked: no
 
+rfkill list - asus-nb-wmi.wapf=1,
+              asus-nb-wmi.wapf=4:
+0: hci0: Bluetooth
+	Soft blocked: no
+	Hard blocked: no
+1: phy0: Wireless LAN
+	Soft blocked: no
+	Hard blocked: no
+2: asus-wlan: Wireless LAN
+	Soft blocked: no
+	Hard blocked: no
+3: asus-bluetooth: Bluetooth
+	Soft blocked: no
+	Hard blocked: no
+
+Regardless of the values ​​of the WAPF parameter,
+<Fn><F2> key combination does not give any results,
+i.e. does not toggles The Internal Wireless LAN ON or OFF.
+Also the WLAN LED is always ON, no matter what.
+
+
+poma
+
+
+
+--------------010703080304000609090204
+Content-Type: text/x-patch;
+ name="asus-nb-wmi.wapf4-ASUSTeK-X75VBP.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="asus-nb-wmi.wapf4-ASUSTeK-X75VBP.diff"
+
+diff --git a/drivers/platform/x86/asus-nb-wmi.c b/drivers/platform/x86/asus-nb-wmi.c
+index 563f59e..674793d 100644
+--- a/drivers/platform/x86/asus-nb-wmi.c
++++ b/drivers/platform/x86/asus-nb-wmi.c
+@@ -182,6 +182,15 @@ static struct dmi_system_id asus_quirks[] = {
+ 	},
+ 	{
+ 		.callback = dmi_matched,
++		.ident = "ASUSTeK COMPUTER INC. X75VBP",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "X75VBP"),
++		},
++		.driver_data = &quirk_asus_x401u,
++	},
++	{
++		.callback = dmi_matched,
+ 		.ident = "ASUSTeK COMPUTER INC. 1015E",
+ 		.matches = {
+ 			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK COMPUTER INC."),
+
+
+
+
+
+--------------010703080304000609090204--
