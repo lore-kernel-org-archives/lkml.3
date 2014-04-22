@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890AbaDVPLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:11:16 -0400
-Received: from mail-ee0-f45.google.com ([74.125.83.45]:56360 "EHLO
-	mail-ee0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756795AbaDVPKy (ORCPT
+	id S1756910AbaDVPLr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:11:47 -0400
+Received: from mail-ob0-f169.google.com ([209.85.214.169]:54324 "EHLO
+	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756895AbaDVPLl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:10:54 -0400
-From: Thierry Reding <thierry.reding@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org
-Subject: [RFC 2/5] drivers/base: Allow driver-data to be attached to a master
-Date: Tue, 22 Apr 2014 17:09:30 +0200
-Message-Id: <1398179373-29966-3-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398179373-29966-1-git-send-email-thierry.reding@gmail.com>
-References: <1398179373-29966-1-git-send-email-thierry.reding@gmail.com>
+	Tue, 22 Apr 2014 11:11:41 -0400
+MIME-Version: 1.0
+In-Reply-To: <1397531437-9104-1-git-send-email-agross@codeaurora.org>
+References: <1397531437-9104-1-git-send-email-agross@codeaurora.org>
+Date: Tue, 22 Apr 2014 17:11:40 +0200
+Message-ID: <CACRpkdZ_TgS2XFHyEhkWTHsgdv-Yw2jj9342nDihiJjjGPh7Bw@mail.gmail.com>
+Subject: Re: [PATCH 0/3] pinctrl: qcom: Add IPQ8064 pinctrl support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Andy Gross <agross@codeaurora.org>,
+        Bjorn Andersson <Bjorn.Andersson@sonymobile.com>,
+        David Brown <davidb@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>
+Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+On Tue, Apr 15, 2014 at 5:10 AM, Andy Gross <agross@codeaurora.org> wrote:
 
-Similarly to what can be done for device drivers, allow driver-specific
-data to be attached to a master. This is necessary for masters whose
-device is already bound to by a different driver and therefore cannot be
-used to store the driver-specific data.
+> This set of patches adds pinctrl support for the Qualcomm IPQ8064 platform.
+> The IPQ8064 uses the same TLMM block as the APQ8064, but has a different number
+> of pins, functions, and function assignments.  The second patch contains the
+> devicetree documentation.  The last patch selects PINCTRL for all ARCH_QCOM
+> platforms.  This allows for selection of pinctrl support via a make menuconfig.
+>
+> Andy Gross (3):
+>   pinctrl: qcom: Add definitions for IPQ8064
+>   dt: Document Qualcomm IPQ8064 pinctrl binding
+>   ARM: qcom: Select PINCTRL by default for ARCH_QCOM
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
----
- drivers/base/component.c  | 13 +++++++++++++
- include/linux/component.h |  3 +++
- 2 files changed, 16 insertions(+)
+Björn can you look at this series?
 
-diff --git a/drivers/base/component.c b/drivers/base/component.c
-index 14fe81bf5ed2..e3693c6d552f 100644
---- a/drivers/base/component.c
-+++ b/drivers/base/component.c
-@@ -25,6 +25,8 @@ struct master {
- 
- 	const struct component_master_ops *ops;
- 	struct device *dev;
-+
-+	void *drvdata;
- };
- 
- struct component {
-@@ -53,6 +55,17 @@ static struct master *__master_find(struct device *dev,
- 	return NULL;
- }
- 
-+void master_set_drvdata(struct master *master, void *data)
-+{
-+	if (master)
-+		master->drvdata = data;
-+}
-+
-+void *master_get_drvdata(struct master *master)
-+{
-+	return master ? master->drvdata : NULL;
-+}
-+
- /* Attach an unattached component to a master. */
- static void component_attach_master(struct master *master, struct component *c)
- {
-diff --git a/include/linux/component.h b/include/linux/component.h
-index 89fe8bb35053..9c2ec9fe48d6 100644
---- a/include/linux/component.h
-+++ b/include/linux/component.h
-@@ -25,6 +25,9 @@ int component_master_add(struct device *, const struct component_master_ops *);
- void component_master_del(struct device *,
- 	const struct component_master_ops *);
- 
-+void master_set_drvdata(struct master *, void *);
-+void *master_get_drvdata(struct master *);
-+
- int component_master_add_child(struct master *master,
- 	int (*compare)(struct device *, void *), void *compare_data);
- 
--- 
-1.9.2
+David/Bryan: can either of you ACK the changes hitting
+arch/arm/mach-qcom/Kconfig
+so I can merge this through the pinctrl tree?
 
+Yours,
+Linus Walleij
