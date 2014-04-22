@@ -1,46 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875AbaDVVeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:34:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13343 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757352AbaDVVeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 17:34:09 -0400
-Message-ID: <5356E041.3060709@redhat.com>
-Date: Tue, 22 Apr 2014 17:33:53 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        mgorman@suse.de, ak@linux.intel.com, alex.shi@linaro.org,
-        dave.hansen@linux.intel.com
-Subject: Re: [PATCH 6/6] x86: mm: set TLB flush tunable to sane value (33)
-References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182428.FC2104C1@viggo.jf.intel.com>
-In-Reply-To: <20140421182428.FC2104C1@viggo.jf.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757052AbaDVUPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:15:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36108 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756762AbaDVUPH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 16:15:07 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Heiner Kallweit <heiner.kallweit@web.de>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 009/133] ipv6: Avoid unnecessary temporary addresses being generated
+Date: Tue, 22 Apr 2014 13:12:27 -0700
+Message-Id: <1398197671-12786-10-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2014 02:24 PM, Dave Hansen wrote:
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> This has been run through Intel's LKP tests across a wide range
-> of modern sytems and workloads and it wasn't shown to make a
-> measurable performance difference positive or negative.
-> 
-> Now that we have some shiny new tracepoints, we can actually
-> figure out what the heck is going on.
-> 
-> During a kernel compile, 60% of the flush_tlb_mm_range() calls
-> are for a single page.  It breaks down like this:
+3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+------------------
 
-Acked-by: Rik van Riel <riel@redhat.com>
+From: Heiner Kallweit <heiner.kallweit@web.de>
 
+[ Upstream commit ecab67015ef6e3f3635551dcc9971cf363cc1cd5 ]
+
+tmp_prefered_lft is an offset to ifp->tstamp, not now. Therefore
+age needs to be added to the condition.
+
+Age calculation in ipv6_create_tempaddr is different from the one
+in addrconf_verify and doesn't consider ADDRCONF_TIMER_FUZZ_MINUS.
+This can cause age in ipv6_create_tempaddr to be less than the one
+in addrconf_verify and therefore unnecessary temporary address to
+be generated.
+Use age calculation as in addrconf_modify to avoid this.
+
+Signed-off-by: Heiner Kallweit <heiner.kallweit@web.de>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ net/ipv6/addrconf.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/net/ipv6/addrconf.c b/net/ipv6/addrconf.c
+index e169782..c724838 100644
+--- a/net/ipv6/addrconf.c
++++ b/net/ipv6/addrconf.c
+@@ -1033,8 +1033,11 @@ retry:
+ 	 * Lifetime is greater than REGEN_ADVANCE time units.  In particular,
+ 	 * an implementation must not create a temporary address with a zero
+ 	 * Preferred Lifetime.
++	 * Use age calculation as in addrconf_verify to avoid unnecessary
++	 * temporary addresses being generated.
+ 	 */
+-	if (tmp_prefered_lft <= regen_advance) {
++	age = (now - tmp_tstamp + ADDRCONF_TIMER_FUZZ_MINUS) / HZ;
++	if (tmp_prefered_lft <= regen_advance + age) {
+ 		in6_ifa_put(ifp);
+ 		in6_dev_put(idev);
+ 		ret = -1;
 -- 
-All rights reversed
+1.9.1
+
