@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758529AbaDVUlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:41:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36647 "EHLO
+	id S1758176AbaDVUYq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:24:46 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36620 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758188AbaDVUYt (ORCPT
+	with ESMTP id S1758125AbaDVUYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:49 -0400
+	Tue, 22 Apr 2014 16:24:35 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 081/133] mfd: max8998: Fix possible NULL pointer dereference on i2c_new_dummy error
-Date: Tue, 22 Apr 2014 13:13:39 -0700
-Message-Id: <1398197671-12786-82-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 083/133] mfd: 88pm860x: Fix I2C device resource leak on regmap init fail
+Date: Tue, 22 Apr 2014 13:13:41 -0700
+Message-Id: <1398197671-12786-84-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -29,39 +29,32 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit ed26f87b9f71693a1d1ee85f5e6209601505080f upstream.
+commit a7ab1c8b261305af583ce26bb4a14f555fdaa73e upstream.
 
-During probe the driver allocates dummy I2C device for RTC with i2c_new_dummy() but it does not check the return value of this call.
-
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by i2c_unregister_device().
-
-If i2c_new_dummy() fails for RTC device, fail also the probe for
-main MFD driver.
+During probe the driver allocates dummy I2C device for companion chip
+and then allocates a regmap for it. If regmap_init_i2c() fails then the
+I2C driver (allocated with i2c_new_dummy()) is not freed and this
+resource leaks.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/max8998.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/mfd/88pm860x-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index d7218cc..8381a76 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -152,6 +152,10 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
- 	mutex_init(&max8998->iolock);
- 
- 	max8998->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
-+	if (!max8998->rtc) {
-+		dev_err(&i2c->dev, "Failed to allocate I2C device for RTC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(max8998->rtc, max8998);
- 
- 	max8998_irq_init(max8998);
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index 893fc1b..f304a09 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -1187,6 +1187,7 @@ static int pm860x_probe(struct i2c_client *client,
+ 			ret = PTR_ERR(chip->regmap_companion);
+ 			dev_err(&chip->companion->dev,
+ 				"Failed to allocate register map: %d\n", ret);
++			i2c_unregister_device(chip->companion);
+ 			return ret;
+ 		}
+ 		i2c_set_clientdata(chip->companion, chip);
 -- 
 1.9.1
 
