@@ -1,84 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767AbaDVPQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:16:43 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:44747 "EHLO arroyo.ext.ti.com"
+	id S932984AbaDVPRL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:17:11 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:36709 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751995AbaDVPQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:16:39 -0400
-Message-ID: <535687A5.2070105@ti.com>
-Date: Tue, 22 Apr 2014 11:15:49 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1751995AbaDVPRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 11:17:09 -0400
+Date: Tue, 22 Apr 2014 10:14:44 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: <balbi@ti.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v6 03/19] usb: phy: msm: Move global regulators variables
+ to driver state
+Message-ID: <20140422151444.GK5524@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
+ <1398158438-21579-4-git-send-email-iivanov@mm-sol.com>
+ <20140422145745.GJ5524@saruman.home>
+ <1398179539.4724.168.camel@iivanov-dev>
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>,
-        <linux-arm-kernel@lists.infradead.org>,
-        =?ISO-8859-1?Q?Gregory_Cl=E9ment?= 
-	<gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>
-Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and
- dma-coherent
-References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com> <20140419182528.414b9b2e@skate> <201404221702.19842.arnd@arndb.de>
-In-Reply-To: <201404221702.19842.arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="00hq2S6J2Jlg6EbK"
+Content-Disposition: inline
+In-Reply-To: <1398179539.4724.168.camel@iivanov-dev>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 April 2014 11:02 AM, Arnd Bergmann wrote:
-> On Saturday 19 April 2014, Thomas Petazzoni wrote:
->>
->> I am not sure whether there is an intersection or not, but I wanted to
->> mention that the mvebu platform (in mach-mvebu) supports hardware I/O
->> coherency, which makes it a coherent DMA platform. However, we are not
->> able to use arm_coherent_dma_ops for this platform, because when a
->> transfer is being made DMA_FROM_DEVICE, at the end of the transfer, we
->> need to perform an I/O barrier to wait for the snooping unit to
->> complete its coherency work. So we're coherent, but not with
->> arm_coherent_dma_ops: we have our own dma operation implementation (see
->> arch/arm/mach-mvebu/coherency.c).
-> 
-> I had completely missed the fact that this support was merged already.
-> 
-> It's an interesting question if this should actually be called
-> 'coherent' or not. It's certainly more coherent than without that
-> support, but then again, you still can't rely on incoming data to
-> be visible after a readl() from the device has returned or an MSI
-> interrupt has been delivered, which is what we normally expect.
-> 
-> In particular, it means you can't really use arm_coherent_dma_alloc(),
-> which is a shame, since that is a significante performance overhead.
-> 
-> I would hope we can find a way to avoid the platform notifiers for
-> mvebu as well and come up with a generic way to express this
-> 'semi-coherent' mode. I believe x-gene has a similar issue, and
-> I wouldn't be surprised if there are others like this.
-> 
-As Catalin already pointed out, the mvebu issue really the barrier
-than dma coherency. Infact for all the correct operations, they
-need the __io_*mb() to be patched up same way as we patched up
-the outer_sync() for Cortex-A9 implementation. With that in place
-and the other dma streaming barrier patch [1] I posted, mvebu
-case should work.
+--00hq2S6J2Jlg6EbK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I don't think, the 'semi-coherent' makes much sense because
-you can many parameters influencing that. Thanks to per
-device property, we already do say" PCIE is not cohenernt
-but USB, NETWORK drivers are on same SOC". Anything beyond
-that will be non-scalable and won't be generic enough.
+On Tue, Apr 22, 2014 at 06:12:19PM +0300, Ivan T. Ivanov wrote:
+> On Tue, 2014-04-22 at 09:57 -0500, Felipe Balbi wrote:
+> > On Tue, Apr 22, 2014 at 12:20:22PM +0300, Ivan T. Ivanov wrote:
+> > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> >=20
+> > #define ENOLOG		ENOCOMMIT
+> >=20
+> > return -ENOLOG;
+> >=20
+>=20
+> #if SIMPLE_CHANGE
+> #define ENOLOG		0
+> #endif
+>=20
+> Will fix it :-)
 
-[1] http://www.spinics.net/lists/arm-kernel/msg324109.html
+#undef ENOLOG
+#define THAT_DOESNT_REALLY_WORK_FOR_ME
 
+hehehe :-) Thanks for updating ;-)
 
+--=20
+balbi
+
+--00hq2S6J2Jlg6EbK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTVodkAAoJEIaOsuA1yqREo58P/0uO4R/ISGSF01pfryX5KQhY
+xHyvR9yayONmH7aV1wckryD+0I77B9F00bXf2pmtK1ftPD6kgN1kGtmXDnRgZ0U0
+jZrq4RuqfpR5AsfHY85UGtLuSVSXOTW8pZAoyklJGDr8AMQNIU3DQTpIKRUP08B+
+2uPo2w0qRImVP9H1V9eVdZrjNhnQqnAEte3NLxG28rURal5qZg0HIWCFxvj+GQVY
+MDLKnHzk1VStYKUgMUjOjnDjPAy8eeMNsqdgsZ0YR8qZ28GuQMFv2yn3SPkbMmDx
+f/mpInMDv9Dc+EudPHaeq9AUsqVK1DFJ5/qcLYY8zHYwepl8RMJJ/xOLZIL5n6Qb
+J1fn/MYDfkp9PoveRCd/LbmBsGbrmuixYUzEHtarTyJnCABT4QmoYjx49fjieeCn
+yI2MuB/GOaOzGdfp86N8hne5r64ZO/Fk0eQJPW7ycAufvdVksfby8sKzeVF9eR4N
+GboDY8xHNnLZGdZ13DZrDJxosIlx1EcdEjD7AauSYPRPfM7BJg+wA1461aYmQaoK
+rhEuymP8EN60inSBkoEcfqYiUPk4JnDAtJnhfAIeGIpESu+e27OYYhrmQcCgNHCJ
+PQABkqIsiMnLInKLWhDHF/Dadm59DQLwERQt7z8ZjrpFimzSuQIQzgWhJY+5SV8l
+kmr2hOKihmQAv772dxi3
+=TFbP
+-----END PGP SIGNATURE-----
+
+--00hq2S6J2Jlg6EbK--
