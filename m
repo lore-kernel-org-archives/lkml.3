@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755925AbaDVTRC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:17:02 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48493 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754749AbaDVTQ6 (ORCPT
+	id S1756076AbaDVTRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:17:12 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:49982 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754749AbaDVTRH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:16:58 -0400
-Date: Tue, 22 Apr 2014 12:16:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Andreas Gruenbacher <agruen@linbit.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-Subject: Re: [PATCH 1/4] idr: proper invalid argument handling
-Message-Id: <20140422121656.14d5e5534ae4888119787471@linux-foundation.org>
-In-Reply-To: <1398161781-12105-2-git-send-email-laijs@cn.fujitsu.com>
-References: <1398161781-12105-1-git-send-email-laijs@cn.fujitsu.com>
-	<1398161781-12105-2-git-send-email-laijs@cn.fujitsu.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Apr 2014 15:17:07 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140422184518.GC3528@book.gsilab.sittig.org>
+References: <1398175396-7560-1-git-send-email-grmoore@altera.com>
+	<1398175396-7560-2-git-send-email-grmoore@altera.com>
+	<20140422184518.GC3528@book.gsilab.sittig.org>
+Date: Tue, 22 Apr 2014 14:17:05 -0500
+Message-ID: <CA+iBjpS2UAPk+TiuX7_Ufp6uXwU3nxFZ-8emwGU2TMF9+6q66g@mail.gmail.com>
+Subject: Re: [PATCH V3] Add support for flag status register on Micron chips.
+From: Graham Moore <ggrahammoore@gmail.com>
+To: Gerhard Sittig <gsi@denx.de>
+Cc: Graham Moore <grmoore@altera.com>, ZY - marex <marex@denx.de>,
+        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
+        Yves Vandervennet <rocket.yvanderv@gmail.com>,
+        linux-mtd@lists.infradead.org, Insop Song <insop.song@gainspeed.com>,
+        Alan Tull <atull@altera.com>, Sourav Poddar <sourav.poddar@ti.com>,
+        Brian Norris <computersforpeace@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Dinh Nguyen <dinguyen@altera.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 18:16:18 +0800 Lai Jiangshan <laijs@cn.fujitsu.com> wrote:
+On Tue, Apr 22, 2014 at 1:45 PM, Gerhard Sittig <gsi@denx.de> wrote:
+> the patch appears to not have dev_err() references, were they
+> removed? see below
+[...]
+> this emits a message that an error has occured, but doesn't tell
+> where it occured -- can you dev_err() here to make the message
+> even more helpful?
 
-> When the arguments passed by the caller are invalid, WARN_ON_ONCE()
-> is proper than BUG_ON() which may crash the kernel.
-> 
-> ida_remove()/idr_remove() add checks for "id < 0".
-> BUG_ON() in ida_simple_remove() is simply removed, due to
-> ida_remove() already checks for "id < 0".
-> 
-> In idr_alloc(), it still returns -ENOSPC when "start == end",
-> but it returns -EINVAL when "max < start" while old code returns
-> -ENOSPC. -EINVAL is proper here, the caller must passed wrong
-> arguments.
-> 
-> ida_simple_get()'s argument-checks are changed as the same as
-> idr_alloc().
+Yeah, the previous dev_err was actually copy-pasted from a similar
+function that already existed.  When I rebased to l2-mtd/spinor, I did
+the same copy-paste but that branch has pr_err instead of dev_err.
+I'm a noob, so I didn't want to change things without a good
+explanation :)  On the other hand, I'm in favor of using dev_err
+instead.
 
-This patch doesn't apply.
+[...]
+> this logic always returns "timed out" when the ready flag is not
+> seen, even in the case of read errors -- can you "preset" the
+> error code with "timed out", and update it with something more
+> appropriate before returning when other errors are seen?
+>
+> though this is an internal helper, and callers may not tell the
+> situations apart in the first place, so this might be a minor nit
 
-> @@ -551,10 +553,7 @@ void idr_remove(struct idr *idp, int id)
->  	struct idr_layer *p;
->  	struct idr_layer *to_free;
->  
-> -	if (id < 0)
-> -		return;
-> -
-> -	if (id > idr_max(idp->layers)) {
-> +	if (id < 0 || id > idr_max(idp->layers)) {
->  		idr_remove_warning(id);
->  		return;
->  	}
+Same here as above, copy-pasted, and so the logic is what already
+existed.  I double-checked the calling code, and like you say, the
+callers do not tell the situations apart.  About half the calls assume
+any error is timeout.  The others either pass return value or some
+other error up, or they ignore it.
 
-3.15-rc2's idr_remove() has a call to sub_remove() in there, but
-whatever-kernel-you're-using does not.
-
-
+Thanks,
+Graham
