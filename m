@@ -1,75 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757470AbaDVQ2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:28:21 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:50343 "EHLO
+	id S1757484AbaDVQ2d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:28:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50347 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756130AbaDVQ2Q convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756130AbaDVQ2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:28:16 -0400
-Date: Tue, 22 Apr 2014 18:28:02 +0200
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-To: Antoine =?UTF-8?B?VMOpbmFydA==?= 
-	<antoine.tenart@free-electrons.com>
-Cc: sebastian.hesselbarth@gmail.com, tj@kernel.org, zmxu@marvell.com,
-        jszhang@marvell.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-        alexandre.belloni@free-electrons.com,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3/6] ARM: berlin: add the AHCI node for the BG2Q
-Message-ID: <20140422182802.447c2912@skate>
-In-Reply-To: <1398181105-19714-4-git-send-email-antoine.tenart@free-electrons.com>
-References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
-	<1398181105-19714-4-git-send-email-antoine.tenart@free-electrons.com>
-Organization: Free Electrons
-X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 22 Apr 2014 12:28:24 -0400
+Date: Tue, 22 Apr 2014 13:27:37 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Chung-Lin Tang <cltang@codesourcery.com>
+Cc: Tobias Klauser <tklauser@distanz.ch>, Ley Foon Tan <lftan@altera.com>,
+        linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com
+Subject: Re: [PATCH 06/28] nios2: Memory management
+Message-ID: <20140422162737.GA13859@arch.cereza>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+ <1397824031-4892-5-git-send-email-lftan@altera.com>
+ <20140422142443.GB15745@arch.cereza>
+ <20140422151458.GC1053@distanz.ch>
+ <20140422153522.GF15745@arch.cereza>
+ <5356924E.7020605@codesourcery.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5356924E.7020605@codesourcery.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Antoine Ténart,
+On Apr 23, Chung-Lin Tang wrote:
+> On 2014/4/22 下午 11:35, Ezequiel Garcia wrote:
+> > On Apr 22, Tobias Klauser wrote:
+> >> On 2014-04-22 at 16:24:43 +0200, Ezequiel Garcia <ezequiel.garcia@free-electrons.com> wrote:
+> >>> Hi Ley Foon,
+> >>>
+> >>> On Apr 18, Ley Foon Tan wrote:
+> >>>> +/*
+> >>>> + * PAGE_SHIFT determines the page size
+> >>>> + */
+> >>>> +#define PAGE_SHIFT	12
+> >>>> +#define PAGE_SIZE	4096
+> >>>> +#define PAGE_MASK	(~(PAGE_SIZE - 1))
+> >>>> +
+> >>>
+> >>> How about something like this:
+> >>>
+> >>> /* PAGE_SHIFT determines the page size */
+> >>> #define PAGE_SHIFT              12
+> >>> #define PAGE_SIZE               (_AC(1,UL) << PAGE_SHIFT)
+> >>> #define PAGE_MASK               (~((1 << PAGE_SHIFT) - 1))
+> >>>
+> >>> Otherwise, the PAGE_SIZE macro above produces some warnings, IIRC.
+> >>
+> >> AFAIR old nios2 GCC versions (the 4.1 version from Windriver, IIRC)
+> >> would complain about something like the above, that's the reason I added
+> >> an explicit value for PAGE_SIZE back then.
+> >>
+> > 
+> > Other than being "pretty" the above fix is to remove a mismatch type
+> > warning. You can get rid of the warning in different ways:
+> > 
+> > ifdef __ASSEMBLY__
+> > define PAGE_SIZE       4096
+> > else
+> > define PAGE_SIZE       4096UL
+> > endif
+> > 
+> >> I assume with the new nios2 GCC this should no longer be necessary and
+> >> Ezequiel's fix should be fine.
+> > 
+> > Speaking of GCC... is there a libc available to test this kernel port?
+> > (which I assume uses the generic syscall ABI)
+> 
+> It's submitted to libc-alpha, also still review in progress.
+> 
 
-On Tue, 22 Apr 2014 17:38:22 +0200, Antoine Ténart wrote:
-> The BG2Q has an AHCI SATA controller. Add the corresponding node
-> in its device tree.
-
-I believe the commit log should explain why an apparently unrelated
-generic-regs@ node gets added in this commit.
-
-Thanks!
-
-Thomas
-
-> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-> index 07452a7483fa..8e58aae73365 100644
-> --- a/arch/arm/boot/dts/berlin2q.dtsi
-> +++ b/arch/arm/boot/dts/berlin2q.dtsi
-> @@ -183,6 +183,18 @@
->  			};
->  		};
->  
-> +		ahci: sata@e90000 {
-> +			compatible = "marvell,berlin-ahci";
-> +			reg = <0xe90000 0x10000>;
-> +			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
-> +			status = "disable";
-> +		};
-> +
-> +		generic-regs@ea0110 {
-> +			compatible = "marvell,berlin-generic-regs", "syscon";
-> +			reg = <0xea0110 0x10>;
-> +		};
-> +
->  		apb@fc0000 {
->  			compatible = "simple-bus";
->  			#address-cells = <1>;
-
-
+Do you plan to support uclibc?
 
 -- 
-Thomas Petazzoni, CTO, Free Electrons
-Embedded Linux, Kernel and Android engineering
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
 http://free-electrons.com
