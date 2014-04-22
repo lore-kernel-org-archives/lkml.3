@@ -1,82 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107AbaDVK2b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 06:28:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:7400 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755077AbaDVK22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 06:28:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,903,1389772800"; 
-   d="scan'208";a="525277179"
-From: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-To: Robin Gong <b38343@freescale.com>
-CC: "Koul, Vinod" <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v1] dma: imx-sdma: add support for sdma memory copy
-Thread-Topic: [PATCH v1] dma: imx-sdma: add support for sdma memory copy
-Thread-Index: AQHPWumN/LAsmiPIT02DhZWBo3zgk5sdZH8A
-Date: Tue, 22 Apr 2014 10:28:05 +0000
-Message-ID: <1398162484.11914.234.camel@smile.fi.intel.com>
-References: <1397728870-22086-1-git-send-email-b38343@freescale.com>
-	 <1397730289.11914.225.camel@smile.fi.intel.com>
-	 <20140418094057.GA11496@Robin-OptiPlex-780>
-In-Reply-To: <20140418094057.GA11496@Robin-OptiPlex-780>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.237.72.73]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <16A495714F092949AF8755D7098A086A@intel.com>
+	id S1755510AbaDVKc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 06:32:56 -0400
+Received: from mail-ve0-f180.google.com ([209.85.128.180]:63559 "EHLO
+	mail-ve0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527AbaDVKcx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 06:32:53 -0400
 MIME-Version: 1.0
+In-Reply-To: <000001417f6834f1-32b83f22-8bde-4b9e-b591-bc31329660e4-000000@email.amazonses.com>
+References: <000001417f6834f1-32b83f22-8bde-4b9e-b591-bc31329660e4-000000@email.amazonses.com>
+Date: Tue, 22 Apr 2014 16:02:52 +0530
+X-Google-Sender-Auth: 673qHlFk-Wj0IcXi0KBNuFd_Npc
+Message-ID: <CAOh2x==yrBdFDcObdz+La0y=jDERj=sxOBMvU-Kk6eGEvvwZQw@mail.gmail.com>
+Subject: Re: vmstat: On demand vmstat workers V3
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Gilad Ben-Yossef <gilad@benyossef.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
+        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Hakan Akkan <hakanakkan@gmail.com>,
+        Max Krasnyansky <maxk@qualcomm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3MASYxU005991
 
-On Fri, 2014-04-18 at 17:41 +0800, Robin Gong wrote:
-> On Thu, Apr 17, 2014 at 10:24:50AM +0000, Shevchenko, Andriy wrote:
-> > On Thu, 2014-04-17 at 18:01 +0800, Robin Gong wrote:
+On Thu, Oct 3, 2013 at 11:10 PM, Christoph Lameter <cl@linux.com> wrote:
+> V2->V3:
+> - Introduce a new tick_get_housekeeping_cpu() function. Not sure
+>   if that is exactly what we want but it is a start. Thomas?
+> - Migrate the shepherd task if the output of
+>   tick_get_housekeeping_cpu() changes.
+> - Fixes recommended by Andrew.
 
-[]
+Hi Christoph,
 
-> > > +	dev_dbg(sdma->dev, "memcpy: %x->%x, len=%d, channel=%d.\n",
-> > 
-> > %pad for dma_addr_t variables.
-> >
-> Yes, %x here is not proper, will be %#llx here to align with others similar
-> code in this file.
+This vmstat interrupt is disturbing my core isolation :), have you got
+any far with this patchset?
 
-Why %#llx? You don't need the specific casting since kernel has special
-specifiers for phys_addr_t and dma_addr_t and their derivatives (see
-Documentation/printk-formats.txt)
-
-> > > +		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%08x %s%s\n",
-> > > +				i, count, sg_src->dma_address,
-> > 
-> > %pad for dma_addr_t.
-> > 
-> Accept the idea, same as the above.
-
-Same as above.
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
----------------------------------------------------------------------
-Intel Finland Oy
-Registered Address: PL 281, 00181 Helsinki 
-Business Identity Code: 0357606 - 4 
-Domiciled in Helsinki 
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+--
+viresh
