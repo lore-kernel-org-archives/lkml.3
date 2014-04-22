@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758354AbaDVVfB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:35:01 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:45884 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757573AbaDVVex (ORCPT
+	id S1758886AbaDVVfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:35:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36161 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756874AbaDVUPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 17:34:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <CANq1E4R4PSuDD599n=0Xff+rfH01CTRtzLSkFDWSdnXMggVKRA@mail.gmail.com>
-References: <cover.1398097304.git.luto@amacapital.net> <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
- <CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
- <20140422143152.GA23716@amd.pavel.ucw.cz> <CANq1E4TPPcdD-8FF_Kc=r44Vrd51Vmt-OVu+EtCC-oEzXkvJvg@mail.gmail.com>
- <20140422185802.GA31201@amd.pavel.ucw.cz> <CANq1E4R4PSuDD599n=0Xff+rfH01CTRtzLSkFDWSdnXMggVKRA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 22 Apr 2014 14:34:31 -0700
-Message-ID: <CALCETrXhzK0pnfhQNqK2NY4ooou3LGUZ4=DLWJmp7UjN6cXi9A@mail.gmail.com>
-Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Apr 2014 16:15:10 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: David L Stevens <dlstevens@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 011/133] vxlan: fix potential NULL dereference in arp_reduce()
+Date: Tue, 22 Apr 2014 13:12:29 -0700
+Message-Id: <1398197671-12786-12-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 2:31 PM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Tue, Apr 22, 2014 at 8:58 PM, Pavel Machek <pavel@ucw.cz> wrote:
->> I don't think openat helps you. This is what we are talking about, it
->> is easy to reproduce. Can you reproduce it without /proc mounted?
->>
->> I think that chmod 700 . should stop you. Openat seems no worse than
->> just placing cwd there...
->
-> Example1:
-> $ mkdir -p subdir/next
-> $ chmod 000 subdir
-> $ touch subdir/next/test
-> => EACCES
-> $ cd subdir
-> => EACCES
->
-> Example2:
-> $ mkdir -p subdir/next
-> $ cd subdir/next
-> $ chmod 000 ..
-> $ touch test
-> => SUCCESS
->
-> This is the exact same situation. The filesystem tree is exactly the
-> same in both situations, but in the first example CWD is outside of
-> "subdir", in the second example CWD is inside of "subdir". Thus, they
-> can create files in that directory, even though they have no access to
-> _any_ absolute path to that directory.
->
-> This is the exact same race that you describe via /proc/self/fd/. But
-> instead of keeping a ref to the dir via CWD, in your example you keep
-> the ref via a FD in that exact same directory and access it via /proc.
->
-> (Hint: instead of using CWD, you can also keep an FD via open(O_PATH)
-> and pass it to openat())
+3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
 
-So what?
+------------------
 
-It's well-known that the execute bit is only checked when you look
-something up, and it's not checked all the way back to the root.  It's
-not well known, nor is it POSIX, that you can fudge it via proc.
+From: David Stevens <dlstevens@us.ibm.com>
 
---Andy
+[ Upstream commit 7346135dcd3f9b57f30a5512094848c678d7143e ]
+
+This patch fixes a NULL pointer dereference in the event of an
+skb allocation failure in arp_reduce().
+
+Signed-Off-By: David L Stevens <dlstevens@us.ibm.com>
+Acked-by: Cong Wang <cwang@twopensource.com>
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/vxlan.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/net/vxlan.c b/drivers/net/vxlan.c
+index cb6f529..dedad38 100644
+--- a/drivers/net/vxlan.c
++++ b/drivers/net/vxlan.c
+@@ -724,6 +724,9 @@ static int arp_reduce(struct net_device *dev, struct sk_buff *skb)
+ 
+ 		neigh_release(n);
+ 
++		if (reply == NULL)
++			goto out;
++
+ 		skb_reset_mac_header(reply);
+ 		__skb_pull(reply, skb_network_offset(reply));
+ 		reply->ip_summed = CHECKSUM_UNNECESSARY;
+-- 
+1.9.1
+
