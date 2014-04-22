@@ -1,253 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539AbaDVMOb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 08:14:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:4921 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932386AbaDVMMd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 08:12:33 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,903,1389772800"; 
-   d="scan'208";a="421964529"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: <gregkh@linuxfoundation.org>
-Cc: <linux-usb@vger.kernel.org>, <sarah.a.sharp@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>, Julius Werner <jwerner@chromium.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH 1/5] usb: xhci: Prefer endpoint context dequeue pointer over stopped_trb
-Date: Tue, 22 Apr 2014 15:22:58 +0300
-Message-Id: <1398169382-12097-2-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398169382-12097-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1398169382-12097-1-git-send-email-mathias.nyman@linux.intel.com>
+	id S932550AbaDVMOr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 08:14:47 -0400
+Received: from mail-pb0-f48.google.com ([209.85.160.48]:56561 "EHLO
+	mail-pb0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932237AbaDVMOl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 08:14:41 -0400
+Message-ID: <53565D29.6010503@gmail.com>
+Date: Tue, 22 Apr 2014 15:14:33 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Florian Weimer <fweimer@redhat.com>, Jeff Layton <jlayton@redhat.com>,
+        Jim Lieb <jlieb@panasas.com>
+CC: Andy Lutomirski <luto@amacapital.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        "Serge E. Hallyn" <serge@canonical.com>,
+        Kees Cook <keescook@chromium.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        bfields@redhat.com
+Subject: Re: Thoughts on credential switching
+References: <CALCETrVyNXYaMWOyWj4gKLWVdzPrSkvv7WTBi2Aa8mYs4NKH9g@mail.gmail.com> <53341D8E.80105@redhat.com> <20140327060225.4f4caa5a@ipyr.poochiereds.net> <53342258.8000304@redhat.com> <533428BF.8090007@gmail.com> <53565491.702@redhat.com>
+In-Reply-To: <53565491.702@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julius Werner <jwerner@chromium.org>
+On 04/22/2014 02:37 PM, Florian Weimer wrote:
+> On 03/27/2014 02:33 PM, Boaz Harrosh wrote:
+>> POSIX or not it just does not have any real programming mining
+>> at all.
+> 
+> What do you mean with "mining" in this context?
+> 
 
-We have observed a rare cycle state desync bug after Set TR Dequeue
-Pointer commands on Intel LynxPoint xHCs (resulting in an endpoint that
-doesn't fetch new TRBs and thus an unresponsive USB device). It always
-triggers when a previous Set TR Dequeue Pointer command has set the
-pointer to the final Link TRB of a segment, and then another URB gets
-enqueued and cancelled again before it can be completed. Further
-investigation showed that the xHC had returned the Link TRB in the TRB
-Pointer field of the Transfer Event (CC == Stopped -- Length Invalid),
-but when xhci_find_new_dequeue_state() later accesses the Endpoint
-Context's TR Dequeue Pointer field it is set to the first TRB of the
-next segment.
+Sorry I saw this mistake after I posted. I meant "meaning".
 
-The driver expects those two values to be the same in this situation,
-and uses the cycle state of the latter together with the address of the
-former. This should be fine according to the XHCI specification, since
-the endpoint ring should be stopped when returning the Transfer Event
-and thus should not advance over the Link TRB before it gets restarted.
-However, real-world XHCI implementations apparently don't really care
-that much about these details, so the driver should follow a more
-defensive approach to try to work around HC spec violations.
+What I'm saying is that the mess starts when you are trying
+to keep patching a very wrong API. the POSIX politics aside,
+in regard to user switching (and current directory and etc...)
+this API is plain WRONG. I mean in the mathematical sense wrong.
 
-This patch removes the stopped_trb variable that had been used to store
-the TRB Pointer from the last Transfer Event of a stopped TRB. Instead,
-xhci_find_new_dequeue_state() now relies only on the Endpoint Context,
-requiring a small amount of additional processing to find the virtual
-address corresponding to the TR Dequeue Pointer. Some other parts of the
-function were slightly rearranged to better fit into this model.
+All these application mess is not the application programmers
+fault. He had to do what he had to do. The mess starts when you
+are trying to keep a mathematical contradiction in your proof.
 
-This patch should be backported to kernels as old as 2.6.31 that contain
-the commit ae636747146ea97efa18e04576acd3416e2514f5 "USB: xhci: URB
-cancellation support."
+It is glibc mess for trying to maintain compatibility with
+these "PROCESS WIDE OPERATIONS". And naming it holy names like
+POSIX will not cover the mess that they are. As long as you try
+to keep them there will be mess. If you want to honestly clean
+things up is by throwing the true garbage out. Convert all legacy
+code to new mathematically sound API's.
 
-Signed-off-by: Julius Werner <jwerner@chromium.org>
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
----
- drivers/usb/host/xhci-ring.c | 67 ++++++++++++++++++++------------------------
- drivers/usb/host/xhci.c      |  1 -
- drivers/usb/host/xhci.h      |  2 --
- 3 files changed, 31 insertions(+), 39 deletions(-)
-
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 5f926be..7a0e3c7 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -550,6 +550,7 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
- 	struct xhci_ring *ep_ring;
- 	struct xhci_generic_trb *trb;
- 	dma_addr_t addr;
-+	u64 hw_dequeue;
- 
- 	ep_ring = xhci_triad_to_transfer_ring(xhci, slot_id,
- 			ep_index, stream_id);
-@@ -559,16 +560,6 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
- 				stream_id);
- 		return;
- 	}
--	state->new_cycle_state = 0;
--	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
--			"Finding segment containing stopped TRB.");
--	state->new_deq_seg = find_trb_seg(cur_td->start_seg,
--			dev->eps[ep_index].stopped_trb,
--			&state->new_cycle_state);
--	if (!state->new_deq_seg) {
--		WARN_ON(1);
--		return;
--	}
- 
- 	/* Dig out the cycle state saved by the xHC during the stop ep cmd */
- 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
-@@ -577,46 +568,57 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
- 	if (ep->ep_state & EP_HAS_STREAMS) {
- 		struct xhci_stream_ctx *ctx =
- 			&ep->stream_info->stream_ctx_array[stream_id];
--		state->new_cycle_state = 0x1 & le64_to_cpu(ctx->stream_ring);
-+		hw_dequeue = le64_to_cpu(ctx->stream_ring);
- 	} else {
- 		struct xhci_ep_ctx *ep_ctx
- 			= xhci_get_ep_ctx(xhci, dev->out_ctx, ep_index);
--		state->new_cycle_state = 0x1 & le64_to_cpu(ep_ctx->deq);
-+		hw_dequeue = le64_to_cpu(ep_ctx->deq);
- 	}
- 
-+	/* Find virtual address and segment of hardware dequeue pointer */
-+	state->new_deq_seg = ep_ring->deq_seg;
-+	state->new_deq_ptr = ep_ring->dequeue;
-+	while (xhci_trb_virt_to_dma(state->new_deq_seg, state->new_deq_ptr)
-+			!= (dma_addr_t)(hw_dequeue & ~0xf)) {
-+		next_trb(xhci, ep_ring, &state->new_deq_seg,
-+					&state->new_deq_ptr);
-+		if (state->new_deq_ptr == ep_ring->dequeue) {
-+			WARN_ON(1);
-+			return;
-+		}
-+	}
-+	/*
-+	 * Find cycle state for last_trb, starting at old cycle state of
-+	 * hw_dequeue. If there is only one segment ring, find_trb_seg() will
-+	 * return immediately and cannot toggle the cycle state if this search
-+	 * wraps around, so add one more toggle manually in that case.
-+	 */
-+	state->new_cycle_state = hw_dequeue & 0x1;
-+	if (ep_ring->first_seg == ep_ring->first_seg->next &&
-+			cur_td->last_trb < state->new_deq_ptr)
-+		state->new_cycle_state ^= 0x1;
-+
- 	state->new_deq_ptr = cur_td->last_trb;
- 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
- 			"Finding segment containing last TRB in TD.");
- 	state->new_deq_seg = find_trb_seg(state->new_deq_seg,
--			state->new_deq_ptr,
--			&state->new_cycle_state);
-+			state->new_deq_ptr, &state->new_cycle_state);
- 	if (!state->new_deq_seg) {
- 		WARN_ON(1);
- 		return;
- 	}
- 
-+	/* Increment to find next TRB after last_trb. Cycle if appropriate. */
- 	trb = &state->new_deq_ptr->generic;
- 	if (TRB_TYPE_LINK_LE32(trb->field[3]) &&
- 	    (trb->field[3] & cpu_to_le32(LINK_TOGGLE)))
- 		state->new_cycle_state ^= 0x1;
- 	next_trb(xhci, ep_ring, &state->new_deq_seg, &state->new_deq_ptr);
- 
--	/*
--	 * If there is only one segment in a ring, find_trb_seg()'s while loop
--	 * will not run, and it will return before it has a chance to see if it
--	 * needs to toggle the cycle bit.  It can't tell if the stalled transfer
--	 * ended just before the link TRB on a one-segment ring, or if the TD
--	 * wrapped around the top of the ring, because it doesn't have the TD in
--	 * question.  Look for the one-segment case where stalled TRB's address
--	 * is greater than the new dequeue pointer address.
--	 */
--	if (ep_ring->first_seg == ep_ring->first_seg->next &&
--			state->new_deq_ptr < dev->eps[ep_index].stopped_trb)
--		state->new_cycle_state ^= 0x1;
-+	/* Don't update the ring cycle state for the producer (us). */
- 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
- 			"Cycle state = 0x%x", state->new_cycle_state);
- 
--	/* Don't update the ring cycle state for the producer (us). */
- 	xhci_dbg_trace(xhci, trace_xhci_dbg_cancel_urb,
- 			"New dequeue segment = %p (virtual)",
- 			state->new_deq_seg);
-@@ -799,7 +801,6 @@ static void xhci_handle_cmd_stop_ep(struct xhci_hcd *xhci, int slot_id,
- 	if (list_empty(&ep->cancelled_td_list)) {
- 		xhci_stop_watchdog_timer_in_irq(xhci, ep);
- 		ep->stopped_td = NULL;
--		ep->stopped_trb = NULL;
- 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
- 		return;
- 	}
-@@ -867,11 +868,9 @@ remove_finished_td:
- 		ring_doorbell_for_active_rings(xhci, slot_id, ep_index);
- 	}
- 
--	/* Clear stopped_td and stopped_trb if endpoint is not halted */
--	if (!(ep->ep_state & EP_HALTED)) {
-+	/* Clear stopped_td if endpoint is not halted */
-+	if (!(ep->ep_state & EP_HALTED))
- 		ep->stopped_td = NULL;
--		ep->stopped_trb = NULL;
--	}
- 
- 	/*
- 	 * Drop the lock and complete the URBs in the cancelled TD list.
-@@ -1941,14 +1940,12 @@ static void xhci_cleanup_halted_endpoint(struct xhci_hcd *xhci,
- 	struct xhci_virt_ep *ep = &xhci->devs[slot_id]->eps[ep_index];
- 	ep->ep_state |= EP_HALTED;
- 	ep->stopped_td = td;
--	ep->stopped_trb = event_trb;
- 	ep->stopped_stream = stream_id;
- 
- 	xhci_queue_reset_ep(xhci, slot_id, ep_index);
- 	xhci_cleanup_stalled_ring(xhci, td->urb->dev, ep_index);
- 
- 	ep->stopped_td = NULL;
--	ep->stopped_trb = NULL;
- 	ep->stopped_stream = 0;
- 
- 	xhci_ring_cmd_db(xhci);
-@@ -2030,7 +2027,6 @@ static int finish_td(struct xhci_hcd *xhci, struct xhci_td *td,
- 		 * the ring dequeue pointer or take this TD off any lists yet.
- 		 */
- 		ep->stopped_td = td;
--		ep->stopped_trb = event_trb;
- 		return 0;
- 	} else {
- 		if (trb_comp_code == COMP_STALL) {
-@@ -2042,7 +2038,6 @@ static int finish_td(struct xhci_hcd *xhci, struct xhci_td *td,
- 			 * USB class driver clear the stall later.
- 			 */
- 			ep->stopped_td = td;
--			ep->stopped_trb = event_trb;
- 			ep->stopped_stream = ep_ring->stream_id;
- 		} else if (xhci_requires_manual_halt_cleanup(xhci,
- 					ep_ctx, trb_comp_code)) {
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 8fe4e12..988ed5f 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -2954,7 +2954,6 @@ void xhci_endpoint_reset(struct usb_hcd *hcd,
- 		xhci_ring_cmd_db(xhci);
- 	}
- 	virt_ep->stopped_td = NULL;
--	virt_ep->stopped_trb = NULL;
- 	virt_ep->stopped_stream = 0;
- 	spin_unlock_irqrestore(&xhci->lock, flags);
- 
-diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
-index d280e92..4746816 100644
---- a/drivers/usb/host/xhci.h
-+++ b/drivers/usb/host/xhci.h
-@@ -865,8 +865,6 @@ struct xhci_virt_ep {
- #define EP_GETTING_NO_STREAMS	(1 << 5)
- 	/* ----  Related to URB cancellation ---- */
- 	struct list_head	cancelled_td_list;
--	/* The TRB that was last reported in a stopped endpoint ring */
--	union xhci_trb		*stopped_trb;
- 	struct xhci_td		*stopped_td;
- 	unsigned int		stopped_stream;
- 	/* Watchdog timer for stop endpoint command to cancel URBs */
--- 
-1.8.3.2
+Peace
+Boaz
 
