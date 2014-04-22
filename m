@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758811AbaDVVbP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:31:15 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:57259 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752435AbaDVVbL (ORCPT
+	id S1758823AbaDVVbt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:31:49 -0400
+Received: from mail-ob0-f172.google.com ([209.85.214.172]:44381 "EHLO
+	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534AbaDVVbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 17:31:11 -0400
+	Tue, 22 Apr 2014 17:31:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140422185802.GA31201@amd.pavel.ucw.cz>
-References: <cover.1398097304.git.luto@amacapital.net>
-	<430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
-	<CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
-	<20140422143152.GA23716@amd.pavel.ucw.cz>
-	<CANq1E4TPPcdD-8FF_Kc=r44Vrd51Vmt-OVu+EtCC-oEzXkvJvg@mail.gmail.com>
-	<20140422185802.GA31201@amd.pavel.ucw.cz>
-Date: Tue, 22 Apr 2014 23:31:11 +0200
-Message-ID: <CANq1E4R4PSuDD599n=0Xff+rfH01CTRtzLSkFDWSdnXMggVKRA@mail.gmail.com>
-Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Andy Lutomirski <luto@amacapital.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>
+In-Reply-To: <8344066.GP0Bf5lvlE@wuerfel>
+References: <cover.1397552154.git.anders.berg@lsi.com>
+	<02c006a6fc64131df82981abbc1c71c7af52254e.1397552154.git.anders.berg@lsi.com>
+	<8344066.GP0Bf5lvlE@wuerfel>
+Date: Tue, 22 Apr 2014 23:31:41 +0200
+Message-ID: <CACRpkdapwscc9tA830nJVHMsh4-sEVuv5GUvCEL5e1YH+b0Wvw@mail.gmail.com>
+Subject: Re: [PATCH 2/5] ARM: dts: Device tree for AXM55xx.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Arnd Bergmann <arnd@arndb.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Anders Berg <anders.berg@lsi.com>, Olof Johansson <olof@lixom.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Tue, Apr 15, 2014 at 2:45 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 15 April 2014 14:06:11 Anders Berg wrote:
 
-On Tue, Apr 22, 2014 at 8:58 PM, Pavel Machek <pavel@ucw.cz> wrote:
-> I don't think openat helps you. This is what we are talking about, it
-> is easy to reproduce. Can you reproduce it without /proc mounted?
+>> +                     serial0: uart@2010080000 {
+>> +                             compatible = "arm,pl011", "arm,primecell";
+>> +                             reg = <0x20 0x10080000 0 0x1000>;
+>> +                             interrupts = <GIC_SPI 56 IRQ_TYPE_LEVEL_HIGH>;
+>> +                             clocks = <&clk_per>, <&clk_per>;
+>> +                             clock-names = "uartclk", "apb_pclk";
+>> +                             status = "disabled";
+>> +                     };
 >
-> I think that chmod 700 . should stop you. Openat seems no worse than
-> just placing cwd there...
+> "uartclk" is not a valid string for pl011, as per binding:
+>
+> | - clocks:  When present, must refer to exactly one clock named
+> |           "apb_pclk"
+>
+> I do see that a lot of platforms do the same thing you have here, not
+> sure who is wrong.
 
-Example1:
-$ mkdir -p subdir/next
-$ chmod 000 subdir
-$ touch subdir/next/test
-=> EACCES
-$ cd subdir
-=> EACCES
+OK the PL011 is tricksier. It has two clocks, the APB clock driving
+the logic and another clock input that is divided down to generate
+the external data clock (baud rate).
 
-Example2:
-$ mkdir -p subdir/next
-$ cd subdir/next
-$ chmod 000 ..
-$ touch test
-=> SUCCESS
+The bus will do:
+pcdev->pclk = clk_get(&pcdev->dev, "apb_pclk");
 
-This is the exact same situation. The filesystem tree is exactly the
-same in both situations, but in the first example CWD is outside of
-"subdir", in the second example CWD is inside of "subdir". Thus, they
-can create files in that directory, even though they have no access to
-_any_ absolute path to that directory.
+The driver will do:
+uap->clk = devm_clk_get(&dev->dev, NULL);
 
-This is the exact same race that you describe via /proc/self/fd/. But
-instead of keeping a ref to the dir via CWD, in your example you keep
-the ref via a FD in that exact same directory and access it via /proc.
+So the driver relies on the anonymous clock being "first"
+in a clock retrieveal operation, and it's a bit fragile indeed.
+That leads to that either you give this clock a sensible
+name or you list the empty string, as you have to have
+clock-names there to name the last entry so the bus can
+retrieve it.
 
-(Hint: instead of using CWD, you can also keep an FD via open(O_PATH)
-and pass it to openat())
+This clock is *indeed* named "UARTCLK" (capital letters)
+in the TRM for PL011. So I think this is perfectly reasonable.
 
-Thanks
-David
+The situation is the same as with the PL022 SPI driver we have
+discussed before, it also retrieves the anonymous clock but we
+consistently named it "SSPCLK" in commits:
+dfc9832ca3f7a10d573e29e46d6ba03a54fbe580
+80fbe30f63c9ba2ab62eb2c1f7ef607ce0721a95
+
+As everyone else was using that. And it was the name from
+the TRM.
+
+Yours,
+Linus Walleij
