@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758989AbaDVVkP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:40:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36135 "EHLO
+	id S1758976AbaDVVkN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:40:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36134 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776AbaDVUPI (ORCPT
+	with ESMTP id S1756769AbaDVUPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 16:15:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
 Cc: Eric Dumazet <edumazet@google.com>,
         "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 003/133] net: unix: non blocking recvmsg() should not return -EINTR
-Date: Tue, 22 Apr 2014 13:12:21 -0700
-Message-Id: <1398197671-12786-4-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 007/133] tcp: tcp_release_cb() should release socket ownership
+Date: Tue, 22 Apr 2014 13:12:25 -0700
+Message-Id: <1398197671-12786-8-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,76 +28,129 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Dumazet <edumazet@google.com>
+From: Eric Dumazet <eric.dumazet@gmail.com>
 
-[ Upstream commit de1443916791d75fdd26becb116898277bb0273f ]
+[ Upstream commit c3f9b01849ef3bc69024990092b9f42e20df7797 ]
 
-Some applications didn't expect recvmsg() on a non blocking socket
-could return -EINTR. This possibility was added as a side effect
-of commit b3ca9b02b00704 ("net: fix multithreaded signal handling in
-unix recv routines").
+Lars Persson reported following deadlock :
 
-To hit this bug, you need to be a bit unlucky, as the u->readlock
-mutex is usually held for very small periods.
+-000 |M:0x0:0x802B6AF8(asm) <-- arch_spin_lock
+-001 |tcp_v4_rcv(skb = 0x8BD527A0) <-- sk = 0x8BE6B2A0
+-002 |ip_local_deliver_finish(skb = 0x8BD527A0)
+-003 |__netif_receive_skb_core(skb = 0x8BD527A0, ?)
+-004 |netif_receive_skb(skb = 0x8BD527A0)
+-005 |elk_poll(napi = 0x8C770500, budget = 64)
+-006 |net_rx_action(?)
+-007 |__do_softirq()
+-008 |do_softirq()
+-009 |local_bh_enable()
+-010 |tcp_rcv_established(sk = 0x8BE6B2A0, skb = 0x87D3A9E0, th = 0x814EBE14, ?)
+-011 |tcp_v4_do_rcv(sk = 0x8BE6B2A0, skb = 0x87D3A9E0)
+-012 |tcp_delack_timer_handler(sk = 0x8BE6B2A0)
+-013 |tcp_release_cb(sk = 0x8BE6B2A0)
+-014 |release_sock(sk = 0x8BE6B2A0)
+-015 |tcp_sendmsg(?, sk = 0x8BE6B2A0, ?, ?)
+-016 |sock_sendmsg(sock = 0x8518C4C0, msg = 0x87D8DAA8, size = 4096)
+-017 |kernel_sendmsg(?, ?, ?, ?, size = 4096)
+-018 |smb_send_kvec()
+-019 |smb_send_rqst(server = 0x87C4D400, rqst = 0x87D8DBA0)
+-020 |cifs_call_async()
+-021 |cifs_async_writev(wdata = 0x87FD6580)
+-022 |cifs_writepages(mapping = 0x852096E4, wbc = 0x87D8DC88)
+-023 |__writeback_single_inode(inode = 0x852095D0, wbc = 0x87D8DC88)
+-024 |writeback_sb_inodes(sb = 0x87D6D800, wb = 0x87E4A9C0, work = 0x87D8DD88)
+-025 |__writeback_inodes_wb(wb = 0x87E4A9C0, work = 0x87D8DD88)
+-026 |wb_writeback(wb = 0x87E4A9C0, work = 0x87D8DD88)
+-027 |wb_do_writeback(wb = 0x87E4A9C0, force_wait = 0)
+-028 |bdi_writeback_workfn(work = 0x87E4A9CC)
+-029 |process_one_work(worker = 0x8B045880, work = 0x87E4A9CC)
+-030 |worker_thread(__worker = 0x8B045880)
+-031 |kthread(_create = 0x87CADD90)
+-032 |ret_from_kernel_thread(asm)
 
-Fixes: b3ca9b02b00704 ("net: fix multithreaded signal handling in unix recv routines")
+Bug occurs because __tcp_checksum_complete_user() enables BH, assuming
+it is running from softirq context.
+
+Lars trace involved a NIC without RX checksum support but other points
+are problematic as well, like the prequeue stuff.
+
+Problem is triggered by a timer, that found socket being owned by user.
+
+tcp_release_cb() should call tcp_write_timer_handler() or
+tcp_delack_timer_handler() in the appropriate context :
+
+BH disabled and socket lock held, but 'owned' field cleared,
+as if they were running from timer handlers.
+
+Fixes: 6f458dfb4092 ("tcp: improve latencies of timer triggered events")
+Reported-by: Lars Persson <lars.persson@axis.com>
+Tested-by: Lars Persson <lars.persson@axis.com>
 Signed-off-by: Eric Dumazet <edumazet@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
-[ kamal removed Cc: Rainer Weikusat per request ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/unix/af_unix.c | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
+ include/net/sock.h    |  5 +++++
+ net/core/sock.c       |  5 ++++-
+ net/ipv4/tcp_output.c | 11 +++++++++++
+ 3 files changed, 20 insertions(+), 1 deletion(-)
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 72f4e97..3887f23 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1795,8 +1795,11 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		goto out;
+diff --git a/include/net/sock.h b/include/net/sock.h
+index 94871cc..bea5d38 100644
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1433,6 +1433,11 @@ static inline void sk_wmem_free_skb(struct sock *sk, struct sk_buff *skb)
+  */
+ #define sock_owned_by_user(sk)	((sk)->sk_lock.owned)
  
- 	err = mutex_lock_interruptible(&u->readlock);
--	if (err) {
--		err = sock_intr_errno(sock_rcvtimeo(sk, noblock));
-+	if (unlikely(err)) {
-+		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
-+		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
-+		 */
-+		err = noblock ? -EAGAIN : -ERESTARTSYS;
- 		goto out;
- 	}
++static inline void sock_release_ownership(struct sock *sk)
++{
++	sk->sk_lock.owned = 0;
++}
++
+ /*
+  * Macro so as to not evaluate some arguments when
+  * lockdep is not enabled.
+diff --git a/net/core/sock.c b/net/core/sock.c
+index 68aad38..bf7985a 100644
+--- a/net/core/sock.c
++++ b/net/core/sock.c
+@@ -2296,10 +2296,13 @@ void release_sock(struct sock *sk)
+ 	if (sk->sk_backlog.tail)
+ 		__release_sock(sk);
  
-@@ -1918,6 +1921,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	struct unix_sock *u = unix_sk(sk);
- 	struct sockaddr_un *sunaddr = msg->msg_name;
- 	int copied = 0;
-+	int noblock = flags & MSG_DONTWAIT;
- 	int check_creds = 0;
- 	int target;
- 	int err = 0;
-@@ -1933,7 +1937,7 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 		goto out;
++	/* Warning : release_cb() might need to release sk ownership,
++	 * ie call sock_release_ownership(sk) before us.
++	 */
+ 	if (sk->sk_prot->release_cb)
+ 		sk->sk_prot->release_cb(sk);
  
- 	target = sock_rcvlowat(sk, flags&MSG_WAITALL, size);
--	timeo = sock_rcvtimeo(sk, flags&MSG_DONTWAIT);
-+	timeo = sock_rcvtimeo(sk, noblock);
+-	sk->sk_lock.owned = 0;
++	sock_release_ownership(sk);
+ 	if (waitqueue_active(&sk->sk_lock.wq))
+ 		wake_up(&sk->sk_lock.wq);
+ 	spin_unlock_bh(&sk->sk_lock.slock);
+diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+index 0c5b79a..dcc2dd4 100644
+--- a/net/ipv4/tcp_output.c
++++ b/net/ipv4/tcp_output.c
+@@ -920,6 +920,17 @@ void tcp_release_cb(struct sock *sk)
+ 	if (flags & (1UL << TCP_TSQ_DEFERRED))
+ 		tcp_tsq_handler(sk);
  
- 	/* Lock the socket to prevent queue disordering
- 	 * while sleeps in memcpy_tomsg
-@@ -1945,8 +1949,11 @@ static int unix_stream_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	}
- 
- 	err = mutex_lock_interruptible(&u->readlock);
--	if (err) {
--		err = sock_intr_errno(timeo);
-+	if (unlikely(err)) {
-+		/* recvmsg() in non blocking mode is supposed to return -EAGAIN
-+		 * sk_rcvtimeo is not honored by mutex_lock_interruptible()
-+		 */
-+		err = noblock ? -EAGAIN : -ERESTARTSYS;
- 		goto out;
- 	}
- 
++	/* Here begins the tricky part :
++	 * We are called from release_sock() with :
++	 * 1) BH disabled
++	 * 2) sk_lock.slock spinlock held
++	 * 3) socket owned by us (sk->sk_lock.owned == 1)
++	 *
++	 * But following code is meant to be called from BH handlers,
++	 * so we should keep BH disabled, but early release socket ownership
++	 */
++	sock_release_ownership(sk);
++
+ 	if (flags & (1UL << TCP_WRITE_TIMER_DEFERRED)) {
+ 		tcp_write_timer_handler(sk);
+ 		__sock_put(sk);
 -- 
 1.9.1
 
