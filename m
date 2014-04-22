@@ -1,68 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932980AbaDVVXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:23:07 -0400
-Received: from hostedrelay.fireflyinternet.com ([109.228.30.76]:50907 "EHLO
-	relay.fireflyinternet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932850AbaDVVWw (ORCPT
+	id S1758016AbaDVVXX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:23:23 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:60145 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755073AbaDVVXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 17:22:52 -0400
-X-Greylist: delayed 970 seconds by postgrey-1.27 at vger.kernel.org; Tue, 22 Apr 2014 17:22:52 EDT
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Knut Petersen <Knut_Petersen@t-online.de>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Imre Deak <imre.deak@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] drm/i915: Discard BIOS framebuffers too small to accommodate chosen mode
-Date: Tue, 22 Apr 2014 22:05:58 +0100
-Message-Id: <1398200758-26107-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <535696DB.2080104@t-online.de>
-References: <535696DB.2080104@t-online.de>
-X-Authenticated-User: chris.alporthouse@surfanytime.net 
+	Tue, 22 Apr 2014 17:23:20 -0400
+From: Fabio Falzoi <fabio.falzoi84@gmail.com>
+To: gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Fabio Falzoi <fabio.falzoi84@gmail.com>
+Subject: [PATCH v3 0/6] Staging: rts5139: Fix coding style
+Date: Tue, 22 Apr 2014 23:22:58 +0200
+Message-Id: <1398201784-7602-1-git-send-email-fabio.falzoi84@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the inherited BIOS framebuffer is smaller than the mode selected for
-fbdev, then if we continue to use it then we cause display corruption as
-we do not setup the panel fitter to upscale.
+Fix some coding style issues in rts51x.c (from rts5139 module).
 
-Regression from commit d978ef14456a38034f6c0e94a794129501f89200
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Fri Mar 7 08:57:51 2014 -0800
+Changes in v3:
+* removed all the Out Of Memory messages
+* redefined pr_fmt to add a prefix to each pr_<level>.
+Changes in v2:
+* patch splitted to have just one specific coding style issue fixed at a time
 
-    drm/i915: Wrap the preallocated BIOS framebuffer and preserve for KMS fbcon v12
+Fabio Falzoi (6):
+  Staging: rts5139: Camel case labels replaced
+  Staging: rts5139: Fixed multi-line code alignment
+  Staging: rts5139: Splitted one-line multiple assignment
+  Staging: rts5139: Use standard pr_<level> prefixing
+  Staging: rts5139: Removed OOM messages
+  Staging: rts5139: More appropriate use of sizeof operand
 
-Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=77767
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/gpu/drm/i915/intel_fbdev.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/staging/rts5139/rts51x.c | 125 ++++++++++++++++++---------------------
+ 1 file changed, 57 insertions(+), 68 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_fbdev.c b/drivers/gpu/drm/i915/intel_fbdev.c
-index b16116db6c37..28220ca838df 100644
---- a/drivers/gpu/drm/i915/intel_fbdev.c
-+++ b/drivers/gpu/drm/i915/intel_fbdev.c
-@@ -133,6 +133,12 @@ static int intelfb_create(struct drm_fb_helper *helper,
- 
- 	mutex_lock(&dev->struct_mutex);
- 
-+	if (intel_fb &&
-+	    (sizes->fb_width > intel_fb->base.width ||
-+	     sizes->fb_height > intel_fb->base.height)) {
-+		drm_framebuffer_reference(&ifbdev->fb->base);
-+		intel_fb = ifbdev->fb = NULL;
-+	}
- 	if (!intel_fb || WARN_ON(!intel_fb->obj)) {
- 		DRM_DEBUG_KMS("no BIOS fb, allocating a new one\n");
- 		ret = intelfb_alloc(helper, sizes);
 -- 
-1.9.2
+1.9.1
 
