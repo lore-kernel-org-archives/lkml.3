@@ -1,78 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752614AbaDVXJI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 19:09:08 -0400
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:54849 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034AbaDVXIu (ORCPT
+	id S1752655AbaDVXT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 19:19:56 -0400
+Received: from mail-pb0-f53.google.com ([209.85.160.53]:32953 "EHLO
+	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927AbaDVXTy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 19:08:50 -0400
+	Tue, 22 Apr 2014 19:19:54 -0400
+Date: Tue, 22 Apr 2014 16:19:52 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Dave Hansen <dave@sr71.net>
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, dave.hansen@linux.intel.com
+Subject: Re: [PATCH] mm: debug: make bad_range() output more usable and
+ readable
+In-Reply-To: <20140421180733.30BD5EFE@viggo.jf.intel.com>
+Message-ID: <alpine.DEB.2.02.1404221619150.16896@chino.kir.corp.google.com>
+References: <20140421180733.30BD5EFE@viggo.jf.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <5356CE58.1090502@zytor.com>
-References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
-	<20140422144659.GF15882@pd.tnic>
-	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
-	<53569467.1030809@zytor.com>
-	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
-	<CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
-	<CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>
-	<CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>
-	<CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com>
-	<CA+55aFwuKTQGHzi-cFkHrkLgkS-kFptajFt4=ginxOgwDcJLrA@mail.gmail.com>
-	<5356A70A.5090907@zytor.com>
-	<CAObL_7GJypym8JhUmdszDTKJVuLW9wSjbbZK4AZ3Jk304GK6tQ@mail.gmail.com>
-	<CAMzpN2hpX=XHFrTKxV1hsngNX4Pmuh9FxjAqeSeQHhEBKza1DA@mail.gmail.com>
-	<5356AF9F.4010301@zytor.com>
-	<CAMzpN2gkCPZoAKCgXa8tNZYFCuiPd6GWg9yhTBSSA=F43WLv1A@mail.gmail.com>
-	<5356BA2F.2030007@zytor.com>
-	<CAMzpN2hkJXyt87ioNowYhxm7ZmSjz_qcc=AZpzFhafKGx_+tzg@mail.gmail.com>
-	<5356CE58.1090502@zytor.com>
-Date: Tue, 22 Apr 2014 19:08:48 -0400
-Message-ID: <CAMzpN2im7kO1NvjyHsP8va7iQCXWRZO6HGgkkySW_AzpeufMWg@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-From: Brian Gerst <brgerst@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Andrew Lutomirski <amluto@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 4:17 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/22/2014 12:55 PM, Brian Gerst wrote:
->> On Tue, Apr 22, 2014 at 2:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 04/22/2014 11:17 AM, Brian Gerst wrote:
->>>>>
->>>>> That is the entry condition that we have to deal with.  The fact that
->>>>> the switch to the IST is unconditional is what makes ISTs hard to deal with.
->>>>
->>>> Right, that is why you switch away from the IST as soon as possible,
->>>> copying the data that is already pushed there to another stack so it
->>>> won't be overwritten by a recursive fault.
->>>>
->>>
->>> That simply will not work if you can take a #GP due to the "safe" MSR
->>> functions from NMI and #MC context, which would be my main concern.
->>
->> In that case (#2 above), you would switch to the previous %rsp (in the
->> NMI/MC stack), copy the exception frame from the IST, and continue
->> with the #GP handler.  That effectively is the same as it is today,
->> where no stack switch occurs on the #GP fault.
->>
->
-> 1. You take #GP.  This causes an IST stack switch.
-> 2. You immediately thereafter take an NMI.  This switches stacks again.
-> 3. Now you take another #GP.  This causes another IST stack, and now you
-> have clobbered your return information, and cannot resume.
+On Mon, 21 Apr 2014, Dave Hansen wrote:
 
-You are right.  That will not work.
+> 
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> Nobody outputs memory addresses in decimal.  PFNs are essentially
+> addresses, and they're gibberish in decimal.  Output them in hex.
+> 
+> Also, add the nid and zone name to give a little more context to
+> the message.
+> 
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+
+Acked-by: David Rientjes <rientjes@google.com>
