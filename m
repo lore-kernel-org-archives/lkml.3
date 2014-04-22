@@ -1,99 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757184AbaDVPvd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:51:33 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46878 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756462AbaDVPva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:51:30 -0400
-Date: Tue, 22 Apr 2014 10:48:58 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Balaji T K <balajitk@ti.com>
-CC: <balbi@ti.com>, <chris@printf.net>, <ulf.hansson@linaro.org>,
-        <linux-mmc@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] mmc: host: omap_hsmmc: a few improvements
-Message-ID: <20140422154858.GN5524@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1395878690-9650-1-git-send-email-balbi@ti.com>
- <20140421173203.GH22794@saruman.home>
- <53568B04.4050703@ti.com>
+	id S1757025AbaDVP4p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:56:45 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:50094 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755956AbaDVP4l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 11:56:41 -0400
+Date: Tue, 22 Apr 2014 17:56:02 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        zmxu@marvell.com, Jisheng Zhang <jszhang@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND 2/5] pinctrl: berlin: add a pinctrl driver for
+ Marvell Berlin SoCs
+Message-ID: <20140422155602.GA19762@kwain>
+References: <1397135274-10764-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1397135274-10764-3-git-send-email-antoine.tenart@free-electrons.com>
+ <5347AFF4.3050607@gmail.com>
+ <20140411123737.GA5903@kwain>
+ <5347EF8A.8040600@gmail.com>
+ <CACRpkdb1eijF-4e=KyhS=9S868NALdyJJaNnzjUubXnapWEeMg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DRfr/2Y1Zz/5r+Kb"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <53568B04.4050703@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdb1eijF-4e=KyhS=9S868NALdyJJaNnzjUubXnapWEeMg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---DRfr/2Y1Zz/5r+Kb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Linus,
 
-Hi,
-
-On Tue, Apr 22, 2014 at 09:00:12PM +0530, Balaji T K wrote:
-> On Monday 21 April 2014 11:02 PM, Felipe Balbi wrote:
-> >Hi,
+On Tue, Apr 22, 2014 at 02:52:10PM +0200, Linus Walleij wrote:
+> On Fri, Apr 11, 2014 at 3:35 PM, Sebastian Hesselbarth
+> <sebastian.hesselbarth@gmail.com> wrote:
+> > On 04/11/2014 02:37 PM, Antoine Ténart wrote:
+> >> On Fri, Apr 11, 2014 at 11:03:48AM +0200, Sebastian Hesselbarth wrote:
+> >>> On 04/10/2014 03:07 PM, Antoine Ténart wrote:
+> 
+> >>> Having said that, the above assumes that each function is unique
+> >>> but IIRC the idea of the function table was to group pins/groups
+> >>> with the same function, e.g. function "gpio", groups 1,7,25,...
+> >>
+> >> Most of the functions you can use on the Berlin they will be unique and
+> >> would
+> >> only be used in one group, except for the 'gpio' one.
 > >
-> >On Wed, Mar 26, 2014 at 07:04:45PM -0500, Felipe Balbi wrote:
-> >>this series lets us access the newer registers introduced
-> >>back in OMAP4 which give us some valid information about
-> >>the OMAP HSMMC IP like max block size, support for ADMA,
-> >>support for Retention.
-> >>
-> >>Right now, only setting max_blk_size correctly as supporting
-> >>ADMA and Retention will take a lot of work.
-> >>
-> >>Tested on OMAP5 uEVM.
-> >>
-> >>Felipe Balbi (5):
-> >>   mmc: host: omap_hsmmc: pass host as an argument
-> >>   mmc: host: omap_hsmmc: add reg_offset field
-> >>   mmc: host: omap_hsmmc: introduce new accessor functions
-> >>   mmc: host: omap_hsmmc: switch over to new accessors
-> >>   mmc: host: omap_hsmmc: set max_blk_size correctly
->=20
-> Got mislead by your reply to this series, about the alternative way of
-> reading memory size from CAPA register
-
-sure, we can do that if you prefer, I just felt I wouldn't touch
-platforms I can't really test :-s
-
-> >this has been here for almost a month, any comments ?
+> > Yeah, I had a similar discussion about it back then for mvebu. IIRC, the
+> > correct answer is: Have a list of functions with groups assigned to it
+> > no matter if there is only one group per function (or 40 per function as
+> > it will be for gpio).
 > >
->=20
-> Do you see any performance impact with this series ?
+> > Maybe Linus can give an update on how to deal with it?
+> 
+> Have you considered implementing pinmux_ops
+> .gpio_request_enable(), .gpio_set_direction() and
+> .gpio_disable_free() instead of defining groups for each
+> and every GPIO?
 
-in the normal case ? no... it helps only with large transfers
+The function 'gpio' can be found on different groups. But the Berlin pin muxing
+does not allow to configure a pin individually. It is then not possible to mux
+GPIO pins individually. For example the 'gpio' function of group 'GSM2' on the
+BG2Q will mux GPIOs 17 *and* 18.
 
---=20
-balbi
+Groups does not have more than a single 'gpio' function.
 
---DRfr/2Y1Zz/5r+Kb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Since the gpio_request_enable() comment says 'Implement this only if you can mux
+every pin individually as GPIO', I did not considered implementing these
+functions.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Antoine
 
-iQIcBAEBAgAGBQJTVo9qAAoJEIaOsuA1yqRE8cYQAJX126G5hH24ybpWAVt2uUTM
-wwRibxe+QnVf4fybPZptSjTum/Xb4GOia8DwzYVTOsApH1zjr3yriMOxywnqx3i4
-Riija1MJAv87aoRF9EgQ/kcVn93+elflcHmJUBvYLhzMLCWxSFOLEXQf43BIUF04
-boIKaG4Jng5W4T435Gtb8cM+2q6usQbJ8E+zxlHgPX4piezwC6dFm6gPuM/kn3ry
-0F7wdRHQYBPtEP/T2JojveRLuEVJbzcPy0zFimnCaCMVrQqfDb47wePHaOLXn8sE
-RCW2qOzVypq8D0Whynj7KRn1cUbvT6BOFTGStTvIWE+P5r8h3Yi6uSOPeq5Jvzqg
-0tNKmTB4lG8PMgUwAgQeSKI8BBA6InE7ZPnEL2YULPbQGSQiqrTZ08FUv4euDL2E
-2zQPDk92i+iEQAlmC9fyjH/iBT5VnfZxfp4GVcCGuJGTFq0GH0/6loUjtOLxFqDa
-P+ef7WD3qb4nwzNme+dxf4AtJ9sorAthw5mz++GohvdxsvF8hi2D+rstkyCQ773g
-ps6fy9m9saxkng82lL+Uu8itKvFPdvQKKm9QTaQePjoL9X9b82vBpJOKM9xb/nU9
-lRX3i4bfudxTAEbuswMIbJtcDIHSoCVnlWvoQOvwBGOyqLxb8kUmKsh2SojkPmwo
-92r1rSOF89MWGoRQ1wrF
-=lP24
------END PGP SIGNATURE-----
-
---DRfr/2Y1Zz/5r+Kb--
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
