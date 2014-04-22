@@ -1,93 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217AbaDVI5S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:57:18 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:45448 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755264AbaDVI4k (ORCPT
+	id S1755245AbaDVI6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:58:35 -0400
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:61665 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280AbaDVI6a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:56:40 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-cc-53562ebd7331
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 2/2] mfd: sec-core: Update sec_pmic documentation
-Date: Tue, 22 Apr 2014 10:56:10 +0200
-Message-id: <1398156970-9360-2-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1398156970-9360-1-git-send-email-k.kozlowski@samsung.com>
-References: <1398156970-9360-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrCJMWRmVeSWpSXmKPExsVy+t/xy7p79cKCDQ5+kbLYOGM9q8XrF4YW
-	Z5vesFvc/3qU0eLyrjlsFmuP3GW3ON3NanFxxRcmBw6PO9f2sHnMOxno0bdlFaPH501yASxR
-	XDYpqTmZZalF+nYJXBnr521gLlgjWNF0w62B8R9vFyMnh4SAicSHGTuZIGwxiQv31rN1MXJx
-	CAksZZSY8ugFM4TTxyTR/noDC0gVm4CxxOblS8CqRAT6GCXOv13DCOIwCxxllJje+xZslrCA
-	i8SbDe9ZQWwWAVWJaYfXsoHYvAJuEo1bjrFB7JOTOHlsMlgNp4C7xLO5b8A2CAHVPJn2h20C
-	I+8CRoZVjKKppckFxUnpuYZ6xYm5xaV56XrJ+bmbGCEh9WUH4+JjVocYBTgYlXh4JQxCg4VY
-	E8uKK3MPMUpwMCuJ8LLqhgUL8aYkVlalFuXHF5XmpBYfYmTi4JRqYLQQ/rIgWC4x41qz4fvZ
-	bNNMpN9nB7SUTNNy5bqYoPNCYnFKQaBx/pKX69t4v1748fhgpvpSieB1qhd5dr62j7y5xpdh
-	w+1rebLfrzqdPNzxZirrQWY2Fak41aM/J9oxbsvNXBdum5gWdmC92ev82kM2ije9DeVCpgb+
-	qWxLMHkQeC0hRXGrkRJLcUaioRZzUXEiAOFGGMAHAgAA
+	Tue, 22 Apr 2014 04:58:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
+Date: Tue, 22 Apr 2014 14:28:28 +0530
+Message-ID: <CA+b37P3HqMFU6kGA+GH3YpGM_Z=TwNXL6jKu+ConR3kCk-Tp4g@mail.gmail.com>
+Subject: Re: [PATCH v7 0/3] Add support for PCI in AArch64
+From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+To: Liviu Dudau <Liviu.Dudau@arm.com>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>,
+        Tanmay Inamdar <tinamdar@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the documentation for sec_pmic state container structure to
-reflect current code.
+On 14 March 2014 21:04, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+> Hi,
+>
+> This patch adds support for PCI to AArch64. It is based on my v7 patch
+> that adds support for creating generic host bridge structure from
+> device tree. With that in place, I was able to boot a platform that
+> has PCIe host bridge support and use a PCIe network card.
+Hi Liviu,
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Are these patches (including your other patchset for device tree host
+bridge support ) available on a public git repo I can checkout from?
 
----
+Thanks,
+~Sandeepa
 
-Changes since v1:
- - Update documentation after review from Lee Jones.
----
- include/linux/mfd/samsung/core.h | 29 +++++++++++++++++------------
- 1 file changed, 17 insertions(+), 12 deletions(-)
-
-diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-index e7e12ebacb9b..47d84242940b 100644
---- a/include/linux/mfd/samsung/core.h
-+++ b/include/linux/mfd/samsung/core.h
-@@ -24,18 +24,23 @@ enum sec_device_type {
- };
- 
- /**
-- * struct sec_pmic_dev - s5m87xx master device for sub-drivers
-- * @dev: master device of the chip (can be used to access platform data)
-- * @pdata: pointer to private data used to pass platform data to child
-- * @i2c: i2c client private data for regulator
-- * @iolock: mutex for serializing io access
-- * @irqlock: mutex for buslock
-- * @irq_base: base IRQ number for sec-pmic, required for IRQs
-- * @irq: generic IRQ number for s5m87xx
-- * @ono: power onoff IRQ number for s5m87xx
-- * @irq_masks_cur: currently active value
-- * @irq_masks_cache: cached hardware value
-- * @type: indicate which s5m87xx "variant" is used
-+ * struct sec_pmic_dev - s2m/s5m master device for sub-drivers
-+ * @dev:		Master device of the chip
-+ * @pdata:		Platform data populated with data from DTS
-+ *			or board files
-+ * @regmap_pmic:	Regmap associated with PMIC's I2C address
-+ * @i2c:		I2C client of the main driver
-+ * @device_type:	Type of device, matches enum sec_device_type
-+ * @irq_base:		Base IRQ number for device, required for IRQs
-+ * @irq:		Generic IRQ number for device
-+ * @irq_data:		Runtime data structure for IRQ controller
-+ * @ono:		Power onoff IRQ number for s5m87xx
-+ * @wakeup:		Whether or not this is a wakeup device
-+ * @wtsr_smpl:		Whether or not to enable in RTC driver the Watchdog
-+ *			Timer Software Reset (registers set to default value
-+ *			after PWRHOLD falling) and Sudden Momentary Power Loss
-+ *			(PMIC will enter power on sequence after short drop in
-+ *			VBATT voltage).
-  */
- struct sec_pmic_dev {
- 	struct device *dev;
--- 
-1.9.1
-
+>
+> I have dropped the RFC tag from the subject as I now have the ambitious goal
+> of trying to get it mainlined.
+>
+> Changes from v6:
+>   - Guard the pci_domain_nr() inline implementation with #ifdef CONFIG_PCI as
+>     to avoid conflict with default empty version present in include/linux/pci.h.
+>     Thanks to Jingoo Han for catching this.
+>
+> Changes from v5:
+>   - Removed pcibios_fixup_bridge_ranges() as the week default version is fine.
+>   - Removed the ALIGN() call in pcibios_align_resource()
+>   - Stopped exporting pcibios_align_resource()
+>
+> Changes from v4:
+>   - Fixed the pci_domain_nr() implementation for arm64. Now we use
+>     find_pci_host_bride() to find the host bridge before we retrieve
+>     the domain number.
+>
+> Changes from v3:
+>   - Added Acks accumulated so far ;)
+>   - Still carrying Catalin's patch for moving the PCI_IO_BASE until it
+>     lands in linux-next or mainline, in order to ease applying the series
+>
+> Changes from v2:
+>   - Implement an arch specific version of pci_register_io_range() and
+>     pci_address_to_pio().
+>   - Return 1 from pci_proc_domain().
+>
+> Changes from v1:
+>   - Added Catalin's patch for moving the PCI_IO_BASE location and extend
+>     its size to 16MB
+>   - Integrated Arnd's version of pci_ioremap_io that uses a bitmap for
+>     keeping track of assigned IO space and returns an io_offset. At the
+>     moment the code is added in arch/arm64 but it can be moved in drivers/pci.
+>   - Added a fix for the generic ioport_map() function when !CONFIG_GENERIC_IOMAP
+>     as suggested by Arnd.
+>
+> v6 thread here: https://lkml.org/lkml/2014/3/5/41
+> v5 thread here: https://lkml.org/lkml/2014/3/4/307
+> v4 thread here: https://lkml.org/lkml/2014/3/3/298
+> v3 thread here: https://lkml.org/lkml/2014/2/28/211
+> v2 thread here: https://lkml.org/lkml/2014/2/27/255
+> v1 thread here: https://lkml.org/lkml/2014/2/3/389
+>
+>
+> The API used is different from the one used by ARM architecture. There is
+> no pci_common_init_dev() function and no hw_pci structure, as that is no
+> longer needed. Once the last signature is added to the legal agreement, I
+> will post the host bridge driver code that I am using. Meanwhile, here
+> is an example of what the probe function looks like, posted as an example:
+>
+> static int myhostbridge_probe(struct platform_device *pdev)
+> {
+>         int err;
+>         struct device_node *dev;
+>         struct pci_host_bridge *bridge;
+>         struct myhostbridge_port *pp;
+>         resource_size_t lastbus;
+>
+>         dev = pdev->dev.of_node;
+>
+>         if (!of_device_is_available(dev)) {
+>                 pr_warn("%s: disabled\n", dev->full_name);
+>                 return -ENODEV;
+>         }
+>
+>         pp = kzalloc(sizeof(struct myhostbridge_port), GFP_KERNEL);
+>         if (!pp)
+>                 return -ENOMEM;
+>
+>         bridge = of_create_pci_host_bridge(&pdev->dev, &myhostbridge_ops, pp);
+>         if (IS_ERR(bridge)) {
+>                 err = PTR_ERR(bridge);
+>                 goto bridge_create_fail;
+>         }
+>
+>         err = myhostbridge_setup(bridge->bus);
+>         if (err)
+>                 goto bridge_setup_fail;
+>
+>         /* We always enable PCI domains and we keep domain 0 backward
+>          * compatible in /proc for video cards
+>          */
+>         pci_add_flags(PCI_ENABLE_PROC_DOMAINS);
+>         pci_add_flags(PCI_REASSIGN_ALL_BUS | PCI_REASSIGN_ALL_RSRC);
+>
+>         lastbus = pci_scan_child_bus(bridge->bus);
+>         pci_bus_update_busn_res_end(bridge->bus, lastbus);
+>
+>         pci_assign_unassigned_bus_resources(bridge->bus);
+>
+>         pci_bus_add_devices(bridge->bus);
+>
+>         return 0;
+>
+> bridge_setup_fail:
+>         put_device(&bridge->dev);
+>         device_unregister(&bridge->dev);
+> bridge_create_fail:
+>         kfree(pp);
+>         return err;
+> }
+>
+> Best regards,
+> Liviu
+>
+>
+> Catalin Marinas (1):
+>   arm64: Extend the PCI I/O space to 16MB
+>
+> Liviu Dudau (2):
+>   Fix ioport_map() for !CONFIG_GENERIC_IOMAP cases.
+>   arm64: Add architecture support for PCI
+>
+>  Documentation/arm64/memory.txt |  16 +--
+>  arch/arm64/Kconfig             |  19 +++-
+>  arch/arm64/include/asm/Kbuild  |   1 +
+>  arch/arm64/include/asm/io.h    |   5 +-
+>  arch/arm64/include/asm/pci.h   |  51 +++++++++
+>  arch/arm64/kernel/Makefile     |   1 +
+>  arch/arm64/kernel/pci.c        | 173 +++++++++++++++++++++++++++++++
+>  include/asm-generic/io.h       |   2 +-
+>  8 files changed, 258 insertions(+), 10 deletions(-)
+>  create mode 100644 arch/arm64/include/asm/pci.h
+>  create mode 100644 arch/arm64/kernel/pci.c
+>
+> --
+> 1.9.0
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
