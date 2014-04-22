@@ -1,57 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756976AbaDVRdz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 13:33:55 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:54882 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756085AbaDVRdx (ORCPT
+	id S933489AbaDVRff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 13:35:35 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:35870 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932927AbaDVRfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 13:33:53 -0400
-Date: Tue, 22 Apr 2014 19:33:48 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Imre Deak <imre.deak@intel.com>
-Cc: Jani Nikula <jani.nikula@linux.intel.com>,
-        Knut Petersen <Knut_Petersen@t-online.de>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>
-Subject: Re: [Intel-gfx] [Bug 3.15-rc2] [bisected] intel framebuffer broken
-Message-ID: <20140422173348.GX10722@phenom.ffwll.local>
-Mail-Followup-To: Imre Deak <imre.deak@intel.com>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	Knut Petersen <Knut_Petersen@t-online.de>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	Jesse Barnes <jbarnes@virtuousgeek.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <53554B59.8080107@t-online.de>
- <87tx9lh95w.fsf@intel.com>
- <535675CC.1020402@t-online.de>
- <871twpbdth.fsf@intel.com>
- <1398183760.21147.85.camel@intelbox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398183760.21147.85.camel@intelbox>
-X-Operating-System: Linux phenom 3.14.0+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 22 Apr 2014 13:35:32 -0400
+Message-ID: <5356A85F.6030708@gmail.com>
+Date: Tue, 22 Apr 2014 19:35:27 +0200
+From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
+	<antoine.tenart@free-electrons.com>
+CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
+Subject: Re: [PATCH v2 1/2] ARM: dts: berlin: add the SDHCI nodes for the
+ BG2Q
+References: <1398155248-1659-1-git-send-email-antoine.tenart@free-electrons.com> <1398155248-1659-2-git-send-email-antoine.tenart@free-electrons.com>
+In-Reply-To: <1398155248-1659-2-git-send-email-antoine.tenart@free-electrons.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 07:22:40PM +0300, Imre Deak wrote:
-> On Tue, 2014-04-22 at 18:10 +0300, Jani Nikula wrote:
-> > Knut, thanks for a quick bisect.
-> > 
-> > Imre, please have a look at the sdvo WARN related to sysfs links in the
-> > dmesg.
-> 
-> It's probably the same WARN fixed by:
-> http://patchwork.freedesktop.org/patch/24126/
+[Added MMC maintainers Chris and Ulf for one question below]
 
-Knut, can you please check that this patch gets rid of the WARN?
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+On 04/22/2014 10:27 AM, Antoine Ténart wrote:
+> Add the SDHCI nodes for the Marvell Berlin BG2Q, using the mrvl,pxav3-mmc
+> driver.
+> 
+> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+> ---
+>  arch/arm/boot/dts/berlin2q.dtsi | 32 ++++++++++++++++++++++++++++++++
+>  1 file changed, 32 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+> index 5925e6a16749..85d0ca5cc47a 100644
+> --- a/arch/arm/boot/dts/berlin2q.dtsi
+> +++ b/arch/arm/boot/dts/berlin2q.dtsi
+> @@ -67,6 +67,14 @@
+>  		clock-div = <3>;
+>  	};
+>  
+> +	sdio1clk: sdio1clk {
+> +		compatible = "fixed-factor-clock";
+> +		#clock-cells = <0>;
+> +		clocks = <&syspll>;
+> +		clock-mult = <1>;
+> +		clock-div = <4>;
+> +	};
+> +
+>  	soc {
+>  		compatible = "simple-bus";
+>  		#address-cells = <1>;
+> @@ -75,6 +83,30 @@
+>  		ranges = <0 0xf7000000 0x1000000>;
+>  		interrupt-parent = <&gic>;
+>  
+> +		sdhci0: sdhci@ab0000 {
+> +			compatible = "mrvl,pxav3-mmc";
+> +			reg = <0xab0000 0x200>;
+> +			clocks = <&sdio1clk>;
+> +			interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
+> +			status = "disabled";
+> +		};
+> +
+> +		sdhci1: sdhci@ab0800 {
+> +			compatible = "mrvl,pxav3-mmc";
+> +			reg = <0xab0800 0x200>;
+> +			clocks = <&sdio1clk>;
+> +			interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
+> +			status = "disabled";
+> +		};
+> +
+> +		sdhci2: sdhci@ab1000 {
+
+Didn't Jisheng ask for sdhci2 being registered at mmc0?
+Renaming the node labels will not help, but have you tried using an:
+
+aliases {
+	mmc0 = &sdhci2;
+	mmc1 = &sdhci0;
+	mmc2 = &sdhci1;
+};
+
+node and set the platform_device's .id field with what you get
+from of_alias_get_id(np, "mmc")?
+
+@Chris, Ulf: Is there any generic alias, e.g. "sdhci", you prefer for
+drivers/mmc so we can put it into sdhci_get_of_property()?
+
+Sebastian
+
+> +			compatible = "mrvl,pxav3-mmc";
+> +			reg = <0xab1000 0x200>;
+> +			interrupts = <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>;
+> +			clocks = <&sdio1clk>;
+> +			status = "disabled";
+> +		};
+> +
+>  		l2: l2-cache-controller@ac0000 {
+>  			compatible = "arm,pl310-cache";
+>  			reg = <0xac0000 0x1000>;
+> 
+
