@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752486AbaDVFcT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 01:32:19 -0400
-Received: from mail-pb0-f43.google.com ([209.85.160.43]:49958 "EHLO
-	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751986AbaDVFcQ (ORCPT
+	id S1752501AbaDVFdA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 01:33:00 -0400
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:48043 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751371AbaDVFc5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 01:32:16 -0400
+	Tue, 22 Apr 2014 01:32:57 -0400
 From: Jianyu Zhan <nasa4836@gmail.com>
-To: davem@davemloft.net, lizefan@huawei.com, tj@kernel.org,
-        nhorman@tuxdriver.com, daniel.wagner@bmw-carit.de, nasa4836@gmail.com,
-        gaofeng@cn.fujitsu.com, stephen@networkplumber.org, jiri@resnulli.us
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] netprio_cgroup: explicitly init the early_init field
-Date: Tue, 22 Apr 2014 13:32:02 +0800
-Message-Id: <1398144722-9864-1-git-send-email-nasa4836@gmail.com>
+To: james.l.morris@oracle.com
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        nasa4836@gmail.com
+Subject: [PATCH] device_cgroup: explicitly init the early_init field
+Date: Tue, 22 Apr 2014 13:32:49 +0800
+Message-Id: <1398144769-9938-1-git-send-email-nasa4836@gmail.com>
 X-Mailer: git-send-email 2.0.0-rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,21 +28,21 @@ to 0, for document reason.
 
 Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 ---
- net/core/netprio_cgroup.c | 1 +
+ security/device_cgroup.c | 1 +
  1 file changed, 1 insertion(+)
 
-diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
-index 13ddd68..fc21035 100644
---- a/net/core/netprio_cgroup.c
-+++ b/net/core/netprio_cgroup.c
-@@ -250,6 +250,7 @@ struct cgroup_subsys net_prio_cgrp_subsys = {
- 	.css_free	= cgrp_css_free,
- 	.attach		= net_prio_attach,
- 	.base_cftypes	= ss_files,
-+	.early_init	= 0,
+diff --git a/security/device_cgroup.c b/security/device_cgroup.c
+index 8365909..dd9614f 100644
+--- a/security/device_cgroup.c
++++ b/security/device_cgroup.c
+@@ -688,6 +688,7 @@ struct cgroup_subsys devices_cgrp_subsys = {
+ 	.css_online = devcgroup_online,
+ 	.css_offline = devcgroup_offline,
+ 	.base_cftypes = dev_cgroup_files,
++	.early_init = 0,
  };
  
- static int netprio_device_event(struct notifier_block *unused,
+ /**
 -- 
 2.0.0-rc0
 
