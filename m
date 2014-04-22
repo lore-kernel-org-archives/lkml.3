@@ -1,60 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159AbaDVK4R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 06:56:17 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52856 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078AbaDVK4I (ORCPT
+	id S1755596AbaDVK6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 06:58:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:53916 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432AbaDVK6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 06:56:08 -0400
-Date: Tue, 22 Apr 2014 11:55:52 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Manfred Schlaegl <manfred.schlaegl@gmx.at>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Peter Hurley <peter@hurleysoftware.com>,
-        Alan Cox <alan@redhat.com>, linux-kernel@vger.kernel.org,
-        Manfred Schlaegl <manfred.schlaegl@ginzinger.com>
-Subject: Re: [PATCH] tty: Fix race condition between
- __tty_buffer_request_room and flush_to_ldisc
-Message-ID: <20140422115552.253b69c4@alan.etchedpixels.co.uk>
-In-Reply-To: <5350DDE9.1040102@gmx.at>
-References: <5343EE9C.9010004@gmx.at>
-	<5350DDE9.1040102@gmx.at>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Apr 2014 06:58:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
+Subject: Re: [PATCH 00/28] nios2 Linux kernel port
+Date: Tue, 22 Apr 2014 12:56:08 +0200
+Message-ID: <16597012.pEkDc99HDN@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAFiDJ5861HE4AXtio-8uNJppWE2oaPt9_OKyGV=Myb_3vPrOVA@mail.gmail.com>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com> <5354AD36.5090809@zytor.com> <CAFiDJ5861HE4AXtio-8uNJppWE2oaPt9_OKyGV=Myb_3vPrOVA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:IElTUq6j+ZIKgV1x8gp8Bx9CcnTft2chN1IZ/JZph1o
+ LAQAK9jBwGMJ9hPfcC2UACcdvuRTLznu0H0e6Jxu35QGHqf5o4
+ /qSSccZa7/WCxyo3Fc6dTHP0OgWWcvqsye3RZ4KEj2iLDrYG9k
+ iGCy/9el1SwNeh3HUfjycG2T/wuOHTdqwYsZvDV5jucK1hNUjv
+ TAZMZWr8dR99sxDIGogC6YfH4yTKfSDV1l4s/6sJcdBslbgEeh
+ 78/Vv+RwdFGPk/XMk6sT26iPN5rPt0YC7CMgUTqE4B44mJ9ClK
+ gVR7mc/cEIJllz+h+G6715VX8ChN30z3833GWCFD4owZVSV7w7
+ POb7jSnwLPILOZ944fyM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Apr 2014 10:10:17 +0200
-Manfred Schlaegl <manfred.schlaegl@gmx.at> wrote:
-
-> On 2014-04-08 14:42, Manfred Schlaegl wrote:
-> > The race was introduced while development of linux-3.11 by
-> > e8437d7ecbc50198705331449367d401ebb3181f and
-> > e9975fdec0138f1b2a85b9624e41660abd9865d4.
-> > Originally it was found and reproduced on linux-3.12.15 and
-> > linux-3.12.15-rt25, by sending 500 byte blocks with 115kbaud to the
-> > target uart in a loop with 100 milliseconds delay.
-> > 
-> > In short:
-> >  1. The consumer flush_to_ldisc is on to remove the head tty_buffer.
-> >  2. The producer adds a number of bytes, so that a new tty_buffer must
-> > 	be allocated and added by __tty_buffer_request_room.
-> >  3. The consumer removes the head tty_buffer element, without handling
-> > 	newly committed data.
+On Tuesday 22 April 2014 18:37:11 Ley Foon Tan wrote:
+> Hi Arnd and Peter Anvin,
 > 
-> Hi!
-> 
-> Reminder: The Problem is still existent in linux-3.11, 3.12, 3.13. 3.14 and pre 3.15 kernels.
-> 
-> The lastly delivered patch cleanly applies to pre 3.15 (torvalds tree) and 3.14(.1).
+> Other than 64-bit time_t, clock_t and suseconds_t, can you confirm
+> that we don't need to have 64 bit off_t? See detail in link below.
+> I can submit the patches for 64-bit time changes
+> (include/asm-generic/posix_types.h and other archs) if everyone is
+> agreed on this.
 
-Greg ?? what is happening about this one. We can't just ignore losing
-bytes caused by incorrect lock removal. We are seeing breakages in things
-like bluetooth over serial which are quite probably down to this problem.
+Yes.
 
-Alan
+> Excerpt from https://lkml.org/lkml/2012/11/14/358 :
+> "Obviously, we want to use 64-bit off_t, but this is achieved already
+> through loff_t, which is used in all places in the asm-generic
+> ABI anyway (the syscalls using off_t are stripped out). I don't
+> think we want to have the other ones set to 64 bit on ARC or Meta,
+> although I'm not 100% sure about ino_t and nlink_t. "
+
+This is all still true. You should have no syscall using 'off_t',
+only loff_t.
+
+I still don't know whether we would want 32 or 64 bit ino_t and nlink_t
+for new architectures. It seems it would gain very little, but have
+a noticeable overhead.
+
+	Arnd
