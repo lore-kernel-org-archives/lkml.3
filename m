@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313AbaDVL5h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:57:37 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:52235 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168AbaDVL5c (ORCPT
+	id S932401AbaDVL54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:57:56 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:59562 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199AbaDVL5d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:57:32 -0400
-Message-ID: <53565922.1050709@de.ibm.com>
-Date: Tue, 22 Apr 2014 13:57:22 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 22 Apr 2014 07:57:33 -0400
+Message-ID: <53565947.3020503@linaro.org>
+Date: Tue, 22 Apr 2014 13:57:59 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Johannes Weiner <hannes@cmpxchg.org>
-CC: Rafael Aquini <aquini@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
-        Suleiman Souhlal <suleiman@google.com>, stable@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: commit 0bf1457f0cfca7b  " mm: vmscan: do not swap anon pages
- just because free+file is low" causes heavy performance regression on paging
-References: <53564AA9.3060905@de.ibm.com>
-In-Reply-To: <53564AA9.3060905@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042211-0542-0000-0000-000008BC0501
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] ARM: sunxi: Add A31 High Speed Timer Support
+References: <1397725606-18000-1-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1397725606-18000-1-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/04/14 12:55, Christian Borntraeger wrote:
-> While preparing/testing some KVM on s390 patches for the next merge window (target is kvm/next which is based on 3.15-rc1) I faced a very severe performance hickup on guest paging (all anonymous memory).
-> 
-> All memory bound guests are in "D" state now and the system is barely unusable.
-> 
-> Reverting commit 0bf1457f0cfca7bc026a82323ad34bcf58ad035d
-> "mm: vmscan: do not swap anon pages just because free+file is low" makes the problem go away.
-> 
-> According to /proc/vmstat the system is now in direct reclaim almost all the time for every page fault (more than 10x more direct reclaims than kswap reclaims)
-> With the patch being reverted everything is fine again.
-> 
-> Any ideas?
+On 04/17/2014 11:06 AM, Maxime Ripard wrote:
+> Hi everyone,
+>
+> This patchset enables support for the High Speed Timer IP found in the
+> Allwinner A31 SoCs.
+>
+> These timers are asserted in reset, and are not associated with any
+> struct device, so we also add a small helper to the reset framework
+> along the way to be able to retrieve the reset controller from the
+> device tree directly.
+>
+> Thanks,
+> Maxime
+>
+> Changes from v2:
+>    - Rebased on top of 3.15-rc1
+>
+> Changes from v1:
+>    - Rebased on top of 3.14-rc1 and reset/for_3.15
+>
+> Maxime Ripard (2):
+>    clocksource: sun5i: Add support for reset controller
+>    ARM: sun6i: a31: Add support for the High Speed Timers
+>
+>   .../devicetree/bindings/timer/allwinner,sun5i-a13-hstimer.txt |  4 ++++
+>   arch/arm/boot/dts/sun6i-a31.dtsi                              | 11 +++++++++++
+>   drivers/clocksource/timer-sun5i.c                             |  6 ++++++
+>   3 files changed, 21 insertions(+)
 
-Here is an idea to tackle my problem and the original problem:
+Applied for 3.16
 
-reverting  0bf1457f0cfca7bc026a82323ad34bcf58ad035d + checking against low, also seems to make my system usable.
+Thanks
 
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1923,7 +1923,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
-         */
-        if (global_reclaim(sc)) {
-                free = zone_page_state(zone, NR_FREE_PAGES);
--               if (unlikely(file + free <= high_wmark_pages(zone))) {
-+               if (unlikely(file + free <= low_wmark_pages(zone))) {
-                        scan_balance = SCAN_ANON;
-                        goto out;
-                }
+   -- Daniel
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
