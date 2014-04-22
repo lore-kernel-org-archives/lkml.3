@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606AbaDVObG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:31:06 -0400
-Received: from asavdk3.altibox.net ([109.247.116.14]:51185 "EHLO
-	asavdk3.altibox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756049AbaDVObC (ORCPT
+	id S932584AbaDVOb1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:31:27 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49245 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756571AbaDVObF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:31:02 -0400
-Date: Tue, 22 Apr 2014 16:30:54 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 00/18] Cross-architecture definitions of relaxed MMIO
- accessors
-Message-ID: <20140422143053.GA16898@ravnborg.org>
-References: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
- <20140417153638.GA7317@ravnborg.org>
- <20140417154714.GD30553@arm.com>
- <20140417191555.GA11970@ravnborg.org>
- <20140422134345.GD9820@arm.com>
+	Tue, 22 Apr 2014 10:31:05 -0400
+Date: Tue, 22 Apr 2014 11:30:37 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+Subject: Re: [PATCH 08/28] nios2: MMU Fault handling
+Message-ID: <20140422143036.GD15745@arch.cereza>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+ <1397824031-4892-6-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20140422134345.GD9820@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1397824031-4892-6-git-send-email-lftan@altera.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> This is because Sparc (and the other architectures I had to modify) don't
-> make use of asm-generic/io.h.
-Somehow I missed this.
+Hello Ley Foon,
 
-Added to my todo list to look into sparc in this respect.
-A quick lokk reveal that sparc32 can use most/all of the generic io.h
+On Apr 18, Ley Foon Tan wrote:
+> +
+> +bad_area_nosemaphore:
+> +	/* User mode accesses just cause a SIGSEGV */
+> +	if (user_mode(regs)) {
 
-	Sam
+I found that it's useful to add some printing here, just as ARM
+does. I carry this patch on my kernel:
+
++               printk(KERN_INFO "%s: unhandled page fault (%d) at 0x%08lx, cause %ld\n",
++                      current->comm, SIGSEGV, address, cause);
++               show_regs(regs);
+
+Do you think we could do something like it? Maybe with a compile time option?
+
+> +		_exception(SIGSEGV, regs, code, address);
+> +		return;
+> +	}
+> +
+-- 
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
