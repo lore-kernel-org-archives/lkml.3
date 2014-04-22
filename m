@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932808AbaDVOMv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:12:51 -0400
-Received: from smtp.devoid-pointer.net ([31.31.77.140]:49467 "EHLO
+	id S932825AbaDVONc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:13:32 -0400
+Received: from smtp.devoid-pointer.net ([31.31.77.140]:49444 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756206AbaDVOAY (ORCPT
+	with ESMTP id S1756104AbaDVOAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:00:24 -0400
+	Tue, 22 Apr 2014 10:00:14 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org
-Subject: [PATCH v2 05/24] input: Port max8997_haptic to ff-memless-next
-Date: Tue, 22 Apr 2014 15:59:50 +0200
-Message-Id: <1398175209-9565-6-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v2 00/24] input: Introduce ff-memless-next as an improved replacement for ff-memless
+Date: Tue, 22 Apr 2014 15:59:45 +0200
+Message-Id: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
-References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -24,87 +22,99 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port max8997_haptic to ff-memless-next
+ff-memless-next (MLNX) is a largely improved version of the current ff-memless
+(FFML) driver. MLNX supports all force feedback effects currently available in
+the Linux force feedback userspace API. All effects are handled in accordance
+with Microsoft's DirectInput/XInput. Most notable changes include support for
+conditional effects, proper handling of all periodic waveforms and improved
+emulation of rumble effects through periodic effects. MLNX also uses its own
+kernel API to pass processed effects to hardware-specific drivers instead of
+abusing "ff_effect" struct. The API is documented in the respective header
+file.
+
+MLNX has been expanded to be a direct replacement for FFML.
+
+Support for FF_PERIODIC and FF_RAMP has been added to all devices that
+support FF_CONSTANT as a part of the port to the new API.
+
+This patch series:
+1) Adds "ff-memless-next" module [1]
+2) Ports all hardware-specific drivers to MLNX's API [2-23]
+3) Removes FFML and replaces it with MLNX [24]
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
----
- drivers/input/misc/Kconfig          |  2 +-
- drivers/input/misc/max8997_haptic.c | 25 +++++++++++++++++++------
- 2 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 91dcae8..6ba327f 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -157,7 +157,7 @@ config INPUT_MAX8925_ONKEY
- config INPUT_MAX8997_HAPTIC
- 	tristate "MAXIM MAX8997 haptic controller support"
- 	depends on PWM && HAVE_PWM && MFD_MAX8997
--	select INPUT_FF_MEMLESS
-+	select INPUT_FF_MEMLESS_NEXT
- 	help
- 	  This option enables device driver support for the haptic controller
- 	  on MAXIM MAX8997 chip. This driver supports ff-memless interface
-diff --git a/drivers/input/misc/max8997_haptic.c b/drivers/input/misc/max8997_haptic.c
-index 1fea548..029ac8b 100644
---- a/drivers/input/misc/max8997_haptic.c
-+++ b/drivers/input/misc/max8997_haptic.c
-@@ -31,6 +31,7 @@
- #include <linux/mfd/max8997-private.h>
- #include <linux/mfd/max8997.h>
- #include <linux/regulator/consumer.h>
-+#include <linux/input/ff-memless-next.h>
- 
- /* Haptic configuration 2 register */
- #define MAX8997_MOTOR_TYPE_SHIFT	7
-@@ -43,6 +44,8 @@
- #define MAX8997_SIG_DUTY_SHIFT		2
- #define MAX8997_PWM_DUTY_SHIFT		0
- 
-+#define FF_UPDATE_RATE 50
-+
- struct max8997_haptic {
- 	struct device *dev;
- 	struct i2c_client *client;
-@@ -219,13 +222,23 @@ static void max8997_haptic_play_effect_work(struct work_struct *work)
- }
- 
- static int max8997_haptic_play_effect(struct input_dev *dev, void *data,
--				  struct ff_effect *effect)
-+				  const struct mlnx_effect_command *command)
- {
- 	struct max8997_haptic *chip = input_get_drvdata(dev);
-+	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 
--	chip->level = effect->u.rumble.strong_magnitude;
--	if (!chip->level)
--		chip->level = effect->u.rumble.weak_magnitude;
-+	switch (command->cmd) {
-+	case MLNX_START_RUMBLE:
-+		chip->level = rumble_force->strong;
-+		if (!chip->level)
-+			chip->level = rumble_force->weak;
-+		break;
-+	case MLNX_STOP_RUMBLE:
-+		chip->level = 0;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
- 
- 	schedule_work(&chip->work);
- 
-@@ -319,8 +332,8 @@ static int max8997_haptic_probe(struct platform_device *pdev)
- 	input_set_drvdata(input_dev, chip);
- 	input_set_capability(input_dev, EV_FF, FF_RUMBLE);
- 
--	error = input_ff_create_memless(input_dev, NULL,
--				max8997_haptic_play_effect);
-+	error = input_ff_create_mlnx(input_dev, NULL,
-+				max8997_haptic_play_effect, FF_UPDATE_RATE);
- 	if (error) {
- 		dev_err(&pdev->dev,
- 			"unable to create FF device, error: %d\n",
+v2:
+ - Add missing msecs to jiffies conversion in ff-memless-next
+ - lgff: Properly convert force on Y axis from MLNX to device range
+         Support periodic effects for "joystick_ac" device class
+ - lg3ff: Properly convert forces from MLNX to device range
+ - Very minor coding style issues fixed
+
+Michal Malý (24):
+  Add ff-memless-next module
+  Port arizona-haptics to ff-memless-next
+  Port twl4030-vibra to ff-memless-next
+  Port twl6040-vibra to ff-memless-next
+  Port max8997_haptic to ff-memless-next
+  Port pm8xxx-vibrator to ff-memless-next
+  Port hid-axff to ff-memless-next
+  Port hid-emsff to ff-memless-next
+  Port hid-dr to ff-memless-next
+  Port hid-gaff to ff-memless-next
+  Port hid-holtekff to ff-memless-next
+  Port hid-lgff to ff-memless-next
+  Port hid-lg3ff to ff-memless-next
+  Port hid-pl to ff-memless-next
+  Port hid-sjoy to ff-memless-next
+  Port hid-sony to ff-memless-next
+  Port hid-tmff to ff-memless-next
+  Port hid-wiimote-modules to ff-memless-next
+  Port hid-zpff to ff-memless-next
+  Port gamecon to ff-memless-next
+  Port xpad to ff-memless-next
+  - Port hid-lg2ff to ff-memless-next     - Clamp vibration magnitude to
+    range <0x02; 0xfd> to prevent irregular       shaking of the
+    vibration motors.
+  Port hid-lg4ff to ff-memless-next
+  Replace ff-memless with ff-memless-next
+
+ drivers/hid/Kconfig                   |   30 +-
+ drivers/hid/hid-axff.c                |   32 +-
+ drivers/hid/hid-dr.c                  |   59 +-
+ drivers/hid/hid-emsff.c               |   38 +-
+ drivers/hid/hid-gaff.c                |   32 +-
+ drivers/hid/hid-holtekff.c            |   47 +-
+ drivers/hid/hid-lg2ff.c               |   65 ++-
+ drivers/hid/hid-lg3ff.c               |   60 +-
+ drivers/hid/hid-lg4ff.c               |   93 +--
+ drivers/hid/hid-lgff.c                |   70 ++-
+ drivers/hid/hid-pl.c                  |   38 +-
+ drivers/hid/hid-sjoy.c                |   35 +-
+ drivers/hid/hid-sony.c                |   24 +-
+ drivers/hid/hid-tmff.c                |   83 +--
+ drivers/hid/hid-wiimote-modules.c     |   74 ++-
+ drivers/hid/hid-zpff.c                |   30 +-
+ drivers/input/Kconfig                 |    4 +-
+ drivers/input/Makefile                |    2 +-
+ drivers/input/ff-memless-next.c       | 1037 +++++++++++++++++++++++++++++++++
+ drivers/input/ff-memless.c            |  547 -----------------
+ drivers/input/joystick/Kconfig        |    4 +-
+ drivers/input/joystick/gamecon.c      |   57 +-
+ drivers/input/joystick/xpad.c         |  125 ++--
+ drivers/input/misc/Kconfig            |   10 +-
+ drivers/input/misc/arizona-haptics.c  |   39 +-
+ drivers/input/misc/max8997_haptic.c   |   25 +-
+ drivers/input/misc/pm8xxx-vibrator.c  |   28 +-
+ drivers/input/misc/twl4030-vibra.c    |   31 +-
+ drivers/input/misc/twl6040-vibra.c    |   27 +-
+ include/linux/input.h                 |    3 -
+ include/linux/input/ff-memless-next.h |  149 +++++
+ 31 files changed, 1939 insertions(+), 959 deletions(-)
+ create mode 100644 drivers/input/ff-memless-next.c
+ delete mode 100644 drivers/input/ff-memless.c
+ create mode 100644 include/linux/input/ff-memless-next.h
+
 -- 
 1.9.2
 
