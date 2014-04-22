@@ -1,94 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580AbaDVUSM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:18:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36306 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434AbaDVUSI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:18:08 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 108/133] x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
-Date: Tue, 22 Apr 2014 13:14:06 -0700
-Message-Id: <1398197671-12786-109-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1757588AbaDVUSk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:18:40 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54015 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751182AbaDVUSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 16:18:38 -0400
+Message-ID: <5356CE58.1090502@zytor.com>
+Date: Tue, 22 Apr 2014 13:17:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Brian Gerst <brgerst@gmail.com>
+CC: Andrew Lutomirski <amluto@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>	<20140422144659.GF15882@pd.tnic>	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>	<53569467.1030809@zytor.com>	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>	<CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>	<CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>	<CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>	<CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com>	<CA+55aFwuKTQGHzi-cFkHrkLgkS-kFptajFt4=ginxOgwDcJLrA@mail.gmail.com>	<5356A70A.5090907@zytor.com>	<CAObL_7GJypym8JhUmdszDTKJVuLW9wSjbbZK4AZ3Jk304GK6tQ@mail.gmail.com>	<CAMzpN2hpX=XHFrTKxV1hsngNX4Pmuh9FxjAqeSeQHhEBKza1DA@mail.gmail.com>	<5356AF9F.4010301@zytor.com>	<CAMzpN2gkCPZoAKCgXa8tNZYFCuiPd6GWg9yhTBSSA=F43WLv1A@mail.gmail.com>	<5356BA2F.2030007@zytor.com> <CAMzpN2hkJXyt87ioNowYhxm7ZmSjz_qcc=AZpzFhafKGx_+tzg@mail.gmail.com>
+In-Reply-To: <CAMzpN2hkJXyt87ioNowYhxm7ZmSjz_qcc=AZpzFhafKGx_+tzg@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
+On 04/22/2014 12:55 PM, Brian Gerst wrote:
+> On Tue, Apr 22, 2014 at 2:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 04/22/2014 11:17 AM, Brian Gerst wrote:
+>>>>
+>>>> That is the entry condition that we have to deal with.  The fact that
+>>>> the switch to the IST is unconditional is what makes ISTs hard to deal with.
+>>>
+>>> Right, that is why you switch away from the IST as soon as possible,
+>>> copying the data that is already pushed there to another stack so it
+>>> won't be overwritten by a recursive fault.
+>>>
+>>
+>> That simply will not work if you can take a #GP due to the "safe" MSR
+>> functions from NMI and #MC context, which would be my main concern.
+> 
+> In that case (#2 above), you would switch to the previous %rsp (in the
+> NMI/MC stack), copy the exception frame from the IST, and continue
+> with the #GP handler.  That effectively is the same as it is today,
+> where no stack switch occurs on the #GP fault.
+> 
 
-------------------
+1. You take #GP.  This causes an IST stack switch.
+2. You immediately thereafter take an NMI.  This switches stacks again.
+3. Now you take another #GP.  This causes another IST stack, and now you
+have clobbered your return information, and cannot resume.
 
-From: Neil Horman <nhorman@tuxdriver.com>
-
-commit 6f8a1b335fde143b7407036e2368d3cd6eb55674 upstream.
-
-Commit 03bbcb2e7e2 (iommu/vt-d: add quirk for broken interrupt
-remapping on 55XX chipsets) properly disables irq remapping on the
-5500/5520 chipsets that don't correctly perform that feature.
-
-However, when I wrote it, I followed the errata sheet linked in that
-commit too closely, and explicitly tied the activation of the quirk to
-revision 0x13 of the chip, under the assumption that earlier revisions
-were not in the field.  Recently a system was reported to be suffering
-from this remap bug and the quirk hadn't triggered, because the
-revision id register read at a lower value that 0x13, so the quirk
-test failed improperly.  Given this, it seems only prudent to adjust
-this quirk so that any revision less than 0x13 has the quirk asserted.
-
-[ tglx: Removed the 0x12 comparison of pci id 3405 as this is covered
-    	by the <= 0x13 check already ]
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/1394649873-14913-1-git-send-email-nhorman@tuxdriver.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- arch/x86/kernel/early-quirks.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 63bdb29..4f7c82c 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -202,18 +202,15 @@ static void __init intel_remapping_check(int num, int slot, int func)
- 	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
- 
- 	/*
-- 	 * Revision 13 of all triggering devices id in this quirk have
--	 * a problem draining interrupts when irq remapping is enabled,
--	 * and should be flagged as broken.  Additionally revisions 0x12
--	 * and 0x22 of device id 0x3405 has this problem.
-+	 * Revision <= 13 of all triggering devices id in this quirk
-+	 * have a problem draining interrupts when irq remapping is
-+	 * enabled, and should be flagged as broken. Additionally
-+	 * revision 0x22 of device id 0x3405 has this problem.
- 	 */
--	if (revision == 0x13)
-+	if (revision <= 0x13)
- 		set_irq_remapping_broken();
--	else if ((device == 0x3405) &&
--	    ((revision == 0x12) ||
--	     (revision == 0x22)))
-+	else if (device == 0x3405 && revision == 0x22)
- 		set_irq_remapping_broken();
--
- }
- 
- #define QFLAG_APPLY_ONCE 	0x1
--- 
-1.9.1
+	-hpa
 
