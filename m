@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753374AbaDVC55 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 22:57:57 -0400
-Received: from mail-oa0-f45.google.com ([209.85.219.45]:36863 "EHLO
-	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751285AbaDVC5y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 22:57:54 -0400
+	id S1752203AbaDVDEN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 23:04:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751117AbaDVDEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 23:04:09 -0400
+Date: Tue, 22 Apr 2014 11:01:58 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: Eric Biederman <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Fengguang Wu <fengguang.wu@intel.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Shaohua Li <shli@kernel.org>, Alexey Kardashevskiy <aik@ozlabs.ru>,
+        Sasha Levin <sasha.levin@oracle.com>, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Save PG_head_mask in VMCOREINFO
+Message-ID: <20140422030158.GJ8084@dhcp-16-105.nay.redhat.com>
+References: <20140411175039.00fa75ea@hananiah.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <CAG-99FPLOXWnjb_oiDbLmdrYnDnticN9r1drDm_8JHtG=4BSiA@mail.gmail.com>
-References: <1397137433-19106-1-git-send-email-chander.kashyap@linaro.org>
-	<CAG-99FPLOXWnjb_oiDbLmdrYnDnticN9r1drDm_8JHtG=4BSiA@mail.gmail.com>
-Date: Tue, 22 Apr 2014 08:27:53 +0530
-Message-ID: <CANuQgHFGTkT0h6_FmxRxg4kYQA2NWEuzch1pj4Ec+_XnRHV2EQ@mail.gmail.com>
-Subject: Re: [PATCH] cpuidle: governor: menu: move repeated correction factor
- check to init
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rafael.j.wysocki@intel.com, Daniel Lezcano <daniel.lezcano@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140411175039.00fa75ea@hananiah.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ping
+On 04/11/14 at 05:50pm, Petr Tesarik wrote:
+> To allow filtering of huge pages, makedumpfile must be able to
+> identify them in the dump. This can be done by checking the
+> appropriate page flag, so communicate its value to makedumpfile
+> through the VMCOREINFO interface.
+> 
+> There's only one small catch. Depending on how many page flags
+> are available on a given architecture, this bit can be called
+> PG_head or PG_compound.
+> 
+> I sent a similar patch back in 2012, but Eric Biederman did not
+> like using an #ifdef. So, this time I'm adding a common symbol
+> (PG_head_mask) instead.
+> 
+> See https://lkml.org/lkml/2012/11/28/91 for the previous version.
+> 
+> Signed-off-by: Petr Tesarik <ptesarik@suse.cz>
+> ---
+>  include/linux/page-flags.h | 3 +++
+>  kernel/kexec.c             | 1 +
+>  2 files changed, 4 insertions(+)
+> 
+> diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+> index d1fe1a7..bc2007e 100644
+> --- a/include/linux/page-flags.h
+> +++ b/include/linux/page-flags.h
+> @@ -348,6 +348,9 @@ static inline void ClearPageCompound(struct page
+> *page) ClearPageHead(page);
+>  }
+>  #endif
+> +
+> +#define PG_head_mask ((1L << PG_head))
 
-On 10 April 2014 19:57, Tuukka Tikkanen <tuukka.tikkanen@linaro.org> wrote:
-> On 10 April 2014 16:43, Chander Kashyap <chander.kashyap@linaro.org> wrote:
->> In menu_select function we check for correction factor every time.
->> If it is zero we are initializing to unity. Hence move it to init function
->> and initialise by unity, hence avoid repeated comparisons.
->>
->> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
->> ---
->>  drivers/cpuidle/governors/menu.c |   15 ++++++++-------
->>  1 file changed, 8 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
->> index cf7f2f0..048f6d9 100644
->> --- a/drivers/cpuidle/governors/menu.c
->> +++ b/drivers/cpuidle/governors/menu.c
->> @@ -315,13 +315,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->>         multiplier = performance_multiplier();
->>
->>         /*
->> -        * if the correction factor is 0 (eg first time init or cpu hotplug
->> -        * etc), we actually want to start out with a unity factor.
->> -        */
->> -       if (data->correction_factor[data->bucket] == 0)
->> -               data->correction_factor[data->bucket] = RESOLUTION * DECAY;
->> -
->> -       /*
->>          * Force the result of multiplication to be 64 bits even if both
->>          * operands are 32 bits.
->>          * Make sure to round up for half microseconds.
->> @@ -453,9 +446,17 @@ static int menu_enable_device(struct cpuidle_driver *drv,
->>                                 struct cpuidle_device *dev)
->>  {
->>         struct menu_device *data = &per_cpu(menu_devices, dev->cpu);
->> +       int i;
->>
->>         memset(data, 0, sizeof(struct menu_device));
->>
->> +       /*
->> +        * if the correction factor is 0 (eg first time init or cpu hotplug
->> +        * etc), we actually want to start out with a unity factor.
->> +        */
->> +       for(i = 0; i < BUCKETS; i++)
->> +               data->correction_factor[i] = RESOLUTION * DECAY;
->> +
->>         return 0;
->>  }
->>
->> --
->> 1.7.9.5
->>
->
-> Reviewed-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
+Hi Petr,
 
+I am fine with this trick which define one name PG_head_mask, but can
+stands for both PG_head and PG_compound. 
 
+I guess Eric may suggest the implementation like it done in
+mm/memory-failure.c . In that file it explicitly defines both of them.
 
--- 
-with warm regards,
-Chander Kashyap
+Thanks
+Baoquan
+
+> +
+>  #else
+>  /*
+>   * Reduce page flag use as much as possible by overlapping
+> diff --git a/kernel/kexec.c b/kernel/kexec.c
+> index c8380ad..e6f3aec 100644
+> --- a/kernel/kexec.c
+> +++ b/kernel/kexec.c
+> @@ -1622,6 +1622,7 @@ static int __init crash_save_vmcoreinfo_init(void)
+>  #ifdef CONFIG_MEMORY_FAILURE
+>  	VMCOREINFO_NUMBER(PG_hwpoison);
+>  #endif
+> +	VMCOREINFO_NUMBER(PG_head_mask);
+>  	VMCOREINFO_NUMBER(PAGE_BUDDY_MAPCOUNT_VALUE);
+>  
+>  	arch_crash_save_vmcoreinfo();
+> -- 
+> 1.8.4.5
+> 
+> _______________________________________________
+> kexec mailing list
+> kexec@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/kexec
