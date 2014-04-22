@@ -1,294 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932402AbaDVMXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 08:23:18 -0400
-Received: from mail-qg0-f50.google.com ([209.85.192.50]:48875 "EHLO
-	mail-qg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755462AbaDVMXQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 08:23:16 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        libc-alpha <libc-alpha@sourceware.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        Stefan Metzmacher <metze@samba.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frank Filz <ffilzlnx@mindspring.com>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCH] locks: rename file-private locks to "open file description locks"
-Date: Tue, 22 Apr 2014 08:23:03 -0400
-Message-Id: <1398169383-10743-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.9.0
+	id S932442AbaDVMYt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 08:24:49 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49907 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755662AbaDVMYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 08:24:46 -0400
+Message-ID: <53565F8C.4050100@ti.com>
+Date: Tue, 22 Apr 2014 15:24:44 +0300
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: <balbi@ti.com>
+CC: <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: dwc3: core: Fix gadget for system suspend/resume
+References: <1395826989-5405-1-git-send-email-rogerq@ti.com>
+In-Reply-To: <1395826989-5405-1-git-send-email-rogerq@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-File-private locks have been merged into Linux for v3.15, and *now*
-people are commenting that the name and macro definitions for the new
-file-private locks suck.
+Hi Felipe,
 
-...and I can't even disagree. The names and command macros do suck.
+Looks like we missed this one. Could you please pick this up for -rc?
+Thanks.
 
-We're going to have to live with these for a long time, so it's
-important that we be happy with the names before we're stuck with them.
-The consensus on the lists so far is that they should be rechristened as
-"open file description locks".
+cheers,
+-roger
 
-The name isn't a big deal for the kernel, but the command macros are not
-visually distinct enough from the traditional POSIX lock macros. The
-glibc and documentation folks are recommending that we change them to
-look like F_OFD_{GETLK|SETLK|SETLKW}. That lessens the chance that a
-programmer will typo one of the commands wrong, and also makes it easier
-to spot this difference when reading code.
-
-This patch makes the following changes that I think are necessary before
-v3.15 ships:
-
-1) rename the command macros to their new names. These end up in the uapi
-   headers and so are part of the external-facing API. It turns out that
-   glibc doesn't actually use the fcntl.h uapi header, but it's hard to
-   be sure that something else won't. Changing it now is safest.
-
-2) make the the /proc/locks output display these as type "OFDLCK"
-
-The rest of the renaming can wait until v3.16, since everything else
-isn't visible outside of the kernel.
-
-Cc: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Carlos O'Donell <carlos@redhat.com>
-Cc: Stefan Metzmacher <metze@samba.org>
-Cc: Andy Lutomirski <luto@amacapital.net>
-Cc: Frank Filz <ffilzlnx@mindspring.com>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- arch/arm/kernel/sys_oabi-compat.c |  6 +++---
- fs/compat.c                       | 14 +++++++-------
- fs/fcntl.c                        | 12 ++++++------
- fs/locks.c                        | 14 +++++++-------
- include/uapi/asm-generic/fcntl.h  | 20 ++++++++++----------
- security/selinux/hooks.c          |  6 +++---
- 6 files changed, 36 insertions(+), 36 deletions(-)
-
-diff --git a/arch/arm/kernel/sys_oabi-compat.c b/arch/arm/kernel/sys_oabi-compat.c
-index 702bd329d9d0..e90a3148f385 100644
---- a/arch/arm/kernel/sys_oabi-compat.c
-+++ b/arch/arm/kernel/sys_oabi-compat.c
-@@ -203,9 +203,9 @@ asmlinkage long sys_oabi_fcntl64(unsigned int fd, unsigned int cmd,
- 	int ret;
- 
- 	switch (cmd) {
--	case F_GETLKP:
--	case F_SETLKP:
--	case F_SETLKPW:
-+	case F_OFD_GETLK:
-+	case F_OFD_SETLK:
-+	case F_OFD_SETLKW:
- 	case F_GETLK64:
- 	case F_SETLK64:
- 	case F_SETLKW64:
-diff --git a/fs/compat.c b/fs/compat.c
-index ca926ad0430c..66d3d3c6b4b2 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -457,9 +457,9 @@ COMPAT_SYSCALL_DEFINE3(fcntl64, unsigned int, fd, unsigned int, cmd,
- 	case F_GETLK64:
- 	case F_SETLK64:
- 	case F_SETLKW64:
--	case F_GETLKP:
--	case F_SETLKP:
--	case F_SETLKPW:
-+	case F_OFD_GETLK:
-+	case F_OFD_SETLK:
-+	case F_OFD_SETLKW:
- 		ret = get_compat_flock64(&f, compat_ptr(arg));
- 		if (ret != 0)
- 			break;
-@@ -468,7 +468,7 @@ COMPAT_SYSCALL_DEFINE3(fcntl64, unsigned int, fd, unsigned int, cmd,
- 		conv_cmd = convert_fcntl_cmd(cmd);
- 		ret = sys_fcntl(fd, conv_cmd, (unsigned long)&f);
- 		set_fs(old_fs);
--		if ((conv_cmd == F_GETLK || conv_cmd == F_GETLKP) && ret == 0) {
-+		if ((conv_cmd == F_GETLK || conv_cmd == F_OFD_GETLK) && ret == 0) {
- 			/* need to return lock information - see above for commentary */
- 			if (f.l_start > COMPAT_LOFF_T_MAX)
- 				ret = -EOVERFLOW;
-@@ -493,9 +493,9 @@ COMPAT_SYSCALL_DEFINE3(fcntl, unsigned int, fd, unsigned int, cmd,
- 	case F_GETLK64:
- 	case F_SETLK64:
- 	case F_SETLKW64:
--	case F_GETLKP:
--	case F_SETLKP:
--	case F_SETLKPW:
-+	case F_OFD_GETLK:
-+	case F_OFD_SETLK:
-+	case F_OFD_SETLKW:
- 		return -EINVAL;
- 	}
- 	return compat_sys_fcntl64(fd, cmd, arg);
-diff --git a/fs/fcntl.c b/fs/fcntl.c
-index 9ead1596399a..72c82f69b01b 100644
---- a/fs/fcntl.c
-+++ b/fs/fcntl.c
-@@ -274,15 +274,15 @@ static long do_fcntl(int fd, unsigned int cmd, unsigned long arg,
- 		break;
- #if BITS_PER_LONG != 32
- 	/* 32-bit arches must use fcntl64() */
--	case F_GETLKP:
-+	case F_OFD_GETLK:
- #endif
- 	case F_GETLK:
- 		err = fcntl_getlk(filp, cmd, (struct flock __user *) arg);
- 		break;
- #if BITS_PER_LONG != 32
- 	/* 32-bit arches must use fcntl64() */
--	case F_SETLKP:
--	case F_SETLKPW:
-+	case F_OFD_SETLK:
-+	case F_OFD_SETLKW:
- #endif
- 		/* Fallthrough */
- 	case F_SETLK:
-@@ -399,13 +399,13 @@ SYSCALL_DEFINE3(fcntl64, unsigned int, fd, unsigned int, cmd,
- 	
- 	switch (cmd) {
- 	case F_GETLK64:
--	case F_GETLKP:
-+	case F_OFD_GETLK:
- 		err = fcntl_getlk64(f.file, cmd, (struct flock64 __user *) arg);
- 		break;
- 	case F_SETLK64:
- 	case F_SETLKW64:
--	case F_SETLKP:
--	case F_SETLKPW:
-+	case F_OFD_SETLK:
-+	case F_OFD_SETLKW:
- 		err = fcntl_setlk64(fd, f.file, cmd,
- 				(struct flock64 __user *) arg);
- 		break;
-diff --git a/fs/locks.c b/fs/locks.c
-index b380f5543614..e1023b504279 100644
---- a/fs/locks.c
-+++ b/fs/locks.c
-@@ -1941,7 +1941,7 @@ int fcntl_getlk(struct file *filp, unsigned int cmd, struct flock __user *l)
- 	if (error)
- 		goto out;
- 
--	if (cmd == F_GETLKP) {
-+	if (cmd == F_OFD_GETLK) {
- 		error = -EINVAL;
- 		if (flock.l_pid != 0)
- 			goto out;
-@@ -2076,7 +2076,7 @@ again:
- 	 * FL_FILE_PVT flag and override the owner.
- 	 */
- 	switch (cmd) {
--	case F_SETLKP:
-+	case F_OFD_SETLK:
- 		error = -EINVAL;
- 		if (flock.l_pid != 0)
- 			goto out;
-@@ -2085,7 +2085,7 @@ again:
- 		file_lock->fl_flags |= FL_FILE_PVT;
- 		file_lock->fl_owner = (fl_owner_t)filp;
- 		break;
--	case F_SETLKPW:
-+	case F_OFD_SETLKW:
- 		error = -EINVAL;
- 		if (flock.l_pid != 0)
- 			goto out;
-@@ -2143,7 +2143,7 @@ int fcntl_getlk64(struct file *filp, unsigned int cmd, struct flock64 __user *l)
- 	if (error)
- 		goto out;
- 
--	if (cmd == F_GETLKP) {
-+	if (cmd == F_OFD_GETLK) {
- 		error = -EINVAL;
- 		if (flock.l_pid != 0)
- 			goto out;
-@@ -2211,7 +2211,7 @@ again:
- 	 * FL_FILE_PVT flag and override the owner.
- 	 */
- 	switch (cmd) {
--	case F_SETLKP:
-+	case F_OFD_SETLK:
- 		error = -EINVAL;
- 		if (flock.l_pid != 0)
- 			goto out;
-@@ -2220,7 +2220,7 @@ again:
- 		file_lock->fl_flags |= FL_FILE_PVT;
- 		file_lock->fl_owner = (fl_owner_t)filp;
- 		break;
--	case F_SETLKPW:
-+	case F_OFD_SETLKW:
- 		error = -EINVAL;
- 		if (flock.l_pid != 0)
- 			goto out;
-@@ -2413,7 +2413,7 @@ static void lock_get_status(struct seq_file *f, struct file_lock *fl,
- 		if (fl->fl_flags & FL_ACCESS)
- 			seq_printf(f, "ACCESS");
- 		else if (IS_FILE_PVT(fl))
--			seq_printf(f, "FLPVT ");
-+			seq_printf(f, "OFDLCK");
- 		else
- 			seq_printf(f, "POSIX ");
- 
-diff --git a/include/uapi/asm-generic/fcntl.h b/include/uapi/asm-generic/fcntl.h
-index a9b13f8b3595..7543b3e51331 100644
---- a/include/uapi/asm-generic/fcntl.h
-+++ b/include/uapi/asm-generic/fcntl.h
-@@ -133,20 +133,20 @@
- #endif
- 
- /*
-- * fd "private" POSIX locks.
-+ * Open File Description Locks
-  *
-- * Usually POSIX locks held by a process are released on *any* close and are
-+ * Usually record locks held by a process are released on *any* close and are
-  * not inherited across a fork().
-  *
-- * These cmd values will set locks that conflict with normal POSIX locks, but
-- * are "owned" by the opened file, not the process. This means that they are
-- * inherited across fork() like BSD (flock) locks, and they are only released
-- * automatically when the last reference to the the open file against which
-- * they were acquired is put.
-+ * These cmd values will set locks that conflict with process-associated
-+ * record  locks, but are "owned" by the open file description, not the
-+ * process. This means that they are inherited across fork() like BSD (flock)
-+ * locks, and they are only released automatically when the last reference to
-+ * the the open file against which they were acquired is put.
-  */
--#define F_GETLKP	36
--#define F_SETLKP	37
--#define F_SETLKPW	38
-+#define F_OFD_GETLK	36
-+#define F_OFD_SETLK	37
-+#define F_OFD_SETLKW	38
- 
- #define F_OWNER_TID	0
- #define F_OWNER_PID	1
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index b4beb77967b1..2c7341dbc5d6 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -3317,9 +3317,9 @@ static int selinux_file_fcntl(struct file *file, unsigned int cmd,
- 	case F_GETLK:
- 	case F_SETLK:
- 	case F_SETLKW:
--	case F_GETLKP:
--	case F_SETLKP:
--	case F_SETLKPW:
-+	case F_OFD_GETLK:
-+	case F_OFD_SETLK:
-+	case F_OFD_SETLKW:
- #if BITS_PER_LONG == 32
- 	case F_GETLK64:
- 	case F_SETLK64:
--- 
-1.9.0
+On 03/26/2014 11:43 AM, Roger Quadros wrote:
+> During system resume, if the event buffers are not setup before
+> the gadget controller starts then we start with invalid context
+> and this can lead to bus access errors. This is especially true for
+> platforms that loose the controller context during system suspend.
+> e.g. AM437x.
+> 
+> The following backtrace was found when the system is suspended
+> and resumed with g_zero loaded on AM437x-evm (USB cable connected
+> to host all the while).
+> 
+> [  120.981506] WARNING: CPU: 0 PID: 1656 at drivers/bus/omap_l3_noc.c:137 l3_interrupt_handler+0x198/0x28c()
+> [  120.981514] L3 custom error: MASTER:USB0 WR TARGET:GPMC
+> [  120.981638] Modules linked in: g_mass_storage usb_f_mass_storage libcomposite configfs bufferclass_ti(O) omaplfb(O) cryptodev(O) dwc3 snd_soc_evm snd_soc_omap snd_pe
+> [  120.981659] CPU: 0 PID: 1656 Comm: sh Tainted: G           O 3.12.10-gc559824 #1
+> [  120.981669] Backtrace:
+> [  120.981705] [<c0017880>] (dump_backtrace+0x0/0x10c) from [<c0017a1c>] (show_stack+0x18/0x1c)
+> [  120.981730]  r6:c02819ac r5:00000009 r4:ec137cb8 r3:00000000
+> [  120.981767] [<c0017a04>] (show_stack+0x0/0x1c) from [<c056c0b0>] (dump_stack+0x20/0x28)
+> [  120.981802] [<c056c090>] (dump_stack+0x0/0x28) from [<c0046d08>] (warn_slowpath_common+0x70/0x90)
+> [  120.981830] [<c0046c98>] (warn_slowpath_common+0x0/0x90) from [<c0046dcc>] (warn_slowpath_fmt+0x38/0x40)
+> [  120.981856]  r8:c0855eb0 r7:00000002 r6:f1000700 r5:00000007 r4:80080003
+> [  120.981886] [<c0046d94>] (warn_slowpath_fmt+0x0/0x40) from [<c02819ac>] (l3_interrupt_handler+0x198/0x28c)
+> [  120.981900]  r3:c0801ab8 r2:c06cb354
+> [  120.981936] [<c0281814>] (l3_interrupt_handler+0x0/0x28c) from [<c007162c>] (handle_irq_event_percpu+0x54/0x1b8)
+> [  120.981962] [<c00715d8>] (handle_irq_event_percpu+0x0/0x1b8) from [<c00717c0>] (handle_irq_event+0x30/0x40)
+> [  120.981993] [<c0071790>] (handle_irq_event+0x0/0x40) from [<c0074058>] (handle_fasteoi_irq+0x74/0x128)
+> [  120.982006]  r4:ed0056c0 r3:00000000
+> [  120.982033] [<c0073fe4>] (handle_fasteoi_irq+0x0/0x128) from [<c0070f34>] (generic_handle_irq+0x28/0x38)
+> [  120.982046]  r4:0000002a r3:c0073fe4
+> [  120.982085] [<c0070f0c>] (generic_handle_irq+0x0/0x38) from [<c0015560>] (handle_IRQ+0x38/0x8c)
+> [  120.982098]  r4:c080137c r3:00000182
+> [  120.982124] [<c0015528>] (handle_IRQ+0x0/0x8c) from [<c00087e0>] (gic_handle_irq+0x30/0x5c)
+> [  120.982145]  r6:ec137dd0 r5:c07ac480 r4:fa24010c r3:00000100
+> [  120.982169] [<c00087b0>] (gic_handle_irq+0x0/0x5c) from [<c056fcc0>] (__irq_svc+0x40/0x54)
+> [  120.982179] Exception stack(0xec137dd0 to 0xec137e18)
+> [  120.982195] 7dc0:                                     00000000 a00001d3 00000000 00000004
+> [  120.982216] 7de0: a0000153 ec1d9010 c080de90 ec137e30 c080debc 00000000 ed756e44 ec137e2c
+> [  120.982232] 7e00: ec137de0 ec137e18 bf1150e4 bf115474 60000153 ffffffff
+> [  120.982253]  r7:ec137e04 r6:ffffffff r5:60000153 r4:bf115474
+> [  120.982327] [<bf115438>] (dwc3_complete+0x0/0x40 [dwc3]) from [<c0338f50>] (dpm_complete+0xd4/0x19c)
+> [  120.982341]  r5:ed756e10 r4:ed756e64
+> [  120.982370] [<c0338e7c>] (dpm_complete+0x0/0x19c) from [<c0339034>] (dpm_resume_end+0x1c/0x20)
+> [  120.982400] [<c0339018>] (dpm_resume_end+0x0/0x20) from [<c006d4ec>] (suspend_devices_and_enter+0x118/0x33c)
+> [  120.982412]  r4:c0833da4 r3:00000000
+> [  120.982436] [<c006d3d4>] (suspend_devices_and_enter+0x0/0x33c) from [<c006d928>] (pm_suspend+0x218/0x254)
+> [  120.982458] [<c006d710>] (pm_suspend+0x0/0x254) from [<c006c594>] (state_store+0x70/0xc0)
+> [  120.982478]  r6:c057a6cc r5:c06a8320 r4:00000003 r3:0000006d
+> [  120.982515] [<c006c524>] (state_store+0x0/0xc0) from [<c0264cc0>] (kobj_attr_store+0x1c/0x28)
+> [  120.982546] [<c0264ca4>] (kobj_attr_store+0x0/0x28) from [<c012ccb8>] (sysfs_write_file+0x170/0x1a4)
+> [  120.982583] [<c012cb48>] (sysfs_write_file+0x0/0x1a4) from [<c00d17e4>] (vfs_write+0xb8/0x190)
+> [  120.982611] [<c00d172c>] (vfs_write+0x0/0x190) from [<c00d1bf8>] (SyS_write+0x44/0x78)
+> [  120.982641] [<c00d1bb4>] (SyS_write+0x0/0x78) from [<c0014660>] (ret_fast_syscall+0x0/0x30)
+> 
+> Signed-off-by: Roger Quadros <rogerq@ti.com>
+> Acked-by: Felipe Balbi <balbi@ti.com>
+> ---
+>  drivers/usb/dwc3/core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> index d001417..10aaaae 100644
+> --- a/drivers/usb/dwc3/core.c
+> +++ b/drivers/usb/dwc3/core.c
+> @@ -821,6 +821,7 @@ static void dwc3_complete(struct device *dev)
+>  
+>  	spin_lock_irqsave(&dwc->lock, flags);
+>  
+> +	dwc3_event_buffers_setup(dwc);
+>  	switch (dwc->dr_mode) {
+>  	case USB_DR_MODE_PERIPHERAL:
+>  	case USB_DR_MODE_OTG:
+> @@ -828,7 +829,6 @@ static void dwc3_complete(struct device *dev)
+>  		/* FALLTHROUGH */
+>  	case USB_DR_MODE_HOST:
+>  	default:
+> -		dwc3_event_buffers_setup(dwc);
+>  		break;
+>  	}
+>  
+> 
 
