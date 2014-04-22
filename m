@@ -1,174 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231AbaDUXwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 19:52:18 -0400
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:45447 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751561AbaDUXwP (ORCPT
+	id S1754499AbaDVAEM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 20:04:12 -0400
+Received: from mail-vc0-f201.google.com ([209.85.220.201]:63335 "EHLO
+	mail-vc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751561AbaDVAEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 19:52:15 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 22 Apr 2014 08:53:19 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dongjun Shin <d.j.shin@samsung.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm/compaction: cleanup isolate_freepages()
-Message-ID: <20140421235319.GD7178@bbox>
-References: <5342BA34.8050006@suse.cz>
- <1397553507-15330-1-git-send-email-vbabka@suse.cz>
- <1397553507-15330-2-git-send-email-vbabka@suse.cz>
- <20140417000745.GF27534@bbox>
- <20140421124146.c8beacf0d58aafff2085a461@linux-foundation.org>
- <535590FC.10607@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535590FC.10607@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Apr 2014 20:04:06 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Jonathan Cameron <jic23@kernel.org>, Lars-Peter Clausen <lars@metafoo.de>
+Cc: Milo.Kim@ti.com, Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, lee.jones@linaro.org,
+        gregkh@linuxfoundation.org, Russ.Dill@ti.com,
+        alexandre.belloni@free-electrons.com, oleksandr.kozaruk@ti.com,
+        B38611@freescale.com, johannes.thumshirn@men.de, sre@debian.org,
+        sachin.kamat@linaro.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] iio: adc: Nothing in ADC should be a bool CONFIG
+Date: Mon, 21 Apr 2014 17:03:51 -0700
+Message-Id: <1398125031-5826-1-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 11:43:24PM +0200, Vlastimil Babka wrote:
-> On 21.4.2014 21:41, Andrew Morton wrote:
-> >On Thu, 17 Apr 2014 09:07:45 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> >
-> >>Hi Vlastimil,
-> >>
-> >>Below just nitpicks.
-> >It seems you were ignored ;)
-> 
-> Oops, I managed to miss your e-mail, sorry.
-> 
-> >>>  {
-> >>>  	struct page *page;
-> >>>-	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
-> >>>+	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
-> >>Could you add comment for each variable?
-> >>
-> >>unsigned long pfn; /* scanning cursor */
-> >>unsigned long low_pfn; /* lowest pfn free scanner is able to scan */
-> >>unsigned long next_free_pfn; /* start pfn for scaning at next truen */
-> >>unsigned long z_end_pfn; /* zone's end pfn */
-> >>
-> >>
-> >>>@@ -688,11 +688,10 @@ static void isolate_freepages(struct zone *zone,
-> >>>  	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
-> >>>  	/*
-> >>>-	 * Take care that if the migration scanner is at the end of the zone
-> >>>-	 * that the free scanner does not accidentally move to the next zone
-> >>>-	 * in the next isolation cycle.
-> >>>+	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
-> >>>+	 * none, the pfn < low_pfn check will kick in.
-> >>        "none" what? I'd like to clear more.
-> 
-> If there are no updates to next_free_pfn within the for cycle. Which
-> matches Andrew's formulation below.
-> 
-> >I did this:
-> 
-> Thanks!
-> 
-> >
-> >--- a/mm/compaction.c~mm-compaction-cleanup-isolate_freepages-fix
-> >+++ a/mm/compaction.c
-> >@@ -662,7 +662,10 @@ static void isolate_freepages(struct zon
-> >  				struct compact_control *cc)
-> >  {
-> >  	struct page *page;
-> >-	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
-> >+	unsigned long pfn;	     /* scanning cursor */
-> >+	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
-> >+	unsigned long next_free_pfn; /* start pfn for scaning at next round */
-> >+	unsigned long z_end_pfn;     /* zone's end pfn */
-> 
-> Yes that works.
-> 
-> >  	int nr_freepages = cc->nr_freepages;
-> >  	struct list_head *freelist = &cc->freepages;
-> >@@ -679,8 +682,8 @@ static void isolate_freepages(struct zon
-> >  	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
-> >  	/*
-> >-	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
-> >-	 * none, the pfn < low_pfn check will kick in.
-> >+	 * Seed the value for max(next_free_pfn, pfn) updates. If no pages are
-> >+	 * isolated, the pfn < low_pfn check will kick in.
-> 
-> OK.
-> 
-> >  	 */
-> >  	next_free_pfn = 0;
-> >>>@@ -766,9 +765,9 @@ static void isolate_freepages(struct zone *zone,
-> >>>  	 * so that compact_finished() may detect this
-> >>>  	 */
-> >>>  	if (pfn < low_pfn)
-> >>>-		cc->free_pfn = max(pfn, zone->zone_start_pfn);
-> >>>-	else
-> >>>-		cc->free_pfn = high_pfn;
-> >>>+		next_free_pfn = max(pfn, zone->zone_start_pfn);
-> >>Why we need max operation?
-> >>IOW, what's the problem if we do (next_free_pfn = pfn)?
-> >An answer to this would be useful, thanks.
-> 
-> The idea (originally, not new here) is that the free scanner wants
-> to remember the highest-pfn
-> block where it managed to isolate some pages. If the following page
-> migration fails, these isolated
-> pages might be put back and would be skipped in further compaction
-> attempt if we used just
-> "next_free_pfn = pfn", until the scanners get reset.
-> 
-> The question of course is if such situations are frequent and makes
-> any difference to compaction
-> outcome. And the downsides are potentially useless rescans and code
-> complexity. Maybe Mel
-> remembers how important this is? It should probably be profiled
-> before changes are made.
+The whole IIO subsystem can be moved to a module.  If you make it a
+module then stuff marked as "Y" in the adc directory simply won't be
+linked in properly.
 
-I didn't mean it. What I mean is code snippet you introduced in 7ed695e069c3c.
-At that time, I didn't Cced so I missed that code so let's ask this time.
-In that patch, you added this.
+The two configs that were wrong were EXYNOS_ADC and LP8788_ADC.  I
+know for a fact that EXYNOS_ADC will work as a module (though it
+appears to crash when you unload it--that needs to be addressed
+separately).  I assume LP8788_ADC will also be fine..
 
-if (pfn < low_pfn)
-  cc->free_pfn = max(pfn, zone->zone_start_pfn);
-else
-  cc->free_pfn = high_pfn;
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+---
+ drivers/iio/adc/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-So the purpose of max(pfn, zone->zone_start_pfn) is to be detected by
-compact_finished to stop compaction. And your [1/2] patch in this patchset
-always makes free page scanner start on pageblock boundary so when the
-loop in isolate_freepages is finished and pfn is lower low_pfn, the pfn
-would be lower than migration scanner so compact_finished will always detect
-it so I think you could just do
-
-if (pfn < low_pfn)
-  next_free_pfn = pfn;
-
-cc->free_pfn = next_free_pfn;
-
-Or, if you want to clear *reset*,
-if (pfn < lown_pfn)
-  next_free_pfn = zone->zone_start_pfn;
-
-cc->free_pfn = next_free_pfn;
-
-That's why I asked about max operation. What am I missing?
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-
+diff --git a/drivers/iio/adc/Kconfig b/drivers/iio/adc/Kconfig
+index d86196c..24c28e3 100644
+--- a/drivers/iio/adc/Kconfig
++++ b/drivers/iio/adc/Kconfig
+@@ -106,7 +106,7 @@ config AT91_ADC
+ 	  Say yes here to build support for Atmel AT91 ADC.
+ 
+ config EXYNOS_ADC
+-	bool "Exynos ADC driver support"
++	tristate "Exynos ADC driver support"
+ 	depends on OF
+ 	help
+ 	  Core support for the ADC block found in the Samsung EXYNOS series
+@@ -114,7 +114,7 @@ config EXYNOS_ADC
+ 	  this resource.
+ 
+ config LP8788_ADC
+-	bool "LP8788 ADC driver"
++	tristate "LP8788 ADC driver"
+ 	depends on MFD_LP8788
+ 	help
+ 	  Say yes here to build support for TI LP8788 ADC.
 -- 
-Kind regards,
-Minchan Kim
+1.9.1.423.g4596e3a
+
