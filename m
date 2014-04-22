@@ -1,244 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778AbaDVOKY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:10:24 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59452 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932765AbaDVOKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:10:18 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: [patch] mm: filemap: update find_get_pages_tag() to deal with shadow entries
-Date: Tue, 22 Apr 2014 10:10:11 -0400
-Message-Id: <1398175811-30439-1-git-send-email-hannes@cmpxchg.org>
-X-Mailer: git-send-email 1.9.2
+	id S932793AbaDVOKa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:10:30 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:62126 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932745AbaDVOJ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:09:59 -0400
+Message-ID: <5356782A.9050809@monstr.eu>
+Date: Tue, 22 Apr 2014 16:09:46 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org, arnd@arndb.de,
+        dhowells@redhat.com, broonie@linaro.org, benh@kernel.crashing.org,
+        peterz@infradead.org, paulmck@linux.vnet.ibm.com
+Subject: Re: [PATCH 18/18] asm-generic: io: define relaxed accessor macros
+ unconditionally
+References: <1397742261-15621-1-git-send-email-will.deacon@arm.com> <1397742261-15621-19-git-send-email-will.deacon@arm.com>
+In-Reply-To: <1397742261-15621-19-git-send-email-will.deacon@arm.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="tiDH4Mqrch3wXrvoNuUH4amjGcTWUvO9I"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Jones reports the following crash when find_get_pages_tag() runs
-into an exceptional entry:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--tiDH4Mqrch3wXrvoNuUH4amjGcTWUvO9I
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-kernel BUG at mm/filemap.c:1347!
-RIP: 0010:[<ffffffffb815aeab>]  [<ffffffffb815aeab>] find_get_pages_tag+0x1cb/0x220
-Call Trace:
- [<ffffffffb815ad16>] ? find_get_pages_tag+0x36/0x220
- [<ffffffffb8168511>] pagevec_lookup_tag+0x21/0x30
- [<ffffffffb81595de>] filemap_fdatawait_range+0xbe/0x1e0
- [<ffffffffb8159727>] filemap_fdatawait+0x27/0x30
- [<ffffffffb81f2fa4>] sync_inodes_sb+0x204/0x2a0
- [<ffffffffb874d98f>] ? wait_for_completion+0xff/0x130
- [<ffffffffb81fa5b0>] ? vfs_fsync+0x40/0x40
- [<ffffffffb81fa5c9>] sync_inodes_one_sb+0x19/0x20
- [<ffffffffb81caab2>] iterate_supers+0xb2/0x110
- [<ffffffffb81fa864>] sys_sync+0x44/0xb0
- [<ffffffffb875c4a9>] ia32_do_call+0x13/0x13
+On 04/17/2014 03:44 PM, Will Deacon wrote:
+> Now that no architectures using asm-generic/io.h define their own relax=
+ed
+> accessors, the dummy definitions can be used unconditionally.
+>=20
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Signed-off-by: Will Deacon <will.deacon@arm.com>
+> ---
+>  include/asm-generic/io.h | 18 ------------------
+>  1 file changed, 18 deletions(-)
 
-1343                         /*
-1344                          * This function is never used on a shmem/tmpfs
-1345                          * mapping, so a swap entry won't be found here.
-1346                          */
-1347                         BUG();
+Do we need this? I think there could be a need to overwrite them.
+Currently we are just lucky that architecture which uses asm-generic/io.h=
 
-After 0cd6144aadd2 ("mm + fs: prepare for non-page entries in page
-cache radix trees") this comment and BUG() are out of date because
-exceptional entries can now appear in all mappings - as shadows of
-recently evicted pages.
+don't need to overwrite it.
+But I expect that all archs should use asm-generic/io.h to clean
+architecture io.h exactly I have done it for Microblaze.
 
-However, as Hugh Dickins notes,
+Thanks,
+Michal
 
-  "it is truly surprising for a PAGECACHE_TAG_WRITEBACK (and probably
-   any other PAGECACHE_TAG_*) to appear on an exceptional entry.
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-   I expect it comes down to an occasional race in RCU lookup of the
-   radix_tree: lacking absolute synchronization, we might sometimes
-   catch an exceptional entry, with the tag which really belongs with
-   the unexceptional entry which was there an instant before."
 
-And indeed, not only is the tree walk lockless, the tags are also read
-in chunks, one radix tree node at a time.  There is plenty of time for
-page reclaim to swoop in and replace a page that was already looked up
-as tagged with a shadow entry.
 
-Remove the BUG() and update the comment.  While reviewing all other
-lookup sites for whether they properly deal with shadow entries of
-evicted pages, update all the comments and fix memcg file charge
-moving to not miss shmem/tmpfs swapcache pages.
+--tiDH4Mqrch3wXrvoNuUH4amjGcTWUvO9I
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Fixes: 0cd6144aadd2 ("mm + fs: prepare for non-page entries in page cache radix trees")
-Reported-by: Dave Jones <davej@redhat.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-Acked-by: Hugh Dickins <hughd@google.com>
----
- mm/filemap.c    | 49 ++++++++++++++++++++++++++++---------------------
- mm/memcontrol.c | 20 ++++++++++++--------
- mm/truncate.c   |  8 --------
- 3 files changed, 40 insertions(+), 37 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index a82fbe4c9e8e..d92c437a79c4 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -906,8 +906,8 @@ EXPORT_SYMBOL(page_cache_prev_hole);
-  * Looks up the page cache slot at @mapping & @offset.  If there is a
-  * page cache page, it is returned with an increased refcount.
-  *
-- * If the slot holds a shadow entry of a previously evicted page, it
-- * is returned.
-+ * If the slot holds a shadow entry of a previously evicted page, or a
-+ * swap entry from shmem/tmpfs, it is returned.
-  *
-  * Otherwise, %NULL is returned.
-  */
-@@ -928,9 +928,9 @@ repeat:
- 			if (radix_tree_deref_retry(page))
- 				goto repeat;
- 			/*
--			 * Otherwise, shmem/tmpfs must be storing a swap entry
--			 * here as an exceptional entry: so return it without
--			 * attempting to raise page count.
-+			 * A shadow entry of a recently evicted page,
-+			 * or a swap entry from shmem/tmpfs.  Return
-+			 * it without attempting to raise page count.
- 			 */
- 			goto out;
- 		}
-@@ -983,8 +983,8 @@ EXPORT_SYMBOL(find_get_page);
-  * page cache page, it is returned locked and with an increased
-  * refcount.
-  *
-- * If the slot holds a shadow entry of a previously evicted page, it
-- * is returned.
-+ * If the slot holds a shadow entry of a previously evicted page, or a
-+ * swap entry from shmem/tmpfs, it is returned.
-  *
-  * Otherwise, %NULL is returned.
-  *
-@@ -1099,8 +1099,8 @@ EXPORT_SYMBOL(find_or_create_page);
-  * with ascending indexes.  There may be holes in the indices due to
-  * not-present pages.
-  *
-- * Any shadow entries of evicted pages are included in the returned
-- * array.
-+ * Any shadow entries of evicted pages, or swap entries from
-+ * shmem/tmpfs, are included in the returned array.
-  *
-  * find_get_entries() returns the number of pages and shadow entries
-  * which were found.
-@@ -1128,9 +1128,9 @@ repeat:
- 			if (radix_tree_deref_retry(page))
- 				goto restart;
- 			/*
--			 * Otherwise, we must be storing a swap entry
--			 * here as an exceptional entry: so return it
--			 * without attempting to raise page count.
-+			 * A shadow entry of a recently evicted page,
-+			 * or a swap entry from shmem/tmpfs.  Return
-+			 * it without attempting to raise page count.
- 			 */
- 			goto export;
- 		}
-@@ -1198,9 +1198,9 @@ repeat:
- 				goto restart;
- 			}
- 			/*
--			 * Otherwise, shmem/tmpfs must be storing a swap entry
--			 * here as an exceptional entry: so skip over it -
--			 * we only reach this from invalidate_mapping_pages().
-+			 * A shadow entry of a recently evicted page,
-+			 * or a swap entry from shmem/tmpfs.  Skip
-+			 * over it.
- 			 */
- 			continue;
- 		}
-@@ -1265,9 +1265,9 @@ repeat:
- 				goto restart;
- 			}
- 			/*
--			 * Otherwise, shmem/tmpfs must be storing a swap entry
--			 * here as an exceptional entry: so stop looking for
--			 * contiguous pages.
-+			 * A shadow entry of a recently evicted page,
-+			 * or a swap entry from shmem/tmpfs.  Stop
-+			 * looking for contiguous pages.
- 			 */
- 			break;
- 		}
-@@ -1341,10 +1341,17 @@ repeat:
- 				goto restart;
- 			}
- 			/*
--			 * This function is never used on a shmem/tmpfs
--			 * mapping, so a swap entry won't be found here.
-+			 * A shadow entry of a recently evicted page.
-+			 *
-+			 * Those entries should never be tagged, but
-+			 * this tree walk is lockless and the tags are
-+			 * looked up in bulk, one radix tree node at a
-+			 * time, so there is a sizable window for page
-+			 * reclaim to evict a page we saw tagged.
-+			 *
-+			 * Skip over it.
- 			 */
--			BUG();
-+			continue;
- 		}
- 
- 		if (!page_cache_get_speculative(page))
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 29501f040568..c47dffdcb246 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -6686,16 +6686,20 @@ static struct page *mc_handle_file_pte(struct vm_area_struct *vma,
- 		pgoff = pte_to_pgoff(ptent);
- 
- 	/* page is moved even if it's not RSS of this task(page-faulted). */
--	page = find_get_page(mapping, pgoff);
--
- #ifdef CONFIG_SWAP
- 	/* shmem/tmpfs may report page out on swap: account for that too. */
--	if (radix_tree_exceptional_entry(page)) {
--		swp_entry_t swap = radix_to_swp_entry(page);
--		if (do_swap_account)
--			*entry = swap;
--		page = find_get_page(swap_address_space(swap), swap.val);
--	}
-+	if (shmem_mapping(mapping)) {
-+		page = find_get_entry(mapping, pgoff);
-+		if (radix_tree_exceptional_entry(page)) {
-+			swp_entry_t swp = radix_to_swp_entry(page);
-+			if (do_swap_account)
-+				*entry = swp;
-+			page = find_get_page(swap_address_space(swp), swp.val);
-+		}
-+	} else
-+		page = find_get_page(mapping, pgoff);
-+#else
-+	page = find_get_page(mapping, pgoff);
- #endif
- 	return page;
- }
-diff --git a/mm/truncate.c b/mm/truncate.c
-index e5cc39ab0751..6a78c814bebf 100644
---- a/mm/truncate.c
-+++ b/mm/truncate.c
-@@ -484,14 +484,6 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
- 	unsigned long count = 0;
- 	int i;
- 
--	/*
--	 * Note: this function may get called on a shmem/tmpfs mapping:
--	 * pagevec_lookup() might then return 0 prematurely (because it
--	 * got a gangful of swap entries); but it's hardly worth worrying
--	 * about - it can rarely have anything to free from such a mapping
--	 * (most pages are dirty), and already skips over any difficulties.
--	 */
--
- 	pagevec_init(&pvec, 0);
- 	while (index <= end && pagevec_lookup_entries(&pvec, mapping, index,
- 			min(end - index, (pgoff_t)PAGEVEC_SIZE - 1) + 1,
--- 
-1.9.2
+iEYEARECAAYFAlNWeCoACgkQykllyylKDCHL7QCfZHY0AEPJpupieO3TTKRh9VXj
+VN4AnRtRl3pIh5H8pVJrJxaX+V08i19U
+=7Mr8
+-----END PGP SIGNATURE-----
 
+--tiDH4Mqrch3wXrvoNuUH4amjGcTWUvO9I--
