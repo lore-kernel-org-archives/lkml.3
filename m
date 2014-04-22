@@ -1,70 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756559AbaDVNwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:52:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.130]:60342 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755531AbaDVNwE (ORCPT
+	id S1756529AbaDVNvr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:51:47 -0400
+Received: from devoid-pointer.net ([31.31.77.140]:49394 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756397AbaDVNq0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:52:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ley Foon Tan <lftan@altera.com>
-Subject: Re: [PATCH 14/28] nios2: DMA mapping API
-Date: Tue, 22 Apr 2014 15:52:00 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
-        cltang@codesourcery.com
-References: <1397824031-4892-1-git-send-email-lftan@altera.com> <1397845149-3141-1-git-send-email-lftan@altera.com> <1397845149-3141-4-git-send-email-lftan@altera.com>
-In-Reply-To: <1397845149-3141-4-git-send-email-lftan@altera.com>
+	Tue, 22 Apr 2014 09:46:26 -0400
+From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
+        anssi.hannula@iki.fi, simon@mungewell.org
+Subject: [PATCH 04/24] Port twl6040-vibra to ff-memless-next
+Date: Tue, 22 Apr 2014 15:45:54 +0200
+Message-Id: <1398174374-9501-5-git-send-email-madcatxster@devoid-pointer.net>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398174374-9501-1-git-send-email-madcatxster@devoid-pointer.net>
+References: <1398174374-9501-1-git-send-email-madcatxster@devoid-pointer.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404221552.00501.arnd@arndb.de>
-X-Provags-ID: V02:K0:OQ8BkBe5OoTYdWVnbyJo2tBU9x8XAlw8SNCvC8XrpuR
- WrnBKFTkeVTpBJvZ8cgdREWNcxVgFQ1ZeRJKlnZsdwd0jMgrzn
- j5PEXq51FCiB29geOmn1VVJhoQ7YXAKUCg6G0V/KQs08puiB+w
- fukSoGRzbD0ApOpwfeaQ7mKHLCnqV1yoIOhJ9gVP0o9c6uWHoD
- FlcMvTCWTlvUdiMS2tJnllq0XEnDuAwF3xnh2RhY6I/QVMFQEl
- fWoX77PKmnkzblWe9Ao0MGFeY+u9zHqlko44FfpgkB82mL42b6
- QguC8I8dp744ZB5dp5n2xpak/EI1odHSu+Akqn11ar86bGCckH
- 93gg9InBg0rwXjWLp2aI=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 18 April 2014, Ley Foon Tan wrote:
+Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
+---
+ drivers/input/misc/Kconfig         |  2 +-
+ drivers/input/misc/twl6040-vibra.c | 27 ++++++++++++++++++++++-----
+ 2 files changed, 23 insertions(+), 6 deletions(-)
 
-> +static inline int dma_supported(struct device *dev, u64 mask)
-> +{
-> +	/* we fall back to GFP_DMA when the mask isn't all 1s,
-> +	 * so we can't guarantee allocations that must be
-> +	 * within a tighter range than GFP_DMA.
-> +	 */
-> +	if (mask < 0x00ffffff)
-> +		return 0;
-> +
-> +	return 1;
-> +}
-
-> +void *dma_alloc_coherent(struct device *dev, size_t size,
-> +			    dma_addr_t *dma_handle, gfp_t gfp)
-> +{
-> +	void *ret;
-> +
-> +	/* ignore region specifiers */
-> +	gfp &= ~(__GFP_DMA | __GFP_HIGHMEM);
-> +
-> +	/* optimized page clearing */
-> +	gfp |= __GFP_ZERO;
-> +
-> +	if (dev == NULL || (dev->coherent_dma_mask < 0xffffffff))
-> +		gfp |= GFP_DMA;
-
-What is the significance of ZONE_DMA on this architecture?
-
-Do you actually have DMA masters with a 0x00ffffff mask?
-
-	Arnd
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 1016a1b..91dcae8 100644
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -417,7 +417,7 @@ config INPUT_TWL4030_VIBRA
+ config INPUT_TWL6040_VIBRA
+ 	tristate "Support for TWL6040 Vibrator"
+ 	depends on TWL6040_CORE
+-	select INPUT_FF_MEMLESS
++	select INPUT_FF_MEMLESS_NEXT
+ 	help
+ 	  This option enables support for TWL6040 Vibrator Driver.
+ 
+diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
+index 77dc23b..7440a74 100644
+--- a/drivers/input/misc/twl6040-vibra.c
++++ b/drivers/input/misc/twl6040-vibra.c
+@@ -30,12 +30,14 @@
+ #include <linux/of.h>
+ #include <linux/workqueue.h>
+ #include <linux/input.h>
++#include <linux/input/ff-memless-next.h>
+ #include <linux/mfd/twl6040.h>
+ #include <linux/slab.h>
+ #include <linux/delay.h>
+ #include <linux/regulator/consumer.h>
+ 
+ #define EFFECT_DIR_180_DEG	0x8000
++#define FF_UPDATE_RATE		50
+ 
+ /* Recommended modulation index 85% */
+ #define TWL6040_VIBRA_MOD	85
+@@ -197,9 +199,10 @@ static void vibra_play_work(struct work_struct *work)
+ }
+ 
+ static int vibra_play(struct input_dev *input, void *data,
+-		      struct ff_effect *effect)
++		      const struct mlnx_effect_command *command)
+ {
+ 	struct vibra_info *info = input_get_drvdata(input);
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
+ 	int ret;
+ 
+ 	/* Do not allow effect, while the routing is set to use audio */
+@@ -209,9 +212,23 @@ static int vibra_play(struct input_dev *input, void *data,
+ 		return -EBUSY;
+ 	}
+ 
+-	info->weak_speed = effect->u.rumble.weak_magnitude;
+-	info->strong_speed = effect->u.rumble.strong_magnitude;
+-	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 1 : -1;
++	switch (command->cmd) {
++	case MLNX_START_RUMBLE:
++		info->weak_speed = rumble_force->weak;
++		info->strong_speed = rumble_force->strong;
++		if (info->strong_speed >= info->weak_speed)
++			info->direction = rumble_force->strong_dir < EFFECT_DIR_180_DEG ? 1 : -1;
++		else
++			info->direction = rumble_force->weak_dir < EFFECT_DIR_180_DEG ? 1 : -1;
++		break;
++	case MLNX_STOP_RUMBLE:
++		info->weak_speed = 0;
++		info->strong_speed = 0;
++		info->direction = 1;
++		break;
++	default:
++		return -EINVAL;
++	}
+ 
+ 	ret = queue_work(info->workqueue, &info->play_work);
+ 	if (!ret) {
+@@ -367,7 +384,7 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
+ 	info->input_dev->close = twl6040_vibra_close;
+ 	__set_bit(FF_RUMBLE, info->input_dev->ffbit);
+ 
+-	ret = input_ff_create_memless(info->input_dev, NULL, vibra_play);
++	ret = input_ff_create_mlnx(info->input_dev, NULL, vibra_play, FF_UPDATE_RATE);
+ 	if (ret < 0) {
+ 		dev_err(info->dev, "couldn't register vibrator to FF\n");
+ 		goto err_ialloc;
+-- 
+1.9.2
 
