@@ -1,42 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755881AbaDVM4S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 08:56:18 -0400
-Received: from mail-oa0-f48.google.com ([209.85.219.48]:55710 "EHLO
-	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751421AbaDVMzl (ORCPT
+	id S1755680AbaDVM6N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 08:58:13 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:41221 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751134AbaDVM6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 08:55:41 -0400
+	Tue, 22 Apr 2014 08:58:11 -0400
+Date: Tue, 22 Apr 2014 15:57:26 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: hans.verkuil@cisco.com, m.chehab@samsung.com, ext-eero.nurkkala@nokia.com,
+        nils.faerber@kernelconcepts.de, joni.lapilainen@gmail.com,
+        freemangordon@abv.bg, sre@ring0.de, pali.rohar@gmail.com,
+        Greg KH <greg@kroah.com>, trivial@kernel.org,
+        linux-media@vger.kernel.org
+Cc: kernel list <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2] radio-bcm2048.c: fix wrong overflow check
+Message-ID: <20140422125726.GA30238@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <1397227564-8698-1-git-send-email-christian.ruppert@abilis.com>
-References: <20140402111358.GA23000@mwanda>
-	<1397227564-8698-1-git-send-email-christian.ruppert@abilis.com>
-Date: Tue, 22 Apr 2014 14:55:40 +0200
-Message-ID: <CACRpkdZwG4pdczNLZdMi3V=wFqPOxWpbME8P-Y2m5ypAn7EU=Q@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl/TB10x: Fix signedness bug
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Christian Ruppert <christian.ruppert@abilis.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201404221147.05726@pali>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 11, 2014 at 4:46 PM, Christian Ruppert
-<christian.ruppert@abilis.com> wrote:
+From: Pali Rohár <pali.rohar@gmail.com>
 
-> In the TB10x pin database, a port index of -1 is used to indicate
-> unmuxed GPIO pin groups. This bug fixes a 'cast to unsigned' bug of
-> this value.
->
-> Thanks to Dan Carpenter for highlighting this.
->
-> CC: Dan Carpenter <dan.carpenter@oracle.com>
-> Signed-off-by: Christian Ruppert <christian.ruppert@abilis.com>
+This patch fixes an off by one check in bcm2048_set_region().
 
-Patch applied for fixes.
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+v2: Send it to the correct list.  Re-work the changelog.
 
-Yours,
-Linus Walleij
+This patch has been floating around for four months but Pavel and Pali
+are knuckle-heads and don't know how to use get_maintainer.pl so they
+never send it to linux-media.
+
+Also Pali doesn't give reporter credit and Pavel steals authorship
+credit.
+
+Also when you try explain to them about how to send patches correctly
+they complain that they have been trying but it is too much work so now
+I have to do it.  During the past four months thousands of other people
+have been able to send patches in the correct format to the correct list
+but it is too difficult for Pavel and Pali...  *sigh*.
+
+diff --git a/drivers/staging/media/bcm2048/radio-bcm2048.c b/drivers/staging/media/bcm2048/radio-bcm2048.c
+index b2cd3a8..bbf236e 100644
+--- a/drivers/staging/media/bcm2048/radio-bcm2048.c
++++ b/drivers/staging/media/bcm2048/radio-bcm2048.c
+@@ -737,7 +737,7 @@ static int bcm2048_set_region(struct bcm2048_device *bdev, u8 region)
+ 	int err;
+ 	u32 new_frequency = 0;
+ 
+-	if (region > ARRAY_SIZE(region_configs))
++	if (region >= ARRAY_SIZE(region_configs))
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&bdev->mutex);
+
+-- 
+
