@@ -1,90 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753167AbaDVCCH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 22:02:07 -0400
-Received: from mga01.intel.com ([192.55.52.88]:25423 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbaDVCCF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 22:02:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,900,1389772800"; 
-   d="scan'208";a="524583856"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: [PATCH 1/4] ACPICA: Add <acpi/platform/aclinuxxf.h> to remove
- mis-ordered inclusion of <acpi/actypes.h> from <acpi/platform/aclinux.h>.
-Thread-Topic: [PATCH 1/4] ACPICA: Add <acpi/platform/aclinuxxf.h> to remove
- mis-ordered inclusion of <acpi/actypes.h> from <acpi/platform/aclinux.h>.
-Thread-Index: AQHPXaI9lV/jhfK5X0Sgd13es7oQhpsc3PXg
-Date: Tue, 22 Apr 2014 02:01:57 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E8802556F33@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1385110130.git.lv.zheng@intel.com>
- <cover.1396930406.git.lv.zheng@intel.com>
- <330810301fa94a244fe1a755e99246a2a5778153.1396930406.git.lv.zheng@intel.com>
- <3086544.JUcChlMM9C@vostro.rjw.lan>
-In-Reply-To: <3086544.JUcChlMM9C@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1752474AbaDVCIu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 22:08:50 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:5157 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbaDVCIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 22:08:43 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp08.nvidia.com on Mon, 21 Apr 2014 19:03:16 -0700
+Message-ID: <5355CF27.8000401@nvidia.com>
+Date: Tue, 22 Apr 2014 11:08:39 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Ben Skeggs <skeggsb@gmail.com>, Ilia Mirkin <imirkin@alum.mit.edu>
+CC: Alexandre Courbot <gnurou@gmail.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Ben Skeggs <bskeggs@redhat.com>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [PATCH v2 07/10] drm/nouveau/graph: pad firmware code at load
+ time
+References: <1398060142-7937-1-git-send-email-acourbot@nvidia.com>	<1398060142-7937-8-git-send-email-acourbot@nvidia.com>	<CAKb7UviQ6s8wRqwLVnE_A0NOw=WcVdFXG_wWmnZypwuaW_hnuw@mail.gmail.com> <CACAvsv7J7yUaug=CoUfsPg5PXf=ZmwUD9XvCt4CqAvnamQNN9A@mail.gmail.com>
+In-Reply-To: <CACAvsv7J7yUaug=CoUfsPg5PXf=ZmwUD9XvCt4CqAvnamQNN9A@mail.gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3M22Hw9003300
 
-Hi,
+On 04/22/2014 08:48 AM, Ben Skeggs wrote:
+> On Tue, Apr 22, 2014 at 4:03 AM, Ilia Mirkin <imirkin@alum.mit.edu> wrote:
+>> On Mon, Apr 21, 2014 at 2:02 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>>> Pad the microcode to a multiple of 0x40 bytes, otherwise firmware will
+>>
+>> bytes or u32's? From the code, I'm guessing the latter. (Similar
+>> concern about comment in the code.)
+>>
+>>> fail to run from non-prepadded firmware files.
+>>>
+>>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>>> Reviewed-by: Thierry Reding <treding@nvidia.com>
+>>> ---
+>>>   drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c | 4 ++++
+>>>   1 file changed, 4 insertions(+)
+>>>
+>>> diff --git a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
+>>> index e5b75f189988..013475c62986 100644
+>>> --- a/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
+>>> +++ b/drivers/gpu/drm/nouveau/core/engine/graph/nvc0.c
+>>> @@ -894,6 +894,10 @@ nvc0_graph_init_fw(struct nvc0_graph_priv *priv, u32 fuc_base,
+>>>                          nv_wr32(priv, fuc_base + 0x0188, i >> 6);
+>>>                  nv_wr32(priv, fuc_base + 0x0184, code->data[i]);
+>>>          }
+>>> +
+>>> +       /* code must be padded to 0x40 bytes */
+>>> +       for (; i & 0x3f; i++)
+>>> +               nv_wr32(priv, fuc_base + 0x0184, 0);
+> It's 256 bytes indeed.
 
-<skip>
-
-> > +#define ACPI_NATIVE_INTERFACE_HEADER	<acpi/platform/aclinuxxf.h>
-> 
-> This is not good.
-> 
-> We don't do things like this in the kernel, because they are confusing and hard
-> to debug if necessary, so please find a different way to make this work.
-
-I use this extra header file to collect:
-1. static inline OSL functions
-2. divergences of prototypes that haven't been back ported to ACPICA.
-This file is useful for ACPICA release automation.
-
-There are the following concerns that lead to the use of this solution:
-1. for this extra header file itself
-    A. The new header file is OSPM specific, thus it needn't be upstreamed to ACPICA;
-    B. Since it needn't be upstreamed to ACPICA, ACPICA needn't determine the name of this extra header;
-    C. It has to be the last file included by <acpi/acpi.h>.
-2. for the file that includes this extra header file
-    A. Currently there is no OSPM specific code in <acpi/acpi.h>.
-Thus I use a macro so that there is still no OSPM specific code in <acpi/acpi.h> and the name of the extra header can be determined by OSPM.
-
-If you want another solution, is the following acceptable?
-1. In <acpi/platform/aclinux.h>
-    #define ACPI_INCLUDE_EXTRA_NATIVE_HEADER	1
-2. In <acpi/acpi.h> <- this is an ACPICA header file, 
-    #ifdef ACPI_INCLUDE_EXTRA_NATIVE_HEADER
-    #include <acpi/platform/acextra.h>
-    #endif
-Note that in this solution, the name of the extra header file will be determined by ACPICA.
-
-> And the name aclinuxxf.h is not one of my favourite.
-
-Since this file needn't be upstreamed into ACPICA, could you help to determine it if the acextra.h was still not acceptable?
-
-Thanks and best regards
--Lv
-
-> 
-> Thanks!
-> 
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Fixed, thanks!
