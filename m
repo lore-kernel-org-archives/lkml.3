@@ -1,40 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757465AbaDVUB4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:01:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49046 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924AbaDVUBx (ORCPT
+	id S1757475AbaDVUC2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:02:28 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:65363 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755287AbaDVUCZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:01:53 -0400
-Date: Tue, 22 Apr 2014 13:01:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Bugfix] sched: fix possible invalid memory access caused by
- CPU hot-addition
-Message-Id: <20140422130151.83bc4539364ca660c68de859@linux-foundation.org>
-In-Reply-To: <20140422081515.GF11182@twins.programming.kicks-ass.net>
-References: <1398144435-26271-1-git-send-email-jiang.liu@linux.intel.com>
-	<20140422081515.GF11182@twins.programming.kicks-ass.net>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Apr 2014 16:02:25 -0400
+Date: Tue, 22 Apr 2014 16:02:21 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Jiri Kosina <jkosina@suse.cz>, Jeff Layton <jlayton@redhat.com>,
+        Andreas Gruenbacher <agruen@linbit.com>,
+        Stephen Hemminger <stephen@networkplumber.org>,
+        Jean Delvare <jdelvare@suse.de>,
+        Monam Agarwal <monamagarwal123@gmail.com>
+Subject: Re: [PATCH 3/4] ida: in-place ida allocation
+Message-ID: <20140422200221.GC2314@mtj.dyndns.org>
+References: <1398161781-12105-1-git-send-email-laijs@cn.fujitsu.com>
+ <1398161781-12105-4-git-send-email-laijs@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398161781-12105-4-git-send-email-laijs@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 10:15:15 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Tue, Apr 22, 2014 at 01:27:15PM +0800, Jiang Liu wrote:
-> > When calling kzalloc_node(size, flags, node), we should first check
-> > whether node is onlined, otherwise it may cause invalid memory access
-> > as below.
+On Tue, Apr 22, 2014 at 06:16:20PM +0800, Lai Jiangshan wrote:
+> There are two stages of ida allocation/free, idr_layers and ida_bitmap.
+> They add unneeded foot print and memory waste.
 > 
-> But this is only for memory less node crap, right? 
+> When a single ID is first allocated from an ida, this ida requires
+> two big chunks of memory. One idr_layer and one ida_bitmap.
+> 
+> To reduce the foot print and memory, we reduce the ida_bitmap
+> to a single "unsigned long" and place it in its own idr-slot
+> and avoid to allocate the ida_bitmap.
+> 
+> It also means ida bitmap is located on its coresponding idr-slot
+> which size is the same as "unsigned long".
+> Each ida bitmap(idr-slot) contains BITS_PER_LONG ida-slots.
+> 
+> The struct ida_bitmap is not needed any more, we use "unsigned long"
+> directly and remove all the code of alloc/free struct ida_bitmap.
 
-um, why are memoryless nodes crap?
+Are you calling 128 byte a "big chunk of memory" while trading off
+tree depth for it?  No, this level of space optimizaiton is completely
+uncalled for.
+
+ Nacked-by: Tejun Heo <tj@kernel.org>
+
+Thanks.
+
+-- 
+tejun
