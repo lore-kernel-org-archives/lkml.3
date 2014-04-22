@@ -1,73 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752498AbaDVDOP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 23:14:15 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:19933 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751117AbaDVDOK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 23:14:10 -0400
-X-AuditID: cbfee61b-b7f766d00000646c-20-5355de8080ae
-From: Weijie Yang <weijie.yang@samsung.com>
-To: "'Minchan Kim'" <minchan@kernel.org>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Nitin Gupta'" <ngupta@vflare.org>, iamjoonsoo.kim@lge.com,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Bob Liu'" <bob.liu@oracle.com>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] zram: correct offset usage in zram_bio_discard
-Date: Tue, 22 Apr 2014 11:14:02 +0800
-Message-id: <000001cf5dd8$ecf1c360$c6d54a20$%yang@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9d2OkahhKhZeOIS9qBUeDWbqT/yg==
-Content-language: zh-cn
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsVy+t9jAd2Ge6HBBufWGljMWb+GzaLr1FQW
-	i5XdzWwWl3fNYbNY9vU9u8WGllnsFms/P2Z3YPfYOesuu8emVZ1sHl1vrzB5nJjxm8Xj49Nb
-	LB47P21m9fi8SS6APYrLJiU1J7MstUjfLoEr4+XPFYwFTewVS669YmpgPM7axcjJISFgIvHp
-	/AImCFtM4sK99WxdjFwcQgKLGCUa2lcxQTh/GCVan9xnBKliE9CWuNu/EaxbREBNYt3BFywg
-	RcwCXxglel99ZwFJCAvYS2y7OZMdxGYRUJXYPHUxWAOvgJ3ExUl/mCFsQYkfk+8B1XMANatL
-	TJmSCxJmFpCX2LzmLTNIWAIo/OivLogpIqAnsfaqIUSFuMTGI7dYJjAKzEIyZxbCnFlI5sxC
-	0rGAkWUVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnA0PJPewbiqweIQowAHoxIPr4RBaLAQ
-	a2JZcWXuIUYJDmYlEV7pw0Ah3pTEyqrUovz4otKc1OJDjNIcLErivAdbrQOFBNITS1KzU1ML
-	UotgskwcnFINjA76+Zx10QVPbt47oqL5zqPw3Jf0xbt1RQNu2Zs58fjduH/hh/Oydy17Ngtm
-	1wj3ncgO5Z8VWDyVf5595iFWow0vnIqO314l4PDapihhbWHUh2vPF+SxpgW9Kwx8xX7svCGn
-	W3Iyb4DnMznlefnebXr9017s2yN+ao7epQ23Fh2bFGEYUhLOoMRSnJFoqMVcVJwIAFs226mC	AgAA
+	id S1753946AbaDVDQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 23:16:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6812 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751446AbaDVDQY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 23:16:24 -0400
+Date: Tue, 22 Apr 2014 11:16:10 +0800
+From: WANG Chao <chaowang@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Zhang Yanfei <zhangyanfei@cn.fujitsu.com>,
+        Vivek Goyal <vgoyal@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: kaslr relocation incompitable with kernel loaded high
+Message-ID: <20140422031610.GC4564@dhcp-17-89.nay.redhat.com>
+References: <20140421105232.GB4564@dhcp-17-89.nay.redhat.com>
+ <CAE9FiQWf+3hMZbt7Ac+vgL+8kqqQS4LKVGmWgrd5fJ4nkSgmPA@mail.gmail.com>
+ <CAGXu5j+-Aqe3H04mK=3wRQ-rhpvNVPm1yOKgZrd=Yc3gqrGq0w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGXu5j+-Aqe3H04mK=3wRQ-rhpvNVPm1yOKgZrd=Yc3gqrGq0w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-we want to skip the logical block which is partially covered by
-the discard bio, so check the remaining size and subtract it if
-there is a need to goto the next logical block.
+On 04/21/14 at 11:01am, Kees Cook wrote:
+> On Mon, Apr 21, 2014 at 10:56 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+> > On Mon, Apr 21, 2014 at 3:52 AM, WANG Chao <chaowang@redhat.com> wrote:
+> >> Hi, Kees
+> >>
+> >> When I'm testing kaslr with kdump, I find that when 2nd kernel is loaded
+> >> high, it doesn't boot.
+> >>
+> >> I reserved 128M memory at high with kernel cmdline
+> >> "crashkernel=128M,high crashkernel=0,low", and for which I got:
+> >>
+> >> [    0.000000] Reserving 128MB of memory at 6896MB for crashkernel (System RAM: 6013MB)
+> >>
+> >> Then I load kdump kernel into the reserved memory region, using a local
+> >> modified kexec-tools which is passing e820 in boot_params.
+> >>
+> >> The e820 map of system RAM passed to 2nd kernel:
+> >>
+> >> E820 memmap (of RAM):
+> >> 0000000000001000-000000000009e3ff (1)
+> >> 00000001af000000-00000001b6f5dfff (1)
+> >> 00000001b6fff400-00000001b6ffffff (1)
+> >>
+> >> In which, 2nd kernel is loaded at 0x1b5000000.
+> >>
+> >> After triggerred a system crash, 2nd kernel doesn't boot even with
+> >> "nokaslr" cmdline:
+> >>
+> >> # echo c > /proc/sysrq-trigger
+> >> [..]
+> >>
+> >> I'm in purgatory
+> >> early console in decompress_kernel
+> >> KASLR disabled...
+> >>
+> >> Decompressing Linux... Parsing ELF... Performing relocations...
+> >>
+> >> 32-bit relocation outside of kernel!
+> >
+> > Interesting, when kernel get at "early console in decompress_kernel"
+> > kernel already in 64 bit...
+> >
+> > what does it mean "32-bit relocation outside of kernel" ?
+> >
+> > why 32-bit is involved ?
+> 
+> The 64-bit kernel has both 64 and 32 bit relocations (there are two
+> tables at the end of the kernel image). The error means that the
+> resulting relocation is believed to be outside the kernel image:
+> 
+> http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/tree/arch/x86/boot/compressed/misc.c#n283
+> 
+> Which means there is likely something wrong with this calculation in
+> your situation:
+> 
+> /*
+>  * Calculate the delta between where vmlinux was linked to load
+>  * and where it was actually loaded.
+>  */
+> delta = min_addr - LOAD_PHYSICAL_ADDR;
+> 
 
-This patch corrects the offset usage in zram_bio_discard.
+Probably.
 
-Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
----
- drivers/block/zram/zram_drv.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I'm wondering why such relocation is still needed when kaslr
+is disabled in 64bit path. I think the relocation work is already
+handled in head_64.S.
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 9849b52..48eccb3 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -572,10 +572,10 @@ static void zram_bio_discard(struct zram *zram, u32 index,
- 	 * skipping this logical block is appropriate here.
- 	 */
- 	if (offset) {
--		if (n < offset)
-+		if (n <= (PAGE_SIZE - offset))
- 			return;
- 
--		n -= offset;
-+		n -= (PAGE_SIZE - offset);
- 		index++;
- 	}
- 
--- 
-1.7.10.4
+FWIW, I got these following relocation info:
+
+# arch/x86/tools/relocs --text vmlinux
+.section ".data.reloc","a"
+.balign 4
+	.long 0x00000000
+	.long 0x81004687
+	[..]
+	.long 0x81e6b018
+	.long 0x00000000
+	.long 0x8100000a
+	[..]
+	.long 0x81e6c9fc
 
 
+Thanks
+WANG Chao
