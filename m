@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268AbaDVOAg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:00:36 -0400
-Received: from transparentnimenzy.cz ([31.31.77.140]:49454 "EHLO
+	id S1756313AbaDVOAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:00:52 -0400
+Received: from devoid-pointer.net ([31.31.77.140]:49459 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027AbaDVOAT (ORCPT
+	with ESMTP id S1756194AbaDVOAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:00:19 -0400
+	Tue, 22 Apr 2014 10:00:20 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org
-Subject: [PATCH v2 02/24] input: Port arizona-haptics to ff-memless-next
-Date: Tue, 22 Apr 2014 15:59:47 +0200
-Message-Id: <1398175209-9565-3-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v2 03/24] input: Port twl4030-vibra to ff-memless-next
+Date: Tue, 22 Apr 2014 15:59:48 +0200
+Message-Id: <1398175209-9565-4-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -24,111 +24,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port arizona-haptics to ff-memless-next
+Port twl4030-vibra to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/input/misc/Kconfig           |  2 +-
- drivers/input/misc/arizona-haptics.c | 39 +++++++++++++++++++++++-------------
- 2 files changed, 26 insertions(+), 15 deletions(-)
+ drivers/input/misc/Kconfig         |  2 +-
+ drivers/input/misc/twl4030-vibra.c | 31 +++++++++++++++++++++++++------
+ 2 files changed, 26 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 7904ab0..33e0f5d 100644
+index 33e0f5d..1016a1b 100644
 --- a/drivers/input/misc/Kconfig
 +++ b/drivers/input/misc/Kconfig
-@@ -75,7 +75,7 @@ config INPUT_AD714X_SPI
- config INPUT_ARIZONA_HAPTICS
- 	tristate "Arizona haptics support"
- 	depends on MFD_ARIZONA && SND_SOC
+@@ -407,7 +407,7 @@ config INPUT_TWL4030_VIBRA
+ 	tristate "Support for TWL4030 Vibrator"
+ 	depends on TWL4030_CORE
+ 	select MFD_TWL4030_AUDIO
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
  	help
- 	  Say Y to enable support for the haptics module in Arizona CODECs.
+ 	  This option enables support for TWL4030 Vibrator Driver.
  
-diff --git a/drivers/input/misc/arizona-haptics.c b/drivers/input/misc/arizona-haptics.c
-index ef2e281..b4707cc 100644
---- a/drivers/input/misc/arizona-haptics.c
-+++ b/drivers/input/misc/arizona-haptics.c
-@@ -13,6 +13,7 @@
- #include <linux/module.h>
- #include <linux/platform_device.h>
+diff --git a/drivers/input/misc/twl4030-vibra.c b/drivers/input/misc/twl4030-vibra.c
+index 960ef2a..5274ad2 100644
+--- a/drivers/input/misc/twl4030-vibra.c
++++ b/drivers/input/misc/twl4030-vibra.c
+@@ -32,9 +32,11 @@
+ #include <linux/mfd/twl4030-audio.h>
  #include <linux/input.h>
-+#include <linux/input/ff-memless-next.h>
  #include <linux/slab.h>
++#include <linux/input/ff-memless-next.h>
  
- #include <sound/soc.h>
-@@ -22,6 +23,8 @@
- #include <linux/mfd/arizona/pdata.h>
- #include <linux/mfd/arizona/registers.h>
+ /* MODULE ID2 */
+ #define LEDEN		0x00
++#define FF_UPDATE_RATE	50
  
-+#define FF_UPDATE_RATE 50
-+
- struct arizona_haptics {
- 	struct arizona *arizona;
- 	struct input_dev *input_dev;
-@@ -108,29 +111,37 @@ static void arizona_haptics_work(struct work_struct *work)
- }
+ /* ForceFeedback */
+ #define EFFECT_DIR_180_DEG	0x8000 /* range is 0 - 0xFFFF */
+@@ -134,14 +136,31 @@ static void vibra_play_work(struct work_struct *work)
+ /*** Input/ForceFeedback ***/
  
- static int arizona_haptics_play(struct input_dev *input, void *data,
--				struct ff_effect *effect)
-+				const struct mlnx_effect_command *command)
+ static int vibra_play(struct input_dev *input, void *data,
+-		      struct ff_effect *effect)
++		      const struct mlnx_effect_command *command)
  {
- 	struct arizona_haptics *haptics = input_get_drvdata(input);
- 	struct arizona *arizona = haptics->arizona;
+ 	struct vibra_info *info = input_get_drvdata(input);
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 
- 	if (!arizona->dapm) {
- 		dev_err(arizona->dev, "No DAPM context\n");
- 		return -EBUSY;
- 	}
- 
--	if (effect->u.rumble.strong_magnitude) {
--		/* Scale the magnitude into the range the device supports */
--		if (arizona->pdata.hap_act) {
--			haptics->intensity =
--				effect->u.rumble.strong_magnitude >> 9;
--			if (effect->direction < 0x8000)
--				haptics->intensity += 0x7f;
++
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		if (rumble_force->strong) {
-+			/* Scale the magnitude into the range the device supports */
-+			if (arizona->pdata.hap_act) {
-+				haptics->intensity = rumble_force->strong >> 9;
-+				if (rumble_force->strong_dir < 0x8000)
-+					haptics->intensity += 0x7f;
-+			} else {
-+				haptics->intensity = rumble_force->strong >> 8;
-+			}
- 		} else {
--			haptics->intensity =
--				effect->u.rumble.strong_magnitude >> 8;
-+			haptics->intensity = 0;
- 		}
--	} else {
++		if (command->u.rumble_force.strong) {
++			info->speed = rumble_force->strong >> 8;
++			info->direction = rumble_force->strong_dir < EFFECT_DIR_180_DEG ?
++					  0 : 1;
++		} else {
++			info->speed = rumble_force->weak >> 9;
++			info->direction = rumble_force->weak_dir < EFFECT_DIR_180_DEG ?
++					  0 : 1;
++		}
 +		break;
 +	case MLNX_STOP_RUMBLE:
- 		haptics->intensity = 0;
++		info->speed = 0;
++		info->direction = 0;
 +		break;
 +	default:
 +		return -EINVAL;
- 	}
++	}
  
- 	schedule_work(&haptics->work);
-@@ -183,10 +194,10 @@ static int arizona_haptics_probe(struct platform_device *pdev)
- 	haptics->input_dev->close = arizona_haptics_close;
- 	__set_bit(FF_RUMBLE, haptics->input_dev->ffbit);
+-	info->speed = effect->u.rumble.strong_magnitude >> 8;
+-	if (!info->speed)
+-		info->speed = effect->u.rumble.weak_magnitude >> 9;
+-	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 0 : 1;
+ 	schedule_work(&info->play_work);
+ 	return 0;
+ }
+@@ -227,7 +246,7 @@ static int twl4030_vibra_probe(struct platform_device *pdev)
+ 	info->input_dev->close = twl4030_vibra_close;
+ 	__set_bit(FF_RUMBLE, info->input_dev->ffbit);
  
--	ret = input_ff_create_memless(haptics->input_dev, NULL,
--				      arizona_haptics_play);
-+	ret = input_ff_create_mlnx(haptics->input_dev, NULL,
-+				   arizona_haptics_play, FF_UPDATE_RATE);
+-	ret = input_ff_create_memless(info->input_dev, NULL, vibra_play);
++	ret = input_ff_create_mlnx(info->input_dev, NULL, vibra_play, FF_UPDATE_RATE);
  	if (ret < 0) {
--		dev_err(arizona->dev, "input_ff_create_memless() failed: %d\n",
-+		dev_err(arizona->dev, "input_ff_create_mlnx() failed: %d\n",
- 			ret);
- 		goto err_ialloc;
- 	}
+ 		dev_dbg(&pdev->dev, "couldn't register vibrator to FF\n");
+ 		return ret;
 -- 
 1.9.2
 
