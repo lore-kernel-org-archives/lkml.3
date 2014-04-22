@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349AbaDVTKB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:10:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22047 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754729AbaDVTJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:09:42 -0400
-Date: Tue, 22 Apr 2014 15:09:28 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: 3.15rc2 hanging processes on exit.
-Message-ID: <20140422190928.GA25183@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	linux-mm <linux-mm@kvack.org>, Hugh Dickins <hughd@google.com>
-References: <20140422180308.GA19038@redhat.com>
- <CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
+	id S1752693AbaDVTNx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:13:53 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:49105 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbaDVTNv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 15:13:51 -0400
+Message-ID: <5356BF6A.2070801@redhat.com>
+Date: Tue, 22 Apr 2014 15:13:46 -0400
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bandan Das <bsd@redhat.com>
+CC: kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] KVM: x86: Check for host supported fields in shadow
+ vmcs
+References: <jpgk3aiv6a9.fsf@nelium.bos.redhat.com>	<5355E222.7010607@redhat.com> <jpg7g6h72ln.fsf@nelium.bos.redhat.com>
+In-Reply-To: <jpg7g6h72ln.fsf@nelium.bos.redhat.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 11:57:50AM -0700, Linus Torvalds wrote:
- 
- > Are you testing anything new? Or is this strictly new to 3.15? The
- > only thing in this area we do differently is commit cda540ace6a1 ("mm:
- > get_user_pages(write,force) refuse to COW in shared areas"), but
- > fault_in_user_writeable() never used the force bit afaik. Adding Hugh
- > just in case.
+Il 22/04/2014 12:25, Bandan Das ha scritto:
+>>> >> +		if (j < i)
+>>> >> +			shadow_read_write_fields[j] =
+>>> >> +				shadow_read_write_fields[i];
+>>> >> +		j++;
+>> >
+>> > ... you need to respin anyway because the j++ is wrong.  It should be
+>> > inside the "if".  If you prefer, you can put it in the lhs of the
+> j++ outside the "if" looks right to me. Can you please explain why
+> you think it shouldn't be that way ?
+>
 
-You mean new as in additions to trinity ?
-The only recent chance that might be relevant is that now, when I create
-struct iovec's to pass to syscalls, I populate them solely with results
-from mmap's rather than a mix of mmaps and mallocs.  The mmaps could be
-all kinds of sizes, types etc. [*]  So now there's more chance I guess
-that an iovec contains a bunch of hugepages, or read-only pages etc.
+The way you wrote it, j will always be equal to i.
 
-I took another slightly longer trace of what's going on at
-http://codemonkey.org.uk/junk/trace2.out
-But it looks to me to be pretty similar.
-
-	Dave
-
-[*] https://github.com/kernelslacker/trinity/commit/1e73841971717256089d63e9f7fc33972d48028c
+Paolo
