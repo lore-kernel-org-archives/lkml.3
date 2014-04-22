@@ -1,91 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932855AbaDVOyQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:54:16 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:58047 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932661AbaDVOyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:54:10 -0400
-Date: Tue, 22 Apr 2014 07:53:58 -0700
-From: Drew Richardson <drew.richardson@arm.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>
-Subject: Re: [PATCH] Export sched tracepoints for use by kernel modules
-Message-ID: <20140422145338.GA4591@dreric01-Precision-T1600>
-References: <20140422142313.GB21121@dreric01-Precision-T1600>
- <20140422144503.GA15892@gmail.com>
+	id S932869AbaDVOzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:55:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6034 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932661AbaDVOzN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:55:13 -0400
+Date: Tue, 22 Apr 2014 16:54:49 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 3/9] perf tools: Account entry stats when it's added to
+ the output tree
+Message-ID: <20140422145449.GI1104@krava.brq.redhat.com>
+References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
+ <1398156591-11001-4-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140422144503.GA15892@gmail.com>
+In-Reply-To: <1398156591-11001-4-git-send-email-namhyung@kernel.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 03:45:04PM +0100, Ingo Molnar wrote:
-> 
-> * Drew Richardson <drew.richardson@arm.com> wrote:
-> 
-> > After commit de7b2973903c6cc50b31ee5682a69b2219b9919d ("tracepoint:
-> > Use struct pointer instead of name hash for reg/unreg tracepoints"),
-> > any tracepoints used in a kernel module must be exported.
-> > 
-> > Signed-off-by: Drew Richardson <drew.richardson@arm.com>
-> > Acked-by: Pawel Moll <pawel.moll@arm.com>
-> > ---
-> >  kernel/sched/core.c | 25 +++++++++++++++++++++++++
-> >  1 file changed, 25 insertions(+)
-> > 
-> > diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> > index 268a45ea238c..cdb8e92ff24a 100644
-> > --- a/kernel/sched/core.c
-> > +++ b/kernel/sched/core.c
-> > @@ -90,6 +90,31 @@
-> >  #define CREATE_TRACE_POINTS
-> >  #include <trace/events/sched.h>
-> >  
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_kthread_stop);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_kthread_stop_ret);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_wakeup);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_wakeup_new);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_switch);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_migrate_task);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_free);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_exit);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_wait_task);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_wait);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_fork);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_exec);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_wait);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_sleep);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_iowait);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_blocked);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_runtime);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_pi_setprio);
-> > +#ifdef CONFIG_DETECT_HUNG_TASK
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_hang);
-> > +#endif /* CONFIG_DETECT_HUNG_TASK */
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_move_numa);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stick_numa);
-> > +EXPORT_TRACEPOINT_SYMBOL_GPL(sched_swap_numa);
-> 
-> Which in-tree kernel module is using these?
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+On Tue, Apr 22, 2014 at 05:49:45PM +0900, Namhyung Kim wrote:
 
-Gator (http://git.linaro.org/arm/ds5/gator.git), an out of tree kernel
-module, uses sched_process_fork, sched_switch and
-sched_process_free. Along with exporting those tracepoints I thought
-it would be helpful to export all the tracepoints from
-trace/events/sched.h.
+SNIP
 
-Thanks,
+>  }
+>  
+>  static int process_sample_event(struct perf_tool *tool,
+> @@ -234,19 +230,17 @@ static int __cmd_annotate(struct perf_annotate *ann)
+>  	total_nr_samples = 0;
+>  	evlist__for_each(session->evlist, pos) {
+>  		struct hists *hists = &pos->hists;
+> -		u32 nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
+>  
+> -		if (nr_samples > 0) {
 
-Drew
+so this condition of having some data is handled in the
+resort I guess.. hm, it will just iterate 0 times ;-)
+
+> -			total_nr_samples += nr_samples;
+> -			hists__collapse_resort(hists, NULL);
+> -			hists__output_resort(hists);
+> +		hists__collapse_resort(hists, NULL);
+> +		hists__output_resort(hists);
+>  
+> -			if (symbol_conf.event_group &&
+> -			    !perf_evsel__is_group_leader(pos))
+> -				continue;
+> +		if (symbol_conf.event_group &&
+> +		    !perf_evsel__is_group_leader(pos))
+> +			continue;
+>  
+> -			hists__find_annotations(hists, pos, ann);
+> -		}
+> +		hists__find_annotations(hists, pos, ann);
+> +
+> +		total_nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
+>  	}
+>  
+>  	if (total_nr_samples == 0) {
+>  
+
+SNIP
+
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index 1c77714f668d..f955ae5a41c5 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -344,9 +344,11 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
+
+I was wondering for a while about the name of this function
+since it no longer increments only nr_entries.. but could not
+think about any good replacement ;-)
+
+We could also add hists__reset_nr_entries for the zeroing code.
+
+
+>  		hists__calc_col_len(hists, h);
+
+also having hists__calc_col_len called here seems strange
+
+thanks,
+jirka
