@@ -1,70 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211AbaDVOdp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:33:45 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:59881 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428AbaDVOdh (ORCPT
+	id S1756301AbaDVOgN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:36:13 -0400
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:63078 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756092AbaDVOgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:33:37 -0400
+	Tue, 22 Apr 2014 10:36:09 -0400
+Message-ID: <53567E72.1030201@linaro.org>
+Date: Tue, 22 Apr 2014 16:36:34 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4T+5Yekm1CpzM40D3C-4XDr+5PYU8d6ud3Zw7k5dcrmUA@mail.gmail.com>
-References: <cover.1398097304.git.luto@amacapital.net> <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
- <CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
- <CALCETrUZfSrBPZ0Fok5WrG2zM5h3LchEfqnWP4nK37-0sQ8=6g@mail.gmail.com> <CANq1E4T+5Yekm1CpzM40D3C-4XDr+5PYU8d6ud3Zw7k5dcrmUA@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 22 Apr 2014 07:33:15 -0700
-Message-ID: <CALCETrWOTVk6wK7e5CwLCRS9XN=5oDT+QtSAPPi_eTMDKgYRFQ@mail.gmail.com>
-Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Content-Type: text/plain; charset=UTF-8
+To: Leela Krishna Amudala <leela.krishna@linaro.org>, linux-pm@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+CC: kgene.kim@samsung.com, amit.kucheria@linaro.org
+Subject: Re: [PATCH] ARM: EXYNOS: cpu hotplug: use v7_exit_coherency_flush
+ macro for cache disabling
+References: <1398176280-7258-1-git-send-email-leela.krishna@linaro.org>
+In-Reply-To: <1398176280-7258-1-git-send-email-leela.krishna@linaro.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 7:17 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi
->
-> On Tue, Apr 22, 2014 at 3:49 PM, Andy Lutomirski <luto@amacapital.net> wrote:
->> Anyone who opens a file read-only and sends it over SCM_RIGHTS is
->> likely broken.  They may think that it's read-only, so it can't be
->> written, but this /proc/fd issue means that whoever receives it can
->> reopen it.
->>
->> It's true that, if the inode doesn't allow the recipient write access,
->> then the recipient can't reopen, but there are lots of cases where the
->> inode can't reliably be expected not to allow write.  For example, the
->> inode could be unlinked, an O_TMPFILE file, a memfd handle, or in a
->> non-world-executable directory, and the file mode should be respected.
->
-> I think it's safe to assume that any object you create is never
-> world-accessible. So the worst you can get is 0600.
+On 04/22/2014 04:18 PM, Leela Krishna Amudala wrote:
+> Remove the duplicated code for cache disabling and use "v7_exit_coherency_flush"
+> macro to do the same job.
 
-Can you explain what you mean?  I think that it's completely *unsafe*
-to make this assumption unless you actually take some explicit action
-to make sure it's correct.
+Hi Leela,
 
-> So if we now take
-> your example, your patch doesn't fix the problem at all. Imagine two
-> processes, $sender and $receiver. If the receiver runs as a different
-> user as the sender, it cannot open /proc/self/fd/ writable due to
-> 0600. So the only problematic case is if both run as the same user.
-> However, in that case, the receiver can _always_ access
-> /proc/$sender/fd/ and thus still gain writable access to the object,
-> even if its own fd is read-only and your patch was applied. (ignoring
-> the fact that they can kill() and ptrace each other..)
-
-Incorrect.  That is exactly what my patch changes.
+thanks for this patch! It would be nice if you can describe why those 
+macros can be replaced by the generic v7_exit_coherency_flush macro.
 
 >
-> Protecting world-accessible objects by hiding them is imho wrong. And
-> protecting users against themselves is even worse.
+> Signed-off-by: Leela Krishna Amudala <leela.krishna@linaro.org>
+>
+> ---
+> cpu hotplug is tested with 3.15-rc1 on Origen(which has cortex A9) and
+> Arndale octa(which has cortex A7 and A15) boards.
+>
+>   arch/arm/mach-exynos/hotplug.c |   56 ++--------------------------------------
+>   1 file changed, 2 insertions(+), 54 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+> index 5eead53..9eb8d1b 100644
+> --- a/arch/arm/mach-exynos/hotplug.c
+> +++ b/arch/arm/mach-exynos/hotplug.c
+> @@ -24,56 +24,6 @@
+>   #include "common.h"
+>   #include "regs-pmu.h"
+>
+> -static inline void cpu_enter_lowpower_a9(void)
+> -{
+> -	unsigned int v;
+> -
+> -	asm volatile(
+> -	"	mcr	p15, 0, %1, c7, c5, 0\n"
+> -	"	mcr	p15, 0, %1, c7, c10, 4\n"
+> -	/*
+> -	 * Turn off coherency
+> -	 */
+> -	"	mrc	p15, 0, %0, c1, c0, 1\n"
+> -	"	bic	%0, %0, %3\n"
+> -	"	mcr	p15, 0, %0, c1, c0, 1\n"
+> -	"	mrc	p15, 0, %0, c1, c0, 0\n"
+> -	"	bic	%0, %0, %2\n"
+> -	"	mcr	p15, 0, %0, c1, c0, 0\n"
+> -	  : "=&r" (v)
+> -	  : "r" (0), "Ir" (CR_C), "Ir" (0x40)
+> -	  : "cc");
+> -}
+> -
+> -static inline void cpu_enter_lowpower_a15(void)
+> -{
+> -	unsigned int v;
+> -
+> -	asm volatile(
+> -	"	mrc	p15, 0, %0, c1, c0, 0\n"
+> -	"	bic	%0, %0, %1\n"
+> -	"	mcr	p15, 0, %0, c1, c0, 0\n"
+> -	  : "=&r" (v)
+> -	  : "Ir" (CR_C)
+> -	  : "cc");
+> -
+> -	flush_cache_louis();
+> -
+> -	asm volatile(
+> -	/*
+> -	* Turn off coherency
+> -	*/
+> -	"	mrc	p15, 0, %0, c1, c0, 1\n"
+> -	"	bic	%0, %0, %1\n"
+> -	"	mcr	p15, 0, %0, c1, c0, 1\n"
+> -	: "=&r" (v)
+> -	: "Ir" (0x40)
+> -	: "cc");
+> -
+> -	isb();
+> -	dsb();
+> -}
+> -
+>   static inline void cpu_leave_lowpower(void)
+>   {
+>   	unsigned int v;
+> @@ -141,10 +91,8 @@ void __ref exynos_cpu_die(unsigned int cpu)
+>   	 * appropriate sequence for entering low power.
+>   	 */
+>   	asm("mrc p15, 0, %0, c0, c0, 0" : "=r"(primary_part) : : "cc");
 
-Protecting users against themselves (i.e. other things with the same
-uid) when they create namespaces and use seccomp filters is important.
+Can't you remove this asm line above as well as the primary_part variable ?
 
---Andy
+> -	if ((primary_part & 0xfff0) == 0xc0f0)
+> -		cpu_enter_lowpower_a15();
+> -	else
+> -		cpu_enter_lowpower_a9();
+> +
+> +	v7_exit_coherency_flush(louis);
+>
+>   	platform_do_lowpower(cpu, &spurious);
+>
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
