@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437AbaDVNYk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:24:40 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45830 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752006AbaDVNYf (ORCPT
+	id S1755281AbaDVN0J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:26:09 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:49916 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754756AbaDVN0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:24:35 -0400
-Date: Tue, 22 Apr 2014 14:24:31 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Will Deacon <Will.Deacon@arm.com>
-Cc: Jean Pihet <jean.pihet@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnaldo <acme@ghostprotocols.net>, Ingo Molnar <mingo@kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Steve Capper <steve.capper@linaro.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Ahern <dsahern@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>
-Subject: Re: [PATCH 1/3] perf tests: Introduce perf_regs_load function on
- ARM64
-Message-ID: <20140422132431.GB9625@e106331-lin.cambridge.arm.com>
-References: <1395222155-22205-1-git-send-email-jean.pihet@linaro.org>
- <1395222155-22205-2-git-send-email-jean.pihet@linaro.org>
- <20140321151126.GR23372@e106331-lin.cambridge.arm.com>
- <CAFrcx1=TSsaDK0xgtJSQUtvUnwicrXNU-nYAcMOi4B=nTU_Qwg@mail.gmail.com>
- <CAFrcx1m_iH1ivWdTi7tbMXxEq1KYqHOAQS3hh3hnJh2ZgEDP3Q@mail.gmail.com>
- <20140422103744.GG7484@arm.com>
+	Tue, 22 Apr 2014 09:26:05 -0400
+Date: Tue, 22 Apr 2014 15:25:59 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: Davidlohr Bueso <davidlohr@hp.com>
+Cc: akpm@linux-foundation.org, zeus@gnu.org, aswin@hp.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH 3/6] mips: call find_vma with the mmap_sem held
+Message-ID: <20140422132559.GD10997@alberich>
+References: <1397960791-16320-1-git-send-email-davidlohr@hp.com>
+ <1397960791-16320-4-git-send-email-davidlohr@hp.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140422103744.GG7484@arm.com>
-Thread-Topic: [PATCH 1/3] perf tests: Introduce perf_regs_load function on
- ARM64
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1397960791-16320-4-git-send-email-davidlohr@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 11:37:44AM +0100, Will Deacon wrote:
-> On Tue, Apr 22, 2014 at 09:13:33AM +0100, Jean Pihet wrote:
-> > Hi Mark, Will,
+On Sat, Apr 19, 2014 at 07:26:28PM -0700, Davidlohr Bueso wrote:
+> Performing vma lookups without taking the mm->mmap_sem is asking
+> for trouble. While doing the search, the vma in question can be
+> modified or even removed before returning to the caller. Take the
+> lock (exclusively) in order to avoid races while iterating through
+> the vmacache and/or rbtree.
 > 
-> Hi Jean,
+> Updates two functions:
+>   - process_fpemu_return()
+>   - cteon_flush_cache_sigtramp()
 > 
-> > Ping on this series. Can you please check? I
+> This patch is completely *untested*.
 > 
-> Do you have a pointer to the latest version of your code please? The email
-> backlog I have seems to end with MarkR saying he would take a look.
+> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: linux-mips@linux-mips.org
 
-The last posting I saw was [1-6]. The lack of reply is my fault, as I
-lost track of the thread.
+Tested-by: Andreas Herrmann <andreas.herrmann@caviumnetworks.com>
 
-Cheers,
-Mark.
 
-[1] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/241470.html
-[2] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/241467.html
-[3] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/242396.html
-[4] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/242998.html
-[5] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/241466.html
-[6] http://lists.infradead.org/pipermail/linux-arm-kernel/2014-March/241468.html
+Thanks,
+
+Andreas
+
+> ---
+>  arch/mips/kernel/traps.c | 2 ++
+>  arch/mips/mm/c-octeon.c  | 2 ++
+>  2 files changed, 4 insertions(+)
+> 
+> diff --git a/arch/mips/kernel/traps.c b/arch/mips/kernel/traps.c
+> index 074e857..c51bd20 100644
+> --- a/arch/mips/kernel/traps.c
+> +++ b/arch/mips/kernel/traps.c
+> @@ -712,10 +712,12 @@ int process_fpemu_return(int sig, void __user *fault_addr)
+>  		si.si_addr = fault_addr;
+>  		si.si_signo = sig;
+>  		if (sig == SIGSEGV) {
+> +			down_read(&current->mm->mmap_sem);
+>  			if (find_vma(current->mm, (unsigned long)fault_addr))
+>  				si.si_code = SEGV_ACCERR;
+>  			else
+>  				si.si_code = SEGV_MAPERR;
+> +			up_read(&current->mm->mmap_sem);
+>  		} else {
+>  			si.si_code = BUS_ADRERR;
+>  		}
+> diff --git a/arch/mips/mm/c-octeon.c b/arch/mips/mm/c-octeon.c
+> index f41a5c5..05b1d7c 100644
+> --- a/arch/mips/mm/c-octeon.c
+> +++ b/arch/mips/mm/c-octeon.c
+> @@ -137,8 +137,10 @@ static void octeon_flush_cache_sigtramp(unsigned long addr)
+>  {
+>  	struct vm_area_struct *vma;
+>  
+> +	down_read(&current->mm->mmap_sem);
+>  	vma = find_vma(current->mm, addr);
+>  	octeon_flush_icache_all_cores(vma);
+> +	up_read(&current->mm->mmap_sem);
+>  }
+>  
+>  
+> -- 
+> 1.8.1.4
+> 
+> 
