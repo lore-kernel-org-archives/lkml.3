@@ -1,101 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751552AbaDVEww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 00:52:52 -0400
-Received: from mail-oa0-f46.google.com ([209.85.219.46]:58745 "EHLO
-	mail-oa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750723AbaDVEwt (ORCPT
+	id S1751889AbaDVEzF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 00:55:05 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:60529 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716AbaDVEy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 00:52:49 -0400
+	Tue, 22 Apr 2014 00:54:59 -0400
+Message-ID: <5355F60C.8010004@gmail.com>
+Date: Tue, 22 Apr 2014 06:54:36 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140421154505.eef405f0a23e2ff8a1c7536e@linux-foundation.org>
-References: <1397780183-24633-1-git-send-email-keescook@chromium.org>
-	<1397780183-24633-4-git-send-email-keescook@chromium.org>
-	<20140421154505.eef405f0a23e2ff8a1c7536e@linux-foundation.org>
-Date: Mon, 21 Apr 2014 21:52:48 -0700
-X-Google-Sender-Auth: lDxtXeQrc7HJI3bozrL5aE1rAkM
-Message-ID: <CAGXu5jLBJynt81Y0HqWkPzFpa6ToR4SZk2ZLLjS3SPNNczTXNw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4] sysctl: allow for strict write position handling
-From: Kees Cook <keescook@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Li Zefan <lizefan@huawei.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
-        Andrew Shewmaker <agshew@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        Jens Axboe <axboe@fb.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        Michael Ellerman <michael@ellerman.id.au>
-Content-Type: text/plain; charset=UTF-8
+To: "Stefan (metze) Metzmacher" <metze@samba.org>,
+        Jeff Layton <jlayton@redhat.com>
+CC: mtk.manpages@gmail.com, Rich Felker <dalias@libc.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH] locks: rename file-private locks to file-description
+ locks
+References: <1398087935-14001-1-git-send-email-jlayton@redhat.com>	<20140421140246.GB26358@brightrain.aerifal.cx>	<535529FA.8070709@gmail.com>	<20140421161004.GC26358@brightrain.aerifal.cx>	<5355644C.7000801@gmail.com>	<20140421184640.GD26358@brightrain.aerifal.cx>	<535573E0.9080106@gmail.com> <20140421155520.3b33fbef@ipyr.poochiereds.net> <53558A73.3010602@samba.org>
+In-Reply-To: <53558A73.3010602@samba.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 3:45 PM, Andrew Morton
-<akpm@linux-foundation.org> wrote:
-> On Thu, 17 Apr 2014 17:16:22 -0700 Kees Cook <keescook@chromium.org> wrote:
->
->> When writing to a sysctl string, each write, regardless of VFS position,
->> begins writing the string from the start. This means the contents of
->> the last write to the sysctl controls the string contents instead of
->> the first:
+On 04/21/2014 11:15 PM, Stefan (metze) Metzmacher wrote:
+> Am 21.04.2014 21:55, schrieb Jeff Layton:
+>> On Mon, 21 Apr 2014 21:39:12 +0200
+>> "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com> wrote:
 >>
->> open("/proc/sys/kernel/modprobe", O_WRONLY)   = 1
->> write(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"..., 4096) = 4096
->> write(1, "/bin/true", 9)                = 9
->> close(1)                                = 0
+>>> On 04/21/2014 08:46 PM, Rich Felker wrote:
+>>>> On Mon, Apr 21, 2014 at 08:32:44PM +0200, Michael Kerrisk (man-pages) wrote:
+>>>>> On 04/21/2014 06:10 PM, Rich Felker wrote:
+>>>>>> I'm well aware of that. The problem is that the proposed API is using
+>>>>>> the two-letter abbreviation FD, which ALWAYS means file descriptor and
+>>>>>> NEVER means file description (in existing usage) to mean file
+>>>>>> description. That's what's wrong.
+>>>>>
+>>>>> So, can you *please* answer this question: what do you call (i.e., 
+>>>>> what  everyday technical language term do use for) the thing
+>>>>> that sits between a file descriptor and an i-node? 
+>>>>>
+>>>>> (Please don't say 'struct file' -- that is not is an implementation 
+>>>>> detail, and does not qualify as the kind of term that I could use 
+>>>>> when documenting this feature in man pages.)
+>>>>
+>>>> "Open file description".
+>>>
+>>> Oh! I didn't realize we agreed :-).
+>>>
+>>>>> POSIX uses (or invented, I am not sure which) the term file description
+>>>>> for a good reason: it is unambiguous, and therefore precise. I do agree
+>>>>> that there's a risk of confusion between 'open file descriptor" and 
+>>>>> 'and file description'--it's the same kind of risk as between English 
+>>>>> terms such as 'arbitrator' and 'arbitration' (and any number of other
+>>>>> examples), and as language speakers we deal with this every day.
+>>>>
+>>>> There's not a problem when the full word is used. On the other hand,
+>>>> if you use "arb" as an abbreviation for "arbitration" in a context
+>>>> where it was already universally understood as meaning "arbitrator",
+>>>> that would be a big problem.
+>>>>
+>>>> Likewise the problem here isn't that "open file description" is a bad
+>>>> term. It's that using "FD" to mean "[open] file description" is
+>>>> utterly confusing, even moreso than just making up a new completely
+>>>> random word.
+>>>
+>>> Ohh -- I had thought you a problem not just with "FD" but also
+>>> "(open) file description".
+>>>
+>>>>>>> 2) The new API constants (F_SETLKP, F_SETLKPW, F_GETLKP) have names
+>>>>>>>    that are visually very close to the traditional POSIX lock names 
+>>>>>>>    (F_SETLK, F_SETLKW, F_GETLK). That's an accident waiting to happen
+>>>>>>>    when someone mistypes in code and/or misses such a misttyping
+>>>>>>>    when reading code. That really must be fixed.
+>>>>>>
+>>>>>> I agree, but I don't think making it worse is a solution.
+>>>>>
+>>>>> I don't agree that it's making it worse. The real problem here is 
+>>>>> that people use no good unambiguous term for the thing between a file
+>>>>> descriptor and an inode. POSIX provides us with a solution that may
+>>>>> not seem perfect, but it is unambiguous, and I think it might feel
+>>>>> more comfortable if we used it often enough.
+>>>>
+>>>> I would like to see it used more too, and in particular, I think it
+>>>> belongs in the documentation for these new locking interfaces. But
+>>>> that still doesn't answer the question of what to call them (the
+>>>> macros) unless you want:
+>>>>
+>>>> F_OPEN_FILE_DESCRIPTION_GETLK
+>>>> F_OPEN_FILE_DESCRIPTION_SETLK
+>>>> F_OPEN_FILE_DESCRIPTION_SETLKW
+>>>
+>>> Or just 'F_OFD_*'?
+>>>
+>>>> Perhaps "OP" (for open-private, i.e. private to the particular open)
+>>>> would be a sensible choice; OTOH people are likely to misread it as
+>>>> OPeration. The general principle I have in mind though is that it
+>>>> might be nice to highlight the word "open" in "open file description"
+>>>
+>>> (Fair enough.)
+>>>
+>>>> since it (1) contrasts with file descriptor, despite file descriptors
+>>>> also dealing with open files, and (2) contrasts well with legacy fcntl
+>>>> locks, which are (this is the whole bug) associated with the
+>>>> underlying file and not the open file description.
+>>>
+>>> Makes sense to me. (We are in more agreement that I realized.)
+>>>
+>>> Cheers,
+>>>
+>>> Michael
+>>>
+>>>
+>>>
 >>
->> $ cat /proc/sys/kernel/modprobe
->> /bin/true
->>
->> Expected behaviour would be to have the sysctl be "AAAA..." capped at
->> maxlen (in this case KMOD_PATH_LEN: 256), instead of truncating to the
->> contents of the second write. Similarly, multiple short writes would not
->> append to the sysctl.
->>
->> This provides CONFIG_PROC_SYSCTL_STRICT_WRITES as a way to make this
->> behavior act in a less surprising manner for strings, and disallows
->> non-zero file position when writing numeric sysctls (similar to what is
->> already done when reading from non-zero file positions).
->
-> Adding a Kconfig knob to alter the behavior of procfs writes creeps me
-> out.  I wonder why.
->
-> - I doubt if many people have a sufficient amount of control over
->   their entire systems to be able to confidently set
->   CONFIG_PROC_SYSCTL_STRICT_WRITES.
->
-> - Software will be shipped which runs OK with one setting but breaks
->   with the other setting.
->
-> So what to do?
->
-> I think we can *detect* this situation easily enough.  So some options are
->
-> a) change the behaviour and add code which detects when userspace is
->    doing a write whose behaviour is now altered.  Print a warning.   Or
->
-> b) leave the behaviour as-is.  Add a detector which tells people
->    "hey, your userspace is probably broken - please fix".  Wait N
->    years.  Then alter the behaviour as in a).
->
-> In either case the detector should display current->comm, the procfs
-> pathname and the contents of the write, to aid people in hunting down
-> and fixing their userspace.
+>> So the motion is to call them "open file description locks" and change
+>> the macros to read *_OFD_*. Does anyone object?
+> 
+> Works fine for me...
 
-How about a tri-state sysctl (har har control sysctl behavior with a
-sysctl) that defaults ("1") to existing behavior (to not break
-anything) with a warning. Mode "2" uses new behavior, and mode "0"
-uses existing behavior without a warning? Then we can wait N years and
-switch the default to "2"?
+And works for me.
 
--Kees
 
 -- 
-Kees Cook
-Chrome OS Security
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
