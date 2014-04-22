@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757966AbaDVUXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:23:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36495 "EHLO
+	id S1757985AbaDVUXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:23:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36504 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756756AbaDVUW5 (ORCPT
+	with ESMTP id S1756756AbaDVUXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:22:57 -0400
+	Tue, 22 Apr 2014 16:23:03 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felipe Franciosi <felipe@paradoxo.org>, Jens Axboe <axboe@fb.com>,
+Cc: Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 065/133] mtip32xx: Set queue bounce limit
-Date: Tue, 22 Apr 2014 13:13:23 -0700
-Message-Id: <1398197671-12786-66-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 067/133] ath9k: fix ready time of the multicast buffer queue
+Date: Tue, 22 Apr 2014 13:13:25 -0700
+Message-Id: <1398197671-12786-68-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,32 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felipe Franciosi <felipe@paradoxo.org>
+From: Felix Fietkau <nbd@openwrt.org>
 
-commit 1044b1bb9278f2e656a1a7b63dc24a59506540aa upstream.
+commit 3b3e0efb5c72c4fc940af50b33626b8a78a907dc upstream.
 
-We need to set the queue bounce limit during the device initialization to
-prevent excessive bouncing on 32 bit architectures.
+qi->tqi_readyTime is written directly to registers that expect
+microseconds as unit instead of TU.
+When setting the CABQ ready time, cur_conf->beacon_interval is in TU, so
+convert it to microseconds before passing it to ath9k_hw.
 
-Signed-off-by: Felipe Franciosi <felipe@paradoxo.org>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+This should hopefully fix some Tx DMA issues with buffered multicast
+frames in AP mode.
+
+Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/block/mtip32xx/mtip32xx.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/wireless/ath/ath9k/xmit.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
-index 3fd1009..a838738 100644
---- a/drivers/block/mtip32xx/mtip32xx.c
-+++ b/drivers/block/mtip32xx/mtip32xx.c
-@@ -3776,6 +3776,7 @@ skip_create_disk:
- 	blk_queue_max_hw_sectors(dd->queue, 0xffff);
- 	blk_queue_max_segment_size(dd->queue, 0x400000);
- 	blk_queue_io_min(dd->queue, 4096);
-+	blk_queue_bounce_limit(dd->queue, dd->pdev->dma_mask);
+diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
+index d134faa..846bff1 100644
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -1465,7 +1465,7 @@ int ath_cabq_update(struct ath_softc *sc)
+ 	else if (sc->config.cabqReadytime > ATH9K_READY_TIME_HI_BOUND)
+ 		sc->config.cabqReadytime = ATH9K_READY_TIME_HI_BOUND;
  
- 	/*
- 	 * write back cache is not supported in the device. FUA depends on
+-	qi.tqi_readyTime = (cur_conf->beacon_interval *
++	qi.tqi_readyTime = (TU_TO_USEC(cur_conf->beacon_interval) *
+ 			    sc->config.cabqReadytime) / 100;
+ 	ath_txq_update(sc, qnum, &qi);
+ 
 -- 
 1.9.1
 
