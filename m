@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754373AbaDVTkS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:40:18 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:51058 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751534AbaDVTkP (ORCPT
+	id S1755594AbaDVTki (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:40:38 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48655 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754686AbaDVTkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:40:15 -0400
-Message-ID: <5356C59A.1070906@semaphore.gr>
-Date: Tue, 22 Apr 2014 22:40:10 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 22 Apr 2014 15:40:33 -0400
+Date: Tue, 22 Apr 2014 12:36:00 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuah.kh@samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux@roeck-us.net,
+        satoru.takeuchi@gmail.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.13 00/32] 3.13.11-stable review
+Message-ID: <20140422193600.GA5092@kroah.com>
+References: <20140421021133.865086647@linuxfoundation.org>
+ <53568F4C.2080800@samsung.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cpufreq: Kconfig: Fix spelling errors
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53568F4C.2080800@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix 4 spelling errors in help sections.
+On Tue, Apr 22, 2014 at 09:48:28AM -0600, Shuah Khan wrote:
+> On 04/20/2014 08:13 PM, Greg Kroah-Hartman wrote:
+> > ----------------
+> >
+> > Note, this is the LAST 3.13.y kernel I will be releasing.  It will be
+> > end-of-life after this release, please move to 3.14.y at this time.
+> >
+> > ----------------
+> >
+> > This is the start of the stable review cycle for the 3.13.11 release.
+> > There are 32 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> >
+> > Responses should be made by Wed Apr 23 02:10:46 UTC 2014.
+> > Anything received after that time might be too late.
+> >
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.11-rc1.gz
+> > and the diffstat can be found below.
+> >
+> > thanks,
+> >
+> > greg k-h
+> >
+> 
+> Compiled and booted on my test systems. No dmesg regressions.
 
-Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
----
- drivers/cpufreq/Kconfig.arm | 4 ++--
- drivers/cpufreq/Kconfig.x86 | 4 ++--
- 2 files changed, 4 insertions(+), 4 deletions(-)
+Thanks for testing and letting me know.
 
-diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-index 5805035..6e05a1e 100644
---- a/drivers/cpufreq/Kconfig.arm
-+++ b/drivers/cpufreq/Kconfig.arm
-@@ -85,7 +85,7 @@ config ARM_EXYNOS_CPU_FREQ_BOOST_SW
- 	  It allows usage of special frequencies for Samsung Exynos
- 	  processors if thermal conditions are appropriate.
- 
--	  It reguires, for safe operation, thermal framework with properly
-+	  It requires, for safe operation, thermal framework with properly
- 	  defined trip points.
- 
- 	  If in doubt, say N.
-@@ -186,7 +186,7 @@ config ARM_S3C2416_CPUFREQ
- 	  S3C2450 SoC. The S3C2416 supports changing the rate of the
- 	  armdiv clock source and also entering a so called dynamic
- 	  voltage scaling mode in which it is possible to reduce the
--	  core voltage of the cpu.
-+	  core voltage of the CPU.
- 
- 	  If in doubt, say N.
- 
-diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
-index d369349..89ae88f 100644
---- a/drivers/cpufreq/Kconfig.x86
-+++ b/drivers/cpufreq/Kconfig.x86
-@@ -10,7 +10,7 @@ config X86_INTEL_PSTATE
- 	  The driver implements an internal governor and will become
-           the scaling driver and governor for Sandy bridge processors.
- 
--	  When this driver is enabled it will become the perferred
-+	  When this driver is enabled it will become the preferred
-           scaling driver for Sandy bridge processors.
- 
- 	  If in doubt, say N.
-@@ -52,7 +52,7 @@ config X86_ACPI_CPUFREQ_CPB
- 	help
- 	  The powernow-k8 driver used to provide a sysfs knob called "cpb"
- 	  to disable the Core Performance Boosting feature of AMD CPUs. This
--	  file has now been superseeded by the more generic "boost" entry.
-+	  file has now been superseded by the more generic "boost" entry.
- 
- 	  By enabling this option the acpi_cpufreq driver provides the old
- 	  entry in addition to the new boost ones, for compatibility reasons.
--- 
-1.9.0
-
+greg k-h
