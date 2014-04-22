@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933096AbaDVPIC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:08:02 -0400
-Received: from static-209-166-131-148.expedient.com ([209.166.131.148]:40520
-	"EHLO natasha.panasas.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S932606AbaDVPHr (ORCPT
+	id S933109AbaDVPIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:08:21 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:61161 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932606AbaDVPIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:07:47 -0400
-Message-ID: <53568529.2030103@panasas.com>
-Date: Tue, 22 Apr 2014 18:05:13 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 22 Apr 2014 11:08:13 -0400
+Date: Tue, 22 Apr 2014 16:07:53 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Doug Anderson <dianders@chromium.org>, Anton Vorontsov <anton@enomsg.org>,
+        Olof Johansson <olof@lixom.net>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Simon Glass <sjg@chromium.org>, Michael Spang <spang@chromium.org>,
+        Sean Paul <seanpaul@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3 5/5] regulator: tps65090: Make FETs more reliable by
+ adding retries
+Message-ID: <20140422150753.GC21613@lee--X1>
+References: <1397689950-1568-1-git-send-email-dianders@chromium.org>
+ <1397689950-1568-6-git-send-email-dianders@chromium.org>
+ <20140418174353.GX12304@sirena.org.uk>
+ <CAD=FV=VQckC34rZwF2RP3F+2T1CRVs0JwtgoqUeA1NVmB20=sA@mail.gmail.com>
+ <20140422074709.GD17657@lee--X1>
+ <20140422110236.GN12304@sirena.org.uk>
 MIME-Version: 1.0
-To: Jeff Layton <jlayton@redhat.com>
-CC: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <samba-technical@lists.samba.org>,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        libc-alpha <libc-alpha@sourceware.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        Stefan Metzmacher <metze@samba.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Frank Filz <ffilzlnx@mindspring.com>, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] locks: rename file-private locks to "open file description
- locks"
-References: <1398169383-10743-1-git-send-email-jlayton@redhat.com>	<5356808B.3040303@gmail.com> <20140422105520.7b09eda5@tlielax.poochiereds.net>
-In-Reply-To: <20140422105520.7b09eda5@tlielax.poochiereds.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140422110236.GN12304@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 05:55 PM, Jeff Layton wrote:
-> On Tue, 22 Apr 2014 17:45:31 +0300
-> Boaz Harrosh <openosd@gmail.com> wrote:
+> > If there are cross-subsystem dependencies I prefer to use immutable
+> > branches to eliminate any change of merge conflicts in -next or the
+> > next merge window. I'm happy to either create on with Mark's Acks, or
+> > receive a pull-request from Mark with mine applied.
 > 
+> > Up to Mark.
 > 
-> There's a big difference between the descriptor and the description.
-> 
-> The numerical value you get back from something like open() is a file
-> descriptor. 
+> Well, Doug didn't send me the MFD patch so I can't do anything with it
+> anyway.
 
-Ha OK sorry I thought that was a file-handle I think in FBSD they
-call it that. I guess file-handle is the NFS thing.
+Ah!
 
-I guess the most common name for those is file-No, fn in
-code
+Doug,
+  what exactly are the dependencies within the set?
 
-> The thing that that value points to internally in the
-> kernel is the file description. 
-
-I did not know that and I completely interchanged these two.
-In Kernel this is called plain "struct file" so I've never
-seen this name used before.
-
-OK Now it is clear
-
-> It's very important that we do not
-> conflate the two here as these locks are associated with the file
-> description and not the file descriptor.
-> 
-
-Sure you are right.
-
-> The best way to illustrate this is the interaction with dup() -- see
-> the LWN article on these for a complete overview.
-> 
-
-I know the difference very well only I got the names mixed
-
-Thanks
-Boaz
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
