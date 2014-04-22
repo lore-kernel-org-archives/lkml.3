@@ -1,71 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410AbaDVT7J (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:59:09 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:36927 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752580AbaDVT7G (ORCPT
+	id S1757339AbaDVT6f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:58:35 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56008 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756528AbaDVT62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:59:06 -0400
+	Tue, 22 Apr 2014 15:58:28 -0400
+Date: Tue, 22 Apr 2014 13:56:29 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Kent Overstreet <kmo@daterainc.com>,
+        Jens Axboe <axboe@kernel.dk>, Shaohua Li <shli@kernel.org>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
+        Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
+ stealing tags
+Message-ID: <20140422115629.GI11182@twins.programming.kicks-ass.net>
+References: <cover.1395840483.git.agordeev@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <535532B3.6060800@nod.at>
-References: <CAOiKX_m8buaq=4_hVQjyfv36ZtFVFieZ-CU8JeDpcdbeiX5mug@mail.gmail.com>
-	<20140417212834.GC17769@csclub.uwaterloo.ca>
-	<CAHO5Pa1Rb5YkXF_0iE_KUhOOGeNo+zV+OWQW6L8_ix=iFvkTyg@mail.gmail.com>
-	<CAFLxGvxx8_gJ+NAGVn_vZmkVfey45_1qTqAQnxKDCZD0gQsr5w@mail.gmail.com>
-	<CAHO5Pa1hfp+uLiQ78-pn2RJ6SytSYqXTniyx3UvaTwU_=ECWjA@mail.gmail.com>
-	<5354DA0B.2060204@nod.at>
-	<53551DB0.6030302@gmail.com>
-	<535532B3.6060800@nod.at>
-Date: Tue, 22 Apr 2014 21:59:05 +0200
-Message-ID: <CAOiKX_=X176bJHLwiJ2tfc8QdK_cFWuJh7VZPNLnp1ersr5A9A@mail.gmail.com>
-Subject: Re: inotify, new idea?
-From: Jos Huisken <jos.huisken@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Lennart Sorensen <lsorense@csclub.uwaterloo.ca>,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1395840483.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems like also 'mv' events are also not supported by fanotify, like
-creation/deletion.
-Therefore not an option (for lsyncd) probably. Maybe loggedfs is (if
-time permits...).
-Thanks for the discussion.
+On Wed, Mar 26, 2014 at 02:34:22PM +0100, Alexander Gordeev wrote:
+> Hello,
+> 
+> This series is against 3.14.0-rc7.
+> 
+> It is amied to further improve 'percpu_ida' tags locality by taking
+> into account system's CPU topology when stealing tags. That is try
+> to steal from a CPU which is 'closest' to the stealing one.
+> 
+> I would not bother to post this, since on several system the change
+> did not show any improvement, i.e. on such one:
 
-Jos
+There's is much lower level fruit to be had before doing something like
+this.
 
-On Mon, Apr 21, 2014 at 5:01 PM, Richard Weinberger <richard@nod.at> wrote:
->
->
-> Am 21.04.2014 15:31, schrieb Michael Kerrisk (man-pages):
->> On 04/21/2014 10:42 AM, Richard Weinberger wrote:
->>> Am 21.04.2014 09:24, schrieb Michael Kerrisk:
->>>>> Does recursive monitoring even work with inotify?
->>>>> Last time I've tried it did failed as soon I did a mkdir -p a/b/c/d because
->>>>> mkdir() raced against the thread which installes the new watches.
->>>>
->>>> As I understand it, you have to program to deal with the races (rescan
->>>> directories after adding watches). I recently did a lot of work
->>>> updating the inotify(7) man page to discuss all the issues that I know
->>>> of, and their remedies. If I missed anything, I'd appreciate a note on
->>>> it, so that it can be added. See
->>>> http://man7.org/linux/man-pages/man7/inotify.7.html#NOTES
->>>
->>> I'm aware of the rescan hack, but in my case it does not help
->>> because my program must not miss any event.
->>
->> Then, we're understand the same thing: you're out of luck :-}.
->>
->>> Currently I'm using a fuse overlay filesystem to log everything.
->>> Not perfect but works... :-)
->>
->> Interesting notion. I need to get to grips with FUSE...
->
-> e.g. http://loggedfs.sourceforge.net/
->
-> Thanks,
-> //richard
+  https://lkml.org/lkml/2014/1/23/257
+  https://lkml.org/lkml/2014/1/23/329
+  https://lkml.org/lkml/2014/1/23/343
+  https://lkml.org/lkml/2014/1/23/354
+
+I've not had time to revisit/finish them, but you should definitely
+clean up the percpu_ida stuff and reduce existing contention before
+going overboard.
