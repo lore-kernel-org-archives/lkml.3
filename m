@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594AbaDVTki (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:40:38 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48655 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754686AbaDVTkd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755400AbaDVTkh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:40:37 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:51891 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534AbaDVTkd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 15:40:33 -0400
-Date: Tue, 22 Apr 2014 12:36:00 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Shuah Khan <shuah.kh@samsung.com>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, linux@roeck-us.net,
-        satoru.takeuchi@gmail.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.13 00/32] 3.13.11-stable review
-Message-ID: <20140422193600.GA5092@kroah.com>
-References: <20140421021133.865086647@linuxfoundation.org>
- <53568F4C.2080800@samsung.com>
+Message-ID: <5356C58E.6020509@ti.com>
+Date: Tue, 22 Apr 2014 14:39:58 -0500
+From: Joel Fernandes <joelf@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53568F4C.2080800@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Nishanth Menon <nm@ti.com>
+CC: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH] ARM: OMAP5: Switch to THUMB mode if needed on secondary
+ CPU
+References: <1398191506-3741-1-git-send-email-joelf@ti.com> <CAGo_u6oyE0-Xnv8WV0Ks-i=jdyotGH5xTcTmNDrgT2fK3GfZFg@mail.gmail.com>
+In-Reply-To: <CAGo_u6oyE0-Xnv8WV0Ks-i=jdyotGH5xTcTmNDrgT2fK3GfZFg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 09:48:28AM -0600, Shuah Khan wrote:
-> On 04/20/2014 08:13 PM, Greg Kroah-Hartman wrote:
-> > ----------------
-> >
-> > Note, this is the LAST 3.13.y kernel I will be releasing.  It will be
-> > end-of-life after this release, please move to 3.14.y at this time.
-> >
-> > ----------------
-> >
-> > This is the start of the stable review cycle for the 3.13.11 release.
-> > There are 32 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Wed Apr 23 02:10:46 UTC 2014.
-> > Anything received after that time might be too late.
-> >
-> > The whole patch series can be found in one patch at:
-> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.11-rc1.gz
-> > and the diffstat can be found below.
-> >
-> > thanks,
-> >
-> > greg k-h
-> >
+On 04/22/2014 01:47 PM, Nishanth Menon wrote:
+> On Tue, Apr 22, 2014 at 1:31 PM, Joel Fernandes <joelf@ti.com> wrote:
+>> On my DRA7 system, when the kernel is built in THUMB mode, the secondary CPU
+> Did you mean THUMB2? omap2plus_defconfig works today with
+> CONFIG_ARM_THUMB enabled..
+
+ARM_THUMB is for user binaries though, not kernel. But yeah I should
+reword the commit message to use Thumb-2. I'll do that.
 > 
-> Compiled and booted on my test systems. No dmesg regressions.
+>> (Cortex A15) fails to come up causing SMP boot on second CPU to timeout. This
+>> seems to be because the CPU is in ARM mode once the ROM hands over control to
+>> the kernel.  Switch to THUMB mode if required once the kernel is control of
+>> secondary CPU. On OMAP4 on the other hand, it appears to be in THUMB mode on
+>> entry so this is not required and SMP boot works as is.
+>>
+>> Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Nishanth Menon <nm@ti.com>
+>> Cc: Tony Lindgren <tony@atomide.com>
+>> Signed-off-by: Joel Fernandes <joelf@ti.com>
+>> ---
+>>  arch/arm/mach-omap2/omap-headsmp.S |    8 ++++++--
+>>  1 file changed, 6 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-omap2/omap-headsmp.S b/arch/arm/mach-omap2/omap-headsmp.S
+>> index 75e9295..1809dce 100644
+>> --- a/arch/arm/mach-omap2/omap-headsmp.S
+>> +++ b/arch/arm/mach-omap2/omap-headsmp.S
+>> @@ -1,7 +1,7 @@
+>>  /*
+>>   * Secondary CPU startup routine source file.
+>>   *
+>> - * Copyright (C) 2009 Texas Instruments, Inc.
+>> + * Copyright (C) 2014 Texas Instruments, Inc.
+> 2009-2014
 
-Thanks for testing and letting me know.
+Sure.
 
-greg k-h
+> 
+>>   *
+>>   * Author:
+>>   *      Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> @@ -28,9 +28,13 @@
+>>   * code.  This routine also provides a holding flag into which
+>>   * secondary core is held until we're ready for it to initialise.
+>>   * The primary core will update this flag using a hardware
+>> -+ * register AuxCoreBoot0.
+>> + * register AuxCoreBoot0.
+> 
+> spurious change?
+> 
+
+The "+" is spurious, I was trying to correct that. Will update commit
+message in v2.
+
+thanks,
+ -Joel
+
