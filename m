@@ -1,123 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713AbaDVOHz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:07:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40477 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751534AbaDVOHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:07:50 -0400
-Date: Tue, 22 Apr 2014 16:07:47 +0200
-From: Jan Kara <jack@suse.cz>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Heinrich Schuchardt <xypron.glpk@gmx.de>,
-        Eric Paris <eparis@redhat.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] fanotify: check permissions when creating file
- descriptor
-Message-ID: <20140422140747.GF366@quack.suse.cz>
-References: <1397940833-6386-1-git-send-email-xypron.glpk@gmx.de>
- <20140422134044.GE366@quack.suse.cz>
- <CAKgNAkh=Shj6UO6x_KieQEYUoY+guokNute0iwUfiSYFJbeTfQ@mail.gmail.com>
+	id S932717AbaDVOI4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:08:56 -0400
+Received: from imap.devoid-pointer.net ([31.31.77.140]:49493 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229AbaDVOBH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:01:07 -0400
+From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
+To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
+        anssi.hannula@iki.fi, simon@mungewell.org
+Subject: [PATCH v2 11/24] input: Port hid-holtekff to ff-memless-next
+Date: Tue, 22 Apr 2014 15:59:56 +0200
+Message-Id: <1398175209-9565-12-git-send-email-madcatxster@devoid-pointer.net>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
+References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKgNAkh=Shj6UO6x_KieQEYUoY+guokNute0iwUfiSYFJbeTfQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 22-04-14 15:50:26, Michael Kerrisk (man-pages) wrote:
-> On Tue, Apr 22, 2014 at 3:40 PM, Jan Kara <jack@suse.cz> wrote:
-> > On Sat 19-04-14 22:53:53, Heinrich Schuchardt wrote:
-> >> When monitoring a directory or a mount with the fanotify API
-> >> the call to fanotify_init checks,
-> >>  * the process has cap_sys_admin capability
-> >>
-> >> The call to fanotify_mark checks,
-> >>  * the process has read authorization for directory or mount
-> >>
-> >> A directory or mount may contain files for which the process
-> >> has no read or write authorization.
-> >> Yet when reading from the fanotify file descriptor, structures
-> >> fanotify_event_metadata are returned, which contain a file
-> >> descriptor for these files, and will allow to read or write.
-> >>
-> >> The patch adds an authorization check for read and write
-> >> permission. In case of missing permission, reading from the
-> >> fanotify file descriptor returns EACCES.
-> >   OK, am I right you are concerned about a situation where fanotify group
-> > descriptor is passed to an unpriviledged process which handles all the
-> > incoming events? I'm asking because the permission checking can be
-> > relatively expensive (think of acls) so we better do it for a reason.
-> > I'd prefer to hear from Eric what the original intention regarding
-> > permissions was...
-> 
-> If I understand correctly, passing to an unprivileged process is the
-> point. The point is I think that supposedly one only needs to
-> CAP_SYS_ADMIN to use fanotify. However, once you have that capability,
-> then you implicitly get the effect of CAP_DAC_READ_SEARCH and
-> CAP_DAC_OVERRIDE as well.
-  Ah, OK. Thanks for explanation. Then I'm OK with the patch. So feel free
-to add:
+Port hid-holtekff to ff-memless-next
 
-Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
+---
+ drivers/hid/Kconfig        |  2 +-
+ drivers/hid/hid-holtekff.c | 47 +++++++++++++++++++++++++++++-----------------
+ 2 files changed, 31 insertions(+), 18 deletions(-)
 
-								Honza
-
-> >>  fs/notify/fanotify/fanotify_user.c | 20 +++++++++++++++-----
-> >>  1 file changed, 15 insertions(+), 5 deletions(-)
-> >>
-> >> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-> >> index 4e565c8..5d22a20 100644
-> >> --- a/fs/notify/fanotify/fanotify_user.c
-> >> +++ b/fs/notify/fanotify/fanotify_user.c
-> >> @@ -62,6 +62,8 @@ static int create_fd(struct fsnotify_group *group,
-> >>  {
-> >>       int client_fd;
-> >>       struct file *new_file;
-> >> +     int mask;
-> >> +     int ret;
-> >>
-> >>       pr_debug("%s: group=%p event=%p\n", __func__, group, event);
-> >>
-> >> @@ -75,11 +77,19 @@ static int create_fd(struct fsnotify_group *group,
-> >>        */
-> >>       /* it's possible this event was an overflow event.  in that case dentry and mnt
-> >>        * are NULL;  That's fine, just don't call dentry open */
-> >> -     if (event->path.dentry && event->path.mnt)
-> >> -             new_file = dentry_open(&event->path,
-> >> -                                    group->fanotify_data.f_flags | FMODE_NONOTIFY,
-> >> -                                    current_cred());
-> >> -     else
-> >> +     if (event->path.dentry && event->path.mnt) {
-> >> +             /* check permissions before granting access to file */
-> >> +             mask = MAY_READ;
-> >> +             if (group->fanotify_data.f_flags & (O_RDWR | O_WRONLY))
-> >> +                     mask |= MAY_WRITE;
-> >> +             ret = inode_permission(event->path.dentry->d_inode, mask);
-> >> +             if (ret)
-> >> +                     new_file = ERR_PTR(ret);
-> >> +             else
-> >> +                     new_file = dentry_open(&event->path,
-> >> +                                            group->fanotify_data.f_flags | FMODE_NONOTIFY,
-> >> +                                            current_cred());
-> >> +     } else
-> >>               new_file = ERR_PTR(-EOVERFLOW);
-> >>       if (IS_ERR(new_file)) {
-> >>               /*
-> >> --
-> >> 1.9.1
-> >>
-> > --
-> > Jan Kara <jack@suse.cz>
-> > SUSE Labs, CR
-> 
-> 
-> 
-> -- 
-> Michael Kerrisk
-> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-> Linux/UNIX System Programming Training: http://man7.org/training/
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 24b336e..d1d4e77 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -247,7 +247,7 @@ config HID_HOLTEK
+ config HOLTEK_FF
+ 	bool "Holtek On Line Grip force feedback support"
+ 	depends on HID_HOLTEK
+-	select INPUT_FF_MEMLESS
++	select INPUT_FF_MEMLESS_NEXT
+ 	---help---
+ 	  Say Y here if you have a Holtek On Line Grip based game controller
+ 	  and want to have force feedback support for it.
+diff --git a/drivers/hid/hid-holtekff.c b/drivers/hid/hid-holtekff.c
+index 9325545..9c6064d 100644
+--- a/drivers/hid/hid-holtekff.c
++++ b/drivers/hid/hid-holtekff.c
+@@ -27,9 +27,12 @@
+ #include <linux/input.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
++#include <linux/input/ff-memless-next.h>
+ 
+ #include "hid-ids.h"
+ 
++#define FF_UPDATE_RATE 50
++
+ #ifdef CONFIG_HOLTEK_FF
+ 
+ MODULE_LICENSE("GPL");
+@@ -104,34 +107,44 @@ static void holtekff_send(struct holtekff_device *holtekff,
+ }
+ 
+ static int holtekff_play(struct input_dev *dev, void *data,
+-			 struct ff_effect *effect)
++			 const struct mlnx_effect_command *command)
+ {
+ 	struct hid_device *hid = input_get_drvdata(dev);
+ 	struct holtekff_device *holtekff = data;
++	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
+ 	int left, right;
+ 	/* effect type 1, length 65535 msec */
+ 	u8 buf[HOLTEKFF_MSG_LENGTH] =
+ 		{ 0x01, 0x01, 0xff, 0xff, 0x10, 0xe0, 0x00 };
+ 
+-	left = effect->u.rumble.strong_magnitude;
+-	right = effect->u.rumble.weak_magnitude;
+-	dbg_hid("called with 0x%04x 0x%04x\n", left, right);
++	switch (command->cmd) {
++	case MLNX_START_RUMBLE:
++		left = rumble_force->strong;
++		right = rumble_force->weak;
++		dbg_hid("called with 0x%04x 0x%04x\n", left, right);
+ 
+-	if (!left && !right) {
+-		holtekff_send(holtekff, hid, stop_all6);
+-		return 0;
+-	}
++		if (!left && !right) {
++			holtekff_send(holtekff, hid, stop_all6);
++			return 0;
++		}
+ 
+-	if (left)
+-		buf[1] |= 0x80;
+-	if (right)
+-		buf[1] |= 0x40;
++		if (left)
++			buf[1] |= 0x80;
++		if (right)
++			buf[1] |= 0x40;
+ 
+-	/* The device takes a single magnitude, so we just sum them up. */
+-	buf[6] = min(0xf, (left >> 12) + (right >> 12));
++		/* The device takes a single magnitude, so we just sum them up. */
++		buf[6] = min(0xf, (left >> 12) + (right >> 12));
+ 
+-	holtekff_send(holtekff, hid, buf);
+-	holtekff_send(holtekff, hid, start_effect_1);
++		holtekff_send(holtekff, hid, buf);
++		holtekff_send(holtekff, hid, start_effect_1);
++		return 0;
++	case MLNX_STOP_RUMBLE:
++		holtekff_send(holtekff, hid, stop_all6);
++		return 0;
++	default:
++		return -EINVAL;
++	}
+ 
+ 	return 0;
+ }
+@@ -171,7 +184,7 @@ static int holtekff_init(struct hid_device *hid)
+ 	holtekff_send(holtekff, hid, stop_all4);
+ 	holtekff_send(holtekff, hid, stop_all6);
+ 
+-	error = input_ff_create_memless(dev, holtekff, holtekff_play);
++	error = input_ff_create_mlnx(dev, holtekff, holtekff_play, FF_UPDATE_RATE);
+ 	if (error) {
+ 		kfree(holtekff);
+ 		return error;
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.9.2
+
