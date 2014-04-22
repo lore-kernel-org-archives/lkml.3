@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758306AbaDVUpB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:45:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36615 "EHLO
+	id S1758352AbaDVUpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:45:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36611 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758118AbaDVUYe (ORCPT
+	with ESMTP id S1758113AbaDVUYd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:34 -0400
+	Tue, 22 Apr 2014 16:24:33 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 090/133] Btrfs: fix deadlock with nested trans handles
-Date: Tue, 22 Apr 2014 13:13:48 -0700
-Message-Id: <1398197671-12786-91-git-send-email-kamal@canonical.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 084/133] mfd: 88pm860x: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Tue, 22 Apr 2014 13:13:42 -0700
+Message-Id: <1398197671-12786-85-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,70 +27,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fb.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 3bbb24b20a8800158c33eca8564f432dd14d0bf3 upstream.
+commit 159ce52a6b777fc82fa0b51c7440e25f9e4c6feb upstream.
 
-Zach found this deadlock that would happen like this
+During probe the driver allocates dummy I2C device for companion chip
+with i2c_new_dummy() but it does not check the return value of this call.
 
-btrfs_end_transaction <- reduce trans->use_count to 0
-  btrfs_run_delayed_refs
-    btrfs_cow_block
-      find_free_extent
-	btrfs_start_transaction <- increase trans->use_count to 1
-          allocate chunk
-	btrfs_end_transaction <- decrease trans->use_count to 0
-	  btrfs_run_delayed_refs
-	    lock tree block we are cowing above ^^
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by regmap_init_i2c().
 
-We need to only decrease trans->use_count if it is above 1, otherwise leave it
-alone.  This will make nested trans be the only ones who decrease their added
-ref, and will let us get rid of the trans->use_count++ hack if we have to commit
-the transaction.  Thanks,
+If i2c_new_dummy() fails for companion device, fail also the probe for
+main MFD driver.
 
-Reported-by: Zach Brown <zab@redhat.com>
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Tested-by: Zach Brown <zab@redhat.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/btrfs/transaction.c | 14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+ drivers/mfd/88pm860x-core.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
-index fc03aa6..29334bf 100644
---- a/fs/btrfs/transaction.c
-+++ b/fs/btrfs/transaction.c
-@@ -562,7 +562,8 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
- 	int lock = (trans->type != TRANS_JOIN_NOLOCK);
- 	int err = 0;
- 
--	if (--trans->use_count) {
-+	if (trans->use_count > 1) {
-+		trans->use_count--;
- 		trans->block_rsv = trans->orig_rsv;
- 		return 0;
- 	}
-@@ -613,17 +614,10 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
- 	}
- 
- 	if (lock && cur_trans->blocked && !cur_trans->in_commit) {
--		if (throttle) {
--			/*
--			 * We may race with somebody else here so end up having
--			 * to call end_transaction on ourselves again, so inc
--			 * our use_count.
--			 */
--			trans->use_count++;
-+		if (throttle)
- 			return btrfs_commit_transaction(trans, root);
--		} else {
-+		else
- 			wake_up_process(info->transaction_kthread);
--		}
- 	}
- 
- 	if (trans->type < TRANS_JOIN_NOLOCK)
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index f304a09..238c7b0 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -1181,6 +1181,11 @@ static int pm860x_probe(struct i2c_client *client,
+ 		chip->companion_addr = pdata->companion_addr;
+ 		chip->companion = i2c_new_dummy(chip->client->adapter,
+ 						chip->companion_addr);
++		if (!chip->companion) {
++			dev_err(&client->dev,
++				"Failed to allocate I2C companion device\n");
++			return -ENODEV;
++		}
+ 		chip->regmap_companion = regmap_init_i2c(chip->companion,
+ 							&pm860x_regmap_config);
+ 		if (IS_ERR(chip->regmap_companion)) {
 -- 
 1.9.1
 
