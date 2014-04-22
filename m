@@ -1,100 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753942AbaDVCeP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 22:34:15 -0400
-Received: from know-smtprelay-omc-8.server.virginmedia.net ([80.0.253.72]:53759
-	"EHLO know-smtprelay-omc-8.server.virginmedia.net"
+	id S1753463AbaDVCmS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 22:42:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:58875 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751371AbaDVCeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 22:34:13 -0400
-X-Originating-IP: [81.106.150.188]
-X-Spam: 0
-X-Authority: v=2.1 cv=TM7LSjVa c=1 sm=1 tr=0 a=DGj713NdaxKrsjjgQne7PA==:117
- a=DGj713NdaxKrsjjgQne7PA==:17 a=J0QyKEt1u0cA:10 a=BdtlclQ1lucA:10
- a=uObrxnre4hsA:10 a=IkcTkHD0fZMA:10 a=NLZqzBF-AAAA:8 a=pGLkceISAAAA:8
- a=zd2uoN0lAAAA:8 a=Z4Rwk6OoAAAA:8 a=VwQbUJbxAAAA:8 a=FuE5Ay7eAgbjKXUaVF8A:9
- a=QEXdDO2ut3YA:10 a=MSl-tDqOz04A:10 a=wu_e27o_rKQA:10 a=jbrJJM5MRmoA:10
-Date: Tue, 22 Apr 2014 03:34:10 +0100
-From: Ken Moffat <zarniwhoop@ntlworld.com>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: Alex Deucher <alexdeucher@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 3.15.0-rc2 radeon HD 7480D [Aruba] blank display
-Message-ID: <20140422023410.GB1709@milliways>
-References: <20140421203207.GA27025@milliways>
- <5549363.XIKIYZeGzc@grover>
- <20140422023106.GA1709@milliways>
+	id S1751276AbaDVCmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 22:42:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,900,1389772800"; 
+   d="scan'208";a="497084525"
+Message-ID: <5355D6C8.7080200@intel.com>
+Date: Tue, 22 Apr 2014 10:41:12 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140422023106.GA1709@milliways>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: paulmck@linux.vnet.ibm.com
+CC: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [sched,rcu] 9234566d3a3: +1.6% will-it-scale.scalability, +1302.6%
+ time.involuntary_context_switches
+References: <5354BA85.6010003@intel.com> <20140422015958.GB4496@linux.vnet.ibm.com>
+In-Reply-To: <20140422015958.GB4496@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 03:31:06AM +0100, Ken Moffat wrote:
+On 04/22/2014 09:59 AM, Paul E. McKenney wrote:
+> On Mon, Apr 21, 2014 at 02:28:21PM +0800, Jet Chen wrote:
+>> Hi Paul,
+>>
+>> we noticed the below changes on
+>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git torture.2014.04.18a
+>> commit 9234566d3a36c0aead8852e3c2ca94cd8ebfe219 ("sched,rcu: Make cond_resched() report RCU quiescent states")
+>
+> My impression of these statistics is that this commit results in huge
+> numbers of additional context switches and interrupts, but has a slightly
+> positive effect on performance and a larger negative effect on
+> scalability.
+>
+> Is this a reasonable interpretation?
+>
+Yes, you're right.
 
-[ resending, somehow lkml dropped out of the Cc. ]
 
-> On Tue, Apr 22, 2014 at 12:19:40AM +0100, Ken Moffat wrote:
-> > On Mon, Apr 21, 2014 at 05:29:27PM -0400, Ed Tomlinson wrote:
-> 
-> > > Ken,
-> > > 
-> > > You might want to try reverting:
-> > > 
-> > > commit 379dfc25e257ffe10eb53b86d2375f7c0f4f33ef
-> > > Author: Alex Deucher <alexdeucher@gmail.com>
-> > > Date:   Mon Apr 7 10:33:46 2014 -0400
-> > > 
-> > >     drm/radeon/dp: switch to the common i2c over aux code
-> > >     
-> > >     Provides a nice cleanup in radeon.
-> > >     
-> > >     Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-> > >     Signed-off-by: Christian König <christian.koenig@amd.com>
-> > > 
-> > > This fixed a similar problem here (see the drm pull thread for rc1)
-> > > 
-> > > Thanks
-> > > Ed Tomlinson
-> > 
-> >  Tried reverting that from rc2, but it didn't help.  Thanks anyway.
-> > 
-> 
->  Well, I *believed* I had created a patch for that commit, and
-> reverted it from -rc2 with patch -R.  But I've now bisected through
-> drivers/gpu/drm between v3.14.0 and v3.15-rc2 and the bisection
-> pointed to that same commit, so I guess I did something wrong.
-> 
->  There were a couple of other issues along the way (mounting nfs
-> hung on one commit, startx hung on several of the commits, but I've
-> marked those as "good" because I had a display, even if the system
-> was not usable).
-> 
->  I've now gone back to linus' tree that I cloned a few hours ago,
-> i.e.
-> commit c089b229dfdd09d59a11d8bc2344bf8196d575ce
-> Merge: 9ac03675010a 0565103d1adb
-> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> Date:   Mon Apr 21 10:05:35 2014 -0700
-> 
->     Merge branch 'for-linus' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml
-> 
-> created a branch, and *definitely* reverted
-> 379dfc25e257ffe10eb53b86d2375f7c0f4f33ef (using git revert) in that
-> branch.  And this version works fine.
-> 
->  So belatedly I see that I seem to have the same problem as Ed.  Or
-> at least that the same commit is causing both our problems.
-> 
->  Alex - do you need any more information from me to help with this ?
-> 
-> ĸen
-> -- 
-> das eine Mal als Tragödie, dieses Mal als Farce
-
--- 
-das eine Mal als Tragödie, dieses Mal als Farce
+> 							Thanx, Paul
+>
+>> Comparison 1 - parent commit of 9234566d3a36c0aead8852e3c2ca94cd8ebfe219 vs 9234566d3a36c0aead8852e3c2ca94cd8ebfe219
+>>
+>> e119454e74a852f  9234566d3a36c0aead8852e3c
+>> ---------------  -------------------------
+>>      1035948 ~ 0%      +1.6%    1052990 ~ 0%  TOTAL will-it-scale.per_thread_ops
+>>      1271322 ~ 0%      +1.8%    1294004 ~ 0%  TOTAL will-it-scale.per_process_ops
+>>         0.63 ~ 0%      -5.2%       0.60 ~ 0%  TOTAL will-it-scale.scalability
+>>        22470 ~ 2%   +1302.6%     315168 ~ 2%  TOTAL time.involuntary_context_switches
+>>        84265 ~ 5%   +1047.1%     966581 ~ 1%  TOTAL interrupts.IWI
+>>         1828 ~44%    +189.6%       5295 ~13%  TOTAL time.voluntary_context_switches
+>>         5337 ~ 1%     +82.1%       9720 ~ 1%  TOTAL vmstat.system.cs
+>>       118599 ~ 0%     -30.4%      82545 ~ 0%  TOTAL interrupts.0:IO-APIC-edge.timer
+>>       224021 ~ 4%     +34.7%     301858 ~ 2%  TOTAL interrupts.RES
+>>        25148 ~ 0%      +7.0%      26917 ~ 0%  TOTAL vmstat.system.in
+>>      7063439 ~ 0%      -5.2%    6694536 ~ 0%  TOTAL interrupts.LOC
+>>       188866 ~ 0%      -3.1%     183008 ~ 0%  TOTAL interrupts.NMI
+>>       188866 ~ 0%      -3.1%     183008 ~ 0%  TOTAL interrupts.PMI
+>>         3720 ~ 0%      -1.5%       3665 ~ 0%  TOTAL time.system_time
+>>         1215 ~ 0%      -1.4%       1198 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+>>
+>>
+>> Comparison 2 - b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 vs 9234566d3a36c0aead8852e3c2ca94cd8ebfe219
+>>
+>> Fengguang has reported stats changes about b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 to you days ago.
+>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git dev.2014.04.14a
+>> commit b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 ("sched,rcu: Make cond_resched() report RCU quiescent states")
+>>
+>> Let's have a compare here.
+>>
+>> b84c4e08143c98d  9234566d3a36c0aead8852e3c
+>> ---------------  -------------------------
+>>       809309 ~ 0%      -2.6%     788400 ~ 0%  TOTAL will-it-scale.per_process_ops
+>>         0.61 ~ 0%      -1.9%       0.60 ~ 0%  TOTAL will-it-scale.scalability
+>>       434080 ~ 0%      -1.5%     427643 ~ 0%  TOTAL will-it-scale.per_thread_ops
+>>            4 ~11%  +1.2e+05%       5249 ~ 2%  TOTAL interrupts.IWI
+>>          607 ~ 7%     +28.0%        778 ~14%  TOTAL interrupts.47:PCI-MSI-edge.eth0
+>>        12349 ~ 2%     -14.6%      10548 ~ 1%  TOTAL interrupts.0:IO-APIC-edge.timer
+>>         3078 ~ 3%     +20.9%       3722 ~ 6%  TOTAL interrupts.RES
+>>
+>>
+>> Comparison 3 - parent commit of b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 vs b84c4e08143c98dad4b4d139f08db0b98b0d3ec4
+>>
+>> Duplicated with Fengguang's report. Help you to see these info in a page :)
+>>
+>> ad86a04266f9b49  b84c4e08143c98dad4b4d139f
+>> ---------------  -------------------------
+>>       676264 ~ 0%      +3.3%     698461 ~ 0%  TOTAL will-it-scale.per_thread_ops
+>>      1174547 ~ 0%      +3.0%    1209307 ~ 0%  TOTAL will-it-scale.per_process_ops
+>>         1.67 ~ 0%      -2.3%       1.63 ~ 0%  TOTAL will-it-scale.scalability
+>>        10522 ~ 2%    +921.2%     107463 ~ 1%  TOTAL time.involuntary_context_switches
+>>        77671 ~ 3%     +67.0%     129688 ~ 3%  TOTAL interrupts.RES
+>>        99502 ~ 0%     -27.8%      71813 ~ 0%  TOTAL interrupts.0:IO-APIC-edge.timer
+>>         2554 ~ 0%     +49.1%       3809 ~ 1%  TOTAL vmstat.system.cs
+>>        11524 ~ 0%      -2.3%      11259 ~ 0%  TOTAL vmstat.system.in
+>>          213 ~ 0%      -4.3%        204 ~ 0%  TOTAL time.system_time
+>>           74 ~ 0%      -4.1%         71 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+>>      3495099 ~ 0%      -3.1%    3387173 ~ 0%  TOTAL interrupts.LOC
+>>
+>>
+>>
+>>
+>> Thanks,
+>> Jet
+>>
+>>
+>>
+>
+>> ./runtest.py open2 32 1 4 6 8
+>>
+>>
+>
