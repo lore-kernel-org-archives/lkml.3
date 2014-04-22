@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752194AbaDVHBv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 03:01:51 -0400
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:54276 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaDVHBp (ORCPT
+	id S1752581AbaDVHEQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 03:04:16 -0400
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:60454 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbaDVHEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 03:01:45 -0400
+	Tue, 22 Apr 2014 03:04:11 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAJd=RBA6ZUZ2UBetmcwGciqY8snme-aY60ZhW9F=8CO6kDzMBA@mail.gmail.com>
-References: <1398144620-9630-1-git-send-email-nasa4836@gmail.com> <CAJd=RBA6ZUZ2UBetmcwGciqY8snme-aY60ZhW9F=8CO6kDzMBA@mail.gmail.com>
+In-Reply-To: <2c63c535f8202c6b605300a834cdf1c07d1bafc3.1398147734.git.nasa4836@gmail.com>
+References: <cover.1398147734.git.nasa4836@gmail.com> <2c63c535f8202c6b605300a834cdf1c07d1bafc3.1398147734.git.nasa4836@gmail.com>
 From: Jianyu Zhan <nasa4836@gmail.com>
-Date: Tue, 22 Apr 2014 15:01:04 +0800
-Message-ID: <CAHz2CGXsvdtVdwZfyFAwtRHJ_vkeJZXtLv4fTGTYEeEwN7H6Qw@mail.gmail.com>
-Subject: Re: [PATCH] hugetlb_cgroup: explicitly init the early_init field
-To: Hillf Danton <dhillf@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        containers@lists.linux-foundation.org,
-        Cgroups <cgroups@vger.kernel.org>, Linux-MM <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
+Date: Tue, 22 Apr 2014 15:03:31 +0800
+Message-ID: <CAHz2CGW+yjt6yXDDn-pjykSf-q03YsD5acmuhDkSCg_iXKA88Q@mail.gmail.com>
+Subject: Re: [PATCH 2/4] mm/memcontrol.c: use accessor to get id from css
+To: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Balbir Singh <bsingharora@gmail.com>, kamezawa.hiroyu@jp.fujitsu.com
+Cc: Cgroups <cgroups@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Jianyu Zhan <nasa4836@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, hillf,
-
-On Tue, Apr 22, 2014 at 2:47 PM, Hillf Danton <dhillf@gmail.com> wrote:
-> But other fields still missed, if any. Fair?
-
-yep, it is not fair.
-
-Sure for this global variable struct, if not initailized, its all
-fields will be initialized
-to 0 or null(depending on its type).  The point here is no to deprive
-the rights of
-compiler/linker of doing this initialization, it is mainly for
-documentation reason.
-Actually this field's value would affect how ->css_alloc should implemented.
-
-Concretely, if early_init is nonzero, then ->css_alloc *must not* call kzalloc,
-because in cgroup implementation, ->css_alloc will be called earlier before
-mm_init().
-
-I don't think that the value of one field(early_init) has a so subtle
-restrition on the
-another field(css_alloc) is a good thing, but since it is there,
-docment it should
-be needed.
-
+Cc Andrew.
 
 Thanks,
 Jianyu Zhan
+
+
+On Tue, Apr 22, 2014 at 2:30 PM, Jianyu Zhan <nasa4836@gmail.com> wrote:
+> This is a prepared patch for converting from per-cgroup id to
+> per-subsystem id.
+>
+> We should not access per-cgroup id directly, since this is implemetation
+> detail. Use the accessor css_from_id() instead.
+>
+> This patch has no functional change.
+>
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+> ---
+>  mm/memcontrol.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 80d9e38..46333cb 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -528,10 +528,10 @@ static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
+>  static inline unsigned short mem_cgroup_id(struct mem_cgroup *memcg)
+>  {
+>         /*
+> -        * The ID of the root cgroup is 0, but memcg treat 0 as an
+> -        * invalid ID, so we return (cgroup_id + 1).
+> +        * The ID of css for the root cgroup is 0, but memcg treat 0 as an
+> +        * invalid ID, so we return (id + 1).
+>          */
+> -       return memcg->css.cgroup->id + 1;
+> +       return css_to_id(&memcg->css) + 1;
+>  }
+>
+>  static inline struct mem_cgroup *mem_cgroup_from_id(unsigned short id)
+> @@ -6407,7 +6407,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
+>         struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+>         struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(css));
+>
+> -       if (css->cgroup->id > MEM_CGROUP_ID_MAX)
+> +       if (css_to_id(css) > MEM_CGROUP_ID_MAX)
+>                 return -ENOSPC;
+>
+>         if (!parent)
+> --
+> 2.0.0-rc0
+>
