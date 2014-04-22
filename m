@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933246AbaDVQjY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:39:24 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:47514 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933083AbaDVQjU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:39:20 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Phil Edworthy <phil.edworthy@renesas.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Linux-SH <linux-sh@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sh-pfc: r8a7791: Fix definition of MOD_SEL3
-Date: Tue, 22 Apr 2014 18:39:29 +0200
-Message-ID: <5799320.HL6Fc0SWev@avalon>
-User-Agent: KMail/4.11.5 (Linux/3.12.13-gentoo; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1398184685-31670-1-git-send-email-phil.edworthy@renesas.com>
-References: <1398184685-31670-1-git-send-email-phil.edworthy@renesas.com>
+	id S933286AbaDVQkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:40:45 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:59479 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933261AbaDVQkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 12:40:40 -0400
+Date: Tue, 22 Apr 2014 12:39:44 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Chiang <pchiang@nvidia.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        "ccross@android.com" <ccross@android.com>,
+        "lizefan@huawei.com" <lizefan@huawei.com>,
+        "tj@kernel.org" <tj@kernel.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "guillaume@morinfr.org" <guillaume@morinfr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] memcg: kill CONFIG_MM_OWNER
+Message-ID: <20140422163944.GB29866@cmpxchg.org>
+References: <20140416135741.GA9407@redhat.com>
+ <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com>
+ <20140418162359.GA4398@redhat.com>
+ <20140418172631.GA13323@redhat.com>
+ <20140418182444.GB22235@dhcp22.suse.cz>
+ <20140418184441.GA26046@redhat.com>
+ <20140418191259.GA7413@redhat.com>
+ <20140422132355.GO29311@dhcp22.suse.cz>
+ <20140422161513.GA6644@redhat.com>
+ <20140422161532.GB6644@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140422161532.GB6644@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Phil,
-
-Thank you for the patch.
-
-On Tuesday 22 April 2014 17:38:05 Phil Edworthy wrote:
-> There is a missing 0 entry from the MOD_SEL3 table.
+On Tue, Apr 22, 2014 at 06:15:32PM +0200, Oleg Nesterov wrote:
+> CONFIG_MM_OWNER makes no sense. It is not user-selectable, it is only
+> selected by CONFIG_MEMCG automatically. So we can kill this option in
+> init/Kconfig and do s/CONFIG_MM_OWNER/CONFIG_MEMCG/ globally.
 > 
-> Signed-off-by: Phil Edworthy <phil.edworthy@renesas.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Acked-by: Michal Hocko <mhocko@suse.cz>
 
-Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-
-> ---
->  drivers/pinctrl/sh-pfc/pfc-r8a7791.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
-> b/drivers/pinctrl/sh-pfc/pfc-r8a7791.c index 56f62dc..a823b5b 100644
-> --- a/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
-> +++ b/drivers/pinctrl/sh-pfc/pfc-r8a7791.c
-> @@ -5305,7 +5305,7 @@ static const struct pinmux_cfg_reg
-> pinmux_config_regs[] = { /* SEL_SCIF3 [2] */
->  		FN_SEL_SCIF3_0, FN_SEL_SCIF3_1, FN_SEL_SCIF3_2, FN_SEL_SCIF3_3,
->  		/* SEL_IEB [2] */
-> -		FN_SEL_IEB_0, FN_SEL_IEB_1, FN_SEL_IEB_2,
-> +		FN_SEL_IEB_0, FN_SEL_IEB_1, FN_SEL_IEB_2, 0,
->  		/* SEL_MMC [1] */
->  		FN_SEL_MMC_0, FN_SEL_MMC_1,
->  		/* SEL_SCIF5 [1] */
-
--- 
-Regards,
-
-Laurent Pinchart
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
