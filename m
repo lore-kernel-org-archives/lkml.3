@@ -1,117 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554AbaDVTbw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:31:52 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48639 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaDVTbu (ORCPT
+	id S1754373AbaDVTkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:40:18 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:51058 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751534AbaDVTkP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:31:50 -0400
-Date: Tue, 22 Apr 2014 12:31:49 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH] mm: vmscan: Do not throttle based on pfmemalloc
- reserves if node has no ZONE_NORMAL
-Message-Id: <20140422123149.d406e5cbef5c01eb6dc5c89b@linux-foundation.org>
-In-Reply-To: <20140422083852.GB23991@suse.de>
-References: <20140422083852.GB23991@suse.de>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 22 Apr 2014 15:40:15 -0400
+Message-ID: <5356C59A.1070906@semaphore.gr>
+Date: Tue, 22 Apr 2014 22:40:10 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+CC: "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] cpufreq: Kconfig: Fix spelling errors
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 09:38:52 +0100 Mel Gorman <mgorman@suse.de> wrote:
+Fix 4 spelling errors in help sections.
 
-> throttle_direct_reclaim() is meant to trigger during swap-over-network
-> during which the min watermark is treated as a pfmemalloc reserve. It
-> throttes on the first node in the zonelist but this is flawed.
-> 
-> On a NUMA machine running a 32-bit kernel (I know) allocation requests
-> freom CPUs on node 1 would detect no pfmemalloc reserves and the process
-> gets throttled. This patch adjusts throttling of direct reclaim to throttle
-> based on the first node in the zonelist that has a usable ZONE_NORMAL or
-> lower zone.
+Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
+---
+ drivers/cpufreq/Kconfig.arm | 4 ++--
+ drivers/cpufreq/Kconfig.x86 | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-I'm unable to determine from the above whether we should backport this
-fix.  Please don't forget to describe the end-user visible effects of
-a bug when that isn't obvious.  
-
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2507,10 +2507,17 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
->  
->  	for (i = 0; i <= ZONE_NORMAL; i++) {
->  		zone = &pgdat->node_zones[i];
-> +		if (!populated_zone(zone))
-> +			continue;
-
-What's this?  Performance tweak?  Or does min_wmark_pages() return
-non-zero for an unpopulated zone, which seems odd.
-
->  		pfmemalloc_reserve += min_wmark_pages(zone);
->  		free_pages += zone_page_state(zone, NR_FREE_PAGES);
->  	}
->  
-> +	/* If there are no reserves (unexpected config) then do not throttle */
-> +	if (!pfmemalloc_reserve)
-> +		return true;
-> +
->  	wmark_ok = free_pages > pfmemalloc_reserve / 2;
->  
->  	/* kswapd must be awake if processes are being throttled */
-> @@ -2535,9 +2542,9 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
->  static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
->  					nodemask_t *nodemask)
->  {
-> +	struct zoneref *z;
->  	struct zone *zone;
-> -	int high_zoneidx = gfp_zone(gfp_mask);
-> -	pg_data_t *pgdat;
-> +	pg_data_t *pgdat = NULL;
->  
->  	/*
->  	 * Kernel threads should not be throttled as they may be indirectly
-> @@ -2556,10 +2563,24 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
->  	if (fatal_signal_pending(current))
->  		goto out;
->  
-> -	/* Check if the pfmemalloc reserves are ok */
-> -	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
-> -	pgdat = zone->zone_pgdat;
-> -	if (pfmemalloc_watermark_ok(pgdat))
-> +	/*
-> +	 * Check if the pfmemalloc reserves are ok by finding the first node
-> +	 * with a usable ZONE_NORMAL or lower zone
-> +	 */
-
-That comment tells us what the code does but not why it does it.
-
-- Why do we ignore zones >= ZONE_NORMAL?
-
-- Why do we throttle when there may be as-yet-unexamined nodes which
-  have reclaimable pages?
-
-
-> +        for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> +                                        gfp_mask, nodemask) {
-
-Those two lines have spaces-instead-of-tabs.
-
-> +		if (zone_idx(zone) > ZONE_NORMAL)
-> +			continue;
-> +
-> +		/* Throttle based on the first usable node */
-> +		pgdat = zone->zone_pgdat;
-> +		if (pfmemalloc_watermark_ok(pgdat))
-> +			goto out;
-> +		break;
-> +	}
-> +
-> +	/* If no zone was usable by the allocation flags then do not throttle */
-> +	if (!pgdat)
->  		goto out;
+diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
+index 5805035..6e05a1e 100644
+--- a/drivers/cpufreq/Kconfig.arm
++++ b/drivers/cpufreq/Kconfig.arm
+@@ -85,7 +85,7 @@ config ARM_EXYNOS_CPU_FREQ_BOOST_SW
+ 	  It allows usage of special frequencies for Samsung Exynos
+ 	  processors if thermal conditions are appropriate.
+ 
+-	  It reguires, for safe operation, thermal framework with properly
++	  It requires, for safe operation, thermal framework with properly
+ 	  defined trip points.
+ 
+ 	  If in doubt, say N.
+@@ -186,7 +186,7 @@ config ARM_S3C2416_CPUFREQ
+ 	  S3C2450 SoC. The S3C2416 supports changing the rate of the
+ 	  armdiv clock source and also entering a so called dynamic
+ 	  voltage scaling mode in which it is possible to reduce the
+-	  core voltage of the cpu.
++	  core voltage of the CPU.
+ 
+ 	  If in doubt, say N.
+ 
+diff --git a/drivers/cpufreq/Kconfig.x86 b/drivers/cpufreq/Kconfig.x86
+index d369349..89ae88f 100644
+--- a/drivers/cpufreq/Kconfig.x86
++++ b/drivers/cpufreq/Kconfig.x86
+@@ -10,7 +10,7 @@ config X86_INTEL_PSTATE
+ 	  The driver implements an internal governor and will become
+           the scaling driver and governor for Sandy bridge processors.
+ 
+-	  When this driver is enabled it will become the perferred
++	  When this driver is enabled it will become the preferred
+           scaling driver for Sandy bridge processors.
+ 
+ 	  If in doubt, say N.
+@@ -52,7 +52,7 @@ config X86_ACPI_CPUFREQ_CPB
+ 	help
+ 	  The powernow-k8 driver used to provide a sysfs knob called "cpb"
+ 	  to disable the Core Performance Boosting feature of AMD CPUs. This
+-	  file has now been superseeded by the more generic "boost" entry.
++	  file has now been superseded by the more generic "boost" entry.
+ 
+ 	  By enabling this option the acpi_cpufreq driver provides the old
+ 	  entry in addition to the new boost ones, for compatibility reasons.
+-- 
+1.9.0
 
