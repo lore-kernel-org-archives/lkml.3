@@ -1,114 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932254AbaDVVRB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:17:01 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36208 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757391AbaDVUP2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:15:28 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 128/133] ALSA: ice1712: Fix boundary checks in PCM pointer ops
-Date: Tue, 22 Apr 2014 13:14:26 -0700
-Message-Id: <1398197671-12786-129-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1758350AbaDVVRe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:17:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29665 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932307AbaDVVRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 17:17:21 -0400
+Date: Tue, 22 Apr 2014 17:16:47 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
+ output fields (v4)
+Message-ID: <20140422211647.GO8488@redhat.com>
+References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, Apr 16, 2014 at 12:05:37PM +0900, Namhyung Kim wrote:
+> Hello,
+> 
+> This is a patchset implementing -F/--fields option to setup output
+> field/column as Ingo requested.  It depends on my --percentage
+> patchset [1].
+> 
+> The -F option can receive any sort keys that -s option recognize, plus
+> following fields (name can be changed):
+> 
+>   overhead, overhead_sys, overhead_us, sample, period
+> 
+> The overhead_guest_sys and overhead_guest_us might be avaiable when
+> you profile guest machines.
+> 
+> Output will be sorted by in order of fields and sort keys passed by -s
+> option will be added to the output field list automatically.  If you
+> want to change the order of sorting you can give -s option in addition
+> to -F option.  To support old behavior, it'll also prepend 'overhead'
+> field to the sort keys unless you give -F option explicitly.
 
-------------------
+So I am struggling a little bit to get this working correctly.  I had it
+in my head that I could sort internally with -s and re-sort the output
+based on -F, but it doesn't seem to be working that way.
 
-From: Takashi Iwai <tiwai@suse.de>
+For example with
 
-commit 4f8e940095536bc002a81666a4107a581c84e9b9 upstream.
+./perf mem record -a grep -r foo /* > /dev/null
+./perf mem report -F overhead,symbol_daddr,pid -s symbol_daddr,pid --stdio 
 
-PCM pointer callbacks in ice1712 driver check the buffer size boundary
-wrongly between bytes and frames.  This leads to PCM core warnings
-like:
-   snd_pcm_update_hw_ptr0: 105 callbacks suppressed
-   ALSA pcm_lib.c:352 BUG: pcmC3D0c:0, pos = 5461, buffer size = 5461, period size = 2730
+I was thinking I could sort everything based on the symbol_daddr and pid.
+Then re-sort the output to display the highest 'symbol_daddr,pid' pair.
+But it didn't seem to work that way.  Instead it seems like I get the
+original sort just displayed in the -F format.
 
-This patch fixes these checks to be placed after the proper unit
-conversions.
+Did I misunderstand what the -F can do or I am using it wrong?
 
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- sound/pci/ice1712/ice1712.c | 15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
+Cheers,
+Don
 
-diff --git a/sound/pci/ice1712/ice1712.c b/sound/pci/ice1712/ice1712.c
-index 806407a..e6b70e3 100644
---- a/sound/pci/ice1712/ice1712.c
-+++ b/sound/pci/ice1712/ice1712.c
-@@ -685,9 +685,10 @@ static snd_pcm_uframes_t snd_ice1712_playback_pointer(struct snd_pcm_substream *
- 	if (!(snd_ice1712_read(ice, ICE1712_IREG_PBK_CTRL) & 1))
- 		return 0;
- 	ptr = runtime->buffer_size - inw(ice->ddma_port + 4);
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static snd_pcm_uframes_t snd_ice1712_playback_ds_pointer(struct snd_pcm_substream *substream)
-@@ -704,9 +705,10 @@ static snd_pcm_uframes_t snd_ice1712_playback_ds_pointer(struct snd_pcm_substrea
- 		addr = ICE1712_DSC_ADDR0;
- 	ptr = snd_ice1712_ds_read(ice, substream->number * 2, addr) -
- 		ice->playback_con_virt_addr[substream->number];
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static snd_pcm_uframes_t snd_ice1712_capture_pointer(struct snd_pcm_substream *substream)
-@@ -717,9 +719,10 @@ static snd_pcm_uframes_t snd_ice1712_capture_pointer(struct snd_pcm_substream *s
- 	if (!(snd_ice1712_read(ice, ICE1712_IREG_CAP_CTRL) & 1))
- 		return 0;
- 	ptr = inl(ICEREG(ice, CONCAP_ADDR)) - ice->capture_con_virt_addr;
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static const struct snd_pcm_hardware snd_ice1712_playback = {
-@@ -1113,9 +1116,10 @@ static snd_pcm_uframes_t snd_ice1712_playback_pro_pointer(struct snd_pcm_substre
- 	if (!(inl(ICEMT(ice, PLAYBACK_CONTROL)) & ICE1712_PLAYBACK_START))
- 		return 0;
- 	ptr = ice->playback_pro_size - (inw(ICEMT(ice, PLAYBACK_SIZE)) << 2);
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static snd_pcm_uframes_t snd_ice1712_capture_pro_pointer(struct snd_pcm_substream *substream)
-@@ -1126,9 +1130,10 @@ static snd_pcm_uframes_t snd_ice1712_capture_pro_pointer(struct snd_pcm_substrea
- 	if (!(inl(ICEMT(ice, PLAYBACK_CONTROL)) & ICE1712_CAPTURE_START_SHADOW))
- 		return 0;
- 	ptr = ice->capture_pro_size - (inw(ICEMT(ice, CAPTURE_SIZE)) << 2);
-+	ptr = bytes_to_frames(substream->runtime, ptr);
- 	if (ptr == substream->runtime->buffer_size)
- 		ptr = 0;
--	return bytes_to_frames(substream->runtime, ptr);
-+	return ptr;
- }
- 
- static const struct snd_pcm_hardware snd_ice1712_playback_pro = {
--- 
-1.9.1
 
+
+> 
+> 
+>   $ perf report -s dso,sym
+>   ...
+>   # Overhead  Shared Object                      Symbol
+>   # ........  .............  ..........................
+>   #
+>       13.75%  ld-2.17.so     [.] strcmp                
+>       10.00%  abc            [.] a                     
+>       10.00%  abc            [.] b                     
+>       10.00%  abc            [.] c                     
+>        8.75%  abc            [.] main                  
+>        7.50%  libc-2.17.so   [.] _setjmp               
+>        6.25%  abc            [.] _init                 
+>        6.25%  abc            [.] frame_dummy           
+>        5.00%  abc            [.] __libc_csu_init       
+>        5.00%  ld-2.17.so     [.] _dl_name_match_p      
+>        3.75%  libc-2.17.so   [.] __new_exitfn          
+>        2.50%  libc-2.17.so   [.] __cxa_atexit          
+>        1.25%  ld-2.17.so     [.] _dl_check_map_versions
+>        1.25%  ld-2.17.so     [.] _dl_setup_hash        
+>        1.25%  ld-2.17.so     [.] _dl_sysdep_start      
+>        1.25%  ld-2.17.so     [.] brk                   
+>        1.25%  ld-2.17.so     [.] calloc@plt            
+>        1.25%  ld-2.17.so     [.] dl_main               
+>        1.25%  ld-2.17.so     [.] match_symbol          
+>        1.25%  ld-2.17.so     [.] sbrk                  
+>        1.25%  ld-2.17.so     [.] strlen                
+> 
+> 
+>   $ perf report -F sym,sample,overhead
+>   ...
+>   #                     Symbol       Samples  Overhead
+>   # ..........................  ............  ........
+>   #
+>     [.] __cxa_atexit                       2     2.50%
+>     [.] __libc_csu_init                    4     5.00%
+>     [.] __new_exitfn                       3     3.75%
+>     [.] _dl_check_map_versions             1     1.25%
+>     [.] _dl_name_match_p                   4     5.00%
+>     [.] _dl_setup_hash                     1     1.25%
+>     [.] _dl_sysdep_start                   1     1.25%
+>     [.] _init                              5     6.25%
+>     [.] _setjmp                            6     7.50%
+>     [.] a                                  8    10.00%
+>     [.] b                                  8    10.00%
+>     [.] brk                                1     1.25%
+>     [.] c                                  8    10.00%
+>     [.] calloc@plt                         1     1.25%
+>     [.] dl_main                            1     1.25%
+>     [.] frame_dummy                        5     6.25%
+>     [.] main                               7     8.75%
+>     [.] match_symbol                       1     1.25%
+>     [.] sbrk                               1     1.25%
+>     [.] strcmp                            11    13.75%
+>     [.] strlen                             1     1.25%
+> 
+> 
+>   $ perf report -F sym,sample -s overhead
+>   ...
+>   #                     Symbol       Samples  Overhead
+>   # ..........................  ............  ........
+>   #
+>     [.] strcmp                            11    13.75%
+>     [.] a                                  8    10.00%
+>     [.] b                                  8    10.00%
+>     [.] c                                  8    10.00%
+>     [.] main                               7     8.75%
+>     [.] _setjmp                            6     7.50%
+>     [.] _init                              5     6.25%
+>     [.] frame_dummy                        5     6.25%
+>     [.] __libc_csu_init                    4     5.00%
+>     [.] _dl_name_match_p                   4     5.00%
+>     [.] __new_exitfn                       3     3.75%
+>     [.] __cxa_atexit                       2     2.50%
+>     [.] _dl_check_map_versions             1     1.25%
+>     [.] _dl_setup_hash                     1     1.25%
+>     [.] _dl_sysdep_start                   1     1.25%
+>     [.] brk                                1     1.25%
+>     [.] calloc@plt                         1     1.25%
+>     [.] dl_main                            1     1.25%
+>     [.] match_symbol                       1     1.25%
+>     [.] sbrk                               1     1.25%
+>     [.] strlen                             1     1.25%
+> 
+> 
+>  * changes in v4:
+>   - fix a tui navigation bug
+>   - fix a bug in output change of perf diff
+>   - move call to perf_hpp__init() out of setup_browser()
+>   - fix alignment of some output fields on stdio
+> 
+>  * changes in v3:
+>   - rename to --fields option for consistency  (David)
+>   - prevent to add same keys multiple times
+>   - change dso sorting to show unknown dsos last
+>   - fix minor bugs
+> 
+>  * changes in v2:
+>   - add a cleanup patch using ui__has_annotation()
+>   - cleanup default sort order managment
+>   - support perf top also
+>   - handle elided sort entries properly
+>   - add Acked-by's from Ingo
+> 
+> 
+> I pushed the patch series on the 'perf/field-v4' branch in my tree
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+> 
+> 
+> Any comments are welcome, please test!
+> 
+> Thanks,
+> Namhyung
+> 
+> 
+> [1] https://lkml.org/lkml/2014/4/10/397
+> 
+> Namhyung Kim (17):
+>   perf tools: Add ->cmp(), ->collapse() and ->sort() to perf_hpp_fmt
+>   perf tools: Convert sort entries to hpp formats
+>   perf tools: Use hpp formats to sort hist entries
+>   perf tools: Support event grouping in hpp ->sort()
+>   perf tools: Use hpp formats to sort final output
+>   perf tools: Consolidate output field handling to hpp format routines
+>   perf ui: Get rid of callback from __hpp__fmt()
+>   perf tools: Allow hpp fields to be sort keys
+>   perf tools: Consolidate management of default sort orders
+>   perf tools: Call perf_hpp__init() before setting up GUI browsers
+>   perf report: Add -F option to specify output fields
+>   perf tools: Add ->sort() member to struct sort_entry
+>   perf report/tui: Fix a bug when --fields/sort is given
+>   perf top: Add --fields option to specify output fields
+>   perf diff: Add missing setup_output_field()
+>   perf tools: Skip elided sort entries
+>   perf hists: Reset width of output fields with header length
+> 
+>  tools/perf/Documentation/perf-report.txt |  10 +
+>  tools/perf/Documentation/perf-top.txt    |   9 +
+>  tools/perf/builtin-diff.c                |   3 +
+>  tools/perf/builtin-report.c              |  31 +--
+>  tools/perf/builtin-top.c                 |  12 +-
+>  tools/perf/ui/browsers/hists.c           |  76 +++----
+>  tools/perf/ui/gtk/hists.c                |  41 +---
+>  tools/perf/ui/hist.c                     | 189 ++++++++++++++--
+>  tools/perf/ui/setup.c                    |   2 -
+>  tools/perf/ui/stdio/hist.c               |  54 ++---
+>  tools/perf/util/hist.c                   |  83 ++-----
+>  tools/perf/util/hist.h                   |  20 +-
+>  tools/perf/util/sort.c                   | 364 ++++++++++++++++++++++++++++++-
+>  tools/perf/util/sort.h                   |   4 +
+>  14 files changed, 654 insertions(+), 244 deletions(-)
+> 
+> -- 
+> 1.9.2
+> 
