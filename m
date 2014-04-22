@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932974AbaDVPCu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:02:50 -0400
-Received: from moutng.kundenserver.de ([212.227.126.130]:50459 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932828AbaDVPCn (ORCPT
+	id S932959AbaDVPCq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:02:46 -0400
+Received: from 216-12-86-13.cv.mvl.ntelos.net ([216.12.86.13]:41981 "EHLO
+	brightrain.aerifal.cx" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756692AbaDVPCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:02:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and dma-coherent
-Date: Tue, 22 Apr 2014 17:02:19 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Grygorii Strashko <grygorii.strashko@ti.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
-        Gregory =?iso-8859-1?q?Cl=E9ment?= 
-	<gregory.clement@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>
-References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com> <20140419182528.414b9b2e@skate>
-In-Reply-To: <20140419182528.414b9b2e@skate>
+	Tue, 22 Apr 2014 11:02:40 -0400
+Date: Tue, 22 Apr 2014 11:00:56 -0400
+From: Rich Felker <dalias@libc.org>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: Jeff Layton <jlayton@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        Stefan Metzmacher <metze@samba.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Frank Filz <ffilzlnx@mindspring.com>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] locks: rename file-private locks to "open file
+ description locks"
+Message-ID: <20140422150056.GL26358@brightrain.aerifal.cx>
+References: <1398169383-10743-1-git-send-email-jlayton@redhat.com>
+ <5356808B.3040303@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404221702.19842.arnd@arndb.de>
-X-Provags-ID: V02:K0:2bL5F/G5/fFElYOTzzudZrry/8mrLD7AEu9tgAWhxP5
- a75P9zUurHnO8H8J9yu5bhzwScgOP3Q4FDKtrCh3OqKRNJnuIQ
- jqeYBN0vhOgDwgTi5ApH0SY7WXGHHaVqJkjCo/p/VfU7fSM/qH
- e50kJmFjEQFdUsX65oMrmag2kwJUHqEmjtJmhl4pd+Ba6cE0fR
- yCH7Pnad30CZco+6p4Q79m9/MVf9mJFJcvGXfI1EF+3YaCQnH7
- XFEjd3HWyWkEz9AyOvK5RHYxKKzpMcTU64NOR+Rcd+ifJI2kRc
- azWHXJlmwdlgqH5PFtx5xCQpdKHJT4/WBcwYZHx+Q0WA6JawdZ
- PGDt4w/xZ/gCpxbgjGig=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5356808B.3040303@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 19 April 2014, Thomas Petazzoni wrote:
+On Tue, Apr 22, 2014 at 05:45:31PM +0300, Boaz Harrosh wrote:
+> On 04/22/2014 03:23 PM, Jeff Layton wrote:
+> <>
+> > 
+> > We're going to have to live with these for a long time, so it's
+> > important that we be happy with the names before we're stuck with them.
+> > The consensus on the lists so far is that they should be rechristened as
+> > "open file description locks".
+> > 
 > 
-> I am not sure whether there is an intersection or not, but I wanted to
-> mention that the mvebu platform (in mach-mvebu) supports hardware I/O
-> coherency, which makes it a coherent DMA platform. However, we are not
-> able to use arm_coherent_dma_ops for this platform, because when a
-> transfer is being made DMA_FROM_DEVICE, at the end of the transfer, we
-> need to perform an I/O barrier to wait for the snooping unit to
-> complete its coherency work. So we're coherent, but not with
-> arm_coherent_dma_ops: we have our own dma operation implementation (see
-> arch/arm/mach-mvebu/coherency.c).
+> I completely agree with the rename. (Though could you please post
+> the rest of the rename patches for review)
+> 
+> Just a very small nit. My native language is not English but I would
+> rather you use "file-descriptor" (with an '-' as well) and not
+> use "description" in the English name of the lock. This is
+> because stated like that, "description" might refer to the
+> locks and not to the file in the sentence. file-descriptor is
+> more clear I think. (For me it was confusing at first before I realized
+> what you meant)
 
-I had completely missed the fact that this support was merged already.
+I think you missed the whole point. "File descriptor" and "open file
+description" have DIFFERENT meanings. Replacing one with the other
+gives the wrong meaning.
 
-It's an interesting question if this should actually be called
-'coherent' or not. It's certainly more coherent than without that
-support, but then again, you still can't rely on incoming data to
-be visible after a readl() from the device has returned or an MSI
-interrupt has been delivered, which is what we normally expect.
-
-In particular, it means you can't really use arm_coherent_dma_alloc(),
-which is a shame, since that is a significante performance overhead.
-
-I would hope we can find a way to avoid the platform notifiers for
-mvebu as well and come up with a generic way to express this
-'semi-coherent' mode. I believe x-gene has a similar issue, and
-I wouldn't be surprised if there are others like this.
-
-	Arnd
+Rich
