@@ -1,128 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757411AbaDVQcs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:32:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14471 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757316AbaDVQco (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:32:44 -0400
-Message-ID: <1398184360.2596.7.camel@flatline.rdu.redhat.com>
-Subject: Re: linux-next: build failure after merge of the audit tree
-From: Eric Paris <eparis@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Briggs <rgb@redhat.com>, sparclinux@vger.kernel.org
-Date: Tue, 22 Apr 2014 12:32:40 -0400
-In-Reply-To: <20140422162207.55e3d9f09244de281b9798cc@canb.auug.org.au>
-References: <20140422162207.55e3d9f09244de281b9798cc@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757430AbaDVQdZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:33:25 -0400
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:56942 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757153AbaDVQdV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 12:33:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <53569467.1030809@zytor.com>
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
+ <5355A9E9.9070102@zytor.com> <CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
+ <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com> <CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
+ <a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com> <CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
+ <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com> <CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
+ <20140422112312.GB15882@pd.tnic> <20140422144659.GF15882@pd.tnic>
+ <CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com> <53569467.1030809@zytor.com>
+From: Andrew Lutomirski <amluto@gmail.com>
+Date: Tue, 22 Apr 2014 09:33:00 -0700
+Message-ID: <CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-22 at 16:22 +1000, Stephen Rothwell wrote:
-> Hi Eric,
-> 
-> After merging the audit tree, today's linux-next build (sparc defconfig)
-> failed like this:
-> 
-> In file included from include/linux/audit.h:29:0,
->                  from mm/mmap.c:33:
-> arch/sparc/include/asm/syscall.h: In function 'syscall_get_arch':
-> arch/sparc/include/asm/syscall.h:131:9: error: 'TIF_32BIT' undeclared (first use in this function)
-> arch/sparc/include/asm/syscall.h:131:9: note: each undeclared identifier is reported only once for each function it appears in
-> 
-> And many more ...
-> 
-> Caused by commit 374c0c054122 ("ARCH: AUDIT: implement syscall_get_arch
-> for all arches").
-> 
-> I applied this patch for today:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 22 Apr 2014 16:18:53 +1000
-> Subject: [PATCH] fix ARCH: AUDIT: implement syscall_get_arch for all arches
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  arch/sparc/include/asm/syscall.h | 4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/arch/sparc/include/asm/syscall.h b/arch/sparc/include/asm/syscall.h
-> index fed3d511b108..a5a8153766b3 100644
-> --- a/arch/sparc/include/asm/syscall.h
-> +++ b/arch/sparc/include/asm/syscall.h
-> @@ -128,8 +128,12 @@ static inline void syscall_set_arguments(struct task_struct *task,
->  
->  static inline int syscall_get_arch(void)
->  {
-> +#if defined(__sparc__) && defined(__arch64__)
->  	return test_thread_flag(TIF_32BIT) ? AUDIT_ARCH_SPARC
->  					   : AUDIT_ARCH_SPARC64;
-> +#else
-> +	return AUDIT_ARCH_SPARC;
-> +#endif
->  }
->  
->  #endif /* __ASM_SPARC_SYSCALL_H */
-> -- 
+On Tue, Apr 22, 2014 at 9:10 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> Honestly, guys... you're painting the bikeshed at the moment.
+>
+> Initialization is the easiest bit of all this code.  The tricky part is
+> *the rest of the code*, i.e. the stuff in entry_64.S.
 
-I swear I saw this and I fixed it.  Drat.  Do we want to do it this way?
-Above in syscall_get_arguments() they use
+That's because the initialization code is much simpler, so it's easy
+to pick on :)  Sorry.
 
-#ifdef CONFIG_SPARC64
-        if (test_tsk_thread_flag(task, TIF_32BIT))
-                zero_extend = 1;
-#endif
+For the espfix_adjust_stack thing, when can it actually need to do
+anything?  irqs should be off, I think, and MCE, NMI, and debug
+exceptions use ist, so that leaves just #SS and #GP, I think.  How can
+those actually occur?  Is there a way to trigger them deliberately
+from userspace?  Why do you have three espfix_adjust_stack
 
-Is CONFIG_SPARC64 a better choice than:
-   defined(__sparc__) && defined(__arch64__)
+What happens on the IST entries?  If I've read your patch right,
+you're still switching back to the normal stack, which looks
+questionable.
 
-Maybe even better would be to copy what you suggested in powerpc:
+Also, if you want to same some register abuse on each exception entry,
+could you check the saved RIP instead of the current RSP?  I.e. use
+the test instruction with offset(%rsp)?  Maybe there are multiple
+possible values, though, and just testing some bits doesn't help.
 
----
-
-diff --git a/arch/sparc/include/asm/syscall.h b/arch/sparc/include/asm/syscall.h
-index fed3d51..49f71fd 100644
---- a/arch/sparc/include/asm/syscall.h
-+++ b/arch/sparc/include/asm/syscall.h
-@@ -128,8 +128,7 @@ static inline void syscall_set_arguments(struct task_struct *task,
- 
- static inline int syscall_get_arch(void)
- {
--	return test_thread_flag(TIF_32BIT) ? AUDIT_ARCH_SPARC
--					   : AUDIT_ARCH_SPARC64;
-+	return is_32bit_task() ? AUDIT_ARCH_SPARC : AUDIT_ARCH_SPARC64;
- }
- 
- #endif /* __ASM_SPARC_SYSCALL_H */
-diff --git a/arch/sparc/include/asm/thread_info_32.h b/arch/sparc/include/asm/thread_info_32.h
-index 96efa7a..acd2be0 100644
---- a/arch/sparc/include/asm/thread_info_32.h
-+++ b/arch/sparc/include/asm/thread_info_32.h
-@@ -130,6 +130,8 @@ register struct thread_info *current_thread_info_reg asm("g6");
- #define _TIF_DO_NOTIFY_RESUME_MASK	(_TIF_NOTIFY_RESUME | \
- 					 _TIF_SIGPENDING)
- 
-+#define is_32bit_task()	(0)
-+
- #endif /* __KERNEL__ */
- 
- #endif /* _ASM_THREAD_INFO_H */
-diff --git a/arch/sparc/include/asm/thread_info_64.h b/arch/sparc/include/asm/thread_info_64.h
-index a5f01ac..5a4f660 100644
---- a/arch/sparc/include/asm/thread_info_64.h
-+++ b/arch/sparc/include/asm/thread_info_64.h
-@@ -219,6 +219,8 @@ register struct thread_info *current_thread_info_reg asm("g6");
- 				 _TIF_NEED_RESCHED)
- #define _TIF_DO_NOTIFY_RESUME_MASK	(_TIF_NOTIFY_RESUME | _TIF_SIGPENDING)
- 
-+#define is_32bit_task()	(test_thread_flag(TIF_32BIT))
-+
- /*
-  * Thread-synchronous status.
-  *
-
-
+--Andy
