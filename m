@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315AbaDVLsv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:48:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37495 "EHLO mx2.suse.de"
+	id S932350AbaDVLuG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:50:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:5721 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755589AbaDVLso (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:48:44 -0400
-Date: Tue, 22 Apr 2014 13:48:39 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: Jianyu Zhan <nasa4836@gmail.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Balbir Singh <bsingharora@gmail.com>,
-        kamezawa.hiroyu@jp.fujitsu.com, Cgroups <cgroups@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] mm/memcontrol.c: remove meaningless while loop in
- mem_cgroup_iter()
-Message-ID: <20140422114838.GK29311@dhcp22.suse.cz>
-References: <1397861935-31595-1-git-send-email-nasa4836@gmail.com>
- <20140422094759.GC29311@dhcp22.suse.cz>
- <CAHz2CGWrk3kuR=BLt2vT-8gxJVtJcj6h17ase9=1CoWXwK6a3w@mail.gmail.com>
- <20140422103420.GI29311@dhcp22.suse.cz>
- <CAHz2CGUZyv-dvUUoSi2Vk_vgPAMqRN4yEg4F4XsKQ8udHeo2bQ@mail.gmail.com>
+	id S1755545AbaDVLuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 07:50:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,903,1389772800"; 
+   d="scan'208";a="524806243"
+Date: Tue, 22 Apr 2014 14:57:17 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Chew Chiau Ee <chiau.ee.chew@intel.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] spi/pxa2xx-pci: Pass host clock rate info from PCI
+ glue layer
+Message-ID: <20140422115716.GP30677@intel.com>
+References: <1397751967-20250-1-git-send-email-chiau.ee.chew@intel.com>
+ <1397751967-20250-3-git-send-email-chiau.ee.chew@intel.com>
+ <20140418163054.GH12304@sirena.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAHz2CGUZyv-dvUUoSi2Vk_vgPAMqRN4yEg4F4XsKQ8udHeo2bQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140418163054.GH12304@sirena.org.uk>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 22-04-14 18:58:11, Jianyu Zhan wrote:
-[...]
-> This reminds me of my draft edition of this patch, I specifically handle
-> this case as:
+On Fri, Apr 18, 2014 at 05:30:54PM +0100, Mark Brown wrote:
+> On Fri, Apr 18, 2014 at 12:26:07AM +0800, Chew Chiau Ee wrote:
+> > From: Chew, Chiau Ee <chiau.ee.chew@intel.com>
+> > 
+> > Intel BayTrail PCI mode LPSS devices inclusive of SPI do not rely
+> > on common clock framework. Thus, this patch allows the PCI mode
+> > SPI host to pass the supported clock rate info to the core layer
+> > which eventually used for speed calculation.
 > 
-> if (reclaim) {
->                if (!memcg ) {
->                               iter->generation++;
->                               if (!prev) {
->                                     memcg = root;
->                                     mem_cgroup_iter_update(iter, NULL, memcg, root,  seq);
->                                     goto out_unlock:
->                               }
->               }
->               mem_cgroup_iter_update(iter, last_visited, memcg, root,
->                                 seq);
->               if (!prev && memcg)
->                         reclaim->generation = iter->generation;
-> }
-> 
-> This is literally manual unwinding the second while loop, and thus omit
-> the while loop,
-> to save a   mem_cgroup_iter_update() and a mem_cgroup_iter_update()
-> 
-> But it maybe a bit hard to read.
+> As you mention we already have a clock API for passing around
+> information about clocks, it would be much better to fix the fact that
+> this isn't enabled on x86 than to add custom code to deal with clocks
+> (even simple things like this) - this is far from the only place where
+> it causes issues.
 
-Dunno, this particular case is more explicit but it is also uglier so I
-do not think this is an overall improvement. I would rather keep the
-current state unless the change either simplifies the generated code
-or it is much better to read.
+We actually have clock API enabled on x86 if CONFIG_X86_INTEL_LPSS is
+selected.
 
-Thanks!
--- 
-Michal Hocko
-SUSE Labs
+In this case the question is more like, where do we create clocks for PCI
+enumerated devices? Surely we don't want to have board files to do this.
+
+In ACPI mode, we do it in drivers/acpi/acpi_lpss.c but not sure where we
+could do that in PCI code.
