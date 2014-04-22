@@ -1,94 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751798AbaDVGDW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 02:03:22 -0400
-Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:52611 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaDVGDU (ORCPT
+	id S1752099AbaDVGEi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 02:04:38 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:43779 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbaDVGEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 02:03:20 -0400
-Message-ID: <53560613.7030801@synopsys.com>
-Date: Tue, 22 Apr 2014 11:32:59 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 22 Apr 2014 02:04:34 -0400
+Message-ID: <5356067D.40003@gmail.com>
+Date: Tue, 22 Apr 2014 09:04:45 +0300
+From: Nadav Amit <nadav.amit@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Newsgroups: gmane.linux.kernel.mm,gmane.linux.kernel
-To: Davidlohr Bueso <davidlohr@hp.com>, <akpm@linux-foundation.org>
-CC: <zeus@gnu.org>, <aswin@hp.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/6] arc: call find_vma with the mmap_sem held
-References: <1397960791-16320-1-git-send-email-davidlohr@hp.com> <1397960791-16320-5-git-send-email-davidlohr@hp.com>
-In-Reply-To: <1397960791-16320-5-git-send-email-davidlohr@hp.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
+To: Gleb Natapov <gleb@kernel.org>, Nadav Amit <namit@cs.technion.ac.il>
+CC: pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] KVM: x86: RSI/RDI/RCX are zero-extended when affected
+ by string ops
+References: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il> <1397794294-8414-1-git-send-email-namit@cs.technion.ac.il> <20140420092646.GB30377@minantech.com>
+In-Reply-To: <20140420092646.GB30377@minantech.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.196.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Gleb,
 
-On Sunday 20 April 2014 07:56 AM, Davidlohr Bueso wrote:
-> Performing vma lookups without taking the mm->mmap_sem is asking
-> for trouble. While doing the search, the vma in question can be
-> modified or even removed before returning to the caller. Take the
-> lock (shared) in order to avoid races while iterating through
-> the vmacache and/or rbtree.
-> 
-> This patch is completely *untested*.
-> 
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> Cc: Vineet Gupta <vgupta@synopsys.com>
-> ---
->  arch/arc/kernel/troubleshoot.c | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arc/kernel/troubleshoot.c b/arch/arc/kernel/troubleshoot.c
-> index 73a7450..3a5a5c1 100644
-> --- a/arch/arc/kernel/troubleshoot.c
-> +++ b/arch/arc/kernel/troubleshoot.c
-> @@ -90,7 +90,7 @@ static void show_faulting_vma(unsigned long address, char *buf)
->  	/* can't use print_vma_addr() yet as it doesn't check for
->  	 * non-inclusive vma
->  	 */
-> -
-> +	down_read(&current->active_mm->mmap_sem);
+On 4/20/14, 12:26 PM, Gleb Natapov wrote:
+> On Fri, Apr 18, 2014 at 07:11:33AM +0300, Nadav Amit wrote:
+>> When using address-size override prefix with string instructions in long-mode,
+>> ESI/EDI/ECX are zero extended if they are affected by the instruction
+>> (incremented/decremented).  Currently, the KVM emulator does not do so.
+>>
+>> In addition, although it is not well-documented, when address override prefix
+>> is used with REP-string instruction, RCX high half is zeroed even if ECX was
+>> zero on the first iteration. Therefore, the emulator should clear the upper
+>> part of RCX in this case, as x86 CPUs do.
+>>
+>> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+>> ---
+>> :100644 100644 69e2636... a69ed67... M	arch/x86/kvm/emulate.c
+>>   arch/x86/kvm/emulate.c |    4 ++++
+>>   1 file changed, 4 insertions(+)
+>>
+>> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+>> index 69e2636..a69ed67 100644
+>> --- a/arch/x86/kvm/emulate.c
+>> +++ b/arch/x86/kvm/emulate.c
+>> @@ -491,6 +491,8 @@ register_address_increment(struct x86_emulate_ctxt *ctxt, unsigned long *reg, in
+>>   	else
+>>   		mask = ad_mask(ctxt);
+>>   	masked_increment(reg, mask, inc);
+>> +	if (ctxt->ad_bytes == 4)
+>> +		*reg &= 0xffffffff;
+> *reg=(u32)*reg; and you can do it inside else part.
+>
+> register_address_increment() is used also by jmp_rel and loop instructions,
+> is this correct for both of those too? Probably yes.
+>
+It appears to be so.
+Results of 32-bit operations are implicitly zero extended to 64-bit 
+values, and this appears to apply to all 32 bit operations, including 
+implicit ones. Therefore it seems to apply to all these operations.
 
-Actually avoiding the lock here was intentional - atleast in the past, in case of
-a crash from mmap_region() - due to our custom mmap syscall handler (not in
-mainline) it would cause a double lockup.
+>>   }
+>>
+>>   static void rsp_increment(struct x86_emulate_ctxt *ctxt, int inc)
+>> @@ -4567,6 +4569,8 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+>>   	if (ctxt->rep_prefix && (ctxt->d & String)) {
+>>   		/* All REP prefixes have the same first termination condition */
+>>   		if (address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) == 0) {
+>> +			if (ctxt->ad_bytes == 4)
+>> +				*reg_write(ctxt, VCPU_REGS_RCX) = 0;
+> Does zero extension happens even if ECX was zero at the beginning on an instruction or only during
+> ECX modification. If later it is already covered in register_address_increment, no?
+The observed behaviour of the Sandy-Bridge I use, is that even if ECX is 
+zero on the first iteration, the high half of RCX is zeroed. Therefore, 
+this is a different case, which was not covered in 
+register_address_increment. I agree it is totally undocumented.
+Following your previous comment - I may have missed the case in which 
+loop instruction is executed with ECX = 0 while RCX != 0 and the address 
+size is 32 bit. I will test this case soon (yet, it is lower on my 
+priority list).
 
-However given that this code is now only called for user contexts [if
-user_mode(regs)] above becomes moot point anyways and it would be safe to do that.
-
-So, yes this looks good.
-
-A minor suggestion though - can you please use a tmp for current->active_mm as
-there are 3 users now in the function.
-
-Acked-by: Vineet Gupta <vgupta@synopsys.com>
-
-Thx
--Vineet
-
-
-
->  	vma = find_vma(current->active_mm, address);
->  
->  	/* check against the find_vma( ) behaviour which returns the next VMA
-> @@ -110,9 +110,10 @@ static void show_faulting_vma(unsigned long address, char *buf)
->  			vma->vm_start < TASK_UNMAPPED_BASE ?
->  				address : address - vma->vm_start,
->  			nm, vma->vm_start, vma->vm_end);
-> -	} else {
-> +	} else
->  		pr_info("    @No matching VMA found\n");
-> -	}
-> +
-> +	up_read(&current->active_mm->mmap_sem);
->  }
->  
->  static void show_ecr_verbose(struct pt_regs *regs)
-> 
+Nadav
 
