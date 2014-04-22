@@ -1,129 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754553AbaDVTuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:50:20 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:54247 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750888AbaDVTuR (ORCPT
+	id S1755505AbaDVTwK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:52:10 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55789 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751970AbaDVTwI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:50:17 -0400
+	Tue, 22 Apr 2014 15:52:08 -0400
+Date: Tue, 22 Apr 2014 21:52:06 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: pavel@ucw.cz, hans.verkuil@cisco.com, m.chehab@samsung.com,
+        ext-eero.nurkkala@nokia.com, nils.faerber@kernelconcepts.de,
+        joni.lapilainen@gmail.com, freemangordon@abv.bg, sre@ring0.de,
+        dan.carpenter@oracle.com, pali.rohar@gmail.com,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: [PATCHv2] radio-bcm2048.c: fix wrong overflow check
+Message-ID: <20140422195206.GA32663@amd.pavel.ucw.cz>
 MIME-Version: 1.0
-In-Reply-To: <20140422194031.GM8488@redhat.com>
-References: <20140421160655.GA4201@quad>
-	<20140422194031.GM8488@redhat.com>
-Date: Tue, 22 Apr 2014 21:50:17 +0200
-Message-ID: <CABPqkBTcOT+BEd1dSrp6bz22o5g+ZvBwx5e4GZvbwft6No+Shw@mail.gmail.com>
-Subject: Re: [PATCH] perf tools: fix processing of pid/tid for mmap records
-From: Stephane Eranian <eranian@google.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, Namhyung Kim <namhyung@kernel.org>,
-        David Ahern <dsahern@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 9:40 PM, Don Zickus <dzickus@redhat.com> wrote:
-> On Mon, Apr 21, 2014 at 06:06:55PM +0200, Stephane Eranian wrote:
->> perf tools: fix processing of pid/tid for mmap records
->>
->> Mmaps are global to a process (always). Processing them
->> per-thread was causing some serious issues in case mmaps
->> would overlap. The overlap fixups would only occur in the
->> context of the thread which generated the overlapping
->> mmap. But that was cause issues later on when a sample
->> from another thread would fall into that overlapping
->> mmap.
->
-> eh?  You are basically reverting my patch for a similar problem. :-)
->
-> I was running a large multi-threading program (specjbb) and the threads
-> were not being seperated into their own map'd areas.  So either I had to
-> lump all threads in to the same pid space or make the change you are
-> reverting.
->
-I don't understand your problem. The address space is shared by ALL
-threads of a process. The mmaps are always shared by all threads?
+From: Pali Rohár <pali.rohar@gmail.com>
 
-> The problem I had with the double pid (as you propose), I would later look
-> up samples based on pid/tid and there would be _no_ map available because
-> it was created as a pid/pid pair.  As a result, our c2c program would drop
-> thousands of samples on the floor (because there was no mapping for the
-> data address to get the major/minor/inode info).
+Fix wrong overflow check in radio-bcm2048.
 
-That is your problem. You should only lookup mapping baseds on pid only
-not pid/tid. Why do you need tid?
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
 
->
-> Now I modified our c2c program to lookup samples as pid/pid but now the
-> maps lost tid info, and I had to hack around that by carrying the tid info
-> in a private struct.
->
-If you need the tid, then it is okay to carry it on the side. I believe mmap
-lookups should ONLY use pid. That is how the address space of a process
-is contructed.
+Nothing in patch changed, just added CCs, and From/Reported-by headers.
 
-> Hopefully Jiri's thread work using pointers will solve both our problems.
-> :-)  But I can't ack your patch because it will break my work :-(
->
-> Cheers,
-> Don
->
->
->>
->> The solution to the problem is to handle ALL mmaps as
->> occurring in the master thread (pid = tid) and then to
->> lookup for thread map using pid as the tid argument.
->> This is how samples are looking up for the thread map
->> already (notice pid passed twice):
->>
->> int perf_event__preprocess_sample(const union perf_event *event,
->>                                   struct machine *machine,
->>                                   struct addr_location *al,
->>                                   struct perf_sample *sample)
->> {
->>         struct thread *thread = machine__findnew_thread(machine, sample->pid,
->>                                                         sample->pid);
->> }
->>
->> Without this fix, some samples in overlapping regions
->> may not be symbolized.
->>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->>
->> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
->> index a53cd0b..43cdc0a 100644
->> --- a/tools/perf/util/machine.c
->> +++ b/tools/perf/util/machine.c
->> @@ -1025,9 +1025,9 @@ int machine__process_mmap2_event(struct machine *machine,
->>                       goto out_problem;
->>               return 0;
->>       }
->> -
->> +     /* only look by pid for mmap events */
->>       thread = machine__findnew_thread(machine, event->mmap2.pid,
->> -                                     event->mmap2.tid);
->> +                                     event->mmap2.pid);
->>       if (thread == NULL)
->>               goto out_problem;
->>
->> @@ -1073,9 +1073,9 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
->>                       goto out_problem;
->>               return 0;
->>       }
->> -
->> +     /* only look by pid for mmap events */
->>       thread = machine__findnew_thread(machine, event->mmap.pid,
->> -                                      event->mmap.tid);
->> +                                      event->mmap.pid);
->>       if (thread == NULL)
->>               goto out_problem;
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+diff --git a/drivers/staging/media/bcm2048/radio-bcm2048.c b/drivers/staging/media/bcm2048/radio-bcm2048.c
+index b2cd3a8..bbf236e 100644
+--- a/drivers/staging/media/bcm2048/radio-bcm2048.c
++++ b/drivers/staging/media/bcm2048/radio-bcm2048.c
+@@ -737,7 +737,7 @@ static int bcm2048_set_region(struct bcm2048_device *bdev, u8 region)
+ 	int err;
+ 	u32 new_frequency = 0;
+ 
+-	if (region > ARRAY_SIZE(region_configs))
++	if (region >= ARRAY_SIZE(region_configs))
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&bdev->mutex);
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
