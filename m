@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387AbaDVVF3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:05:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36348 "EHLO
+	id S932469AbaDVVGU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:06:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36324 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757566AbaDVUUx (ORCPT
+	with ESMTP id S1757680AbaDVUTh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:20:53 -0400
+	Tue, 22 Apr 2014 16:19:37 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jani Nikula <jani.nikula@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
+Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 028/133] drm/i915: quirk invert brightness for Acer Aspire 5336
-Date: Tue, 22 Apr 2014 13:12:46 -0700
-Message-Id: <1398197671-12786-29-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 099/133] dm: take care to copy the space map roots before locking the superblock
+Date: Tue, 22 Apr 2014 13:13:57 -0700
+Message-Id: <1398197671-12786-100-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,58 +27,165 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jani Nikula <jani.nikula@intel.com>
+From: Joe Thornber <ejt@redhat.com>
 
-commit 0f540c3a7cfb91c9d7a19eb0c95c24c5de1197d5 upstream.
+commit 5a32083d03fb543f63489b2946c4948398579ba0 upstream.
 
-Since
-commit ee1452d7458451a7508e0663553ce88d63958157
-Author: Jani Nikula <jani.nikula@intel.com>
-Date:   Fri Sep 20 15:05:30 2013 +0300
+In theory copying the space map root can fail, but in practice it never
+does because we're careful to check what size buffer is needed.
 
-    drm/i915: assume all GM45 Acer laptops use inverted backlight PWM
+But make certain we're able to copy the space map roots before
+locking the superblock.
 
-failed and was later reverted in
-commit be505f643925e257087247b996cd8ece787c12af
-Author: Alexander van Heukelum <heukelum@fastmail.fm>
-Date:   Sat Dec 28 21:00:39 2013 +0100
-
-    Revert "drm/i915: assume all GM45 Acer laptops use inverted backlight PWM"
-
-fix the individual broken machine instead.
-
-Note to backporters:
-
-http://patchwork.freedesktop.org/patch/17837/
-
-is the patch you want for 3.13 and older.
-
-Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=54171
-Reference: http://mid.gmane.org/DUB115-W7628C7C710EA51AA110CD4A5000@phx.gbl
-Signed-off-by: Jani Nikula <jani.nikula@intel.com>
-Reviewed-by: Ville Syrjälä <ville.syrjala@linux.intel.com>
-[danvet: Patch mangling for 3.14 plus adding the link to the original
-for 3.13.]
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Signed-off-by: Joe Thornber <ejt@redhat.com>
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
+[ kamal: backport to 3.8 (no dm-cache-metadata.c, dm-era-target.c) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/gpu/drm/i915/intel_display.c | 3 +++
- 1 file changed, 3 insertions(+)
+ drivers/md/dm-thin-metadata.c | 80 +++++++++++++++++++++++++------------------
+ 1 file changed, 47 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index ad2b52e..4611505 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -8941,6 +8941,9 @@ static struct intel_quirk intel_quirks[] = {
- 	/* Acer Aspire 4736Z */
- 	{ 0x2a42, 0x1025, 0x0260, quirk_invert_brightness },
- 
-+	/* Acer Aspire 5336 */
-+	{ 0x2a42, 0x1025, 0x048a, quirk_invert_brightness },
+diff --git a/drivers/md/dm-thin-metadata.c b/drivers/md/dm-thin-metadata.c
+index 4f67945..f074f92 100644
+--- a/drivers/md/dm-thin-metadata.c
++++ b/drivers/md/dm-thin-metadata.c
+@@ -192,6 +192,13 @@ struct dm_pool_metadata {
+ 	 * operation possible in this state is the closing of the device.
+ 	 */
+ 	bool fail_io:1;
 +
- 	/* Dell XPS13 HD Sandy Bridge */
- 	{ 0x0116, 0x1028, 0x052e, quirk_no_pcm_pwm_enable },
- 	/* Dell XPS13 HD and XPS13 FHD Ivy Bridge */
++	/*
++	 * Reading the space map roots can fail, so we read it into these
++	 * buffers before the superblock is locked and updated.
++	 */
++	__u8 data_space_map_root[SPACE_MAP_ROOT_SIZE];
++	__u8 metadata_space_map_root[SPACE_MAP_ROOT_SIZE];
+ };
+ 
+ struct dm_thin_device {
+@@ -431,26 +438,53 @@ static void __setup_btree_details(struct dm_pool_metadata *pmd)
+ 	pmd->details_info.value_type.equal = NULL;
+ }
+ 
++static int save_sm_roots(struct dm_pool_metadata *pmd)
++{
++	int r;
++	size_t len;
++
++	r = dm_sm_root_size(pmd->metadata_sm, &len);
++	if (r < 0)
++		return r;
++
++	r = dm_sm_copy_root(pmd->metadata_sm, &pmd->metadata_space_map_root, len);
++	if (r < 0)
++		return r;
++
++	r = dm_sm_root_size(pmd->data_sm, &len);
++	if (r < 0)
++		return r;
++
++	return dm_sm_copy_root(pmd->data_sm, &pmd->data_space_map_root, len);
++}
++
++static void copy_sm_roots(struct dm_pool_metadata *pmd,
++			  struct thin_disk_superblock *disk)
++{
++	memcpy(&disk->metadata_space_map_root,
++	       &pmd->metadata_space_map_root,
++	       sizeof(pmd->metadata_space_map_root));
++
++	memcpy(&disk->data_space_map_root,
++	       &pmd->data_space_map_root,
++	       sizeof(pmd->data_space_map_root));
++}
++
+ static int __write_initial_superblock(struct dm_pool_metadata *pmd)
+ {
+ 	int r;
+ 	struct dm_block *sblock;
+-	size_t metadata_len, data_len;
+ 	struct thin_disk_superblock *disk_super;
+ 	sector_t bdev_size = i_size_read(pmd->bdev->bd_inode) >> SECTOR_SHIFT;
+ 
+ 	if (bdev_size > THIN_METADATA_MAX_SECTORS)
+ 		bdev_size = THIN_METADATA_MAX_SECTORS;
+ 
+-	r = dm_sm_root_size(pmd->metadata_sm, &metadata_len);
+-	if (r < 0)
+-		return r;
+-
+-	r = dm_sm_root_size(pmd->data_sm, &data_len);
++	r = dm_sm_commit(pmd->data_sm);
+ 	if (r < 0)
+ 		return r;
+ 
+-	r = dm_sm_commit(pmd->data_sm);
++	r = save_sm_roots(pmd);
+ 	if (r < 0)
+ 		return r;
+ 
+@@ -471,15 +505,7 @@ static int __write_initial_superblock(struct dm_pool_metadata *pmd)
+ 	disk_super->trans_id = 0;
+ 	disk_super->held_root = 0;
+ 
+-	r = dm_sm_copy_root(pmd->metadata_sm, &disk_super->metadata_space_map_root,
+-			    metadata_len);
+-	if (r < 0)
+-		goto bad_locked;
+-
+-	r = dm_sm_copy_root(pmd->data_sm, &disk_super->data_space_map_root,
+-			    data_len);
+-	if (r < 0)
+-		goto bad_locked;
++	copy_sm_roots(pmd, disk_super);
+ 
+ 	disk_super->data_mapping_root = cpu_to_le64(pmd->root);
+ 	disk_super->device_details_root = cpu_to_le64(pmd->details_root);
+@@ -488,10 +514,6 @@ static int __write_initial_superblock(struct dm_pool_metadata *pmd)
+ 	disk_super->data_block_size = cpu_to_le32(pmd->data_block_size);
+ 
+ 	return dm_tm_commit(pmd->tm, sblock);
+-
+-bad_locked:
+-	dm_bm_unlock(sblock);
+-	return r;
+ }
+ 
+ static int __format_metadata(struct dm_pool_metadata *pmd)
+@@ -769,6 +791,10 @@ static int __commit_transaction(struct dm_pool_metadata *pmd)
+ 	if (r < 0)
+ 		return r;
+ 
++	r = save_sm_roots(pmd);
++	if (r < 0)
++		return r;
++
+ 	r = superblock_lock(pmd, &sblock);
+ 	if (r)
+ 		return r;
+@@ -780,21 +806,9 @@ static int __commit_transaction(struct dm_pool_metadata *pmd)
+ 	disk_super->trans_id = cpu_to_le64(pmd->trans_id);
+ 	disk_super->flags = cpu_to_le32(pmd->flags);
+ 
+-	r = dm_sm_copy_root(pmd->metadata_sm, &disk_super->metadata_space_map_root,
+-			    metadata_len);
+-	if (r < 0)
+-		goto out_locked;
+-
+-	r = dm_sm_copy_root(pmd->data_sm, &disk_super->data_space_map_root,
+-			    data_len);
+-	if (r < 0)
+-		goto out_locked;
++	copy_sm_roots(pmd, disk_super);
+ 
+ 	return dm_tm_commit(pmd->tm, sblock);
+-
+-out_locked:
+-	dm_bm_unlock(sblock);
+-	return r;
+ }
+ 
+ struct dm_pool_metadata *dm_pool_metadata_open(struct block_device *bdev,
 -- 
 1.9.1
 
