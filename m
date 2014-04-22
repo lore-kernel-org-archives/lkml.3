@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655AbaDVBh4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 21:37:56 -0400
-Received: from eusmtp01.atmel.com ([212.144.249.243]:3583 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255AbaDVBhx convert rfc822-to-8bit (ORCPT
+	id S1751378AbaDVBoE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 21:44:04 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:4366 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751117AbaDVBoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 21:37:53 -0400
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH] ARM: dts: at91-sama5d3_xplained: add the regulator
- device node
-Thread-Topic: [PATCH] ARM: dts: at91-sama5d3_xplained: add the regulator
- device node
-Thread-Index: AQHPXRswrA2f1ffIY0GWPrJ4xJGUOJsbTx2AgAApLYCAAWLlUA==
-Date: Tue, 22 Apr 2014 01:37:15 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A24364180A876DA@penmbx01>
-References: <1398054547-5834-1-git-send-email-wenyou.yang@atmel.com>
- <20140421095443.GA3461@piout.net> <20140421122205.GB3461@piout.net>
-In-Reply-To: <20140421122205.GB3461@piout.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 21 Apr 2014 21:44:01 -0400
+X-IronPort-AV: E=Sophos;i="4.97,899,1389715200"; 
+   d="scan'208";a="29544870"
+Message-ID: <5355CA43.5040608@cn.fujitsu.com>
+Date: Tue, 22 Apr 2014 09:47:47 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
 MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2 V3] workqueue: substitute POOL_FREEZING with __WQ_FREEZING
+References: <1398081561-12618-1-git-send-email-laijs@cn.fujitsu.com> <20140421222035.GA22730@htj.dyndns.org>
+In-Reply-To: <20140421222035.GA22730@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-> -----Original Message-----
-> From: Alexandre Belloni [mailto:alexandre.belloni@free-electrons.com]
-> Sent: Monday, April 21, 2014 8:22 PM
-> To: Yang, Wenyou
-> Cc: devicetree@vger.kernel.org; Ferre, Nicolas; linux-
-> kernel@vger.kernel.org; robh+dt@kernel.org; broonie@kernel.org; linux-
-> arm-kernel@lists.infradead.org
-> Subject: Re: [PATCH] ARM: dts: at91-sama5d3_xplained: add the regulator
-> device node
+On 04/22/2014 06:20 AM, Tejun Heo wrote:
+> On Mon, Apr 21, 2014 at 07:59:20PM +0800, Lai Jiangshan wrote:
+>> Only workqueues have freezable or freezing attribution/state, not worker pools.
+>> But POOL_FREEZING adds a suspicious state and makes reviewers confused.
+>>
+>> And it causes freeze_workqueues_begin() and thaw_workqueues() much complicated,
+>> they need to travel all the pools besides wqs.
+>>
+>> Since freezable is workqueue instance's attribution, and freezing
+>> is workqueue instance's state, so we introduce __WQ_FREEZING
+>> to wq->flags instead and remove POOL_FREEZING.
+>>
+>> It is different from POOL_FREEZING, POOL_FREEZING is simply set
+>> all over the world(all pools), while __WQ_FREEZING is only set for freezable wq.
+>> freeze_workqueues_begin()/thaw_workqueues() skip to handle non-freezable wqs
+>> and don't touch the non-freezable wqs' flags.
 > 
-> On 21/04/2014 at 11:54:43 +0200, Alexandre Belloni wrote :
-> > Hi,
-> >
-> > On 21/04/2014 at 12:29:07 +0800, Wenyou Yang wrote :
-> > > +
-> > > +						vddana_reg: LDO_REG2 {
-> > > +							regulator-name = "VDDANA";
-> > > +							regulator-min-microvolt =
-> <3300000>;
-> > > +							regulator-max-microvolt =
-> <3300000>;
-> > > +							regulator-always-on;
-> >
-> > I'm pretty sure that one is not always on as you actually have to
-> > configure it to get any voltage. Are you sure you want to set the
-> > regulator-always-on property here ?
-> >
+> I was about to apply the patch and have updated the patch description.
 > 
-> Just to clarify my though, wouldn't it be better to make the ADC driver
-> handle that regulator instead of using regulator-always-on ?
-Yes, you are right. 
-It should not use regulator-always-on property for this regulator. It is ADC driver and ISI driver to handle it(The ISI takes PCK for clock).
-
-I will send new version patch.
-
-Thanks
-
+>   While freezing takes place globally, its execution is per-workqueue;
+>   however, the current implementation makes use of the per-worker_pool
+>   POOL_FREEZING flag.  While it's not broken, the flag makes the code
+>   more confusing and complicates freeze_workqueues_begin() and
+>   thaw_workqueues() by requiring them to walk through all pools.
 > 
-> --
-> Alexandre Belloni, Free Electrons
-> Embedded Linux, Kernel and Android engineering http://free-
-> electrons.com
+>   Since freezable is a workqueue's attribute, and freezing is a
+>   workqueue's state, let's introduce __WQ_FREEZING to wq->flags instead
+>   and remove POOL_FREEZING.
+> 
+>   It is different from POOL_FREEZING in that __WQ_FREEZING is only set
+>   for freezable workqueues while POOL_FREEZING is set globally over all
+>   pools.  freeze_workqueues_begin() and thaw_workqueues() now skip
+>   non-freezable workqueues.
+> 
+> But looking at the patch, why do we need __WQ_FREEZING at all?  We
+> should be able to test workqueue_freezing in pwq_adjust_max_active(),
+> right?  The only requirement there would be that
 
-Best Regards,
-Wenyou Yang
+Testing workqueue_freezing requires wq_pool_mutex held.
+Although almost-all pwq_adjust_max_active() are called with wq_pool_mutex held,
+except workqueue_set_max_active(). But I hope pwq_adjust_max_active()
+don't require the heavy wq_pool_mutex.
+
+> pwq_adjust_max_active() is invoked at least once after
+> workqueue_freezing is changed, which is already guaranteed.
+> 
+> Thanks.
+> 
+
