@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597AbaDVUSw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:18:52 -0400
-Received: from mail-pb0-f41.google.com ([209.85.160.41]:34613 "EHLO
-	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602AbaDVUSs (ORCPT
+	id S1757611AbaDVUS7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:18:59 -0400
+Received: from fujitsu24.fnanic.fujitsu.com ([192.240.6.14]:43484 "EHLO
+	fujitsu24.fnanic.fujitsu.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752602AbaDVUSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:18:48 -0400
-Date: Tue, 22 Apr 2014 13:17:33 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: 3.15rc2 hanging processes on exit.
-In-Reply-To: <CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
-Message-ID: <alpine.LSU.2.11.1404221303060.6220@eggly.anvils>
-References: <20140422180308.GA19038@redhat.com> <CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Tue, 22 Apr 2014 16:18:54 -0400
+From: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
+To: Davidlohr Bueso <davidlohr@hp.com>,
+        Manfred Spraul <manfred@colorfullife.com>
+CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
+        "gthelen@google.com" <gthelen@google.com>,
+        "aswin@hp.com" <aswin@hp.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Tue, 22 Apr 2014 13:15:44 -0700
+Subject: RE: [PATCH 1/4] ipc/shm.c: check for ulong overflows in shmat
+Thread-Topic: [PATCH 1/4] ipc/shm.c: check for ulong overflows in shmat
+Thread-Index: Ac9eV05g8AatLGBhQXat4RU3I6X5TAAEDz8w
+Message-ID: <6B2BA408B38BA1478B473C31C3D2074E30989E9D7A@SV-EXCHANGE1.Corp.FC.LOCAL>
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+	 <1398090397-2397-2-git-send-email-manfred@colorfullife.com>
+ <1398190717.2473.8.camel@buesod1.americas.hpqcorp.net>
+In-Reply-To: <1398190717.2473.8.camel@buesod1.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-22_07:2014-04-22,2014-04-22,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3MKJAMA011690
 
-On Tue, 22 Apr 2014, Linus Torvalds wrote:
-> On Tue, Apr 22, 2014 at 11:03 AM, Dave Jones <davej@redhat.com> wrote:
-> > I've got a test box that's running my fuzzer that is in an odd state.
-> > The processes are about to end, but they don't seem to be making any
-> > progress.  They've been spinning in the same state for a few hours now..
+> > find_vma_intersection does not work as intended if addr+size overflows.
+> > The patch adds a manual check before the call to find_vma_intersection.
 > >
-> > perf top -a is showing a lot of time is being spent in page_fault and bad_gs
-> >
-> > there's a large trace file here from the function tracer:
-> > http://codemonkey.org.uk/junk/trace.out
+> > Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
 > 
-> The trace says that it's one of the infinite loops that do
-> 
->  - cmpxchg_futex_value_locked() fails
->  - we do fault_in_user_writeable(FAULT_FLAG_WRITE) and that succeeds
->  - so we try again
-> 
-> So it implies that handle_mm_fault() returned without VM_FAULT_ERROR,
-> but the page still isn't actually writable.
-> 
-> And to me that smells like (vm_flags & VM_WRITE) isn't set. We'll
-> fault in the page all right, but the resulting page table entry still
-> isn't writable.
-> 
-> Are you testing anything new? Or is this strictly new to 3.15? The
-> only thing in this area we do differently is commit cda540ace6a1 ("mm:
-> get_user_pages(write,force) refuse to COW in shared areas"), but
-> fault_in_user_writeable() never used the force bit afaik. Adding Hugh
-> just in case.
-> 
-> So I think we should make fault_in_user_writeable() just check the
-> vm_flags. Something like the attached (UNTESTED!) patch.
-> 
-> Guys? Comments?
+> Acked-by: Davidlohr Bueso <davidlohr@hp.com>
 
-Your patch looks to me correct and to the point; but I agree that
-we haven't made a relevant change there recently, so I suppose it
-comes from a trinity improvement rather than a new bug in 3.15.
+Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-(Dave, do you have time to confirm that by running new trinity on 3.14?)
-
-One nit: we're inconsistent, and shall never move VM_READ,VM_WRITE bits,
-but it would set a better example to declare "vm_flags_t vm_flags"
-in your patch below, instead of "unsigned vm_flags".
-
-Hugh
----
-
- mm/memory.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/mm/memory.c b/mm/memory.c
-index d0f0bef3be48..91a3e848745d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -1955,12 +1955,17 @@ int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
- 		     unsigned long address, unsigned int fault_flags)
- {
- 	struct vm_area_struct *vma;
-+	unsigned vm_flags;
- 	int ret;
- 
- 	vma = find_extend_vma(mm, address);
- 	if (!vma || address < vma->vm_start)
- 		return -EFAULT;
- 
-+	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
-+	if (!(vm_flags & vma->vm_flags))
-+		return -EFAULT;
-+
- 	ret = handle_mm_fault(mm, vma, address, fault_flags);
- 	if (ret & VM_FAULT_ERROR) {
- 		if (ret & VM_FAULT_OOM)
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
