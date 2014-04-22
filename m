@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758248AbaDVUn3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:43:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36636 "EHLO
+	id S1758147AbaDVUYk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:24:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36604 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758156AbaDVUYm (ORCPT
+	with ESMTP id S1752026AbaDVUYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:42 -0400
+	Tue, 22 Apr 2014 16:24:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Jason Wang <jasowang@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 092/133] x86, hyperv: Bypass the timer_irq_works() check
-Date: Tue, 22 Apr 2014 13:13:50 -0700
-Message-Id: <1398197671-12786-93-git-send-email-kamal@canonical.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 079/133] mfd: max8997: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Tue, 22 Apr 2014 13:13:37 -0700
+Message-Id: <1398197671-12786-80-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -30,56 +27,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit ca3ba2a2f4a49a308e7d78c784d51b2332064f15 upstream.
+commit 97dc4ed3fa377ec91bb60ba98b70d645c2099384 upstream.
 
-This patch bypass the timer_irq_works() check for hyperv guest since:
+During probe the driver allocates dummy I2C devices for RTC, haptic and
+MUIC with i2c_new_dummy() but it does not check the return value of this
+calls.
 
-- It was guaranteed to work.
-- timer_irq_works() may fail sometime due to the lpj calibration were inaccurate
-  in a hyperv guest or a buggy host.
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
 
-In the future, we should get the tsc frequency from hypervisor and use preset
-lpj instead.
+If i2c_new_dummy() fails for RTC, haptic or MUIC devices, fail also the
+probe for main MFD driver.
 
-[ hpa: I would prefer to not defer things to "the future" in the future... ]
-
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Acked-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Link: http://lkml.kernel.org/r/1393558229-14755-1-git-send-email-jasowang@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kernel/cpu/mshyperv.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/mfd/max8997.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 646d192..1a3cf6e 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -18,6 +18,7 @@
- #include <asm/hypervisor.h>
- #include <asm/hyperv.h>
- #include <asm/mshyperv.h>
-+#include <asm/timer.h>
+diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
+index 1471405..ea1defbc 100644
+--- a/drivers/mfd/max8997.c
++++ b/drivers/mfd/max8997.c
+@@ -218,10 +218,26 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 	mutex_init(&max8997->iolock);
  
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
-@@ -70,6 +71,11 @@ static void __init ms_hyperv_init_platform(void)
- 
- 	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
- 		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
+ 	max8997->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
++	if (!max8997->rtc) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max8997->rtc, max8997);
 +
-+#ifdef CONFIG_X86_IO_APIC
-+	no_timer_check = 1;
-+#endif
+ 	max8997->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
++	if (!max8997->haptic) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for Haptic\n");
++		ret = -ENODEV;
++		goto err_i2c_haptic;
++	}
+ 	i2c_set_clientdata(max8997->haptic, max8997);
 +
- }
+ 	max8997->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
++	if (!max8997->muic) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for MUIC\n");
++		ret = -ENODEV;
++		goto err_i2c_muic;
++	}
+ 	i2c_set_clientdata(max8997->muic, max8997);
  
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+ 	pm_runtime_set_active(max8997->dev);
+@@ -248,7 +264,9 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ err_mfd:
+ 	mfd_remove_devices(max8997->dev);
+ 	i2c_unregister_device(max8997->muic);
++err_i2c_muic:
+ 	i2c_unregister_device(max8997->haptic);
++err_i2c_haptic:
+ 	i2c_unregister_device(max8997->rtc);
+ err:
+ 	kfree(max8997);
 -- 
 1.9.1
 
