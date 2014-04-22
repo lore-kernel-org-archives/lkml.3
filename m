@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756914AbaDVTyb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:54:31 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:58450 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756874AbaDVTyZ (ORCPT
+	id S1756979AbaDVTzR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:55:17 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:44898 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756937AbaDVTzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:54:25 -0400
-Date: Tue, 22 Apr 2014 15:54:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Andreas Gruenbacher <agruen@linbit.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-Subject: Re: [PATCH 1/4] idr: proper invalid argument handling
-Message-ID: <20140422195421.GA2314@mtj.dyndns.org>
-References: <1398161781-12105-1-git-send-email-laijs@cn.fujitsu.com>
- <1398161781-12105-2-git-send-email-laijs@cn.fujitsu.com>
+	Tue, 22 Apr 2014 15:55:13 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398161781-12105-2-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5356BA2F.2030007@zytor.com>
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
+	<CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
+	<20140422112312.GB15882@pd.tnic>
+	<20140422144659.GF15882@pd.tnic>
+	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
+	<53569467.1030809@zytor.com>
+	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
+	<CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
+	<CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>
+	<CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>
+	<CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com>
+	<CA+55aFwuKTQGHzi-cFkHrkLgkS-kFptajFt4=ginxOgwDcJLrA@mail.gmail.com>
+	<5356A70A.5090907@zytor.com>
+	<CAObL_7GJypym8JhUmdszDTKJVuLW9wSjbbZK4AZ3Jk304GK6tQ@mail.gmail.com>
+	<CAMzpN2hpX=XHFrTKxV1hsngNX4Pmuh9FxjAqeSeQHhEBKza1DA@mail.gmail.com>
+	<5356AF9F.4010301@zytor.com>
+	<CAMzpN2gkCPZoAKCgXa8tNZYFCuiPd6GWg9yhTBSSA=F43WLv1A@mail.gmail.com>
+	<5356BA2F.2030007@zytor.com>
+Date: Tue, 22 Apr 2014 15:55:11 -0400
+Message-ID: <CAMzpN2hkJXyt87ioNowYhxm7ZmSjz_qcc=AZpzFhafKGx_+tzg@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+From: Brian Gerst <brgerst@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Lutomirski <amluto@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Apr 22, 2014 at 2:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/22/2014 11:17 AM, Brian Gerst wrote:
+>>>
+>>> That is the entry condition that we have to deal with.  The fact that
+>>> the switch to the IST is unconditional is what makes ISTs hard to deal with.
+>>
+>> Right, that is why you switch away from the IST as soon as possible,
+>> copying the data that is already pushed there to another stack so it
+>> won't be overwritten by a recursive fault.
+>>
+>
+> That simply will not work if you can take a #GP due to the "safe" MSR
+> functions from NMI and #MC context, which would be my main concern.
 
-On Tue, Apr 22, 2014 at 06:16:18PM +0800, Lai Jiangshan wrote:
-> @@ -457,8 +457,10 @@ int idr_alloc(struct idr *idr, void *ptr, int start, int end, gfp_t gfp_mask)
->  	/* sanity checks */
->  	if (WARN_ON_ONCE(start < 0))
->  		return -EINVAL;
-> -	if (unlikely(max < start))
-> +	if (unlikely(end > 0 && start == end))
->  		return -ENOSPC;
-> +	if (WARN_ON_ONCE(max < start))
-> +		return -EINVAL;
-
-Why is this change necessary?  Now the code is inconsistent with the
-comment?  This change looks very gratuituous.
-
-> @@ -1078,14 +1077,17 @@ int ida_simple_get(struct ida *ida, unsigned int start, unsigned int end,
->  	unsigned int max;
->  	unsigned long flags;
->  
-> -	BUG_ON((int)start < 0);
-> -	BUG_ON((int)end < 0);
-> +	if (WARN_ON_ONCE((int)start < 0))
-> +		return -EINVAL;
->  
-> -	if (end == 0)
-> -		max = 0x80000000;
-> +	if ((int)end <= 0)
-> +		max = INT_MAX;
-
-Again, why are you changing this?  What problem are you trying to fix?
-
->  	else {
-> -		BUG_ON(end < start);
->  		max = end - 1;
-> +		if (unlikely(start == end))
-> +			return -ENOSPC;
-> +		if (WARN_ON_ONCE(max < start))
-> +			return -EINVAL;
-
-Please juts convert BUG_ON()s to WARNs.  If you want to change how the
-paramters behave.  Do those in a separate patch with proper
-rationales.
-
-Thanks.
-
--- 
-tejun
+In that case (#2 above), you would switch to the previous %rsp (in the
+NMI/MC stack), copy the exception frame from the IST, and continue
+with the #GP handler.  That effectively is the same as it is today,
+where no stack switch occurs on the #GP fault.
