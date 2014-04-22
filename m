@@ -1,158 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925AbaDVPsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:48:18 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:47462 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755745AbaDVPsM (ORCPT
+	id S1756980AbaDVPsg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:48:36 -0400
+Received: from mailout4.w2.samsung.com ([211.189.100.14]:35681 "EHLO
+	usmailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756904AbaDVPsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:48:12 -0400
-Date: Tue, 22 Apr 2014 17:48:07 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [RFC 4/5] drm: Introduce drm_set_unique()
-Message-ID: <20140422154807.GT10722@phenom.ffwll.local>
-Mail-Followup-To: Thierry Reding <thierry.reding@gmail.com>,
-	dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-kernel@vger.kernel.org,
-	Russell King <rmk+kernel@arm.linux.org.uk>
-References: <1398179373-29966-1-git-send-email-thierry.reding@gmail.com>
- <1398179373-29966-5-git-send-email-thierry.reding@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398179373-29966-5-git-send-email-thierry.reding@gmail.com>
-X-Operating-System: Linux phenom 3.14.0+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 22 Apr 2014 11:48:32 -0400
+X-AuditID: cbfec37a-b7fd76d000006048-fb-53568f4e5fd2
+Message-id: <53568F4C.2080800@samsung.com>
+Date: Tue, 22 Apr 2014 09:48:28 -0600
+From: Shuah Khan <shuah.kh@samsung.com>
+Reply-to: shuah.kh@samsung.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
+ Thunderbird/24.2.0
+MIME-version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
+        Shuah Khan <shuah.kh@samsung.com>
+Subject: Re: [PATCH 3.13 00/32] 3.13.11-stable review
+References: <20140421021133.865086647@linuxfoundation.org>
+In-reply-to: <20140421021133.865086647@linuxfoundation.org>
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Originating-IP: [105.144.34.4]
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrALMWRmVeSWpSXmKPExsVy+t9hX13//rBgg9fHmS3mrF/DZtG8eD2b
+	xeVdc9gsniw8w2Qx9dQEFosFGx8xWjzqe8vuwO6xc9Zddo8TM36zeOyfuwbI/d7A7vF5k1wA
+	axSXTUpqTmZZapG+XQJXxtvXz1gLOjgq1m3YxNrAuImti5GTQ0LAROLuzdesELaYxIV764Hi
+	XBxCAssYJR5d2cYK4fQySXxa+BrK2cAo0ftwGlgLr4CWxI7WiUwgNouAqsSSHc+YQWw2AXWJ
+	z693sIPYQgJyEk1LVoPFRQUiJF6dncgC0Sso8WPyPTBbRCBYYu3XhYwgC5gFVjFKXL+8HOw+
+	YQFTibf/O9kgBllJ3O2cDLSMg4NTwFri7cVQkDAzkLly0jZGCFteYvOat8wQ5coSfy6fYoJ4
+	TUFixY03LBMYRWYhWT0LSfssJO0LGJlXMYqVFicXFCelp1YY6hUn5haX5qXrJefnbmKExFLV
+	DsY7X20OMQpwMCrx8EoYhAYLsSaWFVfmHmKU4GBWEuHdmxwWLMSbklhZlVqUH19UmpNafIiR
+	iYNTqoHR6mDvPb7UWu/F80yObH8+8eOpx4yurt89yhrniYjzrljx5evpbymGadFXl8eqh9nx
+	XHDoy7nWzCBb8iHhu9v1Eim2h6fOPnv8al65f8H7b19f3GVaKex7eP9DjlWCz5Svv+m+XF55
+	5az/guQ3226H+57j4/t+wThHdpsHW4aDi3WeSdPGvXGflViKMxINtZiLihMBG+V06YMCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 05:09:32PM +0200, Thierry Reding wrote:
-> From: Thierry Reding <treding@nvidia.com>
-> 
-> Add a helper function that allows drivers to statically set the unique
-> name of the device. This will allow platform and USB drivers to get rid
-> of their DRM bus implementations and directly use drm_dev_alloc() and
-> drm_dev_register().
-> 
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
-> ---
->  drivers/gpu/drm/drm_ioctl.c | 37 +++++++++++++++++++++++++++++++------
->  drivers/gpu/drm/drm_stub.c  |  1 +
->  include/drm/drmP.h          |  3 +++
->  3 files changed, 35 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/drm_ioctl.c b/drivers/gpu/drm/drm_ioctl.c
-> index 2dd3a6d8382b..371db3bef60c 100644
-> --- a/drivers/gpu/drm/drm_ioctl.c
-> +++ b/drivers/gpu/drm/drm_ioctl.c
-> @@ -42,6 +42,20 @@
->  #include <asm/mtrr.h>
->  #endif
->  
-> +int drm_set_unique(struct drm_device *dev, const char *fmt, ...)
+On 04/20/2014 08:13 PM, Greg Kroah-Hartman wrote:
+> ----------------
+>
+> Note, this is the LAST 3.13.y kernel I will be releasing.  It will be
+> end-of-life after this release, please move to 3.14.y at this time.
+>
+> ----------------
+>
+> This is the start of the stable review cycle for the 3.13.11 release.
+> There are 32 patches in this series, all will be posted as a response
+> to this one.  If anyone has any issues with these being applied, please
+> let me know.
+>
+> Responses should be made by Wed Apr 23 02:10:46 UTC 2014.
+> Anything received after that time might be too late.
+>
+> The whole patch series can be found in one patch at:
+> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.13.11-rc1.gz
+> and the diffstat can be found below.
+>
+> thanks,
+>
+> greg k-h
+>
 
-Can you please add a bit of kerneldoc for this? drm_ioctl.c isn't yet
-pulled into the drm reference docbook, but better to have it there
-already. With that fixed this is
+Compiled and booted on my test systems. No dmesg regressions.
 
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-> +{
-> +	va_list ap;
-> +
-> +	kfree(dev->unique);
-> +
-> +	va_start(ap, fmt);
-> +	dev->unique = kvasprintf(GFP_KERNEL, fmt, ap);
-> +	va_end(ap);
-> +
-> +	return dev->unique ? 0 : -ENOMEM;
-> +}
-> +EXPORT_SYMBOL(drm_set_unique);
-> +
->  /**
->   * Get the bus id.
->   *
-> @@ -131,13 +145,24 @@ static int drm_set_busid(struct drm_device *dev, struct drm_file *file_priv)
->  	if (master->unique != NULL)
->  		drm_unset_busid(dev, master);
->  
-> -	ret = dev->driver->bus->set_busid(dev, master);
-> -	if (ret)
-> -		goto err;
-> +	if (dev->driver->bus && dev->driver->bus->set_busid) {
-> +		ret = dev->driver->bus->set_busid(dev, master);
-> +		if (ret) {
-> +			drm_unset_busid(dev, master);
-> +			return ret;
-> +		}
-> +	} else {
-> +		WARN(dev->unique == NULL,
-> +		     "No drm_bus.set_busid() implementation provided by %ps. "
-> +		     "Set the unique name explicitly using drm_set_unique().",
-> +		     dev->driver);
-> +
-> +		master->unique = kstrdup(dev->unique, GFP_KERNEL);
-> +		if (master->unique)
-> +			master->unique_len = strlen(dev->unique);
-> +	}
-> +
->  	return 0;
-> -err:
-> -	drm_unset_busid(dev, master);
-> -	return ret;
->  }
->  
->  /**
-> diff --git a/drivers/gpu/drm/drm_stub.c b/drivers/gpu/drm/drm_stub.c
-> index 3a8e832ad151..9465cf766fe7 100644
-> --- a/drivers/gpu/drm/drm_stub.c
-> +++ b/drivers/gpu/drm/drm_stub.c
-> @@ -646,6 +646,7 @@ static void drm_dev_release(struct kref *ref)
->  	drm_minor_free(dev, DRM_MINOR_CONTROL);
->  
->  	mutex_destroy(&dev->master_mutex);
-> +	kfree(dev->unique);
->  	kfree(dev);
->  }
->  
-> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-> index 8c80c1894b41..8fdefcdc4036 100644
-> --- a/include/drm/drmP.h
-> +++ b/include/drm/drmP.h
-> @@ -1158,6 +1158,8 @@ struct drm_device {
->  	struct drm_vma_offset_manager *vma_offset_manager;
->  	/*@} */
->  	int switch_power_state;
-> +
-> +	char *unique;
->  };
->  
->  #define DRM_SWITCH_POWER_ON 0
-> @@ -1238,6 +1240,7 @@ extern unsigned int drm_poll(struct file *filp, struct poll_table_struct *wait);
->  				/* Misc. IOCTL support (drm_ioctl.h) */
->  extern int drm_irq_by_busid(struct drm_device *dev, void *data,
->  			    struct drm_file *file_priv);
-> +extern int drm_set_unique(struct drm_device *dev, const char *fmt, ...);
->  extern int drm_getunique(struct drm_device *dev, void *data,
->  			 struct drm_file *file_priv);
->  extern int drm_setunique(struct drm_device *dev, void *data,
-> -- 
-> 1.9.2
-> 
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+-- Shuah
 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Shuah Khan
+Senior Linux Kernel Developer - Open Source Group
+Samsung Research America(Silicon Valley)
+shuah.kh@samsung.com | (970) 672-0658
