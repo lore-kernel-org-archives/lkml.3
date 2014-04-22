@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933309AbaDVRET (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 13:04:19 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:45982 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932737AbaDVRER (ORCPT
+	id S933398AbaDVRFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 13:05:46 -0400
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:58052 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933275AbaDVRFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 13:04:17 -0400
+	Tue, 22 Apr 2014 13:05:44 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>
-References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
-	<5355A9E9.9070102@zytor.com>
-	<CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
-	<1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com>
-	<CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
-	<a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com>
-	<CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
-	<ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com>
-	<CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
-	<20140422112312.GB15882@pd.tnic>
-	<20140422144659.GF15882@pd.tnic>
-	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
-	<53569467.1030809@zytor.com>
-	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
-	<CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
-	<CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>
-Date: Tue, 22 Apr 2014 10:04:16 -0700
-X-Google-Sender-Auth: hKjtKjfTCtKu_-mWn5ijPEoMblk
-Message-ID: <CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andrew Lutomirski <amluto@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <CANq1E4TZHwyesFSsfKe8bE+z-H9aXs49Wd5EpkFFX08AK4onGg@mail.gmail.com>
+References: <cover.1398097304.git.luto@amacapital.net> <430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+ <CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
+ <20140422143152.GA23716@amd.pavel.ucw.cz> <CANq1E4TPPcdD-8FF_Kc=r44Vrd51Vmt-OVu+EtCC-oEzXkvJvg@mail.gmail.com>
+ <CALCETrWN_g50nDitvUSmoL6Ho0pHXEMXiqCVHeU53uZc5hN+1g@mail.gmail.com> <CANq1E4TZHwyesFSsfKe8bE+z-H9aXs49Wd5EpkFFX08AK4onGg@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 22 Apr 2014 10:05:23 -0700
+Message-ID: <CALCETrWCYB0fvCMYRySqbpYu42ph1cQfF3yVNDicvtHHSASp1A@mail.gmail.com>
+Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 10:00 AM, Andrew Lutomirski <amluto@gmail.com> wrote:
+On Tue, Apr 22, 2014 at 9:44 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi
 >
-> My point is that it may be safe to remove the special espfix fixup
-> from #PF, which is probably the most performance-critical piece here,
-> aside from iret itself.
+> On Tue, Apr 22, 2014 at 5:24 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+>> On Tue, Apr 22, 2014 at 8:19 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>>> In other words, the bug you describe is that /proc/pid/fd/ allows
+>>> access to objects without a reachable path to the only _real_
+>>> filesystem link. But isn't the same true for openat()?
+>>
+>> I don't think so.  openat doesn't work on fds for things that aren't
+>> directories.
+>
+> Sorry, I wasn't precise enough: I meant the same 'leak' occurs if you
+> keep a dir-fd on the directory in question _before_ it is set to 0600.
+> Just like the example race keeps a file-fd to the file in question. So
+> after the directory is set to 0600 you can use that dir-fd via
+> openat() to avoid the whole path-lookup just like you do it via /proc.
+>
 
-Actually, even that is unsafe.
+I think this doesn't work -- fds pointing at directories don't capture
+execute permission the way fds pointing at files can capture write
+permission.  This is similar to the way that ls fails if you chmod 000
+'.'.  Yes, it's weird.
 
-Why?
-
-The segment table is shared for a process. So you can have one thread
-doing a load_ldt() that invalidates a segment, while another thread is
-busy taking a page fault. The segment was valid at page fault time and
-is saved on the kernel stack, but by the time the page fault returns,
-it is no longer valid and the iretq will fault.
-
-Anyway, if done correctly, this whole espfix should be totally free
-for normal processes, since it should only trigger if SS is a LDT
-entry (bit #2 set in the segment descriptor). So the normal fast-path
-should just have a simple test for that.
-
-And if you have a SS that is a descriptor in the LDT, nobody cares
-about performance any more.
-
-             Linus
+--Andy
