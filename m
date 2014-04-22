@@ -1,48 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330AbaDVTbR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:31:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63197 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751287AbaDVTbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:31:15 -0400
-From: Bandan Das <bsd@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: kvm@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] KVM: x86: Check for host supported fields in shadow vmcs
-References: <jpgk3aiv6a9.fsf@nelium.bos.redhat.com>
-	<5355E222.7010607@redhat.com> <jpg7g6h72ln.fsf@nelium.bos.redhat.com>
-	<5356BF6A.2070801@redhat.com>
-Date: Tue, 22 Apr 2014 15:31:12 -0400
-In-Reply-To: <5356BF6A.2070801@redhat.com> (Paolo Bonzini's message of "Tue,
-	22 Apr 2014 15:13:46 -0400")
-Message-ID: <jpg38h5xitb.fsf@nelium.bos.redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1755554AbaDVTbw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:31:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48639 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaDVTbu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 15:31:50 -0400
+Date: Tue, 22 Apr 2014 12:31:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: vmscan: Do not throttle based on pfmemalloc
+ reserves if node has no ZONE_NORMAL
+Message-Id: <20140422123149.d406e5cbef5c01eb6dc5c89b@linux-foundation.org>
+In-Reply-To: <20140422083852.GB23991@suse.de>
+References: <20140422083852.GB23991@suse.de>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paolo Bonzini <pbonzini@redhat.com> writes:
+On Tue, 22 Apr 2014 09:38:52 +0100 Mel Gorman <mgorman@suse.de> wrote:
 
-> Il 22/04/2014 12:25, Bandan Das ha scritto:
->>>> >> +		if (j < i)
->>>> >> +			shadow_read_write_fields[j] =
->>>> >> +				shadow_read_write_fields[i];
->>>> >> +		j++;
->>> >
->>> > ... you need to respin anyway because the j++ is wrong.  It should be
->>> > inside the "if".  If you prefer, you can put it in the lhs of the
->> j++ outside the "if" looks right to me. Can you please explain why
->> you think it shouldn't be that way ?
->>
->
-> The way you wrote it, j will always be equal to i.
+> throttle_direct_reclaim() is meant to trigger during swap-over-network
+> during which the min watermark is treated as a pfmemalloc reserve. It
+> throttes on the first node in the zonelist but this is flawed.
+> 
+> On a NUMA machine running a 32-bit kernel (I know) allocation requests
+> freom CPUs on node 1 would detect no pfmemalloc reserves and the process
+> gets throttled. This patch adjusts throttling of direct reclaim to throttle
+> based on the first node in the zonelist that has a usable ZONE_NORMAL or
+> lower zone.
 
-Right, and that's what we want unless we come across an unsupported 
-field. We then overwrite the unsupported field with the next
-field supported. j this way keeps track of the "real" length.
+I'm unable to determine from the above whether we should backport this
+fix.  Please don't forget to describe the end-user visible effects of
+a bug when that isn't obvious.  
 
-> Paolo
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2507,10 +2507,17 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+>  
+>  	for (i = 0; i <= ZONE_NORMAL; i++) {
+>  		zone = &pgdat->node_zones[i];
+> +		if (!populated_zone(zone))
+> +			continue;
+
+What's this?  Performance tweak?  Or does min_wmark_pages() return
+non-zero for an unpopulated zone, which seems odd.
+
+>  		pfmemalloc_reserve += min_wmark_pages(zone);
+>  		free_pages += zone_page_state(zone, NR_FREE_PAGES);
+>  	}
+>  
+> +	/* If there are no reserves (unexpected config) then do not throttle */
+> +	if (!pfmemalloc_reserve)
+> +		return true;
+> +
+>  	wmark_ok = free_pages > pfmemalloc_reserve / 2;
+>  
+>  	/* kswapd must be awake if processes are being throttled */
+> @@ -2535,9 +2542,9 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+>  static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+>  					nodemask_t *nodemask)
+>  {
+> +	struct zoneref *z;
+>  	struct zone *zone;
+> -	int high_zoneidx = gfp_zone(gfp_mask);
+> -	pg_data_t *pgdat;
+> +	pg_data_t *pgdat = NULL;
+>  
+>  	/*
+>  	 * Kernel threads should not be throttled as they may be indirectly
+> @@ -2556,10 +2563,24 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+>  	if (fatal_signal_pending(current))
+>  		goto out;
+>  
+> -	/* Check if the pfmemalloc reserves are ok */
+> -	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+> -	pgdat = zone->zone_pgdat;
+> -	if (pfmemalloc_watermark_ok(pgdat))
+> +	/*
+> +	 * Check if the pfmemalloc reserves are ok by finding the first node
+> +	 * with a usable ZONE_NORMAL or lower zone
+> +	 */
+
+That comment tells us what the code does but not why it does it.
+
+- Why do we ignore zones >= ZONE_NORMAL?
+
+- Why do we throttle when there may be as-yet-unexamined nodes which
+  have reclaimable pages?
+
+
+> +        for_each_zone_zonelist_nodemask(zone, z, zonelist,
+> +                                        gfp_mask, nodemask) {
+
+Those two lines have spaces-instead-of-tabs.
+
+> +		if (zone_idx(zone) > ZONE_NORMAL)
+> +			continue;
+> +
+> +		/* Throttle based on the first usable node */
+> +		pgdat = zone->zone_pgdat;
+> +		if (pfmemalloc_watermark_ok(pgdat))
+> +			goto out;
+> +		break;
+> +	}
+> +
+> +	/* If no zone was usable by the allocation flags then do not throttle */
+> +	if (!pgdat)
+>  		goto out;
+
