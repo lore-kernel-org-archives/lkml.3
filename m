@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535AbaDVJol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 05:44:41 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:55111 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754597AbaDVJoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 05:44:15 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Peter Chen <Peter.Chen@freescale.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH v3 3/3] usb: chipidea: msm: Initialize offset of the capability registers
-Date: Tue, 22 Apr 2014 12:43:17 +0300
-Message-Id: <1398159797-26917-4-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398159797-26917-1-git-send-email-iivanov@mm-sol.com>
-References: <1398159797-26917-1-git-send-email-iivanov@mm-sol.com>
+	id S932079AbaDVJpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 05:45:14 -0400
+Received: from s3.sipsolutions.net ([144.76.43.152]:41438 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754597AbaDVJpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 05:45:08 -0400
+Message-ID: <1398159886.4211.1.camel@jlt4.sipsolutions.net>
+Subject: Re: [PATCH 1/3] 6lowpan: add helper to get 6lowpan namespace
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Cc: alex.bluesman.smirnov@gmail.com, dbaryshkov@gmail.com,
+        linux-zigbee-devel@lists.sourceforge.net, davem@davemloft.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        backports@vger.kernel.org, "Luis R. Rodriguez" <mcgrof@suse.com>
+Date: Tue, 22 Apr 2014 11:44:46 +0200
+In-Reply-To: <1397784176-15809-2-git-send-email-mcgrof@do-not-panic.com> (sfid-20140418_032412_117495_4585013B)
+References: <1397784176-15809-1-git-send-email-mcgrof@do-not-panic.com>
+	 <1397784176-15809-2-git-send-email-mcgrof@do-not-panic.com>
+	 (sfid-20140418_032412_117495_4585013B)
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+On Thu, 2014-04-17 at 18:22 -0700, Luis R. Rodriguez wrote:
 
-Since commit 62bb84e (usb: gadget: ci13xxx: convert to platform device)
-start address of the capability registers is not passed correctly to
-udc_probe(). Fix this.
+> +#if IS_ENABLED(CONFIG_IEEE802154_6LOWPAN)
+> [...]
+> +#else
+> +static inline struct netns_ieee802154_lowpan *
+> +net_ieee802154_lowpan(struct net *net)
+> +{
+> +	return NULL;
+> +}
+> +#endif
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- drivers/usb/chipidea/ci_hdrc_msm.c | 1 +
- 1 file changed, 1 insertion(+)
+Why would that be needed? If nobody compiles 802.15.4 then it seems
+nothing should reference it?
 
-diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
-index 736aeb2..d72b9d2 100644
---- a/drivers/usb/chipidea/ci_hdrc_msm.c
-+++ b/drivers/usb/chipidea/ci_hdrc_msm.c
-@@ -47,6 +47,7 @@ static void ci_hdrc_msm_notify_event(struct ci_hdrc *ci, unsigned event)
-
- static struct ci_hdrc_platform_data ci_hdrc_msm_platdata = {
- 	.name			= "ci_hdrc_msm",
-+	.capoffset		= DEF_CAPOFFSET,
- 	.flags			= CI_HDRC_REGS_SHARED |
- 				  CI_HDRC_REQUIRE_TRANSCEIVER |
- 				  CI_HDRC_DISABLE_STREAMING,
---
-1.8.3.2
+johannes
 
