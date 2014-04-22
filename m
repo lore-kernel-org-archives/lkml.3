@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434AbaDVLzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:55:09 -0400
-Received: from mail-ie0-f174.google.com ([209.85.223.174]:52900 "EHLO
-	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755594AbaDVLzE (ORCPT
+	id S932313AbaDVL5h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:57:37 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:52235 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932168AbaDVL5c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:55:04 -0400
+	Tue, 22 Apr 2014 07:57:32 -0400
+Message-ID: <53565922.1050709@de.ibm.com>
+Date: Tue, 22 Apr 2014 13:57:22 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <535631EB.4060906@redhat.com>
-References: <1395256011-2423-1-git-send-email-dh.herrmann@gmail.com>
-	<5343F2EC.3050508@redhat.com>
-	<CANq1E4TmtR=gSgR25PGC_EN=xrEEg1+F=zkTUGXZ4SHvjFNbag@mail.gmail.com>
-	<535631EB.4060906@redhat.com>
-Date: Tue, 22 Apr 2014 13:55:03 +0200
-Message-ID: <CANq1E4TufnELwEDZAkzH94Zn3gb46qvxfDboN5y2mK=Q2gk9-Q@mail.gmail.com>
-Subject: Re: [PATCH 0/6] File Sealing & memfd_create()
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Florian Weimer <fweimer@redhat.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Kay Sievers <kay@vrfy.org>,
-        Daniel Mack <zonque@gmail.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+To: Johannes Weiner <hannes@cmpxchg.org>
+CC: Rafael Aquini <aquini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, stable@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: commit 0bf1457f0cfca7b  " mm: vmscan: do not swap anon pages
+ just because free+file is low" causes heavy performance regression on paging
+References: <53564AA9.3060905@de.ibm.com>
+In-Reply-To: <53564AA9.3060905@de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042211-0542-0000-0000-000008BC0501
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On 22/04/14 12:55, Christian Borntraeger wrote:
+> While preparing/testing some KVM on s390 patches for the next merge window (target is kvm/next which is based on 3.15-rc1) I faced a very severe performance hickup on guest paging (all anonymous memory).
+> 
+> All memory bound guests are in "D" state now and the system is barely unusable.
+> 
+> Reverting commit 0bf1457f0cfca7bc026a82323ad34bcf58ad035d
+> "mm: vmscan: do not swap anon pages just because free+file is low" makes the problem go away.
+> 
+> According to /proc/vmstat the system is now in direct reclaim almost all the time for every page fault (more than 10x more direct reclaims than kswap reclaims)
+> With the patch being reverted everything is fine again.
+> 
+> Any ideas?
 
-On Tue, Apr 22, 2014 at 11:10 AM, Florian Weimer <fweimer@redhat.com> wrote:
-> Ah.  What do you recommend for recipient to recognize such descriptors?
-> Would they just try to seal them and reject them if this fails?
+Here is an idea to tackle my problem and the original problem:
 
-This highly depends on your use-case. Please see the initial email in
-this thread. It describes 2 example use-cases. In both cases, the
-recipients read the current set of seals and verify that a given set
-of seals is set.
+reverting  0bf1457f0cfca7bc026a82323ad34bcf58ad035d + checking against low, also seems to make my system usable.
 
-Thanks
-David
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1923,7 +1923,7 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+         */
+        if (global_reclaim(sc)) {
+                free = zone_page_state(zone, NR_FREE_PAGES);
+-               if (unlikely(file + free <= high_wmark_pages(zone))) {
++               if (unlikely(file + free <= low_wmark_pages(zone))) {
+                        scan_balance = SCAN_ANON;
+                        goto out;
+                }
+
