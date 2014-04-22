@@ -1,191 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101AbaDVFtl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 01:49:41 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:51279 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751709AbaDVFte convert rfc822-to-8bit (ORCPT
+	id S1751943AbaDVFyG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 01:54:06 -0400
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:60660 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbaDVFyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 01:49:34 -0400
+	Tue, 22 Apr 2014 01:54:03 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140416174652.GA8793@birch.djwong.org>
-References: <CADDb1s2RvN_S+abFXCe4ZhZPKZgP_PiocJdpiLzRC_Se5sgVVg@mail.gmail.com>
-	<20140415124743.GD3403@thunk.org>
-	<CADDb1s3HYDvb51Ngrwk82gkpbUWg1bRo7kaUmbGRmb0g_9JKgw@mail.gmail.com>
-	<20140416050729.GD21807@thunk.org>
-	<CADDb1s3CnQJyY4f1xS6a=+ceE3cr0ZmkE1EQZ95fLDBw7DHfNg@mail.gmail.com>
-	<20140416174652.GA8793@birch.djwong.org>
-Date: Tue, 22 Apr 2014 11:19:32 +0530
-Message-ID: <CADDb1s3veuMeiYVOzEz0wuwObH7rTWPqNxzMUiYWqm1xcPN=uA@mail.gmail.com>
-Subject: Re: Ext4: deadlock occurs when running fsstress and ENOSPC errors are seen.
-From: Amit Sahrawat <amit.sahrawat83@gmail.com>
-To: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namjae Jeon <linkinjeon@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20140422023410.GB1709@milliways>
+References: <20140421203207.GA27025@milliways>
+	<5549363.XIKIYZeGzc@grover>
+	<20140422023106.GA1709@milliways>
+	<20140422023410.GB1709@milliways>
+Date: Tue, 22 Apr 2014 01:54:01 -0400
+Message-ID: <CADnq5_OPQdict2MoUFDcLB0AXjkg9Np4W+U6O+RR8mExWKt-Rw@mail.gmail.com>
+Subject: Re: 3.15.0-rc2 radeon HD 7480D [Aruba] blank display
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Ken Moffat <zarniwhoop@ntlworld.com>
+Cc: Ed Tomlinson <edt@aei.ca>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=001a11c123de2d0cc004f79b3ef7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Darrick,
+--001a11c123de2d0cc004f79b3ef7
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Thanks for the reply, sorry for responding late.
-
-On Wed, Apr 16, 2014 at 11:16 PM, Darrick J. Wong
-<darrick.wong@oracle.com> wrote:
-> On Wed, Apr 16, 2014 at 01:21:34PM +0530, Amit Sahrawat wrote:
->> Sorry Ted, if it caused the confusion.
+On Mon, Apr 21, 2014 at 10:34 PM, Ken Moffat <zarniwhoop@ntlworld.com> wrot=
+e:
+> On Tue, Apr 22, 2014 at 03:31:06AM +0100, Ken Moffat wrote:
+>
+> [ resending, somehow lkml dropped out of the Cc. ]
+>
+>> On Tue, Apr 22, 2014 at 12:19:40AM +0100, Ken Moffat wrote:
+>> > On Mon, Apr 21, 2014 at 05:29:27PM -0400, Ed Tomlinson wrote:
 >>
->> There were actually 2 parts to the problem, the logs in the first mail
->> were from the original situation – where in there were many block
->> groups and error prints also showed that.
->>
->> EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1493, 0
->> clusters in bitmap, 58339 in gd
->> EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1000, 0
->> clusters in bitmap, 3 in gd
->> EXT4-fs error (device sda1): ext4_mb_generate_buddy:742: group 1425, 0
->> clusters in bitmap, 1 in gd
->> JBD2: Spotted dirty metadata buffer (dev = sda1, blocknr = 0). There's
->> a risk of filesystem corruption in case of system crash.
->> JBD2: Spotted dirty metadata buffer (dev = sda1, blocknr = 0). There's
->> a risk of filesystem corruption in case of system crash.
->>
->> 1)    Original case – when the disk got corrupted and we only had the
->> logs and the hung task messages. But not the HDD on which issue was
->> observed.
->> 2)    In order to reproduce the problem as was coming through the logs
->> (which highlighted the problem in the bitmap corruption). To minimize
->> the environment and make a proper case, we created a smaller partition
->> size and with only 2 groups. And intentionally corrupted the group 1
->> (our intention was just to replicate the error scenario).
->
-> I'm assuming that the original broken fs simply had a corrupt block bitmap, and
-> that the dd thing was just to simulate that corruption in a testing
-> environment?
-
-Yes, we did so in order to replicate the error scenario.
->
->> 3)    After corruption we used ‘fsstress’  - we got the similar problem
->> as was coming the original logs. – We shared our analysis after this
->> point for looping in the writepages part the free blocks mismatch.
->
-> Hm.  I tried it with 3.15-rc1 and didn't see any hangs.  Corrupt bitmaps shut
-> down allocations from the block group and the FS continues, as expected.
->
-We are using kernel version 3.8, so cannot switch to 3.15-rc1. It is a
-limitation currently.
-
->> 4)    We came across ‘Darrick’ patches(in which it also mentioned about
->> how to corrupt to reproduce the problem) and applied on our
->> environment. It solved the initial problem about the looping in
->> writepages, but now we got hangs at other places.
->
-> There are hundreds of Darrick patches ... to which one are you referring? :)
-> (What was the subject line?)
->
-ext4: error out if verifying the block bitmap fails
-ext4: fix type declaration of ext4_validate_block_bitmap
-ext4: mark block group as corrupt on block bitmap error
-ext4: mark block group as corrupt on inode bitmap error
-ext4: mark group corrupt on group descriptor checksum
-ext4: don't count free clusters from a corrupt block group
-
-So, the patches helps in marking the block group as corrupt and avoids
-further allocation. But when we consider the normal write path using
-write_begin. Since, there is mismatch between the free cluster count
-from the group descriptor and the bitmap. In that case it marks the
-pages dirty by copying dirty but later it get ENOSPC from the
-writepages when it actually does the allocation.
-
-So, our doubt is if we are marking the block group as corrupt, we
-should also subtract the block group count from the
-s_freeclusters_counter. This will make sure we have the valid
-freecluster count and error ‘ENOSPC’ can be returned from the
-write_begin, instead of propagating such paths till the writepages.
-
-We made change like this:
-
-@@ -737,14 +737,18 @@ void ext4_mb_generate_buddy(struct super_block *sb,
-        grp->bb_fragments = fragments;
-
-        if (free != grp->bb_free) {
-+               struct ext4_sb_info *sbi = EXT4_SB(sb);
-                ext4_grp_locked_error(sb, group, 0, 0,
-                                      "%u clusters in bitmap, %u in gd; "
-                                      "block bitmap corrupt.",
-                                      free, grp->bb_free);
-                /*
-                 * If we intend to continue, we consider group descriptor
-                 * corrupt and update bb_free using bitmap value
-                 */
-+               percpu_counter_sub(&sbi->s_freeclusters_counter, grp->bb_free);
-                grp->bb_free = free;
-                set_bit(EXT4_GROUP_INFO_BBITMAP_CORRUPT_BIT, &grp->bb_state);
-        }
-        mb_set_largest_free_order(sb, grp);
-
-Is this the correct method? Or are missing something in this? Please
-share your opinion.
-
-
->> Using ‘tune2fs’ is not a viable solution in our case, we can only
->> provide the solution via. the kernel changes. So, we made the changes
->> as shared earlier.
->
-> Would it help if you could set errors=remount-ro in mke2fs?
->
-Sorry, we cannot reformat or use tune2fs to change the ‘errors’ value.
-
-> --D
->> So the question isn't how the file system got corrupted, but that
->> you'd prefer that the system recovers without hanging after this
->> corruption.
->> >> Yes,  our priority is to keep the system running.
->>
->> Again, Sorry for the confusion. But the intention was just to show the
->> original problem and what we did in order to replicate the problem.
->>
->> Thanks & Regards,
->> Amit Sahrawat
->>
->>
->> On Wed, Apr 16, 2014 at 10:37 AM, Theodore Ts'o <tytso@mit.edu> wrote:
->> > On Wed, Apr 16, 2014 at 10:30:10AM +0530, Amit Sahrawat wrote:
->> >> 4)    Corrupt the block group ‘1’  by writing all ‘1’, we had one file
->> >> with all 1’s, so using ‘dd’ –
->> >> dd if=i_file of=/dev/sdb1 bs=4096 seek=17 count=1
->> >> After this mount the partition – create few random size files and then
->> >> ran ‘fsstress,
+>> > > Ken,
+>> > >
+>> > > You might want to try reverting:
+>> > >
+>> > > commit 379dfc25e257ffe10eb53b86d2375f7c0f4f33ef
+>> > > Author: Alex Deucher <alexdeucher@gmail.com>
+>> > > Date:   Mon Apr 7 10:33:46 2014 -0400
+>> > >
+>> > >     drm/radeon/dp: switch to the common i2c over aux code
+>> > >
+>> > >     Provides a nice cleanup in radeon.
+>> > >
+>> > >     Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
+>> > >     Signed-off-by: Christian K=C3=B6nig <christian.koenig@amd.com>
+>> > >
+>> > > This fixed a similar problem here (see the drm pull thread for rc1)
+>> > >
+>> > > Thanks
+>> > > Ed Tomlinson
 >> >
->> > Um, sigh.  You didn't say that you were deliberately corrupting the
->> > file system.  That wasn't in the subject line, or anywhere else in the
->> > original message.
+>> >  Tried reverting that from rc2, but it didn't help.  Thanks anyway.
 >> >
->> > So the question isn't how the file system got corrupted, but that
->> > you'd prefer that the system recovers without hanging after this
->> > corruption.
->> >
->> > I wish you had *said* that.  It would have saved me a lot of time,
->> > since I was trying to figure out how the system had gotten so
->> > corrupted (not realizing you had deliberately corrupted the file
->> > system).
->> >
->> > So I think if you run "tune2fs -e remount-ro /dev/sdb1" before you
->> > started the fsstress, the file system would have remounted the
->> > filesystem read-only at the first EXT4-fs error message.  This would
->> > avoid the hang that you saw, since the file system would hopefully
->> > "failed fast", before th euser had the opportunity to put data into
->> > the page cache that would be lost when the system discovered there was
->> > no place to put the data.
->> >
->> > Regards,
->> >
->> >                                                 - Ted
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-ext4" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>>  Well, I *believed* I had created a patch for that commit, and
+>> reverted it from -rc2 with patch -R.  But I've now bisected through
+>> drivers/gpu/drm between v3.14.0 and v3.15-rc2 and the bisection
+>> pointed to that same commit, so I guess I did something wrong.
+>>
+>>  There were a couple of other issues along the way (mounting nfs
+>> hung on one commit, startx hung on several of the commits, but I've
+>> marked those as "good" because I had a display, even if the system
+>> was not usable).
+>>
+>>  I've now gone back to linus' tree that I cloned a few hours ago,
+>> i.e.
+>> commit c089b229dfdd09d59a11d8bc2344bf8196d575ce
+>> Merge: 9ac03675010a 0565103d1adb
+>> Author: Linus Torvalds <torvalds@linux-foundation.org>
+>> Date:   Mon Apr 21 10:05:35 2014 -0700
+>>
+>>     Merge branch 'for-linus' of
+>> git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml
+>>
+>> created a branch, and *definitely* reverted
+>> 379dfc25e257ffe10eb53b86d2375f7c0f4f33ef (using git revert) in that
+>> branch.  And this version works fine.
+>>
+>>  So belatedly I see that I seem to have the same problem as Ed.  Or
+>> at least that the same commit is causing both our problems.
+>>
+>>  Alex - do you need any more information from me to help with this ?
+
+The attached patch should fix it.
+
+Thanks,
+
+Alex
+
+--001a11c123de2d0cc004f79b3ef7
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-drm-radeon-aux-fix-hpd-assignment-for-aux-bus.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-radeon-aux-fix-hpd-assignment-for-aux-bus.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_huas1mvw0
+
+RnJvbSA5Y2Q3NjRmZDU3YmIyYTRlNWY2MThkMGY4YTY0YzgxNTRhODIwNjg4IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhhbmRlci5kZXVjaGVyQGFtZC5j
+b20+CkRhdGU6IFR1ZSwgMjIgQXByIDIwMTQgMDE6NDk6MjggLTA0MDAKU3ViamVjdDogW1BBVENI
+XSBkcm0vcmFkZW9uL2F1eDogZml4IGhwZCBhc3NpZ25tZW50IGZvciBhdXggYnVzCgpUaGUgaHBk
+IChob3QgcGx1ZyBkZXRlY3QpIHBpbiBhc3NpZ25tZW50IGdvdCBsb3N0CmluIHRoZSBjb252ZXJz
+aW9uIHRvIHRvIHRoZSBjb21tb24gaTJjIG92ZXIgYXV4CmNvZGUuICBXaXRob3V0IHRoaXMgaW5m
+b3JtYXRpb24sIGF1eCB0cmFuc2FjdGlvbnMKZG8gbm90IHdvcmsgcHJvcGVybHkuICBGaXhlcyBE
+UCBmYWlsdXJlcy4KClNpZ25lZC1vZmYtYnk6IEFsZXggRGV1Y2hlciA8YWxleGFuZGVyLmRldWNo
+ZXJAYW1kLmNvbT4KLS0tCiBkcml2ZXJzL2dwdS9kcm0vcmFkZW9uL2F0b21iaW9zX2RwLmMgfCAx
+ICsKIDEgZmlsZSBjaGFuZ2VkLCAxIGluc2VydGlvbigrKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMv
+Z3B1L2RybS9yYWRlb24vYXRvbWJpb3NfZHAuYyBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vYXRv
+bWJpb3NfZHAuYwppbmRleCAxNTkzNjUyLi5iYzAxMTlmIDEwMDY0NAotLS0gYS9kcml2ZXJzL2dw
+dS9kcm0vcmFkZW9uL2F0b21iaW9zX2RwLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9h
+dG9tYmlvc19kcC5jCkBAIC0yMDksNiArMjA5LDcgQEAgdm9pZCByYWRlb25fZHBfYXV4X2luaXQo
+c3RydWN0IHJhZGVvbl9jb25uZWN0b3IgKnJhZGVvbl9jb25uZWN0b3IpCiB7CiAJaW50IHJldDsK
+IAorCXJhZGVvbl9jb25uZWN0b3ItPmRkY19idXMtPnJlYy5ocGQgPSByYWRlb25fY29ubmVjdG9y
+LT5ocGQuaHBkOwogCXJhZGVvbl9jb25uZWN0b3ItPmRkY19idXMtPmF1eC5kZXYgPSByYWRlb25f
+Y29ubmVjdG9yLT5iYXNlLmtkZXY7CiAJcmFkZW9uX2Nvbm5lY3Rvci0+ZGRjX2J1cy0+YXV4LnRy
+YW5zZmVyID0gcmFkZW9uX2RwX2F1eF90cmFuc2ZlcjsKIAlyZXQgPSBkcm1fZHBfYXV4X3JlZ2lz
+dGVyX2kyY19idXMoJnJhZGVvbl9jb25uZWN0b3ItPmRkY19idXMtPmF1eCk7Ci0tIAoxLjcuMTEu
+NwoK
+--001a11c123de2d0cc004f79b3ef7--
