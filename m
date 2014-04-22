@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956AbaDVTlK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:41:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:51923 "EHLO comal.ext.ti.com"
+	id S1756130AbaDVTlj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:41:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44388 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752580AbaDVTlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:41:08 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Joel Fernandes <joelf@ti.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Russell King <linux@arm.linux.org.uk>, Nishanth Menon <nm@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH v2] ARM: OMAP5: Switch to THUMB mode if needed on secondary CPU
-Date: Tue, 22 Apr 2014 14:40:39 -0500
-Message-ID: <1398195639-29273-1-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1755761AbaDVTlJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 15:41:09 -0400
+Date: Tue, 22 Apr 2014 15:40:31 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, jolsa@redhat.com,
+        peterz@infradead.org, mingo@elte.hu, namhyung@kernel.org,
+        dsahern@gmail.com
+Subject: Re: [PATCH] perf tools: fix processing of pid/tid for mmap records
+Message-ID: <20140422194031.GM8488@redhat.com>
+References: <20140421160655.GA4201@quad>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140421160655.GA4201@quad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On my DRA7 system, when the kernel is built in Thumb-2 mode, the secondary CPU
-(Cortex A15) fails to come up causing SMP boot on second CPU to timeout. This
-seems to be because the CPU is in ARM mode once the ROM hands over control to
-the kernel.  Switch to Thumb-2 mode if required once the kernel is control of
-secondary CPU. On OMAP4 on the other hand, it appears to be in Thumb-2 mode on
-entry so this is not required and SMP boot works as is.
+On Mon, Apr 21, 2014 at 06:06:55PM +0200, Stephane Eranian wrote:
+> perf tools: fix processing of pid/tid for mmap records
+>     
+> Mmaps are global to a process (always). Processing them
+> per-thread was causing some serious issues in case mmaps
+> would overlap. The overlap fixups would only occur in the
+> context of the thread which generated the overlapping
+> mmap. But that was cause issues later on when a sample
+> from another thread would fall into that overlapping
+> mmap.
 
-Also corrected a spurious '+' and updated copyright information.
+eh?  You are basically reverting my patch for a similar problem. :-)
 
-Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Nishanth Menon <nm@ti.com>
-Cc: Tony Lindgren <tony@atomide.com>
-Tested-by: Nishanth Menon <nm@ti.com>
-Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Signed-off-by: Joel Fernandes <joelf@ti.com>
----
- arch/arm/mach-omap2/omap-headsmp.S |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+I was running a large multi-threading program (specjbb) and the threads
+were not being seperated into their own map'd areas.  So either I had to
+lump all threads in to the same pid space or make the change you are
+reverting.
 
-diff --git a/arch/arm/mach-omap2/omap-headsmp.S b/arch/arm/mach-omap2/omap-headsmp.S
-index 75e9295..40c5d5f 100644
---- a/arch/arm/mach-omap2/omap-headsmp.S
-+++ b/arch/arm/mach-omap2/omap-headsmp.S
-@@ -1,7 +1,7 @@
- /*
-  * Secondary CPU startup routine source file.
-  *
-- * Copyright (C) 2009 Texas Instruments, Inc.
-+ * Copyright (C) 2009-2014 Texas Instruments, Inc.
-  *
-  * Author:
-  *      Santosh Shilimkar <santosh.shilimkar@ti.com>
-@@ -28,9 +28,13 @@
-  * code.  This routine also provides a holding flag into which
-  * secondary core is held until we're ready for it to initialise.
-  * The primary core will update this flag using a hardware
--+ * register AuxCoreBoot0.
-+ * register AuxCoreBoot0.
-  */
- ENTRY(omap5_secondary_startup)
-+.arm
-+THUMB( adr     r9, BSYM(wait)  )       @ CPU may be entered in ARM mode.
-+THUMB( bx      r9              )       @ If this is a Thumb-2 kernel,
-+THUMB( .thumb                  )       @ switch to Thumb now.
- wait:	ldr	r2, =AUX_CORE_BOOT0_PA	@ read from AuxCoreBoot0
- 	ldr	r0, [r2]
- 	mov	r0, r0, lsr #5
--- 
-1.7.9.5
+The problem I had with the double pid (as you propose), I would later look
+up samples based on pid/tid and there would be _no_ map available because
+it was created as a pid/pid pair.  As a result, our c2c program would drop
+thousands of samples on the floor (because there was no mapping for the
+data address to get the major/minor/inode info).
 
+Now I modified our c2c program to lookup samples as pid/pid but now the
+maps lost tid info, and I had to hack around that by carrying the tid info
+in a private struct.
+
+Hopefully Jiri's thread work using pointers will solve both our problems.
+:-)  But I can't ack your patch because it will break my work :-(
+
+Cheers,
+Don
+
+
+> 
+> The solution to the problem is to handle ALL mmaps as
+> occurring in the master thread (pid = tid) and then to
+> lookup for thread map using pid as the tid argument.
+> This is how samples are looking up for the thread map
+> already (notice pid passed twice):
+>     
+> int perf_event__preprocess_sample(const union perf_event *event,
+>                                   struct machine *machine,
+>                                   struct addr_location *al,
+>                                   struct perf_sample *sample)
+> {
+>         struct thread *thread = machine__findnew_thread(machine, sample->pid,
+>                                                         sample->pid);
+> }
+>     
+> Without this fix, some samples in overlapping regions
+> may not be symbolized.
+>     
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+> 
+> diff --git a/tools/perf/util/machine.c b/tools/perf/util/machine.c
+> index a53cd0b..43cdc0a 100644
+> --- a/tools/perf/util/machine.c
+> +++ b/tools/perf/util/machine.c
+> @@ -1025,9 +1025,9 @@ int machine__process_mmap2_event(struct machine *machine,
+>  			goto out_problem;
+>  		return 0;
+>  	}
+> -
+> +	/* only look by pid for mmap events */
+>  	thread = machine__findnew_thread(machine, event->mmap2.pid,
+> -					event->mmap2.tid);
+> +					event->mmap2.pid);
+>  	if (thread == NULL)
+>  		goto out_problem;
+>  
+> @@ -1073,9 +1073,9 @@ int machine__process_mmap_event(struct machine *machine, union perf_event *event
+>  			goto out_problem;
+>  		return 0;
+>  	}
+> -
+> +	/* only look by pid for mmap events */
+>  	thread = machine__findnew_thread(machine, event->mmap.pid,
+> -					 event->mmap.tid);
+> +					 event->mmap.pid);
+>  	if (thread == NULL)
+>  		goto out_problem;
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
