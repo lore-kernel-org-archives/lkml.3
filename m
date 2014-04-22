@@ -1,485 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbaDVGde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 02:33:34 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4260 "EHLO mga01.intel.com"
+	id S1753588AbaDVGdy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 02:33:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60008 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753357AbaDVGcr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 02:32:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,901,1389772800"; 
-   d="scan'208";a="517067455"
-From: Lan Tianyu <tianyu.lan@intel.com>
-To: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
-        awilliam@redhat.com, lenb@kernel.org
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, tianyu.lan@intel.com
-Subject: [Resend Patch 7/9] I2C/ACPI: Add i2c ACPI operation region support
-Date: Tue, 22 Apr 2014 14:24:13 +0800
-Message-Id: <1398147855-9868-8-git-send-email-tianyu.lan@intel.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
-References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
- <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
+	id S1753516AbaDVGdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 02:33:32 -0400
+Message-ID: <53560D3F.2030002@suse.cz>
+Date: Tue, 22 Apr 2014 08:33:35 +0200
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Minchan Kim <minchan@kernel.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
+        Heesub Shin <heesub.shin@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Dongjun Shin <d.j.shin@samsung.com>,
+        Sunghwan Yun <sunghwan.yun@samsung.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 2/2] mm/compaction: cleanup isolate_freepages()
+References: <5342BA34.8050006@suse.cz> <1397553507-15330-1-git-send-email-vbabka@suse.cz> <1397553507-15330-2-git-send-email-vbabka@suse.cz> <20140417000745.GF27534@bbox> <20140421124146.c8beacf0d58aafff2085a461@linux-foundation.org> <535590FC.10607@suse.cz> <20140421235319.GD7178@bbox>
+In-Reply-To: <20140421235319.GD7178@bbox>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation region.
-It allows ACPI aml code able to access such kind of devices to implement
-some ACPI standard method.
+On 22.4.2014 1:53, Minchan Kim wrote:
+> On Mon, Apr 21, 2014 at 11:43:24PM +0200, Vlastimil Babka wrote:
+>> On 21.4.2014 21:41, Andrew Morton wrote:
+>>> On Thu, 17 Apr 2014 09:07:45 +0900 Minchan Kim <minchan@kernel.org> wrote:
+>>>
+>>>> Hi Vlastimil,
+>>>>
+>>>> Below just nitpicks.
+>>> It seems you were ignored ;)
+>> Oops, I managed to miss your e-mail, sorry.
+>>
+>>>>>   {
+>>>>>   	struct page *page;
+>>>>> -	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
+>>>>> +	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
+>>>> Could you add comment for each variable?
+>>>>
+>>>> unsigned long pfn; /* scanning cursor */
+>>>> unsigned long low_pfn; /* lowest pfn free scanner is able to scan */
+>>>> unsigned long next_free_pfn; /* start pfn for scaning at next truen */
+>>>> unsigned long z_end_pfn; /* zone's end pfn */
+>>>>
+>>>>
+>>>>> @@ -688,11 +688,10 @@ static void isolate_freepages(struct zone *zone,
+>>>>>   	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+>>>>>   	/*
+>>>>> -	 * Take care that if the migration scanner is at the end of the zone
+>>>>> -	 * that the free scanner does not accidentally move to the next zone
+>>>>> -	 * in the next isolation cycle.
+>>>>> +	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
+>>>>> +	 * none, the pfn < low_pfn check will kick in.
+>>>>         "none" what? I'd like to clear more.
+>> If there are no updates to next_free_pfn within the for cycle. Which
+>> matches Andrew's formulation below.
+>>
+>>> I did this:
+>> Thanks!
+>>
+>>> --- a/mm/compaction.c~mm-compaction-cleanup-isolate_freepages-fix
+>>> +++ a/mm/compaction.c
+>>> @@ -662,7 +662,10 @@ static void isolate_freepages(struct zon
+>>>   				struct compact_control *cc)
+>>>   {
+>>>   	struct page *page;
+>>> -	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
+>>> +	unsigned long pfn;	     /* scanning cursor */
+>>> +	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
+>>> +	unsigned long next_free_pfn; /* start pfn for scaning at next round */
+>>> +	unsigned long z_end_pfn;     /* zone's end pfn */
+>> Yes that works.
+>>
+>>>   	int nr_freepages = cc->nr_freepages;
+>>>   	struct list_head *freelist = &cc->freepages;
+>>> @@ -679,8 +682,8 @@ static void isolate_freepages(struct zon
+>>>   	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
+>>>   	/*
+>>> -	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
+>>> -	 * none, the pfn < low_pfn check will kick in.
+>>> +	 * Seed the value for max(next_free_pfn, pfn) updates. If no pages are
+>>> +	 * isolated, the pfn < low_pfn check will kick in.
+>> OK.
+>>
+>>>   	 */
+>>>   	next_free_pfn = 0;
+>>>>> @@ -766,9 +765,9 @@ static void isolate_freepages(struct zone *zone,
+>>>>>   	 * so that compact_finished() may detect this
+>>>>>   	 */
+>>>>>   	if (pfn < low_pfn)
+>>>>> -		cc->free_pfn = max(pfn, zone->zone_start_pfn);
+>>>>> -	else
+>>>>> -		cc->free_pfn = high_pfn;
+>>>>> +		next_free_pfn = max(pfn, zone->zone_start_pfn);
+>>>> Why we need max operation?
+>>>> IOW, what's the problem if we do (next_free_pfn = pfn)?
+>>> An answer to this would be useful, thanks.
+>> The idea (originally, not new here) is that the free scanner wants
+>> to remember the highest-pfn
+>> block where it managed to isolate some pages. If the following page
+>> migration fails, these isolated
+>> pages might be put back and would be skipped in further compaction
+>> attempt if we used just
+>> "next_free_pfn = pfn", until the scanners get reset.
+>>
+>> The question of course is if such situations are frequent and makes
+>> any difference to compaction
+>> outcome. And the downsides are potentially useless rescans and code
+>> complexity. Maybe Mel
+>> remembers how important this is? It should probably be profiled
+>> before changes are made.
+> I didn't mean it. What I mean is code snippet you introduced in 7ed695e069c3c.
+> At that time, I didn't Cced so I missed that code so let's ask this time.
+> In that patch, you added this.
+>
+> if (pfn < low_pfn)
+>    cc->free_pfn = max(pfn, zone->zone_start_pfn);
+> else
+>    cc->free_pfn = high_pfn;
 
-ACPI Spec defines some access attribute to associate with i2c protocol.
-AttribQuick 	       	       		Read/Write Quick Protocol
-AttribSendReceive			Send/Receive Byte Protocol
-AttribByte 			 	Read/Write Byte Protocol
-AttribWord				Read/Write Word Protocol
-AttribBlock				Read/Write Block Protocol
-AttribBytes				Read/Write N-Bytes Protocol
-AttribProcessCall			Process Call Protocol
-AttribBlockProcessCall			Write Block-Read Block Process Call Protocol
-AttribRawBytes 				Raw Read/Write N-BytesProtocol
-AttribRawProcessBytes			Raw Process Call Protocol
+Oh, right, this max(), not the one in the for loop. Sorry, I should have 
+read more closely.
+But still maybe it's a good opportunity to kill the other max() as well. 
+I'll try some testing.
 
-On the Asus T100TA, Bios use GenericSerialBus operation region to access
-i2c device to get battery info.
+Anyway, this is what I answered to Mel when he asked the same thing when 
+I sent
+that 7ed695069c3c patch:
 
-Sample code From Asus T100TA
+If a zone starts in a middle of a pageblock and migrate scanner isolates
+enough pages early to stay within that pageblock, low_pfn will be at the
+end of that pageblock and after the for cycle in this function ends, pfn
+might be at the beginning of that pageblock. It might not be an actual
+problem (this compaction will finish at this point, and if someone else
+is racing, he will probably check the boundaries himself), but I played
+it safe.
 
-    Scope (_SB.I2C1)
-    {
-        Name (UMPC, ResourceTemplate ()
-        {
-            I2cSerialBus (0x0066, ControllerInitiated, 0x00061A80,
-                AddressingMode7Bit, "\\_SB.I2C1",
-                0x00, ResourceConsumer, ,
-                )
-        })
 
-	...
+> So the purpose of max(pfn, zone->zone_start_pfn) is to be detected by
+> compact_finished to stop compaction. And your [1/2] patch in this patchset
+> always makes free page scanner start on pageblock boundary so when the
+> loop in isolate_freepages is finished and pfn is lower low_pfn, the pfn
+> would be lower than migration scanner so compact_finished will always detect
+> it so I think you could just do
+>
+> if (pfn < low_pfn)
+>    next_free_pfn = pfn;
+>
+> cc->free_pfn = next_free_pfn;
 
-        OperationRegion (DVUM, GenericSerialBus, Zero, 0x0100)
-        Field (DVUM, BufferAcc, NoLock, Preserve)
-        {
-            Connection (UMPC),
-            Offset (0x81),
-            AccessAs (BufferAcc, AttribBytes (0x3E)),
-            FGC0,   8
-        }
-	...
-     }
+That could work. I was probably wrong about danger of racing in the 
+reply to Mel,
+because free_pfn is stored in cc (private), not zone (shared).
 
-     Device (BATC)
-     {
-         Name (_HID, EisaId ("PNP0C0A"))  // _HID: Hardware ID
-         Name (_UID, One)  // _UID: Unique ID
-	 ...
+>
+> Or, if you want to clear *reset*,
+> if (pfn < lown_pfn)
+>    next_free_pfn = zone->zone_start_pfn;
+>
+> cc->free_pfn = next_free_pfn;
 
-            Method (_BST, 0, NotSerialized)  // _BST: Battery Status
-            {
-                If (LEqual (AVBL, One))
-                {
-                    Store (FGC0, BFFG)
-                    If (LNotEqual (STAT, One))
-                    {
-                        ShiftRight (CHST, 0x04, Local0)
-                        And (Local0, 0x03, Local0)
-                        If (LOr (LEqual (Local0, One), LEqual (Local0, 0x02)))
-                        {
-                            Store (0x02, Local1)
-                        }
-	...
+That would work as well but is less straightforward I think. Might be 
+misleading if
+someone added tracepoints to track the free scanner progress with pfn's 
+(which
+might happen soon...)
 
-    }
-
-The i2c operation region is defined under I2C1 scope. _BST method under
-battery device BATC read battery status from the field "FCG0". The request
-would be sent to i2c operation region handler.
-
-This patch is to add i2c ACPI operation region support. Due to there are
-only "Byte" and "Bytes" protocol access on the Asus T100TA, other protocols
-have not been tested.
-
-About RawBytes and RawProcessBytes protocol, they needs specific drivers to interpret
-reference data from AML code according ACPI 5.0 SPEC(5.5.2.4.5.3.9 and 5.5.2.4.5.3.10).
-So far, not found such case and will add when find real case.
-
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
----
- drivers/i2c/Makefile   |   5 +-
- drivers/i2c/i2c-acpi.c | 282 +++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/i2c/i2c-core.c |   2 +
- include/linux/acpi.h   |  11 ++
- include/linux/i2c.h    |  10 ++
- 5 files changed, 309 insertions(+), 1 deletion(-)
- create mode 100644 drivers/i2c/i2c-acpi.c
-
-diff --git a/drivers/i2c/Makefile b/drivers/i2c/Makefile
-index 1722f50..80db307 100644
---- a/drivers/i2c/Makefile
-+++ b/drivers/i2c/Makefile
-@@ -2,8 +2,11 @@
- # Makefile for the i2c core.
- #
- 
-+i2ccore-y := i2c-core.o
-+i2ccore-$(CONFIG_ACPI)		+= i2c-acpi.o
-+
- obj-$(CONFIG_I2C_BOARDINFO)	+= i2c-boardinfo.o
--obj-$(CONFIG_I2C)		+= i2c-core.o
-+obj-$(CONFIG_I2C)		+= i2ccore.o
- obj-$(CONFIG_I2C_SMBUS)		+= i2c-smbus.o
- obj-$(CONFIG_I2C_CHARDEV)	+= i2c-dev.o
- obj-$(CONFIG_I2C_MUX)		+= i2c-mux.o
-diff --git a/drivers/i2c/i2c-acpi.c b/drivers/i2c/i2c-acpi.c
-new file mode 100644
-index 0000000..942abdf
---- /dev/null
-+++ b/drivers/i2c/i2c-acpi.c
-@@ -0,0 +1,282 @@
-+/*
-+ * I2C ACPI code
-+ *
-+ * Copyright (C) 2014 Intel Corp
-+ *
-+ * Author: Lan Tianyu <tianyu.lan@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-+ * for more details.
-+ */
-+#define pr_fmt(fmt) "I2C/ACPI : " fmt
-+
-+#include <linux/kernel.h>
-+#include <linux/errno.h>
-+#include <linux/err.h>
-+#include <linux/i2c.h>
-+#include <linux/acpi.h>
-+
-+struct acpi_i2c_handler_data {
-+	struct acpi_connection_info info;
-+	struct i2c_adapter *adapter;
-+} __packed;
-+
-+struct gsb_buffer {
-+	u8	status;
-+	u8	len;
-+	union {
-+		u16	wdata;
-+		u8	bdata;
-+		u8	data[0];
-+	};
-+} __packed;
-+
-+static int acpi_gsb_i2c_read_bytes(struct i2c_client *client,
-+		u8 cmd, u8 *data, u8 data_len)
-+{
-+
-+	struct i2c_msg msgs[2];
-+	int ret;
-+	u8  *buffer;
-+
-+	buffer = kzalloc(data_len, GFP_KERNEL);
-+	if (!buffer)
-+		return AE_NO_MEMORY;
-+
-+	msgs[0].addr = client->addr;
-+	msgs[0].flags = client->flags;
-+	msgs[0].len = 1;
-+	msgs[0].buf = &cmd;
-+
-+	msgs[1].addr = client->addr;
-+	msgs[1].flags = client->flags | I2C_M_RD;
-+	msgs[1].len = data_len;
-+	msgs[1].buf = buffer;
-+
-+	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-+	if (ret < 0)
-+		pr_err("i2c read failed\n");
-+	else
-+		memcpy(data, buffer, data_len);
-+
-+	kfree(buffer);
-+	return ret;
-+}
-+
-+static int acpi_gsb_i2c_write_bytes(struct i2c_client *client,
-+		u8 cmd, u8 *data, u8 data_len)
-+{
-+
-+	struct i2c_msg msgs[1];
-+	u8  *buffer;
-+	int ret = AE_OK;
-+
-+	buffer = kzalloc(data_len + 1, GFP_KERNEL);
-+	if (!buffer)
-+		return AE_NO_MEMORY;
-+
-+	buffer[0] = cmd;
-+	memcpy(buffer + 1, data, data_len);
-+
-+	msgs[0].addr = client->addr;
-+	msgs[0].flags = client->flags;
-+	msgs[0].len = data_len + 1;
-+	msgs[0].buf = buffer;
-+
-+	ret = i2c_transfer(client->adapter, msgs, ARRAY_SIZE(msgs));
-+	if (ret < 0)
-+		pr_err("i2c write failed\n");
-+
-+	kfree(buffer);
-+	return ret;
-+}
-+
-+static acpi_status
-+acpi_i2c_space_handler(u32 function, acpi_physical_address command,
-+			u32 bits, u64 *value64,
-+			void *handler_context, void *region_context)
-+{
-+	struct gsb_buffer *gsb = (struct gsb_buffer *)value64;
-+	struct acpi_i2c_handler_data *data = handler_context;
-+	struct acpi_connection_info *info = &data->info;
-+	struct acpi_resource_i2c_serialbus *sb;
-+	struct i2c_adapter *adapter = data->adapter;
-+	struct i2c_client client;
-+	struct acpi_resource *ares;
-+	u32 accessor_type = function >> 16;
-+	u8 action = function & ACPI_IO_MASK;
-+	int status;
-+
-+	acpi_buffer_to_resource(info->connection, info->length, &ares);
-+	if (!value64 || ares->type != ACPI_RESOURCE_TYPE_SERIAL_BUS)
-+		return AE_BAD_PARAMETER;
-+
-+	sb = &ares->data.i2c_serial_bus;
-+	if (sb->type != ACPI_RESOURCE_SERIAL_TYPE_I2C)
-+		return AE_BAD_PARAMETER;
-+
-+	client.adapter = adapter;
-+	client.addr = sb->slave_address;
-+	client.flags = 0;
-+
-+	if (sb->access_mode == ACPI_I2C_10BIT_MODE)
-+		client.flags |= I2C_CLIENT_TEN;
-+
-+	switch (accessor_type) {
-+	case ACPI_GSB_ACCESS_ATTRIB_QUICK:
-+		if (action == ACPI_READ)
-+			status = i2c_smbus_quick_read(&client);
-+		else
-+			status = i2c_smbus_quick_write(&client);
-+		break;
-+
-+	case ACPI_GSB_ACCESS_ATTRIB_SEND_RCV:
-+		if (action == ACPI_READ) {
-+			status = i2c_smbus_read_byte(&client);
-+			if (status >= 0) {
-+				gsb->bdata = status;
-+				status = 0;
-+			}
-+		} else {
-+			status = i2c_smbus_write_byte(&client, gsb->bdata);
-+		}
-+		break;
-+
-+	case ACPI_GSB_ACCESS_ATTRIB_BYTE:
-+		if (action == ACPI_READ) {
-+			status = i2c_smbus_read_byte_data(&client, command);
-+			if (status >= 0) {
-+				gsb->bdata = status;
-+				status = 0;
-+			}
-+		} else {
-+			status = i2c_smbus_write_byte_data(&client, command,
-+					gsb->bdata);
-+		}
-+		break;
-+
-+	case ACPI_GSB_ACCESS_ATTRIB_WORD:
-+		if (action == ACPI_READ) {
-+			status = i2c_smbus_read_word_data(&client, command);
-+			if (status >= 0) {
-+				gsb->wdata = status;
-+				status = 0;
-+			}
-+		} else {
-+			status = i2c_smbus_write_word_data(&client, command,
-+					gsb->wdata);
-+		}
-+		break;
-+
-+	case ACPI_GSB_ACCESS_ATTRIB_BLOCK:
-+		if (action == ACPI_READ) {
-+			status = i2c_smbus_read_block_data(&client, command,
-+					gsb->data);
-+			if (status >= 0) {
-+				gsb->len = status;
-+				status = 0;
-+			}
-+		} else {
-+			status = i2c_smbus_write_block_data(&client, command,
-+					gsb->len, gsb->data);
-+		}
-+		break;
-+
-+	case ACPI_GSB_ACCESS_ATTRIB_MULTIBYTE:
-+		if (action == ACPI_READ) {
-+			status = acpi_gsb_i2c_read_bytes(&client, command,
-+					gsb->data, info->access_length);
-+			if (status > 0)
-+				status = 0;
-+		} else {
-+			status = acpi_gsb_i2c_write_bytes(&client, command,
-+					gsb->data, info->access_length);
-+		}
-+		break;
-+
-+	case ACPI_GSB_ACCESS_ATTRIB_WORD_CALL:
-+		status = i2c_smbus_word_proc_call(&client, command, gsb->wdata);
-+		if (status >= 0) {
-+			gsb->wdata = status;
-+			status = 0;
-+		}
-+		break;
-+
-+	case ACPI_GSB_ACCESS_ATTRIB_BLOCK_CALL:
-+		status = i2c_smbus_block_proc_call(&client, command, gsb->len,
-+				gsb->data);
-+		if (status > 0) {
-+			gsb->len = status;
-+			status = 0;
-+		}
-+		break;
-+
-+	default:
-+		pr_info("protocl(0x%02x) is not supported.\n", accessor_type);
-+		return AE_BAD_PARAMETER;
-+	}
-+
-+	gsb->status = status;
-+	return AE_OK;
-+}
-+
-+
-+int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
-+{
-+	acpi_handle handle = ACPI_HANDLE(adapter->dev.parent);
-+	struct acpi_i2c_handler_data *data;
-+	acpi_status status;
-+
-+	if (!handle)
-+		return -ENODEV;
-+
-+	data = kzalloc(sizeof(struct acpi_i2c_handler_data),
-+			    GFP_KERNEL);
-+	if (!data)
-+		return -ENOMEM;
-+
-+	data->adapter = adapter;
-+	status = acpi_bus_attach_private_data(handle, (void *)data);
-+	if (ACPI_FAILURE(status)) {
-+		kfree(data);
-+		return -ENOMEM;
-+	}
-+
-+	status = acpi_install_address_space_handler(handle,
-+				ACPI_ADR_SPACE_GSBUS,
-+				&acpi_i2c_space_handler,
-+				NULL,
-+				data);
-+	if (ACPI_FAILURE(status)) {
-+		pr_err("Error installing i2c space handler\n");
-+		acpi_bus_attach_private_data(handle, NULL);
-+		kfree(data);
-+		return -ENOMEM;
-+	}
-+
-+	return 0;
-+}
-+
-+void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter)
-+{
-+	acpi_handle handle = ACPI_HANDLE(adapter->dev.parent);
-+	struct acpi_i2c_handler_data *data;
-+	acpi_status status;
-+
-+	if (!handle)
-+		return;
-+
-+	acpi_remove_address_space_handler(handle,
-+				ACPI_ADR_SPACE_GSBUS,
-+				&acpi_i2c_space_handler);
-+
-+	status = acpi_bus_get_private_data(handle, (void **)&data);
-+	if (ACPI_SUCCESS(status))
-+		kfree(data);
-+}
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 638befd..bb9dc56 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -1293,6 +1293,7 @@ exit_recovery:
- 	/* create pre-declared device nodes */
- 	of_i2c_register_devices(adap);
- 	acpi_i2c_register_devices(adap);
-+	acpi_i2c_install_space_handler(adap);
- 
- 	if (adap->nr < __i2c_first_dynamic_bus_num)
- 		i2c_scan_static_board_info(adap);
-@@ -1466,6 +1467,7 @@ void i2c_del_adapter(struct i2c_adapter *adap)
- 		return;
- 	}
- 
-+	acpi_i2c_remove_space_handler(adap);
- 	/* Tell drivers about this removal */
- 	mutex_lock(&core_lock);
- 	bus_for_each_drv(&i2c_bus_type, NULL, adap,
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 7a8f2cd..ea53b9b 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -361,6 +361,17 @@ extern bool osc_sb_apei_support_acked;
- #define OSC_PCI_EXPRESS_CAPABILITY_CONTROL	0x00000010
- #define OSC_PCI_CONTROL_MASKS			0x0000001f
- 
-+#define ACPI_GSB_ACCESS_ATTRIB_QUICK		0x00000002
-+#define ACPI_GSB_ACCESS_ATTRIB_SEND_RCV         0x00000004
-+#define ACPI_GSB_ACCESS_ATTRIB_BYTE		0x00000006
-+#define ACPI_GSB_ACCESS_ATTRIB_WORD		0x00000008
-+#define ACPI_GSB_ACCESS_ATTRIB_BLOCK		0x0000000A
-+#define ACPI_GSB_ACCESS_ATTRIB_MULTIBYTE	0x0000000B
-+#define ACPI_GSB_ACCESS_ATTRIB_WORD_CALL	0x0000000C
-+#define ACPI_GSB_ACCESS_ATTRIB_BLOCK_CALL	0x0000000D
-+#define ACPI_GSB_ACCESS_ATTRIB_RAW_BYTES	0x0000000E
-+#define ACPI_GSB_ACCESS_ATTRIB_RAW_PROCESS	0x0000000F
-+
- extern acpi_status acpi_pci_osc_control_set(acpi_handle handle,
- 					     u32 *mask, u32 req);
- 
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index 724440a..681e689 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -583,4 +583,14 @@ static inline struct i2c_adapter *of_find_i2c_adapter_by_node(struct device_node
- }
- #endif /* CONFIG_OF */
- 
-+#ifdef CONFIG_ACPI
-+int acpi_i2c_install_space_handler(struct i2c_adapter *adapter);
-+void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter);
-+#else
-+static inline void acpi_i2c_remove_space_handler(struct i2c_adapter *adapter)
-+{ }
-+static inline int acpi_i2c_install_space_handler(struct i2c_adapter *adapter)
-+{ return 0; }
-+#endif
-+
- #endif /* _LINUX_I2C_H */
--- 
-1.8.4.rc0.1.g8f6a3e5.dirty
+> That's why I asked about max operation. What am I missing?
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
