@@ -1,69 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171AbaDVLIf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:08:35 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:50684 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663AbaDVLIV (ORCPT
+	id S932153AbaDVLIT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:08:19 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:54992
+	"EHLO ch1outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755663AbaDVLII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:08:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140422105744.GA589@arch.cereza>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<1397824031-4892-4-git-send-email-lftan@altera.com>
-	<20140422105744.GA589@arch.cereza>
-Date: Tue, 22 Apr 2014 19:08:20 +0800
-X-Google-Sender-Auth: EWl0T_rtG2kE0FROvLUrg5Wb2to
-Message-ID: <CAFiDJ5_sP+2XtD3BRAGGHCiSqiu4OCKBBYVzPpqCNfoJo5kFMg@mail.gmail.com>
-Subject: Re: [PATCH 04/28] nios2: Exception handling
-From: Ley Foon Tan <lftan@altera.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+	Tue, 22 Apr 2014 07:08:08 -0400
+X-Forefront-Antispam-Report: CIP:149.199.60.83;KIP:(null);UIP:(null);IPV:NLI;H:xsj-gw1;RD:unknown-60-83.xilinx.com;EFVD:NLI
+X-SpamScore: -4
+X-BigFish: VPS-4(zzbb2dI98dI9371I542I1432I1447Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275dh1de097hz2fh95h109h839h93fhc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h14ddh1504h1537h153bh162dh1631h1758h18e1h1946h19b5h1b0ah224fh1d0ch1d2eh1d3fh1dfeh1dffh1e1dh1fe8h1ff5h2216h2336h2438h2461h2487h24ach24d7h2516h2545h255eh25f6h2605h268bh26d3h906i2673i1155h)
+From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+To: Marc Kleine-Budde <mkl@pengutronix.de>
+CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
-Content-Type: text/plain; charset=UTF-8
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Michal Simek <michals@xilinx.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "wg@grandegger.com" <wg@grandegger.com>
+Subject: RE: [PATCH v7 1/2] can: xilinx CAN controller support
+Thread-Topic: [PATCH v7 1/2] can: xilinx CAN controller support
+Thread-Index: AQHPXgiZgKhFQ40Q102/VIe4iyjo45sdbrl4gAAJiKA=
+Date: Tue, 22 Apr 2014 11:08:02 +0000
+References: <3e750ec3-9d47-4b4e-8173-56698ab19786@CH1EHSMHS029.ehs.local>
+ <53562E7D.7090509@pengutronix.de>
+ <957b07ca-f74c-47fb-963a-084710d48c5a@AM1EHSMHS014.ehs.local>
+ <535643D9.3070601@pengutronix.de>
+In-Reply-To: <535643D9.3070601@pengutronix.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.23.18.45]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-RCIS-Action: ALLOW
+Message-ID: <9f70ceca-c6fd-4d57-a54a-8cbf9d888137@CH1EHSMHS016.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3MB8wGs006322
 
-On Tue, Apr 22, 2014 at 6:57 PM, Ezequiel Garcia
-<ezequiel.garcia@free-electrons.com> wrote:
-> Hi Ley Foon,
->
-> Are you sure this is correct? Have you tested this works correctly?
->
-> Last time I tested this, it caused the traced_system_call to be taken
-> for every system call. I already reported and provided a patch a few
-> months ago:
->
-> http://lists.rocketboards.org/pipermail/nios2-dev/2014-January/006968.html
->
-> Here's my proposed fix:
->
-> diff --git a/arch/nios2/kernel/entry.S b/arch/nios2/kernel/entry.S
-> index 9cf2bac..3798008 100644
-> --- a/arch/nios2/kernel/entry.S
-> +++ b/arch/nios2/kernel/entry.S
-> @@ -204,13 +204,10 @@ ENTRY(handle_system_call)
->         ldw     r1, %lo(sys_call_table)(r1)
->         beq     r1, r0, ret_invsyscall
->
-> -       /* Get thread info pointer */
-> -       movi    r11, %lo(0xfffff000)
-> -       and     r11, sp, r11
-> -       ldw     r11, TI_FLAGS(r11)
-> -
-> -       /* If someone is ptrace:ing us, take the long way. */
-> -       BTBNZ   r11, r11, TIF_SYSCALL_TRACE, traced_system_call
-> +       /* Check if we are being traced */
-> +       GET_THREAD_INFO r11
-> +       ldw     r11,TI_FLAGS(r11)
-> +       BTBNZ   r11,r11,TIF_SYSCALL_TRACE,traced_system_call
->
->         /* Execute the system call */
->         callr   r1
-I think I missed out this in nios2-dev ML previously. I will take your fix.
-Thanks.
+Hi Marc,
 
-Regards
+> -----Original Message-----
+> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+> Sent: Tuesday, April 22, 2014 3:57 PM
+> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
+> grant.likely@linaro.org; robh+dt@kernel.org
+> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
+> devicetree@vger.kernel.org
+> Subject: Re: [PATCH v7 1/2] can: xilinx CAN controller support
+>
+> On 04/22/2014 12:06 PM, Appana Durga Kedareswara Rao wrote:
+>
+> >> Meanwhile Thomas Gleixner put some effort into the c_can driver and
+> >> found some problems in most of the can driver. See comments inline.
+> >>
+> > Ok will look into that patches
+>
+> I've commented the relevant parts of your patch. Although more
+> background information can be found in the c_can patches.
+>
+Ok
+
+> >>> +/**
+> >>> + * xcan_tx_interrupt - Tx Done Isr
+> >>> + * @ndev:  net_device pointer
+> >>> + * @isr:   Interrupt status register value
+> >>> + */
+> >>> +static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
+> >>> +   struct xcan_priv *priv = netdev_priv(ndev);
+> >>> +   struct net_device_stats *stats = &ndev->stats;
+> >>> +
+> >>> +   while (priv->tx_head - priv->tx_tail > 0) {
+> >>> +           priv->write_reg(priv, XCAN_ICR_OFFSET,
+> >> XCAN_IXR_TXOK_MASK);
+> >>> +           if (!(isr & XCAN_IXR_TXOK_MASK))
+> >>> +                   break;
+> >>
+> >> This looks broken. I assume you have to issue the
+> XCAN_IXR_TXOK_MASK-
+> >> write once per tx-completed CAN frame. If you enter this loop you
+> >> write once, then isr is read, then you write again and may exit this
+> >> loop if XCAN_IXR_TXOK_MASK is not set anymore.
+>
+> Let's assume you have put 3 CAN frames into the TX-queue and we're into
+> tx-complete interrupt for the first frame and the other 2 are still not
+> completed.
+>
+> This means the while() loop is not terminated by (priv->tx_head -
+> priv->tx_tail > 0), as it can loop 3 times.
+>
+> What happens is:
+>
+> - priv->write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MASK);
+> - if (!(isr & XCAN_IXR_TXOK_MASK)) -> no break
+> - can_get_echo_skb()
+> - ...
+> - isr = priv->read_reg(priv, XCAN_ISR_OFFSET);
+> - loop ->
+> - priv->write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MASK);
+> - if (!(isr & XCAN_IXR_TXOK_MASK)) -> break
+>
+> So you have 2x write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MASK),
+> but only a single TX completed CAN frame.
+>
+
+Ok now got it :). Thanks for the explanation.
+Will modify the loop logic like below.
+
+while (priv->tx_head - priv->tx_tail > 0) {
+                 if ((isr & XCAN_IXR_TXOK_MASK)) {
+                priv->write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MASK);
+                        can_get_echo_skb(ndev, priv->tx_tail %
+                                                priv->tx_max);
+                        priv->tx_tail++;
+                        stats->tx_packets++;
+                } else {
+                break;
+        }
+                isr = priv->read_reg(priv, XCAN_ISR_OFFSET);
+  }
+Are you ok with this?
+
+Regards,
+Kedar.
+
+
+
+This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
+
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
