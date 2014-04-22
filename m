@@ -1,59 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933109AbaDVPIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:08:21 -0400
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:61161 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932606AbaDVPIN (ORCPT
+	id S1756773AbaDVPIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:08:48 -0400
+Received: from mail-we0-f177.google.com ([74.125.82.177]:57756 "EHLO
+	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933081AbaDVPIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:08:13 -0400
-Date: Tue, 22 Apr 2014 16:07:53 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: Doug Anderson <dianders@chromium.org>, Anton Vorontsov <anton@enomsg.org>,
-        Olof Johansson <olof@lixom.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Simon Glass <sjg@chromium.org>, Michael Spang <spang@chromium.org>,
-        Sean Paul <seanpaul@chromium.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 5/5] regulator: tps65090: Make FETs more reliable by
- adding retries
-Message-ID: <20140422150753.GC21613@lee--X1>
-References: <1397689950-1568-1-git-send-email-dianders@chromium.org>
- <1397689950-1568-6-git-send-email-dianders@chromium.org>
- <20140418174353.GX12304@sirena.org.uk>
- <CAD=FV=VQckC34rZwF2RP3F+2T1CRVs0JwtgoqUeA1NVmB20=sA@mail.gmail.com>
- <20140422074709.GD17657@lee--X1>
- <20140422110236.GN12304@sirena.org.uk>
+	Tue, 22 Apr 2014 11:08:00 -0400
+Message-ID: <535685CD.9080207@linaro.org>
+Date: Tue, 22 Apr 2014 16:07:57 +0100
+From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140422110236.GN12304@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Peter Chen <Peter.Chen@freescale.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+CC: devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] usb: chipidea: msm: Add device tree binding information
+References: <1398159797-26917-1-git-send-email-iivanov@mm-sol.com> <1398159797-26917-2-git-send-email-iivanov@mm-sol.com>
+In-Reply-To: <1398159797-26917-2-git-send-email-iivanov@mm-sol.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > If there are cross-subsystem dependencies I prefer to use immutable
-> > branches to eliminate any change of merge conflicts in -next or the
-> > next merge window. I'm happy to either create on with Mark's Acks, or
-> > receive a pull-request from Mark with mine applied.
-> 
-> > Up to Mark.
-> 
-> Well, Doug didn't send me the MFD patch so I can't do anything with it
-> anyway.
 
-Ah!
 
-Doug,
-  what exactly are the dependencies within the set?
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+On 22/04/14 10:43, Ivan T. Ivanov wrote:
+> +- interrupts:   interrupt-specifier for the controller interrupt.
+> +- usb-phy:      phandle for the PHY device
+> +- dr_mode:      Sould be "peripheral"
+s/Sould/Should/
+> +
