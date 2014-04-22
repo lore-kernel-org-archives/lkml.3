@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343AbaDVOBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:01:01 -0400
-Received: from smtp.devoid-pointer.net ([31.31.77.140]:49463 "EHLO
+	id S932111AbaDVOBK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:01:10 -0400
+Received: from transparentnimenzy.cz ([31.31.77.140]:49487 "EHLO
 	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756023AbaDVOAW (ORCPT
+	with ESMTP id S1756349AbaDVOBE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:00:22 -0400
+	Tue, 22 Apr 2014 10:01:04 -0400
 From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
 To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
         anssi.hannula@iki.fi, simon@mungewell.org
-Subject: [PATCH v2 04/24] input: Port twl6040-vibra to ff-memless-next
-Date: Tue, 22 Apr 2014 15:59:49 +0200
-Message-Id: <1398175209-9565-5-git-send-email-madcatxster@devoid-pointer.net>
+Subject: [PATCH v2 10/24] input: Port hid-gaff to ff-memless-next
+Date: Tue, 22 Apr 2014 15:59:55 +0200
+Message-Id: <1398175209-9565-11-git-send-email-madcatxster@devoid-pointer.net>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
 References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
@@ -24,94 +24,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port twl6040-vibra to ff-memless-next
+Port hid-gaff to ff-memless-next
 
 Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
 ---
- drivers/input/misc/Kconfig         |  2 +-
- drivers/input/misc/twl6040-vibra.c | 27 ++++++++++++++++++++++-----
- 2 files changed, 23 insertions(+), 6 deletions(-)
+ drivers/hid/Kconfig    |  2 +-
+ drivers/hid/hid-gaff.c | 32 +++++++++++++++++++++++---------
+ 2 files changed, 24 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-index 1016a1b..91dcae8 100644
---- a/drivers/input/misc/Kconfig
-+++ b/drivers/input/misc/Kconfig
-@@ -417,7 +417,7 @@ config INPUT_TWL4030_VIBRA
- config INPUT_TWL6040_VIBRA
- 	tristate "Support for TWL6040 Vibrator"
- 	depends on TWL6040_CORE
+diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
+index 0ba1962..24b336e 100644
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -656,7 +656,7 @@ config HID_GREENASIA
+ config GREENASIA_FF
+ 	bool "GreenAsia (Product ID 0x12) force feedback support"
+ 	depends on HID_GREENASIA
 -	select INPUT_FF_MEMLESS
 +	select INPUT_FF_MEMLESS_NEXT
- 	help
- 	  This option enables support for TWL6040 Vibrator Driver.
- 
-diff --git a/drivers/input/misc/twl6040-vibra.c b/drivers/input/misc/twl6040-vibra.c
-index 77dc23b..7440a74 100644
---- a/drivers/input/misc/twl6040-vibra.c
-+++ b/drivers/input/misc/twl6040-vibra.c
-@@ -30,12 +30,14 @@
- #include <linux/of.h>
- #include <linux/workqueue.h>
- #include <linux/input.h>
-+#include <linux/input/ff-memless-next.h>
- #include <linux/mfd/twl6040.h>
+ 	---help---
+ 	Say Y here if you have a GreenAsia (Product ID 0x12) based game controller
+ 	(like MANTA Warrior MM816 and SpeedLink Strike2 SL-6635) or adapter
+diff --git a/drivers/hid/hid-gaff.c b/drivers/hid/hid-gaff.c
+index 2d8cead..f2f70c1 100644
+--- a/drivers/hid/hid-gaff.c
++++ b/drivers/hid/hid-gaff.c
+@@ -31,8 +31,11 @@
  #include <linux/slab.h>
- #include <linux/delay.h>
- #include <linux/regulator/consumer.h>
+ #include <linux/hid.h>
+ #include <linux/module.h>
++#include <linux/input/ff-memless-next.h>
+ #include "hid-ids.h"
  
- #define EFFECT_DIR_180_DEG	0x8000
-+#define FF_UPDATE_RATE		50
++#define FF_UPDATE_RATE 50
++
+ #ifdef CONFIG_GREENASIA_FF
  
- /* Recommended modulation index 85% */
- #define TWL6040_VIBRA_MOD	85
-@@ -197,9 +199,10 @@ static void vibra_play_work(struct work_struct *work)
- }
+ struct gaff_device {
+@@ -40,19 +43,30 @@ struct gaff_device {
+ };
  
- static int vibra_play(struct input_dev *input, void *data,
--		      struct ff_effect *effect)
-+		      const struct mlnx_effect_command *command)
+ static int hid_gaff_play(struct input_dev *dev, void *data,
+-			 struct ff_effect *effect)
++			 const struct mlnx_effect_command *command)
  {
- 	struct vibra_info *info = input_get_drvdata(input);
+ 	struct hid_device *hid = input_get_drvdata(dev);
+ 	struct gaff_device *gaff = data;
 +	const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
- 	int ret;
+ 	int left, right;
  
- 	/* Do not allow effect, while the routing is set to use audio */
-@@ -209,9 +212,23 @@ static int vibra_play(struct input_dev *input, void *data,
- 		return -EBUSY;
- 	}
- 
--	info->weak_speed = effect->u.rumble.weak_magnitude;
--	info->strong_speed = effect->u.rumble.strong_magnitude;
--	info->direction = effect->direction < EFFECT_DIR_180_DEG ? 1 : -1;
+-	left = effect->u.rumble.strong_magnitude;
+-	right = effect->u.rumble.weak_magnitude;
+-
+-	dbg_hid("called with 0x%04x 0x%04x", left, right);
+-
+-	left = left * 0xfe / 0xffff;
+-	right = right * 0xfe / 0xffff;
 +	switch (command->cmd) {
 +	case MLNX_START_RUMBLE:
-+		info->weak_speed = rumble_force->weak;
-+		info->strong_speed = rumble_force->strong;
-+		if (info->strong_speed >= info->weak_speed)
-+			info->direction = rumble_force->strong_dir < EFFECT_DIR_180_DEG ? 1 : -1;
-+		else
-+			info->direction = rumble_force->weak_dir < EFFECT_DIR_180_DEG ? 1 : -1;
++		left = rumble_force->strong;
++		right = rumble_force->weak;
++
++		dbg_hid("called with 0x%04x 0x%04x", left, right);
++
++		left = left * 0xfe / 0xffff;
++		right = right * 0xfe / 0xffff;
 +		break;
 +	case MLNX_STOP_RUMBLE:
-+		info->weak_speed = 0;
-+		info->strong_speed = 0;
-+		info->direction = 1;
++		left = 0;
++		right = 0;
 +		break;
 +	default:
 +		return -EINVAL;
 +	}
  
- 	ret = queue_work(info->workqueue, &info->play_work);
- 	if (!ret) {
-@@ -367,7 +384,7 @@ static int twl6040_vibra_probe(struct platform_device *pdev)
- 	info->input_dev->close = twl6040_vibra_close;
- 	__set_bit(FF_RUMBLE, info->input_dev->ffbit);
+ 	gaff->report->field[0]->value[0] = 0x51;
+ 	gaff->report->field[0]->value[1] = 0x0;
+@@ -109,7 +123,7 @@ static int gaff_init(struct hid_device *hid)
  
--	ret = input_ff_create_memless(info->input_dev, NULL, vibra_play);
-+	ret = input_ff_create_mlnx(info->input_dev, NULL, vibra_play, FF_UPDATE_RATE);
- 	if (ret < 0) {
- 		dev_err(info->dev, "couldn't register vibrator to FF\n");
- 		goto err_ialloc;
+ 	set_bit(FF_RUMBLE, dev->ffbit);
+ 
+-	error = input_ff_create_memless(dev, gaff, hid_gaff_play);
++	error = input_ff_create_mlnx(dev, gaff, hid_gaff_play, FF_UPDATE_RATE);
+ 	if (error) {
+ 		kfree(gaff);
+ 		return error;
 -- 
 1.9.2
 
