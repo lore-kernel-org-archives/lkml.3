@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757779AbaDVUVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:21:07 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36358 "EHLO
+	id S932194AbaDVVEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:04:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36369 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757765AbaDVUVA (ORCPT
+	with ESMTP id S1757464AbaDVUVG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:21:00 -0400
+	Tue, 22 Apr 2014 16:21:06 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: David Fries <David@Fries.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>,
+        "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 029/133] w1: fix w1_send_slave dropping a slave id
-Date: Tue, 22 Apr 2014 13:12:47 -0700
-Message-Id: <1398197671-12786-30-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 021/133] isdnloop: Validate NUL-terminated strings from user.
+Date: Tue, 22 Apr 2014 13:12:39 -0700
+Message-Id: <1398197671-12786-22-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,79 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: David Fries <David@Fries.net>
+From: =?UTF-8?q?YOSHIFUJI=20Hideaki=20/=20=E5=90=89=E8=97=A4=E8=8B=B1?=
 
-commit 6b355b33a64fd6d8ead2b838ec16fb9b551f71e8 upstream.
+[ Upstream commit 77bc6bed7121936bb2e019a8c336075f4c8eef62 ]
 
-Previous logic,
-if (avail > 8) {
-	store slave;
-	return;
-}
-send data; clear;
+Return -EINVAL unless all of user-given strings are correctly
+NUL-terminated.
 
-The logic error is, if there isn't space send the buffer and clear,
-but the slave wasn't added to the now empty buffer loosing that slave
-id.  It also should have been "if (avail >= 8)" because when it is 8,
-there is space.
-
-Instead, if there isn't space send and clear the buffer, then there is
-always space for the slave id.
-
-Signed-off-by: David Fries <David@Fries.net>
-Acked-by: Evgeniy Polyakov <zbr@ioremap.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: YOSHIFUJI Hideaki <yoshfuji@linux-ipv6.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/w1/w1_netlink.c | 25 +++++++++++++------------
- 1 file changed, 13 insertions(+), 12 deletions(-)
+ drivers/isdn/isdnloop/isdnloop.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/drivers/w1/w1_netlink.c b/drivers/w1/w1_netlink.c
-index 40788c9..73705af 100644
---- a/drivers/w1/w1_netlink.c
-+++ b/drivers/w1/w1_netlink.c
-@@ -54,28 +54,29 @@ static void w1_send_slave(struct w1_master *dev, u64 rn)
- 	struct w1_netlink_msg *hdr = (struct w1_netlink_msg *)(msg + 1);
- 	struct w1_netlink_cmd *cmd = (struct w1_netlink_cmd *)(hdr + 1);
- 	int avail;
-+	u64 *data;
- 
- 	/* update kernel slave list */
- 	w1_slave_found(dev, rn);
- 
- 	avail = dev->priv_size - cmd->len;
- 
--	if (avail > 8) {
--		u64 *data = (void *)(cmd + 1) + cmd->len;
-+	if (avail < 8) {
-+		msg->ack++;
-+		cn_netlink_send(msg, 0, GFP_KERNEL);
- 
--		*data = rn;
--		cmd->len += 8;
--		hdr->len += 8;
--		msg->len += 8;
--		return;
-+		msg->len = sizeof(struct w1_netlink_msg) +
-+			sizeof(struct w1_netlink_cmd);
-+		hdr->len = sizeof(struct w1_netlink_cmd);
-+		cmd->len = 0;
- 	}
- 
--	msg->ack++;
--	cn_netlink_send(msg, 0, GFP_KERNEL);
-+	data = (void *)(cmd + 1) + cmd->len;
- 
--	msg->len = sizeof(struct w1_netlink_msg) + sizeof(struct w1_netlink_cmd);
--	hdr->len = sizeof(struct w1_netlink_cmd);
--	cmd->len = 0;
-+	*data = rn;
-+	cmd->len += 8;
-+	hdr->len += 8;
-+	msg->len += 8;
- }
- 
- static int w1_process_search_command(struct w1_master *dev, struct cn_msg *msg,
+diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
+index 02125e6..e1f8748 100644
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -1070,6 +1070,12 @@ isdnloop_start(isdnloop_card *card, isdnloop_sdef *sdefp)
+ 		return -EBUSY;
+ 	if (copy_from_user((char *) &sdef, (char *) sdefp, sizeof(sdef)))
+ 		return -EFAULT;
++
++	for (i = 0; i < 3; i++) {
++		if (!memchr(sdef.num[i], 0, sizeof(sdef.num[i])))
++			return -EINVAL;
++	}
++
+ 	spin_lock_irqsave(&card->isdnloop_lock, flags);
+ 	switch (sdef.ptype) {
+ 	case ISDN_PTYPE_EURO:
 -- 
 1.9.1
 
