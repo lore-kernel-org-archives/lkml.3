@@ -1,60 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475AbaDVUC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:02:28 -0400
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:65363 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755287AbaDVUCZ (ORCPT
+	id S1757490AbaDVUCh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:02:37 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:52050 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755249AbaDVUCd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:02:25 -0400
-Date: Tue, 22 Apr 2014 16:02:21 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Jiri Kosina <jkosina@suse.cz>, Jeff Layton <jlayton@redhat.com>,
-        Andreas Gruenbacher <agruen@linbit.com>,
-        Stephen Hemminger <stephen@networkplumber.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Monam Agarwal <monamagarwal123@gmail.com>
-Subject: Re: [PATCH 3/4] ida: in-place ida allocation
-Message-ID: <20140422200221.GC2314@mtj.dyndns.org>
-References: <1398161781-12105-1-git-send-email-laijs@cn.fujitsu.com>
- <1398161781-12105-4-git-send-email-laijs@cn.fujitsu.com>
+	Tue, 22 Apr 2014 16:02:33 -0400
+Date: Tue, 22 Apr 2014 20:18:20 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: bsegall@google.com
+Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, rostedt@goodmis.org,
+        fweisbec@gmail.com, mingo@redhat.com, acme@ghostprotocols.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/8] sched/core: Skip wakeup when task is already running.
+Message-ID: <20140422181820.GT26782@laptop.programming.kicks-ass.net>
+References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
+ <51238bf1648b1f4c66d3547a49cf949d1679d068.1397562542.git.yangds.fnst@cn.fujitsu.com>
+ <20140415135326.GV11096@twins.programming.kicks-ass.net>
+ <534E59FC.2090001@cn.fujitsu.com>
+ <535658DB.2090801@cn.fujitsu.com>
+ <xm26sip55lyb.fsf@sword-of-the-dawn.mtv.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398161781-12105-4-git-send-email-laijs@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <xm26sip55lyb.fsf@sword-of-the-dawn.mtv.corp.google.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 06:16:20PM +0800, Lai Jiangshan wrote:
-> There are two stages of ida allocation/free, idr_layers and ida_bitmap.
-> They add unneeded foot print and memory waste.
+On Tue, Apr 22, 2014 at 10:10:52AM -0700, bsegall@google.com wrote:
+> This is all expected behavior, and the somewhat less than useful trace
+> events are expected. A task setting p->state to TASK_RUNNING without
+> locks is fine if and only p == current. The standard deschedule loop is
+> basically:
 > 
-> When a single ID is first allocated from an ida, this ida requires
-> two big chunks of memory. One idr_layer and one ida_bitmap.
+> while (1) {
+>   set_current_state(TASK_(UN)INTERRUPTIBLE);
+>   if (should_still_sleep)
+>     schedule();
+> }
+> set_current_state(TASK_RUNNING);
 > 
-> To reduce the foot print and memory, we reduce the ida_bitmap
-> to a single "unsigned long" and place it in its own idr-slot
-> and avoid to allocate the ida_bitmap.
+> Which can produce this in a race.
 > 
-> It also means ida bitmap is located on its coresponding idr-slot
-> which size is the same as "unsigned long".
-> Each ida bitmap(idr-slot) contains BITS_PER_LONG ida-slots.
+> The only problem this causes is a wasted check_preempt_curr call in the
+> racing case, and a somewhat inaccurate sched:sched_wakeup trace event.
+> Note that even if you did recheck in ttwu_do_wakeup you could still race
+> and get an "inaccurate" trace event. Heck, even if the ttwu is
+> _necessary_ because p is currently trying to take rq->lock to
+> deschedule, you won't get a matching sched_switch event, because the
+> ttwu is running before schedule is.
 > 
-> The struct ida_bitmap is not needed any more, we use "unsigned long"
-> directly and remove all the code of alloc/free struct ida_bitmap.
+> You could sorta fix this I guess by tracking every write to p->state
+> with trace events, but that would be a somewhat different change, and
+> might be considered too expensive for all I know (and the trace events
+> could /still/ be resolved in a different order across cpus compared to
+> p->state's memory).
 
-Are you calling 128 byte a "big chunk of memory" while trading off
-tree depth for it?  No, this level of space optimizaiton is completely
-uncalled for.
+Ah, you're saying that a second task could try a spurious wakeup between
+set_current_state() and schedule(). Yes, that'll trigger this indeed.
 
- Nacked-by: Tejun Heo <tj@kernel.org>
 
-Thanks.
-
--- 
-tejun
