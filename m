@@ -1,81 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758083AbaDVUc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:32:58 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43439 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757642AbaDVUcy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:32:54 -0400
-Date: Tue, 22 Apr 2014 16:32:51 -0400 (EDT)
-Message-Id: <20140422.163251.1863774803211446171.davem@davemloft.net>
-To: luto@amacapital.net
-Cc: vgoyal@redhat.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        netdev@vger.kernel.org, tj@kernel.org, ssorce@redhat.com,
-        lpoetter@redhat.com, kay@redhat.com, dwalsh@redhat.com
-Subject: Re: [PATCH 0/2] net: Implement SO_PEERCGROUP and SO_PASSCGROUP
- socket options
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CALCETrX_TCbKy-3W590wG3rq9O3Hzbqc_wu3EGg7PKn2NNsTpQ@mail.gmail.com>
-References: <CALCETrWHA5ZmzOHnz9LO+7v4byc8QiynGyjE_ju5sjokNqrjZA@mail.gmail.com>
-	<20140422.162927.2182797573155988911.davem@davemloft.net>
-	<CALCETrX_TCbKy-3W590wG3rq9O3Hzbqc_wu3EGg7PKn2NNsTpQ@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 22 Apr 2014 13:32:54 -0700 (PDT)
+	id S932173AbaDVUdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:33:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757638AbaDVUcz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 16:32:55 -0400
+Date: Tue, 22 Apr 2014 16:32:44 -0400
+From: Dave Jones <davej@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: 3.15rc2 hanging processes on exit.
+Message-ID: <20140422203244.GA30757@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hugh Dickins <hughd@google.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-mm <linux-mm@kvack.org>
+References: <20140422180308.GA19038@redhat.com>
+ <CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
+ <alpine.LSU.2.11.1404221303060.6220@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1404221303060.6220@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 22 Apr 2014 13:31:13 -0700
+On Tue, Apr 22, 2014 at 01:17:33PM -0700, Hugh Dickins wrote:
+ 
+ > Your patch looks to me correct and to the point; but I agree that
+ > we haven't made a relevant change there recently, so I suppose it
+ > comes from a trinity improvement rather than a new bug in 3.15.
+ > 
+ > (Dave, do you have time to confirm that by running new trinity on 3.14?)
 
-> On Tue, Apr 22, 2014 at 1:29 PM, David Miller <davem@davemloft.net> wrote:
->> From: Andy Lutomirski <luto@amacapital.net>
->> Date: Tue, 22 Apr 2014 13:08:59 -0700
->>
->>> On Tue, Apr 22, 2014 at 1:05 PM, David Miller <davem@davemloft.net> wrote:
->>>> From: Vivek Goyal <vgoyal@redhat.com>
->>>> Date: Tue, 15 Apr 2014 17:15:44 -0400
->>>>
->>>>> This is another version of patchset to add support passing cgroup
->>>>> information of client over unix socket API.
->>>>
->>>> I'm marking this patch series as "changes requested" in patchwork
->>>> because if we still end up adding this feature SO_PASSCGROUP needs to
->>>> be changed to behave like SO_PASSCRED.
->>>>
->>>> Specifically, like SO_PASSCRED, it should pass the "real" cgroup, ie.
->>>> the cgroup at socket open() time.
->>>>
->>>
->>> I suspect that making this change will render it useless,
->>> unfortunately.  I really want to understand the use case.
->>
->> There was no use case, it is simply the fact that when I discussed this
->> feature with Vivek and Simo I told them that it should be implemented
->> the same as the existing credential facilities.
->>
->> For datagram situations there is no "peer" to consider in between
->> sendmsg() calls, as the binding is only active during the sendmsg()
->> call.
->>
->> That's why SO_PASSCRED exists in the first place.
->>
->> Otherwise, without SO_PASSCGROUP, there is no way for datagram sockets
->> to find out the peer's open() time cgroup.
-> 
-> Right.
-> 
-> I'd still like to know what userspace applications want this feature.
-> The canonical example seems to be journald, but journald doesn't use
-> unix datagram sockets AFAICS, nor is the process that opened the
-> socket interesting (that process is always systemd).
+I can give it a shot.
 
-It's about rounding out the interface properly, now, rather than having
-to have a specific use case.
+I think perhaps a bigger reason why this might be only just turning up,
+is that I now have an upper bound on the number of entries in an iovec
+at 256 entries.  So now there's more chance that we'll generate an iovec
+that a syscall can actually use instead of us running out of memory
+trying to satisfy every entry and constructing a broken iovec struct if
+we hit ENOMEM
 
-I really don't consider a specific use case as a requirement in this
-case.
+	Dave
+
