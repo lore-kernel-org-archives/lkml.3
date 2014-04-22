@@ -1,114 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582AbaDVSQJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 14:16:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53626 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751339AbaDVSNz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 14:13:55 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        containers@lists.linux-foundation.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, arozansk@redhat.com,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com, eparis@redhat.com,
-        sgrubb@redhat.com
-Subject: [PATCH 0/2] namespaces: log namespaces per task
-Date: Tue, 22 Apr 2014 14:12:51 -0400
-Message-Id: <cover.1398176489.git.rgb@redhat.com>
+	id S1754970AbaDVSQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 14:16:55 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:62035 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752003AbaDVSQx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 14:16:53 -0400
+Date: Tue, 22 Apr 2014 14:16:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Stanislav Meduna <stano@meduna.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
+Message-ID: <20140422141650.7f43d5ba@gandalf.local.home>
+In-Reply-To: <20140422134802.73fc1fa4@gandalf.local.home>
+References: <534C3606.7010206@meduna.org>
+	<534C731F.1050406@meduna.org>
+	<534DADF1.6060608@meduna.org>
+	<20140422115439.GA20669@linutronix.de>
+	<20140422094657.5b6ca1e2@gandalf.local.home>
+	<53569E05.8010600@linutronix.de>
+	<20140422134802.73fc1fa4@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I saw no replies to my questions when I replied a year after Aris' posting, so
-I don't know if it was ignored or got lost in stale threads:
-        https://www.redhat.com/archives/linux-audit/2013-March/msg00020.html
-        https://www.redhat.com/archives/linux-audit/2013-March/msg00033.html
-	(https://lists.linux-foundation.org/pipermail/containers/2013-March/032063.html)
-        https://www.redhat.com/archives/linux-audit/2014-January/msg00180.html
+On Tue, 22 Apr 2014 13:48:02 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-I've tried to answer a number of questions that were raised in that thread.
+> I need to take a deeper look into the actual code. But as trylocks on
+> UP are nops (always succeed), and if it expects to be able to do
+> something in a critical section that is protected by spinlocks (again
+> nops on UP), this would be broken for UP.
 
-The goal is not quite identical to Aris' patchset.
+Reading the code, I see it's broken. We should add something like this:
 
-The purpose is to track namespaces in use by logged processes from the
-perspective of init_*_ns.  The first patch defines a function to list them.
-The second patch provides an example of usage for audit_log_task_info() which
-is used by syscall audits, among others.  audit_log_task() and
-audit_common_recv_message() would be other potential use cases.
-
-Use a serial number per namespace (unique across one boot of one kernel)
-instead of the inode number (which is claimed to have had the right to change
-reserved and is not necessarily unique if there is more than one proc fs).  It
-could be argued that the inode numbers have now become a defacto interface and
-can't change now, but I'm proposing this approach to see if this helps address
-some of the objections to the earlier patchset.
-
-There could also have messages added to track the creation and the destruction
-of namespaces, listing the parent for hierarchical namespaces such as pidns,
-userns, and listing other ids for non-hierarchical namespaces, as well as other
-information to help identify a namespace.
-
-There has been some progress made for audit in net namespaces and pid
-namespaces since this previous thread.  net namespaces are now served as peers
-by one auditd in the init_net namespace with processes in a non-init_net
-namespace being able to write records if they are in the init_user_ns and have
-CAP_AUDIT_WRITE.  Processes in a non-init_pid_ns can now similarly write
-records.  As for CAP_AUDIT_READ, I just posted a patchset to check capabilities
-of userspace processes that try to join netlink broadcast groups.
-
-
-Questions:
-Is there a way to link serial numbers of namespaces involved in migration of a
-container to another kernel?  (I had a brief look at CRIU.)  Is there a unique
-identifier for each running instance of a kernel?  Or at least some identifier
-within the container migration realm?
-
-What additional events should list this information?
-
-Does this present any kind of information leak?  Only CAP_AUDIT_CONTROL (and
-proposed CAP_AUDIT_READ) in init_user_ns can get to this information in the
-init namespace at the moment.
-
-
-Proposed output format:
-This differs slightly from Aristeu's patch because of the label conflict with
-"pid=" due to including it in existing records rather than it being a seperate
-record:
-        type=SYSCALL msg=audit(1398112249.996:65): arch=c000003e syscall=272 success=yes exit=0 a0=40000000 a1=ffffffffffffffff a2=0 a3=22 items=0 ppid=1 pid=566 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="(t-daemon)" exe="/usr/lib/systemd/systemd" mntns=5 netns=97 utsns=2 ipcns=1 pidns=4 userns=3 subj=system_u:system_r:init_t:s0 key=(null)
-
-
-Note: This set does not try to solve the non-init namespace audit messages and
-auditd problem yet.  That will come later, likely with additional auditd
-instances running in another namespace with a limited ability to influence the
-master auditd.  I echo Eric B's idea that messages destined for different
-namespaces would have to be tailored for that namespace with references that
-make sense (such as the right pid number reported to that pid namespace, and
-not leaking info about parents or peers).
-
-
-Richard Guy Briggs (2):
-  namespaces: give each namespace a serial number
-  audit: log namespace serial numbers
-
- fs/mount.h                     |    1 +
- fs/namespace.c                 |    1 +
- include/linux/audit.h          |    7 +++++++
- include/linux/ipc_namespace.h  |    1 +
- include/linux/nsproxy.h        |    8 ++++++++
- include/linux/pid_namespace.h  |    1 +
- include/linux/user_namespace.h |    1 +
- include/linux/utsname.h        |    1 +
- include/net/net_namespace.h    |    1 +
- init/version.c                 |    1 +
- ipc/msgutil.c                  |    1 +
- ipc/namespace.c                |    2 ++
- kernel/audit.c                 |   38 ++++++++++++++++++++++++++++++++++++++
- kernel/nsproxy.c               |   24 ++++++++++++++++++++++++
- kernel/pid.c                   |    1 +
- kernel/pid_namespace.c         |    2 ++
- kernel/user.c                  |    1 +
- kernel/user_namespace.c        |    2 ++
- kernel/utsname.c               |    2 ++
- net/core/net_namespace.c       |    4 +++-
- 20 files changed, 99 insertions(+), 1 deletions(-)
-
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+diff --git a/kernel/timer.c b/kernel/timer.c
+index cc34e42..a03164a 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -1447,6 +1447,12 @@ static void run_timer_softirq(struct softirq_action *h)
+ 		__run_timers(base);
+ }
+ 
++#ifdef CONFIG_SMP
++#define timer_should_raise_softirq(lock)	!spin_do_trylock(lock)
++#else
++#define timer_should_raise_softirq(lock)	1
++#endif
++
+ /*
+  * Called by the local, per-CPU timer interrupt on SMP.
+  */
+@@ -1467,7 +1473,7 @@ void run_local_timers(void)
+ 		return;
+ 	}
+ 
+-	if (!spin_do_trylock(&base->lock)) {
++	if (timer_should_raise_softirq(&base->lock)) {
+ 		raise_softirq(TIMER_SOFTIRQ);
+ 		return;
+ 	}
