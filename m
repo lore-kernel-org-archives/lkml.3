@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757785AbaDVUVX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:21:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36385 "EHLO
+	id S1757788AbaDVUVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:21:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36414 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752491AbaDVUVS (ORCPT
+	with ESMTP id S1752607AbaDVUVg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:21:18 -0400
+	Tue, 22 Apr 2014 16:21:36 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kjetil Oftedal <oftedal@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 024/133] sparc: PCI: Fix incorrect address calculation of PCI Bridge windows on Simba-bridges
-Date: Tue, 22 Apr 2014 13:12:42 -0700
-Message-Id: <1398197671-12786-25-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 109/133] nfsd: check passed socket's net matches NFSd superblock's one
+Date: Tue, 22 Apr 2014 13:14:07 -0700
+Message-Id: <1398197671-12786-110-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,46 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: oftedal <oftedal@gmail.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-[ Upstream commit 557fc5873ef178c4b3e1e36a42db547ecdc43f9b ]
+commit 3064639423c48d6e0eb9ecc27c512a58e38c6c57 upstream.
 
-The SIMBA APB Bridges lacks the 'ranges' of-property describing the
-PCI I/O and memory areas located beneath the bridge. Faking this
-information has been performed by reading range registers in the
-APB bridge, and calculating the corresponding areas.
+There could be a case, when NFSd file system is mounted in network, different
+to socket's one, like below:
 
-In commit 01f94c4a6ced476ce69b895426fc29bfc48c69bd
-("Fix sabre pci controllers with new probing scheme.") a bug was
-introduced into this calculation, causing the PCI memory areas
-to be calculated incorrectly: The shift size was set to be
-identical for I/O and MEM ranges, which is incorrect.
+"ip netns exec" creates new network and mount namespace, which duplicates NFSd
+mount point, created in init_net context. And thus NFS server stop in nested
+network context leads to RPCBIND client destruction in init_net.
+Then, on NFSd start in nested network context, rpc.nfsd process creates socket
+in nested net and passes it into "write_ports", which leads to RPCBIND sockets
+creation in init_net context because of the same reason (NFSd monut point was
+created in init_net context). An attempt to register passed socket in nested
+net leads to panic, because no RPCBIND client present in nexted network
+namespace.
 
-This patch set the shift size of the MEM range back to the
-value used before 01f94c4a6ced476ce69b895426fc29bfc48c69bd.
+This patch add check that passed socket's net matches NFSd superblock's one.
+And returns -EINVAL error to user psace otherwise.
 
-Signed-off-by: Kjetil Oftedal <oftedal@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+v2: Put socket on exit.
+
+Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/sparc/kernel/pci.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/nfsctl.c               |  5 +++++
+ include/linux/sunrpc/svcsock.h |  1 +
+ net/sunrpc/svcsock.c           | 16 ++++++++++++++++
+ 3 files changed, 22 insertions(+)
 
-diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
-index baf4366..906cbf0 100644
---- a/arch/sparc/kernel/pci.c
-+++ b/arch/sparc/kernel/pci.c
-@@ -399,8 +399,8 @@ static void apb_fake_ranges(struct pci_dev *dev,
- 	apb_calc_first_last(map, &first, &last);
- 	res = bus->resource[1];
- 	res->flags = IORESOURCE_MEM;
--	region.start = (first << 21);
--	region.end = (last << 21) + ((1 << 21) - 1);
-+	region.start = (first << 29);
-+	region.end = (last << 29) + ((1 << 29) - 1);
- 	pcibios_bus_to_resource(dev, res, &region);
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index 7493428..dd80c0e 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -671,6 +671,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
+ 	if (err != 0 || fd < 0)
+ 		return -EINVAL;
+ 
++	if (svc_alien_sock(net, fd)) {
++		printk(KERN_ERR "%s: socket net is different to NFSd's one\n", __func__);
++		return -EINVAL;
++	}
++
+ 	err = nfsd_create_serv(net);
+ 	if (err != 0)
+ 		return err;
+diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
+index 62fd1b7..947009e 100644
+--- a/include/linux/sunrpc/svcsock.h
++++ b/include/linux/sunrpc/svcsock.h
+@@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
+ int		svc_send(struct svc_rqst *);
+ void		svc_drop(struct svc_rqst *);
+ void		svc_sock_update_bufs(struct svc_serv *serv);
++bool		svc_alien_sock(struct net *net, int fd);
+ int		svc_addsock(struct svc_serv *serv, const int fd,
+ 					char *name_return, const size_t len);
+ void		svc_init_xprt_sock(void);
+diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+index 305374d..422759b 100644
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -1393,6 +1393,22 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
+ 	return svsk;
  }
  
++bool svc_alien_sock(struct net *net, int fd)
++{
++	int err;
++	struct socket *sock = sockfd_lookup(fd, &err);
++	bool ret = false;
++
++	if (!sock)
++		goto out;
++	if (sock_net(sock->sk) != net)
++		ret = true;
++	sockfd_put(sock);
++out:
++	return ret;
++}
++EXPORT_SYMBOL_GPL(svc_alien_sock);
++
+ /**
+  * svc_addsock - add a listener socket to an RPC service
+  * @serv: pointer to RPC service to which to add a new listener
 -- 
 1.9.1
 
