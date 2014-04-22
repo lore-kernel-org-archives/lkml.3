@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693AbaDVOXT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:23:19 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13833 "EHLO
+	id S1756698AbaDVOXo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:23:44 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:14973 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756328AbaDVOXO (ORCPT
+	by vger.kernel.org with ESMTP id S1751243AbaDVOXm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:23:14 -0400
-Date: Tue, 22 Apr 2014 07:23:13 -0700
+	Tue, 22 Apr 2014 10:23:42 -0400
+Date: Tue, 22 Apr 2014 07:23:41 -0700
 From: Drew Richardson <drew.richardson@arm.com>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH] Export sched tracepoints for use by kernel modules
-Message-ID: <20140422142313.GB21121@dreric01-Precision-T1600>
+To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH] Export block tracepoints for use by kernel modules
+Message-ID: <20140422142341.GC21121@dreric01-Precision-T1600>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,45 +28,35 @@ any tracepoints used in a kernel module must be exported.
 Signed-off-by: Drew Richardson <drew.richardson@arm.com>
 Acked-by: Pawel Moll <pawel.moll@arm.com>
 ---
- kernel/sched/core.c | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ block/blk-core.c | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 268a45ea238c..cdb8e92ff24a 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -90,6 +90,31 @@
- #define CREATE_TRACE_POINTS
- #include <trace/events/sched.h>
+diff --git a/block/blk-core.c b/block/blk-core.c
+index a0e3096c4bb5..a23f958ef20a 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -44,6 +44,21 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_remap);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_remap);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_complete);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(block_unplug);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_touch_buffer);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_dirty_buffer);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_abort);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_requeue);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_complete);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_insert);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_issue);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_bounce);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_backmerge);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_frontmerge);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_queue);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_getrq);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_sleeprq);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_plug);
++EXPORT_TRACEPOINT_SYMBOL_GPL(block_split);
  
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_kthread_stop);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_kthread_stop_ret);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_wakeup);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_wakeup_new);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_switch);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_migrate_task);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_free);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_exit);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_wait_task);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_wait);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_fork);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_exec);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_wait);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_sleep);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_iowait);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_blocked);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_runtime);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_pi_setprio);
-+#ifdef CONFIG_DETECT_HUNG_TASK
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_hang);
-+#endif /* CONFIG_DETECT_HUNG_TASK */
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_move_numa);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stick_numa);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(sched_swap_numa);
-+
- void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
- {
- 	unsigned long delta;
+ DEFINE_IDA(blk_queue_ida);
+ 
 -- 
 1.8.3.2
 
