@@ -1,50 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933325AbaDVQo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:44:27 -0400
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:35400 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932250AbaDVQoW (ORCPT
+	id S933384AbaDVQqf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:46:35 -0400
+Received: from mail-oa0-f74.google.com ([209.85.219.74]:54271 "EHLO
+	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933195AbaDVQqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:44:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <CALCETrWN_g50nDitvUSmoL6Ho0pHXEMXiqCVHeU53uZc5hN+1g@mail.gmail.com>
-References: <cover.1398097304.git.luto@amacapital.net>
-	<430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
-	<CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
-	<20140422143152.GA23716@amd.pavel.ucw.cz>
-	<CANq1E4TPPcdD-8FF_Kc=r44Vrd51Vmt-OVu+EtCC-oEzXkvJvg@mail.gmail.com>
-	<CALCETrWN_g50nDitvUSmoL6Ho0pHXEMXiqCVHeU53uZc5hN+1g@mail.gmail.com>
-Date: Tue, 22 Apr 2014 18:44:22 +0200
-Message-ID: <CANq1E4TZHwyesFSsfKe8bE+z-H9aXs49Wd5EpkFFX08AK4onGg@mail.gmail.com>
-Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Apr 2014 12:46:21 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: lee.jones@linaro.org, swarren@nvidia.com, wsa@the-dreams.de
+Cc: abrestic@chromium.org, dgreid@chromium.org, olof@lixom.net,
+        sjg@chromium.org, linux-samsung-soc@vger.kernel.org,
+        linux-tegra@vger.kernel.org, Doug Anderson <dianders@chromium.org>,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 3/7] mfd: cros_ec: spi: Make the cros_ec_spi timeout more reliable
+Date: Tue, 22 Apr 2014 09:45:50 -0700
+Message-Id: <1398185154-19404-4-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
+In-Reply-To: <1398185154-19404-1-git-send-email-dianders@chromium.org>
+References: <1398185154-19404-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+The cros_ec_spi transfer had two problems with its timeout code:
 
-On Tue, Apr 22, 2014 at 5:24 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Tue, Apr 22, 2014 at 8:19 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->> In other words, the bug you describe is that /proc/pid/fd/ allows
->> access to objects without a reachable path to the only _real_
->> filesystem link. But isn't the same true for openat()?
->
-> I don't think so.  openat doesn't work on fds for things that aren't
-> directories.
+1. It looked at the timeout even in the case that it found valid data.
+2. If the cros_ec_spi code got switched out for a while, it's possible
+   it could get a timeout after a single loop.  Let's be paranoid and
+   make sure we do one last transfer after the timeout expires.
 
-Sorry, I wasn't precise enough: I meant the same 'leak' occurs if you
-keep a dir-fd on the directory in question _before_ it is set to 0600.
-Just like the example race keeps a file-fd to the file in question. So
-after the directory is set to 0600 you can use that dir-fd via
-openat() to avoid the whole path-lookup just like you do it via /proc.
+Signed-off-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Simon Glass <sjg@chromium.org>
+Tested-by: Andrew Bresticker <abrestic@chromium.org>
+Tested-by: Stephen Warren <swarren@nvidia.com>
+---
+Changes in v2: None
 
-Thanks
-David
+ drivers/mfd/cros_ec_spi.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
+index a2a605d..4f863c3 100644
+--- a/drivers/mfd/cros_ec_spi.c
++++ b/drivers/mfd/cros_ec_spi.c
+@@ -113,7 +113,9 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
+ 
+ 	/* Receive data until we see the header byte */
+ 	deadline = jiffies + msecs_to_jiffies(EC_MSG_DEADLINE_MS);
+-	do {
++	while (true) {
++		unsigned long start_jiffies = jiffies;
++
+ 		memset(&trans, 0, sizeof(trans));
+ 		trans.cs_change = 1;
+ 		trans.rx_buf = ptr = ec_dev->din;
+@@ -134,12 +136,19 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
+ 				break;
+ 			}
+ 		}
++		if (ptr != end)
++			break;
+ 
+-		if (time_after(jiffies, deadline)) {
++		/*
++		 * Use the time at the start of the loop as a timeout.  This
++		 * gives us one last shot at getting the transfer and is useful
++		 * in case we got context switched out for a while.
++		 */
++		if (time_after(start_jiffies, deadline)) {
+ 			dev_warn(ec_dev->dev, "EC failed to respond in time\n");
+ 			return -ETIMEDOUT;
+ 		}
+-	} while (ptr == end);
++	}
+ 
+ 	/*
+ 	 * ptr now points to the header byte. Copy any valid data to the
+-- 
+1.9.1.423.g4596e3a
+
