@@ -1,59 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736AbaDVPA0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:00:26 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:46621 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756656AbaDVPAS (ORCPT
+	id S932974AbaDVPCu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:02:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.130]:50459 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932828AbaDVPCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:00:18 -0400
+	Tue, 22 Apr 2014 11:02:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and dma-coherent
+Date: Tue, 22 Apr 2014 17:02:19 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Greg Kroah-Hartman" <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Olof Johansson <olof@lixom.net>, linux-arm-kernel@lists.infradead.org,
+        Gregory =?iso-8859-1?q?Cl=E9ment?= 
+	<gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>
+References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com> <20140419182528.414b9b2e@skate>
+In-Reply-To: <20140419182528.414b9b2e@skate>
 MIME-Version: 1.0
-In-Reply-To: <1397544101-18135-3-git-send-email-wens@csie.org>
-References: <1397544101-18135-1-git-send-email-wens@csie.org>
-	<1397544101-18135-3-git-send-email-wens@csie.org>
-Date: Tue, 22 Apr 2014 17:00:17 +0200
-Message-ID: <CACRpkdZ+3dnhoj1TS4KSVUP8iFHsjjwop-FG2Nf07YtH6aSO_Q@mail.gmail.com>
-Subject: Re: [PATCH 2/7] gpiolib: Support purely name based gpiod lookup in
- device trees
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Chen-Yu Tsai <wens@csie.org>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404221702.19842.arnd@arndb.de>
+X-Provags-ID: V02:K0:2bL5F/G5/fFElYOTzzudZrry/8mrLD7AEu9tgAWhxP5
+ a75P9zUurHnO8H8J9yu5bhzwScgOP3Q4FDKtrCh3OqKRNJnuIQ
+ jqeYBN0vhOgDwgTi5ApH0SY7WXGHHaVqJkjCo/p/VfU7fSM/qH
+ e50kJmFjEQFdUsX65oMrmag2kwJUHqEmjtJmhl4pd+Ba6cE0fR
+ yCH7Pnad30CZco+6p4Q79m9/MVf9mJFJcvGXfI1EF+3YaCQnH7
+ XFEjd3HWyWkEz9AyOvK5RHYxKKzpMcTU64NOR+Rcd+ifJI2kRc
+ azWHXJlmwdlgqH5PFtx5xCQpdKHJT4/WBcwYZHx+Q0WA6JawdZ
+ PGDt4w/xZ/gCpxbgjGig=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 8:41 AM, Chen-Yu Tsai <wens@csie.org> wrote:
+On Saturday 19 April 2014, Thomas Petazzoni wrote:
+> 
+> I am not sure whether there is an intersection or not, but I wanted to
+> mention that the mvebu platform (in mach-mvebu) supports hardware I/O
+> coherency, which makes it a coherent DMA platform. However, we are not
+> able to use arm_coherent_dma_ops for this platform, because when a
+> transfer is being made DMA_FROM_DEVICE, at the end of the transfer, we
+> need to perform an I/O barrier to wait for the snooping unit to
+> complete its coherency work. So we're coherent, but not with
+> arm_coherent_dma_ops: we have our own dma operation implementation (see
+> arch/arm/mach-mvebu/coherency.c).
 
-> This patch enables gpio-names based gpiod lookup in device tree usage,
-> which ignores the index passed to gpiod_get_index. If this fails, fall
-> back to the original function-index ("con_id"-gpios) based lookup scheme,
-> for backward compatibility and any drivers needing more than one GPIO
-> for any function.
->
-> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+I had completely missed the fact that this support was merged already.
 
-This looks a bit scary and I cannot claim to realize the entire semantic
-effect of this patch, but if it's the way to go then OK.
-Acked-by: Linus Walleij <linus.walleij@linaro.org>
+It's an interesting question if this should actually be called
+'coherent' or not. It's certainly more coherent than without that
+support, but then again, you still can't rely on incoming data to
+be visible after a readl() from the device has returned or an MSI
+interrupt has been delivered, which is what we normally expect.
 
-Shall I just apply this to the GPIO tree or are you carrying it along with
-the other stuff?
+In particular, it means you can't really use arm_coherent_dma_alloc(),
+which is a shame, since that is a significante performance overhead.
 
-Yours,
-Linus Walleij
+I would hope we can find a way to avoid the platform notifiers for
+mvebu as well and come up with a generic way to express this
+'semi-coherent' mode. I believe x-gene has a similar issue, and
+I wouldn't be surprised if there are others like this.
+
+	Arnd
