@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932744AbaDVOwY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:52:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932676AbaDVOwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:52:17 -0400
-Date: Tue, 22 Apr 2014 16:52:03 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 2/9] perf hists: Introduce hists__add_nr_events()
-Message-ID: <20140422145203.GH1104@krava.brq.redhat.com>
-References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
- <1398156591-11001-3-git-send-email-namhyung@kernel.org>
+	id S932775AbaDVOw6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:52:58 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:40776 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932581AbaDVOwy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:52:54 -0400
+Date: Tue, 22 Apr 2014 09:50:33 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Roger Quadros <rogerq@ti.com>
+CC: <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH v2] usb: dwc3: core: Fix gadget for system suspend/resume
+Message-ID: <20140422145033.GG5524@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1395826989-5405-1-git-send-email-rogerq@ti.com>
+ <53565F8C.4050100@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zq44+AAfm4giZpo5"
 Content-Disposition: inline
-In-Reply-To: <1398156591-11001-3-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53565F8C.4050100@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 05:49:44PM +0900, Namhyung Kim wrote:
-> The hists__add_nr_events() is a helper function intended to be ran
-> inside of hists__inc_nr_entries().  However this requires other
-> changes that handled in the next patch.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/hist.c | 32 +++++++++++++++++++++-----------
->  1 file changed, 21 insertions(+), 11 deletions(-)
-> 
-> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> index 5a892477aa50..1c77714f668d 100644
-> --- a/tools/perf/util/hist.c
-> +++ b/tools/perf/util/hist.c
-> @@ -317,6 +317,27 @@ static struct hist_entry *hist_entry__new(struct hist_entry *template)
->  	return he;
->  }
->  
-> +static void __events_stats__add(struct events_stats *stats, u32 type, u32 val)
-> +{
-> +	stats->nr_events[0] += val;
-> +	stats->nr_events[type] += val;
-> +}
-> +
-> +void events_stats__inc(struct events_stats *stats, u32 type)
-> +{
-> +	__events_stats__add(stats, type, 1);
-> +}
-> +
-> +void hists__inc_nr_events(struct hists *hists, u32 type)
-> +{
-> +	__events_stats__add(&hists->stats, type, 1);
-> +}
-> +
-> +static void hists__add_nr_events(struct hists *hists, u32 type, u32 val)
-> +{
-> +	__events_stats__add(&hists->stats, type, val);
-> +}
+--zq44+AAfm4giZpo5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-adding static function with no usage breaks build..
-we dont want that, eventhough it's fixed in the next commit
+Hi,
 
-thanks,
-jirka
+On Tue, Apr 22, 2014 at 03:24:44PM +0300, Roger Quadros wrote:
+> Looks like we missed this one. Could you please pick this up for -rc?
+
+see http://marc.info/?l=3Dlinux-usb&m=3D139809466025568&w=3D2 , it's already
+there
+
+--=20
+balbi
+
+--zq44+AAfm4giZpo5
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTVoG5AAoJEIaOsuA1yqREQqwP/iGSve2m5NN8oc/XbNQj750C
+RDC3ct55Cpho//CYL8ZO6GvZNIOnivl/tAp5amAF7ujXYaKHpgx4A/KMFXy/wDkm
+ZRA6mUvXZkh3HCmV0XQKEhnOquD7SJp10Yi5Ad6/w6bS/MH7wKVASYYskdfGmlSk
+l5HtNNHRwGGdYS+gCBV4p+QdcgB8+Wrbh6/Sj8BjiEWG6DyoVt2Q8I0nTD9fqR69
+UEE1oG7gToqyt/U9oh/FYknolZ1wkTa6yycB157X1gxAEILpDUlMm1O5HlcqWNhO
+V4MKdwxhYFZFsyyPZExVOLMJ7nkRnt7HFgdXo9rKkYDY4TpsJPXmCFE+pCRmsOxg
+xiXOORf/dWZxRTr//RCyQVFjVFfJoU7Ux/ym0X1VYdsbZIbEe2KIiQi/XAT7btZw
+BSKlVg0ITTpExD+ci8sO/+a7FjPR/Ktx6ngB+0le0rlS1kmiNInErgshh6y9V+KT
+EW2ASktMeTl5QDxCifuJrmzPbDxq18H0YzkjX/mnIM26a0Qa69cO0mPuD5nniHWc
+Q2KYGLNhzM0bL9UEbZUHKasJD0FCxM+/iZfvfwFAWngrX4VLyf6qSx0P3cKxUw3l
+k5nIcvo4l4+lY32RXTIgBHBVHasrjye1PocuYY2bTNtWpMbZY7dc+23DQkXOLZ4h
+xbLuyOjDq/Pmjqxlq7o+
+=T16J
+-----END PGP SIGNATURE-----
+
+--zq44+AAfm4giZpo5--
