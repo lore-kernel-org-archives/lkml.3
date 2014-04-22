@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758961AbaDVVkK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:40:10 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36137 "EHLO
+	id S1758945AbaDVVkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:40:07 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36140 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756779AbaDVUPI (ORCPT
+	with ESMTP id S1756781AbaDVUPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 16:15:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>,
+Cc: Oliver Neukum <oneukum@suse.de>, "David S. Miller" <davem@davemloft.net>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 019/133] ipv6: some ipv6 statistic counters failed to disable bh
-Date: Tue, 22 Apr 2014 13:12:37 -0700
-Message-Id: <1398197671-12786-20-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 015/133] usbnet: include wait queue head in device structure
+Date: Tue, 22 Apr 2014 13:12:33 -0700
+Message-Id: <1398197671-12786-16-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -29,87 +27,147 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Frederic Sowa <hannes@stressinduktion.org>
+From: Oliver Neukum <oneukum@suse.de>
 
-[ Upstream commit 43a43b6040165f7b40b5b489fe61a4cb7f8c4980 ]
+[ Upstream commit 14a0d635d18d0fb552dcc979d6d25106e6541f2e ]
 
-After commit c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify
-processing to workqueue") some counters are now updated in process context
-and thus need to disable bh before doing so, otherwise deadlocks can
-happen on 32-bit archs. Fabio Estevam noticed this while while mounting
-a NFS volume on an ARM board.
+This fixes a race which happens by freeing an object on the stack.
+Quoting Julius:
+> The issue is
+> that it calls usbnet_terminate_urbs() before that, which temporarily
+> installs a waitqueue in dev->wait in order to be able to wait on the
+> tasklet to run and finish up some queues. The waiting itself looks
+> okay, but the access to 'dev->wait' is totally unprotected and can
+> race arbitrarily. I think in this case usbnet_bh() managed to succeed
+> it's dev->wait check just before usbnet_terminate_urbs() sets it back
+> to NULL. The latter then finishes and the waitqueue_t structure on its
+> stack gets overwritten by other functions halfway through the
+> wake_up() call in usbnet_bh().
 
-As a compensation for missing this I looked after the other *_STATS_BH
-and found three other calls which need updating:
+The fix is to just not allocate the data structure on the stack.
+As dev->wait is abused as a flag it also takes a runtime PM change
+to fix this bug.
 
-1) icmp6_send: ip6_fragment -> icmpv6_send -> icmp6_send (error handling)
-2) ip6_push_pending_frames: rawv6_sendmsg -> rawv6_push_pending_frames -> ...
-   (only in case of icmp protocol with raw sockets in error handling)
-3) ping6_v6_sendmsg (error handling)
-
-Fixes: c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify processing to workqueue")
-Reported-by: Fabio Estevam <festevam@gmail.com>
-Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Reported-by: Grant Grundler <grundler@google.com>
+Tested-by: Grant Grundler <grundler@google.com>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- net/ipv6/icmp.c       |  2 +-
- net/ipv6/ip6_output.c |  4 ++--
- net/ipv6/mcast.c      | 11 ++++++-----
- 3 files changed, 9 insertions(+), 8 deletions(-)
+ drivers/net/usb/usbnet.c   | 33 +++++++++++++++++++--------------
+ include/linux/usb/usbnet.h |  2 +-
+ 2 files changed, 20 insertions(+), 15 deletions(-)
 
-diff --git a/net/ipv6/icmp.c b/net/ipv6/icmp.c
-index 7463f05..9b3e4cb 100644
---- a/net/ipv6/icmp.c
-+++ b/net/ipv6/icmp.c
-@@ -517,7 +517,7 @@ void icmpv6_send(struct sk_buff *skb, u8 type, u8 code, __u32 info)
- 			      np->tclass, NULL, &fl6, (struct rt6_info *)dst,
- 			      MSG_DONTWAIT, np->dontfrag);
- 	if (err) {
--		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTERRORS);
-+		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTERRORS);
- 		ip6_flush_pending_frames(sk);
- 	} else {
- 		err = icmpv6_push_pending_frames(sk, &fl6, &tmp_hdr,
-diff --git a/net/ipv6/ip6_output.c b/net/ipv6/ip6_output.c
-index 84d7632..64809bd 100644
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1577,8 +1577,8 @@ int ip6_push_pending_frames(struct sock *sk)
- 	if (proto == IPPROTO_ICMPV6) {
- 		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index e5812c0..03b1a24 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -668,14 +668,12 @@ EXPORT_SYMBOL_GPL(usbnet_unlink_rx_urbs);
+ // precondition: never called in_interrupt
+ static void usbnet_terminate_urbs(struct usbnet *dev)
+ {
+-	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(unlink_wakeup);
+ 	DECLARE_WAITQUEUE(wait, current);
+ 	int temp;
  
--		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
--		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
-+		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
-+		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
+ 	/* ensure there are no more active urbs */
+-	add_wait_queue(&unlink_wakeup, &wait);
++	add_wait_queue(&dev->wait, &wait);
+ 	set_current_state(TASK_UNINTERRUPTIBLE);
+-	dev->wait = &unlink_wakeup;
+ 	temp = unlink_urbs(dev, &dev->txq) +
+ 		unlink_urbs(dev, &dev->rxq);
+ 
+@@ -689,15 +687,14 @@ static void usbnet_terminate_urbs(struct usbnet *dev)
+ 				  "waited for %d urb completions\n", temp);
  	}
+ 	set_current_state(TASK_RUNNING);
+-	dev->wait = NULL;
+-	remove_wait_queue(&unlink_wakeup, &wait);
++	remove_wait_queue(&dev->wait, &wait);
+ }
  
- 	err = ip6_local_out(skb);
-diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
-index ac1b533..1f93b61 100644
---- a/net/ipv6/mcast.c
-+++ b/net/ipv6/mcast.c
-@@ -1436,11 +1436,12 @@ static void mld_sendpack(struct sk_buff *skb)
- 		      dst_output);
- out:
- 	if (!err) {
--		ICMP6MSGOUT_INC_STATS_BH(net, idev, ICMPV6_MLD2_REPORT);
--		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
--		IP6_UPD_PO_STATS_BH(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
--	} else
--		IP6_INC_STATS_BH(net, idev, IPSTATS_MIB_OUTDISCARDS);
-+		ICMP6MSGOUT_INC_STATS(net, idev, ICMPV6_MLD2_REPORT);
-+		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
-+		IP6_UPD_PO_STATS(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
-+	} else {
-+		IP6_INC_STATS(net, idev, IPSTATS_MIB_OUTDISCARDS);
-+	}
+ int usbnet_stop (struct net_device *net)
+ {
+ 	struct usbnet		*dev = netdev_priv(net);
+ 	struct driver_info	*info = dev->driver_info;
+-	int			retval;
++	int			retval, pm;
  
- 	rcu_read_unlock();
- 	return;
+ 	clear_bit(EVENT_DEV_OPEN, &dev->flags);
+ 	netif_stop_queue (net);
+@@ -707,6 +704,8 @@ int usbnet_stop (struct net_device *net)
+ 		   net->stats.rx_packets, net->stats.tx_packets,
+ 		   net->stats.rx_errors, net->stats.tx_errors);
+ 
++	/* to not race resume */
++	pm = usb_autopm_get_interface(dev->intf);
+ 	/* allow minidriver to stop correctly (wireless devices to turn off
+ 	 * radio etc) */
+ 	if (info->stop) {
+@@ -733,6 +732,9 @@ int usbnet_stop (struct net_device *net)
+ 	dev->flags = 0;
+ 	del_timer_sync (&dev->delay);
+ 	tasklet_kill (&dev->bh);
++	if (!pm)
++		usb_autopm_put_interface(dev->intf);
++
+ 	if (info->manage_power &&
+ 	    !test_and_clear_bit(EVENT_NO_RUNTIME_PM, &dev->flags))
+ 		info->manage_power(dev, 0);
+@@ -1274,11 +1276,12 @@ static void usbnet_bh (unsigned long param)
+ 	/* restart RX again after disabling due to high error rate */
+ 	clear_bit(EVENT_RX_KILL, &dev->flags);
+ 
+-	// waiting for all pending urbs to complete?
+-	if (dev->wait) {
+-		if ((dev->txq.qlen + dev->rxq.qlen + dev->done.qlen) == 0) {
+-			wake_up (dev->wait);
+-		}
++	/* waiting for all pending urbs to complete?
++	 * only then can we forgo submitting anew
++	 */
++	if (waitqueue_active(&dev->wait)) {
++		if (dev->txq.qlen + dev->rxq.qlen + dev->done.qlen == 0)
++			wake_up_all(&dev->wait);
+ 
+ 	// or are we maybe short a few urbs?
+ 	} else if (netif_running (dev->net) &&
+@@ -1415,6 +1418,7 @@ usbnet_probe (struct usb_interface *udev, const struct usb_device_id *prod)
+ 	dev->driver_name = name;
+ 	dev->msg_enable = netif_msg_init (msg_level, NETIF_MSG_DRV
+ 				| NETIF_MSG_PROBE | NETIF_MSG_LINK);
++	init_waitqueue_head(&dev->wait);
+ 	skb_queue_head_init (&dev->rxq);
+ 	skb_queue_head_init (&dev->txq);
+ 	skb_queue_head_init (&dev->done);
+@@ -1606,9 +1610,10 @@ int usbnet_resume (struct usb_interface *intf)
+ 		spin_unlock_irq(&dev->txq.lock);
+ 
+ 		if (test_bit(EVENT_DEV_OPEN, &dev->flags)) {
+-			/* handle remote wakeup ASAP */
+-			if (!dev->wait &&
+-				netif_device_present(dev->net) &&
++			/* handle remote wakeup ASAP
++			 * we cannot race against stop
++			 */
++			if (netif_device_present(dev->net) &&
+ 				!timer_pending(&dev->delay) &&
+ 				!test_bit(EVENT_RX_HALT, &dev->flags))
+ 					rx_alloc_submit(dev, GFP_NOIO);
+diff --git a/include/linux/usb/usbnet.h b/include/linux/usb/usbnet.h
+index 0e5ac93..a843bde 100644
+--- a/include/linux/usb/usbnet.h
++++ b/include/linux/usb/usbnet.h
+@@ -30,7 +30,7 @@ struct usbnet {
+ 	struct driver_info	*driver_info;
+ 	const char		*driver_name;
+ 	void			*driver_priv;
+-	wait_queue_head_t	*wait;
++	wait_queue_head_t	wait;
+ 	struct mutex		phy_mutex;
+ 	unsigned char		suspend_count;
+ 	unsigned char		pkt_cnt, pkt_err;
 -- 
 1.9.1
 
