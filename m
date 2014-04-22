@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756359AbaDVNor (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:44:47 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46540 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756015AbaDVNog (ORCPT
+	id S1756386AbaDVNpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:45:15 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:55724 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756339AbaDVNok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:44:36 -0400
-Date: Tue, 22 Apr 2014 14:43:45 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>, "monstr@monstr.eu" <monstr@monstr.eu>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 00/18] Cross-architecture definitions of relaxed MMIO
- accessors
-Message-ID: <20140422134345.GD9820@arm.com>
-References: <1397742261-15621-1-git-send-email-will.deacon@arm.com>
- <20140417153638.GA7317@ravnborg.org>
- <20140417154714.GD30553@arm.com>
- <20140417191555.GA11970@ravnborg.org>
+	Tue, 22 Apr 2014 09:44:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Subject: Re: [PATCH 20/28] nios2: Time keeping
+Date: Tue, 22 Apr 2014 15:44:33 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+References: <1397824031-4892-1-git-send-email-lftan@altera.com> <1397824031-4892-17-git-send-email-lftan@altera.com>
+In-Reply-To: <1397824031-4892-17-git-send-email-lftan@altera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140417191555.GA11970@ravnborg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404221544.33399.arnd@arndb.de>
+X-Provags-ID: V02:K0:QUPvL6iMUr9LnpCQi+HFgCOzXeFLdUpfFiG8lmef1GQ
+ SbP13qR7gSfiKOpsn5QmGZMvBcqHRV5RavLC+MllAvCw2JN0Gn
+ eQsIplVj3+LS3ajJjSLm4nboLl0+0pGbcJmzLPtfLm4o3gtegI
+ PD4VGUc/letILtgjNDKi2XfmObrXJqRZ9lFWt0keHVy0uJydPa
+ A+0pLRbyJDPtJu124ov0+27zvTIcZGZiPqoCPx2/QJCMG/7JQn
+ 6h0IACzQB0n1epwgDVPOh14x9xoWyjsaBxIy4tDcRHg5bSDnpj
+ M+fUlSflDVHV8LJmUy8VvnyVHeyH36iqo+wAlW7cr+9ElGEM93
+ MBDODvTXqZGUYy7QCCDQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sam,
-
-On Thu, Apr 17, 2014 at 08:15:55PM +0100, Sam Ravnborg wrote:
-> On Thu, Apr 17, 2014 at 04:47:15PM +0100, Will Deacon wrote:
-> > On Thu, Apr 17, 2014 at 04:36:38PM +0100, Sam Ravnborg wrote:
-> > > On Thu, Apr 17, 2014 at 02:44:03PM +0100, Will Deacon wrote:
-> > > > This RFC series attempts to define a portable (i.e. cross-architecture)
-> > > > definition of the {readX,writeX}_relaxed MMIO accessor functions. These
-> > > > functions are already in widespread use amongst drivers (mainly those supporting
-> > > > devices embedded in ARM SoCs), but lack any well-defined semantics and,
-> > > > subsequently, any portable definitions to allow these drivers to be compiled for
-> > > > other architectures.
-> > > 
-> > > Could this be made in such a way that only architectures that need
-> > > to provide their own versions actually have to add them?
-> > > 
-> > > The current patch-set adds the same dummy defines all over,
-> > > and will put this burden also on new architectures.
-> > 
-> > It shouldn't be a burden for new architectures, as they will use
-> > asm-generic/io.h and get the definitions from there.
-> 
-> Why is it then necesary to do this for sparc:
-> diff --git a/arch/sparc/include/asm/io.h b/arch/sparc/include/asm/io.h
-> index f6902cf3cbe9..493f22c4684f 100644
-> --- a/arch/sparc/include/asm/io.h
-> +++ b/arch/sparc/include/asm/io.h
-> @@ -10,6 +10,15 @@
->   * Defines used for both SPARC32 and SPARC64
->   */
-> 
-> +/* Relaxed accessors for MMIO */
-> +#define readb_relaxed(__addr)          readb(__addr)
-> +#define readw_relaxed(__addr)          readw(__addr)
-> +#define readl_relaxed(__addr)          readl(__addr)
+On Friday 18 April 2014, Ley Foon Tan wrote:
+> +static inline unsigned long read_timersnapshot(void)
+> +{
+> +       unsigned long count;
 > +
-> +#define writeb_relaxed(__b, __addr)    writeb(__b, __addr)
-> +#define writew_relaxed(__w, __addr)    writew(__w, __addr)
-> +#define writel_relaxed(__l, __addr)    writel(__l, __addr)
-> 
-> And similar for several other architectures.
+> +       outw(0, timer_membase + ALTERA_TIMER_SNAPL_REG);
+> +       count =
+> +               inw(timer_membase + ALTERA_TIMER_SNAPH_REG) << 16 |
+> +               inw(timer_membase + ALTERA_TIMER_SNAPL_REG);
+> +
+> +       return count;
+> +}
+> +
+> +static inline void write_timerperiod(unsigned long period)
+> +{
+> +       outw(period, timer_membase + ALTERA_TIMER_PERIODL_REG);
+> +       outw(period >> 16, timer_membase + ALTERA_TIMER_PERIODH_REG);
+> +}
 
-This is because Sparc (and the other architectures I had to modify) don't
-make use of asm-generic/io.h. Furthermore, it's not as simple as adding an
-include, since you'll pull in the generic definitions of things like readw
-and inb as it stands.
+It's wrong to use 'outw' if this device is not on an PC-style ISA bus,
+which I assume it is not. Since timer_membase is an __iomem pointer,
+I'm sure you want to use writew() instead.
 
-We could make a new asm-generic file purely for the relaxed accessors, but
-I really don't think it's worth the hassle.
-
-> For asm-generic/io.h:
-> +#ifndef readb_relaxed
-> +#define readb_relaxed  readb
-> +#endif
-> 
-> This has same effect as the above.
-> Only difference is that the implementation in asm-generic lacks the arguments.
-
-I just followed the existing style in asm-generic/io.h.
-
-> The patch also breaks the pattern that the #define foobar foobar is
-> on the line just above the static inline that implements the function.
-> 
-> -#define readw readw
-> +#define readw          readw
-> 
-> +#ifndef readw_relaxed
-> +#define readw_relaxed  readw
-> +#endif
-> Move this blow below the static inline would make this easier to understand.
-> 
->  static inline u16 readw(const volatile void __iomem *addr)
->  {
->         return __le16_to_cpu(__raw_readw(addr));
->  }
-
-Sure, I can fix that.
-
-Will
+	Arnd
