@@ -1,38 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903AbaDVA7G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 20:59:06 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:49933 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252AbaDVA7D (ORCPT
+	id S1754915AbaDVBC2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 21:02:28 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:48098 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754218AbaDVBC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 20:59:03 -0400
+	Mon, 21 Apr 2014 21:02:26 -0400
+Message-ID: <5355BF9C.5020107@kernel.dk>
+Date: Mon, 21 Apr 2014 19:02:20 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140422103223.f16654774d15a81410eaad22@canb.auug.org.au>
-References: <20140422103223.f16654774d15a81410eaad22@canb.auug.org.au>
-Date: Mon, 21 Apr 2014 17:59:01 -0700
-Message-ID: <CADHgK6vPpNtKNmqcQgqDUHLSCM0DfDGbqcrXMaNkOpe+6ikR-Q@mail.gmail.com>
-Subject: Re: linux-next: build warning after merge of the arm tree
-From: Sebastian Capella <sebastian.capella@linaro.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-next@vger.kernel.org,
-        Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Alexander Gordeev <agordeev@redhat.com>, linux-kernel@vger.kernel.org
+CC: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mike Miller <mike.miller@hp.com>, iss_storagedev@hp.com,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH RESEND 0/2] : block: Use pci_enable_msix_exact()
+References: <cover.1398093399.git.agordeev@redhat.com>
+In-Reply-To: <cover.1398093399.git.agordeev@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On 2014-04-21 09:19, Alexander Gordeev wrote:
+> Hi Jens,
+>
+> The series is against v3.15-rc1. The patches complete converison
+> of block layer device drivers to the new MSI initialization API.
 
-I'm not sure if this is helpful, but the virt_to_pfn macro added in
-arch/arm/include/asm/memory.h:300 (I assume the 297 warning in yours),
-in the hibernation patch:
+Thanks, applied for 3.16.
 
-#define virt_to_pfn(kaddr)      (__pa(kaddr) >> PAGE_SHIFT)
+-- 
+Jens Axboe
 
-Should be removed as there is an improved version of virt_to_pfn for
-arm in this commit: e26a9e00afc482b971afcaef1db8c9034d4d6d7c
-
-Thanks,
-
-Sebastian
