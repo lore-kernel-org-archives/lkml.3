@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933013AbaDVPDw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:03:52 -0400
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:59096 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932828AbaDVPDk (ORCPT
+	id S932998AbaDVPDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:03:46 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:20353 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932699AbaDVPDm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:03:40 -0400
+	Tue, 22 Apr 2014 11:03:42 -0400
+Date: Tue, 22 Apr 2014 18:02:39 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: hans.verkuil@cisco.com, m.chehab@samsung.com, ext-eero.nurkkala@nokia.com,
+        nils.faerber@kernelconcepts.de, joni.lapilainen@gmail.com,
+        freemangordon@abv.bg, sre@ring0.de, pali.rohar@gmail.com,
+        Greg KH <greg@kroah.com>, trivial@kernel.org,
+        linux-media@vger.kernel.org
+Cc: kernel list <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] [media] radio-bcm2048: fix wrong overflow check
+Message-ID: <20140422150239.GA32637@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <CALCETrWOTVk6wK7e5CwLCRS9XN=5oDT+QtSAPPi_eTMDKgYRFQ@mail.gmail.com>
-References: <cover.1398097304.git.luto@amacapital.net>
-	<430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
-	<CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
-	<CALCETrUZfSrBPZ0Fok5WrG2zM5h3LchEfqnWP4nK37-0sQ8=6g@mail.gmail.com>
-	<CANq1E4T+5Yekm1CpzM40D3C-4XDr+5PYU8d6ud3Zw7k5dcrmUA@mail.gmail.com>
-	<CALCETrWOTVk6wK7e5CwLCRS9XN=5oDT+QtSAPPi_eTMDKgYRFQ@mail.gmail.com>
-Date: Tue, 22 Apr 2014 17:03:39 +0200
-Message-ID: <CANq1E4QWMw2oLakm-YAdbCsCNHrgfU=66U5Ox-tHzDroFN6avA@mail.gmail.com>
-Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
-From: David Herrmann <dh.herrmann@gmail.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        "Theodore Ts'o" <tytso@mit.edu>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140422125726.GA30238@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+From: Pali Rohár <pali.rohar@gmail.com>
 
-On Tue, Apr 22, 2014 at 4:33 PM, Andy Lutomirski <luto@amacapital.net> wrote:
-> On Tue, Apr 22, 2014 at 7:17 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
->> I think it's safe to assume that any object you create is never
->> world-accessible. So the worst you can get is 0600.
->
-> Can you explain what you mean?  I think that it's completely *unsafe*
-> to make this assumption unless you actually take some explicit action
-> to make sure it's correct.
+This patch fixes an off by one check in bcm2048_set_region().
 
-Which kernel-interface creates world-writable objects if a reasonable
-umask like 022 is set?
+Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+---
+v2: Send it to the correct list.  Re-work the changelog.
+v3: Correct subsystem prefix.
 
->> So if we now take
->> your example, your patch doesn't fix the problem at all. Imagine two
->> processes, $sender and $receiver. If the receiver runs as a different
->> user as the sender, it cannot open /proc/self/fd/ writable due to
->> 0600. So the only problematic case is if both run as the same user.
->> However, in that case, the receiver can _always_ access
->> /proc/$sender/fd/ and thus still gain writable access to the object,
->> even if its own fd is read-only and your patch was applied. (ignoring
->> the fact that they can kill() and ptrace each other..)
->
-> Incorrect.  That is exactly what my patch changes.
+diff --git a/drivers/staging/media/bcm2048/radio-bcm2048.c b/drivers/staging/media/bcm2048/radio-bcm2048.c
+index b2cd3a8..bbf236e 100644
+--- a/drivers/staging/media/bcm2048/radio-bcm2048.c
++++ b/drivers/staging/media/bcm2048/radio-bcm2048.c
+@@ -737,7 +737,7 @@ static int bcm2048_set_region(struct bcm2048_device *bdev, u8 region)
+ 	int err;
+ 	u32 new_frequency = 0;
+ 
+-	if (region > ARRAY_SIZE(region_configs))
++	if (region >= ARRAY_SIZE(region_configs))
+ 		return -EINVAL;
+ 
+ 	mutex_lock(&bdev->mutex);
 
-Are you sure? Note I wrote /proc/$sender/fd/ not /proc/$receiver/fd/.
-The lookup on /proc/$sender/fd/ is done with the file of the _sender_,
-which obviously is writable.
+-- 
 
-Thanks
-David
