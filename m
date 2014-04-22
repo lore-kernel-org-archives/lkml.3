@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757588AbaDVUSk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:18:40 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54015 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751182AbaDVUSi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:18:38 -0400
-Message-ID: <5356CE58.1090502@zytor.com>
-Date: Tue, 22 Apr 2014 13:17:28 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1757597AbaDVUSw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:18:52 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:34613 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602AbaDVUSs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 16:18:48 -0400
+Date: Tue, 22 Apr 2014 13:17:33 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: 3.15rc2 hanging processes on exit.
+In-Reply-To: <CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
+Message-ID: <alpine.LSU.2.11.1404221303060.6220@eggly.anvils>
+References: <20140422180308.GA19038@redhat.com> <CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-To: Brian Gerst <brgerst@gmail.com>
-CC: Andrew Lutomirski <amluto@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>	<20140422144659.GF15882@pd.tnic>	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>	<53569467.1030809@zytor.com>	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>	<CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>	<CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>	<CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>	<CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com>	<CA+55aFwuKTQGHzi-cFkHrkLgkS-kFptajFt4=ginxOgwDcJLrA@mail.gmail.com>	<5356A70A.5090907@zytor.com>	<CAObL_7GJypym8JhUmdszDTKJVuLW9wSjbbZK4AZ3Jk304GK6tQ@mail.gmail.com>	<CAMzpN2hpX=XHFrTKxV1hsngNX4Pmuh9FxjAqeSeQHhEBKza1DA@mail.gmail.com>	<5356AF9F.4010301@zytor.com>	<CAMzpN2gkCPZoAKCgXa8tNZYFCuiPd6GWg9yhTBSSA=F43WLv1A@mail.gmail.com>	<5356BA2F.2030007@zytor.com> <CAMzpN2hkJXyt87ioNowYhxm7ZmSjz_qcc=AZpzFhafKGx_+tzg@mail.gmail.com>
-In-Reply-To: <CAMzpN2hkJXyt87ioNowYhxm7ZmSjz_qcc=AZpzFhafKGx_+tzg@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 12:55 PM, Brian Gerst wrote:
-> On Tue, Apr 22, 2014 at 2:51 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 04/22/2014 11:17 AM, Brian Gerst wrote:
->>>>
->>>> That is the entry condition that we have to deal with.  The fact that
->>>> the switch to the IST is unconditional is what makes ISTs hard to deal with.
->>>
->>> Right, that is why you switch away from the IST as soon as possible,
->>> copying the data that is already pushed there to another stack so it
->>> won't be overwritten by a recursive fault.
->>>
->>
->> That simply will not work if you can take a #GP due to the "safe" MSR
->> functions from NMI and #MC context, which would be my main concern.
+On Tue, 22 Apr 2014, Linus Torvalds wrote:
+> On Tue, Apr 22, 2014 at 11:03 AM, Dave Jones <davej@redhat.com> wrote:
+> > I've got a test box that's running my fuzzer that is in an odd state.
+> > The processes are about to end, but they don't seem to be making any
+> > progress.  They've been spinning in the same state for a few hours now..
+> >
+> > perf top -a is showing a lot of time is being spent in page_fault and bad_gs
+> >
+> > there's a large trace file here from the function tracer:
+> > http://codemonkey.org.uk/junk/trace.out
 > 
-> In that case (#2 above), you would switch to the previous %rsp (in the
-> NMI/MC stack), copy the exception frame from the IST, and continue
-> with the #GP handler.  That effectively is the same as it is today,
-> where no stack switch occurs on the #GP fault.
+> The trace says that it's one of the infinite loops that do
 > 
+>  - cmpxchg_futex_value_locked() fails
+>  - we do fault_in_user_writeable(FAULT_FLAG_WRITE) and that succeeds
+>  - so we try again
+> 
+> So it implies that handle_mm_fault() returned without VM_FAULT_ERROR,
+> but the page still isn't actually writable.
+> 
+> And to me that smells like (vm_flags & VM_WRITE) isn't set. We'll
+> fault in the page all right, but the resulting page table entry still
+> isn't writable.
+> 
+> Are you testing anything new? Or is this strictly new to 3.15? The
+> only thing in this area we do differently is commit cda540ace6a1 ("mm:
+> get_user_pages(write,force) refuse to COW in shared areas"), but
+> fault_in_user_writeable() never used the force bit afaik. Adding Hugh
+> just in case.
+> 
+> So I think we should make fault_in_user_writeable() just check the
+> vm_flags. Something like the attached (UNTESTED!) patch.
+> 
+> Guys? Comments?
 
-1. You take #GP.  This causes an IST stack switch.
-2. You immediately thereafter take an NMI.  This switches stacks again.
-3. Now you take another #GP.  This causes another IST stack, and now you
-have clobbered your return information, and cannot resume.
+Your patch looks to me correct and to the point; but I agree that
+we haven't made a relevant change there recently, so I suppose it
+comes from a trinity improvement rather than a new bug in 3.15.
 
-	-hpa
+(Dave, do you have time to confirm that by running new trinity on 3.14?)
 
+One nit: we're inconsistent, and shall never move VM_READ,VM_WRITE bits,
+but it would set a better example to declare "vm_flags_t vm_flags"
+in your patch below, instead of "unsigned vm_flags".
+
+Hugh
+---
+
+ mm/memory.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/mm/memory.c b/mm/memory.c
+index d0f0bef3be48..91a3e848745d 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -1955,12 +1955,17 @@ int fixup_user_fault(struct task_struct *tsk, struct mm_struct *mm,
+ 		     unsigned long address, unsigned int fault_flags)
+ {
+ 	struct vm_area_struct *vma;
++	unsigned vm_flags;
+ 	int ret;
+ 
+ 	vma = find_extend_vma(mm, address);
+ 	if (!vma || address < vma->vm_start)
+ 		return -EFAULT;
+ 
++	vm_flags = (fault_flags & FAULT_FLAG_WRITE) ? VM_WRITE : VM_READ;
++	if (!(vm_flags & vma->vm_flags))
++		return -EFAULT;
++
+ 	ret = handle_mm_fault(mm, vma, address, fault_flags);
+ 	if (ret & VM_FAULT_ERROR) {
+ 		if (ret & VM_FAULT_OOM)
