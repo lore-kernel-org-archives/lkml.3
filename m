@@ -1,78 +1,314 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150AbaDVH5I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 03:57:08 -0400
-Received: from mail-pd0-f180.google.com ([209.85.192.180]:39892 "EHLO
+	id S1753595AbaDVIE3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:04:29 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:51001 "EHLO
 	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225AbaDVH5B (ORCPT
+	with ESMTP id S1752138AbaDVIDp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 03:57:01 -0400
-Message-ID: <535620C7.2080700@gmail.com>
-Date: Tue, 22 Apr 2014 15:56:55 +0800
-From: Chen Gang <gang.chen.5i5j@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        len.brown@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v2] kernel/power/hibernate.c: use 'u64' instead of 's64'
- to avoid warning
-References: <5355C5F0.6020606@gmail.com> <20140422072112.GB14108@amd.pavel.ucw.cz>
-In-Reply-To: <20140422072112.GB14108@amd.pavel.ucw.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 22 Apr 2014 04:03:45 -0400
+From: Jianyu Zhan <nasa4836@gmail.com>
+To: tj@kernel.org, lizefan@huawei.com
+Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
+        linux-kernel@vger.kernel.org, nasa4836@gmail.com
+Subject: Re: [PATCH 4/4] cgroup: convert from per-cgroup id to per-subsys id
+Date: Tue, 22 Apr 2014 16:03:31 +0800
+Message-Id: <f478e92038bfbc1da2d03082641804e8acfdfad3.1398153537.git.nasa4836@gmail.com>
+X-Mailer: git-send-email 2.0.0-rc0
+In-Reply-To: <cover.1398147734.git.nasa4836@gmail.com>
+References: <cover.1398147734.git.nasa4836@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 03:21 PM, Pavel Machek wrote:
-> On Tue 2014-04-22 09:29:20, Chen Gang wrote:
->> For do_div(), it need 'u64' type, which means the outside must be sure
->> of 'start' is not bigger than 'stop', or it will report warning.
->>
->> Even if 'start' was really bigger than 'stop', it would print incorrect
->> information, but for kernel, it still can continue, so use WARN_ON() is
->> enough.
->>
->> The related warning (with allmodconfig for unicore32):
->>
->>     CC      kernel/power/hibernate.o
->>   kernel/power/hibernate.c: In function ‘swsusp_show_speed’:
->>   kernel/power/hibernate.c:237: warning: comparison of distinct pointer types lacks a cast
->>
->>
-> 
-> Certainly better, but
-> 
->> -	s64 elapsed_centisecs64;
->> +	u64 elapsed_centisecs64;
->>  	int centisecs;
->>  	int k;
->>  	int kps;
->>  
->>  	elapsed_centisecs64 = timeval_to_ns(stop) - timeval_to_ns(start);
->> +	WARN_ON((s64)elapsed_centisecs64 < 0);
->>  	do_div(elapsed_centisecs64, NSEC_PER_SEC / 100);
->>  	centisecs = elapsed_centisecs64;
-> 
-> ...do we need to do the WARN_ON()? Only result of underflow will be
-> very long elapsed time reported... that does not sound too
-> bad. ... and it will be quite obvious what went wrong.
-> 									Pavel
-> 
+Hi, all.
 
-Hmm... that sounds reasonable to me.  If no any other reply within 2
-days, I shall send patch v3 for it.
+Sorry, previous patch has a minor fault, and cause a unitialized variable warning.
+I've fixed it up in this.
 
-BTW: sorry, I guess I can not finish allmodconfig for unicore32 within
-this month (2014-04-30) -- at present I only finish 40-50%, I
-will/should try to finish it within next month.
+Renewed patch:
+---
 
+Currently, cgrp->id is only used to look up css's.  As cgroup and
+css's lifetimes is now decoupled, it should be made per-subsystem
+and moved to css->css_id so that lookups are successful until the
+target css is released.
 
-Thanks.
+Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+---
+ include/linux/cgroup.h | 26 +++++++--------
+ kernel/cgroup.c        | 88 ++++++++++++++++++++++++--------------------------
+ 2 files changed, 56 insertions(+), 58 deletions(-)
+
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index de31b2a..66085bd 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -62,6 +62,16 @@ struct cgroup_subsys_state {
+ 	/* the parent css */
+ 	struct cgroup_subsys_state *parent;
+ 
++	/*
++	 * per css id
++	 *
++	 * The css id of cgrp_dfl_root for each subsys is always 0, and
++	 * a new css will be assigned with a smallest available ID.
++	 *
++	 * Allocating/Removing ID must be protected by cgroup_mutex.
++	 */
++	int css_id;
++
+ 	unsigned long flags;
+ 
+ 	/* percpu_ref killing and RCU release */
+@@ -141,16 +151,6 @@ enum {
+ struct cgroup {
+ 	unsigned long flags;		/* "unsigned long" so bitops work */
+ 
+-	/*
+-	 * idr allocated in-hierarchy ID.
+-	 *
+-	 * The ID of the root cgroup is always 0, and a new cgroup
+-	 * will be assigned with a smallest available ID.
+-	 *
+-	 * Allocating/Removing ID must be protected by cgroup_mutex.
+-	 */
+-	int id;
+-
+ 	/* the number of attached css's */
+ 	int nr_css;
+ 
+@@ -329,9 +329,6 @@ struct cgroup_root {
+ 	/* Hierarchy-specific flags */
+ 	unsigned long flags;
+ 
+-	/* IDs for cgroups in this hierarchy */
+-	struct idr cgroup_idr;
+-
+ 	/* The path to use for release notifications. */
+ 	char release_agent_path[PATH_MAX];
+ 
+@@ -655,6 +652,9 @@ struct cgroup_subsys {
+ 	/* link to parent, protected by cgroup_lock() */
+ 	struct cgroup_root *root;
+ 
++	/* IDs for css'es of this subsys */
++	struct idr css_idr;
++
+ 	/*
+ 	 * List of cftypes.  Each entry is the first entry of an array
+ 	 * terminated by zero length name.
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index f23cb67..9841a33 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -838,7 +838,6 @@ static void cgroup_free_root(struct cgroup_root *root)
+ 		/* hierarhcy ID shoulid already have been released */
+ 		WARN_ON_ONCE(root->hierarchy_id);
+ 
+-		idr_destroy(&root->cgroup_idr);
+ 		kfree(root);
+ 	}
+ }
+@@ -1050,17 +1049,6 @@ static void cgroup_put(struct cgroup *cgrp)
+ 	if (WARN_ON_ONCE(cgrp->parent && !cgroup_is_dead(cgrp)))
+ 		return;
+ 
+-	/*
+-	 * XXX: cgrp->id is only used to look up css's.  As cgroup and
+-	 * css's lifetimes will be decoupled, it should be made
+-	 * per-subsystem and moved to css->id so that lookups are
+-	 * successful until the target css is released.
+-	 */
+-	mutex_lock(&cgroup_mutex);
+-	idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
+-	mutex_unlock(&cgroup_mutex);
+-	cgrp->id = -1;
+-
+ 	call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
+ }
+ 
+@@ -1512,7 +1500,6 @@ static void init_cgroup_root(struct cgroup_root *root,
+ 	atomic_set(&root->nr_cgrps, 1);
+ 	cgrp->root = root;
+ 	init_cgroup_housekeeping(cgrp);
+-	idr_init(&root->cgroup_idr);
+ 
+ 	root->flags = opts->flags;
+ 	if (opts->release_agent)
+@@ -1533,11 +1520,6 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned long ss_mask)
+ 	lockdep_assert_held(&cgroup_tree_mutex);
+ 	lockdep_assert_held(&cgroup_mutex);
+ 
+-	ret = idr_alloc(&root->cgroup_idr, root_cgrp, 0, 1, GFP_KERNEL);
+-	if (ret < 0)
+-		goto out;
+-	root_cgrp->id = ret;
+-
+ 	/*
+ 	 * We're accessing css_set_count without locking css_set_rwsem here,
+ 	 * but that's OK - it can only be increased by someone holding
+@@ -4056,6 +4038,11 @@ static void css_free_work_fn(struct work_struct *work)
+ 
+ 	css->ss->css_free(css);
+ 	cgroup_put(cgrp);
++
++	mutex_lock(&cgroup_mutex);
++	idr_remove(&css->ss->css_idr, css->css_id);
++	mutex_unlock(&cgroup_mutex);
++	css->css_id = -1;
+ }
+ 
+ static void css_free_rcu_fn(struct rcu_head *rcu_head)
+@@ -4152,9 +4139,18 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	if (IS_ERR(css))
+ 		return PTR_ERR(css);
+ 
++	/*
++	 * Temporarily set the pointer to NULL, so idr_find() won't return
++	 * a half-baked css.
++	 */
++	err = idr_alloc(&ss->css_idr, NULL, 1, 0, GFP_KERNEL);
++	if (err < 0)
++		goto err_free_css;
++	css->css_id = err;
++
+ 	err = percpu_ref_init(&css->refcnt, css_release);
+ 	if (err)
+-		goto err_free_css;
++		goto err_free_id;
+ 
+ 	init_css(css, ss, cgrp);
+ 
+@@ -4166,6 +4162,12 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	if (err)
+ 		goto err_clear_dir;
+ 
++	/*
++	 * @css is now fully operational.
++	 * Nothing can fail from this point on.
++	 */
++	idr_replace(&ss->css_idr, css, css->css_id);
++
+ 	cgroup_get(cgrp);
+ 	css_get(css->parent);
+ 
+@@ -4184,6 +4186,8 @@ err_clear_dir:
+ 	cgroup_clear_dir(css->cgroup, 1 << css->ss->id);
+ err_free_percpu_ref:
+ 	percpu_ref_cancel_init(&css->refcnt);
++err_free_id:
++	idr_remove(&ss->css_idr, css->css_id);
+ err_free_css:
+ 	ss->css_free(css);
+ 	return err;
+@@ -4223,16 +4227,6 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 		goto err_unlock_tree;
+ 	}
+ 
+-	/*
+-	 * Temporarily set the pointer to NULL, so idr_find() won't return
+-	 * a half-baked cgroup.
+-	 */
+-	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
+-	if (cgrp->id < 0) {
+-		err = -ENOMEM;
+-		goto err_unlock;
+-	}
+-
+ 	init_cgroup_housekeeping(cgrp);
+ 
+ 	cgrp->parent = parent;
+@@ -4249,7 +4243,7 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 	kn = kernfs_create_dir(parent->kn, name, mode, cgrp);
+ 	if (IS_ERR(kn)) {
+ 		err = PTR_ERR(kn);
+-		goto err_free_id;
++		goto err_unlock;
+ 	}
+ 	cgrp->kn = kn;
+ 
+@@ -4266,12 +4260,6 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 	atomic_inc(&root->nr_cgrps);
+ 	cgroup_get(parent);
+ 
+-	/*
+-	 * @cgrp is now fully operational.  If something fails after this
+-	 * point, it'll be released via the normal destruction path.
+-	 */
+-	idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
+-
+ 	err = cgroup_kn_set_ugid(kn);
+ 	if (err)
+ 		goto err_destroy;
+@@ -4303,8 +4291,6 @@ static long cgroup_create(struct cgroup *parent, const char *name,
+ 
+ 	return 0;
+ 
+-err_free_id:
+-	idr_remove(&root->cgroup_idr, cgrp->id);
+ err_unlock:
+ 	mutex_unlock(&cgroup_mutex);
+ err_unlock_tree:
+@@ -4617,6 +4603,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
+ 	mutex_lock(&cgroup_tree_mutex);
+ 	mutex_lock(&cgroup_mutex);
+ 
++	idr_init(&ss->css_idr);
+ 	INIT_LIST_HEAD(&ss->cfts);
+ 
+ 	/* Create the root cgroup state for this subsystem */
+@@ -4707,9 +4694,25 @@ int __init cgroup_init(void)
+ 	mutex_unlock(&cgroup_tree_mutex);
+ 
+ 	for_each_subsys(ss, ssid) {
++		struct cgroup_subsys_state *css;
++		int id;
++
+ 		if (!ss->early_init)
+ 			cgroup_init_subsys(ss);
+ 
++		/*
++		 * mm_init() runs lately after cgroup_init_early(), thus
++		 * the world isn't set up yet for idr_alloc() to run, so
++		 * we have to defer the id allocation to this point.
++		 *
++		 * And we don't gracefully handle early failure.
++		 */
++		css = init_css_set.subsys[ss->id];
++		id = idr_alloc(&ss->css_idr, css, 0, 1, GFP_KERNEL);
++		if (id < 0)
++			BUG();
++		css->css_id = id;
++
+ 		list_add_tail(&init_css_set.e_cset_node[ssid],
+ 			      &cgrp_dfl_root.cgrp.e_csets[ssid]);
+ 
+@@ -5160,7 +5163,7 @@ struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
+  */
+ int css_to_id(struct cgroup_subsys_state *css)
+ {
+-	return css->cgroup->id;
++	return css->css_id;
+ }
+ 
+ /**
+@@ -5173,14 +5176,9 @@ int css_to_id(struct cgroup_subsys_state *css)
+  */
+ struct cgroup_subsys_state *css_from_id(int id, struct cgroup_subsys *ss)
+ {
+-	struct cgroup *cgrp;
+-
+ 	cgroup_assert_mutexes_or_rcu_locked();
+ 
+-	cgrp = idr_find(&ss->root->cgroup_idr, id);
+-	if (cgrp)
+-		return cgroup_css(cgrp, ss);
+-	return NULL;
++	return idr_find(&ss->css_idr, id);
+ }
+ 
+ #ifdef CONFIG_CGROUP_DEBUG
 -- 
-Chen Gang
+2.0.0-rc0
 
-Open, share, and attitude like air, water, and life which God blessed
