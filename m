@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933384AbaDVQqf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:46:35 -0400
-Received: from mail-oa0-f74.google.com ([209.85.219.74]:54271 "EHLO
-	mail-oa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933195AbaDVQqV (ORCPT
+	id S933369AbaDVQqd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:46:33 -0400
+Received: from mail-ie0-f202.google.com ([209.85.223.202]:39534 "EHLO
+	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932936AbaDVQqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 12:46:21 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: lee.jones@linaro.org, swarren@nvidia.com, wsa@the-dreams.de
 Cc: abrestic@chromium.org, dgreid@chromium.org, olof@lixom.net,
         sjg@chromium.org, linux-samsung-soc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, Doug Anderson <dianders@chromium.org>,
-        sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/7] mfd: cros_ec: spi: Make the cros_ec_spi timeout more reliable
-Date: Tue, 22 Apr 2014 09:45:50 -0700
-Message-Id: <1398185154-19404-4-git-send-email-dianders@chromium.org>
+        linux-tegra@vger.kernel.org, David Hendricks <dhendrix@chromium.org>,
+        Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/7] mfd: cros_ec: spi: calculate delay between transfers correctly
+Date: Tue, 22 Apr 2014 09:45:48 -0700
+Message-Id: <1398185154-19404-2-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.9.1.423.g4596e3a
 In-Reply-To: <1398185154-19404-1-git-send-email-dianders@chromium.org>
 References: <1398185154-19404-1-git-send-email-dianders@chromium.org>
@@ -23,13 +24,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cros_ec_spi transfer had two problems with its timeout code:
+From: David Hendricks <dhendrix@chromium.org>
 
-1. It looked at the timeout even in the case that it found valid data.
-2. If the cros_ec_spi code got switched out for a while, it's possible
-   it could get a timeout after a single loop.  Let's be paranoid and
-   make sure we do one last transfer after the timeout expires.
+To avoid spamming the EC we calculate the time between the previous
+transfer and the current transfer and force a delay if the time delta
+is too small.
 
+However, a small miscalculation causes the delay period to be
+far too short. Most noticably this impacts commands with a long
+turnaround time such as EC firmware reads and writes.
+
+Signed-off-by: David Hendricks <dhendrix@chromium.org>
 Signed-off-by: Doug Anderson <dianders@chromium.org>
 Reviewed-by: Simon Glass <sjg@chromium.org>
 Tested-by: Andrew Bresticker <abrestic@chromium.org>
@@ -37,46 +42,22 @@ Tested-by: Stephen Warren <swarren@nvidia.com>
 ---
 Changes in v2: None
 
- drivers/mfd/cros_ec_spi.c | 15 ++++++++++++---
- 1 file changed, 12 insertions(+), 3 deletions(-)
+ drivers/mfd/cros_ec_spi.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-index a2a605d..4f863c3 100644
+index 84af8d7..c185eb6 100644
 --- a/drivers/mfd/cros_ec_spi.c
 +++ b/drivers/mfd/cros_ec_spi.c
-@@ -113,7 +113,9 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
+@@ -219,7 +219,7 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
+ 		ktime_get_ts(&ts);
+ 		delay = timespec_to_ns(&ts) - ec_spi->last_transfer_ns;
+ 		if (delay < EC_SPI_RECOVERY_TIME_NS)
+-			ndelay(delay);
++			ndelay(EC_SPI_RECOVERY_TIME_NS - delay);
+ 	}
  
- 	/* Receive data until we see the header byte */
- 	deadline = jiffies + msecs_to_jiffies(EC_MSG_DEADLINE_MS);
--	do {
-+	while (true) {
-+		unsigned long start_jiffies = jiffies;
-+
- 		memset(&trans, 0, sizeof(trans));
- 		trans.cs_change = 1;
- 		trans.rx_buf = ptr = ec_dev->din;
-@@ -134,12 +136,19 @@ static int cros_ec_spi_receive_response(struct cros_ec_device *ec_dev,
- 				break;
- 			}
- 		}
-+		if (ptr != end)
-+			break;
- 
--		if (time_after(jiffies, deadline)) {
-+		/*
-+		 * Use the time at the start of the loop as a timeout.  This
-+		 * gives us one last shot at getting the transfer and is useful
-+		 * in case we got context switched out for a while.
-+		 */
-+		if (time_after(start_jiffies, deadline)) {
- 			dev_warn(ec_dev->dev, "EC failed to respond in time\n");
- 			return -ETIMEDOUT;
- 		}
--	} while (ptr == end);
-+	}
- 
- 	/*
- 	 * ptr now points to the header byte. Copy any valid data to the
+ 	/* Transmit phase - send our message */
 -- 
 1.9.1.423.g4596e3a
 
