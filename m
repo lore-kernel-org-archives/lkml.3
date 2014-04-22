@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926AbaDVNJ1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:09:27 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:52661 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201AbaDVNJV (ORCPT
+	id S1755987AbaDVNJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:09:57 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:37188 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755938AbaDVNJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:09:21 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 1/3] arm: dts: add device_type="memory" for ste-ccu8540
-To: Lee Jones <lee.jones@linaro.org>, Leif Lindholm <leif.lindholm@linaro.org>
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Mark Rutland <mark.rutland@arm.com>
-In-Reply-To: <20140422073926.GC17657@lee--X1>
-References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
-	<1397756521-29387-2-git-send-email-leif.lindholm@linaro.org>
-	<20140422073926.GC17657@lee--X1>
-Date: Tue, 22 Apr 2014 14:09:12 +0100
-Message-Id: <20140422130912.A4F71C4042C@trevor.secretlab.ca>
+	Tue, 22 Apr 2014 09:09:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <87tx9w21y5.wl%kuninori.morimoto.gx@gmail.com>
+References: <87sipkoeqj.wl%kuninori.morimoto.gx@gmail.com>
+	<87wqes220f.wl%kuninori.morimoto.gx@gmail.com>
+	<87tx9w21y5.wl%kuninori.morimoto.gx@gmail.com>
+Date: Tue, 22 Apr 2014 15:09:53 +0200
+Message-ID: <CACRpkdZc-Yt+G05GhAtYSO3+wp4=7tHj-sMxjJdKYhpEvghrqA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] sh-pfc: r8a7791: Add Audio pin support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Kuninori Morimoto <kuninori.morimoto.gx@gmail.com>
+Cc: Simon <horms@verge.net.au>, Laurent <laurent.pinchart@ideasonboard.com>,
+        Morimoto <kuninori.morimoto.gx@renesas.com>,
+        Magnus <magnus.damm@gmail.com>, Linux-SH <linux-sh@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 08:39:26 +0100, Lee Jones <lee.jones@linaro.org> wrote:
-> > The current .dts for ste-ccu8540 lacks a 'device_type = "memory"' for
-> > its memory node, relying on an old ppc quirk in order to discover its
-> > memory. Add this, to permit that quirk to be made ppc only.
-> > 
-> > Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-> > Cc: linux-arm-kernel@lists.infradead.org
-> > Cc: devicetree@vger.kernel.org
-> > Cc: Mark Rutland <mark.rutland@arm.com>
-> > Cc: Lee Jones <lee.jones@linaro.org>
-> > ---
-> >  arch/arm/boot/dts/ste-ccu8540.dts |    1 +
-> >  1 file changed, 1 insertion(+)
-> 
-> Acked-by: Lee Jones <lee.jones@linaro.org>
+On Mon, Apr 14, 2014 at 2:24 AM, Kuninori Morimoto
+<kuninori.morimoto.gx@gmail.com> wrote:
 
-Acked-by: Grant Likely <grant.likely@linaro.org>
+> From: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+>
+> Reviewed-by: Geert Uytterhoeven <geert@linux-m68k.org>
+> Reviewed-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+> Signed-off-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+> ---
+> v1 -> v2
+>
+>  - To Linus Walleij, Cc Linux kernel
 
-g.
+Patch applied.
+
+Yours,
+Linus Walleij
