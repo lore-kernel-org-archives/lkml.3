@@ -1,18 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756698AbaDVOXo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:23:44 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:14973 "EHLO
+	id S1756708AbaDVOYY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:24:24 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:16542 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751243AbaDVOXm (ORCPT
+	by vger.kernel.org with ESMTP id S1751165AbaDVOYV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:23:42 -0400
-Date: Tue, 22 Apr 2014 07:23:41 -0700
+	Tue, 22 Apr 2014 10:24:21 -0400
+Date: Tue, 22 Apr 2014 07:24:20 -0700
 From: Drew Richardson <drew.richardson@arm.com>
-To: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Ben Greear <greearb@candelatech.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
         Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH] Export block tracepoints for use by kernel modules
-Message-ID: <20140422142341.GC21121@dreric01-Precision-T1600>
+Subject: [PATCH] Export irq tracepoints for use by kernel modules
+Message-ID: <20140422142419.GD21121@dreric01-Precision-T1600>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,35 +33,26 @@ any tracepoints used in a kernel module must be exported.
 Signed-off-by: Drew Richardson <drew.richardson@arm.com>
 Acked-by: Pawel Moll <pawel.moll@arm.com>
 ---
- block/blk-core.c | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
+ kernel/softirq.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index a0e3096c4bb5..a23f958ef20a 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -44,6 +44,21 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_remap);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_complete);
- EXPORT_TRACEPOINT_SYMBOL_GPL(block_unplug);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_touch_buffer);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_dirty_buffer);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_abort);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_requeue);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_complete);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_insert);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_rq_issue);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_bounce);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_backmerge);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_frontmerge);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_bio_queue);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_getrq);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_sleeprq);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_plug);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(block_split);
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index b50990a5bea0..3a21a6c29406 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -30,6 +30,12 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/irq.h>
  
- DEFINE_IDA(blk_queue_ida);
- 
++EXPORT_TRACEPOINT_SYMBOL_GPL(irq_handler_entry);
++EXPORT_TRACEPOINT_SYMBOL_GPL(irq_handler_exit);
++EXPORT_TRACEPOINT_SYMBOL_GPL(softirq_entry);
++EXPORT_TRACEPOINT_SYMBOL_GPL(softirq_exit);
++EXPORT_TRACEPOINT_SYMBOL_GPL(softirq_raise);
++
+ /*
+    - No shared variables, all the data are CPU local.
+    - If a softirq needs serialization, let it serialize itself
 -- 
 1.8.3.2
 
