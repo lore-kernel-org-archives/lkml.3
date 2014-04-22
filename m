@@ -1,59 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161AbaDVLK5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:10:57 -0400
-Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:20727
-	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755457AbaDVLKy (ORCPT
+	id S932222AbaDVLLy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:11:54 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45645 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932180AbaDVLLw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:10:54 -0400
-X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
-X-SpamScore: 2
-X-BigFish: VPS2(zzbb2dI98dI9371I1432I4015Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2fh95h839h947hc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h2673i19b6n1155h)
-Date: Tue, 22 Apr 2014 13:10:42 +0200
-From: Michal Simek <michal.simek@xilinx.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Tue, 22 Apr 2014 07:11:52 -0400
+Message-ID: <53564E63.4010803@pengutronix.de>
+Date: Tue, 22 Apr 2014 13:11:31 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
 MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: Mike Turquette <mturquette@linaro.org>,
-        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <git@xilinx.com>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Stephen Warren <swarren@nvidia.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Felipe Pena <felipensp@gmail.com>
-Subject: Re: [PATCH] clk: zynq: Leave debug clocks in bootup state
-References: <1397760052-3310-1-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1397760052-3310-1-git-send-email-soren.brinkmann@xilinx.com>
+To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
+CC: "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Michal Simek <michals@xilinx.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "wg@grandegger.com" <wg@grandegger.com>
+Subject: Re: [PATCH v7 1/2] can: xilinx CAN controller support
+References: <3e750ec3-9d47-4b4e-8173-56698ab19786@CH1EHSMHS029.ehs.local> <53562E7D.7090509@pengutronix.de> <957b07ca-f74c-47fb-963a-084710d48c5a@AM1EHSMHS014.ehs.local> <535643D9.3070601@pengutronix.de> <9f70ceca-c6fd-4d57-a54a-8cbf9d888137@CH1EHSMHS016.ehs.local>
+In-Reply-To: <9f70ceca-c6fd-4d57-a54a-8cbf9d888137@CH1EHSMHS016.ehs.local>
 X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-Message-ID: <9b50f9f9-0a8a-43a7-8d23-5f8f81b62a54@CO9EHSMHS015.ehs.local>
-X-OriginatorOrg: xilinx.com
-X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="iRhW9Bx7nSvEMJ2bcB4mKRNamM4NR2vw2"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2014 08:40 PM, Soren Brinkmann wrote:
-> Make sure debug clocks stay enabled if the bootloader enabled them.
-> Otherwise debug HW may crash due to bus-hangs caused by stopped clocks.
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->  drivers/clk/zynq/clkc.c | 12 ++++++++++++
->  1 file changed, 12 insertions(+)
-> 
-> diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
-> index 52c09afdcfb7..246cf1226eaa 100644
-> --- a/drivers/clk/zynq/clkc.c
-> +++ b/drivers/clk/zynq/clkc.c
-> @@ -53,6 +53,9 @@ static void __iomem *zynq_clkc_base;
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--iRhW9Bx7nSvEMJ2bcB4mKRNamM4NR2vw2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Applied to zynq/clk.
+On 04/22/2014 01:08 PM, Appana Durga Kedareswara Rao wrote:
+> Hi Marc,
+>=20
+>> -----Original Message-----
+>> From: Marc Kleine-Budde [mailto:mkl@pengutronix.de]
+>> Sent: Tuesday, April 22, 2014 3:57 PM
+>> To: Appana Durga Kedareswara Rao; wg@grandegger.com; Michal Simek;
+>> grant.likely@linaro.org; robh+dt@kernel.org
+>> Cc: linux-can@vger.kernel.org; netdev@vger.kernel.org; linux-arm-
+>> kernel@lists.infradead.org; linux-kernel@vger.kernel.org;
+>> devicetree@vger.kernel.org
+>> Subject: Re: [PATCH v7 1/2] can: xilinx CAN controller support
+>>
+>> On 04/22/2014 12:06 PM, Appana Durga Kedareswara Rao wrote:
+>>
+>>>> Meanwhile Thomas Gleixner put some effort into the c_can driver and
+>>>> found some problems in most of the can driver. See comments inline.
+>>>>
+>>> Ok will look into that patches
+>>
+>> I've commented the relevant parts of your patch. Although more
+>> background information can be found in the c_can patches.
+>>
+> Ok
+>=20
+>>>>> +/**
+>>>>> + * xcan_tx_interrupt - Tx Done Isr
+>>>>> + * @ndev:  net_device pointer
+>>>>> + * @isr:   Interrupt status register value
+>>>>> + */
+>>>>> +static void xcan_tx_interrupt(struct net_device *ndev, u32 isr) {
+>>>>> +   struct xcan_priv *priv =3D netdev_priv(ndev);
+>>>>> +   struct net_device_stats *stats =3D &ndev->stats;
+>>>>> +
+>>>>> +   while (priv->tx_head - priv->tx_tail > 0) {
+>>>>> +           priv->write_reg(priv, XCAN_ICR_OFFSET,
+>>>> XCAN_IXR_TXOK_MASK);
+>>>>> +           if (!(isr & XCAN_IXR_TXOK_MASK))
+>>>>> +                   break;
+>>>>
+>>>> This looks broken. I assume you have to issue the
+>> XCAN_IXR_TXOK_MASK-
+>>>> write once per tx-completed CAN frame. If you enter this loop you
+>>>> write once, then isr is read, then you write again and may exit this=
 
-Thanks,
-Michal
+>>>> loop if XCAN_IXR_TXOK_MASK is not set anymore.
+>>
+>> Let's assume you have put 3 CAN frames into the TX-queue and we're int=
+o
+>> tx-complete interrupt for the first frame and the other 2 are still no=
+t
+>> completed.
+>>
+>> This means the while() loop is not terminated by (priv->tx_head -
+>> priv->tx_tail > 0), as it can loop 3 times.
+>>
+>> What happens is:
+>>
+>> - priv->write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MASK);
+>> - if (!(isr & XCAN_IXR_TXOK_MASK)) -> no break
+>> - can_get_echo_skb()
+>> - ...
+>> - isr =3D priv->read_reg(priv, XCAN_ISR_OFFSET);
+>> - loop ->
+>> - priv->write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MASK);
+>> - if (!(isr & XCAN_IXR_TXOK_MASK)) -> break
+>>
+>> So you have 2x write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MASK),
+>> but only a single TX completed CAN frame.
+>>
+>=20
+> Ok now got it :). Thanks for the explanation.
+> Will modify the loop logic like below.
+>=20
+> while (priv->tx_head - priv->tx_tail > 0) {
+>                  if ((isr & XCAN_IXR_TXOK_MASK)) {
+>                 priv->write_reg(priv, XCAN_ICR_OFFSET, XCAN_IXR_TXOK_MA=
+SK);
+>                         can_get_echo_skb(ndev, priv->tx_tail %
+>                                                 priv->tx_max);
+>                         priv->tx_tail++;
+>                         stats->tx_packets++;
+>                 } else {
+>                 break;
+>         }
+>                =20
+>   }
+> Are you ok with this?
+
+what about this:
+
+while ((priv->tx_head - priv->tx_tail > 0) &&
+	(isr & XCAN_IXR_TXOK_MASK)) {
+
+	[...]
+
+	isr =3D priv->read_reg(priv, XCAN_ISR_OFFSET);
+}
+
+or even
+
+while ((priv->tx_head - priv->tx_tail > 0) &&
+	(priv->read_reg(priv, XCAN_ISR_OFFSET) & XCAN_IXR_TXOK_MASK)) {
+
+	[...]
+
+}
+
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
 
+--iRhW9Bx7nSvEMJ2bcB4mKRNamM4NR2vw2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Icedove - http://www.enigmail.net/
+
+iEYEARECAAYFAlNWTmMACgkQjTAFq1RaXHMiQwCePMQgdCx7rNb+TRMjU/By+rDF
+EHIAn0kn/OuXK8C84eJpTErhieQKK9de
+=4mw0
+-----END PGP SIGNATURE-----
+
+--iRhW9Bx7nSvEMJ2bcB4mKRNamM4NR2vw2--
