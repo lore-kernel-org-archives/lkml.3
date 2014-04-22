@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933231AbaDVQOx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:14:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:9963 "EHLO mga01.intel.com"
+	id S933264AbaDVQPp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:15:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63629 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933178AbaDVQOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:14:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,904,1389772800"; 
-   d="scan'208";a="524994169"
-Date: Tue, 22 Apr 2014 21:32:28 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: dan.j.williams@intel.com, nsekhar@ti.com, joelf@ti.com,
-        dmaengine@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Subject: Re: [PATCH v3 09/10] dmaengine: edma: Add channel number to debug
- prints
-Message-ID: <20140422160228.GW32284@intel.com>
-References: <1397475725-5036-1-git-send-email-peter.ujfalusi@ti.com>
- <1397475725-5036-10-git-send-email-peter.ujfalusi@ti.com>
+	id S932849AbaDVQPn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 12:15:43 -0400
+Date: Tue, 22 Apr 2014 18:15:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Peter Chiang <pchiang@nvidia.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "lizefan@huawei.com" <lizefan@huawei.com>,
+        "tj@kernel.org" <tj@kernel.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "guillaume@morinfr.org" <guillaume@morinfr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/1] memcg: kill CONFIG_MM_OWNER
+Message-ID: <20140422161513.GA6644@redhat.com>
+References: <80341664FB79C2419999599F48F738410227327881@HKMAIL01.nvidia.com> <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com> <20140416135741.GA9407@redhat.com> <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com> <20140418162359.GA4398@redhat.com> <20140418172631.GA13323@redhat.com> <20140418182444.GB22235@dhcp22.suse.cz> <20140418184441.GA26046@redhat.com> <20140418191259.GA7413@redhat.com> <20140422132355.GO29311@dhcp22.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397475725-5036-10-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20140422132355.GO29311@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 02:42:04PM +0300, Peter Ujfalusi wrote:
-> It helps to identify issues if we have some information regarding to the
-> channel which the event is associated.
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> Acked-by: Joel Fernandes <joelf@ti.com>
+On 04/22, Michal Hocko wrote:
+>
+> On Fri 18-04-14 21:12:59, Oleg Nesterov wrote:
+> >
+> > Seriously what do you think about the patch below? Afaics CONFIG_MM_OWNER
+> > is pointless.
+>
+> Yes, I do not see any reason for a separate config when it has a single
+> user which cannot work without it. So feel free to add my
+> Acked-by: Michal Hocko <mhocko@suse.cz>
 
-This failed to apply, cna you pls rebase this and resend...
+Thanks, included.
 
---	
-~Vinod
+> to the patch with your s-o-b and a simple changelog explaining there the
+> config option didn't have any user outside of MEMCG which cannot work
+> without it.
+
+OK, please see 1/1.
+
+Oleg.
+
