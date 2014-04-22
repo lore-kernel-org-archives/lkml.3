@@ -1,106 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbaDVGWU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 02:22:20 -0400
-Received: from ozlabs.org ([103.22.144.67]:38086 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751711AbaDVGWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 02:22:13 -0400
-Date: Tue, 22 Apr 2014 16:22:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Richard Briggs <rgb@redhat.com>, sparclinux@vger.kernel.org
-Subject: linux-next: build failure after merge of the audit tree
-Message-Id: <20140422162207.55e3d9f09244de281b9798cc@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_Apr_2014_16_22_07_+1000_Hfowe9C_s3T5UyXP"
+	id S1752647AbaDVGWt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 02:22:49 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:4820 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612AbaDVGWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 02:22:43 -0400
+Message-ID: <53560A9A.4020800@huawei.com>
+Date: Tue, 22 Apr 2014 14:22:18 +0800
+From: Li Zefan <lizefan@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+MIME-Version: 1.0
+To: Jianyu Zhan <nasa4836@gmail.com>
+CC: <tj@kernel.org>, <containers@lists.linux-foundation.org>,
+        <cgroups@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cgroup: explicitly init the early_init field
+References: <1398144449-9325-1-git-send-email-nasa4836@gmail.com>
+In-Reply-To: <1398144449-9325-1-git-send-email-nasa4836@gmail.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.18.230]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Apr_2014_16_22_07_+1000_Hfowe9C_s3T5UyXP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 2014/4/22 13:27, Jianyu Zhan wrote:
+> For a cgroup subsystem who should init early, then it should carefully
+> take care of the implementation of css_alloc, because it will be called
+> before mm_init() setup the world.
+> 
+> Luckily we don't, and we better explicitly assign the early_init field
+> to 0, for document reason.
+> 
 
-Hi Eric,
+If you think this is the right thing to do, you can apply the same reason
+to the initialization of other structures in the whole kernel tree.
 
-After merging the audit tree, today's linux-next build (sparc defconfig)
-failed like this:
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
 
-In file included from include/linux/audit.h:29:0,
-                 from mm/mmap.c:33:
-arch/sparc/include/asm/syscall.h: In function 'syscall_get_arch':
-arch/sparc/include/asm/syscall.h:131:9: error: 'TIF_32BIT' undeclared (firs=
-t use in this function)
-arch/sparc/include/asm/syscall.h:131:9: note: each undeclared identifier is=
- reported only once for each function it appears in
+nack
 
-And many more ...
+> ---
+>  kernel/cgroup.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index 559f822..f23cb67 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -5325,5 +5325,6 @@ struct cgroup_subsys debug_cgrp_subsys = {
+>  	.css_alloc = debug_css_alloc,
+>  	.css_free = debug_css_free,
+>  	.base_cftypes = debug_files,
+> +	.early_init = 0,
+>  };
+>  #endif /* CONFIG_CGROUP_DEBUG */
+> 
 
-Caused by commit 374c0c054122 ("ARCH: AUDIT: implement syscall_get_arch
-for all arches").
-
-I applied this patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 22 Apr 2014 16:18:53 +1000
-Subject: [PATCH] fix ARCH: AUDIT: implement syscall_get_arch for all arches
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/sparc/include/asm/syscall.h | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/arch/sparc/include/asm/syscall.h b/arch/sparc/include/asm/sysc=
-all.h
-index fed3d511b108..a5a8153766b3 100644
---- a/arch/sparc/include/asm/syscall.h
-+++ b/arch/sparc/include/asm/syscall.h
-@@ -128,8 +128,12 @@ static inline void syscall_set_arguments(struct task_s=
-truct *task,
-=20
- static inline int syscall_get_arch(void)
- {
-+#if defined(__sparc__) && defined(__arch64__)
- 	return test_thread_flag(TIF_32BIT) ? AUDIT_ARCH_SPARC
- 					   : AUDIT_ARCH_SPARC64;
-+#else
-+	return AUDIT_ARCH_SPARC;
-+#endif
- }
-=20
- #endif /* __ASM_SPARC_SYSCALL_H */
---=20
-1.9.2
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Tue__22_Apr_2014_16_22_07_+1000_Hfowe9C_s3T5UyXP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTVgqTAAoJEMDTa8Ir7ZwV9xkP/inpB6dDFQh9mZ4IrcTDuJ5y
-mLg/Hw8ozo6TJmPCsCVFaCZ7U77fVqjW2W59N7kYnOdeqKQfcutgXWc4Bc7SwyGV
-89B+yS5kVUwNl423hBnPzhXY8cKFahZpKRdRRMyHuylhYweGVLMvwvoHbfxsnuq+
-ljWoikZOK6JDBOvsXmLwOIXSFUTHWCYZUFCQsmEvim6nkumSrpaQIeYHhUiZb5Kx
-COslWdBzvMtmgSE+Y4fOZItlkHHz0OLn3wBi+yKmQamSN6fHW4v0DzKNg5lPdNg8
-Ow8C/StPnGLvWpAKkDM/rWLJGwQYS0l8Ujj1q5goxgF9hUiUWu94wgiDSX6iljz5
-SOwgxBrVGuuBPkwGym3UENSTuW2/HvRlyni36K3nc30oWYTNwC8L+X1JzPRLgtl2
-mxLtvv8JKQhIsQN3jzwsCq0qMVohG+NYuMcrCm/vBGlOOP4rZ7NjYzO03BuWMnB8
-a2TG0URTDU+kcqcx3aNb6hwb/hHvgccz/egwX8Vx7sd16Cvr6jpjIVKy9fSUvQ5B
-fICUIVrDiUerNNR1etq7akKkx53R3c9wO9YH0lLJfodxRl2T6I2cj6CW2Lgp6rdC
-BikmxR1p8BVA2U2tASwifPuD1weI1d+nHTFpHp99LMEGBfZHHjfYZhPrNA/icSyx
-/uPJscp6c7M/luSdwOoz
-=dO/q
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_Apr_2014_16_22_07_+1000_Hfowe9C_s3T5UyXP--
