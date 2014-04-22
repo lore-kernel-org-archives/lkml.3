@@ -1,93 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758548AbaDVUlN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:41:13 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:33367 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758179AbaDVUYs (ORCPT
+	id S1758529AbaDVUlL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:41:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36647 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758188AbaDVUYt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:48 -0400
-Message-ID: <5356D008.8040204@de.ibm.com>
-Date: Tue, 22 Apr 2014 22:24:40 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
-CC: Dominik Dingel <dingel@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] KVM: async_pf: mm->mm_users can not pin apf->mm
-References: <20140421132601.GA13615@redhat.com>
-In-Reply-To: <20140421132601.GA13615@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042220-0542-0000-0000-000008BD404B
+	Tue, 22 Apr 2014 16:24:49 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 081/133] mfd: max8998: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Tue, 22 Apr 2014 13:13:39 -0700
+Message-Id: <1398197671-12786-82-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/04/14 15:26, Oleg Nesterov wrote:
-> get_user_pages(mm) is simply wrong if mm->mm_users == 0 and exit_mmap/etc
-> was already called (or is in progress), mm->mm_count can only pin mm->pgd
-> and mm_struct itself.
-> 
-> Change kvm_setup_async_pf/async_pf_execute to inc/dec mm->mm_users.
-> 
-> kvm_create_vm/kvm_destroy_vm play with ->mm_count too but this case looks
-> fine at first glance, it seems that this ->mm is only used to verify that
-> current->mm == kvm->mm.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
 
-This looks fine, from what I can tell. The old code has the problem mentioned
-in your patch description, so your version is probably better.
+------------------
 
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-> ---
->  virt/kvm/async_pf.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/virt/kvm/async_pf.c b/virt/kvm/async_pf.c
-> index 0ced4f3..cda703e 100644
-> --- a/virt/kvm/async_pf.c
-> +++ b/virt/kvm/async_pf.c
-> @@ -99,7 +99,7 @@ static void async_pf_execute(struct work_struct *work)
->  	if (waitqueue_active(&vcpu->wq))
->  		wake_up_interruptible(&vcpu->wq);
-> 
-> -	mmdrop(mm);
-> +	mmput(mm);
->  	kvm_put_kvm(vcpu->kvm);
->  }
-> 
-> @@ -116,7 +116,7 @@ void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
->  		flush_work(&work->work);
->  #else
->  		if (cancel_work_sync(&work->work)) {
-> -			mmdrop(work->mm);
-> +			mmput(work->mm);
->  			kvm_put_kvm(vcpu->kvm); /* == work->vcpu->kvm */
->  			kmem_cache_free(async_pf_cache, work);
->  		}
-> @@ -181,7 +181,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, unsigned long hva,
->  	work->addr = hva;
->  	work->arch = *arch;
->  	work->mm = current->mm;
-> -	atomic_inc(&work->mm->mm_count);
-> +	atomic_inc(&work->mm->mm_users);
->  	kvm_get_kvm(work->vcpu->kvm);
-> 
->  	/* this can't really happen otherwise gfn_to_pfn_async
-> @@ -199,7 +199,7 @@ int kvm_setup_async_pf(struct kvm_vcpu *vcpu, gva_t gva, unsigned long hva,
->  	return 1;
->  retry_sync:
->  	kvm_put_kvm(work->vcpu->kvm);
-> -	mmdrop(work->mm);
-> +	mmput(work->mm);
->  	kmem_cache_free(async_pf_cache, work);
->  	return 0;
->  }
-> 
+commit ed26f87b9f71693a1d1ee85f5e6209601505080f upstream.
+
+During probe the driver allocates dummy I2C device for RTC with i2c_new_dummy() but it does not check the return value of this call.
+
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
+
+If i2c_new_dummy() fails for RTC device, fail also the probe for
+main MFD driver.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/mfd/max8998.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+index d7218cc..8381a76 100644
+--- a/drivers/mfd/max8998.c
++++ b/drivers/mfd/max8998.c
+@@ -152,6 +152,10 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
+ 	mutex_init(&max8998->iolock);
+ 
+ 	max8998->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
++	if (!max8998->rtc) {
++		dev_err(&i2c->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max8998->rtc, max8998);
+ 
+ 	max8998_irq_init(max8998);
+-- 
+1.9.1
 
