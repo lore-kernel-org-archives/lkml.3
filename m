@@ -1,147 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885AbaDVPZT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:25:19 -0400
-Received: from mail-ve0-f201.google.com ([209.85.128.201]:35926 "EHLO
-	mail-ve0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932574AbaDVPZO (ORCPT
+	id S932882AbaDVP0G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:26:06 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:14754 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932638AbaDVP0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:25:14 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: olof@lixom.net, Sachin Kamat <sachin.kamat@linaro.org>,
-        ajaykumar.rs@samsung.com, linux-samsung-soc@vger.kernel.org,
-        broonie@kernel.org, Doug Anderson <dianders@chromium.org>,
-        sameo@linux.intel.com, lee.jones@linaro.org,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, dwmw2@infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH v3 3/5] mfd: tps65090: Stop caching most registers
-Date: Tue, 22 Apr 2014 08:24:56 -0700
-Message-Id: <1398180298-2018-4-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
+	Tue, 22 Apr 2014 11:26:04 -0400
+Date: Tue, 22 Apr 2014 16:25:29 +0100
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Gregory =?iso-8859-1?Q?Cl=E9ment?= 
+	<gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>
+Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and
+ dma-coherent
+Message-ID: <20140422152529.GE10224@arm.com>
+References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
+ <20140419182528.414b9b2e@skate>
+ <201404221702.19842.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201404221702.19842.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nearly all of the registers in tps65090 combine control bits and
-status bits.  Turn off caching of all registers except the select few
-that can be cached.
+On Tue, Apr 22, 2014 at 04:02:19PM +0100, Arnd Bergmann wrote:
+> On Saturday 19 April 2014, Thomas Petazzoni wrote:
+> > I am not sure whether there is an intersection or not, but I wanted to
+> > mention that the mvebu platform (in mach-mvebu) supports hardware I/O
+> > coherency, which makes it a coherent DMA platform. However, we are not
+> > able to use arm_coherent_dma_ops for this platform, because when a
+> > transfer is being made DMA_FROM_DEVICE, at the end of the transfer, we
+> > need to perform an I/O barrier to wait for the snooping unit to
+> > complete its coherency work. So we're coherent, but not with
+> > arm_coherent_dma_ops: we have our own dma operation implementation (see
+> > arch/arm/mach-mvebu/coherency.c).
+> 
+> I had completely missed the fact that this support was merged already.
+> 
+> It's an interesting question if this should actually be called
+> 'coherent' or not. It's certainly more coherent than without that
+> support, but then again, you still can't rely on incoming data to
+> be visible after a readl() from the device has returned or an MSI
+> interrupt has been delivered, which is what we normally expect.
+> 
+> In particular, it means you can't really use arm_coherent_dma_alloc(),
+> which is a shame, since that is a significante performance overhead.
 
-In order to avoid adding more duplicate #defines, we also move some
-register offset definitions to the mfd driver (and resolve
-inconsistent names).
+It should still work if __io*mb() macros do the extra work specific to
+mvebu (similar to the L2x0 outer_sync(), though this was for
+non-cacheable DMA buffers).
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
-Changes in v3: None
-Changes in v2:
-- Leave cache on for the registers that can be cached.
-- Move register offsets to mfd header file.
+> I would hope we can find a way to avoid the platform notifiers for
+> mvebu as well and come up with a generic way to express this
+> 'semi-coherent' mode. I believe x-gene has a similar issue, and
+> I wouldn't be surprised if there are others like this.
 
- drivers/mfd/tps65090.c           | 27 ++++++++++++++-------------
- drivers/power/tps65090-charger.c | 11 -----------
- include/linux/mfd/tps65090.h     | 14 ++++++++++++++
- 3 files changed, 28 insertions(+), 24 deletions(-)
+The solution is for the snooping unit to detect the DSB instruction
+(which is propagated outside the CPU) and wait for the completion of the
+coherency work (but we need more information from the hardware guys).
 
-diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-index c3cddb4..1c3e6e2 100644
---- a/drivers/mfd/tps65090.c
-+++ b/drivers/mfd/tps65090.c
-@@ -32,14 +32,6 @@
- #define NUM_INT_REG 2
- #define TOTAL_NUM_REG 0x18
- 
--/* interrupt status registers */
--#define TPS65090_INT_STS	0x0
--#define TPS65090_INT_STS2	0x1
--
--/* interrupt mask registers */
--#define TPS65090_INT_MSK	0x2
--#define TPS65090_INT_MSK2	0x3
--
- #define TPS65090_INT1_MASK_VAC_STATUS_CHANGE		1
- #define TPS65090_INT1_MASK_VSYS_STATUS_CHANGE		2
- #define TPS65090_INT1_MASK_BAT_STATUS_CHANGE		3
-@@ -144,17 +136,26 @@ static struct regmap_irq_chip tps65090_irq_chip = {
- 	.irqs = tps65090_irqs,
- 	.num_irqs = ARRAY_SIZE(tps65090_irqs),
- 	.num_regs = NUM_INT_REG,
--	.status_base = TPS65090_INT_STS,
--	.mask_base = TPS65090_INT_MSK,
-+	.status_base = TPS65090_REG_INTR_STS,
-+	.mask_base = TPS65090_REG_INTR_MASK,
- 	.mask_invert = true,
- };
- 
- static bool is_volatile_reg(struct device *dev, unsigned int reg)
- {
--	if ((reg == TPS65090_INT_STS) || (reg == TPS65090_INT_STS2))
--		return true;
--	else
-+	/* Nearly all registers have status bits mixed in, except a few */
-+	switch (reg) {
-+	case TPS65090_REG_INTR_MASK:
-+	case TPS65090_REG_INTR_MASK2:
-+	case TPS65090_REG_CG_CTRL0:
-+	case TPS65090_REG_CG_CTRL1:
-+	case TPS65090_REG_CG_CTRL2:
-+	case TPS65090_REG_CG_CTRL3:
-+	case TPS65090_REG_CG_CTRL4:
-+	case TPS65090_REG_CG_CTRL5:
- 		return false;
-+	}
-+	return true;
- }
- 
- static const struct regmap_config tps65090_regmap_config = {
-diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
-index cc26c12..31a3ba4 100644
---- a/drivers/power/tps65090-charger.c
-+++ b/drivers/power/tps65090-charger.c
-@@ -30,17 +30,6 @@
- 
- #include <linux/mfd/tps65090.h>
- 
--#define TPS65090_REG_INTR_STS	0x00
--#define TPS65090_REG_INTR_MASK	0x02
--#define TPS65090_REG_CG_CTRL0	0x04
--#define TPS65090_REG_CG_CTRL1	0x05
--#define TPS65090_REG_CG_CTRL2	0x06
--#define TPS65090_REG_CG_CTRL3	0x07
--#define TPS65090_REG_CG_CTRL4	0x08
--#define TPS65090_REG_CG_CTRL5	0x09
--#define TPS65090_REG_CG_STATUS1	0x0a
--#define TPS65090_REG_CG_STATUS2	0x0b
--
- #define TPS65090_CHARGER_ENABLE	BIT(0)
- #define TPS65090_VACG		BIT(1)
- #define TPS65090_NOITERM	BIT(5)
-diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
-index 3f43069..45f0f9d 100644
---- a/include/linux/mfd/tps65090.h
-+++ b/include/linux/mfd/tps65090.h
-@@ -64,6 +64,20 @@ enum {
- 	TPS65090_REGULATOR_MAX,
- };
- 
-+/* Register addresses */
-+#define TPS65090_REG_INTR_STS	0x00
-+#define TPS65090_REG_INTR_STS2	0x01
-+#define TPS65090_REG_INTR_MASK	0x02
-+#define TPS65090_REG_INTR_MASK2	0x03
-+#define TPS65090_REG_CG_CTRL0	0x04
-+#define TPS65090_REG_CG_CTRL1	0x05
-+#define TPS65090_REG_CG_CTRL2	0x06
-+#define TPS65090_REG_CG_CTRL3	0x07
-+#define TPS65090_REG_CG_CTRL4	0x08
-+#define TPS65090_REG_CG_CTRL5	0x09
-+#define TPS65090_REG_CG_STATUS1	0x0a
-+#define TPS65090_REG_CG_STATUS2	0x0b
-+
- struct tps65090 {
- 	struct device		*dev;
- 	struct regmap		*rmap;
 -- 
-1.9.1.423.g4596e3a
-
+Catalin
