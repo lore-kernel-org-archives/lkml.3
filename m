@@ -1,40 +1,489 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142AbaDVWMh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 18:12:37 -0400
-Received: from mail-la0-f51.google.com ([209.85.215.51]:43052 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755769AbaDVWMc (ORCPT
+	id S1755073AbaDVWTc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 18:19:32 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:25910 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751310AbaDVWTa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 18:12:32 -0400
-MIME-Version: 1.0
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 22 Apr 2014 15:12:11 -0700
-Message-ID: <CALCETrXE_T-3eKmVKZNkAfoyvC0CcUATDK7fGPvQrR9H=RHQag@mail.gmail.com>
-Subject: How do I make a clean mount namespace?
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Apr 2014 18:19:30 -0400
+Message-ID: <1398205166.6345.7.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH] rwsem: Support optimistic spinning
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Tim Chen <tim.c.chen@linux.intel.com>,
+        Andrea Arcangeli <aarcange@redhat.com>, Alex Shi <alex.shi@linaro.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Michel Lespinasse <walken@google.com>,
+        Davidlohr Bueso <davidlohr@hp.com>, Rik van Riel <riel@redhat.com>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Paul E.McKenney" <paulmck@linux.vnet.ibm.com>,
+        Aswin Chandramouleeswaran <aswin@hp.com>,
+        "Norton, Scott J" <scott.norton@hp.com>, linux-kernel@vger.kernel.org
+Date: Tue, 22 Apr 2014 15:19:26 -0700
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I want to set up a little container.  So I unshare the mount namespace
-and mount something somewhere (say /mnt) that I want to be my new
-root.  Now what?
+We have reached the point where our mutexes are quite fine tuned
+for a number of situations. This includes the use of heuristics
+and optimistic spinning, based on MCS locking techniques.
 
-pivot_root("/mnt", "/mnt/garbage") seems to frequently return -EBUSY.
+Exclusive ownership of read-write semaphores are, conceptually,
+just about the same as mutexes, making them close cousins. To
+this end we need to make them both perform similarly, and
+right now, rwsems are simply not up to it. This was discovered
+by both reverting commit 4fc3f1d6 (mm/rmap, migration: Make
+rmap_walk_anon() and try_to_unmap_anon() more scalable) and
+similarly, converting some other mutexes (ie: i_mmap_mutex) to
+rwsems. This creates a situation where users have to choose
+between a rwsem and mutex taking into account this important
+performance difference. Specifically, biggest difference between
+both locks is when we fail to acquire a mutex in the fastpath,
+optimistic spinning comes in to play and we can avoid a large
+amount of unnecessary sleeping and overhead of moving tasks in
+and out of wait queue. Rwsems do not have such logic.
 
-mounting /mnt onto / using MS_MOVE seems to succeed, but / still
-points at the old root.
+This patch, based on the work from Tim Chen and I, adds support
+for write-side optimistic spinning when the lock is contended.
+It also includes support for the recently added cancelable MCS
+locking for adaptive spinning.
 
-Am I missing a clean way to do this?  I want a way to say "make this
-mountpoint be the root of the whole mount namespace and lazy-unmount
-everything outside it".  If there is no straightforward way to do
-that, can we add one?
+Allowing optimistic spinning before putting the writer on the wait
+queue reduces wait queue contention and provided greater chance
+for the rwsem to get acquired. With these changes, rwsem is on par
+with mutex. The performance benefits can be seen on a number of
+workloads. For instance, on a 8 socket, 80 core 64bit Westmere box,
+aim7 shows the following improvements in throughput:
 
---Andy
++--------------+---------------------+-----------------+
+|   Workload   | throughput-increase | number of users |
++--------------+---------------------+-----------------+
+| alltests     | 20%                 | >1000           |
+| custom       | 27%, 60%            | 10-100, >1000   |
+| high_systime | 36%, 30%            | >100, >1000     |
+| shared       | 58%, 29%            | 10-100, >1000   |
++--------------+---------------------+-----------------+
 
+There was also improvement on smaller systems, such as a quad-core
+x86-64 laptop running a 30Gb PostgreSQL (pgbench) workload for up
+to +60% in throughput for over 50 clients. Additionally, benefits
+were also noticed in exim (mail server) workloads. Furthermore, no
+performance regression have been seen at all.
+
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ include/linux/rwsem.h       |   9 +-
+ kernel/locking/rwsem-xadd.c | 213 +++++++++++++++++++++++++++++++++++++++-----
+ kernel/locking/rwsem.c      |  31 ++++++-
+ 3 files changed, 231 insertions(+), 22 deletions(-)
+
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index 03f3b05..6f992e2 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -16,6 +16,7 @@
+ 
+ #include <linux/atomic.h>
+ 
++struct optimistic_spin_queue;
+ struct rw_semaphore;
+ 
+ #ifdef CONFIG_RWSEM_GENERIC_SPINLOCK
+@@ -26,6 +27,10 @@ struct rw_semaphore {
+ 	long			count;
+ 	raw_spinlock_t		wait_lock;
+ 	struct list_head	wait_list;
++#ifdef CONFIG_SMP
++	struct task_struct	     *owner; /* write owner */
++	struct optimistic_spin_queue *osq;   /* spinner MCS lock */
++#endif
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ 	struct lockdep_map	dep_map;
+ #endif
+@@ -58,7 +63,9 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
+ #define __RWSEM_INITIALIZER(name)			\
+ 	{ RWSEM_UNLOCKED_VALUE,				\
+ 	  __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock),	\
+-	  LIST_HEAD_INIT((name).wait_list)		\
++	  LIST_HEAD_INIT((name).wait_list),		\
++	  NULL, /* owner */				\
++	  NULL /* mcs lock */                           \
+ 	  __RWSEM_DEP_MAP_INIT(name) }
+ 
+ #define DECLARE_RWSEM(name) \
+diff --git a/kernel/locking/rwsem-xadd.c b/kernel/locking/rwsem-xadd.c
+index 1d66e08..b6a67fe 100644
+--- a/kernel/locking/rwsem-xadd.c
++++ b/kernel/locking/rwsem-xadd.c
+@@ -5,12 +5,18 @@
+  *
+  * Writer lock-stealing by Alex Shi <alex.shi@intel.com>
+  * and Michel Lespinasse <walken@google.com>
++ *
++ * Optimistic spinning by Tim Chen <tim.c.chen@intel.com>
++ * and Davidlohr Bueso <davidlohr@hp.com>. Based on mutexes.
+  */
+ #include <linux/rwsem.h>
+ #include <linux/sched.h>
+ #include <linux/init.h>
++#include <linux/sched/rt.h>
+ #include <linux/export.h>
+ 
++#include "mcs_spinlock.h"
++
+ /*
+  * Initialize an rwsem:
+  */
+@@ -27,6 +33,10 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+ 	sem->count = RWSEM_UNLOCKED_VALUE;
+ 	raw_spin_lock_init(&sem->wait_lock);
+ 	INIT_LIST_HEAD(&sem->wait_list);
++#ifdef CONFIG_SMP
++	sem->owner = NULL;
++	sem->osq = NULL;
++#endif
+ }
+ 
+ EXPORT_SYMBOL(__init_rwsem);
+@@ -188,15 +198,183 @@ struct rw_semaphore __sched *rwsem_down_read_failed(struct rw_semaphore *sem)
+ 	return sem;
+ }
+ 
++static inline int rwsem_try_write_lock(long count, struct rw_semaphore *sem)
++{
++	if (!(count & RWSEM_ACTIVE_MASK)) {
++		/* Try acquiring the write lock. */
++		if (sem->count == RWSEM_WAITING_BIAS &&
++		    cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
++			    RWSEM_ACTIVE_WRITE_BIAS) == RWSEM_WAITING_BIAS) {
++			if (!list_is_singular(&sem->wait_list))
++				rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
++			return 1;
++		}
++	}
++	return 0;
++}
++
++/*
++ * Try to acquire write lock before the writer has been put on wait queue.
++ */
++static inline bool rwsem_try_write_lock_unqueued(struct rw_semaphore *sem)
++{
++	long count = ACCESS_ONCE(sem->count);
++retry:
++	if (count == RWSEM_WAITING_BIAS) {
++		count = cmpxchg(&sem->count, RWSEM_WAITING_BIAS,
++			    RWSEM_ACTIVE_WRITE_BIAS + RWSEM_WAITING_BIAS);
++		/* allow write lock stealing, try acquiring the write lock. */
++		if (count == RWSEM_WAITING_BIAS)
++			goto acquired;
++		else if (count == 0)
++			goto retry;
++	} else if (count == 0) {
++		count = cmpxchg(&sem->count, 0, RWSEM_ACTIVE_WRITE_BIAS);
++		if (count == 0)
++			goto acquired;
++		else if (count == RWSEM_WAITING_BIAS)
++			goto retry;
++	}
++	return false;
++
++acquired:
++	return true;
++}
++
++#ifdef CONFIG_SMP
++static inline bool rwsem_can_spin_on_owner(struct rw_semaphore *sem)
++{
++	int retval;
++	struct task_struct *owner;
++
++	rcu_read_lock();
++	owner = ACCESS_ONCE(sem->owner);
++
++	/* Spin only if active writer running */
++	if (owner)
++		retval = owner->on_cpu;
++	else {
++		/*
++		 * When the owner is not set, the sem owner may have just
++		 * acquired it and not set the owner yet, or the sem has
++		 * been released, or reader active.
++		 */
++		retval = false;
++	}
++	rcu_read_unlock();
++
++	return retval;
++}
++
++static inline bool owner_running(struct rw_semaphore *lock,
++				 struct task_struct *owner)
++{
++	if (lock->owner != owner)
++		return false;
++
++	/*
++	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
++	 * lock->owner still matches owner, if that fails, owner might
++	 * point to free()d memory, if it still matches, the rcu_read_lock()
++	 * ensures the memory stays valid.
++	 */
++	barrier();
++
++	return owner->on_cpu;
++}
++
++static noinline
++int rwsem_spin_on_owner(struct rw_semaphore *lock, struct task_struct *owner)
++{
++	rcu_read_lock();
++	while (owner_running(lock, owner)) {
++		if (need_resched())
++			break;
++
++		arch_mutex_cpu_relax();
++	}
++	rcu_read_unlock();
++
++	/*
++	 * We break out the loop above on need_resched() or when the
++	 * owner changed, which is a sign for heavy contention. Return
++	 * success only when lock->owner is NULL.
++	 */
++	return lock->owner == NULL;
++}
++
++static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
++{
++	struct task_struct *owner;
++	bool taken = false;
++
++	preempt_disable();
++
++	/* sem->wait_lock should not be held when doing optimistic spinning */
++	if (!rwsem_can_spin_on_owner(sem))
++		goto done;
++
++	if (!osq_lock(&sem->osq))
++		goto done;
++
++	while (true) {
++		owner = ACCESS_ONCE(sem->owner);
++		if (owner && !rwsem_spin_on_owner(sem, owner))
++			break;
++
++		/* wait_lock will be acquired if write_lock is obtained */
++		if (rwsem_try_write_lock_unqueued(sem)) {
++			taken = true;
++			break;
++		}
++
++		/*
++		 * When there's no owner, we might have preempted between the
++		 * owner acquiring the lock and setting the owner field. If
++		 * we're an RT task that will live-lock because we won't let
++		 * the owner complete.
++		 */
++		if (!owner && (need_resched() || rt_task(current)))
++			break;
++
++		/*
++		 * The cpu_relax() call is a compiler barrier which forces
++		 * everything in this loop to be re-loaded. We don't need
++		 * memory barriers as we'll eventually observe the right
++		 * values at the cost of a few extra spins.
++		 */
++		arch_mutex_cpu_relax();
++	}
++	osq_unlock(&sem->osq);
++done:
++	preempt_enable();
++	return taken;
++}
++
++#else
++static bool rwsem_optimistic_spin(struct rw_semaphore *sem)
++{
++	return false;
++}
++#endif
++
+ /*
+  * wait until we successfully acquire the write lock
+  */
+ __visible
+ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+ {
+-	long count, adjustment = -RWSEM_ACTIVE_WRITE_BIAS;
++	long count;
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk = current;
++	bool waiting = true;
++
++	/* undo write bias from down_write operation, stop active locking */
++	count = rwsem_atomic_update(-RWSEM_ACTIVE_WRITE_BIAS, sem);
++
++	/* do optimistic spinning and steal lock if possible */
++	if (rwsem_optimistic_spin(sem))
++		goto done;
+ 
+ 	/* set up my own style of waitqueue */
+ 	waiter.task = tsk;
+@@ -204,34 +382,29 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+ 
+ 	raw_spin_lock_irq(&sem->wait_lock);
+ 	if (list_empty(&sem->wait_list))
+-		adjustment += RWSEM_WAITING_BIAS;
++		waiting = false;
+ 	list_add_tail(&waiter.list, &sem->wait_list);
+ 
+ 	/* we're now waiting on the lock, but no longer actively locking */
+-	count = rwsem_atomic_update(adjustment, sem);
++	if (waiting)
++		count = ACCESS_ONCE(sem->count);
++	else
++		count = rwsem_atomic_update(RWSEM_WAITING_BIAS, sem);
++
+ 
+-	/* If there were already threads queued before us and there are no
++	/*
++	 * If there were already threads queued before us and there are no
+ 	 * active writers, the lock must be read owned; so we try to wake
+-	 * any read locks that were queued ahead of us. */
+-	if (count > RWSEM_WAITING_BIAS &&
+-	    adjustment == -RWSEM_ACTIVE_WRITE_BIAS)
++	 * any read locks that were queued ahead of us.
++	 */
++	if ((count > RWSEM_WAITING_BIAS) && waiting)
+ 		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READERS);
+ 
+ 	/* wait until we successfully acquire the lock */
+ 	set_task_state(tsk, TASK_UNINTERRUPTIBLE);
+ 	while (true) {
+-		if (!(count & RWSEM_ACTIVE_MASK)) {
+-			/* Try acquiring the write lock. */
+-			count = RWSEM_ACTIVE_WRITE_BIAS;
+-			if (!list_is_singular(&sem->wait_list))
+-				count += RWSEM_WAITING_BIAS;
+-
+-			if (sem->count == RWSEM_WAITING_BIAS &&
+-			    cmpxchg(&sem->count, RWSEM_WAITING_BIAS, count) ==
+-							RWSEM_WAITING_BIAS)
+-				break;
+-		}
+-
++		if (rwsem_try_write_lock(count, sem))
++			break;
+ 		raw_spin_unlock_irq(&sem->wait_lock);
+ 
+ 		/* Block until there are no active lockers. */
+@@ -245,8 +418,8 @@ struct rw_semaphore __sched *rwsem_down_write_failed(struct rw_semaphore *sem)
+ 
+ 	list_del(&waiter.list);
+ 	raw_spin_unlock_irq(&sem->wait_lock);
++done:
+ 	tsk->state = TASK_RUNNING;
+-
+ 	return sem;
+ }
+ 
+diff --git a/kernel/locking/rwsem.c b/kernel/locking/rwsem.c
+index cfff143..a911dbf 100644
+--- a/kernel/locking/rwsem.c
++++ b/kernel/locking/rwsem.c
+@@ -12,6 +12,27 @@
+ 
+ #include <linux/atomic.h>
+ 
++#ifdef CONFIG_SMP
++static inline void rwsem_set_owner(struct rw_semaphore *sem)
++{
++	sem->owner = current;
++}
++
++static inline void rwsem_clear_owner(struct rw_semaphore *sem)
++{
++	sem->owner = NULL;
++}
++
++#else
++static inline void rwsem_set_owner(struct rw_semaphore *sem)
++{
++}
++
++static inline void rwsem_clear_owner(struct rw_semaphore *sem)
++{
++}
++#endif
++
+ /*
+  * lock for reading
+  */
+@@ -48,6 +69,7 @@ void __sched down_write(struct rw_semaphore *sem)
+ 	rwsem_acquire(&sem->dep_map, 0, 0, _RET_IP_);
+ 
+ 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
++	rwsem_set_owner(sem);
+ }
+ 
+ EXPORT_SYMBOL(down_write);
+@@ -59,8 +81,11 @@ int down_write_trylock(struct rw_semaphore *sem)
+ {
+ 	int ret = __down_write_trylock(sem);
+ 
+-	if (ret == 1)
++	if (ret == 1) {
+ 		rwsem_acquire(&sem->dep_map, 0, 1, _RET_IP_);
++		rwsem_set_owner(sem);
++	}
++
+ 	return ret;
+ }
+ 
+@@ -86,6 +111,7 @@ void up_write(struct rw_semaphore *sem)
+ 	rwsem_release(&sem->dep_map, 1, _RET_IP_);
+ 
+ 	__up_write(sem);
++	rwsem_clear_owner(sem);
+ }
+ 
+ EXPORT_SYMBOL(up_write);
+@@ -100,6 +126,7 @@ void downgrade_write(struct rw_semaphore *sem)
+ 	 * dependency.
+ 	 */
+ 	__downgrade_write(sem);
++	rwsem_clear_owner(sem);
+ }
+ 
+ EXPORT_SYMBOL(downgrade_write);
+@@ -122,6 +149,7 @@ void _down_write_nest_lock(struct rw_semaphore *sem, struct lockdep_map *nest)
+ 	rwsem_acquire_nest(&sem->dep_map, 0, 0, nest, _RET_IP_);
+ 
+ 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
++	rwsem_set_owner(sem);
+ }
+ 
+ EXPORT_SYMBOL(_down_write_nest_lock);
+@@ -141,6 +169,7 @@ void down_write_nested(struct rw_semaphore *sem, int subclass)
+ 	rwsem_acquire(&sem->dep_map, subclass, 0, _RET_IP_);
+ 
+ 	LOCK_CONTENDED(sem, __down_write_trylock, __down_write);
++	rwsem_set_owner(sem);
+ }
+ 
+ EXPORT_SYMBOL(down_write_nested);
 -- 
-Andy Lutomirski
-AMA Capital Management, LLC
+1.8.1.4
+
+
+
