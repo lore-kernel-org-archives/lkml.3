@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758403AbaDVU0o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:26:44 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36785 "EHLO
+	id S932174AbaDVU0t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:26:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36783 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758313AbaDVUZY (ORCPT
+	with ESMTP id S1758307AbaDVUZY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 16:25:24 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@linux.intel.com>,
+Cc: Oleksij Rempel <linux@rempel-privat.de>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 039/133] x86, AVX-512: AVX-512 Feature Detection
-Date: Tue, 22 Apr 2014 13:12:57 -0700
-Message-Id: <1398197671-12786-40-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 045/133] [media] uvcvideo: Do not use usb_set_interface on bulk EP
+Date: Tue, 22 Apr 2014 13:13:03 -0700
+Message-Id: <1398197671-12786-46-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,41 +29,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Fenghua Yu <fenghua.yu@intel.com>
+From: Oleksij Rempel <linux@rempel-privat.de>
 
-commit 8e5780fdeef7dc490b3f0b3a62704593721fa4f3 upstream.
+commit b1e43f232698274871e1358c276d7b0242a7d607 upstream.
 
-AVX-512 is an extention of AVX2. Its spec can be found at:
-http://download-software.intel.com/sites/default/files/managed/71/2e/319433-017.pdf
+The UVC specification uses alternate setting selection to notify devices
+of stream start/stop. This breaks when using bulk-based devices, as the
+video streaming interface has a single alternate setting in that case,
+making video stream start and video stream stop events to appear
+identical to the device. Bulk-based devices are thus not well supported
+by UVC.
 
-This patch detects AVX-512 features by CPUID.
+The webcam built in the Asus Zenbook UX302LA ignores the set interface
+request and will keep the video stream enabled when the driver tries to
+stop it. If USB autosuspend is enabled the device will then be suspended
+and will crash, requiring a cold reboot.
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Link: http://lkml.kernel.org/r/1392931491-33237-1-git-send-email-fenghua.yu@intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+USB trace capture showed that Windows sends a CLEAR_FEATURE(HALT)
+request to the bulk endpoint when stopping the stream instead of
+selecting alternate setting 0. The camera then behaves correctly, and
+thus seems to require that behaviour.
+
+Replace selection of alternate setting 0 with clearing of the endpoint
+halt feature at video stream stop for bulk-based devices. Let's refrain
+from blaming Microsoft this time, as it's not clear whether this
+Windows-specific but USB-compliant behaviour was specifically developed
+to handle bulkd-based UVC devices, or if the camera just took advantage
+of it.
+
+Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/include/asm/cpufeature.h | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/media/usb/uvc/uvc_video.c | 20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index d3f0db1..0480fb9 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -211,9 +211,13 @@
- #define X86_FEATURE_ERMS	(9*32+ 9) /* Enhanced REP MOVSB/STOSB */
- #define X86_FEATURE_INVPCID	(9*32+10) /* Invalidate Processor Context ID */
- #define X86_FEATURE_RTM		(9*32+11) /* Restricted Transactional Memory */
-+#define X86_FEATURE_AVX512F	(9*32+16) /* AVX-512 Foundation */
- #define X86_FEATURE_RDSEED	(9*32+18) /* The RDSEED instruction */
- #define X86_FEATURE_ADX		(9*32+19) /* The ADCX and ADOX instructions */
- #define X86_FEATURE_SMAP	(9*32+20) /* Supervisor Mode Access Prevention */
-+#define X86_FEATURE_AVX512PF	(9*32+26) /* AVX-512 Prefetch */
-+#define X86_FEATURE_AVX512ER	(9*32+27) /* AVX-512 Exponential and Reciprocal */
-+#define X86_FEATURE_AVX512CD	(9*32+28) /* AVX-512 Conflict Detection */
+diff --git a/drivers/media/usb/uvc/uvc_video.c b/drivers/media/usb/uvc/uvc_video.c
+index 3394c34..e1c5bf3e 100644
+--- a/drivers/media/usb/uvc/uvc_video.c
++++ b/drivers/media/usb/uvc/uvc_video.c
+@@ -1846,7 +1846,25 @@ int uvc_video_enable(struct uvc_streaming *stream, int enable)
  
- #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
- 
+ 	if (!enable) {
+ 		uvc_uninit_video(stream, 1);
+-		usb_set_interface(stream->dev->udev, stream->intfnum, 0);
++		if (stream->intf->num_altsetting > 1) {
++			usb_set_interface(stream->dev->udev,
++					  stream->intfnum, 0);
++		} else {
++			/* UVC doesn't specify how to inform a bulk-based device
++			 * when the video stream is stopped. Windows sends a
++			 * CLEAR_FEATURE(HALT) request to the video streaming
++			 * bulk endpoint, mimic the same behaviour.
++			 */
++			unsigned int epnum = stream->header.bEndpointAddress
++					   & USB_ENDPOINT_NUMBER_MASK;
++			unsigned int dir = stream->header.bEndpointAddress
++					 & USB_ENDPOINT_DIR_MASK;
++			unsigned int pipe;
++
++			pipe = usb_sndbulkpipe(stream->dev->udev, epnum) | dir;
++			usb_clear_halt(stream->dev->udev, pipe);
++		}
++
+ 		uvc_queue_enable(&stream->queue, 0);
+ 		uvc_video_clock_cleanup(stream);
+ 		return 0;
 -- 
 1.9.1
 
