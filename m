@@ -1,53 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933035AbaDVPFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:05:13 -0400
-Received: from mail-oa0-f47.google.com ([209.85.219.47]:35865 "EHLO
-	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932769AbaDVPFI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:05:08 -0400
+	id S932917AbaDVPHN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:07:13 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:59462 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751995AbaDVPHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 11:07:10 -0400
+Date: Tue, 22 Apr 2014 11:06:56 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Rafael Aquini <aquini@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mgorman@suse.de>, Hugh Dickins <hughd@google.com>,
+        Suleiman Souhlal <suleiman@google.com>, stable@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: commit 0bf1457f0cfca7b  " mm: vmscan: do not swap anon pages
+ just because free+file is low" causes heavy performance regression on paging
+Message-ID: <20140422150656.GA29866@cmpxchg.org>
+References: <53564AA9.3060905@de.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <1397680817-28470-1-git-send-email-abrestic@chromium.org>
-References: <1397611505-17917-1-git-send-email-abrestic@chromium.org>
-	<1397680817-28470-1-git-send-email-abrestic@chromium.org>
-Date: Tue, 22 Apr 2014 17:05:07 +0200
-Message-ID: <CACRpkdbLymoBxJrqdfpHLHDP9ytohqhhd1bdXevKnVS1mVPoNA@mail.gmail.com>
-Subject: Re: [PATCH v2] pinctrl: as3722: fix handling of GPIO invert bit
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andrew Bresticker <abrestic@chromium.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable <stable@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53564AA9.3060905@de.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 10:40 PM, Andrew Bresticker
-<abrestic@chromium.org> wrote:
+Hi Christian,
 
-> The AS3722_GPIO_INV bit will always be blindly overwritten by
-> as3722_pinctrl_gpio_set_direction() and will be ignored when
-> setting the value of the GPIO in as3722_gpio_set() since the
-> enable_gpio_invert flag is never set.  This will cause an
-> initially inverted GPIO to toggle when requested as an output,
-> which could be problematic if, for example, the GPIO controls
-> a critical regulator.
->
-> Instead of setting up the enable_gpio_invert flag, just leave
-> the invert bit alone and check it before setting the GPIO value.
->
-> Cc: <stable@vger.kernel.org> # v3.14+
-> Signed-off-by: Andrew Bresticker <abrestic@chromium.org>
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Changes from v1:
->  - fixed typo
+On Tue, Apr 22, 2014 at 12:55:37PM +0200, Christian Borntraeger wrote:
+> While preparing/testing some KVM on s390 patches for the next merge window (target is kvm/next which is based on 3.15-rc1) I faced a very severe performance hickup on guest paging (all anonymous memory).
+> 
+> All memory bound guests are in "D" state now and the system is barely unusable.
+> 
+> Reverting commit 0bf1457f0cfca7bc026a82323ad34bcf58ad035d
+> "mm: vmscan: do not swap anon pages just because free+file is low" makes the problem go away.
+> 
+> According to /proc/vmstat the system is now in direct reclaim almost all the time for every page fault (more than 10x more direct reclaims than kswap reclaims)
+> With the patch being reverted everything is fine again.
 
-This v2 version applied for fixes with Laxman's ACK.
+Ouch.  Yes, I think we have to revert this for now.
 
-Yours,
-Linus Walleij
+How about this?
+
+---
+From: Johannes Weiner <hannes@cmpxchg.org>
+Subject: [patch] Revert "mm: vmscan: do not swap anon pages just because
+ free+file is low"
+
+This reverts commit 0bf1457f0cfc ("mm: vmscan: do not swap anon pages
+just because free+file is low") because it introduced a regression in
+mostly-anonymous workloads, where reclaim would become ineffective and
+trap every allocating task in direct reclaim.
+
+The problem is that there is a runaway feedback loop in the scan
+balance between file and anon, where the balance tips heavily towards
+a tiny thrashing file LRU and anonymous pages are no longer being
+looked at.  The commit in question removed the safe guard that would
+detect such situations and respond with forced anonymous reclaim.
+
+This commit was part of a series to fix premature swapping in loads
+with relatively little cache, and while it made a small difference,
+the cure is obviously worse than the disease.  Revert it.
+
+Reported-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Cc: <stable@kernel.org>		[3.12+]
+---
+ mm/vmscan.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 9b6497eda806..169acb8e31c9 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1916,6 +1916,24 @@ static void get_scan_count(struct lruvec *lruvec, struct scan_control *sc,
+ 		get_lru_size(lruvec, LRU_INACTIVE_FILE);
+ 
+ 	/*
++	 * Prevent the reclaimer from falling into the cache trap: as
++	 * cache pages start out inactive, every cache fault will tip
++	 * the scan balance towards the file LRU.  And as the file LRU
++	 * shrinks, so does the window for rotation from references.
++	 * This means we have a runaway feedback loop where a tiny
++	 * thrashing file LRU becomes infinitely more attractive than
++	 * anon pages.  Try to detect this based on file LRU size.
++	 */
++	if (global_reclaim(sc)) {
++		unsigned long free = zone_page_state(zone, NR_FREE_PAGES);
++
++		if (unlikely(file + free <= high_wmark_pages(zone))) {
++			scan_balance = SCAN_ANON;
++			goto out;
++		}
++	}
++
++	/*
+ 	 * There is enough inactive page cache, do not reclaim
+ 	 * anything from the anonymous working set right now.
+ 	 */
+-- 
+1.9.2
+
