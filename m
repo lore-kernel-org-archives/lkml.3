@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757507AbaDVURz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:17:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36288 "EHLO
+	id S1757580AbaDVUSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:18:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36306 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751970AbaDVUPk (ORCPT
+	with ESMTP id S1755434AbaDVUSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:15:40 -0400
+	Tue, 22 Apr 2014 16:18:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Lennart Poettering <lpoetter@redhat.com>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 126/133] wait: fix reparent_leader() vs EXIT_DEAD->EXIT_ZOMBIE race
-Date: Tue, 22 Apr 2014 13:14:24 -0700
-Message-Id: <1398197671-12786-127-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 108/133] x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
+Date: Tue, 22 Apr 2014 13:14:06 -0700
+Message-Id: <1398197671-12786-109-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -31,80 +29,66 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Neil Horman <nhorman@tuxdriver.com>
 
-commit dfccbb5e49a621c1b21a62527d61fc4305617aca upstream.
+commit 6f8a1b335fde143b7407036e2368d3cd6eb55674 upstream.
 
-wait_task_zombie() first does EXIT_ZOMBIE->EXIT_DEAD transition and
-drops tasklist_lock.  If this task is not the natural child and it is
-traced, we change its state back to EXIT_ZOMBIE for ->real_parent.
+Commit 03bbcb2e7e2 (iommu/vt-d: add quirk for broken interrupt
+remapping on 55XX chipsets) properly disables irq remapping on the
+5500/5520 chipsets that don't correctly perform that feature.
 
-The last transition is racy, this is even documented in 50b8d257486a
-"ptrace: partially fix the do_wait(WEXITED) vs EXIT_DEAD->EXIT_ZOMBIE
-race".  wait_consider_task() tries to detect this transition and clear
-->notask_error but we can't rely on ptrace_reparented(), debugger can
-exit and do ptrace_unlink() before its sub-thread sets EXIT_ZOMBIE.
+However, when I wrote it, I followed the errata sheet linked in that
+commit too closely, and explicitly tied the activation of the quirk to
+revision 0x13 of the chip, under the assumption that earlier revisions
+were not in the field.  Recently a system was reported to be suffering
+from this remap bug and the quirk hadn't triggered, because the
+revision id register read at a lower value that 0x13, so the quirk
+test failed improperly.  Given this, it seems only prudent to adjust
+this quirk so that any revision less than 0x13 has the quirk asserted.
 
-And there is another problem which were missed before: this transition
-can also race with reparent_leader() which doesn't reset >exit_signal if
-EXIT_DEAD, assuming that this task must be reaped by someone else.  So
-the tracee can be re-parented with ->exit_signal != SIGCHLD, and if
-/sbin/init doesn't use __WALL it becomes unreapable.
+[ tglx: Removed the 0x12 comparison of pci id 3405 as this is covered
+    	by the <= 0x13 check already ]
 
-Change reparent_leader() to update ->exit_signal even if EXIT_DEAD.
-Note: this is the simple temporary hack for -stable, it doesn't try to
-solve all problems, it will be reverted by the next changes.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Jan Kratochvil <jan.kratochvil@redhat.com>
-Reported-by: Michal Schmidt <mschmidt@redhat.com>
-Tested-by: Michal Schmidt <mschmidt@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Lennart Poettering <lpoetter@redhat.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Tejun Heo <tj@kernel.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/1394649873-14913-1-git-send-email-nhorman@tuxdriver.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/exit.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ arch/x86/kernel/early-quirks.c | 15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index b4df219..0842373 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -568,9 +568,6 @@ static void reparent_leader(struct task_struct *father, struct task_struct *p,
- 				struct list_head *dead)
- {
- 	list_move_tail(&p->sibling, &p->real_parent->children);
--
--	if (p->exit_state == EXIT_DEAD)
--		return;
+diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
+index 63bdb29..4f7c82c 100644
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -202,18 +202,15 @@ static void __init intel_remapping_check(int num, int slot, int func)
+ 	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
+ 
  	/*
- 	 * If this is a threaded reparent there is no need to
- 	 * notify anyone anything has happened.
-@@ -578,9 +575,19 @@ static void reparent_leader(struct task_struct *father, struct task_struct *p,
- 	if (same_thread_group(p->real_parent, father))
- 		return;
+- 	 * Revision 13 of all triggering devices id in this quirk have
+-	 * a problem draining interrupts when irq remapping is enabled,
+-	 * and should be flagged as broken.  Additionally revisions 0x12
+-	 * and 0x22 of device id 0x3405 has this problem.
++	 * Revision <= 13 of all triggering devices id in this quirk
++	 * have a problem draining interrupts when irq remapping is
++	 * enabled, and should be flagged as broken. Additionally
++	 * revision 0x22 of device id 0x3405 has this problem.
+ 	 */
+-	if (revision == 0x13)
++	if (revision <= 0x13)
+ 		set_irq_remapping_broken();
+-	else if ((device == 0x3405) &&
+-	    ((revision == 0x12) ||
+-	     (revision == 0x22)))
++	else if (device == 0x3405 && revision == 0x22)
+ 		set_irq_remapping_broken();
+-
+ }
  
--	/* We don't want people slaying init.  */
-+	/*
-+	 * We don't want people slaying init.
-+	 *
-+	 * Note: we do this even if it is EXIT_DEAD, wait_task_zombie()
-+	 * can change ->exit_state to EXIT_ZOMBIE. If this is the final
-+	 * state, do_notify_parent() was already called and ->exit_signal
-+	 * doesn't matter.
-+	 */
- 	p->exit_signal = SIGCHLD;
- 
-+	if (p->exit_state == EXIT_DEAD)
-+		return;
-+
- 	/* If it has exited notify the new parent about this child's death. */
- 	if (!p->ptrace &&
- 	    p->exit_state == EXIT_ZOMBIE && thread_group_empty(p)) {
+ #define QFLAG_APPLY_ONCE 	0x1
 -- 
 1.9.1
 
