@@ -1,128 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932476AbaDVM0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 08:26:49 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:59007 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932195AbaDVM0k (ORCPT
+	id S932487AbaDVM1Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 08:27:24 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:50050 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755662AbaDVM1V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 08:26:40 -0400
+	Tue, 22 Apr 2014 08:27:21 -0400
 MIME-Version: 1.0
-In-Reply-To: <2942005.cg9fS5oSJO@vostro.rjw.lan>
-References: <1397137433-19106-1-git-send-email-chander.kashyap@linaro.org>
-	<2870361.ixyW1GZfvF@vostro.rjw.lan>
-	<CANuQgHGieSC1poZvu906MTHk71akFge_JdSnqyvTd3-Ac-Pd2g@mail.gmail.com>
-	<2942005.cg9fS5oSJO@vostro.rjw.lan>
-Date: Tue, 22 Apr 2014 17:56:39 +0530
-Message-ID: <CANuQgHFdYhTc8YZ2MbQv0r_CsJGDLwHOqy9NuVDEfVUOTsbRpA@mail.gmail.com>
-Subject: Re: [PATCH] cpuidle: governor: menu: move repeated correction factor
- check to init
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        rafael.j.wysocki@intel.com, Daniel Lezcano <daniel.lezcano@linaro.org>,
-        linux-pm@vger.kernel.org
+In-Reply-To: <1397174424-30855-1-git-send-email-tim.kryger@linaro.org>
+References: <1397174424-30855-1-git-send-email-tim.kryger@linaro.org>
+Date: Tue, 22 Apr 2014 14:27:20 +0200
+Message-ID: <CACRpkdav_7x9Ei1pG9JfUvBGzgCO+w3qe2m+_9o1FM9i8_4Jbw@mail.gmail.com>
+Subject: Re: [PATCH] gpio: bcm-kona: Add irq_set_wake method
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Markus Mayer <markus.mayer@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Broadcom Kernel Feedback List 
+	<bcm-kernel-feedback-list@broadcom.com>,
+        Linux GPIO Mailing List <linux-gpio@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22 April 2014 16:54, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Tuesday, April 22, 2014 03:24:21 PM Chander Kashyap wrote:
->> +cc
->> linux-pm@vger.kernel.org.
+On Fri, Apr 11, 2014 at 2:00 AM, Tim Kryger <tim.kryger@linaro.org> wrote:
+
+> If a consumer of a GPIO-based IRQ identifies itself as wanting to
+> have the capability to wake up the system through that interrupt,
+> update the flags to keep that interrupt enabled in suspend.
 >
-> And can you please resend the patch?  So that it shows up in Patchwork,
-> for example?
->
+> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+(...)
+> +#ifdef CONFIG_SUSPEND
+> +static int bcm_kona_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
+> +{
+> +
+> +       struct irq_desc *desc = container_of(d, struct irq_desc, irq_data);
+> +
+> +       if (on)
+> +               desc->action->flags |= IRQF_NO_SUSPEND;
+> +       else
+> +               desc->action->flags &= ~IRQF_NO_SUSPEND;
+> +
+> +       return 0;
+> +}
+> +#else
+> +#define bcm_kona_gpio_irq_set_wake NULL
+> +#endif
 
-Yes i will resend it again.
+Tglx: is this generally speaking the right thing to do for a cascaded
+irqchip? (It looks a bit odd but makes some sense.)
 
->
->> On 22 April 2014 15:33, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
->> > On Tuesday, April 22, 2014 08:27:53 AM Chander Kashyap wrote:
->> >> ping
->> >
->> > Please CC cpuidle patches to linux-pm@vger.kernel.org.
->>
->> +cc to linux-pm@vger.kernel.org.
->> Thanks Rafael
->>
->> >
->> > Thanks!
->> >
->> >> On 10 April 2014 19:57, Tuukka Tikkanen <tuukka.tikkanen@linaro.org> wrote:
->> >> > On 10 April 2014 16:43, Chander Kashyap <chander.kashyap@linaro.org> wrote:
->> >> >> In menu_select function we check for correction factor every time.
->> >> >> If it is zero we are initializing to unity. Hence move it to init function
->> >> >> and initialise by unity, hence avoid repeated comparisons.
->> >> >>
->> >> >> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
->> >> >> ---
->> >> >>  drivers/cpuidle/governors/menu.c |   15 ++++++++-------
->> >> >>  1 file changed, 8 insertions(+), 7 deletions(-)
->> >> >>
->> >> >> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
->> >> >> index cf7f2f0..048f6d9 100644
->> >> >> --- a/drivers/cpuidle/governors/menu.c
->> >> >> +++ b/drivers/cpuidle/governors/menu.c
->> >> >> @@ -315,13 +315,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
->> >> >>         multiplier = performance_multiplier();
->> >> >>
->> >> >>         /*
->> >> >> -        * if the correction factor is 0 (eg first time init or cpu hotplug
->> >> >> -        * etc), we actually want to start out with a unity factor.
->> >> >> -        */
->> >> >> -       if (data->correction_factor[data->bucket] == 0)
->> >> >> -               data->correction_factor[data->bucket] = RESOLUTION * DECAY;
->> >> >> -
->> >> >> -       /*
->> >> >>          * Force the result of multiplication to be 64 bits even if both
->> >> >>          * operands are 32 bits.
->> >> >>          * Make sure to round up for half microseconds.
->> >> >> @@ -453,9 +446,17 @@ static int menu_enable_device(struct cpuidle_driver *drv,
->> >> >>                                 struct cpuidle_device *dev)
->> >> >>  {
->> >> >>         struct menu_device *data = &per_cpu(menu_devices, dev->cpu);
->> >> >> +       int i;
->> >> >>
->> >> >>         memset(data, 0, sizeof(struct menu_device));
->> >> >>
->> >> >> +       /*
->> >> >> +        * if the correction factor is 0 (eg first time init or cpu hotplug
->> >> >> +        * etc), we actually want to start out with a unity factor.
->> >> >> +        */
->> >> >> +       for(i = 0; i < BUCKETS; i++)
->> >> >> +               data->correction_factor[i] = RESOLUTION * DECAY;
->> >> >> +
->> >> >>         return 0;
->> >> >>  }
->> >> >>
->> >> >> --
->> >> >> 1.7.9.5
->> >> >>
->> >> >
->> >> > Reviewed-by: Tuukka Tikkanen <tuukka.tikkanen@linaro.org>
->> >>
->> >>
->> >>
->> >>
->> >
->> > --
->> > I speak only for myself.
->> > Rafael J. Wysocki, Intel Open Source Technology Center.
->>
->>
->>
->>
->
-> --
-> I speak only for myself.
-> Rafael J. Wysocki, Intel Open Source Technology Center.
+>  static void bcm_kona_gpio_irq_mask(struct irq_data *d)
+>  {
+>         struct bcm_kona_gpio *kona_gpio;
+> @@ -494,6 +512,7 @@ static struct irq_chip bcm_gpio_irq_chip = {
+>         .irq_set_type = bcm_kona_gpio_irq_set_type,
+>         .irq_request_resources = bcm_kona_gpio_irq_reqres,
+>         .irq_release_resources = bcm_kona_gpio_irq_relres,
+> +       .irq_set_wake = bcm_kona_gpio_irq_set_wake,
+>  };
 
+So I have introduced the generic GPIO irqchip helpers in order to avoid
+fixing exactly this type of bug in 200 different places.
 
+Can you take this action:
 
--- 
-with warm regards,
-Chander Kashyap
+(A) Convert the BCM kona driver to use the genric GPIO irqchip
+helpers e.g. in the manner of this patch:
+http://marc.info/?l=linux-gpio&m=139696011031186&w=2
+
+(B) Make exactly this bug fix in the gpiolib irqchip helpers,
+by partching drivers/gpio/gpiolib.c instead?
+
+That way we solve the problem for *several* chips in one go.
+
+Yours,
+Linus Walleij
