@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755570AbaDVKXO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 06:23:14 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:52809 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257AbaDVKXM (ORCPT
+	id S1755303AbaDVK0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 06:26:43 -0400
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:60069 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280AbaDVK0l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 06:23:12 -0400
-Date: Tue, 22 Apr 2014 11:22:59 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
-        pmladek@suse.cz, Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
- offloading
-Message-ID: <20140422112259.5f106a44@alan.etchedpixels.co.uk>
-In-Reply-To: <20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
-References: <1395770101-24534-1-git-send-email-jack@suse.cz>
-	<1395770101-24534-9-git-send-email-jack@suse.cz>
-	<20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
-	<20140326192815.GC18118@quack.suse.cz>
-	<20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 22 Apr 2014 06:26:41 -0400
+Message-ID: <535643FA.1080908@linaro.org>
+Date: Tue, 22 Apr 2014 12:27:06 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Xiubo Li <Li.Xiubo@freescale.com>, tglx@linutronix.de
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] clocksource: fix clocksource_mmio_readX_down
+References: <1397726874-6349-1-git-send-email-Li.Xiubo@freescale.com>
+In-Reply-To: <1397726874-6349-1-git-send-email-Li.Xiubo@freescale.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 18 Apr 2014 11:54:38 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+On 04/17/2014 11:27 AM, Xiubo Li wrote:
+> For some clocksource devices, for example, the registers are 32-bit, while
+> the lower 16-bit is used for timer counting(And reading the upper 16-bit
+> will return 0).
+>
+> For example, when the counter value is 0x00001111, and then the
+> ~readl_relaxed(to_mmio_clksrc(c)->reg) will return the value of 0xFFFFEEEE,
+> but it should be 0x0000EEEE.
+>
+> So just using the c->mask to mask the unused bits.
+>
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>   drivers/clocksource/mmio.c | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
+> index c0e2512..f17a0d1 100644
+> --- a/drivers/clocksource/mmio.c
+> +++ b/drivers/clocksource/mmio.c
+> @@ -27,7 +27,7 @@ cycle_t clocksource_mmio_readl_up(struct clocksource *c)
+>
+>   cycle_t clocksource_mmio_readl_down(struct clocksource *c)
+>   {
+> -	return ~readl_relaxed(to_mmio_clksrc(c)->reg);
+> +	return ~readl_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
+>   }
+>
+>   cycle_t clocksource_mmio_readw_up(struct clocksource *c)
+> @@ -37,7 +37,7 @@ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
+>
+>   cycle_t clocksource_mmio_readw_down(struct clocksource *c)
+>   {
+> -	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg);
+> +	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
+>   }
+>
+>   /**
 
-> On Wed, 26 Mar 2014 20:28:15 +0100 Jan Kara <jack@suse.cz> wrote:
-> 
-> > > All the afflicted consoles are serial, all go via the uart layer as far
-> > > as I can see.
-> > > 
-> > > The uart layer has a queue mechanism that could be used
-> >   I'm sorry, I don't follow here - what can the uart queueing be used for?
-> 
-> Alan, I'm desperate to avoid adding all this complexity to core printk
-> code to solve such a rare problem.  It'd be great if you could flesh out
-> any alternative ideas please.
 
-It's not worth adding for upstream anyway - not in that form. If it just
-used schedule_work it would be way way cleaner anyway.
+Hi,
 
-For the general buffering case we already have tty_write_message(). It's
-only really intended for use by the old quota code so it's currently
-assuming nul terminated string but thats a trivial detail.
+I realize there is some type confusion here:
 
-For that matter I don't see why such systems can't implement a queuecon
-console which is a queue on the printk side and a fifo on the userspace
-side.
+cycle_t -> u64
+readl_relaxed -> u32
+readw_relaxed -> u16
 
-The implementation then becomes trivial.
+and clocksource_mmio_readw_down returns a cast to unsigned (u32)
 
-If you want reliable crash logging then we need to be able to set a
-printk level mask per console and just set the serial console for
-"crit/err" and the queue console for the rest, with a 'cat
->/dev/ttywhatever' running if this feature was in use ?
+This patch makes sense but it obfuscate more the types in these 
+functions. Worth to clarify the functions first ?
 
-Alan
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
