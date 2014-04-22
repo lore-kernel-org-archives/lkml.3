@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756298AbaDVO1z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:27:55 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:53256 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428AbaDVO1t (ORCPT
+	id S932523AbaDVO2N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:28:13 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:57131 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756525AbaDVO2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:27:49 -0400
-Date: Tue, 22 Apr 2014 15:27:23 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Mark Brown <broonie@kernel.org>
-Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Chew Chiau Ee <chiau.ee.chew@intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>, linux-spi@vger.kernel.org,
+	Tue, 22 Apr 2014 10:28:04 -0400
+Message-ID: <53567C70.2080008@lwfinger.net>
+Date: Tue, 22 Apr 2014 09:28:00 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        navin patidar <navin.patidar@gmail.com>
+CC: devel@driverdev.osuosl.org, Greg KH <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] spi/pxa2xx-pci: Pass host clock rate info from PCI
- glue layer
-Message-ID: <20140422152723.7542a3bc@alan.etchedpixels.co.uk>
-In-Reply-To: <20140422120948.GT12304@sirena.org.uk>
-References: <1397751967-20250-1-git-send-email-chiau.ee.chew@intel.com>
-	<1397751967-20250-3-git-send-email-chiau.ee.chew@intel.com>
-	<20140418163054.GH12304@sirena.org.uk>
-	<20140422115716.GP30677@intel.com>
-	<20140422120948.GT12304@sirena.org.uk>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Subject: Re: [PATCH 03/10] staging: rtl8188eu: Remove _ReadLEDSetting() function.
+References: <1397983638-10752-1-git-send-email-navin.patidar@gmail.com> <1397983638-10752-3-git-send-email-navin.patidar@gmail.com> <20140422101101.GG26890@mwanda> <CAPV97yd4THZOcV8CGJJ+d5otsP9pvOO5A9SgjFXLLf+sSkoN=w@mail.gmail.com> <20140422141417.GM26890@mwanda>
+In-Reply-To: <20140422141417.GM26890@mwanda>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Why is this conditional?  It's really unhelpful for writing generic code
-> handling clocks that the API isn't available as standard.  Allowing the
-> user to disable it if it's not required makes sense but not making it
-> available at all is just unhelpful.
+On 04/22/2014 09:14 AM, Dan Carpenter wrote:
+> On Tue, Apr 22, 2014 at 07:31:50PM +0530, navin patidar wrote:
+>> Hi dan
+>>
+>> it's just a cleanup patch and i also tested all patches of this patch
+>> series on the hardware (TP-LINK  TL-WN723N).
+>> my mistake i should have added "Tested-by" tag for all patches.
+>>
+>> Tested-by: navin patidar <navin.patidar@gmail.com>
+>
+> No no.  It's not necesary to add a tested by to everything.  It was just
+> something I was curious about.  The patches looked ok.  If you hadn't
+> tested them I would review them a second time more carefully.
 
-KConfig allows drivers to select features they need - this seems to be a
-non issue ?
+To me, the opposite case is true. If you have not tested, then you need to 
+explicitly state "compile tested only" in the commit message. Without saying 
+that, your signed-off-by is implying that you have tested, as well as declaring 
+that you own the copyright to the material.
 
-> As far as I can tell the clock here is part of the same glue that allows
-> the generic pxa2xx support to be instantiated from PCI.  I would
-> therefore expect the glue to also instantiate the clock.  Or if it's a
-> standard PCI clock then perhaps the PCI subsystem ought to be providing
-> it.
-
-For most cases it probably makes sense to do something of that form,
-although as clk_enable/clk_disable allow NULL it's much less of an issue
-than it might otherwise be for some of the other drivers.
-
-Alan
+Larry
 
