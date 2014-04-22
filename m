@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754053AbaDVIYm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:24:42 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:49967 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384AbaDVIYe (ORCPT
+	id S1754192AbaDVI1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:27:41 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:46216 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752476AbaDVI1d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:24:34 -0400
+	Tue, 22 Apr 2014 04:27:33 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] ARM: dts: berlin: add the SDHCI nodes for the BG2Q
+Date: Tue, 22 Apr 2014 10:27:27 +0200
+Message-Id: <1398155248-1659-2-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398155248-1659-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1398155248-1659-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20140421204835.GB22181@amd.pavel.ucw.cz>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<1397824031-4892-13-git-send-email-lftan@altera.com>
-	<20140419160947.GA27776@amd.pavel.ucw.cz>
-	<CAFiDJ5-e=vRLxyKuzSQO0vg4HBHessv3xE9SdCQ9zFOqYOreZg@mail.gmail.com>
-	<CAFLxGvxXfJNKK=n5tSkjt=zjBT-Auo2mCMf7PQr5skOVxYeW+w@mail.gmail.com>
-	<20140421204835.GB22181@amd.pavel.ucw.cz>
-Date: Tue, 22 Apr 2014 16:24:33 +0800
-X-Google-Sender-Auth: 7BrZIvRXsuiRABeCOUJFcpPOWA8
-Message-ID: <CAFiDJ5-jLsQ_Xej3K6DABwmRnu0YTqig=P+ByfFzNmWQhy3NYw@mail.gmail.com>
-Subject: Re: [PATCH 16/28] nios2: System calls handling
-From: Ley Foon Tan <lftan@altera.com>
-To: Pavel Machek <pavel@denx.de>
-Cc: Richard Weinberger <richard.weinberger@gmail.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com,
-        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 4:48 AM, Pavel Machek <pavel@denx.de> wrote:
->> >>> +/* sys_cacheflush -- flush the processor cache. */
->> >>> +asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len,
->> >>> +                             unsigned int op)
->> >>> +{
->> >>> +     struct vm_area_struct *vma;
->> >>> +
->> >>> +     if (len == 0)
->> >>> +             return 0;
->> >>
->> >> op is being ignored? You should remove it... or if (op) return -EINVAL
->> >> if you want future extensions.
->> > Yes, op argument is being ignored. Okay, will add the return -EINVAL
->> > if op is non-zero.
->>
->> Be careful. If existing applications already use this and maybe pass a
->> dummy value
->> to it you break them.
->
-> Well.. of course, but passing ignored integer to syscall, that can be
-> never used is beyond ugly. NAK-level ugly.
->
-> If it is so, you can never ever use the argument, and might as well
-> remove it (depending on your calling convention, it should not break
-> anything.)
->
-I'm prefer to keep the calling convention here for future use and add
-the op checking here.
-This prevent us to update toolchain if we plan to add in op option later.
+Add the SDHCI nodes for the Marvell Berlin BG2Q, using the mrvl,pxav3-mmc
+driver.
 
-Regards
-Ley Foon
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+---
+ arch/arm/boot/dts/berlin2q.dtsi | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 5925e6a16749..85d0ca5cc47a 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -67,6 +67,14 @@
+ 		clock-div = <3>;
+ 	};
+ 
++	sdio1clk: sdio1clk {
++		compatible = "fixed-factor-clock";
++		#clock-cells = <0>;
++		clocks = <&syspll>;
++		clock-mult = <1>;
++		clock-div = <4>;
++	};
++
+ 	soc {
+ 		compatible = "simple-bus";
+ 		#address-cells = <1>;
+@@ -75,6 +83,30 @@
+ 		ranges = <0 0xf7000000 0x1000000>;
+ 		interrupt-parent = <&gic>;
+ 
++		sdhci0: sdhci@ab0000 {
++			compatible = "mrvl,pxav3-mmc";
++			reg = <0xab0000 0x200>;
++			clocks = <&sdio1clk>;
++			interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
++			status = "disabled";
++		};
++
++		sdhci1: sdhci@ab0800 {
++			compatible = "mrvl,pxav3-mmc";
++			reg = <0xab0800 0x200>;
++			clocks = <&sdio1clk>;
++			interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
++			status = "disabled";
++		};
++
++		sdhci2: sdhci@ab1000 {
++			compatible = "mrvl,pxav3-mmc";
++			reg = <0xab1000 0x200>;
++			interrupts = <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&sdio1clk>;
++			status = "disabled";
++		};
++
+ 		l2: l2-cache-controller@ac0000 {
+ 			compatible = "arm,pl310-cache";
+ 			reg = <0xac0000 0x1000>;
+-- 
+1.8.3.2
+
