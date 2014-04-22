@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758330AbaDVUhN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:37:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36689 "EHLO
+	id S1758411AbaDVUif (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:38:35 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36661 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757543AbaDVUY5 (ORCPT
+	with ESMTP id S1758198AbaDVUYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:57 -0400
+	Tue, 22 Apr 2014 16:24:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 085/133] mfd: max77693: Fix possible NULL pointer dereference on i2c_new_dummy error
-Date: Tue, 22 Apr 2014 13:13:43 -0700
-Message-Id: <1398197671-12786-86-git-send-email-kamal@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Richard Guy Briggs <rgb@redhat.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 089/133] audit: convert PPIDs to the inital PID namespace.
+Date: Tue, 22 Apr 2014 13:13:47 -0700
+Message-Id: <1398197671-12786-90-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,62 +28,53 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit ad09dd6a1f5d6244bd89314015af506ba7f9810a upstream.
+commit c92cdeb45eea38515e82187f48c2e4f435fb4e25 upstream.
 
-During probe the driver allocates dummy I2C devices for MUIC and haptic
-with i2c_new_dummy() but it does not check the return value of this
-calls.
+sys_getppid() returns the parent pid of the current process in its own pid
+namespace.  Since audit filters are based in the init pid namespace, a process
+could avoid a filter or trigger an unintended one by being in an alternate pid
+namespace or log meaningless information.
 
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by devm_regmap_init_i2c() and i2c_unregister_device().
+Switch to task_ppid_nr() for PPIDs to anchor all audit filters in the
+init_pid_ns.
 
-If i2c_new_dummy() fails for MUIC or haptic devices, fail also the probe
-for main MFD driver.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+(informed by ebiederman's 6c621b7e)
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+[ kamal: backport to 3.8 (context) ]
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/max77693.c | 12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+ kernel/auditsc.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-index 9e60fed..299970f 100644
---- a/drivers/mfd/max77693.c
-+++ b/drivers/mfd/max77693.c
-@@ -149,9 +149,18 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
- 		dev_info(max77693->dev, "device ID: 0x%x\n", reg_data);
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index a371f85..ba198b1 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -615,7 +615,7 @@ static int audit_filter_rules(struct task_struct *tsk,
+ 		case AUDIT_PPID:
+ 			if (ctx) {
+ 				if (!ctx->ppid)
+-					ctx->ppid = sys_getppid();
++					ctx->ppid = task_ppid_nr(tsk);
+ 				result = audit_comparator(ctx->ppid, f->op, f->val);
+ 			}
+ 			break;
+@@ -1150,10 +1150,10 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
  
- 	max77693->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
-+	if (!max77693->muic) {
-+		dev_err(max77693->dev, "Failed to allocate I2C device for MUIC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(max77693->muic, max77693);
  
- 	max77693->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
-+	if (!max77693->haptic) {
-+		dev_err(max77693->dev, "Failed to allocate I2C device for Haptic\n");
-+		ret = -ENODEV;
-+		goto err_i2c_haptic;
-+	}
- 	i2c_set_clientdata(max77693->haptic, max77693);
- 
- 	/*
-@@ -187,8 +196,9 @@ err_mfd:
- 	max77693_irq_exit(max77693);
- err_irq:
- err_regmap_muic:
--	i2c_unregister_device(max77693->muic);
- 	i2c_unregister_device(max77693->haptic);
-+err_i2c_haptic:
-+	i2c_unregister_device(max77693->muic);
- 	return ret;
- }
- 
+ 	audit_log_format(ab,
+-			 " ppid=%ld pid=%d auid=%u uid=%u gid=%u"
++			 " ppid=%d pid=%d auid=%u uid=%u gid=%u"
+ 			 " euid=%u suid=%u fsuid=%u"
+ 			 " egid=%u sgid=%u fsgid=%u ses=%u tty=%s",
+-			 sys_getppid(),
++			 task_ppid_nr(tsk),
+ 			 tsk->pid,
+ 			 from_kuid(&init_user_ns, tsk->loginuid),
+ 			 from_kuid(&init_user_ns, cred->uid),
 -- 
 1.9.1
 
