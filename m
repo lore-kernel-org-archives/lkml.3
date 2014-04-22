@@ -1,147 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198AbaDVNlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:41:15 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:21070 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756124AbaDVNlG (ORCPT
+	id S1756216AbaDVNlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:41:31 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:35050 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbaDVNlZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:41:06 -0400
-Date: Tue, 22 Apr 2014 09:41:03 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: ftrace/kprobes: Warning when insmod two modules
-Message-ID: <20140422094103.39488700@gandalf.local.home>
-In-Reply-To: <87bnvunhs9.fsf@rustcorp.com.au>
-References: <1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com>
-	<5330164D.6030507@hitachi.com>
-	<20140324105939.7f823b81@gandalf.local.home>
-	<87bnvunhs9.fsf@rustcorp.com.au>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 22 Apr 2014 09:41:25 -0400
+Message-ID: <53567177.6050705@monstr.eu>
+Date: Tue, 22 Apr 2014 15:41:11 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+To: Rob Herring <robherring2@gmail.com>
+CC: Srikanth Thokala <sthokal@xilinx.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, levex@linux.com,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        dmaengine@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v3 2/3] dma: Add Xilinx Video DMA DT Binding Documentation
+References: <1392465619-27614-1-git-send-email-sthokal@xilinx.com> <1392465619-27614-3-git-send-email-sthokal@xilinx.com> <CAL_Jsq+FZt5yLwePEwiAHoACM1S2rE3Yi0302LwRHWdn-pcnFQ@mail.gmail.com>
+In-Reply-To: <CAL_Jsq+FZt5yLwePEwiAHoACM1S2rE3Yi0302LwRHWdn-pcnFQ@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="K97d8D8o9W91FtFX8WhW4uGXtjwPR7eFT"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 13:21:18 +0930
-Rusty Russell <rusty@rustcorp.com.au> wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--K97d8D8o9W91FtFX8WhW4uGXtjwPR7eFT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+On 04/22/2014 03:34 PM, Rob Herring wrote:
+> On Sat, Feb 15, 2014 at 6:00 AM, Srikanth Thokala <sthokal@xilinx.com> =
+wrote:
+>> Device-tree binding documentation of Xilinx Video DMA Engine
+>>
+>> Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
+>=20
+> A few typos below, but otherwise:
+>=20
+> Acked-by: Rob Herring <robh@kernel.org>
+
+Thanks Rob,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
 
-> Sorry, was on paternity leave.
 
-Congratulations! Although having two teenage daughters myself, I'm more
-inclined to say "my condolences".
+--K97d8D8o9W91FtFX8WhW4uGXtjwPR7eFT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-> 
-> I'm always nervous about adding more states, since every place which
-> examines the state has to be audited.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
 
-I didn't really add a state but instead broke an existing state into
-two. More importantly, this second part of the state doesn't get
-exported to other parts of the kernel. That is, there is no notifier
-for it.
+iEYEARECAAYFAlNWcXcACgkQykllyylKDCFEiACgjAQiCGpZaSxP59P1tGnm5Kte
+O2UAnitlsFrY/hm2Jq60p3J1V2V0UCZY
+=KZae
+-----END PGP SIGNATURE-----
 
-This means the only place you need to audit is in module.c itself. Any
-other change requires auditing all module notifiers.
-
-
-> 
-> We set the mod->state to MOD_STATE_COMING in complete_formation;
-> why don't we set NX there instead?  It also makes more sense to
-> set NX before we hit parse_args() which can execute code in the module.
-
-Well, NX is a different issue here all together. Sure if you want to,
-but that wont affect this.
-
-> 
-> In fact, we should probably call the notifier there too, so people
-> can breakpoint/tracepoint/etc parameter calls.
-> 
-> Of course, this means that we set NX before the notifier; does anything
-> break?
-> 
-> Subject: module: set nx before marking module MODULE_STATE_COMING.
-> 
-> This prevents a WARN_ON() where ftrace calls set_all_modules_text_ro()
-> which races with the module setting its own set_section_ro_nx().
-> 
-> It also means we're NX protected before we call parse_args(), which
-> can execute module code.
-> 
-> This means that the notifiers will be called on a module which
-> is already NX, so that may cause problems.
-> 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 11869408f79b..83a437e5d429 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -3023,21 +3023,6 @@ static int do_init_module(struct module *mod)
->  	 */
->  	current->flags &= ~PF_USED_ASYNC;
->  
-> -	blocking_notifier_call_chain(&module_notify_list,
-> -			MODULE_STATE_COMING, mod);
-> -
-> -	/* Set RO and NX regions for core */
-> -	set_section_ro_nx(mod->module_core,
-> -				mod->core_text_size,
-> -				mod->core_ro_size,
-> -				mod->core_size);
-> -
-> -	/* Set RO and NX regions for init */
-> -	set_section_ro_nx(mod->module_init,
-> -				mod->init_text_size,
-> -				mod->init_ro_size,
-> -				mod->init_size);
-> -
->  	do_mod_ctors(mod);
->  	/* Start the module */
->  	if (mod->init != NULL)
-> @@ -3168,9 +3153,26 @@ static int complete_formation(struct module *mod, struct load_info *info)
->  	/* This relies on module_mutex for list integrity. */
->  	module_bug_finalize(info->hdr, info->sechdrs, mod);
->  
-> +	/* Set RO and NX regions for core */
-> +	set_section_ro_nx(mod->module_core,
-> +				mod->core_text_size,
-> +				mod->core_ro_size,
-> +				mod->core_size);
-> +
-> +	/* Set RO and NX regions for init */
-> +	set_section_ro_nx(mod->module_init,
-> +				mod->init_text_size,
-> +				mod->init_ro_size,
-> +				mod->init_size);
-> +
->  	/* Mark state as coming so strong_try_module_get() ignores us,
->  	 * but kallsyms etc. can see us. */
->  	mod->state = MODULE_STATE_COMING;
-> +	mutex_unlock(&module_mutex);
-> +
-> +	blocking_notifier_call_chain(&module_notify_list,
-> +				     MODULE_STATE_COMING, mod);
-
-Here we break ftrace. ftrace expects that it can still replaces the
-calls to mcount with nops here. If the text is RO, then it will crash.
-
--- Steve
-
-
-> +	return 0;
->  
->  out:
->  	mutex_unlock(&module_mutex);
-
+--K97d8D8o9W91FtFX8WhW4uGXtjwPR7eFT--
