@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970AbaDVSQz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 14:16:55 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.231]:62035 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752003AbaDVSQx (ORCPT
+	id S1755114AbaDVSRd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 14:17:33 -0400
+Received: from mail-la0-f41.google.com ([209.85.215.41]:65521 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaDVSRb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 14:16:53 -0400
-Date: Tue, 22 Apr 2014 14:16:50 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Stanislav Meduna <stano@meduna.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
-Message-ID: <20140422141650.7f43d5ba@gandalf.local.home>
-In-Reply-To: <20140422134802.73fc1fa4@gandalf.local.home>
-References: <534C3606.7010206@meduna.org>
-	<534C731F.1050406@meduna.org>
-	<534DADF1.6060608@meduna.org>
-	<20140422115439.GA20669@linutronix.de>
-	<20140422094657.5b6ca1e2@gandalf.local.home>
-	<53569E05.8010600@linutronix.de>
-	<20140422134802.73fc1fa4@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Tue, 22 Apr 2014 14:17:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+In-Reply-To: <5356AF9F.4010301@zytor.com>
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
+	<ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com>
+	<CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
+	<20140422112312.GB15882@pd.tnic>
+	<20140422144659.GF15882@pd.tnic>
+	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
+	<53569467.1030809@zytor.com>
+	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
+	<CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
+	<CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>
+	<CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>
+	<CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com>
+	<CA+55aFwuKTQGHzi-cFkHrkLgkS-kFptajFt4=ginxOgwDcJLrA@mail.gmail.com>
+	<5356A70A.5090907@zytor.com>
+	<CAObL_7GJypym8JhUmdszDTKJVuLW9wSjbbZK4AZ3Jk304GK6tQ@mail.gmail.com>
+	<CAMzpN2hpX=XHFrTKxV1hsngNX4Pmuh9FxjAqeSeQHhEBKza1DA@mail.gmail.com>
+	<5356AF9F.4010301@zytor.com>
+Date: Tue, 22 Apr 2014 14:17:29 -0400
+Message-ID: <CAMzpN2gkCPZoAKCgXa8tNZYFCuiPd6GWg9yhTBSSA=F43WLv1A@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+From: Brian Gerst <brgerst@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Andrew Lutomirski <amluto@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 13:48:02 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+On Tue, Apr 22, 2014 at 2:06 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/22/2014 11:03 AM, Brian Gerst wrote:
+>>
+>> Maybe make the #GP handler check what the previous stack was at the start:
+>> 1) If we came from userspace, switch to the top of the process stack.
+>> 2) If the previous stack was not the espfix stack, switch back to that stack.
+>> 3) Switch to the top of the process stack (espfix case)
+>>
+>> This leaves the IST available for any recursive faults.
+>>
+>
+> Do you actually know what the IST is?  If so, you should realize the
+> above is nonsense.
+>
+> The *hardware* switches stack on an exception; if the vector is set up
+> as an IST, then we *always* switch to the IST stack, unconditionally.
+> If the vector is not, then we switch to the process stack if we came
+> from userspace.
+>
+> That is the entry condition that we have to deal with.  The fact that
+> the switch to the IST is unconditional is what makes ISTs hard to deal with.
 
-> I need to take a deeper look into the actual code. But as trylocks on
-> UP are nops (always succeed), and if it expects to be able to do
-> something in a critical section that is protected by spinlocks (again
-> nops on UP), this would be broken for UP.
-
-Reading the code, I see it's broken. We should add something like this:
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
-diff --git a/kernel/timer.c b/kernel/timer.c
-index cc34e42..a03164a 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1447,6 +1447,12 @@ static void run_timer_softirq(struct softirq_action *h)
- 		__run_timers(base);
- }
- 
-+#ifdef CONFIG_SMP
-+#define timer_should_raise_softirq(lock)	!spin_do_trylock(lock)
-+#else
-+#define timer_should_raise_softirq(lock)	1
-+#endif
-+
- /*
-  * Called by the local, per-CPU timer interrupt on SMP.
-  */
-@@ -1467,7 +1473,7 @@ void run_local_timers(void)
- 		return;
- 	}
- 
--	if (!spin_do_trylock(&base->lock)) {
-+	if (timer_should_raise_softirq(&base->lock)) {
- 		raise_softirq(TIMER_SOFTIRQ);
- 		return;
- 	}
+Right, that is why you switch away from the IST as soon as possible,
+copying the data that is already pushed there to another stack so it
+won't be overwritten by a recursive fault.
