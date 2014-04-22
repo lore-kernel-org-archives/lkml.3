@@ -1,48 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919AbaDVHKG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 03:10:06 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52035 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752133AbaDVHJ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 03:09:58 -0400
-Date: Tue, 22 Apr 2014 09:09:55 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Sebastian Capella <sebastian.capella@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        linaro-kernel@lists.linaro.org, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Russell King <linux@arm.linux.org.uk>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v2] PM / Hibernate: no kernel_power_off when
- pm_power_off NULL
-Message-ID: <20140422070955.GA14108@amd.pavel.ucw.cz>
-References: <1398126646-29518-1-git-send-email-sebastian.capella@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398126646-29518-1-git-send-email-sebastian.capella@linaro.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754994AbaDVHK5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 03:10:57 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46027 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753843AbaDVHGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 03:06:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,902,1389772800"; 
+   d="scan'208";a="517082033"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
+        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Vinod Koul <vinod.koul@intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
+        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
+        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: [Patch Part3 V1 15/22] iommu/vt-d: enhance error recovery in function intel_enable_irq_remapping()
+Date: Tue, 22 Apr 2014 15:07:26 +0800
+Message-Id: <1398150453-28141-16-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1398150453-28141-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1398150453-28141-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2014-04-21 17:30:46, Sebastian Capella wrote:
-> Reboot logic in kernel/reboot will avoid calling kernel_power_off
-> when pm_power_off is null, and instead uses kernel_halt.  Change
-> hibernate's power_down to follow the behavior in the reboot call.
-> 
-> Calling the notifier twice (once for SYS_POWER_OFF and again for
-> SYS_HALT) causes a panic during hibernation on Kirkwood
-> Openblocks A6 board.
-> 
-> Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
-> Reported-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-> Cc: Len Brown <len.brown@intel.com>
+Enhance error recovery in function intel_enable_irq_remapping()
+by tearing down all created data structures.
 
-Reviewed-by: Pavel Machek <pavel@ucw.cz>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+---
+ drivers/iommu/intel_irq_remapping.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/iommu/intel_irq_remapping.c b/drivers/iommu/intel_irq_remapping.c
+index 9f1c86566452..f65b68d3de10 100644
+--- a/drivers/iommu/intel_irq_remapping.c
++++ b/drivers/iommu/intel_irq_remapping.c
+@@ -673,9 +673,11 @@ static int __init intel_enable_irq_remapping(void)
+ 	return eim ? IRQ_REMAP_X2APIC_MODE : IRQ_REMAP_XAPIC_MODE;
+ 
+ error:
+-	/*
+-	 * handle error condition gracefully here!
+-	 */
++	for_each_iommu(iommu, drhd)
++		if (ecap_ir_support(iommu->ecap)) {
++			iommu_disable_irq_remapping(iommu);
++			intel_teardown_irq_remapping(iommu);
++		}
+ 
+ 	if (x2apic_present)
+ 		pr_warn("Failed to enable irq remapping.  You are vulnerable to irq-injection attacks.\n");
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.7.10.4
+
