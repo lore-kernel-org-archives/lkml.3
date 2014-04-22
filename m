@@ -1,91 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754196AbaDVC3t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 22:29:49 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:44895 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280AbaDVC3q (ORCPT
+	id S1754295AbaDVCbj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 22:31:39 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:6035 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751287AbaDVCbg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 22:29:46 -0400
-Message-ID: <1398133777.2805.7.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [RFC PATCH v5 1/2] Use lock_device_hotplug() in
- cpu_probe_store() and cpu_release_store()
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
-        rafael.j.wysocki@intel.com, toshi.kani@hp.com
-Date: Tue, 22 Apr 2014 10:29:37 +0800
-In-Reply-To: <20140421223804.GD22730@htj.dyndns.org>
-References: <20140411102649.GB26252@mtj.dyndns.org>
-	 <1397461649.12943.1.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140414201315.GD16835@htj.dyndns.org>
-	 <1397529877.13188.68.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140415145017.GK1863@htj.dyndns.org>
-	 <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140416151749.GE1257@htj.dyndns.org>
-	 <1397717444.4034.15.camel@ThinkPad-T5421>
-	 <20140417151728.GK15326@htj.dyndns.org>
-	 <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140421223804.GD22730@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
+	Mon, 21 Apr 2014 22:31:36 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Mon, 21 Apr 2014 19:23:19 -0700
+Message-ID: <5355D485.6030301@nvidia.com>
+Date: Tue, 22 Apr 2014 11:31:33 +0900
+From: Alexandre Courbot <acourbot@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Ilia Mirkin <imirkin@alum.mit.edu>
+CC: Ben Skeggs <bskeggs@redhat.com>,
+        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: Re: [Nouveau] [PATCH v2 09/10] drm/nouveau: support GK20A in nouveau_accel_init()
+References: <1398060142-7937-1-git-send-email-acourbot@nvidia.com>	<1398060142-7937-10-git-send-email-acourbot@nvidia.com> <CAKb7Uvg4kOfsE0gd4zLcwjShc4eVgVKA7zQM2r1aeatOybm8NQ@mail.gmail.com>
+In-Reply-To: <CAKb7Uvg4kOfsE0gd4zLcwjShc4eVgVKA7zQM2r1aeatOybm8NQ@mail.gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"; format=flowed
 Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042202-1948-0000-0000-000008894091
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-21 at 18:38 -0400, Tejun Heo wrote:
-> Hello,
-> 
-> On Mon, Apr 21, 2014 at 05:20:59PM +0800, Li Zhong wrote:
-> > While auditing the usage of lock_device_hotplug_sysfs() for implementing
-> > it in another way in following patch, it seems to me that the code here
-> > is to add/remove device, and the files probe/release for cpu bus
-> > themselves won't be removed. 
-> > 
-> > So it seems to me there is no s_active related deadlock here, and we
-> > could just use lock_device_hotplug().
-> 
-> It may still cause issue if offlining ends up removing sysfs files or
-> gets involved with the same lock used during cpu hot[un]plug
-> operations (e.g. offlining racing against cpu hotunplug) and offlining
-> a cpu does remove files.  Has this change been tested?
+On 04/22/2014 03:07 AM, Ilia Mirkin wrote:
+> On Mon, Apr 21, 2014 at 2:02 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
+>> Skip the creation of a software channel for GK20A as software methods
+>> are not yet supported.
+>
+> How is GK20A different from a nvc0+ card that lacks PDISPLAY (like all
+> the 3D Controller ones, and I guess even some that come up as VGA
+> controller in PCI but don't have any outputs in their VBIOS)? i.e.
+> what's wrong with just doing the same thing that GK1xx does? Note that
+> there are sw methods that don't deal with display as well.
 
-The probe/release files are attribute files for cpu subsys, looks like
-following in sysfs dirs
+Well, as it turns out... I have tried reverting this patch and enabling 
+nvc0_software_oclass for GK20A and things worked like a charm. 0_o
 
-$ cd /sys/devices/system/cpu/
-$ ls -l
-total 0
-drwxr-xr-x. 7 root root     0 Apr 17 19:00 cpu0
-drwxr-xr-x. 4 root root     0 Apr 17 19:00 cpu1
-drwxr-xr-x. 4 root root     0 Apr 17 19:00 cpu10
-......
-drwxr-xr-x. 3 root root     0 Apr 20 08:00 cpufreq
-drwxr-xr-x. 2 root root     0 Apr 20 08:00 cpuidle
--rw-------. 1 root root 65536 Apr 21 00:28 dscr_default
--r--r--r--. 1 root root 65536 Apr 21 00:28 kernel_max
--r--r--r--. 1 root root 65536 Apr 21 00:28 offline
--r--r--r--. 1 root root 65536 Sep  4  2014 online
--r--r--r--. 1 root root 65536 Apr 21 00:28 possible
-drwxr-xr-x. 2 root root     0 Apr 20 08:00 power
--r--r--r--. 1 root root 65536 Apr 17 20:46 present
---w-------. 1 root root 65536 Apr 21 00:28 probe        <-----	
---w-------. 1 root root 65536 Apr 21 00:28 release      <-----
--rw-------. 1 root root 65536 Apr 21 00:28 subcores_per_core
--rw-r--r--. 1 root root 65536 Apr 21 00:28 uevent
+This is definitely different from when I first drafted this patch 
+series, where a software class could not be used on GK20A due to hard 
+dependencies on display. But it seems like today's code can accommodate 
+much better with that situation.
 
->From the code, it seems cpu subsys won't be unregistered, and it doesn't
-make sense to remove all the cpus in the system. 
+That's great - this will allow us to get rid of this ungraceful patch. 
+Thanks for making me check it again.
 
-Thanks, Zhong
+Probably a v3 will be necessary to enable the software class in patch 10 
+(and fix the byte/word typo in patch 7). I will just wait a bit to see 
+if this v2 gets more comments before sending it.
 
-> 
-> Thanks.
-> 
-
+>
+>    -ilia
+>
+>>
+>> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
+>> ---
+>>   drivers/gpu/drm/nouveau/nouveau_drm.c | 5 +++++
+>>   1 file changed, 5 insertions(+)
+>>
+>> diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
+>> index ddd83756b9a2..5b46148ffd32 100644
+>> --- a/drivers/gpu/drm/nouveau/nouveau_drm.c
+>> +++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
+>> @@ -208,6 +208,10 @@ nouveau_accel_init(struct nouveau_drm *drm)
+>>                  return;
+>>          }
+>>
+>> +       /* Need to figure out how to handle sw for gk20a */
+>> +       if (device->chipset == 0xea)
+>> +               goto skip_sw_init;
+>> +
+>>          ret = nouveau_object_new(nv_object(drm), NVDRM_CHAN, NVDRM_NVSW,
+>>                                   nouveau_abi16_swclass(drm), NULL, 0, &object);
+>>          if (ret == 0) {
+>> @@ -234,6 +238,7 @@ nouveau_accel_init(struct nouveau_drm *drm)
+>>                  return;
+>>          }
+>>
+>> +skip_sw_init:
+>>          if (device->card_type < NV_C0) {
+>>                  ret = nouveau_gpuobj_new(drm->device, NULL, 32, 0, 0,
+>>                                          &drm->notify);
+>> --
+>> 1.9.2
+>>
+>> _______________________________________________
+>> Nouveau mailing list
+>> Nouveau@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/nouveau
 
