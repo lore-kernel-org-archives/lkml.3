@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755074AbaDVIVu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:21:50 -0400
-Received: from mail-we0-f170.google.com ([74.125.82.170]:48763 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752796AbaDVIVq (ORCPT
+	id S1754053AbaDVIYm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:24:42 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:49967 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384AbaDVIYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:21:46 -0400
-Date: Tue, 22 Apr 2014 09:21:39 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Matt Porter <mporter@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/4] mfd: bcm590xx: add support for second i2c slave
- address space
-Message-ID: <20140422082139.GF17657@lee--X1>
-References: <1397501428-8857-1-git-send-email-mporter@linaro.org>
- <1397501428-8857-3-git-send-email-mporter@linaro.org>
- <20140416110603.GA19671@lee--X1>
- <20140416213141.GD12304@sirena.org.uk>
- <20140417065753.GC28725@lee--X1>
- <20140417222616.GK23695@beef>
+	Tue, 22 Apr 2014 04:24:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140417222616.GK23695@beef>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140421204835.GB22181@amd.pavel.ucw.cz>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<1397824031-4892-13-git-send-email-lftan@altera.com>
+	<20140419160947.GA27776@amd.pavel.ucw.cz>
+	<CAFiDJ5-e=vRLxyKuzSQO0vg4HBHessv3xE9SdCQ9zFOqYOreZg@mail.gmail.com>
+	<CAFLxGvxXfJNKK=n5tSkjt=zjBT-Auo2mCMf7PQr5skOVxYeW+w@mail.gmail.com>
+	<20140421204835.GB22181@amd.pavel.ucw.cz>
+Date: Tue, 22 Apr 2014 16:24:33 +0800
+X-Google-Sender-Auth: 7BrZIvRXsuiRABeCOUJFcpPOWA8
+Message-ID: <CAFiDJ5-jLsQ_Xej3K6DABwmRnu0YTqig=P+ByfFzNmWQhy3NYw@mail.gmail.com>
+Subject: Re: [PATCH 16/28] nios2: System calls handling
+From: Ley Foon Tan <lftan@altera.com>
+To: Pavel Machek <pavel@denx.de>
+Cc: Richard Weinberger <richard.weinberger@gmail.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com,
+        Michael Kerrisk-manpages <mtk.manpages@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > > > s/regmap/Regmap
-> > > 
-> > > It's consistently written regmap in all the documentation and so on :)
-> > 
-> > Furry muff; but the comments still stand for the acronyms.
-> > 
-> > > > addmap{0,1} doesn't quite sit right with me.
-> > > 
-> > > > REVISIT: Ah, it's address-map, rather than add map. Okay, not as bad
-> > > > as I first thought, but still, is there a better naming convention you
-> > > > could use?
-> > > 
-> > > addrmap or something?
-> > 
-> > Right, that was what I was thinking. However, I prefer something along
-> > the lines of 'i2c' and 'i2c_sec' or 'client' and 'client_slv' etc.
-> 
-> FWIW, the reason it's addmap{0,1} is that the datasheet has documents
-> ADDMAP=0 and the first bank of registers and ADDMAP=1 as the second bank
-> of registers. I adopted that to match the docs for the part.
-> 
-> I guess we could do i2c and i2c_sec, I'll just have to put a comment
-> correlating it to the h/w. Calling it 'slv' implies something else
-> so we should avoid that here. The notion of a "secondary" i2c device
-> is completely a Linux I2C subsystem fabrication which wouldn't exist
-> if it allowed multiple slave addresses per device. From a h/w
-> perspective there is really no primary and secondary relationship.
-> 
-> I'm fine with i2c/i2c_sec or addrmap0/1 and I will just comment to
-> correlate with the datasheet..pick one.
+On Tue, Apr 22, 2014 at 4:48 AM, Pavel Machek <pavel@denx.de> wrote:
+>> >>> +/* sys_cacheflush -- flush the processor cache. */
+>> >>> +asmlinkage int sys_cacheflush(unsigned long addr, unsigned long len,
+>> >>> +                             unsigned int op)
+>> >>> +{
+>> >>> +     struct vm_area_struct *vma;
+>> >>> +
+>> >>> +     if (len == 0)
+>> >>> +             return 0;
+>> >>
+>> >> op is being ignored? You should remove it... or if (op) return -EINVAL
+>> >> if you want future extensions.
+>> > Yes, op argument is being ignored. Okay, will add the return -EINVAL
+>> > if op is non-zero.
+>>
+>> Be careful. If existing applications already use this and maybe pass a
+>> dummy value
+>> to it you break them.
+>
+> Well.. of course, but passing ignored integer to syscall, that can be
+> never used is beyond ugly. NAK-level ugly.
+>
+> If it is so, you can never ever use the argument, and might as well
+> remove it (depending on your calling convention, it should not break
+> anything.)
+>
+I'm prefer to keep the calling convention here for future use and add
+the op checking here.
+This prevent us to update toolchain if we plan to add in op option later.
 
-Let's stick method fabricated by the I2C subsystem. It may seem strange
-from a h/w perspective, but it is the way we (you) have coded it, as
-the first parameter of i2c_new_dummy() is the 'managing' (primary,
-parent, master, whatever) device, so '_sec' would suit as an
-identifying appendage for the resultant device.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Regards
+Ley Foon
