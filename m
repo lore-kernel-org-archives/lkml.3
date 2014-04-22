@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758514AbaDVU3d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:29:33 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:43416 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758495AbaDVU33 (ORCPT
+	id S1758477AbaDVU3Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:29:24 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36745 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757727AbaDVUZP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:29:29 -0400
-Date: Tue, 22 Apr 2014 16:29:27 -0400 (EDT)
-Message-Id: <20140422.162927.2182797573155988911.davem@davemloft.net>
-To: luto@amacapital.net
-Cc: vgoyal@redhat.com, linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        netdev@vger.kernel.org, tj@kernel.org, ssorce@redhat.com,
-        lpoetter@redhat.com, kay@redhat.com, dwalsh@redhat.com
-Subject: Re: [PATCH 0/2] net: Implement SO_PEERCGROUP and SO_PASSCGROUP
- socket options
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <CALCETrWHA5ZmzOHnz9LO+7v4byc8QiynGyjE_ju5sjokNqrjZA@mail.gmail.com>
-References: <1397596546-10153-1-git-send-email-vgoyal@redhat.com>
-	<20140422.160558.627080587952506099.davem@davemloft.net>
-	<CALCETrWHA5ZmzOHnz9LO+7v4byc8QiynGyjE_ju5sjokNqrjZA@mail.gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 22 Apr 2014 13:29:29 -0700 (PDT)
+	Tue, 22 Apr 2014 16:25:15 -0400
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 051/133] xhci: Prevent runtime pm from autosuspending during initialization
+Date: Tue, 22 Apr 2014 13:13:09 -0700
+Message-Id: <1398197671-12786-52-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 22 Apr 2014 13:08:59 -0700
+3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
 
-> On Tue, Apr 22, 2014 at 1:05 PM, David Miller <davem@davemloft.net> wrote:
->> From: Vivek Goyal <vgoyal@redhat.com>
->> Date: Tue, 15 Apr 2014 17:15:44 -0400
->>
->>> This is another version of patchset to add support passing cgroup
->>> information of client over unix socket API.
->>
->> I'm marking this patch series as "changes requested" in patchwork
->> because if we still end up adding this feature SO_PASSCGROUP needs to
->> be changed to behave like SO_PASSCRED.
->>
->> Specifically, like SO_PASSCRED, it should pass the "real" cgroup, ie.
->> the cgroup at socket open() time.
->>
-> 
-> I suspect that making this change will render it useless,
-> unfortunately.  I really want to understand the use case.
+------------------
 
-There was no use case, it is simply the fact that when I discussed this
-feature with Vivek and Simo I told them that it should be implemented
-the same as the existing credential facilities.
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
 
-For datagram situations there is no "peer" to consider in between
-sendmsg() calls, as the binding is only active during the sendmsg()
-call.
+commit bcffae7708eb8352f44dc510b326541fe43a02a4 upstream.
 
-That's why SO_PASSCRED exists in the first place.
+xHCI driver has its own pci probe function that will call usb_hcd_pci_probe
+to register its usb-2 bus, and then continue to manually register the
+usb-3 bus. usb_hcd_pci_probe does a pm_runtime_put_noidle at the end and
+might thus trigger a runtime suspend before the usb-3 bus is ready.
 
-Otherwise, without SO_PASSCGROUP, there is no way for datagram sockets
-to find out the peer's open() time cgroup.
+Prevent the runtime suspend by increasing the usage count in the
+beginning of xhci_pci_probe, and decrease it once the usb-3 bus is
+ready.
+
+xhci-platform driver is not using usb_hcd_pci_probe to set up
+busses and should not need to have it's usage count increased during probe.
+
+Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
+Acked-by: Dan Williams <dan.j.williams@intel.com>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/usb/host/xhci-pci.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/usb/host/xhci-pci.c b/drivers/usb/host/xhci-pci.c
+index 3d8d908..dc5f94e 100644
+--- a/drivers/usb/host/xhci-pci.c
++++ b/drivers/usb/host/xhci-pci.c
+@@ -180,6 +180,10 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	struct usb_hcd *hcd;
+ 
+ 	driver = (struct hc_driver *)id->driver_data;
++
++	/* Prevent runtime suspending between USB-2 and USB-3 initialization */
++	pm_runtime_get_noresume(&dev->dev);
++
+ 	/* Register the USB 2.0 roothub.
+ 	 * FIXME: USB core must know to register the USB 2.0 roothub first.
+ 	 * This is sort of silly, because we could just set the HCD driver flags
+@@ -189,7 +193,7 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	retval = usb_hcd_pci_probe(dev, id);
+ 
+ 	if (retval)
+-		return retval;
++		goto put_runtime_pm;
+ 
+ 	/* USB 2.0 roothub is stored in the PCI device now. */
+ 	hcd = dev_get_drvdata(&dev->dev);
+@@ -218,12 +222,17 @@ static int xhci_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
+ 	if (xhci->quirks & XHCI_LPM_SUPPORT)
+ 		hcd_to_bus(xhci->shared_hcd)->root_hub->lpm_capable = 1;
+ 
++	/* USB-2 and USB-3 roothubs initialized, allow runtime pm suspend */
++	pm_runtime_put_noidle(&dev->dev);
++
+ 	return 0;
+ 
+ put_usb3_hcd:
+ 	usb_put_hcd(xhci->shared_hcd);
+ dealloc_usb2_hcd:
+ 	usb_hcd_pci_remove(dev);
++put_runtime_pm:
++	pm_runtime_put_noidle(&dev->dev);
+ 	return retval;
+ }
+ 
+-- 
+1.9.1
+
