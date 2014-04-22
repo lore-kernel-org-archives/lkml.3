@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611AbaDVUS7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:18:59 -0400
-Received: from fujitsu24.fnanic.fujitsu.com ([192.240.6.14]:43484 "EHLO
-	fujitsu24.fnanic.fujitsu.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752602AbaDVUSy (ORCPT
+	id S1757655AbaDVUTM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:19:12 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:43343 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757629AbaDVUTG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:18:54 -0400
-From: Motohiro Kosaki <Motohiro.Kosaki@us.fujitsu.com>
-To: Davidlohr Bueso <davidlohr@hp.com>,
-        Manfred Spraul <manfred@colorfullife.com>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Motohiro Kosaki JP <kosaki.motohiro@jp.fujitsu.com>,
-        "gthelen@google.com" <gthelen@google.com>,
-        "aswin@hp.com" <aswin@hp.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Tue, 22 Apr 2014 13:15:44 -0700
-Subject: RE: [PATCH 1/4] ipc/shm.c: check for ulong overflows in shmat
-Thread-Topic: [PATCH 1/4] ipc/shm.c: check for ulong overflows in shmat
-Thread-Index: Ac9eV05g8AatLGBhQXat4RU3I6X5TAAEDz8w
-Message-ID: <6B2BA408B38BA1478B473C31C3D2074E30989E9D7A@SV-EXCHANGE1.Corp.FC.LOCAL>
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
-	 <1398090397-2397-2-git-send-email-manfred@colorfullife.com>
- <1398190717.2473.8.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1398190717.2473.8.camel@buesod1.americas.hpqcorp.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-22_07:2014-04-22,2014-04-22,1970-01-01 signatures=0
+	Tue, 22 Apr 2014 16:19:06 -0400
+Date: Tue, 22 Apr 2014 16:19:04 -0400 (EDT)
+Message-Id: <20140422.161904.1187535812839850973.davem@davemloft.net>
+To: rgb@redhat.com
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org, eparis@redhat.com,
+        netfilter-devel@vger.kernel.org, hadi@mojatatu.com, sgrubb@redhat.com
+Subject: Re: [PATCH 2/6] netlink: have netlink per-protocol bind function
+ return an error code.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <c9a8a0879bc9f375bb3484f8e86189a8af5aa142.1397831970.git.rgb@redhat.com>
+References: <20140324183406.GE28666@madcap2.tricolour.ca>
+	<cover.1397831970.git.rgb@redhat.com>
+	<c9a8a0879bc9f375bb3484f8e86189a8af5aa142.1397831970.git.rgb@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 22 Apr 2014 13:19:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3MKJAMA011690
 
-> > find_vma_intersection does not work as intended if addr+size overflows.
-> > The patch adds a manual check before the call to find_vma_intersection.
-> >
-> > Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
-> 
-> Acked-by: Davidlohr Bueso <davidlohr@hp.com>
+From: Richard Guy Briggs <rgb@redhat.com>
+Date: Fri, 18 Apr 2014 13:34:06 -0400
 
-Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> @@ -1449,6 +1453,26 @@ static int netlink_bind(struct socket *sock, struct sockaddr *addr,
+>  	if (!nladdr->nl_groups && (nlk->groups == NULL || !(u32)nlk->groups[0]))
+>  		return 0;
+>  
+> +	if (nlk->netlink_bind && nladdr->nl_groups) {
+> +		int i;
+> +
+> +		for (i = 0; i < nlk->ngroups; i++) {
+> +			int undo;
+> +
+> +			if (!test_bit(i, (long unsigned int *)&nladdr->nl_groups))
+> +				continue;
+> +			err = nlk->netlink_bind(i);
+> +			if (!err)
+> +				continue;
+> +			if (!nlk->portid)
+> +				netlink_remove(sk);
+> +			for (undo = 0; undo < i; undo++)
+> +				if (nlk->netlink_unbind)
+> +					nlk->netlink_unbind(undo);
+> +			return err;
+> +		}
+> +	}
+> +
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+It took me a while to figure out why you need to do the netlink_remove() in
+the error path.
+
+I think it's really asking for trouble to allow the socket to have temporary
+visibility if we end up signalling an error.
+
+It seems safest if we only do the autobind/insert once we are absolutely
+certain that the bind() will fully succeed.  This means that you have to
+do this bind validation loop before autobind/insert.
+
+Please make this change and resubmit this series, thanks.
