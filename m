@@ -1,24 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756483AbaDVOW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:22:59 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13064 "EHLO
+	id S1756693AbaDVOXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:23:19 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13833 "EHLO
 	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752201AbaDVOW4 (ORCPT
+	by vger.kernel.org with ESMTP id S1756328AbaDVOXO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:22:56 -0400
-Date: Tue, 22 Apr 2014 07:22:45 -0700
+	Tue, 22 Apr 2014 10:23:14 -0400
+Date: Tue, 22 Apr 2014 07:23:13 -0700
 From: Drew Richardson <drew.richardson@arm.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michel Lespinasse <walken@google.com>,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        William Roberts <bill.c.roberts@gmail.com>,
-        Gideon Israel Dsouza <gidisrael@gmail.com>, linux-mm@kvack.org,
+To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
         linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>
-Subject: [PATCH] Export kmem tracepoints for use by kernel modules
-Message-ID: <20140422142244.GA21121@dreric01-Precision-T1600>
+Subject: [PATCH] Export sched tracepoints for use by kernel modules
+Message-ID: <20140422142313.GB21121@dreric01-Precision-T1600>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -34,23 +28,45 @@ any tracepoints used in a kernel module must be exported.
 Signed-off-by: Drew Richardson <drew.richardson@arm.com>
 Acked-by: Pawel Moll <pawel.moll@arm.com>
 ---
- mm/util.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ kernel/sched/core.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
 
-diff --git a/mm/util.c b/mm/util.c
-index f380af7ea779..379e8db560b3 100644
---- a/mm/util.c
-+++ b/mm/util.c
-@@ -502,3 +502,9 @@ EXPORT_TRACEPOINT_SYMBOL(kmalloc_node);
- EXPORT_TRACEPOINT_SYMBOL(kmem_cache_alloc_node);
- EXPORT_TRACEPOINT_SYMBOL(kfree);
- EXPORT_TRACEPOINT_SYMBOL(kmem_cache_free);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_free);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_free_batched);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_alloc);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_alloc_zone_locked);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_pcpu_drain);
-+EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_alloc_extfrag);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 268a45ea238c..cdb8e92ff24a 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -90,6 +90,31 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/sched.h>
+ 
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_kthread_stop);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_kthread_stop_ret);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_wakeup);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_wakeup_new);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_switch);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_migrate_task);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_free);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_exit);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_wait_task);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_wait);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_fork);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_exec);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_wait);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_sleep);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_iowait);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_blocked);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stat_runtime);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_pi_setprio);
++#ifdef CONFIG_DETECT_HUNG_TASK
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_process_hang);
++#endif /* CONFIG_DETECT_HUNG_TASK */
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_move_numa);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_stick_numa);
++EXPORT_TRACEPOINT_SYMBOL_GPL(sched_swap_numa);
++
+ void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
+ {
+ 	unsigned long delta;
 -- 
 1.8.3.2
 
