@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808AbaDVBfH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 21:35:07 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48065 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877AbaDVBe7 (ORCPT
+	id S1753117AbaDVBgH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 21:36:07 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:63310 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751285AbaDVBgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 21:34:59 -0400
-Date: Tue, 22 Apr 2014 02:34:56 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Theodore Ts'o" <tytso@mit.edu>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the vfs tree with Linus' and te ext4
- trees
-Message-ID: <20140422013456.GT18016@ZenIV.linux.org.uk>
-References: <20140422110459.ab3af554dd61297c61a568c2@canb.auug.org.au>
- <20140422011918.GA9441@thunk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140422011918.GA9441@thunk.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 21 Apr 2014 21:36:01 -0400
+From: Haojian Zhuang <haojian.zhuang@linaro.org>
+To: xuwei5@hisilicon.com, linus.walleij@linaro.org, grant.likely@linaro.org,
+        robh+dt@kernel.org, linux-gpio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        baruch@tkos.co.il
+Cc: Haojian Zhuang <haojian.zhuang@linaro.org>
+Subject: [PATCH 1/2] gpio: pl061: get gpio base from alias id
+Date: Tue, 22 Apr 2014 09:35:42 +0800
+Message-Id: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 09:19:19PM -0400, Theodore Ts'o wrote:
-> On Tue, Apr 22, 2014 at 11:04:59AM +1000, Stephen Rothwell wrote:
-> > 
-> > Today's linux-next merge of the vfs tree got a conflict in
-> > fs/ext4/extents.c between rebased versions of commits from Linus' and the
-> > ext4 trees and the same commits from the vfs tree.
-> > 
-> > I fixed it up (I just used the version from Linus' and the ext4 trees)
-> > and can carry the fix as necessary (no action is required).
-> > 
-> > Al, this is why I asked you about checking with Ted about his tree being
-> > rebased after you merged it into yours ...
-> 
-> Sorry, Al, I hadn't been aware you wanted to carrying some of these
-> changes.  I had mentioned that I was planning on carrying them in the
-> ext4 tree and including them for 3.15 because some of them were fixing
-> bugs that had been introduced in the merge window.  Since no one
-> objected, I thought everyone was on the same page about that plan.
+If gpio base number isn't specified, the gpio base will be find from
+the end of gpio number. In order to keep with schematics, use alias
+to get the ID of gpio chip.
 
-*rechecks*
-I have Cc'd you on this:
+Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+---
+ .../devicetree/bindings/gpio/gpio-pl061.txt        | 31 ++++++++++++++++++++++
+ drivers/gpio/gpio-pl061.c                          | 14 +++++++++-
+ 2 files changed, 44 insertions(+), 1 deletion(-)
+ create mode 100644 Documentation/devicetree/bindings/gpio/gpio-pl061.txt
 
-<quote>
-Subject: Re: linus-next stats (Re: Linux 3.15-rc1 out, merge window closed)
-Message-ID: <20140417203412.GB18016@ZenIV.linux.org.uk>
-[snip]
-one non-trivial in ext4 that I've dealt with by merging a piece of ext4
-branch up to the relevant point.  As long as ext4.git#dev isn't rebased,
-everything should remain fine, when/if it does I'll just redo that merge.
-BTW, ext4 side of that thing is *still* not quite right - playing with
-rlimit allows one to smuggle an unaligned write past that check...
-</quote>
+diff --git a/Documentation/devicetree/bindings/gpio/gpio-pl061.txt b/Documentation/devicetree/bindings/gpio/gpio-pl061.txt
+new file mode 100644
+index 0000000..164b5ba
+--- /dev/null
++++ b/Documentation/devicetree/bindings/gpio/gpio-pl061.txt
+@@ -0,0 +1,31 @@
++PL061 GPIO controller bindings
++
++Required properties:
++- compatible:
++  - "arm,pl061", "arm,primecell".
++- #gpio-cells : Should be two.
++  - first cell is the gpio pin number
++  - second cell is used to specify the gpio polarity:
++      0 = active high
++      1 = active low
++- gpio-controller : Marks the device node as a GPIO controller.
++- interrupt-controller : Marks the device node as an interrupt controller.
++- #interrupt-cells : Should be two.
++  - first cell is the hw irq number
++  - second cell is used to specify the interrupt type:
++      0 = default, unspecified type
++      1 = rising edge triggered
++      2 = falling edge triggered
++      4 = high level triggered
++      8 = low level triggered
++
++Example:
++	gpio0: gpio@fc806000 {
++		compatible = "arm,pl061", "arm,primecell";
++		reg = <0xfc806000 0x1000>;
++		interrupts = <0 64 0x4>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++	};
+diff --git a/drivers/gpio/gpio-pl061.c b/drivers/gpio/gpio-pl061.c
+index b0f4752..14f3ab5 100644
+--- a/drivers/gpio/gpio-pl061.c
++++ b/drivers/gpio/gpio-pl061.c
+@@ -236,6 +236,18 @@ static struct irq_chip pl061_irqchip = {
+ 	.irq_set_type	= pl061_irq_type,
+ };
+ 
++/* Parse gpio base from DT */
++static int pl061_parse_gpio_base(struct device *dev)
++{
++	struct device_node *np = dev->of_node;
++	int ret, id;
++
++	id = of_alias_get_id(np, "gpio");
++	if (id < 0)
++		return id;
++	return (id * PL061_GPIO_NR);
++}
++
+ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+ {
+ 	struct device *dev = &adev->dev;
+@@ -255,7 +267,7 @@ static int pl061_probe(struct amba_device *adev, const struct amba_id *id)
+ 			return -ENODEV;
+ 		}
+ 	} else {
+-		chip->gc.base = -1;
++		chip->gc.base = pl061_parse_gpio_base(dev);
+ 		irq_base = 0;
+ 	}
+ 
+-- 
+1.9.1
 
-I'll rebase that thing...
