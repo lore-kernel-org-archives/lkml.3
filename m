@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932998AbaDVPDq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:03:46 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:20353 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932699AbaDVPDm (ORCPT
+	id S932934AbaDVPEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:04:15 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:39804 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932828AbaDVPEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:03:42 -0400
-Date: Tue, 22 Apr 2014 18:02:39 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: hans.verkuil@cisco.com, m.chehab@samsung.com, ext-eero.nurkkala@nokia.com,
-        nils.faerber@kernelconcepts.de, joni.lapilainen@gmail.com,
-        freemangordon@abv.bg, sre@ring0.de, pali.rohar@gmail.com,
-        Greg KH <greg@kroah.com>, trivial@kernel.org,
-        linux-media@vger.kernel.org
-Cc: kernel list <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] [media] radio-bcm2048: fix wrong overflow check
-Message-ID: <20140422150239.GA32637@mwanda>
+	Tue, 22 Apr 2014 11:04:02 -0400
+Date: Tue, 22 Apr 2014 08:03:45 -0700
+From: Christoph Hellwig <hch@infradead.org>
+To: Drew Richardson <drew.richardson@arm.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Ben Greear <greearb@candelatech.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>
+Subject: Re: [PATCH] Export irq tracepoints for use by kernel modules
+Message-ID: <20140422150345.GA19099@infradead.org>
+References: <20140422142419.GD21121@dreric01-Precision-T1600>
+ <20140422142613.GA14535@infradead.org>
+ <20140422150030.GA4969@dreric01-Precision-T1600>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140422125726.GA30238@mwanda>
+In-Reply-To: <20140422150030.GA4969@dreric01-Precision-T1600>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pali Rohár <pali.rohar@gmail.com>
+On Tue, Apr 22, 2014 at 08:00:31AM -0700, Drew Richardson wrote:
+> Gator (http://git.linaro.org/arm/ds5/gator.git), an out of tree kernel
+> module, uses irq_handler_exit and softirq_exit. I thought it would be
+> helpful to export the other tracepoints from trace/events/irq.h in
+> case other users encountered a similar issue.
 
-This patch fixes an off by one check in bcm2048_set_region().
-
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Pali Rohár <pali.rohar@gmail.com>
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
----
-v2: Send it to the correct list.  Re-work the changelog.
-v3: Correct subsystem prefix.
-
-diff --git a/drivers/staging/media/bcm2048/radio-bcm2048.c b/drivers/staging/media/bcm2048/radio-bcm2048.c
-index b2cd3a8..bbf236e 100644
---- a/drivers/staging/media/bcm2048/radio-bcm2048.c
-+++ b/drivers/staging/media/bcm2048/radio-bcm2048.c
-@@ -737,7 +737,7 @@ static int bcm2048_set_region(struct bcm2048_device *bdev, u8 region)
- 	int err;
- 	u32 new_frequency = 0;
- 
--	if (region > ARRAY_SIZE(region_configs))
-+	if (region >= ARRAY_SIZE(region_configs))
- 		return -EINVAL;
- 
- 	mutex_lock(&bdev->mutex);
-
--- 
+None of them should be exported unless we have in-tree modular users.
+And I don't think adding modular users for either of them is a good idea
+to start with.
 
