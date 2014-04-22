@@ -1,55 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757012AbaDVPa2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:30:28 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60283 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756974AbaDVPaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:30:20 -0400
-Message-ID: <53568B04.4050703@ti.com>
-Date: Tue, 22 Apr 2014 21:00:12 +0530
-From: Balaji T K <balajitk@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
+	id S1757047AbaDVPar (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:30:47 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:45594 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757022AbaDVPah (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 11:30:37 -0400
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <chris@printf.net>, <ulf.hansson@linaro.org>, <linux-mmc@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] mmc: host: omap_hsmmc: a few improvements
-References: <1395878690-9650-1-git-send-email-balbi@ti.com> <20140421173203.GH22794@saruman.home>
-In-Reply-To: <20140421173203.GH22794@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20140422152529.GE10224@arm.com>
+References: <1397917972-6293-1-git-send-email-santosh.shilimkar@ti.com>
+	<20140419182528.414b9b2e@skate>
+	<201404221702.19842.arnd@arndb.de>
+	<20140422152529.GE10224@arm.com>
+Date: Tue, 22 Apr 2014 10:30:36 -0500
+Message-ID: <CAL_JsqJktpEBE1rAXDKX8uNSrWzgP1Scucvzrtw0auQSC=SO_g@mail.gmail.com>
+Subject: Re: [PATCH v2 0/7] of: setup dma parameters using dma-ranges and dma-coherent
+From: Rob Herring <robherring2@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Olof Johansson <olof@lixom.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        =?UTF-8?Q?Gregory_Cl=C3=A9ment?= 
+	<gregory.clement@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 21 April 2014 11:02 PM, Felipe Balbi wrote:
-> Hi,
->
-> On Wed, Mar 26, 2014 at 07:04:45PM -0500, Felipe Balbi wrote:
->> this series lets us access the newer registers introduced
->> back in OMAP4 which give us some valid information about
->> the OMAP HSMMC IP like max block size, support for ADMA,
->> support for Retention.
->>
->> Right now, only setting max_blk_size correctly as supporting
->> ADMA and Retention will take a lot of work.
->>
->> Tested on OMAP5 uEVM.
->>
->> Felipe Balbi (5):
->>    mmc: host: omap_hsmmc: pass host as an argument
->>    mmc: host: omap_hsmmc: add reg_offset field
->>    mmc: host: omap_hsmmc: introduce new accessor functions
->>    mmc: host: omap_hsmmc: switch over to new accessors
->>    mmc: host: omap_hsmmc: set max_blk_size correctly
+On Tue, Apr 22, 2014 at 10:25 AM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Tue, Apr 22, 2014 at 04:02:19PM +0100, Arnd Bergmann wrote:
+>> On Saturday 19 April 2014, Thomas Petazzoni wrote:
 
-Got mislead by your reply to this series, about the alternative way of
-reading memory size from CAPA register
+[...]
 
+>> I would hope we can find a way to avoid the platform notifiers for
+>> mvebu as well and come up with a generic way to express this
+>> 'semi-coherent' mode. I believe x-gene has a similar issue, and
+>> I wouldn't be surprised if there are others like this.
 >
-> this has been here for almost a month, any comments ?
->
+> The solution is for the snooping unit to detect the DSB instruction
+> (which is propagated outside the CPU) and wait for the completion of the
+> coherency work (but we need more information from the hardware guys).
 
-Do you see any performance impact with this series ?
+If the solution was fixing broken h/w, we'd all be retired (or h/w
+designers). :)
+
+Rob
