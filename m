@@ -1,42 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759AbaDVWCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 18:02:37 -0400
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:63587 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382AbaDVWCf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 18:02:35 -0400
-Date: Tue, 22 Apr 2014 15:02:31 -0700
-From: Stephen Hemminger <stephen@networkplumber.org>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Rob Herring <robh+dt@kernel.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Sandeep Nair <sandeep_n@ti.com>
-Subject: Re: [PATCH 0/2] net: Add Keystone NetCP ethernet driver support
-Message-ID: <20140422150231.2e87b7eb@nehalam.linuxnetplumber.net>
-In-Reply-To: <1398201675-17379-1-git-send-email-santosh.shilimkar@ti.com>
-References: <1398201675-17379-1-git-send-email-santosh.shilimkar@ti.com>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1757153AbaDVWDc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 18:03:32 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:51135 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754245AbaDVWD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 18:03:27 -0400
+Date: Tue, 22 Apr 2014 23:03:24 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1404222301180.1825@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1417472082-1398204204=:1825"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 17:21:13 -0400
-Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> NetCP driver has a plug-in module architecture where each of the NetCP
-> sub-modules exist as a loadable kernel module which plug in to the netcp
-> core. These sub-modules are represented as "netcp-devices" in the dts
-> bindings. It is mandatory to have the ethernet switch sub-module for
-> the ethernet interface to be operational. Any other sub-module like the
-> PA is optional.
+--29444707-1417472082-1398204204=:1825
+Content-Type: TEXT/PLAIN; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 
-Where is the implementation of these modules. You need to include
-this as separate patch set. Also the hooks for these modules should all
-be EXPORT_SYMBOL_GPL() to disallow proprietary modules.
+
+Hi Linus,
+
+this is just radeon fixes, primarily the two pll fix and the aux fix,
+it also disables dpm on rv770 gpus, fixes driver reloading, and
+fixes two issues with runtime PM on some GPUS.
+
+Dave.
+
+The following changes since commit 4d0fa8a0f01272d4de33704f20303dcecdb55df1:
+
+  Merge tag 'gpio-v3.15-2' of git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio (2014-04-22 09:28:02 -0700)
+
+are available in the git repository at:
+
+
+  git://people.freedesktop.org/~airlied/linux drm-fixes
+
+for you to fetch changes up to abaafc0af9f74f8e6212a3bf54fb907358b40ad7:
+
+  Merge branch 'drm-fixes-3.15' of git://people.freedesktop.org/~deathsimple/linux into drm-next (2014-04-23 07:39:12 +1000)
+
+----------------------------------------------------------------
+
+Alex Deucher (7):
+      drm/radeon: disable dpm on rv770 by default
+      drm/radeon/aux: fix hpd assignment for aux bus
+      drm/radeon: fix count in cik_sdma_ring_test()
+      drm/radeon: properly unregister hwmon interface (v2)
+      drm/radeon/pm: don't walk the crtc list before it has been initialized (v2)
+      drm/radeon: fix ATPX detection on non-VGA GPUs
+      drm/radeon: don't allow runpm=1 on systems with out ATPX
+
+Christian König (2):
+      drm/radeon: use fixed PPL ref divider if needed
+      drm/radeon: improve PLL limit handling in post div calculation
+
+Dave Airlie (1):
+      Merge branch 'drm-fixes-3.15' of git://people.freedesktop.org/~deathsimple/linux into drm-next
+
+ drivers/gpu/drm/radeon/atombios_dp.c         |  1 +
+ drivers/gpu/drm/radeon/cik_sdma.c            |  2 +-
+ drivers/gpu/drm/radeon/r600_dpm.c            | 35 ++++++------
+ drivers/gpu/drm/radeon/radeon_atpx_handler.c |  7 +++
+ drivers/gpu/drm/radeon/radeon_display.c      | 84 +++++++++++++++++++---------
+ drivers/gpu/drm/radeon/radeon_kms.c          |  8 +--
+ drivers/gpu/drm/radeon/radeon_pm.c           | 51 ++++++++++-------
+ 7 files changed, 120 insertions(+), 68 deletions(-)
+--29444707-1417472082-1398204204=:1825--
