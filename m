@@ -1,305 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbaDVGb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 02:31:27 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:46952 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030AbaDVGbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 02:31:21 -0400
-From: Jianyu Zhan <nasa4836@gmail.com>
-To: tj@kernel.org, lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org, nasa4836@gmail.com
-Subject: [PATCH 4/4] cgroup: convert from per-cgroup id to per-subsys id
-Date: Tue, 22 Apr 2014 14:31:13 +0800
-Message-Id: <4ea07e9e6e32cdf4c3038cc2ea5513f37f9c2ab1.1398147734.git.nasa4836@gmail.com>
-X-Mailer: git-send-email 2.0.0-rc0
-In-Reply-To: <cover.1398147734.git.nasa4836@gmail.com>
-References: <cover.1398147734.git.nasa4836@gmail.com>
+	id S1752997AbaDVGcL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 02:32:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:30776 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752658AbaDVGcF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 02:32:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,901,1389772800"; 
+   d="scan'208";a="497160821"
+From: Lan Tianyu <tianyu.lan@intel.com>
+To: wsa@the-dreams.de, rjw@rjwysocki.net, mika.westerberg@linux.intel.com,
+        awilliam@redhat.com, lenb@kernel.org
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, tianyu.lan@intel.com
+Subject: [Resend Patch 0/9] I2C ACPI operation region handler support 
+Date: Tue, 22 Apr 2014 14:24:06 +0800
+Message-Id: <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
+References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, cgrp->id is only used to look up css's.  As cgroup and
-css's lifetimes is now decoupled, it should be made per-subsystem
-and moved to css->css_id so that lookups are successful until the
-target css is released.
+ACPI 5.0 spec(5.5.2.4.5) defines GenericSerialBus(i2c, spi, uart) operation
+region. It allows ACPI aml code able to access such kind of devices to
+implement some ACPI standard method.
 
-Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
----
- include/linux/cgroup.h | 26 +++++++--------
- kernel/cgroup.c        | 87 ++++++++++++++++++++++++--------------------------
- 2 files changed, 55 insertions(+), 58 deletions(-)
+On the Asus T100TA, Bios use GenericSerialBus operation region to access
+i2c device to get battery info. So battery function depends on the I2C
+operation region support. Here is the bug link.
+https://bugzilla.kernel.org/show_bug.cgi?id=69011
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index de31b2a..66085bd 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -62,6 +62,16 @@ struct cgroup_subsys_state {
- 	/* the parent css */
- 	struct cgroup_subsys_state *parent;
- 
-+	/*
-+	 * per css id
-+	 *
-+	 * The css id of cgrp_dfl_root for each subsys is always 0, and
-+	 * a new css will be assigned with a smallest available ID.
-+	 *
-+	 * Allocating/Removing ID must be protected by cgroup_mutex.
-+	 */
-+	int css_id;
-+
- 	unsigned long flags;
- 
- 	/* percpu_ref killing and RCU release */
-@@ -141,16 +151,6 @@ enum {
- struct cgroup {
- 	unsigned long flags;		/* "unsigned long" so bitops work */
- 
--	/*
--	 * idr allocated in-hierarchy ID.
--	 *
--	 * The ID of the root cgroup is always 0, and a new cgroup
--	 * will be assigned with a smallest available ID.
--	 *
--	 * Allocating/Removing ID must be protected by cgroup_mutex.
--	 */
--	int id;
--
- 	/* the number of attached css's */
- 	int nr_css;
- 
-@@ -329,9 +329,6 @@ struct cgroup_root {
- 	/* Hierarchy-specific flags */
- 	unsigned long flags;
- 
--	/* IDs for cgroups in this hierarchy */
--	struct idr cgroup_idr;
--
- 	/* The path to use for release notifications. */
- 	char release_agent_path[PATH_MAX];
- 
-@@ -655,6 +652,9 @@ struct cgroup_subsys {
- 	/* link to parent, protected by cgroup_lock() */
- 	struct cgroup_root *root;
- 
-+	/* IDs for css'es of this subsys */
-+	struct idr css_idr;
-+
- 	/*
- 	 * List of cftypes.  Each entry is the first entry of an array
- 	 * terminated by zero length name.
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 80c1cf3..f41cf8b 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -838,7 +838,6 @@ static void cgroup_free_root(struct cgroup_root *root)
- 		/* hierarhcy ID shoulid already have been released */
- 		WARN_ON_ONCE(root->hierarchy_id);
- 
--		idr_destroy(&root->cgroup_idr);
- 		kfree(root);
- 	}
- }
-@@ -1050,17 +1049,6 @@ static void cgroup_put(struct cgroup *cgrp)
- 	if (WARN_ON_ONCE(cgrp->parent && !cgroup_is_dead(cgrp)))
- 		return;
- 
--	/*
--	 * XXX: cgrp->id is only used to look up css's.  As cgroup and
--	 * css's lifetimes will be decoupled, it should be made
--	 * per-subsystem and moved to css->id so that lookups are
--	 * successful until the target css is released.
--	 */
--	mutex_lock(&cgroup_mutex);
--	idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
--	mutex_unlock(&cgroup_mutex);
--	cgrp->id = -1;
--
- 	call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
- }
- 
-@@ -1512,7 +1500,6 @@ static void init_cgroup_root(struct cgroup_root *root,
- 	atomic_set(&root->nr_cgrps, 1);
- 	cgrp->root = root;
- 	init_cgroup_housekeeping(cgrp);
--	idr_init(&root->cgroup_idr);
- 
- 	root->flags = opts->flags;
- 	if (opts->release_agent)
-@@ -1533,11 +1520,6 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned long ss_mask)
- 	lockdep_assert_held(&cgroup_tree_mutex);
- 	lockdep_assert_held(&cgroup_mutex);
- 
--	ret = idr_alloc(&root->cgroup_idr, root_cgrp, 0, 1, GFP_KERNEL);
--	if (ret < 0)
--		goto out;
--	root_cgrp->id = ret;
--
- 	/*
- 	 * We're accessing css_set_count without locking css_set_rwsem here,
- 	 * but that's OK - it can only be increased by someone holding
-@@ -4056,6 +4038,11 @@ static void css_free_work_fn(struct work_struct *work)
- 
- 	css->ss->css_free(css);
- 	cgroup_put(cgrp);
-+
-+	mutex_lock(&cgroup_mutex);
-+	idr_remove(&css->ss->css_idr, css->css_id);
-+	mutex_unlock(&cgroup_mutex);
-+	css->css_id = -1;
- }
- 
- static void css_free_rcu_fn(struct rcu_head *rcu_head)
-@@ -4152,9 +4139,17 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 	if (IS_ERR(css))
- 		return PTR_ERR(css);
- 
-+	/*
-+	 * Temporarily set the pointer to NULL, so idr_find() won't return
-+	 * a half-baked css.
-+	 */
-+	css->css_id = idr_alloc(&ss->css_idr, NULL, 1, 0, GFP_KERNEL);
-+	if (css->css_id < 0)
-+		goto err_free_css;
-+
- 	err = percpu_ref_init(&css->refcnt, css_release);
- 	if (err)
--		goto err_free_css;
-+		goto err_free_id;
- 
- 	init_css(css, ss, cgrp);
- 
-@@ -4166,6 +4161,12 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
- 	if (err)
- 		goto err_clear_dir;
- 
-+	/*
-+	 * @css is now fully operational.
-+	 * Nothing can fail from this point on.
-+	 */
-+	idr_replace(&ss->css_idr, css, css->css_id);
-+
- 	cgroup_get(cgrp);
- 	css_get(css->parent);
- 
-@@ -4184,6 +4185,8 @@ err_clear_dir:
- 	cgroup_clear_dir(css->cgroup, 1 << css->ss->id);
- err_free_percpu_ref:
- 	percpu_ref_cancel_init(&css->refcnt);
-+err_free_id:
-+	idr_remove(&ss->css_idr, css->css_id);
- err_free_css:
- 	ss->css_free(css);
- 	return err;
-@@ -4223,16 +4226,6 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 		goto err_unlock_tree;
- 	}
- 
--	/*
--	 * Temporarily set the pointer to NULL, so idr_find() won't return
--	 * a half-baked cgroup.
--	 */
--	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 1, 0, GFP_KERNEL);
--	if (cgrp->id < 0) {
--		err = -ENOMEM;
--		goto err_unlock;
--	}
--
- 	init_cgroup_housekeeping(cgrp);
- 
- 	cgrp->parent = parent;
-@@ -4249,7 +4242,7 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	kn = kernfs_create_dir(parent->kn, name, mode, cgrp);
- 	if (IS_ERR(kn)) {
- 		err = PTR_ERR(kn);
--		goto err_free_id;
-+		goto err_unlock;
- 	}
- 	cgrp->kn = kn;
- 
-@@ -4266,12 +4259,6 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	atomic_inc(&root->nr_cgrps);
- 	cgroup_get(parent);
- 
--	/*
--	 * @cgrp is now fully operational.  If something fails after this
--	 * point, it'll be released via the normal destruction path.
--	 */
--	idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
--
- 	err = cgroup_kn_set_ugid(kn);
- 	if (err)
- 		goto err_destroy;
-@@ -4303,8 +4290,6 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 
- 	return 0;
- 
--err_free_id:
--	idr_remove(&root->cgroup_idr, cgrp->id);
- err_unlock:
- 	mutex_unlock(&cgroup_mutex);
- err_unlock_tree:
-@@ -4617,6 +4602,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
- 	mutex_lock(&cgroup_tree_mutex);
- 	mutex_lock(&cgroup_mutex);
- 
-+	idr_init(&ss->css_idr);
- 	INIT_LIST_HEAD(&ss->cfts);
- 
- 	/* Create the root cgroup state for this subsystem */
-@@ -4707,9 +4693,25 @@ int __init cgroup_init(void)
- 	mutex_unlock(&cgroup_tree_mutex);
- 
- 	for_each_subsys(ss, ssid) {
-+		struct cgroup_subsys_state *css;
-+		int id;
-+
- 		if (!ss->early_init)
- 			cgroup_init_subsys(ss);
- 
-+		/*
-+		 * mm_init() runs lately after cgroup_init_early(), thus
-+		 * the world isn't set up yet for idr_alloc() to run, so
-+		 * we have to defer the id allocation to this point.
-+		 *
-+		 * And we don't gracefully handle early failure.
-+		 */
-+		css = init_css_set.subsys[ss->id];
-+		id = idr_alloc(&ss->css_idr, css, 0, 1, GFP_KERNEL);
-+		if (id < 0)
-+			BUG();
-+		css->css_id = id;
-+
- 		list_add_tail(&init_css_set.e_cset_node[ssid],
- 			      &cgrp_dfl_root.cgrp.e_csets[ssid]);
- 
-@@ -5160,7 +5162,7 @@ struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
-  */
- int css_to_id(struct cgroup_subsys_state *css)
- {
--	return css->cgroup->id;
-+	return css->css_id;
- }
- 
- /**
-@@ -5173,14 +5175,9 @@ int css_to_id(struct cgroup_subsys_state *css)
-  */
- struct cgroup_subsys_state *css_from_id(int id, struct cgroup_subsys *ss)
- {
--	struct cgroup *cgrp;
--
- 	cgroup_assert_mutexes_or_rcu_locked();
- 
--	cgrp = idr_find(&ss->root->cgroup_idr, id);
--	if (cgrp)
--		return cgroup_css(cgrp, ss);
--	return NULL;
-+	return idr_find(&ss->css_idr, id);
- }
- 
- #ifdef CONFIG_CGROUP_DEBUG
--- 
-2.0.0-rc0
+This patchset is to add I2C ACPI operation region handler support.
 
+[Resend Patch 1/9] ACPICA: Executer: Fix buffer allocation issue for
+[Resend Patch 2/9] ACPICA: Export acpi_buffer_to_resource symbol
+[Resend Patch 3/9] ACPI: Add acpi_bus_attach_private_data() to
+[Resend Patch 4/9] ACPI/Thermal: Use acpi_bus_attach_private_data()
+[Resend Patch 5/9] I2C: Add smbus quick read/write helper function
+[Resend Patch 6/9] I2C: Add smbus word/block process call helper
+[Resend Patch 7/9] I2C/ACPI: Add i2c ACPI operation region support
+[Resend Patch 8/9] I2C/ACPI: Move ACPI related code to i2c-acpi.c
+[Resend Patch 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
+
+ drivers/acpi/acpica/exfield.c  | 104 +++++++++++++++++++++++++++++++++++++++++++++----
+ drivers/acpi/acpica/rscreate.c |   1 +
+ drivers/acpi/bus.c             |  18 ++++++++-
+ drivers/acpi/thermal.c         |   9 ++---
+ drivers/i2c/Kconfig            |  17 +++++++-
+ drivers/i2c/Makefile           |   5 ++-
+ drivers/i2c/i2c-acpi.c         | 371 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/i2c/i2c-core.c         | 183 +++++++++++++++++++++++++++++++++++++++++--------------------------------------------
+ include/acpi/acpi_bus.h        |   1 +
+ include/linux/acpi.h           |  11 ++++++
+ include/linux/i2c.h            |  19 +++++++++
+ 11 files changed, 628 insertions(+), 111 deletions(-)
