@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758856AbaDVVd3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:33:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36171 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756762AbaDVUPM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:15:12 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Florian Westphal <fw@strlen.de>, Thomas Graf <tgraf@suug.ch>,
-        Pablo Neira Ayuso <pablo@netfilter.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 020/133] netlink: don't compare the nul-termination in nla_strcmp
-Date: Tue, 22 Apr 2014 13:12:38 -0700
-Message-Id: <1398197671-12786-21-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1758875AbaDVVeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:34:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13343 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757352AbaDVVeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 17:34:09 -0400
+Message-ID: <5356E041.3060709@redhat.com>
+Date: Tue, 22 Apr 2014 17:33:53 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Dave Hansen <dave@sr71.net>, x86@kernel.org
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
+        mgorman@suse.de, ak@linux.intel.com, alex.shi@linaro.org,
+        dave.hansen@linux.intel.com
+Subject: Re: [PATCH 6/6] x86: mm: set TLB flush tunable to sane value (33)
+References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182428.FC2104C1@viggo.jf.intel.com>
+In-Reply-To: <20140421182428.FC2104C1@viggo.jf.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
+On 04/21/2014 02:24 PM, Dave Hansen wrote:
+> From: Dave Hansen <dave.hansen@linux.intel.com>
+> 
+> This has been run through Intel's LKP tests across a wide range
+> of modern sytems and workloads and it wasn't shown to make a
+> measurable performance difference positive or negative.
+> 
+> Now that we have some shiny new tracepoints, we can actually
+> figure out what the heck is going on.
+> 
+> During a kernel compile, 60% of the flush_tlb_mm_range() calls
+> are for a single page.  It breaks down like this:
 
-------------------
+> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
 
-From: Pablo Neira <pablo@netfilter.org>
+Acked-by: Rik van Riel <riel@redhat.com>
 
-[ Upstream commit 8b7b932434f5eee495b91a2804f5b64ebb2bc835 ]
-
-nla_strcmp compares the string length plus one, so it's implicitly
-including the nul-termination in the comparison.
-
- int nla_strcmp(const struct nlattr *nla, const char *str)
- {
-        int len = strlen(str) + 1;
-        ...
-                d = memcmp(nla_data(nla), str, len);
-
-However, if NLA_STRING is used, userspace can send us a string without
-the nul-termination. This is a problem since the string
-comparison will not match as the last byte may be not the
-nul-termination.
-
-Fix this by skipping the comparison of the nul-termination if the
-attribute data is nul-terminated. Suggested by Thomas Graf.
-
-Cc: Florian Westphal <fw@strlen.de>
-Cc: Thomas Graf <tgraf@suug.ch>
-Signed-off-by: Pablo Neira Ayuso <pablo@netfilter.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- lib/nlattr.c | 10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
-
-diff --git a/lib/nlattr.c b/lib/nlattr.c
-index 18eca78..fc67547 100644
---- a/lib/nlattr.c
-+++ b/lib/nlattr.c
-@@ -303,9 +303,15 @@ int nla_memcmp(const struct nlattr *nla, const void *data,
-  */
- int nla_strcmp(const struct nlattr *nla, const char *str)
- {
--	int len = strlen(str) + 1;
--	int d = nla_len(nla) - len;
-+	int len = strlen(str);
-+	char *buf = nla_data(nla);
-+	int attrlen = nla_len(nla);
-+	int d;
- 
-+	if (attrlen > 0 && buf[attrlen - 1] == '\0')
-+		attrlen--;
-+
-+	d = attrlen - len;
- 	if (d == 0)
- 		d = memcmp(nla_data(nla), str, len);
- 
 -- 
-1.9.1
-
+All rights reversed
