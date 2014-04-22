@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932548AbaDVVJm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:09:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36263 "EHLO
+	id S1757964AbaDVVJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:09:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36267 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757468AbaDVUPb (ORCPT
+	with ESMTP id S1757469AbaDVUPb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 16:15:31 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Grover <agrover@redhat.com>, Nicholas Bellinger <nab@linux-iscsi.org>,
+Cc: Alex Chen <alex.chen@huawei.com>, Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 132/133] target/tcm_fc: Fix use-after-free of ft_tpg
-Date: Tue, 22 Apr 2014 13:14:30 -0700
-Message-Id: <1398197671-12786-133-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 121/133] ocfs2: do not put bh when buffer_uptodate failed
+Date: Tue, 22 Apr 2014 13:14:19 -0700
+Message-Id: <1398197671-12786-122-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,52 +29,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Grover <agrover@redhat.com>
+From: alex chen <alex.chen@huawei.com>
 
-commit 2c42be2dd4f6586728dba5c4e197afd5cfaded78 upstream.
+commit f7cf4f5bfe073ad792ab49c04f247626b3e38db6 upstream.
 
-ft_del_tpg checks tpg->tport is set before unlinking the tpg from the
-tport when the tpg is being removed. Set this pointer in ft_tport_create,
-or the unlinking won't happen in ft_del_tpg and tport->tpg will reference
-a deleted object.
+Do not put bh when buffer_uptodate failed in ocfs2_write_block and
+ocfs2_write_super_or_backup, because it will put bh in b_end_io.
+Otherwise it will hit a warning "VFS: brelse: Trying to free free
+buffer".
 
-This patch sets tpg->tport in ft_tport_create, because that's what
-ft_del_tpg checks, and is the only way to get back to the tport to
-clear tport->tpg.
-
-The bug was occuring when:
-
-- lport created, tport (our per-lport, per-provider context) is
-  allocated.
-  tport->tpg = NULL
-- tpg created
-- a PRLI is received. ft_tport_create is called, tpg is found and
-  tport->tpg is set
-- tpg removed. ft_tpg is freed in ft_del_tpg. Since tpg->tport was not
-  set, tport->tpg is not cleared and points at freed memory
-- Future calls to ft_tport_create return tport via first conditional,
-  instead of searching for new tpg by calling ft_lport_find_tpg.
-  tport->tpg is still invalid, and will access freed memory.
-
-see https://bugzilla.redhat.com/show_bug.cgi?id=1071340
-
-Signed-off-by: Andy Grover <agrover@redhat.com>
-Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
+Signed-off-by: Alex Chen <alex.chen@huawei.com>
+Reviewed-by: Joseph Qi <joseph.qi@huawei.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Acked-by: Joel Becker <jlbec@evilplan.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/target/tcm_fc/tfc_sess.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/ocfs2/buffer_head_io.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/drivers/target/tcm_fc/tfc_sess.c b/drivers/target/tcm_fc/tfc_sess.c
-index 6659dd3..332d2fd 100644
---- a/drivers/target/tcm_fc/tfc_sess.c
-+++ b/drivers/target/tcm_fc/tfc_sess.c
-@@ -68,6 +68,7 @@ static struct ft_tport *ft_tport_create(struct fc_lport *lport)
+diff --git a/fs/ocfs2/buffer_head_io.c b/fs/ocfs2/buffer_head_io.c
+index 5d18ad1..4f66e00 100644
+--- a/fs/ocfs2/buffer_head_io.c
++++ b/fs/ocfs2/buffer_head_io.c
+@@ -90,7 +90,6 @@ int ocfs2_write_block(struct ocfs2_super *osb, struct buffer_head *bh,
+ 		 * information for this bh as it's not marked locally
+ 		 * uptodate. */
+ 		ret = -EIO;
+-		put_bh(bh);
+ 		mlog_errno(ret);
+ 	}
  
- 	if (tport) {
- 		tport->tpg = tpg;
-+		tpg->tport = tport;
- 		return tport;
+@@ -420,7 +419,6 @@ int ocfs2_write_super_or_backup(struct ocfs2_super *osb,
+ 
+ 	if (!buffer_uptodate(bh)) {
+ 		ret = -EIO;
+-		put_bh(bh);
+ 		mlog_errno(ret);
  	}
  
 -- 
