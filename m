@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaDVB2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 21:28:35 -0400
-Received: from mail-vc0-f170.google.com ([209.85.220.170]:43820 "EHLO
-	mail-vc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210AbaDVB2d (ORCPT
+	id S1753188AbaDVB33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 21:29:29 -0400
+Received: from mail-pb0-f41.google.com ([209.85.160.41]:45824 "EHLO
+	mail-pb0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751138AbaDVB31 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 21:28:33 -0400
+	Mon, 21 Apr 2014 21:29:27 -0400
+Message-ID: <5355C5F0.6020606@gmail.com>
+Date: Tue, 22 Apr 2014 09:29:20 +0800
+From: Chen Gang <gang.chen.5i5j@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com>
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com>
- <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
- <5355A9E9.9070102@zytor.com> <CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
- <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com> <CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
- <a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com>
-From: Andrew Lutomirski <amluto@gmail.com>
-Date: Mon, 21 Apr 2014 18:28:12 -0700
-Message-ID: <CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Pavel Machek <pavel@ucw.cz>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, len.brown@intel.com
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
+Subject: [PATCH v2] kernel/power/hibernate.c: use 'u64' instead of 's64' to
+ avoid warning
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 6:14 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> I wanted to avoid the "another cpu made this allocation, now I have to free" crap, but I also didn't want to grab the lock if there was no work needed.
+For do_div(), it need 'u64' type, which means the outside must be sure
+of 'start' is not bigger than 'stop', or it will report warning.
 
-I guess you also want to avoid bouncing all these cachelines around on
-boot on bit multicore machines.
+Even if 'start' was really bigger than 'stop', it would print incorrect
+information, but for kernel, it still can continue, so use WARN_ON() is
+enough.
 
-I'd advocate using the bitmap approach or simplifying the existing
-code.  For example:
+The related warning (with allmodconfig for unicore32):
 
-+       for (n = 0; n < ESPFIX_PUD_CLONES; n++) {
-+               pud = ACCESS_ONCE(pud_p[n]);
-+               if (!pud_present(pud))
-+                       return false;
-+       }
+    CC      kernel/power/hibernate.o
+  kernel/power/hibernate.c: In function ‘swsusp_show_speed’:
+  kernel/power/hibernate.c:237: warning: comparison of distinct pointer types lacks a cast
 
-I don't see why that needs to be a loop.  How can one clone exist but
-not the others?
 
---Andy
+Signed-off-by: Chen Gang <gang.chen.5i5j@gmail.com>
+---
+ kernel/power/hibernate.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/kernel/power/hibernate.c b/kernel/power/hibernate.c
+index f4f2073..d5117d5 100644
+--- a/kernel/power/hibernate.c
++++ b/kernel/power/hibernate.c
+@@ -228,12 +228,13 @@ static void platform_recover(int platform_mode)
+ void swsusp_show_speed(struct timeval *start, struct timeval *stop,
+ 			unsigned nr_pages, char *msg)
+ {
+-	s64 elapsed_centisecs64;
++	u64 elapsed_centisecs64;
+ 	int centisecs;
+ 	int k;
+ 	int kps;
+ 
+ 	elapsed_centisecs64 = timeval_to_ns(stop) - timeval_to_ns(start);
++	WARN_ON((s64)elapsed_centisecs64 < 0);
+ 	do_div(elapsed_centisecs64, NSEC_PER_SEC / 100);
+ 	centisecs = elapsed_centisecs64;
+ 	if (centisecs == 0)
+-- 
+1.9.2.459.g68773ac
