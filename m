@@ -1,88 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752138AbaDVSLs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 14:11:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47635 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507AbaDVSLp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 14:11:45 -0400
-Date: Tue, 22 Apr 2014 11:11:43 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kees Cook <keescook@chromium.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Howells <dhowells@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Li Zefan <lizefan@huawei.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        Aaron Tomlin <atomlin@redhat.com>, Dario Faggioli <raistlin@linux.it>,
-        Andrew Shewmaker <agshew@gmail.com>, Andi Kleen <ak@linux.intel.com>,
-        Jens Axboe <axboe@fb.com>, Wanpeng Li <liwanp@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Pavel Emelyanov <xemul@parallels.com>,
-        Andrey Vagin <avagin@openvz.org>,
-        Michael Ellerman <michael@ellerman.id.au>
-Subject: Re: [PATCH v2 3/4] sysctl: allow for strict write position handling
-Message-Id: <20140422111143.74a426009ee37027c948aebc@linux-foundation.org>
-In-Reply-To: <CAGXu5jLBJynt81Y0HqWkPzFpa6ToR4SZk2ZLLjS3SPNNczTXNw@mail.gmail.com>
-References: <1397780183-24633-1-git-send-email-keescook@chromium.org>
-	<1397780183-24633-4-git-send-email-keescook@chromium.org>
-	<20140421154505.eef405f0a23e2ff8a1c7536e@linux-foundation.org>
-	<CAGXu5jLBJynt81Y0HqWkPzFpa6ToR4SZk2ZLLjS3SPNNczTXNw@mail.gmail.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752715AbaDVSN5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 14:13:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40041 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751323AbaDVSNy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 14:13:54 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        containers@lists.linux-foundation.org
+Cc: Richard Guy Briggs <rgb@redhat.com>, arozansk@redhat.com,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com, eparis@redhat.com,
+        sgrubb@redhat.com
+Subject: [PATCH 2/2] audit: log namespace serial numbers
+Date: Tue, 22 Apr 2014 14:12:53 -0400
+Message-Id: <644ef842bae19c55ae11af07e9fd7ac0ec9c74a1.1398176489.git.rgb@redhat.com>
+In-Reply-To: <cover.1398176489.git.rgb@redhat.com>
+References: <cover.1398176489.git.rgb@redhat.com>
+In-Reply-To: <cover.1398176489.git.rgb@redhat.com>
+References: <cover.1398176489.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 21 Apr 2014 21:52:48 -0700 Kees Cook <keescook@chromium.org> wrote:
+Log the namespace details of a task.
 
-> >> This provides CONFIG_PROC_SYSCTL_STRICT_WRITES as a way to make this
-> >> behavior act in a less surprising manner for strings, and disallows
-> >> non-zero file position when writing numeric sysctls (similar to what is
-> >> already done when reading from non-zero file positions).
-> >
-> > Adding a Kconfig knob to alter the behavior of procfs writes creeps me
-> > out.  I wonder why.
-> >
-> > - I doubt if many people have a sufficient amount of control over
-> >   their entire systems to be able to confidently set
-> >   CONFIG_PROC_SYSCTL_STRICT_WRITES.
-> >
-> > - Software will be shipped which runs OK with one setting but breaks
-> >   with the other setting.
-> >
-> > So what to do?
-> >
-> > I think we can *detect* this situation easily enough.  So some options are
-> >
-> > a) change the behaviour and add code which detects when userspace is
-> >    doing a write whose behaviour is now altered.  Print a warning.   Or
-> >
-> > b) leave the behaviour as-is.  Add a detector which tells people
-> >    "hey, your userspace is probably broken - please fix".  Wait N
-> >    years.  Then alter the behaviour as in a).
-> >
-> > In either case the detector should display current->comm, the procfs
-> > pathname and the contents of the write, to aid people in hunting down
-> > and fixing their userspace.
-> 
-> How about a tri-state sysctl (har har control sysctl behavior with a
-> sysctl) that defaults ("1") to existing behavior (to not break
-> anything) with a warning. Mode "2" uses new behavior, and mode "0"
-> uses existing behavior without a warning? Then we can wait N years and
-> switch the default to "2"?
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+---
+ include/linux/audit.h |    7 +++++++
+ kernel/audit.c        |   38 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 45 insertions(+), 0 deletions(-)
 
-Yes, I suppose that's more flexible.
+diff --git a/include/linux/audit.h b/include/linux/audit.h
+index 22cfddb..0ef404a 100644
+--- a/include/linux/audit.h
++++ b/include/linux/audit.h
+@@ -101,6 +101,13 @@ extern int __weak audit_classify_compat_syscall(int abi, unsigned syscall);
+ struct filename;
+ 
+ extern void audit_log_session_info(struct audit_buffer *ab);
++#ifdef CONFIG_NAMESPACES
++extern void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk);
++#else
++void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk)
++{
++}
++#endif
+ 
+ #ifdef CONFIG_AUDIT_COMPAT_GENERIC
+ #define audit_is_compat(arch)  (!((arch) & __AUDIT_ARCH_64BIT))
+diff --git a/kernel/audit.c b/kernel/audit.c
+index 59c0bbe..9049049 100644
+--- a/kernel/audit.c
++++ b/kernel/audit.c
+@@ -64,7 +64,15 @@
+ #endif
+ #include <linux/freezer.h>
+ #include <linux/tty.h>
++#include <linux/nsproxy.h>
++#include <linux/utsname.h>
++#include <linux/ipc_namespace.h>
++#include "../fs/mount.h"
++#include <linux/mount.h>
++#include <linux/mnt_namespace.h>
+ #include <linux/pid_namespace.h>
++#include <net/net_namespace.h>
++#include <linux/user_namespace.h>
+ #include <net/netns/generic.h>
+ 
+ #include "audit.h"
+@@ -1617,6 +1625,35 @@ void audit_log_session_info(struct audit_buffer *ab)
+ 	audit_log_format(ab, " auid=%u ses=%u", auid, sessionid);
+ }
+ 
++#ifdef CONFIG_NAMESPACES
++void audit_log_namespace_info(struct audit_buffer *ab, struct task_struct *tsk)
++{
++	struct nsproxy *nsproxy;
++
++	rcu_read_lock();
++	nsproxy = task_nsproxy(tsk);
++	if (nsproxy != NULL) {
++		audit_log_format(ab, " mntns=%x", nsproxy->mnt_ns->serial_num);
++#ifdef CONFIG_NET_NS
++		audit_log_format(ab, " netns=%x", nsproxy->net_ns->serial_num);
++#endif
++#ifdef CONFIG_UTS_NS
++		audit_log_format(ab, " utsns=%x", nsproxy->uts_ns->serial_num);
++#endif
++#ifdef CONFIG_IPC_NS
++		audit_log_format(ab, " ipcns=%x", nsproxy->ipc_ns->serial_num);
++#endif
++	}
++#ifdef CONFIG_PID_NS
++	audit_log_format(ab, " pidns=%x", task_active_pid_ns(tsk)->serial_num);
++#endif
++#ifdef CONFIG_USER_NS
++	audit_log_format(ab, " userns=%x", task_cred_xxx(tsk, user_ns)->serial_num);
++#endif
++	rcu_read_unlock();
++}
++#endif /* CONFIG_NAMESPACES */
++
+ void audit_log_key(struct audit_buffer *ab, char *key)
+ {
+ 	audit_log_format(ab, " key=");
+@@ -1861,6 +1898,7 @@ void audit_log_task_info(struct audit_buffer *ab, struct task_struct *tsk)
+ 		up_read(&mm->mmap_sem);
+ 	} else
+ 		audit_log_format(ab, " exe=(null)");
++	audit_log_namespace_info(ab, tsk);
+ 	audit_log_task_context(ab);
+ }
+ EXPORT_SYMBOL(audit_log_task_info);
+-- 
+1.7.1
 
-I do have my doubts about whether we'll ever be able to change the
-behaviour.  There will be soooo many random proc-pokers out there and
-the amount of dusty-deck software will only increase over time.
-
-I suppose the first thing to do is to get the warning in there and see
-if we can get an understanding of how much code is likely to be
-affected by the change.  Add "please email Kees" to the printk ;) I did
-that once, many years ago.  I got a lot of email.  Didn't do it again.
