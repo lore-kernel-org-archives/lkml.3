@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755719AbaDVLKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:10:10 -0400
-Received: from void.printf.net ([89.145.121.20]:39059 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432AbaDVLKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:10:07 -0400
-From: Chris Ball <chris@printf.net>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: "linux-next\@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Fariya Fatima <fariyaf@gmail.com>
-Subject: Re: linux-next: build failure after merge of the mmc tree
-References: <20140422130655.51daec1807bde98ade65d691@canb.auug.org.au>
-	<CAPDyKFqeEsDpamUksmgyEBhMN+xLih-Hv_bczbZv43m8ApHDvA@mail.gmail.com>
-Date: Tue, 22 Apr 2014 12:10:00 +0100
-In-Reply-To: <CAPDyKFqeEsDpamUksmgyEBhMN+xLih-Hv_bczbZv43m8ApHDvA@mail.gmail.com>
-	(Ulf Hansson's message of "Tue, 22 Apr 2014 10:40:32 +0200")
-Message-ID: <86r44ptybb.fsf@void.printf.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	id S932161AbaDVLK5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:10:57 -0400
+Received: from co9ehsobe002.messaging.microsoft.com ([207.46.163.25]:20727
+	"EHLO co9outboundpool.messaging.microsoft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755457AbaDVLKy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 07:10:54 -0400
+X-Forefront-Antispam-Report: CIP:62.221.5.235;KIP:(null);UIP:(null);IPV:NLI;H:xir-gw1;RD:unknown-62-221-5-235.ipspace.xilinx.com;EFVD:NLI
+X-SpamScore: 2
+X-BigFish: VPS2(zzbb2dI98dI9371I1432I4015Izz1f42h2148h1ee6h1de0h1fdah2073h2146h1202h1e76h2189h1d1ah1d2ah21bch1fc6h208chzz1de098h8275bh1de097hz2fh95h839h947hc61hd24hf0ah119dh1288h12a5h12a9h12bdh137ah13b6h1441h1504h1537h153bh162dh1631h1758h18e1h190ch1946h19b4h19b5h19c3h1b0ah1be0h224fh1d0ch1d2eh1d3fh1dfeh1dffh1fe8h1ff5h209eh2216h2336h2438h2461h2487h24d7h2516h2545h255eh25f6h2605h268bh26d3h2673i19b6n1155h)
+Date: Tue, 22 Apr 2014 13:10:42 +0200
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Soren Brinkmann <soren.brinkmann@xilinx.com>
+CC: Mike Turquette <mturquette@linaro.org>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <git@xilinx.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Stephen Warren <swarren@nvidia.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Felipe Pena <felipensp@gmail.com>
+Subject: Re: [PATCH] clk: zynq: Leave debug clocks in bootup state
+References: <1397760052-3310-1-git-send-email-soren.brinkmann@xilinx.com>
+In-Reply-To: <1397760052-3310-1-git-send-email-soren.brinkmann@xilinx.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+Message-ID: <9b50f9f9-0a8a-43a7-8d23-5f8f81b62a54@CO9EHSMHS015.ehs.local>
+X-OriginatorOrg: xilinx.com
+X-FOPE-CONNECTOR: Id%0$Dn%*$RO%0$TLS%0$FQDN%$TlsDn%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 04/17/2014 08:40 PM, Soren Brinkmann wrote:
+> Make sure debug clocks stay enabled if the bootloader enabled them.
+> Otherwise debug HW may crash due to bus-hangs caused by stopped clocks.
+> 
+> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> ---
+>  drivers/clk/zynq/clkc.c | 12 ++++++++++++
+>  1 file changed, 12 insertions(+)
+> 
+> diff --git a/drivers/clk/zynq/clkc.c b/drivers/clk/zynq/clkc.c
+> index 52c09afdcfb7..246cf1226eaa 100644
+> --- a/drivers/clk/zynq/clkc.c
+> +++ b/drivers/clk/zynq/clkc.c
+> @@ -53,6 +53,9 @@ static void __iomem *zynq_clkc_base;
 
-On Tue, Apr 22 2014, Ulf Hansson wrote:
-> Until we work out the dependency issue caused by the above commit,
-> could you please drop the following patches from your mmc-next
-> branch!?
->
-> df1a292 mmc: add support for HS400 mode of eMMC5.0
-> f27a5d7 mmc: rework selection of bus speed mode
-> e64f275 mmc: step power class after final selection of bus mode
-> 6371adf mmc: identify available device type to select
-> 3957848 mmc: drop the speed mode of card's state
+Applied to zynq/clk.
 
-Done, thanks.
+Thanks,
+Michal
 
-- Chris.
--- 
-Chris Ball   <http://printf.net/>
+
