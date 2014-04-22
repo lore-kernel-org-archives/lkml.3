@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391AbaDVHNN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 03:13:13 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17579 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753209AbaDVHF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 03:05:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,902,1389772800"; 
-   d="scan'208";a="517081794"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [Patch Part3 V1 07/22] iommu/vt-d: avoid freeing virtual machine domain in free_dmar_iommu()
-Date: Tue, 22 Apr 2014 15:07:18 +0800
-Message-Id: <1398150453-28141-8-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1398150453-28141-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1398150453-28141-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1754370AbaDVHNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 03:13:31 -0400
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:36651 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753101AbaDVHNZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 03:13:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140422060654.GB9133@gmail.com>
+References: <1398144517-9496-1-git-send-email-nasa4836@gmail.com> <20140422060654.GB9133@gmail.com>
+From: Jianyu Zhan <nasa4836@gmail.com>
+Date: Tue, 22 Apr 2014 15:12:45 +0800
+Message-ID: <CAHz2CGW0D6GpbP7Tps2KoN8av_OUEzO9xGvpV_XwoHgFQ36sOw@mail.gmail.com>
+Subject: Re: [PATCH] perf-event/cgroup: explicitly init the early_init field
+To: Ingo Molnar <mingo@kernel.org>
+Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@redhat.com,
+        acme@kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Virtual machine domains are created by intel_iommu_domain_init() and
-should be destroyed by intel_iommu_domain_destroy(). So avoid freeing
-virtual machine domain data structure in free_dmar_iommu() when
-doamin->iommu_count reaches zero, otherwise it may cause invalid
-memory access because the IOMMU framework still holds references
-to the domain structure.
+On Tue, Apr 22, 2014 at 2:06 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> How can that field ever be nonzero?
+>
+> I.e. under what exact circumstances does this patch make sense?
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/iommu/intel-iommu.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Hi, Ingo,
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index 1f10fcd1c696..5e865c1265ad 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1482,7 +1482,8 @@ static void free_dmar_iommu(struct intel_iommu *iommu)
- 
- 			domain = iommu->domains[i];
- 			clear_bit(i, iommu->domain_ids);
--			if (domain_detach_iommu(domain, iommu) == 0)
-+			if (domain_detach_iommu(domain, iommu) == 0 &&
-+			    !domain_type_is_vm(domain))
- 				domain_exit(domain);
- 		}
- 	}
--- 
-1.7.10.4
+More explanation.
 
+Sure, for this global variable struct, if not initailized, its all
+fields will be initialized
+to 0 or null(depending on its type).  The point here is no to deprive
+the rights of compiler/linker of doing this initialization, it is mainly for
+documentation reason. Actually this field's value would affect how ->css_alloc
+should implemented.
+
+Concretely, if early_init is nonzero, then ->css_alloc *must not* call kzalloc,
+because in cgroup implementation, ->css_alloc will be called earlier before
+mm_init().
+
+I don't think that the value of one field(early_init) has a so subtle
+restrition on the another field(css_alloc) is a good thing, but since
+it is there,
+docment it should be needed.
+
+I could resend the patch with  more comment.
+
+Thanks,
+Jianyu Zhan
