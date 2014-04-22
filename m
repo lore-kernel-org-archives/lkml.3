@@ -1,103 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756006AbaDVN7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:59:38 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:17588 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbaDVN7f (ORCPT
+	id S1756047AbaDVN7v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:59:51 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:51658 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756023AbaDVN7o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:59:35 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-73-535675c400c7
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Sangbeom Kim <sbkim73@samsung.com>, linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 1/2] mfd: max14577: Fix IRQ handling after resume if this is
- not a wakeup source
-Date: Tue, 22 Apr 2014 15:59:22 +0200
-Message-id: <1398175162-20244-1-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrNJMWRmVeSWpSXmKPExsVy+t/xq7pHSsOCDdb+N7HYOGM9q8XrF4YW
-	Z5vesFvc/3qU0eLyrjlsFmuP3GW3ON3NanFxxRcmBw6PO9f2sHnMOxno0bdlFaPH501yASxR
-	XDYpqTmZZalF+nYJXBndt5ILFgpXPDh/lrmBcRd/FyMHh4SAicSFBzVdjJxAppjEhXvr2boY
-	uTiEBJYySpyespQZwuljklj7aDcbSBWbgLHE5uVLwKpEBPoYJZatnAfmMAscZZSY3vuWCaRK
-	WCBJ4kHHOXYQm0VAVWLl3idgNq+Au8SU5kmMEPvkJE4em8w6gZF7ASPDKkbR1NLkguKk9FxD
-	veLE3OLSvHS95PzcTYyQAPmyg3HxMatDjAIcjEo8vBIGocFCrIllxZW5hxglOJiVRHj3JocF
-	C/GmJFZWpRblxxeV5qQWH2Jk4uCUamBM9N9df0czem68h/D+KTNi5hfVzvPQ+5EYkvgzkGed
-	zOfuf8LWut9mvvAon19fdtqYnanhgfPlS2x+W5c1aL2uPjZ/W3pKfblF06pst+O5Pt9dO7c/
-	Zsli6yid4ytVaPL5xaFuo/qcFaLJZorMW9JPmHeUzFrRydbIdi5E27rgjenjiydtwpVYijMS
-	DbWYi4oTAWylSRvuAQAA
+	Tue, 22 Apr 2014 09:59:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Subject: Re: [PATCH 07/28] nios2: I/O Mapping
+Date: Tue, 22 Apr 2014 15:59:37 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+References: <1397824031-4892-1-git-send-email-lftan@altera.com> <1397845149-3141-1-git-send-email-lftan@altera.com> <1397845149-3141-3-git-send-email-lftan@altera.com>
+In-Reply-To: <1397845149-3141-3-git-send-email-lftan@altera.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404221559.37560.arnd@arndb.de>
+X-Provags-ID: V02:K0:En6xGuXKpgmIQAMVBPGZrwEBdK/P0r9c3VcOtHFLmn5
+ K2SclERQzOSOX6aqFxhWNMppppqVxuEDXeeN8/RPEPAyEyYvvW
+ Pfs7EL+5l7frV/Y027/+1SGi6YC/qpyrlgNt248sRc5HT9dHJK
+ VCzUBmNSlWDU9g86EUXcZHiJo7BMN6fdSgktwnITt5FEIuVFVF
+ 2l1P7llFbryIKcc3P4NsQr1egQ3jehl4KR8xzqn3VrWgd2LhWV
+ 9XlrDlXPagFlGi2v7RvDO0lFvkeFw0rFOVX4RW2tp5GhnIm4j7
+ 2XIVd6dlMzz/AqKHUsGE/TOQfZs2wSKPf96ZSQZFXbeG/ff/ON
+ Trs5K28Gi055EQZxzkhI=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During suspend the IRQ should be disabled even if this is not a wakeup
-source. This is a proper way of fixing the IRQ handling issue during
-resume (IRQ handler fails because I2C bus did not resume yet).
+On Friday 18 April 2014, Ley Foon Tan wrote:
 
-When device is suspended and max14577 interrupt is signaled the irq chip
-will try to handle it regardless of wakeup source. Device could be woken
-up by different IRQ but still the IRQ handler will try to read the
-registers over I2C bus and fail because I2C bus won't be ready yet:
-	max14577 2-0025: Failed to read IRQ status: -5
+> +
+> +#include <asm/pgtable-bits.h>
+> +
+> +#define IO_SPACE_LIMIT 0xffffffff
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/mfd/max14577.c | 29 +++++++++++++----------------
- 1 file changed, 13 insertions(+), 16 deletions(-)
+Please use 0xffff here, this should work for almost any PCI bus.
 
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index 5f13cefe8def..a24c0ba24cdb 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -183,20 +183,18 @@ static int max14577_suspend(struct device *dev)
- 	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
- 	struct max14577 *max14577 = i2c_get_clientdata(i2c);
- 
--	if (device_may_wakeup(dev)) {
-+	if (device_may_wakeup(dev))
- 		enable_irq_wake(max14577->irq);
--		/*
--		 * MUIC IRQ must be disabled during suspend if this is
--		 * a wake up source because it will be handled before
--		 * resuming I2C.
--		 *
--		 * When device is woken up from suspend (e.g. by ADC change),
--		 * an interrupt occurs before resuming I2C bus controller.
--		 * Interrupt handler tries to read registers but this read
--		 * will fail because I2C is still suspended.
--		 */
--		disable_irq(max14577->irq);
--	}
-+	/*
-+	 * MUIC IRQ must be disabled during suspend because if it happens
-+	 * while suspended it will be handled before resuming I2C.
-+	 *
-+	 * When device is woken up from suspend (e.g. by ADC change),
-+	 * an interrupt occurs before resuming I2C bus controller.
-+	 * Interrupt handler tries to read registers but this read
-+	 * will fail because I2C is still suspended.
-+	 */
-+	disable_irq(max14577->irq);
- 
- 	return 0;
- }
-@@ -206,10 +204,9 @@ static int max14577_resume(struct device *dev)
- 	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
- 	struct max14577 *max14577 = i2c_get_clientdata(i2c);
- 
--	if (device_may_wakeup(dev)) {
-+	if (device_may_wakeup(dev))
- 		disable_irq_wake(max14577->irq);
--		enable_irq(max14577->irq);
--	}
-+	enable_irq(max14577->irq);
- 
- 	return 0;
- }
--- 
-1.9.1
+> +
+> +#ifndef CONFIG_CC_OPTIMIZE_FOR_SIZE
+> +# define __IO_USE_DUFFS
+> +#endif
+> +
+> +#ifdef __IO_USE_DUFFS
+> +
+> +/* Use "Duff's Device" to unroll the loops. */
+> +#define __IO_OUT_LOOP(a, b, l)				\
+> +	do {						\
+> +		if (l > 0) {				\
+> +			int _n = (l + 7) / 8;		\
+> +			switch (l % 8) {		\
+> +			case 0:				\
+> +				do {			\
+> +					*a = *b++;	\
 
+I would recommend just doing all of this in out-of-line implementations
+rather than macros and inline functions.
+
+> +
+> +/*
+> + *	make the short names macros so specific devices
+> + *	can override them as required
+> + */
+> +#define inb(addr)		readb(addr)
+> +#define inw(addr)		readw(addr)
+> +#define inl(addr)		readl(addr)
+> +#define outb(x, addr)		((void) writeb(x, addr))
+> +#define outw(x, addr)		((void) writew(x, addr))
+> +#define outl(x, addr)		((void) writel(x, addr))
+
+This makes no sense: the legacy PC I/O accessors take a completely
+different argument type: I would recommend to make both inline
+functions so you can ensure that readl() gets passed an __iomem
+pointer, while inl() gets an integer number.
+
+Please see the asm-generic version for an example. You should also
+define a non-NULL PCI_IOBASE to which the PCI I/O space gets mapped.
+
+> +#define virt_to_bus virt_to_phys
+> +#define bus_to_virt phys_to_virt
+
+Please drop these, and the CONFIG_VIRT_TO_BUS Kconfig option,
+and fix all drivers that rely on it.
+
+> +#define ioport_map(port, nr)	ioremap(port, nr)
+> +#define ioport_unmap(port)	iounmap(port)
+
+Use this one instead:
+
+#ifdef CONFIG_PCI
+static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
+{
+        return PCI_IOBASE + port;
+}
+
+static inline void __iomem *ioport_unmap(void __iomem *)
+{
+}
+#endif
+
+> +/* Macros used for smc91x.c driver */
+> +#define readsb(p, d, l)		insb(p, d, l)
+> +#define readsw(p, d, l)		insw(p, d, l)
+> +#define readsl(p, d, l)		insl(p, d, l)
+> +#define writesb(p, d, l)	outsb(p, d, l)
+> +#define writesw(p, d, l)	outsw(p, d, l)
+> +#define writesl(p, d, l)	outsl(p, d, l)
+
+These should of course not fall back to the PCI I/O space functions.
+You can do it the other way round.
+
+	Arnd
