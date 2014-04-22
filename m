@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757652AbaDVUfy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:35:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36697 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758221AbaDVUY7 (ORCPT
+	id S1758290AbaDVUgo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:36:44 -0400
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:50690 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758237AbaDVUgl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:59 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 080/133] mfd: max77686: Fix possible NULL pointer dereference on i2c_new_dummy error
-Date: Tue, 22 Apr 2014 13:13:38 -0700
-Message-Id: <1398197671-12786-81-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	Tue, 22 Apr 2014 16:36:41 -0400
+Date: Tue, 22 Apr 2014 16:36:32 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: lizefan@huawei.com, containers@lists.linux-foundation.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] cgroup: convert from per-cgroup id to per-subsys id
+Message-ID: <20140422203632.GF2314@mtj.dyndns.org>
+References: <cover.1398147734.git.nasa4836@gmail.com>
+ <f478e92038bfbc1da2d03082641804e8acfdfad3.1398153537.git.nasa4836@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <f478e92038bfbc1da2d03082641804e8acfdfad3.1398153537.git.nasa4836@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
+On Tue, Apr 22, 2014 at 04:03:31PM +0800, Jianyu Zhan wrote:
+> Hi, all.
+> 
+> Sorry, previous patch has a minor fault, and cause a unitialized variable warning.
+> I've fixed it up in this.
+> 
+> Renewed patch:
+> ---
+> 
+> Currently, cgrp->id is only used to look up css's.  As cgroup and
+> css's lifetimes is now decoupled, it should be made per-subsystem
+> and moved to css->css_id so that lookups are successful until the
+> target css is released.
 
-------------------
+So, css ID can't replace cgroup ID as whole.  It's just that there are
+cases where we're currently using cgroup IDs where we should be using
+css IDs.  Also, we need to update css creation error path RCU safe so
+that idr lookup is always RCU safe.  I already had patches queued for
+posting.  Will post them soon.
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Thanks.
 
-commit b9e183a1d495cd65412abe0f9df19b151716bfe7 upstream.
-
-During probe the driver allocates dummy I2C device for RTC with
-i2c_new_dummy() but it does not check the return value of this call.
-
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by i2c_unregister_device().
-
-If i2c_new_dummy() fails for RTC device, fail also the probe for main
-MFD driver.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/mfd/max77686.c | 4 ++++
- 1 file changed, 4 insertions(+)
-
-diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-index 5b6f118..dbfd0f1 100644
---- a/drivers/mfd/max77686.c
-+++ b/drivers/mfd/max77686.c
-@@ -121,6 +121,10 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
- 		dev_info(max77686->dev, "device found\n");
- 
- 	max77686->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
-+	if (!max77686->rtc) {
-+		dev_err(max77686->dev, "Failed to allocate I2C device for RTC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(max77686->rtc, max77686);
- 
- 	max77686_irq_init(max77686);
 -- 
-1.9.1
-
+tejun
