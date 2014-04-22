@@ -1,180 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600AbaDVOHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:07:43 -0400
-Received: from imap.devoid-pointer.net ([31.31.77.140]:49498 "EHLO
-	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756356AbaDVOBJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:01:09 -0400
-From: =?UTF-8?q?Michal=20Mal=C3=BD?= <madcatxster@devoid-pointer.net>
-To: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
-        anssi.hannula@iki.fi, simon@mungewell.org
-Subject: [PATCH v2 12/24] input: Port hid-lgff to ff-memless-next
-Date: Tue, 22 Apr 2014 15:59:57 +0200
-Message-Id: <1398175209-9565-13-git-send-email-madcatxster@devoid-pointer.net>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
-References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
+	id S932713AbaDVOHz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:07:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40477 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534AbaDVOHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:07:50 -0400
+Date: Tue, 22 Apr 2014 16:07:47 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Heinrich Schuchardt <xypron.glpk@gmx.de>,
+        Eric Paris <eparis@redhat.com>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] fanotify: check permissions when creating file
+ descriptor
+Message-ID: <20140422140747.GF366@quack.suse.cz>
+References: <1397940833-6386-1-git-send-email-xypron.glpk@gmx.de>
+ <20140422134044.GE366@quack.suse.cz>
+ <CAKgNAkh=Shj6UO6x_KieQEYUoY+guokNute0iwUfiSYFJbeTfQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKgNAkh=Shj6UO6x_KieQEYUoY+guokNute0iwUfiSYFJbeTfQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Port hid-lgff to ff-memless-next
+On Tue 22-04-14 15:50:26, Michael Kerrisk (man-pages) wrote:
+> On Tue, Apr 22, 2014 at 3:40 PM, Jan Kara <jack@suse.cz> wrote:
+> > On Sat 19-04-14 22:53:53, Heinrich Schuchardt wrote:
+> >> When monitoring a directory or a mount with the fanotify API
+> >> the call to fanotify_init checks,
+> >>  * the process has cap_sys_admin capability
+> >>
+> >> The call to fanotify_mark checks,
+> >>  * the process has read authorization for directory or mount
+> >>
+> >> A directory or mount may contain files for which the process
+> >> has no read or write authorization.
+> >> Yet when reading from the fanotify file descriptor, structures
+> >> fanotify_event_metadata are returned, which contain a file
+> >> descriptor for these files, and will allow to read or write.
+> >>
+> >> The patch adds an authorization check for read and write
+> >> permission. In case of missing permission, reading from the
+> >> fanotify file descriptor returns EACCES.
+> >   OK, am I right you are concerned about a situation where fanotify group
+> > descriptor is passed to an unpriviledged process which handles all the
+> > incoming events? I'm asking because the permission checking can be
+> > relatively expensive (think of acls) so we better do it for a reason.
+> > I'd prefer to hear from Eric what the original intention regarding
+> > permissions was...
+> 
+> If I understand correctly, passing to an unprivileged process is the
+> point. The point is I think that supposedly one only needs to
+> CAP_SYS_ADMIN to use fanotify. However, once you have that capability,
+> then you implicitly get the effect of CAP_DAC_READ_SEARCH and
+> CAP_DAC_OVERRIDE as well.
+  Ah, OK. Thanks for explanation. Then I'm OK with the patch. So feel free
+to add:
 
-Signed-off-by: Michal Malý <madcatxster@devoid-pointer.net>
----
- drivers/hid/Kconfig    |  2 +-
- drivers/hid/hid-lgff.c | 70 +++++++++++++++++++++++++++++++++++---------------
- 2 files changed, 51 insertions(+), 21 deletions(-)
+Reviewed-by: Jan Kara <jack@suse.cz>
 
-diff --git a/drivers/hid/Kconfig b/drivers/hid/Kconfig
-index d1d4e77..c7794ae 100644
---- a/drivers/hid/Kconfig
-+++ b/drivers/hid/Kconfig
-@@ -356,7 +356,7 @@ config HID_LOGITECH_DJ
- config LOGITECH_FF
- 	bool "Logitech force feedback support"
- 	depends on HID_LOGITECH
--	select INPUT_FF_MEMLESS
-+	select INPUT_FF_MEMLESS_NEXT
- 	help
- 	  Say Y here if you have one of these devices:
- 	  - Logitech WingMan Cordless RumblePad
-diff --git a/drivers/hid/hid-lgff.c b/drivers/hid/hid-lgff.c
-index e1394af..96d418c 100644
---- a/drivers/hid/hid-lgff.c
-+++ b/drivers/hid/hid-lgff.c
-@@ -31,9 +31,12 @@
- 
- #include <linux/input.h>
- #include <linux/hid.h>
-+#include <linux/input/ff-memless-next.h>
- 
- #include "hid-lg.h"
- 
-+#define FF_UPDATE_RATE 50
-+
- struct dev_type {
- 	u16 idVendor;
- 	u16 idProduct;
-@@ -47,11 +50,25 @@ static const signed short ff_rumble[] = {
- 
- static const signed short ff_joystick[] = {
- 	FF_CONSTANT,
-+	FF_RAMP,
-+	FF_PERIODIC,
-+	FF_SQUARE,
-+	FF_TRIANGLE,
-+	FF_SINE,
-+	FF_SAW_UP,
-+	FF_SAW_DOWN,
- 	-1
- };
- 
- static const signed short ff_joystick_ac[] = {
- 	FF_CONSTANT,
-+	FF_RAMP,
-+	FF_PERIODIC,
-+	FF_SQUARE,
-+	FF_TRIANGLE,
-+	FF_SINE,
-+	FF_SAW_UP,
-+	FF_SAW_DOWN,
- 	FF_AUTOCENTER,
- 	-1
- };
-@@ -66,45 +83,58 @@ static const struct dev_type devices[] = {
- 	{ 0x046d, 0xc295, ff_joystick },
- };
- 
--static int hid_lgff_play(struct input_dev *dev, void *data, struct ff_effect *effect)
-+static int hid_lgff_play(struct input_dev *dev, void *data,
-+			 const struct mlnx_effect_command *command)
- {
- 	struct hid_device *hid = input_get_drvdata(dev);
- 	struct list_head *report_list = &hid->report_enum[HID_OUTPUT_REPORT].report_list;
- 	struct hid_report *report = list_entry(report_list->next, struct hid_report, list);
--	int x, y;
--	unsigned int left, right;
- 
--#define CLAMP(x) if (x < 0) x = 0; if (x > 0xff) x = 0xff
-+	switch (command->cmd) {
-+	case MLNX_START_COMBINED: {
-+		const struct mlnx_simple_force *simple_force = &command->u.simple_force;
-+		/* Scale down from MLNX range */
-+		const int x = 0x80 - (simple_force->x * 0xff / 0xffff);
-+		const int y = 0x80 - simple_force->y * 0xff / 0xffff;
- 
--	switch (effect->type) {
--	case FF_CONSTANT:
--		x = effect->u.ramp.start_level + 0x7f;	/* 0x7f is center */
--		y = effect->u.ramp.end_level + 0x7f;
--		CLAMP(x);
--		CLAMP(y);
- 		report->field[0]->value[0] = 0x51;
- 		report->field[0]->value[1] = 0x08;
- 		report->field[0]->value[2] = x;
- 		report->field[0]->value[3] = y;
- 		dbg_hid("(x, y)=(%04x, %04x)\n", x, y);
--		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
- 		break;
-+	}
-+	case MLNX_STOP_COMBINED:
-+		report->field[0]->value[0] = 0x51;
-+		report->field[0]->value[1] = 0x08;
-+		report->field[0]->value[2] = 0x80;
-+		report->field[0]->value[3] = 0x80;
-+		break;
-+	case MLNX_START_RUMBLE: {
-+		const struct mlnx_rumble_force *rumble_force = &command->u.rumble_force;
-+		/* Scale down from MLNX range */
-+		const unsigned int right = rumble_force->weak * 0xff / 0xffff;
-+		const unsigned int left = rumble_force->strong * 0xff / 0xffff;
- 
--	case FF_RUMBLE:
--		right = effect->u.rumble.strong_magnitude;
--		left = effect->u.rumble.weak_magnitude;
--		right = right * 0xff / 0xffff;
--		left = left * 0xff / 0xffff;
--		CLAMP(left);
--		CLAMP(right);
- 		report->field[0]->value[0] = 0x42;
- 		report->field[0]->value[1] = 0x00;
- 		report->field[0]->value[2] = left;
- 		report->field[0]->value[3] = right;
- 		dbg_hid("(left, right)=(%04x, %04x)\n", left, right);
--		hid_hw_request(hid, report, HID_REQ_SET_REPORT);
- 		break;
- 	}
-+	case MLNX_STOP_RUMBLE:
-+		report->field[0]->value[0] = 0x42;
-+		report->field[0]->value[1] = 0x00;
-+		report->field[0]->value[2] = 0;
-+		report->field[0]->value[3] = 0;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	hid_hw_request(hid, report, HID_REQ_SET_REPORT);
-+
- 	return 0;
- }
- 
-@@ -148,7 +178,7 @@ int lgff_init(struct hid_device* hid)
- 	for (i = 0; ff_bits[i] >= 0; i++)
- 		set_bit(ff_bits[i], dev->ffbit);
- 
--	error = input_ff_create_memless(dev, NULL, hid_lgff_play);
-+	error = input_ff_create_mlnx(dev, NULL, hid_lgff_play, FF_UPDATE_RATE);
- 	if (error)
- 		return error;
- 
+								Honza
+
+> >>  fs/notify/fanotify/fanotify_user.c | 20 +++++++++++++++-----
+> >>  1 file changed, 15 insertions(+), 5 deletions(-)
+> >>
+> >> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+> >> index 4e565c8..5d22a20 100644
+> >> --- a/fs/notify/fanotify/fanotify_user.c
+> >> +++ b/fs/notify/fanotify/fanotify_user.c
+> >> @@ -62,6 +62,8 @@ static int create_fd(struct fsnotify_group *group,
+> >>  {
+> >>       int client_fd;
+> >>       struct file *new_file;
+> >> +     int mask;
+> >> +     int ret;
+> >>
+> >>       pr_debug("%s: group=%p event=%p\n", __func__, group, event);
+> >>
+> >> @@ -75,11 +77,19 @@ static int create_fd(struct fsnotify_group *group,
+> >>        */
+> >>       /* it's possible this event was an overflow event.  in that case dentry and mnt
+> >>        * are NULL;  That's fine, just don't call dentry open */
+> >> -     if (event->path.dentry && event->path.mnt)
+> >> -             new_file = dentry_open(&event->path,
+> >> -                                    group->fanotify_data.f_flags | FMODE_NONOTIFY,
+> >> -                                    current_cred());
+> >> -     else
+> >> +     if (event->path.dentry && event->path.mnt) {
+> >> +             /* check permissions before granting access to file */
+> >> +             mask = MAY_READ;
+> >> +             if (group->fanotify_data.f_flags & (O_RDWR | O_WRONLY))
+> >> +                     mask |= MAY_WRITE;
+> >> +             ret = inode_permission(event->path.dentry->d_inode, mask);
+> >> +             if (ret)
+> >> +                     new_file = ERR_PTR(ret);
+> >> +             else
+> >> +                     new_file = dentry_open(&event->path,
+> >> +                                            group->fanotify_data.f_flags | FMODE_NONOTIFY,
+> >> +                                            current_cred());
+> >> +     } else
+> >>               new_file = ERR_PTR(-EOVERFLOW);
+> >>       if (IS_ERR(new_file)) {
+> >>               /*
+> >> --
+> >> 1.9.1
+> >>
+> > --
+> > Jan Kara <jack@suse.cz>
+> > SUSE Labs, CR
+> 
+> 
+> 
+> -- 
+> Michael Kerrisk
+> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+> Linux/UNIX System Programming Training: http://man7.org/training/
 -- 
-1.9.2
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
