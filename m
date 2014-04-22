@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757694AbaDVUTj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:19:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36320 "EHLO
+	id S1757754AbaDVUUy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:20:54 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36343 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757250AbaDVUTg (ORCPT
+	with ESMTP id S1756475AbaDVUUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:19:36 -0400
+	Tue, 22 Apr 2014 16:20:51 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mike Snitzer <snitzer@redhat.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 103/133] dm thin: fix dangling bio in process_deferred_bios error path
-Date: Tue, 22 Apr 2014 13:14:01 -0700
-Message-Id: <1398197671-12786-104-git-send-email-kamal@canonical.com>
+Cc: Dan Carpenter <dan.carpenter@oracle.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 022/133] isdnloop: several buffer overflows
+Date: Tue, 22 Apr 2014 13:12:40 -0700
+Message-Id: <1398197671-12786-23-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -26,36 +28,98 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mike Snitzer <snitzer@redhat.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit fe76cd88e654124d1431bb662a0fc6e99ca811a5 upstream.
+[ Upstream commit 7563487cbf865284dcd35e9ef5a95380da046737 ]
 
-If unable to ensure_next_mapping() we must add the current bio, which
-was removed from the @bios list via bio_list_pop, back to the
-deferred_bios list before all the remaining @bios.
+There are three buffer overflows addressed in this patch.
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Acked-by: Joe Thornber <ejt@redhat.com>
+1) In isdnloop_fake_err() we add an 'E' to a 60 character string and
+then copy it into a 60 character buffer.  I have made the destination
+buffer 64 characters and I'm changed the sprintf() to a snprintf().
+
+2) In isdnloop_parse_cmd(), p points to a 6 characters into a 60
+character buffer so we have 54 characters.  The ->eazlist[] is 11
+characters long.  I have modified the code to return if the source
+buffer is too long.
+
+3) In isdnloop_command() the cbuf[] array was 60 characters long but the
+max length of the string then can be up to 79 characters.  I made the
+cbuf array 80 characters long and changed the sprintf() to snprintf().
+I also removed the temporary "dial" buffer and changed it to use "p"
+directly.
+
+Unfortunately, we pass the "cbuf" string from isdnloop_command() to
+isdnloop_writecmd() which truncates anything over 60 characters to make
+it fit in card->omsg[].  (It can accept values up to 255 characters so
+long as there is a '\n' character every 60 characters).  For now I have
+just fixed the memory corruption bug and left the other problems in this
+driver alone.
+
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/md/dm-thin.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/isdn/isdnloop/isdnloop.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/md/dm-thin.c b/drivers/md/dm-thin.c
-index 4d9659b..ca954b1 100644
---- a/drivers/md/dm-thin.c
-+++ b/drivers/md/dm-thin.c
-@@ -1245,9 +1245,9 @@ static void process_deferred_bios(struct pool *pool)
- 		 */
- 		if (ensure_next_mapping(pool)) {
- 			spin_lock_irqsave(&pool->lock, flags);
-+			bio_list_add(&pool->deferred_bios, bio);
- 			bio_list_merge(&pool->deferred_bios, &bios);
- 			spin_unlock_irqrestore(&pool->lock, flags);
--
- 			break;
- 		}
+diff --git a/drivers/isdn/isdnloop/isdnloop.c b/drivers/isdn/isdnloop/isdnloop.c
+index e1f8748..5a4da94 100644
+--- a/drivers/isdn/isdnloop/isdnloop.c
++++ b/drivers/isdn/isdnloop/isdnloop.c
+@@ -518,9 +518,9 @@ static isdnloop_stat isdnloop_cmd_table[] =
+ static void
+ isdnloop_fake_err(isdnloop_card *card)
+ {
+-	char buf[60];
++	char buf[64];
  
+-	sprintf(buf, "E%s", card->omsg);
++	snprintf(buf, sizeof(buf), "E%s", card->omsg);
+ 	isdnloop_fake(card, buf, -1);
+ 	isdnloop_fake(card, "NAK", -1);
+ }
+@@ -903,6 +903,8 @@ isdnloop_parse_cmd(isdnloop_card *card)
+ 	case 7:
+ 		/* 0x;EAZ */
+ 		p += 3;
++		if (strlen(p) >= sizeof(card->eazlist[0]))
++			break;
+ 		strcpy(card->eazlist[ch - 1], p);
+ 		break;
+ 	case 8:
+@@ -1133,7 +1135,7 @@ isdnloop_command(isdn_ctrl *c, isdnloop_card *card)
+ {
+ 	ulong a;
+ 	int i;
+-	char cbuf[60];
++	char cbuf[80];
+ 	isdn_ctrl cmd;
+ 	isdnloop_cdef cdef;
+ 
+@@ -1198,7 +1200,6 @@ isdnloop_command(isdn_ctrl *c, isdnloop_card *card)
+ 			break;
+ 		if ((c->arg & 255) < ISDNLOOP_BCH) {
+ 			char *p;
+-			char dial[50];
+ 			char dcode[4];
+ 
+ 			a = c->arg;
+@@ -1210,10 +1211,10 @@ isdnloop_command(isdn_ctrl *c, isdnloop_card *card)
+ 			} else
+ 				/* Normal Dial */
+ 				strcpy(dcode, "CAL");
+-			strcpy(dial, p);
+-			sprintf(cbuf, "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
+-				dcode, dial, c->parm.setup.si1,
+-				c->parm.setup.si2, c->parm.setup.eazmsn);
++			snprintf(cbuf, sizeof(cbuf),
++				 "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
++				 dcode, p, c->parm.setup.si1,
++				 c->parm.setup.si2, c->parm.setup.eazmsn);
+ 			i = isdnloop_writecmd(cbuf, strlen(cbuf), 0, card);
+ 		}
+ 		break;
 -- 
 1.9.1
 
