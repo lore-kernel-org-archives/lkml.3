@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097AbaDVNNI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:13:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:48448 "EHLO
+	id S1756144AbaDVNNV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:13:21 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:48486 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751990AbaDVNMs (ORCPT
+	with ESMTP id S1751220AbaDVNMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:12:48 -0400
+	Tue, 22 Apr 2014 09:12:53 -0400
 From: Boris BREZILLON <boris.brezillon@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>,
         Mike Turquette <mturquette@linaro.org>
@@ -16,9 +16,9 @@ Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH v3 02/11] clk: at91: update main clk documentation
-Date: Tue, 22 Apr 2014 15:12:31 +0200
-Message-Id: <1398172360-7837-3-git-send-email-boris.brezillon@free-electrons.com>
+Subject: [PATCH v3 10/11] ARM: at91/dt: move at91sam9rl SoC to the new slow/main clock models
+Date: Tue, 22 Apr 2014 15:12:39 +0200
+Message-Id: <1398172360-7837-11-git-send-email-boris.brezillon@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398172360-7837-1-git-send-email-boris.brezillon@free-electrons.com>
 References: <1398172360-7837-1-git-send-email-boris.brezillon@free-electrons.com>
@@ -26,98 +26,89 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update main clk documentation to match main clk implementation rework.
+Move at91sam9rl SoC to the new main/slow clock model.
 
 Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- .../devicetree/bindings/clock/at91-clock.txt       | 56 ++++++++++++++++++----
- 1 file changed, 47 insertions(+), 9 deletions(-)
+ arch/arm/boot/dts/at91sam9rl.dtsi | 46 +++++++++++++++++++++++++++++++++------
+ 1 file changed, 39 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/at91-clock.txt b/Documentation/devicetree/bindings/clock/at91-clock.txt
-index cd5e239..26d2c84 100644
---- a/Documentation/devicetree/bindings/clock/at91-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/at91-clock.txt
-@@ -15,8 +15,13 @@ Required properties:
- 		All at91 specific clocks (clocks defined below) must be child
- 		node of the PMC node.
- 
-+	"atmel,at91rm9200-clk-main-osc"
-+	"atmel,at91sam9x5-clk-main-rc-osc"
-+		at91 main clk sources
-+
-+	"atmel,at91sam9x5-clk-main"
- 	"atmel,at91rm9200-clk-main":
--		at91 main oscillator
-+		at91 main clock
- 
- 	"atmel,at91rm9200-clk-master" or
- 	"atmel,at91sam9x5-clk-master":
-@@ -85,24 +90,57 @@ For example:
- 		/* put at91 clocks here */
+diff --git a/arch/arm/boot/dts/at91sam9rl.dtsi b/arch/arm/boot/dts/at91sam9rl.dtsi
+index 63e1784..a19a7c2 100644
+--- a/arch/arm/boot/dts/at91sam9rl.dtsi
++++ b/arch/arm/boot/dts/at91sam9rl.dtsi
+@@ -48,6 +48,18 @@
+ 		reg = <0x20000000 0x04000000>;
  	};
  
-+Required properties for main clock internal RC oscillator:
-+- interrupt-parent : must reference the PMC node.
-+- interrupts : shall be set to "<0>".
-+- clock-frequency : define the internal RC oscillator frequency.
-+
-+Optional properties:
-+- clock-accuracy : define the internal RC oscillator accuracy.
-+
-+For example:
-+	main_rc_osc: main_rc_osc {
-+		compatible = "atmel,at91sam9x5-clk-main-rc-osc";
-+		interrupt-parent = <&pmc>;
-+		interrupts = <0>;
-+		clock-frequency = <12000000>;
-+		clock-accuracy = <50000000>;
-+	};
-+
-+Required properties for main clock oscillator:
-+- interrupt-parent : must reference the PMC node.
-+- interrupts : shall be set to "<0>".
-+- #clock-cells : from common clock binding; shall be set to 0.
-+- clocks : shall encode the main osc source clk sources (see atmel datasheet).
-+
-+Optional properties:
-+- atmel,osc-bypass : boolean property. Specified if a clock signal is provided
-+  on XIN.
-+
-+  clock signal is directly provided on XIN pin.
-+
-+For example:
-+	main_osc: main_osc {
-+		compatible = "atmel,at91rm9200-clk-main-osc";
-+		interrupt-parent = <&pmc>;
-+		interrupts = <0>;
++	slow_xtal: slow_xtal {
++		compatible = "fixed-clock";
 +		#clock-cells = <0>;
-+		clocks = <&main_xtal>;
++		clock-frequency = <0>;
 +	};
 +
- Required properties for main clock:
- - interrupt-parent : must reference the PMC node.
- - interrupts : shall be set to "<0>".
- - #clock-cells : from common clock binding; shall be set to 0.
--- clocks (optional if clock-frequency is provided) : shall be the slow clock
--	phandle. This clock is used to calculate the main clock rate if
--	"clock-frequency" is not provided.
--- clock-frequency : the main oscillator frequency.Prefer the use of
--	"clock-frequency" over automatic clock rate calculation.
-+- clocks : shall encode the main clk sources (see atmel datasheet).
++	main_xtal: main_xtal {
++		compatible = "fixed-clock";
++		#clock-cells = <0>;
++		clock-frequency = <0>;
++	};
++
+ 	ahb {
+ 		compatible = "simple-bus";
+ 		#address-cells = <1>;
+@@ -548,17 +560,11 @@
+ 				#size-cells = <0>;
+ 				#interrupt-cells = <1>;
  
- For example:
- 	main: mainck {
--		compatible = "atmel,at91rm9200-clk-main";
-+		compatible = "atmel,at91sam9x5-clk-main";
- 		interrupt-parent = <&pmc>;
- 		interrupts = <0>;
- 		#clock-cells = <0>;
--		clocks = <&ck32k>;
--		clock-frequency = <18432000>;
-+		clocks = <&main_rc_osc &main_osc>;
+-				clk32k: slck {
+-					compatible = "fixed-clock";
+-					#clock-cells = <0>;
+-					clock-frequency = <32768>;
+-				};
+-
+ 				main: mainck {
+ 					compatible = "atmel,at91rm9200-clk-main";
+ 					#clock-cells = <0>;
+ 					interrupts-extended = <&pmc AT91_PMC_MOSCS>;
+-					clocks = <&clk32k>;
++					clocks = <&main_xtal>;
+ 				};
+ 
+ 				plla: pllack {
+@@ -769,6 +775,32 @@
+ 				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
+ 				status = "disabled";
+ 			};
++
++			sckc@fffffd50 {
++				compatible = "atmel,at91sam9x5-sckc";
++				reg = <0xfffffd50 0x4>;
++
++				slow_osc: slow_osc {
++					compatible = "atmel,at91sam9x5-clk-slow-osc";
++					#clock-cells = <0>;
++					atmel,startup-time-usec = <1200000>;
++					clocks = <&slow_xtal>;
++				};
++
++				slow_rc_osc: slow_rc_osc {
++					compatible = "atmel,at91sam9x5-clk-slow-rc-osc";
++					#clock-cells = <0>;
++					atmel,startup-time-usec = <75>;
++					clock-frequency = <32768>;
++					clock-accuracy = <50000000>;
++				};
++
++				clk32k: slck {
++					compatible = "atmel,at91sam9x5-clk-slow";
++					#clock-cells = <0>;
++					clocks = <&slow_rc_osc &slow_osc>;
++				};
++			};
+ 		};
  	};
  
- Required properties for master clock:
 -- 
 1.8.3.2
 
