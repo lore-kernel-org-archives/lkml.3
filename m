@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274AbaDVUoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:44:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36628 "EHLO
+	id S1758306AbaDVUpB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:45:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36615 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758134AbaDVUYh (ORCPT
+	with ESMTP id S1758118AbaDVUYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:37 -0400
+	Tue, 22 Apr 2014 16:24:34 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Richard Guy Briggs <rgb@redhat.com>,
+Cc: Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 088/133] pid: get pid_t ppid of task in init_pid_ns
-Date: Tue, 22 Apr 2014 13:13:46 -0700
-Message-Id: <1398197671-12786-89-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 090/133] Btrfs: fix deadlock with nested trans handles
+Date: Tue, 22 Apr 2014 13:13:48 -0700
+Message-Id: <1398197671-12786-91-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,62 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit ad36d28293936b03d6b7996e9d6aadfd73c0eb08 upstream.
+commit 3bbb24b20a8800158c33eca8564f432dd14d0bf3 upstream.
 
-Added the functions task_ppid_nr_ns() and task_ppid_nr() to abstract the lookup
-of the PPID (real_parent's pid_t) of a process, including rcu locking, in the
-arbitrary and init_pid_ns.
-This provides an alternative to sys_getppid(), which is relative to the child
-process' pid namespace.
+Zach found this deadlock that would happen like this
 
-(informed by ebiederman's 6c621b7e)
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+btrfs_end_transaction <- reduce trans->use_count to 0
+  btrfs_run_delayed_refs
+    btrfs_cow_block
+      find_free_extent
+	btrfs_start_transaction <- increase trans->use_count to 1
+          allocate chunk
+	btrfs_end_transaction <- decrease trans->use_count to 0
+	  btrfs_run_delayed_refs
+	    lock tree block we are cowing above ^^
+
+We need to only decrease trans->use_count if it is above 1, otherwise leave it
+alone.  This will make nested trans be the only ones who decrease their added
+ref, and will let us get rid of the trans->use_count++ hack if we have to commit
+the transaction.  Thanks,
+
+Reported-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Tested-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- include/linux/sched.h | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ fs/btrfs/transaction.c | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 87f0503..ee686ba 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1727,6 +1727,24 @@ static inline pid_t task_tgid_vnr(struct task_struct *tsk)
- }
+diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+index fc03aa6..29334bf 100644
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -562,7 +562,8 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
+ 	int lock = (trans->type != TRANS_JOIN_NOLOCK);
+ 	int err = 0;
  
+-	if (--trans->use_count) {
++	if (trans->use_count > 1) {
++		trans->use_count--;
+ 		trans->block_rsv = trans->orig_rsv;
+ 		return 0;
+ 	}
+@@ -613,17 +614,10 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
+ 	}
  
-+static int pid_alive(const struct task_struct *p);
-+static inline pid_t task_ppid_nr_ns(const struct task_struct *tsk, struct pid_namespace *ns)
-+{
-+	pid_t pid = 0;
-+
-+	rcu_read_lock();
-+	if (pid_alive(tsk))
-+		pid = task_tgid_nr_ns(rcu_dereference(tsk->real_parent), ns);
-+	rcu_read_unlock();
-+
-+	return pid;
-+}
-+
-+static inline pid_t task_ppid_nr(const struct task_struct *tsk)
-+{
-+	return task_ppid_nr_ns(tsk, &init_pid_ns);
-+}
-+
- static inline pid_t task_pgrp_nr_ns(struct task_struct *tsk,
- 					struct pid_namespace *ns)
- {
-@@ -1764,7 +1782,7 @@ static inline pid_t task_pgrp_nr(struct task_struct *tsk)
-  * If pid_alive fails, then pointers within the task structure
-  * can be stale and must not be dereferenced.
-  */
--static inline int pid_alive(struct task_struct *p)
-+static inline int pid_alive(const struct task_struct *p)
- {
- 	return p->pids[PIDTYPE_PID].pid != NULL;
- }
+ 	if (lock && cur_trans->blocked && !cur_trans->in_commit) {
+-		if (throttle) {
+-			/*
+-			 * We may race with somebody else here so end up having
+-			 * to call end_transaction on ourselves again, so inc
+-			 * our use_count.
+-			 */
+-			trans->use_count++;
++		if (throttle)
+ 			return btrfs_commit_transaction(trans, root);
+-		} else {
++		else
+ 			wake_up_process(info->transaction_kthread);
+-		}
+ 	}
+ 
+ 	if (trans->type < TRANS_JOIN_NOLOCK)
 -- 
 1.9.1
 
