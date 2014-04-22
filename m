@@ -1,91 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753428AbaDVB6u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 21:58:50 -0400
-Received: from mail-qg0-f52.google.com ([209.85.192.52]:45577 "EHLO
-	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267AbaDVB6s (ORCPT
+	id S1753497AbaDVCAH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 22:00:07 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:53620 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751240AbaDVCAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 21:58:48 -0400
+	Mon, 21 Apr 2014 22:00:04 -0400
+Date: Mon, 21 Apr 2014 18:59:58 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jet Chen <jet.chen@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [sched,rcu] 9234566d3a3: +1.6% will-it-scale.scalability,
+ +1302.6% time.involuntary_context_switches
+Message-ID: <20140422015958.GB4496@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <5354BA85.6010003@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAKb7Uvg4kOfsE0gd4zLcwjShc4eVgVKA7zQM2r1aeatOybm8NQ@mail.gmail.com>
-References: <1398060142-7937-1-git-send-email-acourbot@nvidia.com>
-	<1398060142-7937-10-git-send-email-acourbot@nvidia.com>
-	<CAKb7Uvg4kOfsE0gd4zLcwjShc4eVgVKA7zQM2r1aeatOybm8NQ@mail.gmail.com>
-Date: Tue, 22 Apr 2014 11:58:48 +1000
-Message-ID: <CACAvsv4Dzx8DVbR+QVWFtw8h8ktey8OdiPA4bd8Xqmhvi5Vv8Q@mail.gmail.com>
-Subject: Re: [Nouveau] [PATCH v2 09/10] drm/nouveau: support GK20A in nouveau_accel_init()
-From: Ben Skeggs <skeggsb@gmail.com>
-To: Ilia Mirkin <imirkin@alum.mit.edu>
-Cc: Alexandre Courbot <acourbot@nvidia.com>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "nouveau@lists.freedesktop.org" <nouveau@lists.freedesktop.org>,
-        Ben Skeggs <bskeggs@redhat.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5354BA85.6010003@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042202-1542-0000-0000-0000013FA814
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 4:07 AM, Ilia Mirkin <imirkin@alum.mit.edu> wrote:
-> On Mon, Apr 21, 2014 at 2:02 AM, Alexandre Courbot <acourbot@nvidia.com> wrote:
->> Skip the creation of a software channel for GK20A as software methods
->> are not yet supported.
->
-> How is GK20A different from a nvc0+ card that lacks PDISPLAY (like all
-> the 3D Controller ones, and I guess even some that come up as VGA
-> controller in PCI but don't have any outputs in their VBIOS)? i.e.
-> what's wrong with just doing the same thing that GK1xx does? Note that
-> there are sw methods that don't deal with display as well.
-The mp_control() methods are the only ones I see, and, in my opinion,
-they should really have been implemented using reserved methods on a
-graphics class, and *not* in a purely software object..  If we need
-them on GK20A too, we should reimplement them in gr, and bump the
-minor version number so userspace knows.
+On Mon, Apr 21, 2014 at 02:28:21PM +0800, Jet Chen wrote:
+> Hi Paul,
+> 
+> we noticed the below changes on
+> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git torture.2014.04.18a
+> commit 9234566d3a36c0aead8852e3c2ca94cd8ebfe219 ("sched,rcu: Make cond_resched() report RCU quiescent states")
 
-Ben.
+My impression of these statistics is that this commit results in huge
+numbers of additional context switches and interrupts, but has a slightly
+positive effect on performance and a larger negative effect on
+scalability.
 
->
->   -ilia
->
->>
->> Signed-off-by: Alexandre Courbot <acourbot@nvidia.com>
->> ---
->>  drivers/gpu/drm/nouveau/nouveau_drm.c | 5 +++++
->>  1 file changed, 5 insertions(+)
->>
->> diff --git a/drivers/gpu/drm/nouveau/nouveau_drm.c b/drivers/gpu/drm/nouveau/nouveau_drm.c
->> index ddd83756b9a2..5b46148ffd32 100644
->> --- a/drivers/gpu/drm/nouveau/nouveau_drm.c
->> +++ b/drivers/gpu/drm/nouveau/nouveau_drm.c
->> @@ -208,6 +208,10 @@ nouveau_accel_init(struct nouveau_drm *drm)
->>                 return;
->>         }
->>
->> +       /* Need to figure out how to handle sw for gk20a */
->> +       if (device->chipset == 0xea)
->> +               goto skip_sw_init;
->> +
->>         ret = nouveau_object_new(nv_object(drm), NVDRM_CHAN, NVDRM_NVSW,
->>                                  nouveau_abi16_swclass(drm), NULL, 0, &object);
->>         if (ret == 0) {
->> @@ -234,6 +238,7 @@ nouveau_accel_init(struct nouveau_drm *drm)
->>                 return;
->>         }
->>
->> +skip_sw_init:
->>         if (device->card_type < NV_C0) {
->>                 ret = nouveau_gpuobj_new(drm->device, NULL, 32, 0, 0,
->>                                         &drm->notify);
->> --
->> 1.9.2
->>
->> _______________________________________________
->> Nouveau mailing list
->> Nouveau@lists.freedesktop.org
->> http://lists.freedesktop.org/mailman/listinfo/nouveau
-> _______________________________________________
-> Nouveau mailing list
-> Nouveau@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/nouveau
+Is this a reasonable interpretation?
+
+							Thanx, Paul
+
+> Comparison 1 - parent commit of 9234566d3a36c0aead8852e3c2ca94cd8ebfe219 vs 9234566d3a36c0aead8852e3c2ca94cd8ebfe219
+> 
+> e119454e74a852f  9234566d3a36c0aead8852e3c
+> ---------------  -------------------------
+>     1035948 ~ 0%      +1.6%    1052990 ~ 0%  TOTAL will-it-scale.per_thread_ops
+>     1271322 ~ 0%      +1.8%    1294004 ~ 0%  TOTAL will-it-scale.per_process_ops
+>        0.63 ~ 0%      -5.2%       0.60 ~ 0%  TOTAL will-it-scale.scalability
+>       22470 ~ 2%   +1302.6%     315168 ~ 2%  TOTAL time.involuntary_context_switches
+>       84265 ~ 5%   +1047.1%     966581 ~ 1%  TOTAL interrupts.IWI
+>        1828 ~44%    +189.6%       5295 ~13%  TOTAL time.voluntary_context_switches
+>        5337 ~ 1%     +82.1%       9720 ~ 1%  TOTAL vmstat.system.cs
+>      118599 ~ 0%     -30.4%      82545 ~ 0%  TOTAL interrupts.0:IO-APIC-edge.timer
+>      224021 ~ 4%     +34.7%     301858 ~ 2%  TOTAL interrupts.RES
+>       25148 ~ 0%      +7.0%      26917 ~ 0%  TOTAL vmstat.system.in
+>     7063439 ~ 0%      -5.2%    6694536 ~ 0%  TOTAL interrupts.LOC
+>      188866 ~ 0%      -3.1%     183008 ~ 0%  TOTAL interrupts.NMI
+>      188866 ~ 0%      -3.1%     183008 ~ 0%  TOTAL interrupts.PMI
+>        3720 ~ 0%      -1.5%       3665 ~ 0%  TOTAL time.system_time
+>        1215 ~ 0%      -1.4%       1198 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+> 
+> 
+> Comparison 2 - b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 vs 9234566d3a36c0aead8852e3c2ca94cd8ebfe219
+> 
+> Fengguang has reported stats changes about b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 to you days ago.
+> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git dev.2014.04.14a
+> commit b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 ("sched,rcu: Make cond_resched() report RCU quiescent states")
+> 
+> Let's have a compare here.
+> 
+> b84c4e08143c98d  9234566d3a36c0aead8852e3c
+> ---------------  -------------------------
+>      809309 ~ 0%      -2.6%     788400 ~ 0%  TOTAL will-it-scale.per_process_ops
+>        0.61 ~ 0%      -1.9%       0.60 ~ 0%  TOTAL will-it-scale.scalability
+>      434080 ~ 0%      -1.5%     427643 ~ 0%  TOTAL will-it-scale.per_thread_ops
+>           4 ~11%  +1.2e+05%       5249 ~ 2%  TOTAL interrupts.IWI
+>         607 ~ 7%     +28.0%        778 ~14%  TOTAL interrupts.47:PCI-MSI-edge.eth0
+>       12349 ~ 2%     -14.6%      10548 ~ 1%  TOTAL interrupts.0:IO-APIC-edge.timer
+>        3078 ~ 3%     +20.9%       3722 ~ 6%  TOTAL interrupts.RES
+> 
+> 
+> Comparison 3 - parent commit of b84c4e08143c98dad4b4d139f08db0b98b0d3ec4 vs b84c4e08143c98dad4b4d139f08db0b98b0d3ec4
+> 
+> Duplicated with Fengguang's report. Help you to see these info in a page :)
+> 
+> ad86a04266f9b49  b84c4e08143c98dad4b4d139f
+> ---------------  -------------------------
+>      676264 ~ 0%      +3.3%     698461 ~ 0%  TOTAL will-it-scale.per_thread_ops
+>     1174547 ~ 0%      +3.0%    1209307 ~ 0%  TOTAL will-it-scale.per_process_ops
+>        1.67 ~ 0%      -2.3%       1.63 ~ 0%  TOTAL will-it-scale.scalability
+>       10522 ~ 2%    +921.2%     107463 ~ 1%  TOTAL time.involuntary_context_switches
+>       77671 ~ 3%     +67.0%     129688 ~ 3%  TOTAL interrupts.RES
+>       99502 ~ 0%     -27.8%      71813 ~ 0%  TOTAL interrupts.0:IO-APIC-edge.timer
+>        2554 ~ 0%     +49.1%       3809 ~ 1%  TOTAL vmstat.system.cs
+>       11524 ~ 0%      -2.3%      11259 ~ 0%  TOTAL vmstat.system.in
+>         213 ~ 0%      -4.3%        204 ~ 0%  TOTAL time.system_time
+>          74 ~ 0%      -4.1%         71 ~ 0%  TOTAL time.percent_of_cpu_this_job_got
+>     3495099 ~ 0%      -3.1%    3387173 ~ 0%  TOTAL interrupts.LOC
+> 
+> 
+> 
+> 
+> Thanks,
+> Jet
+> 
+> 
+> 
+
+> ./runtest.py open2 32 1 4 6 8
+> 
+> 
+
