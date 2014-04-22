@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084AbaDVUYG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:24:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36570 "EHLO
+	id S1758096AbaDVUYQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:24:16 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36575 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757585AbaDVUYC (ORCPT
+	with ESMTP id S1752026AbaDVUYM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:24:02 -0400
+	Tue, 22 Apr 2014 16:24:12 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
-	<stefan.sorensen@spectralink.com>,
-        Tony Lindgren <tony@atomide.com>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 064/133] ARM: OMAP2+: INTC: Acknowledge stuck active interrupts
-Date: Tue, 22 Apr 2014 13:13:22 -0700
-Message-Id: <1398197671-12786-65-git-send-email-kamal@canonical.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 063/133] arm64: Do not synchronise I and D caches for special ptes
+Date: Tue, 22 Apr 2014 13:13:21 -0700
+Message-Id: <1398197671-12786-64-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,56 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Stefan=20S=C3=B8rensen?= <stefan.sorensen@spectralink.com>
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-commit 698b48532539484b012fb7c4176b959d32a17d00 upstream.
+commit 71fdb6bf61bf0692f004f9daf5650392c0cfe300 upstream.
 
-When an interrupt has become active on the INTC it will stay active
-until it is acked, even if masked or de-asserted. The
-INTC_PENDING_IRQn registers are however updated and since these are
-used by omap_intc_handle_irq to determine which interrupt to handle,
-it will never see the active interrupt. This will result in a storm of
-useless interrupts that is only stopped when another higher priority
-interrupt is asserted.
+Special pte mappings are not intended to be executable and do not even
+have an associated struct page. This patch ensures that we do not call
+__sync_icache_dcache() on such ptes.
 
-Fix by sending the INTC an acknowledge if we find no interrupts to
-handle.
-
-Signed-off-by: Stefan Sørensen <stefan.sorensen@spectralink.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Steve Capper <Steve.Capper@arm.com>
+Tested-by: Laura Abbott <lauraa@codeaurora.org>
+Tested-by: Bharat Bhushan <Bharat.Bhushan@freescale.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/arm/mach-omap2/irq.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/arm64/include/asm/pgtable.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
-index e022a86..6037a9a 100644
---- a/arch/arm/mach-omap2/irq.c
-+++ b/arch/arm/mach-omap2/irq.c
-@@ -222,6 +222,7 @@ void __init ti81xx_init_irq(void)
- static inline void omap_intc_handle_irq(void __iomem *base_addr, struct pt_regs *regs)
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+index 09a6b8f..1d7373a 100644
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -161,7 +161,7 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
+ 			      pte_t *ptep, pte_t pte)
  {
- 	u32 irqnr;
-+	int handled_irq = 0;
- 
- 	do {
- 		irqnr = readl_relaxed(base_addr + 0x98);
-@@ -249,8 +250,15 @@ out:
- 		if (irqnr) {
- 			irqnr = irq_find_mapping(domain, irqnr);
- 			handle_IRQ(irqnr, regs);
-+			handled_irq = 1;
- 		}
- 	} while (irqnr);
-+
-+	/* If an irq is masked or deasserted while active, we will
-+	 * keep ending up here with no irq handled. So remove it from
-+	 * the INTC with an ack.*/
-+	if (!handled_irq)
-+		omap_ack_irq(NULL);
- }
- 
- asmlinkage void __exception_irq_entry omap2_intc_handle_irq(struct pt_regs *regs)
+ 	if (pte_valid_user(pte)) {
+-		if (pte_exec(pte))
++		if (!pte_special(pte) && pte_exec(pte))
+ 			__sync_icache_dcache(pte, addr);
+ 		if (!pte_dirty(pte))
+ 			pte = pte_wrprotect(pte);
 -- 
 1.9.1
 
