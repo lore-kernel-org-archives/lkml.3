@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010AbaDVHjb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 03:39:31 -0400
-Received: from ozlabs.org ([103.22.144.67]:39356 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329AbaDVHjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 03:39:11 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Michal Marek <mmarek@suse.cz>, Andi Kleen <ak@linux.intel.com>,
-        Christian Engelmayer <cengelma@gmx.at>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] modpost: Fix ressource leak in read_dump()
-In-Reply-To: <53441149.8010902@suse.cz>
-References: <20140406003649.1ba3c993@spike> <20140406000512.GS32556@tassilo.jf.intel.com> <53441149.8010902@suse.cz>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Tue, 22 Apr 2014 16:56:41 +0930
-Message-ID: <87sip5hlji.fsf@rustcorp.com.au>
+	id S1753416AbaDVHkB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 03:40:01 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:53103 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752986AbaDVHjc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 03:39:32 -0400
+Date: Tue, 22 Apr 2014 08:39:26 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Leif Lindholm <leif.lindholm@linaro.org>
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Mark Rutland <mark.rutland@arm.com>
+Subject: Re: [PATCH 1/3] arm: dts: add device_type="memory" for ste-ccu8540
+Message-ID: <20140422073926.GC17657@lee--X1>
+References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
+ <1397756521-29387-2-git-send-email-leif.lindholm@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1397756521-29387-2-git-send-email-leif.lindholm@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michal Marek <mmarek@suse.cz> writes:
+> The current .dts for ste-ccu8540 lacks a 'device_type = "memory"' for
+> its memory node, relying on an old ppc quirk in order to discover its
+> memory. Add this, to permit that quirk to be made ppc only.
+> 
+> Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: devicetree@vger.kernel.org
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> ---
+>  arch/arm/boot/dts/ste-ccu8540.dts |    1 +
+>  1 file changed, 1 insertion(+)
 
-> On 2014-04-06 02:05, Andi Kleen wrote:
->> On Sun, Apr 06, 2014 at 12:36:49AM +0200, Christian Engelmayer wrote:
->>> Function read_dump() memory maps the input via grab_file(), but fails to call
->>> the corresponding unmap function. Add the missing call to release_file().
->>> Detected by Coverity: CID 1192419
->> 
->> It doesn't matter at all. All memory is freed on exit() in this program.
->
-> The leak can disturb in valgrind output.
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Yeah.  If release_file() didn't exist at all, I'd agree with Andi.  As
-it is, I've queued the patch (with typo in title fixed).
-
-Thanks!
-Rusty.
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
