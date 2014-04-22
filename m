@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609AbaDVXvb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 19:51:31 -0400
-Received: from mail-vc0-f201.google.com ([209.85.220.201]:53627 "EHLO
-	mail-vc0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497AbaDVXv1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 19:51:27 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>
-Cc: yuvaraj.cd@samsung.com, Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>, linux-samsung-soc@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>, chris@printf.net,
-        ulf.hansson@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mmc: dw_mmc: Don't print data errors
-Date: Tue, 22 Apr 2014 16:51:21 -0700
-Message-Id: <1398210681-22976-1-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
+	id S1752252AbaDVX4w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 19:56:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:34979 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaDVX4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 19:56:51 -0400
+Message-ID: <535701A3.5050309@ti.com>
+Date: Tue, 22 Apr 2014 19:56:19 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: Stephen Hemminger <stephen@networkplumber.org>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Rob Herring <robh+dt@kernel.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Sandeep Nair <sandeep_n@ti.com>
+Subject: Re: [PATCH 0/2] net: Add Keystone NetCP ethernet driver support
+References: <1398201675-17379-1-git-send-email-santosh.shilimkar@ti.com> <20140422150231.2e87b7eb@nehalam.linuxnetplumber.net>
+In-Reply-To: <20140422150231.2e87b7eb@nehalam.linuxnetplumber.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Data errors are completely expected during tuning.  Printing them out
-is confusing people looking at the kernel logs.  They see things like:
+On Tuesday 22 April 2014 06:02 PM, Stephen Hemminger wrote:
+> On Tue, 22 Apr 2014 17:21:13 -0400
+> Santosh Shilimkar <santosh.shilimkar@ti.com> wrote:
+> 
+>> NetCP driver has a plug-in module architecture where each of the NetCP
+>> sub-modules exist as a loadable kernel module which plug in to the netcp
+>> core. These sub-modules are represented as "netcp-devices" in the dts
+>> bindings. It is mandatory to have the ethernet switch sub-module for
+>> the ethernet interface to be operational. Any other sub-module like the
+>> PA is optional.
+> 
+> Where is the implementation of these modules. You need to include
+> this as separate patch set. Also the hooks for these modules should all
+> be EXPORT_SYMBOL_GPL() to disallow proprietary modules.
+> 
+There is no proprietary issue and all the hooks will be GPL. The plan is
+to add them in another patch-set once the core driver gets merged. They need
+some work to make them upstream ready.
 
- [    3.613296] dwmmc_exynos 12200000.dwmmc0: data error, status 0x00000088
-
-...and they think something is wrong with their hardware.
-
-Remove the printouts.  We'll leave it up to a higher level to report
-about errors.
-
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/mmc/host/dw_mmc.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index cced599..4c8d423 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -1248,7 +1248,7 @@ static int dw_mci_data_complete(struct dw_mci *host, struct mmc_data *data)
- 			data->error = -EIO;
- 		}
- 
--		dev_err(host->dev, "data error, status 0x%08x\n", status);
-+		dev_dbg(host->dev, "data error, status 0x%08x\n", status);
- 
- 		/*
- 		 * After an error, there may be data lingering
--- 
-1.9.1.423.g4596e3a
-
+Regards,
+Santosh
