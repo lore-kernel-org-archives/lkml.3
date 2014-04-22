@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758092AbaDVUx2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:53:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36509 "EHLO
+	id S1757949AbaDVUW4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:22:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36490 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757975AbaDVUXG (ORCPT
+	with ESMTP id S1757898AbaDVUWx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:23:06 -0400
+	Tue, 22 Apr 2014 16:22:53 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 074/133] mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
-Date: Tue, 22 Apr 2014 13:13:32 -0700
-Message-Id: <1398197671-12786-75-git-send-email-kamal@canonical.com>
+Cc: Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.8 073/133] IB/nes: Return an error on ib_copy_from_udata() failure instead of NULL
+Date: Tue, 22 Apr 2014 13:13:31 -0700
+Message-Id: <1398197671-12786-74-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -27,41 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit 65aba1e04916d72b30c028730a1e31860c225412 upstream.
+commit 9d194d1025f463392feafa26ff8c2d8247f71be1 upstream.
 
-During probe the sec-core driver allocates dummy I2C device for RTC with
-i2c_new_dummy() but return value is not checked. In case of error
-(i2c_new_device(): memory allocation failure or I2C address cannot be
-used) this function returns NULL which is later used by
-devm_regmap_init_i2c() or i2c_unregister_device().
+In case of error while accessing to userspace memory, function
+nes_create_qp() returns NULL instead of an error code wrapped through
+ERR_PTR().  But NULL is not expected by ib_uverbs_create_qp(), as it
+check for error with IS_ERR().
 
-If i2c_new_dummy() fails for RTC device, fail also the probe for main
-MFD driver.
+As page 0 is likely not mapped, it is going to trigger an Oops when
+the kernel will try to dereference NULL pointer to access to struct
+ib_qp's fields.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+In some rare cases, page 0 could be mapped by userspace, which could
+turn this bug to a vulnerability that could be exploited: the function
+pointers in struct ib_device will be under userspace total control.
+
+This was caught when using spatch (aka. coccinelle)
+to rewrite calls to ib_copy_{from,to}_udata().
+
+Link: https://www.gitorious.org/opteya/ib-hw-nes-create-qp-null
+Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
+Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/mfd/sec-core.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/infiniband/hw/nes/nes_verbs.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 49d361a..fe4038f 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -129,6 +129,10 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 	}
- 
- 	sec_pmic->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
-+	if (!sec_pmic->rtc) {
-+		dev_err(&i2c->dev, "Failed to allocate I2C for RTC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(sec_pmic->rtc, sec_pmic);
- 
- 	if (pdata && pdata->cfg_pmic_irq)
+diff --git a/drivers/infiniband/hw/nes/nes_verbs.c b/drivers/infiniband/hw/nes/nes_verbs.c
+index 07e4fba..301efc2 100644
+--- a/drivers/infiniband/hw/nes/nes_verbs.c
++++ b/drivers/infiniband/hw/nes/nes_verbs.c
+@@ -1183,7 +1183,7 @@ static struct ib_qp *nes_create_qp(struct ib_pd *ibpd,
+ 					nes_free_resource(nesadapter, nesadapter->allocated_qps, qp_num);
+ 					kfree(nesqp->allocated_buffer);
+ 					nes_debug(NES_DBG_QP, "ib_copy_from_udata() Failed \n");
+-					return NULL;
++					return ERR_PTR(-EFAULT);
+ 				}
+ 				if (req.user_wqe_buffers) {
+ 					virt_wqs = 1;
 -- 
 1.9.1
 
