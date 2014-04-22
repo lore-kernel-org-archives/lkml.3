@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914AbaDVOzm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:55:42 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57451 "EHLO bear.ext.ti.com"
+	id S932935AbaDVO4H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:56:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21540 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932884AbaDVOzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:55:36 -0400
-Date: Tue, 22 Apr 2014 09:51:59 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Robert Baldyga <r.baldyga@samsung.com>
-CC: Aaro Koskinen <aaro.koskinen@iki.fi>, <robh+dt@kernel.org>,
-        <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rob@landley.net>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
-        <dbaryshkov@gmail.com>, <dwmw2@infradead.org>, <balbi@ti.com>,
-        <gregkh@linuxfoundation.org>, <grant.likely@linaro.org>,
-        <ldewangan@nvidia.com>, <kishon@ti.com>, <gg@slimlogic.co.uk>,
-        <anton@enomsg.org>, <jonghwa3.lee@samsung.com>, <rongjun.ying@csr.com>,
-        <linux@roeck-us.net>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <patches@opensource.wolfsonmicro.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <m.szyprowski@samsung.com>,
-        <t.figa@samsung.com>
-Subject: Re: [PATCH v2 05/13] extcon: extcon-class: improve extcon client API
-Message-ID: <20140422145159.GH5524@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
- <1397475984-28001-6-git-send-email-r.baldyga@samsung.com>
- <20140419105225.GB976@ambient.musicnaut.iki.fi>
- <53560A6F.8030909@samsung.com>
+	id S932884AbaDVO4C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:56:02 -0400
+Date: Tue, 22 Apr 2014 10:55:20 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Boaz Harrosh <openosd@gmail.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org,
+        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
+        libc-alpha <libc-alpha@sourceware.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        "Carlos O'Donell" <carlos@redhat.com>,
+        Stefan Metzmacher <metze@samba.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Frank Filz <ffilzlnx@mindspring.com>, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] locks: rename file-private locks to "open file
+ description locks"
+Message-ID: <20140422105520.7b09eda5@tlielax.poochiereds.net>
+In-Reply-To: <5356808B.3040303@gmail.com>
+References: <1398169383-10743-1-git-send-email-jlayton@redhat.com>
+	<5356808B.3040303@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9iyR+p8Z2cn535Lj"
-Content-Disposition: inline
-In-Reply-To: <53560A6F.8030909@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---9iyR+p8Z2cn535Lj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 22 Apr 2014 17:45:31 +0300
+Boaz Harrosh <openosd@gmail.com> wrote:
 
-On Tue, Apr 22, 2014 at 08:21:35AM +0200, Robert Baldyga wrote:
-> On 04/19/2014 12:52 PM, Aaro Koskinen wrote:
-> > Hi,
-> >=20
-> > On Mon, Apr 14, 2014 at 01:46:16PM +0200, Robert Baldyga wrote:
-> >>  	dev_info(&pdev->dev,
-> >> -		 "OMAP USB OTG controller rev %d.%d (%s, id=3D%d, vbus=3D%d)\n",
-> >> -		 (rev >> 4) & 0xf, rev & 0xf, config->extcon, otg_dev->id,
-> >> +		 "OMAP USB OTG controller rev %d.%d (id=3D%d, vbus=3D%d)\n",
-> >> +		 (rev >> 4) & 0xf, rev & 0xf, otg_dev->id,
-> >>  		 otg_dev->vbus);
-> >=20
-> > This change is unrelated to the patch and not needed.
-> >
->=20
-> It's related because we no longer use config->extcon since we have
-> cable-oriented API. We can keep displaying it, but this value is
-> actually meaningless.
+> On 04/22/2014 03:23 PM, Jeff Layton wrote:
+> <>
+> > 
+> > We're going to have to live with these for a long time, so it's
+> > important that we be happy with the names before we're stuck with them.
+> > The consensus on the lists so far is that they should be rechristened as
+> > "open file description locks".
+> > 
+> 
+> I completely agree with the rename. (Though could you please post
+> the rest of the rename patches for review)
+> 
+> Just a very small nit. My native language is not English but I would
+> rather you use "file-descriptor" (with an '-' as well) and not
+> use "description" in the English name of the lock. This is
+> because stated like that, "description" might refer to the
+> locks and not to the file in the sentence. file-descriptor is
+> more clear I think. (For me it was confusing at first before I realized
+> what you meant)
+> 
+> Just my $0.017
+> Thanks
+> 
 
-can you just add some note in the commit log ? "while at that, also
-remove config->extconf from debugging print because it won't contain
-valid data anymore" or something like that.
+There's a big difference between the descriptor and the description.
 
-Other than that:
+The numerical value you get back from something like open() is a file
+descriptor. The thing that that value points to internally in the
+kernel is the file description. It's very important that we do not
+conflate the two here as these locks are associated with the file
+description and not the file descriptor.
 
-Acked-by: Felipe Balbi <balbi@ti.com>
+The best way to illustrate this is the interaction with dup() -- see
+the LWN article on these for a complete overview.
 
---=20
-balbi
-
---9iyR+p8Z2cn535Lj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTVoIPAAoJEIaOsuA1yqRE1scP/iNK13I3OOL/+5I5/UQon06C
-T6ws3j9Ym6TFw4D/TM8fEjB+ALhO+W9G50CS8lkIJIomn367MzbQtYLsDXMZX7kS
-MPF2YCIDPRwQ9RnoUNwfKdF46muSDJ9aaSMM0o/moizXOTlB/4sdBitVP4GFV8Xd
-kylgq0EQ2fiaMA9CIWr2fgTfDSkA84FaeRcchuzePknTcP8Bq9wudK4KCod8HU03
-xevQ4Zr1/Na0h2HzGYtjPrDtjx3odo88kFxnjx4ePtoDom9+0UFwWX2/1vgSDcUJ
-viLxZHCBm5oqM8958yYVQGJYusBRBowLKagQ+Xr80w1LUvmhPYJf3Gt2gIpjDzPi
-tpQX8KDEdtjNG5SphYkPZajUFtSSZbRoOeb+N/aPtW8sO8yBun7c3JQb1mAzHa43
-DYL/1B+KgaJVyVtZsCs7AtloLRV0Vnt16b7f7AkasU/96SXRpavUApEdHqyTUt8D
-JTjSYB8nUQfctl8KPFjYo5iSHg1R2XovYawcrYtUxmLaOIhFzIp5haV5QE3ijIp1
-gajWzklxh57Uo/AQqDL+DgeCEc/V+mwPy8RDM3L+uUZJWi/3ng50wotnKomR2Zhv
-1FZdSMz6mtXCPvRiu+biV4atHLTFw/qvswat88xsHGyrOGXNxYJ+E+35mGr0m41F
-biowjxJv5Y3dYM1IVuup
-=e9+3
------END PGP SIGNATURE-----
-
---9iyR+p8Z2cn535Lj--
+-- 
+Jeff Layton <jlayton@redhat.com>
