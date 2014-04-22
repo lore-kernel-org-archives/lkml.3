@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933074AbaDVPH5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:07:57 -0400
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:34107 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932740AbaDVPHr (ORCPT
+	id S933117AbaDVPJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:09:16 -0400
+Received: from filtteri5.pp.htv.fi ([213.243.153.188]:37714 "EHLO
+	filtteri5.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933073AbaDVPH5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:07:47 -0400
-Message-ID: <535685C0.5070800@linaro.org>
-Date: Tue, 22 Apr 2014 16:07:44 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 22 Apr 2014 11:07:57 -0400
+Date: Tue, 22 Apr 2014 18:03:36 +0300
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Robert Baldyga <r.baldyga@samsung.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
+        myungjoo.ham@samsung.com, cw00.choi@samsung.com, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, balbi@ti.com, gregkh@linuxfoundation.org,
+        grant.likely@linaro.org, ldewangan@nvidia.com, kishon@ti.com,
+        gg@slimlogic.co.uk, anton@enomsg.org, jonghwa3.lee@samsung.com,
+        rongjun.ying@csr.com, linux@roeck-us.net, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, m.szyprowski@samsung.com,
+        t.figa@samsung.com
+Subject: Re: [PATCH v2 05/13] extcon: extcon-class: improve extcon client API
+Message-ID: <20140422150336.GA612@drone.musicnaut.iki.fi>
+References: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
+ <1397475984-28001-6-git-send-email-r.baldyga@samsung.com>
+ <20140419105225.GB976@ambient.musicnaut.iki.fi>
+ <53560A6F.8030909@samsung.com>
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>, Felipe Balbi <balbi@ti.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH v6 04/19] usb: phy: msm: Migrate to Managed Device Resource
- allocation
-References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com> <1398158438-21579-5-git-send-email-iivanov@mm-sol.com>
-In-Reply-To: <1398158438-21579-5-git-send-email-iivanov@mm-sol.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53560A6F.8030909@samsung.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
+On Tue, Apr 22, 2014 at 08:21:35AM +0200, Robert Baldyga wrote:
+> On 04/19/2014 12:52 PM, Aaro Koskinen wrote:
+> > On Mon, Apr 14, 2014 at 01:46:16PM +0200, Robert Baldyga wrote:
+> >>  	dev_info(&pdev->dev,
+> >> -		 "OMAP USB OTG controller rev %d.%d (%s, id=%d, vbus=%d)\n",
+> >> -		 (rev >> 4) & 0xf, rev & 0xf, config->extcon, otg_dev->id,
+> >> +		 "OMAP USB OTG controller rev %d.%d (id=%d, vbus=%d)\n",
+> >> +		 (rev >> 4) & 0xf, rev & 0xf, otg_dev->id,
+> >>  		 otg_dev->vbus);
+> > 
+> > This change is unrelated to the patch and not needed.
+> >
+> 
+> It's related because we no longer use config->extcon since we have
+> cable-oriented API. We can keep displaying it, but this value is
+> actually meaningless.
 
-On 22/04/14 10:20, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->
-> Move memory, regulators, clocks and irq allocation to
-> devm_* variants. Properly check for valid clk handles.
->
->
-> -module_platform_driver_probe(msm_otg_driver, msm_otg_probe);
-> +module_platform_driver(msm_otg_driver);
+It's not completely meaningless, as the cable is searched using that name.
 
-This change doesn’t match the log.
-
->
->   MODULE_LICENSE("GPL v2");
->   MODULE_DESCRIPTION("MSM USB transceiver driver");
-> --
-> 1.8.3.2
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+A.
