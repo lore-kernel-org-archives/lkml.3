@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933305AbaDVQn7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:43:59 -0400
-Received: from mail-vc0-f169.google.com ([209.85.220.169]:60312 "EHLO
-	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932250AbaDVQn4 (ORCPT
+	id S933325AbaDVQo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:44:27 -0400
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:35400 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932250AbaDVQoW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:43:56 -0400
+	Tue, 22 Apr 2014 12:44:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
-References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
-	<5355A9E9.9070102@zytor.com>
-	<CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
-	<1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com>
-	<CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
-	<a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com>
-	<CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
-	<ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com>
-	<CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
-	<20140422112312.GB15882@pd.tnic>
-	<20140422144659.GF15882@pd.tnic>
-	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
-	<53569467.1030809@zytor.com>
-	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
-Date: Tue, 22 Apr 2014 09:43:55 -0700
-X-Google-Sender-Auth: QW5RpyewieOeBG-cs8-grt45XiE
-Message-ID: <CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andrew Lutomirski <amluto@gmail.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Borislav Petkov <bp@alien8.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <CALCETrWN_g50nDitvUSmoL6Ho0pHXEMXiqCVHeU53uZc5hN+1g@mail.gmail.com>
+References: <cover.1398097304.git.luto@amacapital.net>
+	<430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+	<CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
+	<20140422143152.GA23716@amd.pavel.ucw.cz>
+	<CANq1E4TPPcdD-8FF_Kc=r44Vrd51Vmt-OVu+EtCC-oEzXkvJvg@mail.gmail.com>
+	<CALCETrWN_g50nDitvUSmoL6Ho0pHXEMXiqCVHeU53uZc5hN+1g@mail.gmail.com>
+Date: Tue, 22 Apr 2014 18:44:22 +0200
+Message-ID: <CANq1E4TZHwyesFSsfKe8bE+z-H9aXs49Wd5EpkFFX08AK4onGg@mail.gmail.com>
+Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 9:33 AM, Andrew Lutomirski <amluto@gmail.com> wrote:
+Hi
+
+On Tue, Apr 22, 2014 at 5:24 PM, Andy Lutomirski <luto@amacapital.net> wrote:
+> On Tue, Apr 22, 2014 at 8:19 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+>> In other words, the bug you describe is that /proc/pid/fd/ allows
+>> access to objects without a reachable path to the only _real_
+>> filesystem link. But isn't the same true for openat()?
 >
-> For the espfix_adjust_stack thing, when can it actually need to do
-> anything?  irqs should be off, I think, and MCE, NMI, and debug
-> exceptions use ist, so that leaves just #SS and #GP, I think.  How can
-> those actually occur?  Is there a way to trigger them deliberately
-> from userspace?  Why do you have three espfix_adjust_stack
+> I don't think so.  openat doesn't work on fds for things that aren't
+> directories.
 
-Yes, you can very much trigger GP deliberately.
+Sorry, I wasn't precise enough: I meant the same 'leak' occurs if you
+keep a dir-fd on the directory in question _before_ it is set to 0600.
+Just like the example race keeps a file-fd to the file in question. So
+after the directory is set to 0600 you can use that dir-fd via
+openat() to avoid the whole path-lookup just like you do it via /proc.
 
-The way to do it is to just make an invalid segment descriptor on the
-iret stack. Or make it a valid 16-bit one, but make it a code segment
-for the stack pointer, or read-only, or whatever. All of which is
-trivial to do with a sigretun system call. But you can do it other
-ways too - enter with a SS that is valid, but do a load_ldt() system
-call that makes it invalid, so that by the time you exit it is no
-longer valid etc.
-
-There's a reason we mark that "iretq" as taking faults with that
-
-        _ASM_EXTABLE(native_iret, bad_iret)
-
-and that "bad_iret" creates a GP fault.
-
-And that's a lot of kernel stack. The whole initial GP fault path,
-which goes to the C code that finds the exception table etc. See
-do_general_protection_fault() and fixup_exception().
-
-                Linus
+Thanks
+David
