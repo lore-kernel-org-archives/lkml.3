@@ -1,111 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933489AbaDVRff (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 13:35:35 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:35870 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932927AbaDVRfc (ORCPT
+	id S933534AbaDVRjI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 13:39:08 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:18610 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932927AbaDVRjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 13:35:32 -0400
-Message-ID: <5356A85F.6030708@gmail.com>
-Date: Tue, 22 Apr 2014 19:35:27 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: =?UTF-8?B?QW50b2luZSBUw6luYXJ0?= 
-	<antoine.tenart@free-electrons.com>
-CC: alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-Subject: Re: [PATCH v2 1/2] ARM: dts: berlin: add the SDHCI nodes for the
- BG2Q
-References: <1398155248-1659-1-git-send-email-antoine.tenart@free-electrons.com> <1398155248-1659-2-git-send-email-antoine.tenart@free-electrons.com>
-In-Reply-To: <1398155248-1659-2-git-send-email-antoine.tenart@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Tue, 22 Apr 2014 13:39:05 -0400
+Date: Tue, 22 Apr 2014 10:38:54 -0700
+From: Drew Richardson <drew.richardson@arm.com>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Ben Greear <greearb@candelatech.com>,
+        "Linux-Kernel@Vger. Kernel. Org" <linux-kernel@vger.kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "mathieu.desnoyers@efficios.com" <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH] Export irq tracepoints for use by kernel modules
+Message-ID: <20140422173854.GA26894@dreric01-Precision-T1600>
+References: <20140422142419.GD21121@dreric01-Precision-T1600>
+ <20140422142613.GA14535@infradead.org>
+ <CA+5PVA7TFXdK-KjbwUtqMPF6=Ot1yhKycg5naV6N_gALWVN7cg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA7TFXdK-KjbwUtqMPF6=Ot1yhKycg5naV6N_gALWVN7cg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Added MMC maintainers Chris and Ulf for one question below]
-
-On 04/22/2014 10:27 AM, Antoine Ténart wrote:
-> Add the SDHCI nodes for the Marvell Berlin BG2Q, using the mrvl,pxav3-mmc
-> driver.
+On Tue, Apr 22, 2014 at 04:01:03PM +0100, Josh Boyer wrote:
+> On Tue, Apr 22, 2014 at 10:26 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> > On Tue, Apr 22, 2014 at 07:24:20AM -0700, Drew Richardson wrote:
+> >> After commit de7b2973903c6cc50b31ee5682a69b2219b9919d ("tracepoint:
+> >> Use struct pointer instead of name hash for reg/unreg tracepoints"),
+> >> any tracepoints used in a kernel module must be exported.
+> >
+> > How does this matter given that there aren't any modular users?
 > 
-> Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
-> ---
->  arch/arm/boot/dts/berlin2q.dtsi | 32 ++++++++++++++++++++++++++++++++
->  1 file changed, 32 insertions(+)
+> We had a bug report about this breaking systemtap type usage[1].  In
+> there, Matthieu suggested that the new for_each_kernel_tracepoint
+> interface be used.
 > 
-> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-> index 5925e6a16749..85d0ca5cc47a 100644
-> --- a/arch/arm/boot/dts/berlin2q.dtsi
-> +++ b/arch/arm/boot/dts/berlin2q.dtsi
-> @@ -67,6 +67,14 @@
->  		clock-div = <3>;
->  	};
->  
-> +	sdio1clk: sdio1clk {
-> +		compatible = "fixed-factor-clock";
-> +		#clock-cells = <0>;
-> +		clocks = <&syspll>;
-> +		clock-mult = <1>;
-> +		clock-div = <4>;
-> +	};
-> +
->  	soc {
->  		compatible = "simple-bus";
->  		#address-cells = <1>;
-> @@ -75,6 +83,30 @@
->  		ranges = <0 0xf7000000 0x1000000>;
->  		interrupt-parent = <&gic>;
->  
-> +		sdhci0: sdhci@ab0000 {
-> +			compatible = "mrvl,pxav3-mmc";
-> +			reg = <0xab0000 0x200>;
-> +			clocks = <&sdio1clk>;
-> +			interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
-> +			status = "disabled";
-> +		};
-> +
-> +		sdhci1: sdhci@ab0800 {
-> +			compatible = "mrvl,pxav3-mmc";
-> +			reg = <0xab0800 0x200>;
-> +			clocks = <&sdio1clk>;
-> +			interrupts = <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
-> +			status = "disabled";
-> +		};
-> +
-> +		sdhci2: sdhci@ab1000 {
-
-Didn't Jisheng ask for sdhci2 being registered at mmc0?
-Renaming the node labels will not help, but have you tried using an:
-
-aliases {
-	mmc0 = &sdhci2;
-	mmc1 = &sdhci0;
-	mmc2 = &sdhci1;
-};
-
-node and set the platform_device's .id field with what you get
-from of_alias_get_id(np, "mmc")?
-
-@Chris, Ulf: Is there any generic alias, e.g. "sdhci", you prefer for
-drivers/mmc so we can put it into sdhci_get_of_property()?
-
-Sebastian
-
-> +			compatible = "mrvl,pxav3-mmc";
-> +			reg = <0xab1000 0x200>;
-> +			interrupts = <GIC_SPI 28 IRQ_TYPE_LEVEL_HIGH>;
-> +			clocks = <&sdio1clk>;
-> +			status = "disabled";
-> +		};
-> +
->  		l2: l2-cache-controller@ac0000 {
->  			compatible = "arm,pl310-cache";
->  			reg = <0xac0000 0x1000>;
+> Drew, it would have been proper to CC the author of the change you're
+> referencing on all of your patches to export these symbols.
+> 
+> josh
+> 
+> [1] https://bugzilla.redhat.com/show_bug.cgi?id=1087623
 > 
 
+Thanks Josh for pointing out that I should CC Mathieu and
+register_tracepoint_module_notifier, which will work for me.
+
+Drew
