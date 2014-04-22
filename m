@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933265AbaDVPll (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:41:41 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49895 "EHLO
+	id S933248AbaDVPli (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:41:38 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49898 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933061AbaDVPjC (ORCPT
+	with ESMTP id S933062AbaDVPjC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 11:39:02 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
@@ -16,9 +16,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         devicetree@vger.kernel.org, linux-ide@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] ARM: berlin: enable the eSATA interface on the BG2Q DMP
-Date: Tue, 22 Apr 2014 17:38:23 +0200
-Message-Id: <1398181105-19714-5-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH 3/6] ARM: berlin: add the AHCI node for the BG2Q
+Date: Tue, 22 Apr 2014 17:38:22 +0200
+Message-Id: <1398181105-19714-4-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
 References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
@@ -29,26 +29,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The BG2Q has an AHCI SATA controller with an eSATA interface. Enable it.
+The BG2Q has an AHCI SATA controller. Add the corresponding node
+in its device tree.
 
 Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
 ---
- arch/arm/boot/dts/berlin2q-marvell-dmp.dts | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/arm/boot/dts/berlin2q.dtsi | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-index 2da9c41e29d8..26047ceed603 100644
---- a/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-+++ b/arch/arm/boot/dts/berlin2q-marvell-dmp.dts
-@@ -26,3 +26,8 @@
- &uart0 {
- 	status = "okay";
- };
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 07452a7483fa..8e58aae73365 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -183,6 +183,18 @@
+ 			};
+ 		};
+ 
++		ahci: sata@e90000 {
++			compatible = "marvell,berlin-ahci";
++			reg = <0xe90000 0x10000>;
++			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
++			status = "disable";
++		};
 +
-+&ahci {
-+	status = "okay";
-+	marvell,force-port-map = <1>;
-+};
++		generic-regs@ea0110 {
++			compatible = "marvell,berlin-generic-regs", "syscon";
++			reg = <0xea0110 0x10>;
++		};
++
+ 		apb@fc0000 {
+ 			compatible = "simple-bus";
+ 			#address-cells = <1>;
 -- 
 1.8.3.2
 
