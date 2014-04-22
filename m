@@ -1,63 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933369AbaDVQqd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:46:33 -0400
-Received: from mail-ie0-f202.google.com ([209.85.223.202]:39534 "EHLO
-	mail-ie0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932936AbaDVQqV (ORCPT
+	id S933355AbaDVQqa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:46:30 -0400
+Received: from mail-ie0-f201.google.com ([209.85.223.201]:51130 "EHLO
+	mail-ie0-f201.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932894AbaDVQqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 12:46:21 -0400
 From: Doug Anderson <dianders@chromium.org>
 To: lee.jones@linaro.org, swarren@nvidia.com, wsa@the-dreams.de
 Cc: abrestic@chromium.org, dgreid@chromium.org, olof@lixom.net,
         sjg@chromium.org, linux-samsung-soc@vger.kernel.org,
-        linux-tegra@vger.kernel.org, David Hendricks <dhendrix@chromium.org>,
-        Doug Anderson <dianders@chromium.org>, sameo@linux.intel.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/7] mfd: cros_ec: spi: calculate delay between transfers correctly
-Date: Tue, 22 Apr 2014 09:45:48 -0700
-Message-Id: <1398185154-19404-2-git-send-email-dianders@chromium.org>
+        linux-tegra@vger.kernel.org, Doug Anderson <dianders@chromium.org>,
+        mark.rutland@arm.com, andrew@lunn.ch, swarren@wwwdotorg.org,
+        thierry.reding@gmail.com, linux-i2c@vger.kernel.org,
+        matt.porter@linaro.org, jdelvare@suse.de,
+        laurent.pinchart+renesas@ideasonboard.com, vpalatin@chromium.org,
+        sameo@linux.intel.com, linux-doc@vger.kernel.org,
+        bjorn.andersson@sonymobile.com, u.kleine-koenig@pengutronix.de,
+        kevin.strasser@linux.intel.com, devicetree@vger.kernel.org,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk, robh+dt@kernel.org,
+        linux@arm.linux.org.uk, andriy.shevchenko@linux.intel.com,
+        ch.naveen@samsung.com, linux-arm-kernel@lists.infradead.org,
+        shane.huang@amd.com, rdunlap@infradead.org,
+        linux-kernel@vger.kernel.org, linux@prisktech.co.nz,
+        galak@codeaurora.org, schwidefsky@de.ibm.com,
+        maxime.ripard@free-electrons.com
+Subject: [PATCH v2 0/7] Add cros_ec changes for newer boards
+Date: Tue, 22 Apr 2014 09:45:47 -0700
+Message-Id: <1398185154-19404-1-git-send-email-dianders@chromium.org>
 X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1398185154-19404-1-git-send-email-dianders@chromium.org>
-References: <1398185154-19404-1-git-send-email-dianders@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Hendricks <dhendrix@chromium.org>
+This series adds the most critical cros_ec changes for newer boards
+using cros_ec.  Specifically:
+* Fixes timing/locking issues with the previously upstreamed (but
+  never used upstream) cros_ec_spi driver.
+* Updates the cros_ec header file to the latest version which allows
+  us to use newer EC features like i2c tunneling.
+* Adds an i2c tunnel driver to allow communication to the EC's i2c
+  devices.
 
-To avoid spamming the EC we calculate the time between the previous
-transfer and the current transfer and force a delay if the time delta
-is too small.
+This _doesn't_ get the EC driver fully up to speed with what's in the
+current Chromium OS trees.  There are a whole slew of cleanup patches
+there, an addition of an LPC transport mode, and exports of functions
+to userspace.  Once these patches land and we have functionality we
+can continue to pick more cleanup patches.
 
-However, a small miscalculation causes the delay period to be
-far too short. Most noticably this impacts commands with a long
-turnaround time such as EC firmware reads and writes.
+Changes in v2:
+- Update tunnel binding as per swarren
+- Removed i2c20 alias for i2c tunnel
 
-Signed-off-by: David Hendricks <dhendrix@chromium.org>
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Reviewed-by: Simon Glass <sjg@chromium.org>
-Tested-by: Andrew Bresticker <abrestic@chromium.org>
-Tested-by: Stephen Warren <swarren@nvidia.com>
----
-Changes in v2: None
+Bill Richardson (1):
+  mfd: cros_ec: Sync to the latest cros_ec_commands.h from EC sources
 
- drivers/mfd/cros_ec_spi.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+David Hendricks (1):
+  mfd: cros_ec: spi: calculate delay between transfers correctly
 
-diff --git a/drivers/mfd/cros_ec_spi.c b/drivers/mfd/cros_ec_spi.c
-index 84af8d7..c185eb6 100644
---- a/drivers/mfd/cros_ec_spi.c
-+++ b/drivers/mfd/cros_ec_spi.c
-@@ -219,7 +219,7 @@ static int cros_ec_command_spi_xfer(struct cros_ec_device *ec_dev,
- 		ktime_get_ts(&ts);
- 		delay = timespec_to_ns(&ts) - ec_spi->last_transfer_ns;
- 		if (delay < EC_SPI_RECOVERY_TIME_NS)
--			ndelay(delay);
-+			ndelay(EC_SPI_RECOVERY_TIME_NS - delay);
- 	}
- 
- 	/* Transmit phase - send our message */
+Doug Anderson (5):
+  mfd: cros_ec: spi: Add mutex to cros_ec_spi
+  mfd: cros_ec: spi: Make the cros_ec_spi timeout more reliable
+  mfd: cros_ec: spi: Increase cros_ec_spi deadline from 5ms to 100ms
+  i2c: ChromeOS EC tunnel driver
+  ARM: tegra: Add the EC i2c tunnel to tegra124-venice2
+
+ .../devicetree/bindings/i2c/i2c-cros-ec-tunnel.txt |   39 +
+ arch/arm/boot/dts/tegra124-venice2.dts             |   26 +
+ drivers/i2c/busses/Kconfig                         |    9 +
+ drivers/i2c/busses/Makefile                        |    1 +
+ drivers/i2c/busses/i2c-cros-ec-tunnel.c            |  304 ++++++
+ drivers/mfd/cros_ec.c                              |    7 +-
+ drivers/mfd/cros_ec_spi.c                          |   67 +-
+ include/linux/mfd/cros_ec.h                        |    4 +-
+ include/linux/mfd/cros_ec_commands.h               | 1128 ++++++++++++++++++--
+ 9 files changed, 1493 insertions(+), 92 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-cros-ec-tunnel.txt
+ create mode 100644 drivers/i2c/busses/i2c-cros-ec-tunnel.c
+
 -- 
 1.9.1.423.g4596e3a
 
