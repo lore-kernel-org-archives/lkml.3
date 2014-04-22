@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035AbaDVBGO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 21:06:14 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:63239 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378AbaDVBGI (ORCPT
+	id S1752747AbaDVBGo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 21:06:44 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:61971 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752516AbaDVBGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 21:06:08 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5355C07E.7040805@roeck-us.net>
-Date: Mon, 21 Apr 2014 18:06:06 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Mon, 21 Apr 2014 21:06:40 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.13 00/32] 3.13.11-stable review
-References: <20140421021133.865086647@linuxfoundation.org>
-In-Reply-To: <20140421021133.865086647@linuxfoundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com>
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com>
+ <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
+ <5355A9E9.9070102@zytor.com> <CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
+ <1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com>
+From: Andrew Lutomirski <amluto@gmail.com>
+Date: Mon, 21 Apr 2014 18:06:19 -0700
+Message-ID: <CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/20/2014 07:13 PM, Greg Kroah-Hartman wrote:
-> ----------------
->
-> Note, this is the LAST 3.13.y kernel I will be releasing.  It will be
-> end-of-life after this release, please move to 3.14.y at this time.
->
-> ----------------
->
-> This is the start of the stable review cycle for the 3.13.11 release.
-> There are 32 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
+On Mon, Apr 21, 2014 at 5:53 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> Well, if 2^17 CPUs are allocated we might 2K pages allocated.  We could easily do a bitmap here, of course.  NR_CPUS/64 is a small number, and would reduce the code complexity.
 >
 
-Build results:
-	total: 126 pass: 122 skipped: 4 fail: 0
+Even simpler: just get rid of the check entirely.  That is, break out
+of the higher level loops once one of them is set (this should be a
+big speedup regardless) and don't allocate the page if the first PTE
+is already pointing at something.
 
-Qemu tests all passed. Looks good ...
+After all, espfix_already_there is mostly a duplicate of init_espfix_cpu.
 
-Details are available at http://server.roeck-us.net:8010/builders.
-
-Guenter
-
-
+--Andy
