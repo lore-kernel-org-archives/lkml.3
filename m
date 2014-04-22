@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758579AbaDVVJx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 17:09:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36244 "EHLO
+	id S1758567AbaDVVJu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:09:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36262 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757428AbaDVUP3 (ORCPT
+	with ESMTP id S1757463AbaDVUPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:15:29 -0400
+	Tue, 22 Apr 2014 16:15:30 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Liu Hua <sdu.liu@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Bart Van Assche <bvanassche@acm.org>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Nicholas Bellinger <nab@linux-iscsi.org>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 127/133] hung_task: check the value of "sysctl_hung_task_timeout_sec"
-Date: Tue, 22 Apr 2014 13:14:25 -0700
-Message-Id: <1398197671-12786-128-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 133/133] ib_srpt: Use correct ib_sg_dma primitives
+Date: Tue, 22 Apr 2014 13:14:31 -0700
+Message-Id: <1398197671-12786-134-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,57 +29,83 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Liu Hua <sdu.liu@huawei.com>
+From: Mike Marciniszyn <mike.marciniszyn@intel.com>
 
-commit 80df28476505ed4e6701c3448c63c9229a50c655 upstream.
+commit b076808051f2c80d38e03fb2f1294f525c7a446d upstream.
 
-As sysctl_hung_task_timeout_sec is unsigned long, when this value is
-larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
-watchdog will return immediately without sleep and with print :
+The code was incorrectly using sg_dma_address() and
+sg_dma_len() instead of ib_sg_dma_address() and
+ib_sg_dma_len().
 
-  schedule_timeout: wrong timeout value ffffffffffffff83
+This prevents srpt from functioning with the
+Intel HCA and indeed will corrupt memory
+badly.
 
-and then the funtion watchdog will call schedule_timeout_interruptible
-again and again.  The screen will be filled with
-
-	"schedule_timeout: wrong timeout value ffffffffffffff83"
-
-This patch does some check and correction in sysctl, to let the function
-schedule_timeout_interruptible allways get the valid parameter.
-
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
-Tested-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Bart Van Assche <bvanassche@acm.org>
+Reviewed-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Tested-by: Vinod Kumar <vinod.kumar@intel.com>
+Signed-off-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Nicholas Bellinger <nab@linux-iscsi.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/sysctl.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ drivers/infiniband/ulp/srpt/ib_srpt.c | 16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 585015f..e17ddf6 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -145,6 +145,11 @@ static int min_percpu_pagelist_fract = 8;
- static int ngroups_max = NGROUPS_MAX;
- static const int cap_last_cap = CAP_LAST_CAP;
+diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
+index fb8abcb..75e9d17 100644
+--- a/drivers/infiniband/ulp/srpt/ib_srpt.c
++++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+@@ -1078,6 +1078,7 @@ static void srpt_unmap_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ 				 struct srpt_send_ioctx *ioctx)
+ {
++	struct ib_device *dev = ch->sport->sdev->device;
+ 	struct se_cmd *cmd;
+ 	struct scatterlist *sg, *sg_orig;
+ 	int sg_cnt;
+@@ -1124,7 +1125,7 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
  
-+/*this is needed for proc_doulongvec_minmax of sysctl_hung_task_timeout_secs */
-+#ifdef CONFIG_DETECT_HUNG_TASK
-+static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
-+#endif
-+
- #ifdef CONFIG_INOTIFY_USER
- #include <linux/inotify.h>
- #endif
-@@ -950,6 +955,7 @@ static struct ctl_table kern_table[] = {
- 		.maxlen		= sizeof(unsigned long),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dohung_task_timeout_secs,
-+		.extra2		= &hung_task_timeout_max,
- 	},
- 	{
- 		.procname	= "hung_task_warnings",
+ 	db = ioctx->rbufs;
+ 	tsize = cmd->data_length;
+-	dma_len = sg_dma_len(&sg[0]);
++	dma_len = ib_sg_dma_len(dev, &sg[0]);
+ 	riu = ioctx->rdma_ius;
+ 
+ 	/*
+@@ -1155,7 +1156,8 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ 					++j;
+ 					if (j < count) {
+ 						sg = sg_next(sg);
+-						dma_len = sg_dma_len(sg);
++						dma_len = ib_sg_dma_len(
++								dev, sg);
+ 					}
+ 				}
+ 			} else {
+@@ -1192,8 +1194,8 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ 	tsize = cmd->data_length;
+ 	riu = ioctx->rdma_ius;
+ 	sg = sg_orig;
+-	dma_len = sg_dma_len(&sg[0]);
+-	dma_addr = sg_dma_address(&sg[0]);
++	dma_len = ib_sg_dma_len(dev, &sg[0]);
++	dma_addr = ib_sg_dma_address(dev, &sg[0]);
+ 
+ 	/* this second loop is really mapped sg_addres to rdma_iu->ib_sge */
+ 	for (i = 0, j = 0;
+@@ -1216,8 +1218,10 @@ static int srpt_map_sg_to_ib_sge(struct srpt_rdma_ch *ch,
+ 					++j;
+ 					if (j < count) {
+ 						sg = sg_next(sg);
+-						dma_len = sg_dma_len(sg);
+-						dma_addr = sg_dma_address(sg);
++						dma_len = ib_sg_dma_len(
++								dev, sg);
++						dma_addr = ib_sg_dma_address(
++								dev, sg);
+ 					}
+ 				}
+ 			} else {
 -- 
 1.9.1
 
