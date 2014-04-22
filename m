@@ -1,205 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925AbaDVGvc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 02:51:32 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:42653 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbaDVGva (ORCPT
+	id S1752545AbaDVG5g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 02:57:36 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:12523 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750723AbaDVG5a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 02:51:30 -0400
-X-Original-SENDERIP: 10.177.220.169
-X-Original-MAILFROM: minchan@kernel.org
-Date: Tue, 22 Apr 2014 15:52:24 +0900
-From: Minchan Kim <minchan@kernel.org>
-To: Vlastimil Babka <vbabka@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mgorman@suse.de>,
-        Heesub Shin <heesub.shin@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Dongjun Shin <d.j.shin@samsung.com>,
-        Sunghwan Yun <sunghwan.yun@samsung.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 2/2] mm/compaction: cleanup isolate_freepages()
-Message-ID: <20140422065224.GE24292@bbox>
-References: <5342BA34.8050006@suse.cz>
- <1397553507-15330-1-git-send-email-vbabka@suse.cz>
- <1397553507-15330-2-git-send-email-vbabka@suse.cz>
- <20140417000745.GF27534@bbox>
- <20140421124146.c8beacf0d58aafff2085a461@linux-foundation.org>
- <535590FC.10607@suse.cz>
- <20140421235319.GD7178@bbox>
- <53560D3F.2030002@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53560D3F.2030002@suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 22 Apr 2014 02:57:30 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-51-535612d81668
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
+        "'Fariya Fatima'" <fariyaf@gmail.com>,
+        "'John W. Linville'" <linville@tuxdriver.com>,
+        "'Chris Ball'" <chris@printf.net>,
+        "'Ulf Hansson'" <ulf.hansson@linaro.org>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org
+Subject: [PATCH] linux-next: rsi: fix using of removed stuff from mmc
+Date: Tue, 22 Apr 2014 15:57:28 +0900
+Message-id: <000c01cf5df8$1fecf810$5fc6e830$%jun@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 8BIT
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9d+B9bVJ93/DIISpuD3zPohcsW7Q==
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsVy+t8zY90bQmHBBgfeGVtMuLyd0aJh0hNW
+	ixu/2lgtLu+aw2Zx5H8/o8XBhW2MFlt7JCy27r3KbnF8bbgDp0fjjRtsHjtn3WX3uHNtD5vH
+	jVcLmTz6tqxi9LjyfTWjx+dNcgHsUVw2Kak5mWWpRfp2CVwZkw48Zy/4z1Mx68NK9gbGp1xd
+	jJwcEgImEn2LDrJB2GISF+6tB7K5OIQEljFKrOl5xdLFyAFW9GenI0R8EaNE+4pFTBDOH0aJ
+	rqtnGUG62QS0JP6+ecMMkhABSezqaWMCSTALRErsnH4ZzBYWcJXYdfAhM4jNIqAqcftaB1ic
+	V8BWYvHMk8wQtqDEj8n3wDYzC6hLTJmSCzFGW+LJuwusEAepSzz6qwsSFhHQk/j6YznUJhGJ
+	fS/eMYKcICHwll2iZe5UqFUCEt8mH4J6RlZi0wFmiIclJQ6uuMEygVFsFpLFsxAWz0KyeBaS
+	DQsYWVYxiqYWJBcUJ6UXmeoVJ+YWl+al6yXn525ihMTrxB2M9w9YH2JMBto+kVlKNDkfGO95
+	JfGGxmZGFqYmpsZG5pZmpAkrifOmP0oKEhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cBoudh2
+	89xjL/ZadE9XNzvB6dEyMyaqwvrDxkw5TwPPdPZvOh836pSeYJq4JeiWbrb0JSXOxuSb266z
+	tzy2fKCay2mWm7VvtnbovvtCPK+dne5P1vjANPOydJfqu5kc8kdV1J47FC1W/Rn427E9UPcz
+	9/TtB8O3GR41dJLt+2hqraGcHaIU6KDEUpyRaKjFXFScCAB08WYU7QIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOKsWRmVeSWpSXmKPExsVy+t9jAd0bQmHBBvcm6FtMuLyd0aJh0hNW
+	ixu/2lgtLu+aw2Zx5H8/o8XBhW2MFlt7JCy27r3KbnF8bbgDp0fjjRtsHjtn3WX3uHNtD5vH
+	jVcLmTz6tqxi9LjyfTWjx+dNcgHsUQ2MNhmpiSmpRQqpecn5KZl56bZK3sHxzvGmZgaGuoaW
+	FuZKCnmJuam2Si4+AbpumTlAlykplCXmlAKFAhKLi5X07TBNCA1x07WAaYzQ9Q0JgusxMkAD
+	CesYMyYdeM5e8J+nYtaHlewNjE+5uhg5OCQETCT+7HTsYuQEMsUkLtxbz9bFyMUhJLCIUaJ9
+	xSImCOcPo0TX1bOMIFVsAloSf9+8YQZJiIAkdvW0MYEkmAUiJXZOvwxmCwu4Suw6+JAZxGYR
+	UJW4fa0DLM4rYCuxeOZJZghbUOLH5HssIFcwC6hLTJmSCzFGW+LJuwusEMepSzz6qwsSFhHQ
+	k/j6YznUJhGJfS/eMU5gFJiFZNAshEGzkAyahaRjASPLKkbR1ILkguKk9FwjveLE3OLSvHS9
+	5PzcTYzgZPBMegfjqgaLQ4wCHIxKPLwSBqHBQqyJZcWVuYcYJTiYlUR40/8AhXhTEiurUovy
+	44tKc1KLDzEmA705kVlKNDkfmKjySuINjU3MjCyNzCyMTMzNSRNWEuc92GodKCSQnliSmp2a
+	WpBaBLOFiYNTqoFRIDvnosn733+DXZO3pH0KCNmk5rZ1V2Esy46QLYnG0z2YfQ6dP31i+nH5
+	vjfi84pkNd8f8XM9uSeYc0vGg3nvn0256sd0ZbKGyOLWE97LODZdXLnMozh6y/0vWe4LjNz7
+	9opPmhATp36/VKrluZ4V/85zH24Yy+p/zz579Jq3XDpHgdbP3/wGSizFGYmGWsxFxYkAp2SE
+	CkoDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 08:33:35AM +0200, Vlastimil Babka wrote:
-> On 22.4.2014 1:53, Minchan Kim wrote:
-> >On Mon, Apr 21, 2014 at 11:43:24PM +0200, Vlastimil Babka wrote:
-> >>On 21.4.2014 21:41, Andrew Morton wrote:
-> >>>On Thu, 17 Apr 2014 09:07:45 +0900 Minchan Kim <minchan@kernel.org> wrote:
-> >>>
-> >>>>Hi Vlastimil,
-> >>>>
-> >>>>Below just nitpicks.
-> >>>It seems you were ignored ;)
-> >>Oops, I managed to miss your e-mail, sorry.
-> >>
-> >>>>>  {
-> >>>>>  	struct page *page;
-> >>>>>-	unsigned long high_pfn, low_pfn, pfn, z_end_pfn;
-> >>>>>+	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
-> >>>>Could you add comment for each variable?
-> >>>>
-> >>>>unsigned long pfn; /* scanning cursor */
-> >>>>unsigned long low_pfn; /* lowest pfn free scanner is able to scan */
-> >>>>unsigned long next_free_pfn; /* start pfn for scaning at next truen */
-> >>>>unsigned long z_end_pfn; /* zone's end pfn */
-> >>>>
-> >>>>
-> >>>>>@@ -688,11 +688,10 @@ static void isolate_freepages(struct zone *zone,
-> >>>>>  	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
-> >>>>>  	/*
-> >>>>>-	 * Take care that if the migration scanner is at the end of the zone
-> >>>>>-	 * that the free scanner does not accidentally move to the next zone
-> >>>>>-	 * in the next isolation cycle.
-> >>>>>+	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
-> >>>>>+	 * none, the pfn < low_pfn check will kick in.
-> >>>>        "none" what? I'd like to clear more.
-> >>If there are no updates to next_free_pfn within the for cycle. Which
-> >>matches Andrew's formulation below.
-> >>
-> >>>I did this:
-> >>Thanks!
-> >>
-> >>>--- a/mm/compaction.c~mm-compaction-cleanup-isolate_freepages-fix
-> >>>+++ a/mm/compaction.c
-> >>>@@ -662,7 +662,10 @@ static void isolate_freepages(struct zon
-> >>>  				struct compact_control *cc)
-> >>>  {
-> >>>  	struct page *page;
-> >>>-	unsigned long pfn, low_pfn, next_free_pfn, z_end_pfn;
-> >>>+	unsigned long pfn;	     /* scanning cursor */
-> >>>+	unsigned long low_pfn;	     /* lowest pfn scanner is able to scan */
-> >>>+	unsigned long next_free_pfn; /* start pfn for scaning at next round */
-> >>>+	unsigned long z_end_pfn;     /* zone's end pfn */
-> >>Yes that works.
-> >>
-> >>>  	int nr_freepages = cc->nr_freepages;
-> >>>  	struct list_head *freelist = &cc->freepages;
-> >>>@@ -679,8 +682,8 @@ static void isolate_freepages(struct zon
-> >>>  	low_pfn = ALIGN(cc->migrate_pfn + 1, pageblock_nr_pages);
-> >>>  	/*
-> >>>-	 * Seed the value for max(next_free_pfn, pfn) updates. If there are
-> >>>-	 * none, the pfn < low_pfn check will kick in.
-> >>>+	 * Seed the value for max(next_free_pfn, pfn) updates. If no pages are
-> >>>+	 * isolated, the pfn < low_pfn check will kick in.
-> >>OK.
-> >>
-> >>>  	 */
-> >>>  	next_free_pfn = 0;
-> >>>>>@@ -766,9 +765,9 @@ static void isolate_freepages(struct zone *zone,
-> >>>>>  	 * so that compact_finished() may detect this
-> >>>>>  	 */
-> >>>>>  	if (pfn < low_pfn)
-> >>>>>-		cc->free_pfn = max(pfn, zone->zone_start_pfn);
-> >>>>>-	else
-> >>>>>-		cc->free_pfn = high_pfn;
-> >>>>>+		next_free_pfn = max(pfn, zone->zone_start_pfn);
-> >>>>Why we need max operation?
-> >>>>IOW, what's the problem if we do (next_free_pfn = pfn)?
-> >>>An answer to this would be useful, thanks.
-> >>The idea (originally, not new here) is that the free scanner wants
-> >>to remember the highest-pfn
-> >>block where it managed to isolate some pages. If the following page
-> >>migration fails, these isolated
-> >>pages might be put back and would be skipped in further compaction
-> >>attempt if we used just
-> >>"next_free_pfn = pfn", until the scanners get reset.
-> >>
-> >>The question of course is if such situations are frequent and makes
-> >>any difference to compaction
-> >>outcome. And the downsides are potentially useless rescans and code
-> >>complexity. Maybe Mel
-> >>remembers how important this is? It should probably be profiled
-> >>before changes are made.
-> >I didn't mean it. What I mean is code snippet you introduced in 7ed695e069c3c.
-> >At that time, I didn't Cced so I missed that code so let's ask this time.
-> >In that patch, you added this.
-> >
-> >if (pfn < low_pfn)
-> >   cc->free_pfn = max(pfn, zone->zone_start_pfn);
-> >else
-> >   cc->free_pfn = high_pfn;
-> 
-> Oh, right, this max(), not the one in the for loop. Sorry, I should
-> have read more closely.
-> But still maybe it's a good opportunity to kill the other max() as
-> well. I'll try some testing.
-> 
-> Anyway, this is what I answered to Mel when he asked the same thing
-> when I sent
-> that 7ed695069c3c patch:
-> 
-> If a zone starts in a middle of a pageblock and migrate scanner isolates
-> enough pages early to stay within that pageblock, low_pfn will be at the
-> end of that pageblock and after the for cycle in this function ends, pfn
-> might be at the beginning of that pageblock. It might not be an actual
-> problem (this compaction will finish at this point, and if someone else
-> is racing, he will probably check the boundaries himself), but I played
-> it safe.
-> 
-> 
-> >So the purpose of max(pfn, zone->zone_start_pfn) is to be detected by
-> >compact_finished to stop compaction. And your [1/2] patch in this patchset
-> >always makes free page scanner start on pageblock boundary so when the
-> >loop in isolate_freepages is finished and pfn is lower low_pfn, the pfn
-> >would be lower than migration scanner so compact_finished will always detect
-> >it so I think you could just do
-> >
-> >if (pfn < low_pfn)
-> >   next_free_pfn = pfn;
-> >
-> >cc->free_pfn = next_free_pfn;
-> 
-> That could work. I was probably wrong about danger of racing in the
-> reply to Mel,
-> because free_pfn is stored in cc (private), not zone (shared).
-> 
-> >
-> >Or, if you want to clear *reset*,
-> >if (pfn < lown_pfn)
-> >   next_free_pfn = zone->zone_start_pfn;
-> >
-> >cc->free_pfn = next_free_pfn;
-> 
-> That would work as well but is less straightforward I think. Might
-> be misleading if
-> someone added tracepoints to track the free scanner progress with
-> pfn's (which
-> might happen soon...)
+As commit 3957848(mmc: drop the speed mode of card's state) applies,
+this change should be followed.
 
-My preference is to add following with pair of compact_finished
+drivers/net/wireless/rsi/rsi_91x_sdio.c:288:20: error: 'MMC_STATE_HIGHSPEED' undeclared (first use in this function)
+drivers/net/wireless/rsi/rsi_91x_sdio.c:299:4: error: implicit declaration of function 'mmc_card_set_highspeed' [-Werror=implicit-function-declaration]
+drivers/net/wireless/rsi/rsi_91x_sdio.c:306:2: error: implicit declaration of function 'mmc_card_highspeed' [-Werror=implicit-function-declaration]
 
-static inline void finish_compact(struct compact_control *cc)
-{
-  cc->free_pfn = cc->migrate_pfn;
-}
+Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+---
+ drivers/net/wireless/rsi/rsi_91x_sdio.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-But I don't care.
-If you didn't send this patch as clean up, I would never interrupt
-on the way but you said it's cleanup patch and the one made me spend a
-few minutes to understand the code so it's not a clean up patch. ;-).
-So, IMO, it's worth to tidy it up.
-
-
+diff --git a/drivers/net/wireless/rsi/rsi_91x_sdio.c b/drivers/net/wireless/rsi/rsi_91x_sdio.c
+index 2e39d38..46e7af4 100644
+--- a/drivers/net/wireless/rsi/rsi_91x_sdio.c
++++ b/drivers/net/wireless/rsi/rsi_91x_sdio.c
+@@ -285,7 +285,6 @@ static void rsi_reset_card(struct sdio_func *pfunction)
+ 		if (err) {
+ 			rsi_dbg(ERR_ZONE, "%s: CCCR speed reg read failed: %d\n",
+ 				__func__, err);
+-			card->state &= ~MMC_STATE_HIGHSPEED;
+ 		} else {
+ 			err = rsi_cmd52writebyte(card,
+ 						 SDIO_CCCR_SPEED,
+@@ -296,14 +295,13 @@ static void rsi_reset_card(struct sdio_func *pfunction)
+ 					__func__, err);
+ 				return;
+ 			}
+-			mmc_card_set_highspeed(card);
+ 			host->ios.timing = MMC_TIMING_SD_HS;
+ 			host->ops->set_ios(host, &host->ios);
+ 		}
+ 	}
+ 
+ 	/* Set clock */
+-	if (mmc_card_highspeed(card))
++	if (mmc_card_hs(card))
+ 		clock = 50000000;
+ 	else
+ 		clock = card->cis.max_dtr;
 -- 
-Kind regards,
-Minchan Kim
+1.7.0.4
+
+
