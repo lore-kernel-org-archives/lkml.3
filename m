@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756542AbaDVOQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:16:32 -0400
-Received: from mail-we0-f178.google.com ([74.125.82.178]:52581 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756458AbaDVOQU (ORCPT
+	id S1756461AbaDVOSF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:18:05 -0400
+Received: from moutng.kundenserver.de ([212.227.126.130]:60231 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753950AbaDVORz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:16:20 -0400
-Message-ID: <535679B1.5080407@linaro.org>
-Date: Tue, 22 Apr 2014 15:16:17 +0100
-From: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Tue, 22 Apr 2014 10:17:55 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Javier Martinez Canillas <javier@dowhile0.org>
+Subject: Re: [RFC PATCH 0/5] add gpio_chip_ops to hold GPIO operations
+Date: Tue, 22 Apr 2014 16:17:42 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "Linux-OMAP" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <1396981215-24888-1-git-send-email-javier.martinez@collabora.co.uk> <CACRpkdYLaGXJ+O0rsL5+rjUsOvxCxK2b9QtH2j4FD0g21vx8_Q@mail.gmail.com> <CABxcv=mb+CXQbrS==hBayMQGsaJCPuLR=xyW_BJpZm2oSNBu-w@mail.gmail.com>
+In-Reply-To: <CABxcv=mb+CXQbrS==hBayMQGsaJCPuLR=xyW_BJpZm2oSNBu-w@mail.gmail.com>
 MIME-Version: 1.0
-To: Christopher Covington <cov@codeaurora.org>
-CC: linux-mmc@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        linux-kernel@vger.kernel.org, agross@quicinc.com,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH RFC 00/12] Add Qualcomm SD Card Controller support.
-References: <1398116624-31052-1-git-send-email-srinivas.kandagatla@linaro.org> <53566778.5090603@codeaurora.org>
-In-Reply-To: <53566778.5090603@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201404221617.43272.arnd@arndb.de>
+X-Provags-ID: V02:K0:Y8/mRxZsSx08kuBQRlwn8mLWdSOucIPgnfgMxgHybrv
+ 3K/9TAQDy4cctcfEKXseIUwlxsvKvDaPMjc7huGBNuXoQ0DiFh
+ FM9EOKshjxu42Jw2YZKIC3RZCiMAEEN0yhrs7U/HUAldvUhaiq
+ EiGOU3T/mtfIj2IHaB1IHmIDYWwEIa8KE7CZ02+ioUIkjB07sK
+ i17p660c28QrYHgiHxcDgNpqwzxdCZcZOnSlc5LzaevRyvfph3
+ 7lYrGuRwqb0zkN4V0Shl3xGrp8VecsLaNxHIo85/qcRfreiVRA
+ h5HCRxIm5F7BXvM9aBQGfTBEcjEp6b7XkDIc8E5UBGNeTYz8rD
+ ltW7nOwFG1Eo0OKeWwx0=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christopher,
+On Tuesday 22 April 2014, Javier Martinez Canillas wrote:
+> Hello Linus,
+> 
+> On Tue, Apr 22, 2014 at 1:36 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> > On Tue, Apr 8, 2014 at 8:20 PM, Javier Martinez Canillas
+> > <javier.martinez@collabora.co.uk> wrote:
+> >
+> >> So this is an RFC patch-set to add a virtual table to be used by
+> >> GPIO chip controllers and consist of the following patches:
+> >
+> > Overall I like this.
 
+Agreed, it's a very good cleanup.
 
-On 22/04/14 13:58, Christopher Covington wrote:
-> Hi Srini,
->
-> On 04/21/2014 05:43 PM, srinivas.kandagatla@linaro.org wrote:
->
->> This patches are tested in PIO mode on IFC8064 board with both eMMC and
->> external SD card. I would appreciate any feedback/suggestions on the overall
->> approach.
->
-I pushed a temporary tag "mmci-pio-srini-wip" for you on my git tree 
-git://git.linaro.org/landing-teams/working/qualcomm/kernel.git
+> > However I don't want to see any transitional phase. I prefer a BIG
+> > fat patch converting everyone and its dog to the new vtable and
+> > removing the old function pointers. This can be based on the HEAD
+> > of my GPIO devel branch.
+> >
+> 
+> Ok, I was adding a commit per GPIO driver but the patch-set would have
+> been very big (~200 patches).
+> 
+> > It may be a good idea to use coccinelle for this refactoring in order
+> > not to miss any users.
+> >
+> 
+> Agreed, I was manually searching for users by using grep but I agree
+> that is much safer to use coccinelle for this. I don't have previous
+> experience writing coccinelle semantics patches though so it may take
+> more time than I thought but it is the perfect excuse to finally learn
+> how to do it :-)
 
-> Is a non-upstream device tree needed to reproduce your test setup? If so could
-> you please point to or post it?
+I'm not a big fan of doing this all at once, but it's not my call here.
+Just one recommendation: if you can't do an obvious coccinelle patch
+to do everything at once, use extra patches in the beginning to clean
+up the code enough to make it work, then have the large patch fully
+automated.
 
-You will need to use multi_v7_defconfig.
-
-Thanks,
-srini
->
-> Thanks,
-> Christopher
->
+	Arnd
