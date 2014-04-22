@@ -1,85 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755617AbaDVNBR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 09:01:17 -0400
-Received: from xavier.telenet-ops.be ([195.130.132.52]:51094 "EHLO
-	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752228AbaDVNBO (ORCPT
+	id S1755950AbaDVNBm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 09:01:42 -0400
+Received: from smtp.adetelgroup.com ([94.247.26.71]:31429 "EHLO
+	hbg-pa71.hmc-pa.adm" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755377AbaDVNBb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 09:01:14 -0400
-From: Geert Uytterhoeven <geert+renesas@glider.be>
-To: Simon Horman <horms@verge.net.au>, Magnus Damm <magnus.damm@gmail.com>,
-        Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>
-Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Geert Uytterhoeven <geert+renesas@glider.be>
-Subject: [PATCH 1/2] ARM: shmobile: armadillo800eva: Add LED support
-Date: Tue, 22 Apr 2014 15:01:06 +0200
-Message-Id: <1398171667-24288-1-git-send-email-geert+renesas@glider.be>
-X-Mailer: git-send-email 1.7.9.5
+	Tue, 22 Apr 2014 09:01:31 -0400
+From: Hubert Chaumette <hchaumette@adeneo-embedded.com>
+To: f.fainelli@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: [PATCH] net/phy: micrel: fix bugged test on device tree loading for ksz9021
+Date: Tue, 22 Apr 2014 15:01:04 +0200
+Message-Id: <1398171664-32662-1-git-send-email-hchaumette@adeneo-embedded.com>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cfr. r8a7740-armadillo800eva-reference.dts
+In ksz9021_load_values_from_of() val2 to val4 aren't tested against their
+initialization value.
+This causes the test to always succeed, and this value to be used as if it
+was loaded from the devicetree instead of being ignored, in case of a
+missing/invalid property in the ethernet OF device node.
+As a result, the value "0" is written to the relevant registers.
 
-Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+Change the conditions to test against the right initialization value.
+
+Signed-off-by: Hubert Chaumette <hchaumette@adeneo-embedded.com>
 ---
- arch/arm/mach-shmobile/board-armadillo800eva.c |   35 ++++++++++++++++++++++++
- 1 file changed, 35 insertions(+)
+ drivers/net/phy/micrel.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/arm/mach-shmobile/board-armadillo800eva.c b/arch/arm/mach-shmobile/board-armadillo800eva.c
-index 276d713f0ee9..688a69c7e5fc 100644
---- a/arch/arm/mach-shmobile/board-armadillo800eva.c
-+++ b/arch/arm/mach-shmobile/board-armadillo800eva.c
-@@ -586,6 +586,40 @@ static struct platform_device hdmi_lcdc_device = {
- 	},
- };
+diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
+index df56b26..8c4b1b2 100644
+--- a/drivers/net/phy/micrel.c
++++ b/drivers/net/phy/micrel.c
+@@ -205,13 +205,13 @@ static int ksz9021_load_values_from_of(struct phy_device *phydev,
+ 	if (val1 != -1)
+ 		newval = ((newval & 0xfff0) | ((val1 / PS_TO_REG) & 0xf) << 0);
  
-+/* LEDS */
-+static struct gpio_led gpio_leds[] = {
-+	{
-+		.name		= "led1",
-+		.gpio		= 102,
-+		.default_state	= LEDS_GPIO_DEFSTATE_ON,
-+	}, {
-+		.name		= "led2",
-+		.gpio		= 111,
-+		.default_state	= LEDS_GPIO_DEFSTATE_ON,
-+	}, {
-+		.name		= "led3",
-+		.gpio		= 110,
-+		.default_state	= LEDS_GPIO_DEFSTATE_ON,
-+	}, {
-+		.name		= "led4",
-+		.gpio		= 177,
-+		.default_state	= LEDS_GPIO_DEFSTATE_ON,
-+	},
-+};
-+
-+static struct gpio_led_platform_data leds_gpio_info = {
-+	.leds		= gpio_leds,
-+	.num_leds	= ARRAY_SIZE(gpio_leds),
-+};
-+
-+static struct platform_device leds_gpio_device = {
-+	.name   = "leds-gpio",
-+	.id     = -1,
-+	.dev    = {
-+		.platform_data  = &leds_gpio_info,
-+	},
-+};
-+
- /* GPIO KEY */
- #define GPIO_KEY(c, g, d, ...) \
- 	{ .code = c, .gpio = g, .desc = d, .active_low = 1, __VA_ARGS__ }
-@@ -1077,6 +1111,7 @@ static struct platform_device *eva_devices[] __initdata = {
- 	&lcdc0_device,
- 	&pwm_device,
- 	&pwm_backlight_device,
-+	&leds_gpio_device,
- 	&gpio_keys_device,
- 	&sh_eth_device,
- 	&vcc_sdhi0,
+-	if (val2 != -1)
++	if (val2 != -2)
+ 		newval = ((newval & 0xff0f) | ((val2 / PS_TO_REG) & 0xf) << 4);
+ 
+-	if (val3 != -1)
++	if (val3 != -3)
+ 		newval = ((newval & 0xf0ff) | ((val3 / PS_TO_REG) & 0xf) << 8);
+ 
+-	if (val4 != -1)
++	if (val4 != -4)
+ 		newval = ((newval & 0x0fff) | ((val4 / PS_TO_REG) & 0xf) << 12);
+ 
+ 	return kszphy_extended_write(phydev, reg, newval);
 -- 
-1.7.9.5
+1.9.2
 
