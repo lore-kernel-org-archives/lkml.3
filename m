@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbaDVHJX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 03:09:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:35927 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752526AbaDVHHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 03:07:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,902,1389772800"; 
-   d="scan'208";a="517082291"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Joerg Roedel <joro@8bytes.org>, David Woodhouse <dwmw2@infradead.org>,
-        Yinghai Lu <yinghai@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Ashok Raj <ashok.raj@intel.com>,
-        Yijing Wang <wangyijing@huawei.com>, Tony Luck <tony.luck@intel.com>,
-        iommu@lists.linux-foundation.org, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Subject: [Patch Part3 V1 21/22] iommu/vt-d: introduce helper function iova_size() to improve code readability
-Date: Tue, 22 Apr 2014 15:07:32 +0800
-Message-Id: <1398150453-28141-22-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1398150453-28141-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1398150453-28141-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1754919AbaDVHKG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 03:10:06 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:52035 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133AbaDVHJ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 03:09:58 -0400
+Date: Tue, 22 Apr 2014 09:09:55 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Sebastian Capella <sebastian.capella@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        linaro-kernel@lists.linaro.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Russell King <linux@arm.linux.org.uk>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v2] PM / Hibernate: no kernel_power_off when
+ pm_power_off NULL
+Message-ID: <20140422070955.GA14108@amd.pavel.ucw.cz>
+References: <1398126646-29518-1-git-send-email-sebastian.capella@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398126646-29518-1-git-send-email-sebastian.capella@linaro.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
----
- drivers/iommu/intel-iommu.c |    7 +++----
- include/linux/iova.h        |    5 +++++
- 2 files changed, 8 insertions(+), 4 deletions(-)
+On Mon 2014-04-21 17:30:46, Sebastian Capella wrote:
+> Reboot logic in kernel/reboot will avoid calling kernel_power_off
+> when pm_power_off is null, and instead uses kernel_halt.  Change
+> hibernate's power_down to follow the behavior in the reboot call.
+> 
+> Calling the notifier twice (once for SYS_POWER_OFF and again for
+> SYS_HALT) causes a panic during hibernation on Kirkwood
+> Openblocks A6 board.
+> 
+> Signed-off-by: Sebastian Capella <sebastian.capella@linaro.org>
+> Reported-by: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+> Cc: Len Brown <len.brown@intel.com>
 
-diff --git a/drivers/iommu/intel-iommu.c b/drivers/iommu/intel-iommu.c
-index c4bca2d814c8..6d5b94aaac6e 100644
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -3114,10 +3114,10 @@ static void flush_unmaps(void)
- 			/* On real hardware multiple invalidations are expensive */
- 			if (cap_caching_mode(iommu->cap))
- 				iommu_flush_iotlb_psi(iommu, domain->id,
--					iova->pfn_lo, iova->pfn_hi - iova->pfn_lo + 1,
-+					iova->pfn_lo, iova_size(iova),
- 					!deferred_flush[i].freelist[j], 0);
- 			else {
--				mask = ilog2(mm_to_dma_pfn(iova->pfn_hi - iova->pfn_lo + 1));
-+				mask = ilog2(mm_to_dma_pfn(iova_size(iova)));
- 				iommu_flush_dev_iotlb(deferred_flush[i].domain[j],
- 						(uint64_t)iova->pfn_lo << PAGE_SHIFT, mask);
- 			}
-@@ -4061,8 +4061,7 @@ static int intel_iommu_memory_notifier(struct notifier_block *nb,
- 			rcu_read_lock();
- 			for_each_active_iommu(iommu, drhd)
- 				iommu_flush_iotlb_psi(iommu, si_domain->id,
--					iova->pfn_lo,
--					iova->pfn_hi - iova->pfn_lo + 1,
-+					iova->pfn_lo, iova_size(iova),
- 					!freelist, 0);
- 			rcu_read_unlock();
- 			dma_free_pagelist(freelist);
-diff --git a/include/linux/iova.h b/include/linux/iova.h
-index 3277f4711349..19e81d5ccb6d 100644
---- a/include/linux/iova.h
-+++ b/include/linux/iova.h
-@@ -34,6 +34,11 @@ struct iova_domain {
- 	unsigned long	dma_32bit_pfn;
- };
- 
-+static inline unsigned long iova_size(struct iova *iova)
-+{
-+	return iova->pfn_hi - iova->pfn_lo + 1;
-+}
-+
- struct iova *alloc_iova_mem(void);
- void free_iova_mem(struct iova *iova);
- void free_iova(struct iova_domain *iovad, unsigned long pfn);
+Reviewed-by: Pavel Machek <pavel@ucw.cz>
+
 -- 
-1.7.10.4
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
