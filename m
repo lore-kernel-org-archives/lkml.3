@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbaDVIgW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:36:22 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:42996 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753671AbaDVIgP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:36:15 -0400
-Date: Tue, 22 Apr 2014 09:35:24 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Sebastian Capella <sebastian.capella@linaro.org>
-Subject: Re: linux-next: build warning after merge of the arm tree
-Message-ID: <20140422083524.GQ24070@n2100.arm.linux.org.uk>
-References: <20140422103223.f16654774d15a81410eaad22@canb.auug.org.au>
+	id S1754241AbaDVIi7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:38:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33462 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752138AbaDVIi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 04:38:56 -0400
+Date: Tue, 22 Apr 2014 09:38:52 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH] mm: vmscan: Do not throttle based on pfmemalloc reserves if
+ node has no ZONE_NORMAL
+Message-ID: <20140422083852.GB23991@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20140422103223.f16654774d15a81410eaad22@canb.auug.org.au>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 10:32:23AM +1000, Stephen Rothwell wrote:
-> Hi Russell,
-> 
-> After merging the arm tree, today's linux-next build (arm
-> multi_v7_defconfig) produced this warning:
-> 
-> In file included from /scratch/sfr/next/arch/arm/include/asm/page.h:163:0,
->                  from /scratch/sfr/next/include/linux/mmzone.h:20,
->                  from /scratch/sfr/next/include/linux/gfp.h:5,
->                  from /scratch/sfr/next/include/linux/kmod.h:22,
->                  from /scratch/sfr/next/include/linux/module.h:13,
->                  from /scratch/sfr/next/init/version.c:10:
-> /scratch/sfr/next/arch/arm/include/asm/memory.h:297:0: warning: "virt_to_pfn" redefined [enabled by default]
-> /scratch/sfr/next/arch/arm/include/asm/memory.h:194:0: note: this is the location of the previous definition
-> 
-> Lots of these ...
-> 
-> Introduced by commit e2b5c192c4a6 ("ARM: 8011/1: ARM hibernation /
-> suspend-to-disk").
+throttle_direct_reclaim() is meant to trigger during swap-over-network
+during which the min watermark is treated as a pfmemalloc reserve. It
+throttes on the first node in the zonelist but this is flawed.
 
-Yes, it's a conflict between that patch and one I pushed during the
-merge window.  I've asked the Sebastian to validate with his version of
-virt_to_pfn() removed, and I'm waiting for the results of that...
-That's partly happened, but I'm waiting for the final results.
+On a NUMA machine running a 32-bit kernel (I know) allocation requests
+freom CPUs on node 1 would detect no pfmemalloc reserves and the process
+gets throttled. This patch adjusts throttling of direct reclaim to throttle
+based on the first node in the zonelist that has a usable ZONE_NORMAL or
+lower zone.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+Signed-off-by: Mel Gorman <mgorman@suse.de>
+---
+ mm/vmscan.c | 33 +++++++++++++++++++++++++++------
+ 1 file changed, 27 insertions(+), 6 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 3f56c8d..9c4918e9 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2507,10 +2507,17 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+ 
+ 	for (i = 0; i <= ZONE_NORMAL; i++) {
+ 		zone = &pgdat->node_zones[i];
++		if (!populated_zone(zone))
++			continue;
++
+ 		pfmemalloc_reserve += min_wmark_pages(zone);
+ 		free_pages += zone_page_state(zone, NR_FREE_PAGES);
+ 	}
+ 
++	/* If there are no reserves (unexpected config) then do not throttle */
++	if (!pfmemalloc_reserve)
++		return true;
++
+ 	wmark_ok = free_pages > pfmemalloc_reserve / 2;
+ 
+ 	/* kswapd must be awake if processes are being throttled */
+@@ -2535,9 +2542,9 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 					nodemask_t *nodemask)
+ {
++	struct zoneref *z;
+ 	struct zone *zone;
+-	int high_zoneidx = gfp_zone(gfp_mask);
+-	pg_data_t *pgdat;
++	pg_data_t *pgdat = NULL;
+ 
+ 	/*
+ 	 * Kernel threads should not be throttled as they may be indirectly
+@@ -2556,10 +2563,24 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+ 	if (fatal_signal_pending(current))
+ 		goto out;
+ 
+-	/* Check if the pfmemalloc reserves are ok */
+-	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+-	pgdat = zone->zone_pgdat;
+-	if (pfmemalloc_watermark_ok(pgdat))
++	/*
++	 * Check if the pfmemalloc reserves are ok by finding the first node
++	 * with a usable ZONE_NORMAL or lower zone
++	 */
++        for_each_zone_zonelist_nodemask(zone, z, zonelist,
++                                        gfp_mask, nodemask) {
++		if (zone_idx(zone) > ZONE_NORMAL)
++			continue;
++
++		/* Throttle based on the first usable node */
++		pgdat = zone->zone_pgdat;
++		if (pfmemalloc_watermark_ok(pgdat))
++			goto out;
++		break;
++	}
++
++	/* If no zone was usable by the allocation flags then do not throttle */
++	if (!pgdat)
+ 		goto out;
+ 
+ 	/* Account for the throttling */
