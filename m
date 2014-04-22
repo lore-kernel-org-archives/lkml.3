@@ -1,68 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679AbaDVOVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:21:16 -0400
-Received: from moutng.kundenserver.de ([212.227.126.130]:61868 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908AbaDVOVM (ORCPT
+	id S1756483AbaDVOW7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:22:59 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:13064 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752201AbaDVOW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:21:12 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-Subject: Re: [PATCH v3 7/7] ARM: sunxi: update the default ARCH_NR_GPIO for sunxi arch
-Date: Tue, 22 Apr 2014 16:20:19 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio =?utf-8?q?L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Mike Turquette <mturquette@linaro.org>, "Chen-Yu Tsai" <wens@csie.org>,
-        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        dev@linux-sunxi.org, Alexandre Courbot <gnurou@gmail.com>,
-        "arm@kernel.org" <arm@kernel.org>
-References: <1397137966-30818-1-git-send-email-boris.brezillon@free-electrons.com> <1397137966-30818-8-git-send-email-boris.brezillon@free-electrons.com> <CACRpkdYT9HvG6dOVOEnBSNhRt847tdCsAU6E_dZLdFQEHntpKg@mail.gmail.com>
-In-Reply-To: <CACRpkdYT9HvG6dOVOEnBSNhRt847tdCsAU6E_dZLdFQEHntpKg@mail.gmail.com>
+	Tue, 22 Apr 2014 10:22:56 -0400
+Date: Tue, 22 Apr 2014 07:22:45 -0700
+From: Drew Richardson <drew.richardson@arm.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michel Lespinasse <walken@google.com>,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        William Roberts <bill.c.roberts@gmail.com>,
+        Gideon Israel Dsouza <gidisrael@gmail.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, Pawel Moll <pawel.moll@arm.com>
+Subject: [PATCH] Export kmem tracepoints for use by kernel modules
+Message-ID: <20140422142244.GA21121@dreric01-Precision-T1600>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404221620.19519.arnd@arndb.de>
-X-Provags-ID: V02:K0:djmMHYvd3BJjyr56QGVZQfhASQykkOB/W60Pzp9VIHz
- jwNa22E+mXMdDp5MshiD0O//Vmy4dEMyrnKFmpkHtrN4dT7GJq
- ms/L9c3deRxxmPYqIjNX+OvrfU+2GxzK4jMEJ1j9nXwBfmOuwO
- ZxTN+0TPHc0x55xB0wLtjanfUtood2l/vEepx1aAWqXlmFaEsC
- frppHRR1s9ySxt1T3Nz80gQxlluZX3h0C0lcnVTuuWVJGQRNGY
- vCsaBCZYQJiG6EjY4GnytvNEPMFz0SD/azU0puPg4zUS/5Dx7b
- EIzyOgStdWzp0/yp6glYzJ0b7J7PiMr1n0177WQKqxmx89yyt+
- XZCy6rSb7mufVVutjQCs=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 22 April 2014, Linus Walleij wrote:
-> On Thu, Apr 10, 2014 at 3:52 PM, Boris BREZILLON
-> <boris.brezillon@free-electrons.com> wrote:
-> 
-> > The A31 SoC has PL and PM banks and thus increase the default ARCH_NR_GPIO.
-> >
-> > Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> > Acked-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> 
-> Patch applied, and grrrr we need to get rid of these static #gpios defines
-> in the long run.
+After commit de7b2973903c6cc50b31ee5682a69b2219b9919d ("tracepoint:
+Use struct pointer instead of name hash for reg/unreg tracepoints"),
+any tracepoints used in a kernel module must be exported.
 
-Yes, that would be nice. I guess the gpio-descriptor framework should
-have solved this, but we can't move everything over to that soon, right?
+Signed-off-by: Drew Richardson <drew.richardson@arm.com>
+Acked-by: Pawel Moll <pawel.moll@arm.com>
+---
+ mm/util.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-> ARM SoC folks: notice this hitting arch/arm/Kconfig, complain if it's
-> problematic.
+diff --git a/mm/util.c b/mm/util.c
+index f380af7ea779..379e8db560b3 100644
+--- a/mm/util.c
++++ b/mm/util.c
+@@ -502,3 +502,9 @@ EXPORT_TRACEPOINT_SYMBOL(kmalloc_node);
+ EXPORT_TRACEPOINT_SYMBOL(kmem_cache_alloc_node);
+ EXPORT_TRACEPOINT_SYMBOL(kfree);
+ EXPORT_TRACEPOINT_SYMBOL(kmem_cache_free);
++EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_free);
++EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_free_batched);
++EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_alloc);
++EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_alloc_zone_locked);
++EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_pcpu_drain);
++EXPORT_TRACEPOINT_SYMBOL_GPL(mm_page_alloc_extfrag);
+-- 
+1.8.3.2
 
-Thanks for letting us know about it.
-
-	Arnd
