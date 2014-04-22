@@ -1,60 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbaDVCXw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 22:23:52 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:25256 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751236AbaDVCXt (ORCPT
+	id S1753702AbaDVC1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 22:27:21 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:47506 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751217AbaDVC1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 22:23:49 -0400
-Date: Mon, 21 Apr 2014 22:23:46 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Namhyung Kim <namhyung@kernel.org>
-Subject: [PATCH] tools lib traceevent: Fix backward compatibility macros for
- pevent filter enums
-Message-ID: <20140421222346.0351ced4@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Mon, 21 Apr 2014 22:27:19 -0400
+From: Neil Zhang <zhangwm@marvell.com>
+To: <will.deacon@arm.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Neil Zhang <zhangwm@marvell.com>,
+        Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Subject: [PATCH v4] ARM: perf: save/restore pmu registers in pm notifier
+Date: Tue, 22 Apr 2014 10:26:36 +0800
+Message-ID: <1398133596-29170-1-git-send-email-zhangwm@marvell.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-22_01:2014-04-21,2014-04-22,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1404220026
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This adds core support for saving and restoring CPU PMU registers
+for suspend/resume support i.e. deeper C-states in cpuidle terms.
+This patch adds support only to ARMv7 PMU registers save/restore.
+It needs to be extended to xscale and ARMv6 if needed.
 
-The return value for pevent_filter_match() is suppose to return FILTER_NONE
-if the event doesn't have a filter, and FILTER_NOEXIST if there is no filter
-at all. But the change 41e12e580a7 "tools lib traceevent: Refactor
-pevent_filter_match() to get rid of die()" replaced the return value
-with PEVENT_ERRNO__* values and added "backward compatibility" macros
-that used the old names. Unfortunately, the NOEXIST and NONE macros were
-swapped, and this broke users that use the old return names.
+I made this patch because DS-5 is not working on Marvell's CA7 based SoCs.
+And it has consulted Sudeep KarkadaNagesha's patch set for multiple PMUs.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Thanks Will and Sudeep's suggestion to only save / restore used events.
+
+Cc: Sudeep KarkadaNagesha <sudeep.karkadanagesha@arm.com>
+Signed-off-by: Neil Zhang <zhangwm@marvell.com>
 ---
- tools/lib/traceevent/event-parse.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/include/asm/pmu.h       |    4 +++
+ arch/arm/kernel/perf_event.c     |    2 ++
+ arch/arm/kernel/perf_event_cpu.c |   28 +++++++++++++++
+ arch/arm/kernel/perf_event_v7.c  |   74 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 108 insertions(+)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 9c38181..d6c610a 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -886,8 +886,8 @@ struct event_filter {
- struct event_filter *pevent_filter_alloc(struct pevent *pevent);
+diff --git a/arch/arm/include/asm/pmu.h b/arch/arm/include/asm/pmu.h
+index ae1919b..3de3db7 100644
+--- a/arch/arm/include/asm/pmu.h
++++ b/arch/arm/include/asm/pmu.h
+@@ -83,6 +83,10 @@ struct arm_pmu {
+ 	int		(*request_irq)(struct arm_pmu *, irq_handler_t handler);
+ 	void		(*free_irq)(struct arm_pmu *);
+ 	int		(*map_event)(struct perf_event *event);
++	int		(*register_pm_notifier)(struct arm_pmu *);
++	void		(*unregister_pm_notifier)(struct arm_pmu *);
++	void		(*save_regs)(struct arm_pmu *);
++	void		(*restore_regs)(struct arm_pmu *);
+ 	int		num_events;
+ 	atomic_t	active_events;
+ 	struct mutex	reserve_mutex;
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index a6bc431..08822de 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -326,6 +326,7 @@ static void
+ armpmu_release_hardware(struct arm_pmu *armpmu)
+ {
+ 	armpmu->free_irq(armpmu);
++	armpmu->unregister_pm_notifier(armpmu);
+ 	pm_runtime_put_sync(&armpmu->plat_device->dev);
+ }
  
- /* for backward compatibility */
--#define FILTER_NONE		PEVENT_ERRNO__FILTER_NOT_FOUND
--#define FILTER_NOEXIST		PEVENT_ERRNO__NO_FILTER
-+#define FILTER_NONE		PEVENT_ERRNO__NO_FILTER
-+#define FILTER_NOEXIST		PEVENT_ERRNO__FILTER_NOT_FOUND
- #define FILTER_MISS		PEVENT_ERRNO__FILTER_MISS
- #define FILTER_MATCH		PEVENT_ERRNO__FILTER_MATCH
+@@ -339,6 +340,7 @@ armpmu_reserve_hardware(struct arm_pmu *armpmu)
+ 		return -ENODEV;
+ 
+ 	pm_runtime_get_sync(&pmu_device->dev);
++	armpmu->register_pm_notifier(armpmu);
+ 	err = armpmu->request_irq(armpmu, armpmu_dispatch_irq);
+ 	if (err) {
+ 		armpmu_release_hardware(armpmu);
+diff --git a/arch/arm/kernel/perf_event_cpu.c b/arch/arm/kernel/perf_event_cpu.c
+index 51798d7..79e1c06 100644
+--- a/arch/arm/kernel/perf_event_cpu.c
++++ b/arch/arm/kernel/perf_event_cpu.c
+@@ -19,6 +19,7 @@
+ #define pr_fmt(fmt) "CPU PMU: " fmt
+ 
+ #include <linux/bitmap.h>
++#include <linux/cpu_pm.h>
+ #include <linux/export.h>
+ #include <linux/kernel.h>
+ #include <linux/of.h>
+@@ -173,6 +174,31 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t handler)
+ 	return 0;
+ }
+ 
++static int cpu_pmu_pm_notify(struct notifier_block *b,
++					unsigned long action, void *v)
++{
++	if (action == CPU_PM_ENTER && cpu_pmu->save_regs)
++		cpu_pmu->save_regs(cpu_pmu);
++	else if (action == CPU_PM_EXIT && cpu_pmu->restore_regs)
++		cpu_pmu->restore_regs(cpu_pmu);
++
++	return NOTIFY_OK;
++}
++
++static struct notifier_block cpu_pmu_pm_notifier = {
++	.notifier_call = cpu_pmu_pm_notify,
++};
++
++static int cpu_pmu_register_pm_notifier(struct arm_pmu *cpu_pmu)
++{
++	return cpu_pm_register_notifier(&cpu_pmu_pm_notifier);
++}
++
++static void cpu_pmu_unregister_pm_notifier(struct arm_pmu *cpu_pmu)
++{
++	cpu_pm_unregister_notifier(&cpu_pmu_pm_notifier);
++}
++
+ static void cpu_pmu_init(struct arm_pmu *cpu_pmu)
+ {
+ 	int cpu;
+@@ -187,6 +213,8 @@ static void cpu_pmu_init(struct arm_pmu *cpu_pmu)
+ 	cpu_pmu->get_hw_events	= cpu_pmu_get_cpu_events;
+ 	cpu_pmu->request_irq	= cpu_pmu_request_irq;
+ 	cpu_pmu->free_irq	= cpu_pmu_free_irq;
++	cpu_pmu->register_pm_notifier	= cpu_pmu_register_pm_notifier;
++	cpu_pmu->unregister_pm_notifier	= cpu_pmu_unregister_pm_notifier;
+ 
+ 	/* Ensure the PMU has sane values out of reset. */
+ 	if (cpu_pmu->reset)
+diff --git a/arch/arm/kernel/perf_event_v7.c b/arch/arm/kernel/perf_event_v7.c
+index f4ef398..9069310 100644
+--- a/arch/arm/kernel/perf_event_v7.c
++++ b/arch/arm/kernel/perf_event_v7.c
+@@ -1237,6 +1237,78 @@ static void armv7_pmnc_dump_regs(struct arm_pmu *cpu_pmu)
+ }
+ #endif
+ 
++struct armv7_pmuregs {
++	u32 pmc;
++	u32 pmcntenset;
++	u32 pmintenset;
++	u32 pmxevttype[8];
++	u32 pmxevtcnt[8];
++};
++
++static DEFINE_PER_CPU(struct armv7_pmuregs, pmu_regs);
++
++static void armv7pmu_reset(void *info);
++
++static void armv7pmu_save_regs(struct arm_pmu *cpu_pmu)
++{
++	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
++	struct armv7_pmuregs *regs;
++	int bit;
++
++	/* Check whether there are events used */
++	bit = find_first_bit(events->used_mask, cpu_pmu->num_events);
++	if (bit >= cpu_pmu->num_events)
++		return;
++
++	regs = this_cpu_ptr(&pmu_regs);
++	for_each_set_bit(bit, events->used_mask, cpu_pmu->num_events) {
++		if (bit) {
++			armv7_pmnc_select_counter(bit);
++			asm volatile("mrc p15, 0, %0, c9, c13, 1"
++					: "=r"(regs->pmxevttype[bit]));
++			asm volatile("mrc p15, 0, %0, c9, c13, 2"
++					: "=r"(regs->pmxevtcnt[bit]));
++		} else
++			asm volatile("mrc p15, 0, %0, c9, c13, 0"
++					: "=r" (regs->pmxevtcnt[0]));
++	}
++
++	asm volatile("mrc p15, 0, %0, c9, c12, 1" : "=r" (regs->pmcntenset));
++	asm volatile("mrc p15, 0, %0, c9, c14, 1" : "=r" (regs->pmintenset));
++	asm volatile("mrc p15, 0, %0, c9, c12, 0" : "=r" (regs->pmc));
++}
++
++static void armv7pmu_restore_regs(struct arm_pmu *cpu_pmu)
++{
++	struct pmu_hw_events *events = cpu_pmu->get_hw_events();
++	struct armv7_pmuregs *regs;
++	int bit;
++
++	/* Check whether there are events used */
++	bit = find_first_bit(events->used_mask, cpu_pmu->num_events);
++	if (bit >= cpu_pmu->num_events)
++		return;
++
++	armv7pmu_reset(cpu_pmu);
++
++	regs = this_cpu_ptr(&pmu_regs);
++	for_each_set_bit(bit, events->used_mask, cpu_pmu->num_events) {
++		if (bit) {
++			armv7_pmnc_select_counter(bit);
++			asm volatile("mcr p15, 0, %0, c9, c13, 1"
++					: : "r"(regs->pmxevttype[bit]));
++			asm volatile("mcr p15, 0, %0, c9, c13, 2"
++					: : "r"(regs->pmxevtcnt[bit]));
++		} else
++			asm volatile("mcr p15, 0, %0, c9, c13, 0"
++					: : "r" (regs->pmxevtcnt[0]));
++	}
++
++	asm volatile("mcr p15, 0, %0, c9, c12, 1" : : "r" (regs->pmcntenset));
++	asm volatile("mcr p15, 0, %0, c9, c14, 1" : : "r" (regs->pmintenset));
++	asm volatile("mcr p15, 0, %0, c9, c12, 0" : : "r" (regs->pmc));
++}
++
+ static void armv7pmu_enable_event(struct perf_event *event)
+ {
+ 	unsigned long flags;
+@@ -1528,6 +1600,8 @@ static void armv7pmu_init(struct arm_pmu *cpu_pmu)
+ 	cpu_pmu->start		= armv7pmu_start;
+ 	cpu_pmu->stop		= armv7pmu_stop;
+ 	cpu_pmu->reset		= armv7pmu_reset;
++	cpu_pmu->save_regs	= armv7pmu_save_regs;
++	cpu_pmu->restore_regs	= armv7pmu_restore_regs;
+ 	cpu_pmu->max_period	= (1LLU << 32) - 1;
+ };
  
 -- 
-1.8.1.4
+1.7.9.5
 
