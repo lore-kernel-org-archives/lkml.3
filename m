@@ -1,146 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933574AbaDVRjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 13:39:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47561 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932927AbaDVRji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 13:39:38 -0400
-Date: Tue, 22 Apr 2014 19:39:12 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 9/9] perf hists/tui: Count callchain rows separately
-Message-ID: <20140422173912.GA16924@krava.brq.redhat.com>
-References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
- <1398156591-11001-10-git-send-email-namhyung@kernel.org>
+	id S933579AbaDVRqb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 13:46:31 -0400
+Received: from mail-vc0-f169.google.com ([209.85.220.169]:37605 "EHLO
+	mail-vc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932927AbaDVRq3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 13:46:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398156591-11001-10-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <5356A70A.5090907@zytor.com>
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
+ <CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
+ <a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com> <CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
+ <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com> <CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
+ <20140422112312.GB15882@pd.tnic> <20140422144659.GF15882@pd.tnic>
+ <CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
+ <53569467.1030809@zytor.com> <CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
+ <CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
+ <CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>
+ <CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>
+ <CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com>
+ <CA+55aFwuKTQGHzi-cFkHrkLgkS-kFptajFt4=ginxOgwDcJLrA@mail.gmail.com> <5356A70A.5090907@zytor.com>
+From: Andrew Lutomirski <amluto@gmail.com>
+Date: Tue, 22 Apr 2014 10:46:08 -0700
+Message-ID: <CAObL_7GJypym8JhUmdszDTKJVuLW9wSjbbZK4AZ3Jk304GK6tQ@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 05:49:51PM +0900, Namhyung Kim wrote:
-> When TUI hist browser expands/collapses callchains it accounted number
-> of callchain nodes into total entries to show.  However this code
-> ignores filtering so that it can make the cursor go to out of screen.
-> 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/ui/browsers/hists.c | 38 ++++++++++++++++++++++++++++----------
->  1 file changed, 28 insertions(+), 10 deletions(-)
-> 
-> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-> index 886eee0062e0..215f10429dda 100644
-> --- a/tools/perf/ui/browsers/hists.c
-> +++ b/tools/perf/ui/browsers/hists.c
-> @@ -27,6 +27,7 @@ struct hist_browser {
->  	bool		     show_dso;
->  	float		     min_pcnt;
->  	u64		     nr_non_filtered_entries;
-> +	u64		     nr_callchain_rows;
->  };
->  
->  extern void hist_browser__init_hpp(void);
-> @@ -35,6 +36,10 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
->  				const char *ev_name);
->  static void hist_browser__update_nr_entries(struct hist_browser *hb);
->  
-> +static struct rb_node *hists__filter_entries(struct rb_node *nd,
-> +					     struct hists *hists,
-> +					     float min_pcnt);
+On Tue, Apr 22, 2014 at 10:29 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/22/2014 10:19 AM, Linus Torvalds wrote:
+>> On Tue, Apr 22, 2014 at 10:11 AM, Andrew Lutomirski <amluto@gmail.com> wrote:
+>>>
+>>>>
+>>>> Anyway, if done correctly, this whole espfix should be totally free
+>>>> for normal processes, since it should only trigger if SS is a LDT
+>>>> entry (bit #2 set in the segment descriptor). So the normal fast-path
+>>>> should just have a simple test for that.
+>>>
+>>> How?  Doesn't something still need to check whether SS is funny before
+>>> doing iret?
+>>
+>> Just test bit #2. Don't do anything else if it's clear, because you
+>> should be done. You don't need to do anything special if it's clear,
+>> because I don't *think* we have any 16-bit data segments in the GDT on
+>> x86-64.
+>>
+>
+> And we don't (neither do we on i386, and we depend on that invariance.)
+>
+> Hence:
+>
+>  irq_return:
+> +       /*
+> +        * Are we returning to the LDT?  Note: in 64-bit mode
+> +        * SS:RSP on the exception stack is always valid.
+> +        */
+> +       testb $4,(SS-RIP)(%rsp)
+> +       jnz irq_return_ldt
 > +
->  static bool hist_browser__has_filter(struct hist_browser *hb)
->  {
->  	return hists__has_filter(hb->hists) || hb->min_pcnt;
-> @@ -51,6 +56,7 @@ static void hist_browser__reset(struct hist_browser *browser)
->  {
->  	hist_browser__update_nr_entries(browser);
->  	browser->b.nr_entries = browser->nr_non_filtered_entries;
-> +	browser->b.nr_entries += browser->nr_callchain_rows;
->  	hist_browser__refresh_dimensions(browser);
->  	ui_browser__reset_index(&browser->b);
->  }
-> @@ -205,14 +211,16 @@ static bool hist_browser__toggle_fold(struct hist_browser *browser)
->  		struct hist_entry *he = browser->he_selection;
->  
->  		hist_entry__init_have_children(he);
-> -		browser->hists->nr_entries -= he->nr_rows;
-> +		browser->b.nr_entries -= he->nr_rows;
+> +irq_return_iret:
+>         INTERRUPT_RETURN
+> -       _ASM_EXTABLE(irq_return, bad_iret)
+> +       _ASM_EXTABLE(irq_return_iret, bad_iret)
+>
+>
+> That is the whole impact of the IRET path.
+>
+> If using IST for #GP won't cause trouble (ISTs don't nest, so we need to
+> make sure there is absolutely no way we could end up nested) then the
+> rest of the fixup code can go away and we kill the common path
+> exception-handling overhead; the only new overhead is the IST
+> indirection for #GP, which isn't a performance-critical fault (good
+> thing, because untangling #GP faults is a major effort.)
 
-does browser->b.nr_entries need to be updated in here?
+I'd be a bit nervous about read_msr_safe and friends.  Also, what
+happens if userspace triggers a #GP and the signal stack setup causes
+a page fault?
 
-it gets set in hist_browser__reset and hist_browser__run
-
-> +		browser->nr_callchain_rows -= he->nr_rows;
->  
->  		if (he->ms.unfolded)
->  			he->nr_rows = callchain__count_rows(&he->sorted_chain);
->  		else
->  			he->nr_rows = 0;
-> -		browser->hists->nr_entries += he->nr_rows;
-> -		browser->b.nr_entries = browser->hists->nr_entries;
-> +
-> +		browser->b.nr_entries += he->nr_rows;
-
-ditto
-
-> +		browser->nr_callchain_rows += he->nr_rows;
->  
->  		return true;
->  	}
-> @@ -287,23 +295,31 @@ static void hist_entry__set_folding(struct hist_entry *he, bool unfold)
->  		he->nr_rows = 0;
->  }
->  
-> -static void hists__set_folding(struct hists *hists, bool unfold)
-> +static void
-> +__hist_browser__set_folding(struct hist_browser *browser, bool unfold)
->  {
->  	struct rb_node *nd;
-> +	struct hists *hists = browser->hists;
->  
-> -	hists->nr_entries = 0;
-> -
-> -	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
-> +	for (nd = rb_first(&hists->entries);
-> +	     (nd = hists__filter_entries(nd, hists, browser->min_pcnt)) != NULL;
-> +	     nd = rb_next(nd)) {
->  		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
->  		hist_entry__set_folding(he, unfold);
-> -		hists->nr_entries += 1 + he->nr_rows;
-> +		browser->nr_callchain_rows += he->nr_rows;
->  	}
->  }
->  
->  static void hist_browser__set_folding(struct hist_browser *browser, bool unfold)
->  {
-> -	hists__set_folding(browser->hists, unfold);
-> -	browser->b.nr_entries = browser->hists->nr_entries;
-> +	browser->nr_callchain_rows = 0;
-> +	__hist_browser__set_folding(browser, unfold);
-> +
-> +	if (hist_browser__has_filter(browser))
-> +		browser->b.nr_entries = browser->nr_non_filtered_entries;
-> +	else
-> +		browser->b.nr_entries = browser->hists->nr_entries;
-> +	browser->b.nr_entries += browser->nr_callchain_rows;
-
-ditto,
-
-I think whole condition above could go away, it's the same as in the
-hist_browser__run, which is going to be executed after this anyway..
-
-just setup browser->nr_callchain_rows
-
-
-thanks,
-jirka
+--Andy
