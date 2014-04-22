@@ -1,54 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933223AbaDVQ6u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 12:58:50 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:48752 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504AbaDVQ6s (ORCPT
+	id S933381AbaDVQ7r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 12:59:47 -0400
+Received: from mail-qa0-f74.google.com ([209.85.216.74]:60919 "EHLO
+	mail-qa0-f74.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932854AbaDVQ7p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 12:58:48 -0400
-X-Auth-Info: N+T3Cb6T907QAx+VxqbIooegl/uHfd28unGyRPx/uIs=
-From: Marek Vasut <marex@denx.de>
-To: Graham Moore <grmoore@altera.com>
-Subject: Re: [PATCH V3] Add support for flag status register on Micron chips.
-Date: Tue, 22 Apr 2014 18:55:57 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
-Cc: ggrahammoore@gmail.com, David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Sourav Poddar <sourav.poddar@ti.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Insop Song <insop.song@gainspeed.com>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Alan Tull <atull@altera.com>,
-        Dinh Nguyen <dinguyen@altera.com>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>
-References: <1398175396-7560-1-git-send-email-grmoore@altera.com> <1398175396-7560-2-git-send-email-grmoore@altera.com>
-In-Reply-To: <1398175396-7560-2-git-send-email-grmoore@altera.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404221855.57247.marex@denx.de>
+	Tue, 22 Apr 2014 12:59:45 -0400
+From: Sheng-Liang Song <ssl@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sheng-Liang Song <ssl@chromium.org>,
+        Shawn Nematbakhsh <shawnn@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: atkbd - fix keyboard LG Electronics
+Date: Tue, 22 Apr 2014 09:59:30 -0700
+Message-Id: <1398185970-16331-1-git-send-email-ssl@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, April 22, 2014 at 04:03:16 PM, Graham Moore wrote:
-[...]
+After issuing ATKBD_CMD_RESET_DIS, LG Keyboard stop working.
+The workaround is to issue ATKBD_CMD_RESET_DEF after ATKBD_CMD_RESET_DIS.
 
->  #define INFO(_jedec_id, _ext_id, _sector_size, _n_sectors, _flags)	\
-> @@ -488,6 +534,8 @@ const struct spi_device_id spi_nor_ids[] = {
->  	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, 0) },
->  	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K) },
->  	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K) },
-> +	{ "n25q512ax3",  INFO(0x20ba20, 0, 64 * 1024, 1024, USE_FSR) },
-> +	{ "n25q00",      INFO(0x20ba21, 0, 64 * 1024, 2048, USE_FSR) },
+In order to keep the minimum changes to the current atkbd driver,
+I add logic to apply the patch if and only if the device is LG LW25-B7HV or P1-J273B.
+---
+ drivers/input/keyboard/atkbd.c | 30 ++++++++++++++++++++++++++++++
+ 1 file changed, 30 insertions(+)
 
-Are you sure the n25q512a doesn't use FSR ? Do n25q512a{1,8}3 share the same 
-IDs?
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index 2626773..75e68f2 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -242,6 +242,7 @@ struct atkbd {
+ static void (*atkbd_platform_fixup)(struct atkbd *, const void *data);
+ static void *atkbd_platform_fixup_data;
+ static unsigned int (*atkbd_platform_scancode_fixup)(struct atkbd *, unsigned int);
++static void (*atkbd_deactivate_fixup)(struct atkbd *atkbd);
+ 
+ static ssize_t atkbd_attr_show_helper(struct device *dev, char *buf,
+ 				ssize_t (*handler)(struct atkbd *, char *));
+@@ -698,6 +699,10 @@ static int atkbd_activate(struct atkbd *atkbd)
+  * atkbd_deactivate() resets and disables the keyboard from sending
+  * keystrokes.
+  */
++static void atkbd_deactivate_rst_fixup(struct atkbd *atkbd)
++{
++	ps2_command(&atkbd->ps2dev, NULL, ATKBD_CMD_RESET_DEF);
++}
+ 
+ static void atkbd_deactivate(struct atkbd *atkbd)
+ {
+@@ -707,6 +712,9 @@ static void atkbd_deactivate(struct atkbd *atkbd)
+ 		dev_err(&ps2dev->serio->dev,
+ 			"Failed to deactivate keyboard on %s\n",
+ 			ps2dev->serio->phys);
++
++	if (atkbd_deactivate_fixup)
++		atkbd_deactivate_fixup(atkbd);
+ }
+ 
+ /*
+@@ -1638,6 +1646,12 @@ static int __init atkbd_setup_scancode_fixup(const struct dmi_system_id *id)
+ 	return 1;
+ }
+ 
++static int __init atkbd_setup_deactivate(const struct dmi_system_id *id)
++{
++	atkbd_deactivate_fixup = id->driver_data;
++	return 1;
++}
++
+ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
+ 	{
+ 		.matches = {
+@@ -1775,6 +1789,22 @@ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
+ 		.callback = atkbd_setup_scancode_fixup,
+ 		.driver_data = atkbd_oqo_01plus_scancode_fixup,
+ 	},
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LW25-B7HV"),
++		},
++		.callback = atkbd_setup_deactivate,
++		.driver_data = atkbd_deactivate_rst_fixup,
++	},
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "P1-J273B"),
++		},
++		.callback = atkbd_setup_deactivate,
++		.driver_data = atkbd_deactivate_rst_fixup,
++	},
+ 	{ }
+ };
+ 
+-- 
+1.9.1.423.g4596e3a
 
-[...]
-Best regards,
-Marek Vasut
