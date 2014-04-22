@@ -1,140 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332AbaDVI66 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:58:58 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60718 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442AbaDVI6u (ORCPT
+	id S1753914AbaDVJGa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 05:06:30 -0400
+Received: from mail-ee0-f53.google.com ([74.125.83.53]:47413 "EHLO
+	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbaDVJGZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:58:50 -0400
-Message-ID: <53562F36.6020005@pengutronix.de>
-Date: Tue, 22 Apr 2014 10:58:30 +0200
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+	Tue, 22 Apr 2014 05:06:25 -0400
+Date: Tue, 22 Apr 2014 12:06:17 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Weijie Yang <weijie.yang@samsung.com>
+Cc: "'Minchan Kim'" <minchan@kernel.org>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Nitin Gupta'" <ngupta@vflare.org>, iamjoonsoo.kim@lge.com,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Bob Liu'" <bob.liu@oracle.com>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] zram: correct offset usage in zram_bio_discard
+Message-ID: <20140422090617.GA937@swordfish.minsk.epam.com>
+References: <000001cf5dd8$ecf1c360$c6d54a20$%yang@samsung.com>
 MIME-Version: 1.0
-To: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>,
-        "monstr@monstr.eu" <monstr@monstr.eu>
-CC: "wg@grandegger.com" <wg@grandegger.com>, Michal Simek <michals@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        "linux-can@vger.kernel.org" <linux-can@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v7 1/2] can: xilinx CAN controller support
-References: <3e750ec3-9d47-4b4e-8173-56698ab19786@CH1EHSMHS029.ehs.local> <53424C32.7090000@monstr.eu> <707ea084-ed82-407b-8967-1e82a994b784@AM1EHSMHS003.ehs.local>
-In-Reply-To: <707ea084-ed82-407b-8967-1e82a994b784@AM1EHSMHS003.ehs.local>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="9CxfKEqGoHewKFOiBSMidlRv0KJjxfEu1"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000001cf5dd8$ecf1c360$c6d54a20$%yang@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---9CxfKEqGoHewKFOiBSMidlRv0KJjxfEu1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On (04/22/14 11:14), Weijie Yang wrote:
+> 
+> we want to skip the logical block which is partially covered by
+> the discard bio, so check the remaining size and subtract it if
+> there is a need to goto the next logical block.
+> 
 
-On 04/22/2014 09:56 AM, Appana Durga Kedareswara Rao wrote:
-> Hi Marc,
->=20
->> -----Original Message-----
->> From: Michal Simek [mailto:monstr@monstr.eu]
->> Sent: Monday, April 07, 2014 12:27 PM
->> To: Appana Durga Kedareswara Rao
->> Cc: wg@grandegger.com; mkl@pengutronix.de; Michal Simek;
->> grant.likely@linaro.org; robh+dt@kernel.org; linux-can@vger.kernel.org=
-;
->> netdev@vger.kernel.org; linux-arm-kernel@lists.infradead.org; linux-
->> kernel@vger.kernel.org; devicetree@vger.kernel.org; Appana Durga
->> Kedareswara Rao
->> Subject: Re: [PATCH v7 1/2] can: xilinx CAN controller support
->>
->> On 04/02/2014 03:13 PM, Kedareswara rao Appana wrote:
->>> This patch adds xilinx CAN controller support.
->>> This driver supports both ZYNQ CANPS and Soft IP AXI CAN controller.
->>>
->>> Signed-off-by: Kedareswara rao Appana <appanad@xilinx.com>
->>> ---
->>> Changes for v7:
->>> - Updated the driver with review comments.
->>> - Moved the driver bindings doc as a separte patch.
->>> Changes for v6:
->>> - Updated the driver with review comments.
->>> - Used the clock names specified in the data sheet.
->>> - Updated the devicetree bindings doc as per Rob suggestion.
->>> Changes for v5:
->>> - Updated the driver with the review comments.
->>> - Remove the check for the tx fifo full interrupt condition
->>>   form Tx interrupt routine as we are checking it in the _xmit
->>>   routine.
->>> - Clearing the txok interrupt in the tx interrupt routine for
->>>   every Tx can frame.
->>> Changes for v4:
->>> - Added check for the tx fifo full interrupt condition in Tx interrup=
-t
->>> routine.
->>> - Added be iohelper functions.
->>> - Moved the clock enable/disable to probe/remove because of
->>>   Added big endian support for AXI CAN controller case(reading
->>>   a register during probe for that we need to enable clock).
->>> Changes for v3:
->>> - Updated the driver with the review comments.
->>> - Modified the tranmit logic as per Marc suggestion.
->>> - Enabling the clock when the interface is up to reduce the
->>>   Power consumption.
->>> Changes for v2:
->>> - Updated with the review comments.
->>> - Removed the unnecessary debug prints.
->>> - include tx,rx fifo depths in ZYNQ CANPS case also
->>> ---
->>>  drivers/net/can/Kconfig      |    7 +
->>>  drivers/net/can/Makefile     |    1 +
->>>  drivers/net/can/xilinx_can.c | 1176
->>> ++++++++++++++++++++++++++++++++++++++++++
->>>  3 files changed, 1184 insertions(+), 0 deletions(-)  create mode
->>> 100644 drivers/net/can/xilinx_can.c
->>
->> Mark: Any update on this one?
->> BTW: When you apply these patches you should apply 2/2 before 1/2. The=
-re
->> is new checking for binding.
->>
->=20
-> Ping?
+looks sane.
 
-Done, when you repost, can you change the order of the patches, so that
-the binding comes first.
+	-ss
 
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---9CxfKEqGoHewKFOiBSMidlRv0KJjxfEu1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-Comment: Using GnuPG with Icedove - http://www.enigmail.net/
-
-iEYEARECAAYFAlNWLzYACgkQjTAFq1RaXHNYFQCfcqxljLE6h68CrKf3hvHif2Pk
-tMgAnR9nVNBljRf/Sbo8yh0b+kLg0pia
-=dEH0
------END PGP SIGNATURE-----
-
---9CxfKEqGoHewKFOiBSMidlRv0KJjxfEu1--
+> This patch corrects the offset usage in zram_bio_discard.
+> 
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> ---
+>  drivers/block/zram/zram_drv.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 9849b52..48eccb3 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -572,10 +572,10 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+>  	 * skipping this logical block is appropriate here.
+>  	 */
+>  	if (offset) {
+> -		if (n < offset)
+> +		if (n <= (PAGE_SIZE - offset))
+>  			return;
+>  
+> -		n -= offset;
+> +		n -= (PAGE_SIZE - offset);
+>  		index++;
+>  	}
+>  
+> -- 
+> 1.7.10.4
+> 
+> 
