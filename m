@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758836AbaDVVcK (ORCPT <rfc822;w@1wt.eu>);
+	id S1758850AbaDVVcN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 17:32:13 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:44382 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757948AbaDVVcK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 22 Apr 2014 17:32:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63655 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757716AbaDVVcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 17:32:08 -0400
-Message-ID: <5356DFC8.1060601@redhat.com>
-Date: Tue, 22 Apr 2014 17:31:52 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+Date: Tue, 22 Apr 2014 22:31:14 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Liu Hua <sdu.liu@huawei.com>
+Cc: nicolas.pitre@linaro.org, will.deacon@arm.com, vitalya@ti.com,
+        cyril@ti.com, santosh.shilimkar@ti.com, lauraa@codeaurora.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        wangnan0@huawei.com, peifeiyue@huawei.com, liusdu@126.co
+Subject: Re: [PATCH v3 0/2] change ARM linux memory layout to support 32
+	CPUs
+Message-ID: <20140422213114.GA24070@n2100.arm.linux.org.uk>
+References: <1397559967-26050-1-git-send-email-sdu.liu@huawei.com>
 MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>, x86@kernel.org
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        mgorman@suse.de, ak@linux.intel.com, alex.shi@linaro.org,
-        dave.hansen@linux.intel.com
-Subject: Re: [PATCH 5/6] x86: mm: new tunable for single vs full TLB flush
-References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182426.D6DD1E8F@viggo.jf.intel.com>
-In-Reply-To: <20140421182426.D6DD1E8F@viggo.jf.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397559967-26050-1-git-send-email-sdu.liu@huawei.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/21/2014 02:24 PM, Dave Hansen wrote:
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> Most of the logic here is in the documentation file.  Please take
-> a look at it.
-> 
-> I know we've come full-circle here back to a tunable, but this
-> new one is *WAY* simpler.  I challenge anyone to describe in one
-> sentence how the old one worked.  Here's the way the new one
-> works:
-> 
-> 	If we are flushing more pages than the ceiling, we use
-> 	the full flush, otherwise we use per-page flushes.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+On Tue, Apr 15, 2014 at 07:06:05PM +0800, Liu Hua wrote:
+> This patch series change fixmap mapping region to suppport 32 CPUs.
+> Because the "top_pmd" covers 0xfffe0000 - 0xffffffff(2M). And part 
+> is used by vector table. So I move this region down to 0xffc00000
+>  - 0xffdffff. 
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Can you explain why you have submitted these patches to my patch tracker
+with a copy to stable@vger.kernel.org ?
 
+What makes these qualify for stable tree inclusion?  What regression are
+they fixing?
+
+We don't put patches into the stable tree for things that /never/ worked
+in the past.  We've never supported 32 CPUs so I don't think these
+qualify.
 
 -- 
-All rights reversed
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
