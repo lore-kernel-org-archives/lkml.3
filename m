@@ -1,47 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933224AbaDVPVn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 11:21:43 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:54219 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932787AbaDVPVh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 11:21:37 -0400
-Message-ID: <1398180041.4724.173.camel@iivanov-dev>
-Subject: Re: [PATCH v3 1/3] usb: chipidea: msm: Add device tree binding
- information
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Peter Chen <Peter.Chen@freescale.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Tue, 22 Apr 2014 18:20:41 +0300
-In-Reply-To: <535685CD.9080207@linaro.org>
-References: <1398159797-26917-1-git-send-email-iivanov@mm-sol.com>
-	 <1398159797-26917-2-git-send-email-iivanov@mm-sol.com>
-	 <535685CD.9080207@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933135AbaDVPTy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 11:19:54 -0400
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:57463 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933115AbaDVPTn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 11:19:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140422143152.GA23716@amd.pavel.ucw.cz>
+References: <cover.1398097304.git.luto@amacapital.net>
+	<430cfc67aae9b9ad5eab4d293107285ad44c5fd9.1398097304.git.luto@amacapital.net>
+	<CANq1E4T1P-g+wA6bZQe6=79-+QLmXReu4namcPifw-SZViqW-Q@mail.gmail.com>
+	<20140422143152.GA23716@amd.pavel.ucw.cz>
+Date: Tue, 22 Apr 2014 17:19:42 +0200
+Message-ID: <CANq1E4TPPcdD-8FF_Kc=r44Vrd51Vmt-OVu+EtCC-oEzXkvJvg@mail.gmail.com>
+Subject: Re: [RFC 2/2] fs,proc: Respect FMODE_WRITE when opening /proc/pid/fd/N
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        "Theodore Ts'o" <tytso@mit.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-22 at 16:07 +0100, Srinivas Kandagatla wrote:
-> 
-> On 22/04/14 10:43, Ivan T. Ivanov wrote:
-> > +- interrupts:   interrupt-specifier for the controller interrupt.
-> > +- usb-phy:      phandle for the PHY device
-> > +- dr_mode:      Sould be "peripheral"
-> s/Sould/Should/
-> > +
+Hi
 
-Thanks. will fix it.
+On Tue, Apr 22, 2014 at 4:31 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> Such as here?
+>
+> http://www.securityfocus.com/archive/1/507386
 
-Ivan
+Thanks, that's the first real example someone mentioned.
 
+Quoted from your link:
+
+> The reopen does check the inode permission, but it does not require
+> you have any reachable path to the file. Someone _might_ use that as
+> a traditional unix security mechanism, but if so it's probably quite rare.
+
+In other words, the bug you describe is that /proc/pid/fd/ allows
+access to objects without a reachable path to the only _real_
+filesystem link. But isn't the same true for openat()?
+
+Thanks
+David
