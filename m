@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757490AbaDVUCh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:02:37 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:52050 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755249AbaDVUCd (ORCPT
+	id S1757504AbaDVUDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:03:04 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56063 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756384AbaDVUC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:02:33 -0400
-Date: Tue, 22 Apr 2014 20:18:20 +0200
+	Tue, 22 Apr 2014 16:02:27 -0400
+Date: Tue, 22 Apr 2014 20:26:27 +0200
 From: Peter Zijlstra <peterz@infradead.org>
-To: bsegall@google.com
-Cc: Dongsheng Yang <yangds.fnst@cn.fujitsu.com>, rostedt@goodmis.org,
-        fweisbec@gmail.com, mingo@redhat.com, acme@ghostprotocols.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/8] sched/core: Skip wakeup when task is already running.
-Message-ID: <20140422181820.GT26782@laptop.programming.kicks-ass.net>
-References: <cover.1397562542.git.yangds.fnst@cn.fujitsu.com>
- <51238bf1648b1f4c66d3547a49cf949d1679d068.1397562542.git.yangds.fnst@cn.fujitsu.com>
- <20140415135326.GV11096@twins.programming.kicks-ass.net>
- <534E59FC.2090001@cn.fujitsu.com>
- <535658DB.2090801@cn.fujitsu.com>
- <xm26sip55lyb.fsf@sword-of-the-dawn.mtv.corp.google.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: acme@redhat.com, jolsa@redhat.com, namhyung@kernel.org,
+        linux-kernel@vger.kernel.org, eranian@google.com, andi@firstfloor.org,
+        wcohen@redhat.com, penberg@kernel.org
+Subject: Re: mapping instructions to dynamic languages like java, python, ruby
+Message-ID: <20140422182627.GU26782@laptop.programming.kicks-ass.net>
+References: <20140422180305.GK8488@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <xm26sip55lyb.fsf@sword-of-the-dawn.mtv.corp.google.com>
+In-Reply-To: <20140422180305.GK8488@redhat.com>
 User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 10:10:52AM -0700, bsegall@google.com wrote:
-> This is all expected behavior, and the somewhat less than useful trace
-> events are expected. A task setting p->state to TASK_RUNNING without
-> locks is fine if and only p == current. The standard deschedule loop is
-> basically:
+On Tue, Apr 22, 2014 at 02:03:05PM -0400, Don Zickus wrote:
+> Hi,
 > 
-> while (1) {
->   set_current_state(TASK_(UN)INTERRUPTIBLE);
->   if (should_still_sleep)
->     schedule();
-> }
-> set_current_state(TASK_RUNNING);
+> I was discussing recently with Will Cohen about how to get perf to
+> understand dynamic languages (java, python, ruby) better.  Currently, perf
+> samples and address, stores it in a mmap region (from the kernel side),
+> the mmap region is read (from user side async) and stored in a file.
 > 
-> Which can produce this in a race.
+> During 'perf report' those instruction addresses are looked up in the
+> dwarf table?? of the binary they were mapped to, to resolve their symbols.
 > 
-> The only problem this causes is a wasted check_preempt_curr call in the
-> racing case, and a somewhat inaccurate sched:sched_wakeup trace event.
-> Note that even if you did recheck in ttwu_do_wakeup you could still race
-> and get an "inaccurate" trace event. Heck, even if the ttwu is
-> _necessary_ because p is currently trying to take rq->lock to
-> deschedule, you won't get a matching sched_switch event, because the
-> ttwu is running before schedule is.
+> This works great for statically compiled binaries (like C), where the
+> addresses stay the same during each run of the binary.
 > 
-> You could sorta fix this I guess by tracking every write to p->state
-> with trace events, but that would be a somewhat different change, and
-> might be considered too expensive for all I know (and the trace events
-> could /still/ be resolved in a different order across cpus compared to
-> p->state's memory).
+> However, for dynamic languages like java, python, ruby not only do those
+> addresses change each run of the binary, those address can change
+> _during_ the execution of the binary.  As a result the normal perf
+> collection method fails.
 
-Ah, you're saying that a second task could try a spurious wakeup between
-set_current_state() and schedule(). Yes, that'll trigger this indeed.
+So we have one JIT supported, I forgot the exact details, but it writes
+it symbol table to /tmp/perf-* files. I think the JIT in question will
+never over-write symbols in debug mode.
 
+One way to do this would be having two JIT areas, and copy the active
+symbols into the 'new' one, and recycle the 'old' one.
 
+Pekka used it for his JIT, so he might have some 'sample' code.
+
+> Oprofile has a mechanism to work around this, by creating a debug library
+> for java that records class information.  This library is linked?? during
+> the initial execution of the java program and all its symbol info is
+> recorded in a temp file.  During post-processing this temp file is read
+> back in and symbol info is obtained.
+> 
+> However, this approach is java specific and only works for programs that
+> initially start with it (can not attach to running programs).
+
+Right, we're in the same position.
+
+> Thoughts have come up about using a SIGPROF from the kernel to signal the
+> userspace interpreters to dump information to a temp file that can be used
+> later during post-processing.
+> 
+> Does anyone have any thoughts or experience on this?
+
+I know Stephane worked with some JIT languages, I'll let him tell.
