@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757985AbaDVUXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:23:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36504 "EHLO
+	id S1758003AbaDVUXS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:23:18 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:36514 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756756AbaDVUXD (ORCPT
+	with ESMTP id S1757987AbaDVUXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:23:03 -0400
+	Tue, 22 Apr 2014 16:23:08 -0400
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Felipe Franciosi <felipe@paradoxo.org>, Jens Axboe <axboe@fb.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 067/133] ath9k: fix ready time of the multicast buffer queue
-Date: Tue, 22 Apr 2014 13:13:25 -0700
-Message-Id: <1398197671-12786-68-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.8 066/133] mtip32xx: Unmap the DMA segments before completing the IO request
+Date: Tue, 22 Apr 2014 13:13:24 -0700
+Message-Id: <1398197671-12786-67-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
 References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
@@ -28,38 +27,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Felipe Franciosi <felipe@paradoxo.org>
 
-commit 3b3e0efb5c72c4fc940af50b33626b8a78a907dc upstream.
+commit 368c89d7ac70f937c93cd6f3b65bcfdfb3ba794f upstream.
 
-qi->tqi_readyTime is written directly to registers that expect
-microseconds as unit instead of TU.
-When setting the CABQ ready time, cur_conf->beacon_interval is in TU, so
-convert it to microseconds before passing it to ath9k_hw.
+If the buffers are unmapped after completing a request, then stale data
+might be in the request.
 
-This should hopefully fix some Tx DMA issues with buffered multicast
-frames in AP mode.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Felipe Franciosi <felipe@paradoxo.org>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- drivers/net/wireless/ath/ath9k/xmit.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/block/mtip32xx/mtip32xx.c | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
-index d134faa..846bff1 100644
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -1465,7 +1465,7 @@ int ath_cabq_update(struct ath_softc *sc)
- 	else if (sc->config.cabqReadytime > ATH9K_READY_TIME_HI_BOUND)
- 		sc->config.cabqReadytime = ATH9K_READY_TIME_HI_BOUND;
+diff --git a/drivers/block/mtip32xx/mtip32xx.c b/drivers/block/mtip32xx/mtip32xx.c
+index a838738..ca69cf9 100644
+--- a/drivers/block/mtip32xx/mtip32xx.c
++++ b/drivers/block/mtip32xx/mtip32xx.c
+@@ -602,6 +602,12 @@ static void mtip_timeout_function(unsigned long int data)
+ 			 */
+ 			writel(1 << bit, port->completed[group]);
  
--	qi.tqi_readyTime = (cur_conf->beacon_interval *
-+	qi.tqi_readyTime = (TU_TO_USEC(cur_conf->beacon_interval) *
- 			    sc->config.cabqReadytime) / 100;
- 	ath_txq_update(sc, qnum, &qi);
++			/* Unmap the DMA scatter list entries */
++			dma_unmap_sg(&port->dd->pdev->dev,
++					command->sg,
++					command->scatter_ents,
++					command->direction);
++
+ 			/* Call the async completion callback. */
+ 			if (likely(command->async_callback))
+ 				command->async_callback(command->async_data,
+@@ -609,12 +615,6 @@ static void mtip_timeout_function(unsigned long int data)
+ 			command->async_callback = NULL;
+ 			command->comp_func = NULL;
  
+-			/* Unmap the DMA scatter list entries */
+-			dma_unmap_sg(&port->dd->pdev->dev,
+-					command->sg,
+-					command->scatter_ents,
+-					command->direction);
+-
+ 			/*
+ 			 * Clear the allocated bit and active tag for the
+ 			 * command.
+@@ -692,6 +692,12 @@ static void mtip_async_complete(struct mtip_port *port,
+ 			"Command tag %d failed due to TFE\n", tag);
+ 	}
+ 
++	/* Unmap the DMA scatter list entries */
++	dma_unmap_sg(&dd->pdev->dev,
++		command->sg,
++		command->scatter_ents,
++		command->direction);
++
+ 	/* Upper layer callback */
+ 	if (likely(command->async_callback))
+ 		command->async_callback(command->async_data, cb_status);
+@@ -699,12 +705,6 @@ static void mtip_async_complete(struct mtip_port *port,
+ 	command->async_callback = NULL;
+ 	command->comp_func = NULL;
+ 
+-	/* Unmap the DMA scatter list entries */
+-	dma_unmap_sg(&dd->pdev->dev,
+-		command->sg,
+-		command->scatter_ents,
+-		command->direction);
+-
+ 	/* Clear the allocated and active bits for the command */
+ 	atomic_set(&port->commands[tag].active, 0);
+ 	release_slot(port, tag);
 -- 
 1.9.1
 
