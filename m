@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865AbaDVOvZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 10:51:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51651 "EHLO mx1.redhat.com"
+	id S1756879AbaDVOvj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 10:51:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7981 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756819AbaDVOvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 10:51:10 -0400
-From: Alexander Gordeev <agordeev@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Kent Overstreet <kmo@daterainc.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: [PATCH RESEND 2/2] percpu_ida: Sanity check initialization parameters
-Date: Tue, 22 Apr 2014 16:51:56 +0200
-Message-Id: <7a7d22c2cda445c4a1170c9c13a66a2c32b2c9e7.1398178132.git.agordeev@redhat.com>
-In-Reply-To: <cover.1398178132.git.agordeev@redhat.com>
-References: <cover.1398178132.git.agordeev@redhat.com>
+	id S1756819AbaDVOvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 10:51:32 -0400
+Date: Tue, 22 Apr 2014 16:51:03 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 1/9] perf report: Count number of entries and samples
+ separately
+Message-ID: <20140422145103.GG1104@krava.brq.redhat.com>
+References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
+ <1398156591-11001-2-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398156591-11001-2-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Acked-by: Kent Overstreet <kmo@daterainc.com>
----
- lib/percpu_ida.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+On Tue, Apr 22, 2014 at 05:49:43PM +0900, Namhyung Kim wrote:
+> Those stats are counted counted in multiple places so that they can
+> confuse readers of the code.  This is a preparation of later change
+> and do not intend any functional difference.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-report.c | 37 ++++++++++++++++++++++---------------
+>  1 file changed, 22 insertions(+), 15 deletions(-)
+> 
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index 76e2bb6cf571..375fc504386e 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -57,6 +57,8 @@ struct report {
+>  	const char		*cpu_list;
+>  	const char		*symbol_filter_str;
+>  	float			min_percent;
+> +	u64			nr_entries;
+> +	u64			nr_samples;
+>  	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+>  };
+>  
+> @@ -121,6 +123,12 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
+>  			goto out;
+>  	}
+>  
+> +	rep->nr_samples++;
+> +	if (he->stat.nr_events == 1) {
+> +		/* count new entries only */
+> +		rep->nr_entries++;
+> +	}
+> +
+>  	evsel->hists.stats.total_period += cost;
+>  	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+>  	if (!he->filtered)
+> @@ -176,6 +184,12 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
+>  					goto out;
+>  			}
+>  
+> +			rep->nr_samples++;
+> +			if (he->stat.nr_events == 1) {
+> +				/* count new entries only */
+> +				rep->nr_entries++;
+> +			}
+> +
+>  			evsel->hists.stats.total_period += 1;
+>  			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+>  			if (!he->filtered)
+> @@ -212,6 +226,12 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
+>  	if (ui__has_annotation())
+>  		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+>  
+> +	rep->nr_samples++;
+> +	if (he->stat.nr_events == 1) {
+> +		/* count new entries only */
+> +		rep->nr_entries++;
+> +	}
 
-diff --git a/lib/percpu_ida.c b/lib/percpu_ida.c
-index 472ff08..f474f03 100644
---- a/lib/percpu_ida.c
-+++ b/lib/percpu_ida.c
-@@ -293,6 +293,11 @@ int __percpu_ida_init(struct percpu_ida *pool, unsigned long nr_tags,
- {
- 	unsigned i, cpu, order;
- 
-+	if (batch_size > max_size)
-+		return -ERANGE;
-+	if (!batch_size)
-+		return -EINVAL;
-+
- 	memset(pool, 0, sizeof(*pool));
- 
- 	init_waitqueue_head(&pool->wait);
--- 
-1.7.7.6
+smeels like we could use function for this ^^^
 
+also it took me a while to figure out the reason for the condition,
+maybe there could be more comment about that
+
+thanks,
+jirka
