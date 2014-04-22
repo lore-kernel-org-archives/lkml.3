@@ -1,159 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933543AbaDVR07 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 13:26:59 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:53822 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932873AbaDVR04 (ORCPT
+	id S933547AbaDVRaL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 13:30:11 -0400
+Received: from mail-vc0-f181.google.com ([209.85.220.181]:49728 "EHLO
+	mail-vc0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933273AbaDVRaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 13:26:56 -0400
-Message-ID: <1398187596.7767.60.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 1/1] net: Add rtnl_lock for netif_device_attach/detach
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "Li, Zhen-Hua" <zhen-hual@hp.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <edumazet@google.com>,
-        Veaceslav Falico <vfalico@redhat.com>,
-        Nicolas Dichtel <nicolas.dichtel@6wind.com>,
-        Jiri Pirko <jiri@resnulli.us>,
-        stephen hemminger <stephen@networkplumber.org>,
-        Jerry Chu <hkchu@google.com>, Sathya Perla <sathya.perla@emulex.com>,
-        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
-        Ajit Khaparde <ajit.khaparde@emulex.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Tue, 22 Apr 2014 18:26:36 +0100
-In-Reply-To: <1397632082-18453-1-git-send-email-zhen-hual@hp.com>
-References: <1397632082-18453-1-git-send-email-zhen-hual@hp.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-Se94WuL3tJsfIamJns3f"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Tue, 22 Apr 2014 13:30:06 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140422172630.GG15882@pd.tnic>
+References: <CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
+ <20140422112312.GB15882@pd.tnic> <20140422144659.GF15882@pd.tnic>
+ <CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
+ <53569467.1030809@zytor.com> <CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
+ <CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
+ <CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>
+ <CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gma!il.com>
+ <5356A2BF.2060609@zytor.com> <20140422172630.GG15882@pd.tnic>
+From: Andrew Lutomirski <amluto@gmail.com>
+Date: Tue, 22 Apr 2014 10:29:45 -0700
+Message-ID: <CAObL_7GOMT8Jv27LhCA=UHY=6kbgtfzQeVYUUkZp2cZCu1AM3A@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+To: Borislav Petkov <bp@alien8.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 22, 2014 at 10:26 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Tue, Apr 22, 2014 at 10:11:27AM -0700, H. Peter Anvin wrote:
+>> The fastpath interference is:
+>>
+>> 1. Testing for an LDT SS selector before IRET.  This is actually easier
+>> than on 32 bits, because on 64 bits the SS:RSP on the stack is always valid.
+>>
+>> 2. Testing for an RSP inside the espfix region on exception entry, so we
+>> can switch back the stack.  This has to be done very early in the
+>> exception entry since the espfix stack is so small.  If NMI and #MC
+>> didn't use IST it wouldn't work at all (but neither would SYSCALL).
+>>
+>> #2 currently saves/restores %rdi, which is also saved further down.
+>> This is obviously wasteful.
+>
+> Btw, can we runtime-patch the fastpath interference chunk the moment we
+> see a 16-bit segment? I.e., connect it to the write_idt() path, i.e. in
+> the hunk you've removed in there and enable the espfix checks there the
+> moment we load a 16-bit segment.
+>
+> I know, I know, this is not so important right now but let me put it out
+> there just the same.
 
---=-Se94WuL3tJsfIamJns3f
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Or we could add a TIF_NEEDS_ESPFIX that gets set once you have a
+16-bit LDT entry.
 
-On Wed, 2014-04-16 at 15:08 +0800, Li, Zhen-Hua wrote:
-> From: "Li, Zhen-Hua" <zhen-hual@hp.com>
->=20
-> As netif_running is called in netif_device_attach/detach. There should be
-> rtnl_lock/unlock called, to avoid dev stat change during netif_device_att=
-ach
-> and detach being called.
-> I checked NIC some drivers,  some of them have netif_device_attach/detach
-> called between rtnl_lock/unlock, while some drivers do not.
->=20
-> This patch is tring to find a generic way to fix this for all NIC drivers=
-.
+But I think it makes sense to nail down everything else first.  I
+suspect that a single test-and-branch in the iret path will be lost in
+the noise from iret itself.
 
-I don't think you can generically use the RTNL lock for this.
-
-> Signed-off-by: Li, Zhen-Hua <zhen-hual@hp.com>
-> ---
->  net/core/dev.c |   18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
->=20
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index 5b3042e..795bbc5 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -2190,10 +2190,19 @@ EXPORT_SYMBOL(__dev_kfree_skb_any);
->   */
->  void netif_device_detach(struct net_device *dev)
->  {
-> +	/**
-> +	 * As netif_running is called , rtnl_lock and unlock are needed to
-> +	 * avoid __LINK_STATE_START bit changes during this function call.
-> +	 */
-> +	int need_unlock;
-> +
-> +	need_unlock =3D rtnl_trylock();
-
-It is never correct to use trylock and then continue even if it fails.
-I think you're trying to simulate a reentrant mutex but this will fail
-if *any* task already has the mutex.
-
-Furthermore it is currently allowed and useful to call these functions
-from atomic context (transmit or completion path) where it is not
-possible to hold the mutex.
-
->  	if (test_and_clear_bit(__LINK_STATE_PRESENT, &dev->state) &&
->  	    netif_running(dev)) {
->  		netif_tx_stop_all_queues(dev);
->  	}
-> +	if (need_unlock)
-> +		rtnl_unlock();
->  }
->  EXPORT_SYMBOL(netif_device_detach);
-
-For netif_device_detach(), I wonder whether it is necessary to check
-netif_running().  What are we trying to avoid?
-
-> @@ -2205,11 +2214,20 @@ EXPORT_SYMBOL(netif_device_detach);
->   */
->  void netif_device_attach(struct net_device *dev)
->  {
-> +       /**
-> +        * As netif_running is called , rtnl_lock and unlock are needed t=
-o
-> +        * avoid __LINK_STATE_START bit changes during this function call=
-.
-> +        */
-> +       int need_unlock;
-> +
-> +       need_unlock =3D rtnl_trylock();
->         if (!test_and_set_bit(__LINK_STATE_PRESENT, &dev->state) &&
->             netif_running(dev)) {
->                 netif_tx_wake_all_queues(dev);
->                 __netdev_watchdog_up(dev);
->         }
-> +       if (need_unlock)
-> +               rtnl_unlock();
->  }
->  EXPORT_SYMBOL(netif_device_attach);
-
-I do see a problem if netif_device_detach() races with
-dev_deactivate_many(), which is being mitigated but not avoided by the
-test of netif_running().
-
-I think a proper solution is going to involve changing
-dev_deactivate_many() as well, removing the use of netif_running(), and
-possible using cmpxchg() to atomically manipulate multiple bits of
-dev->state.
-
-Ben.
-
---=20
-Ben Hutchings
-Beware of programmers who carry screwdrivers. - Leonard Brandwein
-
---=-Se94WuL3tJsfIamJns3f
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAU1amTOe/yOyVhhEJAQrXrRAAqSYBXPHgTHzE6cxzl9I7n15xvysC3Bkd
-puhc8nFji00rY/RKt50QWQNpAKCbHby6UQl5OEYFIH6s9GLORlkCTUgmdKT/zv0i
-Fhvf6FcjW+AwhpKrZBp3Hjaej4Lrt70Ioeq1tEEe2D+MQKzBgZgjYJvRfdfhAYCw
-WGOz3kbuE71YRJOhMSLUbhWFXMb+f2SwGptDniFFxN7Eo7eWtejZXH11QDRB9di+
-pOCMSrtCY/Ue/ljFhhJ2eoD4cYVqK0pRr6uxiXOsLRxZWAxRRzgGa9vt4UiD3f5e
-Oysd6PULOE3duAnXxN/cyRtguF1CJ/zK4gpkaoe/czBpX5Lr3oDGlIkz/kLrU5y6
-k/v39pptUHlgxrXp8kX5ToxP0ItP735+hSXBM/+dSpny9LEBxHiWjLXX5tFMM1Qg
-ri80t57KASXi0+kvOtYFu9y0TPOZ44njI74sYHMegcl7u9b8AmOmMGGwxsq0RmYJ
-q3KGNDgulTYI0N1wTdSYc61DEyfNDhd88d2fC/bh+K2t8I+VHgq5WWDwnB3Dx731
-E37PRl+7VDf5TtMaA8wDf7E4Sl5MR6fL6mSiVKgoY8mGLpgbvvhjWByHJRGtxXdj
-VK10iHYcwqn83TT1MIQNBd5d8XDMHPO50sh1AnQ5fc9HGzZ0hW4LhTx2sgA37179
-2jJDlBkg1IE=
-=KXDx
------END PGP SIGNATURE-----
-
---=-Se94WuL3tJsfIamJns3f--
+--Andy
