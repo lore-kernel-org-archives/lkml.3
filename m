@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469AbaDVDjL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 23:39:11 -0400
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:61355 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbaDVDjH (ORCPT
+	id S1754626AbaDVDjx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 23:39:53 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:47628 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754359AbaDVDju (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 23:39:07 -0400
+	Mon, 21 Apr 2014 23:39:50 -0400
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <wenyou.yang@atmel.com>
+Subject: [PATCH Resend] defconfig: sama5_defconfig: updated
+Date: Tue, 22 Apr 2014 11:32:54 +0800
+Message-ID: <1398137574-5790-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-In-Reply-To: <20140419213254.0b4c4b6a@xenia.leun.net>
-References: <20140419031554.253c98c3@xenia.leun.net> <20140419213254.0b4c4b6a@xenia.leun.net>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Mon, 21 Apr 2014 20:38:45 -0700
-X-Google-Sender-Auth: 2RebOz9vgG3JzoUfFoTlPLdR4Ek
-Message-ID: <CAB=NE6Vgvyf-WYwE-9+RjY3RA7kYuX6P=onrgJE6rLwt4c7Y5Q@mail.gmail.com>
-Subject: Re: 3.14 Regression, kernel panic when suspend, looks ath9k /
- wireless related
-To: Michael Leun <lkml20140418@newton.leun.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        ath9k-devel <ath9k-devel@qca.qualcomm.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        ath9k mailing list <ath9k-devel@venema.h4ckr.net>,
-        Mihir Shete <smihir@qti.qualcomm.com>,
-        Henri Bahini <hbahini@qca.qualcomm.com>,
-        Tushnim Bhattacharyya <tushnimb@qca.qualcomm.com>,
-        Johannes Berg <johannes.berg@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 19, 2014 at 12:32 PM, Michael Leun
-<lkml20140418@newton.leun.net> wrote:
-> 2a901468c221e778af52603e006a53
+due to enabling
+	-- CONFIG_REGULATOR
+	-- CONFIG_REGULATOR_ACT8865
 
-Odd -- its unclear how you ended up with this bisect given that
-REGULATORY_COUNTRY_IE_IGNORE is not set for any driver currently. To
-see this you can try:
+Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
+---
+Hi Nicolas,
 
-mcgrof@ergon ~/linux-stable (git::linux-3.14.y)$ git grep
-REGULATORY_COUNTRY_IE_IGNORE drivers/net/wireless/
+It is a typo.
+This patch is based on the branch: at91-3.16-dt, not at91-3.10-dt of
+	git://github.com/at91linux/linux-at91.git
 
-That said, I'm happy to revert this as no driver is using it anyway.
-Folks who care for it can help fix this when they get the Fisher Price
-(TM) driver upstream. I however don't think however this is the issue
-though, this may be a timing issue and by reverting this commit you
-just so happen to not get it triggered. I'll Cc you on some series of
-fixes and if you can test one of those patches on top of v3.14.1
-that'd be appreciated as an alternative. I'm also very curious to hear
-no one else would have run into the same regression as you have.
+Best Regards,
+Wenyou Yang
 
-  Luis
+ arch/arm/configs/sama5_defconfig |    2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/configs/sama5_defconfig b/arch/arm/configs/sama5_defconfig
+index dc3881e..2b9891e 100644
+--- a/arch/arm/configs/sama5_defconfig
++++ b/arch/arm/configs/sama5_defconfig
+@@ -201,3 +201,5 @@ CONFIG_CRYPTO_DEV_ATMEL_TDES=y
+ CONFIG_CRYPTO_DEV_ATMEL_SHA=y
+ CONFIG_CRC_CCITT=m
+ CONFIG_CRC_ITU_T=m
++CONFIG_REGULATOR=y
++CONFIG_REGULATOR_ACT8865=y
+-- 
+1.7.9.5
+
