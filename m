@@ -1,82 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235AbaDVL1h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 07:27:37 -0400
-Received: from mail-we0-f180.google.com ([74.125.82.180]:61903 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755718AbaDVL1g (ORCPT
+	id S932367AbaDVL16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 07:27:58 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:42187 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754432AbaDVL1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 07:27:36 -0400
-Date: Tue, 22 Apr 2014 12:27:17 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Stratos Karafotis <stratosk@semaphore.gr>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        linux-arm-kernel@lists.infradead.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: Re: [PATCH v4 5/8] mfd: db8500-prcmu: Use cpufreq_for_each_entry
- macro for iteration
-Message-ID: <20140422112717.GA21613@lee--X1>
-References: <534DB213.7080802@semaphore.gr>
- <5355A349.50908@semaphore.gr>
- <20140422071541.GA17657@lee--X1>
- <6612075.PRZcWcuj98@vostro.rjw.lan>
+	Tue, 22 Apr 2014 07:27:55 -0400
+Date: Tue, 22 Apr 2014 07:27:34 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Jianyu Zhan <nasa4836@gmail.com>
+Cc: davem@davemloft.net, tj@kernel.org, lizefan@huawei.com,
+        daniel.wagner@bmw-carit.de, jiri@resnulli.us, gaofeng@cn.fujitsu.com,
+        stephen@networkplumber.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] netprio_cgroup: use accessor to get id from css
+Message-ID: <20140422112734.GE17116@hmsreliant.think-freely.org>
+References: <cover.1398147734.git.nasa4836@gmail.com>
+ <0b10af801af45fdbf4835e8da54273e9752b239f.1398147734.git.nasa4836@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6612075.PRZcWcuj98@vostro.rjw.lan>
+In-Reply-To: <0b10af801af45fdbf4835e8da54273e9752b239f.1398147734.git.nasa4836@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014, Rafael J. Wysocki wrote:
-
-> On Tuesday, April 22, 2014 08:15:41 AM Lee Jones wrote:
-> > > The cpufreq core now supports the cpufreq_for_each_entry macro helper
-> > > for iteration over the cpufreq_frequency_table, so use it.
-> > > 
-> > > It should have no functional changes.
-> > 
-> > > Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
-> > > ---
-> > 
-> > It would be good to have a changelog which describes the differences
-> > between the versions, so we can keep track.
-> > 
-> > >  drivers/mfd/db8500-prcmu.c | 19 ++++++++-----------
-> > >  1 file changed, 8 insertions(+), 11 deletions(-)
-> > 
-> > So it looks like I already applied v2 of this patch to my tree. What
-> > changed in v3 and v4? Should I remove that patch from MFD and apply
-> > this one instead?
+On Tue, Apr 22, 2014 at 02:31:01PM +0800, Jianyu Zhan wrote:
+> This is a prepared patch for converting from per-cgroup id to
+> per-subsystem id.
 > 
-> The reason why v4 was sent is because I asked for it.
+> We should not access per-cgroup id directly, since this is
+> implemetation detail.
 > 
-> And if you applied [5/8] without [1/8], it won't work, because the macro is
-> introduced by that patch.
+> Use the accessor css_from_id() instead.
+> 
+> This patch has no functional change.
+> 
+> Signed-off-by: Jianyu Zhan <nasa4836@gmail.com>
+> ---
+>  net/core/netprio_cgroup.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/net/core/netprio_cgroup.c b/net/core/netprio_cgroup.c
+> index ce285c6..fc21035 100644
+> --- a/net/core/netprio_cgroup.c
+> +++ b/net/core/netprio_cgroup.c
+> @@ -89,7 +89,7 @@ static int extend_netdev_table(struct net_device *dev, u32 target_idx)
+>  static u32 netprio_prio(struct cgroup_subsys_state *css, struct net_device *dev)
+>  {
+>  	struct netprio_map *map = rcu_dereference_rtnl(dev->priomap);
+> -	int id = css->cgroup->id;
+> +	int id = css_to_id(css);
+>  
+>  	if (map && id < map->priomap_len)
+>  		return map->priomap[id];
+> @@ -109,7 +109,7 @@ static int netprio_set_prio(struct cgroup_subsys_state *css,
+>  			    struct net_device *dev, u32 prio)
+>  {
+>  	struct netprio_map *map;
+> -	int id = css->cgroup->id;
+> +	int id = css_to_id(css);
+>  	int ret;
+>  
+>  	/* avoid extending priomap for zero writes */
+> @@ -170,7 +170,7 @@ static void cgrp_css_free(struct cgroup_subsys_state *css)
+>  
+>  static u64 read_prioidx(struct cgroup_subsys_state *css, struct cftype *cft)
+>  {
+> -	return css->cgroup->id;
+> +	return css_to_id(css);
+>  }
+>  
+>  static int read_priomap(struct seq_file *sf, void *v)
+> @@ -222,7 +222,7 @@ static void net_prio_attach(struct cgroup_subsys_state *css,
+>  			    struct cgroup_taskset *tset)
+>  {
+>  	struct task_struct *p;
+> -	void *v = (void *)(unsigned long)css->cgroup->id;
+> +	void *v = (void *)(unsigned long)css_to_id(css);
+>  
+>  	cgroup_taskset_for_each(p, tset) {
+>  		task_lock(p);
+> -- 
+> 2.0.0-rc0
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+Acked-by: Neil Horman <nhorman@tuxdriver.com>
 
-That's right, which is why I mailed you about it:
-
-  > > > Applied untested by me.
-  > >
-  > > Wouldn't build. Let it go via Rafael.
-  >
-  > Rafael, would you mind creating a branch from this patch set that we
-  > can both pull from please?
-
-> If that's the case, please drop [5/8] and let me handle the entire series.
-
-I'm happy for you to apply the series and send me a pull-request for
-either a) the entire series or b) just the patches which touch MFD and
-any subsequent decencies. Or I can apply them and send you one.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
