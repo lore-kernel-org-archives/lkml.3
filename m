@@ -1,171 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758249AbaDVUv1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 16:51:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:36538 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758023AbaDVUXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 16:23:44 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.8 072/133] IB/ipath: Fix potential buffer overrun in sending diag packet routine
-Date: Tue, 22 Apr 2014 13:13:30 -0700
-Message-Id: <1398197671-12786-73-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.8
+	id S1758140AbaDVUwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 16:52:20 -0400
+Received: from mout.gmx.net ([212.227.15.18]:54654 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757307AbaDVUwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 16:52:14 -0400
+Message-ID: <5356D66E.4040504@gmx.de>
+Date: Tue, 22 Apr 2014 22:51:58 +0200
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+CC: Eric Paris <eparis@redhat.com>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] fanotify: check permissions when creating file descriptor
+References: <1397940833-6386-1-git-send-email-xypron.glpk@gmx.de> <20140422134044.GE366@quack.suse.cz> <CAKgNAkh=Shj6UO6x_KieQEYUoY+guokNute0iwUfiSYFJbeTfQ@mail.gmail.com> <20140422140747.GF366@quack.suse.cz>
+In-Reply-To: <20140422140747.GF366@quack.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:GVyxZ3jRsOQswMjnKPLR6dw/wzF8zu2YkR1s6TMMimTgC95T/dd
+ LlriaqRNGbLClGyoQvJfVDgM3PG/nF+njJ7H4PGb2mmVKPKzOGCuX6fvlQLUn6M/1XRylbL
+ nOM8zShRICHyF/t67tsf1HJNu+RIGYS/xNdg7vz6/71t7nkFIhfNVFN3uuOWvh60M428P78
+ ErX5gUdJHTR3xiax0Cl2g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
+On 22.04.2014 16:07, Jan Kara wrote:
+>>> On Sat 19-04-14 22:53:53, Heinrich Schuchardt wrote:
+>>>> When monitoring a directory or a mount with the fanotify API
+>>>> the call to fanotify_init checks,
+>>>>   * the process has cap_sys_admin capability
+>>>>
+>>>> The call to fanotify_mark checks,
+>>>>   * the process has read authorization for directory or mount
+>>>>
+>>>> A directory or mount may contain files for which the process
+>>>> has no read or write authorization.
+>>>> Yet when reading from the fanotify file descriptor, structures
+>>>> fanotify_event_metadata are returned, which contain a file
+>>>> descriptor for these files, and will allow to read or write.
+>>>>
+>>>> The patch adds an authorization check for read and write
+>>>> permission. In case of missing permission, reading from the
+>>>> fanotify file descriptor returns EACCES.
+>>>    OK, am I right you are concerned about a situation where fanotify group
+>>> descriptor is passed to an unpriviledged process which handles all the
+>>> incoming events? I'm asking because the permission checking can be
+>>> relatively expensive (think of acls) so we better do it for a reason.
+>>> I'd prefer to hear from Eric what the original intention regarding
+>>> permissions was...
+>
+> Reviewed-by: Jan Kara <jack@suse.cz>
+>
 
-------------------
+Hello Jan, hello Eric
 
-From: Dennis Dalessandro <dennis.dalessandro@intel.com>
+before applying the patch I think another problem has to be solved.
 
-commit a2cb0eb8a64adb29a99fd864013de957028f36ae upstream.
+fanotify_read can have one of the following outcomes:
 
-Guard against a potential buffer overrun.  The size to read from the
-user is passed in, and due to the padding that needs to be taken into
-account, as well as the place holder for the ICRC it is possible to
-overflow the 32bit value which would cause more data to be copied from
-user space than is allocated in the buffer.
+1) Everything works fine one or multiple struct fanotify_event_metadata
+are returned. fanotify_event_metadata->fd references the concerned
+files.
+2) An overflow occured. fanotify_event_metadata->fd is set to FAN_NOFD.
+3) An error occured. fanotify_read returns no
+struct fanotify_event_metadata but fails with an error code.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/infiniband/hw/ipath/ipath_diag.c | 66 ++++++++++++--------------------
- 1 file changed, 25 insertions(+), 41 deletions(-)
+This means any error in create_fd (called by fanotify read) may lead to
+lost events, if the error does not occur in the first event handled by
+fanotify_read.
+And not only events are lost, but also references to file descriptors
+are lost.
 
-diff --git a/drivers/infiniband/hw/ipath/ipath_diag.c b/drivers/infiniband/hw/ipath/ipath_diag.c
-index 714293b..e2f9a51 100644
---- a/drivers/infiniband/hw/ipath/ipath_diag.c
-+++ b/drivers/infiniband/hw/ipath/ipath_diag.c
-@@ -326,7 +326,7 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
- 				   size_t count, loff_t *off)
- {
- 	u32 __iomem *piobuf;
--	u32 plen, clen, pbufn;
-+	u32 plen, pbufn, maxlen_reserve;
- 	struct ipath_diag_pkt odp;
- 	struct ipath_diag_xpkt dp;
- 	u32 *tmpbuf = NULL;
-@@ -335,51 +335,29 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
- 	u64 val;
- 	u32 l_state, lt_state; /* LinkState, LinkTrainingState */
- 
--	if (count < sizeof(odp)) {
--		ret = -EINVAL;
--		goto bail;
--	}
- 
- 	if (count == sizeof(dp)) {
- 		if (copy_from_user(&dp, data, sizeof(dp))) {
- 			ret = -EFAULT;
- 			goto bail;
- 		}
--	} else if (copy_from_user(&odp, data, sizeof(odp))) {
--		ret = -EFAULT;
-+	} else if (count == sizeof(odp)) {
-+		if (copy_from_user(&odp, data, sizeof(odp))) {
-+			ret = -EFAULT;
-+			goto bail;
-+		}
-+	} else {
-+		ret = -EINVAL;
- 		goto bail;
- 	}
- 
--	/*
--	 * Due to padding/alignment issues (lessened with new struct)
--	 * the old and new structs are the same length. We need to
--	 * disambiguate them, which we can do because odp.len has never
--	 * been less than the total of LRH+BTH+DETH so far, while
--	 * dp.unit (same offset) unit is unlikely to get that high.
--	 * Similarly, dp.data, the pointer to user at the same offset
--	 * as odp.unit, is almost certainly at least one (512byte)page
--	 * "above" NULL. The if-block below can be omitted if compatibility
--	 * between a new driver and older diagnostic code is unimportant.
--	 * compatibility the other direction (new diags, old driver) is
--	 * handled in the diagnostic code, with a warning.
--	 */
--	if (dp.unit >= 20 && dp.data < 512) {
--		/* very probable version mismatch. Fix it up */
--		memcpy(&odp, &dp, sizeof(odp));
--		/* We got a legacy dp, copy elements to dp */
--		dp.unit = odp.unit;
--		dp.data = odp.data;
--		dp.len = odp.len;
--		dp.pbc_wd = 0; /* Indicate we need to compute PBC wd */
--	}
--
- 	/* send count must be an exact number of dwords */
- 	if (dp.len & 3) {
- 		ret = -EINVAL;
- 		goto bail;
- 	}
- 
--	clen = dp.len >> 2;
-+	plen = dp.len >> 2;
- 
- 	dd = ipath_lookup(dp.unit);
- 	if (!dd || !(dd->ipath_flags & IPATH_PRESENT) ||
-@@ -422,16 +400,22 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
- 		goto bail;
- 	}
- 
--	/* need total length before first word written */
--	/* +1 word is for the qword padding */
--	plen = sizeof(u32) + dp.len;
--
--	if ((plen + 4) > dd->ipath_ibmaxlen) {
-+	/*
-+	 * need total length before first word written, plus 2 Dwords. One Dword
-+	 * is for padding so we get the full user data when not aligned on
-+	 * a word boundary. The other Dword is to make sure we have room for the
-+	 * ICRC which gets tacked on later.
-+	 */
-+	maxlen_reserve = 2 * sizeof(u32);
-+	if (dp.len > dd->ipath_ibmaxlen - maxlen_reserve) {
- 		ipath_dbg("Pkt len 0x%x > ibmaxlen %x\n",
--			  plen - 4, dd->ipath_ibmaxlen);
-+			  dp.len, dd->ipath_ibmaxlen);
- 		ret = -EINVAL;
--		goto bail;	/* before writing pbc */
-+		goto bail;
- 	}
-+
-+	plen = sizeof(u32) + dp.len;
-+
- 	tmpbuf = vmalloc(plen);
- 	if (!tmpbuf) {
- 		dev_info(&dd->pcidev->dev, "Unable to allocate tmp buffer, "
-@@ -473,11 +457,11 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
- 	 */
- 	if (dd->ipath_flags & IPATH_PIO_FLUSH_WC) {
- 		ipath_flush_wc();
--		__iowrite32_copy(piobuf + 2, tmpbuf, clen - 1);
-+		__iowrite32_copy(piobuf + 2, tmpbuf, plen - 1);
- 		ipath_flush_wc();
--		__raw_writel(tmpbuf[clen - 1], piobuf + clen + 1);
-+		__raw_writel(tmpbuf[plen - 1], piobuf + plen + 1);
- 	} else
--		__iowrite32_copy(piobuf + 2, tmpbuf, clen);
-+		__iowrite32_copy(piobuf + 2, tmpbuf, plen);
- 
- 	ipath_flush_wc();
- 
--- 
-1.9.1
+Of cause create_fd can already fail with EMFILE, if no more file
+descriptors are available. (Not a good situation to lose references
+to file descriptors?)
 
+If we add the patch to check permissions errors in create_fd will
+be much more of an issue. A malware might force such errors to
+occur by writing to a file with chmod 200.
+
+Hence we have to rethink how errors are to be handled.
+
+Instead of having fanotify_read returning an error code it could
+set the concerned fanotify_event_metadata->fd to the
+negative value of the error code, and return this
+fanotify_event_metadata as the last event.
+
+Unfortunately this might break existing code, if this code only
+checks fanotify_event_metadata->fd against FAN_NOFD.
+
+Another solution would be to simply set
+fanotify_event_metadata->fd = FAN_NOFD
+and errno to the error code.
+
+This would not break any existing code, because such code already
+has to be able to handle FAN_NOFD. And the error relating to
+FANO_NOFD can be recovered from errno.
+
+What is your idea how fanotify_read should gracefully handle a
+situation were the last of many returned events has a problem?
+
+Best regards
+
+Heinrich Schuchardt
