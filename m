@@ -1,98 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933AbaDVBhl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 21 Apr 2014 21:37:41 -0400
-Received: from [101.0.96.218] ([101.0.96.218]:36245 "EHLO pide.tip.net.au"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167AbaDVBhi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 21 Apr 2014 21:37:38 -0400
-Date: Tue, 22 Apr 2014 11:37:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: Re: linux-next: manual merge of the userns tree with Linus' tree
-Message-Id: <20140422113711.a5fdc95aa6fe6b309d2d38e1@canb.auug.org.au>
-In-Reply-To: <874n1s73bu.fsf@x220.int.ebiederm.org>
-References: <20140417150657.6d67e750081860b30f99715c@canb.auug.org.au>
-	<20140417052500.GZ18016@ZenIV.linux.org.uk>
-	<874n1s73bu.fsf@x220.int.ebiederm.org>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Tue__22_Apr_2014_11_37_11_+1000_cBBu9Y5g0/_rIlFS"
+	id S1753655AbaDVBh4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 21 Apr 2014 21:37:56 -0400
+Received: from eusmtp01.atmel.com ([212.144.249.243]:3583 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753255AbaDVBhx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 21 Apr 2014 21:37:53 -0400
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH] ARM: dts: at91-sama5d3_xplained: add the regulator
+ device node
+Thread-Topic: [PATCH] ARM: dts: at91-sama5d3_xplained: add the regulator
+ device node
+Thread-Index: AQHPXRswrA2f1ffIY0GWPrJ4xJGUOJsbTx2AgAApLYCAAWLlUA==
+Date: Tue, 22 Apr 2014 01:37:15 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A24364180A876DA@penmbx01>
+References: <1398054547-5834-1-git-send-email-wenyou.yang@atmel.com>
+ <20140421095443.GA3461@piout.net> <20140421122205.GB3461@piout.net>
+In-Reply-To: <20140421122205.GB3461@piout.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__22_Apr_2014_11_37_11_+1000_cBBu9Y5g0/_rIlFS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Thu, 17 Apr 2014 01:44:21 -0700 ebiederm@xmission.com (Eric W. Biederman=
-) wrote:
->
-> Al Viro <viro@ZenIV.linux.org.uk> writes:
->=20
-> > On Thu, Apr 17, 2014 at 03:06:57PM +1000, Stephen Rothwell wrote:
-> >> Hi Eric,
-> >>=20
-> >> Today's linux-next merge of the userns tree got a conflict in
-> >> fs/namespace.c between various commits from Linus' tree and various
-> >> commits from the userns tree.
-> >>=20
-> >> I fixed it up (hopefully - see below) and can carry the fix as necessa=
-ry
-> >> (no action is required).
+> -----Original Message-----
+> From: Alexandre Belloni [mailto:alexandre.belloni@free-electrons.com]
+> Sent: Monday, April 21, 2014 8:22 PM
+> To: Yang, Wenyou
+> Cc: devicetree@vger.kernel.org; Ferre, Nicolas; linux-
+> kernel@vger.kernel.org; robh+dt@kernel.org; broonie@kernel.org; linux-
+> arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH] ARM: dts: at91-sama5d3_xplained: add the regulator
+> device node
+> 
+> On 21/04/2014 at 11:54:43 +0200, Alexandre Belloni wrote :
+> > Hi,
 > >
-> > Various commits include this:
-> > commit 38129a13e6e71f666e0468e99fdd932a687b4d7e
-> > Author: Al Viro <viro@zeniv.linux.org.uk>
-> > Date:   Thu Mar 20 21:10:51 2014 -0400
+> > On 21/04/2014 at 12:29:07 +0800, Wenyou Yang wrote :
+> > > +
+> > > +						vddana_reg: LDO_REG2 {
+> > > +							regulator-name = "VDDANA";
+> > > +							regulator-min-microvolt =
+> <3300000>;
+> > > +							regulator-max-microvolt =
+> <3300000>;
+> > > +							regulator-always-on;
 > >
-> >     switch mnt_hash to hlist
+> > I'm pretty sure that one is not always on as you actually have to
+> > configure it to get any voltage. Are you sure you want to set the
+> > regulator-always-on property here ?
 > >
-> > present in v3.14...  It's been there since before the merge window.
->=20
-> And the code that is in conflict is even older. =20
->=20
-> I just figured out of an abundance of caution I would make certain the
-> code was out there for automatic and semi-automatic things to pound on
-> before I resent my pull request to Linus, now that I have fixed the
-> stack overflow issue you were complaining about.
->=20
-> I suspect something about fixing mntput caused Stephen to loose his
-> trivial resolution for this trivial conflict.
+> 
+> Just to clarify my though, wouldn't it be better to make the ADC driver
+> handle that regulator instead of using regulator-always-on ?
+Yes, you are right. 
+It should not use regulator-always-on property for this regulator. It is ADC driver and ISI driver to handle it(The ISI takes PCK for clock).
 
-That would be the three extra commits you added that touched that file -
-it throws "git rerere" off and I didn't recognise the source of the
-problem.
+I will send new version patch.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Thanks
 
---Signature=_Tue__22_Apr_2014_11_37_11_+1000_cBBu9Y5g0/_rIlFS
-Content-Type: application/pgp-signature
+> 
+> --
+> Alexandre Belloni, Free Electrons
+> Embedded Linux, Kernel and Android engineering http://free-
+> electrons.com
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTVcfMAAoJEMDTa8Ir7ZwVnZQQAJF3cK0HMec0nvqyQpqyNkmx
-VXUAR/g6xI+MSFaL0QkCcy8DVyAmN9xDp5KC4icU6c5yNz0Feu8UrGKfgi3vE1fj
-b2akFvIdTiA8nv3BywRESEdRzHlmyEgb9oGbJbgBpSANri7u9mnDwOlDgT4prt29
-OKmRdKWLSzvBq07h2oNl6vulp0WQ0Dico4usjagb+pF/7fqwFDYq/2mclm7OOQ6z
-yjZnUQKZ7Xt30DG9Ed+32COP7O5P8NGNb+k7zog+SH2XqF5viqmefGmmFnLL9dMw
-uaqSzySv0QUJTu0l6GL4+w/BxlnCa15VRQqwFKKiTOMnPx8Y4exTplNRJ0EGNI6Q
-8w+dN9WWLuxmHekXwc259fVY+hPxEl8l+UfbBDrf8l+PIjOHJvJXqPSE3EtHgEt5
-YCulRilQC1DnqfomoMyFHhrh5q9F2nOcTGuhVoSHd9bYAu/tGuhU7BIvb91DkZWQ
-1CP12Lc4ApNwuTBjCGteehvtuqORopxybZyvu/ijY86CZmt0pt8fdRCJ8/XsoSwL
-OFNOEUmOsebigBxhe5dNAsEQR9Z3hTVl6cdC2vcQ56Ok62WKFC+7fqQQ6J8k0JrE
-R0PKssyrys85diUtQLe1ZGSm1/fSK6oit7lHtVkIRqXHExkrzP+9miNyjM2i4gCu
-Dd5F5z1JfDghMlrO+PC4
-=zvQZ
------END PGP SIGNATURE-----
-
---Signature=_Tue__22_Apr_2014_11_37_11_+1000_cBBu9Y5g0/_rIlFS--
+Best Regards,
+Wenyou Yang
