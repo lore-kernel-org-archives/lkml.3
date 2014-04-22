@@ -1,94 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbaDVIlm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 04:41:42 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:44469 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283AbaDVIli (ORCPT
+	id S1753784AbaDVInB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 04:43:01 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:46590 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbaDVImx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 04:41:38 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-fc-53562b3f7b58
-Message-id: <1398156094.6077.4.camel@AMDC1943>
-Subject: Re: [PATCH 1/2] mfd: sec-core: Remove duplicated device type from
- sec_pmic
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Date: Tue, 22 Apr 2014 10:41:34 +0200
-In-reply-to: <20140422080939.GE17657@lee--X1>
-References: <1397477015-13900-1-git-send-email-k.kozlowski@samsung.com>
- <20140417082628.GG28725@lee--X1> <1397807684.29800.8.camel@AMDC1943>
- <20140422080939.GE17657@lee--X1>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu1
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGLMWRmVeSWpSXmKPExsVy+t/xK7r22mHBBs/+GllsnLGe1eJs0xt2
-	i/tfjzJaXN41h81i7ZG77Banu1ktLq74wuTA7nHn2h42j3knAz36tqxi9Pi8SS6AJYrLJiU1
-	J7MstUjfLoEr48D5JUwFt3krFn2cxdTAeJmri5GTQ0LARGLi9lZWCFtM4sK99WxdjFwcQgJL
-	GSX2XV3EDOF8ZpTYcb6ZBaSKV0BP4tn2DewgtrBAqETL3P1gNpuAscTm5UuAujk4RARUJM69
-	MQfpZRb4xyixZOJZZpA4i4CqxMNT0iAmp4CuxNS9aRDjNzJKTG+6wgYyhllAXWLSPJC9IAcp
-	S8zbf4wJYq2gxI/J91ggauQlNq95yzyBUWAWkpZZSMpmISlbwMi8ilE0tTS5oDgpPddQrzgx
-	t7g0L10vOT93EyMkrL/sYFx8zOoQowAHoxIPr4RBaLAQa2JZcWXuIUYJDmYlEd4mzbBgId6U
-	xMqq1KL8+KLSnNTiQ4xMHJxSDYzrjs58zxPaurfQ5MjGjv7Cc6GHZhzy+P2hSmmVlsmz661a
-	Hj3zntc7RB6+PzP0la8i81GbA0s/e1wym1GavyM5s/TkZdVksf0la0L/mWzJELvJO7X63O9g
-	4xfWaQevM2obMa+aJ+sksebUkuWZTtncTAI3J4c1ahzcL11295HRjqXzT6uVbLNTYinOSDTU
-	Yi4qTgQAGpUpokkCAAA=
+	Tue, 22 Apr 2014 04:42:53 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140421155020.GB13709@redhat.com>
+References: <20140415145749.GF10187@tucsk.piliscsaba.szeredi.hu>
+	<20140416180422.GA20907@redhat.com>
+	<20140421155020.GB13709@redhat.com>
+Date: Tue, 22 Apr 2014 10:42:52 +0200
+Message-ID: <CAJfpegs9cgVgxbYZSM=SxyJqj=N1QA5npp7ic6i80CMec+3sZw@mail.gmail.com>
+Subject: Re: [PATCH] vfs: rw_copy_check_uvector() - free iov on error
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Dave Jones <davej@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wto, 2014-04-22 at 09:09 +0100, Lee Jones wrote:
-> > > > +	unsigned long device_type;
-> > > >  	int ret;
-> > > >  
-> > > >  	sec_pmic = devm_kzalloc(&i2c->dev, sizeof(struct sec_pmic_dev),
-> > > > @@ -262,7 +263,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
-> > > >  	sec_pmic->dev = &i2c->dev;
-> > > >  	sec_pmic->i2c = i2c;
-> > > >  	sec_pmic->irq = i2c->irq;
-> > > > -	sec_pmic->type = sec_i2c_get_driver_data(i2c, id);
-> > > > +	device_type = sec_i2c_get_driver_data(i2c, id);
-> > > 
-> > > Better to change the return type of 'sec_i2c_get_driver_data()' than
-> > > to rely on a cast later on.
-> > 
-> > Hmmm... it was like that before Pankaj Dubey change (8f695de515b9).
-> > Solving that issue (-Wpointer-to-int-cast) along with keeping 'int' as
-> > return type of sec_i2c_get_driver_data would lead to one of:
-> > 1. Using temporary variable in ec_i2c_get_driver_data just for cast.
-> > 
-> > static inline int sec_i2c_get_driver_data(struct i2c_client *i2c,
-> > 						const struct i2c_device_id *id)
-> > {
-> > 	unsigned long type;
-> > 
-> > 	if (i2c->dev.of_node) {
-> > 		const struct of_device_id *match;
-> > 		match = of_match_node(sec_dt_match, i2c->dev.of_node);
-> > 		type = (unsigned long)match->data;
-> > 	}
-> > 	type = id->driver_data;
-> > 
-> > 	return (int)type;
-> > }
-> > 
-> > or
-> > 2. Double cast: (int)(unsigned long)match->data;
-> > 
-> > For me both are kind a ugly... What do you think?
-> 
-> I'm saying, why don't you change everything; the return value of
-> sec_i2c_get_driver_data(), pdata->device_type and device_type to long
-> or unsigned long? Then the only cast you need to do is from void*.
+On Mon, Apr 21, 2014 at 5:50 PM, Dave Jones <davej@redhat.com> wrote:
+> On Wed, Apr 16, 2014 at 02:04:22PM -0400, Dave Jones wrote:
+>  > On Tue, Apr 15, 2014 at 04:57:49PM +0200, Miklos Szeredi wrote:
+>  >
+>  >  > Some callers (aio_run_iocb, vmsplice_to_user) forget to free the iov on
+>  >  > error.  This seems to be a recurring problem, with most callers being buggy
+>  >  > initially.
+>  >
+>  > Your patch looks a lot more complete than the quick hack I did a few
+>  > days ago when coverity first started nagging about this, but in testing
+>  > I've found that something really ugly starts showing up when you patch this
+>  >
+>  > The symptoms vary, but always are some kind of slab corruption.
+>  > Here's the last example:
+>  >
+>  > =============================================================================
+>  > BUG kmalloc-256 (Not tainted): Invalid object pointer 0xffff8802407adc60
+>  > -----------------------------------------------------------------------------
+>  >
+>  > Disabling lock debugging due to kernel taint
+>  > INFO: Slab 0xffffea000901eb00 objects=28 used=22 fp=0xffff8802407ad6d0 flags=0x20000000004081
+>  > CPU: 1 PID: 1185 Comm: trinity-c1 Tainted: G    B         3.15.0-rc1+ #191
+>  >  ffff880243c073c0 00000000f952f249 ffff8800a1a2bc10 ffffffffbd74686d
+>  >  ffffea000901eb00 ffff8800a1a2bce8 ffffffffbd1b0cd4 ffffffff00000020
+>  >  ffff8800a1a2bcf8 ffff8800a1a2bca8 61766e4943c00a18 656a626f2064696c
+>  > Call Trace:
+>  >  [<ffffffffbd74686d>] dump_stack+0x4e/0x7a
+>  >  [<ffffffffbd1b0cd4>] slab_err+0xb4/0xe0
+>  >  [<ffffffffbd0bf3ae>] ? put_lock_stats.isra.23+0xe/0x30
+>  >  [<ffffffffbd1b0da6>] ? slab_pad_check.part.44+0xa6/0x170
+>  >  [<ffffffffbd744e7f>] free_debug_processing+0x88/0x22a
+>  >  [<ffffffffbd1c7041>] ? compat_do_readv_writev+0xe1/0x250
+>  >  [<ffffffffbd74506d>] __slab_free+0x4c/0x2c3
+>  >  [<ffffffffbd1c6679>] ? do_sync_readv_writev+0x59/0xa0
+>  >  [<ffffffffbd1b2614>] kfree+0x214/0x220
+>  >  [<ffffffffbd1c7041>] ? compat_do_readv_writev+0xe1/0x250
+>  >  [<ffffffffbd1c7041>] compat_do_readv_writev+0xe1/0x250
+>  >  [<ffffffffbd0bf716>] ? lock_release_holdtime.part.24+0xe6/0x160
+>  >  [<ffffffffbd0a3ccd>] ? get_parent_ip+0xd/0x50
+>  >  [<ffffffffbd75642b>] ? preempt_count_sub+0x6b/0xf0
+>  >  [<ffffffffbd751a01>] ? _raw_spin_unlock+0x31/0x50
+>  >  [<ffffffffbd349883>] ? __this_cpu_preempt_check+0x13/0x20
+>  >  [<ffffffffbd1c730a>] compat_writev+0x3a/0x80
+>  >  [<ffffffffbd1c85d8>] compat_SyS_writev+0x58/0xd0
+>  >  [<ffffffffbd75c6a9>] ia32_do_call+0x13/0x13
+>  > FIX kmalloc-256: Object at 0xffff8802407adc60 not freed
+>  >
+>  >
+>  > I also had an incomplete trace that showed vmsplice causing a bug in mm/slub.c:3396
+>  > on an earlier run.
+>  >
+>  > The crash happens very quickly (within a few seconds of running trinity) for me.
+>
+> Al, Miklos ?
 
-Aaaa, I got it. I'll sent next version of patch.
+I probably am blind, but I can't see how that will cause slab corruption.
 
-Best regards,
-Krzysztof
+Have you verified that it's just that single patch and no other change?
 
-
+Thanks,
+Miklos
