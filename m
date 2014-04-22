@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584AbaDVTJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 15:09:34 -0400
-Received: from mail-la0-f53.google.com ([209.85.215.53]:33301 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751238AbaDVTJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 15:09:32 -0400
+	id S1755026AbaDVTJo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 15:09:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17084 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754687AbaDVTJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 15:09:42 -0400
+Date: Tue, 22 Apr 2014 15:09:35 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org, davem@davemloft.net,
+        sparclinux@vger.kernel.org, mguzik@redhat.com
+Subject: Re: [PATCH 0/4 V3] Print traces on softlockup
+Message-ID: <20140422190935.GL8488@redhat.com>
+References: <1398179848-197479-1-git-send-email-dzickus@redhat.com>
+ <20140422112828.ea511cefa17affb99d9aa97f@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20140422184908.GA16477@omega>
-References: <1397784176-15809-1-git-send-email-mcgrof@do-not-panic.com>
- <1397784176-15809-2-git-send-email-mcgrof@do-not-panic.com>
- <1398159886.4211.1.camel@jlt4.sipsolutions.net> <20140422095300.GA9241@omega>
- <20140422175818.GN27882@wotan.suse.de> <1398192315.4211.25.camel@jlt4.sipsolutions.net>
- <20140422184908.GA16477@omega>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Tue, 22 Apr 2014 12:09:09 -0700
-X-Google-Sender-Auth: MhXScIMhcIfKrB3UGSf2lM4FdAM
-Message-ID: <CAB=NE6UW23sjr0kNMtDLashm-=N6+Pekiw58rSdt5UcJXhG=5w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] 6lowpan: add helper to get 6lowpan namespace
-To: Alexander Aring <alex.aring@gmail.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-        Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-zigbee-devel@lists.sourceforge.net,
-        David Miller <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "backports@vger.kernel.org" <backports@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140422112828.ea511cefa17affb99d9aa97f@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 11:49 AM, Alexander Aring <alex.aring@gmail.com> wrote:
-> On Tue, Apr 22, 2014 at 08:45:15PM +0200, Johannes Berg wrote:
->> On Tue, 2014-04-22 at 19:58 +0200, Luis R. Rodriguez wrote:
->>
->> > > > > +#if IS_ENABLED(CONFIG_IEEE802154_6LOWPAN)
->> > > > > [...]
->> > > > > +#else
->> > > > > +static inline struct netns_ieee802154_lowpan *
->> > > > > +net_ieee802154_lowpan(struct net *net)
->> > > > > +{
->> > > > > +     return NULL;
->> > > > > +}
->> > > > > +#endif
->> > > >
->> > > > Why would that be needed? If nobody compiles 802.15.4 then it seems
->> > > > nothing should reference it?
->> > > >
->> > > Indeed I think this is unnecessary, also.
->> >
->> > I wanted to be sure, and I was not. Right now 6lowpan does not depend
->> > on CONFIG_NET_NS, is this intentional? I think its fine without it
->> > but I was not sure.
->>
->> I fail to see how !CONFIG_LOWPAN is related CONFIG_NET_NS?
->>
->
-> mhh, IEEE802154_6LOWPAN depends on IPV6 and I think IPV6 is related to
-> CONFIG_NET_NS.
+On Tue, Apr 22, 2014 at 11:28:28AM -0700, Andrew Morton wrote:
+> On Tue, 22 Apr 2014 11:17:24 -0400 Don Zickus <dzickus@redhat.com> wrote:
+> 
+> > Added more patches to handle the 'uniprocessor' panic case by sending NMIs
+> > to every cpu but self.  Only affects x86, sparc.
+> > 
+> 
+> Looks OK to me.  A couple of things:
+> 
+> - Patches 1-3 should be combined so we don't create bisection holes
+>   due to x86 and sparc build errors.
 
-Just test compiled IEEE802154_6LOWPAN without NET_NS and then also
-disabled IPV6 and it compiles, IEEE802154_6LOWPAN already depends on
-IPV6.
+ok.
 
-  Luis
+> 
+> - Patch 4 adds stuff which is unusable on uniprocessor, especially
+>   the presence of /proc/sys/kernel/softlockup_all_cpu_backtrace.  We
+>   already have #ifdef CONFIG_SMP in kern_table, so do more of that?
+
+I can resubmit that patch with CONFIG_SMP around each piece of that patch.
+
+Thanks for the review.
+
+Cheers,
+Don
