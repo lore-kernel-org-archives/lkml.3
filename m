@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757906AbaDWTAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 15:00:30 -0400
-Received: from fencepost.gnu.org ([208.118.235.10]:55082 "EHLO
-	fencepost.gnu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122AbaDWTA1 (ORCPT
+	id S1757926AbaDWTAx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 15:00:53 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:46741 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756122AbaDWTAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 15:00:27 -0400
-Date: Wed, 23 Apr 2014 15:00:06 -0400
-Message-Id: <E1Wd2Os-00061e-GU@fencepost.gnu.org>
-From: ams@gnu.org (Alfred M. Szmidt)
-To: Jeff Layton <jlayton@redhat.com>
-CC: libc-alpha@sourceware.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tytso@mit.edu, dalias@libc.org,
-        mtk.manpages@gmail.com, samba-technical@lists.samba.org,
-        nfs-ganesha-devel@lists.sourceforge.net, carlos@redhat.com,
-        metze@samba.org, hch@infradead.org, bharrosh@panasas.com
-In-reply-to: <20140423112843.77889d16@tlielax.poochiereds.net> (message from
-	Jeff Layton on Wed, 23 Apr 2014 11:28:43 -0400)
-Subject: Re: [RFC][glibc PATCH] fcntl-linux.h: add new definitions and
- manual updates for open file description locks
-Reply-to: ams@gnu.org
-References: <1398253172-9221-1-git-send-email-jlayton@redhat.com>
-	<E1Wcyo3-0000Eg-UC@fencepost.gnu.org> <20140423112843.77889d16@tlielax.poochiereds.net>
+	Wed, 23 Apr 2014 15:00:47 -0400
+Date: Wed, 23 Apr 2014 15:00:43 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC] blkcg: prepare blkcg knobs for default hierarchy
+Message-ID: <20140423190043.GB4163@mtj.dyndns.org>
+References: <20140413013209.GC26252@mtj.dyndns.org>
+ <20140414180824.GB9552@redhat.com>
+ <20140414193214.GC16835@htj.dyndns.org>
+ <20140415135359.GA13033@redhat.com>
+ <20140415140650.GI1863@htj.dyndns.org>
+ <20140415141826.GB17018@redhat.com>
+ <20140423170141.GJ4781@htj.dyndns.org>
+ <20140423171720.GF24651@redhat.com>
+ <20140423185231.GA4163@mtj.dyndns.org>
+ <20140423185835.GD22755@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423185835.GD22755@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-   > Likewise.  You infact write that it does get the lock information
-   > later in the document wrt. F_OFD_GETLK.
+Hello,
 
-   Sorry, I disagree here...GETLK is really a misnomer, IMO. TESTLK
-   would have been a better name.
+On Wed, Apr 23, 2014 at 02:58:35PM -0400, Vivek Goyal wrote:
+> Oh, sorry, I had misunderstood your question.
+> 
+> - Number of IOs serviced will be different at throttling layer and
+>   CFQ layer as throttling accounts IO in terms of bios and CFQ
+>   accounts in terms of number of requests.
 
-   GETLK are used is to "get the first lock".
+But shouldn't it be possible to determine that from merged count?  Or
+we can just expose both bio and request counts at block core layer.
+The point is that there's nothing controller specific about these
+stats.
 
-   It's a way to test whether a particular lock can be applied, and to
-   return information about a conflicting lock if it can't. If, for
-   instance there is no conflicting lock, then you don't "get" any
-   lock information back (l_type just gets reset to F_UNLCK).
+> - CFQ might not be operational on a device while throttling might be
+>   on and one needs bytes stats.
 
-While I kinda see your point, it isn't what GETLK does; it really does
-get you information about the first lock -- you're not testing
-anything.  It is also the terminology used in the POSIX standard.
+Yeah, so expose both from blkcg core as blkio.* stats.
+
+> - In a custom kernel throttling might not be on and CFQ is on and
+>   one needs the stats.
+
+Ditto.
+
+Thanks.
+
+-- 
+tejun
