@@ -1,174 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757801AbaDWRpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:45:21 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43662 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757770AbaDWRpQ (ORCPT
+	id S1757835AbaDWRp2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:45:28 -0400
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:49229 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757770AbaDWRpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:45:16 -0400
-Date: Wed, 23 Apr 2014 19:45:14 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>
-Subject: Generating .config from device tree [was Re: Hardware dependencies
- in Kconfig]
-Message-ID: <20140423174514.GA24243@amd.pavel.ucw.cz>
-References: <20140414145359.48b7337c@endymion.delvare>
- <20140414191143.GA26864@kroah.com>
+	Wed, 23 Apr 2014 13:45:23 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="DocE+STaALJfprDB"
-Content-Disposition: inline
-In-Reply-To: <20140414191143.GA26864@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5357F82D.8020307@zytor.com>
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
+ <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com> <CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
+ <20140422112312.GB15882@pd.tnic> <20140422144659.GF15882@pd.tnic>
+ <CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
+ <53569467.1030809@zytor.com> <CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
+ <CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
+ <CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>
+ <CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>
+ <CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com>
+ <5356A3B6.5050901@zytor.com> <20140423105411.2e166dd8@alan.etchedpixels.co.uk>
+ <5357E214.6050501@zytor.com> <CAObL_7FePDB5EtZNKSbkc19maR3pH31tZSK-k+mcaFrKttYN3w@mail.gmail.com>
+ <5357F572.1030804@zytor.com> <CAObL_7HN0S_zuqi=NSJARaV8HAQz=zQXAvBiE8QsiFQ0VxpO8Q@mail.gmail.com>
+ <5357F82D.8020307@zytor.com>
+From: Andrew Lutomirski <amluto@gmail.com>
+Date: Wed, 23 Apr 2014 10:45:02 -0700
+Message-ID: <CAObL_7G6E+v0mj11TiBGenQLyBor=DtbuMqSy9iQTTqjEL2H9A@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Apr 23, 2014 at 10:28 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/23/2014 10:25 AM, Andrew Lutomirski wrote:
+>> On Wed, Apr 23, 2014 at 10:16 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>> On 04/23/2014 10:08 AM, Andrew Lutomirski wrote:
+>>>>
+>>>> The only way I can see to trigger the race is with sigreturn, but it's
+>>>> still there.  Sigh.
+>>>
+>>> I don't see why sigreturn needs to be involved... all you need is
+>>> modify_ldt() on one CPU while the other is in the middle of an IRET
+>>> return.  Small window, so hard to hit, but still.
+>>
+>> If you set the flag as soon as anyone calls modify_ldt, before any
+>> descriptor is installed, then I don't think this can happen.  But
+>> there's still sigreturn, and I don't think this is worth all the
+>> complexity to save a single branch on #GP.
+>>
+>
+> Who cares?  Since we only need to enter the fixup path for LDT
+> selectors, anything that is dependent on having called modify_ldt() is
+> already redundant.
 
---DocE+STaALJfprDB
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+But you still have to test this, and folding it into the existing
+check for thread flags would eliminate that.  Still, I think this
+would not be worth it, even if it were correct.
 
-Hi!
+>
+> In some ways that is the saving grace.  SS being an LDT selector is
+> fortunately a rare case.
+>
+>> I do mean intra-kernel.  And yes, this has nothing to do with espfix,
+>> but it would make write_msr_safe fail more quickly :)
+>
+> And, pray tell, how important is that?
 
-> Ideally, the arch doesn't matter at all for a driver, only the
-> infrastructure the driver depends on does.  So perhaps the
+Not very.
 
-Actually, it would be nice if user was never asked for combination
-that can be compiled, and kernel would support them, but there's no
-such hardware.
+Page faults may be a different story for some workloads, particularly
+if they are IO-heavy.  Returning to preempted kernel threads may also
+matter.
 
-For example, if I am configuring for Nokia N900, I pretty much know
-all the devices -- not even USB host is officially supported, so this
-machine is not extensible. Yet I'll have to answer about 1000
-questions about config.
+For my particular workload, returns from rescheduling interrupts
+delivered to idle cpus probably also matters, but the fact that those
+interrupts are happening at all is a bug that tglx is working on.
 
-And ... we already have very accurate description of what hardware
-Nokia N900 has -- in the device tree. Perhaps it would make sense to
-generate hardware-dependend parts of config from device tree? [I'll
-still need to answer questions like CONFIG_NFS but should
-not have to answer CONFIG_DISPLAY_PANEL_SONY_ACX565AKM question.]
+--Andy
 
-Anyway, script is attached, perhaps it is useful to someone. 
-
-[And yes, I believe we should build CONFIG_FOO corresponds to
-"ti,omap3-foo" database.]
-
-Run it from linux directory, and modify 
-
-        m.linux_path = "/data/l/linux-n900/"
-        m.dtb_path = "arch/arm/boot/dts/omap3-n900.dtb"
-
-to match your configuration.
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
-
---DocE+STaALJfprDB
-Content-Type: text/x-python; charset=us-ascii
-Content-Disposition: attachment; filename="dtsconfig.py"
-
-#!/usr/bin/python
-#
-# Scripts for automatic kernel configuration from dts
-# 
-# Copyright 2014 Pavel Machek <pavel@ucw.cz>
-# Distribute under GPLv2+
-#
-
-import os
-import re
-
-class DtsParser():
-    def __init__(m):
-        m.linux_path = "/data/l/linux-n900/"
-        m.dtb_path = "arch/arm/boot/dts/omap3-n900.dtb"
-
-    def find_files(m, match):
-        l = os.popen("find "+m.linux_path+" -name '"+match+"'").readlines()
-        return map(lambda s: s.rstrip(), l)
-        
-
-    def find_compatible(m):
-        dts = os.popen("dtc -I dtb "+m.dtb_path).readlines()
-        compatibles = {}
-        for line in dts:
-            match = re.match(".*compatible = ([^;]*);", line)
-            if not match:
-                continue
-            l = match.group(1)
-            for s in l.split('",'):
-                s = re.sub('^[" ]*', '', s)
-                s = re.sub('"$', '', s)
-                compatibles[s] = 1
-
-        m.compatibles = compatibles
-
-
-    def find_drivers(m):
-        drivers = {}
-        for fname in m.find_files("*.c"):
-            for line in open(fname, "r").readlines():
-                for c in m.compatibles:
-                    if re.match('.*"'+c+'".*', line):
-                        m.compatibles[c] = 2
-                        if not fname in drivers:
-                            drivers[fname] = []
-                        drivers[fname] += [ line ]
-        m.drivers = drivers
-
-    def find_configs(m):
-        configs = {}
-        m.found_drivers = {}
-        for fname in m.drivers:
-            makefile = fname.rstrip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.,_")
-            makefile += "Makefile"
-            basename = re.match("^.*/([a-zA-Z0-9-_,]*).c$", fname)
-            if not basename:
-                print "Can't find basename for ", fname
-                continue
-            basename = basename.group(1)
-            print basename
-
-            lines = open(makefile, "r").readlines()
-            for l in lines:
-                l = l.rstrip()
-                c = re.match("^obj-\$\(([A-Z0-9_]*)\)[ 	]*\+= "+basename+".o$", l) 
-                if c:
-                    break
-            if not c:
-                print "Could not file config option for ", basename, " in ", makefile
-                continue
-            c = c.group(1)
-            print "Have config option ", c
-            configs[c] = fname
-            m.found_drivers[fname] = c
-        m.configs = configs
-
-    def run(m):
-        m.find_compatible()
-        m.find_drivers()
-        m.find_configs()
-
-    def print_configs(m):
-        for c in m.configs:
-            print c
-        for c in m.compatibles:
-            if m.compatibles[c] != 2:
-                print "Could not find driver for ", c
-        
-parser = DtsParser()
-parser.run()
-parser.print_configs()
-
-
-#print parser.find_files("*.c")
-
-
---DocE+STaALJfprDB--
+--Andy
