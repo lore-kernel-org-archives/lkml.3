@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583AbaDWNnd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:43:33 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:8284 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851AbaDWN3z (ORCPT
+	id S1757042AbaDWNoG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:44:06 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:56746 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755783AbaDWN3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:29:55 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-85-5357c052cec0
+	Wed, 23 Apr 2014 09:29:54 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-4b-5357c04a8cb7
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, dhowells@redhat.com, jmorris@namei.org
 Cc: roberto.sassu@polito.it, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 13/20] ima: replace opencount with bitop
-Date: Wed, 23 Apr 2014 16:30:31 +0300
-Message-id: <222a8077d845e4097954febc5600147fc68c6582.1398259638.git.d.kasatkin@samsung.com>
+Subject: [PATCH 03/20] ima: move asymmetric keys config option
+Date: Wed, 23 Apr 2014 16:30:21 +0300
+Message-id: <34575ff06cf564319195273a5890540d3653019d.1398259638.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.8.3.2
 In-reply-to: <cover.1398259638.git.d.kasatkin@samsung.com>
 References: <cover.1398259638.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1398259638.git.d.kasatkin@samsung.com>
 References: <cover.1398259638.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t/xq7pBB8KDDbraOS1u/d3LbPGu6TeL
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnluLIzCtJLcpLzFFi42I5/e/4VV2vA+HBBk/bOS1u/d3LbPGu6TeL
 	xbr1i5ksLu+aw2bxoecRm8XLXd/YLT6tmMTswO7x4NBmFo+e78kep1cWe7zfd5XNo2/LKkaP
-	z5vkAtiiuGxSUnMyy1KL9O0SuDKe/HvMXrCDv+Lh6nbmBsabPF2MnBwSAiYSb65cY4WwxSQu
-	3FvP1sXIxSEksJRRYs7HF8wQTieTxPUJn5hAqtgE9CQ2NP9gB7FFBFwkds/pYwIpYhboYZTY
-	/WcxUAcHh7CAhcSqZj+QGhYBVYnN24+CbeAViJPoXvOJDWKbgsSyL2uZQWxOASuJP83TwWYK
-	CVhKfJ80Gaf4BEb+BYwMqxhFU0uTC4qT0nMN9YoTc4tL89L1kvNzNzFCgvHLDsbFx6wOMQpw
-	MCrx8EosDwsWYk0sK67MPcQowcGsJMK7ZFF4sBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGTLO1
-	/wxThbdp7LbZfolLoWephwvrjK4u0xyhZe81lEPv/na/evDPc5uwt/kXTjz8sPyYdeg+2Y+z
-	DzX5Za9w/5M343Hu2+XXpBjeVLI8sw/jy3vvMnEfwx/R61ueirzOiOhjvr0twfwz94xvLvFt
-	kqx/7h3/k6dltNxPb8a2KxuZwiq1/IOeKLEUZyQaajEXFScCAMGTb4ckAgAA
+	z5vkAtiiuGxSUnMyy1KL9O0SuDI6V9sVrOKtmPx8J1sD432uLkZODgkBE4lje64zQ9hiEhfu
+	rWfrYuTiEBJYyihxfvEXdpCEkEAnk8Tn14YgNpuAnsSG5h9gcREBF4ndc/qYQBqYBXoYJXb/
+	WQw2SVjATmL6pg9Akzg4WARUJR6ciAEJ8wrESWy4c5YFYpmCxLIva8HKOQWsJP40T4faZSnx
+	fdJknOITGPkXMDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJxC87GBcfszrEKMDBqMTD
+	K7E8LFiINbGsuDL3EKMEB7OSCO+SReHBQrwpiZVVqUX58UWlOanFhxiZODilGhg1izjF+MXW
+	VhqfU/t9vvbABM3z1j9qjt1qWDO9aIKsYNxpZX6dn4lLtu4Xdm3ceJf5v4Kv0NIHU/axbCuL
+	mTV3Hd+q1V5de5975+qpP6+wm8wm/Pbe0WM+/BEc57Qbj/FceX7hrXFZrphIcst7vXbh6+az
+	vf9fm6TA4/X23b5lk7oO/Xjso3tHiaU4I9FQi7moOBEA5dDbVSICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current implementation uses opencount to allow only single writer
-to update policy at a time. After policy update 'ima/policy' sysfs
-entry is removed which disallow future updates.
-
-Following patches might introduce posibility to update policy multiple
-times. Current open count implementation will not be valid.
-
-This patch replaces usage of opencount with busy bit.
+For better visual appearance it is better to co-locate
+asymmetric key option together with signature support.
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- security/integrity/ima/ima_fs.c | 23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
+ security/integrity/Kconfig | 24 ++++++++++++------------
+ 1 file changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/security/integrity/ima/ima_fs.c b/security/integrity/ima/ima_fs.c
-index da92fcc..71f0d8f 100644
---- a/security/integrity/ima/ima_fs.c
-+++ b/security/integrity/ima/ima_fs.c
-@@ -288,7 +288,12 @@ static struct dentry *runtime_measurements_count;
- static struct dentry *violations;
- static struct dentry *ima_policy;
+diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
+index 245c6d9..f79d853 100644
+--- a/security/integrity/Kconfig
++++ b/security/integrity/Kconfig
+@@ -17,6 +17,18 @@ config INTEGRITY_SIGNATURE
+ 	  This is useful for evm and module keyrings, when keys are
+ 	  usually only added from initramfs.
  
--static atomic_t policy_opencount = ATOMIC_INIT(1);
-+enum ima_fs_flags {
-+	IMA_FS_BUSY = 0,
-+};
++config INTEGRITY_ASYMMETRIC_KEYS
++	boolean "Enable asymmetric keys support"
++	depends on INTEGRITY_SIGNATURE
++	default n
++        select ASYMMETRIC_KEY_TYPE
++        select ASYMMETRIC_PUBLIC_KEY_SUBTYPE
++        select PUBLIC_KEY_ALGO_RSA
++        select X509_CERTIFICATE_PARSER
++	help
++	  This option enables digital signature verification using
++	  asymmetric keys.
 +
-+static unsigned long ima_fs_flags;
-+
- /*
-  * ima_open_policy: sequentialize access to the policy file
-  */
-@@ -297,9 +302,9 @@ static int ima_open_policy(struct inode *inode, struct file *filp)
- 	/* No point in being allowed to open it if you aren't going to write */
- 	if (!(filp->f_flags & O_WRONLY))
- 		return -EACCES;
--	if (atomic_dec_and_test(&policy_opencount))
--		return 0;
--	return -EBUSY;
-+	if (test_and_set_bit(IMA_FS_BUSY, &ima_fs_flags))
-+		return -EBUSY;
-+	return 0;
- }
+ config INTEGRITY_AUDIT
+ 	bool "Enables integrity auditing support "
+ 	depends on INTEGRITY && AUDIT
+@@ -32,17 +44,5 @@ config INTEGRITY_AUDIT
+ 	  be enabled by specifying 'integrity_audit=1' on the kernel
+ 	  command line.
  
- /*
-@@ -314,12 +319,12 @@ static int ima_release_policy(struct inode *inode, struct file *file)
- 	if (!valid_policy) {
- 		ima_delete_rules();
- 		valid_policy = 1;
--		atomic_set(&policy_opencount, 1);
--		return 0;
-+	} else {
-+		ima_update_policy();
-+		securityfs_remove(ima_policy);
-+		ima_policy = NULL;
- 	}
--	ima_update_policy();
--	securityfs_remove(ima_policy);
--	ima_policy = NULL;
-+	clear_bit(IMA_FS_BUSY, &ima_fs_flags);
- 	return 0;
- }
- 
+-config INTEGRITY_ASYMMETRIC_KEYS
+-	boolean "Enable asymmetric keys support"
+-	depends on INTEGRITY_SIGNATURE
+-	default n
+-        select ASYMMETRIC_KEY_TYPE
+-        select ASYMMETRIC_PUBLIC_KEY_SUBTYPE
+-        select PUBLIC_KEY_ALGO_RSA
+-        select X509_CERTIFICATE_PARSER
+-	help
+-	  This option enables digital signature verification using
+-	  asymmetric keys.
+-
+ source security/integrity/ima/Kconfig
+ source security/integrity/evm/Kconfig
 -- 
 1.8.3.2
 
