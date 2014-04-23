@@ -1,62 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755438AbaDWBwD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:52:03 -0400
-Received: from cn.fujitsu.com ([59.151.112.132]:24904 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755239AbaDWBwA (ORCPT
+	id S1753447AbaDWB4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:56:40 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:58993 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752030AbaDWB4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:52:00 -0400
-X-IronPort-AV: E=Sophos;i="4.97,907,1389715200"; 
-   d="scan'208";a="29601427"
-Message-ID: <53571DA5.1010603@cn.fujitsu.com>
-Date: Wed, 23 Apr 2014 09:55:49 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+	Tue, 22 Apr 2014 21:56:39 -0400
+Date: Tue, 22 Apr 2014 21:56:37 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Takao Indoh <indou.takao@jp.fujitsu.com>, rusty@rustcorp.com.au,
+        fweisbec@gmail.com, mingo@redhat.com, ananth@in.ibm.com,
+        anil.s.keshavamurthy@intel.com, davem@davemloft.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: ftrace/kprobes: Warning when insmod two modules
+Message-ID: <20140422215637.6920fb4a@gandalf.local.home>
+In-Reply-To: <535716A8.4050205@hitachi.com>
+References: <1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com>
+	<5330164D.6030507@hitachi.com>
+	<20140324105939.7f823b81@gandalf.local.home>
+	<87bnvunhs9.fsf@rustcorp.com.au>
+	<5355FE49.3030502@jp.fujitsu.com>
+	<53561A06.9050405@hitachi.com>
+	<535629E1.9090107@jp.fujitsu.com>
+	<535716A8.4050205@hitachi.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: <linux-kernel@vger.kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <jdelvare@suse.de>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jeff Layton <jlayton@redhat.com>,
-        Andreas Gruenbacher <agruen@linbit.com>,
-        Stephen Hemminger <stephen@networkplumber.org>
-Subject: Re: [PATCH 2/4] idr: reduce the number of MAX_IDR_FREE
-References: <1398161781-12105-1-git-send-email-laijs@cn.fujitsu.com> <1398161781-12105-3-git-send-email-laijs@cn.fujitsu.com> <20140422195821.GB2314@mtj.dyndns.org>
-In-Reply-To: <20140422195821.GB2314@mtj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 03:58 AM, Tejun Heo wrote:
-> On Tue, Apr 22, 2014 at 06:16:19PM +0800, Lai Jiangshan wrote:
->> +/*
->> + * Number of idr_layer structs to leave in free list.
->> + * When idr is not empty, we need atmost (MAX_IDR_LEVEL - 1) idr_layers
->> + * to build up and atmost (MAX_IDR_LEVEL - 1) idr_layers to allocate down.
->> + * When idr is empty need atmost MAX_IDR_LEVEL layers.
->> + */
->> +#define MAX_IDR_FREE max((MAX_IDR_LEVEL * 2 - 2), MAX_IDR_LEVEL)
-> 
-> I don't know.  Do we really wanna be this sophiscated about it when
-> the cost of mistake would be an unexpected id allocation failure which
-> would *EXTREMELY* difficult to track down or reproduce?  Let's please
-> keep it dumb and safe.
+On Wed, 23 Apr 2014 10:26:00 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-Do you mean "I need additional free layers to
-hide any possible bugs"? let me nervous.
 
-> With preloading we aren't even caching it
-> per-idr.  I don't think this is something we want to do.
+> Agreed. That should be done in a protected (critical) region,
+> and the region must be protected by correct lock. It seems that
+> the ftrace_lock is not a correct one.
 
-Understood.
+The setting of RO to RW done by ftrace before doing the normal
+modification is under the ftrace_lock mutex. Why wouldn't that be the
+correct lock?
 
-> 
->  Nacked-by: Tejun Heo <tj@kernel.org>
-> 
-> Thanks.
-> 
+The issue today is with the loading of a module and ftrace
+expecting its code to be RW. Here's the current race:
+
+
+	CPU 1				CPU 2
+	-----				-----
+  load_module()
+   module->state = MODULE_STATE_COMING
+
+				register_ftrace_function()
+				 mutex_lock(&ftrace_lock);
+				 ftrace_startup()
+				  update_ftrace_function();
+				   ftrace_arch_code_modify_prepare()
+				    set_all_module_text_rw();
+				   <enables-ftrace>
+				    ftrace_arch_code_modify_post_process()
+				     set_all_module_text_ro();
+
+				[ here all module text is set to RO,
+				  including the module that is
+				  loading!! ]
+
+   blocking_notifier_call_chain(MODULE_STATE_COMING);
+    ftrace_init_module()
+
+
+     [ tries to modify code, but it's RO, and fails! ]
+
+One solution is to add a way to set a single module text to ro and rw,
+and then we can encapsulate ftrace_init_module() under ftrace_lock
+mutex and have the ftrace_init_module() set the text to RW and then
+back to RO, and this will keep ftrace from having issues with the
+loaded module.
+
+Now, if text poke does something similar, we need to make another mutex
+that covers modifying text. Don't we have one already?
+
+The worry I have here, and why I still prefer the simple split state of
+MODULE_STATE_COMING, is that once you add another mutex, we now have to
+fight mutex ordering. Not to mention where else things might do this :-p
+
+-- Steve
 
