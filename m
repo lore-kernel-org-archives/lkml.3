@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213AbaDWPvX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:51:23 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59079 "EHLO
+	id S1757487AbaDWPvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:51:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59105 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751156AbaDWPvV (ORCPT
+	with ESMTP id S1751156AbaDWPvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:51:21 -0400
+	Wed, 23 Apr 2014 11:51:24 -0400
 From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: sebastian.hesselbarth@gmail.com, linus.walleij@linaro.org
@@ -15,10 +15,12 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         alexandre.belloni@free-electrons.com, zmxu@marvell.com,
         jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/7] ARM: berlin: add pinctrl support
-Date: Wed, 23 Apr 2014 17:51:09 +0200
-Message-Id: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com>
+Subject: [PATCH v2 5/7] ARM: berlin: add the pinctrl dependency for the Marvell Berlin SoCs
+Date: Wed, 23 Apr 2014 17:51:14 +0200
+Message-Id: <1398268276-9696-6-git-send-email-antoine.tenart@free-electrons.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com>
+References: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -26,67 +28,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds support for the Marvell Berlin pin-controller, allowing
-to configure the pin muxing from the device tree.
+Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+---
+ arch/arm/mach-berlin/Kconfig | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-The Berlin pin-controller support is divided into 3 drivers, each
-driving one Berlin SoC. These drivers use a Berlin common part.
-
-This series applies on top of patches introducing the Marvell Berlin
-BG2Q you can find on Sebastian's berlin/for-next branch[1] and the patch
-allowing not to define the get_group_pins() function[2].
-
-Tested on the Berlin BG2Q.
-
-[1] https://github.com/shesselba/linux-berlin/commits/berlin/for-next
-[2] https://patchwork.kernel.org/patch/3964491/
-
-Changes since v1:
-        - moved the driver to a specific berlin/ directory
-        - divided the pin-controller driver into three (one per SoC) and
-          reworked the driver dependencies accordingly
-        - reworked the device tree bindings
-        - removed the reg-names and reworked the driver to allow
-          splitting the two pin-controllers into two separate nodes in
-          the device tree
-        - updated the documentation
-        - removed unnecessary checks
-        - added support to mux multiple groups with the same function
-        - added BG2, BG2 and BG2CD function definitions
-
-Antoine Ténart (7):
-  pinctrl: berlin: add the core pinctrl driver for Marvell Berlin SoCs
-  pinctrl: berlin: add the BG2Q pinctrl driver
-  pinctrl: berlin: add the BG2 pinctrl driver
-  pinctrl: berlin: add the BG2CD pinctrl driver
-  ARM: berlin: add the pinctrl dependency for the Marvell Berlin SoCs
-  Documentation: add the Marvell Berlin pinctrl documentation
-  ARM: dts: berlin: add the pinctrl node and muxing setup for uarts
-
- .../bindings/pinctrl/marvell,berlin-pinctrl.txt    |  44 +++
- arch/arm/boot/dts/berlin2.dtsi                     |  24 ++
- arch/arm/boot/dts/berlin2cd.dtsi                   |  17 +
- arch/arm/boot/dts/berlin2q.dtsi                    |  24 ++
- arch/arm/mach-berlin/Kconfig                       |   4 +
- drivers/pinctrl/Kconfig                            |   1 +
- drivers/pinctrl/Makefile                           |   1 +
- drivers/pinctrl/berlin/Kconfig                     |  19 +
- drivers/pinctrl/berlin/Makefile                    |   4 +
- drivers/pinctrl/berlin/berlin-bg2.c                | 251 +++++++++++++
- drivers/pinctrl/berlin/berlin-bg2cd.c              | 194 ++++++++++
- drivers/pinctrl/berlin/berlin-bg2q.c               | 413 +++++++++++++++++++++
- drivers/pinctrl/berlin/berlin.c                    | 347 +++++++++++++++++
- drivers/pinctrl/berlin/berlin.h                    |  71 ++++
- 14 files changed, 1414 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,berlin-pinctrl.txt
- create mode 100644 drivers/pinctrl/berlin/Kconfig
- create mode 100644 drivers/pinctrl/berlin/Makefile
- create mode 100644 drivers/pinctrl/berlin/berlin-bg2.c
- create mode 100644 drivers/pinctrl/berlin/berlin-bg2cd.c
- create mode 100644 drivers/pinctrl/berlin/berlin-bg2q.c
- create mode 100644 drivers/pinctrl/berlin/berlin.c
- create mode 100644 drivers/pinctrl/berlin/berlin.h
-
+diff --git a/arch/arm/mach-berlin/Kconfig b/arch/arm/mach-berlin/Kconfig
+index d3c5f14dc142..9c2b569e54ba 100644
+--- a/arch/arm/mach-berlin/Kconfig
++++ b/arch/arm/mach-berlin/Kconfig
+@@ -4,6 +4,7 @@ config ARCH_BERLIN
+ 	select GENERIC_IRQ_CHIP
+ 	select DW_APB_ICTL
+ 	select DW_APB_TIMER_OF
++	select PINCTRL
+ 
+ if ARCH_BERLIN
+ 
+@@ -14,11 +15,13 @@ config MACH_BERLIN_BG2
+ 	select CACHE_L2X0
+ 	select CPU_PJ4B
+ 	select HAVE_ARM_TWD if SMP
++	select PINCTRL_BERLIN_BG2
+ 
+ config MACH_BERLIN_BG2CD
+ 	bool "Marvell Armada 1500-mini (BG2CD)"
+ 	select CACHE_L2X0
+ 	select HAVE_ARM_TWD if SMP
++	select PINCTRL_BERLIN_BG2CD
+ 
+ config MACH_BERLIN_BG2Q
+ 	bool "Marvell Armada 1500 Pro (BG2-Q)"
+@@ -26,6 +29,7 @@ config MACH_BERLIN_BG2Q
+ 	select CPU_V7
+ 	select HAVE_ARM_TWD if SMP
+ 	select HAVE_SMP
++	select PINCTRL_BERLIN_BG2Q
+ 
+ endmenu
+ 
 -- 
 1.8.3.2
 
