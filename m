@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756526AbaDWD6B (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 23:58:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18138 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753517AbaDWD57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 23:57:59 -0400
-Message-ID: <1398225475.750.7.camel@localhost>
-Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
-From: Eric Paris <eparis@redhat.com>
-To: Steve Grubb <sgrubb@redhat.com>
-Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        selinux@tycho.nsa.gov, linux-security-module@vger.kernel.org,
-        davem@davemloft.net, jamal@mojatatu.com
-Date: Tue, 22 Apr 2014 23:57:55 -0400
-In-Reply-To: <26389161.vp9iWSVLPX@x2>
-References: <20140422.161904.1187535812839850973.davem@davemloft.net>
-	 <cover.1398215388.git.rgb@redhat.com> <26389161.vp9iWSVLPX@x2>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751015AbaDWEJT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 00:09:19 -0400
+Received: from mail-yh0-f45.google.com ([209.85.213.45]:44601 "EHLO
+	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750725AbaDWEJQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 00:09:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398210681-22976-1-git-send-email-dianders@chromium.org>
+References: <1398210681-22976-1-git-send-email-dianders@chromium.org>
+From: Alim Akhtar <alim.akhtar@gmail.com>
+Date: Wed, 23 Apr 2014 09:32:36 +0530
+Message-ID: <CAGOxZ52ChD+KExT75Zz5e4j7=fN5bt1py6C04V+czHOfv0tYNQ@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Don't print data errors
+To: Doug Anderson <dianders@chromium.org>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
+        Alim Akhtar <alim.akhtar@samsung.com>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        chris@printf.net, Ulf Hansson <ulf.hansson@linaro.org>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-22 at 22:25 -0400, Steve Grubb wrote:
-> On Tuesday, April 22, 2014 09:31:52 PM Richard Guy Briggs wrote:
-> > This is a patch set Eric Paris and I have been working on to add a
-> > restricted capability read-only netlink multicast socket to kernel audit to
-> > enable userspace clients such as systemd/journald to receive audit logs, in
-> > addition to the bidirectional auditd userspace client.
-> 
-> Do have the ability to separate of secadm_r and sysadm_r? By allowing this, we 
-> will leak to a sysadmin that he is being audited by the security officer. In a 
-> lot of cases, they are one in the same person. But for others, they are not. I 
-> have a feeling this will cause problems for MLS systems.
+Hi Doug,
 
-Why?  This requires CAP_AUDIT_READ.  Just don't give CAP_AUDIT_READ to
-places you don't want to have read permission.  Exactly the same as you
-don't give CAP_AUDIT_CONTROL to sysadm_r.  (If we are giving
-CAP_AUDIT_CONTROL to sysadm_r and you think that any file protections
-on /var/log/audit/audit.log are adequate we are fooling ourselves!)
+On Wed, Apr 23, 2014 at 5:21 AM, Doug Anderson <dianders@chromium.org> wrote:
+> Data errors are completely expected during tuning.  Printing them out
+> is confusing people looking at the kernel logs.  They see things like:
+>
+>  [    3.613296] dwmmc_exynos 12200000.dwmmc0: data error, status 0x00000088
+>
+> ...and they think something is wrong with their hardware.
+>
+> Remove the printouts.  We'll leave it up to a higher level to report
+> about errors.
+>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
 
-> Also, shouldn't we have an audit event for every attempt to connect to this 
-> socket? We really need to know where this information is getting leaked to.
+This looks reasonable
+Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
 
-We certainly can.  What would you like to see in that event?
+> ---
+>  drivers/mmc/host/dw_mmc.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index cced599..4c8d423 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -1248,7 +1248,7 @@ static int dw_mci_data_complete(struct dw_mci *host, struct mmc_data *data)
+>                         data->error = -EIO;
+>                 }
+>
+> -               dev_err(host->dev, "data error, status 0x%08x\n", status);
+> +               dev_dbg(host->dev, "data error, status 0x%08x\n", status);
+>
+>                 /*
+>                  * After an error, there may be data lingering
+> --
+> 1.9.1.423.g4596e3a
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--Eric
 
+
+-- 
+Regards,
+Alim
