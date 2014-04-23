@@ -1,64 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757143AbaDWP3n (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:29:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64739 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751156AbaDWP33 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:29:29 -0400
-Date: Wed, 23 Apr 2014 11:28:43 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: ams@gnu.org
-Cc: libc-alpha@sourceware.org, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, tytso@mit.edu, dalias@libc.org,
-        mtk.manpages@gmail.com, samba-technical@lists.samba.org,
-        nfs-ganesha-devel@lists.sourceforge.net, carlos@redhat.com,
-        metze@samba.org, hch@infradead.org, bharrosh@panasas.com
-Subject: Re: [RFC][glibc PATCH] fcntl-linux.h: add new definitions and
- manual updates for open file description locks
-Message-ID: <20140423112843.77889d16@tlielax.poochiereds.net>
-In-Reply-To: <E1Wcyo3-0000Eg-UC@fencepost.gnu.org>
-References: <1398253172-9221-1-git-send-email-jlayton@redhat.com>
-	<E1Wcyo3-0000Eg-UC@fencepost.gnu.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757358AbaDWP3u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:29:50 -0400
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:65265 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754116AbaDWP3p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:29:45 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgene.kim@samsung.com, stern@rowland.harvard.edu, balbi@ti.com,
+        jg1.han@samsung.com, av.tikhomirov@samsung.com
+Subject: [PATCH 2/3] dts: exynos5250-snow: Add required VDD regulator supplies for usb
+Date: Wed, 23 Apr 2014 20:59:28 +0530
+Message-Id: <1398266969-26000-3-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1398266969-26000-1-git-send-email-gautam.vivek@samsung.com>
+References: <1398266969-26000-1-git-send-email-gautam.vivek@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014 11:09:51 -0400
-ams@gnu.org (Alfred M. Szmidt) wrote:
+Add required VDD 3.3V and VDD 1.0V regulator supplies to usb nodes.
 
->    @@ -2890,7 +2894,7 @@ Get flags associated with the open file.  @xref{File Status Flags}.
->     Set flags associated with the open file.  @xref{File Status Flags}.
-> 
->     @item F_GETLK
->    -Get a file lock.  @xref{File Locks}.
->    +Test a file lock.  @xref{File Locks}.
-> 
-> F_GETLK does get the (first) lock which blocks; it doesn't test for
-> it.  "Retrieves information about the first blocking lock ..." or
-> something might be better than the original
-> 
->    @@ -2898,6 +2902,18 @@ Set or clear a file lock.  @xref{File Locks}.
->     @item F_SETLKW
->     Like @code{F_SETLK}, but wait for completion.  @xref{File Locks}.
-> 
->    +@item F_OFD_GETLK
->    +Test a open file description lock.  @xref{Open File Description Locks}.
->    +Specific to Linux.
-> 
-> Likewise.  You infact write that it does get the lock information
-> later in the document wrt. F_OFD_GETLK.
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+---
+ arch/arm/boot/dts/exynos5250-snow.dts |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-Sorry, I disagree here...GETLK is really a misnomer, IMO. TESTLK would
-have been a better name.
-
-It's a way to test whether a particular lock can be applied, and to
-return information about a conflicting lock if it can't. If, for
-instance there is no conflicting lock, then you don't "get" any lock
-information back (l_type just gets reset to F_UNLCK).
-
+diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
+index fd9b3b3..21d1f31 100644
+--- a/arch/arm/boot/dts/exynos5250-snow.dts
++++ b/arch/arm/boot/dts/exynos5250-snow.dts
+@@ -214,12 +214,24 @@
+ 		enable-active-high;
+ 	};
+ 
++	usb@12000000 {
++		vdd33-supply = <&ldo12_reg>;
++		vdd10-supply = <&ldo15_reg>;
++	};
++
+ 	phy@12100000 {
+ 		vbus-supply = <&usb3_vbus_reg>;
+ 	};
+ 
+ 	usb@12110000 {
+ 		samsung,vbus-gpio = <&gpx1 1 0>;
++		vdd33-supply = <&ldo12_reg>;
++		vdd10-supply = <&ldo15_reg>;
++	};
++
++	usb@12120000 {
++		vdd33-supply = <&ldo12_reg>;
++		vdd10-supply = <&ldo15_reg>;
+ 	};
+ 
+ 	fixed-rate-clocks {
 -- 
-Jeff Layton <jlayton@redhat.com>
+1.7.10.4
+
