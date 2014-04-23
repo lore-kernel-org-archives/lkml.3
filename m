@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791AbaDWNkp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:40:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10754 "EHLO mx1.redhat.com"
+	id S1756930AbaDWNlI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:41:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34045 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755140AbaDWNkk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:40:40 -0400
-Message-ID: <5357C2D2.5060700@redhat.com>
-Date: Wed, 23 Apr 2014 09:40:34 -0400
-From: Daniel J Walsh <dwalsh@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Eric Paris <eparis@redhat.com>, Steve Grubb <sgrubb@redhat.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org, linux-audit@redhat.com,
-        selinux@tycho.nsa.gov, jamal@mojatatu.com, davem@davemloft.net
-Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
-References: <20140422.161904.1187535812839850973.davem@davemloft.net> <cover.1398215388.git.rgb@redhat.com> <26389161.vp9iWSVLPX@x2> <1398225475.750.7.camel@localhost>
-In-Reply-To: <1398225475.750.7.camel@localhost>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756831AbaDWNlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:41:04 -0400
+Message-ID: <1398260463.32091.5.camel@linux-fkkt.site>
+Subject: Re: [PATCH v2 09/24] input: Port hid-dr to ff-memless-next
+From: Oliver Neukum <oneukum@suse.de>
+To: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
+        anssi.hannula@iki.fi, simon@mungewell.org
+Date: Wed, 23 Apr 2014 15:41:03 +0200
+In-Reply-To: <1398175209-9565-10-git-send-email-madcatxster@devoid-pointer.net>
+References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
+	 <1398175209-9565-10-git-send-email-madcatxster@devoid-pointer.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are the capabilities we currently give to sysadm_t with
-sysadm_secadm    1.0.0    Disabled
+On Tue, 2014-04-22 at 15:59 +0200, Michal Malý wrote:
+>  static int drff_play(struct input_dev *dev, void *data,
+> -                                struct ff_effect *effect)
+> +                       const struct mlnx_effect_command *command)
+>  {
+>         struct hid_device *hid = input_get_drvdata(dev);
+>         struct drff_device *drff = data;
+> +       const struct mlnx_rumble_force *rumble_force =
+> &command->u.rumble_force;
+>         int strong, weak;
+>  
+> -       strong = effect->u.rumble.strong_magnitude;
+> -       weak = effect->u.rumble.weak_magnitude;
+> +       strong = rumble_force->strong;
+> +       weak = rumble_force->weak;
+>  
+>         dbg_hid("called with 0x%04x 0x%04x", strong, weak);
+>  
+> -       if (strong || weak) {
+> -               strong = strong * 0xff / 0xffff;
+> -               weak = weak * 0xff / 0xffff;
+> -
+> -               /* While reverse engineering this device, I found that
+> when
+> -                  this value is set, it causes the strong rumble to
+> function
+> -                  at a near maximum speed, so we'll bypass it. */
+> -               if (weak == 0x0a)
+> -                       weak = 0x0b;
+> -
+> -               drff->report->field[0]->value[0] = 0x51;
+> -               drff->report->field[0]->value[1] = 0x00;
+> -               drff->report->field[0]->value[2] = weak;
+> -               drff->report->field[0]->value[4] = strong;
+> -               hid_hw_request(hid, drff->report, HID_REQ_SET_REPORT);
+> -
+> -               drff->report->field[0]->value[0] = 0xfa;
+> -               drff->report->field[0]->value[1] = 0xfe;
+> -       } else {
+> +       switch (command->cmd) {
+> +       case MLNX_START_RUMBLE:
+> +               if (strong || weak) {
+> +                       strong = strong * 0xff / 0xffff;
+> +                       weak = weak * 0xff / 0xffff;
+> +
+> +                       /* While reverse engineering this device, I
+> found that when
+> +                       this value is set, it causes the strong rumble
+> to function
+> +                       at a near maximum speed, so we'll bypass it.
+> */
+> +                       if (weak == 0x0a)
+> +                               weak = 0x0b;
+> +
+> +                       drff->report->field[0]->value[0] = 0x51;
+> +                       drff->report->field[0]->value[1] = 0x00;
+> +                       drff->report->field[0]->value[2] = weak;
+> +                       drff->report->field[0]->value[4] = strong;
 
-   allow sysadm_t sysadm_t : capability { chown dac_override
-dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable
-net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner
-sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice
-sys_resource sys_time sys_tty_config mknod lease audit_write setfcap } ;
-   allow sysadm_t sysadm_t : capability { setgid setuid sys_chroot }
+This looks like an endianness bug.
 
-   allow sysadm_t sysadm_t : capability2 { syslog block_suspend } ;
+> +                       hid_hw_request(hid, drff->report,
+> HID_REQ_SET_REPORT);
 
-cap_audit_write might be a problem?
+	Regards
+		Oliver
 
-On 04/22/2014 11:57 PM, Eric Paris wrote:
-> On Tue, 2014-04-22 at 22:25 -0400, Steve Grubb wrote:
->> On Tuesday, April 22, 2014 09:31:52 PM Richard Guy Briggs wrote:
->>> This is a patch set Eric Paris and I have been working on to add a
->>> restricted capability read-only netlink multicast socket to kernel audit to
->>> enable userspace clients such as systemd/journald to receive audit logs, in
->>> addition to the bidirectional auditd userspace client.
->> Do have the ability to separate of secadm_r and sysadm_r? By allowing this, we 
->> will leak to a sysadmin that he is being audited by the security officer. In a 
->> lot of cases, they are one in the same person. But for others, they are not. I 
->> have a feeling this will cause problems for MLS systems.
-> Why?  This requires CAP_AUDIT_READ.  Just don't give CAP_AUDIT_READ to
-> places you don't want to have read permission.  Exactly the same as you
-> don't give CAP_AUDIT_CONTROL to sysadm_r.  (If we are giving
-> CAP_AUDIT_CONTROL to sysadm_r and you think that any file protections
-> on /var/log/audit/audit.log are adequate we are fooling ourselves!)
->
->> Also, shouldn't we have an audit event for every attempt to connect to this 
->> socket? We really need to know where this information is getting leaked to.
-> We certainly can.  What would you like to see in that event?
->
-> -Eric
->
-> _______________________________________________
-> Selinux mailing list
-> Selinux@tycho.nsa.gov
-> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
-> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
->
->
 
