@@ -1,64 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756077AbaDWQu1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 12:50:27 -0400
-Received: from sabertooth01.qualcomm.com ([65.197.215.72]:21255 "EHLO
-	sabertooth01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148AbaDWQuZ (ORCPT
+	id S1757486AbaDWQw6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 12:52:58 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:65458 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756343AbaDWQw4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 12:50:25 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,7417"; a="62402903"
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Gilad Ben-Yossef <gilad@benyossef.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Tejun Heo <tj@kernel.org>,
-        John Stultz <johnstul@us.ibm.com>, Mike Frysinger <vapier@gentoo.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Hakan Akkan <hakanakkan@gmail.com>,
-        Max Krasnyansky <maxk@qti.qualcomm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <linux-mm@kvack.org>
-X-IronPort-AV: E=Sophos;i="4.97,912,1389772800"; 
-   d="scan'208";a="666749930"
-Message-ID: <5357EF4D.6080302@qti.qualcomm.com>
-Date: Wed, 23 Apr 2014 09:50:21 -0700
-From: Max Krasnyansky <maxk@qti.qualcomm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 23 Apr 2014 12:52:56 -0400
+Date: Wed, 23 Apr 2014 12:52:44 -0400
+From: Tejun Heo <tj@kernel.org>
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, toshi.kani@hp.com
+Subject: Re: [RFC PATCH v5 2/2] Use kernfs_break_active_protection() for
+ device online store callbacks
+Message-ID: <20140423165244.GI4781@htj.dyndns.org>
+References: <1397717444.4034.15.camel@ThinkPad-T5421>
+ <20140417151728.GK15326@htj.dyndns.org>
+ <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>
+ <1398072230.2755.43.camel@ThinkPad-T5421.cn.ibm.com>
+ <20140421224606.GE22730@htj.dyndns.org>
+ <1398137679.2805.28.camel@ThinkPad-T5421.cn.ibm.com>
+ <20140422204455.GB3615@mtj.dyndns.org>
+ <5356EB6D.3010102@intel.com>
+ <20140423142346.GB4781@htj.dyndns.org>
+ <5357E651.2040400@intel.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, Christoph Lameter <cl@linux.com>
-Subject: Re: vmstat: On demand vmstat workers V3
-References: <000001417f6834f1-32b83f22-8bde-4b9e-b591-bc31329660e4-000000@email.amazonses.com> <CAOh2x==yrBdFDcObdz+La0y=jDERj=sxOBMvU-Kk6eGEvvwZQw@mail.gmail.com>
-In-Reply-To: <CAOh2x==yrBdFDcObdz+La0y=jDERj=sxOBMvU-Kk6eGEvvwZQw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.30.39.5]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5357E651.2040400@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+Hello, Rafael.
 
-On 04/22/2014 03:32 AM, Viresh Kumar wrote:
-> On Thu, Oct 3, 2013 at 11:10 PM, Christoph Lameter <cl@linux.com> wrote:
->> V2->V3:
->> - Introduce a new tick_get_housekeeping_cpu() function. Not sure
->>   if that is exactly what we want but it is a start. Thomas?
->> - Migrate the shepherd task if the output of
->>   tick_get_housekeeping_cpu() changes.
->> - Fixes recommended by Andrew.
+On Wed, Apr 23, 2014 at 06:12:01PM +0200, Rafael J. Wysocki wrote:
+> >Why add this additional global lock across multiple subsystems?
 > 
-> Hi Christoph,
+> That basically is because of how eject works when it is triggered via ACPI.
 > 
-> This vmstat interrupt is disturbing my core isolation :), have you got
-> any far with this patchset?
+> It is signaled for a device at the top of a subtree.  It may be a
+> container of some sort and the eject involves everything below that
+> device in the ACPI namespace.  That may involve multiple subsystem
+> (CPUs, memory, PCI host bridge, etc.).
+> 
+> We do that in two steps, offline (which can fail) and eject proper
+> (which can't fail and makes all of the involved devices go away).
+> All that has to be done in one go with respect to the
+> sysfs-triggered offline/online and that's why the lock is there.
 
-You don't mean an interrupt, right?
-The updates are done via the regular priority workqueue.
+Ah, okay, so it's actually synchronzing across multiple subsystems.  I
+think it definitely calls for more documentation.  The requirement is
+pretty unusual after all.
 
-I'm playing with isolation as well (has been more or less a background thing
-for the last 6+ years). Our threads that run on the isolated cores are SCHED_FIFO
-and therefor low prio workqueue stuff, like vmstat, doesn't get in the way.
-I do have a few patches for the workqueues to make things better for isolation.
+Thanks!
 
-Max
+-- 
+tejun
