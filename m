@@ -1,90 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755835AbaDWDUw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 23:20:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50477 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755132AbaDWDUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 23:20:50 -0400
-Date: Tue, 22 Apr 2014 21:30:05 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org, eparis@redhat.com,
-        hadi@mojatatu.com, sgrubb@redhat.com
-Subject: Re: [PATCH 2/6] netlink: have netlink per-protocol bind function
- return an error code.
-Message-ID: <20140423013005.GB20182@madcap2.tricolour.ca>
-References: <20140324183406.GE28666@madcap2.tricolour.ca>
- <cover.1397831970.git.rgb@redhat.com>
- <c9a8a0879bc9f375bb3484f8e86189a8af5aa142.1397831970.git.rgb@redhat.com>
- <20140422.161904.1187535812839850973.davem@davemloft.net>
+	id S1756070AbaDWDVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 23:21:52 -0400
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:49073 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755859AbaDWDVu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 23:21:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140422.161904.1187535812839850973.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201404221544.33399.arnd@arndb.de>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<1397824031-4892-17-git-send-email-lftan@altera.com>
+	<201404221544.33399.arnd@arndb.de>
+Date: Wed, 23 Apr 2014 11:21:49 +0800
+X-Google-Sender-Auth: dRP_BXVRD7xcj3r_JmhN60MjEcY
+Message-ID: <CAFiDJ5_ZRYMrk86+HPLR_FEc5F-Yi04=Jz_EF5L40rRfOLC-9A@mail.gmail.com>
+Subject: Re: [PATCH 20/28] nios2: Time keeping
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/22, David Miller wrote:
-> From: Richard Guy Briggs <rgb@redhat.com>
-> Date: Fri, 18 Apr 2014 13:34:06 -0400
-> 
-> > @@ -1449,6 +1453,26 @@ static int netlink_bind(struct socket *sock, struct sockaddr *addr,
-> >  	if (!nladdr->nl_groups && (nlk->groups == NULL || !(u32)nlk->groups[0]))
-> >  		return 0;
-> >  
-> > +	if (nlk->netlink_bind && nladdr->nl_groups) {
-> > +		int i;
-> > +
-> > +		for (i = 0; i < nlk->ngroups; i++) {
-> > +			int undo;
-> > +
-> > +			if (!test_bit(i, (long unsigned int *)&nladdr->nl_groups))
-> > +				continue;
-> > +			err = nlk->netlink_bind(i);
-> > +			if (!err)
-> > +				continue;
-> > +			if (!nlk->portid)
-> > +				netlink_remove(sk);
-> > +			for (undo = 0; undo < i; undo++)
-> > +				if (nlk->netlink_unbind)
-> > +					nlk->netlink_unbind(undo);
-> > +			return err;
-> > +		}
-> > +	}
-> > +
-> 
-> It took me a while to figure out why you need to do the netlink_remove() in
-> the error path.
-> 
-> I think it's really asking for trouble to allow the socket to have temporary
-> visibility if we end up signalling an error.
+On Tue, Apr 22, 2014 at 9:44 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 18 April 2014, Ley Foon Tan wrote:
+>> +static inline unsigned long read_timersnapshot(void)
+>> +{
+>> +       unsigned long count;
+>> +
+>> +       outw(0, timer_membase + ALTERA_TIMER_SNAPL_REG);
+>> +       count =
+>> +               inw(timer_membase + ALTERA_TIMER_SNAPH_REG) << 16 |
+>> +               inw(timer_membase + ALTERA_TIMER_SNAPL_REG);
+>> +
+>> +       return count;
+>> +}
+>> +
+>> +static inline void write_timerperiod(unsigned long period)
+>> +{
+>> +       outw(period, timer_membase + ALTERA_TIMER_PERIODL_REG);
+>> +       outw(period >> 16, timer_membase + ALTERA_TIMER_PERIODH_REG);
+>> +}
+>
+> It's wrong to use 'outw' if this device is not on an PC-style ISA bus,
+> which I assume it is not. Since timer_membase is an __iomem pointer,
+> I'm sure you want to use writew() instead.
+>
+>         Arnd
+Sure, will change all outw() to writew() and inw() to readw().
 
-The risk seems small, but I agree it is sloppy.
-
-> It seems safest if we only do the autobind/insert once we are absolutely
-> certain that the bind() will fully succeed.  This means that you have to
-> do this bind validation loop before autobind/insert.
-
-Ok, done.  This revision ends up being a bit cleaner than the previous
-one because I've refactored out the unbind loop into netlink_unbind()
-due to it needing to be called if the netlink_insert/autobind() fails as
-well.  In the factorization process I noticed that unrequested groups
-were being unnecessarily unbound.  It also provoked assigning the var
-"groups" from "nladdr->nl_groups" making things easier to read.
-
-> Please make this change and resubmit this series, thanks.
-
-Compiled and tested.  New patchset to follow.
-
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Ley Foon
