@@ -1,217 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403AbaDWNfs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:35:48 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:56763 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755584AbaDWNaB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:30:01 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-b2-5357c0578bd3
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, dhowells@redhat.com, jmorris@namei.org
-Cc: roberto.sassu@polito.it, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 20/20] evm: read EVM key from the kernel
-Date: Wed, 23 Apr 2014 16:30:38 +0300
-Message-id: <d7c005ef499c8824eda2bb2480cc870a3f328b84.1398259638.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-In-reply-to: <cover.1398259638.git.d.kasatkin@samsung.com>
-References: <cover.1398259638.git.d.kasatkin@samsung.com>
-In-reply-to: <cover.1398259638.git.d.kasatkin@samsung.com>
-References: <cover.1398259638.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprILMWRmVeSWpSXmKPExsVy+t/xq7rhB8KDDXZMMra49Xcvs8W7pt8s
-	FuvWL2ayuLxrDpvFh55HbBYvd31jt/i0YhKzA7vHg0ObWTx6vid7nF5Z7PF+31U2j74tqxg9
-	Pm+SC2CL4rJJSc3JLEst0rdL4MrY0NnCWLBcvWLZ1QtMDYxH5bsYOTkkBEwkmm7uZoWwxSQu
-	3FvP1sXIxSEksJRRYur7BrCEkEAnk8Tab2IgNpuAnsSG5h/sILaIgIvE7jl9TCANzAI9jBK7
-	/yxmBkkIC1hI9FxZAmazCKhKXPjyBWwQr0CcxJETi9khtilILPuyFqyGU8BK4k/zdHaIZZYS
-	3ydNxik+gZF/ASPDKkbR1NLkguKk9FwjveLE3OLSvHS95PzcTYyQYPy6g3HpMatDjAIcjEo8
-	vBLLw4KFWBPLiitzDzFKcDArifAuWRQeLMSbklhZlVqUH19UmpNafIiRiYNTqoHxytp/aze0
-	JbMZv2X+9NNjuY24m5VchYpZm76t9p1bYb6pVevY/Pcdn23e2se1Q3F9m5Wm0kPVv4er1jvV
-	MP9wOFJ1Jjtj/gzuC3sr3O+waL22OdcTIbS5a6fj5btrlY35FteltgoYzGO6tEO2qfHHyn0l
-	lw0aWz8pnuHn+HjhltyDxG8dkieUWIozEg21mIuKEwFSulisJAIAAA==
+	id S1756861AbaDWNgH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:36:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49948 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756057AbaDWNgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:36:02 -0400
+Date: Wed, 23 Apr 2014 15:35:36 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 2/7] perf tools: Account entry stats when it's added to
+ the output tree
+Message-ID: <20140423133536.GC11124@krava.brq.redhat.com>
+References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
+ <1398236408-8856-3-git-send-email-namhyung@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398236408-8856-3-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently EVM key needs to be added from the user space
-and it has to be done before mounting filesystems.
-It requires initramfs.
-Many systems often does not want to use initramfs.
+On Wed, Apr 23, 2014 at 04:00:03PM +0900, Namhyung Kim wrote:
+> Currently, accounting each sample is done in multiple places - once
+> when adding them to the input tree, other when adding them to the
+> output tree.  It's not only confusing but also can cause a subtle
+> problem since concurrent processing like in perf top might see the
+> updated stats before adding entries into the output tree - like seeing
+> more (blank) lines at the end and/or slight inaccurate percentage.
+> 
+> To fix this, only account the entries when it's moved into the output
+> tree so that they cannot be seen prematurely.  There're some
+> exceptional cases here and there - they should be addressed separately
+> with comments.
 
-This patch provide support for loading EVM key from the kernel.
+sry to be PITA, but need to ask you to split the patch,
+otherwise I'd get beaten for that ;-)
 
-It supports both 'trusted' and 'user' master keys.
-However, it is recommended to use 'trusted' master key,
-because 'user' master key is in non-encrypted form.
+I can see several separated changes here:
+ * remove stats for input tree (as stated in changelog)
+ * hists__inc_nr_entries -> hists__inc_stats rename
+ * add hists__reset_stats function
+ * move hists__calc_col_len out of hists__inc_nr_entries
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
----
- security/integrity/evm/Kconfig      |  8 ++++
- security/integrity/evm/evm.h        |  9 ++++
- security/integrity/evm/evm_crypto.c | 96 +++++++++++++++++++++++++++++++++++++
- security/integrity/evm/evm_main.c   |  1 +
- 4 files changed, 114 insertions(+)
 
-diff --git a/security/integrity/evm/Kconfig b/security/integrity/evm/Kconfig
-index 70d12f7..953ef05 100644
---- a/security/integrity/evm/Kconfig
-+++ b/security/integrity/evm/Kconfig
-@@ -60,3 +60,11 @@ config EVM_LOAD_X509
- 	help
- 	   This option enables X509 certificate loading from the kernel
- 	   to the '_evm' trusted keyring.
-+
-+config EVM_LOAD_KEY
-+	bool "Load EVM HMAC key from the kernel"
-+	depends on EVM
-+	default n
-+	help
-+	   This option enables EVM HMAC key loading from the kernel.
-+	   It enables EVM.
-diff --git a/security/integrity/evm/evm.h b/security/integrity/evm/evm.h
-index 1db78b8..1890eac 100644
---- a/security/integrity/evm/evm.h
-+++ b/security/integrity/evm/evm.h
-@@ -40,6 +40,15 @@ extern struct crypto_shash *hash_tfm;
- /* List of EVM protected security xattrs */
- extern char *evm_config_xattrnames[];
- 
-+#ifdef CONFIG_EVM_LOAD_KEY
-+int evm_load_key(const char *key, const char *kmk);
-+#else
-+static inline int evm_load_key(const char *key, const char *kmk)
-+{
-+	return 0;
-+}
-+#endif
-+
- int evm_init_key(void);
- int evm_update_evmxattr(struct dentry *dentry,
- 			const char *req_xattr_name,
-diff --git a/security/integrity/evm/evm_crypto.c b/security/integrity/evm/evm_crypto.c
-index f79ebf5..c45b71b 100644
---- a/security/integrity/evm/evm_crypto.c
-+++ b/security/integrity/evm/evm_crypto.c
-@@ -18,6 +18,8 @@
- #include <linux/module.h>
- #include <linux/crypto.h>
- #include <linux/xattr.h>
-+#include <linux/sched.h>
-+#include <linux/cred.h>
- #include <keys/encrypted-type.h>
- #include <crypto/hash.h>
- #include "evm.h"
-@@ -265,3 +267,97 @@ out:
- 		pr_err("initialization failed\n");
- 	return rc;
- }
-+
-+#ifdef CONFIG_EVM_LOAD_KEY
-+int evm_load_key(const char *key, const char *kmk)
-+{
-+	key_ref_t key_ref, keyring_ref;
-+	char *data, *tdata = NULL, *cmd, *type, ch = '\0';
-+	int rc, len;
-+	bool trusted = false;
-+
-+	keyring_ref = make_key_ref(current_cred()->user->uid_keyring, 1);
-+
-+	len = integrity_read_file(key, &data);
-+	if (len < 0)
-+		return len;
-+
-+	swap(data[len - 1], ch);
-+	if (strstr(data, "trusted"))
-+		trusted = true;
-+	swap(data[len - 1], ch);
-+
-+	rc = integrity_read_file(kmk, &tdata);
-+	if (rc < 0)
-+		goto out;
-+
-+	/* padd does not like \n - remove it*/
-+	if (strchr(tdata, '\n'))
-+		rc--;
-+
-+	if (trusted) {
-+		/* we need 'load' keyword */
-+		cmd = kmalloc(rc + 5, GFP_KERNEL);
-+		if (!cmd)
-+			goto out;
-+
-+		memcpy(cmd, "load ", 5);
-+		memcpy(cmd + 5, tdata, rc);
-+		rc += 5;
-+	} else {
-+		cmd = tdata;
-+	}
-+
-+	key_ref = key_create_or_update(keyring_ref,
-+					trusted ? "trusted" : "user", "kmk",
-+					cmd, rc,
-+					((KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+					KEY_USR_VIEW | KEY_USR_READ),
-+					KEY_ALLOC_NOT_IN_QUOTA);
-+	if (trusted)
-+		kfree(cmd);
-+	type = trusted ? "trusted" : "user";
-+	if (IS_ERR(key_ref)) {
-+		rc = PTR_ERR(key_ref);
-+		pr_err("problem loading EVM kmk (%s) (%d): %s\n",
-+		       type, rc, kmk);
-+		goto out;
-+	} else {
-+		pr_notice("loaded EVM kmk (%s) %d': %s\n",
-+			  type, key_ref_to_ptr(key_ref)->serial, kmk);
-+		key_ref_put(key_ref);
-+	}
-+
-+	/* padd does not like \n - remove it*/
-+	if (strchr(data, '\n'))
-+		len--;
-+
-+	/* we need 'load' keyword */
-+	cmd = kmalloc(len + 5, GFP_KERNEL);
-+	if (!cmd)
-+		goto out;
-+
-+	memcpy(cmd, "load ", 5);
-+	memcpy(cmd + 5, data, len);
-+
-+	key_ref = key_create_or_update(keyring_ref,
-+					"encrypted", EVMKEY, cmd, len + 5,
-+					((KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+					KEY_USR_VIEW | KEY_USR_READ),
-+					KEY_ALLOC_NOT_IN_QUOTA);
-+	kfree(cmd);
-+	if (IS_ERR(key_ref)) {
-+		rc = PTR_ERR(key_ref);
-+		pr_err("problem loading EVM key (%d): %s\n", rc, key);
-+	} else {
-+		pr_notice("loaded EVM key %d': %s\n",
-+			  key_ref_to_ptr(key_ref)->serial, key);
-+		key_ref_put(key_ref);
-+	}
-+
-+out:
-+	kfree(tdata);
-+	kfree(data);
-+	return rc;
-+}
-+#endif
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index d2c06d3..4808596 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -463,6 +463,7 @@ static int __init init_evm(void)
- 		goto err;
- 	}
- 
-+	evm_load_key("/etc/keys/evm-key", "/etc/keys/kmk");
- 	evm_init_key();
- 
- 	return 0;
--- 
-1.8.3.2
+> 
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
 
+SNIP
+
+>  
+> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> index aed52036468d..4bdcc040b216 100644
+> --- a/tools/perf/builtin-report.c
+> +++ b/tools/perf/builtin-report.c
+> @@ -85,6 +85,10 @@ static void report__inc_stats(struct report *rep, struct hist_entry *he)
+>  	 */
+>  	if (he->stat.nr_events == 1)
+>  		rep->nr_entries++;
+> +
+> +	hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
+> +	if (!he->filtered)
+> +		he->hists->stats.nr_non_filtered_samples++;
+
+could you put here some comments as for the diff command
+I mean why is this exception in stats counting for input tree
+
+thanks,
+jirka
