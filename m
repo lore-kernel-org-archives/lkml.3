@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293AbaDWRV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:21:58 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:48216 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753570AbaDWRVu (ORCPT
+	id S1757059AbaDWRVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:21:55 -0400
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:57166 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065AbaDWRVt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:21:50 -0400
-Message-ID: <5357F6AA.1010406@gmail.com>
-Date: Wed, 23 Apr 2014 19:21:46 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [PATCH 2/5] clk: berlin: add berlin clocks DT bindings documentation
-References: <1398261667-12621-1-git-send-email-alexandre.belloni@free-electrons.com> <1398261667-12621-3-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1398261667-12621-3-git-send-email-alexandre.belloni@free-electrons.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Apr 2014 13:21:49 -0400
+Date: Wed, 23 Apr 2014 18:25:23 +0100
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Grant Likely <grant.likely@secretlab.ca>,
+        Mark Rutland <mark.rutland@arm.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linaro Patches <patches@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+Subject: Re: [PATCH 0/3] of: dts: enable memory@0 quirk for PPC32 only
+Message-ID: <20140423172523.GM5904@bivouac.eciton.net>
+References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
+ <CAL_JsqL8B2ZY7ACXKX3J8VN5ukjKWuycgfDZpp4kYzBxg6BLmQ@mail.gmail.com>
+ <20140418124821.GE5904@bivouac.eciton.net>
+ <CAL_JsqKdFyhHfkcC1E9QuKjQTrXwoELYG+CFTpgf2-jqDvxGmA@mail.gmail.com>
+ <20140422130829.CA29DC4042C@trevor.secretlab.ca>
+ <20140422140526.GK5904@bivouac.eciton.net>
+ <20140423131508.6E53BC408D2@trevor.secretlab.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423131508.6E53BC408D2@trevor.secretlab.ca>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 04:01 PM, Alexandre Belloni wrote:
-> Document the newly added berlin clock driver
+On Wed, Apr 23, 2014 at 02:15:08PM +0100, Grant Likely wrote:
+> > The reason for me doing that is because we (including you) agreed at
+> > the discussion held during LCU13 that this was the safest way of
+> > preventing "mischief" like userland trying to read information from
+> > /proc/device-tree...
 > 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
-> Cc: devicetree@vger.kernel.org
->  Documentation/devicetree/bindings/clock/berlin-clock.txt | 9 ++++++++-
->  1 file changed, 8 insertions(+), 1 deletion(-)
+> I'm not the most consistent of people. I often change my mind and then
+> have no recollection of ever thinking differently.
+
+And that is fine, but you were not the only person agreeing.
+
+> Userland reading from /proc/device-tree isn't so much a problem, but
+> kernel drivers doing it might be.
 > 
-> diff --git a/Documentation/devicetree/bindings/clock/berlin-clock.txt b/Documentation/devicetree/bindings/clock/berlin-clock.txt
-> index 49b7860bffb8..00f0053ef587 100644
-> --- a/Documentation/devicetree/bindings/clock/berlin-clock.txt
-> +++ b/Documentation/devicetree/bindings/clock/berlin-clock.txt
-> @@ -9,6 +9,8 @@ Required properties:
->  	"marvell,berlin2-pll",
->  	"marvell,berlin2q-pll":
->  		CPU PLL and System PLL
-> +	"marvell,berlin2-clk":
-> +		simple clocks
->  - reg: Address and length of the clock register set.
->  - #clock-cells: from common clock binding; shall be set to 0.
->  - clocks: from common clock binding
-> @@ -26,4 +28,9 @@ cpupll: cpupll@ea003c {
->  	reg = <0xea003c 0x8>;
->  };
->  
-> -
-> +sdio0xinclk: sdio0xinclk@ea023c {
+> But, regardless of whether or not the stub clears out the memory
+> nodes, it is still I think good practice for the kernel to make the
+> decision to ignore memory nodes, and not rely on them being cleared
+> correctly.
 
-Yuck! ;)
+I also remember you saying that relaxing restrictions later on is a lot
+easier than tightening them. On that basis, can we please get the UEFI
+set merged before we start redefining the stub/kernel protocol which was
+agreed at LCU (November last year) after spending a month or two trying
+to get sufficient number of interested parties in the same room?
 
-Can't we just simply use "clock@<addr>" for the node name and
-have the driver compute the name like simple-bus does?
-
-Sebastian
-
-> +	compatible = "marvell,berlin-clk";
-> +	clocks = <&syspll>;
-> +	#clock-cells = <0>;
-> +	reg = <0xea023c 4>;
-> +};
-> 
-
+/
+	Leif
