@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932124AbaDWHAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:00:14 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:60262 "EHLO
+	id S1756964AbaDWHDn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:03:43 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:60348 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858AbaDWHAK (ORCPT
+	with ESMTP id S1754057AbaDWHAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:00:10 -0400
+	Wed, 23 Apr 2014 03:00:11 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -16,89 +16,108 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
         Andi Kleen <andi@firstfloor.org>
-Subject: [PATCHSET 0/7] perf tools: Fixup for the --percentage change (v2)
-Date: Wed, 23 Apr 2014 16:00:01 +0900
-Message-Id: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 6/7] perf top/tui: Update nr_entries properly after a filter is applied
+Date: Wed, 23 Apr 2014 16:00:07 +0900
+Message-Id: <1398236408-8856-7-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
+References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The hist_browser__reset() is only called right after a filter is
+applied so it needs to udpate browser->nr_entries properly.  We cannot
+use hists->nr_non_filtered_entreis directly since it's possible that
+such entries are also filtered out by minimum percentage limit.
 
-This patchset tries to fix bugs in percentage handling which is
-recently changed.  The perf top with symbol filter could cause a
-segfault (NULL pointer dereference) if the filter found no entry.
+In addition when a filter is used for perf top, hist browser's
+nr_entries field was not updated after applying the filter.  But it
+needs to be updated as new samples are coming.
 
-In this patchset, I moved accounting of various histogram stats to be
-calculated at the time it actually shown to users.  Although I tested
-it on my system for a while, it needs more testing since it'll affect
-behaviors of many commands/usages.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/ui/browsers/hists.c | 20 ++++++++++++++++----
+ tools/perf/util/hist.h         |  6 ++++++
+ 2 files changed, 22 insertions(+), 4 deletions(-)
 
-There're three main fields in the hists->stats to affect the output:
-number of samples, number of hist entries and total periods.
-
-Also there're three stages to process samples: at first, samples are
-converted to a hist entry and added to the input tree, and then they are
-moved to the collapsed tree if needed, and finally they're moved to the
-output tree to be shown to user.
-
-The (part of) stats are accounted when samples are added to the input
-tree and then reset before moving to the output tree, and re-counted
-during insertion to the output tree.
-
-I can see some reason to do it this way but it's basically not necessary
-and could make a problem in multi-threaded programs like perf top.
-
-The perf report does all these passes sequentially in a single thread so
-it seems no problem.  But perf top uses two threads - one for gathering
-samples (in the input tree) and another for (collapsing and) moving them
-to the output tree.  Thus accounting stat in parallel can result in an
-inaccurate stats and the output.
-
-So I'd like to get rid of the accounting on the input stage as you can
-see it just gets dropped before doing output resort.  I originally make
-the all three stats are accounted when doing output resort but changed
-mind to account number of samples in the input stage and others in the
-output stage.  Because it'd make more sense accounting number of events
-(sample event) in the input stage (as all other events are also
-accounted in the input stage) and it'd make less changes in code.
-
-So yes, it has a same problem of inaccurate number of samples, but its
-impact should be smaller than other stats - seeing increasing sample
-count (could be slightly inaccurate) without new entries in the browser.
-
-
-You can get this on the 'perf/percentage-v11' branch (yes, v11 - as
-it's continued from my previous series) in my tree
-
-  git://git.kenrel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
-
-
-Any comments, review and testing are welcomed.
-
-Thanks,
-Namhyung
-
-
-Namhyung Kim (7):
-  perf report: Count number of entries separately
-  perf tools: Account entry stats when it's added to the output tree
-  perf hists: Add missing update on filtered stats in
-    hists__decay_entries()
-  perf ui/tui: Fix off-by-one in hist_browser__update_nr_entries()
-  perf ui/tui: Rename hist_browser__update_nr_entries()
-  perf top/tui: Update nr_entries properly after a filter is applied
-  perf hists/tui: Count callchain rows separately
-
- tools/perf/builtin-annotate.c  |  3 +-
- tools/perf/builtin-diff.c      | 23 ++++++-----
- tools/perf/builtin-report.c    | 58 ++++++++++++---------------
- tools/perf/ui/browsers/hists.c | 86 ++++++++++++++++++++++++++--------------
- tools/perf/util/hist.c         | 89 +++++++++++++++++++++++++++---------------
- tools/perf/util/hist.h         |  9 ++++-
- 6 files changed, 162 insertions(+), 106 deletions(-)
-
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 769295bf2c10..886eee0062e0 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -35,6 +35,11 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ 				const char *ev_name);
+ static void hist_browser__update_nr_entries(struct hist_browser *hb);
+ 
++static bool hist_browser__has_filter(struct hist_browser *hb)
++{
++	return hists__has_filter(hb->hists) || hb->min_pcnt;
++}
++
+ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
+ {
+ 	/* 3 == +/- toggle symbol before actual hist_entry rendering */
+@@ -44,7 +49,8 @@ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
+ 
+ static void hist_browser__reset(struct hist_browser *browser)
+ {
+-	browser->b.nr_entries = browser->hists->nr_entries;
++	hist_browser__update_nr_entries(browser);
++	browser->b.nr_entries = browser->nr_non_filtered_entries;
+ 	hist_browser__refresh_dimensions(browser);
+ 	ui_browser__reset_index(&browser->b);
+ }
+@@ -319,9 +325,10 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 	int delay_secs = hbt ? hbt->refresh : 0;
+ 
+ 	browser->b.entries = &browser->hists->entries;
+-	browser->b.nr_entries = browser->hists->nr_entries;
+-	if (browser->min_pcnt)
++	if (hist_browser__has_filter(browser))
+ 		browser->b.nr_entries = browser->nr_non_filtered_entries;
++	else
++		browser->b.nr_entries = browser->hists->nr_entries;
+ 
+ 	hist_browser__refresh_dimensions(browser);
+ 	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
+@@ -338,7 +345,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 			u64 nr_entries;
+ 			hbt->timer(hbt->arg);
+ 
+-			if (browser->min_pcnt) {
++			if (hist_browser__has_filter(browser)) {
+ 				hist_browser__update_nr_entries(browser);
+ 				nr_entries = browser->nr_non_filtered_entries;
+ 			} else {
+@@ -1347,6 +1354,11 @@ static void hist_browser__update_nr_entries(struct hist_browser *hb)
+ 	u64 nr_entries = 0;
+ 	struct rb_node *nd = rb_first(&hb->hists->entries);
+ 
++	if (hb->min_pcnt == 0) {
++		hb->nr_non_filtered_entries = hb->hists->nr_non_filtered_entries;
++		return;
++	}
++
+ 	while ((nd = hists__filter_entries(nd, hb->hists,
+ 					   hb->min_pcnt)) != NULL) {
+ 		nr_entries++;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index ef1ad7a948c0..38c3e874c164 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -129,6 +129,12 @@ void hists__filter_by_dso(struct hists *hists);
+ void hists__filter_by_thread(struct hists *hists);
+ void hists__filter_by_symbol(struct hists *hists);
+ 
++static inline bool hists__has_filter(struct hists *hists)
++{
++	return hists->thread_filter || hists->dso_filter ||
++		hists->symbol_filter_str;
++}
++
+ u16 hists__col_len(struct hists *hists, enum hist_column col);
+ void hists__set_col_len(struct hists *hists, enum hist_column col, u16 len);
+ bool hists__new_col_len(struct hists *hists, enum hist_column col, u16 len);
 -- 
 1.9.2
 
