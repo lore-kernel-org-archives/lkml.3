@@ -1,44 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757782AbaDWSwY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 14:52:24 -0400
-Received: from mail-vc0-f175.google.com ([209.85.220.175]:45728 "EHLO
-	mail-vc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753665AbaDWSwV (ORCPT
+	id S1757842AbaDWSwj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 14:52:39 -0400
+Received: from mail-oa0-f48.google.com ([209.85.219.48]:64106 "EHLO
+	mail-oa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757305AbaDWSwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 14:52:21 -0400
+	Wed, 23 Apr 2014 14:52:35 -0400
+Date: Wed, 23 Apr 2014 14:52:31 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC] blkcg: prepare blkcg knobs for default hierarchy
+Message-ID: <20140423185231.GA4163@mtj.dyndns.org>
+References: <20140413013209.GC26252@mtj.dyndns.org>
+ <20140414180824.GB9552@redhat.com>
+ <20140414193214.GC16835@htj.dyndns.org>
+ <20140415135359.GA13033@redhat.com>
+ <20140415140650.GI1863@htj.dyndns.org>
+ <20140415141826.GB17018@redhat.com>
+ <20140423170141.GJ4781@htj.dyndns.org>
+ <20140423171720.GF24651@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
-References: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
-Date: Wed, 23 Apr 2014 13:52:20 -0500
-Message-ID: <CAL_JsqKo0uV9_SX5aAfgPyRSa0Cv5O=tdp4s1oSQs=76vZC+ww@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: pl061: get gpio base from alias id
-From: Rob Herring <robherring2@gmail.com>
-To: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: xuwei5@hisilicon.com, Linus Walleij <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        baruch@tkos.co.il
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423171720.GF24651@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 8:35 PM, Haojian Zhuang
-<haojian.zhuang@linaro.org> wrote:
-> If gpio base number isn't specified, the gpio base will be find from
-> the end of gpio number. In order to keep with schematics, use alias
-> to get the ID of gpio chip.
+Hello,
 
-NAK. This is an abuse aliases.
+On Wed, Apr 23, 2014 at 01:17:20PM -0400, Vivek Goyal wrote:
+> I think we should just require two. One for measuring rate in terms
+> of IOPS and other for measuring rate in terms of [kMG]B/sec.
 
-> Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
-> ---
->  .../devicetree/bindings/gpio/gpio-pl061.txt        | 31 ++++++++++++++++++++++
+I meant between cfq and blk-throttle.  Why do we have separate stats
+for them to present ultimately the same numbers?
 
-Is something wrong with the binding doc already in pl061-gpio.txt?
-
-Rob
+-- 
+tejun
