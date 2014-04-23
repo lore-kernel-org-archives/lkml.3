@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757397AbaDWNz7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:55:59 -0400
-Received: from mail-ob0-f179.google.com ([209.85.214.179]:53701 "EHLO
-	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756818AbaDWNzx (ORCPT
+	id S1757061AbaDWNyl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:54:41 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:33776 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752180AbaDWNyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:55:53 -0400
+	Wed, 23 Apr 2014 09:54:35 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140422151840.GH24905@lukather>
-References: <1397544101-18135-1-git-send-email-wens@csie.org>
-	<1397544101-18135-3-git-send-email-wens@csie.org>
-	<CACRpkdZ+3dnhoj1TS4KSVUP8iFHsjjwop-FG2Nf07YtH6aSO_Q@mail.gmail.com>
-	<20140422151840.GH24905@lukather>
-Date: Wed, 23 Apr 2014 15:55:52 +0200
-Message-ID: <CACRpkdbdgkYEGWpQiX0WuvS3iivfAyz0r+oK=5D8WB_e=0js2A@mail.gmail.com>
-Subject: Re: [PATCH 2/7] gpiolib: Support purely name based gpiod lookup in
- device trees
+In-Reply-To: <201404221620.19519.arnd@arndb.de>
+References: <1397137966-30818-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1397137966-30818-8-git-send-email-boris.brezillon@free-electrons.com>
+	<CACRpkdYT9HvG6dOVOEnBSNhRt847tdCsAU6E_dZLdFQEHntpKg@mail.gmail.com>
+	<201404221620.19519.arnd@arndb.de>
+Date: Wed, 23 Apr 2014 15:54:35 +0200
+Message-ID: <CACRpkdZAd5SqeCg7XsjXMbYxD+RoriV6x6YMR=59Aon=S7cDnA@mail.gmail.com>
+Subject: Re: [PATCH v3 7/7] ARM: sunxi: update the default ARCH_NR_GPIO for
+ sunxi arch
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Chen-Yu Tsai <wens@csie.org>, Johannes Berg <johannes@sipsolutions.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+To: Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>
+Cc: Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?UTF-8?Q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, Chen-Yu Tsai <wens@csie.org>,
+        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-sunxi <linux-sunxi@googlegroups.com>
+        dev@linux-sunxi.org, "arm@kernel.org" <arm@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 5:18 PM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
+On Tue, Apr 22, 2014 at 4:20 PM, Arnd Bergmann <arnd@arndb.de> wrote:
 
-> This patch has a dependency on the first patch of this serie, since it
-> uses a binding that was documented there.
+>> Patch applied, and grrrr we need to get rid of these static #gpios defines
+>> in the long run.
 >
-> Maybe you'll want to wait for the ACK from the DT maintainers to merge
-> this one.
+> Yes, that would be nice. I guess the gpio-descriptor framework should
+> have solved this, but we can't move everything over to that soon, right?
 
-Yeah I realized this a bit later, sorry for being a bit confused :-/
+Not really, it has to happen platform by platform.
+
+I did consider putting all the GPIO descriptors into a radix and
+use that internally in gpiolib, but that wasn't easy to do
+when I tried it, maybe I just thought backwards.
+
+I would appreciate if drivers for new archs like arm64 would
+use only GPIO descriptors from day one. Also if new drivers
+only apply a an entirely new machine even. They should just
+use descriptors.
 
 Yours,
 Linus Walleij
