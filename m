@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603AbaDWOQr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:16:47 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:48308 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286AbaDWOQp (ORCPT
+	id S1755914AbaDWORF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:17:05 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:62351 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286AbaDWOQ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:16:45 -0400
-X-Greylist: delayed 339 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Apr 2014 10:16:45 EDT
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.um.maine.edu>
-Date: Wed, 23 Apr 2014 10:14:23 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [perf] yet another 32/64-bit range check failure
-In-Reply-To: <20140423102254.GL11096@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1404231013380.30238@vincent-weaver-1.um.maine.edu>
-References: <alpine.DEB.2.10.1404222329590.28273@vincent-weaver-1.um.maine.edu> <20140423102254.GL11096@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Wed, 23 Apr 2014 10:16:59 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20140423140508.2575AC408D2@trevor.secretlab.ca>
+References: <1353509071-8658-1-git-send-email-grant.likely@secretlab.ca>
+	<CAL_JsqJFM1e2Y7GykK06KuZ8fD8iZ=64W1i+tqibJ9datCUR0Q@mail.gmail.com>
+	<20140423140508.2575AC408D2@trevor.secretlab.ca>
+Date: Wed, 23 Apr 2014 09:16:58 -0500
+Message-ID: <CAL_JsqJSSHMaR=NJ3XWscxz1dKtG1N18W6JNDNKY3r3vtf9AXQ@mail.gmail.com>
+Subject: Re: [RFC] driver-core: Remove dummy 'platform_bus'
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014, Peter Zijlstra wrote:
+On Wed, Apr 23, 2014 at 9:05 AM, Grant Likely <grant.likely@linaro.org> wrote:
+> On Mon, 21 Apr 2014 16:05:29 -0500, Rob Herring <robherring2@gmail.com> wrote:
+>> On Wed, Nov 21, 2012 at 8:44 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>> > The "platform_bus" (note: not platform_bus_type) only exists as an empty
+>> > directory to put platform devices into. However, it really doesn't make
+>> > sense to segregate all the platform devices into a sub directory when
+>> > typically they are memory mapped devices that doen't go through any
+>> > particular bus. Particularly on embedded type platforms the platform_bus
+>> > directory doesn't add anything.
+>> >
+>> > However, this will probably just end up breaking some userspace that
+>> > depends on the /sys/devices/platform/ path to be present (no matter how
+>> > much we protest that userspace must not depend on paths in sysfs). So
+>> > while I'm seriously proposing this change, it may just be unacceptable
+>> > ABI breakage
+>>
+>> An old thread, but was there ever a conclusion to this? We now have a
+>> mixture of using platform_bus as the parent or not on various ARM
+>> platforms.
+>
+> We kind of concluded in the opposite direction. Instead of removing the
+> /sys/device/platform directory, the drivers/of code should be changed to
+> use it.
+>
+> The following patch is sufficient to have the same effect. It doesn't
+> unify the OF and non-OF paths of platform device addition, but it gets
+> them closer. I've been nervous about applying it because I'm concerned
+> about userspace breakage, but maybe it just needs to be merged and we
+> can quirk out systems that break.
 
-> On Tue, Apr 22, 2014 at 11:40:07PM -0400, Vince Weaver wrote:
-> > 
-> > More fun found by the perf_fuzzer...
-> > 
-> > In kernel/events/core.c 
-> > SYSCALL_DEFINE5(perf_event_open,
-> > 
-> > We check if flags is valid like this:
-> > 
-> >         /* for future expandability... */
-> >         if (flags & ~PERF_FLAG_ALL)
-> >                 return -EINVAL;
-> > 
-> > but flags is a 64-bit value but ~PERF_FLAG_ALL is 32-bit.
-> > 
-> > This means values like 0x800000000000ULL are treated as valid even though 
-> > they aren't.
-> > 
-> > This is allowing events to be allocated memory but not being freed somehow
-> > before returning EINVAL (a memory leak).
-> > At least it looks like this is happening in the huge traces I have trying 
-> > to track down the perf_fuzzer memory corruption bug.
-> > 
-> > I'd send a patch to fix the above, but it's late and I can't figure out 
-> > where exactly to stick ULL to get PERF_FLAG_ALL to be upgraded to 64-bit.
-> > 
-> > Vince
-> 
-> Something like so should do I suppose.
-> 
-> ---
-> Subject: perf: Fix perf_event_open(.flags) test
-> 
-> Vince noticed that we test the (unsigned long) flags field against an
-> (unsigned int) constant. This would allow setting the high bits on 64bit
-> platforms and not get an error.
-> 
-> There is nothing that uses the high bits, so it should be entirely
-> harmless, but we don't want userspace to accidentally set them anyway,
-> so fix the constants.
+Given that we've changed practically all device names in converting to
+DT and I haven't heard of any complaints, we may be okay.
 
-I suppose I should make a patch for attr->sample_type and 
-attr->read_format which after a quick audit seem to exhibit the same 
-problem?
+We also have some platforms (imx6 for example) setting the parent to
+an soc device. I still need to understand why the soc device needs to
+be the parent, but it is pointless platform variation in my book. It
+would also change the paths when someone has the whim to add an soc
+device.
 
-Vince
+Rob
