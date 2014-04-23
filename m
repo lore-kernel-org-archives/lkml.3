@@ -1,84 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752222AbaDWLM4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 07:12:56 -0400
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:44947 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751646AbaDWLMu (ORCPT
+	id S1752324AbaDWLOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 07:14:05 -0400
+Received: from mail-qc0-f179.google.com ([209.85.216.179]:51054 "EHLO
+	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaDWLOB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 07:12:50 -0400
-Message-ID: <5357A02B.8030404@de.ibm.com>
-Date: Wed, 23 Apr 2014 13:12:43 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 23 Apr 2014 07:14:01 -0400
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Paolo Bonzini <pbonzini@redhat.com>, KVM <kvm@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-Subject: Re: [PATCH] perf/tool: Fix usage of trace events with '-' in trace
- system name.
-References: <1395694140-43447-1-git-send-email-borntraeger@de.ibm.com> <20140417144019.GF7422@krava.brq.redhat.com>
-In-Reply-To: <20140417144019.GF7422@krava.brq.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042311-2966-0000-0000-00000B0611B2
+In-Reply-To: <00d201cf5ee2$d55c4e90$8014ebb0$%tikhomirov@samsung.com>
+References: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
+	<1398082604-3013-3-git-send-email-gautam.vivek@samsung.com>
+	<00bf01cf5ed6$28de18d0$7a9a4a70$%tikhomirov@samsung.com>
+	<CAFp+6iE2eWJPMmxSF9gbfwMmeO7k0bo=geo5SKmdgBRjiFq7mA@mail.gmail.com>
+	<00d201cf5ee2$d55c4e90$8014ebb0$%tikhomirov@samsung.com>
+Date: Wed, 23 Apr 2014 16:36:29 +0530
+X-Google-Sender-Auth: TCPlsDZS3X1tT3_gQ62MvzgIt9U
+Message-ID: <CAFp+6iGBz-0LjkUU8A4var5frEqaumF85scZfHPEVwk62mTe8g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] usb: dwc3-exynos: Make provision for vdd regulators
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Anton Tikhomirov <av.tikhomirov@samsung.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/04/14 16:40, Jiri Olsa wrote:
-> On Mon, Mar 24, 2014 at 09:49:00PM +0100, Christian Borntraeger wrote:
->> From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Hi,
+
+
+On Wed, Apr 23, 2014 at 4:27 PM, Anton Tikhomirov
+<av.tikhomirov@samsung.com> wrote:
+> Hi,
+>
+>> Hi Anton,
 >>
->> Trace events potentially can have a '-' in their trace system name,
->> e.g. kvm on s390 defines kvm-s390:* tracepoints.
->> tools/perf could not parse them, because there was no rule for this:
->> $ sudo ./perf top -e "kvm-s390:*"
->> invalid or unsupported event: 'kvm-s390:*'
 >>
->> This patch adds an extra rule to event_legacy_tracepoint which handles
->> those cases. Without the patch, perf will not accept such tracepoints in
->> the -e option.
+>> On Wed, Apr 23, 2014 at 2:56 PM, Anton Tikhomirov
+>> <av.tikhomirov@samsung.com> wrote:
+>> > Hello,
+>> >
+>> >> -----Original Message-----
+>> >> From: Vivek Gautam [mailto:gautamvivek1987@gmail.com] On Behalf Of
+>> >> Vivek Gautam
+>> >> Sent: Monday, April 21, 2014 9:17 PM
+>> >> To: linux-usb@vger.kernel.org; linux-samsung-soc@vger.kernel.org
+>> >> Cc: linux-kernel@vger.kernel.org; linux-omap@vger.kernel.org; linux-
+>> >> arm-kernel@lists.infradead.org; gregkh@linuxfoundation.org;
+>> >> stern@rowland.harvard.edu; balbi@ti.com; kgene.kim@samsung.com;
+>> Vivek
+>> >> Gautam; Anton Tikhomirov
+>> >> Subject: [PATCH 3/3] usb: dwc3-exynos: Make provision for vdd
+>> >> regulators
+>> >>
+>> >> Facilitate getting required 3.3V and 1.0V VDD supply for
+>> >> DWC3 controller on Exynos.
+>> >>
+>> >> With patches for regulators' nodes merged in 3.15:
+>> >> c8c253f ARM: dts: Add regulator entries to smdk5420
+>> >> 275dcd2 ARM: dts: add max77686 pmic node for smdk5250,
+>> >>
+>> >> certain perripherals will now need to ensure that,
+>> >> they request VDD regulators in their drivers, and enable
+>> >> them so as to make them working.
+>> >>
+>> >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> >> Cc: Anton Tikhomirov <av.tikhomirov@samsung.com>
+>> >> ---
+>> >>
+>> >> Based on 'usb-next' branch of Greg's USB tree.
+>> >> Also cleanly applies on 'next' branch of Balbi's USB tree.
+>> >>
+>> >>  drivers/usb/dwc3/dwc3-exynos.c |   51
+>> >> ++++++++++++++++++++++++++++++++++++++--
+>> >>  1 file changed, 49 insertions(+), 2 deletions(-)
+>> >>
+>> >> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-
+>> >> exynos.c
+>> >> index 28c8ad7..c9d9102 100644
+>> >> --- a/drivers/usb/dwc3/dwc3-exynos.c
+>> >> +++ b/drivers/usb/dwc3/dwc3-exynos.c
+>> >> @@ -27,6 +27,7 @@
+>> >>  #include <linux/usb/usb_phy_gen_xceiv.h>
+>> >>  #include <linux/of.h>
+>> >>  #include <linux/of_platform.h>
+>> >> +#include <linux/regulator/consumer.h>
+>> >>
+>> >>  struct dwc3_exynos {
+>> >>       struct platform_device  *usb2_phy;
+>> >> @@ -34,6 +35,8 @@ struct dwc3_exynos {
+>> >>       struct device           *dev;
+>> >>
+>> >>       struct clk              *clk;
+>> >> +     struct regulator        *vdd33;
+>> >> +     struct regulator        *vdd10;
+>> >>  };
+>> >>
+>> >>  static int dwc3_exynos_register_phys(struct dwc3_exynos *exynos)
+>> >> @@ -144,20 +147,46 @@ static int dwc3_exynos_probe(struct
+>> >> platform_device *pdev)
+>> >>
+>> >>       clk_prepare_enable(exynos->clk);
+>> >>
+>> >> +     exynos->vdd33 = devm_regulator_get(dev, "vdd33");
+>> >> +     if (IS_ERR(exynos->vdd33)) {
+>> >> +             ret = PTR_ERR(exynos->vdd33);
+>> >> +             goto err2;
+>> >
+>> > Is regulator property mandatory for dwc3-exynos? If it is not
+>> > and device tree doesn't provide it, dwc3-exynos driver probe
+>> shouldn't
+>> > fail here.
 >>
->> Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
->> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
->> ---
->>  tools/perf/util/parse-events.y | 12 ++++++++++++
->>  1 file changed, 12 insertions(+)
->>
->> diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
->> index 4eb67ec..dbbb01c 100644
->> --- a/tools/perf/util/parse-events.y
->> +++ b/tools/perf/util/parse-events.y
->> @@ -299,6 +299,18 @@ PE_PREFIX_MEM PE_VALUE sep_dc
->>  }
->>  
->>  event_legacy_tracepoint:
->> +PE_NAME '-' PE_NAME ':' PE_NAME
->> +{
->> +	struct parse_events_evlist *data = _data;
->> +	struct list_head *list;
->> +	char sys_name[strlen($1) + strlen($3) + 2];
-> 
-> hum, could you limit the size of sys_name array with some
-> sane value? those strlens make me nervous :-\
+>> These are the VDD regulators (from PMIC ldo supplies), in absence of
+>> which the controller will not be powered up.
+>> So doesn't it make sense to stop the probe when these are not supplied
+>> by device tree ?
+>
+> Agree. Just curious, is there special reason for this change except making
+> things right?
 
-Right. Something like
-char sys_name[128];
-[...]
+Yea, actually after the patch (which got merged in 3.15 rc1)
+275dcd2 ARM: dts: add max77686 pmic node for smdk5250,
 
-snprintf(&sys_name, 128, "%s-%s", $1, $3);
+the USB stops working, and that's because the regulators related to
+usb are not turned on by default (ldo12 and ldo15 to be specific).
+So we need to enable those regulators, which ofcourse the driver
+should be doing, if i am not wrong.
+Similar is the reason for EHCI, and OHCI exynos patches in this series.
 
-should be enough for all trace event names. And if not, the event should simply fail.
+I shall be sending the dt patch for this soon.
 
-Alexander,
 
-can you send an updates patch?
-
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
