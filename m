@@ -1,70 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751233AbaDWVdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 17:33:49 -0400
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:63059 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751157AbaDWVds (ORCPT
+	id S1751272AbaDWVgJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 17:36:09 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:37315 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750902AbaDWVgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 17:33:48 -0400
-Message-ID: <5358325D.6010409@gmail.com>
-Date: Wed, 23 Apr 2014 17:36:29 -0400
-From: Woody Suwalski <terraluna977@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:29.0) Gecko/20100101 Firefox/29.0 SeaMonkey/2.26
-MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ed Tomlinson <edt@aei.ca>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        =?UTF-8?B?Q2hyaXN0aWE=?= =?UTF-8?B?biBLw7ZuaWc=?= 
-	<christian.koenig@amd.com>
-Subject: Re: [git pull] drm fixes
-References: <alpine.DEB.2.00.1404190810001.7507@skynet.skynet.ie>	<2619529.mEMJol0YfM@grover>	<1549585.kmUPduLgev@grover>	<10435496.M4aSBzoVye@grover>	<CA+55aFwbOQCcd1qsW0rA+bQxN2Vgm9x832ZKmB7fndFX7DBE3w@mail.gmail.com> <CAPM=9tyHwYJ4CTFPZD4zLNFQyct8A_UmoyUMgR_bBZR5bJB+Pw@mail.gmail.com>
-In-Reply-To: <CAPM=9tyHwYJ4CTFPZD4zLNFQyct8A_UmoyUMgR_bBZR5bJB+Pw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Apr 2014 17:36:08 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        linux-kernel@vger.kernel.org
+Cc: Silvio F <silvio.fricke@gmail.com>, Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>, spear-devel@list.st.com,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3/6 v3] mfd: stmpe: probe properly from the device tree
+Date: Wed, 23 Apr 2014 23:35:58 +0200
+Message-Id: <1398288958-4723-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Airlie wrote:
-> On Wed, Apr 23, 2014 at 1:59 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->> Dave, mind sending me a pull request for drm fixes?
->>
->> There's now at least these two:
->>
->>   - "drm/radeon/aux: fix hpd assignment for aux bus"
->>   - "drm/radeon: use fixed PPL ref divider if needed"
->>
->> that look like fairly fatal regressions when they affect somebody.
->>
->> The fact that we already had *two* independent bugs be reported within
->> days of that last out-of-merge-window pull request makes me very
->> unhappy with the state of drm pulls.
->>
->> So please make sure that future fixes really are *fixes*. For
->> regressions only. No more games like this.
-> The pll fallout is fixes for the initial feature that was in the merge window,
-> Tuning plls for monitors is always a pain in the ass, the previous algorithm
-> took a couple of kernels a few years back to get where it was, unfortunately
-> HDMI came along and showed up a bunch of its shortcomings. I'm happy
-> Alex and Christian are on top of things in terms of tracking regressions
-> and making sure they get fixed,
->
-> the AUX fix yes I'm a bit pissed off about myself, but I missed a pull
-> from a few
-> weeks ago, felt guilty, and maybe should have chosen the other path and let it
-> wait a merge,
->
-> Christian just sent me a -fixes pull with all of these in it and I'll
-> send it on to you
-> in a few mins.
->
-> Dave.
->
-That patch also fixes a shimmering (water floating) issue on Radeon 
-RV635 (Thinkpad T500)
-1002:9591
+The current STMPE I2C probing code does not really match the
+compatible strings - it matches node names happening to give
+the right device name. Instead, let's introduce some real
+compatible matching, more complex, more accurate. Make the
+driver depend on OF since all platforms using it are DT-only.
+
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v2->v3:
+- Fix a stupid error where I left a dangling return statement
+  in the probe path.
+- Fix up subject prope->probe
+ChangeLog v1->v2:
+- Make driver depend on OF and remove some ifdeffery that way.
+- Squash OF match table to single lines.
+- Merge of-specific probe function into probe().
+- Print a small nag if DT is using the node name trick to make
+  the driver probe.
+---
+ drivers/mfd/Kconfig     |  1 +
+ drivers/mfd/stmpe-i2c.c | 30 +++++++++++++++++++++++++++++-
+ 2 files changed, 30 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 33834120d057..29be025d5835 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -675,6 +675,7 @@ config MFD_DB8500_PRCMU
+ config MFD_STMPE
+ 	bool "STMicroelectronics STMPE"
+ 	depends on (I2C=y || SPI_MASTER=y)
++	depends on OF
+ 	select MFD_CORE
+ 	help
+ 	  Support for the STMPE family of I/O Expanders from
+diff --git a/drivers/mfd/stmpe-i2c.c b/drivers/mfd/stmpe-i2c.c
+index 0da02e11d58e..a45f9c0a330a 100644
+--- a/drivers/mfd/stmpe-i2c.c
++++ b/drivers/mfd/stmpe-i2c.c
+@@ -14,6 +14,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/types.h>
++#include <linux/of_device.h>
+ #include "stmpe.h"
+ 
+ static int i2c_reg_read(struct stmpe *stmpe, u8 reg)
+@@ -52,15 +53,41 @@ static struct stmpe_client_info i2c_ci = {
+ 	.write_block = i2c_block_write,
+ };
+ 
++static const struct of_device_id stmpe_of_match[] = {
++	{ .compatible = "st,stmpe610", .data = (void *)STMPE610, },
++	{ .compatible = "st,stmpe801", .data = (void *)STMPE801, },
++	{ .compatible = "st,stmpe811", .data = (void *)STMPE811, },
++	{ .compatible = "st,stmpe1601", .data = (void *)STMPE1601, },
++	{ .compatible = "st,stmpe1801", .data = (void *)STMPE1801, },
++	{ .compatible = "st,stmpe2401", .data = (void *)STMPE2401, },
++	{ .compatible = "st,stmpe2403", .data = (void *)STMPE2403, },
++	{},
++};
++MODULE_DEVICE_TABLE(of, stmpe_of_match);
++
+ static int
+ stmpe_i2c_probe(struct i2c_client *i2c, const struct i2c_device_id *id)
+ {
++	int partnum;
++	const struct of_device_id *of_id;
++
+ 	i2c_ci.data = (void *)id;
+ 	i2c_ci.irq = i2c->irq;
+ 	i2c_ci.client = i2c;
+ 	i2c_ci.dev = &i2c->dev;
+ 
+-	return stmpe_probe(&i2c_ci, id->driver_data);
++	of_id = of_match_device(stmpe_of_match, &i2c->dev);
++	if (!of_id) {
++		/*
++		 * This happens when the I2C ID matches the node name
++		 * but no real compatible string has been given.
++		 */
++		dev_info(&i2c->dev, "matching on node name, compatible is preferred\n");
++		partnum = id->driver_data;
++	} else
++		partnum = (int)of_id->data;
++
++	return stmpe_probe(&i2c_ci, partnum);
+ }
+ 
+ static int stmpe_i2c_remove(struct i2c_client *i2c)
+@@ -89,6 +116,7 @@ static struct i2c_driver stmpe_i2c_driver = {
+ #ifdef CONFIG_PM
+ 		.pm = &stmpe_dev_pm_ops,
+ #endif
++		.of_match_table = stmpe_of_match,
+ 	},
+ 	.probe		= stmpe_i2c_probe,
+ 	.remove		= stmpe_i2c_remove,
+-- 
+1.9.0
 
