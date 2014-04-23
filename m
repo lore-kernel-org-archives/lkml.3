@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756818AbaDWPBA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:01:00 -0400
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:51619 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752211AbaDWPA5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:00:57 -0400
-Date: Wed, 23 Apr 2014 16:00:47 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Mark Brown <broonie@kernel.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] regulator: First pull of MFD <-> Regulator IB (v3.16)
-Message-ID: <20140423150047.GH6264@lee--X1>
-References: <20140423113941.GL21613@lee--X1>
- <20140423124629.GA12304@sirena.org.uk>
+	id S1757417AbaDWPB0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:01:26 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:32906 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753686AbaDWPBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:01:19 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <marcel@holtmann.org>, <gustavo@padovan.org>, <johan.hedberg@gmail.com>,
+        <jslaby@suse.cz>, <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 12/13] tty: serial: omap: fix Sparse warnings
+Date: Wed, 23 Apr 2014 09:58:36 -0500
+Message-ID: <1398265117-11793-12-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.9.2.459.g68773ac
+In-Reply-To: <1398265117-11793-1-git-send-email-balbi@ti.com>
+References: <1398265117-11793-1-git-send-email-balbi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140423124629.GA12304@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Doug Anderson (3):
-> >       mfd: tps65090: Don't tell child devices we have an IRQ if we don't
-> >       mfd: tps65090: Stop caching most registers
-> >       regulator: tps65090: Allow setting the overcurrent wait time
-> 
-> Can you drop the last one please, I've already applied it?  I'd have
-> expected just the first two (or probably even just the second one).  If
-> you need it in your tree just grab the branch (or I can tag it if you
-> like).
-> 
-> I tend to apply these things early where they don't have dependencies
-> due to the large number of reposts for unrelated changes in the series
-> that tend to happen (and often several very similar serieses being in
-> flight at once); I frequently end up just deleting them unread.  Not
-> sure what the best way to handle this stuff is in general.
+Fix the following Sparse warnings:
 
-I know that you due, which I think makes things easier for you, but
-more difficult for everyone else (author, other maintainers). Applying
-cross-subsystem patches also makes things difficult down the line.
+drivers/tty/serial/omap-serial.c:1418:49: warning: incorrect \
+	type in argument 2 (different address spaces)
+drivers/tty/serial/omap-serial.c:1418:49:    expected void const \
+	[noderef] <asn:1>*from
+drivers/tty/serial/omap-serial.c:1418:49:    got struct serial_rs485 \
+	*<noident>
+drivers/tty/serial/omap-serial.c:1426:35: warning: incorrect \
+	type in argument 1 (different address spaces)
+drivers/tty/serial/omap-serial.c:1426:35:    expected void [noderef] \
+	<asn:1>*to
+drivers/tty/serial/omap-serial.c:1426:35:    got struct serial_rs485 \
+	*<noident>
 
-Not sure what do do about the last patch now, as it has MFD changes
-which aren't in the MFD tree. All well and good if no one else touches
-that hunk for the remainder of the cycle, but if they do we're likely
-to have merge conflicts.
+Reported-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+---
+ drivers/tty/serial/omap-serial.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-I'll re-spin Monday.
-
-> >  Documentation/devicetree/bindings/regulator/tps65090.txt |  4 ++++
-> >  drivers/mfd/tps65090.c                                   | 41 +++++++++++++++++++++++++----------------
-> >  drivers/power/tps65090-charger.c                         | 11 -----------
-> >  drivers/regulator/tps65090-regulator.c                   | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/tps65090.h                             | 19 +++++++++++++++++++
-> >  5 files changed, 104 insertions(+), 27 deletions(-)
-> 
-> Your formatting for these still seems to be messing up.
-
-How so? Looks fine for me I think?
-
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index ab22dab..d017cec 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -1398,7 +1398,7 @@ serial_omap_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
+ 
+ 	switch (cmd) {
+ 	case TIOCSRS485:
+-		if (copy_from_user(&rs485conf, (struct serial_rs485 *) arg,
++		if (copy_from_user(&rs485conf, (void __user *) arg,
+ 					sizeof(rs485conf)))
+ 			return -EFAULT;
+ 
+@@ -1406,7 +1406,7 @@ serial_omap_ioctl(struct uart_port *port, unsigned int cmd, unsigned long arg)
+ 		break;
+ 
+ 	case TIOCGRS485:
+-		if (copy_to_user((struct serial_rs485 *) arg,
++		if (copy_to_user((void __user *) arg,
+ 					&(to_uart_omap_port(port)->rs485),
+ 					sizeof(rs485conf)))
+ 			return -EFAULT;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.2.459.g68773ac
+
