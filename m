@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444AbaDWP6j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:58:39 -0400
-Received: from mail-vc0-f178.google.com ([209.85.220.178]:53912 "EHLO
-	mail-vc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756772AbaDWP6f (ORCPT
+	id S932490AbaDWP6x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:58:53 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:64840 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932458AbaDWP6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:58:35 -0400
+	Wed, 23 Apr 2014 11:58:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, wim@iguana.be,
+        dbaryshkov@gmail.com, dwmw2@infradead.org,
+        linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH 1/5] wdt: sunxi: Move restart code to the watchdog driver
+Date: Wed, 23 Apr 2014 17:57:56 +0200
+Message-ID: <11279831.fXrrNoqKX2@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1398265476-29373-2-git-send-email-maxime.ripard@free-electrons.com>
+References: <1398265476-29373-1-git-send-email-maxime.ripard@free-electrons.com> <1398265476-29373-2-git-send-email-maxime.ripard@free-electrons.com>
 MIME-Version: 1.0
-In-Reply-To: <20140423105540.GJ21613@lee--X1>
-References: <1398180298-2018-4-git-send-email-dianders@chromium.org>
-	<20140422190754.GF12304@sirena.org.uk>
-	<20140423105540.GJ21613@lee--X1>
-Date: Wed, 23 Apr 2014 08:58:34 -0700
-X-Google-Sender-Auth: 4hG-YVLAlZjK8FyNCNXS0PXMQSM
-Message-ID: <CAD=FV=V0uWMGTt68CST5i30Xf4pTNMt50-D7XeRmtSdfbPwwLQ@mail.gmail.com>
-Subject: Re: [RESEND PATCH v3 3/5] mfd: tps65090: Stop caching most registers
-From: Doug Anderson <dianders@chromium.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Anton Vorontsov <anton@enomsg.org>,
-        Olof Johansson <olof@lixom.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:JiYQcvIj8UgTeek7UlBQyrrTkuoYai+j2wush2iPg7i
+ ffyEpvGhOSXBtynYqVqXawbcnLnPFyohIQuS1eaIsXQeJ4ELoW
+ bBRfqpur30/Xpp0xqhBcRsQAzztJxAVN5P2X5AetbMf1VinqBH
+ Vvj1GOxvk7/5v9SKy7WZyCZJJ1lrBHLvyXyy5qz02Oz9NErUHW
+ 9n/lOrMJzhpf4PCSnfrlWUJk2hJDrgF2wlUwW9LJnWI2k7zoY5
+ Jmtr05Ir+TSAcY5onhcDQPG7fZEQ6IstfzmgO8ojubNeOjS0Of
+ 9UzBxKLKXV1itYCHy/gsTuJkw0iWHpEMJBZVIrZGbmgoIoeTSQ
+ uXR1PZKVErjFHq4VVfbs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee,
+On Wednesday 23 April 2014 17:04:32 Maxime Ripard wrote:
+> Most of the watchdog code is duplicated between the machine restart code and
+> the watchdog driver. Add the restart hook to the watchdog driver, to be able to
+> remove it from the machine code eventually.
+> 
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
 
-On Wed, Apr 23, 2014 at 3:55 AM, Lee Jones <lee.jones@linaro.org> wrote:
->> > Nearly all of the registers in tps65090 combine control bits and
->> > status bits.  Turn off caching of all registers except the select few
->> > that can be cached.
->>
->> Lee, I don't mind if I apply this and send a pull request to you or I
->> pull a tag from you with this in - what's easiest for you?
->
-> I'm happy to do it.
->
-> Doug,
->   Can you send the patch-set again with all of the *-bys and ensure
->   I'm on TO or CC please?
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-It looks as if you've already applied 1, 3, and 4.  I've sent up 2 and
-5 again with collected tags.
 
-https://patchwork.kernel.org/patch/4042761/
-https://patchwork.kernel.org/patch/4042751/
+> @@ -181,6 +209,9 @@ static int sunxi_wdt_probe(struct platform_device *pdev)
+>  	if (unlikely(err))
+>  		return err;
+>  
+> +	sunxi_restart_ctx = sunxi_wdt;
+> +	arm_pm_restart = sun4i_wdt_restart;
+> +
+>  	dev_info(&pdev->dev, "Watchdog enabled (timeout=%d sec, nowayout=%d)",
+>  			sunxi_wdt->wdt_dev.timeout, nowayout);
+>  
+> @@ -191,6 +222,8 @@ static int sunxi_wdt_remove(struct platform_device *pdev)
+>  {
+>  	struct sunxi_wdt_dev *sunxi_wdt = platform_get_drvdata(pdev);
+>  
+> +	arm_pm_restart = NULL;
+> +
+>  	watchdog_unregister_device(&sunxi_wdt->wdt_dev);
+>  	watchdog_set_drvdata(&sunxi_wdt->wdt_dev, NULL);
 
--Doug
+I think we will eventually want a more sophisticated method of registering
+and unregistering reset handlers in order to deal with multiple ways of
+triggering reset. For now, your approach seems sufficient.
+
+	Arnd
