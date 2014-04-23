@@ -1,105 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752879AbaDWFRG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 01:17:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61212 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455AbaDWFRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 01:17:04 -0400
-Message-ID: <1398230210.2704.8.camel@adam.happyassassin.net>
-Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
-Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
- ASUS T100TA
-From: Adam Williamson <awilliam@redhat.com>
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-Cc: "Jin, Yao" <yao.jin@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
-        mathias.nyman@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Tue, 22 Apr 2014 22:16:50 -0700
-In-Reply-To: <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
-References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
-	 <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
-	 <5353A1F6.60602@linux.intel.com> <5353B8A4.1080900@linux.intel.com>
-	 <1398007690.2674.0.camel@adam.happyassassin.net>
-	 <5354BA59.2000008@linux.intel.com> <53551D0F.40906@linux.intel.com>
-	 <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
-Organization: Red Hat
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
+	id S1752944AbaDWFUm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 01:20:42 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:55188 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752303AbaDWFUk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 01:20:40 -0400
+X-Sasl-enc: nmWaK2UGi2srSSodWg51zR+5I7hDAY5DPmPitDaNlfG0 1398230438
+Subject: [PATCH] autofs - fix lockref lookup
+To: Andrew Morton <akpm@linux-foundation.org>
+From: Ian Kent <raven@themaw.net>
+Cc: autofs mailing list <autofs@vger.kernel.org>,
+        Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed, 23 Apr 2014 13:20:36 +0800
+Message-ID: <20140423052035.5999.69412.stgit@perseus.fritz.box>
+User-Agent: StGit/0.16
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2014-04-21 at 10:30 -0400, Benjamin Tissoires wrote:
-> On Mon, Apr 21, 2014 at 9:28 AM, Jin, Yao <yao.jin@linux.intel.com> wrote:
-> >
-> >
-> > On 2014/4/21 14:27, Jin, Yao wrote:
-> >>
-> >>
-> >> On 2014/4/20 23:28, Adam Williamson wrote:
-> >>> On Sun, 2014-04-20 at 20:08 +0800, Jin, Yao wrote:
-> >>>> For the issue that touch screen doesn't work, could you check power
-> >>>> state of LPSS devices? For example:
-> >>>>
-> >>>> cd /sys/bus/acpi/devices
-> >>>> grep -H . */power_state
-> >>>>
-> >>>> If they are D3cold, it should be the reason why touch screen doesn't
-> >>>> work. That's another issue, unrelated to this gpio patch.
-> >>>
-> >>> The touch screen worked fine with kernel 3.14, and Benjamin looked at
-> >>> debug output from the attempt to load the touchscreen driver when
-> >>> diagnosing the problem, he's not just guessing. I am building a kernel
-> >>> without your patch to confirm that fixes it.
-> >>>
-> >>
-> >> I tried the clean kernel 3.14 with the boot option "nomodeset text" on
-> >> Dell Venue 11 Pro (If without "nomodeset",my ubuntu is being "black
-> >> screen", but that should be another i915 issue).
-> >>
-> >> After system starup, I executed the "startx" to launch the xwindow. In
-> >> xwindow, the touchscreen work.
-> >>
-> >> I tried the kernel 3.14 again with my gpio patch applied, the result was
-> >> the same, the touchscreen work.
-> >>
-> >> I also check the DSDT table of Dell Venue 11 Pro by searching the
-> >> keyword "Interrupt", I can't find any clue for the irq conflict.
-> >>
-> >> I'm sorry I don't have a Dell Venue 8 for testing, but I guess it's
-> >> similar to Dell Venue 11 Pro.
-> 
-> Sorry, my bad. Actually, this patch does not break the touchscreen,
-> but the other Adam applied does:
-> https://github.com/AdamWill/baytrail-m/blob/master/kernel/baytrail_gpio_quirk.patch
-> 
-> This one was to enable wifi, but it actually breaks the touchscreen.
-> I'll try to figure out which part of the patch breaks the touchscreen.
-> 
-> The good point is that I have a reproducer now on the Lenovo Miix 2,
-> so I'll be able to spot the pb easily.
-> 
-> Sorry for having been rude, and thanks for the tests.
+autofs needs to be able to see private data dentry flags for
+its dentrys that are being created but not yet hashed and for
+its dentys that have been rmdir()ed but not yet freed. It
+needs to do this so it can block processes in these states
+until a status has been returned to indicate the given
+operation is complete.
 
-Well, I can't actually concur. See my results in
-https://bugzilla.kernel.org/show_bug.cgi?id=68291#c44 .
+It does this by keeping two lists, active and expring, of
+dentrys in this state and uses ->d_release() to keep them
+stable while it checks the reference count to determine
+if they should be used.
 
-1. A kernel with neither patch applied (and no hid-rmi driver) results
-in a working touchscreen.
-2. A kernel with only v3 of Doug's patch from
-https://bugzilla.kernel.org/show_bug.cgi?id=67921 results in a working
-touchscreen.
-3. A kernel with both v3 of Doug's patch and this IRQ descriptor
-conflict "fix" results in a broken touchscreen.
+But with the recent lockref changes dentrys being freed
+sometimes don't transition to a reference count of 0 before
+being freed so autofs can occassionally use a dentry that
+is invalid which can lead to a panic.
 
-Seems to me there really is some kind of problem with this patch...
--- 
-Adam Williamson
-Fedora QA Community Monkey
-IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
-http://www.happyassassin.net
+Signed-off-by: Ian Kent <raven@themaw.net>
+---
+ fs/autofs4/root.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index 2caf36a..cc87c1a 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -179,7 +179,7 @@ static struct dentry *autofs4_lookup_active(struct dentry *dentry)
+ 		spin_lock(&active->d_lock);
+ 
+ 		/* Already gone? */
+-		if (!d_count(active))
++		if ((int) d_count(active) <= 0)
+ 			goto next;
+ 
+ 		qstr = &active->d_name;
+@@ -230,7 +230,7 @@ static struct dentry *autofs4_lookup_expiring(struct dentry *dentry)
+ 
+ 		spin_lock(&expiring->d_lock);
+ 
+-		/* Bad luck, we've already been dentry_iput */
++		/* We've already been dentry_iput or unlinked */
+ 		if (!expiring->d_inode)
+ 			goto next;
+ 
 
