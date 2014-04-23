@@ -1,58 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756442AbaDWPrL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:47:11 -0400
-Received: from host171.canaca.com ([67.55.55.225]:53810 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753156AbaDWPrJ (ORCPT
+	id S1756698AbaDWPsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:48:15 -0400
+Received: from mail-ve0-f169.google.com ([209.85.128.169]:42907 "EHLO
+	mail-ve0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754217AbaDWPsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:47:09 -0400
-Message-ID: <0792885b3347c5935a0af7a7a3f3bc70.squirrel@mungewell.org>
-In-Reply-To: <20140423154201.GA10531@core.coreip.homeip.net>
-References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
-    <1398175209-9565-10-git-send-email-madcatxster@devoid-pointer.net>
-    <1398260463.32091.5.camel@linux-fkkt.site>
-    <5sjip0.n4hp0o.2szhuh-qmf@smtp.devoid-pointer.net>
-    <20140423154201.GA10531@core.coreip.homeip.net>
-Date: Wed, 23 Apr 2014 11:47:05 -0400
-Subject: Re: [PATCH v2 09/24] input: Port hid-dr to ff-memless-next
-From: simon@mungewell.org
-To: "Dmitry Torokhov" <dmitry.torokhov@gmail.com>
-Cc: madcatxster@devoid-pointer.net, oneukum@suse.de,
-        linux-kernel@vger.kernel.org, jkosina@suse.cz, elias.vds@gmail.com,
-        anssi.hannula@iki.fi, simon@mungewell.org, linux-input@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22
+	Wed, 23 Apr 2014 11:48:08 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <20140423115102.GO21613@lee--X1>
+References: <1397689950-1568-1-git-send-email-dianders@chromium.org>
+	<1397689950-1568-5-git-send-email-dianders@chromium.org>
+	<20140423115102.GO21613@lee--X1>
+Date: Wed, 23 Apr 2014 08:48:07 -0700
+X-Google-Sender-Auth: 7Ya3Emo-diaoTfF_mMfgCxmKkHI
+Message-ID: <CAD=FV=WN4hVibiK_8+mpNfO7UQnd35ZT9EXA9fuw-mnBzzb1cA@mail.gmail.com>
+Subject: Re: [PATCH v3 4/5] regulator: tps65090: Allow setting the overcurrent
+ wait time
+From: Doug Anderson <dianders@chromium.org>
+To: Lee Jones <lee.jones@linaro.org>, Mark Brown <broonie@kernel.org>
+Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        AJAY KUMAR RAMAKRISHNA SHYMALAMMA <ajaykumar.rs@samsung.com>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Simon Glass <sjg@chromium.org>, Michael Spang <spang@chromium.org>,
+        Sean Paul <seanpaul@chromium.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, Apr 23, 2014 at 03:14:44PM +0000, madcatxster@devoid-pointer.net
-> wrote:
->> This is another case where even the old code was flawed, right? Should
->> I try to stuff the fixes into these patches or would a few extra
->> patches addressing these problems be an easier to review solution? I
->> can append such patches to the MLNX patchset.
+Lee,
+
+On Wed, Apr 23, 2014 at 4:51 AM, Lee Jones <lee.jones@linaro.org> wrote:
+>> The tps65090 regulator allows you to specify how long you want it to
+>> wait before detecting an overcurrent condition.  Allow specifying that
+>> through the device tree (or through platform data).
+>>
+>> Signed-off-by: Doug Anderson <dianders@chromium.org>
+>> Signed-off-by: Simon Glass <sjg@chromium.org>
+>> Signed-off-by: Michael Spang <spang@chromium.org>
+>> Signed-off-by: Sean Paul <seanpaul@chromium.org>
+>> ---
+>> Changes in v3:
+>> - Fixed kernel-doc notation for return
+>>
+>> Changes in v2:
+>> - Separated the overcurrent and retries changes into two patches.
+>> - Now set overcurrent at probe time since it doesn't change.
+>>
+>>  .../devicetree/bindings/regulator/tps65090.txt     |  4 ++
+>>  drivers/regulator/tps65090-regulator.c             | 56 ++++++++++++++++++++++
+>>  include/linux/mfd/tps65090.h                       |  5 ++
+>>  3 files changed, 65 insertions(+)
 >
-> Changes addressing pre-existing problem should go into separate patches
-> (preferably applicable first).
->
+> Applied, thanks.
 
-As a by-stander who would like to see MLNX move forward, should it be
-heldback by pre-existing problems in drivers that the MLNX dev(s) don't
-have hardware to test against...?
+Ummmm, Mark said that he had already applied this patch to his tree (I
+mentioned it in my recent summary and you can see it in this thread
+too).  I don't see it on git.kernel.org though
+<https://git.kernel.org/cgit/linux/kernel/git/broonie/regulator.git/log/?h=for-next>
 
-Simon.
+I'm worried this will cause a merge conflict if you both apply it.
 
+-Doug
