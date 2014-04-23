@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754774AbaDWNzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:55:20 -0400
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:60588 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755491AbaDWNzK (ORCPT
+	id S1757397AbaDWNz7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:55:59 -0400
+Received: from mail-ob0-f179.google.com ([209.85.214.179]:53701 "EHLO
+	mail-ob0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756818AbaDWNzx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:55:10 -0400
-Date: Wed, 23 Apr 2014 14:55:03 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com, balbi@ti.com,
-        gg@slimlogic.co.uk, kishon@ti.com, ckeepax@opensource.wolfsonmicro.com,
-        broonie@kernel.org, k.kozlowski@samsung.com, kyungmin.park@samsung.com,
-        Samuel Ortiz <sameo@linux.intel.com>
-Subject: Re: [PATCHv2 6/9] extcon: palmas: Use devm_extcon_dev_allocate for
- extcon_dev
-Message-ID: <20140423135503.GC6264@lee--X1>
-References: <1398081742-24277-1-git-send-email-cw00.choi@samsung.com>
- <1398081742-24277-7-git-send-email-cw00.choi@samsung.com>
- <20140423133821.GL640@lee--X1>
+	Wed, 23 Apr 2014 09:55:53 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140423133821.GL640@lee--X1>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140422151840.GH24905@lukather>
+References: <1397544101-18135-1-git-send-email-wens@csie.org>
+	<1397544101-18135-3-git-send-email-wens@csie.org>
+	<CACRpkdZ+3dnhoj1TS4KSVUP8iFHsjjwop-FG2Nf07YtH6aSO_Q@mail.gmail.com>
+	<20140422151840.GH24905@lukather>
+Date: Wed, 23 Apr 2014 15:55:52 +0200
+Message-ID: <CACRpkdbdgkYEGWpQiX0WuvS3iivfAyz0r+oK=5D8WB_e=0js2A@mail.gmail.com>
+Subject: Re: [PATCH 2/7] gpiolib: Support purely name based gpiod lookup in
+ device trees
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: Chen-Yu Tsai <wens@csie.org>, Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014, Lee Jones wrote:
+On Tue, Apr 22, 2014 at 5:18 PM, Maxime Ripard
+<maxime.ripard@free-electrons.com> wrote:
 
-> > This patch use devm_extcon_dev_allocate() to simplify the memory control
-> > of extcon device.
-> > 
-> > Cc: Graeme Gregory <gg@slimlogic.co.uk>
-> > Cc: Kishon Vijay Abraham I <kishon@ti.com>
-> > Cc: Felipe Balbi <balbi@ti.com>
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Cc: Lee Jones <lee.jones@linaro.org>
-> > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> > ---
-> >  drivers/extcon/extcon-palmas.c | 35 ++++++++++++++++++++---------------
-> >  include/linux/mfd/palmas.h     |  2 +-
-> >  2 files changed, 21 insertions(+), 16 deletions(-)
-> 
-> Applied, thanks.
+> This patch has a dependency on the first patch of this serie, since it
+> uses a binding that was documented there.
+>
+> Maybe you'll want to wait for the ACK from the DT maintainers to merge
+> this one.
 
-Doesn't apply. I guess there are dependencies in your repo. I don't
-think a 2 line patch is worth us creating an Immutable branch
-for. Instead, here's my:
+Yeah I realized this a bit later, sorry for being a bit confused :-/
 
-  Acked-by: Lee Jones <lee.jones@linaro.org>
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yours,
+Linus Walleij
