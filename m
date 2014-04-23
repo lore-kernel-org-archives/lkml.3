@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757624AbaDWQBY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 12:01:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.130]:56457 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757475AbaDWQBS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 12:01:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: wim@iguana.be, dbaryshkov@gmail.com, dwmw2@infradead.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com
-Subject: Re: [PATCH 4/5] ARM: sunxi: Remove reset code from the platform
-Date: Wed, 23 Apr 2014 18:00:24 +0200
-Message-ID: <10836281.Wx7YzfuubV@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1398265476-29373-5-git-send-email-maxime.ripard@free-electrons.com>
-References: <1398265476-29373-1-git-send-email-maxime.ripard@free-electrons.com> <1398265476-29373-5-git-send-email-maxime.ripard@free-electrons.com>
+	id S1757721AbaDWQBg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 12:01:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5949 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757475AbaDWQB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 12:01:27 -0400
+Date: Wed, 23 Apr 2014 12:01:06 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Simo Sorce <ssorce@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
+        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+Message-ID: <20140423160106.GB24651@redhat.com>
+References: <CALCETrVBJFgKwRKBE2jAG6kiGgkJ+MyQiw2nyz5yj0h68kCk9A@mail.gmail.com>
+ <1397759013.2628.86.camel@willson.li.ssimo.org>
+ <20140417185023.GA32527@redhat.com>
+ <1397761817.2628.113.camel@willson.li.ssimo.org>
+ <20140417191646.GA2461@redhat.com>
+ <CALCETrW3F1+3qF3thrAmuoWVbRveBJ2=owpigh4mv6iAafoQCw@mail.gmail.com>
+ <20140421150307.GA4367@redhat.com>
+ <CALCETrW5RvbW-Hz_Y7oULP6sEfdhGBh51+mTj4RwobHV-ji+Kg@mail.gmail.com>
+ <20140423150744.GC22755@redhat.com>
+ <CALCETrVhXPK2roQZ7sKMPbJOsLCaMwhUJdL-p0tbUqN8cubsjg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:imfcaw8a/cURMO1VYrIQcIG1suivQ7NDSnoWZzIKoOE
- XWReyYEb3ppW+eFPjjM7wGz3njnAx3e4QeAx52seudaFDs0zYA
- 9BBqfXpfdHPhubsaFs0DPQQqSZouLk/pD7K8VMTOyodWJDG+mR
- lRItUtCCq+s39g2GJDzVYHJgLtf6Ts//4yaZ6TNA8wF1NTzUaQ
- xzUo/Bued6+UVGqbmpr/zm2lTYR6j87DTqQ1otL+9z45zncFob
- UI18bhEgI8YcdMNhoBsePp9Tmu1oes9LZ4BTc/ER10HclnX19M
- YFdGiL12fwzyHxLv+lhA1Z+6bPQBDPtw+s6SBKtUqXH97GJE+l
- jIj2uQk3mSMsWaG5qcBM=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVhXPK2roQZ7sKMPbJOsLCaMwhUJdL-p0tbUqN8cubsjg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 April 2014 17:04:35 Maxime Ripard wrote:
-> Now that reset is handled either by the watchdog driver for the sun4i, sun5i
-> and sun7i, and by a driver of its own for sun6i, we can remove it from the
-> platform code.
+On Wed, Apr 23, 2014 at 08:37:56AM -0700, Andy Lutomirski wrote:
+> On Wed, Apr 23, 2014 at 8:07 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Mon, Apr 21, 2014 at 08:47:51AM -0700, Andy Lutomirski wrote:
+> >
+> > [..]
+> >> To summarize from my reading of how this crap words:
+> >>
+> >> When a unit is created, systemd opens a stream socket pointing at
+> >> /run/systemd/journal/stdout.  It tells journald the unit, along with
+> >> lots of other useful information.  journald records this association
+> >> between the socket and the unit.  Systemd could tell journald the
+> >> cgroup here, too, if it wanted it.
+> >
+> > Ok, that's a fair point. I looked at  connect_logger_as() and I see
+> > that systemd does connect() on behalf of service being launched and
+> > sets up fd and passes bunch of information to journald. So cgroup could
+> > be one of the information and that would act like SO_PEERCGROUP in
+> > this specific case. Not sure why it is not done though. I will let
+> > systemd folks comment on that. I don't have enough background here.
+> >
+> > But this works in this specific case where there is a mechanism to
+> > pass meta information to receiver. What about SSSD use case where
+> > they want to know the cgroup of client and possibly provide differentiated
+> > service based on client.
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  arch/arm/mach-sunxi/sunxi.c | 98 ---------------------------------------------
->  1 file changed, 98 deletions(-)
-> 
+> Separate sockets sounds like it will work just fine, if not better, here, to me.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+That's one way of doing it. But that can't be the argument to not provide
+another way of doing same thing with the help of single socket instead
+of maintaining multiple ones.
+
+Setting up separate socket for each client will require knowing every
+client in advance so that one can socket appropriately. But mutiplexing
+everything on one socket, does not have that constraint and should make
+life little bit easier.
+
+I think they will be just two different ways of doing things and user
+can choose one depending on what suits them.
+
+Thanks
+Vivek
