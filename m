@@ -1,51 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757718AbaDWRoq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:44:46 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:53566 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146AbaDWRon (ORCPT
+	id S1757801AbaDWRpV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:45:21 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:43662 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757770AbaDWRpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:44:43 -0400
-X-Auth-Info: ZmkftslnfdR62ZMiF48OoeAn4cB9K/4+DcdSLFkKTHU=
-From: Marek Vasut <marex@denx.de>
-To: Christian Engelmayer <cengelma@gmx.at>
-Subject: Re: [PATCH 1/3] crypto: Fix potential leak in test_aead_speed() if aad_size is too big
-Date: Wed, 23 Apr 2014 19:44:41 +0200
-User-Agent: KMail/1.13.7 (Linux/3.13-trunk-amd64; KDE/4.11.3; x86_64; ; )
-Cc: tim.c.chen@linux.intel.com, herbert@gondor.apana.org.au,
-        davem@davemloft.net, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <20140421204439.7999f1c6@spike> <201404230133.05256.marex@denx.de> <20140423194335.2d72d7a4@spike>
-In-Reply-To: <20140423194335.2d72d7a4@spike>
+	Wed, 23 Apr 2014 13:45:16 -0400
+Date: Wed, 23 Apr 2014 19:45:14 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Jean Delvare <jdelvare@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>
+Subject: Generating .config from device tree [was Re: Hardware dependencies
+ in Kconfig]
+Message-ID: <20140423174514.GA24243@amd.pavel.ucw.cz>
+References: <20140414145359.48b7337c@endymion.delvare>
+ <20140414191143.GA26864@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404231944.41781.marex@denx.de>
+Content-Type: multipart/mixed; boundary="DocE+STaALJfprDB"
+Content-Disposition: inline
+In-Reply-To: <20140414191143.GA26864@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 23, 2014 at 07:43:35 PM, Christian Engelmayer wrote:
-> On Wed, 23 Apr 2014 01:33:05 +0200, Marek Vasut <marex@denx.de> wrote:
-> > On Monday, April 21, 2014 at 08:45:59 PM, Christian Engelmayer wrote:
-> > > +	if (aad_size >= PAGE_SIZE) {
-> > 
-> > On an unrelated note ... Won't if (aad_size > PAGE_SIZE) be sufficient
-> > here?
-> 
-> From what I have seen how the buffers are allocated via __get_free_page() I
-> thought so too. However, as it previously read
-> 
-> 	if (aad_size < PAGE_SIZE)
-> 		memset(assoc, 0xff, aad_size);
-> 	else {
-> 
-> my intention was simply to make the modification so that the bug is
-> addressed without introducing an additional change.
 
-I fully agree with you. I was just curious about the comparison here.
+--DocE+STaALJfprDB
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Best regards,
-Marek Vasut
+Hi!
+
+> Ideally, the arch doesn't matter at all for a driver, only the
+> infrastructure the driver depends on does.  So perhaps the
+
+Actually, it would be nice if user was never asked for combination
+that can be compiled, and kernel would support them, but there's no
+such hardware.
+
+For example, if I am configuring for Nokia N900, I pretty much know
+all the devices -- not even USB host is officially supported, so this
+machine is not extensible. Yet I'll have to answer about 1000
+questions about config.
+
+And ... we already have very accurate description of what hardware
+Nokia N900 has -- in the device tree. Perhaps it would make sense to
+generate hardware-dependend parts of config from device tree? [I'll
+still need to answer questions like CONFIG_NFS but should
+not have to answer CONFIG_DISPLAY_PANEL_SONY_ACX565AKM question.]
+
+Anyway, script is attached, perhaps it is useful to someone. 
+
+[And yes, I believe we should build CONFIG_FOO corresponds to
+"ti,omap3-foo" database.]
+
+Run it from linux directory, and modify 
+
+        m.linux_path = "/data/l/linux-n900/"
+        m.dtb_path = "arch/arm/boot/dts/omap3-n900.dtb"
+
+to match your configuration.
+
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+
+--DocE+STaALJfprDB
+Content-Type: text/x-python; charset=us-ascii
+Content-Disposition: attachment; filename="dtsconfig.py"
+
+#!/usr/bin/python
+#
+# Scripts for automatic kernel configuration from dts
+# 
+# Copyright 2014 Pavel Machek <pavel@ucw.cz>
+# Distribute under GPLv2+
+#
+
+import os
+import re
+
+class DtsParser():
+    def __init__(m):
+        m.linux_path = "/data/l/linux-n900/"
+        m.dtb_path = "arch/arm/boot/dts/omap3-n900.dtb"
+
+    def find_files(m, match):
+        l = os.popen("find "+m.linux_path+" -name '"+match+"'").readlines()
+        return map(lambda s: s.rstrip(), l)
+        
+
+    def find_compatible(m):
+        dts = os.popen("dtc -I dtb "+m.dtb_path).readlines()
+        compatibles = {}
+        for line in dts:
+            match = re.match(".*compatible = ([^;]*);", line)
+            if not match:
+                continue
+            l = match.group(1)
+            for s in l.split('",'):
+                s = re.sub('^[" ]*', '', s)
+                s = re.sub('"$', '', s)
+                compatibles[s] = 1
+
+        m.compatibles = compatibles
+
+
+    def find_drivers(m):
+        drivers = {}
+        for fname in m.find_files("*.c"):
+            for line in open(fname, "r").readlines():
+                for c in m.compatibles:
+                    if re.match('.*"'+c+'".*', line):
+                        m.compatibles[c] = 2
+                        if not fname in drivers:
+                            drivers[fname] = []
+                        drivers[fname] += [ line ]
+        m.drivers = drivers
+
+    def find_configs(m):
+        configs = {}
+        m.found_drivers = {}
+        for fname in m.drivers:
+            makefile = fname.rstrip("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-.,_")
+            makefile += "Makefile"
+            basename = re.match("^.*/([a-zA-Z0-9-_,]*).c$", fname)
+            if not basename:
+                print "Can't find basename for ", fname
+                continue
+            basename = basename.group(1)
+            print basename
+
+            lines = open(makefile, "r").readlines()
+            for l in lines:
+                l = l.rstrip()
+                c = re.match("^obj-\$\(([A-Z0-9_]*)\)[ 	]*\+= "+basename+".o$", l) 
+                if c:
+                    break
+            if not c:
+                print "Could not file config option for ", basename, " in ", makefile
+                continue
+            c = c.group(1)
+            print "Have config option ", c
+            configs[c] = fname
+            m.found_drivers[fname] = c
+        m.configs = configs
+
+    def run(m):
+        m.find_compatible()
+        m.find_drivers()
+        m.find_configs()
+
+    def print_configs(m):
+        for c in m.configs:
+            print c
+        for c in m.compatibles:
+            if m.compatibles[c] != 2:
+                print "Could not find driver for ", c
+        
+parser = DtsParser()
+parser.run()
+parser.print_configs()
+
+
+#print parser.find_files("*.c")
+
+
+--DocE+STaALJfprDB--
