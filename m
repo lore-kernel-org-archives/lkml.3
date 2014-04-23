@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405AbaDWQ4z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 12:56:55 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41217 "EHLO mail.zytor.com"
+	id S1756280AbaDWQ6h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 12:58:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52205 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753447AbaDWQ4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 12:56:54 -0400
-Message-ID: <5357F0A0.6040909@zytor.com>
-Date: Wed, 23 Apr 2014 09:56:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751916AbaDWQ6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 12:58:35 -0400
+Date: Wed, 23 Apr 2014 18:58:08 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/1] uprobes/tracing: uprobe_perf_open() forgets to handle
+	the error from uprobe_apply()
+Message-ID: <20140423165808.GA29485@redhat.com>
 MIME-Version: 1.0
-To: Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Andrew Lutomirski <amluto@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Borislav Petkov <bp@alien8.de>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <535714A1.9080502@linux.intel.com> <CAObL_7HsnpGKRoBh+NZkW7SURqGx_4Dkfow=1-_7UU9uBV4UkA@mail.gmail.com> <53571A7D.8050702@zytor.com> <5357CD0B.5050003@oracle.com>
-In-Reply-To: <5357CD0B.5050003@oracle.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 07:24 AM, Boris Ostrovsky wrote:
->>
->> Konrad - I really could use some help figuring out what needs to be done
->> for this not to break Xen.
-> 
-> This does break Xen PV:
-> 
+Hello,
 
-I know it does.  This is why I asked for help.
+Steven, I am going to ask Ingo to pull this fix along with other
+pending uprobes changes, but please let me know if you want to take
+this patch.
 
-This is fundamentally the problem with PV and *especially* the way Xen
-PV was integrated into Linux: it acts as a development brake for native
-hardware.  Fortunately, Konrad has been quite responsive to that kind of
-problems, which hasn't always been true of the Xen community in the past.
+Oleg.
 
-	-hpa
+ kernel/trace/trace_uprobe.c |   46 +++++++++++++++++++++++-------------------
+ 1 files changed, 25 insertions(+), 21 deletions(-)
 
