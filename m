@@ -1,129 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264AbaDWNwE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:52:04 -0400
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:53088 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600AbaDWNv6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:51:58 -0400
-Date: Wed, 23 Apr 2014 14:51:51 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2 1/2] mfd: sec-core: Remove duplicated device type from
- sec_pmic_dev
-Message-ID: <20140423135151.GA6264@lee--X1>
-References: <1398156970-9360-1-git-send-email-k.kozlowski@samsung.com>
+	id S1757276AbaDWNwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:52:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34351 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755258AbaDWNwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:52:14 -0400
+Date: Wed, 23 Apr 2014 14:52:10 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH] mm: vmscan: Do not throttle based on pfmemalloc reserves
+ if node has no ZONE_NORMAL
+Message-ID: <20140423135210.GK23991@suse.de>
+References: <20140422083852.GB23991@suse.de>
+ <20140422123149.d406e5cbef5c01eb6dc5c89b@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398156970-9360-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <20140422123149.d406e5cbef5c01eb6dc5c89b@linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014, Krzysztof Kozlowski wrote:
+On Tue, Apr 22, 2014 at 12:31:49PM -0700, Andrew Morton wrote:
+> On Tue, 22 Apr 2014 09:38:52 +0100 Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > throttle_direct_reclaim() is meant to trigger during swap-over-network
+> > during which the min watermark is treated as a pfmemalloc reserve. It
+> > throttes on the first node in the zonelist but this is flawed.
+> > 
+> > On a NUMA machine running a 32-bit kernel (I know) allocation requests
+> > freom CPUs on node 1 would detect no pfmemalloc reserves and the process
+> > gets throttled. This patch adjusts throttling of direct reclaim to throttle
+> > based on the first node in the zonelist that has a usable ZONE_NORMAL or
+> > lower zone.
+> 
+> I'm unable to determine from the above whether we should backport this
+> fix.  Please don't forget to describe the end-user visible effects of
+> a bug when that isn't obvious.  
+> 
 
-> The device type was stored in sec_pmic_dev state container twice:
->  - unsigned long type (initialized from of_device_id or i2c_device_id)
->  - int device_type (initialized as above or from board files when there
->    is no DTS)
-> 
-> The 'type' field was never used outside of probe so it can be safely
-> removed.
-> 
-> Change also the device_type in sec_pmic_dev and sec_platform_data to
-> unsigned long to avoid any casts.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> 
-> ---
-> 
-> Changes since v1:
->  - Change device_type field of sec_platform_data from int to unsigned long.
->  - Update commit msg.
-> ---
->  drivers/mfd/sec-core.c           | 5 +++--
->  drivers/mfd/sec-irq.c            | 2 +-
->  include/linux/mfd/samsung/core.h | 3 +--
->  3 files changed, 5 insertions(+), 5 deletions(-)
+The user-visible impact is that a process running on CPU whose local
+memory node has no ZONE_NORMAL will stall for prolonged periods of time,
+possibly indefintely. This is due to throttle_direct_reclaim thinking the
+pfmemalloc reserves are depleted when in fact they don't exist on that node.
 
-What upstream commit are these patches based on? They don't seem to
-apply to v3.15-rc2. Could you rebase and resend with my Ack applied
-please?
+Strictly speaking this is stable material. I should have flagged it as
+such but hadn't as I was treating 32-bit kernels running on NUMA hardware
+as being a poor choice.
 
-> diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-> index d4682c6cbff5..09fd256abcf6 100644
-> --- a/drivers/mfd/sec-core.c
-> +++ b/drivers/mfd/sec-core.c
-> @@ -251,6 +251,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
->  	struct sec_platform_data *pdata = dev_get_platdata(&i2c->dev);
->  	const struct regmap_config *regmap;
->  	struct sec_pmic_dev *sec_pmic;
-> +	unsigned long device_type;
->  	int ret;
->  
->  	sec_pmic = devm_kzalloc(&i2c->dev, sizeof(struct sec_pmic_dev),
-> @@ -262,7 +263,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
->  	sec_pmic->dev = &i2c->dev;
->  	sec_pmic->i2c = i2c;
->  	sec_pmic->irq = i2c->irq;
-> -	sec_pmic->type = sec_i2c_get_driver_data(i2c, id);
-> +	device_type = sec_i2c_get_driver_data(i2c, id);
->  
->  	if (sec_pmic->dev->of_node) {
->  		pdata = sec_pmic_i2c_parse_dt_pdata(sec_pmic->dev);
-> @@ -270,7 +271,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
->  			ret = PTR_ERR(pdata);
->  			return ret;
->  		}
-> -		pdata->device_type = sec_pmic->type;
-> +		pdata->device_type = device_type;
->  	}
->  	if (pdata) {
->  		sec_pmic->device_type = pdata->device_type;
-> diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
-> index 64e7913aadc6..654e2c1dbf7a 100644
-> --- a/drivers/mfd/sec-irq.c
-> +++ b/drivers/mfd/sec-irq.c
-> @@ -385,7 +385,7 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
->  				  &sec_pmic->irq_data);
->  		break;
->  	default:
-> -		dev_err(sec_pmic->dev, "Unknown device type %d\n",
-> +		dev_err(sec_pmic->dev, "Unknown device type %lu\n",
->  			sec_pmic->device_type);
->  		return -EINVAL;
->  	}
-> diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-> index 84aaf6c25794..e7e12ebacb9b 100644
-> --- a/include/linux/mfd/samsung/core.h
-> +++ b/include/linux/mfd/samsung/core.h
-> @@ -43,13 +43,12 @@ struct sec_pmic_dev {
->  	struct regmap *regmap_pmic;
->  	struct i2c_client *i2c;
->  
-> -	int device_type;
-> +	unsigned long device_type;
->  	int irq_base;
->  	int irq;
->  	struct regmap_irq_chip_data *irq_data;
->  
->  	int ono;
-> -	unsigned long type;
->  	bool wakeup;
->  	bool wtsr_smpl;
->  };
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2507,10 +2507,17 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+> >  
+> >  	for (i = 0; i <= ZONE_NORMAL; i++) {
+> >  		zone = &pgdat->node_zones[i];
+> > +		if (!populated_zone(zone))
+> > +			continue;
+> 
+> What's this?  Performance tweak?  Or does min_wmark_pages() return
+> non-zero for an unpopulated zone, which seems odd.
+> 
+
+Minor performance tweak. It's a force of habit to skip populated zones
+when doing a zone walk like this.
+
+> >  		pfmemalloc_reserve += min_wmark_pages(zone);
+> >  		free_pages += zone_page_state(zone, NR_FREE_PAGES);
+> >  	}
+> >  
+> > +	/* If there are no reserves (unexpected config) then do not throttle */
+> > +	if (!pfmemalloc_reserve)
+> > +		return true;
+> > +
+> >  	wmark_ok = free_pages > pfmemalloc_reserve / 2;
+> >  
+> >  	/* kswapd must be awake if processes are being throttled */
+> > @@ -2535,9 +2542,9 @@ static bool pfmemalloc_watermark_ok(pg_data_t *pgdat)
+> >  static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+> >  					nodemask_t *nodemask)
+> >  {
+> > +	struct zoneref *z;
+> >  	struct zone *zone;
+> > -	int high_zoneidx = gfp_zone(gfp_mask);
+> > -	pg_data_t *pgdat;
+> > +	pg_data_t *pgdat = NULL;
+> >  
+> >  	/*
+> >  	 * Kernel threads should not be throttled as they may be indirectly
+> > @@ -2556,10 +2563,24 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+> >  	if (fatal_signal_pending(current))
+> >  		goto out;
+> >  
+> > -	/* Check if the pfmemalloc reserves are ok */
+> > -	first_zones_zonelist(zonelist, high_zoneidx, NULL, &zone);
+> > -	pgdat = zone->zone_pgdat;
+> > -	if (pfmemalloc_watermark_ok(pgdat))
+> > +	/*
+> > +	 * Check if the pfmemalloc reserves are ok by finding the first node
+> > +	 * with a usable ZONE_NORMAL or lower zone
+> > +	 */
+> 
+> That comment tells us what the code does but not why it does it.
+> 
+> - Why do we ignore zones >= ZONE_NORMAL?
+> 
+> - Why do we throttle when there may be as-yet-unexamined nodes which
+>   have reclaimable pages?
+> 
+
+/*
+ * Check if the pfmemalloc reserves are ok by finding the first node
+ * with a usable ZONE_NORMAL or lower zone. The expectation is that
+ * GFP_KERNEL will be required for allocating network buffers when
+ * swapping over the network so ZONE_HIGHMEM is unusable.
+ * 
+ * Throttling is based on the first usable node and throttled processes
+ * wait on a queue until kswapd makes progress and wakes them. There
+ * is an affinity then between processes waking up and where reclaim
+ * progress has been made assuming the process wakes on the same node.
+ * More importantly, processes running on remote nodes will not compete
+ * for remote pfmemalloc reserves and processes on different nodes
+ * should make reasonable progress.
+ */
+
+?
+
+> 
+> > +        for_each_zone_zonelist_nodemask(zone, z, zonelist,
+> > +                                        gfp_mask, nodemask) {
+> 
+> Those two lines have spaces-instead-of-tabs.
+> 
+
+Sorry, that was careless.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Mel Gorman
+SUSE Labs
