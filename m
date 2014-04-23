@@ -1,51 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334AbaDWOnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:43:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43689 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753155AbaDWOmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:42:39 -0400
-Message-ID: <1398264152.2596.25.camel@flatline.rdu.redhat.com>
-Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
-From: Eric Paris <eparis@redhat.com>
-To: Daniel J Walsh <dwalsh@redhat.com>
-Cc: Steve Grubb <sgrubb@redhat.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-audit@redhat.com, selinux@tycho.nsa.gov, jamal@mojatatu.com,
-        davem@davemloft.net
-Date: Wed, 23 Apr 2014 10:42:32 -0400
-In-Reply-To: <5357C2D2.5060700@redhat.com>
-References: <20140422.161904.1187535812839850973.davem@davemloft.net>
-	 <cover.1398215388.git.rgb@redhat.com> <26389161.vp9iWSVLPX@x2>
-	 <1398225475.750.7.camel@localhost> <5357C2D2.5060700@redhat.com>
+	id S1757370AbaDWOna (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:43:30 -0400
+Received: from mail-pd0-f179.google.com ([209.85.192.179]:48759 "EHLO
+	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757339AbaDWOnY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 10:43:24 -0400
+Subject: Re: [PATCH 2/7] perf tools: Account entry stats when it's added to
+ the output tree
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20140423133536.GC11124@krava.brq.redhat.com>
+References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
+	 <1398236408-8856-3-git-send-email-namhyung@kernel.org>
+	 <20140423133536.GC11124@krava.brq.redhat.com>
 Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Apr 2014 23:43:16 +0900
+Message-ID: <1398264196.1696.12.camel@leonhard>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-23 at 09:40 -0400, Daniel J Walsh wrote:
-> Here are the capabilities we currently give to sysadm_t with
-> sysadm_secadm    1.0.0    Disabled
-> 
->    allow sysadm_t sysadm_t : capability { chown dac_override
-> dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable
-> net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner
-> sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice
-> sys_resource sys_time sys_tty_config mknod lease audit_write setfcap } ;
->    allow sysadm_t sysadm_t : capability { setgid setuid sys_chroot }
-> 
->    allow sysadm_t sysadm_t : capability2 { syslog block_suspend } ;
-> 
-> cap_audit_write might be a problem?
+Hi Jiri,
 
-cap_audit_write is fine.
+2014-04-23 (수), 15:35 +0200, Jiri Olsa:
+> On Wed, Apr 23, 2014 at 04:00:03PM +0900, Namhyung Kim wrote:
+> > Currently, accounting each sample is done in multiple places - once
+> > when adding them to the input tree, other when adding them to the
+> > output tree.  It's not only confusing but also can cause a subtle
+> > problem since concurrent processing like in perf top might see the
+> > updated stats before adding entries into the output tree - like seeing
+> > more (blank) lines at the end and/or slight inaccurate percentage.
+> > 
+> > To fix this, only account the entries when it's moved into the output
+> > tree so that they cannot be seen prematurely.  There're some
+> > exceptional cases here and there - they should be addressed separately
+> > with comments.
+> 
+> sry to be PITA, but need to ask you to split the patch,
+> otherwise I'd get beaten for that ;-)
 
-syslogd_t (aka journal) is going to need the new permission
-cap_audit_read.  Also, as steve pointed out, someone may be likely to
-want to be able to disable that permission easily.
+No problem.  I'll split it in the next spin.
 
--Eric
+> 
+> I can see several separated changes here:
+>  * remove stats for input tree (as stated in changelog)
+>  * hists__inc_nr_entries -> hists__inc_stats rename
+>  * add hists__reset_stats function
+>  * move hists__calc_col_len out of hists__inc_nr_entries
+> 
+> 
+> > 
+> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> > ---
+> 
+> SNIP
+> 
+> >  
+> > diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+> > index aed52036468d..4bdcc040b216 100644
+> > --- a/tools/perf/builtin-report.c
+> > +++ b/tools/perf/builtin-report.c
+> > @@ -85,6 +85,10 @@ static void report__inc_stats(struct report *rep, struct hist_entry *he)
+> >  	 */
+> >  	if (he->stat.nr_events == 1)
+> >  		rep->nr_entries++;
+> > +
+> > +	hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
+> > +	if (!he->filtered)
+> > +		he->hists->stats.nr_non_filtered_samples++;
+> 
+> could you put here some comments as for the diff command
+> I mean why is this exception in stats counting for input tree
+
+Will do as well.
+
+Thanks,
+Namhyung
+
+
 
