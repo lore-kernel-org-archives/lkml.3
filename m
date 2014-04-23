@@ -1,126 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbaDWWpR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:45:17 -0400
-Received: from mail-pd0-f175.google.com ([209.85.192.175]:35011 "EHLO
-	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751600AbaDWWpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:45:12 -0400
-Message-ID: <53584277.7000405@gmail.com>
-Date: Wed, 23 Apr 2014 15:45:11 -0700
-From: Frank Rowand <frowand.list@gmail.com>
-Reply-To: frowand.list@gmail.com
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
-MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] sysfs, device-tree: aid for debugging device tree boot
- problems
-References: <53571685.5060403@gmail.com> <20140423032044.GA26233@kroah.com>
-In-Reply-To: <20140423032044.GA26233@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751882AbaDWWrx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:47:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42814 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751126AbaDWWrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 18:47:52 -0400
+Date: Thu, 24 Apr 2014 08:47:40 +1000
+From: NeilBrown <neilb@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Dave Chinner <david@fromorbit.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Mel Gorman <mgorman@suse.com>, linux-mm@kvack.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] MM: avoid throttling reclaim for loop-back nfsd
+ threads.
+Message-ID: <20140424084740.44a416e4@notabene.brown>
+In-Reply-To: <20140423150318.d4bcf234faa5bea7fcb57b9b@linux-foundation.org>
+References: <20140423022441.4725.89693.stgit@notabene.brown>
+	<20140423024058.4725.71995.stgit@notabene.brown>
+	<20140423150318.d4bcf234faa5bea7fcb57b9b@linux-foundation.org>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/gVq0EJx4uYNh11lkimZo1pT"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/22/2014 8:20 PM, Greg Kroah-Hartman wrote:
-> On Tue, Apr 22, 2014 at 06:25:25PM -0700, Frank Rowand wrote:
->> Create some infrastructure to aid trouble shooting device tree related
->> boot issues.
->>
->> Add a %driver_name file to each device tree node sysfs directory which has had
->> a driver bound to it.  This allows detecting device tree nodes which failed
->> to be bound to any driver.
-> 
-> Why is this needed, shouldn't there already be a "driver" symlink in
-> sysfs for these devices when a driver binds to them?  The rest of the
-> driver model works that way, why is of devices any different?
+--Sig_/gVq0EJx4uYNh11lkimZo1pT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, the devices do have a "driver" symlink in sysfs.
+On Wed, 23 Apr 2014 15:03:18 -0700 Andrew Morton <akpm@linux-foundation.org>
+wrote:
 
-The problem I had was that I could not deterministically determine the
-device name in /sysfs that was associated with a device tree node that
-the device was created for.  And I couldn't find a link from the device
-tree entries to the device tree node.
+> On Wed, 23 Apr 2014 12:40:58 +1000 NeilBrown <neilb@suse.de> wrote:
+>=20
+> > When a loop-back NFS mount is active and the backing device for the
+> > NFS mount becomes congested, that can impose throttling delays on the
+> > nfsd threads.
+> >=20
+> > These delays significantly reduce throughput and so the NFS mount
+> > remains congested.
+> >=20
+> > This results in a live lock and the reduced throughput persists.
+> >=20
+> > This live lock has been found in testing with the 'wait_iff_congested'
+> > call, and could possibly be caused by the 'congestion_wait' call.
+> >=20
+> > This livelock is similar to the deadlock which justified the
+> > introduction of PF_LESS_THROTTLE, and the same flag can be used to
+> > remove this livelock.
+> >=20
+> > To minimise the impact of the change, we still throttle nfsd when the
+> > filesystem it is writing to is congested, but not when some separate
+> > filesystem (e.g. the NFS filesystem) is congested.
+> >=20
+> > Signed-off-by: NeilBrown <neilb@suse.de>
+> > ---
+> >  mm/vmscan.c |   18 ++++++++++++++++--
+> >  1 file changed, 16 insertions(+), 2 deletions(-)
+> >=20
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index a9c74b409681..e011a646de95 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -1424,6 +1424,18 @@ putback_inactive_pages(struct lruvec *lruvec, st=
+ruct list_head *page_list)
+> >  	list_splice(&pages_to_free, page_list);
+> >  }
+> > =20
+> > +/* If a kernel thread (such as nfsd for loop-back mounts) services
+>=20
+> /*
+>  * If ...
+>=20
+> please
+>=20
+> > + * a backing device by writing to the page cache it sets PF_LESS_THROT=
+TLE.
+> > + * In that case we should only throttle if the backing device it is
+> > + * writing to is congested.  In other cases it is safe to throttle.
+> > + */
+> > +static int current_may_throttle(void)
+> > +{
+> > +	return !(current->flags & PF_LESS_THROTTLE) ||
+> > +		current->backing_dev_info =3D=3D NULL ||
+> > +		bdi_write_congested(current->backing_dev_info);
+> > +}
+> > +
+> >  /*
+> >   * shrink_inactive_list() is a helper for shrink_zone().  It returns t=
+he number
+> >   * of reclaimed pages
+> > @@ -1552,7 +1564,8 @@ shrink_inactive_list(unsigned long nr_to_scan, st=
+ruct lruvec *lruvec,
+> >  		 * implies that pages are cycling through the LRU faster than
+> >  		 * they are written so also forcibly stall.
+> >  		 */
+> > -		if (nr_unqueued_dirty =3D=3D nr_taken || nr_immediate)
+> > +		if ((nr_unqueued_dirty =3D=3D nr_taken || nr_immediate)
+> > +		    && current_may_throttle())
+>=20
+> 	foo &&
+> 	bar
+>=20
+> please.  As you did in in current_may_throttle().
+>=20
+> >  			congestion_wait(BLK_RW_ASYNC, HZ/10);
+> >  	}
+> > =20
+> > @@ -1561,7 +1574,8 @@ shrink_inactive_list(unsigned long nr_to_scan, st=
+ruct lruvec *lruvec,
+> >  	 * is congested. Allow kswapd to continue until it starts encountering
+> >  	 * unqueued dirty pages or cycling through the LRU too quickly.
+> >  	 */
+> > -	if (!sc->hibernation_mode && !current_is_kswapd())
+> > +	if (!sc->hibernation_mode && !current_is_kswapd()
+> > +	    && current_may_throttle())
+>=20
+> ditto
+>=20
+> >  		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
+> > =20
+> >  	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
+> >=20
 
-Grant's reply to your email provided the solution to my problem; the
-device uevents file contains the full device tree path of the associated
-device tree node.
+Thanks.  I've made those changes and will resend just that patch.
+As it is quite independent of all the others can you take it and I'll funnel
+the others through other trees?
 
-Grant's reply removes the need for my patch.
+Thanks
+NeilBrown
 
-> 
->> Examples of using the %driver_name file (note that /proc/device-tree is a
->> link to the base of the device tree sysfs tree):
->>
->>
->>   1) To find list of device tree nodes with no driver:
->>
->>   # A few false positives may be reported.  For example,
->>   #   node_full_path of "." is the board.
->>   #
->>   # output is: node_full_path compatible_string
->>   #
->>   cd /proc/device-tree
->>   for k in `find . -type d`; do
->>      if [[ -f ${k}/compatible && ! -f ${k}/%driver_name ]] ; then
->>         if [[ "`cat ${k}/compatible`" != "simple-bus" ]] ; then
->>            echo `echo ${k} | sed -e 's|./||'` `cat ${k}/compatible`
->>         fi
->>      fi
->>   done | sort
->>
->>
->>   2) To find list of device tree nodes with a bound driver:
->>
->>   # output is:  node_full_path driver_name
->>   #
->>   cd /proc/device-tree
->>   for k in `find . -name %driver_name` ; do
->>      echo `echo ${k} | sed -e 's|./||' -e 's|/%driver_name$||'` `cat ${k}`
->>   done | sort
->>
->>
->>   3) To find list of device tree nodes with a bound driver:
->>
->>   # output is:  driver_name node_full_path
->>   #
->>   cd /proc/device-tree
->>   for k in `find . -name %driver_name` ; do
->>      echo `cat ${k}` `echo ${k} | sed -e 's|./||' -e 's|/%driver_name$||'`
->>   done | sort
-> 
-> If we take this patch, these examples should be somewhere in the
-> documentation to make it easy for others.
+--Sig_/gVq0EJx4uYNh11lkimZo1pT
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-That is a good idea.  I'll package up the equivalent shell code from
-Grant's email.  Any suggestions on location?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-  scripts/debug/devicetree/
-  scripts/devicetree/debug/
-  Documentation/devicetree/scripts/
+iQIVAwUBU1hDDDnsnt1WYoG5AQI9jA/+NXYdoiGvtJCey8EL55LIltoj0t/pgFUp
+HJ5LMxkQnY0AHZ6NarrHHPDmktCPlPjOjYpPEU/yWb8V5nZZQOQ7vv/LRsun14Ck
+vCMRG43Et2jJS5bALtp0FuePSp2vXQld+H4ol4fEbFQIkcJNVr58Z01aXinpPGUx
+YeNJpPMY6IJC72V646YaQ2ET8SOAYwaDqrOA0S+KNj5QMsycfPpI9Ww4Lkf418tc
+J/UGAbecXLvOTZFQB+fe9asg8QWZtL586XPkz8oN6de4YMcPEsNV15hyKfvpkvxG
+fgoipV7cwuRE18OiYuwdHt7ZG6PBBgEdpElaX4Indn+XFB8ThdRFhxlGJQ5mkVKB
+CFY/hl4vTL7BtjYLanHxyjbIhFLs7alDOLhrrw3Crd2j3PDGiMdGvSEec+khK4GE
+AaSHsWom14YpQe4qert6wm87jDSwxV5rzh9GdieaL+p39q4JUmPVo7WAEyBY7uvT
+DZHcbvBMz1aDn91D8Ay00O33RmH31hhfeqPUIPFpYcLSr51mjwfvOFeRmXEEbWWU
+fZlVCOUjXyZiUofxm9qIwGWq7dg1QmOouIpfrEO2Cv9wngSq4iLaCJ0pzvq+xLe1
+rn8YOSf5uyCVD8vkjRon7omxRDWX03ZlPrI4KC1kurszo9bzIR2sDh7KHZlgrBht
+qVoODT+cRGI=
+=i294
+-----END PGP SIGNATURE-----
 
-If there is no good location in the kernel tree, then I will put them
-either on the devicetree wiki, or the devicetree section of the
-elinux wiki.
-
-> 
->> Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
-> 
-> Minor nit, your From: line doesn't match this signed-off-by: so
-> something has to change (or add a new From: line, like SubmittingPatches
-> decribes how to do.)
-
-Oops, thanks for pointing that out.
-
-> 
-> thanks,
-> 
-> greg k-h
-
--Frank
-
+--Sig_/gVq0EJx4uYNh11lkimZo1pT--
