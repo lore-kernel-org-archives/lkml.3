@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756687AbaDWNsB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:48:01 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:55999 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461AbaDWNq7 (ORCPT
+	id S1756890AbaDWNsL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:48:11 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:63232 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723AbaDWNsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:46:59 -0400
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-To: Al Viro <viro@zeniv.linux.org.uk>, <tytso@mit.edu>,
-        <adilger.kernel@dilger.ca>
-CC: <linux-ext4@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-fsdevel@vger.kernel.org>
-Subject: [PATCH 2/2] ext4: Fix up the .write callback to use new_sync_write
-Date: Wed, 23 Apr 2014 16:46:46 +0300
-Message-ID: <1398260806-19340-3-git-send-email-peter.ujfalusi@ti.com>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398260806-19340-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1398260806-19340-1-git-send-email-peter.ujfalusi@ti.com>
+	Wed, 23 Apr 2014 09:48:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1398173886-9376-1-git-send-email-boris.brezillon@free-electrons.com>
+References: <1398173886-9376-1-git-send-email-boris.brezillon@free-electrons.com>
+Date: Wed, 23 Apr 2014 15:48:01 +0200
+Message-ID: <CACRpkdaQZ2VABWpbwEZ1eeMUZuf8SkGermKhiOPPHLQudJ4iqg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: sunxi: dt: list all pinctrl compatible strings
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Boris BREZILLON <boris.brezillon@free-electrons.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        =?UTF-8?Q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>,
+        Mike Turquette <mturquette@linaro.org>, Chen-Yu Tsai <wens@csie.org>,
+        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Other filesystems has been updated but ext4 has been left out and since
-ext4 does not provide aio_write callback we have kernel crash in
-do_sync_write()
+On Tue, Apr 22, 2014 at 3:38 PM, Boris BREZILLON
+<boris.brezillon@free-electrons.com> wrote:
 
-Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
----
- fs/ext4/file.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> List all sunxi pinctrl compatible strings in order to be able to grep for
+> those values.
+>
+> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index f48a1c2838b6..708aad768199 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -587,7 +587,7 @@ loff_t ext4_llseek(struct file *file, loff_t offset, int whence)
- const struct file_operations ext4_file_operations = {
- 	.llseek		= ext4_llseek,
- 	.read		= new_sync_read,
--	.write		= do_sync_write,
-+	.write		= new_sync_write,
- 	.read_iter	= generic_file_read_iter,
- 	.write_iter	= ext4_file_write_iter,
- 	.unlocked_ioctl = ext4_ioctl,
--- 
-1.9.2
+Patch applied, but I edited the subject to pinctrl:
+as this is arch neutral and has nothing to do with ARM really.
 
+Yours,
+Linus Walleij
