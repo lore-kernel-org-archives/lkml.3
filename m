@@ -1,94 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757835AbaDWRp2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:45:28 -0400
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:49229 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757770AbaDWRpX (ORCPT
+	id S1756966AbaDWRsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:48:03 -0400
+Received: from mga09.intel.com ([134.134.136.24]:39541 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753219AbaDWRr7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:45:23 -0400
+	Wed, 23 Apr 2014 13:47:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,913,1389772800"; 
+   d="scan'208";a="526401944"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [Bugfix] sched: fix possible invalid memory access caused by
+ CPU hot-addition
+Thread-Topic: [Bugfix] sched: fix possible invalid memory access caused by
+ CPU hot-addition
+Thread-Index: AQHPXes1Qjl1X5tgj0C+YUEy+BJBwpsdv3yAgAE2H4CAAC6pgIAABUiAgABRbRA=
+Date: Wed, 23 Apr 2014 17:46:26 +0000
+Message-ID: <3908561D78D1C84285E8C5FCA982C28F327EB605@ORSMSX114.amr.corp.intel.com>
+References: <1398144435-26271-1-git-send-email-jiang.liu@linux.intel.com>
+ <20140422081515.GF11182@twins.programming.kicks-ass.net>
+ <53572939.7020509@linux.intel.com>
+ <20140423053213.GV26782@laptop.programming.kicks-ass.net>
+ <20140423055107.GB1429@laptop.programming.kicks-ass.net>
+In-Reply-To: <20140423055107.GB1429@laptop.programming.kicks-ass.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <5357F82D.8020307@zytor.com>
-References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
- <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com> <CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
- <20140422112312.GB15882@pd.tnic> <20140422144659.GF15882@pd.tnic>
- <CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
- <53569467.1030809@zytor.com> <CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
- <CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
- <CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>
- <CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>
- <CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com>
- <5356A3B6.5050901@zytor.com> <20140423105411.2e166dd8@alan.etchedpixels.co.uk>
- <5357E214.6050501@zytor.com> <CAObL_7FePDB5EtZNKSbkc19maR3pH31tZSK-k+mcaFrKttYN3w@mail.gmail.com>
- <5357F572.1030804@zytor.com> <CAObL_7HN0S_zuqi=NSJARaV8HAQz=zQXAvBiE8QsiFQ0VxpO8Q@mail.gmail.com>
- <5357F82D.8020307@zytor.com>
-From: Andrew Lutomirski <amluto@gmail.com>
-Date: Wed, 23 Apr 2014 10:45:02 -0700
-Message-ID: <CAObL_7G6E+v0mj11TiBGenQLyBor=DtbuMqSy9iQTTqjEL2H9A@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 10:28 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 04/23/2014 10:25 AM, Andrew Lutomirski wrote:
->> On Wed, Apr 23, 2014 at 10:16 AM, H. Peter Anvin <hpa@zytor.com> wrote:
->>> On 04/23/2014 10:08 AM, Andrew Lutomirski wrote:
->>>>
->>>> The only way I can see to trigger the race is with sigreturn, but it's
->>>> still there.  Sigh.
->>>
->>> I don't see why sigreturn needs to be involved... all you need is
->>> modify_ldt() on one CPU while the other is in the middle of an IRET
->>> return.  Small window, so hard to hit, but still.
->>
->> If you set the flag as soon as anyone calls modify_ldt, before any
->> descriptor is installed, then I don't think this can happen.  But
->> there's still sigreturn, and I don't think this is worth all the
->> complexity to save a single branch on #GP.
->>
+> > > 1) Handle CPU hot-addition event
+> > > 1.a) gather platform specific information
+> > > 1.b) associate hot-added CPU with a node
+> > > 1.c) create CPU device
+> > > 2) User online hot-added CPUs through sysfs:
+> > > 2.a)	cpu_up()
+> > > 2.b)		->try_online_node()
+> > > 2.c)			->hotadd_new_pgdat()
+> > > 2.d)			->node_set_online()
+> > > 
+> > > So between 1.b and 2.c, kmalloc_node(nid) may cause invalid
+> > > memory access without the node_online(nid) check.
+> > 
+> > Any why was all this not in the Changelog?
 >
-> Who cares?  Since we only need to enter the fixup path for LDT
-> selectors, anything that is dependent on having called modify_ldt() is
-> already redundant.
+> Also, do explain what kind of hardware you needed to trigger this. This
+> code has been like this for a good while.
 
-But you still have to test this, and folding it into the existing
-check for thread flags would eliminate that.  Still, I think this
-would not be worth it, even if it were correct.
+With your proposed fix in place the allocations will succeed - but they
+will be done from other nodes ... and this cpu will have to do a remote
+NUMA access for the rest of time.
 
->
-> In some ways that is the saving grace.  SS being an LDT selector is
-> fortunately a rare case.
->
->> I do mean intra-kernel.  And yes, this has nothing to do with espfix,
->> but it would make write_msr_safe fail more quickly :)
->
-> And, pray tell, how important is that?
+It would be better to switch the order above - add the memory first,
+then add the cpus.  Is that possible?
 
-Not very.
-
-Page faults may be a different story for some workloads, particularly
-if they are IO-heavy.  Returning to preempted kernel threads may also
-matter.
-
-For my particular workload, returns from rescheduling interrupts
-delivered to idle cpus probably also matters, but the fact that those
-interrupts are happening at all is a bug that tglx is working on.
-
---Andy
-
---Andy
+-Tony
