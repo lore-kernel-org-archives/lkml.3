@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875AbaDWBfv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:35:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13050 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756422AbaDWBcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:32:43 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, davem@davemloft.net,
-        jamal@mojatatu.com, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH 4/6][v2] audit: add netlink audit protocol bind to check capabilities on multicast join
-Date: Tue, 22 Apr 2014 21:31:56 -0400
-Message-Id: <98fb27d9bb1bdeca41d53cccd8a8b65c1e58cc80.1398215388.git.rgb@redhat.com>
-In-Reply-To: <20140422.161904.1187535812839850973.davem@davemloft.net>
-References: <20140422.161904.1187535812839850973.davem@davemloft.net>
-In-Reply-To: <cover.1398215388.git.rgb@redhat.com>
-References: <cover.1398215388.git.rgb@redhat.com>
+	id S1752847AbaDWBk1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:40:27 -0400
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:21916 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaDWBk0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 21:40:26 -0400
+X-IronPort-AV: E=Sophos;i="4.97,908,1389772800"; 
+   d="scan'208";a="25836714"
+From: Zi Shen Lim <zlim@broadcom.com>
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Mark Brown <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
+        Will Deacon <will.deacon@arm.com>
+CC: Zi Shen Lim <zlim@broadcom.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/2] arm64 topology updates
+Date: Tue, 22 Apr 2014 18:40:12 -0700
+Message-ID: <1398217214-12204-1-git-send-email-zlim@broadcom.com>
+X-Mailer: git-send-email 1.8.4.3
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Register a netlink per-protocol bind fuction for audit to check userspace
-process capabilities before allowing a multicast group connection.
+First patch in this series purges unused mc_capable() and smt_capable(),
+similar to what went into 3.15-rc1 for other architectures. [1]
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- include/uapi/linux/capability.h     |    7 ++++++-
- kernel/audit.c                      |   10 ++++++++++
- security/selinux/include/classmap.h |    2 +-
- 3 files changed, 17 insertions(+), 2 deletions(-)
+Since this is fairly straightforward, please pick this one up soon, so
+we're in line with other architectures.
 
-diff --git a/include/uapi/linux/capability.h b/include/uapi/linux/capability.h
-index 154dd6d..12c37a1 100644
---- a/include/uapi/linux/capability.h
-+++ b/include/uapi/linux/capability.h
-@@ -347,7 +347,12 @@ struct vfs_cap_data {
- 
- #define CAP_BLOCK_SUSPEND    36
- 
--#define CAP_LAST_CAP         CAP_BLOCK_SUSPEND
-+/* Allow reading the audit log via multicast netlink socket */
-+
-+#define CAP_AUDIT_READ		37
-+
-+
-+#define CAP_LAST_CAP         CAP_AUDIT_READ
- 
- #define cap_valid(x) ((x) >= 0 && (x) <= CAP_LAST_CAP)
- 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index 7c28936..223cb74 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -1076,10 +1076,20 @@ static void audit_receive(struct sk_buff  *skb)
- 	mutex_unlock(&audit_cmd_mutex);
- }
- 
-+/* Run custom bind function on netlink socket group connect or bind requests. */
-+static int audit_bind(int group)
-+{
-+	if (!capable(CAP_AUDIT_READ))
-+		return -EPERM;
-+
-+	return 0;
-+}
-+
- static int __net_init audit_net_init(struct net *net)
- {
- 	struct netlink_kernel_cfg cfg = {
- 		.input	= audit_receive,
-+		.bind	= audit_bind,
- 	};
- 
- 	struct audit_net *aunet = net_generic(net, audit_net_id);
-diff --git a/security/selinux/include/classmap.h b/security/selinux/include/classmap.h
-index 14d04e6..be491a7 100644
---- a/security/selinux/include/classmap.h
-+++ b/security/selinux/include/classmap.h
-@@ -147,7 +147,7 @@ struct security_class_mapping secclass_map[] = {
- 	{ "peer", { "recv", NULL } },
- 	{ "capability2",
- 	  { "mac_override", "mac_admin", "syslog", "wake_alarm", "block_suspend",
--	    NULL } },
-+	    "audit_read", NULL } },
- 	{ "kernel_service", { "use_as_override", "create_files_as", NULL } },
- 	{ "tun_socket",
- 	  { COMMON_SOCK_PERMS, "attach_queue", NULL } },
+Second patch in this series adds MPIDR-based detection of cpu topology.
+MPIDR support is independent of topology information from DT or ACPI.
+MPIDR should always work for hardware that sets those bits with sane values.
+
+For cpu topology, MPIDR can be used as default method or as fallback for
+DT or ACPI. I lean towards MPIDR as default (at least on host/hypervisor),
+but will leave it up to the maintainers on detection priority :)
+
+I've tested this on my model with MT and it works for me.
+The code should cover known use cases. I hope to get confirmation,
+or more discussions, from others.
+
+This series applies on 3.15-rc1.
+
+Note that this series is functionally orthogonal to the series Mark Brown
+just posted. In off-list discussion with Mark, he's currently focusing on
+DT-related bits. For reference, his patches are:
+
+  [PATCH 1/4] arm64: topology: Initialise default topology state immediately
+  [PATCH 2/4] arm64: topology: Add support for topology DT bindings
+  [PATCH 3/4] arm64: topology: Tell the scheduler about the relative power of cores
+  [PATCH 4/4] arm64: topology: Provide relative power numbers for cores
+
+Thanks,
+z
+
+References:
+[1] Clean up from Bjorn Helgaas 36fc5500bb19 ("sched: Remove unused
+    mc_capable() and smt_capable()"). Link: https://lkml.org/lkml/2014/3/11/463
+
+Links to Mark's series:
+[1/4] http://www.spinics.net/lists/arm-kernel/msg324508.html
+[2/4] http://www.spinics.net/lists/arm-kernel/msg324507.html
+[3/4] http://www.spinics.net/lists/arm-kernel/msg324505.html
+[4/4] http://www.spinics.net/lists/arm-kernel/msg324506.html
+
+Zi Shen Lim (2):
+  arm64, sched: Remove unused mc_capable() and smt_capable()
+  arm64: topology: add MPIDR-based detection
+
+ arch/arm64/include/asm/cputype.h  |  2 ++
+ arch/arm64/include/asm/topology.h |  3 ---
+ arch/arm64/kernel/topology.c      | 31 +++++++++++++++++++++++++++++++
+ 3 files changed, 33 insertions(+), 3 deletions(-)
+
 -- 
-1.7.1
+1.8.4.3
 
