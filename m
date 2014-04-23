@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755393AbaDWNOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:14:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37414 "EHLO
+	id S1755564AbaDWNOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:14:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37420 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755140AbaDWNOM (ORCPT
+	with ESMTP id S1755281AbaDWNOU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:14:12 -0400
-Date: Wed, 23 Apr 2014 06:13:49 -0700
+	Wed, 23 Apr 2014 09:14:20 -0400
+Date: Wed, 23 Apr 2014 06:14:02 -0700
 From: tip-bot for Steven Rostedt <tipbot@zytor.com>
-Message-ID: <tip-4508793541140723ab862d83095f6b5141d24e49@git.kernel.org>
+Message-ID: <tip-de04f8657de9d3351a2d5880f1f7080b23b798cf@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
         rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
         rostedt@goodmis.org, tglx@linutronix.de, jolsa@redhat.com
-In-Reply-To: <20140421222346.0351ced4@gandalf.local.home>
-References: <20140421222346.0351ced4@gandalf.local.home>
+In-Reply-To: <20140422192330.6bb09bf8@gandalf.local.home>
+References: <20140422192330.6bb09bf8@gandalf.local.home>
 To: linux-tip-commits@vger.kernel.org
 Subject: [tip:perf/urgent] tools lib traceevent:
-  Fix backward compatibility macros for pevent filter enums
-Git-Commit-ID: 4508793541140723ab862d83095f6b5141d24e49
+  Fix memory leak in pretty_print()
+Git-Commit-ID: de04f8657de9d3351a2d5880f1f7080b23b798cf
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,42 +32,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4508793541140723ab862d83095f6b5141d24e49
-Gitweb:     http://git.kernel.org/tip/4508793541140723ab862d83095f6b5141d24e49
+Commit-ID:  de04f8657de9d3351a2d5880f1f7080b23b798cf
+Gitweb:     http://git.kernel.org/tip/de04f8657de9d3351a2d5880f1f7080b23b798cf
 Author:     Steven Rostedt <rostedt@goodmis.org>
-AuthorDate: Mon, 21 Apr 2014 22:23:46 -0400
+AuthorDate: Tue, 22 Apr 2014 19:23:30 -0400
 Committer:  Jiri Olsa <jolsa@redhat.com>
-CommitDate: Wed, 23 Apr 2014 13:19:23 +0200
+CommitDate: Wed, 23 Apr 2014 13:19:30 +0200
 
-tools lib traceevent: Fix backward compatibility macros for pevent filter enums
+tools lib traceevent: Fix memory leak in pretty_print()
 
-The return value for pevent_filter_match() is suppose to return FILTER_NONE
-if the event doesn't have a filter, and FILTER_NOEXIST if there is no filter
-at all. But the change 41e12e580a7 "tools lib traceevent: Refactor
-pevent_filter_match() to get rid of die()" replaced the return value
-with PEVENT_ERRNO__* values and added "backward compatibility" macros
-that used the old names. Unfortunately, the NOEXIST and NONE macros were
-swapped, and this broke users that use the old return names.
+Commit 12e55569a244 "tools lib traceevent: Use helper trace-seq in print
+functions like kernel does" added a extra trace_seq helper to process
+string arguments like the kernel does it. But the difference between the
+kernel and the userspace library is that the kernel's trace_seq structure
+has a static allocated buffer. The userspace one has a dynamically
+allocated one. It requires a trace_seq_destroy(), otherwise it produces
+a nasty memory leak.
 
+Cc: stable@vger.kernel.org # 3.14+
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-Link: http://lkml.kernel.org/r/20140421222346.0351ced4@gandalf.local.home
+Link: http://lkml.kernel.org/r/20140422192330.6bb09bf8@gandalf.local.home
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
 ---
- tools/lib/traceevent/event-parse.h | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/lib/traceevent/event-parse.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
-index 791c539..feab942 100644
---- a/tools/lib/traceevent/event-parse.h
-+++ b/tools/lib/traceevent/event-parse.h
-@@ -876,8 +876,8 @@ struct event_filter {
- struct event_filter *pevent_filter_alloc(struct pevent *pevent);
- 
- /* for backward compatibility */
--#define FILTER_NONE		PEVENT_ERRNO__FILTER_NOT_FOUND
--#define FILTER_NOEXIST		PEVENT_ERRNO__NO_FILTER
-+#define FILTER_NONE		PEVENT_ERRNO__NO_FILTER
-+#define FILTER_NOEXIST		PEVENT_ERRNO__FILTER_NOT_FOUND
- #define FILTER_MISS		PEVENT_ERRNO__FILTER_MISS
- #define FILTER_MATCH		PEVENT_ERRNO__FILTER_MATCH
- 
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index baec7d8..b83184f 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -4344,6 +4344,7 @@ static void pretty_print(struct trace_seq *s, void *data, int size, struct event
+ 					      format, len_arg, arg);
+ 				trace_seq_terminate(&p);
+ 				trace_seq_puts(s, p.buffer);
++				trace_seq_destroy(&p);
+ 				arg = arg->next;
+ 				break;
+ 			default:
