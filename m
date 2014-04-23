@@ -1,126 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524AbaDWPFg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:05:36 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:33118 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655AbaDWPFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:05:24 -0400
-Date: Wed, 23 Apr 2014 10:02:59 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: <balbi@ti.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v6 01/19] usb: phy: msm: Make driver selectable on
- ARCH_QCOM
-Message-ID: <20140423150259.GE9593@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
- <1398158438-21579-2-git-send-email-iivanov@mm-sol.com>
- <20140422145701.GI5524@saruman.home>
- <1398179795.4724.170.camel@iivanov-dev>
- <20140422152425.GL5524@saruman.home>
- <1398242909.4724.204.camel@iivanov-dev>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PPYy/fEw/8QCHSq3"
-Content-Disposition: inline
-In-Reply-To: <1398242909.4724.204.camel@iivanov-dev>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754085AbaDWPFd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:05:33 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58559 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753034AbaDWPFZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:05:25 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
+        dwmw2@infradead.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 1/5] wdt: sunxi: Move restart code to the watchdog driver
+Date: Wed, 23 Apr 2014 17:04:32 +0200
+Message-Id: <1398265476-29373-2-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398265476-29373-1-git-send-email-maxime.ripard@free-electrons.com>
+References: <1398265476-29373-1-git-send-email-maxime.ripard@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---PPYy/fEw/8QCHSq3
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Most of the watchdog code is duplicated between the machine restart code and
+the watchdog driver. Add the restart hook to the watchdog driver, to be able to
+remove it from the machine code eventually.
 
-On Wed, Apr 23, 2014 at 11:48:29AM +0300, Ivan T. Ivanov wrote:
-> On Tue, 2014-04-22 at 10:24 -0500, Felipe Balbi wrote:
-> > On Tue, Apr 22, 2014 at 06:16:35PM +0300, Ivan T. Ivanov wrote:
-> > >=20
-> > > Hi,=20
-> > >=20
-> > > On Tue, 2014-04-22 at 09:57 -0500, Felipe Balbi wrote:
-> > > > On Tue, Apr 22, 2014 at 12:20:20PM +0300, Ivan T. Ivanov wrote:
-> > > > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > > > >=20
-> > > > > Controller could be found on APQ and MSM platforms,
-> > > > > make configuration description more generic.
-> > > > >=20
-> > > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > > > > ---
-> > > > >  drivers/usb/phy/Kconfig | 6 +++---
-> > > > >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > > > >=20
-> > > > > diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-> > > > > index 416e0c8..0c668a3 100644
-> > > > > --- a/drivers/usb/phy/Kconfig
-> > > > > +++ b/drivers/usb/phy/Kconfig
-> > > > > @@ -171,11 +171,11 @@ config USB_ISP1301
-> > > > >  	  module will be called phy-isp1301.
-> > > > >=20
-> > > > >  config USB_MSM_OTG
-> > > > > -	tristate "OTG support for Qualcomm on-chip USB controller"
-> > > > > -	depends on (USB || USB_GADGET) && ARCH_MSM
-> > > > > +	tristate "Qualcomm on-chip USB OTG controller support"
-> > > > > +	depends on (USB || USB_GADGET) && (ARCH_MSM || ARCH_QCOM)
-> > > >=20
-> > > > I would actually drop USB || USB_GADGET dependency here just make it
-> > > > easier to enable the driver on Kconfig, other you have to enable
-> > > > USB_SUPPORT, then enable USB, go back one menu level, go down to PHY
-> > > > menu, and choose this driver.
-> > > >=20
-> > >=20
-> > > Because phy directory already depends on USB_SUPPORT?
-> >=20
-> > right
->=20
-> Build fails if USB and USB_GADGET are not selected.=20
-> of_usb_get_dr_mode is part of USB_COMMON.=20
->=20
-> ...
->=20
-> if USB_SUPPORT
->=20
-> config USB_COMMON
-> 	tristate
-> 	default y
-> 	depends on USB || USB_GADGET
->=20
-> ...
->=20
-> of_usb_get_dr_mode() is no part of this patch, but should I remove
-> dependency here and add it several patches later?
+Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+---
+ drivers/watchdog/sunxi_wdt.c | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-I guess we can keep it as is and I'll sort that out globaly later, I can
-see a few other PHYs have some "weirdness" in their dependencies
+diff --git a/drivers/watchdog/sunxi_wdt.c b/drivers/watchdog/sunxi_wdt.c
+index cd00a7836cdc..0644c45d2b60 100644
+--- a/drivers/watchdog/sunxi_wdt.c
++++ b/drivers/watchdog/sunxi_wdt.c
+@@ -14,6 +14,7 @@
+  */
+ 
+ #include <linux/clk.h>
++#include <linux/delay.h>
+ #include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
+@@ -22,9 +23,12 @@
+ #include <linux/moduleparam.h>
+ #include <linux/of.h>
+ #include <linux/platform_device.h>
++#include <linux/reboot.h>
+ #include <linux/types.h>
+ #include <linux/watchdog.h>
+ 
++#include <asm/system_misc.h>
++
+ #define WDT_MAX_TIMEOUT         16
+ #define WDT_MIN_TIMEOUT         1
+ #define WDT_MODE_TIMEOUT(n)     ((n) << 3)
+@@ -70,6 +74,30 @@ static const int wdt_timeout_map[] = {
+ 	[16] = 0b1011, /* 16s */
+ };
+ 
++static struct sunxi_wdt_dev *sunxi_restart_ctx;
++
++static void sun4i_wdt_restart(enum reboot_mode mode, const char *cmd)
++{
++	if (!sunxi_restart_ctx)
++		return;
++
++	/* Enable timer and set reset bit in the watchdog */
++	writel(WDT_MODE_EN | WDT_MODE_RST_EN,
++	       sunxi_restart_ctx->wdt_base + WDT_MODE);
++
++	/*
++	 * Restart the watchdog. The default (and lowest) interval
++	 * value for the watchdog is 0.5s.
++	 */
++	writel(WDT_CTRL_RELOAD, sunxi_restart_ctx->wdt_base + WDT_CTRL);
++
++	while (1) {
++		mdelay(5);
++		writel(WDT_MODE_EN | WDT_MODE_RST_EN,
++		       sunxi_restart_ctx->wdt_base + WDT_MODE);
++	}
++}
++
+ static int sunxi_wdt_ping(struct watchdog_device *wdt_dev)
+ {
+ 	struct sunxi_wdt_dev *sunxi_wdt = watchdog_get_drvdata(wdt_dev);
+@@ -181,6 +209,9 @@ static int sunxi_wdt_probe(struct platform_device *pdev)
+ 	if (unlikely(err))
+ 		return err;
+ 
++	sunxi_restart_ctx = sunxi_wdt;
++	arm_pm_restart = sun4i_wdt_restart;
++
+ 	dev_info(&pdev->dev, "Watchdog enabled (timeout=%d sec, nowayout=%d)",
+ 			sunxi_wdt->wdt_dev.timeout, nowayout);
+ 
+@@ -191,6 +222,8 @@ static int sunxi_wdt_remove(struct platform_device *pdev)
+ {
+ 	struct sunxi_wdt_dev *sunxi_wdt = platform_get_drvdata(pdev);
+ 
++	arm_pm_restart = NULL;
++
+ 	watchdog_unregister_device(&sunxi_wdt->wdt_dev);
+ 	watchdog_set_drvdata(&sunxi_wdt->wdt_dev, NULL);
+ 
+-- 
+1.9.1
 
---=20
-balbi
-
---PPYy/fEw/8QCHSq3
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTV9YjAAoJEIaOsuA1yqREvrwP/RJ/RJ9eHFyOjHKjdgEJ3/Vi
-K04iefOicAK8Z4hqCrRppgB4O/1AZ8JitQ3z7RHtXZbI1EoSc7GV4aTzG7rqzaX/
-1aufBamntT+S/vI8SFaLn6DHt2dUuxyVxAdaCAhoItharVO38z2u5ym6J7KRGInb
-H+AC9XtDwTNaT6hwP//pmTRNaxLAE4myTDkVefgV2z/PCG9FDDE+Y+UhW2jkWpDr
-1ASnSixWyxfYg7wIiUEyMOHx1iyT034bMzET0CA7+kHCa8LoxxFvxWa6FCHWu6Ug
-F1M6ja2qmA2ujCn7Izwz31+vg7iPjpaopmjiqOLhtO8UkPL2QOPrbHta8Kk3ixA1
-XOTUAI4f4pzp6k8D0e9hF6bKP1cXGmZhBWRGYozQdLClm/1xY3iSjStC8xGKRGT+
-mUmiOWYllJ0w2WA1bSSB+9atyAXKdurf4VES8IhHPPyoH+RJ28EkGuL09k/InQAb
-Fo2pOk2JQ2i3Za7A8HUYiMC4yg6T+j7M2s8SvvPE28kCmUxH1jdgW43hD+x+2QBb
-SNWI9CeZ0bsXign092nwoRD/kIH7yfIp976xcpEyVlpiqmHqgcBU61t+deQgmaar
-ZztUWFzmw8dBh7fmDCSQXb0Ws+KqVa2qHZHVcPIhMqUxhmXmjj21lKSzHDSk89bt
-lpZEDgjHsvDe6kKc3ipC
-=GhD1
------END PGP SIGNATURE-----
-
---PPYy/fEw/8QCHSq3--
