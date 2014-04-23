@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926AbaDWTAx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 15:00:53 -0400
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:46741 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122AbaDWTAr (ORCPT
+	id S1757945AbaDWTBQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 15:01:16 -0400
+Received: from mail-ob0-f173.google.com ([209.85.214.173]:60175 "EHLO
+	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757929AbaDWTBM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 15:00:47 -0400
-Date: Wed, 23 Apr 2014 15:00:43 -0400
+	Wed, 23 Apr 2014 15:01:12 -0400
+Date: Wed, 23 Apr 2014 15:01:08 -0400
 From: Tejun Heo <tj@kernel.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
-Subject: Re: [PATCH RFC] blkcg: prepare blkcg knobs for default hierarchy
-Message-ID: <20140423190043.GB4163@mtj.dyndns.org>
-References: <20140413013209.GC26252@mtj.dyndns.org>
- <20140414180824.GB9552@redhat.com>
- <20140414193214.GC16835@htj.dyndns.org>
- <20140415135359.GA13033@redhat.com>
- <20140415140650.GI1863@htj.dyndns.org>
- <20140415141826.GB17018@redhat.com>
- <20140423170141.GJ4781@htj.dyndns.org>
- <20140423171720.GF24651@redhat.com>
- <20140423185231.GA4163@mtj.dyndns.org>
- <20140423185835.GD22755@redhat.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Sebastian Ott <sebott@linux.vnet.ibm.com>,
+        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] s390/ccwgroup: Fix memory corruption
+Message-ID: <20140423190108.GC4163@mtj.dyndns.org>
+References: <1398279525-2837-1-git-send-email-borntraeger@de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140423185835.GD22755@redhat.com>
+In-Reply-To: <1398279525-2837-1-git-send-email-borntraeger@de.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Wed, Apr 23, 2014 at 02:58:35PM -0400, Vivek Goyal wrote:
-> Oh, sorry, I had misunderstood your question.
+On Wed, Apr 23, 2014 at 08:58:45PM +0200, Christian Borntraeger wrote:
+> commit 0b60f9ead5d4816e7e3d6e28f4a0d22d4a1b2513 (s390: use
+> device_remove_file_self() instead of device_schedule_callback())
 > 
-> - Number of IOs serviced will be different at throttling layer and
->   CFQ layer as throttling accounts IO in terms of bios and CFQ
->   accounts in terms of number of requests.
+> caused random memory corruption on my s390 box. Turns out that the
+> last element of the ccwgroup structure is of dynamic size, so we
+> must move the newly introduced work structure _before_ the zero
+> length array.
+> 
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
+> CC: Heiko Carstens <heiko.carstens@de.ibm.com>
+> CC: Sebastian Ott <sebott@linux.vnet.ibm.com>
+> CC: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
 
-But shouldn't it be possible to determine that from merged count?  Or
-we can just expose both bio and request counts at block core layer.
-The point is that there's nothing controller specific about these
-stats.
+Oops,
 
-> - CFQ might not be operational on a device while throttling might be
->   on and one needs bytes stats.
-
-Yeah, so expose both from blkcg core as blkio.* stats.
-
-> - In a custom kernel throttling might not be on and CFQ is on and
->   one needs the stats.
-
-Ditto.
+ Acked-by: Tejun Heo <tj@kernel.org>
 
 Thanks.
 
