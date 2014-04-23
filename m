@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757683AbaDWTN1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 15:13:27 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:57077 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881AbaDWTNZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 15:13:25 -0400
+	id S1757574AbaDWTVT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 15:21:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756082AbaDWTVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 15:21:17 -0400
+Date: Wed, 23 Apr 2014 15:21:09 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC] blkcg: prepare blkcg knobs for default hierarchy
+Message-ID: <20140423192108.GF22755@redhat.com>
+References: <20140414180824.GB9552@redhat.com>
+ <20140414193214.GC16835@htj.dyndns.org>
+ <20140415135359.GA13033@redhat.com>
+ <20140415140650.GI1863@htj.dyndns.org>
+ <20140415141826.GB17018@redhat.com>
+ <20140423170141.GJ4781@htj.dyndns.org>
+ <20140423171720.GF24651@redhat.com>
+ <20140423185231.GA4163@mtj.dyndns.org>
+ <20140423185835.GD22755@redhat.com>
+ <20140423190043.GB4163@mtj.dyndns.org>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <E1Wd2Os-00061e-GU@fencepost.gnu.org>
-References: <1398253172-9221-1-git-send-email-jlayton@redhat.com>
- <E1Wcyo3-0000Eg-UC@fencepost.gnu.org> <20140423112843.77889d16@tlielax.poochiereds.net>
- <E1Wd2Os-00061e-GU@fencepost.gnu.org>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Wed, 23 Apr 2014 21:13:03 +0200
-Message-ID: <CAKgNAkju-vzgJ=p568ksLy7L63qo_3tHxf_tzNZrDgGoD_vNUA@mail.gmail.com>
-Subject: Re: [RFC][glibc PATCH] fcntl-linux.h: add new definitions and manual
- updates for open file description locks
-To: ams@gnu.org
-Cc: Jeff Layton <jlayton@redhat.com>,
-        "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Rich Felker <dalias@libc.org>, samba-technical@lists.samba.org,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Boaz Harrosh <bharrosh@panasas.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423190043.GB4163@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 9:00 PM, Alfred M. Szmidt <ams@gnu.org> wrote:
->    > Likewise.  You infact write that it does get the lock information
->    > later in the document wrt. F_OFD_GETLK.
->
->    Sorry, I disagree here...GETLK is really a misnomer, IMO. TESTLK
->    would have been a better name.
+On Wed, Apr 23, 2014 at 03:00:43PM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Apr 23, 2014 at 02:58:35PM -0400, Vivek Goyal wrote:
+> > Oh, sorry, I had misunderstood your question.
+> > 
+> > - Number of IOs serviced will be different at throttling layer and
+> >   CFQ layer as throttling accounts IO in terms of bios and CFQ
+> >   accounts in terms of number of requests.
+> 
+> But shouldn't it be possible to determine that from merged count?  Or
+> we can just expose both bio and request counts at block core layer.
+> The point is that there's nothing controller specific about these
+> stats.
 
-I'm inclined to agree.
+In general this idea makes sense. Exporting both request and bio will
+solve the problem of io accounting. Also that should allow us to
+get rid of blkio.io_merged.
 
->    GETLK are used is to "get the first lock".
->
->    It's a way to test whether a particular lock can be applied, and to
->    return information about a conflicting lock if it can't. If, for
->    instance there is no conflicting lock, then you don't "get" any
->    lock information back (l_type just gets reset to F_UNLCK).
->
-> While I kinda see your point, it isn't what GETLK does; it really does
-> get you information about the first lock -- you're not testing
-> anything.  It is also the terminology used in the POSIX standard.
+What about sync/async differentiation? Throttling layer seems to flag a request sync
+only if bio->bi_rw flag has REQ_SYNC set. While CFQ seems to consider
+request sync if bio is either read or bio->bi_rw has REQ_SYNC flag set.
 
-The POSIX wording is a little confused. For example, what does "first"
-mean in this context? F_GETLK returns information about one
-(arbitrarily selected) lock that blocks a lock you would like to
-place. So, I'm inclined to agree with Jeff -- this really is a "test"
-(or "can I lock it") operation.
+So we need to make this definition uniform. Or I am wondering do we
+really need to export sync/async data. (Again put in by google folks).
+How useful this info really is. 
 
-Of course, the operation has no reliable use: by the time it returns
-the information might already be out of date. I suspect that it was
-designed to solve the problem: "My F_GETLK operation failed. Who's
-blocking me?"
-
-Cheers,
-
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Thanks
+Vivek
