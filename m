@@ -1,84 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181AbaDWM3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:29:06 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:56632 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751785AbaDWM3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:29:02 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Peter Chen <Peter.Chen@freescale.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH v4 2/3] usb: chipidea: msm: Add device tree support
-Date: Wed, 23 Apr 2014 15:28:03 +0300
-Message-Id: <1398256084-6815-3-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398256084-6815-1-git-send-email-iivanov@mm-sol.com>
-References: <1398256084-6815-1-git-send-email-iivanov@mm-sol.com>
+	id S1754356AbaDWMs7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:48:59 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:44594 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753142AbaDWMs4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 08:48:56 -0400
+Message-ID: <5357B6B4.6020008@gmail.com>
+Date: Wed, 23 Apr 2014 14:48:52 +0200
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Jan Moskyto Matejka <mq@suse.cz>, Randy Dunlap <rdunlap@infradead.org>
+CC: mtk.manpages@gmail.com, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] proc: fix documentation for /proc/stat, line "intr"
+References: <1398180580-8089-1-git-send-email-mq@suse.cz> <5356B2AB.3020005@gmail.com> <5356EEBB.5040402@infradead.org> <20140423094836.GA10953@moskyto.dyndns.org>
+In-Reply-To: <20140423094836.GA10953@moskyto.dyndns.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+On 04/23/2014 11:48 AM, Jan Moskyto Matejka wrote:
+> n Tue, Apr 22, 2014 at 03:35:39PM -0700, Randy Dunlap wrote:
+>> On 04/22/14 11:19, Michael Kerrisk (man-pages) wrote:
+>>> On 04/22/2014 05:29 PM, Jan Moskyto Matejka wrote:
+>>>> The sum at the beginning of line "intr" includes also unnumbered interrupts.
+>>>> It implies that the sum at the beginning isn't the sum of the remainder of the
+>>>> line, not even an estimation.
+>>>>
+>>>> Fixed the documentation to mention that.
+>>>
+>>> I'm not really doubting what you claim, Jan, but it would be really
+>>> helpful if you provided some data to support the proposed change
+>>> (Kernel source references, or notes about testing you've done, or 
+>>> pointers to mailing list threads, authoritative note that you are
+>>> the maintainer of some relevant kernel subsystem...). Do you have
+>>> something like that? (It's also useful for the change log.)
+>>
+>> I wouldn't mind more of a changelog, but the additional text is
+>> certainly correct.
+>>
+>> Thanks.  I'll apply the patch, but more changelog comments are welcome.
+> 
+> Thank you for applying.
+> 
+> You may add following line to the changelog:
+> This behaviour was added to /proc/stat in commit a2eddfa95919a730e0e5ed17e9c303fe5ba249cd.
 
-Allows controller to be specified via device tree.
-Pass PHY phandle specified in DT to core driver.
+Thanks, Jan -- that's indeed helpful for the man-pages changelog!
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- drivers/usb/chipidea/ci_hdrc_msm.c | 23 ++++++++++++++++++++++-
- 1 file changed, 22 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/usb/chipidea/ci_hdrc_msm.c b/drivers/usb/chipidea/ci_hdrc_msm.c
-index 2d51d85..736aeb2 100644
---- a/drivers/usb/chipidea/ci_hdrc_msm.c
-+++ b/drivers/usb/chipidea/ci_hdrc_msm.c
-@@ -57,9 +57,21 @@ static struct ci_hdrc_platform_data ci_hdrc_msm_platdata = {
- static int ci_hdrc_msm_probe(struct platform_device *pdev)
- {
- 	struct platform_device *plat_ci;
-+	struct usb_phy *phy;
-
- 	dev_dbg(&pdev->dev, "ci_hdrc_msm_probe\n");
-
-+	/*
-+	 * OTG(PHY) driver takes care of PHY initialization, clock management,
-+	 * powering up VBUS, mapping of registers address space and power
-+	 * management.
-+	 */
-+	phy = devm_usb_get_phy_by_phandle(&pdev->dev, "usb-phy", 0);
-+	if (IS_ERR(phy))
-+		return PTR_ERR(phy);
-+
-+	ci_hdrc_msm_platdata.phy = phy;
-+
- 	plat_ci = ci_hdrc_add_device(&pdev->dev,
- 				pdev->resource, pdev->num_resources,
- 				&ci_hdrc_msm_platdata);
-@@ -86,10 +98,19 @@ static int ci_hdrc_msm_remove(struct platform_device *pdev)
- 	return 0;
- }
-
-+static const struct of_device_id msm_ci_dt_match[] = {
-+	{ .compatible = "qcom,ci-hdrc", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, msm_ci_dt_match);
-+
- static struct platform_driver ci_hdrc_msm_driver = {
- 	.probe = ci_hdrc_msm_probe,
- 	.remove = ci_hdrc_msm_remove,
--	.driver = { .name = "msm_hsusb", },
-+	.driver = {
-+		.name = "msm_hsusb",
-+		.of_match_table = msm_ci_dt_match,
-+	},
- };
-
- module_platform_driver(ci_hdrc_msm_driver);
---
-1.8.3.2
-
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
