@@ -1,120 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757971AbaDWUei (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 16:34:38 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:51169 "EHLO extserv.mm-sol.com"
+	id S1757982AbaDWUkx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 16:40:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41605 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752748AbaDWUef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 16:34:35 -0400
-Message-ID: <1398285272.14329.6.camel@violet>
-Subject: Re: [PATCH 1/2] mfd: pm8x41: add support for Qualcomm 8x41 PMICs
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Courtney Cavin <courtney.cavin@sonymobile.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Date: Wed, 23 Apr 2014 23:34:32 +0300
-In-Reply-To: <20140423181614.GK17066@sonymobile.com>
-References: <1398213110-28135-1-git-send-email-courtney.cavin@sonymobile.com>
-	 <1398259168.4724.217.camel@iivanov-dev>
-	 <20140423181614.GK17066@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755018AbaDWUkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 16:40:49 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: akpm@linux-foundation.org, x86@kernel.org, davem@davemloft.net,
+        sparclinux@vger.kernel.org, mguzik@redhat.com,
+        Aaron Tomlin <atomlin@redhat.com>, Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 1/2 v4] nmi: Provide the option to issue an NMI back trace to every cpu but current
+Date: Wed, 23 Apr 2014 16:40:04 -0400
+Message-Id: <1398285605-147082-2-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1398285605-147082-1-git-send-email-dzickus@redhat.com>
+References: <1398285605-147082-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Aaron Tomlin <atomlin@redhat.com>
 
-On Wed, 2014-04-23 at 11:16 -0700, Courtney Cavin wrote:
-> On Wed, Apr 23, 2014 at 03:19:28PM +0200, Ivan T. Ivanov wrote:
-> > 
-> > Hi,
-> > 
-> > On Tue, 2014-04-22 at 17:31 -0700, Courtney Cavin wrote:
-> > > From: Josh Cartwright <joshc@codeaurora.org>
-> > > 
-> > > The Qualcomm 8941 and 8841 PMICs are components used with the Snapdragon
-> > > 800 series SoC family.  This driver exists largely as a glue mfd component,
-> > > it exists to be an owner of an SPMI regmap for children devices
-> > > described in device tree.
-> > > 
-> > 
-> > Thanks. This is exactly what I have planed to do :-)
-> > 
-> 
-> Sorry if I usurped your work!
+Some times it is preferred not to use the
+trigger_all_cpu_backtrace() routine when one wants
+to avoid capturing a back trace for current.
+For instance if one was previously captured
+recently.
 
-Noting to worry. I just was surprised how close it is to my vision ;-).
+This patch provides a new routine namely
+trigger_allbutself_cpu_backtrace() which offers
+the flexibility to issue an NMI to every cpu but
+current and capture a back trace accordingly.
 
-> 
-> > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> > > Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
-> > > ---
-> > >  drivers/mfd/Kconfig  | 13 +++++++++++
-> > >  drivers/mfd/Makefile |  1 +
-> > >  drivers/mfd/pm8x41.c | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++++
-> > >  3 files changed, 77 insertions(+)
-> > >  create mode 100644 drivers/mfd/pm8x41.c
-> > > 
-> > 
-> > <snip>
-> > 
-> > > +
-> > > +static int pm8x41_probe(struct spmi_device *sdev)
-> > > +{
-> > > +	struct regmap *regmap;
-> > > +
-> > > +	regmap = devm_regmap_init_spmi_ext(sdev, &pm8x41_regmap_config);
-> > > +	if (IS_ERR(regmap)) {
-> > > +		dev_dbg(&sdev->dev, "regmap creation failed.\n");
-> > > +		return PTR_ERR(regmap);
-> > > +	}
-> > > +
-> > > +	return of_platform_populate(sdev->dev.of_node, NULL, NULL, &sdev->dev);
-> > 
-> > I think that this will not going to work. For example in this particular
-> > case, both controllers have "qcom,qpnp-revid" peripheral which is
-> > located at offset 0x100.
-> > 
-> > And the result is:
-> > 
-> > [    0.963944] sysfs: cannot create duplicate filename '/bus/platform/devices/100.revid'
-> > 
-> [...]
-> > 
-> > Any suggestions?
-> 
-> That's expected behavior actually.  You have two nodes in DT named the
-> same thing and at the same address.  This error is due to the fact that
-> all devices are put in '/bus/platform/devices/' with a name made from
-> the unit address and name specified in DT.  There's no other unique
-> information used to differentiate the devices.
-> 
-> If you simply change the names in DT, it works.  
+Patched x86 and sparc to support new routine.
 
-Sure, it will work. But they are part of different address spaces. 
-Why we should add, IMHO, artificial requirement that names should
-be unique? Is it possible to prefix child nodes with parent device 
-address? As side note, why they should be registered on the platform
-bus at all? To be honest I don't have solution.
+Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Aaron Tomlin <atomlin@redhat.com>
+[Added stub in #else clause]
+[Don't print message in single processor case,
+ wrap with get/put_cpu based on Oleg's suggestion]
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ arch/sparc/include/asm/irq_64.h |    2 +-
+ arch/sparc/kernel/process_64.c  |   14 +++++++++-----
+ arch/x86/include/asm/irq.h      |    2 +-
+ arch/x86/kernel/apic/hw_nmi.c   |   17 +++++++++++++----
+ include/linux/nmi.h             |   11 ++++++++++-
+ 5 files changed, 34 insertions(+), 12 deletions(-)
 
-Regards,
-Ivan  
-
-> [...] qcom,qpnp-revid 100.qcom,pm8841-revid: PM8841 v2.0 options: 0, 0, 2, 2
-> [...] qcom,qpnp-revid 100.qcom,pm8941-revid: PM8941 v3.0 options: 2, 0, 0, 0
-> 
-> Whether this should be "fixed" in the device/bus/sysfs core, I don't
-> know, but it isn't specifically an issue with this driver, and there's
-> little-to-nothing I can do to fix it here.
-> 
-> -Courtney
-
-
+diff --git a/arch/sparc/include/asm/irq_64.h b/arch/sparc/include/asm/irq_64.h
+index abf6afe..4f072b9 100644
+--- a/arch/sparc/include/asm/irq_64.h
++++ b/arch/sparc/include/asm/irq_64.h
+@@ -89,7 +89,7 @@ static inline unsigned long get_softint(void)
+ 	return retval;
+ }
+ 
+-void arch_trigger_all_cpu_backtrace(void);
++void arch_trigger_all_cpu_backtrace(bool);
+ #define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
+ 
+ extern void *hardirq_stack[NR_CPUS];
+diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
+index 32a280e..3d61b98 100644
+--- a/arch/sparc/kernel/process_64.c
++++ b/arch/sparc/kernel/process_64.c
+@@ -237,7 +237,7 @@ static void __global_reg_poll(struct global_reg_snapshot *gp)
+ 	}
+ }
+ 
+-void arch_trigger_all_cpu_backtrace(void)
++void arch_trigger_all_cpu_backtrace(bool include_self)
+ {
+ 	struct thread_info *tp = current_thread_info();
+ 	struct pt_regs *regs = get_irq_regs();
+@@ -249,15 +249,19 @@ void arch_trigger_all_cpu_backtrace(void)
+ 
+ 	spin_lock_irqsave(&global_cpu_snapshot_lock, flags);
+ 
+-	memset(global_cpu_snapshot, 0, sizeof(global_cpu_snapshot));
+-
+ 	this_cpu = raw_smp_processor_id();
+ 
+-	__global_reg_self(tp, regs, this_cpu);
++	memset(global_cpu_snapshot, 0, sizeof(global_cpu_snapshot));
++
++	if (include_self)
++		__global_reg_self(tp, regs, this_cpu);
+ 
+ 	smp_fetch_global_regs();
+ 
+ 	for_each_online_cpu(cpu) {
++		if (!include_self && cpu == this_cpu)
++			continue;
++
+ 		struct global_reg_snapshot *gp = &global_cpu_snapshot[cpu].reg;
+ 
+ 		__global_reg_poll(gp);
+@@ -290,7 +294,7 @@ void arch_trigger_all_cpu_backtrace(void)
+ 
+ static void sysrq_handle_globreg(int key)
+ {
+-	arch_trigger_all_cpu_backtrace();
++	arch_trigger_all_cpu_backtrace(true);
+ }
+ 
+ static struct sysrq_key_op sparc_globalreg_op = {
+diff --git a/arch/x86/include/asm/irq.h b/arch/x86/include/asm/irq.h
+index cb6cfcd..a80cbb8 100644
+--- a/arch/x86/include/asm/irq.h
++++ b/arch/x86/include/asm/irq.h
+@@ -43,7 +43,7 @@ extern int vector_used_by_percpu_irq(unsigned int vector);
+ extern void init_ISA_irqs(void);
+ 
+ #ifdef CONFIG_X86_LOCAL_APIC
+-void arch_trigger_all_cpu_backtrace(void);
++void arch_trigger_all_cpu_backtrace(bool);
+ #define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
+ #endif
+ 
+diff --git a/arch/x86/kernel/apic/hw_nmi.c b/arch/x86/kernel/apic/hw_nmi.c
+index a698d71..1400d72 100644
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -33,31 +33,40 @@ static DECLARE_BITMAP(backtrace_mask, NR_CPUS) __read_mostly;
+ /* "in progress" flag of arch_trigger_all_cpu_backtrace */
+ static unsigned long backtrace_flag;
+ 
+-void arch_trigger_all_cpu_backtrace(void)
++void arch_trigger_all_cpu_backtrace(bool include_self)
+ {
+ 	int i;
++	int cpu = get_cpu();
+ 
+-	if (test_and_set_bit(0, &backtrace_flag))
++	if (test_and_set_bit(0, &backtrace_flag)) {
+ 		/*
+ 		 * If there is already a trigger_all_cpu_backtrace() in progress
+ 		 * (backtrace_flag == 1), don't output double cpu dump infos.
+ 		 */
++		put_cpu();
+ 		return;
++	}
+ 
+ 	cpumask_copy(to_cpumask(backtrace_mask), cpu_online_mask);
++	if (!include_self)
++		cpumask_clear_cpu(cpu, to_cpumask(backtrace_mask));
+ 
+-	printk(KERN_INFO "sending NMI to all CPUs:\n");
+-	apic->send_IPI_all(NMI_VECTOR);
++	if (!cpumask_empty(to_cpumask(backtrace_mask))) {
++		pr_info("sending NMI to %s CPUs:\n", (include_self ? "all" : "other"));
++		apic->send_IPI_mask(to_cpumask(backtrace_mask), NMI_VECTOR);
++	}
+ 
+ 	/* Wait for up to 10 seconds for all CPUs to do the backtrace */
+ 	for (i = 0; i < 10 * 1000; i++) {
+ 		if (cpumask_empty(to_cpumask(backtrace_mask)))
+ 			break;
+ 		mdelay(1);
++		touch_softlockup_watchdog();
+ 	}
+ 
+ 	clear_bit(0, &backtrace_flag);
+ 	smp_mb__after_clear_bit();
++	put_cpu();
+ }
+ 
+ static int __kprobes
+diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+index 6a45fb5..a17ab63 100644
+--- a/include/linux/nmi.h
++++ b/include/linux/nmi.h
+@@ -32,15 +32,24 @@ static inline void touch_nmi_watchdog(void)
+ #ifdef arch_trigger_all_cpu_backtrace
+ static inline bool trigger_all_cpu_backtrace(void)
+ {
+-	arch_trigger_all_cpu_backtrace();
++	arch_trigger_all_cpu_backtrace(true);
+ 
+ 	return true;
+ }
++static inline bool trigger_allbutself_cpu_backtrace(void)
++{
++	arch_trigger_all_cpu_backtrace(false);
++	return true;
++}
+ #else
+ static inline bool trigger_all_cpu_backtrace(void)
+ {
+ 	return false;
+ }
++static inline bool trigger_allbutself_cpu_backtrace(void)
++{
++	return false;
++}
+ #endif
+ 
+ #ifdef CONFIG_LOCKUP_DETECTOR
+-- 
+1.7.1
 
