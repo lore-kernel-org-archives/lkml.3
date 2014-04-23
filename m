@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724AbaDWM3d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:29:33 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:52969 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751861AbaDWM3a (ORCPT
+	id S1754775AbaDWM36 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:29:58 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:52263 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752770AbaDWM3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Apr 2014 08:29:30 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-be-5357b2280a55
+X-AuditID: cbfec7f4-b7fb36d000006ff7-cb-5357b229f1e7
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
         linux-kernel@vger.kernel.org
@@ -16,45 +16,45 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Jingoo Han <jg1.han@samsung.com>,
         Sachin Kamat <sachin.kamat@linaro.org>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH RESEND 1/2] rtc: 88pm860x: Use of_get_child_by_name
-Date: Wed, 23 Apr 2014 14:29:27 +0200
-Message-id: <1398256168-493-1-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH RESEND 2/2] rtc: 88pm860x: Add missing of_node_put
+Date: Wed, 23 Apr 2014 14:29:28 +0200
+Message-id: <1398256168-493-2-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBJMWRmVeSWpSXmKPExsVy+t/xK7oam8KDDXr321gsuXiV3WLO+jVs
-	FpfPHWa0uLzwEqvF6xeGFpd3zWGz2N/ZwWhx8k8vowOHx56JJ9k87lzbw+ZxYsZvFo++LasY
-	PabP+8nk8XmTXABbFJdNSmpOZllqkb5dAlfGvwsL2At62SoufbnF1MDYw9rFyMkhIWAiMaN7
-	NTuELSZx4d56ti5GLg4hgaWMEo+/dUE5fUwSB+7eZAOpYhMwlti8fAmYLSKQLrFo2hUmkCJm
-	gRuMEn0vuxhBEsICzhKzX64CW8EioCpx6Mc1ZhCbV8BV4kv7SxaIdXISJ49NZp3AyL2AkWEV
-	o2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkjofN3BuPSY1SFGAQ5GJR5eieVhwUKsiWXFlbmH
-	GCU4mJVEeJcsCg8W4k1JrKxKLcqPLyrNSS0+xMjEwSnVwMgrx73ovkzxrRdXeXROzi8Xlr6w
-	oZ+V6eeOTZk9lQKHLjYZGBfNEtdSe6JiETHnZaDZdIbpm08mhJXmXlunNK31Rvz8SxWTViya
-	2djKy7Xx/fyknhnTHNonHb1VsLb02CW3LwznM3Ozrmb/uHa7N+Wcq//8mznrJgg5ZuT/FHNu
-	FNzWEp6t1q3EUpyRaKjFXFScCADMATyk+wEAAA==
+In-reply-to: <1398256168-493-1-git-send-email-k.kozlowski@samsung.com>
+References: <1398256168-493-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrLJMWRmVeSWpSXmKPExsVy+t/xK7qam8KDDdafkbBYcvEqu8Wc9WvY
+	LC6fO8xocXnhJVaL1y8MLS7vmsNmsb+zg9Hi5J9eRgcOjz0TT7J53Lm2h83jxIzfLB59W1Yx
+	ekyf95PJ4/MmuQC2KC6blNSczLLUIn27BK6MaYt7WQvesVR8+bCHtYGxm6WLkYNDQsBE4ksf
+	RxcjJ5ApJnHh3nq2LkYuDiGBpYwSH95PgnL6mCSOLFjEAlLFJmAssXn5EjYQW0QgXWLRtCtM
+	IEXMAjcYJfpedjGCJIQFnCQmHvrCDLKBRUBV4sL/EJAwr4CrxIdb95kgtslJnDw2mRXE5hRw
+	k9jfNg/sICGgmhlzCycw8i5gZFjFKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERJkX3YwLj5m
+	dYhRgINRiYdXYnlYsBBrYllxZe4hRgkOZiUR3iWLwoOFeFMSK6tSi/Lji0pzUosPMTJxcEo1
+	MLpzcJpM/Pv5OGfDhlzmVfMve7J++v1qudbqF6pLj5j3N8iXd7BXtbRYSC31/j03wGPhvw9z
+	n0TrBE46b1fwZG6uE+cD/dMtV87tPLp+ebwNm+E5n8aDG3aYLTz+/aD5HfMLS/nXCDXXZvFq
+	PtaetdSk6WTCVM+VZbuVWmWP71VPP+ZtLfdVolWJpTgj0VCLuag4EQAsuF44EAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use of_get_child_by_name to obtain reference to charger node instead of
-of_find_node_by_name which can walk outside of the parent node.
+Add missing of_node_put to decrement the reference count.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/rtc/rtc-88pm860x.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/rtc/rtc-88pm860x.c | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/rtc/rtc-88pm860x.c b/drivers/rtc/rtc-88pm860x.c
-index 816504846cdd..fb9e3c63b4ac 100644
+index fb9e3c63b4ac..0c6add1a38dc 100644
 --- a/drivers/rtc/rtc-88pm860x.c
 +++ b/drivers/rtc/rtc-88pm860x.c
-@@ -293,7 +293,7 @@ static int pm860x_rtc_dt_init(struct platform_device *pdev,
- 	int ret;
- 	if (!np)
- 		return -ENODEV;
--	np = of_find_node_by_name(np, "rtc");
-+	np = of_get_child_by_name(np, "rtc");
- 	if (!np) {
- 		dev_err(&pdev->dev, "failed to find rtc node\n");
- 		return -ENODEV;
+@@ -301,6 +301,7 @@ static int pm860x_rtc_dt_init(struct platform_device *pdev,
+ 	ret = of_property_read_u32(np, "marvell,88pm860x-vrtc", &info->vrtc);
+ 	if (ret)
+ 		info->vrtc = 0;
++	of_node_put(np);
+ 	return 0;
+ }
+ #else
 -- 
 1.9.1
 
