@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806AbaDWBcw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:32:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14723 "EHLO mx1.redhat.com"
+	id S1756762AbaDWBcu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:32:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50201 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756289AbaDWBcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:32:42 -0400
+	id S1756206AbaDWBch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 21:32:37 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org, selinux@tycho.nsa.gov,
         linux-security-module@vger.kernel.org
 Cc: Richard Guy Briggs <rgb@redhat.com>, davem@davemloft.net,
         jamal@mojatatu.com, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH 3/6][v2] netlink: implement unbind to netlink_setsockopt NETLINK_DROP_MEMBERSHIP
-Date: Tue, 22 Apr 2014 21:31:55 -0400
-Message-Id: <7a5855accebc1a4f90bc7e03f39451ca0f088c98.1398215388.git.rgb@redhat.com>
+Subject: [PATCH 0/6][v2] audit: implement multicast socket for journald
+Date: Tue, 22 Apr 2014 21:31:52 -0400
+Message-Id: <cover.1398215388.git.rgb@redhat.com>
 In-Reply-To: <20140422.161904.1187535812839850973.davem@davemloft.net>
 References: <20140422.161904.1187535812839850973.davem@davemloft.net>
-In-Reply-To: <cover.1398215388.git.rgb@redhat.com>
-References: <cover.1398215388.git.rgb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Call the per-protocol unbind function rather than bind function on
-NETLINK_DROP_MEMBERSHIP in netlink_setsockopt().
+This is a patch set Eric Paris and I have been working on to add a restricted
+capability read-only netlink multicast socket to kernel audit to enable
+userspace clients such as systemd/journald to receive audit logs, in addition
+to the bidirectional auditd userspace client.
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
----
- net/netlink/af_netlink.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Currently, auditd has the CAP_AUDIT_CONTROL and CAP_AUDIT_WRITE capabilities
+(but uses CAP_NET_ADMIN).  The CAP_AUDIT_READ capability will be added for use
+by read-only AUDIT_NLGRP_READLOG multicast group clients to the kaudit
+subsystem.  This will remove the dependence on CAP_NET_ADMIN for the multicast
+read-only socket.
 
-diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
-index 7e8d229..92f4b69 100644
---- a/net/netlink/af_netlink.c
-+++ b/net/netlink/af_netlink.c
-@@ -2129,7 +2129,7 @@ static int netlink_setsockopt(struct socket *sock, int level, int optname,
- 			return err;
- 		if (!val || val - 1 >= nlk->ngroups)
- 			return -EINVAL;
--		if (nlk->netlink_bind) {
-+		if (optname == NETLINK_ADD_MEMBERSHIP && nlk->netlink_bind) {
- 			err = nlk->netlink_bind(val);
- 			if (err)
- 				return err;
-@@ -2138,6 +2138,8 @@ static int netlink_setsockopt(struct socket *sock, int level, int optname,
- 		netlink_update_socket_mc(nlk, val,
- 					 optname == NETLINK_ADD_MEMBERSHIP);
- 		netlink_table_ungrab();
-+		if (optname == NETLINK_DROP_MEMBERSHIP && nlk->netlink_unbind)
-+			nlk->netlink_unbind(val);
- 
- 		err = 0;
- 		break;
--- 
-1.7.1
+
+Patches 1-3 provide a way for per-protocol bind functions to
+signal an error and to be able to clean up after themselves.
+
+The first netfilter cleanup patch has already been accepted by a netfilter
+maintainer, though I don't see it upstream yet, so it is included for
+completeness.
+
+The second patch adds the per-protocol bind function return code to signal to
+the netlink code that no further processing should be done and to undo the work
+already done.
+V1: This rev fixes a bug introduced by flattening the code in the last posting.
+*V2: This rev moves the per-protocol bind call above the socket exposure call
+and refactors out the unbind procedure.
+
+The third provides a way per protocol to undo bind actions on DROP.
+
+
+Patches 4-6 implement the audit multicast socket with capability checking.
+
+The fourth patch adds the bind function capability check to multicast join
+requests for audit.
+
+The fifth patch adds the audit log read multicast group.  An assumption has
+been made that systemd/journald reside in the initial network namespace.  This
+could be changed to check the actual network namespace of systemd/journald
+should this assumption no longer be true since audit now supports all network
+namespaces.  This version of the patch now directly sends the broadcast when
+the packet is ready rather than waiting until it passes the queue.
+
+The sixth checks if any clients actually exist before sending.
+
+
+Since the net tree is busier than the audit tree, conflicts are more likely and
+the audit patches depend on the net patches, it is proposed to have the net
+tree carry this entire patchset for 3.16.  Are the net maintainers ok with this?
+
+
+https://bugzilla.redhat.com/show_bug.cgi?id=887992 
+
+First posted:   https://www.redhat.com/archives/linux-audit/2013-January/msg00008.html
+                https://lkml.org/lkml/2013/1/27/279
+
+Please find source for a test program at: 
+	http://people.redhat.com/rbriggs/audit-multicast-listen/
+
+
+Richard Guy Briggs (6):
+  netlink: simplify nfnetlink_bind
+  netlink: have netlink per-protocol bind function return an error
+    code.
+  netlink: implement unbind to netlink_setsockopt
+    NETLINK_DROP_MEMBERSHIP
+  audit: add netlink audit protocol bind to check capabilities on
+    multicast join
+  audit: add netlink multicast group for log read
+  audit: send multicast messages only if there are listeners
+
+ include/linux/netlink.h             |    3 +-
+ include/uapi/linux/audit.h          |    8 ++++
+ include/uapi/linux/capability.h     |    7 +++-
+ kernel/audit.c                      |   64 ++++++++++++++++++++++++++++++--
+ net/netfilter/nfnetlink.c           |   10 ++---
+ net/netlink/af_netlink.c            |   70 +++++++++++++++++++++++++----------
+ net/netlink/af_netlink.h            |    6 ++-
+ security/selinux/include/classmap.h |    2 +-
+ 8 files changed, 135 insertions(+), 35 deletions(-)
 
