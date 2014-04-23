@@ -1,106 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753971AbaDWGWt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 02:22:49 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:17244 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752773AbaDWGWq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 02:22:46 -0400
-X-AuditID: cbfee690-b7fcd6d0000026e0-6c-53575c350da8
-From: Seungwon Jeon <tgih.jun@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Jaehoon Chung'" <jh80.chung@samsung.com>
-Cc: yuvaraj.cd@samsung.com, "'Alim Akhtar'" <alim.akhtar@samsung.com>,
-        "'Sonny Rao'" <sonnyrao@chromium.org>,
-        linux-samsung-soc@vger.kernel.org, chris@printf.net,
-        ulf.hansson@linaro.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1398210681-22976-1-git-send-email-dianders@chromium.org>
-In-reply-to: <1398210681-22976-1-git-send-email-dianders@chromium.org>
-Subject: RE: [PATCH] mmc: dw_mmc: Don't print data errors
-Date: Wed, 23 Apr 2014 15:22:44 +0900
-Message-id: <000201cf5ebc$70213200$50639600$%jun@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ks_c_5601-1987
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9ehe+RuOPv4XJqQQuiGIdShOq36wANEp0w
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLIsWRmVeSWpSXmKPExsVy+t8zfV3TmPBggwVTuC0ezNvGZjHh8nZG
-	i7PLDrJZ3PjVxmpxedccNosj//sZLWac38dk8eTMTEaL42vDLc6eKnfg8pjdcJHF4861PWwe
-	N14tZPLo27KK0ePzJrkA1igum5TUnMyy1CJ9uwSujNe79rIWnOOu6Po+h6mBcSVnFyMnh4SA
-	icSePV9YIWwxiQv31rN1MXJxCAksY5S48/kGM0zRz4N7mCES0xkldnWugar6wyix590JJpAq
-	NgEtib9v3gBVcXCICIRL7L2pAlLDLPCFUWLq/ftgk4QEXCV+vv3BCFLDKeAm8XmbNIgpLGAp
-	0dFWAlLBIqAqcerdH0YQm1fAVuLn+dVQtqDEj8n3WEBsZgEDifez+lghbHmJzWvegm2VEFCX
-	ePRXFyQsImAkse7kAXaIEhGJfS/eMYJcIyHQyCGxdN0+VohdAhLfJh9igeiVldh0AOpdSYmD
-	K26wTGCUmIVk8ywkm2ch2TwLyYoFjCyrGEVTC5ILipPSi0z0ihNzi0vz0vWS83M3MUKiesIO
-	xnsHrA8xJgOtn8gsJZqcD0wKeSXxhsZmRhamJqbGRuaWZqQJK4nzqj1KChISSE8sSc1OTS1I
-	LYovKs1JLT7EyMTBKdXA6BahXqPsc8Jh0iqN3rUVPZE2q8RjTk29cidz3uNpNjZzG9zWaj/Z
-	fc/MOyWtu/Xkhpszn3h4Lz/Ndq2CPXzbwpXLtSc6yO5hPfrc1azAYUfo0U2h3Bdc9zz7KMId
-	8/q5mIRh4M83s9SeHqz/feZDrfY6Zb4tVa0LfBZfberkv21y89iV0o1PQpVYijMSDbWYi4oT
-	Ae1HcCsAAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t9jQV3TmPBgg1tL2CwezNvGZjHh8nZG
-	i7PLDrJZ3PjVxmpxedccNosj//sZLWac38dk8eTMTEaL42vDLc6eKnfg8pjdcJHF4861PWwe
-	N14tZPLo27KK0ePzJrkA1qgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8
-	xNxUWyUXnwBdt8wcoKOUFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYR1jBmv
-	d+1lLTjHXdH1fQ5TA+NKzi5GTg4JAROJnwf3MEPYYhIX7q1n62Lk4hASmM4osatzDZTzh1Fi
-	z7sTTCBVbAJaEn/fvAHq4OAQEQiX2HtTBaSGWeALo8TU+/fBJgkJuEr8fPuDEaSGU8BN4vM2
-	aRBTWMBSoqOtBKSCRUBV4tS7P4wgNq+ArcTP86uhbEGJH5PvsYDYzAIGEu9n9bFC2PISm9e8
-	BdsqIaAu8eivLkhYRMBIYt3JA+wQJSIS+168Y5zAKDQLyaRZSCbNQjJpFpKWBYwsqxhFUwuS
-	C4qT0nMN9YoTc4tL89L1kvNzNzGCU8YzqR2MKxssDjEKcDAq8fAWrAwLFmJNLCuuzD3EKMHB
-	rCTCO/MjUIg3JbGyKrUoP76oNCe1+BBjMtCjE5mlRJPzgeksryTe0NjEzMjSyMzCyMTcnDRh
-	JXHeA63WgUIC6YklqdmpqQWpRTBbmDg4pRoY1xx3SBTVj/qk6xO7+M8S02vz/F7+OC53Omhu
-	TJLA59OK5Tot12bEPr5dIVVRmXo48djWCmPrpAi7N1cy5pZffS04qZhtfvp5yZ6088+3ra47
-	kPROmkPtHI/c1VdLqjjLLq7YxNHpfPyS26JIO9ZpC5rXzd/nn8IRaXrSa2Gf6ob5AZq90duK
-	lViKMxINtZiLihMB/mM+dl0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753891AbaDWGZE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 02:25:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60545 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752865AbaDWGZB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 02:25:01 -0400
+Message-ID: <53575C84.6080801@zytor.com>
+Date: Tue, 22 Apr 2014 23:24:04 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Lutomirski <amluto@gmail.com>
+CC: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>	<5355A9E9.9070102@zytor.com>	<CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>	<1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com>	<CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>	<a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com>	<CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>	<ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com>	<CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>	<20140422112312.GB15882@pd.tnic>	<20140422144659.GF15882@pd.tnic>	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>	<53569467.1030809@zytor.com>	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>	<CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>	<CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com> <CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gma!
+ il.com>
+In-Reply-To: <CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, April 23, 2014, Doug Anderson wrote:
-> Data errors are completely expected during tuning.  Printing them out
-> is confusing people looking at the kernel logs.  They see things like:
-> 
->  [    3.613296] dwmmc_exynos 12200000.dwmmc0: data error, status 0x00000088
-> 
-> ...and they think something is wrong with their hardware.
-> 
-> Remove the printouts.  We'll leave it up to a higher level to report
-> about errors.
-Yes, your saying makes sense.
-But in normal I/O, actual error information such as status below is useful, isn't it?
+On 04/22/2014 10:04 AM, Linus Torvalds wrote:
+>
+> The segment table is shared for a process. So you can have one thread
+> doing a load_ldt() that invalidates a segment, while another thread is
+> busy taking a page fault. The segment was valid at page fault time and
+> is saved on the kernel stack, but by the time the page fault returns,
+> it is no longer valid and the iretq will fault.
+>
+> Anyway, if done correctly, this whole espfix should be totally free
+> for normal processes, since it should only trigger if SS is a LDT
+> entry (bit #2 set in the segment descriptor). So the normal fast-path
+> should just have a simple test for that.
+>
+> And if you have a SS that is a descriptor in the LDT, nobody cares
+> about performance any more.
+>
 
-Thanks,
-Seungwon Jeon
+I just realized that with the LDT being a process-level object (unlike 
+the GDT), we need to remove the filtering on the espfix hack, both for 
+32-bit and 64-bit kernels.  Otherwise there is a race condition between 
+executing the LAR instruction in the filter and the IRET, which could 
+allow the leak to become manifest.
 
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
->  drivers/mmc/host/dw_mmc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index cced599..4c8d423 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -1248,7 +1248,7 @@ static int dw_mci_data_complete(struct dw_mci *host, struct mmc_data *data)
->  			data->error = -EIO;
->  		}
-> 
-> -		dev_err(host->dev, "data error, status 0x%08x\n", status);
-> +		dev_dbg(host->dev, "data error, status 0x%08x\n", status);
-> 
->  		/*
->  		 * After an error, there may be data lingering
-> --
-> 1.9.1.423.g4596e3a
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The "good" part is that I think the espfix hack is harmless even with a 
+32/64-bit stack segment, although it has a substantial performance penalty.
+
+Does anyone have any idea if there is a real use case for non-16-bit LDT 
+segments used as the stack segment?  Does Wine use anything like that?
+
+Very old NPTL Linux binaries use LDT segments, but only for data segments.
+
+	-hpa
+
 
