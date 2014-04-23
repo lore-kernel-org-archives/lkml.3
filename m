@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008AbaDWOFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:05:13 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:58610 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756215AbaDWOFJ (ORCPT
+	id S932073AbaDWOFa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:05:30 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:45571 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753193AbaDWOFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:05:09 -0400
-MIME-Version: 1.0
-In-Reply-To: <5357C4BE.3050606@monstr.eu>
-References: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
-	<1398215901-25609-19-git-send-email-robherring2@gmail.com>
-	<5357C4BE.3050606@monstr.eu>
-Date: Wed, 23 Apr 2014 09:05:07 -0500
-Message-ID: <CAL_JsqKg8oAd+JmmhERa3Xb1dD9CPz1_cVM3mb=ypWhxkZJHtQ@mail.gmail.com>
-Subject: Re: [PATCH v2 18/21] powerpc: use libfdt accessors for header data
-From: Rob Herring <robherring2@gmail.com>
-To: Michal Simek <monstr@monstr.eu>
-Cc: Grant Likely <grant.likely@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 Apr 2014 10:05:21 -0400
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [RFC] driver-core: Remove dummy 'platform_bus'
+To: Rob Herring <robherring2@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kay Sievers <kay.sievers@vrfy.org>
+In-Reply-To: <CAL_JsqJFM1e2Y7GykK06KuZ8fD8iZ=64W1i+tqibJ9datCUR0Q@mail.gmail.com>
+References: <1353509071-8658-1-git-send-email-grant.likely@secretlab.ca>
+	<CAL_JsqJFM1e2Y7GykK06KuZ8fD8iZ=64W1i+tqibJ9datCUR0Q@mail.gmail.com>
+Date: Wed, 23 Apr 2014 15:05:08 +0100
+Message-Id: <20140423140508.2575AC408D2@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 8:48 AM, Michal Simek <monstr@monstr.eu> wrote:
-> On 04/23/2014 03:18 AM, Rob Herring wrote:
->> From: Rob Herring <robh@kernel.org>
->>
->> With libfdt support, we can take advantage of helper accessors in libfdt
->> for accessing the FDT header data. This makes the code more readable and
->> makes the FDT blob structure more opaque to the kernel. This also
->> prepares for removing struct boot_param_header completely.
+On Mon, 21 Apr 2014 16:05:29 -0500, Rob Herring <robherring2@gmail.com> wrote:
+> On Wed, Nov 21, 2012 at 8:44 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> > The "platform_bus" (note: not platform_bus_type) only exists as an empty
+> > directory to put platform devices into. However, it really doesn't make
+> > sense to segregate all the platform devices into a sub directory when
+> > typically they are memory mapped devices that doen't go through any
+> > particular bus. Particularly on embedded type platforms the platform_bus
+> > directory doesn't add anything.
+> >
+> > However, this will probably just end up breaking some userspace that
+> > depends on the /sys/devices/platform/ path to be present (no matter how
+> > much we protest that userspace must not depend on paths in sysfs). So
+> > while I'm seriously proposing this change, it may just be unacceptable
+> > ABI breakage
+> 
+> An old thread, but was there ever a conclusion to this? We now have a
+> mixture of using platform_bus as the parent or not on various ARM
+> platforms.
 
-[...]
+We kind of concluded in the opposite direction. Instead of removing the
+/sys/device/platform directory, the drivers/of code should be changed to
+use it.
 
->> @@ -117,14 +118,14 @@ static void __init move_device_tree(void)
->>       DBG("-> move_device_tree\n");
->>
->>       start = __pa(initial_boot_params);
->> -     size = be32_to_cpu(initial_boot_params->totalsize);
->> +     size = fdt_totalsize(initial_boot_params);
->
-> In 19/21 you use your newly introduced of_get_flat_dt_size()
-> that's why I expect you will use it here too.
-> size = of_get_flat_dt_size();
->
-> The same is for 14/21 where you can use this new function too.
-> It means moving 14/21 to the end and using this new function
-> makes more sense.
+The following patch is sufficient to have the same effect. It doesn't
+unify the OF and non-OF paths of platform device addition, but it gets
+them closer. I've been nervous about applying it because I'm concerned
+about userspace breakage, but maybe it just needs to be merged and we
+can quirk out systems that break.
 
-Really, I would prefer to just use libfdt accessors directly rather
-than have wrappers, but including libfdt.h is not the cleanest
-solution. Since x86 just needed this one function, I added a wrapper.
-Since PPC needs other header fields I prefer to use the libfdt
-accessors directly for all fields. The same goes for drivers/of/fdt.c.
+---
 
-Rob
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 404d1daebefa..40a85b85c932 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -175,7 +175,7 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ #if defined(CONFIG_MICROBLAZE)
+ 	dev->dev.dma_mask = &dev->archdata.dma_mask;
+ #endif
+-	dev->dev.parent = parent;
++	dev->dev.parent = parent ? parent : &platform_bus;
+ 
+ 	if (bus_id)
+ 		dev_set_name(&dev->dev, "%s", bus_id);
+
