@@ -1,148 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752324AbaDWLOF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 07:14:05 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:51054 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751047AbaDWLOB (ORCPT
+	id S1752553AbaDWLOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 07:14:20 -0400
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:55210 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375AbaDWLOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 07:14:01 -0400
+	Wed, 23 Apr 2014 07:14:09 -0400
 MIME-Version: 1.0
-In-Reply-To: <00d201cf5ee2$d55c4e90$8014ebb0$%tikhomirov@samsung.com>
-References: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
-	<1398082604-3013-3-git-send-email-gautam.vivek@samsung.com>
-	<00bf01cf5ed6$28de18d0$7a9a4a70$%tikhomirov@samsung.com>
-	<CAFp+6iE2eWJPMmxSF9gbfwMmeO7k0bo=geo5SKmdgBRjiFq7mA@mail.gmail.com>
-	<00d201cf5ee2$d55c4e90$8014ebb0$%tikhomirov@samsung.com>
-Date: Wed, 23 Apr 2014 16:36:29 +0530
-X-Google-Sender-Auth: TCPlsDZS3X1tT3_gQ62MvzgIt9U
-Message-ID: <CAFp+6iGBz-0LjkUU8A4var5frEqaumF85scZfHPEVwk62mTe8g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] usb: dwc3-exynos: Make provision for vdd regulators
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Anton Tikhomirov <av.tikhomirov@samsung.com>
-Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
+In-Reply-To: <20140423104528.GD30036@e106331-lin.cambridge.arm.com>
+References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
+	<1397756521-29387-4-git-send-email-leif.lindholm@linaro.org>
+	<CAMuHMdXBNWum7UJ95uT2hwTd1b5C8ebF2LQ4T-A+RS80p7MH=A@mail.gmail.com>
+	<20140418125924.GF5904@bivouac.eciton.net>
+	<20140422133515.E7A0BC40754@trevor.secretlab.ca>
+	<20140423104528.GD30036@e106331-lin.cambridge.arm.com>
+Date: Wed, 23 Apr 2014 13:14:07 +0200
+X-Google-Sender-Auth: QWJd-GsSQlTOGyK0ITFjqUj1KN4
+Message-ID: <CAMuHMdW80dm0smxt84b+qcwPuRkvXpCHxAYyhcLWETWCEQ5Xcg@mail.gmail.com>
+Subject: Re: [PATCH 3/3] of: Handle memory@0 node on PPC32 only
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Grant Likely <grant.likely@linaro.org>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
+        "patches@linaro.org" <patches@linaro.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Rob Herring <robherring2@gmail.com>, Lee Jones <lee.jones@linaro.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Mark,
 
+On Wed, Apr 23, 2014 at 12:45 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> Does anyone have a LongTrail DT to hand, and if so does the root have a
+> compatible string? From grepping through the kernel I could only find a
+> model string ("IBM,LongTrail").
 
-On Wed, Apr 23, 2014 at 4:27 PM, Anton Tikhomirov
-<av.tikhomirov@samsung.com> wrote:
-> Hi,
->
->> Hi Anton,
->>
->>
->> On Wed, Apr 23, 2014 at 2:56 PM, Anton Tikhomirov
->> <av.tikhomirov@samsung.com> wrote:
->> > Hello,
->> >
->> >> -----Original Message-----
->> >> From: Vivek Gautam [mailto:gautamvivek1987@gmail.com] On Behalf Of
->> >> Vivek Gautam
->> >> Sent: Monday, April 21, 2014 9:17 PM
->> >> To: linux-usb@vger.kernel.org; linux-samsung-soc@vger.kernel.org
->> >> Cc: linux-kernel@vger.kernel.org; linux-omap@vger.kernel.org; linux-
->> >> arm-kernel@lists.infradead.org; gregkh@linuxfoundation.org;
->> >> stern@rowland.harvard.edu; balbi@ti.com; kgene.kim@samsung.com;
->> Vivek
->> >> Gautam; Anton Tikhomirov
->> >> Subject: [PATCH 3/3] usb: dwc3-exynos: Make provision for vdd
->> >> regulators
->> >>
->> >> Facilitate getting required 3.3V and 1.0V VDD supply for
->> >> DWC3 controller on Exynos.
->> >>
->> >> With patches for regulators' nodes merged in 3.15:
->> >> c8c253f ARM: dts: Add regulator entries to smdk5420
->> >> 275dcd2 ARM: dts: add max77686 pmic node for smdk5250,
->> >>
->> >> certain perripherals will now need to ensure that,
->> >> they request VDD regulators in their drivers, and enable
->> >> them so as to make them working.
->> >>
->> >> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> >> Cc: Anton Tikhomirov <av.tikhomirov@samsung.com>
->> >> ---
->> >>
->> >> Based on 'usb-next' branch of Greg's USB tree.
->> >> Also cleanly applies on 'next' branch of Balbi's USB tree.
->> >>
->> >>  drivers/usb/dwc3/dwc3-exynos.c |   51
->> >> ++++++++++++++++++++++++++++++++++++++--
->> >>  1 file changed, 49 insertions(+), 2 deletions(-)
->> >>
->> >> diff --git a/drivers/usb/dwc3/dwc3-exynos.c b/drivers/usb/dwc3/dwc3-
->> >> exynos.c
->> >> index 28c8ad7..c9d9102 100644
->> >> --- a/drivers/usb/dwc3/dwc3-exynos.c
->> >> +++ b/drivers/usb/dwc3/dwc3-exynos.c
->> >> @@ -27,6 +27,7 @@
->> >>  #include <linux/usb/usb_phy_gen_xceiv.h>
->> >>  #include <linux/of.h>
->> >>  #include <linux/of_platform.h>
->> >> +#include <linux/regulator/consumer.h>
->> >>
->> >>  struct dwc3_exynos {
->> >>       struct platform_device  *usb2_phy;
->> >> @@ -34,6 +35,8 @@ struct dwc3_exynos {
->> >>       struct device           *dev;
->> >>
->> >>       struct clk              *clk;
->> >> +     struct regulator        *vdd33;
->> >> +     struct regulator        *vdd10;
->> >>  };
->> >>
->> >>  static int dwc3_exynos_register_phys(struct dwc3_exynos *exynos)
->> >> @@ -144,20 +147,46 @@ static int dwc3_exynos_probe(struct
->> >> platform_device *pdev)
->> >>
->> >>       clk_prepare_enable(exynos->clk);
->> >>
->> >> +     exynos->vdd33 = devm_regulator_get(dev, "vdd33");
->> >> +     if (IS_ERR(exynos->vdd33)) {
->> >> +             ret = PTR_ERR(exynos->vdd33);
->> >> +             goto err2;
->> >
->> > Is regulator property mandatory for dwc3-exynos? If it is not
->> > and device tree doesn't provide it, dwc3-exynos driver probe
->> shouldn't
->> > fail here.
->>
->> These are the VDD regulators (from PMIC ldo supplies), in absence of
->> which the controller will not be powered up.
->> So doesn't it make sense to stop the probe when these are not supplied
->> by device tree ?
->
-> Agree. Just curious, is there special reason for this change except making
-> things right?
+It's compatible with "prep":
 
-Yea, actually after the patch (which got merged in 3.15 rc1)
-275dcd2 ARM: dts: add max77686 pmic node for smdk5250,
+http://users.telenet.be/geertu/Linux/PPC/root.html
 
-the USB stops working, and that's because the regulators related to
-usb are not turned on by default (ldo12 and ldo15 to be specific).
-So we need to enable those regulators, which ofcourse the driver
-should be doing, if i am not wrong.
-Similar is the reason for EHCI, and OHCI exynos patches in this series.
+Full tree at:
 
-I shall be sending the dt patch for this soon.
+http://users.telenet.be/geertu/Linux/PPC/DeviceTree.html
 
+Sorry, the HTML version is all I still have.
 
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
