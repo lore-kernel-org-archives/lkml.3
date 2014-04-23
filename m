@@ -1,74 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932617AbaDWU4K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 16:56:10 -0400
-Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:31825 "EHLO
-	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1422633AbaDWU4B convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 16:56:01 -0400
-From: Bing Zhao <bzhao@marvell.com>
-To: Jan Moskyto Matejka <mq@suse.cz>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 23 Apr 2014 13:55:52 -0700
-Subject: RE: [PATCH][linux-next] wireless: fixed bad dev_info integer type
- warning
-Thread-Topic: [PATCH][linux-next] wireless: fixed bad dev_info integer type
- warning
-Thread-Index: Ac9e9AyGivhrEGk3SC+xVEDv4sQ/7AAQjeBA
-Message-ID: <477F20668A386D41ADCC57781B1F70430F70A2A9C3@SC-VEXCH1.marvell.com>
-References: <1398258039-20512-1-git-send-email-mq@suse.cz>
-In-Reply-To: <1398258039-20512-1-git-send-email-mq@suse.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	id S932640AbaDWU4w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 16:56:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59351 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1422655AbaDWU4I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 16:56:08 -0400
+Date: Wed, 23 Apr 2014 13:56:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 2/8] printk: Release lockbuf_lock before calling
+ console_trylock_for_printk()
+Message-Id: <20140423135606.d727fe5eb38bd8805ad3a5c3@linux-foundation.org>
+In-Reply-To: <1395770101-24534-3-git-send-email-jack@suse.cz>
+References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+	<1395770101-24534-3-git-send-email-jack@suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
- definitions=2014-04-23_04:2014-04-23,2014-04-23,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=0
- phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
- scancount=1 engine=7.0.1-1402240000 definitions=main-1404230312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jan,
+On Tue, 25 Mar 2014 18:54:55 +0100 Jan Kara <jack@suse.cz> wrote:
 
-Thanks for the patch.
-
-> The pointer difference (ptrdiff_t) should be formatted by %tx, not %lx.
+> There's no reason to hold lockbuf_lock when entering
+> console_trylock_for_printk(). The first thing this function does is
+> calling down_trylock(console_sem) and if that fails it immediately
+> unlocks lockbuf_lock. So lockbuf_lock isn't needed for that branch.
+> When down_trylock() succeeds, the rest of console_trylock() is OK
+> without lockbuf_lock (it is called without it from other places), and
+> the only remaining thing in console_trylock_for_printk() is
+> can_use_console() call. For that call console_sem is enough (it
+> iterates all consoles and checks CON_ANYTIME flag).
 > 
-> Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
-
-Acked-by: Bing Zhao <bzhao@marvell.com>
-
-Regards,
-Bing
-
-> ---
->  drivers/net/wireless/mwifiex/pcie.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> So we drop logbuf_lock before entering console_trylock_for_printk()
+> which simplifies the code.
 > 
-> diff --git a/drivers/net/wireless/mwifiex/pcie.c b/drivers/net/wireless/mwifiex/pcie.c
-> index 9c1f427..e04141a 100644
-> --- a/drivers/net/wireless/mwifiex/pcie.c
-> +++ b/drivers/net/wireless/mwifiex/pcie.c
-> @@ -2321,7 +2321,7 @@ static void mwifiex_pcie_fw_dump_work(struct work_struct *work)
->  			if (stat != RDWR_STATUS_DONE)
->  				continue;
-> 
-> -			dev_info(adapter->dev, "%s done: size=0x%lx\n",
-> +			dev_info(adapter->dev, "%s done: size=0x%tx\n",
->  				 entry->mem_name, dbg_ptr - entry->mem_ptr);
->  			memset(filename, 0, sizeof(filename));
->  			memcpy(filename, name_prefix, strlen(name_prefix));
-> --
-> 1.8.4.5
+
+I suppose we should document have_callable_console()'s locking
+requirements, and I don't think that "early in boot" part is true?
+
+--- a/kernel/printk/printk.c~printk-release-lockbuf_lock-before-calling-console_trylock_for_printk-fix
++++ a/kernel/printk/printk.c
+@@ -1377,7 +1377,9 @@ static void zap_locks(void)
+ 	sema_init(&console_sem, 1);
+ }
+ 
+-/* Check if we have any console registered that can be called early in boot. */
++/*
++ * Check if we have any console registered.  Requires console_sem.
++ */
+ static int have_callable_console(void)
+ {
+ 	struct console *con;
+_
 
