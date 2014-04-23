@@ -1,193 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757636AbaDWPyn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:54:43 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59102 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755983AbaDWPvZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:51:25 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, linus.walleij@linaro.org
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 7/7] ARM: dts: berlin: add the pinctrl node and muxing setup for uarts
-Date: Wed, 23 Apr 2014 17:51:16 +0200
-Message-Id: <1398268276-9696-8-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com>
+	id S1757689AbaDWPzE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:55:04 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39812 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755598AbaDWPy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:54:58 -0400
+Message-ID: <5357E214.6050501@zytor.com>
+Date: Wed, 23 Apr 2014 08:53:56 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+CC: Andrew Lutomirski <amluto@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>	<CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>	<a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com>	<CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>	<ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com>	<CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>	<20140422112312.GB15882@pd.tnic>	<20140422144659.GF15882@pd.tnic>	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>	<53569467.1030809@zytor.com>	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>	<CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>	<CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>	<CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com>	<CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com>	<5356A3B6.5050901@zytor.com> <20140423105411.2e166dd8@alan.etchedpixels.co.uk>
+In-Reply-To: <20140423105411.2e166dd8@alan.etchedpixels.co.uk>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The uart0 pinmux configuration is in the dtsi because uart0 will always
-use uart0-pmux to work, no other possibility. Same thing for uart1.
+On 04/23/2014 02:54 AM, One Thousand Gnomes wrote:
+>> Ideally the tests should be doable such that on a normal machine the
+>> tests can be overlapped with the other things we have to do on that
+>> path.  The exit branch will be strongly predicted in the negative
+>> direction, so it shouldn't be a significant problem.
+>>
+>> Again, this is not the case in the current prototype.
+> 
+> Or you make sure that you switch to those code paths only after software
+> has executed syscalls that make it possible it will use a 16bit ss. 
+> 
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
----
- arch/arm/boot/dts/berlin2.dtsi   | 24 ++++++++++++++++++++++++
- arch/arm/boot/dts/berlin2cd.dtsi | 17 +++++++++++++++++
- arch/arm/boot/dts/berlin2q.dtsi  | 24 ++++++++++++++++++++++++
- 3 files changed, 65 insertions(+)
+Which, again, would introduce a race, I believe, at least if we have an
+LDT at all (and since we only enter these code paths for LDT descriptors
+in the first place, it is equivalent to the current code minus the filters.)
 
-diff --git a/arch/arm/boot/dts/berlin2.dtsi b/arch/arm/boot/dts/berlin2.dtsi
-index 56a1af2f1052..9a13891c38a3 100644
---- a/arch/arm/boot/dts/berlin2.dtsi
-+++ b/arch/arm/boot/dts/berlin2.dtsi
-@@ -176,6 +176,11 @@
- 			};
- 		};
- 
-+		soc_pinctrl: pin-controller@ea0000 {
-+			compatible = "marvell,berlin2-soc-pinctrl";
-+			reg = <0xea0000 0x4c>;
-+		};
-+
- 		apb@fc0000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
-@@ -184,6 +189,21 @@
- 			ranges = <0 0xfc0000 0x10000>;
- 			interrupt-parent = <&sic>;
- 
-+			sm_pinctrl: pin-controller@0000 {
-+				compatible = "marvell,berlin2-sysmgr-pinctrl";
-+				reg = <0x0000 0x44>;
-+
-+				uart0_pmux: uart0-pmux {
-+					marvell,groups = "GSM4";
-+					marvell,function = "uart0";
-+				};
-+
-+				uart1_pmux: uart1-pmux {
-+					marvell,groups = "GSM5";
-+					marvell,function = "uart1";
-+				};
-+			};
-+
- 			uart0: serial@9000 {
- 				compatible = "snps,dw-apb-uart";
- 				reg = <0x9000 0x100>;
-@@ -191,6 +211,8 @@
- 				reg-io-width = <1>;
- 				interrupts = <8>;
- 				clocks = <&smclk>;
-+				pinctrl-0 = <&uart0_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
- 
-@@ -201,6 +223,8 @@
- 				reg-io-width = <1>;
- 				interrupts = <9>;
- 				clocks = <&smclk>;
-+				pinctrl-0 = <&uart1_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
- 
-diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
-index 094968c27533..a802d3fe5da6 100644
---- a/arch/arm/boot/dts/berlin2cd.dtsi
-+++ b/arch/arm/boot/dts/berlin2cd.dtsi
-@@ -169,6 +169,11 @@
- 			};
- 		};
- 
-+		soc_pinctrl: pin-controller@ae0000 {
-+			compatible = "marvell,berlin2cd-soc-pinctrl";
-+			reg = <0xea0000 0x4c>;
-+		};
-+
- 		apb@fc0000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
-@@ -177,6 +182,16 @@
- 			ranges = <0 0xfc0000 0x10000>;
- 			interrupt-parent = <&sic>;
- 
-+			sm_pinctrl: pin-controller@0000 {
-+				compatible = "marvell,berlin2cd-sysmgr-pinctrl";
-+				reg = <0x0000 0x44>;
-+
-+				uart0_pmux: uart0-pmux {
-+					marvell,groups = "G6";
-+					marvell,function = "uart0";
-+				};
-+			};
-+
- 			uart0: serial@9000 {
- 				compatible = "snps,dw-apb-uart";
- 				reg = <0x9000 0x100>;
-@@ -184,6 +199,8 @@
- 				reg-io-width = <1>;
- 				interrupts = <8>;
- 				clocks = <&smclk>;
-+				pinctrl-0 = <&uart0_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
- 
-diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-index 07452a7483fa..734debbf072f 100644
---- a/arch/arm/boot/dts/berlin2q.dtsi
-+++ b/arch/arm/boot/dts/berlin2q.dtsi
-@@ -183,6 +183,11 @@
- 			};
- 		};
- 
-+		soc_pinctrl: pin-controller@ea0000 {
-+			compatible = "marvell,berlin2q-soc-pinctrl";
-+			reg = <0xea0000 0x4c>;
-+		};
-+
- 		apb@fc0000 {
- 			compatible = "simple-bus";
- 			#address-cells = <1>;
-@@ -198,6 +203,8 @@
- 				interrupts = <8>;
- 				clocks = <&smclk>;
- 				reg-shift = <2>;
-+				pinctrl-0 = <&uart0_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
- 
-@@ -208,9 +215,26 @@
- 				interrupts = <9>;
- 				clocks = <&smclk>;
- 				reg-shift = <2>;
-+				pinctrl-0 = <&uart1_pmux>;
-+				pinctrl-names = "default";
- 				status = "disabled";
- 			};
- 
-+			sm_pinctrl: pin-controller@d000 {
-+				compatible = "marvell,berlin2q-sysmgr-pinctrl";
-+				reg = <0xd000 0x44>;
-+
-+				uart0_pmux: uart0-pmux {
-+					marvell,groups = "GSM12";
-+					marvell,function = "uart0";
-+				};
-+
-+				uart1_pmux: uart1-pmux {
-+					marvell,groups = "GSM14";
-+					marvell,function = "uart1";
-+				};
-+			};
-+
- 			sic: interrupt-controller@e000 {
- 				compatible = "snps,dw-apb-ictl";
- 				reg = <0xe000 0x30>;
--- 
-1.8.3.2
+> The other question I have is - is there any reason we can't fix up the
+> IRET to do a 32bit return into a vsyscall type userspace page which then
+> does a long jump or retf to the right place ?
+
+I did a writeup on this a while ago.  It does have the problem that you
+need additional memory in userspace, which is per-thread and in the
+right region of userspace; this pretty much means you have to muck about
+with the user space stack when user space is running in weird modes.
+This gets complex very quickly and does have some "footprint".
+Furthermore, on some CPUs (not including any recent Intel CPUs) there is
+still a way to leak bits [63:32].  I believe the in-kernel solution is
+actually simpler.
+
+	-hpa
+
 
