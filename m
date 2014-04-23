@@ -1,166 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972AbaDWT6j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 15:58:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30927 "EHLO mx1.redhat.com"
+	id S1758003AbaDWT7F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 15:59:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36493 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757863AbaDWT6h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 15:58:37 -0400
-From: Eric Paris <eparis@redhat.com>
-To: eparis@redhat.com
-Cc: Richard Guy Briggs <rgb@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org, linux-audit@redhat.com
-Subject: [PATCH] audit: x86: drop arch from __audit_syscall_entry() interface
-Date: Wed, 23 Apr 2014 15:58:24 -0400
-Message-Id: <1398283104-29185-1-git-send-email-eparis@redhat.com>
+	id S1757462AbaDWT7A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 15:59:00 -0400
+Date: Wed, 23 Apr 2014 16:58:32 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Nadav Amit <nadav.amit@gmail.com>
+Cc: Gleb Natapov <gleb@kernel.org>, Nadav Amit <namit@cs.technion.ac.il>,
+        pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] KVM: x86: RSI/RDI/RCX are zero-extended when
+ affected by string ops
+Message-ID: <20140423195832.GA32528@amt.cnet>
+References: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il>
+ <1397794294-8414-1-git-send-email-namit@cs.technion.ac.il>
+ <20140420092646.GB30377@minantech.com>
+ <5356067D.40003@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5356067D.40003@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Guy Briggs <rgb@redhat.com>
+On Tue, Apr 22, 2014 at 09:04:45AM +0300, Nadav Amit wrote:
+> Gleb,
+> 
+> On 4/20/14, 12:26 PM, Gleb Natapov wrote:
+> >On Fri, Apr 18, 2014 at 07:11:33AM +0300, Nadav Amit wrote:
+> >>When using address-size override prefix with string instructions in long-mode,
+> >>ESI/EDI/ECX are zero extended if they are affected by the instruction
+> >>(incremented/decremented).  Currently, the KVM emulator does not do so.
+> >>
+> >>In addition, although it is not well-documented, when address override prefix
+> >>is used with REP-string instruction, RCX high half is zeroed even if ECX was
+> >>zero on the first iteration. Therefore, the emulator should clear the upper
+> >>part of RCX in this case, as x86 CPUs do.
+> >>
+> >>Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+> >>---
+> >>:100644 100644 69e2636... a69ed67... M	arch/x86/kvm/emulate.c
+> >>  arch/x86/kvm/emulate.c |    4 ++++
+> >>  1 file changed, 4 insertions(+)
+> >>
+> >>diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+> >>index 69e2636..a69ed67 100644
+> >>--- a/arch/x86/kvm/emulate.c
+> >>+++ b/arch/x86/kvm/emulate.c
+> >>@@ -491,6 +491,8 @@ register_address_increment(struct x86_emulate_ctxt *ctxt, unsigned long *reg, in
+> >>  	else
+> >>  		mask = ad_mask(ctxt);
+> >>  	masked_increment(reg, mask, inc);
+> >>+	if (ctxt->ad_bytes == 4)
+> >>+		*reg &= 0xffffffff;
+> >*reg=(u32)*reg; and you can do it inside else part.
+> >
+> >register_address_increment() is used also by jmp_rel and loop instructions,
+> >is this correct for both of those too? Probably yes.
+> >
+> It appears to be so.
+> Results of 32-bit operations are implicitly zero extended to 64-bit
+> values, and this appears to apply to all 32 bit operations,
+> including implicit ones. Therefore it seems to apply to all these
+> operations.
+> 
+> >>  }
+> >>
+> >>  static void rsp_increment(struct x86_emulate_ctxt *ctxt, int inc)
+> >>@@ -4567,6 +4569,8 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+> >>  	if (ctxt->rep_prefix && (ctxt->d & String)) {
+> >>  		/* All REP prefixes have the same first termination condition */
+> >>  		if (address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) == 0) {
+> >>+			if (ctxt->ad_bytes == 4)
+> >>+				*reg_write(ctxt, VCPU_REGS_RCX) = 0;
+> >Does zero extension happens even if ECX was zero at the beginning on an instruction or only during
+> >ECX modification. If later it is already covered in register_address_increment, no?
+> The observed behaviour of the Sandy-Bridge I use, is that even if
+> ECX is zero on the first iteration, the high half of RCX is zeroed.
+> Therefore, this is a different case, which was not covered in
+> register_address_increment. I agree it is totally undocumented.
+> Following your previous comment - I may have missed the case in
+> which loop instruction is executed with ECX = 0 while RCX != 0 and
+> the address size is 32 bit. I will test this case soon (yet, it is
+> lower on my priority list).
 
-Since the arch is found locally in __audit_syscall_entry(), there is no need to
-pass it in as a parameter.  Delete it from the parameter list.
+In 64-bit mode, the operand size for all near branches (CALL, RET, JCC,
+JCXZ, JMP, and LOOP) is forced to 64 bits.
 
-x86* was the only arch to call __audit_syscall_entry() directly and did so from
-assembly code.
+These instructions update the 64-bit RIP without the need for a REX
+operand-size prefix.
 
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-audit@redhat.com
-Signed-off-by: Eric Paris <eparis@redhat.com>
+The following aspects of near branches are controlled by the effective
+operand size:
+• Truncation of the size of the instruction pointer
+...
 
----
+In 64-bit mode, all of the above actions are forced to 64 bits
+regardless of operand size prefixes (operand size
+prefixes are silently ignored). However, the displacement field for
+relative branches is still limited to 32 bits and the
+address size for near branches is not forced in 64-bit mode.
+Address sizes affect the size of RCX used for JCXZ and LOOP; they also
+impact the address calculation for memory
+indirect branches. Such addresses are 64 bits by default; but they can
+be overridden to 32 bits by an address size
+prefix.
 
-As this patch relies on changes in the audit tree, I think it
-appropriate to send it through my tree rather than the x86 tree.
----
- arch/x86/ia32/ia32entry.S  | 12 ++++++------
- arch/x86/kernel/entry_32.S | 11 +++++------
- arch/x86/kernel/entry_64.S | 11 +++++------
- include/linux/audit.h      |  5 ++---
- kernel/auditsc.c           |  6 ++----
- 5 files changed, 20 insertions(+), 25 deletions(-)
-
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 4299eb0..f5bdd28 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -186,12 +186,12 @@ sysexit_from_sys_call:
- 
- #ifdef CONFIG_AUDITSYSCALL
- 	.macro auditsys_entry_common
--	movl %esi,%r9d			/* 6th arg: 4th syscall arg */
--	movl %edx,%r8d			/* 5th arg: 3rd syscall arg */
--	/* (already in %ecx)		   4th arg: 2nd syscall arg */
--	movl %ebx,%edx			/* 3rd arg: 1st syscall arg */
--	movl %eax,%esi			/* 2nd arg: syscall number */
--	movl $AUDIT_ARCH_I386,%edi	/* 1st arg: audit arch */
-+	movl %esi,%r8d			/* 5th arg: 4th syscall arg */
-+	movl %ecx,%r9d			/*swap with edx*/
-+	movl %edx,%ecx			/* 4th arg: 3rd syscall arg */
-+	movl %r9d,%edx			/* 3rd arg: 2nd syscall arg */
-+	movl %ebx,%esi			/* 2nd arg: 1st syscall arg */
-+	movl %eax,%edi			/* 1st arg: syscall number */
- 	call __audit_syscall_entry
- 	movl RAX-ARGOFFSET(%rsp),%eax	/* reload syscall number */
- 	cmpq $(IA32_NR_syscalls-1),%rax
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index a2a4f46..078053e 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -456,12 +456,11 @@ sysenter_audit:
- 	jnz syscall_trace_entry
- 	addl $4,%esp
- 	CFI_ADJUST_CFA_OFFSET -4
--	/* %esi already in 8(%esp)	   6th arg: 4th syscall arg */
--	/* %edx already in 4(%esp)	   5th arg: 3rd syscall arg */
--	/* %ecx already in 0(%esp)	   4th arg: 2nd syscall arg */
--	movl %ebx,%ecx			/* 3rd arg: 1st syscall arg */
--	movl %eax,%edx			/* 2nd arg: syscall number */
--	movl $AUDIT_ARCH_I386,%eax	/* 1st arg: audit arch */
-+	movl %esi,4(%esp)		/* 5th arg: 4th syscall arg */
-+	movl %edx,(%esp)		/* 4th arg: 3rd syscall arg */
-+	/* %ecx already in %ecx		   3rd arg: 2nd syscall arg */
-+	movl %ebx,%edx			/* 2nd arg: 1st syscall arg */
-+	/* %eax already in %eax		   1st arg: syscall number */
- 	call __audit_syscall_entry
- 	pushl_cfi %ebx
- 	movl PT_EAX(%esp),%eax		/* reload syscall number */
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 1e96c36..8292ff7 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -694,12 +694,11 @@ badsys:
- 	 * jump back to the normal fast path.
- 	 */
- auditsys:
--	movq %r10,%r9			/* 6th arg: 4th syscall arg */
--	movq %rdx,%r8			/* 5th arg: 3rd syscall arg */
--	movq %rsi,%rcx			/* 4th arg: 2nd syscall arg */
--	movq %rdi,%rdx			/* 3rd arg: 1st syscall arg */
--	movq %rax,%rsi			/* 2nd arg: syscall number */
--	movl $AUDIT_ARCH_X86_64,%edi	/* 1st arg: audit arch */
-+	movq %r10,%r8			/* 5th arg: 4th syscall arg */
-+	movq %rdx,%rcx			/* 4th arg: 3rd syscall arg */
-+	movq %rsi,%rdx			/* 3rd arg: 2nd syscall arg */
-+	movq %rdi,%rsi			/* 2nd arg: 1st syscall arg */
-+	movq %rax,%rdi			/* 1st arg: syscall number */
- 	call __audit_syscall_entry
- 	LOAD_ARGS 0		/* reload call-clobbered registers */
- 	jmp system_call_fastpath
-diff --git a/include/linux/audit.h b/include/linux/audit.h
-index 783157b..1ae0089 100644
---- a/include/linux/audit.h
-+++ b/include/linux/audit.h
-@@ -115,8 +115,7 @@ extern void audit_log_session_info(struct audit_buffer *ab);
- 				/* Public API */
- extern int  audit_alloc(struct task_struct *task);
- extern void __audit_free(struct task_struct *task);
--extern void __audit_syscall_entry(int arch,
--				  int major, unsigned long a0, unsigned long a1,
-+extern void __audit_syscall_entry(int major, unsigned long a0, unsigned long a1,
- 				  unsigned long a2, unsigned long a3);
- extern void __audit_syscall_exit(int ret_success, long ret_value);
- extern struct filename *__audit_reusename(const __user char *uptr);
-@@ -148,7 +147,7 @@ static inline void audit_syscall_entry(int major, unsigned long a0,
- 				       unsigned long a3)
- {
- 	if (unlikely(current->audit_context))
--		__audit_syscall_entry(syscall_get_arch(), major, a0, a1, a2, a3);
-+		__audit_syscall_entry(major, a0, a1, a2, a3);
- }
- static inline void audit_syscall_exit(void *pt_regs)
- {
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 62823a3..b12a712 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1497,7 +1497,6 @@ void __audit_free(struct task_struct *tsk)
- 
- /**
-  * audit_syscall_entry - fill in an audit record at syscall entry
-- * @arch: architecture type
-  * @major: major syscall type (function)
-  * @a1: additional syscall register 1
-  * @a2: additional syscall register 2
-@@ -1512,9 +1511,8 @@ void __audit_free(struct task_struct *tsk)
-  * will only be written if another part of the kernel requests that it
-  * be written).
-  */
--void __audit_syscall_entry(int arch, int major,
--			 unsigned long a1, unsigned long a2,
--			 unsigned long a3, unsigned long a4)
-+void __audit_syscall_entry(int major, unsigned long a1, unsigned long a2,
-+			   unsigned long a3, unsigned long a4)
- {
- 	struct task_struct *tsk = current;
- 	struct audit_context *context = tsk->audit_context;
--- 
-1.9.0
+So it seems your patch incorrectly handles "rex call" for example.
 
