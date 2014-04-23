@@ -1,159 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914AbaDWCyF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 22:54:05 -0400
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:40883 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248AbaDWCyD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 22:54:03 -0400
-Message-ID: <1398221636.6345.9.camel@buesod1.americas.hpqcorp.net>
-Subject: [PATCH 5/4] ipc,shm: minor cleanups
-From: Davidlohr Bueso <davidlohr@hp.com>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
-        aswin@hp.com, linux-mm@kvack.org
-Date: Tue, 22 Apr 2014 19:53:56 -0700
-In-Reply-To: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755943AbaDWCzo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 22:55:44 -0400
+Received: from mail-bn1blp0183.outbound.protection.outlook.com ([207.46.163.183]:48478
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752874AbaDWCzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 22:55:43 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <daniel.lezcano@linaro.org>, <tglx@linutronix.de>,
+        <linux-kernel@vger.kernel.org>
+CC: Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv2 1/2] clocksource: fix type confusion for clocksource_mmio_readX_Y
+Date: Wed, 23 Apr 2014 10:11:59 +0800
+Message-ID: <1398219120-23029-1-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(92726001)(87286001)(79102001)(36756003)(2201001)(92566001)(85852003)(74662001)(74502001)(20776003)(77982001)(31966008)(86362001)(50986999)(83072002)(47776003)(575784001)(81342001)(93916002)(81542001)(19580395003)(88136002)(80976001)(87936001)(46102001)(62966002)(50226001)(50466002)(80022001)(83322001)(19580405001)(6806004)(4396001)(77156001)(44976005)(76482001)(48376002)(99396002)(77096999)(89996001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:az84smr01.freescale.net;FPR:FC15377A.6CEE5D2C.BEFDAB74.802A1C29.2018B;MLV:sfv;PTR:gate-az5.freescale.com;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Forefront-PRVS: 01901B3451
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--  Breakup long function names/args.
--  Cleaup variable declaration.
--  s/current->mm/mm
+The types' definations are:
+   o  cycle_t       -> u64
+   o  readl_relaxed -> u32
+   o  readw_relaxed -> u16
 
-Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+So let clocksource_mmio_readX_Ys return a cast to cycle_t, though
+this maybe look reduntant sometimes, it make sense and they will be
+more readable and less confusion...
+
+This patch clarifies the functions type and fix it.
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
 ---
- ipc/shm.c | 40 +++++++++++++++++-----------------------
- 1 file changed, 17 insertions(+), 23 deletions(-)
+ drivers/clocksource/mmio.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/ipc/shm.c b/ipc/shm.c
-index f000696..584d02e 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -480,15 +480,13 @@ static const struct vm_operations_struct shm_vm_ops = {
- static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
- {
- 	key_t key = params->key;
--	int shmflg = params->flg;
-+	int id, error, shmflg = params->flg;
- 	size_t size = params->u.size;
--	int error;
--	struct shmid_kernel *shp;
- 	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
--	struct file *file;
- 	char name[13];
--	int id;
- 	vm_flags_t acctflag = 0;
-+	struct shmid_kernel *shp;
-+	struct file *file;
+diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
+index c0e2512..19a6b3f 100644
+--- a/drivers/clocksource/mmio.c
++++ b/drivers/clocksource/mmio.c
+@@ -22,22 +22,22 @@ static inline struct clocksource_mmio *to_mmio_clksrc(struct clocksource *c)
  
- 	if (size < SHMMIN || size > ns->shm_ctlmax)
- 		return -EINVAL;
-@@ -681,7 +679,8 @@ copy_shmid_from_user(struct shmid64_ds *out, void __user *buf, int version)
- 	}
+ cycle_t clocksource_mmio_readl_up(struct clocksource *c)
+ {
+-	return readl_relaxed(to_mmio_clksrc(c)->reg);
++	return (cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
  }
  
--static inline unsigned long copy_shminfo_to_user(void __user *buf, struct shminfo64 *in, int version)
-+static inline unsigned long copy_shminfo_to_user(void __user *buf,
-+						 struct shminfo64 *in, int version)
+ cycle_t clocksource_mmio_readl_down(struct clocksource *c)
  {
- 	switch (version) {
- 	case IPC_64:
-@@ -711,8 +710,8 @@ static inline unsigned long copy_shminfo_to_user(void __user *buf, struct shminf
-  * Calculate and add used RSS and swap pages of a shm.
-  * Called with shm_ids.rwsem held as a reader
-  */
--static void shm_add_rss_swap(struct shmid_kernel *shp,
--	unsigned long *rss_add, unsigned long *swp_add)
-+static void shm_add_rss_swap(struct shmid_kernel *shp, unsigned long *rss_add,
-+			     unsigned long *swp_add)
+-	return ~readl_relaxed(to_mmio_clksrc(c)->reg);
++	return ~(cycle_t)readl_relaxed(to_mmio_clksrc(c)->reg);
+ }
+ 
+ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
  {
- 	struct inode *inode;
+-	return readw_relaxed(to_mmio_clksrc(c)->reg);
++	return (cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
+ }
  
-@@ -739,7 +738,7 @@ static void shm_add_rss_swap(struct shmid_kernel *shp,
-  * Called with shm_ids.rwsem held as a reader
-  */
- static void shm_get_stat(struct ipc_namespace *ns, unsigned long *rss,
--		unsigned long *swp)
-+			 unsigned long *swp)
+ cycle_t clocksource_mmio_readw_down(struct clocksource *c)
  {
- 	int next_id;
- 	int total, in_use;
-@@ -1047,21 +1046,16 @@ out_unlock1:
- long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
- 	      unsigned long shmlba)
- {
--	struct shmid_kernel *shp;
--	unsigned long addr;
--	unsigned long size;
-+	unsigned long addr, size, flags, prot, populate = 0;
- 	struct file *file;
--	int    err;
--	unsigned long flags;
--	unsigned long prot;
--	int acc_mode;
-+	int acc_mode, err = -EINVAL;
- 	struct ipc_namespace *ns;
- 	struct shm_file_data *sfd;
-+	struct shmid_kernel *shp;
- 	struct path path;
- 	fmode_t f_mode;
--	unsigned long populate = 0;
-+	struct mm_struct *mm = current->mm;
+-	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg);
++	return ~(cycle_t)readw_relaxed(to_mmio_clksrc(c)->reg);
+ }
  
--	err = -EINVAL;
- 	if (shmid < 0)
- 		goto out;
- 	else if ((addr = (ulong)shmaddr)) {
-@@ -1161,20 +1155,20 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
- 	if (err)
- 		goto out_fput;
- 
--	down_write(&current->mm->mmap_sem);
-+	down_write(&mm->mmap_sem);
- 	if (addr && !(shmflg & SHM_REMAP)) {
- 		err = -EINVAL;
- 		if (addr + size < addr)
- 			goto invalid;
- 
--		if (find_vma_intersection(current->mm, addr, addr + size))
-+		if (find_vma_intersection(mm, addr, addr + size))
- 			goto invalid;
- 		/*
- 		 * If shm segment goes below stack, make sure there is some
- 		 * space left for the stack to grow (at least 4 pages).
- 		 */
--		if (addr < current->mm->start_stack &&
--		    addr > current->mm->start_stack - size - PAGE_SIZE * 5)
-+		if (addr < mm->start_stack &&
-+		    addr > mm->start_stack - size - PAGE_SIZE * 5)
- 			goto invalid;
- 	}
- 
-@@ -1184,7 +1178,7 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
- 	if (IS_ERR_VALUE(addr))
- 		err = (long)addr;
- invalid:
--	up_write(&current->mm->mmap_sem);
-+	up_write(&mm->mmap_sem);
- 	if (populate)
- 		mm_populate(addr, populate);
- 
+ /**
 -- 
-1.8.1.4
-
-
+1.8.4
 
