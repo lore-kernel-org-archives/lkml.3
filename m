@@ -1,67 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753842AbaDWB6S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:58:18 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:3399 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751248AbaDWB6Q (ORCPT
+	id S1754806AbaDWB7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:59:19 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:43909 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbaDWB7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:58:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aq9xAPIdV1N5LEcvPGdsb2JhbABZgwaIbqMPmWeBExcDAQEBATg1giUBAQUnExwjEAgDDgoJJQ8FJQMHGhOIQKx5okQXFo5AB4Q4BIV2knmKbIsqKw
-Date: Wed, 23 Apr 2014 11:58:03 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Fabian Frederick <fabf@skynet.be>,
-        linux-kernel <linux-kernel@vger.kernel.org>, hch <hch@infradead.org>
-Subject: Re: [PATCH 1/1] fs/xfs/xfs_log.c: Fix comparison to bool
-Message-ID: <20140423015803.GH15995@dastard>
-References: <20140413220917.a566d048eb0cc55b5ec9f7be@skynet.be>
- <20140416151557.ac032e9621027faa8fc7f86d@linux-foundation.org>
+	Tue, 22 Apr 2014 21:59:17 -0400
+Date: Tue, 22 Apr 2014 18:59:15 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>, Ingo Molnar <mingo@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [Bugfix] sched: fix possible invalid memory access caused by
+ CPU hot-addition
+In-Reply-To: <20140422200449.GF11096@twins.programming.kicks-ass.net>
+Message-ID: <alpine.DEB.2.02.1404221849330.4008@chino.kir.corp.google.com>
+References: <1398144435-26271-1-git-send-email-jiang.liu@linux.intel.com> <20140422081515.GF11182@twins.programming.kicks-ass.net> <20140422130151.83bc4539364ca660c68de859@linux-foundation.org> <20140422200449.GF11096@twins.programming.kicks-ass.net>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140416151557.ac032e9621027faa8fc7f86d@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 16, 2014 at 03:15:57PM -0700, Andrew Morton wrote:
-> On Sun, 13 Apr 2014 22:09:17 +0200 Fabian Frederick <fabf@skynet.be> wrote:
+On Tue, 22 Apr 2014, Peter Zijlstra wrote:
+
+> On Tue, Apr 22, 2014 at 01:01:51PM -0700, Andrew Morton wrote:
+> > On Tue, 22 Apr 2014 10:15:15 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Tue, Apr 22, 2014 at 01:27:15PM +0800, Jiang Liu wrote:
+> > > > When calling kzalloc_node(size, flags, node), we should first check
+> > > > whether node is onlined, otherwise it may cause invalid memory access
+> > > > as below.
+> > > 
+> > > But this is only for memory less node crap, right? 
+> > 
+> > um, why are memoryless nodes crap?
 > 
-> > Fixing coccinelle warning
-> 
-> Please always quote the full error message or warning text when fixing
-> such things.
+> Why wouldn't they be? Having CPUs with no local memory seems decidedly
+> suboptimal.
 
-And CC the correct lists (xfs@oss.sgi.com) and/or the subsystem
-maintainer (me). LKML is extremely lossy - I got behind on reading
-it and so simply deleted the 10,000 queued emails, one of which was
-this patch....
+The quick fix for memoryless node issues is usually just do cpu_to_mem() 
+rather than cpu_to_node() in the caller.  This assumes that the arch is 
+setup correctly to handle memoryless nodes with 
+CONFIG_HAVE_MEMORYLESS_NODES (and we've had problems recently with 
+memoryless nodes not being configured correctly on powerpc).
 
-> > --- a/fs/xfs/xfs_log.c
-> > +++ b/fs/xfs/xfs_log.c
-> > @@ -2376,7 +2376,7 @@ next_lv:
-> >  				if (lv)
-> >  					vecp = lv->lv_iovecp;
-> >  			}
-> > -			if (record_cnt == 0 && ordered == false) {
-> > +			if (record_cnt == 0 && !ordered) {
-> >  				if (!lv)
-> >  					return 0;
-> 
-> There was nothing wrong with that code.  I suspect coccinelle bustage.
+That type of a fix would probably be better handled in the slab allocator, 
+though, since kmalloc_node(nid) shouldn't crash just because nid is 
+memoryless, we should be doing local_memory_node(node) when allocating the 
+slab pages.
 
-Agreed, especially given that the variable is declared as:
+However, I don't think memoryless nodes are the problem here since Jiang 
+is testing for !node_online(nid) in his patch, so it's a problem with 
+cpu_to_node() pointing to an offline node.  It makes sense for the page 
+allocator to crash in such a case, the node id is erroneous.
 
-	bool ordered = false;
-
-So it can only have the values of false and true....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+So either the cpu-to-node mapping is invalid or alloc_fair_sched_group() 
+is allocating memory for a cpu on an offline node.  The 
+for_each_possible_cpu() looks suspicious.  There's no guarantee that 
+local_memory_node(node) for an offline node will return anything with 
+affinity, so falling back to NUMA_NO_NODE looks appropriate in Jiang's 
+patch.
