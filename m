@@ -1,167 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757508AbaDWPFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:05:12 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:62409 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755358AbaDWPFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:05:06 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-20-5357d69a0322
-Message-id: <5357D68E.8060605@samsung.com>
-Date: Wed, 23 Apr 2014 17:04:46 +0200
-From: Andrzej Hajda <a.hajda@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: dri-devel@lists.freedesktop.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Inki Dae <inki.dae@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Airlie <airlied@linux.ie>,
-        open list <linux-kernel@vger.kernel.org>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC 3/3] drm/exynos: use pending_components for	components
- tracking
-References: <1397734130-21019-1-git-send-email-a.hajda@samsung.com>
- <1397734130-21019-4-git-send-email-a.hajda@samsung.com>
- <20140417220412.GZ24070@n2100.arm.linux.org.uk> <5351145D.8070207@samsung.com>
- <20140418124652.GE24070@n2100.arm.linux.org.uk> <535652B2.7000607@samsung.com>
- <20140422115145.GU24070@n2100.arm.linux.org.uk>
-In-reply-to: <20140422115145.GU24070@n2100.arm.linux.org.uk>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t/xK7qzroUHG/w7KWXRe+4kk8XfScfY
-	La58fc9m0bx4PZvFpPsTWCzONr1ht9j0+BqrxeVdc9gsZpzfx2Rx+zKvxdojd9kt1s94zeLA
-	49HS3MPm8fvXJEaP7d8esHrsn7uG3eN+93Emj81L6j36tqxi9Pi8SS6AI4rLJiU1J7MstUjf
-	LoErY9tJ3YLd6hVXfz9jbmA8K9/FyMkhIWAisf3zREYIW0ziwr31bF2MXBxCAksZJTbNX8MK
-	4XxilJh8cgtYFa+AlsS21t0sIDaLgKrEzueX2EBsNgFNib+bb4LZogIREvcaD7NC1AtK/Jh8
-	D6xeRMBU4tqjZ8wgQ5kFmlgk5lydAZYQFoiUWLl3FQvEtotMEkvebgTbxilgI7F5wUOwImYB
-	HYn9rdPYIGx5ic1r3jJPYBSYhWTJLCRls5CULWBkXsUomlqaXFCclJ5rpFecmFtcmpeul5yf
-	u4kREjVfdzAuPWZ1iFGAg1GJh1dieViwEGtiWXFl7iFGCQ5mJRHeJYvCg4V4UxIrq1KL8uOL
-	SnNSiw8xMnFwSjUwRrjy/VaNEEg81Owv9LxcwSu6d5HrgyXpqXZZXydWLjtQvv7fwke3313s
-	amGdJlrJ8GzhnabqQMnS1z80dIMTv/N4310mGf9ySfXdB/tmBPfwbr9W9e1BVsHr578bwxSd
-	BUIiP1u3up14UCqTs1Ksaev0SbYKApcy2xTC/4u5rPk/X2bV1bVXlFiKMxINtZiLihMB/CrN
-	BHgCAAA=
+	id S1757524AbaDWPFg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:05:36 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:33118 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752655AbaDWPFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:05:24 -0400
+Date: Wed, 23 Apr 2014 10:02:59 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: <balbi@ti.com>, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH v6 01/19] usb: phy: msm: Make driver selectable on
+ ARCH_QCOM
+Message-ID: <20140423150259.GE9593@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
+ <1398158438-21579-2-git-send-email-iivanov@mm-sol.com>
+ <20140422145701.GI5524@saruman.home>
+ <1398179795.4724.170.camel@iivanov-dev>
+ <20140422152425.GL5524@saruman.home>
+ <1398242909.4724.204.camel@iivanov-dev>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PPYy/fEw/8QCHSq3"
+Content-Disposition: inline
+In-Reply-To: <1398242909.4724.204.camel@iivanov-dev>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 01:51 PM, Russell King - ARM Linux wrote:
-> On Tue, Apr 22, 2014 at 01:29:54PM +0200, Andrzej Hajda wrote:
->> On 04/18/2014 02:46 PM, Russell King - ARM Linux wrote:
->>> On Fri, Apr 18, 2014 at 02:02:37PM +0200, Andrzej Hajda wrote:
->>>> Separation of the interfaces exposed by the device from the device itself
->>>> seems to me a good thing. I would even consider it as a biggest
->>>> advantage of this solution :)
->>>>
->>>> The problem of re-initialization does not seems to be relevant here, it
->>>> is classic
->>>> problem of coding correctness nothing more, it can appear here and in
->>>> many different
->>>> places.
->>> It may be a problem of coding correctless, but it's also a maintainability
->>> problem too - it makes it _much_ more difficult to ensure that everything
->>> is correct.
->> But forcibly re-initializing all component devices instead of fixing bugs
->> in specific drivers seems to be 'absolutely absurd' as classic says.
-> They're *unnecessary* bugs that wouldn't even exist if it weren't for
-> the forced-splitup of the initialisation into two separate parts that
-> your approach mandates.
->
-> Yes, I know that you're desperate to play that down, but you can't get
+--PPYy/fEw/8QCHSq3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Not true. I only try to find the best solution and the approach with
-multiple re-probing just to avoid potential bugs in drivers does not
-look to me correct.
+On Wed, Apr 23, 2014 at 11:48:29AM +0300, Ivan T. Ivanov wrote:
+> On Tue, 2014-04-22 at 10:24 -0500, Felipe Balbi wrote:
+> > On Tue, Apr 22, 2014 at 06:16:35PM +0300, Ivan T. Ivanov wrote:
+> > >=20
+> > > Hi,=20
+> > >=20
+> > > On Tue, 2014-04-22 at 09:57 -0500, Felipe Balbi wrote:
+> > > > On Tue, Apr 22, 2014 at 12:20:20PM +0300, Ivan T. Ivanov wrote:
+> > > > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> > > > >=20
+> > > > > Controller could be found on APQ and MSM platforms,
+> > > > > make configuration description more generic.
+> > > > >=20
+> > > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> > > > > ---
+> > > > >  drivers/usb/phy/Kconfig | 6 +++---
+> > > > >  1 file changed, 3 insertions(+), 3 deletions(-)
+> > > > >=20
+> > > > > diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
+> > > > > index 416e0c8..0c668a3 100644
+> > > > > --- a/drivers/usb/phy/Kconfig
+> > > > > +++ b/drivers/usb/phy/Kconfig
+> > > > > @@ -171,11 +171,11 @@ config USB_ISP1301
+> > > > >  	  module will be called phy-isp1301.
+> > > > >=20
+> > > > >  config USB_MSM_OTG
+> > > > > -	tristate "OTG support for Qualcomm on-chip USB controller"
+> > > > > -	depends on (USB || USB_GADGET) && ARCH_MSM
+> > > > > +	tristate "Qualcomm on-chip USB OTG controller support"
+> > > > > +	depends on (USB || USB_GADGET) && (ARCH_MSM || ARCH_QCOM)
+> > > >=20
+> > > > I would actually drop USB || USB_GADGET dependency here just make it
+> > > > easier to enable the driver on Kconfig, other you have to enable
+> > > > USB_SUPPORT, then enable USB, go back one menu level, go down to PHY
+> > > > menu, and choose this driver.
+> > > >=20
+> > >=20
+> > > Because phy directory already depends on USB_SUPPORT?
+> >=20
+> > right
+>=20
+> Build fails if USB and USB_GADGET are not selected.=20
+> of_usb_get_dr_mode is part of USB_COMMON.=20
+>=20
+> ...
+>=20
+> if USB_SUPPORT
+>=20
+> config USB_COMMON
+> 	tristate
+> 	default y
+> 	depends on USB || USB_GADGET
+>=20
+> ...
+>=20
+> of_usb_get_dr_mode() is no part of this patch, but should I remove
+> dependency here and add it several patches later?
 
-> away from this fact: your approach _forces_ a split up of the
-> initialisation into dependent two stages and that fact _alone_ adds
-> additional complexity, and along with that additional complexity comes
-> more opportunity for bugs. 
+I guess we can keep it as is and I'll sort that out globaly later, I can
+see a few other PHYs have some "weirdness" in their dependencies
 
-This sound so funny, just look at componentize patches - every patch
-adds two stage initialization for every component and the master,
-with forced unwinding and two levels of devres management.
+--=20
+balbi
 
-'My approach' adds only one call to probe and one call to remove of
-components,
-and very simple and straightforward interface to the master.
+--PPYy/fEw/8QCHSq3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-'My approach' is very standard - during probe driver probes hardware,
-and registers interfaces which can be used by other drivers, for example
-by drm master. The only addition is reporting its readiness. Comparing to
-'your approach' it is bloody simple.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
+iQIcBAEBAgAGBQJTV9YjAAoJEIaOsuA1yqREvrwP/RJ/RJ9eHFyOjHKjdgEJ3/Vi
+K04iefOicAK8Z4hqCrRppgB4O/1AZ8JitQ3z7RHtXZbI1EoSc7GV4aTzG7rqzaX/
+1aufBamntT+S/vI8SFaLn6DHt2dUuxyVxAdaCAhoItharVO38z2u5ym6J7KRGInb
+H+AC9XtDwTNaT6hwP//pmTRNaxLAE4myTDkVefgV2z/PCG9FDDE+Y+UhW2jkWpDr
+1ASnSixWyxfYg7wIiUEyMOHx1iyT034bMzET0CA7+kHCa8LoxxFvxWa6FCHWu6Ug
+F1M6ja2qmA2ujCn7Izwz31+vg7iPjpaopmjiqOLhtO8UkPL2QOPrbHta8Kk3ixA1
+XOTUAI4f4pzp6k8D0e9hF6bKP1cXGmZhBWRGYozQdLClm/1xY3iSjStC8xGKRGT+
+mUmiOWYllJ0w2WA1bSSB+9atyAXKdurf4VES8IhHPPyoH+RJ28EkGuL09k/InQAb
+Fo2pOk2JQ2i3Za7A8HUYiMC4yg6T+j7M2s8SvvPE28kCmUxH1jdgW43hD+x+2QBb
+SNWI9CeZ0bsXign092nwoRD/kIH7yfIp976xcpEyVlpiqmHqgcBU61t+deQgmaar
+ZztUWFzmw8dBh7fmDCSQXb0Ws+KqVa2qHZHVcPIhMqUxhmXmjj21lKSzHDSk89bt
+lpZEDgjHsvDe6kKc3ipC
+=GhD1
+-----END PGP SIGNATURE-----
 
->  Also with that additional complexity comes
-> the need to perform more tests to find those bugs, and given that most
-> people just say "okay, it boots and seems to work, that's good enough
-> for me" there is a high possibility that these kinds of bugs will take
-> a long time to find.
-
-Volume of changes for each component and drm device management
-dispersed on all components makes your argument very valid for
-component subsystem.
-
-Btw have you observed component framework when one of the components
-during bind returns -EPROBE_DEFER ? In my tests it resulted in
-deferred probing of master and unbind/bind of other components.
-So lets say you have N components and the last component will be deferred
-K times, it results in:
-- K times deferring of the last component and the master,
-- (N - 1) * K - unbinds and binds of other components.
-
-
->
->> As I wrote already, this framework was proposed for drivers which
->> are tied together anyway, and this is case of many drivers, not
->> only exynos.
-> Please name them.
->
->> Standalone drivers were not at my sight but I have also described in
->> other mail how the framework can be 'improved' to support standalone
->> drivers also.
-> At the moment, I don't see a justification for your "simplified"
-> and restrictive solution, which if used will lock drivers into that
-> simplisitic method, and which can't ever be extended without lots of
-> ifdeffery to having other components (such as TDA998x) attached.
->
-> My objections are entirely based on where imx-drm and armada DRM are
-> going, neither of which could ever use your implementation.
->
-> Before you say that it isn't meant to deal with stuff like the TDA998x,
-> take a moment to think about this - the Dove video subsystem was
-> designed to support OLPC.  It was primerly designed to drive a LCD
-> screen plus an on-board VGA DAC.  Everything for that is on-SoC.  With
-> that, the hardware is well known, and your solution could be used.
->
-> However, then SolidRun came along and dropped a TDA998x on the LCD output
-> pins.  Suddenly, things aren't that simple, and your solution falls
-> apart, because it can't cope with a generic component that has no knowledge
-> of the rest of its "master".
->
-> This kind of scenario can happen /any/ time, and any time it does happen,
-> your simple solution falls apart.
-
-I think I have answered you two or three times that it is not a problem
-to remove
-'glued drivers' restriction. I desperately try to avoid accusing you for
-'desperately
-playing down' on this subject, so I will not comment this anymore.
-
-On the other hand you have not answered quite important question - how
-do you plan to componentize drivers shared by different drms when
-one of drms is not componentized???
-
-
-Regards
-Andrzej
-
+--PPYy/fEw/8QCHSq3--
