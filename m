@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016AbaDWMcz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:32:55 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:49487 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752757AbaDWMcs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:32:48 -0400
-Date: Wed, 23 Apr 2014 13:32:40 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: swarren@nvidia.com, wsa@the-dreams.de, abrestic@chromium.org,
-        dgreid@chromium.org, olof@lixom.net, sjg@chromium.org,
-        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        mark.rutland@arm.com, andrew@lunn.ch, swarren@wwwdotorg.org,
-        thierry.reding@gmail.com, linux-i2c@vger.kernel.org,
-        matt.porter@linaro.org, jdelvare@suse.de,
-        laurent.pinchart+renesas@ideasonboard.com, vpalatin@chromium.org,
-        sameo@linux.intel.com, linux-doc@vger.kernel.org,
-        bjorn.andersson@sonymobile.com, u.kleine-koenig@pengutronix.de,
-        kevin.strasser@linux.intel.com, devicetree@vger.kernel.org,
-        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk, robh+dt@kernel.org,
-        linux@arm.linux.org.uk, andriy.shevchenko@linux.intel.com,
-        ch.naveen@samsung.com, linux-arm-kernel@lists.infradead.org,
-        shane.huang@amd.com, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org, linux@prisktech.co.nz,
-        galak@codeaurora.org, schwidefsky@de.ibm.com,
-        maxime.ripard@free-electrons.com
-Subject: Re: [PATCH v2 0/7] Add cros_ec changes for newer boards
-Message-ID: <20140423123240.GA640@lee--X1>
-References: <1398185154-19404-1-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398185154-19404-1-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754629AbaDWM3L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:29:11 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:56631 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751725AbaDWM3C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 08:29:02 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Peter Chen <Peter.Chen@freescale.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: [PATCH v4 1/3] usb: chipidea: msm: Add device tree binding information
+Date: Wed, 23 Apr 2014 15:28:02 +0300
+Message-Id: <1398256084-6815-2-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398256084-6815-1-git-send-email-iivanov@mm-sol.com>
+References: <1398256084-6815-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014, Doug Anderson wrote:
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-> This series adds the most critical cros_ec changes for newer boards
-> using cros_ec.  Specifically:
-> * Fixes timing/locking issues with the previously upstreamed (but
->   never used upstream) cros_ec_spi driver.
-> * Updates the cros_ec header file to the latest version which allows
->   us to use newer EC features like i2c tunneling.
-> * Adds an i2c tunnel driver to allow communication to the EC's i2c
->   devices.
-> 
-> This _doesn't_ get the EC driver fully up to speed with what's in the
-> current Chromium OS trees.  There are a whole slew of cleanup patches
-> there, an addition of an LPC transport mode, and exports of functions
-> to userspace.  Once these patches land and we have functionality we
-> can continue to pick more cleanup patches.
-> 
-> Changes in v2:
-> - Update tunnel binding as per swarren
-> - Removed i2c20 alias for i2c tunnel
-> 
-> Bill Richardson (1):
->   mfd: cros_ec: Sync to the latest cros_ec_commands.h from EC sources
-> 
-> David Hendricks (1):
->   mfd: cros_ec: spi: calculate delay between transfers correctly
-> 
-> Doug Anderson (5):
->   mfd: cros_ec: spi: Add mutex to cros_ec_spi
->   mfd: cros_ec: spi: Make the cros_ec_spi timeout more reliable
->   mfd: cros_ec: spi: Increase cros_ec_spi deadline from 5ms to 100ms
->   i2c: ChromeOS EC tunnel driver
->   ARM: tegra: Add the EC i2c tunnel to tegra124-venice2
-> 
->  .../devicetree/bindings/i2c/i2c-cros-ec-tunnel.txt |   39 +
->  arch/arm/boot/dts/tegra124-venice2.dts             |   26 +
->  drivers/i2c/busses/Kconfig                         |    9 +
->  drivers/i2c/busses/Makefile                        |    1 +
->  drivers/i2c/busses/i2c-cros-ec-tunnel.c            |  304 ++++++
->  drivers/mfd/cros_ec.c                              |    7 +-
->  drivers/mfd/cros_ec_spi.c                          |   67 +-
->  include/linux/mfd/cros_ec.h                        |    4 +-
->  include/linux/mfd/cros_ec_commands.h               | 1128 ++++++++++++++++++--
->  9 files changed, 1493 insertions(+), 92 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/i2c/i2c-cros-ec-tunnel.txt
->  create mode 100644 drivers/i2c/busses/i2c-cros-ec-tunnel.c
+Document device tree binding information as required by
+the Qualcomm USB controller.
 
-Need to wait for the ARM, DT and I2C guys to review, at which point
-I'll be happy to take in and supply a branch for them to pull from if
-required. If there are no _true_ dependencies and the MFD changes can
-be added independently without fear of build breakages, let me know
-and I'll apply them separately.
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ Documentation/devicetree/bindings/usb/ci-hdrc-qcom.txt | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-qcom.txt
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+diff --git a/Documentation/devicetree/bindings/usb/ci-hdrc-qcom.txt b/Documentation/devicetree/bindings/usb/ci-hdrc-qcom.txt
+new file mode 100644
+index 0000000..f2899b5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/usb/ci-hdrc-qcom.txt
+@@ -0,0 +1,17 @@
++Qualcomm CI13xxx (Chipidea) USB controllers
++
++Required properties:
++- compatible:   should contain "qcom,ci-hdrc"
++- reg:          offset and length of the register set in the memory map
++- interrupts:   interrupt-specifier for the controller interrupt.
++- usb-phy:      phandle for the PHY device
++- dr_mode:      Should be "peripheral"
++
++Examples:
++	gadget@f9a55000 {
++		compatible = "qcom,ci-hdrc";
++		reg = <0xf9a55000 0x400>;
++		dr_mode = "peripheral";
++		interrupts = <0 134 0>;
++		usb-phy = <&usbphy0>;
++	};
+--
+1.8.3.2
+
