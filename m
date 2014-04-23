@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370AbaDWMjl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:39:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.130]:60047 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932328AbaDWMjh (ORCPT
+	id S1755628AbaDWMhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:37:05 -0400
+Received: from mail-we0-f169.google.com ([74.125.82.169]:41234 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754212AbaDWMg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:39:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 6/8] ARM: sun6i: Sort the NMI node by physical address
-Date: Wed, 23 Apr 2014 14:39:26 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, devicetree@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>, andriy.shevchenko@intel.com,
-        linux-kernel@vger.kernel.org, zhuzhenhua@allwinnertech.com,
-        shuge@allwinnertech.com, linux-sunxi@googlegroups.com,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        dmaengine@vger.kernel.org
-References: <1397724379-15398-1-git-send-email-maxime.ripard@free-electrons.com> <1397724379-15398-7-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1397724379-15398-7-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 23 Apr 2014 08:36:57 -0400
+Date: Wed, 23 Apr 2014 13:36:50 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: swarren@nvidia.com, wsa@the-dreams.de, abrestic@chromium.org,
+        dgreid@chromium.org, olof@lixom.net, sjg@chromium.org,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Bill Richardson <wfrichar@chromium.org>, sameo@linux.intel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 5/7] mfd: cros_ec: Sync to the latest
+ cros_ec_commands.h from EC sources
+Message-ID: <20140423123650.GF640@lee--X1>
+References: <1398185154-19404-1-git-send-email-dianders@chromium.org>
+ <1398185154-19404-6-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404231439.26549.arnd@arndb.de>
-X-Provags-ID: V02:K0:sCtP/xHFh+eSbUbjryCAAhAluLrMZfRW7nNcgNmrPdP
- jBejdT0fqSnpbSQRQ7flpsPoyVi2LrjorLZGQNqlA8yrshPepM
- Bj+r3quVHFl7xYeFfGzKcWRqbM2uGhAZ78kpGeRKR/nd4vOVRy
- f6S8A6mnTGDTtWy2xH6Ou1SXfdtCIKyg0F3G3A6ay6CoclR3sr
- 57E5jCvqFhYi2jGkph4tCe+vaMlRd8sobB4sWdCyf/EPHG10zm
- kFk/v1XKP1YSOtptxFcmM5+f0PsJen2NKaO/7aOE3yOz/a3XeH
- W96Vot3snVJdAHWUZlQiqg6aECKN2616yQHC6CpAghoWeVi4G7
- DKRW69HNo0+aoI2S6jac=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398185154-19404-6-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 April 2014, Maxime Ripard wrote:
-> The DT are supposed to be ordered by physical address. Move the NMI node where
-> it belongs.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+On Tue, 22 Apr 2014, Doug Anderson wrote:
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+> From: Bill Richardson <wfrichar@chromium.org>
+> 
+> This just updates include/linux/mfd/cros_ec_commands.h to match the
+> latest EC version (which is the One True Source for such things).  See
+> <https://chromium.googlesource.com/chromiumos/platform/ec>
+> 
+> [dianders: took today's ToT version from the Chromium OS EC; deleted
+> references to cros_ec_dev and cros_ec_lpc since those aren't upstream
+> yet]
+> 
+> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Reviewed-by: Simon Glass <sjg@chromium.org>
+> Tested-by: Andrew Bresticker <abrestic@chromium.org>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Changes in v2: None
+> 
+>  drivers/mfd/cros_ec.c                |    2 +-
+>  include/linux/mfd/cros_ec.h          |    4 +-
+>  include/linux/mfd/cros_ec_commands.h | 1128 +++++++++++++++++++++++++++++++---
+>  3 files changed, 1059 insertions(+), 75 deletions(-)
+
+Waiting for other subsystems to Ack, so for now:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
