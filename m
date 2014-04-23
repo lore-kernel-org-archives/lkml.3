@@ -1,107 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063AbaDWMw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:52:57 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:63280 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751165AbaDWMwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:52:55 -0400
-From: Lin Yongting <linyongting@gmail.com>
-To: linux@arm.linux.org.uk, rostedt@goodmis.org, k.khlebnikov@samsung.com
-Cc: linyongting@gmail.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linyongting@huawei.com
-Subject: [PATCH] ftrace/arm: add save_stack_trace_regs() implementation
-Date: Wed, 23 Apr 2014 20:52:21 +0800
-Message-Id: <1398257541-18201-1-git-send-email-linyongting@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
-Content-Type: text/plain; charset="utf-8"
+	id S1752667AbaDWMzI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:55:08 -0400
+Received: from zene.cmpxchg.org ([85.214.230.12]:59527 "EHLO zene.cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552AbaDWMzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 08:55:04 -0400
+Date: Wed, 23 Apr 2014 08:54:55 -0400
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Rientjes <rientjes@google.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH -mm -repost] memcg: do not hang on OOM when killed by
+ userspace OOM access to memory reserves
+Message-ID: <20140423125455.GA31836@cmpxchg.org>
+References: <1398247922-2374-1-git-send-email-mhocko@suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398247922-2374-1-git-send-email-mhocko@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When configure kprobe events of ftrace with "stacktrace" option enabled
-in arm, there is no stacktrace was recorded after the kprobe event was
-triggered. The root cause is no save_stack_trace_regs() function implemented.
+On Wed, Apr 23, 2014 at 12:12:02PM +0200, Michal Hocko wrote:
+> Eric has reported that he can see task(s) stuck in memcg OOM handler
+> regularly.  The only way out is to
+> 
+> 	echo 0 > $GROUP/memory.oom_controll
+> 
+> His usecase is:
+> 
+> - Setup a hierarchy with memory and the freezer (disable kernel oom and
+>   have a process watch for oom).
+> 
+> - In that memory cgroup add a process with one thread per cpu.
+> 
+> - In one thread slowly allocate once per second I think it is 16M of ram
+>   and mlock and dirty it (just to force the pages into ram and stay
+>   there).
+> 
+> - When oom is achieved loop:
+>   * attempt to freeze all of the tasks.
+>   * if frozen send every task SIGKILL, unfreeze, remove the directory in
+>     cgroupfs.
+> 
+> Eric has then pinpointed the issue to be memcg specific.
+> 
+> All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
+> Those that have received fatal signal will bypass the charge and should
+> continue on their way out.  The tricky part is that the exit path might
+> trigger a page fault (e.g.  exit_robust_list), thus the memcg charge,
+> while its memcg is still under OOM because nobody has released any charges
+> yet.
+> 
+> Unlike with the in-kernel OOM handler the exiting task doesn't get
+> TIF_MEMDIE set so it doesn't shortcut further charges of the killed task
+> and falls to the memcg OOM again without any way out of it as there are no
+> fatal signals pending anymore.
+> 
+> This patch fixes the issue by checking PF_EXITING early in
+> mem_cgroup_try_charge and bypass the charge same as if it had fatal
+> signal pending or TIF_MEMDIE set.
+> 
+> Normally exiting tasks (aka not killed) will bypass the charge now but
+> this should be OK as the task is leaving and will release memory and
+> increasing the memory pressure just to release it in a moment seems
+> dubious wasting of cycles.  Besides that charges after exit_signals should
+> be rare.
+> 
+> Reported-by: Eric W. Biederman <ebiederm@xmission.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-Implement the save_stack_trace_regs() function in arm, then ftrace will
-call this architecture-related function to record the stacktrace into
-ring buffer.
+We're allowing fatal_signal_pending() tasks to bypass the limit
+already, so I don't see why we shouldn't do the same for tasks that
+cleared the signal and are in fact exiting.
 
-After this fix, stacktrace can be recorded, for example:
-
-# mount -t debugfs nodev /sys/kernel/debug
-# echo "p:netrx net_rx_action" >> /sys/kernel/debug/tracing/kprobe_events
-# echo 1 > /sys/kernel/debug/tracing/events/kprobes/netrx/enable
-# echo 1 > /sys/kernel/debug/tracing/options/stacktrace
-# echo 1 > /sys/kernel/debug/tracing/tracing_on
-# ping 127.0.0.1 -c 1
-# echo 0 > /sys/kernel/debug/tracing/tracing_on
-
-# cat /sys/kernel/debug/tracing/trace
-# tracer: nop
-#
-# entries-in-buffer/entries-written: 12/12   #P:1
-#
-#                              _-----=> irqs-off
-#                             / _----=> need-resched
-#                            | / _---=> hardirq/softirq
-#                            || / _--=> preempt-depth
-#                            ||| /     delay
-#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-#              | |       |   ||||       |         |
-            <------ missing some entries ---------------->
-            ping-1200  [000] dNs1   667.603250: netrx: (net_rx_action+0x0/0x1f8)
-            ping-1200  [000] dNs1   667.604738: <stack trace>
- => net_rx_action
- => do_softirq
- => local_bh_enable
- => ip_finish_output
- => ip_output
- => ip_local_out
- => ip_send_skb
- => ip_push_pending_frames
- => raw_sendmsg
- => inet_sendmsg
- => sock_sendmsg
- => SyS_sendto
- => ret_fast_syscall
-
-Signed-off-by: Lin Yongting <linyongting@gmail.com>
----
- arch/arm/kernel/stacktrace.c |   19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-diff --git a/arch/arm/kernel/stacktrace.c b/arch/arm/kernel/stacktrace.c
-index af4e8c8..c558db6 100644
---- a/arch/arm/kernel/stacktrace.c
-+++ b/arch/arm/kernel/stacktrace.c
-@@ -123,6 +123,25 @@ void save_stack_trace_tsk(struct task_struct *tsk, struct stack_trace *trace)
- 		trace->entries[trace->nr_entries++] = ULONG_MAX;
- }
- 
-+void save_stack_trace_regs(struct pt_regs *regs, struct stack_trace *trace)
-+{
-+	struct stack_trace_data data;
-+	struct stackframe frame;
-+
-+	data.trace = trace;
-+	data.skip = trace->skip;
-+	data.no_sched_functions = 0;
-+
-+	frame.fp = regs->ARM_fp;
-+	frame.sp = regs->ARM_sp;
-+	frame.lr = regs->ARM_lr;
-+	frame.pc = regs->ARM_pc;
-+
-+	walk_stackframe(&frame, save_trace, &data);
-+	if (trace->nr_entries < trace->max_entries)
-+		trace->entries[trace->nr_entries++] = ULONG_MAX;
-+}
-+
- void save_stack_trace(struct stack_trace *trace)
- {
- 	save_stack_trace_tsk(current, trace);
--- 
-1.7.9.5
-
+Acked-by: Johannes Weiner <hannes@cmpxchg.org>
