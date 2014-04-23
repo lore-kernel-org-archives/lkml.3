@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754401AbaDWPmz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:42:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22666 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753798AbaDWPmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:42:52 -0400
-Date: Wed, 23 Apr 2014 17:42:11 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Don Zickus <dzickus@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH] perf tools: fix processing of pid/tid for mmap records
-Message-ID: <20140423154211.GB2230@krava.brq.redhat.com>
-References: <20140421160655.GA4201@quad>
- <20140422194031.GM8488@redhat.com>
- <CABPqkBTcOT+BEd1dSrp6bz22o5g+ZvBwx5e4GZvbwft6No+Shw@mail.gmail.com>
- <20140422204522.GN8488@redhat.com>
- <CABPqkBTUV65VD3D7Qcxi4=oTqBVS_WGpbFSqo561Zuex3D9ZwQ@mail.gmail.com>
- <20140423133000.GQ8488@redhat.com>
- <CABPqkBSt9N_05Lo-74Dk==_anj5Zh4+5b=26g63ozNvsWUJLVQ@mail.gmail.com>
+	id S1755344AbaDWPod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:44:33 -0400
+Received: from mail-oa0-f44.google.com ([209.85.219.44]:55713 "EHLO
+	mail-oa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451AbaDWPob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:44:31 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBSt9N_05Lo-74Dk==_anj5Zh4+5b=26g63ozNvsWUJLVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140423153544.GD25378@pd.tnic>
+References: <1394739386-22260-1-git-send-email-venkateshs@google.com>
+	<CABPqkBRm8Ux15UY2+hF1TZdVsgVbYV+9XPiuh9m497Mr3oJ0Wg@mail.gmail.com>
+	<20140423144538.GN11096@twins.programming.kicks-ass.net>
+	<CABPqkBT5xg+zQ45dugHiXM5XFYi+V3gsBmANevx25fE0S0iNXA@mail.gmail.com>
+	<20140423150912.GO11096@twins.programming.kicks-ass.net>
+	<CABPqkBTSKeza=Ax0yGEfMTq5B8NSQHyvfFBe8qVa-h0dE=UCYg@mail.gmail.com>
+	<20140423151638.GA8526@pd.tnic>
+	<CABPqkBQCVrqtNvva5DD3sE0q=MsJNauKMUv=Vd2GH74v8SsBWQ@mail.gmail.com>
+	<20140423153544.GD25378@pd.tnic>
+Date: Wed, 23 Apr 2014 17:44:30 +0200
+Message-ID: <CABPqkBTMY+q9FUxF0gopSrrG2OJS8NrFkPtKGshjHgZ8Lq8arA@mail.gmail.com>
+Subject: Re: [PATCH] perf/x86/intel: Use rdmsrl_safe when initializing RAPL PMU.
+From: Stephane Eranian <eranian@google.com>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Srinivas <venkateshs@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 05:06:21PM +0200, Stephane Eranian wrote:
+On Wed, Apr 23, 2014 at 5:35 PM, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, Apr 23, 2014 at 05:18:29PM +0200, Stephane Eranian wrote:
+>> On Wed, Apr 23, 2014 at 5:16 PM, Borislav Petkov <bp@alien8.de> wrote:
+>> > On Wed, Apr 23, 2014 at 05:14:33PM +0200, Stephane Eranian wrote:
+>> >> Wouldn't rdmsrl_safe() return 0 on success?
+>> >
+>> > Yes.
+>> >
+>> then the if() test is wrong:
+>> if (!rdmsrl_safe())
+>>    return -1;
+>>
+>> Should be:
+>> if (rdmsrl_safe())
+>>   return -1;
+>>
+>> Or am I missing something?
+>
+> Yeah, that is wrong:
+>
+>         if (!rdmsrl_safe(MSR_RAPL_POWER_UNIT, &msr_rapl_power_unit_bits))
+>                 return -1;
+>
+> On error we return -EIO, on success 0. Just remove the "!".
+>
+Yeah, will post a patch ASAP. A comment describing return values
+where rdmsrl_safe() is defined would maybe help avoid problems in the future.
+Thanks.
 
-SNIP
-
-> > That is probably the behaviour we both expect.
-> >
-> > Jiri's patch takes all mmap events as pid maps and creates an initial map
-> > for them.  All future threads that don't have mappings will trying to use
-> > their pid's mapping as a fallback option.
-> >
-> > Because it is all pointer based now, updating the pid mappings
-> > automatically update all the thread mappings too.
-> >
-> > I believe this approach will is the right one and makes sense.  Do you
-> > think that works for you?
-> >
-> I just tried Jiri's 5 patches and my JIT patches, and it does work correctly.
-> My Java samples are correctly symbolized. So looks like we have a solution
-> that works for both of us though it seems complicated. But I can live with it.
-> Thanks Jiri.
-
-can I take this for your Tested-by?
-
-thanks,
-jirka
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
