@@ -1,173 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753386AbaDWFm7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 01:42:59 -0400
-Received: from ozlabs.org ([103.22.144.67]:58504 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752596AbaDWFl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 01:41:26 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Borislav Petkov <bp@alien8.de>, Jiri Olsa <jolsa@redhat.com>
-Cc: Borislav Petkov <bp@suse.de>, Sasha Levin <sasha.levin@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-        virtio-dev@lists.oasis-open.org,
-        virtualization@lists.linux-foundation.org,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <rric@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Namhyung Kim <namhyung@gmail.com>
-Subject: Re: [PATCH 1/3] tools: Unify export.h
-In-Reply-To: <1397493185-19521-2-git-send-email-bp@alien8.de>
-References: <1397493185-19521-1-git-send-email-bp@alien8.de> <1397493185-19521-2-git-send-email-bp@alien8.de>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 23 Apr 2014 13:37:03 +0930
-Message-ID: <87k3agheoo.fsf@rustcorp.com.au>
+	id S1753403AbaDWFpA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 01:45:00 -0400
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:59487 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752481AbaDWFo5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 01:44:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <53567E72.1030201@linaro.org>
+References: <1398176280-7258-1-git-send-email-leela.krishna@linaro.org> <53567E72.1030201@linaro.org>
+From: Leela Krishna Amudala <leela.krishna@linaro.org>
+Date: Wed, 23 Apr 2014 11:14:36 +0530
+Message-ID: <CAM7CM0=zVH-zvcAFAnmSWYL3F=ZUZJL0iGp5mRFKmxt-n+i=3w@mail.gmail.com>
+Subject: Re: [PATCH] ARM: EXYNOS: cpu hotplug: use v7_exit_coherency_flush
+ macro for cache disabling
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: linux-pm <linux-pm@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        "kgene.kim" <kgene.kim@samsung.com>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov <bp@alien8.de> writes:
-> From: Borislav Petkov <bp@suse.de>
->
-> So tools/ has been growing three, at a different stage of their
-> development export.h headers and so we should unite into one. Add
-> tools/include/ to the include path of virtio and liblockdep to pick the
-> shared header now.
+Hi Daniel,
 
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Thanks for reviewing the patch.
 
-Thanks,
-Rusty.
+On Tue, Apr 22, 2014 at 8:06 PM, Daniel Lezcano
+<daniel.lezcano@linaro.org> wrote:
+> On 04/22/2014 04:18 PM, Leela Krishna Amudala wrote:
+>>
+>> Remove the duplicated code for cache disabling and use
+>> "v7_exit_coherency_flush"
+>> macro to do the same job.
+>
+>
+> Hi Leela,
+>
+> thanks for this patch! It would be nice if you can describe why those macros
+> can be replaced by the generic v7_exit_coherency_flush macro.
+>
+
+Okay, will give the description in commit message
 
 >
-> Cc: Sasha Levin <sasha.levin@oracle.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-> Cc: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> Cc: linux-kernel@vger.kernel.org
-> Cc: virtio-dev@lists.oasis-open.org
-> Cc: virtualization@lists.linux-foundation.org
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  tools/{virtio => include}/linux/export.h  | 5 +++++
->  tools/lib/lockdep/Makefile                | 2 +-
->  tools/lib/lockdep/uinclude/linux/export.h | 7 -------
->  tools/perf/MANIFEST                       | 1 +
->  tools/perf/Makefile.perf                  | 2 +-
->  tools/perf/util/include/linux/export.h    | 6 ------
->  tools/virtio/Makefile                     | 2 +-
->  7 files changed, 9 insertions(+), 16 deletions(-)
->  rename tools/{virtio => include}/linux/export.h (70%)
->  delete mode 100644 tools/lib/lockdep/uinclude/linux/export.h
->  delete mode 100644 tools/perf/util/include/linux/export.h
+>>
+>> Signed-off-by: Leela Krishna Amudala <leela.krishna@linaro.org>
+>>
+>> ---
+>> cpu hotplug is tested with 3.15-rc1 on Origen(which has cortex A9) and
+>> Arndale octa(which has cortex A7 and A15) boards.
+>>
+>>   arch/arm/mach-exynos/hotplug.c |   56
+>> ++--------------------------------------
+>>   1 file changed, 2 insertions(+), 54 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-exynos/hotplug.c
+>> b/arch/arm/mach-exynos/hotplug.c
+>> index 5eead53..9eb8d1b 100644
+>> --- a/arch/arm/mach-exynos/hotplug.c
+>> +++ b/arch/arm/mach-exynos/hotplug.c
+>> @@ -24,56 +24,6 @@
+>>   #include "common.h"
+>>   #include "regs-pmu.h"
+>>
+>> -static inline void cpu_enter_lowpower_a9(void)
+>> -{
+>> -       unsigned int v;
+>> -
+>> -       asm volatile(
+>> -       "       mcr     p15, 0, %1, c7, c5, 0\n"
+>> -       "       mcr     p15, 0, %1, c7, c10, 4\n"
+>> -       /*
+>> -        * Turn off coherency
+>> -        */
+>> -       "       mrc     p15, 0, %0, c1, c0, 1\n"
+>> -       "       bic     %0, %0, %3\n"
+>> -       "       mcr     p15, 0, %0, c1, c0, 1\n"
+>> -       "       mrc     p15, 0, %0, c1, c0, 0\n"
+>> -       "       bic     %0, %0, %2\n"
+>> -       "       mcr     p15, 0, %0, c1, c0, 0\n"
+>> -         : "=&r" (v)
+>> -         : "r" (0), "Ir" (CR_C), "Ir" (0x40)
+>> -         : "cc");
+>> -}
+>> -
+>> -static inline void cpu_enter_lowpower_a15(void)
+>> -{
+>> -       unsigned int v;
+>> -
+>> -       asm volatile(
+>> -       "       mrc     p15, 0, %0, c1, c0, 0\n"
+>> -       "       bic     %0, %0, %1\n"
+>> -       "       mcr     p15, 0, %0, c1, c0, 0\n"
+>> -         : "=&r" (v)
+>> -         : "Ir" (CR_C)
+>> -         : "cc");
+>> -
+>> -       flush_cache_louis();
+>> -
+>> -       asm volatile(
+>> -       /*
+>> -       * Turn off coherency
+>> -       */
+>> -       "       mrc     p15, 0, %0, c1, c0, 1\n"
+>> -       "       bic     %0, %0, %1\n"
+>> -       "       mcr     p15, 0, %0, c1, c0, 1\n"
+>> -       : "=&r" (v)
+>> -       : "Ir" (0x40)
+>> -       : "cc");
+>> -
+>> -       isb();
+>> -       dsb();
+>> -}
+>> -
+>>   static inline void cpu_leave_lowpower(void)
+>>   {
+>>         unsigned int v;
+>> @@ -141,10 +91,8 @@ void __ref exynos_cpu_die(unsigned int cpu)
+>>          * appropriate sequence for entering low power.
+>>          */
+>>         asm("mrc p15, 0, %0, c0, c0, 0" : "=r"(primary_part) : : "cc");
 >
-> diff --git a/tools/virtio/linux/export.h b/tools/include/linux/export.h
-> similarity index 70%
-> rename from tools/virtio/linux/export.h
-> rename to tools/include/linux/export.h
-> index 7311d326894a..d07e586b9ba0 100644
-> --- a/tools/virtio/linux/export.h
-> +++ b/tools/include/linux/export.h
-> @@ -1,5 +1,10 @@
-> +#ifndef _TOOLS_LINUX_EXPORT_H_
-> +#define _TOOLS_LINUX_EXPORT_H_
-> +
->  #define EXPORT_SYMBOL(sym)
->  #define EXPORT_SYMBOL_GPL(sym)
->  #define EXPORT_SYMBOL_GPL_FUTURE(sym)
->  #define EXPORT_UNUSED_SYMBOL(sym)
->  #define EXPORT_UNUSED_SYMBOL_GPL(sym)
-> +
-> +#endif
-> diff --git a/tools/lib/lockdep/Makefile b/tools/lib/lockdep/Makefile
-> index 07b0b7542511..41d4a99ce46e 100644
-> --- a/tools/lib/lockdep/Makefile
-> +++ b/tools/lib/lockdep/Makefile
-> @@ -112,7 +112,7 @@ export Q VERBOSE
->  
->  LIBLOCKDEP_VERSION = $(LL_VERSION).$(LL_PATCHLEVEL).$(LL_EXTRAVERSION)
->  
-> -INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include $(CONFIG_INCLUDES)
-> +INCLUDES = -I. -I/usr/local/include -I./uinclude -I./include -I../../include $(CONFIG_INCLUDES)
->  
->  # Set compile option CFLAGS if not set elsewhere
->  CFLAGS ?= -g -DCONFIG_LOCKDEP -DCONFIG_STACKTRACE -DCONFIG_PROVE_LOCKING -DBITS_PER_LONG=__WORDSIZE -DLIBLOCKDEP_VERSION='"$(LIBLOCKDEP_VERSION)"' -rdynamic -O0 -g
-> diff --git a/tools/lib/lockdep/uinclude/linux/export.h b/tools/lib/lockdep/uinclude/linux/export.h
-> deleted file mode 100644
-> index 6bdf3492c535..000000000000
-> --- a/tools/lib/lockdep/uinclude/linux/export.h
-> +++ /dev/null
-> @@ -1,7 +0,0 @@
-> -#ifndef _LIBLOCKDEP_LINUX_EXPORT_H_
-> -#define _LIBLOCKDEP_LINUX_EXPORT_H_
-> -
-> -#define EXPORT_SYMBOL(sym)
-> -#define EXPORT_SYMBOL_GPL(sym)
-> -
-> -#endif
-> diff --git a/tools/perf/MANIFEST b/tools/perf/MANIFEST
-> index c0c87c87b60f..81783c2037fc 100644
-> --- a/tools/perf/MANIFEST
-> +++ b/tools/perf/MANIFEST
-> @@ -7,6 +7,7 @@ tools/lib/symbol/kallsyms.h
->  tools/include/asm/bug.h
->  tools/include/linux/compiler.h
->  tools/include/linux/hash.h
-> +tools/include/linux/export.h
->  include/linux/const.h
->  include/linux/perf_event.h
->  include/linux/rbtree.h
-> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-> index e96923310d57..595fcbeb8262 100644
-> --- a/tools/perf/Makefile.perf
-> +++ b/tools/perf/Makefile.perf
-> @@ -222,7 +222,7 @@ LIB_H += util/include/linux/const.h
->  LIB_H += util/include/linux/ctype.h
->  LIB_H += util/include/linux/kernel.h
->  LIB_H += util/include/linux/list.h
-> -LIB_H += util/include/linux/export.h
-> +LIB_H += ../include/linux/export.h
->  LIB_H += util/include/linux/poison.h
->  LIB_H += util/include/linux/rbtree.h
->  LIB_H += util/include/linux/rbtree_augmented.h
-> diff --git a/tools/perf/util/include/linux/export.h b/tools/perf/util/include/linux/export.h
-> deleted file mode 100644
-> index b43e2dc21e04..000000000000
-> --- a/tools/perf/util/include/linux/export.h
-> +++ /dev/null
-> @@ -1,6 +0,0 @@
-> -#ifndef PERF_LINUX_MODULE_H
-> -#define PERF_LINUX_MODULE_H
-> -
-> -#define EXPORT_SYMBOL(name)
-> -
-> -#endif
-> diff --git a/tools/virtio/Makefile b/tools/virtio/Makefile
-> index 3187c62d9814..9325f4693821 100644
-> --- a/tools/virtio/Makefile
-> +++ b/tools/virtio/Makefile
-> @@ -3,7 +3,7 @@ test: virtio_test vringh_test
->  virtio_test: virtio_ring.o virtio_test.o
->  vringh_test: vringh_test.o vringh.o virtio_ring.o
->  
-> -CFLAGS += -g -O2 -Wall -I. -I ../../usr/include/ -Wno-pointer-sign -fno-strict-overflow -fno-strict-aliasing -fno-common -MMD -U_FORTIFY_SOURCE
-> +CFLAGS += -g -O2 -Wall -I. -I../include/ -I ../../usr/include/ -Wno-pointer-sign -fno-strict-overflow -fno-strict-aliasing -fno-common -MMD -U_FORTIFY_SOURCE
->  vpath %.c ../../drivers/virtio ../../drivers/vhost
->  mod:
->  	${MAKE} -C `pwd`/../.. M=`pwd`/vhost_test
-> -- 
-> 1.9.0
+>
+> Can't you remove this asm line above as well as the primary_part variable ?
+
+Didn't notice it, will remove this.
+
+>
+>
+>> -       if ((primary_part & 0xfff0) == 0xc0f0)
+>> -               cpu_enter_lowpower_a15();
+>> -       else
+>> -               cpu_enter_lowpower_a9();
+>> +
+>> +       v7_exit_coherency_flush(louis);
+>>
+>>         platform_do_lowpower(cpu, &spurious);
+>>
+>>
+>
 >
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+>
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+>
