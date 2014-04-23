@@ -1,1065 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631AbaDWAEE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 20:04:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50772 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750705AbaDWAD5 (ORCPT
+	id S1752852AbaDWAEv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 20:04:51 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:35409 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751898AbaDWAEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 20:03:57 -0400
-Date: Tue, 22 Apr 2014 17:06:47 -0700
-From: Greg KH <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@vger.kernel.org
-Cc: lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.13.11
-Message-ID: <20140423000647.GB32144@kroah.com>
-References: <20140423000635.GA32144@kroah.com>
+	Tue, 22 Apr 2014 20:04:49 -0400
+Date: Wed, 23 Apr 2014 02:04:45 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: Re: [PATCH] workqueue: allow changing attributions of ordered
+ workqueue
+Message-ID: <20140423000443.GC18483@localhost.localdomain>
+References: <1395940862-31428-1-git-send-email-fweisbec@gmail.com>
+ <534D02B0.1000801@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140423000635.GA32144@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <534D02B0.1000801@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff --git a/Makefile b/Makefile
-index 982ade0ad2dc..e7d3c5b13118 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1,6 +1,6 @@
- VERSION = 3
- PATCHLEVEL = 13
--SUBLEVEL = 10
-+SUBLEVEL = 11
- EXTRAVERSION =
- NAME = One Giant Leap for Frogkind
- 
-diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
-index d4f7a6a163dc..6c95f4de077f 100644
---- a/arch/sparc/Kconfig
-+++ b/arch/sparc/Kconfig
-@@ -26,7 +26,7 @@ config SPARC
- 	select RTC_DRV_M48T59
- 	select HAVE_DMA_ATTRS
- 	select HAVE_DMA_API_DEBUG
--	select HAVE_ARCH_JUMP_LABEL
-+	select HAVE_ARCH_JUMP_LABEL if SPARC64
- 	select GENERIC_IRQ_SHOW
- 	select ARCH_WANT_IPC_PARSE_VERSION
- 	select GENERIC_PCI_IOMAP
-diff --git a/arch/sparc/kernel/process_64.c b/arch/sparc/kernel/process_64.c
-index 32a280ec38c1..d7b4967f8fa6 100644
---- a/arch/sparc/kernel/process_64.c
-+++ b/arch/sparc/kernel/process_64.c
-@@ -58,9 +58,12 @@ void arch_cpu_idle(void)
- {
- 	if (tlb_type != hypervisor) {
- 		touch_nmi_watchdog();
-+		local_irq_enable();
- 	} else {
- 		unsigned long pstate;
- 
-+		local_irq_enable();
-+
-                 /* The sun4v sleeping code requires that we have PSTATE.IE cleared over
-                  * the cpu sleep hypervisor call.
-                  */
-@@ -82,7 +85,6 @@ void arch_cpu_idle(void)
- 			: "=&r" (pstate)
- 			: "i" (PSTATE_IE));
- 	}
--	local_irq_enable();
- }
- 
- #ifdef CONFIG_HOTPLUG_CPU
-diff --git a/arch/sparc/kernel/syscalls.S b/arch/sparc/kernel/syscalls.S
-index 87729fff13b9..33a17e7b3ccd 100644
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -189,7 +189,8 @@ linux_sparc_syscall32:
- 	 mov	%i0, %l5				! IEU1
- 5:	call	%l7					! CTI	Group brk forced
- 	 srl	%i5, 0, %o5				! IEU1
--	ba,a,pt	%xcc, 3f
-+	ba,pt	%xcc, 3f
-+	 sra	%o0, 0, %o0
- 
- 	/* Linux native system calls enter here... */
- 	.align	32
-@@ -217,7 +218,6 @@ linux_sparc_syscall:
- 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
- ret_sys_call:
- 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
--	sra	%o0, 0, %o0
- 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
- 	sllx	%g2, 32, %g2
- 
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index 9f7ca266864a..832d05a914ba 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -26,6 +26,7 @@
- #include <asm/irq_regs.h>
- #include <asm/i8259.h>
- #include <asm/apic.h>
-+#include <asm/timer.h>
- 
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
-@@ -105,6 +106,11 @@ static void __init ms_hyperv_init_platform(void)
- 
- 	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
- 		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-+
-+#ifdef CONFIG_X86_IO_APIC
-+	no_timer_check = 1;
-+#endif
-+
- }
- 
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index bc4a088f9023..6d7d5a1260a6 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -203,18 +203,15 @@ static void __init intel_remapping_check(int num, int slot, int func)
- 	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
- 
- 	/*
-- 	 * Revision 13 of all triggering devices id in this quirk have
--	 * a problem draining interrupts when irq remapping is enabled,
--	 * and should be flagged as broken.  Additionally revisions 0x12
--	 * and 0x22 of device id 0x3405 has this problem.
-+	 * Revision <= 13 of all triggering devices id in this quirk
-+	 * have a problem draining interrupts when irq remapping is
-+	 * enabled, and should be flagged as broken. Additionally
-+	 * revision 0x22 of device id 0x3405 has this problem.
- 	 */
--	if (revision == 0x13)
-+	if (revision <= 0x13)
- 		set_irq_remapping_broken();
--	else if ((device == 0x3405) &&
--	    ((revision == 0x12) ||
--	     (revision == 0x22)))
-+	else if (device == 0x3405 && revision == 0x22)
- 		set_irq_remapping_broken();
--
- }
- 
- /*
-diff --git a/drivers/acpi/button.c b/drivers/acpi/button.c
-index c971929d75c2..ae8ca5c3e458 100644
---- a/drivers/acpi/button.c
-+++ b/drivers/acpi/button.c
-@@ -302,6 +302,10 @@ static void acpi_button_notify(struct acpi_device *device, u32 event)
- 			input_sync(input);
- 
- 			pm_wakeup_event(&device->dev, 0);
-+			acpi_bus_generate_netlink_event(
-+					device->pnp.device_class,
-+					dev_name(&device->dev),
-+					event, ++button->pushed);
- 		}
- 		break;
- 	default:
-diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
-index a22a7a502740..8156cafad11a 100644
---- a/drivers/char/ipmi/ipmi_bt_sm.c
-+++ b/drivers/char/ipmi/ipmi_bt_sm.c
-@@ -352,7 +352,7 @@ static inline void write_all_bytes(struct si_sm_data *bt)
- 
- static inline int read_all_bytes(struct si_sm_data *bt)
- {
--	unsigned char i;
-+	unsigned int i;
- 
- 	/*
- 	 * length is "framing info", minimum = 4: NetFn, Seq, Cmd, cCode.
-diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
-index e33b68be0391..3ac16c8cc938 100644
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -498,13 +498,13 @@ static void dw_pcie_prog_viewport_cfg1(struct pcie_port *pp, u32 busdev)
- 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
- 			  PCIE_ATU_VIEWPORT);
- 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
--	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- 	dw_pcie_writel_rc(pp, pp->cfg1_base, PCIE_ATU_LOWER_BASE);
- 	dw_pcie_writel_rc(pp, (pp->cfg1_base >> 32), PCIE_ATU_UPPER_BASE);
- 	dw_pcie_writel_rc(pp, pp->cfg1_base + pp->config.cfg1_size - 1,
- 			  PCIE_ATU_LIMIT);
- 	dw_pcie_writel_rc(pp, busdev, PCIE_ATU_LOWER_TARGET);
- 	dw_pcie_writel_rc(pp, 0, PCIE_ATU_UPPER_TARGET);
-+	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- }
- 
- static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
-@@ -513,7 +513,6 @@ static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
- 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0,
- 			  PCIE_ATU_VIEWPORT);
- 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
--	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- 	dw_pcie_writel_rc(pp, pp->mem_base, PCIE_ATU_LOWER_BASE);
- 	dw_pcie_writel_rc(pp, (pp->mem_base >> 32), PCIE_ATU_UPPER_BASE);
- 	dw_pcie_writel_rc(pp, pp->mem_base + pp->config.mem_size - 1,
-@@ -521,6 +520,7 @@ static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
- 	dw_pcie_writel_rc(pp, pp->config.mem_bus_addr, PCIE_ATU_LOWER_TARGET);
- 	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.mem_bus_addr),
- 			  PCIE_ATU_UPPER_TARGET);
-+	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- }
- 
- static void dw_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
-@@ -529,7 +529,6 @@ static void dw_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
- 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
- 			  PCIE_ATU_VIEWPORT);
- 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_IO, PCIE_ATU_CR1);
--	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- 	dw_pcie_writel_rc(pp, pp->io_base, PCIE_ATU_LOWER_BASE);
- 	dw_pcie_writel_rc(pp, (pp->io_base >> 32), PCIE_ATU_UPPER_BASE);
- 	dw_pcie_writel_rc(pp, pp->io_base + pp->config.io_size - 1,
-@@ -537,6 +536,7 @@ static void dw_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
- 	dw_pcie_writel_rc(pp, pp->config.io_bus_addr, PCIE_ATU_LOWER_TARGET);
- 	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.io_bus_addr),
- 			  PCIE_ATU_UPPER_TARGET);
-+	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
- }
- 
- static int dw_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
-@@ -773,7 +773,7 @@ void dw_pcie_setup_rc(struct pcie_port *pp)
- 
- 	/* setup RC BARs */
- 	dw_pcie_writel_rc(pp, 0x00000004, PCI_BASE_ADDRESS_0);
--	dw_pcie_writel_rc(pp, 0x00000004, PCI_BASE_ADDRESS_1);
-+	dw_pcie_writel_rc(pp, 0x00000000, PCI_BASE_ADDRESS_1);
- 
- 	/* setup interrupt pins */
- 	dw_pcie_readl_rc(pp, PCI_INTERRUPT_LINE, &val);
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 1a8a4fdafe6d..6f01c74d4ced 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -1134,6 +1134,9 @@ static int do_pci_enable_device(struct pci_dev *dev, int bars)
- 	if (dev->msi_enabled || dev->msix_enabled)
- 		return 0;
- 
-+	if (dev->msi_enabled || dev->msix_enabled)
-+		return 0;
-+
- 	pci_read_config_byte(dev, PCI_INTERRUPT_PIN, &pin);
- 	if (pin) {
- 		pci_read_config_word(dev, PCI_COMMAND, &cmd);
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 69725f7c32c1..410be822d59d 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1463,8 +1463,8 @@ static int sd_sync_cache(struct scsi_disk *sdkp)
- 			sd_print_sense_hdr(sdkp, &sshdr);
- 		/* we need to evaluate the error return  */
- 		if (scsi_sense_valid(&sshdr) &&
--			/* 0x3a is medium not present */
--			sshdr.asc == 0x3a)
-+			(sshdr.asc == 0x3a ||	/* medium not present */
-+			 sshdr.asc == 0x20))	/* invalid command */
- 				/* this is no error here */
- 				return 0;
- 
-diff --git a/drivers/staging/comedi/drivers/8255_pci.c b/drivers/staging/comedi/drivers/8255_pci.c
-index c55f234b29e6..26321f9f5caf 100644
---- a/drivers/staging/comedi/drivers/8255_pci.c
-+++ b/drivers/staging/comedi/drivers/8255_pci.c
-@@ -56,6 +56,7 @@ Configuration Options: not applicable, uses PCI auto config
- #include "../comedidev.h"
- 
- #include "8255.h"
-+#include "mite.h"
- 
- enum pci_8255_boardid {
- 	BOARD_ADLINK_PCI7224,
-@@ -79,6 +80,7 @@ struct pci_8255_boardinfo {
- 	const char *name;
- 	int dio_badr;
- 	int n_8255;
-+	unsigned int has_mite:1;
- };
- 
- static const struct pci_8255_boardinfo pci_8255_boards[] = {
-@@ -126,36 +128,43 @@ static const struct pci_8255_boardinfo pci_8255_boards[] = {
- 		.name		= "ni_pci-dio-96",
- 		.dio_badr	= 1,
- 		.n_8255		= 4,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PCIDIO96B] = {
- 		.name		= "ni_pci-dio-96b",
- 		.dio_badr	= 1,
- 		.n_8255		= 4,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PXI6508] = {
- 		.name		= "ni_pxi-6508",
- 		.dio_badr	= 1,
- 		.n_8255		= 4,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PCI6503] = {
- 		.name		= "ni_pci-6503",
- 		.dio_badr	= 1,
- 		.n_8255		= 1,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PCI6503B] = {
- 		.name		= "ni_pci-6503b",
- 		.dio_badr	= 1,
- 		.n_8255		= 1,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PCI6503X] = {
- 		.name		= "ni_pci-6503x",
- 		.dio_badr	= 1,
- 		.n_8255		= 1,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PXI_6503] = {
- 		.name		= "ni_pxi-6503",
- 		.dio_badr	= 1,
- 		.n_8255		= 1,
-+		.has_mite	= 1,
- 	},
- };
- 
-@@ -163,6 +172,25 @@ struct pci_8255_private {
- 	void __iomem *mmio_base;
- };
- 
-+static int pci_8255_mite_init(struct pci_dev *pcidev)
-+{
-+	void __iomem *mite_base;
-+	u32 main_phys_addr;
-+
-+	/* ioremap the MITE registers (BAR 0) temporarily */
-+	mite_base = pci_ioremap_bar(pcidev, 0);
-+	if (!mite_base)
-+		return -ENOMEM;
-+
-+	/* set data window to main registers (BAR 1) */
-+	main_phys_addr = pci_resource_start(pcidev, 1);
-+	writel(main_phys_addr | WENAB, mite_base + MITE_IODWBSR);
-+
-+	/* finished with MITE registers */
-+	iounmap(mite_base);
-+	return 0;
-+}
-+
- static int pci_8255_mmio(int dir, int port, int data, unsigned long iobase)
- {
- 	void __iomem *mmio_base = (void __iomem *)iobase;
-@@ -201,6 +229,12 @@ static int pci_8255_auto_attach(struct comedi_device *dev,
- 	if (ret)
- 		return ret;
- 
-+	if (board->has_mite) {
-+		ret = pci_8255_mite_init(pcidev);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	is_mmio = (pci_resource_flags(pcidev, board->dio_badr) &
- 		   IORESOURCE_MEM) != 0;
- 	if (is_mmio) {
-diff --git a/drivers/tty/ipwireless/tty.c b/drivers/tty/ipwireless/tty.c
-index 8fd72ff9436e..d917a34e94bb 100644
---- a/drivers/tty/ipwireless/tty.c
-+++ b/drivers/tty/ipwireless/tty.c
-@@ -177,9 +177,6 @@ void ipwireless_tty_received(struct ipw_tty *tty, unsigned char *data,
- 				": %d chars not inserted to flip buffer!\n",
- 				length - work);
- 
--	/*
--	 * This may sleep if ->low_latency is set
--	 */
- 	if (work)
- 		tty_flip_buffer_push(&tty->port);
- }
-diff --git a/drivers/tty/tty_buffer.c b/drivers/tty/tty_buffer.c
-index c043136fbe51..2b52d807934e 100644
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -332,14 +332,11 @@ EXPORT_SYMBOL(tty_insert_flip_string_flags);
-  *	Takes any pending buffers and transfers their ownership to the
-  *	ldisc side of the queue. It then schedules those characters for
-  *	processing by the line discipline.
-- *	Note that this function can only be used when the low_latency flag
-- *	is unset. Otherwise the workqueue won't be flushed.
-  */
- 
- void tty_schedule_flip(struct tty_port *port)
- {
- 	struct tty_bufhead *buf = &port->buf;
--	WARN_ON(port->low_latency);
- 
- 	buf->tail->commit = buf->tail->used;
- 	schedule_work(&buf->work);
-@@ -487,17 +484,15 @@ static void flush_to_ldisc(struct work_struct *work)
-  */
- void tty_flush_to_ldisc(struct tty_struct *tty)
- {
--	if (!tty->port->low_latency)
--		flush_work(&tty->port->buf.work);
-+	flush_work(&tty->port->buf.work);
- }
- 
- /**
-  *	tty_flip_buffer_push	-	terminal
-  *	@port: tty port to push
-  *
-- *	Queue a push of the terminal flip buffers to the line discipline. This
-- *	function must not be called from IRQ context if port->low_latency is
-- *	set.
-+ *	Queue a push of the terminal flip buffers to the line discipline.
-+ *	Can be called from IRQ/atomic context.
-  *
-  *	In the event of the queue being busy for flipping the work will be
-  *	held off and retried later.
-@@ -505,14 +500,7 @@ void tty_flush_to_ldisc(struct tty_struct *tty)
- 
- void tty_flip_buffer_push(struct tty_port *port)
- {
--	struct tty_bufhead *buf = &port->buf;
--
--	buf->tail->commit = buf->tail->used;
--
--	if (port->low_latency)
--		flush_to_ldisc(&buf->work);
--	else
--		schedule_work(&buf->work);
-+	tty_schedule_flip(port);
- }
- EXPORT_SYMBOL(tty_flip_buffer_push);
- 
-diff --git a/drivers/tty/tty_io.c b/drivers/tty/tty_io.c
-index c74a00ad7add..d3448a90f0f9 100644
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1271,12 +1271,13 @@ static void pty_line_name(struct tty_driver *driver, int index, char *p)
-  *
-  *	Locking: None
-  */
--static void tty_line_name(struct tty_driver *driver, int index, char *p)
-+static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
- {
- 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
--		strcpy(p, driver->name);
-+		return sprintf(p, "%s", driver->name);
- 	else
--		sprintf(p, "%s%d", driver->name, index + driver->name_base);
-+		return sprintf(p, "%s%d", driver->name,
-+			       index + driver->name_base);
- }
- 
- /**
-@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct device *dev,
- 		if (i >= ARRAY_SIZE(cs))
- 			break;
- 	}
--	while (i--)
--		count += sprintf(buf + count, "%s%d%c",
--				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
-+	while (i--) {
-+		int index = cs[i]->index;
-+		struct tty_driver *drv = cs[i]->device(cs[i], &index);
-+
-+		/* don't resolve tty0 as some programs depend on it */
-+		if (drv && (cs[i]->index > 0 || drv->major != TTY_MAJOR))
-+			count += tty_line_name(drv, index, buf + count);
-+		else
-+			count += sprintf(buf + count, "%s%d",
-+					 cs[i]->name, cs[i]->index);
-+
-+		count += sprintf(buf + count, "%c", i ? ' ':'\n');
-+	}
- 	console_unlock();
- 
- 	return count;
-diff --git a/drivers/usb/gadget/u_serial.c b/drivers/usb/gadget/u_serial.c
-index b369292d4b90..ad0aca812002 100644
---- a/drivers/usb/gadget/u_serial.c
-+++ b/drivers/usb/gadget/u_serial.c
-@@ -549,8 +549,8 @@ static void gs_rx_push(unsigned long _port)
- 		port->read_started--;
- 	}
- 
--	/* Push from tty to ldisc; without low_latency set this is handled by
--	 * a workqueue, so we won't get callbacks and can hold port_lock
-+	/* Push from tty to ldisc; this is handled by a workqueue,
-+	 * so we won't get callbacks and can hold port_lock
- 	 */
- 	if (do_push)
- 		tty_flip_buffer_push(&port->port);
-diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
-index 8072cfa8a3b1..7eb50f33935b 100644
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -3238,6 +3238,8 @@ static int barrier_all_devices(struct btrfs_fs_info *info)
- 	/* send down all the barriers */
- 	head = &info->fs_devices->devices;
- 	list_for_each_entry_rcu(dev, head, dev_list) {
-+		if (dev->missing)
-+			continue;
- 		if (!dev->bdev) {
- 			errors_send++;
- 			continue;
-@@ -3252,6 +3254,8 @@ static int barrier_all_devices(struct btrfs_fs_info *info)
- 
- 	/* wait for all the barriers */
- 	list_for_each_entry_rcu(dev, head, dev_list) {
-+		if (dev->missing)
-+			continue;
- 		if (!dev->bdev) {
- 			errors_wait++;
- 			continue;
-diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
-index c6a872a8a468..b329f967588f 100644
---- a/fs/btrfs/transaction.c
-+++ b/fs/btrfs/transaction.c
-@@ -685,7 +685,8 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
- 	int lock = (trans->type != TRANS_JOIN_NOLOCK);
- 	int err = 0;
- 
--	if (--trans->use_count) {
-+	if (trans->use_count > 1) {
-+		trans->use_count--;
- 		trans->block_rsv = trans->orig_rsv;
- 		return 0;
- 	}
-@@ -733,17 +734,10 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
- 	}
- 
- 	if (lock && ACCESS_ONCE(cur_trans->state) == TRANS_STATE_BLOCKED) {
--		if (throttle) {
--			/*
--			 * We may race with somebody else here so end up having
--			 * to call end_transaction on ourselves again, so inc
--			 * our use_count.
--			 */
--			trans->use_count++;
-+		if (throttle)
- 			return btrfs_commit_transaction(trans, root);
--		} else {
-+		else
- 			wake_up_process(info->transaction_kthread);
--		}
- 	}
- 
- 	if (trans->type & __TRANS_FREEZABLE)
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 02dd709b74c2..3a09bb7ac8c5 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2585,6 +2585,27 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
- 	ex_ee_block = le32_to_cpu(ex->ee_block);
- 	ex_ee_len = ext4_ext_get_actual_len(ex);
- 
-+	/*
-+	 * If we're starting with an extent other than the last one in the
-+	 * node, we need to see if it shares a cluster with the extent to
-+	 * the right (towards the end of the file). If its leftmost cluster
-+	 * is this extent's rightmost cluster and it is not cluster aligned,
-+	 * we'll mark it as a partial that is not to be deallocated.
-+	 */
-+
-+	if (ex != EXT_LAST_EXTENT(eh)) {
-+		ext4_fsblk_t current_pblk, right_pblk;
-+		long long current_cluster, right_cluster;
-+
-+		current_pblk = ext4_ext_pblock(ex) + ex_ee_len - 1;
-+		current_cluster = (long long)EXT4_B2C(sbi, current_pblk);
-+		right_pblk = ext4_ext_pblock(ex + 1);
-+		right_cluster = (long long)EXT4_B2C(sbi, right_pblk);
-+		if (current_cluster == right_cluster &&
-+			EXT4_PBLK_COFF(sbi, right_pblk))
-+			*partial_cluster = -right_cluster;
-+	}
-+
- 	trace_ext4_ext_rm_leaf(inode, start, ex, *partial_cluster);
- 
- 	while (ex >= EXT_FIRST_EXTENT(eh) &&
-@@ -2710,10 +2731,15 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
- 		err = ext4_ext_correct_indexes(handle, inode, path);
- 
- 	/*
--	 * Free the partial cluster only if the current extent does not
--	 * reference it. Otherwise we might free used cluster.
-+	 * If there's a partial cluster and at least one extent remains in
-+	 * the leaf, free the partial cluster if it isn't shared with the
-+	 * current extent.  If there's a partial cluster and no extents
-+	 * remain in the leaf, it can't be freed here.  It can only be
-+	 * freed when it's possible to determine if it's not shared with
-+	 * any other extent - when the next leaf is processed or when space
-+	 * removal is complete.
- 	 */
--	if (*partial_cluster > 0 &&
-+	if (*partial_cluster > 0 && eh->eh_entries &&
- 	    (EXT4_B2C(sbi, ext4_ext_pblock(ex) + ex_ee_len - 1) !=
- 	     *partial_cluster)) {
- 		int flags = get_default_free_blocks_flags(inode);
-@@ -4128,7 +4154,7 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
- 	struct ext4_extent newex, *ex, *ex2;
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 	ext4_fsblk_t newblock = 0;
--	int free_on_err = 0, err = 0, depth;
-+	int free_on_err = 0, err = 0, depth, ret;
- 	unsigned int allocated = 0, offset = 0;
- 	unsigned int allocated_clusters = 0;
- 	struct ext4_allocation_request ar;
-@@ -4189,9 +4215,13 @@ int ext4_ext_map_blocks(handle_t *handle, struct inode *inode,
- 			if (!ext4_ext_is_uninitialized(ex))
- 				goto out;
- 
--			allocated = ext4_ext_handle_uninitialized_extents(
-+			ret = ext4_ext_handle_uninitialized_extents(
- 				handle, inode, map, path, flags,
- 				allocated, newblock);
-+			if (ret < 0)
-+				err = ret;
-+			else
-+				allocated = ret;
- 			goto out3;
- 		}
- 	}
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index d754e3cf99a8..a16315957ef3 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -89,16 +89,29 @@ static inline struct inode *wb_inode(struct list_head *head)
- #define CREATE_TRACE_POINTS
- #include <trace/events/writeback.h>
- 
-+static void bdi_wakeup_thread(struct backing_dev_info *bdi)
-+{
-+	spin_lock_bh(&bdi->wb_lock);
-+	if (test_bit(BDI_registered, &bdi->state))
-+		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+	spin_unlock_bh(&bdi->wb_lock);
-+}
-+
- static void bdi_queue_work(struct backing_dev_info *bdi,
- 			   struct wb_writeback_work *work)
- {
- 	trace_writeback_queue(bdi, work);
- 
- 	spin_lock_bh(&bdi->wb_lock);
-+	if (!test_bit(BDI_registered, &bdi->state)) {
-+		if (work->done)
-+			complete(work->done);
-+		goto out_unlock;
-+	}
- 	list_add_tail(&work->list, &bdi->work_list);
--	spin_unlock_bh(&bdi->wb_lock);
--
- 	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+out_unlock:
-+	spin_unlock_bh(&bdi->wb_lock);
- }
- 
- static void
-@@ -114,7 +127,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
- 	work = kzalloc(sizeof(*work), GFP_ATOMIC);
- 	if (!work) {
- 		trace_writeback_nowork(bdi);
--		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+		bdi_wakeup_thread(bdi);
- 		return;
- 	}
- 
-@@ -161,7 +174,7 @@ void bdi_start_background_writeback(struct backing_dev_info *bdi)
- 	 * writeback as soon as there is no other work to do.
- 	 */
- 	trace_writeback_wake_background(bdi);
--	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+	bdi_wakeup_thread(bdi);
- }
- 
- /*
-@@ -1017,7 +1030,7 @@ void bdi_writeback_workfn(struct work_struct *work)
- 	current->flags |= PF_SWAPWRITE;
- 
- 	if (likely(!current_is_workqueue_rescuer() ||
--		   list_empty(&bdi->bdi_list))) {
-+		   !test_bit(BDI_registered, &bdi->state))) {
- 		/*
- 		 * The normal path.  Keep writing back @bdi until its
- 		 * work_list is empty.  Note that this path is also taken
-@@ -1039,10 +1052,10 @@ void bdi_writeback_workfn(struct work_struct *work)
- 		trace_writeback_pages_written(pages_written);
- 	}
- 
--	if (!list_empty(&bdi->work_list) ||
--	    (wb_has_dirty_io(wb) && dirty_writeback_interval))
--		queue_delayed_work(bdi_wq, &wb->dwork,
--			msecs_to_jiffies(dirty_writeback_interval * 10));
-+	if (!list_empty(&bdi->work_list))
-+		mod_delayed_work(bdi_wq, &wb->dwork, 0);
-+	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
-+		bdi_wakeup_thread_delayed(bdi);
- 
- 	current->flags &= ~PF_SWAPWRITE;
- }
-diff --git a/fs/jffs2/compr_rtime.c b/fs/jffs2/compr_rtime.c
-index 16a5047903a6..406d9cc84ba8 100644
---- a/fs/jffs2/compr_rtime.c
-+++ b/fs/jffs2/compr_rtime.c
-@@ -33,7 +33,7 @@ static int jffs2_rtime_compress(unsigned char *data_in,
- 				unsigned char *cpage_out,
- 				uint32_t *sourcelen, uint32_t *dstlen)
- {
--	short positions[256];
-+	unsigned short positions[256];
- 	int outpos = 0;
- 	int pos=0;
- 
-@@ -74,7 +74,7 @@ static int jffs2_rtime_decompress(unsigned char *data_in,
- 				  unsigned char *cpage_out,
- 				  uint32_t srclen, uint32_t destlen)
- {
--	short positions[256];
-+	unsigned short positions[256];
- 	int outpos = 0;
- 	int pos=0;
- 
-diff --git a/fs/jffs2/nodelist.h b/fs/jffs2/nodelist.h
-index e4619b00f7c5..fa35ff79ab35 100644
---- a/fs/jffs2/nodelist.h
-+++ b/fs/jffs2/nodelist.h
-@@ -231,7 +231,7 @@ struct jffs2_tmp_dnode_info
- 	uint32_t version;
- 	uint32_t data_crc;
- 	uint32_t partial_crc;
--	uint16_t csize;
-+	uint32_t csize;
- 	uint16_t overlapped;
- };
- 
-diff --git a/fs/jffs2/nodemgmt.c b/fs/jffs2/nodemgmt.c
-index 03310721712f..b6bd4affd9ad 100644
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -179,6 +179,7 @@ int jffs2_reserve_space(struct jffs2_sb_info *c, uint32_t minsize,
- 					spin_unlock(&c->erase_completion_lock);
- 
- 					schedule();
-+					remove_wait_queue(&c->erase_wait, &wait);
- 				} else
- 					spin_unlock(&c->erase_completion_lock);
- 			} else if (ret)
-@@ -211,20 +212,25 @@ out:
- int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
- 			   uint32_t *len, uint32_t sumsize)
- {
--	int ret = -EAGAIN;
-+	int ret;
- 	minsize = PAD(minsize);
- 
- 	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
- 
--	spin_lock(&c->erase_completion_lock);
--	while(ret == -EAGAIN) {
-+	while (true) {
-+		spin_lock(&c->erase_completion_lock);
- 		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
- 		if (ret) {
- 			jffs2_dbg(1, "%s(): looping, ret is %d\n",
- 				  __func__, ret);
- 		}
-+		spin_unlock(&c->erase_completion_lock);
-+
-+		if (ret == -EAGAIN)
-+			cond_resched();
-+		else
-+			break;
- 	}
--	spin_unlock(&c->erase_completion_lock);
- 	if (!ret)
- 		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
- 
-diff --git a/fs/xfs/xfs_da_btree.c b/fs/xfs/xfs_da_btree.c
-index 796272a2e129..e69d57be866b 100644
---- a/fs/xfs/xfs_da_btree.c
-+++ b/fs/xfs/xfs_da_btree.c
-@@ -1295,7 +1295,7 @@ xfs_da3_fixhashpath(
- 		node = blk->bp->b_addr;
- 		dp->d_ops->node_hdr_from_disk(&nodehdr, node);
- 		btree = dp->d_ops->node_tree_p(node);
--		if (be32_to_cpu(btree->hashval) == lasthash)
-+		if (be32_to_cpu(btree[blk->index].hashval) == lasthash)
- 			break;
- 		blk->hashval = lasthash;
- 		btree[blk->index].hashval = cpu_to_be32(lasthash);
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index 24819001f5c8..e488e9459a93 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -95,7 +95,7 @@ struct backing_dev_info {
- 	unsigned int max_ratio, max_prop_frac;
- 
- 	struct bdi_writeback wb;  /* default writeback info for this bdi */
--	spinlock_t wb_lock;	  /* protects work_list */
-+	spinlock_t wb_lock;	  /* protects work_list & wb.dwork scheduling */
- 
- 	struct list_head work_list;
- 
-diff --git a/include/linux/tty.h b/include/linux/tty.h
-index 97d660ed70c1..dda9ac596983 100644
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -202,7 +202,7 @@ struct tty_port {
- 	wait_queue_head_t	delta_msr_wait;	/* Modem status change */
- 	unsigned long		flags;		/* TTY flags ASY_*/
- 	unsigned char		console:1,	/* port is a console */
--				low_latency:1;	/* direct buffer flush */
-+				low_latency:1;	/* optional: tune for latency */
- 	struct mutex		mutex;		/* Locking */
- 	struct mutex		buf_mutex;	/* Buffer alloc lock */
- 	unsigned char		*xmit_buf;	/* Optional buffer */
-diff --git a/kernel/exit.c b/kernel/exit.c
-index a949819055d5..dcde2c4b61d0 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -559,9 +559,6 @@ static void reparent_leader(struct task_struct *father, struct task_struct *p,
- 				struct list_head *dead)
- {
- 	list_move_tail(&p->sibling, &p->real_parent->children);
--
--	if (p->exit_state == EXIT_DEAD)
--		return;
- 	/*
- 	 * If this is a threaded reparent there is no need to
- 	 * notify anyone anything has happened.
-@@ -569,9 +566,19 @@ static void reparent_leader(struct task_struct *father, struct task_struct *p,
- 	if (same_thread_group(p->real_parent, father))
- 		return;
- 
--	/* We don't want people slaying init.  */
-+	/*
-+	 * We don't want people slaying init.
-+	 *
-+	 * Note: we do this even if it is EXIT_DEAD, wait_task_zombie()
-+	 * can change ->exit_state to EXIT_ZOMBIE. If this is the final
-+	 * state, do_notify_parent() was already called and ->exit_signal
-+	 * doesn't matter.
-+	 */
- 	p->exit_signal = SIGCHLD;
- 
-+	if (p->exit_state == EXIT_DEAD)
-+		return;
-+
- 	/* If it has exited notify the new parent about this child's death. */
- 	if (!p->ptrace &&
- 	    p->exit_state == EXIT_ZOMBIE && thread_group_empty(p)) {
-@@ -783,6 +790,8 @@ void do_exit(long code)
- 	exit_shm(tsk);
- 	exit_files(tsk);
- 	exit_fs(tsk);
-+	if (group_dead)
-+		disassociate_ctty(1);
- 	exit_task_namespaces(tsk);
- 	exit_task_work(tsk);
- 	check_stack_usage();
-@@ -798,13 +807,9 @@ void do_exit(long code)
- 
- 	cgroup_exit(tsk, 1);
- 
--	if (group_dead)
--		disassociate_ctty(1);
--
- 	module_put(task_thread_info(tsk)->exec_domain->module);
- 
- 	proc_exit_connector(tsk);
--
- 	/*
- 	 * FIXME: do that only when needed, using sched_exit tracepoint
- 	 */
-diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-index 06c62de9c711..db95d8eb761b 100644
---- a/kernel/pid_namespace.c
-+++ b/kernel/pid_namespace.c
-@@ -318,7 +318,9 @@ static void *pidns_get(struct task_struct *task)
- 	struct pid_namespace *ns;
- 
- 	rcu_read_lock();
--	ns = get_pid_ns(task_active_pid_ns(task));
-+	ns = task_active_pid_ns(task);
-+	if (ns)
-+		get_pid_ns(ns);
- 	rcu_read_unlock();
- 
- 	return ns;
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 240fb62cf394..4612096b933d 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -152,7 +152,7 @@ static u32 map_id_range_down(struct uid_gid_map *map, u32 id, u32 count)
- 
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].first;
- 		last = first + map->extent[idx].count - 1;
-@@ -176,7 +176,7 @@ static u32 map_id_down(struct uid_gid_map *map, u32 id)
- 
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].first;
- 		last = first + map->extent[idx].count - 1;
-@@ -199,7 +199,7 @@ static u32 map_id_up(struct uid_gid_map *map, u32 id)
- 
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].lower_first;
- 		last = first + map->extent[idx].count - 1;
-@@ -615,9 +615,8 @@ static ssize_t map_write(struct file *file, const char __user *buf,
- 	 * were written before the count of the extents.
- 	 *
- 	 * To achieve this smp_wmb() is used on guarantee the write
--	 * order and smp_read_barrier_depends() is guaranteed that we
--	 * don't have crazy architectures returning stale data.
--	 *
-+	 * order and smp_rmb() is guaranteed that we don't have crazy
-+	 * architectures returning stale data.
- 	 */
- 	mutex_lock(&id_map_mutex);
- 
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index ce682f7a4f29..09d9591b7708 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -288,13 +288,19 @@ int bdi_has_dirty_io(struct backing_dev_info *bdi)
-  * Note, we wouldn't bother setting up the timer, but this function is on the
-  * fast-path (used by '__mark_inode_dirty()'), so we save few context switches
-  * by delaying the wake-up.
-+ *
-+ * We have to be careful not to postpone flush work if it is scheduled for
-+ * earlier. Thus we use queue_delayed_work().
-  */
- void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
- {
- 	unsigned long timeout;
- 
- 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
--	mod_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-+	spin_lock_bh(&bdi->wb_lock);
-+	if (test_bit(BDI_registered, &bdi->state))
-+		queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-+	spin_unlock_bh(&bdi->wb_lock);
- }
- 
- /*
-@@ -307,9 +313,6 @@ static void bdi_remove_from_list(struct backing_dev_info *bdi)
- 	spin_unlock_bh(&bdi_lock);
- 
- 	synchronize_rcu_expedited();
--
--	/* bdi_list is now unused, clear it to mark @bdi dying */
--	INIT_LIST_HEAD(&bdi->bdi_list);
- }
- 
- int bdi_register(struct backing_dev_info *bdi, struct device *parent,
-@@ -360,6 +363,11 @@ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
- 	 */
- 	bdi_remove_from_list(bdi);
- 
-+	/* Make sure nobody queues further work */
-+	spin_lock_bh(&bdi->wb_lock);
-+	clear_bit(BDI_registered, &bdi->state);
-+	spin_unlock_bh(&bdi->wb_lock);
-+
- 	/*
- 	 * Drain work list and shutdown the delayed_work.  At this point,
- 	 * @bdi->bdi_list is empty telling bdi_Writeback_workfn() that @bdi
-diff --git a/net/bluetooth/hci_event.c b/net/bluetooth/hci_event.c
-index 5935f748c0f9..75d34d150e8a 100644
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3596,7 +3596,13 @@ static void hci_le_ltk_request_evt(struct hci_dev *hdev, struct sk_buff *skb)
- 
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
- 
--	if (ltk->type & HCI_SMP_STK) {
-+	/* Ref. Bluetooth Core SPEC pages 1975 and 2004. STK is a
-+	 * temporary key used to encrypt a connection following
-+	 * pairing. It is used during the Encrypted Session Setup to
-+	 * distribute the keys. Later, security can be re-established
-+	 * using a distributed LTK.
-+	 */
-+	if (ltk->type == HCI_SMP_STK_SLAVE) {
- 		list_del(&ltk->list);
- 		kfree(ltk);
- 	}
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index 0356e1d437ca..f79fa8be203c 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -27,7 +27,7 @@
- #include "../integrity.h"
- 
- enum ima_show_type { IMA_SHOW_BINARY, IMA_SHOW_BINARY_NO_FIELD_LEN,
--		     IMA_SHOW_ASCII };
-+		     IMA_SHOW_BINARY_OLD_STRING_FMT, IMA_SHOW_ASCII };
- enum tpm_pcrs { TPM_PCR0 = 0, TPM_PCR8 = 8 };
- 
- /* digest size for IMA, fits SHA1 or MD5 */
-diff --git a/security/integrity/ima/ima_fs.c b/security/integrity/ima/ima_fs.c
-index db01125926bd..468a3ba3c539 100644
---- a/security/integrity/ima/ima_fs.c
-+++ b/security/integrity/ima/ima_fs.c
-@@ -160,6 +160,8 @@ static int ima_measurements_show(struct seq_file *m, void *v)
- 
- 		if (is_ima_template && strcmp(field->field_id, "d") == 0)
- 			show = IMA_SHOW_BINARY_NO_FIELD_LEN;
-+		if (is_ima_template && strcmp(field->field_id, "n") == 0)
-+			show = IMA_SHOW_BINARY_OLD_STRING_FMT;
- 		field->field_show(m, show, &e->template_data[i]);
- 	}
- 	return 0;
-diff --git a/security/integrity/ima/ima_template_lib.c b/security/integrity/ima/ima_template_lib.c
-index 1c2a63412656..f37a8035cf28 100644
---- a/security/integrity/ima/ima_template_lib.c
-+++ b/security/integrity/ima/ima_template_lib.c
-@@ -109,13 +109,16 @@ static void ima_show_template_data_binary(struct seq_file *m,
- 					  enum data_formats datafmt,
- 					  struct ima_field_data *field_data)
- {
-+	u32 len = (show == IMA_SHOW_BINARY_OLD_STRING_FMT) ?
-+	    strlen(field_data->data) : field_data->len;
-+
- 	if (show != IMA_SHOW_BINARY_NO_FIELD_LEN)
--		ima_putc(m, &field_data->len, sizeof(u32));
-+		ima_putc(m, &len, sizeof(len));
- 
--	if (!field_data->len)
-+	if (!len)
- 		return;
- 
--	ima_putc(m, field_data->data, field_data->len);
-+	ima_putc(m, field_data->data, len);
- }
- 
- static void ima_show_template_field_data(struct seq_file *m,
-@@ -129,6 +132,7 @@ static void ima_show_template_field_data(struct seq_file *m,
- 		break;
- 	case IMA_SHOW_BINARY:
- 	case IMA_SHOW_BINARY_NO_FIELD_LEN:
-+	case IMA_SHOW_BINARY_OLD_STRING_FMT:
- 		ima_show_template_data_binary(m, show, datafmt, field_data);
- 		break;
- 	default:
+Hi Lai,
+
+So actually I'll need to use apply_workqueue_attr() on the next patchset. So
+I'm considering this patch.
+
+Some comments below:
+
+On Tue, Apr 15, 2014 at 05:58:08PM +0800, Lai Jiangshan wrote:
+> From 534f1df8a5a03427b0fc382150fbd34e05648a28 Mon Sep 17 00:00:00 2001
+> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+> Date: Tue, 15 Apr 2014 17:52:19 +0800
+> Subject: [PATCH] workqueue: allow changing attributions of ordered workqueue
+> 
+> Allow changing ordered workqueue's cpumask
+> Allow changing ordered workqueue's nice value
+> Allow registering ordered workqueue to SYSFS
+> 
+> Still disallow changing ordered workqueue's max_active which breaks ordered guarantee
+> Still disallow changing ordered workqueue's no_numa which breaks ordered guarantee
+> 
+> Changing attributions will introduce new pwqs in a given workqueue, and
+> old implement doesn't have any solution to handle multi-pwqs on ordered workqueues,
+> so changing attributions for ordered workqueues is disallowed.
+> 
+> After I investigated several solutions which try to handle multi-pwqs on ordered workqueues,
+> I found the solution which reuse max_active are the simplest.
+> In this solution, the new introduced pwq's max_active is kept as *ZERO* until it become
+> the oldest pwq.
+
+I don't see where this zero value is enforced. Do you mean 1? That's the initial value of
+ordered max_active pools.
+
+> Thus only one (the oldest) pwq is active, and ordered is guarantee.
+> 
+> This solution forces ordered on higher level while the non-reentrancy is also
+> forced. so we don't need to queue any work to its previous pool. And we shouldn't
+> do it. we must disallow any work repeatedly requeues itself back-to-back
+> which keeps the oldest pwq stay and make newest(if have) pwq starvation(non-active for ever).
+> 
+> Build test only.
+> This patch depends on previous patch:
+> workqueue: add __WQ_FREEZING and remove POOL_FREEZING
+> 
+> Frederic:
+> 	You can pick this patch to your updated patchset before
+> 	TJ apply it.
+> 
+> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> ---
+>  kernel/workqueue.c |   66 ++++++++++++++++++++++++++++++---------------------
+>  1 files changed, 39 insertions(+), 27 deletions(-)
+> 
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 92c9ada..fadcc4a 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -1350,8 +1350,14 @@ retry:
+>  	 * If @work was previously on a different pool, it might still be
+>  	 * running there, in which case the work needs to be queued on that
+>  	 * pool to guarantee non-reentrancy.
+> +	 *
+> +	 * pwqs are guaranteed active orderly for ordered workqueue, and
+> +	 * it guarantees non-reentrancy for works. So any work doesn't need
+> +	 * to be queued on previous pool. And the works shouldn't be queued
+> +	 * on previous pool, since we need to guarantee the prevous pwq
+> +	 * releasable to avoid work-stavation on the newest pool.
+
+BTW, who needs this reentrancy guarantee? Is this an implicit guarantee for
+all workqueues that is there for backward compatibility? I've seen some
+patches dealing with that lately but I don't recall the details.
+
+>  	 */
+> -	last_pool = get_work_pool(work);
+> +	last_pool = wq->flags & __WQ_ORDERED ? NULL : get_work_pool(work);
+
+Does it hurt performance to do this old worker recovery? It seems to
+when I look at get_work_pool() and find_worker_executing_pool().
+
+Perhaps we can generalize this check to all wqs which have only one
+worker?
+
+Anyway that's just optimizations. Nothing that needs to be done in this
+patch.
+
+>  	if (last_pool && last_pool != pwq->pool) {
+>  		struct worker *worker;
+>  
+> @@ -3179,6 +3185,10 @@ static ssize_t wq_numa_store(struct device *dev, struct device_attribute *attr,
+>  	struct workqueue_attrs *attrs;
+>  	int v, ret;
+>  
+> +	/* Creating per-node pwqs breaks ordering guarantee. Keep no_numa = 1 */
+> +	if (WARN_ON(wq->flags & __WQ_ORDERED))
+> +		return -EINVAL;
+> +
+>  	attrs = wq_sysfs_prep_attrs(wq);
+>  	if (!attrs)
+>  		return -ENOMEM;
+> @@ -3239,14 +3249,6 @@ int workqueue_sysfs_register(struct workqueue_struct *wq)
+>  	struct wq_device *wq_dev;
+>  	int ret;
+>  
+> -	/*
+> -	 * Adjusting max_active or creating new pwqs by applyting
+> -	 * attributes breaks ordering guarantee.  Disallow exposing ordered
+> -	 * workqueues.
+> -	 */
+> -	if (WARN_ON(wq->flags & __WQ_ORDERED))
+> -		return -EINVAL;
+> -
+>  	wq->wq_dev = wq_dev = kzalloc(sizeof(*wq_dev), GFP_KERNEL);
+>  	if (!wq_dev)
+>  		return -ENOMEM;
+> @@ -3568,6 +3570,13 @@ static void rcu_free_pwq(struct rcu_head *rcu)
+>  			container_of(rcu, struct pool_workqueue, rcu));
+>  }
+>  
+> +static struct pool_workqueue *oldest_pwq(struct workqueue_struct *wq)
+> +{
+> +	return list_last_entry(&wq->pwqs, struct pool_workqueue, pwqs_node);
+> +}
+> +
+> +static void pwq_adjust_max_active(struct pool_workqueue *pwq);
+> +
+>  /*
+>   * Scheduled on system_wq by put_pwq() when an unbound pwq hits zero refcnt
+>   * and needs to be destroyed.
+> @@ -3583,14 +3592,12 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
+>  	if (WARN_ON_ONCE(!(wq->flags & WQ_UNBOUND)))
+>  		return;
+>  
+> -	/*
+> -	 * Unlink @pwq.  Synchronization against wq->mutex isn't strictly
+> -	 * necessary on release but do it anyway.  It's easier to verify
+> -	 * and consistent with the linking path.
+> -	 */
+>  	mutex_lock(&wq->mutex);
+>  	list_del_rcu(&pwq->pwqs_node);
+>  	is_last = list_empty(&wq->pwqs);
+> +	/* try to active the oldest pwq when needed */
+> +	if (!is_last && (wq->flags & __WQ_ORDERED))
+> +		pwq_adjust_max_active(oldest_pwq(wq));
+
+So this switches the new pwq's max active from 0 to 1?
+I still can't find where it is set to 0.
+
+>  	mutex_unlock(&wq->mutex);
+>  
+>  	mutex_lock(&wq_pool_mutex);
+> @@ -3609,6 +3616,16 @@ static void pwq_unbound_release_workfn(struct work_struct *work)
+>  	}
+>  }
+>  
+> +static bool pwq_active(struct pool_workqueue *pwq)
+> +{
+> +	/* Only the oldest pwq is active in the ordered wq */
+> +	if (pwq->wq->flags & __WQ_ORDERED)
+> +		return pwq == oldest_pwq(pwq->wq);
+> +
+> +	/* All pwqs in the non-ordered wq are active */
+> +	return true;
+> +}
+> +
+>  /**
+>   * pwq_adjust_max_active - update a pwq's max_active to the current setting
+>   * @pwq: target pool_workqueue
+> @@ -3626,7 +3643,7 @@ static void pwq_adjust_max_active(struct pool_workqueue *pwq)
+>  
+>  	spin_lock_irq(&pwq->pool->lock);
+>  
+> -	if (!(wq->flags & __WQ_FREEZING)) {
+> +	if (!(wq->flags & __WQ_FREEZING) && pwq_active(pwq)) {
+
+Ah! So that must be how we initially set the new max_active to 0.
+
+>  		pwq->max_active = wq->saved_max_active;
+>  
+>  		while (!list_empty(&pwq->delayed_works) &&
+> @@ -3680,11 +3697,11 @@ static void link_pwq(struct pool_workqueue *pwq)
+>  	 */
+>  	pwq->work_color = wq->work_color;
+>  
+> +	/* link in @pwq on the head of &wq->pwqs */
+> +	list_add_rcu(&pwq->pwqs_node, &wq->pwqs);
+> +
+>  	/* sync max_active to the current setting */
+>  	pwq_adjust_max_active(pwq);
+> -
+> -	/* link in @pwq */
+> -	list_add_rcu(&pwq->pwqs_node, &wq->pwqs);
+>  }
+>  
+>  /* obtain a pool matching @attr and create a pwq associating the pool and @wq */
+> @@ -3810,8 +3827,8 @@ int apply_workqueue_attrs(struct workqueue_struct *wq,
+>  	if (WARN_ON(!(wq->flags & WQ_UNBOUND)))
+>  		return -EINVAL;
+>  
+> -	/* creating multiple pwqs breaks ordering guarantee */
+> -	if (WARN_ON((wq->flags & __WQ_ORDERED) && !list_empty(&wq->pwqs)))
+> +	/* creating multiple per-node pwqs breaks ordering guarantee */
+> +	if (WARN_ON((wq->flags & __WQ_ORDERED) && !attrs->no_numa))
+>  		return -EINVAL;
+>  
+>  	pwq_tbl = kzalloc(wq_numa_tbl_len * sizeof(pwq_tbl[0]), GFP_KERNEL);
+> @@ -4004,7 +4021,7 @@ out_unlock:
+>  static int alloc_and_link_pwqs(struct workqueue_struct *wq)
+>  {
+>  	bool highpri = wq->flags & WQ_HIGHPRI;
+> -	int cpu, ret;
+> +	int cpu;
+>  
+>  	if (!(wq->flags & WQ_UNBOUND)) {
+>  		wq->cpu_pwqs = alloc_percpu(struct pool_workqueue);
+> @@ -4025,12 +4042,7 @@ static int alloc_and_link_pwqs(struct workqueue_struct *wq)
+>  		}
+>  		return 0;
+>  	} else if (wq->flags & __WQ_ORDERED) {
+> -		ret = apply_workqueue_attrs(wq, ordered_wq_attrs[highpri]);
+> -		/* there should only be single pwq for ordering guarantee */
+> -		WARN(!ret && (wq->pwqs.next != &wq->dfl_pwq->pwqs_node ||
+> -			      wq->pwqs.prev != &wq->dfl_pwq->pwqs_node),
+> -		     "ordering guarantee broken for workqueue %s\n", wq->name);
+> -		return ret;
+> +		return apply_workqueue_attrs(wq, ordered_wq_attrs[highpri]);
+>  	} else {
+>  		return apply_workqueue_attrs(wq, unbound_std_wq_attrs[highpri]);
+>  	}
+
+So I have mixed feelings with this patch given the complication. But it's probably
+better to take that direction.
+
+I just wish we had some way to automatically detect situations where a work
+mistakenly runs through re-entrancy. Because if it ever happens randomly,
+it's going to be a hell to debug.
+
+Thanks.
+
+> -- 
+> 1.7.4.4
+> 
