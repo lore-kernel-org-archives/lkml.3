@@ -1,87 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757004AbaDWO6G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:58:06 -0400
-Received: from mail-oa0-f41.google.com ([209.85.219.41]:63503 "EHLO
-	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756616AbaDWO6C (ORCPT
+	id S1756951AbaDWO7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:59:44 -0400
+Received: from hqemgate14.nvidia.com ([216.228.121.143]:17217 "EHLO
+	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113AbaDWO7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:58:02 -0400
+	Wed, 23 Apr 2014 10:59:42 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 23 Apr 2014 07:51:12 -0700
+Date: Wed, 23 Apr 2014 17:59:39 +0300
+From: Peter De Schrijver <pdeschrijver@nvidia.com>
+To: <mturquette@linaro.org>
+CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
+        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
+        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
+        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
+Subject: pull request for Tegra PLLE fixes
+Message-ID: <20140423145939.GA11307@tbergstrom-lnx.Nvidia.com>
 MIME-Version: 1.0
-In-Reply-To: <20140423144538.GN11096@twins.programming.kicks-ass.net>
-References: <1394739386-22260-1-git-send-email-venkateshs@google.com>
-	<CABPqkBRm8Ux15UY2+hF1TZdVsgVbYV+9XPiuh9m497Mr3oJ0Wg@mail.gmail.com>
-	<20140423144538.GN11096@twins.programming.kicks-ass.net>
-Date: Wed, 23 Apr 2014 16:49:55 +0200
-Message-ID: <CABPqkBT5xg+zQ45dugHiXM5XFYi+V3gsBmANevx25fE0S0iNXA@mail.gmail.com>
-Subject: Re: [PATCH] perf/x86/intel: Use rdmsrl_safe when initializing RAPL PMU.
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Venkatesh Srinivas <venkateshs@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 4:45 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, Apr 23, 2014 at 04:31:32PM +0200, Stephane Eranian wrote:
->> On Thu, Mar 13, 2014 at 8:36 PM, Venkatesh Srinivas
->> <venkateshs@google.com> wrote:
->> > CPUs which should support the RAPL counters according to
->> > Family/Model/Stepping may still issue #GP when attempting to access
->> > the RAPL MSRs. This may happen when Linux is running under KVM and
->> > we are passing-through host F/M/S data, for example. Use rdmsrl_safe
->> > to first access the RAPL_POWER_UNIT MSR; if this fails, do not
->> > attempt to use this PMU.
->> >
->> > Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
->> > ---
->> >  arch/x86/kernel/cpu/perf_event_intel_rapl.c | 12 +++++++++---
->> >  1 file changed, 9 insertions(+), 3 deletions(-)
->> >
->> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
->> > index 5ad35ad..95700e5 100644
->> > --- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
->> > +++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
->> > @@ -511,6 +511,7 @@ static int rapl_cpu_prepare(int cpu)
->> >         struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
->> >         int phys_id = topology_physical_package_id(cpu);
->> >         u64 ms;
->> > +       u64 msr_rapl_power_unit_bits;
->> >
->> >         if (pmu)
->> >                 return 0;
->> > @@ -518,6 +519,9 @@ static int rapl_cpu_prepare(int cpu)
->> >         if (phys_id < 0)
->> >                 return -1;
->> >
->> > +       if (!rdmsrl_safe(MSR_RAPL_POWER_UNIT, &msr_rapl_power_unit_bits))
->> > +               return -1;
->> > +
->> I have a problem with this patch on native hardware. This
->> rdmsrl_safe() systematically
->> fails when I know the MSR is perfectly valid on the CPU. Consequently, RAPL PMU
->> is disabled when I tried on IvyBridge and Haswell CPUs.
->>
->> I don't know the internals of rdmsrl_safe(). Maybe it is invoked too
->> early in the boot process.
->
-> Weird; so the way it works is that it adds an exception table entry for
-> the wrmsr instruction, so when the wrmsr generates a fault due to being
-> an invalid msr the fault handler looks at the exception table, and finds
-> the entry, which instructs it to continue execution at the error path
-> and return -EFAULT.
->
-On your machine, booted with 3.15-rc2, do you have /sys/devices/power?
-If not, and you have at least an SNB, you should have RAPL and that
-RAPL_UNIT MSR.
+Hi Mike,
 
-Proof is that if you read that MSR using /dev/cpu/msr it works just fine:
-# modprobe msr
-# rdmsr 0x606
-a1003
+This fixes a number of stability problems with PCIe on Tegra30.
 
-So something is broken somewhere.
+The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+
+  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+
+are available in the git repository at:
+  git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git  clk-tegra-fixes-3.15
+
+Thierry Reding (3):
+      clk: tegra: Fix PLLE programming
+      clk: tegra: Introduce divider mask and shift helpers
+      clk: tegra: Fix enabling of PLLE
+
+ drivers/clk/tegra/clk-pll.c |   64 +++++++++++++++++++++++++++++--------------
+ 1 files changed, 43 insertions(+), 21 deletions(-)
