@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959AbaDWRRn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:17:43 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:41580 "EHLO mail.zytor.com"
+	id S1754633AbaDWRUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:20:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:28922 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753572AbaDWRRl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:17:41 -0400
-Message-ID: <5357F572.1030804@zytor.com>
-Date: Wed, 23 Apr 2014 10:16:34 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Andrew Lutomirski <amluto@gmail.com>
-CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@linux.intel.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com> <CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com> <ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com> <CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com> <20140422112312.GB15882@pd.tnic> <20140422144659.GF15882@pd.tnic> <CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com> <53569467.1030809@zytor.com> <CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com> <CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com> <CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com> <CA+55aFzRf2Dhh3Eea1E74cpD9DXijUHpsXa71AURy_n6F_JKbw@mail.gmail.com> <CAObL_7EL8P0jgnjxkngqso47eFpYXHStNkvpzxSG_xCYgnaHng@mail.gmail.com> <5356A3B6.5050901@zytor.com> <20140423105411.2e166dd8@alan.etchedpixels.co.uk> <5357E214.6050501@zytor.com> <CAObL_7FePDB5EtZNKSbkc19maR3pH31tZSK-k+mcaFrKttYN3w@mail.gmail.com>
-In-Reply-To: <CAObL_7FePDB5EtZNKSbkc19maR3pH31tZSK-k+mcaFrKttYN3w@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
+	id S1752092AbaDWRUv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 13:20:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,912,1389772800"; 
+   d="scan'208";a="526376112"
+Subject: Re: [PATCH 1/3] crypto: Fix potential leak in test_aead_speed() if
+ aad_size is too big
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Christian Engelmayer <cengelma@gmx.at>
+Cc: herbert@gondor.apana.org.au, davem@davemloft.net,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20140421204559.75b8aa71@spike>
+References: <20140421204439.7999f1c6@spike>  <20140421204559.75b8aa71@spike>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Apr 2014 10:20:28 -0700
+Message-ID: <1398273628.2970.53.camel@schen9-DESK>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 10:08 AM, Andrew Lutomirski wrote:
+On Mon, 2014-04-21 at 20:45 +0200, Christian Engelmayer wrote:
+> Fix a potential memory leak in the error handling of test_aead_speed(). In case
+> the size check on the associate data length parameter fails, the function goes
+> through the wrong exit label. Reported by Coverity - CID 1163870.
 > 
-> The only way I can see to trigger the race is with sigreturn, but it's
-> still there.  Sigh.
+> Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+
+Acked.
+
+Tim
+
+> ---
+>  crypto/tcrypt.c | 14 ++++++--------
+>  1 file changed, 6 insertions(+), 8 deletions(-)
 > 
-
-I don't see why sigreturn needs to be involved... all you need is
-modify_ldt() on one CPU while the other is in the middle of an IRET
-return.  Small window, so hard to hit, but still.
-
-> 2. I've often pondered changing the way we return *to* CPL 0 to bypass
-> iret entirely.  It could be something like:
-> 
-> SS
-> RSP
-> EFLAGS
-> CS
-> RIP
-> 
-> push 16($rsp)
-> popfq [does this need to force rex.w somehow?]
-> ret $64
-
-When you say return to CPL 0 you mean intra-kernel return?  That isn't
-really the problem here, though.  I think this will also break the
-kernel debugger since it will have the wrong behavior for TF and RF.
-
->>> The other question I have is - is there any reason we can't fix up the
->>> IRET to do a 32bit return into a vsyscall type userspace page which then
->>> does a long jump or retf to the right place ?
->>
->> I did a writeup on this a while ago.  It does have the problem that you
->> need additional memory in userspace, which is per-thread and in the
->> right region of userspace; this pretty much means you have to muck about
->> with the user space stack when user space is running in weird modes.
->> This gets complex very quickly and does have some "footprint".
->> Furthermore, on some CPUs (not including any recent Intel CPUs) there is
->> still a way to leak bits [63:32].  I believe the in-kernel solution is
->> actually simpler.
->>
-> 
-> There's also no real guarantee that user code won't unmap the vdso.
-
-There is, but there is also at some point a "don't do that, then" aspect
-to it all.
-
-	-hpa
+> diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
+> index 870be7b..1856d7f 100644
+> --- a/crypto/tcrypt.c
+> +++ b/crypto/tcrypt.c
+> @@ -282,6 +282,11 @@ static void test_aead_speed(const char *algo, int enc, unsigned int sec,
+>  	unsigned int *b_size;
+>  	unsigned int iv_len;
+>  
+> +	if (aad_size >= PAGE_SIZE) {
+> +		pr_err("associate data length (%u) too big\n", aad_size);
+> +		return;
+> +	}
+> +
+>  	if (enc == ENCRYPT)
+>  		e = "encryption";
+>  	else
+> @@ -323,14 +328,7 @@ static void test_aead_speed(const char *algo, int enc, unsigned int sec,
+>  		b_size = aead_sizes;
+>  		do {
+>  			assoc = axbuf[0];
+> -
+> -			if (aad_size < PAGE_SIZE)
+> -				memset(assoc, 0xff, aad_size);
+> -			else {
+> -				pr_err("associate data length (%u) too big\n",
+> -					aad_size);
+> -				goto out_nosg;
+> -			}
+> +			memset(assoc, 0xff, aad_size);
+>  			sg_init_one(&asg[0], assoc, aad_size);
+>  
+>  			if ((*keysize + *b_size) > TVMEMSIZE * PAGE_SIZE) {
 
 
