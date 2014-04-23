@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757190AbaDWRnz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:43:55 -0400
-Received: from mout.gmx.net ([212.227.17.22]:49156 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756629AbaDWRnx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:43:53 -0400
-Date: Wed, 23 Apr 2014 19:43:35 +0200
-From: Christian Engelmayer <cengelma@gmx.at>
-To: Marek Vasut <marex@denx.de>
-Cc: tim.c.chen@linux.intel.com, herbert@gondor.apana.org.au,
-        davem@davemloft.net, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] crypto: Fix potential leak in test_aead_speed() if
- aad_size is too big
-Message-ID: <20140423194335.2d72d7a4@spike>
-In-Reply-To: <201404230133.05256.marex@denx.de>
-References: <20140421204439.7999f1c6@spike>
-	<20140421204559.75b8aa71@spike>
-	<201404230133.05256.marex@denx.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	id S1757621AbaDWRoY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:44:24 -0400
+Received: from g5t1626.atlanta.hp.com ([15.192.137.9]:52807 "EHLO
+	g5t1626.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757316AbaDWRoU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 13:44:20 -0400
+Message-ID: <5357FBDE.4040400@hp.com>
+Date: Wed, 23 Apr 2014 13:43:58 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
- boundary="Sig_//SuvCvuci+K/glLkCjY/wjv"; protocol="application/pgp-signature"
-X-Provags-ID: V03:K0:WhPFJZKPJGQepypgH8cynSDluB5z9TiZ+jIuEmxEF/8OL/AHY3I
- llIiqkDG7BHo0DvEp5jV0IBGaEoaqJTQh3jE5xH+wWvLHV6vz9C5uxXs/haIB8+KiI6KGEM
- hqmz1YOEDA1lCaU61iK0bUarixtPtj/fH4VhoBYB/b8wCM6ZW1Y57eszp/4lzDNb8ETvPUK
- 4YZrWL/4Qytn1pR0XL+sA==
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
+References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com> <1397747051-15401-6-git-send-email-Waiman.Long@hp.com> <20140417155649.GR11096@twins.programming.kicks-ass.net> <53504BB3.4010009@hp.com> <20140418082716.GZ11096@twins.programming.kicks-ass.net> <53516672.3010701@hp.com> <20140418190519.GA11182@twins.programming.kicks-ass.net> <53519BBF.7060506@hp.com> <5357CCEF.2000606@hp.com> <20140423145649.GE2777@phenom.dumpdata.com>
+In-Reply-To: <20140423145649.GE2777@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_//SuvCvuci+K/glLkCjY/wjv
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 04/23/2014 10:56 AM, Konrad Rzeszutek Wilk wrote:
+> On Wed, Apr 23, 2014 at 10:23:43AM -0400, Waiman Long wrote:
+>> On 04/18/2014 05:40 PM, Waiman Long wrote:
+>>> On 04/18/2014 03:05 PM, Peter Zijlstra wrote:
+>>>> On Fri, Apr 18, 2014 at 01:52:50PM -0400, Waiman Long wrote:
+>>>>> I am confused by your notation.
+>>>> Nah, I think I was confused :-) Make the 1 _Q_LOCKED_VAL though, as
+>>>> that's the proper constant to use.
+>>> Everyone gets confused once in a while:-) I have plenty of that myself.
+>>>
+>>> I will change 1 to _Q_LOCKED_VAL as suggested.
+>>>
+>>> -Longman
+>>
+>> The attached patch file contains the additional changes that I had
+>> made to qspinlock.c file so far. Please let me know if you or others
+>> have any additional feedbacks or changes that will need to go to the
+>> next version of the patch series.
+>>
+>> I am going to take vacation starting from tomorrow and will be back
+>> on 5/5 (Mon). So I will not be able to respond to emails within this
+>> period.
+>>
+>> BTW, is there any chance that this patch can be merged to 3.16?
+> Um, it needs to have Acks from KVM and Xen maintainers who have not
+> done so. Also Peter needs to chime in. (BTW, please CC
+> xen-devel@lists.xenproject.org next time you post so that David and Boris
+> can take a peek at it).
 
-On Wed, 23 Apr 2014 01:33:05 +0200, Marek Vasut <marex@denx.de> wrote:
-> On Monday, April 21, 2014 at 08:45:59 PM, Christian Engelmayer wrote:
-> > +	if (aad_size >=3D PAGE_SIZE) {
->=20
-> On an unrelated note ... Won't if (aad_size > PAGE_SIZE) be sufficient he=
-re?
+I will cc xen-devel@lists.xenproject.org when I sent out the next patch.
 
-=46rom what I have seen how the buffers are allocated via __get_free_page() I
-thought so too. However, as it previously read
+> I would strongly recommend you put all your patches on github (free git
+> service) so that we can test it and poke it at during your vacation
+> (and even after).
+>
 
-	if (aad_size < PAGE_SIZE)
-		memset(assoc, 0xff, aad_size);
-	else {
+I am not used to setting up a public repo in github. If I create a repo 
+there, should I put a snapshot of the whole kernel source tree or just a 
+portion of the relevant files as the base? With the later, it won't be 
+buildable.
 
-my intention was simply to make the modification so that the bug is address=
-ed
-without introducing an additional change.
-
-Regards,
-Christian
-
---Sig_//SuvCvuci+K/glLkCjY/wjv
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTV/vHAAoJEKssnEpaPQKEbvAP/R0pH9/JW+ljtvpi+thy7DnM
-KJ2yCr/OTDMuSvbvcPyeXxaaTfd/thDZL8J41tBrlb60fx/u5ncHCikOm/0DeEET
-DNCrRf57Ql/GoVhhHSfTEGlQ2dwsVM5y8gxh8O9C3WhWTHFt7spp0/ihaLqKRlQA
-ZJdOfgd1Cn6fi+K/5cI0NBjBHkYIMDgtFPyrvDz1gG0sK0T2M+p0K/gouz3D78te
-J54g+BmPNgFKOS/0rGQxlcPYdoaCosBrBcMVVobM/gfB+zpcWUH4wu0+FuktxNdH
-O474xrfiwVzLx9O/bumstBgnhUeUaaVPEuQMy1mFMnWVKiT2GCW6FSLyD6Qa9Qfe
-/7gVQC7d4Rbddp5nljkANUf/b3jNCSTiaQ6S5AbkXTUDLKLPs+pTTRKYnRuv0SXa
-wECbRPd4JMK+D5z6YbrtgDge8yaI8sm97ycJ/eMjDAtnWhK48rE2uK/LlLVGvzKf
-GtT0oQ0BRUY7BA77DOgIXptg+1Wv1zvfQfF1BpSHzab8zJ4hZPVT7Npv76N+0I2y
-0KxTqD0BKq+bRHr2k+Vl4Nwak/1ajqZUTdosz2j0O/MV2m4H5bEp89UztrSw0vHC
-VFq6XE3GKh989wKfUxV5Na3qsJsXxyMKV1KTabWxivbzk1+G+a1NR+aSqD5lg61b
-A0tf/fKNz15EZmP8oM5t
-=yzZ/
------END PGP SIGNATURE-----
-
---Sig_//SuvCvuci+K/glLkCjY/wjv--
+-Longman
