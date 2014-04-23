@@ -1,128 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013AbaDWG3c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 02:29:32 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:59157 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753988AbaDWG32 (ORCPT
+	id S1754046AbaDWGkj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 02:40:39 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:49407 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717AbaDWGkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 02:29:28 -0400
-Message-ID: <53575DC4.6080008@monstr.eu>
-Date: Wed, 23 Apr 2014 08:29:24 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Michal Simek <michal.simek@xilinx.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Grant Likely <grant.likely@linaro.org>,
-        Peter Crosthwaite <peter.crosthwaite@xilinx.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [RESEND PATCH v3 9/9] ARM: zynq: DT: Migrate UART to Cadence
- binding
-References: <1396657425-31029-1-git-send-email-soren.brinkmann@xilinx.com> <1396657425-31029-9-git-send-email-soren.brinkmann@xilinx.com>
-In-Reply-To: <1396657425-31029-9-git-send-email-soren.brinkmann@xilinx.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="ipujcCmbOhw5wbTsgMQGL1oEoJNNiIaW1"
+	Wed, 23 Apr 2014 02:40:37 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: [PATCH v2 2/2] perf tools: Get rid of on_exit() feature test
+Date: Wed, 23 Apr 2014 15:40:35 +0900
+Message-Id: <1398235235-4239-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398235235-4239-1-git-send-email-namhyung@kernel.org>
+References: <1398235235-4239-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---ipujcCmbOhw5wbTsgMQGL1oEoJNNiIaW1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+The on_exit() function was only used in perf record but it's gone in
+previous patch.
 
-On 04/05/2014 02:23 AM, Soren Brinkmann wrote:
-> The Zynq UART is Cadence IP and the driver has been renamed accordingly=
-=2E
-> Migrate the DT to use the new binding for the UART driver.
->=20
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Acked-by: Peter Crosthwaite <peter.crosthwaite@xilinx.com>
-> Acked-by: Rob Herring <robh@kernel.org>
-> Tested-by: Michal Simek <michal.simek@xilinx.com>
-> ---
-> This change depends on 'tty: xuartps: Rebrand driver as Cadence UART',
-> which introduces the new clock-names.
->=20
-> Changes in v3: None
-> Changes in v2: None
->=20
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> ---
->  arch/arm/boot/dts/zynq-7000.dtsi | 8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
->=20
-> diff --git a/arch/arm/boot/dts/zynq-7000.dtsi b/arch/arm/boot/dts/zynq-=
-7000.dtsi
-> index 789d0bacc110..d27eb5c21831 100644
-> --- a/arch/arm/boot/dts/zynq-7000.dtsi
-> +++ b/arch/arm/boot/dts/zynq-7000.dtsi
-> @@ -73,19 +73,19 @@
->  		};
-> =20
->  		uart0: uart@e0000000 {
-> -			compatible =3D "xlnx,xuartps";
-> +			compatible =3D "xlnx,xuartps", "cdns,uart-r1p8";
->  			status =3D "disabled";
->  			clocks =3D <&clkc 23>, <&clkc 40>;
-> -			clock-names =3D "ref_clk", "aper_clk";
-> +			clock-names =3D "uart_clk", "pclk";
->  			reg =3D <0xE0000000 0x1000>;
->  			interrupts =3D <0 27 4>;
->  		};
-> =20
->  		uart1: uart@e0001000 {
-> -			compatible =3D "xlnx,xuartps";
-> +			compatible =3D "xlnx,xuartps", "cdns,uart-r1p8";
->  			status =3D "disabled";
->  			clocks =3D <&clkc 24>, <&clkc 41>;
-> -			clock-names =3D "ref_clk", "aper_clk";
-> +			clock-names =3D "uart_clk", "pclk";
->  			reg =3D <0xE0001000 0x1000>;
->  			interrupts =3D <0 50 4>;
->  		};
->=20
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-record.c                     | 31 -------------------------
+ tools/perf/config/Makefile                      |  8 -------
+ tools/perf/config/feature-checks/Makefile       |  4 ----
+ tools/perf/config/feature-checks/test-all.c     |  5 ----
+ tools/perf/config/feature-checks/test-on-exit.c | 16 -------------
+ 5 files changed, 64 deletions(-)
+ delete mode 100644 tools/perf/config/feature-checks/test-on-exit.c
 
-Applied to zynq/dt2 branch.
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index d315be9e9be2..34f8c11e833b 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -30,37 +30,6 @@
+ #include <sched.h>
+ #include <sys/mman.h>
+ 
+-#ifndef HAVE_ON_EXIT_SUPPORT
+-#ifndef ATEXIT_MAX
+-#define ATEXIT_MAX 32
+-#endif
+-static int __on_exit_count = 0;
+-typedef void (*on_exit_func_t) (int, void *);
+-static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
+-static void *__on_exit_args[ATEXIT_MAX];
+-static int __exitcode = 0;
+-static void __handle_on_exit_funcs(void);
+-static int on_exit(on_exit_func_t function, void *arg);
+-#define exit(x) (exit)(__exitcode = (x))
+-
+-static int on_exit(on_exit_func_t function, void *arg)
+-{
+-	if (__on_exit_count == ATEXIT_MAX)
+-		return -ENOMEM;
+-	else if (__on_exit_count == 0)
+-		atexit(__handle_on_exit_funcs);
+-	__on_exit_funcs[__on_exit_count] = function;
+-	__on_exit_args[__on_exit_count++] = arg;
+-	return 0;
+-}
+-
+-static void __handle_on_exit_funcs(void)
+-{
+-	int i;
+-	for (i = 0; i < __on_exit_count; i++)
+-		__on_exit_funcs[i] (__exitcode, __on_exit_args[i]);
+-}
+-#endif
+ 
+ struct record {
+ 	struct perf_tool	tool;
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index ee21fa95ebcf..7b7003d11983 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -156,7 +156,6 @@ CORE_FEATURE_TESTS =			\
+ 	libpython-version		\
+ 	libslang			\
+ 	libunwind			\
+-	on-exit				\
+ 	stackprotector-all		\
+ 	timerfd				\
+ 	libdw-dwarf-unwind
+@@ -182,7 +181,6 @@ VF_FEATURE_TESTS =			\
+ 	libelf-getphdrnum		\
+ 	libelf-mmap			\
+ 	libpython-version		\
+-	on-exit				\
+ 	stackprotector-all		\
+ 	timerfd				\
+ 	libunwind-debug-frame		\
+@@ -541,12 +539,6 @@ ifneq ($(filter -lbfd,$(EXTLIBS)),)
+   CFLAGS += -DHAVE_LIBBFD_SUPPORT
+ endif
+ 
+-ifndef NO_ON_EXIT
+-  ifeq ($(feature-on-exit), 1)
+-    CFLAGS += -DHAVE_ON_EXIT_SUPPORT
+-  endif
+-endif
+-
+ ifndef NO_BACKTRACE
+   ifeq ($(feature-backtrace), 1)
+     CFLAGS += -DHAVE_BACKTRACE_SUPPORT
+diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+index 2da103c53f89..64c84e5f0514 100644
+--- a/tools/perf/config/feature-checks/Makefile
++++ b/tools/perf/config/feature-checks/Makefile
+@@ -24,7 +24,6 @@ FILES=					\
+ 	test-libslang.bin		\
+ 	test-libunwind.bin		\
+ 	test-libunwind-debug-frame.bin	\
+-	test-on-exit.bin		\
+ 	test-stackprotector-all.bin	\
+ 	test-timerfd.bin		\
+ 	test-libdw-dwarf-unwind.bin
+@@ -133,9 +132,6 @@ test-liberty-z.bin:
+ test-cplus-demangle.bin:
+ 	$(BUILD) -liberty
+ 
+-test-on-exit.bin:
+-	$(BUILD)
+-
+ test-backtrace.bin:
+ 	$(BUILD)
+ 
+diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+index fc37eb3ca17b..fe5c1e5c952f 100644
+--- a/tools/perf/config/feature-checks/test-all.c
++++ b/tools/perf/config/feature-checks/test-all.c
+@@ -69,10 +69,6 @@
+ # include "test-libbfd.c"
+ #undef main
+ 
+-#define main main_test_on_exit
+-# include "test-on-exit.c"
+-#undef main
+-
+ #define main main_test_backtrace
+ # include "test-backtrace.c"
+ #undef main
+@@ -110,7 +106,6 @@ int main(int argc, char *argv[])
+ 	main_test_gtk2(argc, argv);
+ 	main_test_gtk2_infobar(argc, argv);
+ 	main_test_libbfd();
+-	main_test_on_exit();
+ 	main_test_backtrace();
+ 	main_test_libnuma();
+ 	main_test_timerfd();
+diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
+deleted file mode 100644
+index 8e88b16e6ded..000000000000
+--- a/tools/perf/config/feature-checks/test-on-exit.c
++++ /dev/null
+@@ -1,16 +0,0 @@
+-#include <stdio.h>
+-#include <stdlib.h>
+-
+-static void exit_fn(int status, void *__data)
+-{
+-	printf("exit status: %d, data: %d\n", status, *(int *)__data);
+-}
+-
+-static int data = 123;
+-
+-int main(void)
+-{
+-	on_exit(exit_fn, &data);
+-
+-	return 321;
+-}
+-- 
+1.9.2
 
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---ipujcCmbOhw5wbTsgMQGL1oEoJNNiIaW1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNXXcQACgkQykllyylKDCHW9wCghT57+CmaEFZuaeDfMFT1ax04
-e8wAn2TPCGCyUm773W0cP6xAeeCYmXn4
-=Qb8/
------END PGP SIGNATURE-----
-
---ipujcCmbOhw5wbTsgMQGL1oEoJNNiIaW1--
