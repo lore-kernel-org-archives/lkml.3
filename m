@@ -1,215 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305AbaDWNw5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:52:57 -0400
-Received: from mail-we0-f176.google.com ([74.125.82.176]:55781 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbaDWNwe (ORCPT
+	id S1757052AbaDWNxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:53:36 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:53476 "EHLO
+	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756308AbaDWNwB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:52:34 -0400
-Message-ID: <5357C59E.8080400@monstr.eu>
-Date: Wed, 23 Apr 2014 15:52:30 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 23 Apr 2014 09:52:01 -0400
+Message-ID: <5357C57E.9070007@semaphore.gr>
+Date: Wed, 23 Apr 2014 16:51:58 +0300
+From: Stratos Karafotis <stratosk@semaphore.gr>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Rob Herring <robherring2@gmail.com>
-CC: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, Rob Herring <robh@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH v2 14/21] of/fdt: create common debugfs
-References: <1398215901-25609-1-git-send-email-robherring2@gmail.com> <1398215901-25609-15-git-send-email-robherring2@gmail.com>
-In-Reply-To: <1398215901-25609-15-git-send-email-robherring2@gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="88UUtkXqPO4B5klRm7exJsF1Uu6jmCtbo"
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] cpufreq: powernow-k8: Fix checkpatch warnings
+References: <5356DB92.1060600@semaphore.gr> <CAKohpo=6wTYHGvLcNUb4+MFdKeHobNA0A1W2Ta5yJqBCAceMhA@mail.gmail.com>
+In-Reply-To: <CAKohpo=6wTYHGvLcNUb4+MFdKeHobNA0A1W2Ta5yJqBCAceMhA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---88UUtkXqPO4B5klRm7exJsF1Uu6jmCtbo
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 23/04/2014 07:46 πμ, Viresh Kumar wrote:
+> On 23 April 2014 02:43, Stratos Karafotis <stratosk@semaphore.gr> wrote:
+>> @@ -342,7 +333,7 @@ static int core_voltage_pre_transition(struct powernow_k8_data *data,
+>>                 return 1;
+>>
+>>         if (savefid != data->currfid) {
+>> -               printk(KERN_ERR PFX "ph1 err, currfid changed 0x%x\n",
+>> +               pr_err("ph1 err, currfid changed 0x%x\n",
+>>                                 data->currfid);
+> 
+> This will come in single line?
+> 
+>> @@ -529,43 +510,39 @@ static int check_pst_table(struct powernow_k8_data *data, struct pst_s *pst,
+>>
+>>         for (j = 0; j < data->numps; j++) {
+>>                 if (pst[j].vid > LEAST_VID) {
+>> -                       printk(KERN_ERR FW_BUG PFX "vid %d invalid : 0x%x\n",
+>> -                              j, pst[j].vid);
+>> +                       pr_err(FW_BUG "vid %d invalid : 0x%x\n", j,
+>> +                              pst[j].vid);
+> 
+> Same here.
+> 
+>>  static const char missing_pss_msg[] =
+>>         KERN_ERR
+> 
+> remove this and use pr_err_once instead of printk_once()
+> 
+>> -       FW_BUG PFX "No compatible ACPI _PSS objects found.\n"
+>> -       FW_BUG PFX "First, make sure Cool'N'Quiet is enabled in the BIOS.\n"
+>> -       FW_BUG PFX "If that doesn't help, try upgrading your BIOS.\n";
+>> +       FW_BUG KBUILD_MODNAME
+>> +       "No compatible ACPI _PSS objects found.\n"
+> 
+> Don't break these, even if they cross 80 columns.
+> 
 
-On 04/23/2014 03:18 AM, Rob Herring wrote:
-> From: Rob Herring <robh@kernel.org>
->=20
-> Both powerpc and microblaze have the same FDT blob in debugfs feature.
-> Move this to common location and remove the powerpc and microblaze
-> implementations. This feature could become more useful when FDT
-> overlay support is added.
->=20
-> This changes the path of the blob from "$arch/flat-device-tree" to
-> "device-tree/flat-device-tree".
->=20
-> Signed-off-by: Rob Herring <robh@kernel.org>
-> Cc: Michal Simek <monstr@monstr.eu>
-> Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: linuxppc-dev@lists.ozlabs.org
-> ---
-> v2: move to after libfdt conversion
->=20
->  arch/microblaze/kernel/prom.c | 31 -------------------------------
->  arch/powerpc/kernel/prom.c    | 21 ---------------------
->  drivers/of/fdt.c              | 24 ++++++++++++++++++++++++
->  3 files changed, 24 insertions(+), 52 deletions(-)
->=20
-> diff --git a/arch/microblaze/kernel/prom.c b/arch/microblaze/kernel/pro=
-m.c
-> index c766306..68f0999 100644
-> --- a/arch/microblaze/kernel/prom.c
-> +++ b/arch/microblaze/kernel/prom.c
-> @@ -114,34 +114,3 @@ void __init early_init_devtree(void *params)
-> =20
->  	pr_debug(" <- early_init_devtree()\n");
->  }
-> -
-> -/*******
-> - *
-> - * New implementation of the OF "find" APIs, return a refcounted
-> - * object, call of_node_put() when done.  The device tree and list
-> - * are protected by a rw_lock.
-> - *
-> - * Note that property management will need some locking as well,
-> - * this isn't dealt with yet.
-> - *
-> - *******/
-> -
-> -#if defined(CONFIG_DEBUG_FS) && defined(DEBUG)
-> -static struct debugfs_blob_wrapper flat_dt_blob;
-> -
-> -static int __init export_flat_device_tree(void)
-> -{
-> -	struct dentry *d;
-> -
-> -	flat_dt_blob.data =3D initial_boot_params;
-> -	flat_dt_blob.size =3D initial_boot_params->totalsize;
-> -
-> -	d =3D debugfs_create_blob("flat-device-tree", S_IFREG | S_IRUSR,
-> -				of_debugfs_root, &flat_dt_blob);
-> -	if (!d)
-> -		return 1;
-> -
-> -	return 0;
-> -}
-> -device_initcall(export_flat_device_tree);
-> -#endif
-> diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-> index f971134..03624ce 100644
-> --- a/arch/powerpc/kernel/prom.c
-> +++ b/arch/powerpc/kernel/prom.c
-> @@ -29,7 +29,6 @@
->  #include <linux/bitops.h>
->  #include <linux/export.h>
->  #include <linux/kexec.h>
-> -#include <linux/debugfs.h>
->  #include <linux/irq.h>
->  #include <linux/memblock.h>
->  #include <linux/of.h>
-> @@ -924,23 +923,3 @@ bool arch_match_cpu_phys_id(int cpu, u64 phys_id)
->  {
->  	return (int)phys_id =3D=3D get_hard_smp_processor_id(cpu);
->  }
-> -
-> -#if defined(CONFIG_DEBUG_FS) && defined(DEBUG)
-> -static struct debugfs_blob_wrapper flat_dt_blob;
-> -
-> -static int __init export_flat_device_tree(void)
-> -{
-> -	struct dentry *d;
-> -
-> -	flat_dt_blob.data =3D initial_boot_params;
-> -	flat_dt_blob.size =3D be32_to_cpu(initial_boot_params->totalsize);
-> -
-> -	d =3D debugfs_create_blob("flat-device-tree", S_IFREG | S_IRUSR,
-> -				powerpc_debugfs_root, &flat_dt_blob);
-> -	if (!d)
-> -		return 1;
-> -
-> -	return 0;
-> -}
-> -__initcall(export_flat_device_tree);
-> -#endif
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 0b38a6a..4129f74 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -20,6 +20,7 @@
->  #include <linux/errno.h>
->  #include <linux/slab.h>
->  #include <linux/libfdt.h>
-> +#include <linux/debugfs.h>
-> =20
->  #include <asm/setup.h>  /* for COMMAND_LINE_SIZE */
->  #include <asm/page.h>
-> @@ -916,4 +917,27 @@ void __init unflatten_and_copy_device_tree(void)
->  	unflatten_device_tree();
->  }
-> =20
-> +#if defined(CONFIG_DEBUG_FS) && defined(DEBUG)
-> +static struct debugfs_blob_wrapper flat_dt_blob;
-> +
-> +static int __init of_flat_dt_debugfs_export_fdt(void)
-> +{
-> +	struct dentry *d =3D debugfs_create_dir("device-tree", NULL);
-> +
-> +	if (!d)
-> +		return -ENOENT;
-> +
-> +	flat_dt_blob.data =3D initial_boot_params;
-> +	flat_dt_blob.size =3D fdt_totalsize(initial_boot_params);
+Thanks for your review!
 
-As I wrote in different patch. I would move this to the end of this
-series and
-flat_dt_blob.size =3D of_get_flat_dt_size();
+Stratos
 
-> +
-> +	d =3D debugfs_create_blob("flat-device-tree", S_IFREG | S_IRUSR,
-> +				d, &flat_dt_blob);
-> +	if (!d)
-> +		return -ENOENT;
-> +
-> +	return 0;
-> +}
-> +module_init(of_flat_dt_debugfs_export_fdt);
-> +#endif
-> +
->  #endif /* CONFIG_OF_EARLY_FLATTREE */
->=20
-
-Other than comment above:
-For Microblaze:
-Tested-by: Michal Simek <monstr@monstr.eu>
-
-Thanks,
-Michal
-
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---88UUtkXqPO4B5klRm7exJsF1Uu6jmCtbo
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNXxZ4ACgkQykllyylKDCF3RQCfXnnWAfDfmGWypy71NoANLTHj
-ciIAniVfzjzk3tzlgxXG9bABc6s9tMI8
-=CNyh
------END PGP SIGNATURE-----
-
---88UUtkXqPO4B5klRm7exJsF1Uu6jmCtbo--
