@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711AbaDWE6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 00:58:24 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:52533 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215AbaDWE6X (ORCPT
+	id S1752752AbaDWE7U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 00:59:20 -0400
+Received: from lgeamrelo02.lge.com ([156.147.1.126]:37585 "EHLO
+	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215AbaDWE7T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 00:58:23 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 3/9] perf tools: Account entry stats when it's added to the output tree
-References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
-	<1398156591-11001-4-git-send-email-namhyung@kernel.org>
-	<20140422145449.GI1104@krava.brq.redhat.com>
-Date: Wed, 23 Apr 2014 13:58:22 +0900
-In-Reply-To: <20140422145449.GI1104@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Tue, 22 Apr 2014 16:54:49 +0200")
-Message-ID: <877g6gskup.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 23 Apr 2014 00:59:19 -0400
+X-Original-SENDERIP: 10.177.220.145
+X-Original-MAILFROM: iamjoonsoo.kim@lge.com
+Date: Wed, 23 Apr 2014 14:00:12 +0900
+From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+To: Weijie Yang <weijie.yang.kh@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Bob Liu <bob.liu@oracle.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] zram: correct offset usage in zram_bio_discard
+Message-ID: <20140423050012.GA17173@js1304-P5Q-DELUXE>
+References: <000001cf5dd8$ecf1c360$c6d54a20$%yang@samsung.com>
+ <20140422125539.f40a414ca0dbae703a23b977@linux-foundation.org>
+ <CAL1ERfM2VGyNUGYdQQyEyqyycnPMoHZn5Vk2Fo3WXL37KmFzCA@mail.gmail.com>
+ <20140423030855.GB11184@js1304-P5Q-DELUXE>
+ <CAL1ERfNt3VnN8p20P-Gw3HsvzvJZqUwBhikdN5gY+=OsV-8bRQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAL1ERfNt3VnN8p20P-Gw3HsvzvJZqUwBhikdN5gY+=OsV-8bRQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 16:54:49 +0200, Jiri Olsa wrote:
-> On Tue, Apr 22, 2014 at 05:49:45PM +0900, Namhyung Kim wrote:
->
-> SNIP
->
->>  }
->>  
->>  static int process_sample_event(struct perf_tool *tool,
->> @@ -234,19 +230,17 @@ static int __cmd_annotate(struct perf_annotate *ann)
->>  	total_nr_samples = 0;
->>  	evlist__for_each(session->evlist, pos) {
->>  		struct hists *hists = &pos->hists;
->> -		u32 nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
->>  
->> -		if (nr_samples > 0) {
->
-> so this condition of having some data is handled in the
-> resort I guess.. hm, it will just iterate 0 times ;-)
+On Wed, Apr 23, 2014 at 11:52:08AM +0800, Weijie Yang wrote:
+> On Wed, Apr 23, 2014 at 11:08 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> > On Wed, Apr 23, 2014 at 10:32:30AM +0800, Weijie Yang wrote:
+> >> On Wed, Apr 23, 2014 at 3:55 AM, Andrew Morton
+> >> <akpm@linux-foundation.org> wrote:
+> >> > On Tue, 22 Apr 2014 11:14:02 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
+> >> >
+> >> >> we want to skip the logical block which is partially covered by
+> >> >> the discard bio, so check the remaining size and subtract it if
+> >> >> there is a need to goto the next logical block.
+> >> >>
+> >> >> This patch corrects the offset usage in zram_bio_discard.
+> >> >>
+> >> >
+> >> > What were the end-user visible effects of the bug?
+> >> >
+> >> > Please always include this information when fixing something so that
+> >> > others can work out which kernel(s) need patching.
+> >> >
+> >>
+> >> Thanks for your advise, I will resend this patch and add the end-user
+> >> visible effect information.
+> >
+> > Thanks for fixing it.
+> >
+> > As far as I understand, there is no end-user visible effect, because
+> > request size is alway PAGE_SIZE aligned and if n < PAGE_SIZE,
+> > no real operation happens. Am I missing?
+> 
+> The zram only limit ZRAM_LOGICAL_BLOCK_SIZE(4K) aligned,
+> not PAGE_SIZE aligned.
+> 
+> Consider the following scenario:
+> on some architecture or config, PAGE_SIZE is 64K for example
+> filesystem is set up on zram disk without PAGE_SIZE aligned.
+> a discard bio leads to a offset = 4K, size=72K
+> normally, it should not really discard any physical block as it partially
+> cover two physical blocks.
+> However, with the current offset usage, it will discard the second
+> physical block and free its memory, which will cause filesystem breakdown.
+> 
 
-Right.  But I decided to keep this logic as is - will explain on other thread.
+I misunderstood what discard_granularity means. I thought that if I set
+discard_granularity=PAGE_SIZE, the size of discard request is aligned to
+PAGE_SIZE. But, by looking at the code, I notice that isn't true. So now, I
+understand your patch compeletely. Thanks again.
 
->
->> -			total_nr_samples += nr_samples;
->> -			hists__collapse_resort(hists, NULL);
->> -			hists__output_resort(hists);
->> +		hists__collapse_resort(hists, NULL);
->> +		hists__output_resort(hists);
->>  
->> -			if (symbol_conf.event_group &&
->> -			    !perf_evsel__is_group_leader(pos))
->> -				continue;
->> +		if (symbol_conf.event_group &&
->> +		    !perf_evsel__is_group_leader(pos))
->> +			continue;
->>  
->> -			hists__find_annotations(hists, pos, ann);
->> -		}
->> +		hists__find_annotations(hists, pos, ann);
->> +
->> +		total_nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
->>  	}
->>  
->>  	if (total_nr_samples == 0) {
->>  
->
-> SNIP
->
->> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
->> index 1c77714f668d..f955ae5a41c5 100644
->> --- a/tools/perf/util/hist.c
->> +++ b/tools/perf/util/hist.c
->> @@ -344,9 +344,11 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
->
-> I was wondering for a while about the name of this function
-> since it no longer increments only nr_entries.. but could not
-> think about any good replacement ;-)
->
-> We could also add hists__reset_nr_entries for the zeroing code.
-
-How about hists__inc_stats() and hists__reset_stats()?
-
->
->
->>  		hists__calc_col_len(hists, h);
->
-> also having hists__calc_col_len called here seems strange
-
-Agreed.  I'll move this out of the function.
-
-Thanks,
-Namhyung
+Thanks.
