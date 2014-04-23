@@ -1,103 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754126AbaDWJTi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 05:19:38 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:62064 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752000AbaDWJTd (ORCPT
+	id S1754707AbaDWJWB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 05:22:01 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:37466 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375AbaDWJV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 05:19:33 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-a9-535785a2c470
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Arnd Bergmann'" <arnd@arndb.de>, "'Jingoo Han'" <jg1.han@samsung.com>
-Cc: "'linux-pci'" <linux-pci@vger.kernel.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org, linaro-kernel@lists.linaro.org,
-        linux-kernel@vger.kernel.org, "'Liviu Dudau'" <Liviu.Dudau@arm.com>,
-        "'Byungho An'" <bh74.an@samsung.com>, ilho215.lee@samsung.com
-References: <000801cf592e$30b7bff0$92273fd0$%han@samsung.com>
- <000a01cf592e$67e592e0$37b0b8a0$%han@samsung.com>
- <201404221611.40087.arnd@arndb.de>
-In-reply-to: <201404221611.40087.arnd@arndb.de>
-Subject: RE: [RFC PATCH 2/2] PCI: exynos: Add PCIe support for Samsung GH7 SoC
-Date: Wed, 23 Apr 2014 18:19:30 +0900
-Message-id: <031b01cf5ed5$21d536a0$657fa3e0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQE7j5vEO2bPBvFlE8X5JkO9YLQfLwI5mSp5AVCKzFycKjZeUA==
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t8zQ91FreHBBhtOm1n8nXSM3eLquWOM
-	FkuaMiyO/lvIaHF54SVWi/eHnjFbbHp8jdXi8q45bBZn5x1nsziwtJ3Fgctjzbw1jB6/f01i
-	9FiwqdRj85J6j9v/HjN79G1ZxejxeZNcAHsUl01Kak5mWWqRvl0CV8aZDTfZC7q4K1reP2Bs
-	YLzD0cXIySEhYCLRO+UMG4QtJnHh3nogm4tDSGAZo8TUXW+YYYp+L7/GCpGYziixpn8vC4Tz
-	l1Gi7+51sCo2AQ2Jw++fsXcxcnCICLhLNJ4oA6lhFljAJPF373uwGiGBaYwSs28Jg9icAvoS
-	a1ZPAFstLOAnsWTBSTCbRUBVouniWSYQm1fAUuJ310RWCFtQ4sfkeywgNrOAlsT6nceZIGx5
-	ic1r3kJdqiCx4+xrRhBbRMBJ4t3fN+wQNSIS+168YwQ5SEJgKofEuv0boJYJSHybfIgF5GgJ
-	AVmJTQeg5khKHFxxg2UCo8QsJKtnIVk9C8nqWUhWLGBkWcUomlqQXFCclF5kqlecmFtcmpeu
-	l5yfu4kREu0TdzDeP2B9iDEZaP1EZinR5HxgssgriTc0NjOyMDUxNTYytzQjTVhJnDf9UVKQ
-	kEB6YklqdmpqQWpRfFFpTmrxIUYmDk6pBsbzqxVKbaxEdIq/xF+0sUy7Zb/p7T6LaO2ND7+X
-	8d1Qd4r5fnDVt0y/i0KFHNcm7b4+PWGzF2vT7eUPtd51/s6dsOeRpuLz0hl6NrtsLrCUHlM6
-	/jTf+kyNzrRlrTOYIxbdfJISzFS5ec7DL9p8FSuvMZadyWW8vSjo1h6NWbP3ebWmb173VMpa
-	iaU4I9FQi7moOBEAbbcpfAwDAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGKsWRmVeSWpSXmKPExsVy+t9jQd1FreHBBi23DC3+TjrGbnH13DFG
-	iyVNGRZH/y1ktLi88BKrxftDz5gtNj2+xmpxedccNouz846zWRxY2s7iwOWxZt4aRo/fvyYx
-	eizYVOqxeUm9x+1/j5k9+rasYvT4vEkugD2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTM
-	wFDX0NLCXEkhLzE31VbJxSdA1y0zB+g6JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFw
-	PUYGaCBhHWPGmQ032Qu6uCta3j9gbGC8w9HFyMkhIWAi8Xv5NVYIW0ziwr31bF2MXBxCAtMZ
-	Jdb072WBcP4ySvTdvc4MUsUmoCFx+P0z9i5GDg4RAXeJxhNlIDXMAguYJP7ufQ9WIyQwjVFi
-	9i1hEJtTQF9izeoJbCC2sICfxJIFJ8FsFgFViaaLZ5lAbF4BS4nfXRNZIWxBiR+T77GA2MwC
-	WhLrdx5ngrDlJTavecsMcamCxI6zrxlBbBEBJ4l3f9+wQ9SISOx78Y5xAqPQLCSjZiEZNQvJ
-	qFlIWhYwsqxiFE0tSC4oTkrPNdQrTswtLs1L10vOz93ECE4lz6R2MK5ssDjEKMDBqMTDW7Ay
-	LFiINbGsuDL3EKMEB7OSCO+xuvBgId6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4Hprm8knhD
-	YxMzI0sjMwsjE3Nz0oSVxHkPtFoHCgmkJ5akZqemFqQWwWxh4uCUamCs+Jxx7uYHn8cp726e
-	k7oculmxZO8HvVgBiRaOUws+OCx1Y3iq8qb35pHvgRF9zBHPihjE7G7t/T/Bcr7DPYmtUzZW
-	/bcSZdCJVTwo/2tZ4/9d5UnX37ZYtiiJeT4Szu5bt+BFxgTJr4WOJ0S2Ob/ZVO/k1Lnxltrs
-	xX/XdxcucVQr32nyUPG9EktxRqKhFnNRcSIA3UMSyGkDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 23 Apr 2014 05:21:58 -0400
+Message-ID: <53578632.1060005@gmail.com>
+Date: Wed, 23 Apr 2014 11:21:54 +0200
+From: Ivan Pantovic <gyro.ivan@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+MIME-Version: 1.0
+To: Dave Chinner <david@fromorbit.com>
+CC: Speedy Milan <speedy.milan@gmail.com>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: rm -f * on large files very slow on XFS + MD RAID 6 volume of
+ 15x 4TB of HDDs (52TB)
+References: <CAHuzUScfp19c_th_pfsZs05+yDz34MuEH-P1f+FF1dcivfH=5Q@mail.gmail.com> <20140423021835.GI15995@dastard> <53576A7D.9020303@gmail.com> <20140423082538.GR18672@dastard>
+In-Reply-To: <20140423082538.GR18672@dastard>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> 
-> On Wednesday 16 April 2014, Jingoo Han wrote:
-> > Samsung GH7 has four PCIe controllers which can be used as root
-> > complex for PCIe interface.
-> >
-> > Signed-off-by: Jingoo Han <jg1.han@samsung.com>
-> > ---
-> >  drivers/pci/host/Kconfig      |    2 +-
-> >  drivers/pci/host/pci-exynos.c |  135
-> ++++++++++++++++++++++++++++++++++++++---
-> >  2 files changed, 126 insertions(+), 11 deletions(-)
-> 
-+ Byungho An, Ilho Lee
+Hi Dave,
 
-Hi Arnd,
+> xfs_db> freesp
+>    from      to extents  blocks    pct
+>       1       1   52463   52463   0.00
+>       2       3   73270  181394   0.01
+>       4       7  134526  739592   0.03
+>       8      15  250469 2870193   0.12
+>      16      31  581572 13465403   0.58
+>      32      63  692386 32096932   1.37
+>      64     127 1234204 119157757   5.09
+>     128     255   91015 16690243   0.71
+>     256     511   18977 6703895   0.29
+>     512    1023   12821 8611576   0.37
+>    1024    2047   23209 33177541   1.42
+>    2048    4095   43282 101126831   4.32
+>    4096    8191   12726 55814285   2.39
+>    8192   16383    2138 22750157   0.97
+>   16384   32767    1033 21790120   0.93
+>   32768   65535     433 19852497   0.85
+>   65536  131071     254 23052185   0.99
+>  131072  262143     204 37833000   1.62
+>  262144  524287     229 89970969   3.85
+>  524288 1048575     164 124210580   5.31
+> 1048576 2097151     130 173193687   7.40
+> 2097152 4194303      22 61297862   2.62
+> 4194304 8388607      16 97070435   4.15
+> 8388608 16777215      26 320475332  13.70
+> 16777216 33554431       6 133282461   5.70
+> 33554432 67108863      12 616939026  26.37
+> 134217728 268435328       1 207504563   8.87
+> xfs_db>
 
-> Can you explain how much the GH7 and Exynos front-ends actually have in
-> common? Would it make sense to have a separate driver for gh7?
-> 
-Basically, ARMv8 based GH7 has same PCIe hardware IP with previous ARMv7
-based exynos5440, several features in PCIe are different though. In other
-words, basic functionalities for PCIe are same. So I think, would be nice if
-we could use one PCIe device driver for both SoCs.
+well now it is quite obvious that file fragmentation was actually the issue.
 
-However, if we need to support the PCIe with each own device driver because
-of difference of 32bit and 64bit, please kindly let us know. Honestly, I'm
-not sure about that right now.
+this is what munin has to say about that time frame when files were deleted.
 
-> Also, if gh7 is expected to run a full firmware, I think you should
-> do all the setup in the firmware before booting Linux, and just
-> do the required run-time operations in the driver itself.
-> 
-Well, we're expecting that all the setup should be done by the device driver
-in kernel not firmware.
+http://picpaste.com/df_inode-pinpoint_1397768678_1397876678-kpwd9loR.png
+http://picpaste.com/df-pinpoint_1397768678_1397876678-pQ7ZCTPu.png
 
-Thanks,
-Kukjin
+although the drives were "only" 50% busy while deleting all those inodes.
+
+it's quite interesting how we got there in the first place thanks to 
+bacula backup and some other hardware failure not related to the backup 
+server.
+
+On 04/23/2014 10:25 AM, Dave Chinner wrote:
+> On Wed, Apr 23, 2014 at 09:23:41AM +0200, Ivan Pantovic wrote:
+>>> [root@drive-b ~]# xfs_db -r /dev/md0
+>>> xfs_db> frag
+>>> actual 11157932, ideal 11015175, fragmentation factor 1.28%
+>>> xfs_db>
+>> this is current level of fragmentation ... is it bad?
+> http://xfs.org/index.php/XFS_FAQ#Q:_The_xfs_db_.22frag.22_command_says_I.27m_over_50.25._Is_that_bad.3F
+>
+>> some say over 1% is candidate for defrag? ...
+> Some say that over 70% is usually not a problem:
+>
+> http://www.mythtv.org/wiki/XFS_Filesystem#Defragmenting_XFS_Partitions
+>
+> i.e. the level that becomes are problem is highly workload specific.
+> So, you can't read *anything* in that number without know exactly
+> what is in your filesystem, how the application(s) interact with it
+> and so on.
+>
+> Besides, I was asking specifically about the files you removed, not
+> the files that remain in the filesystem. Given that you have 11
+> million inodes in the filesystem, you probably removed the only
+> significantly large files in the filesystem....
+>
+> So, the files your removed are now free space, so free space
+> fragmentation is what we need to look at.  i.e. use the freesp
+> command to dump the histogram and summary of the free space...
+>
+> Cheers,
+>
+> Dave.
 
