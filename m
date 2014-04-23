@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757516AbaDWPiV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:38:21 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:47619 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181AbaDWPiS (ORCPT
+	id S1753368AbaDWPmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:42:39 -0400
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:38404 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751943AbaDWPmf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:38:18 -0400
+	Wed, 23 Apr 2014 11:42:35 -0400
+Message-ID: <5357DF53.4010806@samsung.com>
+Date: Thu, 24 Apr 2014 00:42:11 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <20140423150744.GC22755@redhat.com>
-References: <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
- <1397756025.2628.64.camel@willson.li.ssimo.org> <CALCETrVBJFgKwRKBE2jAG6kiGgkJ+MyQiw2nyz5yj0h68kCk9A@mail.gmail.com>
- <1397759013.2628.86.camel@willson.li.ssimo.org> <20140417185023.GA32527@redhat.com>
- <1397761817.2628.113.camel@willson.li.ssimo.org> <20140417191646.GA2461@redhat.com>
- <CALCETrW3F1+3qF3thrAmuoWVbRveBJ2=owpigh4mv6iAafoQCw@mail.gmail.com>
- <20140421150307.GA4367@redhat.com> <CALCETrW5RvbW-Hz_Y7oULP6sEfdhGBh51+mTj4RwobHV-ji+Kg@mail.gmail.com>
- <20140423150744.GC22755@redhat.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 23 Apr 2014 08:37:56 -0700
-Message-ID: <CALCETrVhXPK2roQZ7sKMPbJOsLCaMwhUJdL-p0tbUqN8cubsjg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing cgroup path
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Simo Sorce <ssorce@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
-        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Chander Kashyap <chander.kashyap@linaro.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, lorenzo.pieralisi@arm.com,
+        daniel.lezcano@linaro.org, kgene.kim@samsung.com
+Subject: Re: [Patch v2 0/4] add cpuidle support for Exynos5420
+References: <1398080958-21677-5-git-send-email-chander.kashyap@linaro.org> <1398245154-18771-1-git-send-email-chander.kashyap@linaro.org> <4517423.BmCv8cudjC@vostro.rjw.lan>
+In-Reply-To: <4517423.BmCv8cudjC@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 8:07 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Mon, Apr 21, 2014 at 08:47:51AM -0700, Andy Lutomirski wrote:
->
-> [..]
->> To summarize from my reading of how this crap words:
+On 04/23/14 19:18, Rafael J. Wysocki wrote:
+> On Wednesday, April 23, 2014 02:55:50 PM Chander Kashyap wrote:
+>> Exynos5420 is a big-little Soc from Samsung. It has 4 A15 and 4 A7 cores.
 >>
->> When a unit is created, systemd opens a stream socket pointing at
->> /run/systemd/journal/stdout.  It tells journald the unit, along with
->> lots of other useful information.  journald records this association
->> between the socket and the unit.  Systemd could tell journald the
->> cgroup here, too, if it wanted it.
+>> This patchset adds cpuidle support for Exynos5420 SoC based on
+>> generic big.little cpuidle driver.
+>>
+>> Tested on SMDK5420.
+>>
+>> This patch set depends on:
+>> 	1. [PATCH 0/5] MCPM backend for Exynos5420
+>> 	   http://www.spinics.net/lists/arm-kernel/msg321666.html
+>>
+>> 	2. [PATCH v4] arm: exynos: generalize power register address calculation
+>> 	   http://www.spinics.net/lists/arm-kernel/msg324024.html
+>> 		
+>> Changelog is in respective patches.
+>> Chander Kashyap (4):
+>>    cpuidle: config: Add SOC_EXYNOS5420 entry to select
+>>      cpuidle-big-little driver
+>>    driver: cpuidle: cpuidle-big-little: init driver for Exynos5420
+>>    exynos: cpuidle: do not allow cpuidle registration for Exynos5420
+>>    mcpm: exynos: populate suspend and powered_up callbacks
+>>
+>>   arch/arm/mach-exynos/cpuidle.c       |    3 ++
+>>   arch/arm/mach-exynos/mcpm-exynos.c   |   53 ++++++++++++++++++++++++++++++++++
+>>   drivers/cpuidle/Kconfig.arm          |    2 +-
+>>   drivers/cpuidle/cpuidle-big_little.c |    3 +-
+>>   4 files changed, 59 insertions(+), 2 deletions(-)
 >
-> Ok, that's a fair point. I looked at  connect_logger_as() and I see
-> that systemd does connect() on behalf of service being launched and
-> sets up fd and passes bunch of information to journald. So cgroup could
-> be one of the information and that would act like SO_PEERCGROUP in
-> this specific case. Not sure why it is not done though. I will let
-> systemd folks comment on that. I don't have enough background here.
+> I'm assuming that the Exynos maintainers will take care of this, correct?
 >
-> But this works in this specific case where there is a mechanism to
-> pass meta information to receiver. What about SSSD use case where
-> they want to know the cgroup of client and possibly provide differentiated
-> service based on client.
 
-Separate sockets sounds like it will work just fine, if not better, here, to me.
+Yeah, I will if you have any objection :-)
 
->
-> Also Dan Walsh mentioned that what if a process directly wants to open
-> journal socket and log something to journal.
+BTW, I need to look at the dependent patches.
 
-This is a fair point.  I think that cgroup is a very odd thing to log,
-but systemd unit isn't so strange.
-
-As I've said, I won't object strongly to SO_PEERCGROUP.  I think that
-applications that rely on it are likely to be annoying to their users,
-but I think the API itself is okay.
-
-I'd still rather see a good, general solution for sensibly identifying
-yourself to your peer, but that can wait.
-
---Andy
+- Kukjin
