@@ -1,40 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754469AbaDWOBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:01:21 -0400
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:50312 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084AbaDWOBR convert rfc822-to-8bit (ORCPT
+	id S1755196AbaDWOBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:01:32 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:57893 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752084AbaDWOB3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:01:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <1397531437-9104-2-git-send-email-agross@codeaurora.org>
-References: <1397531437-9104-1-git-send-email-agross@codeaurora.org>
-	<1397531437-9104-2-git-send-email-agross@codeaurora.org>
-Date: Wed, 23 Apr 2014 16:01:17 +0200
-Message-ID: <CACRpkdYDVby0epYjuYM5412iyBe=qe5UUcxabNsZBRiusHzg3Q@mail.gmail.com>
-Subject: Re: [PATCH 1/3] pinctrl: qcom: Add definitions for IPQ8064
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Andy Gross <agross@codeaurora.org>
-Cc: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Apr 2014 10:01:29 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 1/5] clk: berlin: add support for clocks
+Date: Wed, 23 Apr 2014 16:01:03 +0200
+Message-Id: <1398261667-12621-2-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398261667-12621-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1398261667-12621-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 15, 2014 at 5:10 AM, Andy Gross <agross@codeaurora.org> wrote:
+Add support for clocks having their own register set.
 
-> This adds pinctrl definitions for the GPIO pins of the TLMM v2 block in the
-> Qualcomm IPQ8064 platform.
->
-> Signed-off-by: Andy Gross <agross@codeaurora.org>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ drivers/clk/berlin/Makefile |   2 +-
+ drivers/clk/berlin/clk.c    | 132 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 133 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/clk/berlin/clk.c
 
-Patch applied with Björns requested change and Review tag.
+diff --git a/drivers/clk/berlin/Makefile b/drivers/clk/berlin/Makefile
+index 94859513de90..9bfa58eaf25a 100644
+--- a/drivers/clk/berlin/Makefile
++++ b/drivers/clk/berlin/Makefile
+@@ -1,4 +1,4 @@
+-obj-y += pll.o
++obj-y += pll.o clk.o
+ obj-$(CONFIG_MACH_BERLIN_BG2)   += pll-berlin2.o
+ obj-$(CONFIG_MACH_BERLIN_BG2CD) += pll-berlin2.o
+ obj-$(CONFIG_MACH_BERLIN_BG2Q)  += pll-berlin2q.o
+diff --git a/drivers/clk/berlin/clk.c b/drivers/clk/berlin/clk.c
+new file mode 100644
+index 000000000000..a0e688e5bead
+--- /dev/null
++++ b/drivers/clk/berlin/clk.c
+@@ -0,0 +1,132 @@
++/*
++ * Copyright (c) 2014 Marvell Technology Group Ltd.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++#include <linux/bitops.h>
++#include <linux/clk-provider.h>
++#include <linux/of.h>
++#include <linux/of_address.h>
++#include <linux/slab.h>
++
++#include "common.h"
++
++#define CLKEN		(1 << 0)
++#define CLKPLLSEL_MASK	7
++#define CLKPLLSEL_SHIFT	1
++#define CLKPLLSWITCH	(1 << 4)
++#define CLKSWITCH	(1 << 5)
++#define CLKD3SWITCH	(1 << 6)
++#define CLKSEL_MASK	7
++#define CLKSEL_SHIFT	7
++
++struct berlin_clk {
++	struct clk_hw hw;
++	void __iomem *base;
++};
++
++#define to_berlin_clk(hw)	container_of(hw, struct berlin_clk, hw)
++
++static u8 clk_div[] = {1, 2, 4, 6, 8, 12, 1, 1};
++
++static unsigned long berlin_clk_recalc_rate(struct clk_hw *hw,
++					unsigned long parent_rate)
++{
++	u32 val, divider;
++	struct berlin_clk *clk = to_berlin_clk(hw);
++
++	val = readl_relaxed(clk->base);
++	if (val & CLKD3SWITCH)
++		divider = 3;
++	else {
++		if (val & CLKSWITCH) {
++			val >>= CLKSEL_SHIFT;
++			val &= CLKSEL_MASK;
++			divider = clk_div[val];
++		} else
++			divider = 1;
++	}
++
++	return parent_rate / divider;
++}
++
++static u8 berlin_clk_get_parent(struct clk_hw *hw)
++{
++	u32 val;
++	struct berlin_clk *clk = to_berlin_clk(hw);
++
++	val = readl_relaxed(clk->base);
++	if (val & CLKPLLSWITCH) {
++		val >>= CLKPLLSEL_SHIFT;
++		val &= CLKPLLSEL_MASK;
++		return val;
++	}
++
++	return 0;
++}
++
++static const struct clk_ops berlin_clk_ops = {
++	.recalc_rate	= berlin_clk_recalc_rate,
++	.get_parent	= berlin_clk_get_parent,
++};
++
++static void __init berlin_clk_setup(struct device_node *np)
++{
++	struct clk_init_data init;
++	struct berlin_clk *bclk;
++	struct clk *clk;
++	const char **parent_names;
++	int nparents, i, ret;
++
++	bclk = kzalloc(sizeof(*bclk), GFP_KERNEL);
++	if (WARN_ON(!bclk))
++		return;
++
++	bclk->base = of_iomap(np, 0);
++	if (WARN_ON(!bclk->base))
++		goto exit;
++
++	nparents = of_clk_get_parent_count(np);
++	if (WARN_ON(!nparents))
++		goto exit;
++
++	parent_names = kzalloc((sizeof(char *) * nparents), GFP_KERNEL);
++	if (WARN_ON(!parent_names))
++		goto exit;
++
++	init.name = np->name;
++	init.ops = &berlin_clk_ops;
++	for (i = 0; i < nparents; i++) {
++		parent_names[i] = of_clk_get_parent_name(np, i);
++		if (!parent_names[i])
++			break;
++	}
++	init.parent_names = parent_names;
++	init.num_parents = i;
++
++	bclk->hw.init = &init;
++
++	clk = clk_register(NULL, &bclk->hw);
++	kfree(parent_names);
++	if (WARN_ON(IS_ERR(clk)))
++		goto exit;
++
++	ret = of_clk_add_provider(np, of_clk_src_simple_get, clk);
++	WARN_ON(ret);
++
++	return;
++exit:
++	kfree(bclk);
++}
++
++CLK_OF_DECLARE(berlin_clk, "marvell,berlin-clk", berlin_clk_setup);
+-- 
+1.9.1
 
-Yours,
-Linus Walleij
