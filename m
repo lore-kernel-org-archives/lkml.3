@@ -1,181 +1,301 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaDWXrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 19:47:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:59937 "EHLO
+	id S1752660AbaDWXr2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 19:47:28 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:59941 "EHLO
 	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543AbaDWXrN (ORCPT
+	with ESMTP id S1752599AbaDWXrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 19:47:13 -0400
+	Wed, 23 Apr 2014 19:47:23 -0400
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         Sandeep Nair <sandeep_n@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>,
+        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
         Santosh Shilimkar <santosh.shilimkar@ti.com>
-Subject: [PATCH v2 2/6] firmware: add Keystone QMSS PDSP accumulator firmware blob
-Date: Wed, 23 Apr 2014 19:46:18 -0400
-Message-ID: <1398296783-1176-3-git-send-email-santosh.shilimkar@ti.com>
+Subject: =?UTF-8?q?=5BPATCH=20v2=203/6=5D=20Documentation=3A=20dt=3A=20soc=3A=20add=20Keystone=20Navigator=20QMSS=20bindings?=
+Date: Wed, 23 Apr 2014 19:46:19 -0400
+Message-ID: <1398296783-1176-4-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1398296783-1176-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1398296783-1176-1-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sandeep Nair <sandeep_n@ti.com>
 
-QMSS(Queue Manager Sub System) uses PDSPs to implement various
-QM related functions like packet accumulation, QoS or event
-management.
+The QMSS (Queue Manager Sub System) found on Keystone SOCs is one of
+the main hardware sub system which forms the backbone of the Keystone
+Multi-core Navigator. QMSS consist of queue managers, packed-data structure
+processors(PDSP), linking RAM, descriptor pools and infrastructure
+Packet DMA.
 
-Patch adds firmware blob for the QMSS accumulator
-functionality.
+The Queue Manager is a hardware module that is responsible for accelerating
+management of the packet queues. Packets are queued/de-queued by writing or
+reading descriptor address to a particular memory mapped location. The PDSPs
+perform QMSS related functions like accumulation, QoS, or event management.
+Linking RAM registers are used to link the descriptors which are stored in
+descriptor RAM. Descriptor RAM is configurable as internal or external memory.
 
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Kumar Gala <galak@codeaurora.org>
 Cc: Olof Johansson <olof@lixom.net>
 Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Mark Rutland <mark.rutland@arm.com>
 Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
 Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- firmware/Makefile                                  |    1 +
- .../keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw.ihex |  110 ++++++++++++++++++++
- 2 files changed, 111 insertions(+)
- create mode 100644 firmware/keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw.ihex
+ .../bindings/soc/keystone-navigator-qmss.txt       |  232 ++++++++++++++++++++
+ 1 file changed, 232 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/soc/keystone-navigator-qmss.txt
 
-diff --git a/firmware/Makefile b/firmware/Makefile
-index cbb09ce..c63df76 100644
---- a/firmware/Makefile
-+++ b/firmware/Makefile
-@@ -29,6 +29,7 @@ endif
- fw-shipped-$(CONFIG_ACENIC) += $(acenic-objs)
- fw-shipped-$(CONFIG_ADAPTEC_STARFIRE) += adaptec/starfire_rx.bin \
- 					 adaptec/starfire_tx.bin
-+fw-shipped-$(CONFIG_ARCH_KEYSTONE) += keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw
- fw-shipped-$(CONFIG_ATARI_DSP56K) += dsp56k/bootstrap.bin
- fw-shipped-$(CONFIG_ATM_AMBASSADOR) += atmsar11.fw
- fw-shipped-$(CONFIG_BNX2X) += bnx2x/bnx2x-e1-6.2.9.0.fw \
-diff --git a/firmware/keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw.ihex b/firmware/keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw.ihex
+diff --git a/Documentation/devicetree/bindings/soc/keystone-navigator-qmss.txt b/Documentation/devicetree/bindings/soc/keystone-navigator-qmss.txt
 new file mode 100644
-index 0000000..52a9c61
+index 0000000..edc5458
 --- /dev/null
-+++ b/firmware/keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw.ihex
-@@ -0,0 +1,110 @@
-+:10000000210003008001300001000008240000E00E
-+:1000100081002280241117E081042280248003E0E3
-+:10002000810022802EFF8B822400FF072400FF27FF
-+:100030002400FF472400FF6724002F2691182A8000
-+:1000400024040082240002C25101E01B24440082E7
-+:10005000240002C25102E01824840082240002C25B
-+:100060005103E01524C40082240002C25104E012AE
-+:1000700024040082240003C25105E00F24440082BE
-+:10008000240003C25106E00C24840082240003C231
-+:100090005107E00924C40082240003C25108E0068D
-+:1000A00024DE008024FEE1C0240018E180E12A80E3
-+:1000B00021002C0024000066244000E0240000E120
-+:1000C0000504E0E080E02A816F00E0FE243000813A
-+:1000D000248001C1240018E080E02A810104E0E0CE
-+:1000E00024000881240100C180E02A811D004646C9
-+:1000F000C91FFF031F1FFFFF1F00464601012626E1
-+:10010000693026022400202693002A88C907284B3C
-+:1001100069802818613008032400036821008C00DE
-+:1001200061200807052008E0D0E08403240004686B
-+:1001300021008C001CE0848421005100CE08E3FCE7
-+:100140001C08E3E310080806090406E0090206E1BA
-+:1001500000E1E0E00140E0E092E02A89117F4646BC
-+:1001600051008D0223016C9E2400016821008C0047
-+:100170006981281E244000E060E08B0324000668AB
-+:1001800021008C00613008032400036821008C00EA
-+:1001900061200807052008E0C8E084032400056802
-+:1001A00021008C001EE0848421006D00D608E3FC51
-+:1001B0001E08E3E32400006C2400008D240000CD21
-+:1001C000D1014C03C9004C021F016C6C090408E00A
-+:1001D000090208E100E1E0E00140E0E082E02A8974
-+:1001E0002400016821008C0069822809240000E0B5
-+:1001F000810022801F1FFFFF81042289248003E0E9
-+:10020000810022802400016821008C006983280479
-+:1002100010E9E9C42400016821008C0069842804E5
-+:1002200010E9E9E52400016821008C00240002683F
-+:100230002400002881002A885100C4022301859EE1
-+:10024000510085022301A19E23013D9E240000064A
-+:10025000110F66E0690FE00323013D9E2100940029
-+:1002600061200604052006E0C8E0843421009D00DA
-+:10027000C806E332117F4646090406E0090206E19A
-+:1002800000E1E0E00140E0F192F12A89D1026C2B1B
-+:1002900001018DE050CBE0200B058BE00902E0E08E
-+:1002A00090E02581D1054C07C88BE10F108B8B8E18
-+:1002B0002300D69E01018DE050CBE0172100B9004C
-+:1002C00010E9E1EF2701EF8E51208E071C8EEFEF32
-+:1002D000008B8E8E2300D69E01018DE06ECBE0FA5E
-+:1002E0002100C500C9074606C9014C05D1004C02D2
-+:1002F000D1016C03108C8CCD1F016C6CC9016C0E8C
-+:100300005100CD04C900460C0501CDCD6900CD0AD0
-+:1003100051008D09010006E16120E1040520E1E1C1
-+:10032000910C23802100CB0091082380D0E1E002D2
-+:1003300023011C9E82F12A894F1F066D511F06045E
-+:1003400001010606673006C321003B001026260681
-+:10035000673006C021003B0010E2E2F0090206E02F
-+:100360000006E0E00906E0E000E0F0F001018DCEDB
-+:1003700004CECBCE5100CE3E110C4C005104001CDB
-+:100380005108002F1904CECE09048EE0010CE0E0E4
-+:1003900090E026925100F2367101CE0C90E0269347
-+:1003A0006900F302240001CE7102CE0890E0269489
-+:1003B0006900F402240002CE7103CE0490E0269579
-+:1003C0006900F502240003CE09028DE1C9044C0244
-+:1003D0000104E1E10902CE00EEE1D01200CE8D8DE4
-+:1003E0001F0746465704CEE221011B001902CECE5C
-+:1003F00009048EE00108E0E090E066925100F31CF1
-+:10040000108E8ED25101CE0490E066946900F50200
-+:10041000240001CE108E8ED409038DE1C9044C0254
-+:100420000108E1E10903CE00EEE1D01200CE8D8D8E
-+:100430001F0746465702CECE21011B001901CECE22
-+:1004400009048EE090E0E6925100F509108E8ED4FA
-+:1004500009048DE1C9044C020110E1E1E0E1F092F0
-+:1004600001018D8D1F0746462100DB00209E000004
-+:1004700010E2E2F6090206E00006E0E00906E0E02C
-+:1004800000E0F6F60B024CE01103E0E00102E0E1CF
-+:10049000C9044C04108D8DE0E100368021012D004F
-+:1004A0002EFF87922400010008E1000008E18DC0C2
-+:1004B000EEC0D61210EAEAF7C9006C0308E1CBE0FF
-+:1004C00000E0F7F701018DE008E1E098249030D8D2
-+:1004D00013F06600270000E00906E0E180E1A8963D
-+:1004E0001F026C6C1EE06666011CE0012C80060198
-+:1004F000209E0000110F6619270119395120392C4F
-+:100500001C391919090639E090E0A896D71EF8FBA6
-+:100510006F0098FA010439E1D0E166091EE16666D0
-+:100520000504F6E10504F7F610E1E1F7240004986C
-+:10053000249030D880E0A89621013E001CE1666638
-+:100540001C396666011C39012C200159090459E047
-+:10055000090259E100E1E0E00140E0F192F12A896D
-+:100560001D026C6C15016C6C2400008D1D016C6CFF
-+:10057000D1014C04C9004C03108C8CCD1F016C6C54
-+:1005800082F12A89010059E0240001E16120E0059F
-+:100590000520E0E008E0E1E18104238121013E0043
-+:1005A00008E0E1E18100238121013E00209E00005E
-+:1005B000109E9EDE010006E16120E1040520E1E1DC
-+:1005C000910C23802101730091082380D6E1E0FA89
-+:1005D000D1026C0C110F66E0690FE00923013D9E0A
-+:1005E000110F66E0570FE0FE090406E0090206E17C
-+:1005F00000E1E0E00140E0E092E02A8923011C9E56
-+:1006000023013D9E110F66E06F00E0FE10DEDE9ECE
-+:10061000209E00000904C4E0010CE0E090E0269276
-+:100620005100F21811F01212F300728811C068E044
-+:100630005100E0035180E00E2101A000D10FEA0239
-+:10064000240000ED240000F1C90EEA021F1FF1F1A1
-+:10065000113F2A2A09048AE00108E0E080E066915F
-+:100660005700EDEDF3006D8821019100113F2A2A1A
-+:1006700009048AE0010CE0E080E026922101850077
-+:10068000209E0000090485E0010CE0E090E0269245
-+:100690005100F20C10F2F2F111F01111F500318855
-+:1006A00011C068E06900E004C91FEA03242008E0E3
-+:1006B000E10020900904C5E0010CE0E080E0269212
-+:0406C000209E000078
-+:00000001FF
++++ b/Documentation/devicetree/bindings/soc/keystone-navigator-qmss.txt
+@@ -0,0 +1,232 @@
++* Texas Instruments Keystone Navigator Queue Management SubSystem driver
++
++The QMSS (Queue Manager Sub System) found on Keystone SOCs is one of
++the main hardware sub system which forms the backbone of the Keystone
++multi-core Navigator. QMSS consist of queue managers, packed-data structure
++processors(PDSP), linking RAM, descriptor pools and infrastructure
++Packet DMA.
++The Queue Manager is a hardware module that is responsible for accelerating
++management of the packet queues. Packets are queued/de-queued by writing or
++reading descriptor address to a particular memory mapped location. The PDSPs
++perform QMSS related functions like accumulation, QoS, or event management.
++Linking RAM registers are used to link the descriptors which are stored in
++descriptor RAM. Descriptor RAM is configurable as internal or external memory.
++The QMSS driver manages the PDSP setups, linking RAM regions,
++queue pool management (allocation, push, pop and notify) and descriptor
++pool management.
++
++
++Required properties:
++- compatible	: Must be "ti,keystone-navigator-qmss";
++- clocks	: phandle to the reference clock for this device.
++- queue-range	: <start number> total range of queue numbers for the device.
++- linkram0	: <address size> for internal link ram, where size is the total
++		  link ram entries.
++- linkram1	: <address size> for external link ram, where size is the total
++		  external link ram entries. If the address is specified as "0"
++		  driver will allocate memory.
++- qmgrs         : child node describing the individual queue managers on the
++		  SoC. On keystone 1 devices there should be only one node.
++		  On keystone 2 devices there can be more than 1 node.
++  -- managed-queues	: the actual queues managed by each queue manager
++			  instance, specified as <"base queue #" "# of queues">.
++  -- reg		: Address and size of the register set for the device.
++			  Register regions should be specified in the following
++			  order
++			  - Queue Peek region.
++			  - Queue status RAM.
++			  - Queue configuration region.
++			  - Descriptor memory setup region.
++			  - Queue Management/Queue Proxy region for queue Push.
++			  - Queue Management/Queue Proxy region for queue Pop.
++- queue-pools	: child node classifying the queue ranges into pools.
++		  Queue ranges are grouped into 3 type of pools:
++		  - qpend	    : pool of qpend(interruptible) queues
++		  - general-purpose : pool of general queues, primarly used
++				      as free descriptor queues or the
++				      transmit DMA queues.
++		  - accumulator	    : pool of queues on PDSP accumulator channel
++		  Each range can have the following properties:
++  -- qrange		: number of queues to use per queue range, specified as
++			  <"base queue #" "# of queues">.
++  -- interrupts		: Optional property to specify the interrupt mapping
++			  for interruptible queues. The driver additionaly sets
++			  the interrupt affinity hint based on the cpu mask.
++  -- qalloc-by-id	: Optional property to specify that the queues in this
++			  range can only be allocated by queue id.
++  -- accumulator	: Accumulator channel specification. Any of the PDSPs in
++			  QMSS can be loaded with the accumulator firmware. The
++			  accumulator firmware’s job is to poll a select number of
++			  queues looking for descriptors that have been pushed
++			  into them. Descriptors are popped from the queue and
++			  placed in a buffer provided by the host. When the list
++			  becomes full or a programmed time period expires, the
++			  accumulator triggers an interrupt to the host to read
++			  the buffer for descriptor information. This firmware
++			  comes in 16, 32, and 48 channel builds. Each of these
++			  channels can be configured to monitor 32 contiguous
++			  queues.  Accumulator channel property is specified as:
++			  <pdsp-id, channel, entries, pacing mode, latency>
++			  pdsp-id     : QMSS PDSP running accumulator firmware
++					on which the channel has to be
++					configured
++			  channel     : Accumulator channel number
++			  entries     : Size of the accumulator descriptor list
++			  pacing mode : Interrupt pacing mode
++					0 : None, i.e interrupt on list full only
++					1 : Time delay since last interrupt
++					2 : Time delay since first new packet
++					3 : Time delay since last new packet
++			  latency     : time to delay the interrupt, specified
++					in microseconds.
++  -- multi-queue	: Optional property to specify that the channel has to
++			  monitor upto 32 queues starting at the base queue #.
++- descriptor-regions	: child node describing the memory regions for keystone
++			  navigator packet DMA descriptors. The memory for
++			  descriptors will be allocated by the driver.
++  -- id				: region number in QMSS.
++  -- region-spec		: specifies the number of descriptors in the
++				  region, specified as
++				  <"# of descriptors" "descriptor size">.
++  -- link-index			: start index, i.e. index of the first
++				  descriptor in the region.
++
++Optional properties:
++- dma-coherent	: Present if DMA operations are coherent.
++- pdsps		: child node describing the PDSP configuration.
++  -- firmware		: firmware to be loaded on the PDSP.
++  -- id			: the qmss pdsp that will run the firmware.
++  -- reg		: Address and size of the register set for the PDSP.
++			  Register regions should be specified in the following
++			  order
++			  - PDSP internal RAM region.
++			  - PDSP control/status region registers.
++			  - QMSS interrupt distributor registers.
++			  - PDSP command interface region.
++
++Example:
++
++qmss: qmss@2a40000 {
++	compatible = "ti,keystone-qmss";
++	dma-coherent;
++	#address-cells = <1>;
++	#size-cells = <1>;
++	clocks = <&chipclk13>;
++	ranges;
++	queue-range	= <0 0x4000>;
++	linkram0	= <0x100000 0x8000>;
++	linkram1	= <0x0 0x10000>;
++
++	qmgrs {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		qmgr0 {
++			managed-queues = <0 0x2000>;
++			reg = <0x2a40000 0x20000>,
++			      <0x2a06000 0x400>,
++			      <0x2a02000 0x1000>,
++			      <0x2a03000 0x1000>,
++			      <0x2a80000 0x20000>,
++			      <0x2a80000 0x20000>;
++		};
++
++		qmgr1 {
++			managed-queues = <0x2000 0x2000>;
++			reg = <0x2a60000 0x20000>,
++			      <0x2a06400 0x400>,
++			      <0x2a04000 0x1000>,
++			      <0x2a05000 0x1000>,
++			      <0x2aa0000 0x20000>,
++			      <0x2aa0000 0x20000>;
++		};
++	};
++	queue-pools {
++		qpend {
++			qpend-0 {
++				qrange = <658 8>;
++				interrupts =<0 40 0xf04 0 41 0xf04 0 42 0xf04
++					     0 43 0xf04 0 44 0xf04 0 45 0xf04
++					     0 46 0xf04 0 47 0xf04>;
++			};
++			qpend-1 {
++				qrange = <8704 16>;
++				interrupts = <0 48 0xf04 0 49 0xf04 0 50 0xf04
++					      0 51 0xf04 0 52 0xf04 0 53 0xf04
++					      0 54 0xf04 0 55 0xf04 0 56 0xf04
++					      0 57 0xf04 0 58 0xf04 0 59 0xf04
++					      0 60 0xf04 0 61 0xf04 0 62 0xf04
++					      0 63 0xf04>;
++				qalloc-by-id;
++			};
++			qpend-2 {
++				qrange = <8720 16>;
++				interrupts = <0 64 0xf04 0 65 0xf04 0 66 0xf04
++					      0 59 0xf04 0 68 0xf04 0 69 0xf04
++					      0 70 0xf04 0 71 0xf04 0 72 0xf04
++					      0 73 0xf04 0 74 0xf04 0 75 0xf04
++					      0 76 0xf04 0 77 0xf04 0 78 0xf04
++					      0 79 0xf04>;
++			};
++		};
++		general-purpose {
++			gp-0 {
++				qrange = <4000 64>;
++			};
++			netcp-tx {
++				qrange = <640 9>;
++				qalloc-by-id;
++			};
++		};
++		accumulator {
++			acc-0 {
++				qrange = <128 32>;
++				accumulator = <0 36 16 2 50>;
++				interrupts = <0 215 0xf01>;
++				multi-queue;
++				qalloc-by-id;
++			};
++			acc-1 {
++				qrange = <160 32>;
++				accumulator = <0 37 16 2 50>;
++				interrupts = <0 216 0xf01>;
++				multi-queue;
++			};
++			acc-2 {
++				qrange = <192 32>;
++				accumulator = <0 38 16 2 50>;
++				interrupts = <0 217 0xf01>;
++				multi-queue;
++			};
++			acc-3 {
++				qrange = <224 32>;
++				accumulator = <0 39 16 2 50>;
++				interrupts = <0 218 0xf01>;
++				multi-queue;
++			};
++		};
++	};
++	descriptor-regions {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		region-12 {
++			id = <12>;
++			region-spec = <8192 128>; /* num_desc desc_size */
++			link-index = <0x4000>;
++		};
++	};
++	pdsps {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		pdsp0@0x2a10000 {
++			firmware = "keystone/qmss_pdsp_acc48_k2_le_1_0_0_8.fw";
++			reg = <0x2a10000 0x1000>,
++			      <0x2a0f000 0x100>,
++			      <0x2a0c000 0x3c8>,
++			      <0x2a20000 0x4000>;
++			id = <0>;
++		};
++	};
++}; /* qmss */
 -- 
 1.7.9.5
 
