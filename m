@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757442AbaDWIG1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:06:27 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:46474 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757313AbaDWIFe (ORCPT
+	id S1757473AbaDWIKh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:10:37 -0400
+Received: from www.linutronix.de ([62.245.132.108]:53646 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435AbaDWIK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:05:34 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-samsung-soc@vger.kernel.org
-Cc: broonie@kernel.org, lgirdwood@gmail.com, sbkim73@samsung.com,
-        jassisinghbrar@gmail.com, kgene.kim@samsung.com
-Subject: [PATCH] ASoC: SAMSUNG: Don't clear clock setting during i2s_startup
-Date: Wed, 23 Apr 2014 13:34:24 +0530
-Message-Id: <1398240264-21285-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 23 Apr 2014 04:10:26 -0400
+Message-ID: <53577559.9090501@linutronix.de>
+Date: Wed, 23 Apr 2014 10:10:01 +0200
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Icedove/24.4.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+CC: Stanislav Meduna <stano@meduna.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
+References: <534C3606.7010206@meduna.org> <534C731F.1050406@meduna.org> <534DADF1.6060608@meduna.org> <20140422115439.GA20669@linutronix.de> <20140422094657.5b6ca1e2@gandalf.local.home> <20140422140918.GE11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140422140918.GE11096@twins.programming.kicks-ass.net>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In exiting kernel, if DAIFMT flags are set in dai_link and I2S is
-set to run in master mode, the I2S clocks are not getting configured
-resulting in no output.
+On 04/22/2014 04:09 PM, Peter Zijlstra wrote:
+> On Tue, Apr 22, 2014 at 09:46:57AM -0400, Steven Rostedt wrote:
+>>>  According to lockdep a trylock should not fail on UP.
+> 
+> Oh!? Where does it say that? A trylock can fail at all times.
 
-Existing code clears the current I2S clock settings during i2s_startup
-and requires that the clocks are reconfigured. It then assumes that
-sound-card driver would call snd_soc_dai_{set_sysclk/set_fmt} to
-configure the root clock.
+kernel/locking/spinlock_debug.c:
 
-1. Since I2S clock settings remain fixed for a board, it would be better
-to set the clocks once during sound-card probe.
+int do_raw_spin_trylock(raw_spinlock_t *lock)
+ {
+         int ret = arch_spin_trylock(&lock->raw_lock);
 
-2. Also if the DAIFMT flags are set in dai_link, snd_soc_dai_set_fmt is
-called during DAI probe.
+         if (ret)
+                 debug_spin_lock_after(lock);
+ #ifndef CONFIG_SMP
+         /*
+          * Must not happen on UP:
+          */
+         SPIN_BUG_ON(!ret, lock, "trylock failure on UP");
+ #endif
+         return ret;
+ }
 
-If both these conditions are true, then I2S clock remains unconfigured
-during audio playback. Fix this by removing the code to clear
-rclk_srcrate in i2s_startup. Instead, reset this during DAI probe.
+How can a trylock (spinlock, not mutex) fail on UP? That would mean the
+lock is not interrupt safe.
+Unless, you attempt to take the lock from interrupt context via trylock
+while in general you take the spinlock in process context with
+interrupts enabled.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
-The patch is based on v3.15-rc2.
-
- sound/soc/samsung/i2s.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
-
-diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
-index 048ead9..6e61db7 100644
---- a/sound/soc/samsung/i2s.c
-+++ b/sound/soc/samsung/i2s.c
-@@ -724,9 +724,6 @@ static int i2s_startup(struct snd_pcm_substream *substream,
- 	else
- 		i2s->mode |= DAI_MANAGER;
- 
--	/* Enforce set_sysclk in Master mode */
--	i2s->rclk_srcrate = 0;
--
- 	if (!any_active(i2s) && (i2s->quirks & QUIRK_NEED_RSTCLR))
- 		writel(CON_RSTCLR, i2s->addr + I2SCON);
- 
-@@ -984,6 +981,7 @@ probe_exit:
- 	/* Reset any constraint on RFS and BFS */
- 	i2s->rfs = 0;
- 	i2s->bfs = 0;
-+	i2s->rclk_srcrate = 0;
- 	i2s_txctrl(i2s, 0);
- 	i2s_rxctrl(i2s, 0);
- 	i2s_fifo(i2s, FIC_TXFLUSH);
--- 
-1.7.9.5
-
+Sebastian
