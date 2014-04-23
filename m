@@ -1,79 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861AbaDWNgH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:36:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49948 "EHLO mx1.redhat.com"
+	id S1756827AbaDWNgE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:36:04 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:60333 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756057AbaDWNgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:36:02 -0400
-Date: Wed, 23 Apr 2014 15:35:36 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 2/7] perf tools: Account entry stats when it's added to
- the output tree
-Message-ID: <20140423133536.GC11124@krava.brq.redhat.com>
-References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
- <1398236408-8856-3-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398236408-8856-3-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753434AbaDWNf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:35:59 -0400
+Message-ID: <1398260102.4724.223.camel@iivanov-dev>
+Subject: Re: [PATCH v6 15/19] usb: phy: msm: Fix PTS definitions for MSM USB
+ controller
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Felipe Balbi <balbi@ti.com>, Tim Bird <tbird20d@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
+Date: Wed, 23 Apr 2014 16:35:02 +0300
+In-Reply-To: <1398259477.4724.218.camel@iivanov-dev>
+References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
+	 <1398158438-21579-16-git-send-email-iivanov@mm-sol.com>
+	 <53566A23.8010508@cogentembedded.com>
+	 <1398259477.4724.218.camel@iivanov-dev>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 04:00:03PM +0900, Namhyung Kim wrote:
-> Currently, accounting each sample is done in multiple places - once
-> when adding them to the input tree, other when adding them to the
-> output tree.  It's not only confusing but also can cause a subtle
-> problem since concurrent processing like in perf top might see the
-> updated stats before adding entries into the output tree - like seeing
-> more (blank) lines at the end and/or slight inaccurate percentage.
+On Wed, 2014-04-23 at 16:24 +0300, Ivan T. Ivanov wrote:
+
+> > > --- a/include/linux/usb/msm_hsusb_hw.h
+> > > +++ b/include/linux/usb/msm_hsusb_hw.h
+> > > @@ -31,8 +31,9 @@
+> > >   #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
+> > >
+> > >   #define PORTSC_PHCD            (1 << 23) /* phy suspend mode */
+> > > -#define PORTSC_PTS_MASK         (3 << 30)
+> > > -#define PORTSC_PTS_ULPI         (3 << 30)
+> > > +#define PORTSC_PTS_MASK        (3 << 30)
+> > > +#define PORTSC_PTS_ULPI        (2 << 30)
+> > > +#define PORTSC_PTS_SERIAL      (3 << 30)
+> > 
+> >     Please use tabs, not spaces here.
 > 
-> To fix this, only account the entries when it's moved into the output
-> tree so that they cannot be seen prematurely.  There're some
-> exceptional cases here and there - they should be addressed separately
-> with comments.
+> Thanks, will fix and resend.
 
-sry to be PITA, but need to ask you to split the patch,
-otherwise I'd get beaten for that ;-)
+I answered too quickly. File contain tabs and spaces for
+indentation of definitions. Should I still use tabs here?
 
-I can see several separated changes here:
- * remove stats for input tree (as stated in changelog)
- * hists__inc_nr_entries -> hists__inc_stats rename
- * add hists__reset_stats function
- * move hists__calc_col_len out of hists__inc_nr_entries
-
+Regards,
+Ivan
 
 > 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
+> Ivan
+> 
+> > 
+> > WBR, Sergei
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-SNIP
 
->  
-> diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> index aed52036468d..4bdcc040b216 100644
-> --- a/tools/perf/builtin-report.c
-> +++ b/tools/perf/builtin-report.c
-> @@ -85,6 +85,10 @@ static void report__inc_stats(struct report *rep, struct hist_entry *he)
->  	 */
->  	if (he->stat.nr_events == 1)
->  		rep->nr_entries++;
-> +
-> +	hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
-> +	if (!he->filtered)
-> +		he->hists->stats.nr_non_filtered_samples++;
-
-could you put here some comments as for the diff command
-I mean why is this exception in stats counting for input tree
-
-thanks,
-jirka
