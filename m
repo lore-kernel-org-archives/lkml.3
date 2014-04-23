@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097AbaDWNV6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:21:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:46666 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754723AbaDWNVz (ORCPT
+	id S1755344AbaDWNWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:22:52 -0400
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:62626 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753525AbaDWNWv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:21:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
-References: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
-Date: Wed, 23 Apr 2014 15:21:54 +0200
-Message-ID: <CACRpkdbzoPNEEJ6UbisqHOiRwuxEb6XSrDL=MiUmDPgyY=rVuw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: pl061: get gpio base from alias id
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: xuwei5@hisilicon.com, Rob Herring <robh+dt@kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+	Wed, 23 Apr 2014 09:22:51 -0400
+Date: Wed, 23 Apr 2014 14:22:38 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Baruch Siach <baruch@tkos.co.il>
-Content-Type: text/plain; charset=UTF-8
+        Silvio F <silvio.fricke@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        spear-devel <spear-devel@list.st.com>
+Subject: Re: [PATCH 1/6] mfd: stmpe: root out static GPIO and IRQ assignments
+Message-ID: <20140423132238.GJ640@lee--X1>
+References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
+ <1397659455-13638-2-git-send-email-linus.walleij@linaro.org>
+ <20140417104925.GM28725@lee--X1>
+ <CACRpkdaHQkOMx1NrAWkDd0prc1AqXRs-p69TX9ihoPUhx49oEQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACRpkdaHQkOMx1NrAWkDd0prc1AqXRs-p69TX9ihoPUhx49oEQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 3:35 AM, Haojian Zhuang
-<haojian.zhuang@linaro.org> wrote:
+> >> The only platform using the STMPE expander now boots from
+> >> device tree using all-dynamic GPIO and IRQ number assignments, so
+> >> remove the mechanism to pass this from the device tree entirely.
+> >>
+> >> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> >> ---
+> >>  drivers/gpio/gpio-stmpe.c | 18 +++++-------------
+> >>  drivers/mfd/stmpe.c       |  3 +--
+> >>  include/linux/mfd/stmpe.h | 14 --------------
+> >>  3 files changed, 6 insertions(+), 29 deletions(-)
+> >
+> > MFD changes look good to me.
+> >
+> > Acked-by: Lee Jones <lee.jones@linaro.org>
+> >
+> > Do you want me to set up and immutable branch between MFD and GPIO?
+> 
+> That would be perfect. Can you stack up the MFD portions in patches
+> 1 thru 4 (given you're happy with the v2 of 3/6) and provide a branch
+> to me, please?
 
-> If gpio base number isn't specified, the gpio base will be find from
-> the end of gpio number. In order to keep with schematics, use alias
-> to get the ID of gpio chip.
->
-> Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+How are you planning on sending 3/6?
 
-The idea with GPIO numbers is not that these shall correspond
-to schematics or data sheets or anything like that. It's a completely
-Linux-internal number and has nothing to do with anything else.
+Can you send it attached to v1 please?
 
-The same is true for IRQ numbers.
-
-The long term goal is to get rid of both GPIO and IRQ numbers
-and deal only with descriptors in the kernel.
-
-> +++ b/Documentation/devicetree/bindings/gpio/gpio-pl061.txt
-
-A patch to add the device tree bindings is *very* welcome.
-
->         } else {
-> -               chip->gc.base = -1;
-> +               chip->gc.base = pl061_parse_gpio_base(dev);
->                 irq_base = 0;
->         }
-
-I do not like a patch that changes the dynamic numbering to a
-static one, that make things worse for our goals, not better :-(
-
-Yours,
-Linus Walleij
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
