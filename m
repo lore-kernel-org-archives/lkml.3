@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755914AbaDWORF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:17:05 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:62351 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286AbaDWOQ7 (ORCPT
+	id S1753396AbaDWOTK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:19:10 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:50109 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811AbaDWOTI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:16:59 -0400
+	Wed, 23 Apr 2014 10:19:08 -0400
+Date: Wed, 23 Apr 2014 15:19:01 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Bill Richardson <wfrichar@chromium.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mfd: cros_ec: cleanup: cros_ec.c is GPL licensed, like
+ all the others.
+Message-ID: <20140423141901.GD6264@lee--X1>
+References: <1397763137-20552-1-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-In-Reply-To: <20140423140508.2575AC408D2@trevor.secretlab.ca>
-References: <1353509071-8658-1-git-send-email-grant.likely@secretlab.ca>
-	<CAL_JsqJFM1e2Y7GykK06KuZ8fD8iZ=64W1i+tqibJ9datCUR0Q@mail.gmail.com>
-	<20140423140508.2575AC408D2@trevor.secretlab.ca>
-Date: Wed, 23 Apr 2014 09:16:58 -0500
-Message-ID: <CAL_JsqJSSHMaR=NJ3XWscxz1dKtG1N18W6JNDNKY3r3vtf9AXQ@mail.gmail.com>
-Subject: Re: [RFC] driver-core: Remove dummy 'platform_bus'
-From: Rob Herring <robherring2@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1397763137-20552-1-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 9:05 AM, Grant Likely <grant.likely@linaro.org> wrote:
-> On Mon, 21 Apr 2014 16:05:29 -0500, Rob Herring <robherring2@gmail.com> wrote:
->> On Wed, Nov 21, 2012 at 8:44 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->> > The "platform_bus" (note: not platform_bus_type) only exists as an empty
->> > directory to put platform devices into. However, it really doesn't make
->> > sense to segregate all the platform devices into a sub directory when
->> > typically they are memory mapped devices that doen't go through any
->> > particular bus. Particularly on embedded type platforms the platform_bus
->> > directory doesn't add anything.
->> >
->> > However, this will probably just end up breaking some userspace that
->> > depends on the /sys/devices/platform/ path to be present (no matter how
->> > much we protest that userspace must not depend on paths in sysfs). So
->> > while I'm seriously proposing this change, it may just be unacceptable
->> > ABI breakage
->>
->> An old thread, but was there ever a conclusion to this? We now have a
->> mixture of using platform_bus as the parent or not on various ARM
->> platforms.
->
-> We kind of concluded in the opposite direction. Instead of removing the
-> /sys/device/platform directory, the drivers/of code should be changed to
-> use it.
->
-> The following patch is sufficient to have the same effect. It doesn't
-> unify the OF and non-OF paths of platform device addition, but it gets
-> them closer. I've been nervous about applying it because I'm concerned
-> about userspace breakage, but maybe it just needs to be merged and we
-> can quirk out systems that break.
+> From: Bill Richardson <wfrichar@chromium.org>
+> 
+> This module has always been GPL licensed. It was just missing the explicit
+> declaration to avoid tainting the kernel.
+> 
+> Signed-off-by: Bill Richardson <wfrichar@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+>  drivers/mfd/cros_ec.c | 3 +++
+>  1 file changed, 3 insertions(+)
 
-Given that we've changed practically all device names in converting to
-DT and I haven't heard of any complaints, we may be okay.
+Applied, thanks.
 
-We also have some platforms (imx6 for example) setting the parent to
-an soc device. I still need to understand why the soc device needs to
-be the parent, but it is pointless platform variation in my book. It
-would also change the paths when someone has the whim to add an soc
-device.
 
-Rob
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
