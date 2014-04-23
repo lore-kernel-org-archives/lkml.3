@@ -1,576 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201AbaDWMhu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:37:50 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:59988 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932078AbaDWMhq (ORCPT
+	id S932284AbaDWMiG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:38:06 -0400
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:51362 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932234AbaDWMhy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:37:46 -0400
+	Wed, 23 Apr 2014 08:37:54 -0400
+Date: Wed, 23 Apr 2014 13:37:46 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: swarren@nvidia.com, wsa@the-dreams.de, abrestic@chromium.org,
+        dgreid@chromium.org, olof@lixom.net, sjg@chromium.org,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Vincent Palatin <vpalatin@chromium.org>, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        rdunlap@infradead.org, sameo@linux.intel.com, jdelvare@suse.de,
+        shane.huang@amd.com, maxime.ripard@free-electrons.com,
+        laurent.pinchart+renesas@ideasonboard.com,
+        u.kleine-koenig@pengutronix.de, bjorn.andersson@sonymobile.com,
+        kevin.strasser@linux.intel.com, linux@prisktech.co.nz, andrew@lunn.ch,
+        andriy.shevchenko@linux.intel.com, schwidefsky@de.ibm.com,
+        matt.porter@linaro.org, ch.naveen@samsung.com,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v2 6/7] i2c: ChromeOS EC tunnel driver
+Message-ID: <20140423123746.GG640@lee--X1>
+References: <1398185154-19404-1-git-send-email-dianders@chromium.org>
+ <1398185154-19404-7-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <1398253172-9221-1-git-send-email-jlayton@redhat.com>
-References: <1398253172-9221-1-git-send-email-jlayton@redhat.com>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Wed, 23 Apr 2014 14:37:24 +0200
-Message-ID: <CAKgNAkh6sr0t9U=uPz9mHQ12-c6sOEspAOrs9wXo=JrV+oxGSQ@mail.gmail.com>
-Subject: Re: [RFC][glibc PATCH] fcntl-linux.h: add new definitions and manual
- updates for open file description locks
-To: Jeff Layton <jlayton@redhat.com>
-Cc: "libc-alpha@sourceware.org" <libc-alpha@sourceware.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-        Rich Felker <dalias@libc.org>, samba-technical@lists.samba.org,
-        Ganesha NFS List <nfs-ganesha-devel@lists.sourceforge.net>,
-        "Carlos O'Donell" <carlos@redhat.com>,
-        "Stefan (metze) Metzmacher" <metze@samba.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Boaz Harrosh <bharrosh@panasas.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398185154-19404-7-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
+On Tue, 22 Apr 2014, Doug Anderson wrote:
 
-Comments below.
-
-On Wed, Apr 23, 2014 at 1:39 PM, Jeff Layton <jlayton@redhat.com> wrote:
-> (I haven't yet sent the patch to rename these to Linus, but here's a
->  new draft version of the glibc header/manual updates for open file
->  description locks. Please speak up if you see any issues or object
->  to the new name.)
->
-> Open file description locks have been merged into the Linux kernel for
-> v3.15.  Add the appropriate command-value definitions and an update to
-> the manual that describes their usage.
->
-> ChangeLog:
->
-> 2014-04-23  Jeff Layton  <jlayton@redhat.com>
->
->         [BZ#16839]
->         * manual/llio.texi: add section about open file description locks
->
->         * sysdeps/unix/sysv/linux/bits/fcntl-linux.h:
->           (F_OFD_GETLK, F_OFD_SETLK, F_OFD_SETLKW): New macros.
+> On ARM Chromebooks we have a few devices that are accessed by both the
+> AP (the main "Application Processor") and the EC (the Embedded
+> Controller).  These are:
+> * The battery (sbs-battery).
+> * The power management unit tps65090.
+> 
+> On the original Samsung ARM Chromebook these devices were on an I2C
+> bus that was shared between the AP and the EC and arbitrated using
+> some extranal GPIOs (see i2c-arb-gpio-challenge).
+> 
+> The original arbitration scheme worked well enough but had some
+> downsides:
+> * It was nonstandard (not using standard I2C multimaster)
+> * It only worked if the EC-AP communication was I2C
+> * It was relatively hard to debug problems (hard to tell if i2c issues
+>   were caused by the EC, the AP, or some device on the bus).
+> 
+> On the HP Chromebook 11 the design was changed to:
+> * The AP/EC comms were still i2c, but the battery/tps65090 were no
+>   longer on the bus used for AP/EC communication.  The battery was
+>   exposed to the AP through a limited i2c tunnel and tps65090 was
+>   exposed to the AP through a custom Linux driver.
+> 
+> On the Samsung ARM Chromebook 2 the scheme is changed yet again, now:
+> * The AP/EC comms are now using SPI for faster speeds.
+> * The EC's i2c bus is exposed to the AP through a full i2c tunnel.
+> 
+> The upstream "tegra124-venice2" uses the same scheme as the Samsung
+> ARM Chromebook 2, though it has a different set of components on the
+> other side of the bus.
+> 
+> This driver supports the scheme used by the Samsung ARM Chromebook 2.
+> Future patches to this driver could add support for the battery tunnel
+> on the HP Chromebook 11 (and perhaps could even be used to access
+> tps65090 on the HP Chromebook 11 instead of using a special driver,
+> but I haven't researched that enough).
+> 
+> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
+> Signed-off-by: Simon Glass <sjg@chromium.org>
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Tested-by: Andrew Bresticker <abrestic@chromium.org>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
 > ---
->  manual/examples/ofdlocks.c                 |  75 +++++++++
->  manual/llio.texi                           | 237 ++++++++++++++++++++++++++++-
->  sysdeps/unix/sysv/linux/bits/fcntl-linux.h |  17 +++
->  3 files changed, 326 insertions(+), 3 deletions(-)
->  create mode 100644 manual/examples/ofdlocks.c
->
-> diff --git a/manual/examples/ofdlocks.c b/manual/examples/ofdlocks.c
-> new file mode 100644
-> index 000000000000..544001769272
-> --- /dev/null
-> +++ b/manual/examples/ofdlocks.c
-> @@ -0,0 +1,75 @@
-> +/* Open File Description Locks Usage Example
-> +   Copyright (C) 1991-2014 Free Software Foundation, Inc.
-> +
-> +   This program is free software; you can redistribute it and/or
-> +   modify it under the terms of the GNU General Public License
-> +   as published by the Free Software Foundation; either version 2
-> +   of the License, or (at your option) any later version.
-> +
-> +   This program is distributed in the hope that it will be useful,
-> +   but WITHOUT ANY WARRANTY; without even the implied warranty of
-> +   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> +   GNU General Public License for more details.
-> +
-> +   You should have received a copy of the GNU General Public License
-> +   along with this program; if not, if not, see <http://www.gnu.org/licenses/>.
-
-s/if not, if not/if not/
-
-> +*/
-> +
-> +#define _GNU_SOURCE
-> +#include <stdio.h>
-> +#include <sys/types.h>
-> +#include <sys/stat.h>
-> +#include <unistd.h>
-> +#include <fcntl.h>
-> +#include <pthread.h>
-> +
-> +#define FILENAME       "/tmp/foo"
-> +#define NUM_THREADS    3
-> +#define ITERATIONS     5
-> +
-> +void *
-> +thread_start(void *arg)
-> +{
-> +       int i, fd, len;
-> +       long tid = (long)arg;
-s/)/) /
-
-> +       char buf[256];
-> +       struct flock lck = {
-> +               .l_whence       = SEEK_SET,
-> +               .l_start        = 0,
-> +               .l_len          = 1,
-> +       };
-> +
-> +       fd = open("/tmp/foo", O_RDWR|O_CREAT, 0666);
-
-s/|/ | /
-
-> +
-> +       for (i = 0; i < ITERATIONS; i++) {
-
-I am no lover of the GNU coding style, but I suspect this program
-should be respecting it with respect to the brace style...
-
-> +               lck.l_type = F_WRLCK;
-> +               fcntl(fd, F_OFD_SETLKW, &lck);
-> +
-> +               len = sprintf(buf, "%d: tid=%ld fd=%d\n", i, tid, fd);
-> +
-> +               lseek(fd, 0, SEEK_END);
-> +               write(fd, buf, len);
-> +               fsync(fd);
-> +
-> +               lck.l_type = F_UNLCK;
-> +               fcntl(fd, F_OFD_SETLK, &lck);
-> +
-> +               usleep(1);
-
-I think the usleep() call needs to be either removed or explained.
-
-> +       }
-> +       pthread_exit(NULL);
-> +}
-> +
-> +int
-> +main(int argc, char **argv)
-> +{
-> +       long i;
-> +       pthread_t       threads[NUM_THREADS];
-
-Why the large white space gap?
-
-> +
-> +       truncate(FILENAME, 0);
-> +
-> +       for (i = 0; i < NUM_THREADS; i++)
-> +               pthread_create(&threads[i], NULL, thread_start, (void *)i);
-> +
-> +       pthread_exit(NULL);
-> +       return 0;
-
-The "return 0" isn't needed.
-
-> +}
-> diff --git a/manual/llio.texi b/manual/llio.texi
-> index 6f8adfc607d7..b5c2d07ad929 100644
-> --- a/manual/llio.texi
-> +++ b/manual/llio.texi
-> @@ -57,6 +57,10 @@ directly.)
->                                           flags associated with open files.
->  * File Locks::                          Fcntl commands for implementing
->                                           file locking.
-> +* Open File Description Locks::         Fcntl commands for implementing
-> +                                         open file description locking.
-> +* Open File Description Locks Example:: An example of open file description lock
-> +                                         usage
->  * Interrupt Input::                     Getting an asynchronous signal when
->                                           input arrives.
->  * IOCTLs::                              Generic I/O Control operations.
-> @@ -2890,7 +2894,7 @@ Get flags associated with the open file.  @xref{File Status Flags}.
->  Set flags associated with the open file.  @xref{File Status Flags}.
->
->  @item F_GETLK
-> -Get a file lock.  @xref{File Locks}.
-> +Test a file lock.  @xref{File Locks}.
->
->  @item F_SETLK
->  Set or clear a file lock.  @xref{File Locks}.
-> @@ -2898,6 +2902,18 @@ Set or clear a file lock.  @xref{File Locks}.
->  @item F_SETLKW
->  Like @code{F_SETLK}, but wait for completion.  @xref{File Locks}.
->
-> +@item F_OFD_GETLK
-> +Test a open file description lock.  @xref{Open File Description Locks}.
-> +Specific to Linux.
-> +
-> +@item F_OFD_SETLK
-> +Set or clear a file lock.  @xref{Open File Description Locks}.
-> +Specific to Linux.
-> +
-> +@item F_OFD_SETLKW
-> +Like @code{F_OFD_SETLK}, but wait for completion.
-> +@xref{Open File Description Locks}.  Specific to Linux.
-> +
->  @item F_GETOWN
->  Get process or process group ID to receive @code{SIGIO} signals.
->  @xref{Interrupt Input}.
-> @@ -3576,6 +3592,10 @@ set_nonblock_flag (int desc, int value)
->
->  @cindex file locks
->  @cindex record locking
-> +This section describes record locks that are associated with the process.
-> +There is also a different type of record lock that is associated with the
-> +open description instead of the process.  @xref{Open File Description Locks}.
-
-s/open/open file/
-
-> +
->  The remaining @code{fcntl} commands are used to support @dfn{record
->  locking}, which permits multiple cooperating programs to prevent each
->  other from simultaneously accessing parts of a file in error-prone
-> @@ -3641,7 +3661,10 @@ the file.
->  @item pid_t l_pid
->  This field is the process ID (@pxref{Process Creation Concepts}) of the
->  process holding the lock.  It is filled in by calling @code{fcntl} with
-> -the @code{F_GETLK} command, but is ignored when making a lock.
-> +the @code{F_GETLK} command, but is ignored when making a lock.  If the
-> +conflicting lock is an open file description lock
-> +(@pxref{Open File Description Locks}), then this field will be set to
-> +@math{-1}.
->  @end table
->  @end deftp
->
-> @@ -3813,10 +3836,218 @@ that part of the file for writing.
->
->  @c ??? This section could use an example program.
->
-> -Remember that file locks are only a @emph{voluntary} protocol for
-> +Remember that file locks are only an @emph{advisory} protocol for
->  controlling access to a file.  There is still potential for access to
->  the file by programs that don't use the lock protocol.
->
-> +@node Open File Description Locks
-> +@section Open File Description Locks
-> +
-> +In contrast to process-associated record locks (@pxref{File Locks}),
-> +open file description record locks are associated with an open file
-> +description rather than a process.
-> +
-> +Using @code{fcntl} to apply a open file description lock on a region that
-> +already has an existing open file description lock that was created via the
-> +same file descriptor will never cause a lock conflict.
-> +
-> +Open file description locks are also inherited by child processes across
-> +@code{fork}, or @code{clone} with @code{CLONE_FILES} set
-> +(@pxref{Creating a Process}), along with the file descriptor.
-> +
-> +It is important to distinguish between the file @emph{description} (an
-
-s/file/open file/
-
-> +instance of an open file, usually created by a call to @code{open}) and
-> +a file @emph{descriptor}, which is a numeric value that refers to the
-> +former.  The locks described here are associated with the file
-
-I'd s/former/open file description/ for clarity
-
-and
-s/file/open file/
-
-> +@emph{description} and not the file @emph{descriptor}.
-> +
-> +Using @code{dup} (@pxref{Duplicating Descriptors}) to copy a file
-> +descriptor does not give you an entirely new file description , but
-
-s/entirely//
-(it's redundant, and possibly even confusing.)
-
-
-> +rather copies a reference to an existing file description and assigns it
-
-s/file/open file/
-
-> +to a new file descriptor.  Thus, open file description locks set on a file
-> +descriptor cloned by @code{dup} will never conflict with
-> +open file description locks set on the original descriptor since they refer
-> +to the same file description.  Depending on the range and type of lock
-
-s/file/open file/
-
-> +involved, the original lock may be modified by a @code{F_OFD_SETLK} or
-> +@code{F_OFD_SETLKW} command in this situation however.
-> +
-> +Open file description locks always conflict with process-associated locks,
-> +even if acquired by the same process or on the same open file
-> +descriptor.
-> +
-> +Open file description locks use the same @code{struct flock} as
-> +process-associated locks as an argument (@pxref{File Locks}) and the
-> +macros for the cmd values are also declared in the header file
-
-s/cmd/@code{command}/
-
-> +@file{fcntl.h}. To use them, the macro @code{_GNU_SOURCE} must be
-> +defined prior to including @file{fcntl.h}.
-
-s/prior to including @file{fcntl.h}/before including any header file/
-
-(See http://man7.org/linux/man-pages/man7/feature_test_macros.7.html )
-
-> +
-> +In contrast to process-associated locks, any @code{struct flock} used as
-> +an argument to open file description lock commands must have the @code{l_pid}
-> +value set to @math{0}.   Also, when returning information about a
-
-s/s/an/
-
-> +open file description lock in a @code{F_GETLK} or @code{F_OFD_GETLK} request,
-> +the @code{l_pid} field in @code{struct flock} will be set to @math{-1}
-> +to indicate that a lock is not associated with a process.
-> +
-> +When the same struct flock is reused as an argument to a
-
-s/struct flock/@code{struct flock}/
-
-> +@code{F_OFD_SETLK} or @code{F_OFD_SETLKW} request after being used for an
-> +@code{F_OFD_GETLK} request, it is necessary to inspect and reset the
-> +@code{l_pid} field to @math{0}.
-> +
-> +@pindex fcntl.h.
-> +
-> +@deftypevr Macro int F_OFD_GETLK
-> +This macro is used as the @var{command} argument to @code{fcntl}, to
-> +specify that it should get information about a lock.  This command
-> +requires a third argument of type @w{@code{struct flock *}} to be passed
-> +to @code{fcntl}, so that the form of the call is:
-> +
-> +@smallexample
-> +fcntl (@var{filedes}, F_OFD_GETLK, @var{lockp})
-> +@end smallexample
-> +
-> +If there is a lock already in place that would block the lock described
-> +by the @var{lockp} argument, information about that lock overwrites
-
-s/overwrites/is written to/
-
-> +@code{*@var{lockp}}.  Existing locks are not reported if they are
-> +compatible with making a new lock as specified.  Thus, you should
-> +specify a lock type of @code{F_WRLCK} if you want to find out about both
-> +read and write locks, or @code{F_RDLCK} if you want to find out about
-> +write locks only.
-> +
-> +There might be more than one lock affecting the region specified by the
-> +@var{lockp} argument, but @code{fcntl} only returns information about
-> +one of them. Which lock is returned in this situation is undefined.
-> +
-> +The @code{l_whence} member of the @var{lockp} structure is set to
-> +@code{SEEK_SET} and the @code{l_start} and @code{l_len} fields set to identify
-
-s/set/are set/
-
-> +the locked region.
-> +
-> +If no conflicting lock exists, the only change to the @var{lockp} structure
-> +is to update the @code{l_type} field to the value @code{F_UNLCK}.
-> +
-> +The normal return value from @code{fcntl} with this command is either @math{0}
-> +on success or @math{-1}, which indicates an error. The following @code{errno}
-> +error conditions are defined for this command:
-> +
-> +@table @code
-> +@item EBADF
-> +The @var{filedes} argument is invalid.
-> +
-> +@item EINVAL
-> +Either the @var{lockp} argument doesn't specify valid lock information,
-> +the operating system kernel doesn't support open file description locks, or the file
-> +associated with @var{filedes} doesn't support locks.
-> +@end table
-> +@end deftypevr
-> +
-> +@comment fcntl.h
-> +@comment POSIX.1
-> +@deftypevr Macro int F_OFD_SETLK
-> +This macro is used as the @var{command} argument to @code{fcntl}, to
-> +specify that it should set or clear a lock.  This command requires a
-> +third argument of type @w{@code{struct flock *}} to be passed to
-> +@code{fcntl}, so that the form of the call is:
-> +
-> +@smallexample
-> +fcntl (@var{filedes}, F_OFD_SETLK, @var{lockp})
-> +@end smallexample
-> +
-> +If the opened file already has a lock on any part of the
-
-s/opened/open/
-
-> +region, the old lock on that part is replaced with the new lock.  You
-> +can remove a lock by specifying a lock type of @code{F_UNLCK}.
-> +
-> +If the lock cannot be set, @code{fcntl} returns immediately with a value
-> +of @math{-1}.  This function does not wait for other tasks
-
-s/function/command/
-
-> +to release locks.  If @code{fcntl} succeeds, it returns @math{0}.
-> +
-> +The following @code{errno} error conditions are defined for this
-> +function:
-> +
-> +@table @code
-> +@item EAGAIN
-> +The lock cannot be set because it is blocked by an existing lock on the
-> +file.
-> +
-> +@item EBADF
-> +Either: the @var{filedes} argument is invalid; you requested a read lock
-> +but the @var{filedes} is not open for read access; or, you requested a
-> +write lock but the @var{filedes} is not open for write access.
-> +
-> +@item EINVAL
-> +Either the @var{lockp} argument doesn't specify valid lock information,
-> +the operating system kernel doesn't support open file description locks, or the
-> +file associated with @var{filedes} doesn't support locks.
-> +
-> +@item ENOLCK
-> +The system has run out of file lock resources; there are already too
-> +many file locks in place.
-> +
-> +Well-designed file systems never report this error, because they have no
-> +limitation on the number of locks.  However, you must still take account
-> +of the possibility of this error, as it could result from network access
-> +to a file system on another machine.
-> +@end table
-> +@end deftypevr
-> +
-> +@comment fcntl.h
-> +@comment POSIX.1
-> +@deftypevr Macro int F_OFD_SETLKW
-> +This macro is used as the @var{command} argument to @code{fcntl}, to
-> +specify that it should set or clear a lock.  It is just like the
-> +@code{F_OFD_SETLK} command, but causes the process to wait until the request
-> +can be completed.
-> +
-> +This command requires a third argument of type @code{struct flock *}, as
-> +for the @code{F_OFD_SETLK} command.
-> +
-> +The @code{fcntl} return values and errors are the same as for the
-> +@code{F_OFD_SETLK} command, but these additional @code{errno} error conditions
-> +are defined for this command:
-> +
-> +@table @code
-> +@item EINTR
-> +The function was interrupted by a signal while it was waiting.
-> +@xref{Interrupted Primitives}.
-> +
-> +@end table
-> +@end deftypevr
-> +
-> +Open file description locks are useful in the same sorts of situations as
-> +process-associated locks. They can also be used to synchronize file
-> +access between threads within the same process by having each thread perform
-> +its own @code{open} of the file, to obtain its own file description.
-
-s/file/open file/
-
-> +
-> +Because they are only released automatically when the last reference to
-> +file description is closed, open file description locks avoid the possibility
-
-s/file description/open file description/
-
-But, I'd rewrite the sentence a little:
-
-Because open file description locks are automatically freed only upon
-closing the last file descriptor that refers to the open file
-description, this locking mechanism avoids the possibility...
-
-> +that locks are released due to a library routine opening and closing a file
-> +without the application being aware.
-> +
-> +As with process-associated locks, open file description locks are advisory.
-> +
-> +@node Open File Description Locks Example
-> +@section Open File Description Locks Example
-> +
-> +Here is an example of using open file description locks in a threaded program. If
-> +this program used process-associated locks, then then it would be
-
-s/then then/then/
-
-> +subject to data corruption due since multiple threads are running within
-> +the same process.
-
-That last piece is a biut confusing. How about
-
-...because process-associated locks are shared by the threads inside a
-process, and thus cannot be used by one thread to lock out another
-thread in the same process.
-
-> Proper error handling has been omitted in the following
-> +program for brevity.
-> +
-> +@smallexample
-> +@include ofdlocks.c.texi
-> +@end smallexample
-> +
-> +This example spawns three threads and has each do five iterations of
-> +appending to a file.
-
-Better:
-
-This example creates three threads, each of which loops five times,
-appending to the file.
-
-> Access to that file is serialized via open file
-
-s/taht/the/
-
-> +description locks. If we compile and run the above program, we'll end up
-> +with /tmp/foo that has 15 lines in it.
-> +
-> +If we, however, were to replace the @code{F_OFD_SETLK} and @code{F_OFD_SETLKW}
-> +commands with their process-associated lock equivalents, the locking
-> +essentially becomes a noop since it is all done within the context of
-> +the same process. That leads to data corruption (typically manifested
-> +as missing lines) as some threads race in and overwrite the data from
-
-s/from/written by/
-
-> +others.
-> +
->  @node Interrupt Input
->  @section Interrupt-Driven Input
->
-> diff --git a/sysdeps/unix/sysv/linux/bits/fcntl-linux.h b/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
-> index 915eb3ede560..455389cd2c2a 100644
-> --- a/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
-> +++ b/sysdeps/unix/sysv/linux/bits/fcntl-linux.h
-> @@ -117,6 +117,23 @@
->  # define F_SETLKW64    14      /* Set record locking info (blocking).  */
->  #endif
->
-> +/* open file description locks.
-> +
-> +   Usually record locks held by a process are released on *any* close and are
-> +   not inherited across a fork.
-> +
-> +   These cmd values will set locks that conflict with process-associated record
-> +   locks, but are "owned" by the opened file description, not the process.
-> +   This means that they are inherited across fork or clone with CLONE_FILES
-> +   like BSD (flock) locks, and they are only released automatically when the
-> +   last reference to the the file description against which they were acquired
-> +   is put. */
-> +#if __USE_GNU
-> +# define F_OFD_GETLK   36
-> +# define F_OFD_SETLK   37
-> +# define F_OFD_SETLKW  38
-> +#endif
-> +
->  #ifdef __USE_LARGEFILE64
->  # define O_LARGEFILE __O_LARGEFILE
->  #endif
-> --
-> 1.9.0
->
-
-Cheers,
-
-Michael
+> Changes in v2:
+> - Update tunnel binding as per swarren
+> 
+>  .../devicetree/bindings/i2c/i2c-cros-ec-tunnel.txt |  39 +++
+>  drivers/i2c/busses/Kconfig                         |   9 +
+>  drivers/i2c/busses/Makefile                        |   1 +
+>  drivers/i2c/busses/i2c-cros-ec-tunnel.c            | 304 +++++++++++++++++++++
+>  drivers/mfd/cros_ec.c                              |   5 +
+
+For the MFD changes:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
