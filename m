@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756174AbaDWGyI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 02:54:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:6808 "EHLO mga03.intel.com"
+	id S1756374AbaDWGyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 02:54:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55632 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753442AbaDWGyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 02:54:05 -0400
+	id S1756182AbaDWGyN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 02:54:13 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,910,1389772800"; 
-   d="scan'208,223";a="517760221"
+   d="scan'208";a="525905564"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 2/5] ACPICA: Add <acpi/acpi_opt.h> to remove mis-ordered inclusion of <acpi/actypes.h> from <acpi/platform/aclinux.h>.
-Date: Wed, 23 Apr 2014 14:53:59 +0800
-Message-Id: <c1428c5c48ec7c0ab9e5f588365689d0452e2d8f.1398232409.git.lv.zheng@intel.com>
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org
+Subject: [PATCH v2 3/5] ACPICA: Add <asm/acenv.h> to remove mis-ordered inclusion of <asm/acpi.h> from <acpi/platform/aclinux.h>.
+Date: Wed, 23 Apr 2014 14:54:06 +0800
+Message-Id: <522ac0c3a52f1697d75363cc808a213773dca295.1398232409.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <cover.1398232408.git.lv.zheng@intel.com>
 References: <cover.1396930406.git.lv.zheng@intel.com> <cover.1398232408.git.lv.zheng@intel.com>
@@ -24,293 +28,346 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From ACPICA's perspective, <acpi/actypes.h> should be included after
-inclusion of <acpi/platform/acenv.h>.  But currently in Linux,
-<acpi/platform/aclinux.h> included by <acpi/platform/acenv.h> has
-included <acpi/actypes.h> to find ACPICA types for inline functions.
+There is a mis-order inclusion for <asm/acpi.h>.
 
-This causes the following problem:
-1. Redundant code in <asm/acpi.h> and <acpi/platform/aclinux.h>:
-   Linux must be careful to keep conditions for <acpi/actypes.h> inclusion
-   consistent with the conditions for <acpi/platform/aclinux.h> inclusion.
-   Which finally leads to the issue that we have to keep many useless macro
-   definitions in <acpi/platform/aclinux.h> or <asm/acpi.h>.
-   Such conditions include:
-     COMPILER_DEPENDENT_UINT64
-     COMPILER_DEPENDENT_INT64
-     ACPI_INLINE
-     ACPI_SYSTEM_XFACE
-     ACPI_EXTERNAL_XFACE
-     ACPI_INTERNAL_XFACE
-     ACPI_INTERNAL_VAR_XFACE
-     ACPI_MUTEX_TYPE
-     DEBUGGER_THREADING
-     ACPI_ACQUIRE_GLOBAL_LOCK
-     ACPI_RELEASE_GLOBAL_LOCK
-     ACPI_FLUSH_CPU_CACHE
-   They have default implementations in <include/acpi/platform/acenv.h>
-   while Linux need to keep a copy in <asm/acpi.h> to avoid build errors.
-   Typical Linux build error if we deletes COMPILER_DEPENDENT_x and
-   ACPI_x_XFACE definitions from asm/acpi.h:
-      CC      init/main.o
-    In file included from include/acpi/platform/aclinux.h:293:0,
-                     from include/acpi/platform/acenv.h:149,
-                     from include/acpi/acpi.h:56,
-                     from include/linux/acpi.h:41,
-                     from init/main.c:27:
-    include/acpi/actypes.h:129:1: error: unknown type name 'COMPILER_DEPENDENT_UINT64'
-    include/acpi/actypes.h:130:1: error: unknown type name 'COMPILER_DEPENDENT_INT64'
-    In file included from include/acpi/platform/aclinux.h:293:0,
-                     from include/acpi/platform/acenv.h:149,
-                     from include/acpi/acpi.h:56,
-                     from include/linux/acpi.h:41,
-                     from init/main.c:27:
-    include/acpi/actypes.h:1025:21: error: expected ')' before '*' token
-    include/acpi/actypes.h:1028:21: error: expected ')' before '*' token
-    In file included from include/acpi/acpi.h:63:0,
-                     from include/linux/acpi.h:41,
-                     from init/main.c:27:
-    include/acpi/acpiosxf.h:240:7: error: unknown type name 'acpi_osd_handler'
-    include/acpi/acpiosxf.h:247:6: error: unknown type name 'acpi_osd_handler'
-    include/acpi/acpiosxf.h:260:3: error: unknown type name 'acpi_osd_exec_callback'
+As we will enforce including <linux/acpi.h> for all Linux ACPI users, we
+can find the inclusion order is as follows:
 
-This patch introduces <acpi/acpi_opt.h> to fix this issue by splitting
-conditions and declarations (most of them are inline functions) into 2
-header files so that the wrong inclusion of <acpi/actypes.h> can be removed
-from <acpi/platform/aclinux.h>.
+<linux/acpi.h>
+  <acpi/acpi.h>
+   <acpi/platform/acenv.h>
+    (acenv.h before including aclinux.h)
+    <acpi/platform/aclinux.h>
+...........................................................................
+     (aclinux.h before including asm/acpi.h)
+     <asm/acpi.h>                             @Redundant@
+      (ACPICA specific stuff)
+...........................................................................
+...........................................................................
+      (Linux ACPI specific stuff) ? - - - - - - - - - - - - +
+     (aclinux.h after including asm/acpi.h)   @Invisible@   |
+    (acenv.h after including aclinux.h)       @Invisible@   |
+   other ACPICA headers                       @Invisible@   |
+............................................................|..............
+  <acpi/acpi_bus.h>                                         |
+  <acpi/acpi_drivers.h>                                     |
+  <asm/acpi.h> (Excluded)                                   |
+   (Linux ACPI specific stuff) ! <- - - - - - - - - - - - - +
+
+NOTE that, in ACPICA, <acpi/platform/acenv.h> is more like Kconfig
+generated <generated/autoconf.h> for Linux, it is meant to be included
+before including any ACPICA code.
+
+In the above figure, there is a question mark for "Linux ACPI specific
+stuff" in <asm/acpi.h> which should be included after including all other
+ACPICA header files.  Thus they really need to be moved to the position
+marked with exclaimation mark or the definitions in the blocks marked with
+"@Invisible@" will be invisible to such architecture specific "Linux ACPI
+specific stuff" header blocks.  This leaves 2 issues:
+1. All environmental definitions in these blocks should have a copy in the
+   area marked with "@Redundant@" if they are required by the "Linux ACPI
+   specific stuff".
+2. We cannot use any ACPICA defined types in <asm/acpi.h>.
+
+This patch splits architecture specific ACPICA stuff from <asm/acpi.h> to
+fix this issue.
 
 Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: linux-ia64@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
 ---
- include/acpi/acpi_opt.h         |   90 ++++++++++++++++++++++++++++++++++
- include/acpi/platform/aclinux.h |  101 +++++----------------------------------
- 2 files changed, 101 insertions(+), 90 deletions(-)
- create mode 100644 include/acpi/acpi_opt.h
+ arch/ia64/include/asm/acenv.h   |   71 +++++++++++++++++++++++++++++++++++++++
+ arch/ia64/include/asm/acpi.h    |   50 ---------------------------
+ arch/x86/include/asm/acenv.h    |   65 +++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/acpi.h     |   45 -------------------------
+ include/acpi/platform/aclinux.h |    2 +-
+ 5 files changed, 137 insertions(+), 96 deletions(-)
+ create mode 100644 arch/ia64/include/asm/acenv.h
+ create mode 100644 arch/x86/include/asm/acenv.h
 
-diff --git a/include/acpi/acpi_opt.h b/include/acpi/acpi_opt.h
+diff --git a/arch/ia64/include/asm/acenv.h b/arch/ia64/include/asm/acenv.h
 new file mode 100644
-index 0000000..51ccbe5
+index 0000000..e0896eb
 --- /dev/null
-+++ b/include/acpi/acpi_opt.h
-@@ -0,0 +1,90 @@
++++ b/arch/ia64/include/asm/acenv.h
+@@ -0,0 +1,71 @@
 +/*
-+ * Extra OS specific ACPI defines for Linux.
++ * IA64 specific ACPICA environments and implementation
 + *
 + * Copyright (C) 2014, Intel Corporation
-+ * Authors: Lv Zheng <lv.zheng@intel.com>
++ *   Author: Lv Zheng <lv.zheng@intel.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef _ACPI_OPT_H_
-+#define _ACPI_OPT_H_
++#ifndef _ASM_IA64_ACENV_H
++#define _ASM_IA64_ACENV_H
 +
-+#ifdef __KERNEL__
++#include <asm/intrinsics.h>
 +
-+/*
-+ * Overrides for in-kernel ACPICA
-+ */
-+acpi_status __init acpi_os_initialize(void);
-+
-+acpi_status acpi_os_terminate(void);
++#define COMPILER_DEPENDENT_INT64	long
++#define COMPILER_DEPENDENT_UINT64	unsigned long
 +
 +/*
-+ * Memory allocation/deallocation
++ * Calling conventions:
++ *
++ * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
++ * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
++ * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
++ * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
 + */
++#define ACPI_SYSTEM_XFACE
++#define ACPI_EXTERNAL_XFACE
++#define ACPI_INTERNAL_XFACE
++#define ACPI_INTERNAL_VAR_XFACE
 +
-+/*
-+ * The irqs_disabled() check is for resume from RAM.
-+ * Interrupts are off during resume, just like they are for boot.
-+ * However, boot has  (system_state != SYSTEM_RUNNING)
-+ * to quiet __might_sleep() in kmalloc() and resume does not.
-+ */
-+static inline void *acpi_os_allocate(acpi_size size)
++/* Asm macros */
++
++#define ACPI_FLUSH_CPU_CACHE()
++
++#ifdef CONFIG_ACPI
++
++static inline int
++ia64_acpi_acquire_global_lock(unsigned int *lock)
 +{
-+	return kmalloc(size, irqs_disabled() ? GFP_ATOMIC : GFP_KERNEL);
++	unsigned int old, new, val;
++	do {
++		old = *lock;
++		new = (((old & ~0x3) + 2) + ((old >> 1) & 0x1));
++		val = ia64_cmpxchg4_acq(lock, new, old);
++	} while (unlikely (val != old));
++	return (new < 3) ? -1 : 0;
 +}
 +
-+/* Use native linux version of acpi_os_allocate_zeroed */
-+
-+static inline void *acpi_os_allocate_zeroed(acpi_size size)
++static inline int
++ia64_acpi_release_global_lock(unsigned int *lock)
 +{
-+	return kzalloc(size, irqs_disabled() ? GFP_ATOMIC : GFP_KERNEL);
++	unsigned int old, new, val;
++	do {
++		old = *lock;
++		new = old & ~0x3;
++		val = ia64_cmpxchg4_acq(lock, new, old);
++	} while (unlikely (val != old));
++	return old & 0x1;
 +}
 +
-+static inline void acpi_os_free(void *memory)
-+{
-+	kfree(memory);
-+}
++#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq)				\
++	((Acq) = ia64_acpi_acquire_global_lock(&facs->global_lock))
 +
-+static inline void *acpi_os_acquire_object(acpi_cache_t *cache)
-+{
-+	return kmem_cache_zalloc(cache,
-+				 irqs_disabled() ? GFP_ATOMIC : GFP_KERNEL);
-+}
-+
-+static inline acpi_thread_id acpi_os_get_thread_id(void)
-+{
-+	return (acpi_thread_id)(unsigned long)current;
-+}
-+
-+/*
-+ * When lockdep is enabled, the spin_lock_init() macro stringifies it's
-+ * argument and uses that as a name for the lock in debugging.
-+ * By executing spin_lock_init() in a macro the key changes from "lock" for
-+ * all locks to the name of the argument of acpi_os_create_lock(), which
-+ * prevents lockdep from reporting false positives for ACPICA locks.
-+ */
-+#define acpi_os_create_lock(__handle) \
-+	({ \
-+		spinlock_t *lock = ACPI_ALLOCATE(sizeof(*lock)); \
-+		if (lock) { \
-+			*(__handle) = lock; \
-+			spin_lock_init(*(__handle)); \
-+		} \
-+		lock ? AE_OK : AE_NO_MEMORY; \
-+	})
-+
-+void __iomem *acpi_os_map_memory(acpi_physical_address where, acpi_size length);
-+
-+void acpi_os_unmap_memory(void __iomem *logical_address, acpi_size size);
-+
-+/*
-+ * OSL interfaces added by Linux
-+ */
-+void early_acpi_os_unmap_memory(void __iomem *virt, acpi_size size);
++#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq)				\
++	((Acq) = ia64_acpi_release_global_lock(&facs->global_lock))
 +
 +#endif
 +
++#endif /* _ASM_IA64_ACENV_H */
+diff --git a/arch/ia64/include/asm/acpi.h b/arch/ia64/include/asm/acpi.h
+index d651102..b0ddcfd 100644
+--- a/arch/ia64/include/asm/acpi.h
++++ b/arch/ia64/include/asm/acpi.h
+@@ -34,56 +34,6 @@
+ #include <linux/numa.h>
+ #include <asm/numa.h>
+ 
+-#define COMPILER_DEPENDENT_INT64	long
+-#define COMPILER_DEPENDENT_UINT64	unsigned long
+-
+-/*
+- * Calling conventions:
+- *
+- * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
+- * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
+- * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
+- * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
+- */
+-#define ACPI_SYSTEM_XFACE
+-#define ACPI_EXTERNAL_XFACE
+-#define ACPI_INTERNAL_XFACE
+-#define ACPI_INTERNAL_VAR_XFACE
+-
+-/* Asm macros */
+-
+-#define ACPI_FLUSH_CPU_CACHE()
+-
+-static inline int
+-ia64_acpi_acquire_global_lock (unsigned int *lock)
+-{
+-	unsigned int old, new, val;
+-	do {
+-		old = *lock;
+-		new = (((old & ~0x3) + 2) + ((old >> 1) & 0x1));
+-		val = ia64_cmpxchg4_acq(lock, new, old);
+-	} while (unlikely (val != old));
+-	return (new < 3) ? -1 : 0;
+-}
+-
+-static inline int
+-ia64_acpi_release_global_lock (unsigned int *lock)
+-{
+-	unsigned int old, new, val;
+-	do {
+-		old = *lock;
+-		new = old & ~0x3;
+-		val = ia64_cmpxchg4_acq(lock, new, old);
+-	} while (unlikely (val != old));
+-	return old & 0x1;
+-}
+-
+-#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq)				\
+-	((Acq) = ia64_acpi_acquire_global_lock(&facs->global_lock))
+-
+-#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq)				\
+-	((Acq) = ia64_acpi_release_global_lock(&facs->global_lock))
+-
+ #ifdef	CONFIG_ACPI
+ #define acpi_disabled 0	/* ACPI always enabled on IA64 */
+ #define acpi_noirq 0	/* ACPI always enabled on IA64 */
+diff --git a/arch/x86/include/asm/acenv.h b/arch/x86/include/asm/acenv.h
+new file mode 100644
+index 0000000..6978584
+--- /dev/null
++++ b/arch/x86/include/asm/acenv.h
+@@ -0,0 +1,65 @@
++/*
++ * X86 specific ACPICA environments and implementation
++ *
++ * Copyright (C) 2014, Intel Corporation
++ *   Author: Lv Zheng <lv.zheng@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _ASM_X86_ACENV_H
++#define _ASM_X86_ACENV_H
++
++#include <asm/special_insns.h>
++
++#define COMPILER_DEPENDENT_INT64   long long
++#define COMPILER_DEPENDENT_UINT64  unsigned long long
++
++/*
++ * Calling conventions:
++ *
++ * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
++ * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
++ * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
++ * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
++ */
++#define ACPI_SYSTEM_XFACE
++#define ACPI_EXTERNAL_XFACE
++#define ACPI_INTERNAL_XFACE
++#define ACPI_INTERNAL_VAR_XFACE
++
++/* Asm macros */
++
++#define ACPI_FLUSH_CPU_CACHE()	wbinvd()
++
++#ifdef CONFIG_ACPI
++
++int __acpi_acquire_global_lock(unsigned int *lock);
++int __acpi_release_global_lock(unsigned int *lock);
++
++#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq) \
++	((Acq) = __acpi_acquire_global_lock(&facs->global_lock))
++
++#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq) \
++	((Acq) = __acpi_release_global_lock(&facs->global_lock))
++
++/*
++ * Math helper asm macros
++ */
++#define ACPI_DIV_64_BY_32(n_hi, n_lo, d32, q32, r32) \
++	asm("divl %2;"				     \
++	    : "=a"(q32), "=d"(r32)		     \
++	    : "r"(d32),				     \
++	     "0"(n_lo), "1"(n_hi))
++
++#define ACPI_SHIFT_RIGHT_64(n_hi, n_lo) \
++	asm("shrl   $1,%2	;"	\
++	    "rcrl   $1,%3;"		\
++	    : "=r"(n_hi), "=r"(n_lo)	\
++	    : "0"(n_hi), "1"(n_lo))
++
 +#endif
++
++#endif /* _ASM_X86_ACENV_H */
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index c8c1e70..e06225e 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -32,51 +32,6 @@
+ #include <asm/mpspec.h>
+ #include <asm/realmode.h>
+ 
+-#define COMPILER_DEPENDENT_INT64   long long
+-#define COMPILER_DEPENDENT_UINT64  unsigned long long
+-
+-/*
+- * Calling conventions:
+- *
+- * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
+- * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
+- * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
+- * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
+- */
+-#define ACPI_SYSTEM_XFACE
+-#define ACPI_EXTERNAL_XFACE
+-#define ACPI_INTERNAL_XFACE
+-#define ACPI_INTERNAL_VAR_XFACE
+-
+-/* Asm macros */
+-
+-#define ACPI_FLUSH_CPU_CACHE()	wbinvd()
+-
+-int __acpi_acquire_global_lock(unsigned int *lock);
+-int __acpi_release_global_lock(unsigned int *lock);
+-
+-#define ACPI_ACQUIRE_GLOBAL_LOCK(facs, Acq) \
+-	((Acq) = __acpi_acquire_global_lock(&facs->global_lock))
+-
+-#define ACPI_RELEASE_GLOBAL_LOCK(facs, Acq) \
+-	((Acq) = __acpi_release_global_lock(&facs->global_lock))
+-
+-/*
+- * Math helper asm macros
+- */
+-#define ACPI_DIV_64_BY_32(n_hi, n_lo, d32, q32, r32) \
+-	asm("divl %2;"				     \
+-	    : "=a"(q32), "=d"(r32)		     \
+-	    : "r"(d32),				     \
+-	     "0"(n_lo), "1"(n_hi))
+-
+-
+-#define ACPI_SHIFT_RIGHT_64(n_hi, n_lo) \
+-	asm("shrl   $1,%2	;"	\
+-	    "rcrl   $1,%3;"		\
+-	    : "=r"(n_hi), "=r"(n_lo)	\
+-	    : "0"(n_hi), "1"(n_lo))
+-
+ #ifdef CONFIG_ACPI
+ extern int acpi_lapic;
+ extern int acpi_ioapic;
 diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-index f242909..a20f051 100644
+index a20f051..99d0546 100644
 --- a/include/acpi/platform/aclinux.h
 +++ b/include/acpi/platform/aclinux.h
-@@ -130,73 +130,6 @@
- 
- #ifdef __KERNEL__
- 
--/*
-- * FIXME: Inclusion of actypes.h
-- * Linux kernel need this before defining inline OSL interfaces as
-- * actypes.h need to be included to find ACPICA type definitions.
-- * Since from ACPICA's perspective, the actypes.h should be included after
-- * acenv.h (aclinux.h), this leads to a inclusion mis-ordering issue.
-- */
--#include <acpi/actypes.h>
--
--/*
-- * Overrides for in-kernel ACPICA
-- */
--acpi_status __init acpi_os_initialize(void);
--#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_initialize
--
--acpi_status acpi_os_terminate(void);
--#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_terminate
--
--/*
-- * Memory allocation/deallocation
-- */
--
--/*
-- * The irqs_disabled() check is for resume from RAM.
-- * Interrupts are off during resume, just like they are for boot.
-- * However, boot has  (system_state != SYSTEM_RUNNING)
-- * to quiet __might_sleep() in kmalloc() and resume does not.
-- */
--static inline void *acpi_os_allocate(acpi_size size)
--{
--	return kmalloc(size, irqs_disabled()? GFP_ATOMIC : GFP_KERNEL);
--}
--
--#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_allocate
--
--/* Use native linux version of acpi_os_allocate_zeroed */
--
--static inline void *acpi_os_allocate_zeroed(acpi_size size)
--{
--	return kzalloc(size, irqs_disabled()? GFP_ATOMIC : GFP_KERNEL);
--}
--
--#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_allocate_zeroed
--#define USE_NATIVE_ALLOCATE_ZEROED
--
--static inline void acpi_os_free(void *memory)
--{
--	kfree(memory);
--}
--
--#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_free
--
--static inline void *acpi_os_acquire_object(acpi_cache_t * cache)
--{
--	return kmem_cache_zalloc(cache,
--				 irqs_disabled()? GFP_ATOMIC : GFP_KERNEL);
--}
--
--#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_acquire_object
--
--static inline acpi_thread_id acpi_os_get_thread_id(void)
--{
--	return (acpi_thread_id) (unsigned long)current;
--}
--
--#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_get_thread_id
--
- #ifndef CONFIG_PREEMPT
- 
- /*
-@@ -212,27 +145,18 @@ static inline acpi_thread_id acpi_os_get_thread_id(void)
+@@ -71,7 +71,7 @@
+ #ifdef EXPORT_ACPI_INTERFACES
+ #include <linux/export.h>
  #endif
+-#include <asm/acpi.h>
++#include <asm/acenv.h>
  
- /*
-- * When lockdep is enabled, the spin_lock_init() macro stringifies it's
-- * argument and uses that as a name for the lock in debugging.
-- * By executing spin_lock_init() in a macro the key changes from "lock" for
-- * all locks to the name of the argument of acpi_os_create_lock(), which
-- * prevents lockdep from reporting false positives for ACPICA locks.
-+ * Overrides for in-kernel ACPICA
-  */
--#define acpi_os_create_lock(__handle) \
--	({ \
--		spinlock_t *lock = ACPI_ALLOCATE(sizeof(*lock)); \
--		if (lock) { \
--			*(__handle) = lock; \
--			spin_lock_init(*(__handle)); \
--		} \
--		lock ? AE_OK : AE_NO_MEMORY; \
--	})
-+#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_initialize
-+#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_terminate
-+#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_allocate
-+#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_allocate_zeroed
-+#define USE_NATIVE_ALLOCATE_ZEROED
-+#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_free
-+#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_acquire_object
-+#define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_get_thread_id
- #define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_create_lock
--
--void __iomem *acpi_os_map_memory(acpi_physical_address where, acpi_size length);
- #define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_map_memory
--
--void acpi_os_unmap_memory(void __iomem * logical_address, acpi_size size);
- #define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_unmap_memory
+ /* Host-dependent types and defines for in-kernel ACPICA */
  
- /*
-@@ -253,11 +177,8 @@ void acpi_os_unmap_memory(void __iomem * logical_address, acpi_size size);
- #define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_get_next_filename
- #define ACPI_USE_ALTERNATE_PROTOTYPE_acpi_os_close_directory
- 
--/*
-- * OSL interfaces added by Linux
-- */
--void early_acpi_os_unmap_memory(void __iomem * virt, acpi_size size);
--
- #endif				/* __KERNEL__ */
- 
-+#define ACPI_USE_NATIVE_INTERFACE_HEADER    1
-+
- #endif				/* __ACLINUX_H__ */
 -- 
 1.7.10
 
