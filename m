@@ -1,55 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696AbaDWQWI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 12:22:08 -0400
-Received: from mailrelay004.isp.belgacom.be ([195.238.6.170]:20405 "EHLO
-	mailrelay004.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756319AbaDWQWF (ORCPT
+	id S1754717AbaDWQYd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 12:24:33 -0400
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:47783 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787AbaDWQYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 12:22:05 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApAMAMrnV1NXQ6tr/2dsb2JhbABagwaCXqkQmWyBGRd0glMTHCMYahgkE4gtAxUByAENhlQXjECBNGSEQAEDjmyIGYFvAYpsghaFU4MzO4Es
-Date: Wed, 23 Apr 2014 18:22:02 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Brian Norris <computersforpeace@gmail.com>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH 1/1] drivers/mtd/devices/docg3.c: add __exit to
- doc_unregister_sysfs
-Message-Id: <20140423182202.1e755c243efc129aec8633f0@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Apr 2014 12:24:32 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140423181442.d4d07316c04a9a528a393ea1@skynet.be>
+References: <20140423181442.d4d07316c04a9a528a393ea1@skynet.be>
+Date: Wed, 23 Apr 2014 18:24:31 +0200
+Message-ID: <CAJfpegtze0nd-Mho0Msc8YPmEOQ=8soN+aAyheEbkKYoR-m5LA@mail.gmail.com>
+Subject: Re: [PATCH 1/1] FS/FUSE: add __exit to fuse_ctl_cleanup
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Fabian Frederick <fabf@skynet.be>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        akpm <akpm@linux-foundation.org>,
+        fuse-devel <fuse-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-doc_unregister_sysfs is only called by __exit docg3_release
+On Wed, Apr 23, 2014 at 6:14 PM, Fabian Frederick <fabf@skynet.be> wrote:
+> fuse_ctl_cleanup is only called by __exit fuse_exit
 
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Brian Norris <computersforpeace@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- drivers/mtd/devices/docg3.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks, queued.
 
-diff --git a/drivers/mtd/devices/docg3.c b/drivers/mtd/devices/docg3.c
-index dd5e101..eec9f39 100644
---- a/drivers/mtd/devices/docg3.c
-+++ b/drivers/mtd/devices/docg3.c
-@@ -1636,7 +1636,7 @@ static int doc_register_sysfs(struct platform_device *pdev,
- 	return ret;
- }
- 
--static void doc_unregister_sysfs(struct platform_device *pdev,
-+static void __exit doc_unregister_sysfs(struct platform_device *pdev,
- 				 struct docg3_cascade *cascade)
- {
- 	struct device *dev = &pdev->dev;
--- 
-1.9.1
-
+Miklos
