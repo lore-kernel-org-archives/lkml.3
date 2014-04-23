@@ -1,97 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757818AbaDWRcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:32:00 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:39981 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753242AbaDWRb7 (ORCPT
+	id S1756831AbaDWRe6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:34:58 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:41591 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219AbaDWRez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:31:59 -0400
-Message-ID: <5357F909.7070205@infradead.org>
-Date: Wed, 23 Apr 2014 10:31:53 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Wed, 23 Apr 2014 13:34:55 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
+        <balajitk@ti.com>, <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v4 1/4] ARM: OMAP5: hwmod: Add ocp2scp3 and sata hwmods
+Date: Wed, 23 Apr 2014 20:34:47 +0300
+Message-ID: <1398274487-24688-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398274237-24510-1-git-send-email-rogerq@ti.com>
+References: <1398274237-24510-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Robin Gong <b38343@freescale.com>
-CC: "Koul, Vinod" <vinod.koul@intel.com>,
-        "Williams, Dan J" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v1] dma: imx-sdma: add support for sdma memory copy
-References: <1397728870-22086-1-git-send-email-b38343@freescale.com>	 <1397730289.11914.225.camel@smile.fi.intel.com>	 <20140418094057.GA11496@Robin-OptiPlex-780>	 <1398162484.11914.234.camel@smile.fi.intel.com>	 <20140422105142.GA9693@Robin-OptiPlex-780> <1398165864.11914.241.camel@smile.fi.intel.com>
-In-Reply-To: <1398165864.11914.241.camel@smile.fi.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/14 04:24, Andy Shevchenko wrote:
-> On Tue, 2014-04-22 at 18:51 +0800, Robin Gong wrote:
->> On Tue, Apr 22, 2014 at 10:28:05AM +0000, Shevchenko, Andriy wrote:
->>> On Fri, 2014-04-18 at 17:41 +0800, Robin Gong wrote:
->>>> On Thu, Apr 17, 2014 at 10:24:50AM +0000, Shevchenko, Andriy wrote:
->>>>> On Thu, 2014-04-17 at 18:01 +0800, Robin Gong wrote:
->>>
->>> []
->>>
->>>>>> +	dev_dbg(sdma->dev, "memcpy: %x->%x, len=%d, channel=%d.\n",
->>>>>
->>>>> %pad for dma_addr_t variables.
->>>>>
->>>> Yes, %x here is not proper, will be %#llx here to align with others similar
->>>> code in this file.
->>>
->>> Why %#llx? You don't need the specific casting since kernel has special
->>> specifiers for phys_addr_t and dma_addr_t and their derivatives (see
->>> Documentation/printk-formats.txt)
->>>
->> I think both are ok, why I choose %llx is only for align the code style,
-> 
-> Yes, but it was started being developed earlier than kernel gains the
-> feature.
-> 
->>  you
->> can find the same code in sdma_prep_dma_cyclic function. below description also
->> copy from Documentation/printk-formats.txt:
->>
->>
->> If <type> is dependent on a config option for its size (e.g., sector_t,
->> blkcnt_t, phys_addr_t, resource_size_t) or is architecture-dependent
->> for its size (e.g., tcflag_t), use a format specifier of its largest
->> possible type and explicitly cast to it.  Example:
->>
->> 	printk("test: sector number/total blocks: %llu/%llu\n",
->> 		(unsigned long long)sector, (unsigned long long)blockcount);
-> 
-> Yeah, I think it requires to be updated accordingly to last changes
-> regarding to new specifiers.
-> 
-> +Cc Randy. Randy, do you think is a matter of fact that we have to
-> update that paragraph somehow and recommend to prefer special specifiers
-> over explicit casting to longest possible type?
+From: Keshava Munegowda <keshava_mgowda@ti.com>
 
-Yes, I agree, if there is a printk format specifier that supports a certain type
-to be printed, we should prefer to use that instead of the generic casting method.
+Create hwmods for ocp2scp3 and sata modules.
 
-IMO, the cast to (long long) or (unsigned long long) or (u64) or (s64) should be a last
-resort safe method.
+[Roger Q] Clean up.
 
+CC: Benoit Cousson <bcousson@baylibre.com>
+Acked-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Balaji T K <balajitk@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/mach-omap2/omap_hwmod_54xx_data.c | 73 ++++++++++++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
 
->>>>>> +		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%08x %s%s\n",
->>>>>> +				i, count, sg_src->dma_address,
->>>>>
->>>>> %pad for dma_addr_t.
->>>>>
->>>> Accept the idea, same as the above.
->>>
->>> Same as above.
-> 
-> 
-
-
+diff --git a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+index 8923172..e169f90 100644
+--- a/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
++++ b/arch/arm/mach-omap2/omap_hwmod_54xx_data.c
+@@ -1791,6 +1791,77 @@ static struct omap_hwmod omap54xx_wd_timer2_hwmod = {
+ 	},
+ };
+ 
++/*
++ * 'ocp2scp' class
++ * bridge to transform ocp interface protocol to scp (serial control port)
++ * protocol
++ */
++/* ocp2scp3 */
++static struct omap_hwmod omap54xx_ocp2scp3_hwmod;
++/* l4_cfg -> ocp2scp3 */
++static struct omap_hwmod_ocp_if omap54xx_l4_cfg__ocp2scp3 = {
++	.master		= &omap54xx_l4_cfg_hwmod,
++	.slave		= &omap54xx_ocp2scp3_hwmod,
++	.clk		= "l4_root_clk_div",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
++
++static struct omap_hwmod omap54xx_ocp2scp3_hwmod = {
++	.name		= "ocp2scp3",
++	.class		= &omap54xx_ocp2scp_hwmod_class,
++	.clkdm_name	= "l3init_clkdm",
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = OMAP54XX_CM_L3INIT_OCP2SCP3_CLKCTRL_OFFSET,
++			.context_offs = OMAP54XX_RM_L3INIT_OCP2SCP3_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_HWCTRL,
++		},
++	},
++};
++
++/*
++ * 'sata' class
++ * sata:  serial ata interface  gen2 compliant   ( 1 rx/ 1 tx)
++ */
++
++static struct omap_hwmod_class_sysconfig omap54xx_sata_sysc = {
++	.sysc_offs	= 0x0000,
++	.sysc_flags	= (SYSC_HAS_MIDLEMODE | SYSC_HAS_SIDLEMODE),
++	.idlemodes	= (SIDLE_FORCE | SIDLE_NO | SIDLE_SMART |
++			   SIDLE_SMART_WKUP | MSTANDBY_FORCE | MSTANDBY_NO |
++			   MSTANDBY_SMART | MSTANDBY_SMART_WKUP),
++	.sysc_fields	= &omap_hwmod_sysc_type2,
++};
++
++static struct omap_hwmod_class omap54xx_sata_hwmod_class = {
++	.name	= "sata",
++	.sysc	= &omap54xx_sata_sysc,
++};
++
++/* sata */
++static struct omap_hwmod omap54xx_sata_hwmod = {
++	.name		= "sata",
++	.class		= &omap54xx_sata_hwmod_class,
++	.clkdm_name	= "l3init_clkdm",
++	.flags		= HWMOD_SWSUP_SIDLE | HWMOD_SWSUP_MSTANDBY,
++	.main_clk	= "func_48m_fclk",
++	.mpu_rt_idx	= 1,
++	.prcm = {
++		.omap4 = {
++			.clkctrl_offs = OMAP54XX_CM_L3INIT_SATA_CLKCTRL_OFFSET,
++			.context_offs = OMAP54XX_RM_L3INIT_SATA_CONTEXT_OFFSET,
++			.modulemode   = MODULEMODE_SWCTRL,
++		},
++	},
++};
++
++/* l4_cfg -> sata */
++static struct omap_hwmod_ocp_if omap54xx_l4_cfg__sata = {
++	.master		= &omap54xx_l4_cfg_hwmod,
++	.slave		= &omap54xx_sata_hwmod,
++	.clk		= "l3_iclk_div",
++	.user		= OCP_USER_MPU | OCP_USER_SDMA,
++};
+ 
+ /*
+  * Interfaces
+@@ -2482,6 +2553,8 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
+ 	&omap54xx_l4_cfg__usb_tll_hs,
+ 	&omap54xx_l4_cfg__usb_otg_ss,
+ 	&omap54xx_l4_wkup__wd_timer2,
++	&omap54xx_l4_cfg__ocp2scp3,
++	&omap54xx_l4_cfg__sata,
+ 	NULL,
+ };
+ 
 -- 
-~Randy
+1.8.3.2
+
