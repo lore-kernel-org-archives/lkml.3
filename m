@@ -1,84 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932335AbaDWTB1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 15:01:27 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:42079 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757538AbaDWTBV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 15:01:21 -0400
-Message-ID: <53580DFC.9060507@gmail.com>
-Date: Wed, 23 Apr 2014 21:01:16 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Miklos Szeredi <miklos@szeredi.hu>
-CC: mtk.manpages@gmail.com, "J. Bruce Fields" <bfields@fieldses.org>,
-        Jan Kara <jack@suse.cz>, Al Viro <viro@zeniv.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux-Fsdevel <linux-fsdevel@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
+	id S932468AbaDWTBz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 15:01:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65313 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932401AbaDWTBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 15:01:51 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Zach Brown <zab@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>,
-        "mszeredi@suse.cz" <mszeredi@suse.cz>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        "Carlos O'Donell" <carlos@redhat.com>
-Subject: Re: [PATCH 11/11] ext4: add cross rename support
-References: <1389219015-10980-1-git-send-email-miklos@szeredi.hu>	<1389219015-10980-12-git-send-email-miklos@szeredi.hu>	<20140113122517.GA10366@quack.suse.cz>	<20140115182347.GB5715@fieldses.org>	<CAJfpegv0TgJpd-pXxBj2n0efRUW9_GW_tYtHtfN6drOYA=25QQ@mail.gmail.com>	<20140116105406.GF24171@tucsk.piliscsaba.szeredi.hu>	<52D90B93.5010209@gmail.com>	<20140117144126.GG24171@tucsk.piliscsaba.szeredi.hu>	<53523D16.9020101@gmail.com> <CAJfpegsdUwxHOGxhiLtkMHzB==UGzbj+rAVOJGX4nb6z1Urzpw@mail.gmail.com>
-In-Reply-To: <CAJfpegsdUwxHOGxhiLtkMHzB==UGzbj+rAVOJGX4nb6z1Urzpw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH 1/3] nohz: Only update sleeptime stats locally
+Date: Wed, 23 Apr 2014 21:00:34 +0200
+Message-Id: <1398279636-21503-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 04:21 PM, Miklos Szeredi wrote:
-> On Sat, Apr 19, 2014 at 11:08 AM, Michael Kerrisk (man-pages)
-> <mtk.manpages@gmail.com> wrote:
->> Hi Miklos,
->>
->>> The code changes are pushed to the git tree and the updated man page is below.
->>
->> Now that renameat2() is in 3.15, I've taken these changes. This had to be
->> manually does, because I'd done some major reworking on the pages since you
->> originally wrote your text. So, I may have injected some errors.
->>
->> I did a little light reworking of the text and added VERSIONS and
->> CONFORMING TO pieces. I also added a couple of FIXMEs, to note points
->> that will need to be updated once glibc support is (presumably) added.
->> (Carlos, what's the usual process for triggering that sort of thing?)
->>
->> Could you please review the diff below (now against rename(2)).
-> 
-> Looks okay.
+From: Frederic Weisbecker <fweisbec@gmail.com>
 
-Thanks for checking it.
+The idle and io sleeptime stats can be updated concurrently from callers
+of get_cpu_idle_time_us(), get_cpu_iowait_time_us() and
+tick_nohz_stop_idle().
 
-> One comment on the current rename.2 page:
-> 
->   #include <fcntl.h>           /* Definition of AT_* constants */
-> 
-> AT_ constants are not used in renameat() hence this seems unneeded.
+Updaters can easily race and mess up with internal datas coherency,
+for example when a governor calls a get_cpu_*_time_us() API and the
+target CPU exits idle at the same time, because no locking or whatsoever
+is there to protect against this concurrency.
 
-I think you overlooked AT_FDCWD? (It is true though that that comment 
-is boilerplate across the *at() pages, some of which have several 
-AT_* constants.)
+To fix this, lets only update the sleeptime stats locally when the CPU
+exits from idle. This is the only place where a real update is truly
+needed. The callers of get_cpu_*_time_us() can simply add up the pending
+sleep time delta to the last sleeptime snapshot in order to get a coherent
+result. There is no need for them to also update the stats.
 
-> Not sure where the RENAME_ constants need to go once renameat2() is
-> added to glibc, possibly to <stdio.h> since they are closely related
-> to rename.
+Rebased to Linus' tree by Denys Vlasenko.
 
-Will you be prodding the glibc folks about this?
+Reported-by: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+---
+ kernel/time/tick-sched.c | 63 ++++++++++++++++--------------------------------
+ 1 file changed, 21 insertions(+), 42 deletions(-)
 
-Thanks,
-
-Michael
-
-
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 9f8af69..73ced0c4 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -403,31 +403,16 @@ static void tick_nohz_update_jiffies(ktime_t now)
+ 	touch_softlockup_watchdog();
+ }
+ 
+-/*
+- * Updates the per cpu time idle statistics counters
+- */
+-static void
+-update_ts_time_stats(int cpu, struct tick_sched *ts, ktime_t now, u64 *last_update_time)
++static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
+ {
+ 	ktime_t delta;
+ 
+-	if (ts->idle_active) {
+-		delta = ktime_sub(now, ts->idle_entrytime);
+-		if (nr_iowait_cpu(cpu) > 0)
+-			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
+-		else
+-			ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+-		ts->idle_entrytime = now;
+-	}
+-
+-	if (last_update_time)
+-		*last_update_time = ktime_to_us(now);
+-
+-}
+-
+-static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
+-{
+-	update_ts_time_stats(smp_processor_id(), ts, now, NULL);
++	/* Updates the per cpu time idle statistics counters */
++	delta = ktime_sub(now, ts->idle_entrytime);
++	if (nr_iowait_cpu(smp_processor_id()) > 0)
++		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
++	else
++		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+ 	ts->idle_active = 0;
+ 
+ 	sched_clock_idle_wakeup_event(0);
+@@ -466,17 +451,14 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+ 		return -1;
+ 
+ 	now = ktime_get();
+-	if (last_update_time) {
+-		update_ts_time_stats(cpu, ts, now, last_update_time);
+-		idle = ts->idle_sleeptime;
+-	} else {
+-		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
+-			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
++	if (last_update_time)
++		*last_update_time = ktime_to_us(now);
+ 
+-			idle = ktime_add(ts->idle_sleeptime, delta);
+-		} else {
+-			idle = ts->idle_sleeptime;
+-		}
++	if (ts->idle_active && !nr_iowait_cpu(cpu)) {
++		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
++		idle = ktime_add(ts->idle_sleeptime, delta);
++	} else {
++		idle = ts->idle_sleeptime;
+ 	}
+ 
+ 	return ktime_to_us(idle);
+@@ -507,17 +489,14 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+ 		return -1;
+ 
+ 	now = ktime_get();
+-	if (last_update_time) {
+-		update_ts_time_stats(cpu, ts, now, last_update_time);
+-		iowait = ts->iowait_sleeptime;
+-	} else {
+-		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+-			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
++	if (last_update_time)
++		*last_update_time = ktime_to_us(now);
+ 
+-			iowait = ktime_add(ts->iowait_sleeptime, delta);
+-		} else {
+-			iowait = ts->iowait_sleeptime;
+-		}
++	if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
++		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
++		iowait = ktime_add(ts->iowait_sleeptime, delta);
++	} else {
++		iowait = ts->iowait_sleeptime;
+ 	}
+ 
+ 	return ktime_to_us(iowait);
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.8.1.4
+
