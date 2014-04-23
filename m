@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435AbaDWPEn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:04:43 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:32894 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757197AbaDWPBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757251AbaDWPBP (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 23 Apr 2014 11:01:15 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49061 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752211AbaDWPBJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:01:09 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: Greg KH <gregkh@linuxfoundation.org>
 CC: <marcel@holtmann.org>, <gustavo@padovan.org>, <johan.hedberg@gmail.com>,
@@ -15,9 +15,9 @@ CC: <marcel@holtmann.org>, <gustavo@padovan.org>, <johan.hedberg@gmail.com>,
         <devicetree@vger.kernel.org>,
         Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
         Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 10/13] tty: serial: omap: remove some dead code
-Date: Wed, 23 Apr 2014 09:58:34 -0500
-Message-ID: <1398265117-11793-10-git-send-email-balbi@ti.com>
+Subject: [PATCH 02/13] bluetooth: hci_ldisc: fix deadlock condition
+Date: Wed, 23 Apr 2014 09:58:26 -0500
+Message-ID: <1398265117-11793-2-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.9.2.459.g68773ac
 In-Reply-To: <1398265117-11793-1-git-send-email-balbi@ti.com>
 References: <1398265117-11793-1-git-send-email-balbi@ti.com>
@@ -27,85 +27,97 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-nobody passes a DTR_gpio to this driver, so
-this code is not necessary.
+LDISCs shouldn't call tty->ops->write() from within
+->write_wakeup().
 
+->write_wakeup() is called with port lock taken and
+IRQs disabled, tty->ops->write() will try to acquire
+the same port lock and we will deadlock.
+
+Acked-by: Marcel Holtmann <marcel@holtmann.org>
+Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+Reported-by: Huang Shijie <b32955@freescale.com>
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/tty/serial/omap-serial.c | 39 ---------------------------------------
- 1 file changed, 39 deletions(-)
+ drivers/bluetooth/hci_ldisc.c | 24 +++++++++++++++++++-----
+ drivers/bluetooth/hci_uart.h  |  1 +
+ 2 files changed, 20 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
-index b46aaf3..6654682 100644
---- a/drivers/tty/serial/omap-serial.c
-+++ b/drivers/tty/serial/omap-serial.c
-@@ -163,10 +163,6 @@ struct uart_omap_port {
- 	u8			wakeups_enabled;
- 	u32			features;
+diff --git a/drivers/bluetooth/hci_ldisc.c b/drivers/bluetooth/hci_ldisc.c
+index f1fbf4f..e00f8f5 100644
+--- a/drivers/bluetooth/hci_ldisc.c
++++ b/drivers/bluetooth/hci_ldisc.c
+@@ -118,10 +118,6 @@ static inline struct sk_buff *hci_uart_dequeue(struct hci_uart *hu)
  
--	int			DTR_gpio;
--	int			DTR_inverted;
--	int			DTR_active;
+ int hci_uart_tx_wakeup(struct hci_uart *hu)
+ {
+-	struct tty_struct *tty = hu->tty;
+-	struct hci_dev *hdev = hu->hdev;
+-	struct sk_buff *skb;
 -
- 	struct serial_rs485	rs485;
- 	int			rts_gpio;
+ 	if (test_and_set_bit(HCI_UART_SENDING, &hu->tx_state)) {
+ 		set_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+ 		return 0;
+@@ -129,6 +125,22 @@ int hci_uart_tx_wakeup(struct hci_uart *hu)
  
-@@ -694,16 +690,6 @@ static void serial_omap_set_mctrl(struct uart_port *port, unsigned int mctrl)
- 	serial_out(up, UART_MCR, up->mcr);
- 	pm_runtime_mark_last_busy(up->dev);
- 	pm_runtime_put_autosuspend(up->dev);
--
--	if (gpio_is_valid(up->DTR_gpio) &&
--	    !!(mctrl & TIOCM_DTR) != up->DTR_active) {
--		up->DTR_active = !up->DTR_active;
--		if (gpio_cansleep(up->DTR_gpio))
--			schedule_work(&up->qos_work);
--		else
--			gpio_set_value(up->DTR_gpio,
--				       up->DTR_active != up->DTR_inverted);
--	}
+ 	BT_DBG("");
+ 
++	schedule_work(&hu->write_work);
++
++	return 0;
++}
++
++static void hci_uart_write_work(struct work_struct *work)
++{
++	struct hci_uart *hu = container_of(work, struct hci_uart, write_work);
++	struct tty_struct *tty = hu->tty;
++	struct hci_dev *hdev = hu->hdev;
++	struct sk_buff *skb;
++
++	/* REVISIT: should we cope with bad skbs or ->write() returning
++	 * and error value ?
++	 */
++
+ restart:
+ 	clear_bit(HCI_UART_TX_WAKEUP, &hu->tx_state);
+ 
+@@ -153,7 +165,6 @@ restart:
+ 		goto restart;
+ 
+ 	clear_bit(HCI_UART_SENDING, &hu->tx_state);
+-	return 0;
  }
  
- static void serial_omap_break_ctl(struct uart_port *port, int break_state)
-@@ -847,9 +833,6 @@ static void serial_omap_uart_qos_work(struct work_struct *work)
- 						qos_work);
+ static void hci_uart_init_work(struct work_struct *work)
+@@ -282,6 +293,7 @@ static int hci_uart_tty_open(struct tty_struct *tty)
+ 	tty->receive_room = 65536;
  
- 	pm_qos_update_request(&up->pm_qos_request, up->latency);
--	if (gpio_is_valid(up->DTR_gpio))
--		gpio_set_value_cansleep(up->DTR_gpio,
--					up->DTR_active != up->DTR_inverted);
- }
+ 	INIT_WORK(&hu->init_ready, hci_uart_init_work);
++	INIT_WORK(&hu->write_work, hci_uart_write_work);
  
- static void
-@@ -1672,28 +1655,6 @@ static int serial_omap_probe(struct platform_device *pdev)
- 	if (IS_ERR(base))
- 		return PTR_ERR(base);
+ 	spin_lock_init(&hu->rx_lock);
  
--	if (gpio_is_valid(omap_up_info->DTR_gpio) &&
--	    omap_up_info->DTR_present) {
--		ret = devm_gpio_request(&pdev->dev, omap_up_info->DTR_gpio,
--				"omap-serial");
--		if (ret < 0)
--			return ret;
--		ret = gpio_direction_output(omap_up_info->DTR_gpio,
--					    omap_up_info->DTR_inverted);
--		if (ret < 0)
--			return ret;
--	}
--
--	if (gpio_is_valid(omap_up_info->DTR_gpio) &&
--	    omap_up_info->DTR_present) {
--		up->DTR_gpio = omap_up_info->DTR_gpio;
--		up->DTR_inverted = omap_up_info->DTR_inverted;
--	} else {
--		up->DTR_gpio = -EINVAL;
--	}
--
--	up->DTR_active = 0;
--
- 	up->dev = &pdev->dev;
- 	up->port.dev = &pdev->dev;
- 	up->port.type = PORT_OMAP;
+@@ -319,6 +331,8 @@ static void hci_uart_tty_close(struct tty_struct *tty)
+ 	if (hdev)
+ 		hci_uart_close(hdev);
+ 
++	cancel_work_sync(&hu->write_work);
++
+ 	if (test_and_clear_bit(HCI_UART_PROTO_SET, &hu->flags)) {
+ 		if (hdev) {
+ 			if (test_bit(HCI_UART_REGISTERED, &hu->flags))
+diff --git a/drivers/bluetooth/hci_uart.h b/drivers/bluetooth/hci_uart.h
+index fffa61f..12df101 100644
+--- a/drivers/bluetooth/hci_uart.h
++++ b/drivers/bluetooth/hci_uart.h
+@@ -68,6 +68,7 @@ struct hci_uart {
+ 	unsigned long		hdev_flags;
+ 
+ 	struct work_struct	init_ready;
++	struct work_struct	write_work;
+ 
+ 	struct hci_uart_proto	*proto;
+ 	void			*priv;
 -- 
 1.9.2.459.g68773ac
 
