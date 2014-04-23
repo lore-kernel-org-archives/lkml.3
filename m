@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491AbaDWPHy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:07:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757561AbaDWPHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:07:49 -0400
-Date: Wed, 23 Apr 2014 11:07:44 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Simo Sorce <ssorce@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
-        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
-        Network Development <netdev@vger.kernel.org>
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-Message-ID: <20140423150744.GC22755@redhat.com>
-References: <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
- <1397756025.2628.64.camel@willson.li.ssimo.org>
- <CALCETrVBJFgKwRKBE2jAG6kiGgkJ+MyQiw2nyz5yj0h68kCk9A@mail.gmail.com>
- <1397759013.2628.86.camel@willson.li.ssimo.org>
- <20140417185023.GA32527@redhat.com>
- <1397761817.2628.113.camel@willson.li.ssimo.org>
- <20140417191646.GA2461@redhat.com>
- <CALCETrW3F1+3qF3thrAmuoWVbRveBJ2=owpigh4mv6iAafoQCw@mail.gmail.com>
- <20140421150307.GA4367@redhat.com>
- <CALCETrW5RvbW-Hz_Y7oULP6sEfdhGBh51+mTj4RwobHV-ji+Kg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrW5RvbW-Hz_Y7oULP6sEfdhGBh51+mTj4RwobHV-ji+Kg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932397AbaDWPH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:07:26 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:58603 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757545AbaDWPHM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:07:12 -0400
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
+        dwmw2@infradead.org
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: [PATCH 0/5] ARM: sunxi: Machine code cleanup
+Date: Wed, 23 Apr 2014 17:04:31 +0200
+Message-Id: <1398265476-29373-1-git-send-email-maxime.ripard@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 08:47:51AM -0700, Andy Lutomirski wrote:
+Hi,
 
-[..]
-> To summarize from my reading of how this crap words:
-> 
-> When a unit is created, systemd opens a stream socket pointing at
-> /run/systemd/journal/stdout.  It tells journald the unit, along with
-> lots of other useful information.  journald records this association
-> between the socket and the unit.  Systemd could tell journald the
-> cgroup here, too, if it wanted it.
+This serie moves the restart code out of the mach-sunxi directory to
+either the watchdog driver or to a new driver in drivers/power/reset.
 
-Ok, that's a fair point. I looked at  connect_logger_as() and I see
-that systemd does connect() on behalf of service being launched and
-sets up fd and passes bunch of information to journald. So cgroup could
-be one of the information and that would act like SO_PEERCGROUP in
-this specific case. Not sure why it is not done though. I will let
-systemd folks comment on that. I don't have enough background here.
+Since the reset code was pretty much all the code left in the
+mach-sunxi directory for all the SoCs but the A31, we also can remove
+the whole machine definitions, and use the generic machine.
 
-But this works in this specific case where there is a mechanism to 
-pass meta information to receiver. What about SSSD use case where 
-they want to know the cgroup of client and possibly provide differentiated
-service based on client.
+Thanks,
+Maxime
 
-Also Dan Walsh mentioned that what if a process directly wants to open
-journal socket and log something to journal. 
+Maxime Ripard (5):
+  wdt: sunxi: Move restart code to the watchdog driver
+  power: reset: Add Allwinner A31 reset code
+  ARM: sunxi: Select restart drivers
+  ARM: sunxi: Remove reset code from the platform
+  ARM: sunxi: Remove sun4i and sun7i machine definitions
 
-Thanks
-Vivek
+ arch/arm/mach-sunxi/Kconfig        |   4 ++
+ arch/arm/mach-sunxi/sunxi.c        | 127 -------------------------------------
+ drivers/power/reset/Kconfig        |   7 ++
+ drivers/power/reset/Makefile       |   1 +
+ drivers/power/reset/sun6i-reboot.c |  85 +++++++++++++++++++++++++
+ drivers/watchdog/sunxi_wdt.c       |  33 ++++++++++
+ 6 files changed, 130 insertions(+), 127 deletions(-)
+ create mode 100644 drivers/power/reset/sun6i-reboot.c
+
+-- 
+1.9.1
+
