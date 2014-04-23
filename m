@@ -1,93 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615AbaDWNEW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:04:22 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:48051 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754482AbaDWNEQ (ORCPT
+	id S1754765AbaDWNEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:04:41 -0400
+Received: from mail-we0-f180.google.com ([74.125.82.180]:65250 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751923AbaDWNEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:04:16 -0400
-Date: Wed, 23 Apr 2014 14:04:09 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v5 0/9] mfd: max14577: Add support for MAX77836
-Message-ID: <20140423130409.GH640@lee--X1>
-References: <1397467040-30502-1-git-send-email-k.kozlowski@samsung.com>
- <20140416102846.GL4754@lee--X1>
- <1397645078.6147.11.camel@AMDC1943>
- <20140416110806.GB19671@lee--X1>
- <1397646784.6147.18.camel@AMDC1943>
- <20140416121814.GD19671@lee--X1>
- <1398253978.3737.2.camel@AMDC1943>
+	Wed, 23 Apr 2014 09:04:38 -0400
+Message-ID: <5357BA5C.6000606@monstr.eu>
+Date: Wed, 23 Apr 2014 15:04:28 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398253978.3737.2.camel@AMDC1943>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@kernel.org>
+CC: Lee Jones <lee.jones@linaro.org>, Michal Simek <michal.simek@xilinx.com>,
+        linux-kernel@vger.kernel.org, pankaj.dubey@samsung.com,
+        Samuel Ortiz <sameo@linux.intel.com>, arnd@arndb.de
+Subject: Re: [PATCH v3] mfd: syscon: Support early initialization
+References: <3eb785d83c406f4a57508dc03610b05492e12bfd.1396969250.git.michal.simek@xilinx.com> <20140423100530.GG21613@lee--X1> <20140423114217.GW12304@sirena.org.uk>
+In-Reply-To: <20140423114217.GW12304@sirena.org.uk>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="CHQxD6qFOdXagbWc5DHF0UcMF9PmaSooG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014, Krzysztof Kozlowski wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--CHQxD6qFOdXagbWc5DHF0UcMF9PmaSooG
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> On śro, 2014-04-16 at 13:18 +0100, Lee Jones wrote:
-> > > > > > > This is first part of fifth version of patchset adding support for
-> > > > > > > MAX77836 device to the max14577 driver.
-> > > > > > > 
-> > > > > > > I decided to split the patchset into smaller parts. I hope this would
-> > > > > > > help in getting necessary review/acks from maintainers.
-> > > > > > > 
-> > > > > > > The first part introduces changes in max14577 driver and adds support
-> > > > > > > for MAX77836 in MFD, extcon and regulator drivers. Most of these
-> > > > > > > patches already have required acks from maintainers.
-> > > > > > > Full v4 patchset can be found here:
-> > > > > > > http://thread.gmane.org/gmane.linux.kernel/1654267
-> > > > > > 
-> > > > > > So what's the plan for this driver now? What's missing? Do you have
-> > > > > > all the Acks you need? If so, I'm happy to apply this patch-set and
-> > > > > > supply a pull-request to the other maintainers.
-> > > > > 
-> > > > > Next patches (part 2):
-> > > > > 1. charger: max14577: Add support for MAX77836 charger
-> > > > > 2. power: max17040: Add ID for MAX77836 Fuel Gauge block
-> > > > > 3. regulator/mfd: max14577: Export symbols for calculating charger 
-> > > > >    current
-> > > > > 4. charger: max14577: Configure battery-dependent settings from DTS
-> > > > > 5. Documentation: mfd: max14577: Add device tree bindings document
-> > > > > 6. regulator: max14577: Implement SUSPEND mode for MAX77836 LDO-s
-> > > > > 
-> > > > > They are quite independent from each other so I think it would be the
-> > > > > best if you could prepare an immutable branch with first part of
-> > > > > patches.
-> > > > 
-> > > > I'm only concerned with the patches in this set at the moment.
-> > > > 
-> > > > Do all of the patches in _this_ set have all of the required Acks, or
-> > > > are you still waiting on some maintainers?
-> > > 
-> > > I have all necessary Acks for this patchset.
-> > > One exception: patch 9/9 (regulator) was only reviewed by Mark Brown,
-> > > not acked:
-> > > https://lkml.org/lkml/2014/1/28/252
-> > 
-> > That's okay. Still counts. :)
-> 
-> If there are no more issues can you apply this patchset and prepare an
-> immutable branch with them?
+On 04/23/2014 01:42 PM, Mark Brown wrote:
+> On Wed, Apr 23, 2014 at 11:05:30AM +0100, Lee Jones wrote:
+>=20
+>>> +struct regmap *syscon_early_regmap_lookup_by_phandle(struct device_n=
+ode *np,
+>>> +						     const char *property)
+>>> +{
+>>> +	struct device_node *syscon_np;
+>>> +	struct syscon *syscon;
+>>> +
+>>> +	syscon_np =3D of_parse_phandle(np, property, 0);
+>>> +	if (!syscon_np)
+>>> +		return ERR_PTR(-ENODEV);
+>>> +
+>>> +	syscon =3D syscon_np->data;
+>>> +
+>>> +	of_node_put(syscon_np);
+>>> +
+>>> +	return syscon->regmap;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(syscon_early_regmap_lookup_by_phandle);
+>=20
+> I don't know what this is doing but it looks dodgy, we're returning
+> something stored in the DT node after dropping our reference to the DT
+> node.  For FDT systems this probably makes no difference since we don't=
 
-Yep, it's on my TODO list for today.
+> actually free the node but someone might decide to do something like
+> clear data that's associated with a node (however that happened) when
+> the node goes unreferenced.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+In early_syscon_probe np->data contains pointer to struct syscon which
+stores base, regmap and res - driver private data for system controller.
+(init in early_syscon_probe)
+This is the way I am aware of how to share driver private data without pd=
+ev.
+Maybe there is better way how to do it that's why please let me know
+if you are aware about it.
+
+Thanks,
+Michal
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--CHQxD6qFOdXagbWc5DHF0UcMF9PmaSooG
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlNXulwACgkQykllyylKDCEWOQCeJqCfjepzPsNNP/F3hzInkSgN
+qL0An0oNKRGX6TBGhX5mEUYQteWhQ9E2
+=KO32
+-----END PGP SIGNATURE-----
+
+--CHQxD6qFOdXagbWc5DHF0UcMF9PmaSooG--
