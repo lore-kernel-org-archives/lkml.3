@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307AbaDWFvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 01:51:14 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57843 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637AbaDWFvM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 01:51:12 -0400
-Date: Wed, 23 Apr 2014 07:51:07 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Bugfix] sched: fix possible invalid memory access caused by CPU
- hot-addition
-Message-ID: <20140423055107.GB1429@laptop.programming.kicks-ass.net>
-References: <1398144435-26271-1-git-send-email-jiang.liu@linux.intel.com>
- <20140422081515.GF11182@twins.programming.kicks-ass.net>
- <53572939.7020509@linux.intel.com>
- <20140423053213.GV26782@laptop.programming.kicks-ass.net>
+	id S1753466AbaDWFvy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 01:51:54 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49442 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753376AbaDWFvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 01:51:52 -0400
+Message-ID: <535754F3.6020003@ti.com>
+Date: Wed, 23 Apr 2014 11:21:47 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140423053213.GV26782@laptop.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: <myungjoo.ham@samsung.com>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <balbi@ti.com>
+Subject: Re: [PATCH] extcon: palmas: explicitly set edev name as node name
+References: <1395989462-14613-1-git-send-email-kishon@ti.com> <534614DB.9000805@samsung.com>
+In-Reply-To: <534614DB.9000805@samsung.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 07:32:13AM +0200, Peter Zijlstra wrote:
-> On Wed, Apr 23, 2014 at 10:45:13AM +0800, Jiang Liu wrote:
-> > Hi Peter,
-> > 	It's not for memoryless node, but to solve a race window
-> > in CPU hot-addition. The related CPU hot-addition flow is:
-> > 1) Handle CPU hot-addition event
-> > 1.a) gather platform specific information
-> > 1.b) associate hot-added CPU with a node
-> > 1.c) create CPU device
-> > 2) User online hot-added CPUs through sysfs:
-> > 2.a)	cpu_up()
-> > 2.b)		->try_online_node()
-> > 2.c)			->hotadd_new_pgdat()
-> > 2.d)			->node_set_online()
-> > 
-> > So between 1.b and 2.c, kmalloc_node(nid) may cause invalid
-> > memory access without the node_online(nid) check.
-> 
-> Any why was all this not in the Changelog?
+Hi Chanwoo,
 
-Also, do explain what kind of hardware you needed to trigger this. This
-code has been like this for a good while.
+On Thursday 10 April 2014 09:19 AM, Chanwoo Choi wrote:
+> Hi Kishon,
+> 
+> On 03/28/2014 03:51 PM, Kishon Vijay Abraham I wrote:
+>> commit ca488 (extcon: of: Remove unnecessary function call by using the
+>> name of device_node) started using node name instead of device name
+>> to get the extcon device. This breaks dwc3-omap since it's not able to
+>> get the extcon device anymore. Fixed it by setting edev name of
+>> palmas to be the same as its node name.
+>>
+>> Signed-off-by: Kishon Vijay Abraham I <kishon@ti.com>
+>> Reported-by: Felipe Balbi <balbi@ti.com>
+>> ---
+> 
+> Applied this patch
+> but, you could check this patch on extcon-next branch
+> after few days. becuase I have firewall issue of kerner.org.
+
+I see the commit being merged in extcon-next branch. Will you be sending it in
+this -rc cycle?
+
+Thanks
+Kishon
