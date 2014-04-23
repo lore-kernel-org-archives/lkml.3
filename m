@@ -1,129 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbaDWWf1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:35:27 -0400
-Received: from ozlabs.org ([103.22.144.67]:33226 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751348AbaDWWfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:35:25 -0400
-Date: Thu, 24 Apr 2014 08:35:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Davidlohr Bueso <davidlohr@hp.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
-        aswin@hp.com, linux-mm@kvack.org
-Subject: Re: [PATCH 5/4] ipc,shm: minor cleanups
-Message-Id: <20140424083515.b113760f062072e69d1899ac@canb.auug.org.au>
-In-Reply-To: <20140423152755.7f323cfd0e6901a2907afca8@linux-foundation.org>
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
-	<1398221636.6345.9.camel@buesod1.americas.hpqcorp.net>
-	<53574AA5.1060205@gmail.com>
-	<1398230745.27667.2.camel@buesod1.americas.hpqcorp.net>
-	<20140423152755.7f323cfd0e6901a2907afca8@linux-foundation.org>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Apr_2014_08_35_15_+1000_wcig3Jp=HffsP76."
+	id S1751967AbaDWWik (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:38:40 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43262 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894AbaDWWih (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 18:38:37 -0400
+Date: Wed, 23 Apr 2014 23:38:12 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Zi Shen Lim <zlim@broadcom.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Message-ID: <20140423223812.GG12304@sirena.org.uk>
+References: <1398217214-12204-1-git-send-email-zlim@broadcom.com>
+ <1398217214-12204-3-git-send-email-zlim@broadcom.com>
+ <20140423103648.GM12304@sirena.org.uk>
+ <20140423172720.GA18588@lc-sj1-5012.sj.broadcom.com>
+ <20140423182611.GF12304@sirena.org.uk>
+ <20140423192228.GA21142@lc-sj1-5012.sj.broadcom.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="54LdxIEkS+RO3u8o"
+Content-Disposition: inline
+In-Reply-To: <20140423192228.GA21142@lc-sj1-5012.sj.broadcom.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 2/2] arm64: topology: add MPIDR-based detection
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Apr_2014_08_35_15_+1000_wcig3Jp=HffsP76.
-Content-Type: text/plain; charset=US-ASCII
+
+--54LdxIEkS+RO3u8o
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-On Wed, 23 Apr 2014 15:27:55 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> On Tue, 22 Apr 2014 22:25:45 -0700 Davidlohr Bueso <davidlohr@hp.com> wro=
-te:
->=20
-> > On Wed, 2014-04-23 at 07:07 +0200, Michael Kerrisk (man-pages) wrote:
-> > > On 04/23/2014 04:53 AM, Davidlohr Bueso wrote:
-> > > > -  Breakup long function names/args.
-> > > > -  Cleaup variable declaration.
-> > > > -  s/current->mm/mm
-> > > >=20
-> > > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-> > > > ---
-> > > >  ipc/shm.c | 40 +++++++++++++++++-----------------------
-> > > >  1 file changed, 17 insertions(+), 23 deletions(-)
-> > > >=20
-> > > > diff --git a/ipc/shm.c b/ipc/shm.c
-> > > > index f000696..584d02e 100644
-> > > > --- a/ipc/shm.c
-> > > > +++ b/ipc/shm.c
-> > > > @@ -480,15 +480,13 @@ static const struct vm_operations_struct shm_=
-vm_ops =3D {
-> > > >  static int newseg(struct ipc_namespace *ns, struct ipc_params *par=
-ams)
-> > > >  {
-> > > >  	key_t key =3D params->key;
-> > > > -	int shmflg =3D params->flg;
-> > > > +	int id, error, shmflg =3D params->flg;
-> > >=20
-> > > It's largely a matter of taste (and I may be in a minority), and I kn=
-ow
-> > > there's certainly precedent in the kernel code, but I don't much like=
- the=20
-> > > style of mixing variable declarations that have initializers, with ot=
-her
-> > > unrelated declarations (e.g., variables without initializers). What i=
-s=20
-> > > the gain? One less line of text? That's (IMO) more than offset by the=
-=20
-> > > small loss of readability.
-> >=20
-> > Yes, it's taste. And yes, your in the minority, at least in many core
-> > kernel components and ipc.
->=20
-> I'm with Michael.
->=20
-> - Putting multiple definitions on the same line (whether or not they
->   are initialized there) makes it impossible to add little comments
->   documenting them.  And we need more little comments documenting
->   locals.
->=20
-> - Having multiple definitions on the same line is maddening when the
->   time comes to resolve patch conflicts.  And it increases the
->   likelihood of conflicts in the first place.
->=20
-> - It makes it much harder to *find* a definition.
+On Wed, Apr 23, 2014 at 12:22:28PM -0700, Zi Shen Lim wrote:
+> On Wed, Apr 23, 2014 at 07:26:11PM +0100, Mark Brown wrote:
 
-And it changes a line that has nothing to do with the patch.
+> > When I was looking at this it wasn't sufficiently clear to me that the
+> > cluster clustering would be well modelled by sockets as the scheduler
+> > currently assumes them, nor what to do with additional levels of that
+> > (the DT binding allows for infinite levels).  Punting and just putting
+> > all clusters at the same level avoids active bugs and seems fairly
+> > conservative.
 
-Sometimes the minority are right :-)
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> Sounds like you prefer "cluster of clusters" over "socket", correct?
 
---Signature=_Thu__24_Apr_2014_08_35_15_+1000_wcig3Jp=HffsP76.
-Content-Type: application/pgp-signature
+I don't actually care that much, I guess I was using the hardware
+terminology because I'm not sure how well it will map onto the current
+Linux software model of what a socket is but if we decide it maps well
+onto a socket that's fine also.
+
+> In any case, with only 4 affinity levels defined in the arch, as long as
+> we also have 4 variables to capture that information, we should be good,
+> right?
+
+> Anything more exotic not expressable by these 4 affinity levels in MPIDR
+> will require additional information from other sources such as DT or ACPI.
+
+Yes.  I'd really only thought it through properly for the DT case since
+at the time Catalin was saying that it would not be possible to use
+MPIDR.
+
+> > > Perhaps we should just add a new 'socket_id' and that will accommodate
+> > > all cases (up to aff3).
+
+> > Not in the non-MT case where we've got two levels above the cluster ID
+> > in affinity level 1 unless we just combine 2 and 3 (which would be
+> > reasonable enough of course).
+
+> Is the following an accurate description of your proposal for non-MT?
+
+> 	thread_id   = -1
+> 	core_id     = aff0
+> 	cluster_id  = aff1
+> 	clusters_id = combine(aff2,aff3)
+
+Yes, exactly in the combining case - probably just shift one of them
+left and or them together.  Otherwise just only have the cluster_id and
+combine everything else into one (that's what the DT code does
+effectively).
+
+--54LdxIEkS+RO3u8o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJTWEApAAoJEMDTa8Ir7ZwVh5MP/AjyWRpF1vz5tM8Xy0uStunV
-+sWsjHOtwRV3FoSoVtFMFhrUVT3wGE4eBy8VIIdSPyk+sfUQ3JRRUCl49Sdy29A8
-S2PMPZpqCFaKjNs0P/K+0lFIoq/GHROwFQsgyZtCmEpLGHP4Yc3mZGMwugbosy7I
-fpdJcYBG63GbHrkadTp7OnL5tKb604isrkGr1tDw9VYiOovlq/u3huXX8QAX/zqB
-Z65QBQy8R/CzAVD6I6VfVCXWwZ54obPbF3sjmq0IH7cjrY/wi9FB+LIDBPckyHR1
-0ca0hDmSn0MB+OWAPeJJgrq7p0v3MjxQdzAcfiRznR/GKBlP1t7cYEiqDJl+DhaB
-D876joQXDoUqkxclT42LbR0vyCUy6SRMNPvXWZz/XrS6JA9Gssi2cgDgCu1NbvP5
-p1MPZPXO4Tnk4iqFezp09U7QAY0gUat742b9dv8jyKozupYkEzpkduZfTei6S5kJ
-PZn0ykE32RAWNo2Js16thsfyYHXFEqjpv70l/MIfnjJ5BEidxYOz0GXmc/vDy/iq
-ixFXmTZhWeC+uPoudUf7fBzPLFcxs1M1HBxPhwFZw//A3Kq54Y5Ls+etPJ922s3j
-ftCgIEGgac/CiUbVLRogIYCfs2rzs29EvFZEyy/TPm627onH/yeAOcnuOrT/ClHG
-nXbrJfzMpgXzC5/plvbd
-=18lG
+iQIcBAEBAgAGBQJTWEDRAAoJELSic+t+oim9LBkQAJZDfsAPt+uTv5csPcFhO6b7
+Y/XqPMc971eLtSd3isaAut4eoHMtrxugLcyaoN8AfYLEB6AoxVOBinhYfSE9WSz7
+Kss+02BByPeqOSnGBLN87X2yBdlaa8JmffZ3xhEkJJ30riBnNCIHfZGeOooRMG/d
+Rpha8Z4kDRYK3hBtQ4J8KNtyqeERZoXe36f9Yx2WW0f/7p+k/XVj2rfvCreWTzz4
+Zkr1Rl6iOZYt8UtHCNLzVJNiJFhQQLJjev+H6TpW7iBbNdFYj9T5cV7lneLNLEWC
+dniiaEQz7oPxFqb0ljarcu8Cx74InmH0avGk2jRANCEWP2aslrCpLjCOF+GycylI
+eO3aUNNRmErE5seAUi0Wy7S23ikeXvIbuO6KKhbgfrtgY6uNlXfdlGmoYFYYJX0b
+cii+HjoSfdWqPVuprLUKg7s8KqOa++Y3RBo+jnVKp7YImaPxxqKvfOPs29ml/RuF
+BFeqWBMZNlOf/By5ZEh2N1fcrA3tZlslgPtaWC4dnNDC9c5QrNVKt3fEvV/EC8Te
+GuG6zRFtrDf/iVNgJRWH1ELpnCPl0g527KVTqqclBGo/ednmf5Hp4oaInRJuD/rz
+O1uzF5JX/77mIszI+IlWLscxQ0+GN+fx7PbW6jcFFJ7PbNQShYIDTkG1+fLgDBpY
+44rD0tlwFy05Z2OIAUjD
+=ETYC
 -----END PGP SIGNATURE-----
 
---Signature=_Thu__24_Apr_2014_08_35_15_+1000_wcig3Jp=HffsP76.--
+--54LdxIEkS+RO3u8o--
