@@ -1,167 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133AbaDWNon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:44:43 -0400
-Received: from mx11.netapp.com ([216.240.18.76]:57377 "EHLO mx11.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757080AbaDWNog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:44:36 -0400
-X-IronPort-AV: E=Sophos;i="4.97,912,1389772800"; 
-   d="scan'208";a="118817448"
-Message-ID: <5357C3AC.9090203@netapp.com>
-Date: Wed, 23 Apr 2014 09:44:12 -0400
-From: Anna Schumaker <Anna.Schumaker@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1757154AbaDWNpn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:45:43 -0400
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:47988 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755851AbaDWNpi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:45:38 -0400
+Message-ID: <5357C3FC.5020501@monstr.eu>
+Date: Wed, 23 Apr 2014 15:45:32 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>, Jan Kara <jack@suse.cz>,
-        Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "Dave Chinner" <david@fromorbit.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "Mel Gorman" <mgorman@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: <linux-mm@kvack.org>, <linux-nfs@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] SUNRPC: track when a client connection is routed
- to the local host.
-References: <20140423022441.4725.89693.stgit@notabene.brown> <20140423024058.4725.7703.stgit@notabene.brown>
-In-Reply-To: <20140423024058.4725.7703.stgit@notabene.brown>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+To: Rob Herring <robherring2@gmail.com>
+CC: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH v2 17/21] of/fdt: introduce of_get_flat_dt_size
+References: <1398215901-25609-1-git-send-email-robherring2@gmail.com> <1398215901-25609-18-git-send-email-robherring2@gmail.com>
+In-Reply-To: <1398215901-25609-18-git-send-email-robherring2@gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="3J2bVK1p3xU8pq4RROhJnKThfChBHoVAv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 10:40 PM, NeilBrown wrote:
-> If requests are being sent to the local host, then NFS will
-> need to take care to avoid deadlocks.
->
-> So keep track when accepting a connection or sending a UDP request
-> and set a flag in the svc_xprt when the peer connected to is local.
->
-> The interface rpc_is_foreign() is provided to check is a given client
-> is connected to a foreign server.  When it returns zero it is either
-> not connected or connected to a local server and in either case
-> greater care is needed.
->
-> Signed-off-by: NeilBrown <neilb@suse.de>
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--3J2bVK1p3xU8pq4RROhJnKThfChBHoVAv
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 04/23/2014 03:18 AM, Rob Herring wrote:
+> From: Rob Herring <robh@kernel.org>
+>=20
+> Add a wrapper function to retrieve the FDT size from the FDT header. Th=
+is
+> is primarily to avoid libfdt include paths for the whole kernel.
+>=20
+> Signed-off-by: Rob Herring <robh@kernel.org>
 > ---
->  include/linux/sunrpc/clnt.h |    1 +
->  include/linux/sunrpc/xprt.h |    1 +
->  net/sunrpc/clnt.c           |   25 +++++++++++++++++++++++++
->  net/sunrpc/xprtsock.c       |   17 +++++++++++++++++
->  4 files changed, 44 insertions(+)
->
-> diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-> index 8af2804bab16..5d626cc5ab01 100644
-> --- a/include/linux/sunrpc/clnt.h
-> +++ b/include/linux/sunrpc/clnt.h
-> @@ -173,6 +173,7 @@ void		rpc_force_rebind(struct rpc_clnt *);
->  size_t		rpc_peeraddr(struct rpc_clnt *, struct sockaddr *, size_t);
->  const char	*rpc_peeraddr2str(struct rpc_clnt *, enum rpc_display_format_t);
->  int		rpc_localaddr(struct rpc_clnt *, struct sockaddr *, size_t);
-> +int		rpc_is_foreign(struct rpc_clnt *);
->  
->  #endif /* __KERNEL__ */
->  #endif /* _LINUX_SUNRPC_CLNT_H */
-> diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
-> index 8097b9df6773..318ee37bc358 100644
-> --- a/include/linux/sunrpc/xprt.h
-> +++ b/include/linux/sunrpc/xprt.h
-> @@ -340,6 +340,7 @@ int			xs_swapper(struct rpc_xprt *xprt, int enable);
->  #define XPRT_CONNECTION_ABORT	(7)
->  #define XPRT_CONNECTION_CLOSE	(8)
->  #define XPRT_CONGESTED		(9)
-> +#define XPRT_LOCAL		(10)
->  
->  static inline void xprt_set_connected(struct rpc_xprt *xprt)
->  {
-> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-> index 0edada973434..454cea69b373 100644
-> --- a/net/sunrpc/clnt.c
-> +++ b/net/sunrpc/clnt.c
-> @@ -1109,6 +1109,31 @@ const char *rpc_peeraddr2str(struct rpc_clnt *clnt,
+> v2: new patch
+>=20
+>  drivers/of/fdt.c       | 8 ++++++++
+>  include/linux/of_fdt.h | 1 +
+>  2 files changed, 9 insertions(+)
+>=20
+> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+> index d9e6450..358bcf0 100644
+> --- a/drivers/of/fdt.c
+> +++ b/drivers/of/fdt.c
+> @@ -554,6 +554,14 @@ unsigned long __init of_get_flat_dt_root(void)
 >  }
->  EXPORT_SYMBOL_GPL(rpc_peeraddr2str);
->  
-> +/**
-> + * rpc_is_foreign - report is rpc client was recently connected to
-> + *                  remote host
-> + * @clnt: RPC client structure
-> + *
-> + * If the client is not connected, or connected to the local host
-> + * (any IP address), then return 0.  Only return non-zero if the
-> + * most recent state was a connection to a remote host.
-> + * For UDP the client always appears to be connected, and the
-> + * remoteness of the host is of the destination of the last transmission.
+> =20
+>  /**
+> + * of_get_flat_dt_size - Return the total size of the FDT
 > + */
-> +int rpc_is_foreign(struct rpc_clnt *clnt)
-> +{
-> +	struct rpc_xprt *xprt;
-> +	int conn_foreign;
-> +
-> +	rcu_read_lock();
-> +	xprt = rcu_dereference(clnt->cl_xprt);
-> +	conn_foreign = (xprt && xprt_connected(xprt)
-> +			&& !test_bit(XPRT_LOCAL, &xprt->state));
-> +	rcu_read_unlock();
-> +	return conn_foreign;
-> +}
-> +EXPORT_SYMBOL_GPL(rpc_is_foreign);
-> +
->  static const struct sockaddr_in rpc_inaddr_loopback = {
->  	.sin_family		= AF_INET,
->  	.sin_addr.s_addr	= htonl(INADDR_ANY),
-> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-> index 0addefca8e77..74796cf37d5b 100644
-> --- a/net/sunrpc/xprtsock.c
-> +++ b/net/sunrpc/xprtsock.c
-> @@ -642,6 +642,15 @@ static int xs_udp_send_request(struct rpc_task *task)
->  			xdr->len - req->rq_bytes_sent, status);
->  
->  	if (status >= 0) {
-> +		struct dst_entry *dst;
-> +		rcu_read_lock();
-> +		dst = rcu_dereference(transport->sock->sk->sk_dst_cache);
-> +		if (dst && dst->dev && (dst->dev->features & NETIF_F_LOOPBACK))
-> +			set_bit(XPRT_LOCAL, &xprt->state);
-> +		else
-> +			clear_bit(XPRT_LOCAL, &xprt->state);
-> +		rcu_read_unlock();
-> +
-You repeat this block of code a bit later.  Can you please make it an inline helper function?
 
-Anna
+It looks like that you are trying to use kernel-doc format
+but I believe this will caused kernel-doc warning.
 
->  		req->rq_xmit_bytes_sent += status;
->  		if (status >= req->rq_slen)
->  			return 0;
-> @@ -1527,6 +1536,7 @@ static void xs_sock_mark_closed(struct rpc_xprt *xprt)
->  static void xs_tcp_state_change(struct sock *sk)
->  {
->  	struct rpc_xprt *xprt;
-> +	struct dst_entry *dst;
->  
->  	read_lock_bh(&sk->sk_callback_lock);
->  	if (!(xprt = xprt_from_sock(sk)))
-> @@ -1556,6 +1566,13 @@ static void xs_tcp_state_change(struct sock *sk)
->  
->  			xprt_wake_pending_tasks(xprt, -EAGAIN);
->  		}
-> +		rcu_read_lock();
-> +		dst = rcu_dereference(sk->sk_dst_cache);
-> +		if (dst && dst->dev && (dst->dev->features & NETIF_F_LOOPBACK))
-> +			set_bit(XPRT_LOCAL, &xprt->state);
-> +		else
-> +			clear_bit(XPRT_LOCAL, &xprt->state);
-> +		rcu_read_unlock();
->  		spin_unlock(&xprt->transport_lock);
->  		break;
->  	case TCP_FIN_WAIT1:
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks,
+Michal
 
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--3J2bVK1p3xU8pq4RROhJnKThfChBHoVAv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlNXw/0ACgkQykllyylKDCHY7ACgmQZh8up/hvkdAn69igCkKfZ2
+XRYAn3/x8njeA0wc3ABp8+N829Si9QIu
+=HTyK
+-----END PGP SIGNATURE-----
+
+--3J2bVK1p3xU8pq4RROhJnKThfChBHoVAv--
