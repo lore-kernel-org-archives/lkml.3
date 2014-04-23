@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906AbaDWInx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:43:53 -0400
-Received: from thoth.sbs.de ([192.35.17.2]:43835 "EHLO thoth.sbs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751480AbaDWInu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:43:50 -0400
-Message-ID: <53577D3C.5060103@siemens.com>
-Date: Wed, 23 Apr 2014 10:43:40 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1752006AbaDWIqp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:46:45 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:50227 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaDWIqm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 04:46:42 -0400
 MIME-Version: 1.0
-To: Carlo Vitucci <vitucci.carlo@gmail.com>, jailhouse-dev@googlegroups.com
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Sabony, Mazda" <Mazda.Sabony@amd.com>
-Subject: Re: Developer wanted: AMD64 port of Jailhouse hypervisor
-References: <534C2884.7050004@siemens.com> <b95ba76d-c3a9-458e-b9a9-10ca28886d55@googlegroups.com>
-In-Reply-To: <b95ba76d-c3a9-458e-b9a9-10ca28886d55@googlegroups.com>
-X-Enigmail-Version: 1.6
+X-Originating-IP: [46.139.80.5]
+In-Reply-To: <20140422165814.GH10224@arm.com>
+References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
+	<1397211951-20549-5-git-send-email-miklos@szeredi.hu>
+	<20140422165814.GH10224@arm.com>
+Date: Wed, 23 Apr 2014 10:46:40 +0200
+Message-ID: <CAJfpeguLJjxRu_pktaru9tL3WUo_r=cjmRzqt==M9RkH21GYaw@mail.gmail.com>
+Subject: Re: [PATCH 04/15] arm64: __NR_compat_syscalls fix
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <mszeredi@suse.cz>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-23 08:21, Carlo Vitucci wrote:
-> Il giorno lunedì 14 aprile 2014 20:27:16 UTC+2, J. Kiszka ha scritto:
->> Hi all,
+On Tue, Apr 22, 2014 at 6:58 PM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Fri, Apr 11, 2014 at 11:25:40AM +0100, Miklos Szeredi wrote:
+>> From: Miklos Szeredi <mszeredi@suse.cz>
 >>
+>> Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+>> ---
+>>  arch/arm64/include/asm/unistd32.h | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
 >>
+>> diff --git a/arch/arm64/include/asm/unistd32.h b/arch/arm64/include/asm/unistd32.h
+>> index bb8eb8a78e67..faa0e1ce59df 100644
+>> --- a/arch/arm64/include/asm/unistd32.h
+>> +++ b/arch/arm64/include/asm/unistd32.h
+>> @@ -404,7 +404,7 @@ __SYSCALL(379, sys_finit_module)
+>>  __SYSCALL(380, sys_sched_setattr)
+>>  __SYSCALL(381, sys_sched_getattr)
 >>
->> so far the Linux-based Jailhouse hypervisor [1] is only available for
->>
->> Intel x86 CPUs. I'm now very happy to announce that AMD is offering to
->>
->> sponsor the initial port of Jailhouse to the AMD64 architecture. Our
->>
->> resources here are unfortunately bound to different tasks, but if anyone
->>
->> out there with the required skills is interested in working on this
->>
->> project, just reply to this email or contact me and Mazda directly.
->>
->>
->>
->> The work to be done is manageable: we basically need corresponding
->>
->> implementations of vmx.c and vtd.c in the current Jailhouse code base -
->>
->> provided our existing abstractions were done right. Someone familiar
->>
->> with virtualization on x86 in general and, ideally, even on AMD
->>
->> processors should be able to complete this task within a couple of weeks.
->>
->>
->>
->> For more details on the Jailhouse architecture and implementations, see
->>
->> our slowly growing Documentation folder in the source tree or simply ask
->>
->> on the mailing list.
->>
->>
->>
->> Jan
->>
->>
->>
->> [1] https://github.com/siemens/jailhouse
->>
->>
->>
->> -- 
->>
->> Siemens AG, Corporate Technology, CT RTC ITP SES-DE
->>
->> Corporate Competence Center Embedded Linux
-> 
-> Hello jailhouse,
->  just a thought, if I could. AMD64 is not officially delivered and one
->  of the most important new features, that is the direct interrupt delivery,
->  is without a final specification. in other words, ARMv8 is the only suitable
->  architecture for Jailhouse porting, but there is still a bit fog around.
+>> -#define __NR_compat_syscalls         379
+>> +#define __NR_compat_syscalls         382
+>
+> I picked up this patch, together with a Cc: stable and longer comment.
+>
+> What's your plan with the other patches? Do you submit them as a series
+> or would like the arch maintainers to pick them up?
 
-I'm not sure if I got your point yet: AMD64 stands for the
-well-established x86-64 architecture with AMD-specific parts like the
-virtualization extensions. All these transistors and specs are broadly
-available for years.
+Either is OK for me.  I'll collect ACKs for those which the maintainer
+doesn't want to submit, and I'll submit them in one batch.
 
-Regarding direct interrupt delivery: on Intel, we do not depend on
-specific hardware support to provide this feature, and I bet we can port
-that approach to AMD as well.
+But if you have patches anyway, please feel free to pick this up as well.
 
-Jan
-
--- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+Thanks,
+Miklois
