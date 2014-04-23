@@ -1,143 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313AbaDWIVI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:21:08 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55102 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751745AbaDWIVD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:21:03 -0400
-Date: Wed, 23 Apr 2014 10:21:00 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Cc: tj@kernel.org, alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] ata: ahci: add AHCI support for Berlin SoCs
-Message-ID: <20140423082100.GB24355@kwain>
-References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
- <1398181105-19714-2-git-send-email-antoine.tenart@free-electrons.com>
- <5356A4F4.6090107@gmail.com>
+	id S1757423AbaDWIVU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:21:20 -0400
+Received: from mga09.intel.com ([134.134.136.24]:27321 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754124AbaDWIVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 04:21:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,910,1389772800"; 
+   d="scan'208";a="517799278"
+Message-ID: <535777F2.1050501@intel.com>
+Date: Wed, 23 Apr 2014 16:21:06 +0800
+From: Jet Chen <jet.chen@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <5356A4F4.6090107@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Williams <dan.j.williams@intel.com>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>, lkp@01.org,
+        Fengguang Wu <fengguang.wu@intel.com>
+Subject: Re: [libata/ahci] 8a4aeec8d2d: +138.4% perf-stat.dTLB-store-misses,
+ +37.2% perf-stat.dTLB-load-misses
+References: <5354C8F3.3050504@intel.com> <CAPcyv4jWnaF6tNfZqf13WnqZ0=U98X-5K-kMWnruQPoBYO21KQ@mail.gmail.com>
+In-Reply-To: <CAPcyv4jWnaF6tNfZqf13WnqZ0=U98X-5K-kMWnruQPoBYO21KQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian,
-
-On Tue, Apr 22, 2014 at 07:20:52PM +0200, Sebastian Hesselbarth wrote:
-> On 04/22/2014 05:38 PM, Antoine Ténart wrote:
-
-[…]
-
-> > +static inline void ahci_berlin_reg_set(void __iomem *reg, u32 val)
-> > +{
-> > +	writel(val, reg);
-> > +}
+On 04/23/2014 01:11 AM, Dan Williams wrote:
+> On Mon, Apr 21, 2014 at 12:29 AM, Jet Chen <jet.chen@intel.com> wrote:
+>> HI Dan,
+>>
+>> we noticed the below changes on
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata for-next
+>> commit 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd ("libata/ahci: accommodate
+>> tag ordered controllers")
 > 
-> Antoine,
+> Hi, was this on simulated hardware or a real AHCI controller and disk?
 > 
-> if you really need to rename writel, the above function name should
-> end with _write.
 
-I renamed writel for consistency with ahci_berlin_reg_clear_set() and
-ahci_berlin_reg_setbits() but I can definitively drop it.
+Testing was on a physical machine with a real AHCI controller.
 
-> 
-> > +static inline void ahci_berlin_reg_clear_set(void __iomem *reg, u32 clear_val,
-> > +					     u32 set_val)
-> > +{
-> > +	u32 regval;
-> > +
-> > +	regval = readl(reg);
-> > +	regval &= ~(clear_val);
-> > +	regval |= set_val;
-> > +	writel(regval, reg);
-> > +}
-> 
-> ahci_berlin_reg_setbits(reg, val) == ahci_berlin_reg_clear_set(reg, 0, val);
-> 
-> Maybe get rid of the latter?
+root@bay ~# lspci | grep AHCI
+00:1f.2 SATA controller: Intel Corporation 82801IR/IO/IH (ICH9R/DO/DH) 6 port SATA Controller [AHCI mode] (rev 02)
 
-Sure.
-
+> It does appear this test noticed increased throughput:
 > 
-> > +static void ahci_berlin_init(void __iomem *mmio)
-> > +{
-> > +	/* interface select */
-> > +	ahci_berlin_reg_set(mmio + HOST_VSA_ADDR, BIT(2));
-> > +	ahci_berlin_reg_set(mmio + HOST_VSA_ADDR,
-> > +			    BIT(21) | BIT(18) | BIT(5) | BIT(4) | BIT(2));
+>     203893 ~ 0%      +3.7%     211474 ~ 0%  TOTAL iostat.sda.wkB/s
 > 
-> Any chance we get named #defines for the BIT()s above and below?
-
-I'm afraid I can't. I'd love to do so if someone has a clue on this matter.
-
-> > +	/* force_map is modified only if the property is found */
-> > +	of_property_read_u32(np, "marvell,force-port-map", &force_map);
-> > +	if (force_map)
-> > +		nports = force_map;
+> I wonder if ap->last_tag can be moved to a hotter cacheline, but if
+> throughput goes up I can imagine it throws off the cpu statistics
+> quite a bit.
 > 
-> marvell,force-port-map is undocumented and its name does not reflect
-> what it is about. Before you just rename it to marvell,nr-ports or
-> something, how about having one sub-node per port:
-> 
-> sata_phy0: sata-phy@e90100 {
-> 	compatible = "marvell,berlin-sata-phy";
-> 	reg = <0xe90100 0x80>;
-> 	status = "disabled";
-> };
-> 
-> sata_phy1: sata-phy@e90180 {
-> 	compatible = "marvell,berlin-sata-phy";
-> 	reg = <0xe90180 0x80>;
-> 	status = "disabled";
-> };
-> 
-> ahci: sata@e90000 {
-> 	compatible = "marvell,berlin-ahci";
-> 	reg = <0xe90000 0x100>;
-> 	interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
-> 	#address-cells = <1>;
-> 	#size-cells = <0>;
-> 	status = "disabled";
-> 
-> 	sata-port@0 {
-> 		reg = <0>;
-> 		sata-phy = <&sata_phy0>;
-> 		status = "disabled";
-> 	};
-> 
-> 	sata-port@1 {
-> 		reg = <1>;
-> 		sata-phy = <&sata_phy1>;
-> 		status = "okay";
-> 	};
-> };
-> 
-> That way you can
-> (a) separate a PHY driver that has little code but is able to power-down
->     the PHY even if there is no AHCI driver loaded.
-> (b) enable/disable each port individually.
-> (c) enable port1 while port0 is disabled.
-> (d) disable the PLL if there is no port enabled at all.
-
-That would be better, but as of now I'm not sure I have enough information on
-the PHY to do (a).
-
-I guess (b), (c) and (d) can still be done.
-
-Thanks for the review!
-
-Antoine
-
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
