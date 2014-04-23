@@ -1,120 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752113AbaDWLYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 07:24:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:26527 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744AbaDWLYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 07:24:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,911,1389772800"; 
-   d="scan'208";a="526060363"
-Message-ID: <5357A594.6050404@linux.intel.com>
-Date: Wed, 23 Apr 2014 14:35:48 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1751653AbaDWL2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 07:28:08 -0400
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:40800 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbaDWL2G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 07:28:06 -0400
+Date: Wed, 23 Apr 2014 12:27:58 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
+        Sachin Kamat <sachin.kamat@linaro.org>, ajaykumar.rs@samsung.com,
+        linux-samsung-soc@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/5] mfd: tps65090: Stop caching most registers
+Message-ID: <20140423112758.GK21613@lee--X1>
+References: <1397689950-1568-1-git-send-email-dianders@chromium.org>
+ <1397689950-1568-4-git-send-email-dianders@chromium.org>
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        "Jin, Yao" <yao.jin@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Krogerus, Heikki" <heikki.krogerus@intel.com>
-Subject: Re: [PATCH] pinctrl-baytrail: workaround for irq descriptor conflict
- on ASUS T100TA
-References: <1397443272-31467-1-git-send-email-yao.jin@linux.intel.com>	<534B4C6D.5070003@linux.intel.com> <CACRpkdYXD-Fd0tFJtir8ifsTqdBvA0Rznc4Hmzoq_ByBjTahdw@mail.gmail.com>
-In-Reply-To: <CACRpkdYXD-Fd0tFJtir8ifsTqdBvA0Rznc4Hmzoq_ByBjTahdw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1397689950-1568-4-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->
-> Urgent fix and the maintainers did not react in a week? Well maybe they need
-> to be on the To: line...
->
-> Mathias: can you send a patch adding yourself as maintainer of this
-> driver in the MAINTAINERS file so stuff like this does not fall to the
-> floor (me)?
->
+Anton,
 
-Hi,
+> Nearly all of the registers in tps65090 combine control bits and
+> status bits.  Turn off caching of all registers except the select few
+> that can be cached.
+> 
+> In order to avoid adding more duplicate #defines, we also move some
+> register offset definitions to the mfd driver (and resolve
+> inconsistent names).
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> ---
+> Changes in v3: None
+> Changes in v2:
+> - Leave cache on for the registers that can be cached.
+> - Move register offsets to mfd header file.
+> 
+>  drivers/mfd/tps65090.c           | 27 ++++++++++++++-------------
+>  drivers/power/tps65090-charger.c | 11 -----------
 
-Sorry about the delay. I'm taking over Sarah's role as usb3 xhci 
-maintainer and got my hands full over there. I can look at these
-patches now and then but you might need to kick me.
+This patch still requires your Ack.
 
-In general, I'd agree with Mika, Andy and Heikki (and Rafael obviously) 
-opinion regarding baytrail gpio / acpi related matters.
+>  include/linux/mfd/tps65090.h     | 14 ++++++++++++++
+>  3 files changed, 28 insertions(+), 24 deletions(-)
+> 
+> diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
+> index c3cddb4..1c3e6e2 100644
+> --- a/drivers/mfd/tps65090.c
+> +++ b/drivers/mfd/tps65090.c
+> @@ -32,14 +32,6 @@
+>  #define NUM_INT_REG 2
+>  #define TOTAL_NUM_REG 0x18
+>  
+> -/* interrupt status registers */
+> -#define TPS65090_INT_STS	0x0
+> -#define TPS65090_INT_STS2	0x1
+> -
+> -/* interrupt mask registers */
+> -#define TPS65090_INT_MSK	0x2
+> -#define TPS65090_INT_MSK2	0x3
+> -
+>  #define TPS65090_INT1_MASK_VAC_STATUS_CHANGE		1
+>  #define TPS65090_INT1_MASK_VSYS_STATUS_CHANGE		2
+>  #define TPS65090_INT1_MASK_BAT_STATUS_CHANGE		3
+> @@ -144,17 +136,26 @@ static struct regmap_irq_chip tps65090_irq_chip = {
+>  	.irqs = tps65090_irqs,
+>  	.num_irqs = ARRAY_SIZE(tps65090_irqs),
+>  	.num_regs = NUM_INT_REG,
+> -	.status_base = TPS65090_INT_STS,
+> -	.mask_base = TPS65090_INT_MSK,
+> +	.status_base = TPS65090_REG_INTR_STS,
+> +	.mask_base = TPS65090_REG_INTR_MASK,
+>  	.mask_invert = true,
+>  };
+>  
+>  static bool is_volatile_reg(struct device *dev, unsigned int reg)
+>  {
+> -	if ((reg == TPS65090_INT_STS) || (reg == TPS65090_INT_STS2))
+> -		return true;
+> -	else
+> +	/* Nearly all registers have status bits mixed in, except a few */
+> +	switch (reg) {
+> +	case TPS65090_REG_INTR_MASK:
+> +	case TPS65090_REG_INTR_MASK2:
+> +	case TPS65090_REG_CG_CTRL0:
+> +	case TPS65090_REG_CG_CTRL1:
+> +	case TPS65090_REG_CG_CTRL2:
+> +	case TPS65090_REG_CG_CTRL3:
+> +	case TPS65090_REG_CG_CTRL4:
+> +	case TPS65090_REG_CG_CTRL5:
+>  		return false;
+> +	}
+> +	return true;
+>  }
+>  
+>  static const struct regmap_config tps65090_regmap_config = {
+> diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
+> index cc26c12..31a3ba4 100644
+> --- a/drivers/power/tps65090-charger.c
+> +++ b/drivers/power/tps65090-charger.c
+> @@ -30,17 +30,6 @@
+>  
+>  #include <linux/mfd/tps65090.h>
+>  
+> -#define TPS65090_REG_INTR_STS	0x00
+> -#define TPS65090_REG_INTR_MASK	0x02
+> -#define TPS65090_REG_CG_CTRL0	0x04
+> -#define TPS65090_REG_CG_CTRL1	0x05
+> -#define TPS65090_REG_CG_CTRL2	0x06
+> -#define TPS65090_REG_CG_CTRL3	0x07
+> -#define TPS65090_REG_CG_CTRL4	0x08
+> -#define TPS65090_REG_CG_CTRL5	0x09
+> -#define TPS65090_REG_CG_STATUS1	0x0a
+> -#define TPS65090_REG_CG_STATUS2	0x0b
+> -
+>  #define TPS65090_CHARGER_ENABLE	BIT(0)
+>  #define TPS65090_VACG		BIT(1)
+>  #define TPS65090_NOITERM	BIT(5)
+> diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
+> index 3f43069..45f0f9d 100644
+> --- a/include/linux/mfd/tps65090.h
+> +++ b/include/linux/mfd/tps65090.h
+> @@ -64,6 +64,20 @@ enum {
+>  	TPS65090_REGULATOR_MAX,
+>  };
+>  
+> +/* Register addresses */
+> +#define TPS65090_REG_INTR_STS	0x00
+> +#define TPS65090_REG_INTR_STS2	0x01
+> +#define TPS65090_REG_INTR_MASK	0x02
+> +#define TPS65090_REG_INTR_MASK2	0x03
+> +#define TPS65090_REG_CG_CTRL0	0x04
+> +#define TPS65090_REG_CG_CTRL1	0x05
+> +#define TPS65090_REG_CG_CTRL2	0x06
+> +#define TPS65090_REG_CG_CTRL3	0x07
+> +#define TPS65090_REG_CG_CTRL4	0x08
+> +#define TPS65090_REG_CG_CTRL5	0x09
+> +#define TPS65090_REG_CG_STATUS1	0x0a
+> +#define TPS65090_REG_CG_STATUS2	0x0b
+> +
+>  struct tps65090 {
+>  	struct device		*dev;
+>  	struct regmap		*rmap;
 
-> Second: this fix is ugly like hell, is it really the best we can think
-> of, plus in the commit message I'd very much like to know the
-> real issue behind this as people in the x86 camp seem to be
-> using some strange static IRQ line assignments that I cannot
-> really understand so I don't know what the proper fix for this is :-(
->
-
-This patch went out a bit early, a new version (which is not mangled) 
-can be found at:
-
-http://marc.info/?l=linux-kernel&m=139765010717522&w=2
-
-But that one still produces some compiler warning which should be fixed.
-
-There might be some touchscreen related issues recently found related to 
-this patch that need to be investigated ( see bug link in commit message)
-
-This is a hack to get T100TA working. This is one of many bad ways to 
-workaround the real issue instead of fixing it, and I hope it can be 
-reverted later, but this is the best we can do with our (my) limited 
-io-apic and interrupt knowledge. But in the end, with this the Asus 
-T100TA gpio works somehow, without it, it doesn't.
-
-The real issue to my understanding is that the x86 io-apic code is not 
-really capable of living together with other interrupt controllers at 
-the same time. There are some assumptions that interrupts 0-15 belong to 
-the legacy ISA world, from there on we got io-apic PCI interrupts
-( I think io-apic interrupt controller handles something like 24 - 48 
-interrupts?) we want to be outside that range until this is fixed.
-
-The x86 io-apic code does nasty things, for example the function
-that allocates the irq and the private chip data assumes that if the irq 
-descriptor is taken, (returns -EEXISTS) then io-apic just must have 
-reserved it earlier and can anyway use it, and access the chip data in a 
-format only io-apic (struct irq_cfg) uses. This is of course not the 
-case if a gpio interrupt controller like pinctrl-baytrail reserved the 
-interrupt descriptor earler.  -> oops
-
-here's the io_apic.c function:
-
-static struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, int node)
-{
-  	int res = irq_alloc_desc_at(at, node);
-         struct irq_cfg *cfg;
-
-         if (res < 0) {
-                 if (res != -EEXIST)
-                         return NULL;
-                 cfg = irq_get_chip_data(at);
-                 if (cfg)
-                         return cfg;
-         }
-
-         cfg = alloc_irq_cfg(at, node);
-	if (cfg)
-                 irq_set_chip_data(at, cfg);
-         else
-             	irq_free_desc(at);
-         return cfg;
-}
-
-We tried to fix this particular issue (make sure the interrupt belongs 
-to a io_apic controller before letting io_apic touch it), but we just 
-opened a can of worms of other issues I don't know how to deal with.
-
--Mathias
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
