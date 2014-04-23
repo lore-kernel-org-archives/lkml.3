@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757599AbaDWSQk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 14:16:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37912 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757313AbaDWSQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 14:16:37 -0400
-Date: Wed, 23 Apr 2014 14:16:00 -0400
-From: Luiz Capitulino <lcapitulino@redhat.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-next@vger.kernel.org,
-        nacc@linux.vnet.ibm.com, Richard Weinberger <richard@nod.at>
-Subject: Re: mmotm 2014-04-22-15-20 uploaded (uml 32- and 64-bit defconfigs)
-Message-ID: <20140423141600.4a303d95@redhat.com>
-In-Reply-To: <5357FCEB.2060507@infradead.org>
-References: <20140422222121.2FAB45A431E@corp2gmr1-2.hot.corp.google.com>
-	<5357F405.20205@infradead.org>
-	<20140423134131.778f0d0a@redhat.com>
-	<5357FCEB.2060507@infradead.org>
-Organization: Red Hat
-MIME-Version: 1.0
+	id S1757686AbaDWSRx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 14:17:53 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57695 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752500AbaDWSRv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 14:17:51 -0400
+Date: Wed, 23 Apr 2014 11:17:50 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
+ offloading
+Message-Id: <20140423111750.88ad799bb271a1fe0bed119f@linux-foundation.org>
+In-Reply-To: <20140423110847.GB17824@quack.suse.cz>
+References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+	<1395770101-24534-9-git-send-email-jack@suse.cz>
+	<20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
+	<20140326192815.GC18118@quack.suse.cz>
+	<20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
+	<20140422112259.5f106a44@alan.etchedpixels.co.uk>
+	<20140423110847.GB17824@quack.suse.cz>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014 10:48:27 -0700
-Randy Dunlap <rdunlap@infradead.org> wrote:
+On Wed, 23 Apr 2014 13:08:47 +0200 Jan Kara <jack@suse.cz> wrote:
 
-> On 04/23/14 10:41, Luiz Capitulino wrote:
-> > On Wed, 23 Apr 2014 10:10:29 -0700
-> > Randy Dunlap <rdunlap@infradead.org> wrote:
-> > 
-> >> On 04/22/14 15:21, akpm@linux-foundation.org wrote:
-> >>> The mm-of-the-moment snapshot 2014-04-22-15-20 has been uploaded to
-> >>>
-> >>>    http://www.ozlabs.org/~akpm/mmotm/
-> >>>
-> >>> mmotm-readme.txt says
-> >>>
-> >>> README for mm-of-the-moment:
-> >>>
-> >>> http://www.ozlabs.org/~akpm/mmotm/
-> >>>
-> >>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> >>> more than once a week.
-> >>>
-> >>> You will need quilt to apply these patches to the latest Linus release (3.x
-> >>> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-> >>> http://ozlabs.org/~akpm/mmotm/series
-> >>>
-> >>
-> >> include/linux/hugetlb.h:468:9: error: 'HPAGE_SHIFT' undeclared (first use in this function)
-> > 
-> > The patch adding HPAGE_SHIFT usage to hugetlb.h in current mmotm is this:
-> > 
-> > http://www.ozlabs.org/~akpm/mmotm/broken-out/hugetlb-ensure-hugepage-access-is-denied-if-hugepages-are-not-supported.patch
-> > 
-> > But I can't reproduce the issue to be sure what the problem is. Are you
-> > building the kernel on 32bits? Can you provide the output of
-> > "grep -i huge .config" or send your .config in private?
-> > 
+> > If you want reliable crash logging then we need to be able to set a
+> > printk level mask per console and just set the serial console for
+> > "crit/err" and the queue console for the rest, with a 'cat
+> > >/dev/ttywhatever' running if this feature was in use ?
+>   Ok, now I understand. Thanks for an interesting idea. IMO people
+> definitely need messages logged directly into serial console when e.g. oops
+> is happening because very likely they won't get logged to disk and even
+> userspace won't have a chance to run and copy messages to the serial
+> console. Plus for useful softlockup reports or oops messages you need also
+> the KERN_NOTICE and KERN_INFO messages - stack traces, cpu numbers, process
+> information - all this is printed with these levels.
 > 
-> [adding Richard to cc:]
+> These obvious places could be changed to print with lower log level I
+> assume but still I'm somewhat worried that some KERN_INFO messages that
+> would be useful for debugging a crash won't make it to console before the
+> crash happens.
 > 
-> 
-> As in $subject, if I build uml x86 32-bit or 64-bit defconfig, the build fails with
-> this error.
+> But if both you and Andrew think that the above problems are smaller than
+> the complexity connected with printk offloading, I can give it a try.
+> Andrew?
 
-Oh, I missed the subject info completely. Sorry about that.
+I'm curious about the idea of writing a new(?) console driver which the
+problematic machines can use.
 
-So, the issue really seems to be introduced by patch:
+The problem of course will be in sizing the driver's queue.  Perhaps we
+can have a driver which uses a huge queue, temporarily use that driver
+during boot then switch over to a conventional console driver?
 
- hugetlb-ensure-hugepage-access-is-denied-if-hugepages-are-not-supported.patch
-
-And the problem is that UML doesn't define HPAGE_SHIFT. The following patch
-fixes it, but I'll let Nishanth decide what to do here.
-
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 4eace5e..3aab7df 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -458,6 +458,10 @@ static inline spinlock_t *huge_pte_lock(struct hstate *h,
- 	return ptl;
- }
- 
-+#ifndef HPAGE_SHIFT
-+#define HPAGE_SHIFT 0
-+#endif
-+
- static inline bool hugepages_supported(void)
- {
- 	/*
