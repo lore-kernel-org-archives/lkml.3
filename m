@@ -1,163 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032AbaDWEMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 00:12:41 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:57763 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751812AbaDWEMj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 00:12:39 -0400
-X-AuditID: cbfee690-b7fcd6d0000026e0-ca-53573db5bdfa
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: balbi@ti.com, gregkh@linuxfoundation.org
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCH] usb: phy: tahvo: Use devm_extcon_dev_* function for resource
- management of extcon
-Date: Wed, 23 Apr 2014 13:12:43 +0900
-Message-id: <1398226363-19536-1-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLLMWRmVeSWpSXmKPExsWyRsSkUHebbXiwwWchi4P36y2uf3nOatG8
-	eD2bxeVdc9gsFi1rZXZg9dg/dw27R9+WVYwex29sZ/L4vEkugCWKyyYlNSezLLVI3y6BK2Pi
-	xePMBd/lK+4fPMvawPhOqouRk0NCwETiwvqvTBC2mMSFe+vZuhi5OIQEljJKnOh5A5TgACu6
-	clIfIr6IUeL0tA9MEE4Tk8Te1XfZQbrZBLQk9r+4wQZiiwjoSMz+cZERxGYWSJbYc+cjWI2w
-	QIpE14Y9YHEWAVWJK6c2gW3mFXCVmH/7N9QVchIf9jxiB1kgIfCeTaJlYw8rRIOAxLfJh1gg
-	LpKV2HSAGaJeUuLgihssExgFFzAyrGIUTS1ILihOSi8y0StOzC0uzUvXS87P3cQIDMrT/55N
-	2MF474D1IcZkoHETmaVEk/OBQZ1XEm9obGZkYWpiamxkbmlGmrCSOK/ao6QgIYH0xJLU7NTU
-	gtSi+KLSnNTiQ4xMHJxSDYxGV2s0Mkz2N12R3/1679c52fo3rHRitAVKnpw5oTl1h+H08hv7
-	41RYw428O1ecmaHYkZWU8HvX9ktivaZTF5c27zq9gHVN2aucE19WVVfnbTqq77LDz0tt3nSn
-	yfqmy7pkrvqpfPD+X+B4aXbJE8XHGxzmCUpKzwwrLhcuzFxpt+Th/TKZ9z+VWIozEg21mIuK
-	EwH6LtByYAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrNIsWRmVeSWpSXmKPExsVy+t9jAd2ttuHBBit+m1gcvF9vcf3Lc1aL
-	5sXr2Swu75rDZrFoWSuzA6vH/rlr2D36tqxi9Dh+YzuTx+dNcgEsUQ2MNhmpiSmpRQqpecn5
-	KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlAe5UUyhJzSoFCAYnFxUr6dpgm
-	hIa46VrANEbo+oYEwfUYGaCBhDWMGRMvHmcu+C5fcf/gWdYGxndSXYwcHBICJhJXTup3MXIC
-	mWISF+6tZ+ti5OIQEljEKHF62gcmCKeJSWLv6rvsIFVsAloS+1/cYAOxRQR0JGb/uMgIYjML
-	JEvsufMRrEZYIEWia8MesDiLgKrElVObmEBsXgFXifm3fzNBbJOT+LDnEfsERu4FjAyrGEVT
-	C5ILipPSc430ihNzi0vz0vWS83M3MYKD/pn0DsZVDRaHGAU4GJV4eCWWhwULsSaWFVfmHmKU
-	4GBWEuGd+REoxJuSWFmVWpQfX1Sak1p8iDEZaPtEZinR5HxgROaVxBsam5gZWRqZG1oYGZuT
-	Jqwkznuw1TpQSCA9sSQ1OzW1ILUIZgsTB6dUA2Oh03W9rEV6OoorqgWaVG4Ge7h9V7/+00Vm
-	Spuui3v3hqt7ZuYX81/fMHuHPuP+vaaZoYZ/jpw+9pUxz+Q/S9Dm6ri/V9j85cw/u6xm8E9R
-	1LfYf/Pj8xkrt2ZI3+LfZSJk63Dc6vZ09vilVbqZtyPV3j162Tgj+/F8m4/iCW9evK+dzp7x
-	iFuJpTgj0VCLuag4EQDIAeaxvgIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1752108AbaDWERh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 00:17:37 -0400
+Received: from ozlabs.org ([103.22.144.67]:32907 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750746AbaDWERf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 00:17:35 -0400
+Date: Wed, 23 Apr 2014 14:17:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Mel Gorman <mgorman@suse.de>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-Id: <20140423141727.0262510673258b07e9a9fa4a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__23_Apr_2014_14_17_27_+1000_XTiil/4_xe918AZN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses devm_extcon_dev_{allocate, register} function for automatically
-resource management of extcon device instead of legacy method and simplifies
-the behavior of register/unregister for extcon device.
+--Signature=_Wed__23_Apr_2014_14_17_27_+1000_XTiil/4_xe918AZN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Hi Andrew,
+
+After merging the akpm-current tree, today's linux-next build (arm
+multi_v7_defconfig) failed like this:
+
+In file included from arch/arm/mm/flush.c:20:0:
+include/linux/hugetlb.h: In function 'hugepages_supported':
+include/linux/hugetlb.h:468:9: error: 'HPAGE_SHIFT' undeclared (first use i=
+n this function)
+
+And a few more similarly.
+
+Caused by commit c669debfbf05 ("hugetlb: ensure hugepage access is denied
+if hugepages are not supported").
+
+I added the following fix patch:
+
+=46rom 91e29eff2be1b6bc0c9ea33b1ee901dd4877e924 Mon Sep 17 00:00:00 2001
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 23 Apr 2014 14:12:56 +1000
+Subject: [PATCH] hugetlb: ensure hugepage access is denied if hugepages are
+ not supported -fix
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
-This patch has dependency about following patches[1-2]:
-[1] https://lkml.org/lkml/2014/4/21/140
-[2] https://lkml.org/lkml/2014/4/21/164
+ include/linux/hugetlb.h | 19 +++++++++----------
+ 1 file changed, 9 insertions(+), 10 deletions(-)
 
- drivers/usb/phy/phy-tahvo.c | 29 +++++++++++++++--------------
- 1 file changed, 15 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/usb/phy/phy-tahvo.c b/drivers/usb/phy/phy-tahvo.c
-index cc61ee4..8cde928 100644
---- a/drivers/usb/phy/phy-tahvo.c
-+++ b/drivers/usb/phy/phy-tahvo.c
-@@ -57,7 +57,7 @@ struct tahvo_usb {
- 	struct clk		*ick;
- 	int			irq;
- 	int			tahvo_mode;
--	struct extcon_dev	extcon;
-+	struct extcon_dev	*extcon;
- };
- 
- static const char *tahvo_cable[] = {
-@@ -118,7 +118,7 @@ static void check_vbus_state(struct tahvo_usb *tu)
- 	prev_state = tu->vbus_state;
- 	tu->vbus_state = reg & TAHVO_STAT_VBUS;
- 	if (prev_state != tu->vbus_state) {
--		extcon_set_cable_state(&tu->extcon, "USB", tu->vbus_state);
-+		extcon_set_cable_state(tu->extcon, "USB", tu->vbus_state);
- 		sysfs_notify(&tu->pt_dev->dev.kobj, NULL, "vbus_state");
- 	}
+diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+index 4eace5e94117..cbee9847e425 100644
+--- a/include/linux/hugetlb.h
++++ b/include/linux/hugetlb.h
+@@ -214,6 +214,15 @@ static inline int is_file_hugepages(struct file *file)
+ 	return 0;
  }
-@@ -127,7 +127,7 @@ static void tahvo_usb_become_host(struct tahvo_usb *tu)
- {
- 	struct retu_dev *rdev = dev_get_drvdata(tu->pt_dev->dev.parent);
- 
--	extcon_set_cable_state(&tu->extcon, "USB-HOST", true);
-+	extcon_set_cable_state(tu->extcon, "USB-HOST", true);
- 
- 	/* Power up the transceiver in USB host mode */
- 	retu_write(rdev, TAHVO_REG_USBR, USBR_REGOUT | USBR_NSUSPEND |
-@@ -146,7 +146,7 @@ static void tahvo_usb_become_peripheral(struct tahvo_usb *tu)
- {
- 	struct retu_dev *rdev = dev_get_drvdata(tu->pt_dev->dev.parent);
- 
--	extcon_set_cable_state(&tu->extcon, "USB-HOST", false);
-+	extcon_set_cable_state(tu->extcon, "USB-HOST", false);
- 
- 	/* Power up transceiver and set it in USB peripheral mode */
- 	retu_write(rdev, TAHVO_REG_USBR, USBR_SLAVE_CONTROL | USBR_REGOUT |
-@@ -360,11 +360,15 @@ static int tahvo_usb_probe(struct platform_device *pdev)
- 	 */
- 	tu->vbus_state = retu_read(rdev, TAHVO_REG_IDSR) & TAHVO_STAT_VBUS;
- 
--	tu->extcon.name = DRIVER_NAME;
--	tu->extcon.supported_cable = tahvo_cable;
--	tu->extcon.dev.parent = &pdev->dev;
-+	tu->extcon = devm_extcon_dev_allocate(&pdev->dev, tahvo_cable);
-+	if (!tu->extcon) {
-+		dev_err(&pdev->dev, "failed to allocate memory for extcon\n");
-+		return -ENOMEM;
-+	}
-+	tu->extcon->name = DRIVER_NAME;
-+	tu->extcon->dev.parent = &pdev->dev;
- 
--	ret = extcon_dev_register(&tu->extcon);
-+	ret = devm_extcon_dev_register(&pdev->dev, tu->extcon);
- 	if (ret) {
- 		dev_err(&pdev->dev, "could not register extcon device: %d\n",
- 			ret);
-@@ -372,9 +376,9 @@ static int tahvo_usb_probe(struct platform_device *pdev)
- 	}
- 
- 	/* Set the initial cable state. */
--	extcon_set_cable_state(&tu->extcon, "USB-HOST",
-+	extcon_set_cable_state(tu->extcon, "USB-HOST",
- 			       tu->tahvo_mode == TAHVO_MODE_HOST);
--	extcon_set_cable_state(&tu->extcon, "USB", tu->vbus_state);
-+	extcon_set_cable_state(tu->extcon, "USB", tu->vbus_state);
- 
- 	/* Create OTG interface */
- 	tahvo_usb_power_off(tu);
-@@ -391,7 +395,7 @@ static int tahvo_usb_probe(struct platform_device *pdev)
- 	if (ret < 0) {
- 		dev_err(&pdev->dev, "cannot register USB transceiver: %d\n",
- 			ret);
--		goto err_extcon_unreg;
-+		goto err_disable_clk;
- 	}
- 
- 	dev_set_drvdata(&pdev->dev, tu);
-@@ -418,8 +422,6 @@ err_free_irq:
- 	free_irq(tu->irq, tu);
- err_remove_phy:
- 	usb_remove_phy(&tu->phy);
--err_extcon_unreg:
--	extcon_dev_unregister(&tu->extcon);
- err_disable_clk:
- 	if (!IS_ERR(tu->ick))
- 		clk_disable(tu->ick);
-@@ -434,7 +436,6 @@ static int tahvo_usb_remove(struct platform_device *pdev)
- 	sysfs_remove_group(&pdev->dev.kobj, &tahvo_attr_group);
- 	free_irq(tu->irq, tu);
- 	usb_remove_phy(&tu->phy);
--	extcon_dev_unregister(&tu->extcon);
- 	if (!IS_ERR(tu->ick))
- 		clk_disable(tu->ick);
- 
--- 
-1.8.0
+=20
++static inline bool hugepages_supported(void)
++{
++	/*
++	 * Some platform decide whether they support huge pages at boot
++	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
++	 * there is no such support
++	 */
++	return HPAGE_SHIFT !=3D 0;
++}
+=20
+ #else /* !CONFIG_HUGETLBFS */
+=20
+@@ -458,14 +467,4 @@ static inline spinlock_t *huge_pte_lock(struct hstate =
+*h,
+ 	return ptl;
+ }
+=20
+-static inline bool hugepages_supported(void)
+-{
+-	/*
+-	 * Some platform decide whether they support huge pages at boot
+-	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
+-	 * there is no such support
+-	 */
+-	return HPAGE_SHIFT !=3D 0;
+-}
+-
+ #endif /* _LINUX_HUGETLB_H */
+--=20
+1.9.2
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__23_Apr_2014_14_17_27_+1000_XTiil/4_xe918AZN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTVz7dAAoJEMDTa8Ir7ZwVwJgP/iHj8VUXkOv8ZRHYjpuAwtAM
+r6Av13BAvWwucr32BU7Ae6cHWmcCy5JQCDtiILaCmv08vvqq05nmNWzNo6eSnCqh
+9o2jh78u2Mmt+uQchMLgQ1qGlfow/EwbXfLV3biV8B8edygntgdZMlpevzIhfXyN
+mgM9gWEUpgd3H1z+Qj7xf28S4b9NdnAmcfaqoddOFHI7Qj/rJW3YnQvs1VG0gwSD
+7jgdoJpryB7cTs/VXBRRuufVTTkcSD+R5BrBXpb1mwXAS+jYlkue0fCKxe8zfz6C
+yh6CQF7sEo9Hf8fJgueF0l0AY+xG+u+ZiK7ri07oWjY4rrzbg6tTSACEMzwfmtha
+DSLliE9G2T4d9jmdOR2vr6ic4N0q0I3nztUX4exaIY0ybQWchz68pTVxHTLTIg1c
+K9QLjY9E0upL+BLFvkrb6uHjTs+snKqYXpGAbdmnh+Z4Oj/92F56D3c3jxr/HYdM
+VeFfusHcKLelgcq3aV1c6xMLOztmjte5pM7uQ/RuujVIXoWRAQO2mhrrq4MJJr/v
+I6XB9KngS4sXptR2nMPNBo22vtdxdfw7YzZimVdVctHogDxxCf5uyzZeqOGWpgmr
+VMEay/VTPcGzxgsl8/kWS+/JGE0csnzNIQGZnYXEJ/gOcwdd67MdRTQD+QswFOk5
+Rfz7B/2S9DXZxRghXGCn
+=MM8o
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__23_Apr_2014_14_17_27_+1000_XTiil/4_xe918AZN--
