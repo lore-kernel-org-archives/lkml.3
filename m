@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896AbaDWNiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:38:20 -0400
-Received: from mail.active-venture.com ([67.228.131.205]:61758 "EHLO
-	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753834AbaDWNiQ (ORCPT
+	id S1756581AbaDWNif (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:38:35 -0400
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:63028 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753834AbaDWNi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:38:16 -0400
-X-Originating-IP: 108.223.40.66
-Message-ID: <5357C246.7050604@roeck-us.net>
-Date: Wed, 23 Apr 2014 06:38:14 -0700
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 23 Apr 2014 09:38:28 -0400
+Date: Wed, 23 Apr 2014 14:38:21 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com, balbi@ti.com,
+        gg@slimlogic.co.uk, kishon@ti.com, ckeepax@opensource.wolfsonmicro.com,
+        broonie@kernel.org, k.kozlowski@samsung.com, kyungmin.park@samsung.com,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCHv2 6/9] extcon: palmas: Use devm_extcon_dev_allocate for
+ extcon_dev
+Message-ID: <20140423133821.GL640@lee--X1>
+References: <1398081742-24277-1-git-send-email-cw00.choi@samsung.com>
+ <1398081742-24277-7-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-To: monstr@monstr.eu
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Microblaze image hanging in qemu with 3.15-rc
-References: <20140422172356.GA15672@roeck-us.net> <53575074.6010602@monstr.eu>
-In-Reply-To: <53575074.6010602@monstr.eu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398081742-24277-7-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 10:32 PM, Michal Simek wrote:
-> Hi Guenter,
->
->
-> On 04/22/2014 07:23 PM, Guenter Roeck wrote:
->> Hi all,
->>
->> when trying to run a microblaze image with 3.15-rc1 or 3.15-rc2 in qemu,
->> I get the following hangup. This used to work with earlier kernels
->> with the same configuration.
->>
->> Is this a known problem, or is something wrong with my configuration
->> or with my qemu command line ?
->
-> Is this BE/LE version? Which qemu do you use?
+> This patch use devm_extcon_dev_allocate() to simplify the memory control
+> of extcon device.
+> 
+> Cc: Graeme Gregory <gg@slimlogic.co.uk>
+> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+>  drivers/extcon/extcon-palmas.c | 35 ++++++++++++++++++++---------------
+>  include/linux/mfd/palmas.h     |  2 +-
+>  2 files changed, 21 insertions(+), 16 deletions(-)
 
-BE.
+Applied, thanks.
 
-file vmlinux:
-
-vmlinux: ELF 32-bit MSB  executable, version 1 (SYSV), statically linked, BuildID[sha1]=5e1872c08df2956eddaed6fc1f6528a8540375b7, not stripped
-
-qemu-system-microblaze --version:
-
-QEMU emulator version 1.7.0, Copyright (c) 2003-2008 Fabrice Bellard
-
-gcc --version:
-
-microblaze-linux-gcc (GCC) 4.8.0
-Copyright (C) 2013 Free Software Foundation, Inc.
-This is free software; see the source for copying conditions.  There is NO
-warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-
-> There is endian autodetection in timer and intc driver
-> which can caused this problem.
->
-Is this new code ? I didn't see the problem in 3.13 (same compile options,
-same configuration, same compiler, same qemu version).
-
-Thanks,
-Guenter
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
