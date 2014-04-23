@@ -1,172 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756937AbaDWHDl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:03:41 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:60366 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058AbaDWHAL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:00:11 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 7/7] perf hists/tui: Count callchain rows separately
-Date: Wed, 23 Apr 2014 16:00:08 +0900
-Message-Id: <1398236408-8856-8-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
-References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
+	id S1757072AbaDWHE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:04:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54792 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755872AbaDWHEW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 03:04:22 -0400
+Date: Wed, 23 Apr 2014 09:04:15 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hugh Dickins <hughd@google.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Peter Chiang <pchiang@nvidia.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Balbir Singh <bsingharora@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        "ccross@android.com" <ccross@android.com>,
+        "lizefan@huawei.com" <lizefan@huawei.com>,
+        "tj@kernel.org" <tj@kernel.org>, "pavel@ucw.cz" <pavel@ucw.cz>,
+        "ebiederm@xmission.com" <ebiederm@xmission.com>,
+        "guillaume@morinfr.org" <guillaume@morinfr.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] memcg: mm_update_next_owner() should skip kthreads
+Message-ID: <20140423070415.GA20969@dhcp22.suse.cz>
+References: <80341664FB79C2419999599F48F738410227327888@HKMAIL01.nvidia.com>
+ <20140416135741.GA9407@redhat.com>
+ <80341664FB79C2419999599F48F7384102273279C3@HKMAIL01.nvidia.com>
+ <20140418162359.GA4398@redhat.com>
+ <20140418172631.GA13323@redhat.com>
+ <20140418182444.GB22235@dhcp22.suse.cz>
+ <20140418184441.GA26046@redhat.com>
+ <20140422105228.GJ29311@dhcp22.suse.cz>
+ <20140422132102.GN29311@dhcp22.suse.cz>
+ <alpine.LSU.2.11.1404221432150.6603@eggly.anvils>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1404221432150.6603@eggly.anvils>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When TUI hist browser expands/collapses callchains it accounted number
-of callchain nodes into total entries to show.  However this code
-ignores filtering so that it can make the cursor go to out of screen.
+On Tue 22-04-14 14:35:14, Hugh Dickins wrote:
+> On Tue, 22 Apr 2014, Michal Hocko wrote:
+> > On Tue 22-04-14 12:52:28, Michal Hocko wrote:
+> > > On Fri 18-04-14 20:44:41, Oleg Nesterov wrote:
+> > [...]
+> > > > I do not even understand why do we have CONFIG_MM_OWNER, perhaps it should
+> > > > die?
+> > > 
+> > > I have to dig into history to check why it has been introduced in the
+> > > first place. It might be possible it is not relevant anymore.
+> > 
+> > There didn't seem to be any other user of CONFIG_MM_OWNER outside of
+> > MEMCG so it seems that a separate config option seems like an overkill.
+> > Regarding the mm->owner itself it is hard to live without it at the
+> > moment. Most of the charging places do charge the current task_struct
+> > but there are some that rely on mm and we would need mm->task mapping.
+> > The last obstacle would be threads migration but that one should go away
+> > with unified hierarchy AFAIR.
+> 
+> Balbir had another user for mm->owner in mmotm back in 2008, his
+> memrlimit controller; but that didn't make it through to mainline.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 57 +++++++++++++++++++++++++++---------------
- 1 file changed, 37 insertions(+), 20 deletions(-)
-
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 886eee0062e0..5b81c0d2fec5 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -27,6 +27,7 @@ struct hist_browser {
- 	bool		     show_dso;
- 	float		     min_pcnt;
- 	u64		     nr_non_filtered_entries;
-+	u64		     nr_callchain_rows;
- };
- 
- extern void hist_browser__init_hpp(void);
-@@ -35,11 +36,27 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
- 				const char *ev_name);
- static void hist_browser__update_nr_entries(struct hist_browser *hb);
- 
-+static struct rb_node *hists__filter_entries(struct rb_node *nd,
-+					     struct hists *hists,
-+					     float min_pcnt);
-+
- static bool hist_browser__has_filter(struct hist_browser *hb)
- {
- 	return hists__has_filter(hb->hists) || hb->min_pcnt;
- }
- 
-+static u32 hist_browser__nr_entries(struct hist_browser *hb)
-+{
-+	u32 nr_entries;
-+
-+	if (hist_browser__has_filter(hb))
-+		nr_entries = hb->nr_non_filtered_entries;
-+	else
-+		nr_entries = hb->hists->nr_entries;
-+
-+	return nr_entries + hb->nr_callchain_rows;
-+}
-+
- static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- {
- 	/* 3 == +/- toggle symbol before actual hist_entry rendering */
-@@ -50,7 +67,7 @@ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- static void hist_browser__reset(struct hist_browser *browser)
- {
- 	hist_browser__update_nr_entries(browser);
--	browser->b.nr_entries = browser->nr_non_filtered_entries;
-+	browser->b.nr_entries = hist_browser__nr_entries(browser);
- 	hist_browser__refresh_dimensions(browser);
- 	ui_browser__reset_index(&browser->b);
- }
-@@ -205,14 +222,16 @@ static bool hist_browser__toggle_fold(struct hist_browser *browser)
- 		struct hist_entry *he = browser->he_selection;
- 
- 		hist_entry__init_have_children(he);
--		browser->hists->nr_entries -= he->nr_rows;
-+		browser->b.nr_entries -= he->nr_rows;
-+		browser->nr_callchain_rows -= he->nr_rows;
- 
- 		if (he->ms.unfolded)
- 			he->nr_rows = callchain__count_rows(&he->sorted_chain);
- 		else
- 			he->nr_rows = 0;
--		browser->hists->nr_entries += he->nr_rows;
--		browser->b.nr_entries = browser->hists->nr_entries;
-+
-+		browser->b.nr_entries += he->nr_rows;
-+		browser->nr_callchain_rows += he->nr_rows;
- 
- 		return true;
- 	}
-@@ -287,23 +306,27 @@ static void hist_entry__set_folding(struct hist_entry *he, bool unfold)
- 		he->nr_rows = 0;
- }
- 
--static void hists__set_folding(struct hists *hists, bool unfold)
-+static void
-+__hist_browser__set_folding(struct hist_browser *browser, bool unfold)
- {
- 	struct rb_node *nd;
-+	struct hists *hists = browser->hists;
- 
--	hists->nr_entries = 0;
--
--	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
-+	for (nd = rb_first(&hists->entries);
-+	     (nd = hists__filter_entries(nd, hists, browser->min_pcnt)) != NULL;
-+	     nd = rb_next(nd)) {
- 		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
- 		hist_entry__set_folding(he, unfold);
--		hists->nr_entries += 1 + he->nr_rows;
-+		browser->nr_callchain_rows += he->nr_rows;
- 	}
- }
- 
- static void hist_browser__set_folding(struct hist_browser *browser, bool unfold)
- {
--	hists__set_folding(browser->hists, unfold);
--	browser->b.nr_entries = browser->hists->nr_entries;
-+	browser->nr_callchain_rows = 0;
-+	__hist_browser__set_folding(browser, unfold);
-+
-+	browser->b.nr_entries = hist_browser__nr_entries(browser);
- 	/* Go to the start, we may be way after valid entries after a collapse */
- 	ui_browser__reset_index(&browser->b);
- }
-@@ -325,10 +348,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 	int delay_secs = hbt ? hbt->refresh : 0;
- 
- 	browser->b.entries = &browser->hists->entries;
--	if (hist_browser__has_filter(browser))
--		browser->b.nr_entries = browser->nr_non_filtered_entries;
--	else
--		browser->b.nr_entries = browser->hists->nr_entries;
-+	browser->b.nr_entries = hist_browser__nr_entries(browser);
- 
- 	hist_browser__refresh_dimensions(browser);
- 	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
-@@ -345,13 +365,10 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 			u64 nr_entries;
- 			hbt->timer(hbt->arg);
- 
--			if (hist_browser__has_filter(browser)) {
-+			if (hist_browser__has_filter(browser))
- 				hist_browser__update_nr_entries(browser);
--				nr_entries = browser->nr_non_filtered_entries;
--			} else {
--				nr_entries = browser->hists->nr_entries;
--			}
- 
-+			nr_entries = hist_browser__nr_entries(browser);
- 			ui_browser__update_nr_entries(&browser->b, nr_entries);
- 
- 			if (browser->hists->stats.nr_lost_warned !=
+I see, thanks for the reference, Hugh!
 -- 
-1.9.2
-
+Michal Hocko
+SUSE Labs
