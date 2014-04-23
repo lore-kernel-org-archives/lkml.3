@@ -1,223 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064AbaDWUoZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 16:44:25 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:38930 "EHLO mail.skyhub.de"
+	id S932329AbaDWUoi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 16:44:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19707 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754033AbaDWUoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 16:44:18 -0400
-Date: Wed, 23 Apr 2014 22:44:11 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-Message-ID: <20140423204411.GG25378@pd.tnic>
-References: <20140423151507.GA31689@pd.tnic>
+	id S1754033AbaDWUof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 16:44:35 -0400
+Message-ID: <53582610.7000109@redhat.com>
+Date: Wed, 23 Apr 2014 16:44:00 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140423151507.GA31689@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, joern@logfs.org, peterz@infradead.org,
+        cxie@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH RFC] sysrq: rcu-ify __handle_sysrq
+References: <20140423125352.704f9fb2@annuminas.surriel.com> <20140423130453.32361ca9ceef591b9b184926@linux-foundation.org>
+In-Reply-To: <20140423130453.32361ca9ceef591b9b184926@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 05:15:07PM +0200, Borislav Petkov wrote:
-> Ok, here's a dirty hack that issues ratelimit messages at release
-> time. I probably should wrap it nicely in ratelimit_*() accessors
-> instead of poking directly at ratelimit_state. Yeah, maybe a
-> ratelimit_exit() wrapper which does all the fun automatically.
+On 04/23/2014 04:04 PM, Andrew Morton wrote:
+> On Wed, 23 Apr 2014 12:53:52 -0400 Rik van Riel <riel@redhat.com> wrote:
+> 
+>> Echoing values into /proc/sysrq-trigger seems to be a popular way to
+>> get information out of the kernel. However, dumping information about
+>> thousands of processes, or hundreds of CPUs to serial console can
+>> result in IRQs being blocked for minutes, resulting in various kinds
+>> of cascade failures.
+>>
+>> The most common failure is due to interrupts being blocked for a very
+>> long time. This can lead to things like failed IO requests, and other
+>> things the system cannot easily recover from.
+> 
+> I bet nobody wants that console output anyway.  You do the sysrq then
+> run dmesg or look in /var/log/messages to see what happened.  People
+> who are experiencing problems such as this should run `dmesg -n 1'
+> before writing to sysrq-trigger.
 
-I.e., something like that:
+I'm not sure about that. I know of a few hundred QA people who
+gather the bulk of their logs through serial console, and they
+do appear interested in sysrq output :)
 
----
- fs/fat/inode.c            |  2 +-
- include/linux/ratelimit.h | 28 ++++++++++++++++++++++------
- kernel/printk/printk.c    | 32 ++++++++++++++++++++++----------
- lib/ratelimit.c           |  6 ++++--
- 4 files changed, 49 insertions(+), 19 deletions(-)
+>> It also leaves sysrq-from-irq-context when the sysrq keys are pressed,
+>> but that is probably desired since people want that to work in situations
+>> where the system is already hosed.
+>>
+>> The callers of register_sysrq_key and unregister_sysrq_key appear to be
+>> capable of sleeping.
+> 
+> unregister_sysrq_key() is basically never used - a couple of scruffy
+> drivers during rmmod.  We hardly need any locking in there at all.  I
+> guess using simple RCU is better than just removing it though.
 
-diff --git a/fs/fat/inode.c b/fs/fat/inode.c
-index 0062da21dd8b..33550f4d6ae8 100644
---- a/fs/fat/inode.c
-+++ b/fs/fat/inode.c
-@@ -1277,7 +1277,7 @@ int fat_fill_super(struct super_block *sb, void *data, int silent, int isvfat,
- 	sb->s_export_op = &fat_export_ops;
- 	mutex_init(&sbi->nfs_build_inode_lock);
- 	ratelimit_state_init(&sbi->ratelimit, DEFAULT_RATELIMIT_INTERVAL,
--			     DEFAULT_RATELIMIT_BURST);
-+			     DEFAULT_RATELIMIT_BURST, 0);
- 
- 	error = parse_options(sb, data, isvfat, silent, &debug, &sbi->options);
- 	if (error)
-diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
-index 0a260d8a18bf..fb4cf72fcfc7 100644
---- a/include/linux/ratelimit.h
-+++ b/include/linux/ratelimit.h
-@@ -2,11 +2,15 @@
- #define _LINUX_RATELIMIT_H
- 
- #include <linux/param.h>
-+#include <linux/sched.h>
- #include <linux/spinlock.h>
- 
-+
- #define DEFAULT_RATELIMIT_INTERVAL	(5 * HZ)
- #define DEFAULT_RATELIMIT_BURST		10
- 
-+#define RATELIMIT_MSG_ON_RELEASE	BIT(0)
-+
- struct ratelimit_state {
- 	raw_spinlock_t	lock;		/* protect the state */
- 
-@@ -15,6 +19,7 @@ struct ratelimit_state {
- 	int		printed;
- 	int		missed;
- 	unsigned long	begin;
-+	unsigned long	flags;
- };
- 
- #define DEFINE_RATELIMIT_STATE(name, interval_init, burst_init)		\
-@@ -26,14 +31,25 @@ struct ratelimit_state {
- 	}
- 
- static inline void ratelimit_state_init(struct ratelimit_state *rs,
--					int interval, int burst)
-+					int interval, int burst,
-+					unsigned long flags)
- {
-+	memset(rs, 0, sizeof(*rs));
-+
- 	raw_spin_lock_init(&rs->lock);
--	rs->interval = interval;
--	rs->burst = burst;
--	rs->printed = 0;
--	rs->missed = 0;
--	rs->begin = 0;
-+	rs->interval	= interval;
-+	rs->burst	= burst;
-+	rs->flags	= flags;
-+}
-+
-+static inline void ratelimit_state_exit(struct ratelimit_state *rs)
-+{
-+	if (!(rs->flags & RATELIMIT_MSG_ON_RELEASE))
-+		return;
-+
-+	if (rs->missed)
-+		printk(KERN_WARNING "%s: %d callbacks suppressed\n",
-+		       current->comm, rs->missed);
- }
- 
- extern struct ratelimit_state printk_ratelimit_state;
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 5b5fdd8eeb75..195f7733e6bb 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -450,6 +450,7 @@ struct devkmsg_user {
- 	u64 seq;
- 	u32 idx;
- 	enum log_flags prev;
-+	struct ratelimit_state rs;
- 	struct mutex lock;
- 	char buf[8192];
- };
-@@ -461,11 +462,17 @@ static ssize_t devkmsg_writev(struct kiocb *iocb, const struct iovec *iv,
- 	int i;
- 	int level = default_message_loglevel;
- 	int facility = 1;	/* LOG_USER */
-+	struct file *file = iocb->ki_filp;
-+	struct devkmsg_user *user = file->private_data;
- 	size_t len = iov_length(iv, count);
- 	ssize_t ret = len;
- 
--	if (len > LOG_LINE_MAX)
-+	if (!user || len > LOG_LINE_MAX)
- 		return -EINVAL;
-+
-+	if (!___ratelimit(&user->rs, current->comm))
-+		return ret;
-+
- 	buf = kmalloc(len+1, GFP_KERNEL);
- 	if (buf == NULL)
- 		return -ENOMEM;
-@@ -696,21 +703,24 @@ static unsigned int devkmsg_poll(struct file *file, poll_table *wait)
- static int devkmsg_open(struct inode *inode, struct file *file)
- {
- 	struct devkmsg_user *user;
--	int err;
- 
--	/* write-only does not need any file context */
--	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
--		return 0;
--
--	err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
--				       SYSLOG_FROM_READER);
--	if (err)
--		return err;
-+	/* write-only does not need to check read permissions */
-+	if ((file->f_flags & O_ACCMODE) != O_WRONLY) {
-+		int err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
-+					       SYSLOG_FROM_READER);
-+		if (err)
-+			return err;
-+	}
- 
- 	user = kmalloc(sizeof(struct devkmsg_user), GFP_KERNEL);
- 	if (!user)
- 		return -ENOMEM;
- 
-+	/* Configurable? */
-+	ratelimit_state_init(&user->rs, DEFAULT_RATELIMIT_INTERVAL,
-+					DEFAULT_RATELIMIT_BURST,
-+					RATELIMIT_MSG_ON_RELEASE);
-+
- 	mutex_init(&user->lock);
- 
- 	raw_spin_lock_irq(&logbuf_lock);
-@@ -729,6 +739,8 @@ static int devkmsg_release(struct inode *inode, struct file *file)
- 	if (!user)
- 		return 0;
- 
-+	ratelimit_state_exit(&user->rs);
-+
- 	mutex_destroy(&user->lock);
- 	kfree(user);
- 	return 0;
-diff --git a/lib/ratelimit.c b/lib/ratelimit.c
-index 40e03ea2a967..b4763cb10d8f 100644
---- a/lib/ratelimit.c
-+++ b/lib/ratelimit.c
-@@ -46,12 +46,14 @@ int ___ratelimit(struct ratelimit_state *rs, const char *func)
- 		rs->begin = jiffies;
- 
- 	if (time_is_before_jiffies(rs->begin + rs->interval)) {
--		if (rs->missed)
-+		if (rs->missed && !(rs->flags & RATELIMIT_MSG_ON_RELEASE))
- 			printk(KERN_WARNING "%s: %d callbacks suppressed\n",
- 				func, rs->missed);
- 		rs->begin   = 0;
- 		rs->printed = 0;
--		rs->missed  = 0;
-+
-+		if (!(rs->flags & RATELIMIT_MSG_ON_RELEASE))
-+			rs->missed  = 0;
- 	}
- 	if (rs->burst && rs->burst > rs->printed) {
- 		rs->printed++;
--- 
-1.9.0
+Yeah, I went with the "solve the easy 90%" aspect with this
+patch.  I am not convinced that we want to complicate the
+sysrq code to better support a fringe use case, but if we
+can fix the big without increasing the code maintenance
+burden in the future, why not?
+
+>> --- a/drivers/tty/sysrq.c
+>> +++ b/drivers/tty/sysrq.c
+>> @@ -510,9 +510,8 @@ void __handle_sysrq(int key, bool check_mask)
+>>  	struct sysrq_key_op *op_p;
+>>  	int orig_log_level;
+>>  	int i;
+>> -	unsigned long flags;
+>>  
+>> -	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+>> +	rcu_read_lock();
+>>  	/*
+>>  	 * Raise the apparent loglevel to maximum so that the sysrq header
+>>  	 * is shown to provide the user with positive feedback.  We do not
+>> @@ -554,7 +553,7 @@ void __handle_sysrq(int key, bool check_mask)
+>>  		printk("\n");
+>>  		console_loglevel = orig_log_level;
+>>  	}
+>> -	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+>> +	rcu_read_unlock();
+>>  }
+>>  
+>>  void handle_sysrq(int key)
+>> @@ -1043,16 +1042,23 @@ static int __sysrq_swap_key_ops(int key, struct sysrq_key_op *insert_op_p,
+>>                                  struct sysrq_key_op *remove_op_p)
+>>  {
+>>  	int retval;
+>> -	unsigned long flags;
+>>  
+>> -	spin_lock_irqsave(&sysrq_key_table_lock, flags);
+>> +	spin_lock(&sysrq_key_table_lock);
+>>  	if (__sysrq_get_key_op(key) == remove_op_p) {
+>>  		__sysrq_put_key_op(key, insert_op_p);
+>>  		retval = 0;
+>>  	} else {
+>>  		retval = -1;
+>>  	}
+>> -	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
+>> +	spin_unlock(&sysrq_key_table_lock);
+>> +
+>> +	/*
+>> +	 * A concurrent __handle_sysrq eitehr got the old op or the new op.
+> 
+> yuo cnat spel
+
+I can fix that for version 2, assuming people are interested it a v2 :)
+
+>> +	 * Wait for it to go away before returning, so the code for an old
+>> +	 * op is not freed (eg. on module unload) while it is in use.
+>> +	 */
+>> +	synchronize_rcu();
+>> +
+>>  	return retval;
+>>  }
+> 
+
 
 -- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+All rights reversed
