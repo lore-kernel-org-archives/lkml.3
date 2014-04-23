@@ -1,125 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108AbaDWERh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 00:17:37 -0400
-Received: from ozlabs.org ([103.22.144.67]:32907 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750746AbaDWERf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 00:17:35 -0400
-Date: Wed, 23 Apr 2014 14:17:27 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Nishanth Aravamudan <nacc@linux.vnet.ibm.com>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Mel Gorman <mgorman@suse.de>
-Subject: linux-next: build failure after merge of the akpm-current tree
-Message-Id: <20140423141727.0262510673258b07e9a9fa4a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Wed__23_Apr_2014_14_17_27_+1000_XTiil/4_xe918AZN"
+	id S1751565AbaDWE15 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 00:27:57 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:45185 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746AbaDWE1y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 00:27:54 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140422144944.GF5524@saruman.home>
+References: <20140421160802.GA22794@saruman.home>
+	<Pine.LNX.4.44L0.1404211228190.1201-100000@iolanthe.rowland.org>
+	<CALHRZur7+MaYXbWOfbvjggPN7_eYAE+th5VNbcLP=ehvm0HGsA@mail.gmail.com>
+	<20140422144944.GF5524@saruman.home>
+Date: Wed, 23 Apr 2014 09:57:52 +0530
+Message-ID: <CALHRZuoq32qoh70hbb2LtVJNgkwB1j6bvzmYONmxcn3mBnGONQ@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] usb: gadget: Add xilinx axi usb2 device support
+From: sundeep subbaraya <sundeep.lkml@gmail.com>
+To: "balbi@ti.com" <balbi@ti.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Subbaraya Sundeep Bhatta <subbaraya.sundeep.bhatta@xilinx.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Michal Simek <michals@xilinx.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Subbaraya Sundeep Bhatta <sbhatta@xilinx.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__23_Apr_2014_14_17_27_+1000_XTiil/4_xe918AZN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Andrew,
+On Tue, Apr 22, 2014 at 8:19 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Tue, Apr 22, 2014 at 12:58:41PM +0530, sundeep subbaraya wrote:
+>> Hi,
+>>
+>> On Mon, Apr 21, 2014 at 10:09 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> > On Mon, 21 Apr 2014, Felipe Balbi wrote:
+>> >
+>> >> Hi,
+>> >>
+>> >> On Fri, Apr 18, 2014 at 07:34:08PM +0530, sundeep subbaraya wrote:
+>> >>
+>> >> <snip>
+>> >>
+>> >> > >> in ep_queue driver starts dma transfer from/to IP buffer to/from req->buf.
+>> >> > >> If transfer is completed then request is not added to ep request queue
+>> >> > >> and returns from ep_queue.
+>> >> > >> If transfer is not completed (actual < length) then request is added
+>> >> > >> to queue and returns from ep_queue.
+>> >> > >
+>> >> > > This is wrong. Why wouldn't you give gadget driver the chance to decide
+>> >> > > if it needs to queue the request again or not ?
+>> >> >
+>> >> > When does gadget driver decides to queue the same request again?
+>> >> > if -EBUSY is returned from ep_queue or req.status != 0 in completion
+>> >> > routine?
+>> >>
+>> >> whenever it so decides. Different gadget drivers might have different
+>> >> requirements. The code is open and sits under drivers/usb/gadget/ why
+>> >> don't you have a read ?
+>> >
+>> > I get the impression that the two of you are arguing past each other.
+>> > It appears that Sundeep is talking about transferring data from the
+>> > gadget driver's buffer to an internal buffer in the UDC hardware, but
+>> > Felipe is talking about transferring data from the UDC to the host.
+>> >
+>> > As I understand it, Sundeep said that when the gadget driver queues a
+>> > data-IN request, the UDC driver copies as much of the data buffer as
+>> > possible into a hardware FIFO.  If it succeeds in copying all the data
+>> > into the FIFO then the request's completion routine gets called
+>> > immediately, even though the data doesn't get sent from the FIFO to the
+>> > host until the host asks for it.
+>> >
+>> > If only part of the data can be copied into the FIFO then the request
+>> > is added to the ep's request queue before the usb_ep_queue() call
+>> > returns.  When space becomes available in the FIFO, the data will be
+>> > copied and eventually sent to the host.  When all the data has been
+>> > copied to the FIFO, the request's completion routine will be called.
+>
+> there seems to be a slight problem with this approach: how will the IP
+> know that even though you copied X bytes into the FIFO, it should wait
+> for another Y bytes before shifting data to the wire ? How will it know
+> that it shouldn't generate CRC yet because there's still data to be
+> added ?
 
-After merging the akpm-current tree, today's linux-next build (arm
-multi_v7_defconfig) failed like this:
+No. IP does/need not know that it has to wait for Y bytes.We just
+write X bytes into
+HW buffer and count as X in buffer count register. IP generates CRC
+for bytes based
+on Count register and sends data to Host. Let us consider this
+scenario of bulk IN transfer:
+req.length = 5120 and   wMaxPacketSize = 512, ep_queue is called once
+and is returned with
+status 0. In ep_queue this code snippet,
+               if (xudc_write_fifo(ep, req) == 1)
+                        req = NULL;
+               if(req != NULL)
+                         list_add_tail(&req->queue, &ep->queue);
 
-In file included from arch/arm/mm/flush.c:20:0:
-include/linux/hugetlb.h: In function 'hugepages_supported':
-include/linux/hugetlb.h:468:9: error: 'HPAGE_SHIFT' undeclared (first use i=
-n this function)
+xudc_write_fifo does the following if HW buffers not busy:
+     copies 512 bytes to HW buffer
+     set count and ready registers so that IP can start data transfer to host
+     changes req.actual to 512 and returns 0(if req.length >
+wMaxPacketSize) and 1(if req.length < wMaxPacketSize).
+Since return is zero this request is added to queue. When data
+transfer to host is completed IP generates
+an interrupt. In the interrupt handler we again call write_fifo if
+request list is not empty.
+       if (list_empty(&ep->queue))
+                req = NULL;
+        else
+                req = list_entry(ep->queue.next, struct xusb_req, queue);
+        if (!req)
+                return;
 
-And a few more similarly.
+        if (ep->is_in)
+                xudc_write_fifo(ep, req);
+        else
+                xudc_read_fifo(ep, req);
 
-Caused by commit c669debfbf05 ("hugetlb: ensure hugepage access is denied
-if hugepages are not supported").
+This happens 10 times(since length 5120) and completion is called.
 
-I added the following fix patch:
+> If there's no space in the FIFO yet, why copy data at all ?
 
-=46rom 91e29eff2be1b6bc0c9ea33b1ee901dd4877e924 Mon Sep 17 00:00:00 2001
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 23 Apr 2014 14:12:56 +1000
-Subject: [PATCH] hugetlb: ensure hugepage access is denied if hugepages are
- not supported -fix
+If HW buffers are busy(IP is still transferring previous data to Host
+from buffer) then xudc_write_fifo returns
+0 without changing req.actual. When previous data transfer completes
+then Interrupt then again write_fifo
+from handler.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- include/linux/hugetlb.h | 19 +++++++++----------
- 1 file changed, 9 insertions(+), 10 deletions(-)
+>> > Thus there never is any need for the gadget driver to queue the request
+>> > again.
 
-diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-index 4eace5e94117..cbee9847e425 100644
---- a/include/linux/hugetlb.h
-+++ b/include/linux/hugetlb.h
-@@ -214,6 +214,15 @@ static inline int is_file_hugepages(struct file *file)
- 	return 0;
- }
-=20
-+static inline bool hugepages_supported(void)
-+{
-+	/*
-+	 * Some platform decide whether they support huge pages at boot
-+	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
-+	 * there is no such support
-+	 */
-+	return HPAGE_SHIFT !=3D 0;
-+}
-=20
- #else /* !CONFIG_HUGETLBFS */
-=20
-@@ -458,14 +467,4 @@ static inline spinlock_t *huge_pte_lock(struct hstate =
-*h,
- 	return ptl;
- }
-=20
--static inline bool hugepages_supported(void)
--{
--	/*
--	 * Some platform decide whether they support huge pages at boot
--	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
--	 * there is no such support
--	 */
--	return HPAGE_SHIFT !=3D 0;
--}
--
- #endif /* _LINUX_HUGETLB_H */
---=20
-1.9.2
+Yes
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>> >An incomplete transfer means the FIFO didn't have enough room
+>> > when the request was submitted; it doesn't mean that the data didn't
+>> > eventually get sent to the host.
+>>
+>> Exactly Alan,this is what I was trying to say. Probably I was not
+>> clear in explaining. I didnt see any harm this way and even this
+>> implementation is same like at91_udc.c. I have been reading
+>> mas_storage to understand when does gadget driver tries to enqueue a
+>> request again. Since different gadget drivers might have different
+>> requirements (agree with Felipe), wanted to know criteria for queuing
+>> a same request again.
+>>
+>> I will change this implementation as per Felipe comments and test with
+>> some of the gadgets.
+>
+> Let's see, please help me understand the questions above.
 
---Signature=_Wed__23_Apr_2014_14_17_27_+1000_XTiil/4_xe918AZN
-Content-Type: application/pgp-signature
+Hope this helps.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Thanks,
+Sundeep.B.S.
 
-iQIcBAEBCAAGBQJTVz7dAAoJEMDTa8Ir7ZwVwJgP/iHj8VUXkOv8ZRHYjpuAwtAM
-r6Av13BAvWwucr32BU7Ae6cHWmcCy5JQCDtiILaCmv08vvqq05nmNWzNo6eSnCqh
-9o2jh78u2Mmt+uQchMLgQ1qGlfow/EwbXfLV3biV8B8edygntgdZMlpevzIhfXyN
-mgM9gWEUpgd3H1z+Qj7xf28S4b9NdnAmcfaqoddOFHI7Qj/rJW3YnQvs1VG0gwSD
-7jgdoJpryB7cTs/VXBRRuufVTTkcSD+R5BrBXpb1mwXAS+jYlkue0fCKxe8zfz6C
-yh6CQF7sEo9Hf8fJgueF0l0AY+xG+u+ZiK7ri07oWjY4rrzbg6tTSACEMzwfmtha
-DSLliE9G2T4d9jmdOR2vr6ic4N0q0I3nztUX4exaIY0ybQWchz68pTVxHTLTIg1c
-K9QLjY9E0upL+BLFvkrb6uHjTs+snKqYXpGAbdmnh+Z4Oj/92F56D3c3jxr/HYdM
-VeFfusHcKLelgcq3aV1c6xMLOztmjte5pM7uQ/RuujVIXoWRAQO2mhrrq4MJJr/v
-I6XB9KngS4sXptR2nMPNBo22vtdxdfw7YzZimVdVctHogDxxCf5uyzZeqOGWpgmr
-VMEay/VTPcGzxgsl8/kWS+/JGE0csnzNIQGZnYXEJ/gOcwdd67MdRTQD+QswFOk5
-Rfz7B/2S9DXZxRghXGCn
-=MM8o
------END PGP SIGNATURE-----
-
---Signature=_Wed__23_Apr_2014_14_17_27_+1000_XTiil/4_xe918AZN--
+>
+> --
+> balbi
