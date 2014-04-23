@@ -1,161 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751653AbaDWL2I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 07:28:08 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:40800 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaDWL2G (ORCPT
+	id S1752148AbaDWLbG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 07:31:06 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42753 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751827AbaDWLbE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 07:28:06 -0400
-Date: Wed, 23 Apr 2014 12:27:58 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: Anton Vorontsov <anton@enomsg.org>, Olof Johansson <olof@lixom.net>,
-        Sachin Kamat <sachin.kamat@linaro.org>, ajaykumar.rs@samsung.com,
-        linux-samsung-soc@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/5] mfd: tps65090: Stop caching most registers
-Message-ID: <20140423112758.GK21613@lee--X1>
-References: <1397689950-1568-1-git-send-email-dianders@chromium.org>
- <1397689950-1568-4-git-send-email-dianders@chromium.org>
+	Wed, 23 Apr 2014 07:31:04 -0400
+Date: Wed, 23 Apr 2014 12:30:50 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-samsung-soc@vger.kernel.org, lgirdwood@gmail.com,
+        sbkim73@samsung.com, jassisinghbrar@gmail.com, kgene.kim@samsung.com
+Message-ID: <20140423113050.GU12304@sirena.org.uk>
+References: <1398240264-21285-1-git-send-email-tushar.behera@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zvRX+gpdrLDrHMsm"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1397689950-1568-4-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398240264-21285-1-git-send-email-tushar.behera@linaro.org>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] ASoC: SAMSUNG: Don't clear clock setting during
+ i2s_startup
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anton,
 
-> Nearly all of the registers in tps65090 combine control bits and
-> status bits.  Turn off caching of all registers except the select few
-> that can be cached.
-> 
-> In order to avoid adding more duplicate #defines, we also move some
-> register offset definitions to the mfd driver (and resolve
-> inconsistent names).
-> 
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> ---
-> Changes in v3: None
-> Changes in v2:
-> - Leave cache on for the registers that can be cached.
-> - Move register offsets to mfd header file.
-> 
->  drivers/mfd/tps65090.c           | 27 ++++++++++++++-------------
->  drivers/power/tps65090-charger.c | 11 -----------
+--zvRX+gpdrLDrHMsm
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This patch still requires your Ack.
+On Wed, Apr 23, 2014 at 01:34:24PM +0530, Tushar Behera wrote:
+> In exiting kernel, if DAIFMT flags are set in dai_link and I2S is
+> set to run in master mode, the I2S clocks are not getting configured
+> resulting in no output.
 
->  include/linux/mfd/tps65090.h     | 14 ++++++++++++++
->  3 files changed, 28 insertions(+), 24 deletions(-)
-> 
-> diff --git a/drivers/mfd/tps65090.c b/drivers/mfd/tps65090.c
-> index c3cddb4..1c3e6e2 100644
-> --- a/drivers/mfd/tps65090.c
-> +++ b/drivers/mfd/tps65090.c
-> @@ -32,14 +32,6 @@
->  #define NUM_INT_REG 2
->  #define TOTAL_NUM_REG 0x18
->  
-> -/* interrupt status registers */
-> -#define TPS65090_INT_STS	0x0
-> -#define TPS65090_INT_STS2	0x1
-> -
-> -/* interrupt mask registers */
-> -#define TPS65090_INT_MSK	0x2
-> -#define TPS65090_INT_MSK2	0x3
-> -
->  #define TPS65090_INT1_MASK_VAC_STATUS_CHANGE		1
->  #define TPS65090_INT1_MASK_VSYS_STATUS_CHANGE		2
->  #define TPS65090_INT1_MASK_BAT_STATUS_CHANGE		3
-> @@ -144,17 +136,26 @@ static struct regmap_irq_chip tps65090_irq_chip = {
->  	.irqs = tps65090_irqs,
->  	.num_irqs = ARRAY_SIZE(tps65090_irqs),
->  	.num_regs = NUM_INT_REG,
-> -	.status_base = TPS65090_INT_STS,
-> -	.mask_base = TPS65090_INT_MSK,
-> +	.status_base = TPS65090_REG_INTR_STS,
-> +	.mask_base = TPS65090_REG_INTR_MASK,
->  	.mask_invert = true,
->  };
->  
->  static bool is_volatile_reg(struct device *dev, unsigned int reg)
->  {
-> -	if ((reg == TPS65090_INT_STS) || (reg == TPS65090_INT_STS2))
-> -		return true;
-> -	else
-> +	/* Nearly all registers have status bits mixed in, except a few */
-> +	switch (reg) {
-> +	case TPS65090_REG_INTR_MASK:
-> +	case TPS65090_REG_INTR_MASK2:
-> +	case TPS65090_REG_CG_CTRL0:
-> +	case TPS65090_REG_CG_CTRL1:
-> +	case TPS65090_REG_CG_CTRL2:
-> +	case TPS65090_REG_CG_CTRL3:
-> +	case TPS65090_REG_CG_CTRL4:
-> +	case TPS65090_REG_CG_CTRL5:
->  		return false;
-> +	}
-> +	return true;
->  }
->  
->  static const struct regmap_config tps65090_regmap_config = {
-> diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
-> index cc26c12..31a3ba4 100644
-> --- a/drivers/power/tps65090-charger.c
-> +++ b/drivers/power/tps65090-charger.c
-> @@ -30,17 +30,6 @@
->  
->  #include <linux/mfd/tps65090.h>
->  
-> -#define TPS65090_REG_INTR_STS	0x00
-> -#define TPS65090_REG_INTR_MASK	0x02
-> -#define TPS65090_REG_CG_CTRL0	0x04
-> -#define TPS65090_REG_CG_CTRL1	0x05
-> -#define TPS65090_REG_CG_CTRL2	0x06
-> -#define TPS65090_REG_CG_CTRL3	0x07
-> -#define TPS65090_REG_CG_CTRL4	0x08
-> -#define TPS65090_REG_CG_CTRL5	0x09
-> -#define TPS65090_REG_CG_STATUS1	0x0a
-> -#define TPS65090_REG_CG_STATUS2	0x0b
-> -
->  #define TPS65090_CHARGER_ENABLE	BIT(0)
->  #define TPS65090_VACG		BIT(1)
->  #define TPS65090_NOITERM	BIT(5)
-> diff --git a/include/linux/mfd/tps65090.h b/include/linux/mfd/tps65090.h
-> index 3f43069..45f0f9d 100644
-> --- a/include/linux/mfd/tps65090.h
-> +++ b/include/linux/mfd/tps65090.h
-> @@ -64,6 +64,20 @@ enum {
->  	TPS65090_REGULATOR_MAX,
->  };
->  
-> +/* Register addresses */
-> +#define TPS65090_REG_INTR_STS	0x00
-> +#define TPS65090_REG_INTR_STS2	0x01
-> +#define TPS65090_REG_INTR_MASK	0x02
-> +#define TPS65090_REG_INTR_MASK2	0x03
-> +#define TPS65090_REG_CG_CTRL0	0x04
-> +#define TPS65090_REG_CG_CTRL1	0x05
-> +#define TPS65090_REG_CG_CTRL2	0x06
-> +#define TPS65090_REG_CG_CTRL3	0x07
-> +#define TPS65090_REG_CG_CTRL4	0x08
-> +#define TPS65090_REG_CG_CTRL5	0x09
-> +#define TPS65090_REG_CG_STATUS1	0x0a
-> +#define TPS65090_REG_CG_STATUS2	0x0b
-> +
->  struct tps65090 {
->  	struct device		*dev;
->  	struct regmap		*rmap;
+Applied, thanks.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+--zvRX+gpdrLDrHMsm
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTV6RnAAoJELSic+t+oim99NcP/Rb5XcfTKcV0/OSjQQneFRsP
+LROuCEy4O0ngUB3dgQ12rNCEUfVfFrwDI1ROX21Z1tnQjK903Q5aFkP05Pwatr2r
+IRuo687zG37FHY4xHodUBPL7ilhZ5XpsDiJrlHhrvS0K9pzFVE2MdhbtAuTQuaAH
+YN4Jyr6ifs+fyKpuxrKhiNQv3A9B/eLHXMjbHf986TEBEQTRi+Jdl5BU+JJZJXJI
+eCudbTTat0BDBdZaBuKDElTxlBNdoWpu8lvJBZrXzzaTlvftbUOFgMI9Cn9c68QT
+aQroU02xc3z4fpuzpaFMrXlhG+6tlnzokJWZD4XJXP/YC8thiEUWOu755F0lYoGY
+QVqPRQM0YiqDimcAgZ/ft53/VNwxn5ZppEQULiHwXXoCibbPzJbB1t4y6jlc6Gyi
+rQgLhGcWB3DXgkcl2QLqloSpeQsBZdBLSvj2VE2J6DkHQHmQwJsmEMS+0MP79wvp
+5aRPWFki6ktWhgeZTtZchlh5AeGMQE5tOdJu9vZUygGAeL0AkGWrFwMIgJTTZ+Nt
+Yfmbdh8qjOxvXKYZYRJkSwRbWZAu2JhHv58ifz75e0cb0akDoxPhj4+CaQZeSaH9
+aeKPFZG4KhDtpesSI0STl0bR9QbOQIn3f6MG0/kHuFscTnxuRHxMJWjq6Smp+ZK+
+GwGfSJhjbypYFagj1UIb
+=zjNv
+-----END PGP SIGNATURE-----
+
+--zvRX+gpdrLDrHMsm--
