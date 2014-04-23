@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115AbaDWHjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:39:43 -0400
-Received: from hostedrelay.fireflyinternet.com ([109.228.30.76]:54896 "EHLO
-	relay.fireflyinternet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaDWHjm (ORCPT
+	id S1757406AbaDWHk2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:40:28 -0400
+Received: from mail-qa0-f45.google.com ([209.85.216.45]:42070 "EHLO
+	mail-qa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757233AbaDWHkW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:39:42 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Cc: Knut Petersen <Knut_Petersen@t-online.de>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        Imre Deak <imre.deak@intel.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] drm/i915: Discard BIOS framebuffers too small to accommodate chosen mode
-Date: Wed, 23 Apr 2014 08:39:07 +0100
-Message-Id: <1398238747-30657-1-git-send-email-chris@chris-wilson.co.uk>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <20140423071125.GS10722@phenom.ffwll.local>
-References: <20140423071125.GS10722@phenom.ffwll.local>
-X-Authenticated-User: chris.alporthouse@surfanytime.net 
+	Wed, 23 Apr 2014 03:40:22 -0400
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.44L0.1404221358530.1326-100000@iolanthe.rowland.org>
+References: <CAFp+6iGrgMTE27FxpFTQfALJO_XypxGSZ1-wny8KAoY1sLBbWw@mail.gmail.com>
+	<Pine.LNX.4.44L0.1404221358530.1326-100000@iolanthe.rowland.org>
+Date: Wed, 23 Apr 2014 13:10:20 +0530
+X-Google-Sender-Auth: ammXeXMdyw4fjA1ihZwkHbqqtkI
+Message-ID: <CAFp+6iG8moJdpq2kLsG_yJysJpk7BZ9EJw9=i=AmpCxsCQjefQ@mail.gmail.com>
+Subject: Re: [PATCH] usb: ohci-exynos: Add facility to use phy provided by the
+ generic phy framework
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        linux-doc@vger.kernel.org,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene.kim@samsung.com>, "robh+dt" <robh+dt@kernel.org>,
+        Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the inherited BIOS framebuffer is smaller than the mode selected for
-fbdev, then if we continue to use it then we cause display corruption as
-we do not setup the panel fitter to upscale.
+Hi,
 
-Regression from commit d978ef14456a38034f6c0e94a794129501f89200
-Author: Jesse Barnes <jbarnes@virtuousgeek.org>
-Date:   Fri Mar 7 08:57:51 2014 -0800
+On Tue, Apr 22, 2014 at 11:29 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Tue, 22 Apr 2014, Vivek Gautam wrote:
+>
+>> On Thu, Apr 10, 2014 at 6:54 PM, Vivek Gautam <gautam.vivek@samsung.com> wrote:
+>> > Add support to consume phy provided by Generic phy framework.
+>> > Keeping the support for older usb-phy intact right now, in order
+>> > to prevent any functionality break in absence of relevant
+>> > device tree side change for ohci-exynos.
+>> > Once we move to new phy in the device nodes for ohci, we can
+>> > remove the support for older phys.
+>>
+>> Any comments on this please.
+>> I think whatever the approach we follow, that can be common to both
+>> ehci-exynos[1], and ohci-exynos, since
+>> both are needed to move to the new generic phy framework, keeping
+>> support for older usb-phy
+>> so as to have smooth transition, in order to avoid any regression.
+>
+> I lost my copies of the ehci-exynos patch, but probably the same
+> comments apply as for the ohci-exynos patch.
 
-    drm/i915: Wrap the preallocated BIOS framebuffer and preserve for KMS fbcon v12
+Ok, i will be reworking on the ehci-exynos patch also (which was
+earlier posted by Kamil [1]),
+after addressing the review comments on that, and will post the same.
 
-v2: Add a debug message to track the discard of the BIOS fb.
-
-Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
-Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=77767
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
----
- drivers/gpu/drm/i915/intel_fbdev.c | 10 ++++++++++
- 1 file changed, 10 insertions(+)
-
-diff --git a/drivers/gpu/drm/i915/intel_fbdev.c b/drivers/gpu/drm/i915/intel_fbdev.c
-index b16116db6c37..dbd3f7ce6354 100644
---- a/drivers/gpu/drm/i915/intel_fbdev.c
-+++ b/drivers/gpu/drm/i915/intel_fbdev.c
-@@ -133,6 +133,16 @@ static int intelfb_create(struct drm_fb_helper *helper,
- 
- 	mutex_lock(&dev->struct_mutex);
- 
-+	if (intel_fb &&
-+	    (sizes->fb_width > intel_fb->base.width ||
-+	     sizes->fb_height > intel_fb->base.height)) {
-+		DRM_DEBUG_KMS("BIOS fb too small (%dx%d), we require (%dx%d),"
-+			      " releasing it\n",
-+			      intel_fb->base.width, intel_fb->base.height,
-+			      sizes->fb_width, sizes->fb_height);
-+		drm_framebuffer_reference(&ifbdev->fb->base);
-+		intel_fb = ifbdev->fb = NULL;
-+	}
- 	if (!intel_fb || WARN_ON(!intel_fb->obj)) {
- 		DRM_DEBUG_KMS("no BIOS fb, allocating a new one\n");
- 		ret = intelfb_alloc(helper, sizes);
--- 
-1.9.2
-
+[1] [PATCH v6 8/8] usb: ehci-exynos: Change to use phy provided by the
+generic phy framework
+https://lkml.org/lkml/2014/1/29/298
