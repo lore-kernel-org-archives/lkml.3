@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756335AbaDWDhy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 23:37:54 -0400
-Received: from mail-pb0-f45.google.com ([209.85.160.45]:54966 "EHLO
-	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755850AbaDWDhN (ORCPT
+	id S1756273AbaDWDhw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 23:37:52 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:36392 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755666AbaDWDhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 23:37:13 -0400
+	Tue, 22 Apr 2014 23:37:11 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>, Jan Kara <jack@suse.cz>,
         Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>
-Subject: [RFC][PATCH 3/3] timekeeping: Use printk_deferred when holding timekeeping seqlock
-Date: Tue, 22 Apr 2014 20:36:58 -0700
-Message-Id: <1398224218-4429-4-git-send-email-john.stultz@linaro.org>
+Subject: [RFC][PATCH 2/3] printk: Add printk_once_deferred
+Date: Tue, 22 Apr 2014 20:36:57 -0700
+Message-Id: <1398224218-4429-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398224218-4429-1-git-send-email-john.stultz@linaro.org>
 References: <1398224218-4429-1-git-send-email-john.stultz@linaro.org>
@@ -23,37 +23,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jiri Bohac pointed out that there are rare but potential deadlock
-possibilities when calling printk while holding the timekeeping
-seqlock.
-
-This is due to printk() triggering console sem wakeup, which can
-cause scheduling code to trigger hrtimers which may try to read
-the time.
-
-Specifically, as Jiri pointed out, that path is:
-  printk
-    vprintk_emit
-      console_unlock
-        up(&console_sem)
-          __up
-	    wake_up_process
-	      try_to_wake_up
-	        ttwu_do_activate
-		  ttwu_activate
-		    activate_task
-		      enqueue_task
-		        enqueue_task_fair
-			  hrtick_update
-			    hrtick_start_fair
-			      hrtick_start_fair
-			        get_time
-				  ktime_get
-				    --> endless loop on
-				    read_seqcount_retry(&timekeeper_seq, ...)
-
-This patch tries to avoid this issue by using printk_deferred (previously
-named printk_sched) which should defer printing via a irq_work_queue.
+Two of the three prink_deferred uses are really printk_once style
+uses, so add a printk_once_deferred macro to simplify those call
+sites.
 
 Cc: Jan Kara <jack@suse.cz>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -61,85 +33,76 @@ Cc: Jiri Bohac <jbohac@suse.cz>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: Ingo Molnar <mingo@redhat.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>
-Reported-by: Jiri Bohac <jbohac@suse.cz>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- kernel/time/ntp.c         | 15 +++++++++------
- kernel/time/timekeeping.c |  7 ++++---
- 2 files changed, 13 insertions(+), 9 deletions(-)
+ include/linux/printk.h  | 11 +++++++++++
+ kernel/sched/deadline.c |  7 +------
+ kernel/sched/rt.c       |  8 +-------
+ 3 files changed, 13 insertions(+), 13 deletions(-)
 
-diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
-index 419a52c..5b0ac4d 100644
---- a/kernel/time/ntp.c
-+++ b/kernel/time/ntp.c
-@@ -786,8 +786,9 @@ static long hardpps_update_freq(struct pps_normtime freq_norm)
- 		time_status |= STA_PPSERROR;
- 		pps_errcnt++;
- 		pps_dec_freq_interval();
--		pr_err("hardpps: PPSERROR: interval too long - %ld s\n",
--				freq_norm.sec);
-+		printk_deferred(KERN_ERR
-+			"hardpps: PPSERROR: interval too long - %ld s\n",
-+			freq_norm.sec);
- 		return 0;
- 	}
+diff --git a/include/linux/printk.h b/include/linux/printk.h
+index 7847301..bd21234 100644
+--- a/include/linux/printk.h
++++ b/include/linux/printk.h
+@@ -266,9 +266,20 @@ extern asmlinkage void dump_stack(void) __cold;
+ 		printk(fmt, ##__VA_ARGS__);			\
+ 	}							\
+ })
++#define printk_once_deferred(fmt, ...)				\
++({								\
++	static bool __print_once __read_mostly;			\
++								\
++	if (!__print_once) {					\
++		__print_once = true;				\
++		printk_deferred(fmt, ##__VA_ARGS__);		\
++	}							\
++})
+ #else
+ #define printk_once(fmt, ...)					\
+ 	no_printk(fmt, ##__VA_ARGS__)
++#define printk_once_deferred(fmt, ...)				\
++	no_printk(fmt, ##__VA_ARGS__)
+ #endif
  
-@@ -800,7 +801,8 @@ static long hardpps_update_freq(struct pps_normtime freq_norm)
- 	delta = shift_right(ftemp - pps_freq, NTP_SCALE_SHIFT);
- 	pps_freq = ftemp;
- 	if (delta > PPS_MAXWANDER || delta < -PPS_MAXWANDER) {
--		pr_warning("hardpps: PPSWANDER: change=%ld\n", delta);
-+		printk_deferred(KERN_WARNING
-+				"hardpps: PPSWANDER: change=%ld\n", delta);
- 		time_status |= STA_PPSWANDER;
- 		pps_stbcnt++;
- 		pps_dec_freq_interval();
-@@ -844,8 +846,9 @@ static void hardpps_update_phase(long error)
- 	 * the time offset is updated.
+ #define pr_emerg_once(fmt, ...)					\
+diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
+index 657ed68..3ec96bd 100644
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -348,12 +348,7 @@ static void replenish_dl_entity(struct sched_dl_entity *dl_se,
+ 	 * entity.
  	 */
- 	if (jitter > (pps_jitter << PPS_POPCORN)) {
--		pr_warning("hardpps: PPSJITTER: jitter=%ld, limit=%ld\n",
--		       jitter, (pps_jitter << PPS_POPCORN));
-+		printk_deferred(KERN_WARNING
-+				"hardpps: PPSJITTER: jitter=%ld, limit=%ld\n",
-+				jitter, (pps_jitter << PPS_POPCORN));
- 		time_status |= STA_PPSJITTER;
- 		pps_jitcnt++;
- 	} else if (time_status & STA_PPSTIME) {
-@@ -902,7 +905,7 @@ void __hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
- 		time_status |= STA_PPSJITTER;
- 		/* restart the frequency calibration interval */
- 		pps_fbase = *raw_ts;
--		pr_err("hardpps: PPSJITTER: bad pulse\n");
-+		printk_deferred(KERN_ERR "hardpps: PPSJITTER: bad pulse\n");
- 		return;
+ 	if (dl_time_before(dl_se->deadline, rq_clock(rq))) {
+-		static bool lag_once = false;
+-
+-		if (!lag_once) {
+-			lag_once = true;
+-			printk_deferred("sched: DL replenish lagged to much\n");
+-		}
++		printk_once_deferred("sched: DL replenish lagged to much\n");
+ 		dl_se->deadline = rq_clock(rq) + pi_se->dl_deadline;
+ 		dl_se->runtime = pi_se->dl_runtime;
  	}
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index f7df8ea..ffd3113 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -852,8 +852,9 @@ static void __timekeeping_inject_sleeptime(struct timekeeper *tk,
- 							struct timespec *delta)
- {
- 	if (!timespec_valid_strict(delta)) {
--		printk(KERN_WARNING "__timekeeping_inject_sleeptime: Invalid "
--					"sleep delta value!\n");
-+		printk_deferred(KERN_WARNING
-+				"__timekeeping_inject_sleeptime: Invalid "
-+				"sleep delta value!\n");
- 		return;
- 	}
- 	tk_xtime_add(tk, delta);
-@@ -1157,7 +1158,7 @@ static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
- 
- 	if (unlikely(tk->clock->maxadj &&
- 		(tk->mult + adj > tk->clock->mult + tk->clock->maxadj))) {
--		printk_once(KERN_WARNING
-+		printk_once_deferred(KERN_WARNING
- 			"Adjusting %s more than 11%% (%ld vs %ld)\n",
- 			tk->clock->name, (long)tk->mult + adj,
- 			(long)tk->clock->mult + tk->clock->maxadj);
+diff --git a/kernel/sched/rt.c b/kernel/sched/rt.c
+index c19b3cc..722e9a3 100644
+--- a/kernel/sched/rt.c
++++ b/kernel/sched/rt.c
+@@ -851,14 +851,8 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
+ 		 * but accrue some time due to boosting.
+ 		 */
+ 		if (likely(rt_b->rt_runtime)) {
+-			static bool once = false;
+-
+ 			rt_rq->rt_throttled = 1;
+-
+-			if (!once) {
+-				once = true;
+-				printk_deferred("sched: RT throttling activated\n");
+-			}
++			printk_once_deferred("sched: RT throttling activated\n");
+ 		} else {
+ 			/*
+ 			 * In case we did anyway, make it go away,
 -- 
 1.8.3.2
 
