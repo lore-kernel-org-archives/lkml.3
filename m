@@ -1,102 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762AbaDWBcu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:32:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50201 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756206AbaDWBch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:32:37 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org
-Cc: Richard Guy Briggs <rgb@redhat.com>, davem@davemloft.net,
-        jamal@mojatatu.com, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH 0/6][v2] audit: implement multicast socket for journald
-Date: Tue, 22 Apr 2014 21:31:52 -0400
-Message-Id: <cover.1398215388.git.rgb@redhat.com>
-In-Reply-To: <20140422.161904.1187535812839850973.davem@davemloft.net>
-References: <20140422.161904.1187535812839850973.davem@davemloft.net>
+	id S1755068AbaDWBdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:33:42 -0400
+Received: from cn.fujitsu.com ([59.151.112.132]:45610 "EHLO
+	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753461AbaDWBdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 21:33:39 -0400
+X-IronPort-AV: E=Sophos;i="4.97,907,1389715200"; 
+   d="scan'208";a="29600427"
+Message-ID: <53571958.7050606@cn.fujitsu.com>
+Date: Wed, 23 Apr 2014 09:37:28 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc14 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2 V3] workqueue: substitute POOL_FREEZING with __WQ_FREEZING
+References: <1398081561-12618-1-git-send-email-laijs@cn.fujitsu.com> <20140421222035.GA22730@htj.dyndns.org> <5355CA43.5040608@cn.fujitsu.com> <20140422204623.GC3615@mtj.dyndns.org>
+In-Reply-To: <20140422204623.GC3615@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.167.226.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch set Eric Paris and I have been working on to add a restricted
-capability read-only netlink multicast socket to kernel audit to enable
-userspace clients such as systemd/journald to receive audit logs, in addition
-to the bidirectional auditd userspace client.
+On 04/23/2014 04:46 AM, Tejun Heo wrote:
+> Hello,
+> 
+> On Tue, Apr 22, 2014 at 09:47:47AM +0800, Lai Jiangshan wrote:
+>> Testing workqueue_freezing requires wq_pool_mutex held.
+>> Although almost-all pwq_adjust_max_active() are called with wq_pool_mutex held,
+>> except workqueue_set_max_active(). But I hope pwq_adjust_max_active()
+>> don't require the heavy wq_pool_mutex.
+> 
+> No it doesn't require wq_pool_mutex to be held.  All it requires is
+> that the changed state is visible on the subsequent
+> pwq_adjust_max_active() invocatino which is already trivially
+> guaranteed.
+> 
 
-Currently, auditd has the CAP_AUDIT_CONTROL and CAP_AUDIT_WRITE capabilities
-(but uses CAP_NET_ADMIN).  The CAP_AUDIT_READ capability will be added for use
-by read-only AUDIT_NLGRP_READLOG multicast group clients to the kaudit
-subsystem.  This will remove the dependence on CAP_NET_ADMIN for the multicast
-read-only socket.
+Good! I understood! Could you respin the patch? I'm afraid
+I can't explain it well in the comments.
 
+For me, I always prefer locks for non-performance critical path,
+locks help review, I believe your comment will do so.
 
-Patches 1-3 provide a way for per-protocol bind functions to
-signal an error and to be able to clean up after themselves.
-
-The first netfilter cleanup patch has already been accepted by a netfilter
-maintainer, though I don't see it upstream yet, so it is included for
-completeness.
-
-The second patch adds the per-protocol bind function return code to signal to
-the netlink code that no further processing should be done and to undo the work
-already done.
-V1: This rev fixes a bug introduced by flattening the code in the last posting.
-*V2: This rev moves the per-protocol bind call above the socket exposure call
-and refactors out the unbind procedure.
-
-The third provides a way per protocol to undo bind actions on DROP.
-
-
-Patches 4-6 implement the audit multicast socket with capability checking.
-
-The fourth patch adds the bind function capability check to multicast join
-requests for audit.
-
-The fifth patch adds the audit log read multicast group.  An assumption has
-been made that systemd/journald reside in the initial network namespace.  This
-could be changed to check the actual network namespace of systemd/journald
-should this assumption no longer be true since audit now supports all network
-namespaces.  This version of the patch now directly sends the broadcast when
-the packet is ready rather than waiting until it passes the queue.
-
-The sixth checks if any clients actually exist before sending.
-
-
-Since the net tree is busier than the audit tree, conflicts are more likely and
-the audit patches depend on the net patches, it is proposed to have the net
-tree carry this entire patchset for 3.16.  Are the net maintainers ok with this?
-
-
-https://bugzilla.redhat.com/show_bug.cgi?id=887992 
-
-First posted:   https://www.redhat.com/archives/linux-audit/2013-January/msg00008.html
-                https://lkml.org/lkml/2013/1/27/279
-
-Please find source for a test program at: 
-	http://people.redhat.com/rbriggs/audit-multicast-listen/
-
-
-Richard Guy Briggs (6):
-  netlink: simplify nfnetlink_bind
-  netlink: have netlink per-protocol bind function return an error
-    code.
-  netlink: implement unbind to netlink_setsockopt
-    NETLINK_DROP_MEMBERSHIP
-  audit: add netlink audit protocol bind to check capabilities on
-    multicast join
-  audit: add netlink multicast group for log read
-  audit: send multicast messages only if there are listeners
-
- include/linux/netlink.h             |    3 +-
- include/uapi/linux/audit.h          |    8 ++++
- include/uapi/linux/capability.h     |    7 +++-
- kernel/audit.c                      |   64 ++++++++++++++++++++++++++++++--
- net/netfilter/nfnetlink.c           |   10 ++---
- net/netlink/af_netlink.c            |   70 +++++++++++++++++++++++++----------
- net/netlink/af_netlink.h            |    6 ++-
- security/selinux/include/classmap.h |    2 +-
- 8 files changed, 135 insertions(+), 35 deletions(-)
-
+Thanks,
+Lai
