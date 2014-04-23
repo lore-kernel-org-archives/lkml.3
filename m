@@ -1,54 +1,428 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078AbaDWBXs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:23:48 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:36951 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaDWBXo (ORCPT
+	id S1755998AbaDWBXb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:23:31 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:39307 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754033AbaDWBTE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:23:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <535714A1.9080502@linux.intel.com>
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com>
- <535714A1.9080502@linux.intel.com>
-From: Andrew Lutomirski <amluto@gmail.com>
-Date: Tue, 22 Apr 2014 18:23:23 -0700
-Message-ID: <CAObL_7HsnpGKRoBh+NZkW7SURqGx_4Dkfow=1-_7UU9uBV4UkA@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Apr 2014 21:19:04 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: Rob Herring <robh@kernel.org>
+Subject: [PATCH v2 12/21] of/fdt: Convert FDT functions to use libfdt
+Date: Tue, 22 Apr 2014 20:18:12 -0500
+Message-Id: <1398215901-25609-13-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
+References: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 6:17 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> Another spin of the prototype.  This one avoids the espfix for anything
-> but #GP, and avoids save/restore/saving registers... one can wonder,
-> though, how much that actually matters in practice.
->
-> It still does redundant SWAPGS on the slow path.  I'm not sure I
-> personally care enough to optimize that, as it means some fairly
-> significant restructuring of some of the code paths.  Some of that
-> restructuring might actually be beneficial, but still...
->
+From: Rob Herring <robh@kernel.org>
 
-What's the to_dmesg thing for?
+The kernel FDT functions predate libfdt and are much more limited in
+functionality. Also, the kernel functions and libfdt functions are
+not compatible with each other because they have different definitions
+of node offsets. To avoid this incompatibility and in preparation to
+add more FDT parsing functions which will need libfdt, let's first
+convert the existing code to use libfdt.
 
-It looks sane, although I haven't checked the detailed register manipulation.
+The FDT unflattening, top-level FDT scanning, and property retrieval
+functions are converted to use libfdt. The scanning code should be
+re-worked to be more efficient and understandable by using libfdt to
+find nodes directly by path or compatible strings.
 
-Users of big systems may complain when every single CPU lines up for
-that mutex.  Maybe no one cares.
+Signed-off-by: Rob Herring <robh@kernel.org>
+---
+v2: fix bug reported by Michal Simek in unflatten_dt_node in tracking tree
+ depth.
+ 
+ drivers/of/Kconfig     |   1 +
+ drivers/of/Makefile    |   2 +
+ drivers/of/fdt.c       | 209 ++++++++++++++-----------------------------------
+ include/linux/of_fdt.h |   1 -
+ 4 files changed, 60 insertions(+), 153 deletions(-)
 
---Andy
+diff --git a/drivers/of/Kconfig b/drivers/of/Kconfig
+index 889005f..2dcb054 100644
+--- a/drivers/of/Kconfig
++++ b/drivers/of/Kconfig
+@@ -20,6 +20,7 @@ config OF_SELFTEST
+ config OF_FLATTREE
+ 	bool
+ 	select DTC
++	select LIBFDT
+ 
+ config OF_EARLY_FLATTREE
+ 	bool
+diff --git a/drivers/of/Makefile b/drivers/of/Makefile
+index ed9660a..9891232 100644
+--- a/drivers/of/Makefile
++++ b/drivers/of/Makefile
+@@ -10,3 +10,5 @@ obj-$(CONFIG_OF_PCI)	+= of_pci.o
+ obj-$(CONFIG_OF_PCI_IRQ)  += of_pci_irq.o
+ obj-$(CONFIG_OF_MTD)	+= of_mtd.o
+ obj-$(CONFIG_OF_RESERVED_MEM) += of_reserved_mem.o
++
++CFLAGS_fdt.o = -I$(src)/../../scripts/dtc/libfdt
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 1d1582b..8e820a2 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -19,58 +19,11 @@
+ #include <linux/string.h>
+ #include <linux/errno.h>
+ #include <linux/slab.h>
++#include <linux/libfdt.h>
+ 
+ #include <asm/setup.h>  /* for COMMAND_LINE_SIZE */
+ #include <asm/page.h>
+ 
+-char *of_fdt_get_string(struct boot_param_header *blob, u32 offset)
+-{
+-	return ((char *)blob) +
+-		be32_to_cpu(blob->off_dt_strings) + offset;
+-}
+-
+-/**
+- * of_fdt_get_property - Given a node in the given flat blob, return
+- * the property ptr
+- */
+-void *of_fdt_get_property(struct boot_param_header *blob,
+-		       unsigned long node, const char *name,
+-		       int *size)
+-{
+-	unsigned long p = node;
+-
+-	do {
+-		u32 tag = be32_to_cpup((__be32 *)p);
+-		u32 sz, noff;
+-		const char *nstr;
+-
+-		p += 4;
+-		if (tag == OF_DT_NOP)
+-			continue;
+-		if (tag != OF_DT_PROP)
+-			return NULL;
+-
+-		sz = be32_to_cpup((__be32 *)p);
+-		noff = be32_to_cpup((__be32 *)(p + 4));
+-		p += 8;
+-		if (be32_to_cpu(blob->version) < 0x10)
+-			p = ALIGN(p, sz >= 8 ? 8 : 4);
+-
+-		nstr = of_fdt_get_string(blob, noff);
+-		if (nstr == NULL) {
+-			pr_warning("Can't find property index name !\n");
+-			return NULL;
+-		}
+-		if (strcmp(name, nstr) == 0) {
+-			if (size)
+-				*size = sz;
+-			return (void *)p;
+-		}
+-		p += sz;
+-		p = ALIGN(p, 4);
+-	} while (1);
+-}
+-
+ /**
+  * of_fdt_is_compatible - Return true if given node from the given blob has
+  * compat in its compatible list
+@@ -88,7 +41,7 @@ int of_fdt_is_compatible(struct boot_param_header *blob,
+ 	int cplen;
+ 	unsigned long l, score = 0;
+ 
+-	cp = of_fdt_get_property(blob, node, "compatible", &cplen);
++	cp = fdt_getprop(blob, node, "compatible", &cplen);
+ 	if (cp == NULL)
+ 		return 0;
+ 	while (cplen > 0) {
+@@ -147,28 +100,27 @@ static void *unflatten_dt_alloc(void **mem, unsigned long size,
+  */
+ static void * unflatten_dt_node(struct boot_param_header *blob,
+ 				void *mem,
+-				void **p,
++				int *poffset,
+ 				struct device_node *dad,
+ 				struct device_node ***allnextpp,
+ 				unsigned long fpsize)
+ {
++	const __be32 *p;
+ 	struct device_node *np;
+ 	struct property *pp, **prev_pp = NULL;
+-	char *pathp;
+-	u32 tag;
++	const char *pathp;
+ 	unsigned int l, allocl;
++	static int depth = 0;
++	int old_depth;
++	int offset;
+ 	int has_name = 0;
+ 	int new_format = 0;
+ 
+-	tag = be32_to_cpup(*p);
+-	if (tag != OF_DT_BEGIN_NODE) {
+-		pr_err("Weird tag at start of node: %x\n", tag);
++	pathp = fdt_get_name(blob, *poffset, &l);
++	if (!pathp)
+ 		return mem;
+-	}
+-	*p += 4;
+-	pathp = *p;
+-	l = allocl = strlen(pathp) + 1;
+-	*p = PTR_ALIGN(*p + l, 4);
++
++	allocl = l++;
+ 
+ 	/* version 0x10 has a more compact unit name here instead of the full
+ 	 * path. we accumulate the full path size using "fpsize", we'll rebuild
+@@ -186,7 +138,7 @@ static void * unflatten_dt_node(struct boot_param_header *blob,
+ 			fpsize = 1;
+ 			allocl = 2;
+ 			l = 1;
+-			*pathp = '\0';
++			pathp = "";
+ 		} else {
+ 			/* account for '/' and path size minus terminal 0
+ 			 * already in 'l'
+@@ -233,32 +185,23 @@ static void * unflatten_dt_node(struct boot_param_header *blob,
+ 		}
+ 	}
+ 	/* process properties */
+-	while (1) {
+-		u32 sz, noff;
+-		char *pname;
+-
+-		tag = be32_to_cpup(*p);
+-		if (tag == OF_DT_NOP) {
+-			*p += 4;
+-			continue;
+-		}
+-		if (tag != OF_DT_PROP)
++	for (offset = fdt_first_property_offset(blob, *poffset);
++	     (offset >= 0);
++	     (offset = fdt_next_property_offset(blob, offset))) {
++		const char *pname;
++		u32 sz;
++
++		if (!(p = fdt_getprop_by_offset(blob, offset, &pname, &sz))) {
++			offset = -FDT_ERR_INTERNAL;
+ 			break;
+-		*p += 4;
+-		sz = be32_to_cpup(*p);
+-		noff = be32_to_cpup(*p + 4);
+-		*p += 8;
+-		if (be32_to_cpu(blob->version) < 0x10)
+-			*p = PTR_ALIGN(*p, sz >= 8 ? 8 : 4);
+-
+-		pname = of_fdt_get_string(blob, noff);
++		}
++
+ 		if (pname == NULL) {
+ 			pr_info("Can't find property name in list !\n");
+ 			break;
+ 		}
+ 		if (strcmp(pname, "name") == 0)
+ 			has_name = 1;
+-		l = strlen(pname) + 1;
+ 		pp = unflatten_dt_alloc(&mem, sizeof(struct property),
+ 					__alignof__(struct property));
+ 		if (allnextpp) {
+@@ -270,26 +213,25 @@ static void * unflatten_dt_node(struct boot_param_header *blob,
+ 			if ((strcmp(pname, "phandle") == 0) ||
+ 			    (strcmp(pname, "linux,phandle") == 0)) {
+ 				if (np->phandle == 0)
+-					np->phandle = be32_to_cpup((__be32*)*p);
++					np->phandle = be32_to_cpup(p);
+ 			}
+ 			/* And we process the "ibm,phandle" property
+ 			 * used in pSeries dynamic device tree
+ 			 * stuff */
+ 			if (strcmp(pname, "ibm,phandle") == 0)
+-				np->phandle = be32_to_cpup((__be32 *)*p);
+-			pp->name = pname;
++				np->phandle = be32_to_cpup(p);
++			pp->name = (char *)pname;
+ 			pp->length = sz;
+-			pp->value = *p;
++			pp->value = (__be32 *)p;
+ 			*prev_pp = pp;
+ 			prev_pp = &pp->next;
+ 		}
+-		*p = PTR_ALIGN((*p) + sz, 4);
+ 	}
+ 	/* with version 0x10 we may not have the name property, recreate
+ 	 * it here from the unit name if absent
+ 	 */
+ 	if (!has_name) {
+-		char *p1 = pathp, *ps = pathp, *pa = NULL;
++		const char *p1 = pathp, *ps = pathp, *pa = NULL;
+ 		int sz;
+ 
+ 		while (*p1) {
+@@ -326,19 +268,18 @@ static void * unflatten_dt_node(struct boot_param_header *blob,
+ 		if (!np->type)
+ 			np->type = "<NULL>";
+ 	}
+-	while (tag == OF_DT_BEGIN_NODE || tag == OF_DT_NOP) {
+-		if (tag == OF_DT_NOP)
+-			*p += 4;
+-		else
+-			mem = unflatten_dt_node(blob, mem, p, np, allnextpp,
+-						fpsize);
+-		tag = be32_to_cpup(*p);
+-	}
+-	if (tag != OF_DT_END_NODE) {
+-		pr_err("Weird tag at end of node: %x\n", tag);
+-		return mem;
+-	}
+-	*p += 4;
++
++	old_depth = depth;
++	*poffset = fdt_next_node(blob, *poffset, &depth);
++	if (depth < 0)
++		depth = 0;
++	while (*poffset > 0 && depth > old_depth)
++		mem = unflatten_dt_node(blob, mem, poffset, np, allnextpp,
++					fpsize);
++
++	if (*poffset < 0 && *poffset != -FDT_ERR_NOTFOUND)
++		pr_err("unflatten: error %d processing FDT\n", *poffset);
++
+ 	return mem;
+ }
+ 
+@@ -359,7 +300,8 @@ static void __unflatten_device_tree(struct boot_param_header *blob,
+ 			     void * (*dt_alloc)(u64 size, u64 align))
+ {
+ 	unsigned long size;
+-	void *start, *mem;
++	int start;
++	void *mem;
+ 	struct device_node **allnextp = mynodes;
+ 
+ 	pr_debug(" -> unflatten_device_tree()\n");
+@@ -380,7 +322,7 @@ static void __unflatten_device_tree(struct boot_param_header *blob,
+ 	}
+ 
+ 	/* First pass, scan for size */
+-	start = ((void *)blob) + be32_to_cpu(blob->off_dt_struct);
++	start = 0;
+ 	size = (unsigned long)unflatten_dt_node(blob, 0, &start, NULL, NULL, 0);
+ 	size = ALIGN(size, 4);
+ 
+@@ -395,10 +337,8 @@ static void __unflatten_device_tree(struct boot_param_header *blob,
+ 	pr_debug("  unflattening %p...\n", mem);
+ 
+ 	/* Second pass, do actual unflattening */
+-	start = ((void *)blob) + be32_to_cpu(blob->off_dt_struct);
++	start = 0;
+ 	unflatten_dt_node(blob, mem, &start, NULL, &allnextp, 0);
+-	if (be32_to_cpup(start) != OF_DT_END)
+-		pr_warning("Weird tag at end of tree: %08x\n", be32_to_cpup(start));
+ 	if (be32_to_cpup(mem + size) != 0xdeadbeef)
+ 		pr_warning("End of tree marker overwritten: %08x\n",
+ 			   be32_to_cpup(mem + size));
+@@ -574,47 +514,19 @@ int __init of_scan_flat_dt(int (*it)(unsigned long node,
+ 				     void *data),
+ 			   void *data)
+ {
+-	unsigned long p = ((unsigned long)initial_boot_params) +
+-		be32_to_cpu(initial_boot_params->off_dt_struct);
+-	int rc = 0;
+-	int depth = -1;
+-
+-	do {
+-		u32 tag = be32_to_cpup((__be32 *)p);
+-		const char *pathp;
+-
+-		p += 4;
+-		if (tag == OF_DT_END_NODE) {
+-			depth--;
+-			continue;
+-		}
+-		if (tag == OF_DT_NOP)
+-			continue;
+-		if (tag == OF_DT_END)
+-			break;
+-		if (tag == OF_DT_PROP) {
+-			u32 sz = be32_to_cpup((__be32 *)p);
+-			p += 8;
+-			if (be32_to_cpu(initial_boot_params->version) < 0x10)
+-				p = ALIGN(p, sz >= 8 ? 8 : 4);
+-			p += sz;
+-			p = ALIGN(p, 4);
+-			continue;
+-		}
+-		if (tag != OF_DT_BEGIN_NODE) {
+-			pr_err("Invalid tag %x in flat device tree!\n", tag);
+-			return -EINVAL;
+-		}
+-		depth++;
+-		pathp = (char *)p;
+-		p = ALIGN(p + strlen(pathp) + 1, 4);
++	const void *blob = initial_boot_params;
++	const char *pathp;
++	int offset, rc = 0, depth = -1;
++
++        for (offset = fdt_next_node(blob, -1, &depth);
++             offset >= 0 && depth >= 0 && !rc;
++             offset = fdt_next_node(blob, offset, &depth)) {
++
++		pathp = fdt_get_name(blob, offset, NULL);
+ 		if (*pathp == '/')
+ 			pathp = kbasename(pathp);
+-		rc = it(p, pathp, depth, data);
+-		if (rc != 0)
+-			break;
+-	} while (1);
+-
++		rc = it(offset, pathp, depth, data);
++	}
+ 	return rc;
+ }
+ 
+@@ -623,14 +535,7 @@ int __init of_scan_flat_dt(int (*it)(unsigned long node,
+  */
+ unsigned long __init of_get_flat_dt_root(void)
+ {
+-	unsigned long p = ((unsigned long)initial_boot_params) +
+-		be32_to_cpu(initial_boot_params->off_dt_struct);
+-
+-	while (be32_to_cpup((__be32 *)p) == OF_DT_NOP)
+-		p += 4;
+-	BUG_ON(be32_to_cpup((__be32 *)p) != OF_DT_BEGIN_NODE);
+-	p += 4;
+-	return ALIGN(p + strlen((char *)p) + 1, 4);
++	return 0;
+ }
+ 
+ /**
+@@ -642,7 +547,7 @@ unsigned long __init of_get_flat_dt_root(void)
+ const void *__init of_get_flat_dt_prop(unsigned long node, const char *name,
+ 				       int *size)
+ {
+-	return of_fdt_get_property(initial_boot_params, node, name, size);
++	return fdt_getprop(initial_boot_params, node, name, size);
+ }
+ 
+ /**
+diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+index b36a50d..26cef9a 100644
+--- a/include/linux/of_fdt.h
++++ b/include/linux/of_fdt.h
+@@ -84,7 +84,6 @@ extern char __dtb_start[];
+ extern char __dtb_end[];
+ 
+ /* For scanning the flat device-tree at boot time */
+-extern char *find_flat_dt_string(u32 offset);
+ extern int of_scan_flat_dt(int (*it)(unsigned long node, const char *uname,
+ 				     int depth, void *data),
+ 			   void *data);
+-- 
+1.9.1
+
