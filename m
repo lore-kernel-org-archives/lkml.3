@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417AbaDWMfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:35:20 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:33500 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755171AbaDWMer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:34:47 -0400
-Message-ID: <5357B35E.6020908@de.ibm.com>
-Date: Wed, 23 Apr 2014 14:34:38 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755071AbaDWMn1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:43:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62010 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752562AbaDWMnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 08:43:25 -0400
+Message-ID: <5357B563.2060009@redhat.com>
+Date: Wed, 23 Apr 2014 14:43:15 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>,
-        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
-CC: Paolo Bonzini <pbonzini@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        KVM <kvm@vger.kernel.org>, linux-s390 <linux-s390@vger.kernel.org>,
-        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf/tool: Fix usage of trace events with '-' in trace
- system name.
-References: <1395694140-43447-1-git-send-email-borntraeger@de.ibm.com> <53315741.9010508@redhat.com> <20140417113221.GA7422@krava.brq.redhat.com> <874n1mg021.wl%yarygin@linux.vnet.ibm.com> <20140423114529.GB11124@krava.brq.redhat.com>
-In-Reply-To: <20140423114529.GB11124@krava.brq.redhat.com>
+To: Kefeng Wang <kefeng.wang@linaro.org>, Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: wangkefeng.wang@huawei.com
+Subject: Re: [PATCH v5 0/3] ahci: add support for hisilicon sata
+References: <1398256603-20160-1-git-send-email-kefeng.wang@linaro.org>
+In-Reply-To: <1398256603-20160-1-git-send-email-kefeng.wang@linaro.org>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042312-8372-0000-0000-0000096FD638
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/04/14 13:45, Jiri Olsa wrote:
-> On Mon, Apr 21, 2014 at 07:43:50PM +0400, Alexander Yarygin wrote:
-[...]
->> And a bit of offtopic :)
->> Apparently, s390 doesn't have syscalls:*, so some of the tests
->> don't work properly (or maybe I missed something? I set CONFIG_FTRACE_SYSCALLS
->> to 'y' in my config: still no syscalls:*).
+Hi,
 
-Strange, on my system I have syscall trace points on s390.
-Maybe some additional dependency of CONFIG_FTRACE_SYSCALLS that is not catched
-via Kconfig?
-
->>
->> What do you think about this idea:
->>
->> --- a/tools/perf/tests/parse-events.c
->> +++ b/tools/perf/tests/parse-events.c
->> @@ -1177,13 +1177,21 @@ struct evlist_test {
->>  	int (*check)(struct perf_evlist *evlist);
->>  };
->>
->> +#if !defined(__s390x__)
->> +#define TP_SYS_NAME "syscalls"
->> +#define TP_EVENT_NAME "sys_enter_open"
->> +#else
->> +#define TP_SYS_NAME "sched"
->> +#define TP_EVENT_NAME "sched_wakeup"
->> +#endif
->> +
->>  static struct evlist_test test__events[] = {
->>  	[0] = {
->> -		.name  = "syscalls:sys_enter_open",
->> +		.name  = TP_SYS_NAME ":" TP_EVENT_NAME,
->>  		.check = test__checkevent_tracepoint,
->>  	},
->>
->> ... and so on?
+On 04/23/2014 02:36 PM, Kefeng Wang wrote:
+> channge in v5:
 > 
-> that looks fine.. also we could use just generic tracepoints
-> like the 'sched' ones
+> 1) drop AHCI_HFLAGS(...) from ahci_xgene.c and do use host_flags
+>    in ahci_platform_init_host, it's my carelessness.
+> 
 
-I think generic tracepoints are preferred over ifdef, but as I said I have syscalls.
+Thanks, looks good now, this series is:
 
-Christian
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
 
-Christian
+Regards,
+
+Hans
 
 
-
-
+> changes in v4:
+> 
+> 1) add a dynamic host_flags parameter in ahci_platform_init_host
+>    to make it more flexible, modify some driver to use new
+>    way to pass host flags, suggested by Hans
+> 
+> changes in v3:
+> 
+> 1) move NO_FBS chunk after YES_FBS, Tejun's suggestion
+> 2) use ata_port_info pointer to avoid struct ata_port_info
+>    on the stack twice
+> 
+> changes in v2:
+> 
+> 1) make code more concise according to Hans's advice
+> 
+> Kefeng Wang (3):
+>   ata: ahci: append new hflag AHCI_HFLAG_NO_FBS
+>   libahci_platform: add host_flags parameter in
+>     ahci_platform_init_host()
+>   ahci: add support for Hisilicon sata
+> 
+>  .../devicetree/bindings/ata/ahci-platform.txt      |    3 ++-
+>  drivers/ata/ahci.h                                 |    1 +
+>  drivers/ata/ahci_da850.c                           |    3 ++-
+>  drivers/ata/ahci_imx.c                             |    3 ++-
+>  drivers/ata/ahci_platform.c                        |    8 +++++++-
+>  drivers/ata/ahci_st.c                              |    2 +-
+>  drivers/ata/ahci_sunxi.c                           |    9 ++++++---
+>  drivers/ata/ahci_xgene.c                           |    7 +++++--
+>  drivers/ata/libahci.c                              |    5 +++++
+>  drivers/ata/libahci_platform.c                     |    5 ++++-
+>  include/linux/ahci_platform.h                      |    1 +
+>  11 files changed, 36 insertions(+), 11 deletions(-)
+> 
