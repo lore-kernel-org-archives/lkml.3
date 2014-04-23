@@ -1,193 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794AbaDWMnt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:43:49 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:49954 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617AbaDWMnf (ORCPT
+	id S1755242AbaDWMer (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:34:47 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:14287 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753536AbaDWMen (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:43:35 -0400
-X-AuditID: cbfee690-b7fcd6d0000026e0-dc-5357b57534f7
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Vivek Gautam'" <gautam.vivek@samsung.com>
-Cc: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
-        stern@rowland.harvard.edu, balbi@ti.com, kgene.kim@samsung.com,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
-In-reply-to: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
-Subject: Re: [PATCH 1/3] usb: ohci-exynos: Make provision for vdd regulators
-Date: Wed, 23 Apr 2014 21:43:33 +0900
-Message-id: <000a01cf5ef1$a3111a10$e9334e30$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9dW5pZQjqvGcUATj+zeP3Unp+51QBlcoJA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t8zfd3SreHBBh8ny1scvF9v0XblILtF
-	8+L1bBaXF15itehdcJXNYtPja6wWl3fNYbOYvaSfxWLG+X1MFouWtTJbTPh9gc2B22P/3DXs
-	HpuX1HvMvvuD0aNvyypGj+M3tjN5fN4kF8AWxWWTkpqTWZZapG+XwJWx4d01xoLHchVXHi5j
-	bGBsk+xi5OSQEDCR6Fq3mBnCFpO4cG89WxcjF4eQwDJGiSUXHzDDFL07MpMJIjGdUWJ501pW
-	COc3o8SZ/n+MIFVsAmoSX74cZgexRQR0JXomfmQBKWIWWMEksfHhKhaQhJCAu8S5xTOYQGxO
-	AQ+JI6eWsILYwgI+EhPu3wAbxCKgKjFzVQdYDa+ArcTef5fYIGxBiR+T74HNYRbQkli/8zgT
-	hC0vsXnNW6BTOYBOVZd49FcX4gYjifuHzzNDlIhI7HvxjhHkHgmBqRwSOza1MEHsEpD4NvkQ
-	C0SvrMSmA1AfS0ocXHGDZQKjxCwkm2ch2TwLyeZZSFYsYGRZxSiaWpBcUJyUXmSiV5yYW1ya
-	l66XnJ+7iRES7xN2MN47YH2IMRlo/URmKdHkfGC6yCuJNzQ2M7IwNTE1NjK3NCNNWEmcV+1R
-	UpCQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGxuwlMvtbjzCzH5BwmVd1w2T+lW9V/Q+7bCo+
-	rtBsXpzwijl/cvrePV/mzmP59fJ75nw/Wf1n0ze+3WlvckCBz2n1+QVZi59kC6uqKtl533CT
-	2NTUWuvheHzhcsZ9/REcv48u1+Tkac84+/eYwUWjc1WzNEWSBMMudd7a++5/3rew7M2Tbs6Q
-	2KjEUpyRaKjFXFScCAD/9RBQDQMAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOKsWRmVeSWpSXmKPExsVy+t9jQd3SreHBBqvPS1ocvF9v0XblILtF
-	8+L1bBaXF15itehdcJXNYtPja6wWl3fNYbOYvaSfxWLG+X1MFouWtTJbTPh9gc2B22P/3DXs
-	HpuX1HvMvvuD0aNvyypGj+M3tjN5fN4kF8AW1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9q
-	ZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0npJCWWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35Ag
-	uB4jAzSQsI4xY8O7a4wFj+UqrjxcxtjA2CbZxcjJISFgIvHuyEwmCFtM4sK99WxdjFwcQgLT
-	GSWWN61lhXB+M0qc6f/HCFLFJqAm8eXLYXYQW0RAV6Jn4kcWkCJmgRVMEhsfrmIBSQgJuEuc
-	WzwDbCyngIfEkVNLWEFsYQEfiQn3b4ANYhFQlZi5qgOshlfAVmLvv0tsELagxI/J98DmMAto
-	SazfeZwJwpaX2LzmLXMXIwfQqeoSj/7qQtxgJHH/8HlmiBIRiX0v3jFOYBSahWTSLCSTZiGZ
-	NAtJywJGllWMoqkFyQXFSem5hnrFibnFpXnpesn5uZsYwcnkmdQOxpUNFocYBTgYlXh4C1aG
-	BQuxJpYVV+YeYpTgYFYS4V2yKDxYiDclsbIqtSg/vqg0J7X4EGMy0KMTmaVEk/OBiS6vJN7Q
-	2MTMyNLIzMLIxNycNGElcd4DrdaBQgLpiSWp2ampBalFMFuYODilGhhXmbCEFc68rOX/ROnc
-	VO0+kXT181XL/eZ8995T+fi8YMz9vRN9n1Qaf7pe52sVb2xe/M7R+UGGmU6t4/Hyl0fWLDkQ
-	49297SHbJF2tmbqVNVE/VvazpEtLXnQ7FH2Cq5PpZqHk3q3lxyu5/s1pyo/m+PP8oITu/9Iz
-	5Z/ON+symW34oauSfF2JpTgj0VCLuag4EQCnK27yagMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 23 Apr 2014 08:34:43 -0400
+X-IronPort-AV: E=Sophos;i="4.97,911,1389744000"; 
+   d="scan'208";a="122654571"
+Message-ID: <5357B342.9090204@citrix.com>
+Date: Wed, 23 Apr 2014 13:34:10 +0100
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Ben Hutchings <ben@decadent.org.uk>
+CC: Luis Henriques <luis.henriques@canonical.com>,
+        David Miller <davem@davemloft.net>, <jesse@nicira.com>,
+        <pshelar@nicira.com>, <tgraf@redhat.com>, <dev@openvswitch.org>,
+        <pablo@netfilter.org>, <kadlec@blackhole.kfki.hu>,
+        <edumazet@google.com>, <dborkman@redhat.com>, <therbert@google.com>,
+        <jasowang@redhat.com>, <fw@strlen.de>, <joe@perches.com>,
+        <horms@verge.net.au>, <jiri@resnulli.us>, <mst@redhat.com>,
+        <Paul.Durrant@citrix.com>, <JBeulich@suse.com>,
+        <herbert@gondor.apana.org.au>, <mszeredi@suse.cz>,
+        <netfilter-devel@vger.kernel.org>, <netfilter@vger.kernel.org>,
+        <xen-devel@lists.xenproject.org>, <netdev@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3.13] core, nfqueue, openvswitch: Orphan frags in skb_zerocopy
+ and handle errors
+References: <1395873465-22282-1-git-send-email-zoltan.kiss@citrix.com>		 <20140327.152956.1528740039185894234.davem@davemloft.net>		 <20140421112601.GC3200@hercules>	 <1398181118.3624.203.camel@deadeye.wl.decadent.org.uk>	 <5356AEBF.5010505@citrix.com> <1398194284.7767.101.camel@deadeye.wl.decadent.org.uk>
+In-Reply-To: <1398194284.7767.101.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.80.2.133]
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, April 21, 2014 9:17 PM, Vivek Gautam wrote:
-> 
-> Facilitate getting required 3.3V and 1.0V VDD supply for
-> OHCI controller on Exynos.
-> 
-> With patches for regulators' nodes merged in 3.15:
-> c8c253f ARM: dts: Add regulator entries to smdk5420
-> 275dcd2 ARM: dts: add max77686 pmic node for smdk5250,
-> 
-> certain perripherals will now need to ensure that,
-> they request VDD regulators in their drivers, and enable
-> them so as to make them working.
-> 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Cc: Jingoo Han <jg1.han@samsung.com>
-
-Acked-by: Jingoo Han <jg1.han@samsung.com>
-
-Best regards,
-Jingoo Han
-
+On 22/04/14 20:18, Ben Hutchings wrote:
+> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+>
+> commit 36d5fe6a000790f56039afe26834265db0a3ad4c upstream.
+>
+> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+> orphan them. Also, it doesn't handle errors, so this patch takes care of that
+> as well, and modify the callers accordingly. skb_tx_error() is also added to
+> the callers so they will signal the failed delivery towards the creator of the
+> skb.
+>
+> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> [bwh: Backported to 3.13: skb_zerocopy() is new in 3.14, but was moved from a
+>   static function in nfnetlink_queue.  We need to patch that and its caller, but
+>   not openvswitch.]
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 > ---
-> 
-> Based on 'usb-next' branch of Greg's usb tree.
-> 
->  drivers/usb/host/ohci-exynos.c |   47 ++++++++++++++++++++++++++++++++++++++++
->  1 file changed, 47 insertions(+)
-> 
-> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-exynos.c
-> index 68588d8..e2e72a8 100644
-> --- a/drivers/usb/host/ohci-exynos.c
-> +++ b/drivers/usb/host/ohci-exynos.c
-> @@ -18,6 +18,7 @@
->  #include <linux/module.h>
->  #include <linux/of.h>
->  #include <linux/platform_device.h>
-> +#include <linux/regulator/consumer.h>
->  #include <linux/usb/phy.h>
->  #include <linux/usb/samsung_usb_phy.h>
->  #include <linux/usb.h>
-> @@ -37,6 +38,8 @@ struct exynos_ohci_hcd {
->  	struct clk *clk;
->  	struct usb_phy *phy;
->  	struct usb_otg *otg;
-> +	struct regulator *vdd33;
-> +	struct regulator *vdd10;
->  };
-> 
->  static void exynos_ohci_phy_enable(struct platform_device *pdev)
-> @@ -98,6 +101,28 @@ static int exynos_ohci_probe(struct platform_device *pdev)
->  		exynos_ohci->otg = phy->otg;
->  	}
-> 
-> +	exynos_ohci->vdd33 = devm_regulator_get(&pdev->dev, "vdd33");
-> +	if (IS_ERR(exynos_ohci->vdd33)) {
-> +		err = PTR_ERR(exynos_ohci->vdd33);
-> +		goto fail_regulator1;
-> +	}
-> +	err = regulator_enable(exynos_ohci->vdd33);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "Failed to enable VDD33 supply\n");
-> +		goto fail_regulator1;
-> +	}
-> +
-> +	exynos_ohci->vdd10 = devm_regulator_get(&pdev->dev, "vdd10");
-> +	if (IS_ERR(exynos_ohci->vdd10)) {
-> +		err = PTR_ERR(exynos_ohci->vdd10);
-> +		goto fail_regulator2;
-> +	}
-> +	err = regulator_enable(exynos_ohci->vdd10);
-> +	if (err) {
-> +		dev_err(&pdev->dev, "Failed to enable VDD10 supply\n");
-> +		goto fail_regulator2;
-> +	}
-> +
->  skip_phy:
->  	exynos_ohci->clk = devm_clk_get(&pdev->dev, "usbhost");
-> 
-> @@ -154,6 +179,10 @@ fail_add_hcd:
->  fail_io:
->  	clk_disable_unprepare(exynos_ohci->clk);
->  fail_clk:
-> +	regulator_disable(exynos_ohci->vdd10);
-> +fail_regulator2:
-> +	regulator_disable(exynos_ohci->vdd33);
-> +fail_regulator1:
->  	usb_put_hcd(hcd);
->  	return err;
->  }
-> @@ -172,6 +201,9 @@ static int exynos_ohci_remove(struct platform_device *pdev)
-> 
->  	clk_disable_unprepare(exynos_ohci->clk);
-> 
-> +	regulator_disable(exynos_ohci->vdd10);
-> +	regulator_disable(exynos_ohci->vdd33);
-> +
->  	usb_put_hcd(hcd);
-> 
->  	return 0;
-> @@ -208,6 +240,9 @@ static int exynos_ohci_suspend(struct device *dev)
-> 
->  	clk_disable_unprepare(exynos_ohci->clk);
-> 
-> +	regulator_disable(exynos_ohci->vdd10);
-> +	regulator_disable(exynos_ohci->vdd33);
-> +
->  	spin_unlock_irqrestore(&ohci->lock, flags);
-> 
->  	return 0;
-> @@ -218,6 +253,18 @@ static int exynos_ohci_resume(struct device *dev)
->  	struct usb_hcd *hcd			= dev_get_drvdata(dev);
->  	struct exynos_ohci_hcd *exynos_ohci	= to_exynos_ohci(hcd);
->  	struct platform_device *pdev		= to_platform_device(dev);
+> On Tue, 2014-04-22 at 19:02 +0100, Zoltan Kiss wrote:
+>> On 22/04/14 16:38, Ben Hutchings wrote:
+>>> On Mon, 2014-04-21 at 12:26 +0100, Luis Henriques wrote:
+>>>> Hi David,
+>>>>
+>>>> On Thu, Mar 27, 2014 at 03:29:56PM -0400, David Miller wrote:
+>>>>> From: Zoltan Kiss <zoltan.kiss@citrix.com>
+>>>>> Date: Wed, 26 Mar 2014 22:37:45 +0000
+>>>>>
+>>>>>> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
+>>>>>> orphan them. Also, it doesn't handle errors, so this patch takes care of that
+>>>>>> as well, and modify the callers accordingly. skb_tx_error() is also added to
+>>>>>> the callers so they will signal the failed delivery towards the creator of the
+>>>>>> skb.
+>>>>>>
+>>>>>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+>>>>>
+>>>>> Fingers crossed :-)  Applied, thanks Zoltan.
+>>>>> --
+>>>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>>>>> the body of a message to majordomo@vger.kernel.org
+>>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>
+>>>> Could you please queue this for stable as well?  It has CVE-2014-2568
+>>>> assigned to it and I believe it is applicable to some of the trees.
+>>>
+>>> It was applied to 3.13, but needs backporting to earlier versions.  I
+>>> posted my attempt in
+>>> <1397429860.10849.86.camel@deadeye.wl.decadent.org.uk> but it needs
+>>> testing/reviewing.
+>>
+>> This one is a different issue, although it is very similar.
+>
+> Sorry for mixing these up.  I believe this bug has been present since
+> zerocopy was added to nfqueue in Linux 3.10 (commit ae08ce002108).  This
+> is the version I used for Debian's 3.13 branch, which might be usable
+> for older stable branches too.
+Seems OK, thanks!
+
+>
+> Ben.
+>
+> ---
+> --- a/net/netfilter/nfnetlink_queue_core.c
+> +++ b/net/netfilter/nfnetlink_queue_core.c
+> @@ -235,22 +235,23 @@ nfqnl_flush(struct nfqnl_instance *queue
+>   	spin_unlock_bh(&queue->lock);
+>   }
+>
+> -static void
+> +static int
+>   nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
+>   {
+>   	int i, j = 0;
+>   	int plen = 0; /* length of skb->head fragment */
 > +	int ret;
+>   	struct page *page;
+>   	unsigned int offset;
+>
+>   	/* dont bother with small payloads */
+> -	if (len <= skb_tailroom(to)) {
+> -		skb_copy_bits(from, 0, skb_put(to, len), len);
+> -		return;
+> -	}
+> +	if (len <= skb_tailroom(to))
+> +		return skb_copy_bits(from, 0, skb_put(to, len), len);
+>
+>   	if (hlen) {
+> -		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
+> +		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
+> +		if (unlikely(ret))
+> +			return ret;
+>   		len -= hlen;
+>   	} else {
+>   		plen = min_t(int, skb_headlen(from), len);
+> @@ -268,6 +269,11 @@ nfqnl_zcopy(struct sk_buff *to, const st
+>   	to->len += len + plen;
+>   	to->data_len += len + plen;
+>
+> +	if (unlikely(skb_orphan_frags(from, GFP_ATOMIC))) {
+> +		skb_tx_error(from);
+> +		return -ENOMEM;
+> +	}
 > +
-> +	ret = regulator_enable(exynos_ohci->vdd33);
-> +	if (ret) {
-> +		dev_err(dev, "Failed to enable VDD33 supply\n");
-> +		return ret;
+>   	for (i = 0; i < skb_shinfo(from)->nr_frags; i++) {
+>   		if (!len)
+>   			break;
+> @@ -278,6 +284,8 @@ nfqnl_zcopy(struct sk_buff *to, const st
+>   		j++;
+>   	}
+>   	skb_shinfo(to)->nr_frags = j;
+> +
+> +	return 0;
+>   }
+>
+>   static int
+> @@ -374,13 +382,16 @@ nfqnl_build_packet_message(struct net *n
+>
+>   	skb = nfnetlink_alloc_skb(net, size, queue->peer_portid,
+>   				  GFP_ATOMIC);
+> -	if (!skb)
+> +	if (!skb) {
+> +		skb_tx_error(entskb);
+>   		return NULL;
 > +	}
-> +	ret = regulator_enable(exynos_ohci->vdd10);
-> +	if (ret) {
-> +		dev_err(dev, "Failed to enable VDD10 supply\n");
-> +		return ret;
-> +	}
-> 
->  	clk_prepare_enable(exynos_ohci->clk);
-> 
-> --
-> 1.7.10.4
+>
+>   	nlh = nlmsg_put(skb, 0, 0,
+>   			NFNL_SUBSYS_QUEUE << 8 | NFQNL_MSG_PACKET,
+>   			sizeof(struct nfgenmsg), 0);
+>   	if (!nlh) {
+> +		skb_tx_error(entskb);
+>   		kfree_skb(skb);
+>   		return NULL;
+>   	}
+> @@ -504,13 +515,15 @@ nfqnl_build_packet_message(struct net *n
+>   		nla->nla_type = NFQA_PAYLOAD;
+>   		nla->nla_len = nla_attr_size(data_len);
+>
+> -		nfqnl_zcopy(skb, entskb, data_len, hlen);
+> +		if (nfqnl_zcopy(skb, entskb, data_len, hlen))
+> +			goto nla_put_failure;
+>   	}
+>
+>   	nlh->nlmsg_len = skb->len;
+>   	return skb;
+>
+>   nla_put_failure:
+> +	skb_tx_error(entskb);
+>   	kfree_skb(skb);
+>   	net_err_ratelimited("nf_queue: error creating packet message\n");
+>   	return NULL;
+>
 
