@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756073AbaDWNVm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:21:42 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55708 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754723AbaDWNVL (ORCPT
+	id S1756097AbaDWNV6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:21:58 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:46666 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754723AbaDWNVz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:21:11 -0400
-Date: Wed, 23 Apr 2014 14:20:33 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Marc Zyngier <marc.zyngier@arm.com>
-Cc: Jianguo Wu <wujianguo@huawei.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        Ben Dooks <ben.dooks@codethink.co.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Li Zefan <lizefan@huawei.com>, Wang Nan <wangnan0@huawei.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] ARM: mm: support big-endian page tables
-Message-ID: <20140423132033.GE5649@arm.com>
-References: <534F9F79.9050503@huawei.com>
- <87ob00wau2.fsf@approximate.cambridge.arm.com>
+	Wed, 23 Apr 2014 09:21:55 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ob00wau2.fsf@approximate.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
+References: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
+Date: Wed, 23 Apr 2014 15:21:54 +0200
+Message-ID: <CACRpkdbzoPNEEJ6UbisqHOiRwuxEb6XSrDL=MiUmDPgyY=rVuw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] gpio: pl061: get gpio base from alias id
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Haojian Zhuang <haojian.zhuang@linaro.org>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: xuwei5@hisilicon.com, Rob Herring <robh+dt@kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Baruch Siach <baruch@tkos.co.il>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jianguo,
+On Tue, Apr 22, 2014 at 3:35 AM, Haojian Zhuang
+<haojian.zhuang@linaro.org> wrote:
 
-On Thu, Apr 17, 2014 at 10:43:01AM +0100, Marc Zyngier wrote:
-> On Thu, Apr 17 2014 at 10:31:37 am BST, Jianguo Wu <wujianguo@huawei.com> wrote:
-> > When enable LPAE and big-endian in a hisilicon board, while specify
-> > mem=384M mem=512M@7680M, will get bad page state:
-> >
-> > Freeing unused kernel memory: 180K (c0466000 - c0493000)
-> > BUG: Bad page state in process init  pfn:fa442
-> > page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
-> > page flags: 0x40000400(reserved)
-> > Modules linked in:
-> > CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
-> > [<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
-> > [<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
-> > [<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
-> > [<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
-> > [<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
-> > [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
-> > [<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
-> > [<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
-> > [<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
+> If gpio base number isn't specified, the gpio base will be find from
+> the end of gpio number. In order to keep with schematics, use alias
+> to get the ID of gpio chip.
+>
+> Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
 
+The idea with GPIO numbers is not that these shall correspond
+to schematics or data sheets or anything like that. It's a completely
+Linux-internal number and has nothing to do with anything else.
 
-[...]
+The same is true for IRQ numbers.
 
-Please can you put this into Russell's patch system? You can also add my
-ack:
+The long term goal is to get rid of both GPIO and IRQ numbers
+and deal only with descriptors in the kernel.
 
-  Acked-by: Will Deacon <will.deacon@arm.com>
+> +++ b/Documentation/devicetree/bindings/gpio/gpio-pl061.txt
 
-You should also CC stable <stable@vger.kernel.org> in the commit log.
+A patch to add the device tree bindings is *very* welcome.
 
-Cheers,
+>         } else {
+> -               chip->gc.base = -1;
+> +               chip->gc.base = pl061_parse_gpio_base(dev);
+>                 irq_base = 0;
+>         }
 
-Will
+I do not like a patch that changes the dynamic numbering to a
+static one, that make things worse for our goals, not better :-(
+
+Yours,
+Linus Walleij
