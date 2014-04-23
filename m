@@ -1,25 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402AbaDWVOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 17:14:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59407 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038AbaDWVOJ (ORCPT
+	id S1758062AbaDWVQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 17:16:23 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56056 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754792AbaDWVQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 17:14:09 -0400
-Date: Wed, 23 Apr 2014 14:14:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org, davem@davemloft.net,
-        sparclinux@vger.kernel.org, mguzik@redhat.com,
-        Aaron Tomlin <atomlin@redhat.com>
-Subject: Re: [PATCH 2/2 v4] watchdog: Printing traces for all cpus on lockup
- detection
-Message-Id: <20140423141407.6c38ee453d4c88c36fdfb062@linux-foundation.org>
-In-Reply-To: <1398285605-147082-3-git-send-email-dzickus@redhat.com>
-References: <1398285605-147082-1-git-send-email-dzickus@redhat.com>
-	<1398285605-147082-3-git-send-email-dzickus@redhat.com>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+	Wed, 23 Apr 2014 17:16:21 -0400
+Date: Wed, 23 Apr 2014 22:16:09 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, LKML <linux-kernel@vger.kernel.org>,
+        pmladek@suse.cz, Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
+ offloading
+Message-ID: <20140423221609.0d3b536f@alan.etchedpixels.co.uk>
+In-Reply-To: <20140423111750.88ad799bb271a1fe0bed119f@linux-foundation.org>
+References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+	<1395770101-24534-9-git-send-email-jack@suse.cz>
+	<20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
+	<20140326192815.GC18118@quack.suse.cz>
+	<20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
+	<20140422112259.5f106a44@alan.etchedpixels.co.uk>
+	<20140423110847.GB17824@quack.suse.cz>
+	<20140423111750.88ad799bb271a1fe0bed119f@linux-foundation.org>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -27,91 +34,31 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014 16:40:05 -0400 Don Zickus <dzickus@redhat.com> wrote:
+> The problem of course will be in sizing the driver's queue.  Perhaps we
+> can have a driver which uses a huge queue, temporarily use that driver
+> during boot then switch over to a conventional console driver?
 
-> From: Aaron Tomlin <atomlin@redhat.com>
-> 
-> A 'softlockup' is defined as a bug that causes the kernel to
-> loop in kernel mode for more than a predefined period to
-> time, without giving other tasks a chance to run.
-> 
-> Currently, upon detection of this condition by the per-cpu
-> watchdog task, debug information (including a stack trace)
-> is sent to the system log.
-> 
-> On some occasions, we have observed that the "victim" rather
-> than the actual "culprit" (i.e. the owner/holder of the
-> contended resource) is reported to the user.
-> Often this information has proven to be insufficient to
-> assist debugging efforts.
-> 
-> To avoid loss of useful debug information, for architectures
-> which support NMI, this patch makes it possible to improve
-> soft lockup reporting. This is accomplished by issuing an
-> NMI to each cpu to obtain a stack trace.
-> 
-> If NMI is not supported we just revert back to the old method.
-> A sysctl and boot-time parameter is available to toggle this
-> feature.
-> 
-> --- a/include/linux/nmi.h
-> +++ b/include/linux/nmi.h
-> @@ -57,6 +57,9 @@ int hw_nmi_is_cpu_stuck(struct pt_regs *);
->  u64 hw_nmi_get_sample_period(int watchdog_thresh);
->  extern int watchdog_user_enabled;
->  extern int watchdog_thresh;
-> +#ifdef CONFIG_SMP
-> +extern int sysctl_softlockup_all_cpu_backtrace;
-> +#endif
+It depends how early in boot you are but this is true equally of kernel
+threads and other stuff.
 
-The ifdefs aren't really needed here.  If we omit them then error
-reporting happens at link time rather than at compile time, but that's
-a small price to pay for cleaning up the code.
+The big problem doing it early is that we have no mechanism to "open" a
+tty port without having a tty. We do now have the split for this for
+queueing input and to some extent output, but not all of the "open"
+aspect. The output buffering is also quite limited for most devices but
+that bit *is* easy to fix if needed.
 
-> +		if (softlockup_all_cpu_backtrace) {
-> +			/* Prevent multiple soft-lockup reports if one cpu is already
-> +			 * engaged in dumping cpu back traces
-> +			 */
-> +			if (test_and_set_bit(0, &soft_lockup_nmi_warn)) {
-> +				/* Someone else will report us. Let's give up */
-> +				__this_cpu_write(soft_watchdog_warn, true);
-> +				return HRTIMER_RESTART;
-> +			}
-> +		}
+Given this all only affects huge boxes and the only fix we have right now
+is hideously ugly I'd rather it stayed in the vendor hacks to their
+trees, until someone is inspired to sort it properly.
 
-You missed my suggestion here.
+On the plus side having a queueing console that can use tty methods would
+mean you could make any tty a console and special hacks for support would
+be improving reliability/early functionality rather than enabling.
 
-   text    data     bss     dec     hex filename
-   1519     524      24    2067     813 kernel/watchdog.o-before
-   1471     520      16    2007     7d7 kernel/watchdog.o-after
+Essentially you can create tty_port_kopen()/tty_port_kclose() and use
+the tty device write methods with a tty_port, it's just a matter of
+continuing to clean up the tty/tty_port split properly.
 
+It's not a small job though.
 
---- a/include/linux/nmi.h~watchdog-printing-traces-for-all-cpus-on-lockup-detection-fix
-+++ a/include/linux/nmi.h
-@@ -57,9 +57,7 @@ int hw_nmi_is_cpu_stuck(struct pt_regs *
- u64 hw_nmi_get_sample_period(int watchdog_thresh);
- extern int watchdog_user_enabled;
- extern int watchdog_thresh;
--#ifdef CONFIG_SMP
- extern int sysctl_softlockup_all_cpu_backtrace;
--#endif
- struct ctl_table;
- extern int proc_dowatchdog(struct ctl_table *, int ,
- 			   void __user *, size_t *, loff_t *);
---- a/kernel/watchdog.c~watchdog-printing-traces-for-all-cpus-on-lockup-detection-fix
-+++ a/kernel/watchdog.c
-@@ -31,7 +31,12 @@
- 
- int watchdog_user_enabled = 1;
- int __read_mostly watchdog_thresh = 10;
-+#ifdef CONFIG_SMP
- int __read_mostly sysctl_softlockup_all_cpu_backtrace;
-+#else
-+#define sysctl_softlockup_all_cpu_backtrace 0
-+#endif
-+
- static int __read_mostly watchdog_running;
- static u64 __read_mostly sample_period;
- 
-_
-
+Alan
