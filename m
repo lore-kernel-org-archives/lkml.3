@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755785AbaDWNQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:16:27 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:57470 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755574AbaDWNPG (ORCPT
+	id S1755463AbaDWNOm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:14:42 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:59821 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753434AbaDWNOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:15:06 -0400
-Date: Wed, 23 Apr 2014 15:11:42 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, Emilio Lopez <emilio@elopez.com.ar>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, devicetree@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>, andriy.shevchenko@intel.com,
-        linux-kernel@vger.kernel.org, zhuzhenhua@allwinnertech.com,
-        shuge@allwinnertech.com, linux-sunxi@googlegroups.com,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        dmaengine@vger.kernel.org
-Subject: Re: [PATCH v6 6/8] ARM: sun6i: Sort the NMI node by physical address
-Message-ID: <20140423131142.GR24905@lukather>
-References: <1397724379-15398-1-git-send-email-maxime.ripard@free-electrons.com>
- <1397724379-15398-7-git-send-email-maxime.ripard@free-electrons.com>
- <201404231439.26549.arnd@arndb.de>
+	Wed, 23 Apr 2014 09:14:39 -0400
+Date: Wed, 23 Apr 2014 15:14:33 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [GIT PULL 0/4] perf/urgent fixes
+Message-ID: <20140423131433.GB23224@gmail.com>
+References: <1398252682-17185-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DzFMwNuU1QL7hgxO"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201404231439.26549.arnd@arndb.de>
+In-Reply-To: <1398252682-17185-1-git-send-email-jolsa@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---DzFMwNuU1QL7hgxO
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+(Just reporting two bugs I found today - unrelated to your the 
+perf/urgent pull request.)
 
-On Wed, Apr 23, 2014 at 02:39:26PM +0200, Arnd Bergmann wrote:
-> On Thursday 17 April 2014, Maxime Ripard wrote:
-> > The DT are supposed to be ordered by physical address. Move the NMI nod=
-e where
-> > it belongs.
-> >=20
-> > Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
->=20
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
+1)
 
-Thanks!
+Even when the most modern unwind library is found, the autodetection 
+is spammy:
 
-Just applied.
 
-Maxime
+ Auto-detecting system features:
+ ...                         dwarf: [ on  ]
+ ...                         glibc: [ on  ]
+ ...                          gtk2: [ on  ]
+ ...                      libaudit: [ on  ]
+ ...                        libbfd: [ on  ]
+ ...                        libelf: [ on  ]
+ ...                       libnuma: [ on  ]
+ ...                       libperl: [ on  ]
+ ...                     libpython: [ on  ]
+ ...                      libslang: [ on  ]
+ ...                     libunwind: [ on  ]
+ ...            libdw-dwarf-unwind: [ on  ]
+ ...     DWARF post unwind library: libunwind
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+The 'DWARF post unwind library' line is somewhat superfluous. I 
+realize that it prints out the library selected - but that's obvious 
+from the 'libdw-dwarf-unwind' line above it already, right?
 
---DzFMwNuU1QL7hgxO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Furthermore, it breaks the autodetection output format.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
+2)
 
-iQIcBAEBAgAGBQJTV7wOAAoJEBx+YmzsjxAgnIwP/RoS5ePrSE58YIbkgXI9bw/a
-XOVHEk5vul8XGhOAUp3FL1O2Ux19wk+VGmUzXOH426tXJn7FBmrJiKZuBt7ulAwh
-j7kUKtHRV6zvkHcNnRStruCY8zSTxHo7DfgPGWCDJ7B6jUOQHk27ftOOWDZYGoLZ
-MQmEukdSVvSIgNpZ09zpHrUwrvDFYPnLak1eKBV1sHb8o3BGk2aexRDNZZ/OU4ut
-3+346wgHBp5In1q1HrrNAn+gtXHDTWyWgzf5PXdCnqMJFLzVfG/xAAk6Ktoco1SJ
-81m9sot+r67bHSc4edHhMp2CjPz0XVbWE/O2lifcBIOCGOhYasPCaBrlrIg1Qmim
-1O0plBUJKsZ/41tDH/LuK+fbyYLY7LBes7dUojCl0r/X8s+gHEE8WEdda+C1jPez
-QH15fBbALtrr5gtHDzW62hlOzBiwpgE1DZ8wvcpsI5QKm1dCCj0ajF6Nowx9bUis
-PcJDjiKDT4r5GShTtRQesQde5sze7tkoDYmL/dYr9qq3Gu7x+VMVR8UH9C0rPm+Q
-k+XBg/oKCdEvGOSqLOrYpIUaUuoiJ9mrKzuoFnQrLEXBV5/nIaCUu0F9y7D2ls07
-Zw17eslEBJt0Xk1YnS6BHUX4d4Pn/9sxH56rYh9Hg7jasOnWkecvXJe8/IB1eTuS
-n7dprVEfVDhtTonxqQz8
-=lqrT
------END PGP SIGNATURE-----
+On latest Ubuntu (14.04) the tip:master build fails with:
 
---DzFMwNuU1QL7hgxO--
+ /usr/bin/ld: cannot find -liberty
+ collect2: error: ld returned 1 exit status
+
+The autodetection sequence reports all green entries, so something's 
+funky going on there.
+
+Thanks,
+
+	Ingo
