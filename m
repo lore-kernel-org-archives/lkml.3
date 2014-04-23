@@ -1,90 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559AbaDWSNK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 14:13:10 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:47564 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbaDWSNI (ORCPT
+	id S1756335AbaDWSOF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 14:14:05 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43114 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751346AbaDWSOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 14:13:08 -0400
-Date: Wed, 23 Apr 2014 11:11:53 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Dave Jones <davej@redhat.com>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Subject: Re: 3.15rc2 hanging processes on exit.
-In-Reply-To: <CA+55aFziPHmSP5yjxDP6h_hRY-H2VgWZKsqC7w8+B9d9wXqn6Q@mail.gmail.com>
-Message-ID: <alpine.LSU.2.11.1404231057470.2678@eggly.anvils>
-References: <20140422180308.GA19038@redhat.com> <CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com> <alpine.LSU.2.11.1404221303060.6220@eggly.anvils> <20140423144901.GA24220@redhat.com>
- <CA+55aFziPHmSP5yjxDP6h_hRY-H2VgWZKsqC7w8+B9d9wXqn6Q@mail.gmail.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Wed, 23 Apr 2014 14:14:03 -0400
+Date: Wed, 23 Apr 2014 19:13:50 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20140423181350.GE12304@sirena.org.uk>
+References: <20140423113941.GL21613@lee--X1>
+ <20140423124629.GA12304@sirena.org.uk>
+ <20140423150047.GH6264@lee--X1>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="vW+D2DIg1cqRcJ5V"
+Content-Disposition: inline
+In-Reply-To: <20140423150047.GH6264@lee--X1>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [GIT PULL] regulator: First pull of MFD <-> Regulator IB (v3.16)
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014, Linus Torvalds wrote:
-> On Wed, Apr 23, 2014 at 7:49 AM, Dave Jones <davej@redhat.com> wrote:
-> >
-> > So for reasons I can't figure out, I've not been able to hit it on 3.14
 
-Thanks for trying.  Not the reassuring answer that I was hoping for,
-so I'd better give it a little more thought, to see if we have some
-reason in 3.15-rc why it should now appear.  Not worth spending too
-much effort on, though: Linus's fix looked good whatever.
+--vW+D2DIg1cqRcJ5V
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> > The only 'interesting' thing I've hit in overnight testing is this, which
-> > I'm not sure if I've also seen in my .15rc testing, but it doesn't look
-> > familiar to me.  (Though the vm oopses I've seen the last few months
-> > are starting to all blur together in my memory)
-> >
-> >
-> > kernel BUG at mm/mlock.c:82!
-> 
-> That's
-> 
->   mlock_vma_page:
->     BUG_ON(!PageLocked(page));
-> 
-> which is odd, because:
-> 
-> > Call Trace:
-> >  [<ffffffffbe196612>] try_to_unmap_nonlinear+0x2a2/0x530
-> >  [<ffffffffbe1972a7>] rmap_walk+0x157/0x320
-> >  [<ffffffffbe1976e3>] try_to_unmap+0x93/0xf0
-> >  [<ffffffffbe1bb8f6>] migrate_pages+0x3b6/0x7b0
-> 
-> All the calls to "try_to_unmap()" in mm/migrate.c are preceded by the pattern
-> 
->         if (!trylock_page(page)) {
->                  ....
->                 lock_page(page);
->         }
+On Wed, Apr 23, 2014 at 04:00:47PM +0100, Lee Jones wrote:
 
-Yes, that's true of the mm/migrate.c end, but the nonlinear
-try_to_unmap_cluster() (Being unable to point directly to the desired
-page) does this thing of unmapping a cluster of (likely unrelated) pages,
-in the hope that if it keeps getting called repeatedly, it will sooner or
-later have unmapped everything required.
+> > Can you drop the last one please, I've already applied it?  I'd have
+> > expected just the first two (or probably even just the second one).  If
+> > you need it in your tree just grab the branch (or I can tag it if you
+> > like).
 
-> 
-> where there are just a few "goto out" style cases for the "ok, we're
-> not going to wait for this page lock" in there.
-> 
-> Very odd.  Does anybody see anything I missed?
+> > I tend to apply these things early where they don't have dependencies
+> > due to the large number of reposts for unrelated changes in the series
+> > that tend to happen (and often several very similar serieses being in
+> > flight at once); I frequently end up just deleting them unread.  Not
+> > sure what the best way to handle this stuff is in general.
 
-Easily explained (correct me if I'm wrong): Dave is reporting this from
-his testing of 3.14, but Linus is looking at his 3.15-rc git tree, which
-now contains
+> I know that you due, which I think makes things easier for you, but
+> more difficult for everyone else (author, other maintainers). Applying
+> cross-subsystem patches also makes things difficult down the line.
 
-commit 57e68e9cd65b4b8eb4045a1e0d0746458502554c
-Author: Vlastimil Babka <vbabka@suse.cz>
-Date:   Mon Apr 7 15:37:50 2014 -0700
-    mm: try_to_unmap_cluster() should lock_page() before mlocking
+It's not really my convenience here - it's about trying progress the
+serieses and cut the amount of code that people are having to carry.
 
-precisely to fix this (long-standing but long-unnoticed) issue,
-which Sasha reported a couple of months ago.
+People were complaining about things getting stalled due to lack of
+review but of course one of the reasons for that is that it seems that
+the early bits of the series commonly need respins and there's frequent
+delays too (probably compounded by the frequent respins).  That creates
+a sense that these things are going nowhere slowly (or are just reposts
+of already reviewed changes) which discourages spending time on them
+until someone actively chases and then compounds the problem.
 
-Hugh
+> Not sure what do do about the last patch now, as it has MFD changes
+> which aren't in the MFD tree. All well and good if no one else touches
+> that hunk for the remainder of the cycle, but if they do we're likely
+> to have merge conflicts.
+
+As I said above just pull the branch into MFD - like I say I can tag it
+if you want, in fact I just pushed one:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/tps65090-reg-pdata-v3.16
+
+That's what all the tiny topic branches are for, to make it easy to do
+merges when needed - there shouldn't be any great difficulty here?
+
+> > >  Documentation/devicetree/bindings/regulator/tps65090.txt |  4 ++++
+> > >  drivers/mfd/tps65090.c                                   | 41 +++++++++++++++++++++++++----------------
+> > >  drivers/power/tps65090-charger.c                         | 11 -----------
+> > >  drivers/regulator/tps65090-regulator.c                   | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> > >  include/linux/mfd/tps65090.h                             | 19 +++++++++++++++++++
+> > >  5 files changed, 104 insertions(+), 27 deletions(-)
+
+> > Your formatting for these still seems to be messing up.
+
+> How so? Looks fine for me I think?
+
+The lines are *way* over 80 columns, look to be formatted for about 130
+or something.
+
+--vW+D2DIg1cqRcJ5V
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTWALbAAoJELSic+t+oim9ZFcP/RaTgWcrW/71aQfkFZzuWc0Y
+YuJn1xdtk0oqXUNoaAJb0yB1xpuaqXlyi5IktPAs/zty17CkTx9urbjN6bBTCu9d
+Nut7PoFkecx/HcM+ibv+cPp2UF5SZVZVCpJieDeOoUVnBea+4Qu8D8AZcNf78R0m
+k8aIMRCCVbzPisbvcoNyp0cp/bhXKkRVsrTImgcbnWryUGndgG3Ho0VTvabVd8B/
+fAW7kcXNqopS4zbhRERnz7DpZNmVzHM9klJ9PFgFtr3wgZcDOdsy7fOAFQESfL1i
+dpp8f6CXm4jl7iD0Q21dcMl/y4o9TGe7mZ0BwsvWhFGw8RwgZWIpOVJj2dLjg37+
+kh92k5XFqYQfpsU+ZsKfpoTiWjZ1lghcoJ0Io1bz/QD1SGoM6niMsV9paHLvLgWV
+q6R2zd+KGMvBkpAxW30x7gNbdFHAA2WU6iTY4NVUPO9IlFYawMnaXwk6k9vtN77O
+689KlZfL3qry8v3sP3xLqUbu1DQtKsJvvTitCUD/eVGepImLyP1Gnr58E36Pj66c
+C9byaqp8l/HGWKlGizpu4Xw1YOhdm9HCliXWXj/2jjakNIBqll41JY0/9JD0kM1G
+IyxdAsoy0xC1zTrT2v31o0NYewIO/3NKVNDB3Z5JAxEyRCbbFrUdXhD7I3l7Dsr2
+CJ0WsxxR5acOqaKnxe0v
+=M884
+-----END PGP SIGNATURE-----
+
+--vW+D2DIg1cqRcJ5V--
