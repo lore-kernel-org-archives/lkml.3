@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbaDWE7U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 00:59:20 -0400
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:37585 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215AbaDWE7T (ORCPT
+	id S1752427AbaDWFDw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 01:03:52 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:54414 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaDWFDu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 00:59:19 -0400
-X-Original-SENDERIP: 10.177.220.145
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Wed, 23 Apr 2014 14:00:12 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Weijie Yang <weijie.yang.kh@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Weijie Yang <weijie.yang@samsung.com>,
-        Minchan Kim <minchan@kernel.org>, Nitin Gupta <ngupta@vflare.org>,
-        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
-        Bob Liu <bob.liu@oracle.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] zram: correct offset usage in zram_bio_discard
-Message-ID: <20140423050012.GA17173@js1304-P5Q-DELUXE>
-References: <000001cf5dd8$ecf1c360$c6d54a20$%yang@samsung.com>
- <20140422125539.f40a414ca0dbae703a23b977@linux-foundation.org>
- <CAL1ERfM2VGyNUGYdQQyEyqyycnPMoHZn5Vk2Fo3WXL37KmFzCA@mail.gmail.com>
- <20140423030855.GB11184@js1304-P5Q-DELUXE>
- <CAL1ERfNt3VnN8p20P-Gw3HsvzvJZqUwBhikdN5gY+=OsV-8bRQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL1ERfNt3VnN8p20P-Gw3HsvzvJZqUwBhikdN5gY+=OsV-8bRQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 Apr 2014 01:03:50 -0400
+Message-ID: <1398229422.2805.49.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: Re: [RFC PATCH v5 2/2] Use kernfs_break_active_protection() for
+ device online store callbacks
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        rafael.j.wysocki@intel.com, toshi.kani@hp.com
+Date: Wed, 23 Apr 2014 13:03:42 +0800
+In-Reply-To: <20140422204455.GB3615@mtj.dyndns.org>
+References: <1397529877.13188.68.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140415145017.GK1863@htj.dyndns.org>
+	 <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140416151749.GE1257@htj.dyndns.org>
+	 <1397717444.4034.15.camel@ThinkPad-T5421>
+	 <20140417151728.GK15326@htj.dyndns.org>
+	 <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>
+	 <1398072230.2755.43.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140421224606.GE22730@htj.dyndns.org>
+	 <1398137679.2805.28.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140422204455.GB3615@mtj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042305-1948-0000-0000-0000088C9665
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 11:52:08AM +0800, Weijie Yang wrote:
-> On Wed, Apr 23, 2014 at 11:08 AM, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> > On Wed, Apr 23, 2014 at 10:32:30AM +0800, Weijie Yang wrote:
-> >> On Wed, Apr 23, 2014 at 3:55 AM, Andrew Morton
-> >> <akpm@linux-foundation.org> wrote:
-> >> > On Tue, 22 Apr 2014 11:14:02 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
-> >> >
-> >> >> we want to skip the logical block which is partially covered by
-> >> >> the discard bio, so check the remaining size and subtract it if
-> >> >> there is a need to goto the next logical block.
-> >> >>
-> >> >> This patch corrects the offset usage in zram_bio_discard.
-> >> >>
-> >> >
-> >> > What were the end-user visible effects of the bug?
-> >> >
-> >> > Please always include this information when fixing something so that
-> >> > others can work out which kernel(s) need patching.
-> >> >
-> >>
-> >> Thanks for your advise, I will resend this patch and add the end-user
-> >> visible effect information.
-> >
-> > Thanks for fixing it.
-> >
-> > As far as I understand, there is no end-user visible effect, because
-> > request size is alway PAGE_SIZE aligned and if n < PAGE_SIZE,
-> > no real operation happens. Am I missing?
+On Tue, 2014-04-22 at 16:44 -0400, Tejun Heo wrote:
+> Hello,
 > 
-> The zram only limit ZRAM_LOGICAL_BLOCK_SIZE(4K) aligned,
-> not PAGE_SIZE aligned.
+> On Tue, Apr 22, 2014 at 11:34:39AM +0800, Li Zhong wrote:
+> > > Is this assumption true?  If so, can we add lockdep assertions in
+> > > places to verify and enforce this?  If not, aren't we just feeling
+> > > good when the reality is broken?
+> > 
+> > It seems not true ... I think there are devices that don't have the
+> > online/offline concept, we just need to add it, remove it, like ethernet
+> > cards. 
+> > 
+> > Maybe we could change the comments above, like:
+> > 	/* We assume device_hotplug_lock must be acquired before 
+> > 	 * removing devices, which have online/offline sysfs knob, 
+> > 	 * and some locks are needed to serialize the online/offline
+> > 	 * callbacks and device removing. ...
+> > ? 
+> > 
+> > And we could add lockdep assertions in cpu and memory related code? e.g.
+> > remove_memory(), unregister_cpu()
+> > 
+> > Currently, remove_memory() has comments for the function:
+> > 
+> >  * NOTE: The caller must call lock_device_hotplug() to serialize hotplug
+> >  * and online/offline operations before this call, as required by
+> >  * try_offline_node().
+> >  */
+> >     
+> > maybe it could be removed with the lockdep assertion.
 > 
-> Consider the following scenario:
-> on some architecture or config, PAGE_SIZE is 64K for example
-> filesystem is set up on zram disk without PAGE_SIZE aligned.
-> a discard bio leads to a offset = 4K, size=72K
-> normally, it should not really discard any physical block as it partially
-> cover two physical blocks.
-> However, with the current offset usage, it will discard the second
-> physical block and free its memory, which will cause filesystem breakdown.
+> I'm confused about the overall locking scheme.  What's the role of
+> device_hotplug_lock?  Is that solely to prevent the sysfs deadlock
+> issue?  Or does it serve other synchronization purposes depending on
+> the specific subsystem?  If the former, the lock no longer needs to
+> exist.  The only thing necessary would be synchronization between
+> device_del() deleting the sysfs file and the unbreak helper invoking
+> device-specific callback.  If the latter, we probably should change
+> that.  Sharing hotplug lock across multiple subsystems through driver
+> core sounds like a pretty bad idea.
+
+I think it's the latter. I think device_{on|off}line is better to be
+done in some sort of lock which prevents the device from being removed,
+including some preparation work that needs be done before device_del().
+
+Thanks, Zhong
+
+> 
+> Thanks.
 > 
 
-I misunderstood what discard_granularity means. I thought that if I set
-discard_granularity=PAGE_SIZE, the size of discard request is aligned to
-PAGE_SIZE. But, by looking at the code, I notice that isn't true. So now, I
-understand your patch compeletely. Thanks again.
 
-Thanks.
