@@ -1,59 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676AbaDWCpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 22:45:18 -0400
-Received: from mga01.intel.com ([192.55.52.88]:17308 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751899AbaDWCpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 22:45:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,908,1389772800"; 
-   d="scan'208";a="525291354"
-Message-ID: <53572939.7020509@linux.intel.com>
-Date: Wed, 23 Apr 2014 10:45:13 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755243AbaDWCqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 22:46:07 -0400
+Received: from mx0b-0016f401.pphosted.com ([67.231.156.173]:64625 "EHLO
+	mx0b-0016f401.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754754AbaDWCqF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 22:46:05 -0400
+Date: Wed, 23 Apr 2014 10:43:43 +0800
+From: Jisheng Zhang <jszhang@marvell.com>
+To: Antoine =?UTF-8?B?VMOpbmFydA==?= 
+	<antoine.tenart@free-electrons.com>
+CC: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] ARM: berlin: add the AHCI node for the BG2CD
+Message-ID: <20140423104343.45979ab0@xhacker>
+In-Reply-To: <1398181105-19714-7-git-send-email-antoine.tenart@free-electrons.com>
+References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
+	<1398181105-19714-7-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Bugfix] sched: fix possible invalid memory access caused by
- CPU hot-addition
-References: <1398144435-26271-1-git-send-email-jiang.liu@linux.intel.com> <20140422081515.GF11182@twins.programming.kicks-ass.net>
-In-Reply-To: <20140422081515.GF11182@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.11.96,1.0.14,0.0.0000
+ definitions=2014-04-23_01:2014-04-22,2014-04-23,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=outbound_notspam policy=outbound score=0 spamscore=0 suspectscore=2
+ phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0 reason=mlx
+ scancount=1 engine=7.0.1-1402240000 definitions=main-1404230051
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-	It's not for memoryless node, but to solve a race window
-in CPU hot-addition. The related CPU hot-addition flow is:
-1) Handle CPU hot-addition event
-1.a) gather platform specific information
-1.b) associate hot-added CPU with a node
-1.c) create CPU device
-2) User online hot-added CPUs through sysfs:
-2.a)	cpu_up()
-2.b)		->try_online_node()
-2.c)			->hotadd_new_pgdat()
-2.d)			->node_set_online()
+Hi Antoine,
 
-So between 1.b and 2.c, kmalloc_node(nid) may cause invalid
-memory access without the node_online(nid) check.
+On Tue, 22 Apr 2014 08:38:25 -0700
+Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
 
-Best Regards!
-Gerry
+> The BG2CD has an AHCI SATA controller. Add the corresponding node
+> in its device tree.
 
-On 2014/4/22 16:15, Peter Zijlstra wrote:
-> On Tue, Apr 22, 2014 at 01:27:15PM +0800, Jiang Liu wrote:
->> When calling kzalloc_node(size, flags, node), we should first check
->> whether node is onlined, otherwise it may cause invalid memory access
->> as below.
-> 
-> But this is only for memory less node crap, right? 
-> 
+BG2CD doesn't has AHCI controller. 
+
+Thanks
