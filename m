@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbaDWCSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 22:18:39 -0400
-Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:10383 "EHLO
-	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751547AbaDWCSh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 22:18:37 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aq9xAKUiV1N5LEcvPGdsb2JhbABYgwaIbqMFmWeBExcDAQEBATg1giUBAQQBOhwjBQsIAxgJJQ8FJQMHGhOIOQfPQxcWjVwiQgeEOASYb5RFgVErgSwCHg
-Date: Wed, 23 Apr 2014 12:18:35 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Speedy Milan <speedy.milan@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ivan Pantovic <gyro.ivan@gmail.com>,
-        xfs@oss.sgi.com
-Subject: Re: rm -f * on large files very slow on XFS + MD RAID 6 volume of
- 15x 4TB of HDDs (52TB)
-Message-ID: <20140423021835.GI15995@dastard>
-References: <CAHuzUScfp19c_th_pfsZs05+yDz34MuEH-P1f+FF1dcivfH=5Q@mail.gmail.com>
+	id S1753953AbaDWC0D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 22:26:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15969 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaDWCZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 22:25:59 -0400
+From: Steve Grubb <sgrubb@redhat.com>
+To: Richard Guy Briggs <rgb@redhat.com>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org, davem@davemloft.net,
+        jamal@mojatatu.com, eparis@redhat.com
+Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
+Date: Tue, 22 Apr 2014 22:25:55 -0400
+Message-ID: <26389161.vp9iWSVLPX@x2>
+Organization: Red Hat
+User-Agent: KMail/4.12.4 (Linux/3.13.10-200.fc20.x86_64; KDE/4.12.4; x86_64; ; )
+In-Reply-To: <cover.1398215388.git.rgb@redhat.com>
+References: <20140422.161904.1187535812839850973.davem@davemloft.net> <cover.1398215388.git.rgb@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHuzUScfp19c_th_pfsZs05+yDz34MuEH-P1f+FF1dcivfH=5Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[cc xfs@oss.sgi.com]
+On Tuesday, April 22, 2014 09:31:52 PM Richard Guy Briggs wrote:
+> This is a patch set Eric Paris and I have been working on to add a
+> restricted capability read-only netlink multicast socket to kernel audit to
+> enable userspace clients such as systemd/journald to receive audit logs, in
+> addition to the bidirectional auditd userspace client.
 
-On Mon, Apr 21, 2014 at 10:58:53PM +0200, Speedy Milan wrote:
-> I want to report very slow deletion of 24 50GB files (in total 12 TB),
-> all present in the same folder.
+Do have the ability to separate of secadm_r and sysadm_r? By allowing this, we 
+will leak to a sysadmin that he is being audited by the security officer. In a 
+lot of cases, they are one in the same person. But for others, they are not. I 
+have a feeling this will cause problems for MLS systems.
 
-total = 1.2TB?
+Also, shouldn't we have an audit event for every attempt to connect to this 
+socket? We really need to know where this information is getting leaked to.
 
-> OS is CentOS 6.4, with upgraded kernel 3.13.1.
+-Steve
+
+
+> Currently, auditd has the CAP_AUDIT_CONTROL and CAP_AUDIT_WRITE capabilities
+> (but uses CAP_NET_ADMIN).  The CAP_AUDIT_READ capability will be added for
+> use by read-only AUDIT_NLGRP_READLOG multicast group clients to the kaudit
+> subsystem.  This will remove the dependence on CAP_NET_ADMIN for the
+> multicast read-only socket.
 > 
-> The hardware is a Supermicro server with 15x 4TB WD Se drives in MD
-> RAID 6, totalling 52TB of free space.
 > 
-> XFS is formated directly on the RAID volume, without LVM layers.
+> Patches 1-3 provide a way for per-protocol bind functions to
+> signal an error and to be able to clean up after themselves.
 > 
-> Deletion was done with rm -f * command, and it took upwards of 1 hour
-> to delete the files.
+> The first netfilter cleanup patch has already been accepted by a netfilter
+> maintainer, though I don't see it upstream yet, so it is included for
+> completeness.
 > 
-> File system was filled completely prior to deletion.
+> The second patch adds the per-protocol bind function return code to signal
+> to the netlink code that no further processing should be done and to undo
+> the work already done.
+> V1: This rev fixes a bug introduced by flattening the code in the last
+> posting. *V2: This rev moves the per-protocol bind call above the socket
+> exposure call and refactors out the unbind procedure.
+> 
+> The third provides a way per protocol to undo bind actions on DROP.
+> 
+> 
+> Patches 4-6 implement the audit multicast socket with capability checking.
+> 
+> The fourth patch adds the bind function capability check to multicast join
+> requests for audit.
+> 
+> The fifth patch adds the audit log read multicast group.  An assumption has
+> been made that systemd/journald reside in the initial network namespace. 
+> This could be changed to check the actual network namespace of
+> systemd/journald should this assumption no longer be true since audit now
+> supports all network namespaces.  This version of the patch now directly
+> sends the broadcast when the packet is ready rather than waiting until it
+> passes the queue.
+> 
+> The sixth checks if any clients actually exist before sending.
+> 
+> 
+> Since the net tree is busier than the audit tree, conflicts are more likely
+> and the audit patches depend on the net patches, it is proposed to have the
+> net tree carry this entire patchset for 3.16.  Are the net maintainers ok
+> with this?
+> 
+> 
+> https://bugzilla.redhat.com/show_bug.cgi?id=887992
+> 
+> First posted:  
+> https://www.redhat.com/archives/linux-audit/2013-January/msg00008.html
+> https://lkml.org/lkml/2013/1/27/279
+> 
+> Please find source for a test program at:
+> 	http://people.redhat.com/rbriggs/audit-multicast-listen/
+> 
+> 
+> Richard Guy Briggs (6):
+>   netlink: simplify nfnetlink_bind
+>   netlink: have netlink per-protocol bind function return an error
+>     code.
+>   netlink: implement unbind to netlink_setsockopt
+>     NETLINK_DROP_MEMBERSHIP
+>   audit: add netlink audit protocol bind to check capabilities on
+>     multicast join
+>   audit: add netlink multicast group for log read
+>   audit: send multicast messages only if there are listeners
+> 
+>  include/linux/netlink.h             |    3 +-
+>  include/uapi/linux/audit.h          |    8 ++++
+>  include/uapi/linux/capability.h     |    7 +++-
+>  kernel/audit.c                      |   64 ++++++++++++++++++++++++++++++--
+> net/netfilter/nfnetlink.c           |   10 ++---
+>  net/netlink/af_netlink.c            |   70
+> +++++++++++++++++++++++++---------- net/netlink/af_netlink.h            |  
+>  6 ++-
+>  security/selinux/include/classmap.h |    2 +-
+>  8 files changed, 135 insertions(+), 35 deletions(-)
 
-Oh, that's bad. it's likely you fragmented the files into
-millions of extents?
-
-> rm was mostly waiting (D state), probably for kworker threads, and
-
-No, waiting for IO.
-
-> iostat was showing big HDD utilization numbers and very low throughput
-> so it looked like a random HDD workload was in effect.
-
-Yup, smells like file fragmentation. Non-fragmented 50GB files
-should be removed in a few milliseconds. but if you've badly
-fragmented the files, there could be 10 million extents in a 50GB
-file. A few milliseconds per extent removal gives you....
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
