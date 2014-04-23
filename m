@@ -1,78 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaDWMQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:16:18 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7766 "EHLO mga01.intel.com"
+	id S1754205AbaDWMRx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:17:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60461 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751800AbaDWMQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:16:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,911,1389772800"; 
-   d="scan'208";a="525535628"
-Date: Wed, 23 Apr 2014 15:23:44 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: Adam Williamson <awilliam@redhat.com>
-Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        "Jin, Yao" <yao.jin@linux.intel.com>,
-        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
-        mathias.nyman@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
- ASUS T100TA
-Message-ID: <20140423122344.GX30677@intel.com>
-References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
- <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
- <5353A1F6.60602@linux.intel.com>
- <5353B8A4.1080900@linux.intel.com>
- <1398007690.2674.0.camel@adam.happyassassin.net>
- <5354BA59.2000008@linux.intel.com>
- <53551D0F.40906@linux.intel.com>
- <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
- <1398230210.2704.8.camel@adam.happyassassin.net>
- <20140423083430.GV30677@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140423083430.GV30677@intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751446AbaDWMRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 08:17:52 -0400
+Message-ID: <1398255470.32091.3.camel@linux-fkkt.site>
+Subject: Re: [PATCH v2 11/24] input: Port hid-holtekff to ff-memless-next
+From: Oliver Neukum <oneukum@suse.de>
+To: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
+        anssi.hannula@iki.fi, simon@mungewell.org
+Date: Wed, 23 Apr 2014 14:17:50 +0200
+In-Reply-To: <1398175209-9565-12-git-send-email-madcatxster@devoid-pointer.net>
+References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
+	 <1398175209-9565-12-git-send-email-madcatxster@devoid-pointer.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.2 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 11:34:30AM +0300, Mika Westerberg wrote:
-> On Tue, Apr 22, 2014 at 10:16:50PM -0700, Adam Williamson wrote:
-> > Well, I can't actually concur. See my results in
-> > https://bugzilla.kernel.org/show_bug.cgi?id=68291#c44 .
-> > 
-> > 1. A kernel with neither patch applied (and no hid-rmi driver) results
-> > in a working touchscreen.
-> > 2. A kernel with only v3 of Doug's patch from
-> > https://bugzilla.kernel.org/show_bug.cgi?id=67921 results in a working
-> > touchscreen.
-> > 3. A kernel with both v3 of Doug's patch and this IRQ descriptor
-> > conflict "fix" results in a broken touchscreen.
-> > 
-> > Seems to me there really is some kind of problem with this patch...
-> 
-> Can you try so that you have both patches applied and then this one? I'm
-> suspecting that the ACPI GPIO operation region support might do something
-> unexpected in this case.
+On Tue, 2014-04-22 at 15:59 +0200, Michal Malý wrote:
+>  static int holtekff_play(struct input_dev *dev, void *data,
+> -                        struct ff_effect *effect)
+> +                        const struct mlnx_effect_command *command)
+>  {
+>         struct hid_device *hid = input_get_drvdata(dev);
+>         struct holtekff_device *holtekff = data;
+> +       const struct mlnx_rumble_force *rumble_force =
+> &command->u.rumble_force;
+>         int left, right;
+>         /* effect type 1, length 65535 msec */
+>         u8 buf[HOLTEKFF_MSG_LENGTH] =
+>                 { 0x01, 0x01, 0xff, 0xff, 0x10, 0xe0, 0x00 };
 
-I'm able to reproduce this problem here now and it seems not related to the
-ACPI GPIO operation regions.
+On the kernel stack.
 
-This patch changes call to irq_domain_add_linear() to
-irq_domain_add_simple() and somehow that changes the behaviour so that I
-get non-working touchscreen:
+>  
+> -       left = effect->u.rumble.strong_magnitude;
+> -       right = effect->u.rumble.weak_magnitude;
+> -       dbg_hid("called with 0x%04x 0x%04x\n", left, right);
+> +       switch (command->cmd) {
+> +       case MLNX_START_RUMBLE:
+> +               left = rumble_force->strong;
+> +               right = rumble_force->weak;
+> +               dbg_hid("called with 0x%04x 0x%04x\n", left, right);
+>  
+> -       if (!left && !right) {
+> -               holtekff_send(holtekff, hid, stop_all6);
+> -               return 0;
+> -       }
+> +               if (!left && !right) {
+> +                       holtekff_send(holtekff, hid, stop_all6);
+> +                       return 0;
+> +               }
+>  
+> -       if (left)
+> -               buf[1] |= 0x80;
+> -       if (right)
+> -               buf[1] |= 0x40;
+> +               if (left)
+> +                       buf[1] |= 0x80;
+> +               if (right)
+> +                       buf[1] |= 0x40;
+>  
+> -       /* The device takes a single magnitude, so we just sum them
+> up. */
+> -       buf[6] = min(0xf, (left >> 12) + (right >> 12));
+> +               /* The device takes a single magnitude, so we just sum
+> them up. */
+> +               buf[6] = min(0xf, (left >> 12) + (right >> 12));
+>  
+> -       holtekff_send(holtekff, hid, buf);
+> -       holtekff_send(holtekff, hid, start_effect_1);
+> +               holtekff_send(holtekff, hid, buf);
+> +               holtekff_send(holtekff, hid, start_effect_1);
+> +               return 0;
+> +       case MLNX_STOP_RUMBLE:
+> +               holtekff_send(holtekff, hid, stop_all6);
+> +               return 0;
+> +       default:
+> +               return -EINVAL;
+> +       }
+>  
+>         return 0;
+>  }
 
-...
-[   37.434998] i2c_hid i2c-ATML1000:00: failed to reset device.
-[   37.435009] i2c_hid i2c-ATML1000:00: i2c_hid_set_power
-[   37.435021] i2c_hid i2c-ATML1000:00: __i2c_hid_command: cmd=fb 00 01 08
-[   38.439897] i2c_hid i2c-ATML1000:00: can't add hid device: -61
-[   38.440749] i2c_hid: probe of i2c-ATML1000:00 failed with error -61
+This looks very much like doing DMA on the kernel stack.
+That is very strictly forbidden. The bug is also in the current
+code, but would you care to fix it up?
 
-It never gets an interrupt when the device reset is ready.
+	Regards
+		Oliver
 
-Jin, do you have any idea what is going on?
+
