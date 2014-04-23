@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084AbaDWJ3b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 05:29:31 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:36420 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755028AbaDWJ0P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 05:26:15 -0400
-From: Chander Kashyap <chander.kashyap@linaro.org>
-To: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: lorenzo.pieralisi@arm.com, daniel.lezcano@linaro.org, rjw@rjwysocki.net,
-        kgene.kim@samsung.com, Chander Kashyap <chander.kashyap@linaro.org>,
-        Chander Kashyap <k.chander@samsung.com>
-Subject: [Patch v2 1/4] cpuidle: config: Add SOC_EXYNOS5420 entry to select cpuidle-big-little driver
-Date: Wed, 23 Apr 2014 14:55:51 +0530
-Message-Id: <1398245154-18771-2-git-send-email-chander.kashyap@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398245154-18771-1-git-send-email-chander.kashyap@linaro.org>
-References: <1398080958-21677-5-git-send-email-chander.kashyap@linaro.org>
- <1398245154-18771-1-git-send-email-chander.kashyap@linaro.org>
+	id S1756137AbaDWJap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 05:30:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57385 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752642AbaDWJal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 05:30:41 -0400
+Date: Wed, 23 Apr 2014 11:30:37 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jan Kara <jack@suse.cz>, One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
+ offloading
+Message-ID: <20140423093037.GA17824@quack.suse.cz>
+References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+ <1395770101-24534-9-git-send-email-jack@suse.cz>
+ <20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
+ <20140326192815.GC18118@quack.suse.cz>
+ <20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Exynos5420 is a big-little SoC from Samsung. It has 4 A15 and 4 A7 cores.
-In order to use generic cpuidle-big-little driver, this patch adds Exynos5420
-specific check to initialize generic cpuidle driver.
+On Fri 18-04-14 11:54:38, Andrew Morton wrote:
+> On Wed, 26 Mar 2014 20:28:15 +0100 Jan Kara <jack@suse.cz> wrote:
+> 
+> > > All the afflicted consoles are serial, all go via the uart layer as far
+> > > as I can see.
+> > > 
+> > > The uart layer has a queue mechanism that could be used
+> >   I'm sorry, I don't follow here - what can the uart queueing be used for?
+> 
+> Alan, I'm desperate to avoid adding all this complexity to core printk
+> code to solve such a rare problem.  It'd be great if you could flesh out
+> any alternative ideas please.
+  OK, Andrew, can you please queue at least patches 1-4 in the series?
+Noone is objecting to those, they make sense on their own, and it makes life
+somewhat simpler for me. Thanks!
 
-Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
-Signed-off-by: Chander Kashyap <k.chander@samsung.com>
----
-Changes in v2:
-	1. Changed config macro from SOC_EXYNOS5420 to SOC_EXYNOS5420
- drivers/cpuidle/Kconfig.arm |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/cpuidle/Kconfig.arm b/drivers/cpuidle/Kconfig.arm
-index 97ccc31..d9596e7 100644
---- a/drivers/cpuidle/Kconfig.arm
-+++ b/drivers/cpuidle/Kconfig.arm
-@@ -4,7 +4,7 @@
- 
- config ARM_BIG_LITTLE_CPUIDLE
- 	bool "Support for ARM big.LITTLE processors"
--	depends on ARCH_VEXPRESS_TC2_PM
-+	depends on ARCH_VEXPRESS_TC2_PM || ARCH_EXYNOS
- 	select ARM_CPU_SUSPEND
- 	select CPU_IDLE_MULTIPLE_DRIVERS
- 	help
+								Honza
 -- 
-1.7.9.5
-
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
