@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757555AbaDWPHo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:07:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61680 "EHLO mx1.redhat.com"
+	id S932491AbaDWPHy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:07:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39352 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755833AbaDWPHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:07:40 -0400
-Date: Wed, 23 Apr 2014 17:07:14 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 7/7] perf hists/tui: Count callchain rows separately
-Message-ID: <20140423150714.GA2230@krava.brq.redhat.com>
-References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
- <1398236408-8856-8-git-send-email-namhyung@kernel.org>
- <20140423142915.GA27585@krava.brq.redhat.com>
- <1398265053.1696.21.camel@leonhard>
+	id S1757561AbaDWPHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:07:49 -0400
+Date: Wed, 23 Apr 2014 11:07:44 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Simo Sorce <ssorce@redhat.com>, Daniel J Walsh <dwalsh@redhat.com>,
+        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        lpoetter@redhat.com, cgroups@vger.kernel.org, kay@redhat.com,
+        Network Development <netdev@vger.kernel.org>
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+Message-ID: <20140423150744.GC22755@redhat.com>
+References: <CALCETrVq4HRpfWOAbZAQbyjuraQd=OxnW=WjSoe5JgBzRStiKg@mail.gmail.com>
+ <1397756025.2628.64.camel@willson.li.ssimo.org>
+ <CALCETrVBJFgKwRKBE2jAG6kiGgkJ+MyQiw2nyz5yj0h68kCk9A@mail.gmail.com>
+ <1397759013.2628.86.camel@willson.li.ssimo.org>
+ <20140417185023.GA32527@redhat.com>
+ <1397761817.2628.113.camel@willson.li.ssimo.org>
+ <20140417191646.GA2461@redhat.com>
+ <CALCETrW3F1+3qF3thrAmuoWVbRveBJ2=owpigh4mv6iAafoQCw@mail.gmail.com>
+ <20140421150307.GA4367@redhat.com>
+ <CALCETrW5RvbW-Hz_Y7oULP6sEfdhGBh51+mTj4RwobHV-ji+Kg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398265053.1696.21.camel@leonhard>
+In-Reply-To: <CALCETrW5RvbW-Hz_Y7oULP6sEfdhGBh51+mTj4RwobHV-ji+Kg@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 11:57:33PM +0900, Namhyung Kim wrote:
-> 2014-04-23 (수), 16:29 +0200, Jiri Olsa:
-> > On Wed, Apr 23, 2014 at 04:00:08PM +0900, Namhyung Kim wrote:
-> > > When TUI hist browser expands/collapses callchains it accounted number
-> > > of callchain nodes into total entries to show.  However this code
-> > > ignores filtering so that it can make the cursor go to out of screen.
-> > 
-> > SNIP
-> > 
-> > hi,
-> > I needed following patch, otherwise following test case would segfault
-> > 
-> > - record with -g
-> > - report - unfold one symbol
-> > - search for nonsense
-> > 
-> > the reason is that after unfolding the symbol the nr_callchain_rows
-> > will get some number, which will cause the hist_browser__nr_entries
-> > function return (entries != 0) actually (entries == nr_callchain_rows)
-> > even if there's no entry passing the filter
-> 
-> Argh, right..  Thanks for spotting this.  I guess other filters (thread,
-> dso) have same problem.
-> 
-> > 
-> > fixing that by unfolding everything after the filter and reseting
-> > the nr_callchain_rows number
-> 
-> Hmm.. I think hists__remove_entry_filter() already folds them so how
-> about just setting ->nr_callchain_rows to 0 in hist_browser__reset()
-> instead?
+On Mon, Apr 21, 2014 at 08:47:51AM -0700, Andy Lutomirski wrote:
 
-ok, sounds good
+[..]
+> To summarize from my reading of how this crap words:
+> 
+> When a unit is created, systemd opens a stream socket pointing at
+> /run/systemd/journal/stdout.  It tells journald the unit, along with
+> lots of other useful information.  journald records this association
+> between the socket and the unit.  Systemd could tell journald the
+> cgroup here, too, if it wanted it.
 
-thanks,
-jirka
+Ok, that's a fair point. I looked at  connect_logger_as() and I see
+that systemd does connect() on behalf of service being launched and
+sets up fd and passes bunch of information to journald. So cgroup could
+be one of the information and that would act like SO_PEERCGROUP in
+this specific case. Not sure why it is not done though. I will let
+systemd folks comment on that. I don't have enough background here.
+
+But this works in this specific case where there is a mechanism to 
+pass meta information to receiver. What about SSSD use case where 
+they want to know the cgroup of client and possibly provide differentiated
+service based on client.
+
+Also Dan Walsh mentioned that what if a process directly wants to open
+journal socket and log something to journal. 
+
+Thanks
+Vivek
