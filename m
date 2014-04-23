@@ -1,88 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaDWMzI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:55:08 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59527 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552AbaDWMzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:55:04 -0400
-Date: Wed, 23 Apr 2014 08:54:55 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Rientjes <rientjes@google.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH -mm -repost] memcg: do not hang on OOM when killed by
- userspace OOM access to memory reserves
-Message-ID: <20140423125455.GA31836@cmpxchg.org>
-References: <1398247922-2374-1-git-send-email-mhocko@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398247922-2374-1-git-send-email-mhocko@suse.cz>
+	id S1752823AbaDWM5p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:57:45 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:37139 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaDWM5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 08:57:44 -0400
+X-AuditID: cbfee68e-b7fd86d0000038e3-d9-5357b8c6396f
+From: Jingoo Han <jg1.han@samsung.com>
+To: "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>
+Cc: "'Alessandro Zummo'" <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        linux-kernel@vger.kernel.org,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Haojian Zhuang'" <haojian.zhuang@linaro.org>,
+        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1398256168-493-1-git-send-email-k.kozlowski@samsung.com>
+In-reply-to: <1398256168-493-1-git-send-email-k.kozlowski@samsung.com>
+Subject: Re: [PATCH RESEND 1/2] rtc: 88pm860x: Use of_get_child_by_name
+Date: Wed, 23 Apr 2014 21:57:42 +0900
+Message-id: <000c01cf5ef3$9d482a90$d7d87fb0$%han@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9e76xsw0Xq6PRVRASSEcaxpMmXngAA6dOA
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t8zfd1jO8KDDTZONrFYcvEqu8Wc9WvY
+	LC6fO8xocXnhJVaL1y8MLS7vmsNmsb+zg9Hi5J9eRgcOjz0TT7J53Lm2h83jxIzfLB59W1Yx
+	ekyf95PJ4/MmuQC2KC6blNSczLLUIn27BK6MBc/ushdcYK9YsuYcWwPjLLYuRk4OCQETiU8f
+	50LZYhIX7q0Hsrk4hASWMUps3bSbFabozLkX7BCJRYwSU67cZYVwfjNKzPr1gRGkik1ATeLL
+	l8PsILaIgLHEmplLwUYxC0xjklhx5TlQBwdQh6vEjLmFIDWcAm4S+9vmsYDYwgLuEksbvzOB
+	2CwCqhJHd/wHm8krYCtxbvMJNghbUOLH5Htg9cwCWhLrdx5ngrDlJTavecsMMl5CQF3i0V9d
+	iBOMJJYtPwdVLiKx78U7RpBzJAT+sku8vvCMFWKXgMS3yYdYIHplJTYdYIZ4WFLi4IobLBOA
+	vkOyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGCER3beD8eYB60OM
+	yUDrJzJLiSbnAxNCXkm8obGZkYWpiamxkbmlGWnCSuK8ix4mBQkJpCeWpGanphakFsUXleak
+	Fh9iZOLglGpgzONarZHKMPns54WC76vf79xn9/a27Tq/KXqsB3KdOe02TPsksd/jb8EXk/lX
+	5xoKvXxt/fxGrvaqRU4LF9innX9roCZhl9Am/ElBxUP1rq2n4f7DnOe+Tm9mbfj0/YPPcutn
+	dUwB0Vu6gi5VnWK5ueiS2xzjGbyPbU4qS18NWHLz8O9nc0PU9iixFGckGmoxFxUnAgB5nYbT
+	/gIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBKsWRmVeSWpSXmKPExsVy+t9jAd1jO8KDDV5c0rdYcvEqu8Wc9WvY
+	LC6fO8xocXnhJVaL1y8MLS7vmsNmsb+zg9Hi5J9eRgcOjz0TT7J53Lm2h83jxIzfLB59W1Yx
+	ekyf95PJ4/MmuQC2qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
+	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGQue3WUv
+	uMBesWTNObYGxllsXYycHBICJhJnzr1gh7DFJC7cWw8U5+IQEljEKDHlyl1WCOc3o8SsXx8Y
+	QarYBNQkvnw5DNYhImAssWbmUrAOZoFpTBIrrjwH6uAA6nCVmDG3EKSGU8BNYn/bPBYQW1jA
+	XWJp43cmEJtFQFXi6I7/YDN5BWwlzm0+wQZhC0r8mHwPrJ5ZQEti/c7jTBC2vMTmNW+ZQcZL
+	CKhLPPqrC3GCkcSy5eegykUk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca
+	6hUn5haX5qXrJefnbmIEp4tnUjsYVzZYHGIU4GBU4uEtWBkWLMSaWFZcmXuIUYKDWUmEd8mi
+	8GAh3pTEyqrUovz4otKc1OJDjMlAj05klhJNzgemsrySeENjEzMjSyMzCyMTc3PShJXEeQ+0
+	WgcKCaQnlqRmp6YWpBbBbGHi4JRqYHTqUHhx9cYdjR28+xwvyb+UTfl5RWfz3pnz43Ys/7yh
+	xLvbSurJ46Zf6z9ZOkkvyKt+z9cy60/p31t39vpsLYmYVrzmaY7Rk8VP+t/YHl125FBX991t
+	B+Yvy98vtqS0OEatSyBYynHJQwmtXWu3toWUterta9qfPnXi84YGGV09pb+yLJ6TFmxVYinO
+	SDTUYi4qTgQAZlVB81sDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 12:12:02PM +0200, Michal Hocko wrote:
-> Eric has reported that he can see task(s) stuck in memcg OOM handler
-> regularly.  The only way out is to
+On Wednesday, April 23, 2014 9:29 PM, Krzysztof Kozlowski wrote:
 > 
-> 	echo 0 > $GROUP/memory.oom_controll
+> Use of_get_child_by_name to obtain reference to charger node instead of
+> of_find_node_by_name which can walk outside of the parent node.
 > 
-> His usecase is:
-> 
-> - Setup a hierarchy with memory and the freezer (disable kernel oom and
->   have a process watch for oom).
-> 
-> - In that memory cgroup add a process with one thread per cpu.
-> 
-> - In one thread slowly allocate once per second I think it is 16M of ram
->   and mlock and dirty it (just to force the pages into ram and stay
->   there).
-> 
-> - When oom is achieved loop:
->   * attempt to freeze all of the tasks.
->   * if frozen send every task SIGKILL, unfreeze, remove the directory in
->     cgroupfs.
-> 
-> Eric has then pinpointed the issue to be memcg specific.
-> 
-> All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
-> Those that have received fatal signal will bypass the charge and should
-> continue on their way out.  The tricky part is that the exit path might
-> trigger a page fault (e.g.  exit_robust_list), thus the memcg charge,
-> while its memcg is still under OOM because nobody has released any charges
-> yet.
-> 
-> Unlike with the in-kernel OOM handler the exiting task doesn't get
-> TIF_MEMDIE set so it doesn't shortcut further charges of the killed task
-> and falls to the memcg OOM again without any way out of it as there are no
-> fatal signals pending anymore.
-> 
-> This patch fixes the issue by checking PF_EXITING early in
-> mem_cgroup_try_charge and bypass the charge same as if it had fatal
-> signal pending or TIF_MEMDIE set.
-> 
-> Normally exiting tasks (aka not killed) will bypass the charge now but
-> this should be OK as the task is leaving and will release memory and
-> increasing the memory pressure just to release it in a moment seems
-> dubious wasting of cycles.  Besides that charges after exit_signals should
-> be rare.
-> 
-> Reported-by: Eric W. Biederman <ebiederm@xmission.com>
-> Signed-off-by: Michal Hocko <mhocko@suse.cz>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: <stable@vger.kernel.org>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-We're allowing fatal_signal_pending() tasks to bypass the limit
-already, so I don't see why we shouldn't do the same for tasks that
-cleared the signal and are in fact exiting.
+Reviewed-by: Jingoo Han <jg1.han@samsung.com>
 
-Acked-by: Johannes Weiner <hannes@cmpxchg.org>
+Best regards,
+Jingoo Han
+
+> ---
+>  drivers/rtc/rtc-88pm860x.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/rtc/rtc-88pm860x.c b/drivers/rtc/rtc-88pm860x.c
+> index 816504846cdd..fb9e3c63b4ac 100644
+> --- a/drivers/rtc/rtc-88pm860x.c
+> +++ b/drivers/rtc/rtc-88pm860x.c
+> @@ -293,7 +293,7 @@ static int pm860x_rtc_dt_init(struct platform_device *pdev,
+>  	int ret;
+>  	if (!np)
+>  		return -ENODEV;
+> -	np = of_find_node_by_name(np, "rtc");
+> +	np = of_get_child_by_name(np, "rtc");
+>  	if (!np) {
+>  		dev_err(&pdev->dev, "failed to find rtc node\n");
+>  		return -ENODEV;
+> --
+> 1.9.1
+
