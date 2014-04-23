@@ -1,113 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752003AbaDWIdf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:33:35 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:55185 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750755AbaDWIdb (ORCPT
+	id S1753779AbaDWIei (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:34:38 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45930 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750811AbaDWIed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:33:31 -0400
-Date: Wed, 23 Apr 2014 10:33:26 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Tejun Heo <tj@kernel.org>, zmxu@marvell.com,
-        Jisheng Zhang <jszhang@marvell.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-ide@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/6] ata: ahci: add AHCI support for Berlin SoCs
-Message-ID: <20140423083326.GD24355@kwain>
-References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
- <1398181105-19714-2-git-send-email-antoine.tenart@free-electrons.com>
- <CAL_JsqKE_Z3kBhS1VaQADV5ob8x6AKHhbHaQEGoVSwkwdd50zA@mail.gmail.com>
+	Wed, 23 Apr 2014 04:34:33 -0400
+Date: Wed, 23 Apr 2014 09:34:12 +0100
+From: Mark Rutland <mark.rutland@arm.com>
+To: Xiubo Li <Li.Xiubo@freescale.com>
+Cc: "broonie@kernel.org" <broonie@kernel.org>,
+        "rob@landley.net" <rob@landley.net>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCHv2 1/3] dt/bindings: Add the DT binding documentation
+ for endianness
+Message-ID: <20140423083412.GA30036@e106331-lin.cambridge.arm.com>
+References: <1398235595-13370-1-git-send-email-Li.Xiubo@freescale.com>
+ <1398235595-13370-2-git-send-email-Li.Xiubo@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAL_JsqKE_Z3kBhS1VaQADV5ob8x6AKHhbHaQEGoVSwkwdd50zA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398235595-13370-2-git-send-email-Li.Xiubo@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob,
-
-On Tue, Apr 22, 2014 at 01:47:43PM -0500, Rob Herring wrote:
-> On Tue, Apr 22, 2014 at 10:38 AM, Antoine Ténart
-> <antoine.tenart@free-electrons.com> wrote:
-
-[…]
-
-> > +static inline void ahci_berlin_reg_clear_set(void __iomem *reg, u32 clear_val,
-> > +                                            u32 set_val)
-> > +{
-> > +       u32 regval;
-> > +
-> > +       regval = readl(reg);
-> > +       regval &= ~(clear_val);
-> > +       regval |= set_val;
-> > +       writel(regval, reg);
-> > +}
-> > +
-> > +static void ahci_berlin_init(void __iomem *mmio)
+On Wed, Apr 23, 2014 at 07:46:33AM +0100, Xiubo Li wrote:
+> Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+> ---
+>  .../devicetree/bindings/endianness/endianness.txt  | 55 ++++++++++++++++++++++
+>  1 file changed, 55 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/endianness/endianness.txt
 > 
-> I don't really see the point of a function to do 2 register writes of
-> magic values especially when the function name doesn't provide any
-> indication of what you are doing really.
-> 
-> > +{
-> > +       /* interface select */
-> > +       ahci_berlin_reg_set(mmio + HOST_VSA_ADDR, BIT(2));
-> > +       ahci_berlin_reg_set(mmio + HOST_VSA_ADDR,
-> 
-> 2 writes to the same reg? Is this supposed to be the VSA_DATA register?
+> diff --git a/Documentation/devicetree/bindings/endianness/endianness.txt b/Documentation/devicetree/bindings/endianness/endianness.txt
+> new file mode 100644
+> index 0000000..64f1d5e
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/endianness/endianness.txt
+> @@ -0,0 +1,55 @@
+> +Device-Tree binding for device endianness
+> +
+> +The endianness mode of CPU & Device scenarios:
+> +  Index    CPU      Device
+> +  ------------------------
+> +  1        LE         LE
+> +  2        LE         BE
+> +  3        BE         BE
+> +  4        BE         LE
+> +
+> +For one device driver, which will run in different scenarios above
+> +on different SoCs using the devicetree, we need one way to simplify
+> +this.
+> +
+> +Required properties:
+> +- [prefix]-endian: this is one string property and must be one
+> +  of 'be', 'le' and 'native' if it is present.
 
-You're right it's VSA_DATA.
+What exactly is the prefix?
 
-> 
-> > +                           BIT(21) | BIT(18) | BIT(5) | BIT(4) | BIT(2));
-> 
-> Use of BIT is only helpful to people that don't understand hex. Can
-> you define what these bits are. Otherwise, just use 0x00240034 and
-> note that it is magic value which you have no idea what the bits are.
+This file name and file heading implies this is a common endianness
+binding, which it is not. There are many existing bindings that have
+mechanisms for describing the endianness of components, and they have
+settled on a different pattern.
 
-This is magic. I'll update and add a comment.
+We already have many bindings with {big,little}-endian{,-*} boolean
+properties. It would be better to take that common case and document
+that as the standard way of doing things rather than inventing a
+completely different mechanism.
 
-> > +static void ahci_berlin_port_init(void __iomem *mmio, unsigned int ports)
-> > +{
-> > +       int p;
-> > +
-> > +       /* power down pll */
-> > +       ahci_berlin_reg_set(mmio + HOST_VSA_ADDR, 0x0);
-> > +       ahci_berlin_reg_setbits(mmio + HOST_VSA_DATA, BIT(6));
-> > +
-> > +       for (p = 0; p < ports; p++) {
-> > +               /* port control register */
-> > +               void __iomem *ctrl_reg = mmio + 0x100 + (p * 0x80);
-> > +
-> > +               /* set PHY mode to SATA, ref freq to 25 MHz */
-> > +               ahci_berlin_reg_set(ctrl_reg + PORT_VSR_ADDR, 0x201);
-> > +               ahci_berlin_reg_clear_set(ctrl_reg + PORT_VSR_DATA,
-> > +                                         0xff, BIT(0));
-> 
-> So you have registers hidden behind an address and data register.
-> Perhaps a read and write function to provide that access rather than
-> all these set/clear bit functions.
+> +The endianness mode:
+> +  'le' : device is in little endian mode,
+> +  'be' : device is in big endian mode,
+> +  'native' : device is in the same endian mode with the CPU.
 
-I'd like to do so if I could name 0x201, 0x225 ...
-I can also merge the two functions if you think it's better for
-readability.
+What exactly do you mean by native? A device which always matches the
+endianness of the CPU even if it changes? How common is that?
 
-Thanks!
+> +
+> +Examples:
+> +Scenario 1 : CPU in LE mode & device in LE mode.
+> +dev: dev@40031000 {
+> +	      compatible = "name";
+> +	      reg = <0x40031000 0x1000>;
+> +	      ...
+> +	      [prefix]-endian = 'native';
+> +};
 
-Antoine
+If the device is LE, then surely we should describe the device as LE.
+The kernel knows what endianness it is, might choose to change the CPU
+endianness, but regardless can do the right thing. Telling it a device
+is native is useless unless the device changes endianness with the CPU.
 
+> +
+> +Scenario 2 : CPU in LE mode & device in BE mode.
+> +dev: dev@40031000 {
+> +	      compatible = "name";
+> +	      reg = <0x40031000 0x1000>;
+> +	      ...
+> +	      [prefix]-endian = 'be';
+> +};
+> +
+> +Scenario 3 : CPU in BE mode & device in BE mode.
+> +dev: dev@40031000 {
+> +	      compatible = "name";
+> +	      reg = <0x40031000 0x1000>;
+> +	      ...
+> +	      [prefix]-endian = 'native';
+> +};
 
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Likewise.
+
+Thanks,
+Mark.
