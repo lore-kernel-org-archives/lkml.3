@@ -1,104 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754998AbaDWJu2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 05:50:28 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:10790 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaDWJuW (ORCPT
+	id S1755833AbaDWJu5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 05:50:57 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:61862 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755588AbaDWJur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 05:50:22 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-57-53578cddcf5f
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Doug Anderson'" <dianders@chromium.org>,
-        "'Wolfram Sang'" <wsa@the-dreams.de>
-Cc: "'Olof Johansson'" <olof@lixom.net>, "'Ben Dooks'" <ben-linux@fluff.org>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <1397254781-23833-1-git-send-email-dianders@chromium.org>
-In-reply-to: <1397254781-23833-1-git-send-email-dianders@chromium.org>
-Subject: RE: [PATCH] i2c: s3c2410: resume race fix
-Date: Wed, 23 Apr 2014 18:50:20 +0900
-Message-id: <038101cf5ed9$70b5a3a0$5220eae0$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQJFA9vjkmBzO6b39URJRKc7aH23gZozqwFA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDIsWRmVeSWpSXmKPExsVy+t8zY927PeHBBpsfsVpMWneAyeLssoNs
-	FpseX2O16Pj7hdHi8q45bBYzzu9jsjh1/TObxcoTs5gdODxmN1xk8fi76gWzx+Yl9R5XTjSx
-	epw89YTF4/MmuQC2KC6blNSczLLUIn27BK6M9/c2MBc0cFU8X76QvYFxCkcXIyeHhICJxJ8J
-	b5kgbDGJC/fWs3UxcnEICSxjlJj7aDILTNHXGYuYIBKLGCXOLprOCuH8ZZQ48f4MWDubgIbE
-	4ffP2EFsEQF/iUtLloONYhY4B1T0ew0jSEJIwFXiz8THYA2cAm4SM3bMBWsQFjCSmHjnLlgN
-	i4CqxNaph8HivAKWErsunGKDsAUlfky+B3YSs4CWxPqdx5kgbHmJzWveMkOcqiCx4+xrRogj
-	jCTevTwFVSMise/FO0aImp/sEovOhkLsEpD4NvkQ0EwOoLisxKYDUGMkJQ6uuMEygVFiFpLN
-	s5BsnoVk8ywkGxYwsqxiFE0tSC4oTkovMtUrTswtLs1L10vOz93ECInpiTsY7x+wPsSYDLR+
-	IrOUaHI+MCXklcQbGpsZWZiamBobmVuakSasJM6b/igpSEggPbEkNTs1tSC1KL6oNCe1+BAj
-	EwenVAOjSmt4eMm6bvFf1bssDgc84AxelRG7PZJzUnn41Mzyyn9ni8P+TD8b+m56hDBzz7pg
-	9iuy4oym+7Kbev7q2TsvNEhTX6FXZaP/oiLeJU/7qSdTn1BRraD/iaK/ORES0wrDBJoKiwoX
-	OyRM+D53o9E7sRzfnOikjQE1cfEmM9btPDznQurWfUosxRmJhlrMRcWJAKelsHf/AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFKsWRmVeSWpSXmKPExsVy+t9jAd27PeHBBtd3MlpMWneAyeLssoNs
-	FpseX2O16Pj7hdHi8q45bBYzzu9jsjh1/TObxcoTs5gdODxmN1xk8fi76gWzx+Yl9R5XTjSx
-	epw89YTF4/MmuQC2qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
-	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGe/vbWAu
-	aOCqeL58IXsD4xSOLkZODgkBE4mvMxYxQdhiEhfurWfrYuTiEBJYxChxdtF0VgjnL6PEifdn
-	wKrYBDQkDr9/xg5iiwj4S1xashysg1ngHFDR7zWMIAkhAVeJPxMfgzVwCrhJzNgxF6xBWMBI
-	YuKdu2A1LAKqElunHgaL8wpYSuy6cIoNwhaU+DH5HguIzSygJbF+53EmCFteYvOat8wQpypI
-	7Dj7mhHiCCOJdy9PQdWISOx78Y5xAqPQLCSjZiEZNQvJqFlIWhYwsqxiFE0tSC4oTkrPNdQr
-	TswtLs1L10vOz93ECE4Zz6R2MK5ssDjEKMDBqMTDW7AyLFiINbGsuDL3EKMEB7OSCO+GzvBg
-	Id6UxMqq1KL8+KLSnNTiQ4zJQJ9OZJYSTc4HprO8knhDYxMzI0sjMwsjE3Nz0oSVxHkPtFoH
-	CgmkJ5akZqemFqQWwWxh4uCUamAsWs3i1PvhyD35XC0h18rMe+lRG+sv7g0IOy/pudeT69IC
-	t3vB00LOJfJnFq9slPz5+t5fk2+XTuZVS9hkXT3SG3IpvvbtLqUHGSt9VaZK1cUp80+/GnZO
-	qizi60XZVbvZhCyqHyr9K+/8G2Rvq76v7vaOS3bb/Of+v7bx9fb7+y+Zf/m1LW6vEktxRqKh
-	FnNRcSIAqaecjl0DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 23 Apr 2014 05:50:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <87zjjcfwz1.fsf@rustcorp.com.au>
+References: <20131127220746.GA11255@order.stressinduktion.org>
+ <1385826152-17531-1-git-send-email-ynvich@gmail.com> <87a9g9s27z.fsf@rustcorp.com.au>
+ <1386660574.7152.203.camel@host5.omatika.ru> <87zjjcfwz1.fsf@rustcorp.com.au>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Wed, 23 Apr 2014 06:50:27 -0300
+Message-ID: <CAKi4VA+nHVPckqLYF6X9tjq2mvAZ0OFLsROxxH-6Y1G9+OqmZA@mail.gmail.com>
+Subject: Re: [PATCH v2] fix printk output
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Sergei Ianovich <ynvich@gmail.com>, lkml <linux-kernel@vger.kernel.org>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        "Elliott, Robert (Server Storage)" <Elliott@hp.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Doug Anderson wrote:
-> 
-> From: Olof Johansson <olof@lixom.net>
-> 
-> Don't unmark the device as suspended until after it's been re-setup.
-> 
-> The main race would be w.r.t. an i2c driver that gets resumed at the same
-> time (asyncronously), that is allowed to do a transfer since suspended
-> is set to 0 before reinit, but really should have seen the -EIO return
-> instead.
-> 
-> Signed-off-by: Olof Johansson <olof@lixom.net>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+On Wed, Apr 23, 2014 at 2:14 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> Sergei Ianovich <ynvich@gmail.com> writes:
+>> On Tue, 2013-12-10 at 15:59 +1030, Rusty Russell wrote:
+>>> BTW, did you actually hit this?
+>>
+>> # modprobe usb_storage
+>> [  600.807274] usbcore: registered new interface driver usb-storage
+>> # modprobe -r usb_storage
+>> [  604.216318] waiting module removal not supported: please upgrade[
+>> 604.222164] usbcore: deregistering interface driver usb-storage
+>> # modprobe -V
+>> kmod version 9
+>>
+>> I am using the latest kmod package from emdebian unstable-grip.
+>
+> Sorry, was off on leave.
+>
+> Hmm, Lucas intimated that kmod version 11 started passing this flag
+> correctly.
 
-Acked-by: Kukjin Kim <kgene.kim@samsung.com>
+Sorry... rmmod was correctly updated but I forgot modprobe. My bad.
+Then when I enforced it on libkmod, modprobe ended up doing the right
+thing.
 
-Thanks,
-Kukjin
+>
+> In fact, kmod's modprobe *never* used the O_NONBLOCK
+> (ie. KMOD_REMOVE_NOWAIT) flag, until it was finally enforced in
+>
+> commit 7ab8804448377fb6b8854f2dd288608db01bb43b
+> Author: Lucas De Marchi <lucas.demarchi@intel.com>
+> Date:   Fri Sep 20 01:30:07 2013 -0500
+>
+> See: tools/modprobe.c at that commit:
+>
+>         static int rmmod_do_remove_module(struct kmod_module *mod)
+>         {
+>                 const char *modname = kmod_module_get_name(mod);
+>                 struct kmod_list *deps, *itr;
+>                 int flags = 0, err;
+> ...
+>                 if (force)
+>                         flags |= KMOD_REMOVE_FORCE;
+>
+>                 err = kmod_module_remove_module(mod, flags);
+>
+> Perhaps we need to just get rid of the kernel message, since we're
+> getting far too many false reports :(
 
-> ---
->  drivers/i2c/busses/i2c-s3c2410.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-s3c2410.c b/drivers/i2c/busses/i2c-
-> s3c2410.c
-> index ae44910..bb3a996 100644
-> --- a/drivers/i2c/busses/i2c-s3c2410.c
-> +++ b/drivers/i2c/busses/i2c-s3c2410.c
-> @@ -1276,10 +1276,10 @@ static int s3c24xx_i2c_resume(struct device *dev)
->  	struct platform_device *pdev = to_platform_device(dev);
->  	struct s3c24xx_i2c *i2c = platform_get_drvdata(pdev);
-> 
-> -	i2c->suspended = 0;
->  	clk_prepare_enable(i2c->clk);
->  	s3c24xx_i2c_init(i2c);
->  	clk_disable_unprepare(i2c->clk);
-> +	i2c->suspended = 0;
-> 
->  	return 0;
->  }
-> --
-> 1.9.1.423.g4596e3a
+Now that I realize only kmod 16 has the fix... maybe. But I think this
+commit could be easily backported to older versions if distros would
+like to avoid the upgrade (even if they should not since latest
+releases were more targeted to bug fixes). I'll try to push this or a
+similar patch downstream to package maintainers.
 
+Again, sorry about that.
+
+
+Lucas De Marchi
