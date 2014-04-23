@@ -1,119 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700AbaDWONI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:13:08 -0400
-Received: from mail-we0-f172.google.com ([74.125.82.172]:41533 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084AbaDWONF (ORCPT
+	id S1755818AbaDWONT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:13:19 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:10814 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753299AbaDWONO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:13:05 -0400
-Message-ID: <5357CA6B.1070101@monstr.eu>
-Date: Wed, 23 Apr 2014 16:12:59 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Guenter Roeck <linux@roeck-us.net>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Microblaze image hanging in qemu with 3.15-rc
-References: <20140422172356.GA15672@roeck-us.net> <53575074.6010602@monstr.eu> <5357C246.7050604@roeck-us.net>
-In-Reply-To: <5357C246.7050604@roeck-us.net>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="88nNrSpXwEX99wHaCaEN0tVujrl6sCcQK"
+	Wed, 23 Apr 2014 10:13:14 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-d0-5357ca7704aa
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Subject: [PATCH v2 RESEND 2/2] mfd: sec-core: Update sec_pmic documentation
+Date: Wed, 23 Apr 2014 16:13:06 +0200
+Message-id: <1398262386-10568-2-git-send-email-k.kozlowski@samsung.com>
+X-Mailer: git-send-email 1.9.1
+In-reply-to: <1398262386-10568-1-git-send-email-k.kozlowski@samsung.com>
+References: <1398262386-10568-1-git-send-email-k.kozlowski@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t/xK7rlp8KDDRZ+ErB4/cLQ4v7Xo4wW
+	l3fNYbM43c1qcXHFFyYHVo871/awecw7GejRt2UVo8fnTXIBLFFcNimpOZllqUX6dglcGe+n
+	KxS0CFW8nXycsYHxOF8XIyeHhICJxOrtT9khbDGJC/fWs4HYQgJLGSU2/M7pYuQCsvuYJNZc
+	+M0KkmATMJbYvHwJG0hCRKCPUeL82zWMIAlmAUOJn+/+gE0SFvCWOL93GjOIzSKgKvFp4iSw
+	OK+Au8T5qQ3MENvkJE4emww2lFPAQ+Lvnj52iM3uEu23jzJPYORdwMiwilE0tTS5oDgpPddQ
+	rzgxt7g0L10vOT93EyMkYL7sYFx8zOoQowAHoxIPr8TysGAh1sSy4srcQ4wSHMxKIrxLFoUH
+	C/GmJFZWpRblxxeV5qQWH2Jk4uCUamBcrR/6qF771c4ffat83I1S1Jhzc+6xaiiHlD2sXxv6
+	5rWO2oGXGstrEqOu5n7Ucu/qyu+csyCJqWDGIud9kcv1b/uo77303ujOY44IcW4D9+jKFmuL
+	OhP22Nip6qIPAn7t//XKRrFoJZ96sgDbAq9Slx/7/m8XbtHbouX6Zkb9+Qn7WR0umymxFGck
+	GmoxFxUnAgCOAnlr9gEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---88nNrSpXwEX99wHaCaEN0tVujrl6sCcQK
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Update the documentation for sec_pmic state container structure to
+reflect current code.
 
-On 04/23/2014 03:38 PM, Guenter Roeck wrote:
-> On 04/22/2014 10:32 PM, Michal Simek wrote:
->> Hi Guenter,
->>
->>
->> On 04/22/2014 07:23 PM, Guenter Roeck wrote:
->>> Hi all,
->>>
->>> when trying to run a microblaze image with 3.15-rc1 or 3.15-rc2 in qe=
-mu,
->>> I get the following hangup. This used to work with earlier kernels
->>> with the same configuration.
->>>
->>> Is this a known problem, or is something wrong with my configuration
->>> or with my qemu command line ?
->>
->> Is this BE/LE version? Which qemu do you use?
->=20
-> BE.
->=20
-> file vmlinux:
->=20
-> vmlinux: ELF 32-bit MSB  executable, version 1 (SYSV), statically linke=
-d, BuildID[sha1]=3D5e1872c08df2956eddaed6fc1f6528a8540375b7, not stripped=
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
->=20
-> qemu-system-microblaze --version:
->=20
-> QEMU emulator version 1.7.0, Copyright (c) 2003-2008 Fabrice Bellard
->=20
-> gcc --version:
->=20
-> microblaze-linux-gcc (GCC) 4.8.0
-> Copyright (C) 2013 Free Software Foundation, Inc.
-> This is free software; see the source for copying conditions.  There is=
- NO
-> warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURP=
-OSE.
->=20
->> There is endian autodetection in timer and intc driver
->> which can caused this problem.
->>
-> Is this new code ? I didn't see the problem in 3.13 (same compile optio=
-ns,
-> same configuration, same compiler, same qemu version).
+---
 
-yes it was added to 3.15-rc1.
+Changes since v1:
+ - Update documentation after review from Lee Jones.
+---
+ include/linux/mfd/samsung/core.h | 30 +++++++++++++++++-------------
+ 1 file changed, 17 insertions(+), 13 deletions(-)
 
-Try to rever this one
-a66a626 microblaze: Use asm-generic/io.h
+diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
+index 55540b524b5a..68f1377e5c07 100644
+--- a/include/linux/mfd/samsung/core.h
++++ b/include/linux/mfd/samsung/core.h
+@@ -24,19 +24,23 @@ enum sec_device_type {
+ };
+ 
+ /**
+- * struct sec_pmic_dev - s5m87xx master device for sub-drivers
+- * @dev: master device of the chip (can be used to access platform data)
+- * @pdata: pointer to private data used to pass platform data to child
+- * @i2c: i2c client private data for regulator
+- * @rtc: i2c client private data for rtc
+- * @iolock: mutex for serializing io access
+- * @irqlock: mutex for buslock
+- * @irq_base: base IRQ number for sec-pmic, required for IRQs
+- * @irq: generic IRQ number for s5m87xx
+- * @ono: power onoff IRQ number for s5m87xx
+- * @irq_masks_cur: currently active value
+- * @irq_masks_cache: cached hardware value
+- * @type: indicate which s5m87xx "variant" is used
++ * struct sec_pmic_dev - s2m/s5m master device for sub-drivers
++ * @dev:		Master device of the chip
++ * @pdata:		Platform data populated with data from DTS
++ *			or board files
++ * @regmap_pmic:	Regmap associated with PMIC's I2C address
++ * @i2c:		I2C client of the main driver
++ * @device_type:	Type of device, matches enum sec_device_type
++ * @irq_base:		Base IRQ number for device, required for IRQs
++ * @irq:		Generic IRQ number for device
++ * @irq_data:		Runtime data structure for IRQ controller
++ * @ono:		Power onoff IRQ number for s5m87xx
++ * @wakeup:		Whether or not this is a wakeup device
++ * @wtsr_smpl:		Whether or not to enable in RTC driver the Watchdog
++ *			Timer Software Reset (registers set to default value
++ *			after PWRHOLD falling) and Sudden Momentary Power Loss
++ *			(PMIC will enter power on sequence after short drop in
++ *			VBATT voltage).
+  */
+ struct sec_pmic_dev {
+ 	struct device *dev;
+-- 
+1.9.1
 
-but the problem is probably here because you are not getting proper
-reaction from qemu model.
-a1715bb microblaze: Make timer driver endian aware
-1aa1243 microblaze: Make intc driver endian aware
-
-I have tested it on the latest petalinux qemu and there shouldn't be
-any problem.
-
-Thanks,
-Michal
-
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
-
-
-
---88nNrSpXwEX99wHaCaEN0tVujrl6sCcQK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNXymwACgkQykllyylKDCFEPwCcCr8Ao0s+klQniTxdgkC0WFBO
-71cAnjh9RlO4NwE7eqcZ8VeZEqIK7aGD
-=A8nC
------END PGP SIGNATURE-----
-
---88nNrSpXwEX99wHaCaEN0tVujrl6sCcQK--
