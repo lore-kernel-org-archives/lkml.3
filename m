@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaDWWbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:31:12 -0400
-Received: from ozlabs.org ([103.22.144.67]:42521 "EHLO ozlabs.org"
+	id S1751914AbaDWWcE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:32:04 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40192 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751348AbaDWWbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:31:09 -0400
-Date: Thu, 24 Apr 2014 08:31:00 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-next@vger.kernel.org,
-        nacc@linux.vnet.ibm.com, Richard Weinberger <richard@nod.at>
-Subject: Re: mmotm 2014-04-22-15-20 uploaded (uml 32- and 64-bit defconfigs)
-Message-Id: <20140424083100.c5f32e14abd2f6ed05673cb9@canb.auug.org.au>
-In-Reply-To: <20140423151819.d752391e323a850ca0aded57@linux-foundation.org>
-References: <20140422222121.2FAB45A431E@corp2gmr1-2.hot.corp.google.com>
-	<5357F405.20205@infradead.org>
-	<20140423134131.778f0d0a@redhat.com>
-	<5357FCEB.2060507@infradead.org>
-	<20140423141600.4a303d95@redhat.com>
-	<20140423112442.5a5c8f23d580a65575e0c5fc@linux-foundation.org>
-	<20140424081019.596b5d23c624f5721ba0480a@canb.auug.org.au>
-	<20140423151819.d752391e323a850ca0aded57@linux-foundation.org>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+	id S1751401AbaDWWcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 18:32:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,914,1389772800"; 
+   d="scan'208";a="526638697"
+Subject: [PATCH] sched: Skip double execution of pick_next_task_fair
+From: Tim Chen <tim.c.chen@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        Len Brown <len.brown@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Apr 2014 15:31:57 -0700
+Message-ID: <1398292317.2970.63.camel@schen9-DESK>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Apr_2014_08_31_00_+1000_0Dhfh/.RqrYqxFm6"
+X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Apr_2014_08_31_00_+1000_0Dhfh/.RqrYqxFm6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The current code will call pick_next_task_fair a second time
+in the slow path if we did not pull any task in our first try.
+This is really unnecessary as we already know no task can
+be pulled and it doubles the delay for the cpu to enter idle.
 
-Hi Andrew,
+We instrumented some network workloads and that saw that
+pick_next_task_fair is frequently called twice before a cpu enters idle.
+The call to pick_next_task_fair can add
+non trivial latency as it calls load_balance which runs find_busiest_group
+on an hierarchy of sched domains spanning the cpus for a large system.  For
+some 4 socket systems, we saw almost 0.25 msec spent per call
+of pick_next_task_fair before a cpu can be idled.
 
-On Wed, 23 Apr 2014 15:18:19 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> Stephen who?
->=20
-> Oh, that guy who sends stuff first then comes last when others use LIFO :)
+This patch skips pick_next_task_fair in the slow path if it
+has already been invoked.
 
-Ah ha!  So all I have to do is stamp my emails a day ahead?  Or queue
-them up and send them via a cron job just after "Andrew's breakfast
-time"? :-)
+Tim
 
-Anyway, I was more suggesting that Randy and the others could have saved
-themselves time by reading that email.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
+---
+ kernel/sched/core.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
---Signature=_Thu__24_Apr_2014_08_31_00_+1000_0Dhfh/.RqrYqxFm6
-Content-Type: application/pgp-signature
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 1d1b87b..4053437 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2583,6 +2583,7 @@ pick_next_task(struct rq *rq, struct task_struct *prev)
+ {
+ 	const struct sched_class *class = &fair_sched_class;
+ 	struct task_struct *p;
++	int skip_fair = 0;
+ 
+ 	/*
+ 	 * Optimization: we know that if all tasks are in
+@@ -2591,12 +2592,17 @@ pick_next_task(struct rq *rq, struct task_struct *prev)
+ 	if (likely(prev->sched_class == class &&
+ 		   rq->nr_running == rq->cfs.h_nr_running)) {
+ 		p = fair_sched_class.pick_next_task(rq, prev);
+-		if (likely(p && p != RETRY_TASK))
++		if (!p)
++			skip_fair = 1;
++		else if (likely(p != RETRY_TASK))
+ 			return p;
+ 	}
+ 
+ again:
+ 	for_each_class(class) {
++		/* if we have already failed to pull fair task, skip */
++		if (class == &fair_sched_class && skip_fair)
++			continue;
+ 		p = class->pick_next_task(rq, prev);
+ 		if (p) {
+ 			if (unlikely(p == RETRY_TASK))
+-- 
+1.7.11.7
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBCAAGBQJTWD8pAAoJEMDTa8Ir7ZwV2qkP/i56IWTfQzb5LesqyA27W2Vf
-ZXsUjBURwZeAAIO5phkqqAEf8xiGquOq7MGif87oCTrDqwYxnF5FrRHrcu75tufZ
-BmfqRv4cEqLhCw8y0a2J6Hi2vTIdOrfTjGGLyHXvmppJ6CgvRg/3tMWtJJb5zdbw
-v8eI4svOQT+xpZl6pURtSMLcHsm4OP/NYbPzeg5SzMbtkRy7f4OSTvVFMHjCFvXM
-zwr4ulNEkYD8xeOXUzzF46Cw6wITShV5BsdyWhteldq8vuwRxlUL/Eitqk6yciQT
-WOqYRgsKzoGbut9ykT24TytJRI0/iUYCUpd8new5PHHJebnZSL/rFJ/cvUjSC3iD
-IUgUgONsj+TIXUbUZEi3Rk+OwZS1b+dw3prbKYS+SlwnBDmOgN2X1L6ImkZOixTN
-B6nIgjg69Cr6QvivLoyw5agpFFPCtWjQsgFzCjNqvPgkf/EiiIGpuXLzySOVJQRC
-E9LVkYOONFMwZKLy0T2g6bYH14YFx8/xv3X9oP2zolEFZNGuPkYrb7G/IhOU9U9C
-kOfmr7IpX3Yw/RyHa76hlBXzan+MSB8hp+Ik57azo5Hl5mHF8YpBIqYDBY/XsMr9
-P1FARil3gnMg4PCLXJ+vi27B27muBoUh8GcV0Mpri9bF0PGlQ6ZFK3fzMqSxl87v
-pKHXngzzYjBnd0Dzd5vH
-=lZl8
------END PGP SIGNATURE-----
-
---Signature=_Thu__24_Apr_2014_08_31_00_+1000_0Dhfh/.RqrYqxFm6--
