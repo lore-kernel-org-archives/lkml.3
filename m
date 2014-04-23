@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252AbaDWBTz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:19:55 -0400
-Received: from mail-oa0-f51.google.com ([209.85.219.51]:53445 "EHLO
-	mail-oa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751898AbaDWBTO (ORCPT
+	id S1754750AbaDWBTN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:19:13 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:58241 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803AbaDWBS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:19:14 -0400
+	Tue, 22 Apr 2014 21:18:57 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org
-Cc: Rob Herring <robh@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2 21/21] of: push struct boot_param_header and defines into powerpc
-Date: Tue, 22 Apr 2014 20:18:21 -0500
-Message-Id: <1398215901-25609-22-git-send-email-robherring2@gmail.com>
+Cc: Rob Herring <robh@kernel.org>, Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH v2 07/21] mips: convert fdt pointers to opaque pointers
+Date: Tue, 22 Apr 2014 20:18:07 -0500
+Message-Id: <1398215901-25609-8-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
 References: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
@@ -25,120 +23,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <robh@kernel.org>
 
-Now powerpc is the only user of struct boot_param_header and FDT defines,
-so they can be moved into the powerpc architecture code.
+The architecture code does not need to access the internals of the FDT
+blob directly, so make the pointers to it void * and use char arrays
+for section variables.
 
 Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: linuxppc-dev@lists.ozlabs.org
+Cc: Ralf Baechle <ralf@linux-mips.org>
 ---
 v2: no change
 
- arch/powerpc/include/asm/prom.h | 39 +++++++++++++++++++++++++++++++++++++++
- include/linux/of_fdt.h          | 37 -------------------------------------
- 2 files changed, 39 insertions(+), 37 deletions(-)
+ arch/mips/include/asm/mips-boards/generic.h | 4 +---
+ arch/mips/include/asm/prom.h                | 6 +++---
+ arch/mips/kernel/prom.c                     | 2 +-
+ arch/mips/lantiq/prom.c                     | 2 +-
+ arch/mips/lantiq/prom.h                     | 2 +-
+ arch/mips/mti-sead3/sead3-setup.c           | 8 ++++----
+ arch/mips/ralink/of.c                       | 4 ++--
+ 7 files changed, 13 insertions(+), 15 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/prom.h b/arch/powerpc/include/asm/prom.h
-index d977b9b..74b79f0 100644
---- a/arch/powerpc/include/asm/prom.h
-+++ b/arch/powerpc/include/asm/prom.h
-@@ -26,6 +26,45 @@
- #include <linux/of_irq.h>
- #include <linux/platform_device.h>
+diff --git a/arch/mips/include/asm/mips-boards/generic.h b/arch/mips/include/asm/mips-boards/generic.h
+index 4861681..b969491 100644
+--- a/arch/mips/include/asm/mips-boards/generic.h
++++ b/arch/mips/include/asm/mips-boards/generic.h
+@@ -67,9 +67,7 @@
  
-+#define OF_DT_BEGIN_NODE	0x1		/* Start of node, full name */
-+#define OF_DT_END_NODE		0x2		/* End node */
-+#define OF_DT_PROP		0x3		/* Property: name off, size,
-+						 * content */
-+#define OF_DT_NOP		0x4		/* nop */
-+#define OF_DT_END		0x9
-+
-+#define OF_DT_VERSION		0x10
-+
-+/*
-+ * This is what gets passed to the kernel by prom_init or kexec
-+ *
-+ * The dt struct contains the device tree structure, full pathes and
-+ * property contents. The dt strings contain a separate block with just
-+ * the strings for the property names, and is fully page aligned and
-+ * self contained in a page, so that it can be kept around by the kernel,
-+ * each property name appears only once in this page (cheap compression)
-+ *
-+ * the mem_rsvmap contains a map of reserved ranges of physical memory,
-+ * passing it here instead of in the device-tree itself greatly simplifies
-+ * the job of everybody. It's just a list of u64 pairs (base/size) that
-+ * ends when size is 0
-+ */
-+struct boot_param_header {
-+	__be32	magic;			/* magic word OF_DT_HEADER */
-+	__be32	totalsize;		/* total size of DT block */
-+	__be32	off_dt_struct;		/* offset to structure */
-+	__be32	off_dt_strings;		/* offset to strings */
-+	__be32	off_mem_rsvmap;		/* offset to memory reserve map */
-+	__be32	version;		/* format version */
-+	__be32	last_comp_version;	/* last compatible version */
-+	/* version 2 fields below */
-+	__be32	boot_cpuid_phys;	/* Physical CPU id we're booting on */
-+	/* version 3 fields below */
-+	__be32	dt_strings_size;	/* size of the DT strings block */
-+	/* version 17 fields below */
-+	__be32	dt_struct_size;		/* size of the DT structure block */
-+};
-+
- /*
-  * OF address retreival & translation
-  */
-diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
-index 1f882e1..5c0ab05 100644
---- a/include/linux/of_fdt.h
-+++ b/include/linux/of_fdt.h
-@@ -17,45 +17,8 @@
+ extern int mips_revision_sconid;
  
- /* Definitions used by the flattened device tree */
- #define OF_DT_HEADER		0xd00dfeed	/* marker */
--#define OF_DT_BEGIN_NODE	0x1		/* Start of node, full name */
--#define OF_DT_END_NODE		0x2		/* End node */
--#define OF_DT_PROP		0x3		/* Property: name off, size,
--						 * content */
--#define OF_DT_NOP		0x4		/* nop */
--#define OF_DT_END		0x9
--
--#define OF_DT_VERSION		0x10
+-#ifdef CONFIG_OF
+-extern struct boot_param_header __dtb_start;
+-#endif
++extern char __dtb_start[];
  
- #ifndef __ASSEMBLY__
--/*
-- * This is what gets passed to the kernel by prom_init or kexec
-- *
-- * The dt struct contains the device tree structure, full pathes and
-- * property contents. The dt strings contain a separate block with just
-- * the strings for the property names, and is fully page aligned and
-- * self contained in a page, so that it can be kept around by the kernel,
-- * each property name appears only once in this page (cheap compression)
-- *
-- * the mem_rsvmap contains a map of reserved ranges of physical memory,
-- * passing it here instead of in the device-tree itself greatly simplifies
-- * the job of everybody. It's just a list of u64 pairs (base/size) that
-- * ends when size is 0
-- */
--struct boot_param_header {
--	__be32	magic;			/* magic word OF_DT_HEADER */
--	__be32	totalsize;		/* total size of DT block */
--	__be32	off_dt_struct;		/* offset to structure */
--	__be32	off_dt_strings;		/* offset to strings */
--	__be32	off_mem_rsvmap;		/* offset to memory reserve map */
--	__be32	version;		/* format version */
--	__be32	last_comp_version;	/* last compatible version */
--	/* version 2 fields below */
--	__be32	boot_cpuid_phys;	/* Physical CPU id we're booting on */
--	/* version 3 fields below */
--	__be32	dt_strings_size;	/* size of the DT strings block */
--	/* version 17 fields below */
--	__be32	dt_struct_size;		/* size of the DT structure block */
--};
+ #ifdef CONFIG_PCI
+ extern void mips_pcibios_init(void);
+diff --git a/arch/mips/include/asm/prom.h b/arch/mips/include/asm/prom.h
+index ccd2b75..a9494c0 100644
+--- a/arch/mips/include/asm/prom.h
++++ b/arch/mips/include/asm/prom.h
+@@ -21,13 +21,13 @@ extern void device_tree_init(void);
  
- #if defined(CONFIG_OF_FLATTREE)
+ struct boot_param_header;
  
+-extern void __dt_setup_arch(struct boot_param_header *bph);
++extern void __dt_setup_arch(void *bph);
+ 
+ #define dt_setup_arch(sym)						\
+ ({									\
+-	extern struct boot_param_header __dtb_##sym##_begin;		\
++	extern char __dtb_##sym##_begin[];				\
+ 									\
+-	__dt_setup_arch(&__dtb_##sym##_begin);				\
++	__dt_setup_arch(__dtb_##sym##_begin);				\
+ })
+ 
+ #else /* CONFIG_OF */
+diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
+index 3c3b0df..5d39bb8 100644
+--- a/arch/mips/kernel/prom.c
++++ b/arch/mips/kernel/prom.c
+@@ -47,7 +47,7 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
+ 	return __alloc_bootmem(size, align, __pa(MAX_DMA_ADDRESS));
+ }
+ 
+-void __init __dt_setup_arch(struct boot_param_header *bph)
++void __init __dt_setup_arch(void *bph)
+ {
+ 	if (!early_init_dt_scan(bph))
+ 		return;
+diff --git a/arch/mips/lantiq/prom.c b/arch/mips/lantiq/prom.c
+index cdea687..7447d32 100644
+--- a/arch/mips/lantiq/prom.c
++++ b/arch/mips/lantiq/prom.c
+@@ -71,7 +71,7 @@ void __init plat_mem_setup(void)
+ 	 * Load the builtin devicetree. This causes the chosen node to be
+ 	 * parsed resulting in our memory appearing
+ 	 */
+-	__dt_setup_arch(&__dtb_start);
++	__dt_setup_arch(__dtb_start);
+ }
+ 
+ void __init device_tree_init(void)
+diff --git a/arch/mips/lantiq/prom.h b/arch/mips/lantiq/prom.h
+index 8e07b5f..69a4c58 100644
+--- a/arch/mips/lantiq/prom.h
++++ b/arch/mips/lantiq/prom.h
+@@ -26,6 +26,6 @@ struct ltq_soc_info {
+ extern void ltq_soc_detect(struct ltq_soc_info *i);
+ extern void ltq_soc_init(void);
+ 
+-extern struct boot_param_header __dtb_start;
++extern char __dtb_start[];
+ 
+ #endif
+diff --git a/arch/mips/mti-sead3/sead3-setup.c b/arch/mips/mti-sead3/sead3-setup.c
+index bf7fe48..e43f480 100644
+--- a/arch/mips/mti-sead3/sead3-setup.c
++++ b/arch/mips/mti-sead3/sead3-setup.c
+@@ -69,17 +69,17 @@ static void __init parse_memsize_param(void)
+ 	if (!memsize)
+ 		return;
+ 
+-	offset = fdt_path_offset(&__dtb_start, "/memory");
++	offset = fdt_path_offset(__dtb_start, "/memory");
+ 	if (offset > 0) {
+ 		uint64_t new_value;
+ 		/*
+ 		 * reg contains 2 32-bits BE values, offset and size. We just
+ 		 * want to replace the size value without affecting the offset
+ 		 */
+-		prop_value = fdt_getprop(&__dtb_start, offset, "reg", &prop_len);
++		prop_value = fdt_getprop(__dtb_start, offset, "reg", &prop_len);
+ 		new_value = be64_to_cpu(*prop_value);
+ 		new_value =  (new_value & ~0xffffffffllu) | memsize;
+-		fdt_setprop_inplace_u64(&__dtb_start, offset, "reg", new_value);
++		fdt_setprop_inplace_u64(__dtb_start, offset, "reg", new_value);
+ 	}
+ }
+ 
+@@ -92,7 +92,7 @@ void __init plat_mem_setup(void)
+ 	 * Load the builtin devicetree. This causes the chosen node to be
+ 	 * parsed resulting in our memory appearing
+ 	 */
+-	__dt_setup_arch(&__dtb_start);
++	__dt_setup_arch(__dtb_start);
+ }
+ 
+ void __init device_tree_init(void)
+diff --git a/arch/mips/ralink/of.c b/arch/mips/ralink/of.c
+index 0170d82..91d7060 100644
+--- a/arch/mips/ralink/of.c
++++ b/arch/mips/ralink/of.c
+@@ -28,7 +28,7 @@
+ __iomem void *rt_sysc_membase;
+ __iomem void *rt_memc_membase;
+ 
+-extern struct boot_param_header __dtb_start;
++extern char __dtb_start[];
+ 
+ __iomem void *plat_of_remap_node(const char *node)
+ {
+@@ -63,7 +63,7 @@ void __init plat_mem_setup(void)
+ 	 * Load the builtin devicetree. This causes the chosen node to be
+ 	 * parsed resulting in our memory appearing
+ 	 */
+-	__dt_setup_arch(&__dtb_start);
++	__dt_setup_arch(__dtb_start);
+ 
+ 	if (soc_info.mem_size)
+ 		add_memory_region(soc_info.mem_base, soc_info.mem_size * SZ_1M,
 -- 
 1.9.1
 
