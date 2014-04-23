@@ -1,440 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757249AbaDWOzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:55:33 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:61624 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755071AbaDWOvI (ORCPT
+	id S1753943AbaDWO5n (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:57:43 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:50406 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003AbaDWO5k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:51:08 -0400
-X-AuditID: cbfec7f5-b7fae6d000004d6d-23-5357d359e3bd
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Anton Vorontsov <anton@enomsg.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Jenny Tc <jenny.tc@intel.com>
-Subject: [PATCH part2 3/6] charger: max14577: Configure battery-dependent
- settings from DTS
-Date: Wed, 23 Apr 2014 16:50:37 +0200
-Message-id: <1398264640-12122-4-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
-References: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t/xa7qRl8ODDda/sbQ4uFXTYuOM9awW
-	Ux8+YbOY9OQ9s8XElZOZLdZ+7WG3eP3C0OJs0xt2i/tfjzJafLvSwWRxedccNou1R+6yW5zu
-	ZrVYP+M1iwOfx4T+T4weO2fdZffYvELLY/Gel0wem1Z1snncubaHzWPeyUCPvi2rGD0+b5IL
-	4IzisklJzcksSy3St0vgyth7+jJrwbW4ii9z/zI3MM7y62Lk4JAQMJHY9yS3i5ETyBSTuHBv
-	PVsXIxeHkMBSRolfb98yQTh9TBKTGi6wgFSxCRhLbF6+BKxKRKCbSaJ1zU92EIdZYA2TxMbd
-	PewgVcICsRLvlj1iBbFZBFQlOk7cZAOxeQXcJZquzGeH2CcncfLYZFaQMzgFPCQuP7UDCQsB
-	lfx8M5F1AiPvAkaGVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghoft1B+PSY1aHGAU4GJV4
-	eCWWhwULsSaWFVfmHmKU4GBWEuFdsig8WIg3JbGyKrUoP76oNCe1+BAjEwenVAOj9r+N7PJd
-	UWaqmb/uNFb+Prb4wg6B+F2T/zFvznM3nnn75UK+EwEzdj/29D5a2TP5hWD0rrLvFQLCDDoN
-	xgsZDyRmSXxas+bUS45sP0+rB86nVxTHf/q5zWR14S/Pcz6KT11OLFm+OCfBdcq34iPXBWyl
-	42tn/dqnZhV/tC3s87G5mxlfPHn9XomlOCPRUIu5qDgRACGNFwY7AgAA
+	Wed, 23 Apr 2014 10:57:40 -0400
+Subject: Re: [PATCH 7/7] perf hists/tui: Count callchain rows separately
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20140423142915.GA27585@krava.brq.redhat.com>
+References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
+	 <1398236408-8856-8-git-send-email-namhyung@kernel.org>
+	 <20140423142915.GA27585@krava.brq.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 23 Apr 2014 23:57:33 +0900
+Message-ID: <1398265053.1696.21.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove hard-coded values for:
- - Fast Charge current,
- - End Of Charge current,
- - Fast Charge timer,
- - Overvoltage Protection Threshold,
- - Battery Constant Voltage,
-and use DTS to configure them. This allows using the max14577 charger
-driver with different batteries.
+2014-04-23 (수), 16:29 +0200, Jiri Olsa:
+> On Wed, Apr 23, 2014 at 04:00:08PM +0900, Namhyung Kim wrote:
+> > When TUI hist browser expands/collapses callchains it accounted number
+> > of callchain nodes into total entries to show.  However this code
+> > ignores filtering so that it can make the cursor go to out of screen.
+> 
+> SNIP
+> 
+> hi,
+> I needed following patch, otherwise following test case would segfault
+> 
+> - record with -g
+> - report - unfold one symbol
+> - search for nonsense
+> 
+> the reason is that after unfolding the symbol the nr_callchain_rows
+> will get some number, which will cause the hist_browser__nr_entries
+> function return (entries != 0) actually (entries == nr_callchain_rows)
+> even if there's no entry passing the filter
 
-Now the charger driver requires valid configuration data from DTS. In
-case of wrong configuration data it fails during probe. Patch adds
-of_compatible to the charger mfd cell in MFD driver core.
+Argh, right..  Thanks for spotting this.  I guess other filters (thread,
+dso) have same problem.
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Jenny Tc <jenny.tc@intel.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
----
- drivers/mfd/max14577.c               |   5 +-
- drivers/power/max14577_charger.c     | 232 +++++++++++++++++++++++++++++++----
- include/linux/mfd/max14577-private.h |  16 +++
- include/linux/mfd/max14577.h         |   8 ++
- 4 files changed, 233 insertions(+), 28 deletions(-)
+> 
+> fixing that by unfolding everything after the filter and reseting
+> the nr_callchain_rows number
 
-diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index cef2149ac096..13030573a8ca 100644
---- a/drivers/mfd/max14577.c
-+++ b/drivers/mfd/max14577.c
-@@ -116,7 +116,10 @@ static struct mfd_cell max14577_devs[] = {
- 		.name = "max14577-regulator",
- 		.of_compatible = "maxim,max14577-regulator",
- 	},
--	{ .name = "max14577-charger", },
-+	{
-+		.name = "max14577-charger",
-+		.of_compatible = "maxim,max14577-charger",
-+	},
- };
- 
- static struct mfd_cell max77836_devs[] = {
-diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
-index 19c8f42abf24..f32f94a9a144 100644
---- a/drivers/power/max14577_charger.c
-+++ b/drivers/power/max14577_charger.c
-@@ -19,6 +19,7 @@
- #include <linux/platform_device.h>
- #include <linux/power_supply.h>
- #include <linux/mfd/max14577-private.h>
-+#include <linux/mfd/max14577.h>
- 
- struct max14577_charger {
- 	struct device *dev;
-@@ -27,6 +28,8 @@ struct max14577_charger {
- 
- 	unsigned int		charging_state;
- 	unsigned int		battery_state;
-+
-+	struct max14577_charger_platform_data	*pdata;
- };
- 
- /*
-@@ -178,15 +181,107 @@ static int max14577_get_present(struct max14577_charger *chg)
- 	return 1;
- }
- 
-+static inline int max14577_init_constant_voltage(struct max14577_charger *chg,
-+		unsigned int uvolt)
-+{
-+	u8 reg_data;
-+
-+	if (uvolt < MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN ||
-+			uvolt > MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX)
-+		return -EINVAL;
-+
-+	if (uvolt == 4200000)
-+		reg_data = 0x0;
-+	else if (uvolt == MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX)
-+		reg_data = 0x1f;
-+	else if (uvolt <= 4280000) {
-+		unsigned int val = uvolt;
-+
-+		val -= MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN;
-+		val /= MAXIM_CHARGER_CONSTANT_VOLTAGE_STEP;
-+		if (uvolt <= 4180000)
-+			reg_data = 0x1 + val;
-+		else
-+			reg_data = val; /* Fix for gap between 4.18V and 4.22V */
-+	} else
-+		return -EINVAL;
-+
-+	reg_data <<= CHGCTRL3_MBCCVWRC_SHIFT;
-+
-+	return max14577_write_reg(chg->max14577->regmap,
-+			MAX14577_CHG_REG_CHG_CTRL3, reg_data);
-+}
-+
-+static inline int max14577_init_eoc(struct max14577_charger *chg,
-+		unsigned int uamp)
-+{
-+	unsigned int current_bits = 0xf;
-+	u8 reg_data;
-+
-+	switch (chg->max14577->dev_type) {
-+	case MAXIM_DEVICE_TYPE_MAX77836:
-+		if (uamp < 5000)
-+			return -EINVAL; /* Requested current is too low */
-+
-+		if (uamp >= 7500 && uamp < 10000)
-+			current_bits = 0x0;
-+		else if (uamp <= 50000) {
-+			/* <5000, 7499> and <10000, 50000> */
-+			current_bits = uamp / 5000;
-+		} else {
-+			uamp = min(uamp, 100000U) - 50000U;
-+			current_bits = 0xa + uamp / 10000;
-+		}
-+		break;
-+
-+	case MAXIM_DEVICE_TYPE_MAX14577:
-+	default:
-+		if (uamp < MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN)
-+			return -EINVAL; /* Requested current is too low */
-+
-+		uamp = min(uamp, MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX);
-+		uamp -= MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN;
-+		current_bits = uamp / MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP;
-+		break;
-+	}
-+
-+	reg_data = current_bits << CHGCTRL5_EOCS_SHIFT;
-+
-+	return max14577_update_reg(chg->max14577->regmap,
-+			MAX14577_CHG_REG_CHG_CTRL5, CHGCTRL5_EOCS_MASK,
-+			reg_data);
-+}
-+
-+static inline int max14577_init_fast_charge(struct max14577_charger *chg,
-+		unsigned int uamp)
-+{
-+	u8 reg_data;
-+	int ret;
-+	const struct maxim_charger_current *limits =
-+		&maxim_charger_currents[chg->max14577->dev_type];
-+
-+	ret = maxim_charger_calc_reg_current(limits, uamp, uamp, &reg_data);
-+	if (ret) {
-+		dev_err(chg->dev, "Wrong value for fast charge: %u\n", uamp);
-+		return ret;
-+	}
-+
-+	return max14577_update_reg(chg->max14577->regmap,
-+			MAX14577_CHG_REG_CHG_CTRL4,
-+			CHGCTRL4_MBCICHWRCL_MASK | CHGCTRL4_MBCICHWRCH_MASK,
-+			reg_data);
-+}
-+
- /*
-  * Sets charger registers to proper and safe default values.
-  * Some of these values are equal to defaults in MAX14577E
-  * data sheet but there are minor differences.
-  */
--static void max14577_charger_reg_init(struct max14577_charger *chg)
-+static int max14577_charger_reg_init(struct max14577_charger *chg)
- {
- 	struct regmap *rmap = chg->max14577->regmap;
- 	u8 reg_data;
-+	int ret;
- 
- 	/*
- 	 * Charger-Type Manual Detection, default off (set CHGTYPMAN to 0)
-@@ -198,10 +293,6 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
- 			CDETCTRL1_CHGDETEN_MASK | CDETCTRL1_CHGTYPMAN_MASK,
- 			reg_data);
- 
--	/* Battery Fast-Charge Timer, set to: 6hrs */
--	reg_data = 0x3 << CHGCTRL1_TCHW_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
--
- 	/*
- 	 * Wall-Adapter Rapid Charge, default on
- 	 * Battery-Charger, default on
-@@ -210,32 +301,57 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
- 	reg_data |= 0x1 << CHGCTRL2_MBCHOSTEN_SHIFT;
- 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL2, reg_data);
- 
--	/* Battery-Charger Constant Voltage (CV) Mode, set to: 4.35V */
--	reg_data = 0xf << CHGCTRL3_MBCCVWRC_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL3, reg_data);
--
--	/*
--	 * Fast Battery-Charge Current Low,
--	 * default 200-950mA (max14577) / 100-475mA (max77836)
--	 *
--	 * Fast Battery-Charge Current High,
--	 * set to 450mA (max14577) / 225mA (max77836)
--	 */
--	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
--	reg_data |= 0x5 << CHGCTRL4_MBCICHWRCH_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL4, reg_data);
--
--	/* End-of-Charge Current, set to 50mA (max14577) / 7.5mA (max77836) */
--	reg_data = 0x0 << CHGCTRL5_EOCS_SHIFT;
--	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL5, reg_data);
--
- 	/* Auto Charging Stop, default off */
- 	reg_data = 0x0 << CHGCTRL6_AUTOSTOP_SHIFT;
- 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL6, reg_data);
- 
--	/* Overvoltage-Protection Threshold, set to 6.5V */
--	reg_data = 0x2 << CHGCTRL7_OTPCGHCVS_SHIFT;
-+	ret = max14577_init_constant_voltage(chg, chg->pdata->constant_uvolt);
-+	if (ret)
-+		return ret;
-+
-+	ret = max14577_init_eoc(chg, chg->pdata->eoc_uamp);
-+	if (ret)
-+		return ret;
-+
-+	ret = max14577_init_fast_charge(chg, chg->pdata->fast_charge_uamp);
-+	if (ret)
-+		return ret;
-+
-+	/* Initialize Battery Fast-Charge Timer */
-+	switch (chg->pdata->fast_charge_timer) {
-+	case 5 ... 7:
-+		reg_data = chg->pdata->fast_charge_timer - 3;
-+		break;
-+	case 0:
-+		/* Disable */
-+		reg_data = 0x7;
-+	default:
-+		dev_err(chg->dev, "Wrong value for Fast-Charge Timer: %u\n",
-+				chg->pdata->fast_charge_timer);
-+		return -EINVAL;
-+	}
-+	reg_data <<= CHGCTRL1_TCHW_SHIFT;
-+	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
-+
-+	/* Initialize Overvoltage-Protection Threshold */
-+	switch (chg->pdata->ovp_uvolt) {
-+	case 7500000:
-+		reg_data = 0x0;
-+		break;
-+	case 6000000:
-+	case 6500000:
-+	case 7000000:
-+		reg_data = 0x1 + (chg->pdata->ovp_uvolt - 6000000) / 500000;
-+		break;
-+	default:
-+		dev_err(chg->dev, "Wrong value for OVP: %u\n",
-+				chg->pdata->ovp_uvolt);
-+		return -EINVAL;
-+	}
-+	reg_data <<= CHGCTRL7_OTPCGHCVS_SHIFT;
- 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL7, reg_data);
-+
-+	return 0;
- }
- 
- /* Support property from charger */
-@@ -295,6 +411,58 @@ static int max14577_charger_get_property(struct power_supply *psy,
- 	return ret;
- }
- 
-+#ifdef CONFIG_OF
-+static struct max14577_charger_platform_data *max14577_charger_dt_init(
-+		struct platform_device *pdev)
-+{
-+	struct max14577_charger_platform_data *pdata;
-+	struct device_node *np = pdev->dev.of_node;
-+	int ret;
-+
-+	if (!np) {
-+		dev_err(&pdev->dev, "No charger OF node\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata) {
-+		dev_err(&pdev->dev, "Memory alloc for charger pdata failed\n");
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	ret = of_property_read_u32(np, "maxim,fast-charge-timer",
-+			&pdata->fast_charge_timer);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,constant-uvolt",
-+			&pdata->constant_uvolt);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,fast-charge-uamp",
-+			&pdata->fast_charge_uamp);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,eoc-uamp", &pdata->eoc_uamp);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	ret = of_property_read_u32(np, "maxim,ovp-uvolt", &pdata->ovp_uvolt);
-+	if (ret)
-+		return ERR_PTR(ret);
-+
-+	return pdata;
-+}
-+#else /* CONFIG_OF */
-+static struct max14577_charger_platform_data *max14577_charger_dt_init(
-+		struct platform_device *pdev)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_OF */
-+
- static int max14577_charger_probe(struct platform_device *pdev)
- {
- 	struct max14577_charger *chg;
-@@ -309,7 +477,13 @@ static int max14577_charger_probe(struct platform_device *pdev)
- 	chg->dev = &pdev->dev;
- 	chg->max14577 = max14577;
- 
--	max14577_charger_reg_init(chg);
-+	chg->pdata = max14577_charger_dt_init(pdev);
-+	if (IS_ERR_OR_NULL(chg->pdata))
-+		return PTR_ERR(chg->pdata);
-+
-+	ret = max14577_charger_reg_init(chg);
-+	if (ret)
-+		return ret;
- 
- 	chg->charger.name = "max14577-charger",
- 	chg->charger.type = POWER_SUPPLY_TYPE_BATTERY,
-@@ -323,6 +497,10 @@ static int max14577_charger_probe(struct platform_device *pdev)
- 		return ret;
- 	}
- 
-+	/* Check for valid values for charger */
-+	BUILD_BUG_ON(MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN +
-+			MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP * 0xf !=
-+			MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX);
- 	return 0;
- }
- 
-diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
-index 7d514839c764..5c842f3b6da5 100644
---- a/include/linux/mfd/max14577-private.h
-+++ b/include/linux/mfd/max14577-private.h
-@@ -293,6 +293,22 @@ enum max14577_charger_reg {
- #define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP	 25000U
- #define MAX77836_CHARGER_CURRENT_LIMIT_MAX		475000U
- 
-+/*
-+ * MAX14577 charger End-Of-Charge current limits
-+ * (as in CHGCTRL5 register), uA
-+ */
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN		50000U
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP		10000U
-+#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX		200000U
-+
-+/*
-+ * MAX14577/MAX77836 Battery Constant Voltage
-+ * (as in CHGCTRL3 register), uV
-+ */
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN		4000000U
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_STEP		20000U
-+#define MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX		4350000U
-+
- /* MAX14577 regulator SFOUT LDO voltage, fixed, uV */
- #define MAX14577_REGULATOR_SAFEOUT_VOLTAGE		4900000
- 
-diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
-index 3c098d57b1d1..d068846a13cf 100644
---- a/include/linux/mfd/max14577.h
-+++ b/include/linux/mfd/max14577.h
-@@ -54,6 +54,14 @@ struct max14577_regulator_platform_data {
- 	struct device_node *of_node;
- };
- 
-+struct max14577_charger_platform_data {
-+	unsigned int fast_charge_timer;
-+	unsigned int constant_uvolt;
-+	unsigned int fast_charge_uamp;
-+	unsigned int eoc_uamp;
-+	unsigned int ovp_uvolt;
-+};
-+
- /*
-  * MAX14577 MFD platform data
-  */
--- 
-1.9.1
+Hmm.. I think hists__remove_entry_filter() already folds them so how
+about just setting ->nr_callchain_rows to 0 in hist_browser__reset()
+instead?
+
+Thanks,
+Namhyung
+
+> 
+> feel free to merge this with your change if you agree ;-)
+> 
+> thanks,
+> jirka
+> 
+> 
+> ---
+> diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+> index 5b81c0d..1cf5f45 100644
+> --- a/tools/perf/ui/browsers/hists.c
+> +++ b/tools/perf/ui/browsers/hists.c
+> @@ -312,6 +312,8 @@ __hist_browser__set_folding(struct hist_browser *browser, bool unfold)
+>  	struct rb_node *nd;
+>  	struct hists *hists = browser->hists;
+>  
+> +	browser->nr_callchain_rows = 0;
+> +
+>  	for (nd = rb_first(&hists->entries);
+>  	     (nd = hists__filter_entries(nd, hists, browser->min_pcnt)) != NULL;
+>  	     nd = rb_next(nd)) {
+> @@ -323,7 +325,6 @@ __hist_browser__set_folding(struct hist_browser *browser, bool unfold)
+>  
+>  static void hist_browser__set_folding(struct hist_browser *browser, bool unfold)
+>  {
+> -	browser->nr_callchain_rows = 0;
+>  	__hist_browser__set_folding(browser, unfold);
+>  
+>  	browser->b.nr_entries = hist_browser__nr_entries(browser);
+> @@ -1507,6 +1508,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+>  					delay_secs * 2) == K_ENTER) {
+>  				hists->symbol_filter_str = *buf ? buf : NULL;
+>  				hists__filter_by_symbol(hists);
+> +				__hist_browser__set_folding(browser, false);
+>  				hist_browser__reset(browser);
+>  			}
+>  			continue;
+
+
 
