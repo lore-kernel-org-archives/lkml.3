@@ -1,317 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751925AbaDWMLn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:11:43 -0400
-Received: from mail-oa0-f42.google.com ([209.85.219.42]:50606 "EHLO
-	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354AbaDWMLl (ORCPT
+	id S1752314AbaDWML4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:11:56 -0400
+Received: from mail-pb0-f52.google.com ([209.85.160.52]:57207 "EHLO
+	mail-pb0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaDWMLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:11:41 -0400
+	Wed, 23 Apr 2014 08:11:48 -0400
+Message-ID: <5357AE20.70808@linaro.org>
+Date: Wed, 23 Apr 2014 20:12:16 +0800
+From: "kefeng.wang" <kefeng.wang@linaro.org>
+User-Agent: Mozilla/5.0 (Windows NT 5.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1398235235-4239-1-git-send-email-namhyung@kernel.org>
-References: <1398235235-4239-1-git-send-email-namhyung@kernel.org>
-Date: Wed, 23 Apr 2014 14:11:40 +0200
-Message-ID: <CABPqkBSgRmtnoGzb2KfLKK4QNkhUVzceU81x+o+PTLwNL3uL+A@mail.gmail.com>
-Subject: Re: [PATCH v2 1/2] perf record: Propagate exit status of a command
- line workload
-From: Stephane Eranian <eranian@google.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Hans de Goede <hdegoede@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: wangkefeng.wang@huawei.com
+Subject: Re: [PATCH v4 2/3] libahci_platform: add host_flags parameter in
+ ahci_platform_init_host()
+References: <1398253008-17059-1-git-send-email-kefeng.wang@linaro.org> <1398253008-17059-3-git-send-email-kefeng.wang@linaro.org> <5357A86C.1070709@redhat.com>
+In-Reply-To: <5357A86C.1070709@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 8:40 AM, Namhyung Kim <namhyung@kernel.org> wrote:
-> Currently perf record doesn't propagate the exit status of a workload
-> given by the command line.  But sometimes it'd useful if it's
-> propagated so that a monitoring script can handle errors
-> appropriately.
->
-> To do that, it got rid of exit handlers and run/call them directly in
-> the __cmd_record().  I don't see any reason why those are in a form of
-> exit handlers in the first place.  Also it cleaned up the resouce
-> management code in record__exit().
->
-> With this change, perf record returns the child exit status in case of
-> normal termination.  (Not sure what should be returned on abnormal
-> cases though).
->
-> Example run of Stephane's case:
->
->   $ perf record false && echo yes || echo no
->   [ perf record: Woken up 1 times to write data ]
->   [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
->   no
->
-> And Jiri's case (error in parent):
->
->   $ perf record -m 10G true && echo yes || echo no
->   rounding mmap pages size to 17179869184 bytes (4194304 pages)
->   failed to mmap with 12 (Cannot allocate memory)
->   no
->
-> Reported-by: Stephane Eranian <eranian@google.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/builtin-record.c | 119 ++++++++++++++++++--------------------------
->  1 file changed, 49 insertions(+), 70 deletions(-)
->
-> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-> index eb524f91bffe..d315be9e9be2 100644
-> --- a/tools/perf/builtin-record.c
-> +++ b/tools/perf/builtin-record.c
-> @@ -152,26 +152,6 @@ static void sig_handler(int sig)
->         signr = sig;
->  }
->
-> -static void record__sig_exit(int exit_status __maybe_unused, void *arg)
-> -{
-> -       struct record *rec = arg;
-> -       int status;
-> -
-> -       if (rec->evlist->workload.pid > 0) {
-> -               if (!child_finished)
-> -                       kill(rec->evlist->workload.pid, SIGTERM);
-> -
-> -               wait(&status);
-> -               if (WIFSIGNALED(status))
-> -                       psignal(WTERMSIG(status), rec->progname);
-> -       }
-> -
-> -       if (signr == -1 || signr == SIGUSR1)
-> -               return;
-> -
-> -       signal(signr, SIG_DFL);
-> -}
-> -
->  static int record__open(struct record *rec)
->  {
->         char msg[512];
-> @@ -243,27 +223,6 @@ static int process_buildids(struct record *rec)
->                                               size, &build_id__mark_dso_hit_ops);
->  }
->
-> -static void record__exit(int status, void *arg)
-> -{
-> -       struct record *rec = arg;
-> -       struct perf_data_file *file = &rec->file;
-> -
-> -       if (status != 0)
-> -               return;
-> -
-> -       if (!file->is_pipe) {
-> -               rec->session->header.data_size += rec->bytes_written;
-> -
-> -               if (!rec->no_buildid)
-> -                       process_buildids(rec);
-> -               perf_session__write_header(rec->session, rec->evlist,
-> -                                          file->fd, true);
-> -               perf_session__delete(rec->session);
-> -               perf_evlist__delete(rec->evlist);
-> -               symbol__exit();
-> -       }
-> -}
-> -
->  static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
->  {
->         int err;
-> @@ -356,6 +315,7 @@ static void workload_exec_failed_signal(int signo, siginfo_t *info,
->  static int __cmd_record(struct record *rec, int argc, const char **argv)
->  {
->         int err;
-> +       int status = 0;
->         unsigned long waking = 0;
->         const bool forks = argc > 0;
->         struct machine *machine;
-> @@ -367,7 +327,6 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->
->         rec->progname = argv[0];
->
-> -       on_exit(record__sig_exit, rec);
->         signal(SIGCHLD, sig_handler);
->         signal(SIGINT, sig_handler);
->         signal(SIGTERM, sig_handler);
-> @@ -394,26 +353,21 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->
->         if (record__open(rec) != 0) {
->                 err = -1;
-> -               goto out_delete_session;
-> +               goto out_child;
->         }
->
->         if (!rec->evlist->nr_groups)
->                 perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
->
-> -       /*
-> -        * perf_session__delete(session) will be called at record__exit()
-> -        */
-> -       on_exit(record__exit, rec);
-> -
->         if (file->is_pipe) {
->                 err = perf_header__write_pipe(file->fd);
->                 if (err < 0)
-> -                       goto out_delete_session;
-> +                       goto out_child;
->         } else {
->                 err = perf_session__write_header(session, rec->evlist,
->                                                  file->fd, false);
->                 if (err < 0)
-> -                       goto out_delete_session;
-> +                       goto out_child;
->         }
->
->         if (!rec->no_buildid
-> @@ -421,7 +375,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->                 pr_err("Couldn't generate buildids. "
->                        "Use --no-buildid to profile anyway.\n");
->                 err = -1;
-> -               goto out_delete_session;
-> +               goto out_child;
->         }
->
->         machine = &session->machines.host;
-> @@ -431,7 +385,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->                                                    process_synthesized_event);
->                 if (err < 0) {
->                         pr_err("Couldn't synthesize attrs.\n");
-> -                       goto out_delete_session;
-> +                       goto out_child;
->                 }
->
->                 if (have_tracepoints(&rec->evlist->entries)) {
-> @@ -447,7 +401,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->                                                                   process_synthesized_event);
->                         if (err <= 0) {
->                                 pr_err("Couldn't record tracing data.\n");
-> -                               goto out_delete_session;
-> +                               goto out_child;
->                         }
->                         rec->bytes_written += err;
->                 }
-> @@ -475,7 +429,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->         err = __machine__synthesize_threads(machine, tool, &opts->target, rec->evlist->threads,
->                                             process_synthesized_event, opts->sample_address);
->         if (err != 0)
-> -               goto out_delete_session;
-> +               goto out_child;
->
->         if (rec->realtime_prio) {
->                 struct sched_param param;
-> @@ -484,7 +438,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->                 if (sched_setscheduler(0, SCHED_FIFO, &param)) {
->                         pr_err("Could not set realtime priority.\n");
->                         err = -1;
-> -                       goto out_delete_session;
-> +                       goto out_child;
->                 }
->         }
->
-> @@ -512,7 +466,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->
->                 if (record__mmap_read_all(rec) < 0) {
->                         err = -1;
-> -                       goto out_delete_session;
-> +                       goto out_child;
->                 }
->
->                 if (hits == rec->samples) {
-> @@ -538,28 +492,52 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
->                 const char *emsg = strerror_r(workload_exec_errno, msg, sizeof(msg));
->                 pr_err("Workload failed: %s\n", emsg);
->                 err = -1;
-> -               goto out_delete_session;
-> +               goto out_child;
->         }
->
-> -       if (quiet || signr == SIGUSR1)
-> -               return 0;
-> +       if (!quiet) {
-> +               fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
->
-> -       fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
-> +               /*
-> +                * Approximate RIP event size: 24 bytes.
-> +                */
-> +               fprintf(stderr,
-> +                       "[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
-> +                       (double)rec->bytes_written / 1024.0 / 1024.0,
-> +                       file->path,
-> +                       rec->bytes_written / 24);
-> +       }
->
-> -       /*
-> -        * Approximate RIP event size: 24 bytes.
-> -        */
-> -       fprintf(stderr,
-> -               "[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
-> -               (double)rec->bytes_written / 1024.0 / 1024.0,
-> -               file->path,
-> -               rec->bytes_written / 24);
-> +out_child:
-> +       if (forks) {
-> +               int exit_status;
->
-> -       return 0;
-> +               if (!child_finished)
-> +                       kill(rec->evlist->workload.pid, SIGTERM);
-> +
-> +               wait(&exit_status);
-> +
-> +               if (err < 0)
-Not quite this. Although this works with my test case with 'false'.
-It fails when I tried the opposite test case:
+On 2014-4-23 19:47, Hans de Goede wrote:
+> Hi,
+> 
+> On 04/23/2014 01:36 PM, Kefeng Wang wrote:
+>> Add a dynamic host flags argument to make ahci_platform_init_host more flexible,
+>> then remove the AHCI_HFLAGS(...) argument from some driver's ata_port_info,
+>> and pass that in as the new arguments.
+>>
+>> Cc: Hans de Geode <hdegoede@redhat.com>
+>> Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
+> 
+> Thanks for working on this, review comments inline.
+> 
+[...]
+>> diff --git a/drivers/ata/ahci_xgene.c b/drivers/ata/ahci_xgene.c
+>> index 77c89bf..8022b5a 100644
+>> --- a/drivers/ata/ahci_xgene.c
+>> +++ b/drivers/ata/ahci_xgene.c
+>> @@ -382,6 +382,7 @@ static int xgene_ahci_probe(struct platform_device *pdev)
+>>  	struct ahci_host_priv *hpriv;
+>>  	struct xgene_ahci_context *ctx;
+>>  	struct resource *res;
+>> +	unsigned int hflags;
+>>  	int rc;
+>>  
+>>  	hpriv = ahci_platform_get_resources(pdev);
+>> @@ -450,7 +451,10 @@ static int xgene_ahci_probe(struct platform_device *pdev)
+>>  		goto disable_resources;
+>>  	}
+>>  
+>> -	rc = ahci_platform_init_host(pdev, hpriv, &xgene_ahci_port_info, 0, 0);
+>> +	hflags = AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ,
+>> +
+>> +	rc = ahci_platform_init_host(pdev, hpriv, &xgene_ahci_port_info,
+>> +				     hflags, 0, 0);
+>>  	if (rc)
+>>  		goto disable_resources;
+>>  
+> 
+> You should remove the AHCI_HFLAGS(AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ),
+> part from xgene_ahci_port_info here, like you do for ahci_sunxi.c
 
-$ perf record true && echo yes || echo no
-  [ perf record: Woken up 1 times to write data ]
-  [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
-  no
+yes.
 
-The return code in this case is 255. I tracked it down to err being last set
-by poll() which got interrupted by SIGCHLD. So I think the err value must
-be overridden somehow in this case. Maybe something like:
+> 
+>> diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
+>> index 7cb3a85..ebd880e 100644
+>> --- a/drivers/ata/libahci_platform.c
+>> +++ b/drivers/ata/libahci_platform.c
+>> @@ -283,6 +283,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_get_resources);
+>>   * @pdev: platform device pointer for the host
+>>   * @hpriv: ahci-host private data for the host
+>>   * @pi_template: template for the ata_port_info to use
+>> + * @host_flags: ahci host flags used in ahci_host_priv
+>>   * @force_port_map: param passed to ahci_save_initial_config
+>>   * @mask_port_map: param passed to ahci_save_initial_config
+>>   *
+>> @@ -296,6 +297,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_get_resources);
+>>  int ahci_platform_init_host(struct platform_device *pdev,
+>>  			    struct ahci_host_priv *hpriv,
+>>  			    const struct ata_port_info *pi_template,
+>> +			    unsigned int host_flags,
+>>  			    unsigned int force_port_map,
+>>  			    unsigned int mask_port_map)
+>>  {
+> 
+> And here you should actually do something with hflags, not just throw
+> them away. Something like:
+> 
+> pi.private_data = (void *)host_flags;
 
-                        err = poll(evsel_list->pollfd, evsel_list->nr_fds, -1);
-                        if (err < 0 &&  errno == EINTR && forks && done)
-                                err = 0;
+:( it's my mistake, will update, thanks for you reminder.
 
+> 
+>> diff --git a/include/linux/ahci_platform.h b/include/linux/ahci_platform.h
+>> index 1f16d50..45897f6 100644
+>> --- a/include/linux/ahci_platform.h
+>> +++ b/include/linux/ahci_platform.h
+>> @@ -44,6 +44,7 @@ struct ahci_host_priv *ahci_platform_get_resources(
+>>  int ahci_platform_init_host(struct platform_device *pdev,
+>>  			    struct ahci_host_priv *hpriv,
+>>  			    const struct ata_port_info *pi_template,
+>> +			    unsigned int host_flags,
+>>  			    unsigned int force_port_map,
+>>  			    unsigned int mask_port_map);
+>>  
+>>
+> 
+> Regards,
+> 
+> Hans
+> 
 
-> +                       status = err;
-> +               else if (WIFEXITED(exit_status))
-> +                       status = WEXITSTATUS(exit_status);
-> +               else if (WIFSIGNALED(status))
-> +                       psignal(WTERMSIG(status), rec->progname);
-> +       } else
-> +               status = err;
-> +
-> +       if (!err && !file->is_pipe) {
-> +               rec->session->header.data_size += rec->bytes_written;
-> +
-> +               if (!rec->no_buildid)
-> +                       process_buildids(rec);
-> +               perf_session__write_header(rec->session, rec->evlist,
-> +                                          file->fd, true);
-> +       }
->
->  out_delete_session:
->         perf_session__delete(session);
-> -       return err;
-> +       return status;
->  }
->
->  #define BRANCH_OPT(n, m) \
-> @@ -988,6 +966,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
->
->         err = __cmd_record(&record, argc, argv);
->  out_symbol_exit:
-> +       perf_evlist__delete(rec->evlist);
->         symbol__exit();
->         return err;
->  }
-> --
-> 1.9.2
->
