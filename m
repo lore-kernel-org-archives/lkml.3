@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752678AbaDWFPE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 01:15:04 -0400
-Received: from mail-la0-f52.google.com ([209.85.215.52]:47963 "EHLO
-	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158AbaDWFPA (ORCPT
+	id S1752821AbaDWFPZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 01:15:25 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56794 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752345AbaDWFPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 01:15:00 -0400
+	Wed, 23 Apr 2014 01:15:03 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 3/9] perf tools: Account entry stats when it's added to the output tree
+References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
+	<1398156591-11001-4-git-send-email-namhyung@kernel.org>
+	<20140422171048.GL1104@krava.brq.redhat.com>
+Date: Wed, 23 Apr 2014 14:14:59 +0900
+In-Reply-To: <20140422171048.GL1104@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Tue, 22 Apr 2014 19:10:49 +0200")
+Message-ID: <8738h4sk30.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <5356EEBB.5040402@infradead.org>
-References: <1398180580-8089-1-git-send-email-mq@suse.cz> <5356B2AB.3020005@gmail.com>
- <5356EEBB.5040402@infradead.org>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Wed, 23 Apr 2014 07:14:38 +0200
-Message-ID: <CAKgNAkj995fwjE2Jk59kbVqNJFR7Q9FfVTbz81Wq6z5XYyPJSQ@mail.gmail.com>
-Subject: Re: [PATCH] proc: fix documentation for /proc/stat, line "intr"
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: Jan Moskyto Matejka <mq@suse.cz>, linux-doc@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 12:35 AM, Randy Dunlap <rdunlap@infradead.org> wrote:
-> On 04/22/14 11:19, Michael Kerrisk (man-pages) wrote:
->> On 04/22/2014 05:29 PM, Jan Moskyto Matejka wrote:
->>> The sum at the beginning of line "intr" includes also unnumbered interrupts.
->>> It implies that the sum at the beginning isn't the sum of the remainder of the
->>> line, not even an estimation.
->>>
->>> Fixed the documentation to mention that.
->>
->> I'm not really doubting what you claim, Jan, but it would be really
->> helpful if you provided some data to support the proposed change
->> (Kernel source references, or notes about testing you've done, or
->> pointers to mailing list threads, authoritative note that you are
->> the maintainer of some relevant kernel subsystem...). Do you have
->> something like that? (It's also useful for the change log.)
+On Tue, 22 Apr 2014 19:10:49 +0200, Jiri Olsa wrote:
+> On Tue, Apr 22, 2014 at 05:49:45PM +0900, Namhyung Kim wrote:
 >
-> I wouldn't mind more of a changelog, but the additional text is
-> certainly correct.
+> SNIP
 >
-> Thanks.  I'll apply the patch, but more changelog comments are welcome.
-
-And I see now that this text could also reasonably fit into the
-proc(5) man page. So I've added, with a Reviewed-by: tag for Randy.
-Thanks for the text, Jan.
-
-Cheers,
-
-Michael
-
-
->>> Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
->>> ---
->>>  Documentation/filesystems/proc.txt | 5 +++--
->>>  1 file changed, 3 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
->>> index f00bee1..4e6f9d0 100644
->>> --- a/Documentation/filesystems/proc.txt
->>> +++ b/Documentation/filesystems/proc.txt
->>> @@ -1245,8 +1245,9 @@ second).  The meanings of the columns are as follows, from left to right:
->>>
->>>  The "intr" line gives counts of interrupts  serviced since boot time, for each
->>>  of the  possible system interrupts.   The first  column  is the  total of  all
->>> -interrupts serviced; each  subsequent column is the  total for that particular
->>> -interrupt.
->>> +interrupts serviced  including  unnumbered  architecture specific  interrupts;
->>> +each  subsequent column is the  total for that particular numbered interrupt.
->>> +Unnumbered interrupts are not shown, only summed into the total.
->>>
->>>  The "ctxt" line gives the total number of context switches across all CPUs.
->>>
->>>
->>
->>
+>>  
+>> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+>> index 1c77714f668d..f955ae5a41c5 100644
+>> --- a/tools/perf/util/hist.c
+>> +++ b/tools/perf/util/hist.c
+>> @@ -344,9 +344,11 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
+>>  		hists__calc_col_len(hists, h);
+>>  		hists->nr_non_filtered_entries++;
+>>  		hists->stats.total_non_filtered_period += h->stat.period;
+>> +		hists->stats.nr_non_filtered_samples += h->stat.nr_events;
+>>  	}
+>>  	hists->nr_entries++;
+>>  	hists->stats.total_period += h->stat.period;
+>> +	hists__add_nr_events(hists, PERF_RECORD_SAMPLE, h->stat.nr_events);
 >
+> while at it.. could hists__remove_entry_filter call hists__inc_nr_entries too?
+
+Nope, I (and Arnaldo) want to the default stats invariant - they are not
+changed by any filter.  As you can see hists__remove_entry_filter() only
+updates non-filtered stats.
+
 >
-> --
-> ~Randy
+> not sure about those 2 extra lines in hists__remove_entry_filter:
+>
+>         if (h->ms.unfolded)
+>                 hists->nr_non_filtered_entries += h->nr_rows;
+>         h->row_offset = 0;
+>
+> maybe they should be added into hists__inc_nr_entries?
 
+Hmm.. this seems like a mix of generic code and UI-specific code.  The
+->nr_rows, ->row_offset and ->ms.unfolded are only used by TUI browser
+code AFAIK and it takes the folding state into account.
 
+I think we should just make it folded to make things simple - and
+finally get rid of the UI-specific bits in the generic code.
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Thanks,
+Namhyung
