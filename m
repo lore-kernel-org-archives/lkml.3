@@ -1,102 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbaDWM6z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:58:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33887 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752171AbaDWM6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:58:54 -0400
-Date: Wed, 23 Apr 2014 08:58:28 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
- output fields (v4)
-Message-ID: <20140423125828.GL5328@redhat.com>
-References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
- <20140422211647.GO8488@redhat.com>
- <87lhuwr2pk.fsf@sejong.aot.lge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87lhuwr2pk.fsf@sejong.aot.lge.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753704AbaDWM7z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:59:55 -0400
+Received: from mail-la0-f44.google.com ([209.85.215.44]:40743 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784AbaDWM7y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 08:59:54 -0400
+From: Anders Darander <anders.darander@gmail.com>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, Anders Darander <anders.darander@gmail.com>
+Subject: [PATCH linux-next v2]  staging/rtl8821ae: fix sparse address space warning
+Date: Wed, 23 Apr 2014 14:59:46 +0200
+Message-Id: <1398257986-21395-1-git-send-email-anders.darander@gmail.com>
+X-Mailer: git-send-email 2.0.0.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 03:15:35PM +0900, Namhyung Kim wrote:
-> Hi Don,
-> 
-> On Tue, 22 Apr 2014 17:16:47 -0400, Don Zickus wrote:
-> > On Wed, Apr 16, 2014 at 12:05:37PM +0900, Namhyung Kim wrote:
-> >> Hello,
-> >> 
-> >> This is a patchset implementing -F/--fields option to setup output
-> >> field/column as Ingo requested.  It depends on my --percentage
-> >> patchset [1].
-> >> 
-> >> The -F option can receive any sort keys that -s option recognize, plus
-> >> following fields (name can be changed):
-> >> 
-> >>   overhead, overhead_sys, overhead_us, sample, period
-> >> 
-> >> The overhead_guest_sys and overhead_guest_us might be avaiable when
-> >> you profile guest machines.
-> >> 
-> >> Output will be sorted by in order of fields and sort keys passed by -s
-> >> option will be added to the output field list automatically.  If you
-> >> want to change the order of sorting you can give -s option in addition
-> >> to -F option.  To support old behavior, it'll also prepend 'overhead'
-> >> field to the sort keys unless you give -F option explicitly.
-> >
-> > So I am struggling a little bit to get this working correctly.  I had it
-> > in my head that I could sort internally with -s and re-sort the output
-> > based on -F, but it doesn't seem to be working that way.
-> 
-> Hmm.. probably it's me miss something on perf mem side..  I don't have
-> an access to a machine to test it now.
-> 
-> >
-> > For example with
-> >
-> > ./perf mem record -a grep -r foo /* > /dev/null
-> > ./perf mem report -F overhead,symbol_daddr,pid -s symbol_daddr,pid --stdio 
-> >
-> > I was thinking I could sort everything based on the symbol_daddr and pid.
-> > Then re-sort the output to display the highest 'symbol_daddr,pid' pair.
-> > But it didn't seem to work that way.  Instead it seems like I get the
-> > original sort just displayed in the -F format.
-> 
-> Could you please show me the output of your example?
+Change the definition of pci_mem_start|end from correct from pci_io(un)map's
+point of view.
 
+Signed-off-by: Anders Darander <anders.darander@gmail.com>
+---
 
-# To display the perf.data header info, please use --header/--header-only
-# options.
-#
-# Samples: 96K of event 'cpu/mem-loads/pp'
-# Total weight : 1102938
-# Sort order   : symbol_daddr,pid
-#
-# Overhead Data Symbol          Command:  Pid
-# ........ ......................................................................
-#
-     0.00%  [k] 0xffff8807a8c1cf80 grep:116437
-     0.00%  [k] 0xffff8807a8c8cee0 grep:116437
-     0.00%  [k] 0xffff8807a8dceea0 grep:116437
-     0.01%  [k] 0xffff8807a9298dc0 grep:116437
-     0.01%  [k] 0xffff8807a934be40 grep:116437
-     0.00%  [k] 0xffff8807a9416ec0 grep:116437
-     0.02%  [k] 0xffff8807a9735700 grep:116437
-     0.00%  [k] 0xffff8807a98e9460 grep:116437
-     0.02%  [k] 0xffff8807a9afc890 grep:116437
-     0.00%  [k] 0xffff8807aa64feb0 grep:116437
-     0.02%  [k] 0xffff8807aa6b0030 grep:116437
+Changes v1 -> v2:
+	* Change the struct definition instead of casting all
+	  pci_iomap and pci_iounmap calls.
 
-Cheers,
-Don
+ drivers/staging/rtl8821ae/pci.c  | 14 +++++++-------
+ drivers/staging/rtl8821ae/wifi.h |  4 ++--
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/rtl8821ae/pci.c b/drivers/staging/rtl8821ae/pci.c
+index a562aa6..5306e66 100644
+--- a/drivers/staging/rtl8821ae/pci.c
++++ b/drivers/staging/rtl8821ae/pci.c
+@@ -2313,16 +2313,16 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
+ 
+ 	/*shared mem start */
+ 	rtlpriv->io.pci_mem_start =
+-			(unsigned long)pci_iomap(pdev,
++			pci_iomap(pdev,
+ 			rtlpriv->cfg->bar_id, pmem_len);
+-	if (rtlpriv->io.pci_mem_start == 0) {
++	if (rtlpriv->io.pci_mem_start == NULL) {
+ 		RT_ASSERT(false, ("Can't map PCI mem\n"));
+ 		goto fail2;
+ 	}
+ 
+ 	RT_TRACE(COMP_INIT, DBG_DMESG,
+ 		 ("mem mapped space: start: 0x%08lx len:%08lx "
+-		  "flags:%08lx, after map:0x%08lx\n",
++		  "flags:%08lx, after map:0x%p\n",
+ 		  pmem_start, pmem_len, pmem_flags,
+ 		  rtlpriv->io.pci_mem_start));
+ 
+@@ -2415,8 +2415,8 @@ fail3:
+ 	rtl_deinit_core(hw);
+ 	ieee80211_free_hw(hw);
+ 
+-	if (rtlpriv->io.pci_mem_start != 0)
+-		pci_iounmap(pdev, (void *)rtlpriv->io.pci_mem_start);
++	if (rtlpriv->io.pci_mem_start != NULL )
++		pci_iounmap(pdev, rtlpriv->io.pci_mem_start);
+ 
+ fail2:
+ 	pci_release_regions(pdev);
+@@ -2478,8 +2478,8 @@ void rtl_pci_disconnect(struct pci_dev *pdev)
+ 		pci_disable_msi(rtlpci->pdev);
+ 
+ 	list_del(&rtlpriv->list);
+-	if (rtlpriv->io.pci_mem_start != 0) {
+-		pci_iounmap(pdev, (void *)rtlpriv->io.pci_mem_start);
++	if (rtlpriv->io.pci_mem_start != NULL) {
++		pci_iounmap(pdev, rtlpriv->io.pci_mem_start);
+ 		pci_release_regions(pdev);
+ 	}
+ 
+diff --git a/drivers/staging/rtl8821ae/wifi.h b/drivers/staging/rtl8821ae/wifi.h
+index 17a9d9f..e8250da 100644
+--- a/drivers/staging/rtl8821ae/wifi.h
++++ b/drivers/staging/rtl8821ae/wifi.h
+@@ -1086,8 +1086,8 @@ struct rtl_io {
+ 	struct device *dev;
+ 
+ 	/*PCI MEM map */
+-	unsigned long pci_mem_end;	/*shared mem end        */
+-	unsigned long pci_mem_start;	/*shared mem start */
++	void __iomem *pci_mem_end;	/*shared mem end        */
++	void __iomem *pci_mem_start;	/*shared mem start */
+ 
+ 	/*PCI IO map */
+ 	unsigned long pci_base_addr;	/*device I/O address */
+-- 
+2.0.0.rc0
+
