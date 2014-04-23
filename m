@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757376AbaDWHiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:38:08 -0400
-Received: from e06smtp12.uk.ibm.com ([195.75.94.108]:46999 "EHLO
-	e06smtp12.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757074AbaDWHiF (ORCPT
+	id S1757115AbaDWHjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:39:43 -0400
+Received: from hostedrelay.fireflyinternet.com ([109.228.30.76]:54896 "EHLO
+	relay.fireflyinternet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897AbaDWHjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:38:05 -0400
-Date: Wed, 23 Apr 2014 09:37:57 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, will.deacon@arm.com,
-        peterz@infradead.org, schwidefsky@de.ibm.com,
-        paulmck@linux.vnet.ibm.com, gang.chen@asianux.com,
-        heiko.carstens@de.ibm.com, tglx@linutronix.de
-Cc: tipbot@zytor.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:locking/core] arch,s390: Convert smp_mb__*()
-Message-ID: <20140423093757.2c07c209@mschwide>
-In-Reply-To: <tip-kme5dz5hcobpnufnnkh1ech2@git.kernel.org>
-References: <tip-kme5dz5hcobpnufnnkh1ech2@git.kernel.org>
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042307-8372-0000-0000-0000096EB445
+	Wed, 23 Apr 2014 03:39:42 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
+From: Chris Wilson <chris@chris-wilson.co.uk>
+To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Cc: Knut Petersen <Knut_Petersen@t-online.de>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        Imre Deak <imre.deak@intel.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: [PATCH] drm/i915: Discard BIOS framebuffers too small to accommodate chosen mode
+Date: Wed, 23 Apr 2014 08:39:07 +0100
+Message-Id: <1398238747-30657-1-git-send-email-chris@chris-wilson.co.uk>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <20140423071125.GS10722@phenom.ffwll.local>
+References: <20140423071125.GS10722@phenom.ffwll.local>
+X-Authenticated-User: chris.alporthouse@surfanytime.net 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+If the inherited BIOS framebuffer is smaller than the mode selected for
+fbdev, then if we continue to use it then we cause display corruption as
+we do not setup the panel fitter to upscale.
 
-On Fri, 18 Apr 2014 06:11:38 -0700
-tip-bot for Peter Zijlstra <tipbot@zytor.com> wrote:
+Regression from commit d978ef14456a38034f6c0e94a794129501f89200
+Author: Jesse Barnes <jbarnes@virtuousgeek.org>
+Date:   Fri Mar 7 08:57:51 2014 -0800
 
-> arch,s390: Convert smp_mb__*()
-> 
-> As per the existing implementation; implement the new one using
-> smp_mb().
-> 
-> AFAICT the s390 compare-and-swap does imply a barrier, however there
-> are some immediate ops that seem to be singly-copy atomic and do not
-> imply a barrier. One such is the "ni" op (which would be
-> and-immediate) which is used for the constant clear_bit
-> implementation. Therefore s390 needs full barriers for the
-> {before,after} atomic ops.
+    drm/i915: Wrap the preallocated BIOS framebuffer and preserve for KMS fbcon v12
 
-Good catch, if ni/oi are used this is required. What we want to
-add is an #ifdef CONFIG_HAVE_MARCH_Z196_FEATURES. With smp_mb__*
-defined as smp_mb() we get additional barriers for older machines
-while the atomic ops are defined with compare-and-swap which
-already does the barrier before and after the operation.
+v2: Add a debug message to track the discard of the BIOS fb.
 
-We can do that with a patch on top of this one, so no hurry.
+Reported-by: Knut Petersen <Knut_Petersen@t-online.de>
+Bugzilla: https://bugs.freedesktop.org/show_bug.cgi?id=77767
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Reviewed-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+---
+ drivers/gpu/drm/i915/intel_fbdev.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
+diff --git a/drivers/gpu/drm/i915/intel_fbdev.c b/drivers/gpu/drm/i915/intel_fbdev.c
+index b16116db6c37..dbd3f7ce6354 100644
+--- a/drivers/gpu/drm/i915/intel_fbdev.c
++++ b/drivers/gpu/drm/i915/intel_fbdev.c
+@@ -133,6 +133,16 @@ static int intelfb_create(struct drm_fb_helper *helper,
+ 
+ 	mutex_lock(&dev->struct_mutex);
+ 
++	if (intel_fb &&
++	    (sizes->fb_width > intel_fb->base.width ||
++	     sizes->fb_height > intel_fb->base.height)) {
++		DRM_DEBUG_KMS("BIOS fb too small (%dx%d), we require (%dx%d),"
++			      " releasing it\n",
++			      intel_fb->base.width, intel_fb->base.height,
++			      sizes->fb_width, sizes->fb_height);
++		drm_framebuffer_reference(&ifbdev->fb->base);
++		intel_fb = ifbdev->fb = NULL;
++	}
+ 	if (!intel_fb || WARN_ON(!intel_fb->obj)) {
+ 		DRM_DEBUG_KMS("no BIOS fb, allocating a new one\n");
+ 		ret = intelfb_alloc(helper, sizes);
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+1.9.2
 
