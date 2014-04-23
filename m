@@ -1,70 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022AbaDWLby (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 07:31:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29050 "EHLO mx1.redhat.com"
+	id S1752876AbaDWLbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 07:31:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48997 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752517AbaDWLbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 07:31:47 -0400
+	id S1750755AbaDWLbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 07:31:48 -0400
 From: Jiri Olsa <jolsa@redhat.com>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
         Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         David Ahern <dsahern@gmail.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Jean Pihet <jean.pihet@linaro.org>,
+        Jean Pihet <jean.pihet@linaro.org>, Jiri Olsa <jolsa@redhat.com>,
         Josh Boyer <jwboyer@fedoraproject.org>,
+        Masanari Iida <standby24x7@gmail.com>,
         Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 2/4] perf tools: Disable libdw unwind for all but x86 arch
-Date: Wed, 23 Apr 2014 13:31:20 +0200
-Message-Id: <1398252682-17185-3-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1398252682-17185-1-git-send-email-jolsa@redhat.com>
-References: <1398252682-17185-1-git-send-email-jolsa@redhat.com>
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, stable@vger.kernel.org
+Subject: [GIT PULL 0/4] perf/urgent fixes
+Date: Wed, 23 Apr 2014 13:31:18 +0200
+Message-Id: <1398252682-17185-1-git-send-email-jolsa@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So far there's only x86 libdw unwind support merged in perf.
-Disable it on all other architectures in case libdw unwind
-support is detected in system.
+hi Ingo,
+please consider pulling
 
-Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>
-Cc: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1397988006-14158-1-git-send-email-jolsa@redhat.com
+thanks,
+jirka
+
+
+The following changes since commit fd741edc25600e1660abd00b5c1bbe967018c6a0:
+
+  Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/urgent (2014-04-20 09:53:55 +0200)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-urgent-for-mingo
+
+for you to fetch changes up to de04f8657de9d3351a2d5880f1f7080b23b798cf:
+
+  tools lib traceevent: Fix memory leak in pretty_print() (2014-04-23 13:19:30 +0200)
+
+----------------------------------------------------------------
+perf/urgent fixes:
+
+Developer stuff:
+. Fix memory leak and backward compatibility macros for pevent
+  filter enums in traceevent library (Steven Rostedt)
+
+. Disable libdw unwind for all but x86 arch (Jiri Olsa)
+
+. Fix memory leak in sample_ustack (Masanari Iida)
+
 Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- tools/perf/config/Makefile | 8 ++++++++
- 1 file changed, 8 insertions(+)
 
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index ee21fa9..a71fb39 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -34,6 +34,14 @@ ifeq ($(ARCH),arm)
-   LIBUNWIND_LIBS = -lunwind -lunwind-arm
- endif
- 
-+# So far there's only x86 libdw unwind support merged in perf.
-+# Disable it on all other architectures in case libdw unwind
-+# support is detected in system. Add supported architectures
-+# to the check.
-+ifneq ($(ARCH),x86)
-+  NO_LIBDW_DWARF_UNWIND := 1
-+endif
-+
- ifeq ($(LIBUNWIND_LIBS),)
-   NO_LIBUNWIND := 1
- else
--- 
-1.8.3.1
+----------------------------------------------------------------
+Jiri Olsa (1):
+      perf tools: Disable libdw unwind for all but x86 arch
 
+Masanari Iida (1):
+      perf tests x86: Fix memory leak in sample_ustack()
+
+Steven Rostedt (2):
+      tools lib traceevent: Fix backward compatibility macros for pevent filter enums
+      tools lib traceevent: Fix memory leak in pretty_print()
+
+ tools/lib/traceevent/event-parse.c       | 1 +
+ tools/lib/traceevent/event-parse.h       | 4 ++--
+ tools/perf/arch/x86/tests/dwarf-unwind.c | 1 +
+ tools/perf/config/Makefile               | 8 ++++++++
+ 4 files changed, 12 insertions(+), 2 deletions(-)
