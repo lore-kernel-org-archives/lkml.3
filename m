@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756365AbaDWBb1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:31:27 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39956 "EHLO comal.ext.ti.com"
+	id S1756319AbaDWBbZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:31:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46793 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751688AbaDWB15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:27:57 -0400
+	id S1755879AbaDWB17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 21:27:59 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Tony Lindgren <tony@atomide.com>, Rob Herring <rob.herring@calxeda.com>,
         Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 CC: Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 0/8] OMAP2+ system timer cleanup series
-Date: Tue, 22 Apr 2014 20:27:01 -0500
-Message-ID: <1398216429-4681-1-git-send-email-joelf@ti.com>
+Subject: [PATCH 3/8] ARM: OMAP2+: timer: Add comment on timer clk parenting
+Date: Tue, 22 Apr 2014 20:27:04 -0500
+Message-ID: <1398216429-4681-4-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398216429-4681-1-git-send-email-joelf@ti.com>
+References: <1398216429-4681-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is a clean up series that attempts to separate out some of the DT-only vs
-legacy system timer usage for OMAP2+. Emphasis is on separating legacy stuff,
-and abstracting annoyances such as hwmod to give us the flexibilty for the
-migration. The series will relieve some of the difficulties in moving out the
-timer code from mach layer. As such it is incremental and there is a bit of
-duplication for fallback cases, but emphasis is on keeping things working
-during the migration.
+Add a comment describing the state of system timer clock parenting.  The code
+following the comment should be deleted once all platforms can do DT boot, and
+specially should not be executed for DT platforms once we can specify default
+clock parents through DT.
 
-Earlier series posted for dmtimer cleanup, and changes for OMAP1 is at [1].
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ arch/arm/mach-omap2/timer.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
-[1] https://lkml.org/lkml/2014/4/16/737
-
-Joel Fernandes (8):
-  ARM: OMAP2+: timer: Add a powerup function
-  ARM: OMAP2+: timer: Simplify clock event/source name setting
-  ARM: OMAP2+: timer: Add comment on timer clk parenting
-  ARM: OMAP2+: timer: Remove hwmod look-up dependency for DT-boot
-  ARM: OMAP2+: timer: Use of_clk_get for DT platforms
-  ARM: OMAP2+: timer: Fix error message to not use hwmod structure
-  ARM: OMAP2+: timer: Add fallback for of_clk_get
-  ARM: OMAP2+: timer: Add legacy code for old way of getting fclk
-
- arch/arm/mach-omap2/timer.c |  111 +++++++++++++++++++++++++++++++++----------
- 1 file changed, 85 insertions(+), 26 deletions(-)
-
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index f192a41..9fdff5b 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -313,6 +313,10 @@ static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
+ 	if (IS_ERR(timer->fclk))
+ 		return PTR_ERR(timer->fclk);
+ 
++	/*
++	 * Clock reparenting code, goes away for DT-boot atleast,
++	 * once clock layer can do it through DT.
++	 */
+ 	src = clk_get(NULL, fck_source);
+ 	if (IS_ERR(src))
+ 		return PTR_ERR(src);
 -- 
 1.7.9.5
 
