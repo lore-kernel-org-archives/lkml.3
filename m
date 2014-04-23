@@ -1,26 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532AbaDWGy0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 02:54:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25220 "EHLO mga11.intel.com"
+	id S1756655AbaDWGyy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 02:54:54 -0400
+Received: from mga03.intel.com ([143.182.124.21]:26885 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756182AbaDWGyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 02:54:22 -0400
+	id S1756589AbaDWGys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 02:54:48 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,910,1389772800"; 
-   d="scan'208";a="517760293"
+   d="scan'208";a="422363299"
 From: Lv Zheng <lv.zheng@intel.com>
 To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Len Brown <len.brown@intel.com>
 Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org,
-        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org
-Subject: [PATCH v2 4/5] ACPICA: Cleanup redudant definitions that already have defaults in <acpi/platform/acenv.h>.
-Date: Wed, 23 Apr 2014 14:54:14 +0800
-Message-Id: <9e881bb73577488890dbd098a02eef4884d6e3b9.1398232409.git.lv.zheng@intel.com>
+        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
+Subject: [PATCH v2 5/5] ACPICA: Remove deprecated _LINUX definitions for ACPICA.
+Date: Wed, 23 Apr 2014 14:54:22 +0800
+Message-Id: <8e6c90efc629b463709aef5da4957e916fdc0437.1398232409.git.lv.zheng@intel.com>
 X-Mailer: git-send-email 1.7.10
 In-Reply-To: <cover.1398232408.git.lv.zheng@intel.com>
 References: <cover.1396930406.git.lv.zheng@intel.com> <cover.1398232408.git.lv.zheng@intel.com>
@@ -28,91 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since mis-order issues have been solved, we can cleanup redundant
-definitions that already have defaults in <acpi/platform/acenv.h>.
+There are _LINUX defined so that when Linux kernel is compiled using broken
+compilers that having not __linux__ defined can still include
+<acpi/platform/aclinux.h> from <acpi/platform/acenv.h>.
 
-This patch removes redudant environments for __KERNEL__ surrounded code.
+This behavior is deprecated as all drivers/acpi/acpica files are compiled
+without including <linux/acpi.h>, thus without _LINUX defined.  As there is
+no issues encountered when we compile ACPICA code without _LINUX defined,
+it is OK to remove _LINUX from <linux/acpi.h> now.
 
 Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Fenghua Yu <fenghua.yu@intel.com>
-Cc: linux-ia64@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
 ---
- arch/ia64/include/asm/acenv.h   |   15 ---------------
- arch/x86/include/asm/acenv.h    |   16 ----------------
- include/acpi/platform/aclinux.h |    1 -
- 3 files changed, 32 deletions(-)
+ include/linux/acpi.h |    4 ----
+ 1 file changed, 4 deletions(-)
 
-diff --git a/arch/ia64/include/asm/acenv.h b/arch/ia64/include/asm/acenv.h
-index e0896eb..3f9eaee 100644
---- a/arch/ia64/include/asm/acenv.h
-+++ b/arch/ia64/include/asm/acenv.h
-@@ -17,23 +17,8 @@
- #define COMPILER_DEPENDENT_INT64	long
- #define COMPILER_DEPENDENT_UINT64	unsigned long
+diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+index 7a8f2cd..9c559f7 100644
+--- a/include/linux/acpi.h
++++ b/include/linux/acpi.h
+@@ -31,10 +31,6 @@
  
--/*
-- * Calling conventions:
-- *
-- * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
-- * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
-- * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
-- * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
-- */
--#define ACPI_SYSTEM_XFACE
--#define ACPI_EXTERNAL_XFACE
--#define ACPI_INTERNAL_XFACE
--#define ACPI_INTERNAL_VAR_XFACE
+ #ifdef	CONFIG_ACPI
+ 
+-#ifndef _LINUX
+-#define _LINUX
+-#endif
 -
- /* Asm macros */
- 
--#define ACPI_FLUSH_CPU_CACHE()
--
- #ifdef CONFIG_ACPI
- 
- static inline int
-diff --git a/arch/x86/include/asm/acenv.h b/arch/x86/include/asm/acenv.h
-index 6978584..6687329 100644
---- a/arch/x86/include/asm/acenv.h
-+++ b/arch/x86/include/asm/acenv.h
-@@ -14,22 +14,6 @@
- 
- #include <asm/special_insns.h>
- 
--#define COMPILER_DEPENDENT_INT64   long long
--#define COMPILER_DEPENDENT_UINT64  unsigned long long
--
--/*
-- * Calling conventions:
-- *
-- * ACPI_SYSTEM_XFACE        - Interfaces to host OS (handlers, threads)
-- * ACPI_EXTERNAL_XFACE      - External ACPI interfaces
-- * ACPI_INTERNAL_XFACE      - Internal ACPI interfaces
-- * ACPI_INTERNAL_VAR_XFACE  - Internal variable-parameter list interfaces
-- */
--#define ACPI_SYSTEM_XFACE
--#define ACPI_EXTERNAL_XFACE
--#define ACPI_INTERNAL_XFACE
--#define ACPI_INTERNAL_VAR_XFACE
--
- /* Asm macros */
- 
- #define ACPI_FLUSH_CPU_CACHE()	wbinvd()
-diff --git a/include/acpi/platform/aclinux.h b/include/acpi/platform/aclinux.h
-index 99d0546..90eea12 100644
---- a/include/acpi/platform/aclinux.h
-+++ b/include/acpi/platform/aclinux.h
-@@ -48,7 +48,6 @@
- 
- #define ACPI_USE_SYSTEM_CLIBRARY
- #define ACPI_USE_DO_WHILE_0
--#define ACPI_MUTEX_TYPE             ACPI_BINARY_SEMAPHORE
- 
- #ifdef __KERNEL__
+ #include <linux/list.h>
+ #include <linux/mod_devicetable.h>
  
 -- 
 1.7.10
