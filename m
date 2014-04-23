@@ -1,99 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561AbaDWGDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 02:03:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:36557 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752773AbaDWGDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 02:03:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,910,1389772800"; 
-   d="scan'208";a="525885030"
-Date: Wed, 23 Apr 2014 11:21:41 +0530
-From: Vinod Koul <vinod.koul@intel.com>
-To: Joel Fernandes <joelf@ti.com>
-Cc: dan.j.williams@intel.com, nsekhar@ti.com, dmaengine@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com,
-        Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] dmaengine: edma: No need save/restore interrupt flags
- during spin_lock in IRQ
-Message-ID: <20140423055141.GA32284@intel.com>
-References: <1397714313-26561-1-git-send-email-joelf@ti.com>
+	id S1753610AbaDWGEB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 02:04:01 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:53070 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009AbaDWGD6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 02:03:58 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, William Cohen <wcohen@redhat.com>
+Subject: Re: mapping instructions to dynamic languages like java, python, ruby
+References: <20140422180305.GK8488@redhat.com>
+	<CABPqkBTJ4==4FF2KLVGzvpGSX_RhHVZWUH5h9Vvi+XG_xJSUEQ@mail.gmail.com>
+Date: Wed, 23 Apr 2014 15:03:56 +0900
+In-Reply-To: <CABPqkBTJ4==4FF2KLVGzvpGSX_RhHVZWUH5h9Vvi+XG_xJSUEQ@mail.gmail.com>
+	(Stephane Eranian's message of "Tue, 22 Apr 2014 21:05:11 +0200")
+Message-ID: <87tx9kr38z.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397714313-26561-1-git-send-email-joelf@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 12:58:33AM -0500, Joel Fernandes wrote:
-> The vchan lock in edma_callback is acquired in hard interrupt context. As
-> interrupts are already disabled, there's no point in save/restoring interrupt
-> mask bit or cpsr flags.
-> 
-> Get rid of flags local variable and use spin_lock instead of spin_lock_irqsave.
+Hi Stephane,
 
-Applied, thanks
+On Tue, 22 Apr 2014 21:05:11 +0200, Stephane Eranian wrote:
+> Hi Don,
+>
+> I have been working on the JIT code support for a while now.
+> I have something working well for more than Java now. It reuses
+> some of the same principles as the OProfile support but extend
+> them to support more advanced JIT features such as address
+> recycling and code movements.
+>
+> I intend to contribute that code for perf once it is finalized.
+> Note that it uses a module developed by Sonny Rao to
+> export the perf timestamp time source via a posix-clock.
+> This clock discussion has been going on for a while and
+> never reached a conclusion. So I decided to go with the
+> simple posix-clock module for the time being.
 
--- 
-~Vinod
+I'm looking forward to seeing your patches soon!
 
-> 
-> Signed-off-by: Joel Fernandes <joelf@ti.com>
-> ---
->  drivers/dma/edma.c |    9 ++++-----
->  1 file changed, 4 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
-> index 91849aa..25a75e2 100644
-> --- a/drivers/dma/edma.c
-> +++ b/drivers/dma/edma.c
-> @@ -638,7 +638,6 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
->  	struct edma_chan *echan = data;
->  	struct device *dev = echan->vchan.chan.device->dev;
->  	struct edma_desc *edesc;
-> -	unsigned long flags;
->  	struct edmacc_param p;
->  
->  	edesc = echan->edesc;
-> @@ -649,7 +648,7 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
->  
->  	switch (ch_status) {
->  	case EDMA_DMA_COMPLETE:
-> -		spin_lock_irqsave(&echan->vchan.lock, flags);
-> +		spin_lock(&echan->vchan.lock);
->  
->  		if (edesc) {
->  			if (edesc->cyclic) {
-> @@ -665,11 +664,11 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
->  			}
->  		}
->  
-> -		spin_unlock_irqrestore(&echan->vchan.lock, flags);
-> +		spin_unlock(&echan->vchan.lock);
->  
->  		break;
->  	case EDMA_DMA_CC_ERROR:
-> -		spin_lock_irqsave(&echan->vchan.lock, flags);
-> +		spin_lock(&echan->vchan.lock);
->  
->  		edma_read_slot(EDMA_CHAN_SLOT(echan->slot[0]), &p);
->  
-> @@ -700,7 +699,7 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
->  			edma_trigger_channel(echan->ch_num);
->  		}
->  
-> -		spin_unlock_irqrestore(&echan->vchan.lock, flags);
-> +		spin_unlock(&echan->vchan.lock);
->  
->  		break;
->  	default:
-> -- 
-> 1.7.9.5
-> 
-
--- 
+Thanks,
+Namhyung
