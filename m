@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205AbaDWMRx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:17:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60461 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446AbaDWMRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:17:52 -0400
-Message-ID: <1398255470.32091.3.camel@linux-fkkt.site>
-Subject: Re: [PATCH v2 11/24] input: Port hid-holtekff to ff-memless-next
-From: Oliver Neukum <oneukum@suse.de>
-To: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
-        anssi.hannula@iki.fi, simon@mungewell.org
-Date: Wed, 23 Apr 2014 14:17:50 +0200
-In-Reply-To: <1398175209-9565-12-git-send-email-madcatxster@devoid-pointer.net>
-References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
-	 <1398175209-9565-12-git-send-email-madcatxster@devoid-pointer.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+	id S1754244AbaDWMSs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:18:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.130]:59774 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751798AbaDWMSo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 08:18:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: James Hogan <james.hogan@imgtec.com>
+Subject: Re: [RFC 3/3] asm-generic: Drop renameat syscall from default list
+Date: Wed, 23 Apr 2014 14:18:04 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        linux-arm-kernel@lists.infradead.org, Mark Salter <msalter@redhat.com>,
+        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org,
+        Richard Kuo <rkuo@codeaurora.org>, linux-hexagon@vger.kernel.org,
+        linux-metag@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
+        linux@openrisc.net, Chen Liqin <liqin.linux@gmail.com>,
+        Lennox Wu <lennox.wu@gmail.com>, Chris Metcalf <cmetcalf@tilera.com>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>
+References: <1398247687-13453-1-git-send-email-james.hogan@imgtec.com> <1398247687-13453-4-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1398247687-13453-4-git-send-email-james.hogan@imgtec.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404231418.05174.arnd@arndb.de>
+X-Provags-ID: V02:K0:iQ6iVNTDDVWhVCxee2E+xHnfPwx8sQzvbinRcPwqKwI
+ cqEvTuONroj6fRwhPR2EvRUeW8SrMY4/oMf4T1B9rVzEsvXnGy
+ ZwyCfqfFasvj+FgLTNcgVoxZOchtikU2wWYlZ+1l1EdiUUbiMo
+ yyBl7AAeBvzSPXdWJ2Mr78/2YvxS6PSAB4j1USjIZeQ+cf3y6y
+ J8eQJPQXiJyGCxRDDC2bBv+yvvRNgQk3VsRgSLMJ5MmH/etvnv
+ ZhmbIScV6Z8IuUWmpf6oKSpduVz4p+sRAaP28jdNr2AXaxNyqP
+ ftXdc9SisncaOvIGXmwbMybETA0vNXt5H51OgjODqG4NWwWYlz
+ uhHW7biUlS7lhpt9Ao1A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-22 at 15:59 +0200, Michal Malý wrote:
->  static int holtekff_play(struct input_dev *dev, void *data,
-> -                        struct ff_effect *effect)
-> +                        const struct mlnx_effect_command *command)
->  {
->         struct hid_device *hid = input_get_drvdata(dev);
->         struct holtekff_device *holtekff = data;
-> +       const struct mlnx_rumble_force *rumble_force =
-> &command->u.rumble_force;
->         int left, right;
->         /* effect type 1, length 65535 msec */
->         u8 buf[HOLTEKFF_MSG_LENGTH] =
->                 { 0x01, 0x01, 0xff, 0xff, 0x10, 0xe0, 0x00 };
+On Wednesday 23 April 2014, James Hogan wrote:
+> The new renameat2 syscall provides all the functionality provided by the
+> renameat syscall and adds flags, so future architectures won't need to
+> include renameat.
+> 
+> Therefore drop the renameat syscall from the generic syscall list unless
+> __ARCH_WANT_RENAMEAT is defined by the architecture's unistd.h prior to
+> including asm-generic/unistd.h, and adjust all architectures using the
+> generic syscall list to define it so that no in-tree architectures are
+> affected.
 
-On the kernel stack.
+I should have read this one before replying to patch 2 ;-)
 
->  
-> -       left = effect->u.rumble.strong_magnitude;
-> -       right = effect->u.rumble.weak_magnitude;
-> -       dbg_hid("called with 0x%04x 0x%04x\n", left, right);
-> +       switch (command->cmd) {
-> +       case MLNX_START_RUMBLE:
-> +               left = rumble_force->strong;
-> +               right = rumble_force->weak;
-> +               dbg_hid("called with 0x%04x 0x%04x\n", left, right);
->  
-> -       if (!left && !right) {
-> -               holtekff_send(holtekff, hid, stop_all6);
-> -               return 0;
-> -       }
-> +               if (!left && !right) {
-> +                       holtekff_send(holtekff, hid, stop_all6);
-> +                       return 0;
-> +               }
->  
-> -       if (left)
-> -               buf[1] |= 0x80;
-> -       if (right)
-> -               buf[1] |= 0x40;
-> +               if (left)
-> +                       buf[1] |= 0x80;
-> +               if (right)
-> +                       buf[1] |= 0x40;
->  
-> -       /* The device takes a single magnitude, so we just sum them
-> up. */
-> -       buf[6] = min(0xf, (left >> 12) + (right >> 12));
-> +               /* The device takes a single magnitude, so we just sum
-> them up. */
-> +               buf[6] = min(0xf, (left >> 12) + (right >> 12));
->  
-> -       holtekff_send(holtekff, hid, buf);
-> -       holtekff_send(holtekff, hid, start_effect_1);
-> +               holtekff_send(holtekff, hid, buf);
-> +               holtekff_send(holtekff, hid, start_effect_1);
-> +               return 0;
-> +       case MLNX_STOP_RUMBLE:
-> +               holtekff_send(holtekff, hid, stop_all6);
-> +               return 0;
-> +       default:
-> +               return -EINVAL;
-> +       }
->  
->         return 0;
->  }
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-arch@vger.kernel.org
+> Cc: Vineet Gupta <vgupta@synopsys.com>
+> Cc: Catalin Marinas <catalin.marinas@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: linux-arm-kernel@lists.infradead.org
+> Cc: Mark Salter <msalter@redhat.com>
+> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
+> Cc: linux-c6x-dev@linux-c6x.org
+> Cc: Richard Kuo <rkuo@codeaurora.org>
+> Cc: linux-hexagon@vger.kernel.org
+> Cc: linux-metag@vger.kernel.org
+> Cc: Jonas Bonn <jonas@southpole.se>
+> Cc: linux@lists.openrisc.net
+> Cc: Chen Liqin <liqin.linux@gmail.com>
+> Cc: Lennox Wu <lennox.wu@gmail.com>
+> Cc: Chris Metcalf <cmetcalf@tilera.com>
+> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> ---
+> Is this the approach we want to take to keep the default syscall list
+> minimal? We could for example have made renameat2 use the renameat
+> syscall number for new arches, but it seemed best to leave a gap for new
+> arches to improve consistency of numbering.
 
-This looks very much like doing DMA on the kernel stack.
-That is very strictly forbidden. The bug is also in the current
-code, but would you care to fix it up?
+I think leaving the hole is best.
 
-	Regards
-		Oliver
+> This patch is a no-op for arches in tree, so there's no harm for this to
+> wait for the v3.16 merge window.
 
+Sounds good. I guess I'll have to put this into my asm-generic tree
+then, unless I can get the nios2 maintainers to pick it up.
 
+If you don't mind, can you submit the first two patches to Linus
+directly?
+
+	Arnd
