@@ -1,70 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752356AbaDWROq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:14:46 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:46217 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750890AbaDWROp (ORCPT
+	id S1755044AbaDWRQk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:16:40 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42301 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751709AbaDWRQi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:14:45 -0400
-Date: Wed, 23 Apr 2014 18:13:52 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Andrzej Hajda <a.hajda@samsung.com>
-Cc: "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-samsung-soc@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, David Airlie <airlied@linux.ie>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        dri-devel@lists.freedesktop.org, Inki Dae <inki.dae@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        "moderated list:ARM/S5P EXYNOS AR..." 
-	<linux-arm-kernel@lists.infradead.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH RFC 3/3] drm/exynos: use pending_components for
-	components tracking
-Message-ID: <20140423171351.GH24070@n2100.arm.linux.org.uk>
-References: <1397734130-21019-1-git-send-email-a.hajda@samsung.com> <1397734130-21019-4-git-send-email-a.hajda@samsung.com> <20140417220412.GZ24070@n2100.arm.linux.org.uk> <5351145D.8070207@samsung.com> <20140418124652.GE24070@n2100.arm.linux.org.uk> <535652B2.7000607@samsung.com> <20140422115145.GU24070@n2100.arm.linux.org.uk> <5357D68E.8060605@samsung.com> <20140423164328.GG24070@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140423164328.GG24070@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 23 Apr 2014 13:16:38 -0400
+Message-ID: <1398273387.4222.19.camel@fourier>
+Subject: [ANNOUNCE] Linux 3.13.y.z extended stable support
+From: Kamal Mostafa <kamal@canonical.com>
+To: stable@vger.kernel.org, kernel-team <kernel-team@lists.ubuntu.com>
+Cc: linux-kernel@vger.kernel.org, gregkh <gregkh@linuxfoundation.org>,
+        lwn@lwn.net
+Date: Wed, 23 Apr 2014 10:16:27 -0700
+In-Reply-To: <20140423000635.GA32144@kroah.com>
+References: <20140423000635.GA32144@kroah.com>
+Content-Type: multipart/signed; micalg="pgp-sha256";
+	protocol="application/pgp-signature"; boundary="=-v9Xjam2WYjVAE7I9eF/K"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 05:43:28PM +0100, Russell King - ARM Linux wrote:
-> So, maybe you would like to finally address *my* point about TDA998x
-> and your solution in a way that provides a satisfactory answer.  *Show*
-> how it can be done, or *outline* how it can be done.
 
-Let me be absolutely clear *why* I'm very interested in this - and that
-is because I'm presently converting TDA998x and Armada DRM to use the
-component helpers.  If your solution is better, then I'd want to convert
-to that instead, and let's retire the component helpers.
+--=-v9Xjam2WYjVAE7I9eF/K
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-At the moment, my belief is that your solution is *very* substandard and
-suboptimal precisely for the reasons I've outlined, especially when it
-comes to sharing a component between several drivers.
+On Tue, 2014-04-22 at 17:06 -0700, Greg KH wrote:
+> NOTE
+>=20
+> This is the LAST 3.13.y release.  It is now end-of-life.  [...]
 
-So, if you *really* care, you'll stop fobbing me off on this point and
-provide some real technical input how you'd see your solution being used
-in exactly the scenario that I've been outlining several times in this
-thread.
 
-For example, you could show what kind of modifications you expect would
-be required to the _existing_ TDA998x driver to allow it to participate
-as a device declared in DT as an entirely separate entity, probed via the
-standard I2C probing methods, and then hook itself into the appropriate
-DRM driver.  Remembering, of course, that the TDA998x device is used by
-more than _just_ Armada DRM.
+The Ubuntu kernel team will pick up stable maintenance where Greg KH
+left off with v3.13.11 (thanks, Greg!)...
 
-I don't care if you show it via pseudo-code or by real patch.  I just
-want to know _how_ your solution could be used.  And I won't want some
-silly remark like "trivially" or "I've already answered that."  I want
-_you_ to _show_ _how_ it can be done.
 
--- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+The Ubuntu kernel team is pleased to announce that we will be providing
+extended stable support for the Linux 3.13 kernel until April 2016 as a
+third party effort maintained on our infrastructure.
+
+Our linux-3.13.y{-queue,-review} stable branches will fork from v3.13.11
+and will be published here:
+
+    git://kernel.ubuntu.com/ubuntu/linux.git
+
+We will use the same stable request/review workflow and follow the
+standard upstream stable kernel rules.  More details are available at
+http://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+
+We welcome any feedback and contribution to this effort.  We will be
+posting the first review cycle patch set in a week or two.
+
+ -Kamal Mostafa
+  Ubuntu Kernel Team, Canonical Ltd.
+
+--=-v9Xjam2WYjVAE7I9eF/K
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAABCAAGBQJTV/VrAAoJEHqwmdxYrXhZ+kAP/RpgpaVhmgcMZgtoDgN09Yqw
+E0FRVimUE7YOyGH+olQMd6wsVVpkhobRYcqP9uV5crGDg0C2wWu49X7/5qdCU2wi
+ZcZ6dMgIWyu/9TQberkL7HfWlcUo8gATUo96Sg99YSSpau9RZjKSkSqxgvnDOOUD
+/zp4wLh35yDlOR+fuJ7QPFZV+jIvGLEBLP4c9KLdAofnj1Mi1gcUvI/IMIwp0VEO
+6/CR2D4rFUGtcA0t8IDlNZwwjaVICtjq7EcHWMDhX/l2gCMuAsAN4AK52KD7iUov
+QLJBBleVSdPRY+QYDA58fNOIXN2nfzY1rr8hHyhvTlDPMtsqwv0yrsAKmes1uTuB
+Om2+Qg73h/bJMKtviOXKwe4aPB8c3rJuXzWhkhwX8ilQTar9O4bd9vsisxMzf8H0
+xzlpLQSFbIU1BHOQZQbEAhQ9FZJylCtqrlmbfbCbD3u9ltkWYRqTRguXgytT5VNk
+fquQgwbE8PYGkoAmHduvQzXELQPP3Si9NA4FNzmPHjLu7DtqwnNc7Ko8ZHTSBt7t
+/eGCpQuIDO49lvh29XvE0G5b7NJNH6bYtnabRtSzsdRr7yxoeyC0DGQSB6SBP17L
+f2uvd8KoP26XrEMoBCD+E2AsN7jrKPYRQrsKAdA4YUuhuM/v0N5YE+sgKN1rRW3Y
+UrNts/wEFomw6iDhfFA9
+=3B6q
+-----END PGP SIGNATURE-----
+
+--=-v9Xjam2WYjVAE7I9eF/K--
+
