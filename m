@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468AbaDWTBz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 15:01:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65313 "EHLO mx1.redhat.com"
+	id S932512AbaDWTB7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 15:01:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33471 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932401AbaDWTBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 15:01:51 -0400
+	id S932401AbaDWTB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 15:01:57 -0400
 From: Denys Vlasenko <dvlasenk@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>,
+Cc: Denys Vlasenko <dvlasenk@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
         Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
@@ -18,36 +18,37 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Arjan van de Ven <arjan@linux.intel.com>,
         Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 1/3] nohz: Only update sleeptime stats locally
-Date: Wed, 23 Apr 2014 21:00:34 +0200
-Message-Id: <1398279636-21503-1-git-send-email-dvlasenk@redhat.com>
+Subject: [PATCH 2/3] nohz: Synchronize sleep time stats with memory barriers
+Date: Wed, 23 Apr 2014 21:00:35 +0200
+Message-Id: <1398279636-21503-2-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <1398279636-21503-1-git-send-email-dvlasenk@redhat.com>
+References: <1398279636-21503-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frederic Weisbecker <fweisbec@gmail.com>
+When some call site uses get_cpu_*_time_us() to read a sleeptime
+stat, it deduces the total sleeptime by adding the pending time
+to the last sleeptime snapshot if the CPU target is idle.
 
-The idle and io sleeptime stats can be updated concurrently from callers
-of get_cpu_idle_time_us(), get_cpu_iowait_time_us() and
-tick_nohz_stop_idle().
+But this only works if idle_sleeptime, idle_entrytime and idle_active are
+read and updated under some disciplined order.
 
-Updaters can easily race and mess up with internal datas coherency,
-for example when a governor calls a get_cpu_*_time_us() API and the
-target CPU exits idle at the same time, because no locking or whatsoever
-is there to protect against this concurrency.
+This patch changes updaters to modify idle_entrytime,
+{idle,iowait}_sleeptime, and idle_active exactly in this order,
+with write barriers on SMP to ensure other CPUs see then in this order too.
+Readers are changed read them in the opposite order, with read barriers.
+When readers detect a race by seeing cleared idle_entrytime,
+they retry the reads.
 
-To fix this, lets only update the sleeptime stats locally when the CPU
-exits from idle. This is the only place where a real update is truly
-needed. The callers of get_cpu_*_time_us() can simply add up the pending
-sleep time delta to the last sleeptime snapshot in order to get a coherent
-result. There is no need for them to also update the stats.
+The "iowait-ness" of every idle period is decided at the moment it starts:
+if this CPU's run-queue had tasks waiting on I/O, then this idle
+period's duration will be added to iowait_sleeptime.
+This, along with proper SMP syncronization, fixes the bug where iowait
+counts could go backwards.
 
-Rebased to Linus' tree by Denys Vlasenko.
-
-Reported-by: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
-Reported-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Cc: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
 Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
@@ -58,102 +59,149 @@ Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Arjan van de Ven <arjan@linux.intel.com>
 Cc: Oleg Nesterov <oleg@redhat.com>
 ---
- kernel/time/tick-sched.c | 63 ++++++++++++++++--------------------------------
- 1 file changed, 21 insertions(+), 42 deletions(-)
+ kernel/time/tick-sched.c | 83 ++++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 66 insertions(+), 17 deletions(-)
 
 diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 9f8af69..73ced0c4 100644
+index 73ced0c4..a99770e 100644
 --- a/kernel/time/tick-sched.c
 +++ b/kernel/time/tick-sched.c
-@@ -403,31 +403,16 @@ static void tick_nohz_update_jiffies(ktime_t now)
- 	touch_softlockup_watchdog();
- }
+@@ -409,10 +409,15 @@ static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
  
--/*
-- * Updates the per cpu time idle statistics counters
-- */
--static void
--update_ts_time_stats(int cpu, struct tick_sched *ts, ktime_t now, u64 *last_update_time)
-+static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
- {
- 	ktime_t delta;
- 
--	if (ts->idle_active) {
--		delta = ktime_sub(now, ts->idle_entrytime);
--		if (nr_iowait_cpu(cpu) > 0)
--			ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
--		else
--			ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
--		ts->idle_entrytime = now;
--	}
--
--	if (last_update_time)
--		*last_update_time = ktime_to_us(now);
--
--}
--
--static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
--{
--	update_ts_time_stats(smp_processor_id(), ts, now, NULL);
-+	/* Updates the per cpu time idle statistics counters */
-+	delta = ktime_sub(now, ts->idle_entrytime);
-+	if (nr_iowait_cpu(smp_processor_id()) > 0)
-+		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
-+	else
-+		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+ 	/* Updates the per cpu time idle statistics counters */
+ 	delta = ktime_sub(now, ts->idle_entrytime);
+-	if (nr_iowait_cpu(smp_processor_id()) > 0)
++	ts->idle_entrytime.tv64 = 0;
++	smp_wmb();
++
++	if (ts->idle_active == 2)
+ 		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
+ 	else
+ 		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
++
++	smp_wmb();
  	ts->idle_active = 0;
  
  	sched_clock_idle_wakeup_event(0);
-@@ -466,17 +451,14 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+@@ -423,7 +428,8 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
+ 	ktime_t now = ktime_get();
+ 
+ 	ts->idle_entrytime = now;
+-	ts->idle_active = 1;
++	smp_wmb();
++	ts->idle_active = nr_iowait_cpu(smp_processor_id()) ? 2 : 1;
+ 	sched_clock_idle_sleep_event();
+ 	return now;
+ }
+@@ -444,25 +450,46 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
+  */
+ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+ {
+-	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+-	ktime_t now, idle;
++	struct tick_sched *ts;
++	ktime_t now, count;
++	int active;
+ 
+ 	if (!tick_nohz_active)
  		return -1;
  
++	ts = &per_cpu(tick_cpu_sched, cpu);
++
  	now = ktime_get();
--	if (last_update_time) {
--		update_ts_time_stats(cpu, ts, now, last_update_time);
+ 	if (last_update_time)
+ 		*last_update_time = ktime_to_us(now);
+ 
+-	if (ts->idle_active && !nr_iowait_cpu(cpu)) {
+-		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+-		idle = ktime_add(ts->idle_sleeptime, delta);
++ again:
++	active = ACCESS_ONCE(ts->idle_active);
++	smp_rmb();
++	count = ACCESS_ONCE(ts->idle_sleeptime);
++	if (active == 1) {
++		ktime_t delta, start;
++
++		smp_rmb();
++		start = ACCESS_ONCE(ts->idle_entrytime);
++		if (start.tv64 == 0) {
++			/*
++			 * Other CPU is updating the count.
++			 * We don't know whether fetched count is valid.
++			 */
++			goto again;
++		}
++		delta = ktime_sub(now, start);
++		count = ktime_add(count, delta);
+ 	} else {
 -		idle = ts->idle_sleeptime;
--	} else {
--		if (ts->idle_active && !nr_iowait_cpu(cpu)) {
--			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-+	if (last_update_time)
-+		*last_update_time = ktime_to_us(now);
- 
--			idle = ktime_add(ts->idle_sleeptime, delta);
--		} else {
--			idle = ts->idle_sleeptime;
--		}
-+	if (ts->idle_active && !nr_iowait_cpu(cpu)) {
-+		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-+		idle = ktime_add(ts->idle_sleeptime, delta);
-+	} else {
-+		idle = ts->idle_sleeptime;
++		/*
++		 * Possible concurrent tick_nohz_stop_idle() already
++		 * cleared idle_active. We fetched count *after*
++		 * we fetched idle_active, so count must be valid.
++		 */
  	}
  
- 	return ktime_to_us(idle);
-@@ -507,17 +489,14 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+-	return ktime_to_us(idle);
+-
++	return ktime_to_us(count);
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_idle_time_us);
+ 
+@@ -482,24 +509,46 @@ EXPORT_SYMBOL_GPL(get_cpu_idle_time_us);
+  */
+ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
+ {
+-	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+-	ktime_t now, iowait;
++	struct tick_sched *ts;
++	ktime_t now, count;
++	int active;
+ 
+ 	if (!tick_nohz_active)
  		return -1;
  
++	ts = &per_cpu(tick_cpu_sched, cpu);
++
  	now = ktime_get();
--	if (last_update_time) {
--		update_ts_time_stats(cpu, ts, now, last_update_time);
--		iowait = ts->iowait_sleeptime;
--	} else {
--		if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
--			ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-+	if (last_update_time)
-+		*last_update_time = ktime_to_us(now);
+ 	if (last_update_time)
+ 		*last_update_time = ktime_to_us(now);
  
--			iowait = ktime_add(ts->iowait_sleeptime, delta);
--		} else {
--			iowait = ts->iowait_sleeptime;
--		}
-+	if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
-+		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-+		iowait = ktime_add(ts->iowait_sleeptime, delta);
-+	} else {
-+		iowait = ts->iowait_sleeptime;
+-	if (ts->idle_active && nr_iowait_cpu(cpu) > 0) {
+-		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+-		iowait = ktime_add(ts->iowait_sleeptime, delta);
++ again:
++	active = ACCESS_ONCE(ts->idle_active);
++	smp_rmb();
++	count = ACCESS_ONCE(ts->iowait_sleeptime);
++	if (active == 2) {
++		ktime_t delta, start;
++
++		smp_rmb();
++		start = ACCESS_ONCE(ts->idle_entrytime);
++		if (start.tv64 == 0) {
++			/*
++			 * Other CPU is updating the count.
++			 * We don't know whether fetched count is valid.
++			 */
++			goto again;
++		}
++		delta = ktime_sub(now, start);
++		count = ktime_add(count, delta);
+ 	} else {
+-		iowait = ts->iowait_sleeptime;
++		/*
++		 * Possible concurrent tick_nohz_stop_idle() already
++		 * cleared idle_active. We fetched count *after*
++		 * we fetched idle_active, so count must be valid.
++		 */
  	}
  
- 	return ktime_to_us(iowait);
+-	return ktime_to_us(iowait);
++	return ktime_to_us(count);
+ }
+ EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
+ 
 -- 
 1.8.1.4
 
