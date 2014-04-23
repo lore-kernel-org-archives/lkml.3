@@ -1,73 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758027AbaDWUoR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 16:44:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57784 "EHLO mx1.redhat.com"
+	id S1757892AbaDWUr5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 16:47:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9478 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754033AbaDWUoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 16:44:14 -0400
-Date: Wed, 23 Apr 2014 16:44:11 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org, davem@davemloft.net,
-        sparclinux@vger.kernel.org, mguzik@redhat.com
-Subject: Re: [PATCH 0/4 V3] Print traces on softlockup
-Message-ID: <20140423204411.GB8488@redhat.com>
-References: <1398179848-197479-1-git-send-email-dzickus@redhat.com>
- <20140422112828.ea511cefa17affb99d9aa97f@linux-foundation.org>
- <20140423192228.GY8488@redhat.com>
- <20140423123550.1818553bcdff3ef058efd3f7@linux-foundation.org>
+	id S1752767AbaDWUr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 16:47:56 -0400
+Date: Wed, 23 Apr 2014 17:47:36 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Nadav Amit <namit@cs.technion.ac.il>
+Cc: gleb@kernel.org, pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] KVM: x86: Fix KVM behavior that does not follow spec
+Message-ID: <20140423204736.GA31715@amt.cnet>
+References: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140423123550.1818553bcdff3ef058efd3f7@linux-foundation.org>
+In-Reply-To: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 12:35:50PM -0700, Andrew Morton wrote:
-> On Wed, 23 Apr 2014 15:22:28 -0400 Don Zickus <dzickus@redhat.com> wrote:
+On Fri, Apr 18, 2014 at 02:33:06AM +0300, Nadav Amit wrote:
+> This series of patches fix various scenarios in which KVM behavior does not
+> follow x86 specifications.  Each patch actually deals with a separate bug.
+> These bugs can cause the guest to get stuck (i.e., make no progress), encounter
+> spurious injected exceptions, or cause guest code to misbehave. As a result
+> guest OS can potentially fail.
 > 
-> > On Tue, Apr 22, 2014 at 11:28:28AM -0700, Andrew Morton wrote:
-> > > On Tue, 22 Apr 2014 11:17:24 -0400 Don Zickus <dzickus@redhat.com> wrote:
-> > > 
-> > > > Added more patches to handle the 'uniprocessor' panic case by sending NMIs
-> > > > to every cpu but self.  Only affects x86, sparc.
-> > > > 
-> > > 
-> > > Looks OK to me.  A couple of things:
-> > > 
-> > > - Patches 1-3 should be combined so we don't create bisection holes
-> > >   due to x86 and sparc build errors.
-> > > 
-> > > - Patch 4 adds stuff which is unusable on uniprocessor, especially
-> > >   the presence of /proc/sys/kernel/softlockup_all_cpu_backtrace.  We
-> > >   already have #ifdef CONFIG_SMP in kern_table, so do more of that?
-> > 
-> > Are you suggesting just add CONFIG_SMP to kern_table entry or all the
-> > pieces in kernel/watchdog.c too?  I wasn't sure how messy I should make
-> > this patch.
+> Thanks for reviewing the patches.
 > 
-> Well, don't go nuts and be tasteful. 
-> 
-> /proc/sys/kernel/softlockup_all_cpu_backtrace should disappear.
-> 
-> Look around for existing #ifdef CONFIG_SMP blocks to use.
-> 
-> Making sysctl_softlockup_all_cpu_backtrace evaluate to literal zero
-> will cause the compiler to remove unused code without ifdefs.  This
-> might require that watchdog_timer_fn:softlockup_all_cpu_backtrace (why
-> does this local exist btw) be declared const - check the compiler
+> Nadav Amit (5):
+>   KVM: x86: Fix wrong/stuck PMU when guest does not use PMI
+>   KVM: x86: Fix CR3 reserved bits
+>   KVM: x86: IN instruction emulation should ignore REP-prefix
+>   KVM: x86: RSI/RDI/RCX are zero-extended when affected by string ops
+>   KVM: x86: Processor mode may be determined incorrectly
 
-The local exists because it was pointed out in a private review that there
-could be a race in which the sysctl value might change in the middle of
-the execution of a softlockup.  This would result in a permanently disable
-softlockup_all_cpu_backtrace because the flag would never be cleared.
+Applied all except patch 4.
 
-Hence the snapshot of the local copy to prevent that race.
 
-I posted an update of the patchset.
-
-Cheers,
-Don
