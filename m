@@ -1,74 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757871AbaDWTcp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 15:32:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17345 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757493AbaDWTcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 15:32:42 -0400
-Date: Wed, 23 Apr 2014 21:32:28 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@kernel.org>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Dominik Dingel <dingel@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] KVM: async_pf: kill the unnecessary
-	use_mm/unuse_mm async_pf_execute()
-Message-ID: <20140423193228.GA3441@redhat.com>
-References: <20140421132558.GA13608@redhat.com> <5356CDDF.5000203@de.ibm.com> <5356DA2F.8080606@de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5356DA2F.8080606@de.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757933AbaDWTfy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 15:35:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58818 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614AbaDWTfw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 15:35:52 -0400
+Date: Wed, 23 Apr 2014 12:35:50 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org, davem@davemloft.net,
+        sparclinux@vger.kernel.org, mguzik@redhat.com
+Subject: Re: [PATCH 0/4 V3] Print traces on softlockup
+Message-Id: <20140423123550.1818553bcdff3ef058efd3f7@linux-foundation.org>
+In-Reply-To: <20140423192228.GY8488@redhat.com>
+References: <1398179848-197479-1-git-send-email-dzickus@redhat.com>
+	<20140422112828.ea511cefa17affb99d9aa97f@linux-foundation.org>
+	<20140423192228.GY8488@redhat.com>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22, Christian Borntraeger wrote:
->
-> On 22/04/14 22:15, Christian Borntraeger wrote:
-> > On 21/04/14 15:25, Oleg Nesterov wrote:
-> >> async_pf_execute() has no reasons to adopt apf->mm, gup(current, mm)
-> >> should work just fine even if current has another or NULL ->mm.
-> >>
-> >> Recently kvm_async_page_present_sync() was added insedie the "use_mm"
-> >> section, but it seems that it doesn't need current->mm too.
-> >>
-> >> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> >
-> > Indeed, use/unuse_mm should only be necessary for copy_to/from_user etc.
-> > This is fine for s390, but it seems that x86 kvm_arch_async_page_not_present
-> > might call apf_put_user which might call copy_to_user, so this is not ok, I guess.
->
-> wanted to say kvm_arch_async_page_not_present, but I have to correct myself.
-> x86 does the "page is there" in the cpu loop, not in the worker. The cpu look
-> d oes have a valid mm. So this patch should be also ok.
+On Wed, 23 Apr 2014 15:22:28 -0400 Don Zickus <dzickus@redhat.com> wrote:
 
-Thanks ;)
+> On Tue, Apr 22, 2014 at 11:28:28AM -0700, Andrew Morton wrote:
+> > On Tue, 22 Apr 2014 11:17:24 -0400 Don Zickus <dzickus@redhat.com> wrote:
+> > 
+> > > Added more patches to handle the 'uniprocessor' panic case by sending NMIs
+> > > to every cpu but self.  Only affects x86, sparc.
+> > > 
+> > 
+> > Looks OK to me.  A couple of things:
+> > 
+> > - Patches 1-3 should be combined so we don't create bisection holes
+> >   due to x86 and sparc build errors.
+> > 
+> > - Patch 4 adds stuff which is unusable on uniprocessor, especially
+> >   the presence of /proc/sys/kernel/softlockup_all_cpu_backtrace.  We
+> >   already have #ifdef CONFIG_SMP in kern_table, so do more of that?
+> 
+> Are you suggesting just add CONFIG_SMP to kern_table entry or all the
+> pieces in kernel/watchdog.c too?  I wasn't sure how messy I should make
+> this patch.
 
-Btw, I forgot to mention this in the changelog, but
+Well, don't go nuts and be tasteful. 
 
-> >> @@ -80,12 +80,10 @@ static void async_pf_execute(struct work_struct *work)
-> >>
-> >>  	might_sleep();
-> >>
-> >> -	use_mm(mm);
-> >>  	down_read(&mm->mmap_sem);
-> >>  	get_user_pages(current, mm, addr, 1, 1, 0, NULL, NULL);
-> >>  	up_read(&mm->mmap_sem);
-> >>  	kvm_async_page_present_sync(vcpu, apf);
-> >> -	unuse_mm(mm);
+/proc/sys/kernel/softlockup_all_cpu_backtrace should disappear.
 
-it can actually do
+Look around for existing #ifdef CONFIG_SMP blocks to use.
 
-	get_user_pages(NULL, mm, addr, 1, 1, 0, NULL, NULL);
-
-"task" is only used to increment task_struct->xxx_flt. I don't think
-async_pf_execute() actually needs this (current is PF_WQ_WORKER after
-all), but I didn't dare to do another change in the code I can hardly
-understand.
-
-Oleg.
+Making sysctl_softlockup_all_cpu_backtrace evaluate to literal zero
+will cause the compiler to remove unused code without ifdefs.  This
+might require that watchdog_timer_fn:softlockup_all_cpu_backtrace (why
+does this local exist btw) be declared const - check the compiler
+output.
 
