@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092AbaDWNxp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:53:45 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:53491 "EHLO
-	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756823AbaDWNxi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:53:38 -0400
-Message-ID: <5357C5E0.1070207@semaphore.gr>
-Date: Wed, 23 Apr 2014 16:53:36 +0300
-From: Stratos Karafotis <stratosk@semaphore.gr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Viresh Kumar <viresh.kumar@linaro.org>,
-        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cpufreq: powernow-k8: Fix checkpatch warnings
-References: <5356DB92.1060600@semaphore.gr> <2606012.9SjvfKiI5Z@vostro.rjw.lan>
-In-Reply-To: <2606012.9SjvfKiI5Z@vostro.rjw.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1757345AbaDWNyE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:54:04 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:33003 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751351AbaDWNx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:53:59 -0400
+Message-ID: <1398261183.4724.226.camel@iivanov-dev>
+Subject: Re: [PATCH v6 15/19] usb: phy: msm: Fix PTS definitions for MSM USB
+ controller
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Felipe Balbi <balbi@ti.com>, Tim Bird <tbird20d@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
+Date: Wed, 23 Apr 2014 16:53:03 +0300
+In-Reply-To: <5357C40E.7060000@cogentembedded.com>
+References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
+		 <1398158438-21579-16-git-send-email-iivanov@mm-sol.com>
+		 <53566A23.8010508@cogentembedded.com>
+		 <1398259477.4724.218.camel@iivanov-dev>
+	 <1398260102.4724.223.camel@iivanov-dev>
+	 <5357C40E.7060000@cogentembedded.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/04/2014 01:37 μμ, Rafael J. Wysocki wrote:
-> On Wednesday, April 23, 2014 12:13:54 AM Stratos Karafotis wrote:
->> Fix the following checkpatch warnings:
+On Wed, 2014-04-23 at 17:45 +0400, Sergei Shtylyov wrote:
+> Hello.
 > 
-> In addition to comments from Viresh, I have a general one.
+> On 23-04-2014 17:35, Ivan T. Ivanov wrote:
 > 
-> Some of the checkpatch.pl warnings are not worth fixing at all ->
+> >>>> --- a/include/linux/usb/msm_hsusb_hw.h
+> >>>> +++ b/include/linux/usb/msm_hsusb_hw.h
+> >>>> @@ -31,8 +31,9 @@
+> >>>>    #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
+> >>>>
+> >>>>    #define PORTSC_PHCD            (1 << 23) /* phy suspend mode */
+> >>>> -#define PORTSC_PTS_MASK         (3 << 30)
+> >>>> -#define PORTSC_PTS_ULPI         (3 << 30)
+> >>>> +#define PORTSC_PTS_MASK        (3 << 30)
+> >>>> +#define PORTSC_PTS_ULPI        (2 << 30)
+> >>>> +#define PORTSC_PTS_SERIAL      (3 << 30)
 > 
->> - WARNING: Prefer pr_err(... to printk(KERN_ERR ...
->> - WARNING: Prefer pr_info(... to printk(KERN_INFO ...
->> - WARNING: Prefer pr_warn(... to printk(KERN_WARNING ...
->> - WARNING: quoted string split across lines
->> - WARNING: line over 80 characters
+> >>>      Please use tabs, not spaces here.
 > 
-> -> and the "line over 80 characters" ones are outright wrong in many cases,
-> so please don't "fix" them.
+> >> Thanks, will fix and resend.
 > 
+> > I answered too quickly. File contain tabs and spaces for
+> > indentation of definitions.
+> 
+>     You mean tabs and spaces on one line? Or sometimes tabs, sometimes spaces?
 
-Hi Rafael,
+In this particular hunk, original code uses spaces.
 
-Thanks for your comments!
+Ivan
 
-Could you please clarify if you want me to drop the entire patch or
-send it only with the changes about the last warning found ("no spaces
-at the start of a line)?
-
-Also, I would like to take the opportunity and ask a question. :)
-
-Reading the code, sometimes, I find some minor formatting issues.
-Like the checkpatch warnings or unnecessary parentheses and braces.
-
-For example the line bellow:
-		if ((freq < policy->min) || (freq > policy->max))
-
-I know that this is not actually an issue and a patch with such changes
-is (somehow) a noise for the maintainers. But, should it be "fixed" or not?
-
-Thanks for your time,
-
-Stratos
-
+> 
+> > Should I still use tabs here?
+> 
+>     If they are already used, why not?
+> 
+> > Regards,
+> > Ivan
+> 
+> WBR, Sergei
 
