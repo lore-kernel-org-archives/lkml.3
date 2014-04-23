@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753063AbaDWLwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 07:52:08 -0400
-Received: from szxga01-in.huawei.com ([119.145.14.64]:63038 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751343AbaDWLwG (ORCPT
+	id S1753463AbaDWLws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 07:52:48 -0400
+Received: from szxga02-in.huawei.com ([119.145.14.65]:13722 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752010AbaDWLwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 07:52:06 -0400
-Message-ID: <5357A93C.3050604@hisilicon.com>
-Date: Wed, 23 Apr 2014 19:51:24 +0800
+	Wed, 23 Apr 2014 07:52:47 -0400
+Message-ID: <5357A941.6080809@hisilicon.com>
+Date: Wed, 23 Apr 2014 19:51:29 +0800
 From: Zhou Wang <wangzhou1@hisilicon.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130509 Thunderbird/17.0.6
 MIME-Version: 1.0
-To: <linux-kernel@vger.kernel.org>
+To: <linux@arm.linux.org.uk>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
 CC: <haojian.zhuang@linaro.org>, <xuwei5@hisilicon.com>
-Subject: [PATCH 0/2] ARM: hip04: add GPIO support
+Subject: [PATCH 1/2] ARM: hip04: set ARCH_NR_GPIO to 128
 Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.66.65.131]
@@ -23,19 +24,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series add the support for the GPIOs of Hisilicon Soc hip04. We use
-the dwapb GPIO driver here.
+set ARCH_NR_GPIO for Hisilicon Soc hip04, which has 4 GPIO
+controllers with 32 GPIOs each.
 
-The second patch is based on hip04.dtsi[1] which is upstreaming now.
-[1] http://article.gmane.org/gmane.linux.ports.arm.kernel/317491
+Signed-off-by: Zhou Wang <wangzhou1@hisilicon.com>
+---
+ arch/arm/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Zhou Wang (2):
-  ARM: hip04: set ARCH_NR_GPIO to 128
-  ARM: dts: hip04: add gpio pieces
-
- arch/arm/Kconfig             |    1 +
- arch/arm/boot/dts/hip04.dtsi |   76 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 77 insertions(+)
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 2961627..bb00e65 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1664,6 +1664,7 @@ config ARCH_NR_GPIO
+ 	default 352 if ARCH_VT8500
+ 	default 288 if ARCH_SUNXI
+ 	default 264 if MACH_H4700
++	default 128 if ARCH_HIP04
+ 	default 0
+ 	help
+ 	  Maximum number of GPIOs in the system.
 -- 1.7.9.5
 
