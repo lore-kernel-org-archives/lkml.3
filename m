@@ -1,58 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbaDWGyy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 02:54:54 -0400
-Received: from mga03.intel.com ([143.182.124.21]:26885 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756589AbaDWGys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 02:54:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,910,1389772800"; 
-   d="scan'208";a="422363299"
-From: Lv Zheng <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Len Brown <len.brown@intel.com>
-Cc: Lv Zheng <lv.zheng@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        <linux-kernel@vger.kernel.org>, linux-acpi@vger.kernel.org
-Subject: [PATCH v2 5/5] ACPICA: Remove deprecated _LINUX definitions for ACPICA.
-Date: Wed, 23 Apr 2014 14:54:22 +0800
-Message-Id: <8e6c90efc629b463709aef5da4957e916fdc0437.1398232409.git.lv.zheng@intel.com>
-X-Mailer: git-send-email 1.7.10
-In-Reply-To: <cover.1398232408.git.lv.zheng@intel.com>
-References: <cover.1396930406.git.lv.zheng@intel.com> <cover.1398232408.git.lv.zheng@intel.com>
+	id S932432AbaDWHA0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:00:26 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:60332 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754055AbaDWHAL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 03:00:11 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 5/7] perf ui/tui: Rename hist_browser__update_nr_entries()
+Date: Wed, 23 Apr 2014 16:00:06 +0900
+Message-Id: <1398236408-8856-6-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
+References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are _LINUX defined so that when Linux kernel is compiled using broken
-compilers that having not __linux__ defined can still include
-<acpi/platform/aclinux.h> from <acpi/platform/acenv.h>.
+Rename ->nr_pcnt_entries and hist_browser__update_pcnt_entries() to
+->nr_non_filtered_entries and hist_browser__update_nr_entries() since
+it's now used for filtering as well.
 
-This behavior is deprecated as all drivers/acpi/acpica files are compiled
-without including <linux/acpi.h>, thus without _LINUX defined.  As there is
-no issues encountered when we compile ACPICA code without _LINUX defined,
-it is OK to remove _LINUX from <linux/acpi.h> now.
-
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- include/linux/acpi.h |    4 ----
- 1 file changed, 4 deletions(-)
+ tools/perf/ui/browsers/hists.c | 17 ++++++++---------
+ 1 file changed, 8 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/acpi.h b/include/linux/acpi.h
-index 7a8f2cd..9c559f7 100644
---- a/include/linux/acpi.h
-+++ b/include/linux/acpi.h
-@@ -31,10 +31,6 @@
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 311226edae12..769295bf2c10 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -26,13 +26,14 @@ struct hist_browser {
+ 	int		     print_seq;
+ 	bool		     show_dso;
+ 	float		     min_pcnt;
+-	u64		     nr_pcnt_entries;
++	u64		     nr_non_filtered_entries;
+ };
  
- #ifdef	CONFIG_ACPI
+ extern void hist_browser__init_hpp(void);
  
--#ifndef _LINUX
--#define _LINUX
--#endif
+ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ 				const char *ev_name);
++static void hist_browser__update_nr_entries(struct hist_browser *hb);
+ 
+ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
+ {
+@@ -310,8 +311,6 @@ static void ui_browser__warn_lost_events(struct ui_browser *browser)
+ 		"Or reduce the sampling frequency.");
+ }
+ 
+-static void hist_browser__update_pcnt_entries(struct hist_browser *hb);
 -
- #include <linux/list.h>
- #include <linux/mod_devicetable.h>
+ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 			     struct hist_browser_timer *hbt)
+ {
+@@ -322,7 +321,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 	browser->b.entries = &browser->hists->entries;
+ 	browser->b.nr_entries = browser->hists->nr_entries;
+ 	if (browser->min_pcnt)
+-		browser->b.nr_entries = browser->nr_pcnt_entries;
++		browser->b.nr_entries = browser->nr_non_filtered_entries;
  
+ 	hist_browser__refresh_dimensions(browser);
+ 	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
+@@ -340,8 +339,8 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 			hbt->timer(hbt->arg);
+ 
+ 			if (browser->min_pcnt) {
+-				hist_browser__update_pcnt_entries(browser);
+-				nr_entries = browser->nr_pcnt_entries;
++				hist_browser__update_nr_entries(browser);
++				nr_entries = browser->nr_non_filtered_entries;
+ 			} else {
+ 				nr_entries = browser->hists->nr_entries;
+ 			}
+@@ -1343,7 +1342,7 @@ close_file_and_continue:
+ 	return ret;
+ }
+ 
+-static void hist_browser__update_pcnt_entries(struct hist_browser *hb)
++static void hist_browser__update_nr_entries(struct hist_browser *hb)
+ {
+ 	u64 nr_entries = 0;
+ 	struct rb_node *nd = rb_first(&hb->hists->entries);
+@@ -1354,7 +1353,7 @@ static void hist_browser__update_pcnt_entries(struct hist_browser *hb)
+ 		nd = rb_next(nd);
+ 	}
+ 
+-	hb->nr_pcnt_entries = nr_entries;
++	hb->nr_non_filtered_entries = nr_entries;
+ }
+ 
+ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+@@ -1411,7 +1410,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 
+ 	if (min_pcnt) {
+ 		browser->min_pcnt = min_pcnt;
+-		hist_browser__update_pcnt_entries(browser);
++		hist_browser__update_nr_entries(browser);
+ 	}
+ 
+ 	fstack = pstack__new(2);
 -- 
-1.7.10
+1.9.2
 
