@@ -1,139 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858AbaDWOxl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:53:41 -0400
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:39047 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113AbaDWOxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:53:36 -0400
-From: Srikanth Thokala <sthokal@xilinx.com>
-To: dan.j.williams@intel.com, vinod.koul@intel.com, michals@xilinx.com,
-        grant.likely@linaro.org, robh+dt@kernel.org
-Cc: levex@linux.com, lars@metafoo.de, andriy.shevchenko@linux.intel.com,
-        dmaengine@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        Srikanth Thokala <sthokal@xilinx.com>
-Subject: [PATCH v8 1/2] dma: Add Xilinx Video DMA DT Binding Documentation
-Date: Wed, 23 Apr 2014 20:23:25 +0530
-Message-Id: <1398264806-2082-1-git-send-email-sthokal@xilinx.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1757018AbaDWOxy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:53:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61856 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753815AbaDWOxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 10:53:47 -0400
+Date: Wed, 23 Apr 2014 16:53:25 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [GIT PULL 0/4] perf/urgent fixes
+Message-ID: <20140423145325.GB27585@krava.brq.redhat.com>
+References: <1398252682-17185-1-git-send-email-jolsa@redhat.com>
+ <20140423131433.GB23224@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423131433.GB23224@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Device-tree binding documentation of Xilinx Video DMA Engine
+On Wed, Apr 23, 2014 at 03:14:33PM +0200, Ingo Molnar wrote:
+> 
+> (Just reporting two bugs I found today - unrelated to your the 
+> perf/urgent pull request.)
+> 
+> 1)
+> 
+> Even when the most modern unwind library is found, the autodetection 
+> is spammy:
+> 
+> 
+>  Auto-detecting system features:
+>  ...                         dwarf: [ on  ]
+>  ...                         glibc: [ on  ]
+>  ...                          gtk2: [ on  ]
+>  ...                      libaudit: [ on  ]
+>  ...                        libbfd: [ on  ]
+>  ...                        libelf: [ on  ]
+>  ...                       libnuma: [ on  ]
+>  ...                       libperl: [ on  ]
+>  ...                     libpython: [ on  ]
+>  ...                      libslang: [ on  ]
+>  ...                     libunwind: [ on  ]
+>  ...            libdw-dwarf-unwind: [ on  ]
+>  ...     DWARF post unwind library: libunwind
+> 
+> The 'DWARF post unwind library' line is somewhat superfluous. I 
+> realize that it prints out the library selected - but that's obvious 
+> from the 'libdw-dwarf-unwind' line above it already, right?
+> 
+> Furthermore, it breaks the autodetection output format.
+> 
+> 2)
+> 
+> On latest Ubuntu (14.04) the tip:master build fails with:
+> 
+>  /usr/bin/ld: cannot find -liberty
+>  collect2: error: ld returned 1 exit status
+> 
+> The autodetection sequence reports all green entries, so something's 
+> funky going on there.
 
-Signed-off-by: Srikanth Thokala <sthokal@xilinx.com>
-Acked-by: Rob Herring <robh@kernel.org>
+we add -liberty once -lbfd is detected, I guess we
+assumed that was common case
+
+  perf tools: fix BFD detection on opensuse
+  commit 280e7c48c3b873e4987a63da276ecab25383f494
+  Author: Andi Kleen <ak@linux.intel.com>
+  Date:   Sat Jan 11 11:42:51 2014 -0800
+
+could you please try patch below? it adds that only
+if thats detected
+
+'make VF=1' should display more status now
+
+Andi,
+could you please try that on opensuse?
+
+thanks,
+jirka
+
+
 ---
-Changes in v8:
-Fixed typos as suggested by Rob, Thanks.
-
-Changes in v7:
-None
-
-Changes in v6:
-None
-
-Changes in v5:
-None
-
-Changes in v4:
-None
-
-Changes in v3:
-None
-
-Changes in v2:
-- Removed device-id DT property, as suggested by Arnd Bergmann
-- Properly documented DT bindings as suggested by Arnd Bergmann
----
- .../devicetree/bindings/dma/xilinx/xilinx_vdma.txt |   75 ++++++++++++++++++++
- 1 file changed, 75 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-
-diff --git a/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-new file mode 100644
-index 0000000..264100c
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/xilinx/xilinx_vdma.txt
-@@ -0,0 +1,75 @@
-+Xilinx AXI VDMA engine, it does transfers between memory and video devices.
-+It can be configured to have one channel or two channels. If configured
-+as two channels, one is to transmit to the video device and another is
-+to receive from the video device.
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index ee21fa9..f511658 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -186,7 +186,10 @@ VF_FEATURE_TESTS =			\
+ 	stackprotector-all		\
+ 	timerfd				\
+ 	libunwind-debug-frame		\
+-	bionic
++	bionic				\
++	liberty				\
++	liberty-z			\
++	cplus-demangle
+ 
+ # Set FEATURE_CHECK_(C|LD)FLAGS-all for all CORE_FEATURE_TESTS features.
+ # If in the future we need per-feature checks/flags for features not
+@@ -504,7 +507,21 @@ else
+ endif
+ 
+ ifeq ($(feature-libbfd), 1)
+-  EXTLIBS += -lbfd -lz -liberty
++  EXTLIBS += -lbfd
 +
-+Required properties:
-+- compatible: Should be "xlnx,axi-vdma-1.00.a"
-+- #dma-cells: Should be <1>, see "dmas" property below
-+- reg: Should contain VDMA registers location and length.
-+- xlnx,num-fstores: Should be the number of framebuffers as configured in h/w.
-+- dma-channel child node: Should have at least one channel and can have up to
-+	two channels per device. This node specifies the properties of each
-+	DMA channel (see child node properties below).
++  # call all detections now so we get correct
++  # status in VF output
++  $(call feature_check,liberty)
++  $(call feature_check,liberty-z)
++  $(call feature_check,cplus-demangle)
 +
-+Optional properties:
-+- xlnx,include-sg: Tells configured for Scatter-mode in
-+	the hardware.
-+- xlnx,flush-fsync: Tells which channel to Flush on Frame sync.
-+	It takes following values:
-+	{1}, flush both channels
-+	{2}, flush mm2s channel
-+	{3}, flush s2mm channel
-+
-+Required child node properties:
-+- compatible: It should be either "xlnx,axi-vdma-mm2s-channel" or
-+	"xlnx,axi-vdma-s2mm-channel".
-+- interrupts: Should contain per channel VDMA interrupts.
-+- xlnx,data-width: Should contain the stream data width, take values
-+	{32,64...1024}.
-+
-+Optional child node properties:
-+- xlnx,include-dre: Tells hardware is configured for Data
-+	Realignment Engine.
-+- xlnx,genlock-mode: Tells Genlock synchronization is
-+	enabled/disabled in hardware.
-+
-+Example:
-+++++++++
-+
-+axi_vdma_0: axivdma@40030000 {
-+	compatible = "xlnx,axi-vdma-1.00.a";
-+	#dma_cells = <1>;
-+	reg = < 0x40030000 0x10000 >;
-+	xlnx,num-fstores = <0x8>;
-+	xlnx,flush-fsync = <0x1>;
-+	dma-channel@40030000 {
-+		compatible = "xlnx,axi-vdma-mm2s-channel";
-+		interrupts = < 0 54 4 >;
-+		xlnx,datawidth = <0x40>;
-+	} ;
-+	dma-channel@40030030 {
-+		compatible = "xlnx,axi-vdma-s2mm-channel";
-+		interrupts = < 0 53 4 >;
-+		xlnx,datawidth = <0x40>;
-+	} ;
-+} ;
-+
-+
-+* DMA client
-+
-+Required properties:
-+- dmas: a list of <[Video DMA device phandle] [Channel ID]> pairs,
-+	where Channel ID is '0' for write/tx and '1' for read/rx
-+	channel.
-+- dma-names: a list of DMA channel names, one per "dmas" entry
-+
-+Example:
-+++++++++
-+
-+vdmatest_0: vdmatest@0 {
-+	compatible ="xlnx,axi-vdma-test-1.00.a";
-+	dmas = <&axi_vdma_0 0
-+		&axi_vdma_0 1>;
-+	dma-names = "vdma0", "vdma1";
-+} ;
--- 
-1.7.9.5
-
++  ifeq ($(feature-liberty), 1)
++    EXTLIBS += -lbfd -liberty
++  else
++    ifeq ($(feature-liberty-z), 1)
++      EXTLIBS += -lbfd -liberty -lz
++    endif
++  endif
+ endif
+ 
+ ifdef NO_DEMANGLE
+@@ -515,15 +532,10 @@ else
+     CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
+   else
+     ifneq ($(feature-libbfd), 1)
+-      $(call feature_check,liberty)
+-      ifeq ($(feature-liberty), 1)
+-        EXTLIBS += -lbfd -liberty
+-      else
+-        $(call feature_check,liberty-z)
+-        ifeq ($(feature-liberty-z), 1)
+-          EXTLIBS += -lbfd -liberty -lz
+-        else
+-          $(call feature_check,cplus-demangle)
++      ifneq ($(feature-liberty), 1)
++        ifneq ($(feature-liberty-z), 1)
++          # we dont have neither HAVE_CPLUS_DEMANGLE_SUPPORT
++          # or any of 'bfd iberty z' trinity
+           ifeq ($(feature-cplus-demangle), 1)
+             EXTLIBS += -liberty
+             CFLAGS += -DHAVE_CPLUS_DEMANGLE_SUPPORT
