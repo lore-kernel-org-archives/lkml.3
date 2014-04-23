@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753473AbaDWMPd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:15:33 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:34711 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752652AbaDWMPc (ORCPT
+	id S1753684AbaDWMPn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:15:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.131]:64872 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925AbaDWMPi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:15:32 -0400
-Date: Wed, 23 Apr 2014 08:15:25 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Stanislav Meduna <stano@meduna.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
-Message-ID: <20140423081525.0e9b863f@gandalf.local.home>
-In-Reply-To: <53576859.8060706@linutronix.de>
-References: <534C3606.7010206@meduna.org>
-	<534C731F.1050406@meduna.org>
-	<534DADF1.6060608@meduna.org>
-	<20140422115439.GA20669@linutronix.de>
-	<20140422094657.5b6ca1e2@gandalf.local.home>
-	<53569E05.8010600@linutronix.de>
-	<20140422134802.73fc1fa4@gandalf.local.home>
-	<20140422141650.7f43d5ba@gandalf.local.home>
-	<53576859.8060706@linutronix.de>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 23 Apr 2014 08:15:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: James Hogan <james.hogan@imgtec.com>
+Subject: Re: [RFC 2/3] scripts/checksyscalls.sh: Make renameat optional
+Date: Wed, 23 Apr 2014 14:15:24 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1398247687-13453-1-git-send-email-james.hogan@imgtec.com> <1398247687-13453-3-git-send-email-james.hogan@imgtec.com>
+In-Reply-To: <1398247687-13453-3-git-send-email-james.hogan@imgtec.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Message-Id: <201404231415.24869.arnd@arndb.de>
+X-Provags-ID: V02:K0:5pINtEuHa9wqpHhDyJd/NH4CNl1ZvBHdjRV1XFKw+aV
+ ysGskrzx6PyiSUqeLV8eqlTY2/223zvAdf9s0f0znhEyTqxFLU
+ 4ERofoh9HPtOh7F5sshqmXoou6/BIFjWqaerKRWRJuhCx61VEi
+ rjIHj1KOK5CF55u1FdWLSM+yOj/2L7Z6z92Mea+bHg94YYlB0l
+ Q5qARzWxd/pSE1PIniOgOzo39JuoNftFC+vc9BUmIF37bxqN1T
+ lG/Wmw40O+hzQ153TcYhLfKZTWi48vh+X7BU5hC/nuCjY0ZNoh
+ FJwy/Gv934ZPH1GIIPAoRJK/l7nZfxk91FtS2XnlrQcU16Q0Ne
+ EEKN7AheIsziVtrJBuPs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014 09:14:33 +0200
-Sebastian Andrzej Siewior <bigeasy@linutronix.de> wrote:
-
-> On 04/22/2014 08:16 PM, Steven Rostedt wrote:
-> > --- a/kernel/timer.c
-> > +++ b/kernel/timer.c
-> > @@ -1447,6 +1447,12 @@ static void run_timer_softirq(struct softirq_action *h)
-> >  		__run_timers(base);
-> >  }
-> >  
-> > +#ifdef CONFIG_SMP
-> > +#define timer_should_raise_softirq(lock)	!spin_do_trylock(lock)
-> > +#else
-> > +#define timer_should_raise_softirq(lock)	1
-> > +#endif
-> > +
+On Wednesday 23 April 2014, James Hogan wrote:
+> The new renameat2 syscall provides all the functionality of renameat
+> with an additional flags argument, so make renameat optional so that
+> future architectures can omit it without getting a warning.
 > 
-> No. The lock may be taken but it also may be available no matter if UP
-> or not. With this patch applied the lockdep splat will go away but the
-> FULL_NO_HZ people will come back because the timer softirq is scheduled
-> even if no timer has expired.
+> Signed-off-by: James Hogan <james.hogan@imgtec.com>
+> Cc: Arnd Bergmann <arnd@arndb.de>
+> Cc: linux-arch@vger.kernel.org
+> ---
+> This patch doesn't affect existing architectures, so there's no harm for
+> this to wait for the v3.16 merge window.
 
-Although, as Peter said FULL_NO_HZ is pretty pointless on UP, but I've
-been thinking this from a non PREEMPT_RT viewpoint. In non PREEMPT_RT,
-spin_locks() are nops, where this is an issue, but in PREEMPT_RT, they
-are mutexes, BUT!
+Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-The rt_mutex use wait_lock to protect its internal state, which is a raw
-spinlock, and in UP it's a nop. That means there's nothing preventing
-an interrupt here from corrupting the rtmutex's internal state. I see
-this is still an issue, and the warning is still valid.
+I'm not actually sure how we'd arrange for new architectures not
+to provide renameat() when using the generic syscall ABI, but this
+patch is correct anyway.
 
--- Steve
+	Arnd
