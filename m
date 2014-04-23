@@ -1,201 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932466AbaDWI64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:58:56 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:39854 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838AbaDWI5t (ORCPT
+	id S1752645AbaDWI5d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:57:33 -0400
+Received: from mail.codeweavers.com ([216.251.189.131]:45078 "EHLO
+	mail.codeweavers.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaDWI5a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:57:49 -0400
-Date: Wed, 23 Apr 2014 09:57:20 +0100
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Zoltan Kiss <zoltan.kiss@citrix.com>, David Miller <davem@davemloft.net>,
-        jesse@nicira.com, pshelar@nicira.com, tgraf@redhat.com,
-        dev@openvswitch.org, pablo@netfilter.org, kadlec@blackhole.kfki.hu,
-        edumazet@google.com, dborkman@redhat.com, therbert@google.com,
-        jasowang@redhat.com, fw@strlen.de, joe@perches.com, horms@verge.net.au,
-        jiri@resnulli.us, mst@redhat.com, Paul.Durrant@citrix.com,
-        JBeulich@suse.com, herbert@gondor.apana.org.au, mszeredi@suse.cz,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        xen-devel@lists.xenproject.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 3.13] core, nfqueue, openvswitch: Orphan frags in
- skb_zerocopy and handle errors
-Message-ID: <20140423085720.GA3572@hercules>
-References: <1395873465-22282-1-git-send-email-zoltan.kiss@citrix.com>
- <20140327.152956.1528740039185894234.davem@davemloft.net>
- <20140421112601.GC3200@hercules>
- <1398181118.3624.203.camel@deadeye.wl.decadent.org.uk>
- <5356AEBF.5010505@citrix.com>
- <1398194284.7767.101.camel@deadeye.wl.decadent.org.uk>
+	Wed, 23 Apr 2014 04:57:30 -0400
+From: Alexandre Julliard <julliard@winehq.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Lutomirski <amluto@gmail.com>, Borislav Petkov <bp@alien8.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+References: <CAObL_7EJi5+m-oDXRy4hu+-OTZ=9wZ9WEivTMsdDtccU00wfWA@mail.gmail.com>
+	<5355A9E9.9070102@zytor.com>
+	<CAObL_7EP+zPpx9TVgsSu2iFN+r0U8yy6UEZtdk=CPwowXUu=Qw@mail.gmail.com>
+	<1dbe8155-58da-45c2-9dc0-d9f4b5a6e643@email.android.com>
+	<CAObL_7FUDpV9md+UnDbXxWw=trrXLFLNNJMNegdezrQt7rm6TA@mail.gmail.com>
+	<a035392c-f332-4b3f-b851-13b0c7a0fc68@email.android.com>
+	<CAObL_7FMX9yaGVi19pVwsU5VwHqKLLWMEB7kwDF-fatsGnHvdQ@mail.gmail.com>
+	<ee12ff5e-91fe-487b-bed9-4472f15f94fe@email.android.com>
+	<CAObL_7HTDvN2zu2_CDnVR_ztZ-b7PfLYz0csuVX-ShQ7EHGEjg@mail.gmail.com>
+	<20140422112312.GB15882@pd.tnic> <20140422144659.GF15882@pd.tnic>
+	<CAObL_7FGs4n6zusbdwTLi5W5q2V81Sf7pOnOmHPFyv5d7jMfvA@mail.gmail.com>
+	<53569467.1030809@zytor.com>
+	<CAObL_7F9yxt=vXjbssYB5wjZ7HUyKcstG7KYaRWxDDK0n7_vQw@mail.gmail.com>
+	<CA+55aFyg1n6=Lnp_qhqdGESoP3u-sv_+MbvSdT4MEutGQAJESg@mail.gmail.com>
+	<CAObL_7HdWs2hoNYd0gKzh6iVJr293Z9p+Dg1C6u+5GYQiDfgnA@mail.gmail.com>
+	<53575C84.6080801@zytor.com>
+Date: Wed, 23 Apr 2014 10:57:14 +0200
+In-Reply-To: <53575C84.6080801@zytor.com> (H. Peter Anvin's message of "Tue,
+	22 Apr 2014 23:24:04 -0700")
+Message-ID: <87lhuw779x.fsf@wine.dyndns.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4.50 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398194284.7767.101.camel@deadeye.wl.decadent.org.uk>
+Content-Type: text/plain
+X-Spam-Score: 0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 08:18:04PM +0100, Ben Hutchings wrote:
-> From: Zoltan Kiss <zoltan.kiss@citrix.com>
-> 
-> commit 36d5fe6a000790f56039afe26834265db0a3ad4c upstream.
-> 
-> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
-> orphan them. Also, it doesn't handle errors, so this patch takes care of that
-> as well, and modify the callers accordingly. skb_tx_error() is also added to
-> the callers so they will signal the failed delivery towards the creator of the
-> skb.
-> 
-> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> [bwh: Backported to 3.13: skb_zerocopy() is new in 3.14, but was moved from a
->  static function in nfnetlink_queue.  We need to patch that and its caller, but
->  not openvswitch.]
-> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> ---
-> On Tue, 2014-04-22 at 19:02 +0100, Zoltan Kiss wrote:
-> > On 22/04/14 16:38, Ben Hutchings wrote:
-> > > On Mon, 2014-04-21 at 12:26 +0100, Luis Henriques wrote:
-> > >> Hi David,
-> > >>
-> > >> On Thu, Mar 27, 2014 at 03:29:56PM -0400, David Miller wrote:
-> > >>> From: Zoltan Kiss <zoltan.kiss@citrix.com>
-> > >>> Date: Wed, 26 Mar 2014 22:37:45 +0000
-> > >>>
-> > >>>> skb_zerocopy can copy elements of the frags array between skbs, but it doesn't
-> > >>>> orphan them. Also, it doesn't handle errors, so this patch takes care of that
-> > >>>> as well, and modify the callers accordingly. skb_tx_error() is also added to
-> > >>>> the callers so they will signal the failed delivery towards the creator of the
-> > >>>> skb.
-> > >>>>
-> > >>>> Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-> > >>>
-> > >>> Fingers crossed :-)  Applied, thanks Zoltan.
-> > >>> --
-> > >>> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> > >>> the body of a message to majordomo@vger.kernel.org
-> > >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > >>
-> > >> Could you please queue this for stable as well?  It has CVE-2014-2568
-> > >> assigned to it and I believe it is applicable to some of the trees.
-> > >
-> > > It was applied to 3.13, but needs backporting to earlier versions.  I
-> > > posted my attempt in
-> > > <1397429860.10849.86.camel@deadeye.wl.decadent.org.uk> but it needs
-> > > testing/reviewing.
-> > 
-> > This one is a different issue, although it is very similar.
-> 
-> Sorry for mixing these up.  I believe this bug has been present since
-> zerocopy was added to nfqueue in Linux 3.10 (commit ae08ce002108).  This
-> is the version I used for Debian's 3.13 branch, which might be usable
-> for older stable branches too.
-> 
-> Ben.
+"H. Peter Anvin" <hpa@zytor.com> writes:
 
-Thank you for this backport Ben.  It looks correct to me and it seems
-to be applicable to 3.10+ kernels
+> Does anyone have any idea if there is a real use case for non-16-bit
+> LDT segments used as the stack segment?  Does Wine use anything like
+> that?
 
-Cheers,
---
-Luís
+Wine uses them for DPMI support, though that would only get used when
+vm86 mode is available.
 
-
-> ---
-> --- a/net/netfilter/nfnetlink_queue_core.c
-> +++ b/net/netfilter/nfnetlink_queue_core.c
-> @@ -235,22 +235,23 @@ nfqnl_flush(struct nfqnl_instance *queue
->  	spin_unlock_bh(&queue->lock);
->  }
->  
-> -static void
-> +static int
->  nfqnl_zcopy(struct sk_buff *to, const struct sk_buff *from, int len, int hlen)
->  {
->  	int i, j = 0;
->  	int plen = 0; /* length of skb->head fragment */
-> +	int ret;
->  	struct page *page;
->  	unsigned int offset;
->  
->  	/* dont bother with small payloads */
-> -	if (len <= skb_tailroom(to)) {
-> -		skb_copy_bits(from, 0, skb_put(to, len), len);
-> -		return;
-> -	}
-> +	if (len <= skb_tailroom(to))
-> +		return skb_copy_bits(from, 0, skb_put(to, len), len);
->  
->  	if (hlen) {
-> -		skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-> +		ret = skb_copy_bits(from, 0, skb_put(to, hlen), hlen);
-> +		if (unlikely(ret))
-> +			return ret;
->  		len -= hlen;
->  	} else {
->  		plen = min_t(int, skb_headlen(from), len);
-> @@ -268,6 +269,11 @@ nfqnl_zcopy(struct sk_buff *to, const st
->  	to->len += len + plen;
->  	to->data_len += len + plen;
->  
-> +	if (unlikely(skb_orphan_frags(from, GFP_ATOMIC))) {
-> +		skb_tx_error(from);
-> +		return -ENOMEM;
-> +	}
-> +
->  	for (i = 0; i < skb_shinfo(from)->nr_frags; i++) {
->  		if (!len)
->  			break;
-> @@ -278,6 +284,8 @@ nfqnl_zcopy(struct sk_buff *to, const st
->  		j++;
->  	}
->  	skb_shinfo(to)->nr_frags = j;
-> +
-> +	return 0;
->  }
->  
->  static int
-> @@ -374,13 +382,16 @@ nfqnl_build_packet_message(struct net *n
->  
->  	skb = nfnetlink_alloc_skb(net, size, queue->peer_portid,
->  				  GFP_ATOMIC);
-> -	if (!skb)
-> +	if (!skb) {
-> +		skb_tx_error(entskb);
->  		return NULL;
-> +	}
->  
->  	nlh = nlmsg_put(skb, 0, 0,
->  			NFNL_SUBSYS_QUEUE << 8 | NFQNL_MSG_PACKET,
->  			sizeof(struct nfgenmsg), 0);
->  	if (!nlh) {
-> +		skb_tx_error(entskb);
->  		kfree_skb(skb);
->  		return NULL;
->  	}
-> @@ -504,13 +515,15 @@ nfqnl_build_packet_message(struct net *n
->  		nla->nla_type = NFQA_PAYLOAD;
->  		nla->nla_len = nla_attr_size(data_len);
->  
-> -		nfqnl_zcopy(skb, entskb, data_len, hlen);
-> +		if (nfqnl_zcopy(skb, entskb, data_len, hlen))
-> +			goto nla_put_failure;
->  	}
->  
->  	nlh->nlmsg_len = skb->len;
->  	return skb;
->  
->  nla_put_failure:
-> +	skb_tx_error(entskb);
->  	kfree_skb(skb);
->  	net_err_ratelimited("nf_queue: error creating packet message\n");
->  	return NULL;
-> 
-> -- 
-> Ben Hutchings
-> Beware of programmers who carry screwdrivers. - Leonard Brandwein
-
-
+-- 
+Alexandre Julliard
+julliard@winehq.org
