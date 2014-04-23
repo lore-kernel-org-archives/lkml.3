@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757725AbaDWPzW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:55:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30670 "EHLO mx1.redhat.com"
+	id S932191AbaDWPzq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:55:46 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52709 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757696AbaDWPzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:55:17 -0400
-Date: Wed, 23 Apr 2014 11:55:12 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        netdev@vger.kernel.org, tj@kernel.org, ssorce@redhat.com,
-        lpoetter@redhat.com, kay@redhat.com, luto@amacapital.net,
-        dwalsh@redhat.com
-Subject: Re: [PATCH 0/2] net: Implement SO_PEERCGROUP and SO_PASSCGROUP
- socket options
-Message-ID: <20140423155512.GA24651@redhat.com>
-References: <1397596546-10153-1-git-send-email-vgoyal@redhat.com>
- <20140422.160558.627080587952506099.davem@davemloft.net>
+	id S1757733AbaDWPzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:55:40 -0400
+Date: Wed, 23 Apr 2014 17:55:26 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Srinivas <venkateshs@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Subject: Re: [PATCH] perf/x86/intel: Use rdmsrl_safe when initializing RAPL
+ PMU.
+Message-ID: <20140423155526.GE25378@pd.tnic>
+References: <1394739386-22260-1-git-send-email-venkateshs@google.com>
+ <CABPqkBRm8Ux15UY2+hF1TZdVsgVbYV+9XPiuh9m497Mr3oJ0Wg@mail.gmail.com>
+ <20140423144538.GN11096@twins.programming.kicks-ass.net>
+ <CABPqkBT5xg+zQ45dugHiXM5XFYi+V3gsBmANevx25fE0S0iNXA@mail.gmail.com>
+ <20140423150912.GO11096@twins.programming.kicks-ass.net>
+ <CABPqkBTSKeza=Ax0yGEfMTq5B8NSQHyvfFBe8qVa-h0dE=UCYg@mail.gmail.com>
+ <20140423151638.GA8526@pd.tnic>
+ <CABPqkBQCVrqtNvva5DD3sE0q=MsJNauKMUv=Vd2GH74v8SsBWQ@mail.gmail.com>
+ <20140423153544.GD25378@pd.tnic>
+ <CABPqkBTMY+q9FUxF0gopSrrG2OJS8NrFkPtKGshjHgZ8Lq8arA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20140422.160558.627080587952506099.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CABPqkBTMY+q9FUxF0gopSrrG2OJS8NrFkPtKGshjHgZ8Lq8arA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 04:05:58PM -0400, David Miller wrote:
-> From: Vivek Goyal <vgoyal@redhat.com>
-> Date: Tue, 15 Apr 2014 17:15:44 -0400
-> 
-> > This is another version of patchset to add support passing cgroup
-> > information of client over unix socket API.
-> 
-> I'm marking this patch series as "changes requested" in patchwork
-> because if we still end up adding this feature SO_PASSCGROUP needs to
-> be changed to behave like SO_PASSCRED.
+On Wed, Apr 23, 2014 at 05:44:30PM +0200, Stephane Eranian wrote:
+> A comment describing return values where rdmsrl_safe() is defined
+> would maybe help avoid problems in the future.
 
-Does this concern of passing of real uid apply to cgroups also. Even
-if somebody tricks suid program to write to fd setup by under priviliged
-program how would that pgram force setuid program to change cgroup.
+If it helps, sure. But please as a separate patch and to x86 guys.
 
-To me passing cgroup information looks more like "pid" information where
-we pass the actual pid of setuid program and not the pid of parent who
-setup fd.
+-- 
+Regards/Gruss,
+    Boris.
 
-How would one trick setuid program change cgroup? If not, then this class
-of attack does not seem to apply to SO_PASSCGROUP.
-
-So I think real discussion here should be how "cgroup" information should
-be used and not necessarily whether we should be passing cgroup
-information of sender. This information is already available. One can
-do SO_PASSCRED, get pid, get /proc/pid/cgroup and use cgroup in whatever
-way they want.
-
-If that's buggy, should we block /proc/pid/cgroup interface because cgroup
-info of a process can be used in improper way.
-
-Thanks
-Vivek
+Sent from a fat crate under my desk. Formatting is fine.
+--
