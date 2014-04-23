@@ -1,67 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932125AbaDWRfG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:35:06 -0400
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:37813 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219AbaDWRfC (ORCPT
+	id S932313AbaDWRfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:35:14 -0400
+Received: from smtpout4.laposte.net ([193.253.67.229]:24489 "EHLO
+	smtpout.laposte.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219AbaDWRfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:35:02 -0400
+	Wed, 23 Apr 2014 13:35:10 -0400
+Date: Wed, 23 Apr 2014 19:35:02 +0200
+From: Bastien Armand <armand.bastien@laposte.net>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Willy Tarreau <willy@meta-x.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Monam Agarwal <monamagarwal123@gmail.com>,
+        Jake Champlin <jake.champlin.27@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] staging: panel: fix sparse warnings in lcd_write
+Message-ID: <20140423173435.GB10879@plop.dartybox.com>
+References: <20140418161057.GC1258@plop.dartybox.com>
+ <20140422100144.GE26890@mwanda>
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdY4gASYR7CR64ux6QgMNdmmNYt86QQF7gvvTjK_6C7c8w@mail.gmail.com>
-References: <1398192025-31523-1-git-send-email-geert+renesas@glider.be>
-	<1398192025-31523-2-git-send-email-geert+renesas@glider.be>
-	<CACRpkdY4gASYR7CR64ux6QgMNdmmNYt86QQF7gvvTjK_6C7c8w@mail.gmail.com>
-Date: Wed, 23 Apr 2014 19:35:00 +0200
-X-Google-Sender-Auth: 0De1IqIMLhODjq67WhSBsSZjHNk
-Message-ID: <CAMuHMdXO1u_Aw5BM7+a6TNM5+Rt-FCgnFLsGn9-w-nv=AKaaiQ@mail.gmail.com>
-Subject: Re: [PATCH 2/4] dt: bindings: Typo s/interrupts-names/interrupt-names/g
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
-        Rob Herring <robh+dt@kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Signed-off-by: Mark Brown" <broonie@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140422100144.GE26890@mwanda>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Tue, Apr 22, 2014 at 01:01:45PM +0300, Dan Carpenter wrote:
+> Out of curiosity, have you tested this patch?
+> 
+> On Fri, Apr 18, 2014 at 06:10:57PM +0200, Bastien Armand wrote:
+> > This patch fixes two sparse warnings related to lcd_write :
+> > warning: incorrect type in argument 1 (different address spaces)
+> > warning: incorrect type in initializer (incompatible argument 2 
+> > (different address spaces))
+> > 
+> > lcd_write can be used from kernel space (in panel_lcd_print) or from user
+> > space. So we introduce the lcd_write_char function that will write a char to
+> > the device. We modify lcd_write and panel_lcd_print to use it. Finally we add
+> > __user annotation missing in lcd_write.
+> > 
+> > 
+> > Signed-off-by: Bastien Armand <armand.bastien@laposte.net>
+> > ---
+> >  drivers/staging/panel/panel.c |  205 ++++++++++++++++++++++-------------------
+> >  1 file changed, 109 insertions(+), 96 deletions(-)
+> > 
+> > diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+> > index 1569e26..dc34254 100644
+> > --- a/drivers/staging/panel/panel.c
+> > +++ b/drivers/staging/panel/panel.c
+> > @@ -1217,111 +1217,113 @@ static inline int handle_lcd_special_code(void)
+> >  	return processed;
+> >  }
+> >  ...
+> 
+> This is buggy.  You are getting the first character over and over.  You
+> should be doing:
+> 
+> 		if (get_user(c, tmp))
+> 			return -EFAULT;
+> 
+Hi,
 
-On Wed, Apr 23, 2014 at 4:11 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Tue, Apr 22, 2014 at 8:40 PM, Geert Uytterhoeven
-> <geert+renesas@glider.be> wrote:
->> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Cc: Signed-off-by: Mark Brown <broonie@linaro.org>
->> ---
->>  .../devicetree/bindings/pinctrl/pinctrl-st.txt     |    4 ++--
->>  .../bindings/sound/davinci-mcasp-audio.txt         |    2 +-
->>  2 files changed, 3 insertions(+), 3 deletions(-)
->
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
+You're totally right. I am sorry to have missed that... As the patch has
+been accepted in linux-next. I will send a correction right away.
 
-Thanks!
+> Btw, this whole function is terrible.  It should be reading larger
+> chunks at once instead of get_user() for each character.
+> 
+> 
 
-> Maybe Mark can apply this then, as it's mostly sound related.
-> Ideally it should be two patches but who cares about such a petty
-> detail.
+The aim of my patch was basically to add __user annotation. I tried to
+keep the change minimal to lessen the risk of regression (it seems I have
+failed here...). Perhaps, I can write an other patch to change that.
 
-Opinions about patch granularity differ...
-Grant Likely replied to one of the other patches in the series:
+> > ...
+> >  static void panel_lcd_print(const char *s)
+> >  {
+> > -	if (lcd_enabled && lcd_initialized)
+> > -		lcd_write(NULL, s, strlen(s), NULL);
+> > +	const char *tmp = s;
+> > +	int count = strlen(s);
+> > +
+> > +	if (lcd_enabled && lcd_initialized) {
+> > +		for (; count-- > 0; tmp++) {
+> > +			if (!in_interrupt() && (((count + 1) & 0x1f) == 0))
+> > +				/* let's be a little nice with other processes
+> > +				   that need some CPU */
+> > +				schedule();
+> 
+> This schedule() isn't needed.  It just prints a line or two at start up
+> and some other debug output or something.  Small small.
+> 
 
-| Applied all, but squashed into a single patch. I'll send it up to Linus
-| as a fix for 3.15
+I hesitated to remove it. I leave it here as it was allready in lcd_write.
+Perhaps, I could send another patch to remove it.
 
-Gr{oetje,eeting}s,
+> regards,
+> dan carpenter
+> 
 
-                        Geert
+Thanks for your review. It was really appreciated.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Regards,
+bastien armand
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+> > +
+> > +			lcd_write_char(*tmp);
+> > +		}
+> > +	}
+> >  }
+> > 
+> >  /* initialize the LCD driver */
+> > --
+> > 1.7.10.4
+> > 
+> > _______________________________________________
+> > devel mailing list
+> > devel@linuxdriverproject.org
+> > http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
