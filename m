@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752267AbaDWEtR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 00:49:17 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:62180 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751527AbaDWEtQ (ORCPT
+	id S1752395AbaDWEt1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 00:49:27 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:49751 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752183AbaDWEtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 00:49:16 -0400
+	Wed, 23 Apr 2014 00:49:22 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 0/9] perf tools: Fixup for the --percentage change
+References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
+	<20140422095557.GB10813@gmail.com>
+Date: Wed, 23 Apr 2014 13:49:05 +0900
+In-Reply-To: <20140422095557.GB10813@gmail.com> (Ingo Molnar's message of
+	"Tue, 22 Apr 2014 11:55:57 +0200")
+Message-ID: <87k3agsla6.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <20140422212330.GA18483@localhost.localdomain>
-References: <cover.1398072824.git.viresh.kumar@linaro.org>
-	<f3f95d6a68a1d3aec3a30c2384848a06ad32459b.1398072824.git.viresh.kumar@linaro.org>
-	<20140422212330.GA18483@localhost.localdomain>
-Date: Wed, 23 Apr 2014 10:19:15 +0530
-Message-ID: <CAKohpo=kpKfPp1yQFbtqr3TYapxZrr6wY3WyusQrrEf7bvwL4w@mail.gmail.com>
-Subject: Re: [PATCH V2 01/19] tick: trivial cleanups
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linaro Networking <linaro-networking@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 April 2014 02:53, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> On Mon, Apr 21, 2014 at 03:24:57PM +0530, Viresh Kumar wrote:
->> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
->> index 6558b7a..9e9ddba 100644
->> --- a/kernel/time/tick-sched.c
->> +++ b/kernel/time/tick-sched.c
->> @@ -108,7 +108,6 @@ static ktime_t tick_init_jiffy_update(void)
->>       return period;
->>  }
->>
->> -
->>  static void tick_sched_do_timer(ktime_t now)
->>  {
->>       int cpu = smp_processor_id();
->> @@ -248,8 +247,8 @@ void tick_nohz_full_kick_all(void)
->>               return;
->>
->>       preempt_disable();
->> -     smp_call_function_many(tick_nohz_full_mask,
->> -                            nohz_full_kick_ipi, NULL, false);
->> +     smp_call_function_many(tick_nohz_full_mask, nohz_full_kick_ipi, NULL,
->> +                            false);
+Hi Ingo,
+
+On Tue, 22 Apr 2014 11:55:57 +0200, Ingo Molnar wrote:
+> I gave it some quick testing and after fixing a trivial merge conflict 
+> in tools/lib/lockdep/Makefile all seems to be working fine.
+
+Thanks for testing!
+
 >
-> Breaking < 80 char lines is arguable although I'm not sure it still matters in 2014.
+> But while looking at it I remembered one of my old UI complains about 
+> perf top and report, the hard to read nature of:
+>
+>    Event count (approx.): 226958779
+>
+> the values displayed are typically way too large to be easily human 
+> readable. More importantly, they are also nonsensical! That we have a 
+> sampling interval and can sum up all the intervals sampled has very 
+> little meaning to the overwhelming majority of humans looking at the 
+> data.
+>
+> And printing that just spams the visual field and confuses people.
+>
+> People care about the quality and speed of sampling itself, not 
+> directly the interval of sampling (which will often be variable with 
+> auto-freq sampling).
 
-I agree. In case we don't care anymore, checkpatch.pl must be fixed..
+You meant 'period' by 'interval', right?
 
-> But I don't see much the point of the above change. I usually prefer when line contents
-> are a bit balanced. It may be a matter of taste I guess.
+There's --show-total-period option (should be equivalent to -F period
+later) in perf report, so there might be people want to see the numbers
+IMHO.
 
-When I tried doing it, I though it might come in a single line, but
-then it didn't.
-The way I wrap things normally is I let 'vim' do it after 80 columns. And it
-tries to fit max in a single line.. So this happened.
+>
+> So instead of:
+>
+>   Samples: 42K of event 'cycles', Event count (approx.): 226958779
+>
+> How about only printing this in 'perf top' and 'perf report':
+>
+>   Captured 42.1K 'cycles' event samples
+>
+> Note the extra decimal (which helps monitor smaller changes as well), 
+> and note the different wording.
+>
+> Thoughts?
 
-I can drop it if you want.. :)
+Well, I'm okay to add the extra decimal, but it seems that it only makes
+sense when the unit is 'K'..
+
+And I think it might be worth adding filtered sample count as well if
+filtering is enabled something like:
+
+  Captured 13.2K/42.1K 'cycles' event samples
+
+
+Thanks,
+Namhyung
