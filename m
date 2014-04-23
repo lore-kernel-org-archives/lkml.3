@@ -1,68 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755619AbaDWOJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:09:42 -0400
-Received: from mail-la0-f46.google.com ([209.85.215.46]:46180 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965AbaDWOJj (ORCPT
+	id S1755695AbaDWOK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:10:29 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:59771 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752821AbaDWOK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:09:39 -0400
-Message-ID: <5357C99F.6070009@cogentembedded.com>
-Date: Wed, 23 Apr 2014 18:09:35 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 23 Apr 2014 10:10:28 -0400
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Felipe Balbi <balbi@ti.com>, Tim Bird <tbird20d@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
-Subject: Re: [PATCH v6 15/19] usb: phy: msm: Fix PTS definitions for MSM USB
- controller
-References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>		 <1398158438-21579-16-git-send-email-iivanov@mm-sol.com>		 <53566A23.8010508@cogentembedded.com>		 <1398259477.4724.218.camel@iivanov-dev>	 <1398260102.4724.223.camel@iivanov-dev>	 <5357C40E.7060000@cogentembedded.com> <1398261183.4724.226.camel@iivanov-dev>
-In-Reply-To: <1398261183.4724.226.camel@iivanov-dev>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1398184685-31670-1-git-send-email-phil.edworthy@renesas.com>
+References: <1398184685-31670-1-git-send-email-phil.edworthy@renesas.com>
+Date: Wed, 23 Apr 2014 16:10:27 +0200
+Message-ID: <CACRpkdZrvvkuGJ0u_eqUP5pD7mHZRHiEq2LwNUnGWyZLxrZVRA@mail.gmail.com>
+Subject: Re: [PATCH] sh-pfc: r8a7791: Fix definition of MOD_SEL3
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Phil Edworthy <phil.edworthy@renesas.com>
+Cc: Laurent Pinchart <laurent.pinchart+renesas@ideasonboard.com>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Linux-SH <linux-sh@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23-04-2014 17:53, Ivan T. Ivanov wrote:
+On Tue, Apr 22, 2014 at 6:38 PM, Phil Edworthy
+<phil.edworthy@renesas.com> wrote:
 
->>>>>> --- a/include/linux/usb/msm_hsusb_hw.h
->>>>>> +++ b/include/linux/usb/msm_hsusb_hw.h
->>>>>> @@ -31,8 +31,9 @@
->>>>>>     #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
->>>>>>
->>>>>>     #define PORTSC_PHCD            (1 << 23) /* phy suspend mode */
->>>>>> -#define PORTSC_PTS_MASK         (3 << 30)
->>>>>> -#define PORTSC_PTS_ULPI         (3 << 30)
->>>>>> +#define PORTSC_PTS_MASK        (3 << 30)
->>>>>> +#define PORTSC_PTS_ULPI        (2 << 30)
->>>>>> +#define PORTSC_PTS_SERIAL      (3 << 30)
+> There is a missing 0 entry from the MOD_SEL3 table.
+>
+> Signed-off-by: Phil Edworthy <phil.edworthy@renesas.com>
 
->>>>>       Please use tabs, not spaces here.
+Patch applied for fixes with Laurent's ACK.
 
->>>> Thanks, will fix and resend.
-
->>> I answered too quickly. File contain tabs and spaces for
->>> indentation of definitions.
-
->>      You mean tabs and spaces on one line? Or sometimes tabs, sometimes spaces?
-
-> In this particular hunk, original code uses spaces.
-
-    That I saw. 8-)
-    I was asking about this file in general.
-
-> Ivan
-
->>> Should I still use tabs here?
-
->>      If they are already used, why not?
-
->>> Regards,
->>> Ivan
-
-WBR, Sergei
-
+Yours,
+Linus Walleij
