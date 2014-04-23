@@ -1,78 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616AbaDWB1y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:27:54 -0400
-Received: from mail-oa0-f50.google.com ([209.85.219.50]:44147 "EHLO
-	mail-oa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751688AbaDWBSy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:18:54 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: Rob Herring <robh@kernel.org>, Ralf Baechle <ralf@linux-mips.org>,
-        linux-mips@linux-mips.org
-Subject: [PATCH v2 04/21] mips: ralink: convert to use unflatten_and_copy_device_tree
-Date: Tue, 22 Apr 2014 20:18:04 -0500
-Message-Id: <1398215901-25609-5-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
-References: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
+	id S1756723AbaDWB2K (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:28:10 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46799 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756619AbaDWB2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 21:28:00 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Rob Herring <rob.herring@calxeda.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Joel Fernandes <joelf@ti.com>
+Subject: [PATCH 2/8] ARM: OMAP2+: timer: Simplify clock event/source name setting
+Date: Tue, 22 Apr 2014 20:27:03 -0500
+Message-ID: <1398216429-4681-3-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398216429-4681-1-git-send-email-joelf@ti.com>
+References: <1398216429-4681-1-git-send-email-joelf@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
+For the OMAPs, we're setting up only one clockevent and clocksource. Further,
+for DT boot there's no easy way to get the timer name and currently this is
+done in an ugly way by reading a hwmod entry. So let's just set it to a simpler
+name like timer_clkev and timer_clksrc.
 
-The ralink FDT code can be simplified by using
-unflatten_and_copy_device_tree function. This removes all accesses to
-FDT header data by the arch code.
-
-Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org
+Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
-v2: no change
+ arch/arm/mach-omap2/timer.c |   10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
 
- arch/mips/ralink/of.c | 25 +------------------------
- 1 file changed, 1 insertion(+), 24 deletions(-)
-
-diff --git a/arch/mips/ralink/of.c b/arch/mips/ralink/of.c
-index eccc552..0170d82 100644
---- a/arch/mips/ralink/of.c
-+++ b/arch/mips/ralink/of.c
-@@ -52,30 +52,7 @@ __iomem void *plat_of_remap_node(const char *node)
- 
- void __init device_tree_init(void)
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index ec427e6..f192a41 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -251,7 +251,6 @@ static u32 __init omap_dm_timer_get_errata(void)
+ static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
+ 					 const char *fck_source,
+ 					 const char *property,
+-					 const char **timer_name,
+ 					 int posted)
  {
--	unsigned long base, size;
--	void *fdt_copy;
--
--	if (!initial_boot_params)
--		return;
--
--	base = virt_to_phys((void *)initial_boot_params);
--	size = be32_to_cpu(initial_boot_params->totalsize);
--
--	/* Before we do anything, lets reserve the dt blob */
--	reserve_bootmem(base, size, BOOTMEM_DEFAULT);
--
--	/* The strings in the flattened tree are referenced directly by the
--	 * device tree, so copy the flattened device tree from init memory
--	 * to regular memory.
--	 */
--	fdt_copy = alloc_bootmem(size);
--	memcpy(fdt_copy, initial_boot_params, size);
--	initial_boot_params = fdt_copy;
--
--	unflatten_device_tree();
--
--	/* free the space reserved for the dt blob */
--	free_bootmem(base, size);
-+	unflatten_and_copy_device_tree();
- }
+ 	char name[10]; /* 10 = sizeof("gptXX_Xck0") */
+@@ -290,8 +289,6 @@ static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
+ 	if (!oh)
+ 		return -ENODEV;
  
- void __init plat_mem_setup(void)
+-	*timer_name = oh->name;
+-
+ 	if (!of_have_populated_dt()) {
+ 		r = omap_hwmod_get_resource_byname(oh, IORESOURCE_IRQ, NULL,
+ 						   &irq);
+@@ -365,8 +362,10 @@ static void __init omap2_gp_clockevent_init(int gptimer_id,
+ 	 */
+ 	__omap_dm_timer_override_errata(&clkev, OMAP_TIMER_ERRATA_I103_I767);
+ 
++	clockevent_gpt.name = "timer_clkev";
++
+ 	res = omap_dm_timer_init_one(&clkev, fck_source, property,
+-				     &clockevent_gpt.name, OMAP_TIMER_POSTED);
++				     OMAP_TIMER_POSTED);
+ 	BUG_ON(res);
+ 
+ 	omap2_gp_timer_irq.dev_id = &clkev;
+@@ -489,10 +488,11 @@ static void __init omap2_gptimer_clocksource_init(int gptimer_id,
+ 	clksrc.errata = omap_dm_timer_get_errata();
+ 
+ 	res = omap_dm_timer_init_one(&clksrc, fck_source, property,
+-				     &clocksource_gpt.name,
+ 				     OMAP_TIMER_NONPOSTED);
+ 	BUG_ON(res);
+ 
++	clocksource_gpt.name = "timer_clksrc";
++
+ 	__omap_dm_timer_load_start(&clksrc,
+ 				   OMAP_TIMER_CTRL_AR, 0,
+ 				   OMAP_TIMER_NONPOSTED);
 -- 
-1.9.1
+1.7.9.5
 
