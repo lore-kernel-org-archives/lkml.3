@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052AbaDWNxg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:53:36 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:53476 "EHLO
+	id S932092AbaDWNxp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:53:45 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:53491 "EHLO
 	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756308AbaDWNwB (ORCPT
+	with ESMTP id S1756823AbaDWNxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:52:01 -0400
-Message-ID: <5357C57E.9070007@semaphore.gr>
-Date: Wed, 23 Apr 2014 16:51:58 +0300
+	Wed, 23 Apr 2014 09:53:38 -0400
+Message-ID: <5357C5E0.1070207@semaphore.gr>
+Date: Wed, 23 Apr 2014 16:53:36 +0300
 From: Stratos Karafotis <stratosk@semaphore.gr>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Viresh Kumar <viresh.kumar@linaro.org>,
         "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
         "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] cpufreq: powernow-k8: Fix checkpatch warnings
-References: <5356DB92.1060600@semaphore.gr> <CAKohpo=6wTYHGvLcNUb4+MFdKeHobNA0A1W2Ta5yJqBCAceMhA@mail.gmail.com>
-In-Reply-To: <CAKohpo=6wTYHGvLcNUb4+MFdKeHobNA0A1W2Ta5yJqBCAceMhA@mail.gmail.com>
+References: <5356DB92.1060600@semaphore.gr> <2606012.9SjvfKiI5Z@vostro.rjw.lan>
+In-Reply-To: <2606012.9SjvfKiI5Z@vostro.rjw.lan>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/04/2014 07:46 πμ, Viresh Kumar wrote:
-> On 23 April 2014 02:43, Stratos Karafotis <stratosk@semaphore.gr> wrote:
->> @@ -342,7 +333,7 @@ static int core_voltage_pre_transition(struct powernow_k8_data *data,
->>                 return 1;
->>
->>         if (savefid != data->currfid) {
->> -               printk(KERN_ERR PFX "ph1 err, currfid changed 0x%x\n",
->> +               pr_err("ph1 err, currfid changed 0x%x\n",
->>                                 data->currfid);
+On 23/04/2014 01:37 μμ, Rafael J. Wysocki wrote:
+> On Wednesday, April 23, 2014 12:13:54 AM Stratos Karafotis wrote:
+>> Fix the following checkpatch warnings:
 > 
-> This will come in single line?
+> In addition to comments from Viresh, I have a general one.
 > 
->> @@ -529,43 +510,39 @@ static int check_pst_table(struct powernow_k8_data *data, struct pst_s *pst,
->>
->>         for (j = 0; j < data->numps; j++) {
->>                 if (pst[j].vid > LEAST_VID) {
->> -                       printk(KERN_ERR FW_BUG PFX "vid %d invalid : 0x%x\n",
->> -                              j, pst[j].vid);
->> +                       pr_err(FW_BUG "vid %d invalid : 0x%x\n", j,
->> +                              pst[j].vid);
+> Some of the checkpatch.pl warnings are not worth fixing at all ->
 > 
-> Same here.
+>> - WARNING: Prefer pr_err(... to printk(KERN_ERR ...
+>> - WARNING: Prefer pr_info(... to printk(KERN_INFO ...
+>> - WARNING: Prefer pr_warn(... to printk(KERN_WARNING ...
+>> - WARNING: quoted string split across lines
+>> - WARNING: line over 80 characters
 > 
->>  static const char missing_pss_msg[] =
->>         KERN_ERR
-> 
-> remove this and use pr_err_once instead of printk_once()
-> 
->> -       FW_BUG PFX "No compatible ACPI _PSS objects found.\n"
->> -       FW_BUG PFX "First, make sure Cool'N'Quiet is enabled in the BIOS.\n"
->> -       FW_BUG PFX "If that doesn't help, try upgrading your BIOS.\n";
->> +       FW_BUG KBUILD_MODNAME
->> +       "No compatible ACPI _PSS objects found.\n"
-> 
-> Don't break these, even if they cross 80 columns.
+> -> and the "line over 80 characters" ones are outright wrong in many cases,
+> so please don't "fix" them.
 > 
 
-Thanks for your review!
+Hi Rafael,
+
+Thanks for your comments!
+
+Could you please clarify if you want me to drop the entire patch or
+send it only with the changes about the last warning found ("no spaces
+at the start of a line)?
+
+Also, I would like to take the opportunity and ask a question. :)
+
+Reading the code, sometimes, I find some minor formatting issues.
+Like the checkpatch warnings or unnecessary parentheses and braces.
+
+For example the line bellow:
+		if ((freq < policy->min) || (freq > policy->max))
+
+I know that this is not actually an issue and a patch with such changes
+is (somehow) a noise for the maintainers. But, should it be "fixed" or not?
+
+Thanks for your time,
 
 Stratos
+
 
