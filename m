@@ -1,100 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756362AbaDWHMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:12:41 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:63254 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753714AbaDWHMk (ORCPT
+	id S932145AbaDWHNV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:13:21 -0400
+Received: from relay.parallels.com ([195.214.232.42]:53839 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913AbaDWHNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:12:40 -0400
-Message-ID: <535767E4.6020900@monstr.eu>
-Date: Wed, 23 Apr 2014 09:12:36 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+	Wed, 23 Apr 2014 03:13:19 -0400
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: <akpm@linux-foundation.org>
+CC: <hannes@cmpxchg.org>, <mhocko@suse.cz>, <glommer@gmail.com>,
+        <cl@linux-foundation.org>, <penberg@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        <devel@openvz.org>
+Subject: [PATCH -mm v3 0/3] kmemcg: simplify work-flow
+Date: Wed, 23 Apr 2014 11:13:12 +0400
+Message-ID: <cover.1398235153.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-To: Will Deacon <will.deacon@arm.com>
-CC: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "dhowells@redhat.com" <dhowells@redhat.com>,
-        "broonie@linaro.org" <broonie@linaro.org>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 18/18] asm-generic: io: define relaxed accessor macros
- unconditionally
-References: <1397742261-15621-1-git-send-email-will.deacon@arm.com> <1397742261-15621-19-git-send-email-will.deacon@arm.com> <5356782A.9050809@monstr.eu> <20140422151809.GF9820@arm.com>
-In-Reply-To: <20140422151809.GF9820@arm.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="fLllnNn7PTSF7DuVVvuSibNHt1oOdS2HU"
+Content-Type: text/plain
+X-Originating-IP: [10.30.16.96]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---fLllnNn7PTSF7DuVVvuSibNHt1oOdS2HU
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Hi Will,
+This patch-set is a part of preparations for kmemcg re-parenting. It
+targets at simplifying kmemcg work-flows and synchronization.
 
-On 04/22/2014 05:18 PM, Will Deacon wrote:
-> Hi Michal,
->=20
-> On Tue, Apr 22, 2014 at 03:09:46PM +0100, Michal Simek wrote:
->> On 04/17/2014 03:44 PM, Will Deacon wrote:
->>> Now that no architectures using asm-generic/io.h define their own rel=
-axed
->>> accessors, the dummy definitions can be used unconditionally.
->>>
->>> Cc: Arnd Bergmann <arnd@arndb.de>
->>> Signed-off-by: Will Deacon <will.deacon@arm.com>
->>> ---
->>>  include/asm-generic/io.h | 18 ------------------
->>>  1 file changed, 18 deletions(-)
->>
->> Do we need this? I think there could be a need to overwrite them.
->> Currently we are just lucky that architecture which uses asm-generic/i=
-o.h
->> don't need to overwrite it.
->> But I expect that all archs should use asm-generic/io.h to clean
->> architecture io.h exactly I have done it for Microblaze.
->=20
-> I'm open to keeping the conditional definitions, but it introduces a
-> discrepancy with the non-relaxed versions, which are defined unconditio=
-nally
-> (although the underlying __raw_* accessors can be overridden).
+First, it removes async per memcg cache destruction (see patches 1, 2).
+Now caches are only destroyed on memcg offline. That means the caches
+that are not empty on memcg offline will be leaked. However, they are
+already leaked, because memcg_cache_params::nr_pages normally never
+drops to 0 so the destruction work is never scheduled except
+kmem_cache_shrink is called explicitly. In the future I'm planning
+reaping such dead caches on vmpressure or periodically.
 
-up to you.
+Second, it substitutes per memcg slab_caches_mutex's with the global
+memcg_slab_mutex, which should be taken during the whole per memcg cache
+creation/destruction path before the slab_mutex (see patch 3). This
+greatly simplifies synchronization among various per memcg cache
+creation/destruction paths.
+
+I'm still not quite sure about the end picture, in particular I don't
+know whether we should reap dead memcgs' kmem caches periodically or try
+to merge them with their parents (see https://lkml.org/lkml/2014/4/20/38
+for more details), but whichever way we choose, this set looks like a
+reasonable change to me, because it greatly simplifies kmemcg work-flows
+and eases further development.
+
+Changes in v3:
+ - rebase on top of mmotm 2014-04-22-15-20 (minor, so I preserved
+   Johannes' ACKs)
+Changes in v2:
+ - substitute per memcg slab_caches_mutex's with the global
+   memcg_slab_mutex and re-split the set.
+
+v2: https://lkml.org/lkml/2014/4/18/42
+v1: https://lkml.org/lkml/2014/4/9/298
 
 Thanks,
-Michal
 
+Vladimir Davydov (3):
+  memcg, slab: do not schedule cache destruction when last page goes
+    away
+  memcg, slab: merge memcg_{bind,release}_pages to
+    memcg_{un}charge_slab
+  memcg, slab: simplify synchronization scheme
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+ include/linux/memcontrol.h |   15 +--
+ include/linux/slab.h       |    8 +-
+ mm/memcontrol.c            |  231 +++++++++++++++-----------------------------
+ mm/slab.c                  |    2 -
+ mm/slab.h                  |   28 +-----
+ mm/slab_common.c           |   23 ++---
+ mm/slub.c                  |    2 -
+ 7 files changed, 93 insertions(+), 216 deletions(-)
 
+-- 
+1.7.10.4
 
-
---fLllnNn7PTSF7DuVVvuSibNHt1oOdS2HU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNXZ+QACgkQykllyylKDCFSJgCgnNdIsl0aqV2eq561vp8vMmeK
-LKMAni1uuUWTcvoV1akrZQyc7LaAQjVQ
-=O4wg
------END PGP SIGNATURE-----
-
---fLllnNn7PTSF7DuVVvuSibNHt1oOdS2HU--
