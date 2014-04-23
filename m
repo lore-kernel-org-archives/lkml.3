@@ -1,167 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935AbaDWJez (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 05:34:55 -0400
-Received: from mail-lb0-f181.google.com ([209.85.217.181]:64668 "EHLO
-	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708AbaDWJeu (ORCPT
+	id S932429AbaDWJi3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 05:38:29 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:44954 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932122AbaDWJi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 05:34:50 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH] USB: serial: fix sysfs-attribute removal deadlock
-Date: Wed, 23 Apr 2014 11:32:19 +0200
-Message-Id: <1398245539-1618-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Wed, 23 Apr 2014 05:38:26 -0400
+MIME-Version: 1.0
+Date: Wed, 23 Apr 2014 15:08:25 +0530
+Message-ID: <CAKohpokPSVTJ5rupW8vM0btgtc9S6bWdgCdDkn6qHK5SfcGX0A@mail.gmail.com>
+Subject: [Query]: hrtimers: why don't we consider hrtimers in get_next_timer_interrupt()
+From: Viresh Kumar <viresh.kumar@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>
+Cc: Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linaro Networking <linaro-networking@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix driver new_id sysfs-attribute removal deadlock by making sure to
-not hold any locks that the attribute operations grab when removing the
-attribute.
+Hi,
 
-Specifically, usb_serial_deregister holds the table mutex when
-deregistering the driver, which includes removing the new_id attribute.
-This can lead to a deadlock as writing to new_id increments the
-attribute's active count before trying to grab the same mutex in
-usb_serial_probe.
+File: hrtimer.c
+Function: hrtimer_get_next_event()
 
-The deadlock can easily be triggered by inserting a sleep in
-usb_serial_deregister and writing the id of an unbound device to new_id
-during module unload.
+I was looking closely at what's waking up my system and
+found this piece of code:
 
-As the table mutex (in this case) is used to prevent subdriver unload
-during probe, it should be sufficient to only hold the lock while
-manipulating the usb-serial driver list during deregister. A racing
-probe will then either fail to find a matching subdriver or fail to get
-the corresponding module reference.
+ktime_t hrtimer_get_next_event(void)
+{
+        if (!hrtimer_hres_active()) {
+                find next hrtimer event ....
+        }
+}
 
-Since v3.15-rc1 this also triggers the following lockdep warning:
+Which probably means that: "don't consider hrtimers for getting
+next timer event if we are running ticks in high resolution mode".
 
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.15.0-rc2 #123 Tainted: G        W
--------------------------------------------------------
-modprobe/190 is trying to acquire lock:
- (s_active#4){++++.+}, at: [<c0167aa0>] kernfs_remove_by_name_ns+0x4c/0x94
+And I couldn't understand why is it so?
 
-but task is already holding lock:
- (table_lock){+.+.+.}, at: [<bf004d84>] usb_serial_deregister+0x3c/0x78 [usbserial]
+When hres_active isn't set, we run hrtimer handlers from timer
+handlers, which means that timers would be sufficient in finding
+the next event and we don't need to check for hrtimers.
 
-which lock already depends on the new lock.
+But when hres_active is set, hrtimers could be set to fire before
+the next timer event and so we must take them into account.
 
-the existing dependency chain (in reverse order) is:
+I am new to this whole world of core frameworks and might be
+missing something very very obvious. But its always better to
+ask than to ignore and think that things are probably fine and
+just shut up.
 
--> #1 (table_lock){+.+.+.}:
-       [<c0075f84>] __lock_acquire+0x1694/0x1ce4
-       [<c0076de8>] lock_acquire+0xb4/0x154
-       [<c03af3cc>] _raw_spin_lock+0x4c/0x5c
-       [<c02bbc24>] usb_store_new_id+0x14c/0x1ac
-       [<bf007eb4>] new_id_store+0x68/0x70 [usbserial]
-       [<c025f568>] drv_attr_store+0x30/0x3c
-       [<c01690e0>] sysfs_kf_write+0x5c/0x60
-       [<c01682c0>] kernfs_fop_write+0xd4/0x194
-       [<c010881c>] vfs_write+0xbc/0x198
-       [<c0108e4c>] SyS_write+0x4c/0xa0
-       [<c000f880>] ret_fast_syscall+0x0/0x48
+Thanks for your patience during my learning curve :)
 
--> #0 (s_active#4){++++.+}:
-       [<c03a7a28>] print_circular_bug+0x68/0x2f8
-       [<c0076218>] __lock_acquire+0x1928/0x1ce4
-       [<c0076de8>] lock_acquire+0xb4/0x154
-       [<c0166b70>] __kernfs_remove+0x254/0x310
-       [<c0167aa0>] kernfs_remove_by_name_ns+0x4c/0x94
-       [<c0169fb8>] remove_files.isra.1+0x48/0x84
-       [<c016a2fc>] sysfs_remove_group+0x58/0xac
-       [<c016a414>] sysfs_remove_groups+0x34/0x44
-       [<c02623b8>] driver_remove_groups+0x1c/0x20
-       [<c0260e9c>] bus_remove_driver+0x3c/0xe4
-       [<c026235c>] driver_unregister+0x38/0x58
-       [<bf007fb4>] usb_serial_bus_deregister+0x84/0x88 [usbserial]
-       [<bf004db4>] usb_serial_deregister+0x6c/0x78 [usbserial]
-       [<bf005330>] usb_serial_deregister_drivers+0x2c/0x4c [usbserial]
-       [<bf016618>] usb_serial_module_exit+0x14/0x1c [sierra]
-       [<c009d6cc>] SyS_delete_module+0x184/0x210
-       [<c000f880>] ret_fast_syscall+0x0/0x48
-
-other info that might help us debug this:
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(table_lock);
-                               lock(s_active#4);
-                               lock(table_lock);
-  lock(s_active#4);
-
- *** DEADLOCK ***
-
-1 lock held by modprobe/190:
- #0:  (table_lock){+.+.+.}, at: [<bf004d84>] usb_serial_deregister+0x3c/0x78 [usbserial]
-
-stack backtrace:
-CPU: 0 PID: 190 Comm: modprobe Tainted: G        W     3.15.0-rc2 #123
-[<c0015e10>] (unwind_backtrace) from [<c0013728>] (show_stack+0x20/0x24)
-[<c0013728>] (show_stack) from [<c03a9a54>] (dump_stack+0x24/0x28)
-[<c03a9a54>] (dump_stack) from [<c03a7cac>] (print_circular_bug+0x2ec/0x2f8)
-[<c03a7cac>] (print_circular_bug) from [<c0076218>] (__lock_acquire+0x1928/0x1ce4)
-[<c0076218>] (__lock_acquire) from [<c0076de8>] (lock_acquire+0xb4/0x154)
-[<c0076de8>] (lock_acquire) from [<c0166b70>] (__kernfs_remove+0x254/0x310)
-[<c0166b70>] (__kernfs_remove) from [<c0167aa0>] (kernfs_remove_by_name_ns+0x4c/0x94)
-[<c0167aa0>] (kernfs_remove_by_name_ns) from [<c0169fb8>] (remove_files.isra.1+0x48/0x84)
-[<c0169fb8>] (remove_files.isra.1) from [<c016a2fc>] (sysfs_remove_group+0x58/0xac)
-[<c016a2fc>] (sysfs_remove_group) from [<c016a414>] (sysfs_remove_groups+0x34/0x44)
-[<c016a414>] (sysfs_remove_groups) from [<c02623b8>] (driver_remove_groups+0x1c/0x20)
-[<c02623b8>] (driver_remove_groups) from [<c0260e9c>] (bus_remove_driver+0x3c/0xe4)
-[<c0260e9c>] (bus_remove_driver) from [<c026235c>] (driver_unregister+0x38/0x58)
-[<c026235c>] (driver_unregister) from [<bf007fb4>] (usb_serial_bus_deregister+0x84/0x88 [usbserial])
-[<bf007fb4>] (usb_serial_bus_deregister [usbserial]) from [<bf004db4>] (usb_serial_deregister+0x6c/0x78 [usbserial])
-[<bf004db4>] (usb_serial_deregister [usbserial]) from [<bf005330>] (usb_serial_deregister_drivers+0x2c/0x4c [usbserial])
-[<bf005330>] (usb_serial_deregister_drivers [usbserial]) from [<bf016618>] (usb_serial_module_exit+0x14/0x1c [sierra])
-[<bf016618>] (usb_serial_module_exit [sierra]) from [<c009d6cc>] (SyS_delete_module+0x184/0x210)
-[<c009d6cc>] (SyS_delete_module) from [<c000f880>] (ret_fast_syscall+0x0/0x48)
-
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
-
-I got this new lockdep warning with 3.15-rc, but this dates back to at
-least 0daeed381c6a ("USB-BKL: Remove BKL use for usb serial driver
-probing").
-
-As far as I can tell, moving driver deregistration out of the table lock
-should be fine. Another option would be to get a module reference in
-new_id store, although that would still trigger the lockdep warning.
-
-Thanks,
-Johan
-
-
- drivers/usb/serial/usb-serial.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/usb/serial/usb-serial.c b/drivers/usb/serial/usb-serial.c
-index 81fc0dfcfdcf..6d40d56378d7 100644
---- a/drivers/usb/serial/usb-serial.c
-+++ b/drivers/usb/serial/usb-serial.c
-@@ -1347,10 +1347,12 @@ static int usb_serial_register(struct usb_serial_driver *driver)
- static void usb_serial_deregister(struct usb_serial_driver *device)
- {
- 	pr_info("USB Serial deregistering driver %s\n", device->description);
-+
- 	mutex_lock(&table_lock);
- 	list_del(&device->driver_list);
--	usb_serial_bus_deregister(device);
- 	mutex_unlock(&table_lock);
-+
-+	usb_serial_bus_deregister(device);
- }
- 
- /**
--- 
-1.8.3.2
-
+--
+viresh
