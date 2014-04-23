@@ -1,215 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346AbaDWO5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:57:54 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:43159 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332AbaDWO5s (ORCPT
+	id S1757004AbaDWO6G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:58:06 -0400
+Received: from mail-oa0-f41.google.com ([209.85.219.41]:63503 "EHLO
+	mail-oa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756616AbaDWO6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:57:48 -0400
-Date: Wed, 23 Apr 2014 10:56:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Waiman Long <waiman.long@hp.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
-Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
-Message-ID: <20140423145649.GE2777@phenom.dumpdata.com>
-References: <1397747051-15401-1-git-send-email-Waiman.Long@hp.com>
- <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
- <20140417155649.GR11096@twins.programming.kicks-ass.net>
- <53504BB3.4010009@hp.com>
- <20140418082716.GZ11096@twins.programming.kicks-ass.net>
- <53516672.3010701@hp.com>
- <20140418190519.GA11182@twins.programming.kicks-ass.net>
- <53519BBF.7060506@hp.com>
- <5357CCEF.2000606@hp.com>
+	Wed, 23 Apr 2014 10:58:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5357CCEF.2000606@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+In-Reply-To: <20140423144538.GN11096@twins.programming.kicks-ass.net>
+References: <1394739386-22260-1-git-send-email-venkateshs@google.com>
+	<CABPqkBRm8Ux15UY2+hF1TZdVsgVbYV+9XPiuh9m497Mr3oJ0Wg@mail.gmail.com>
+	<20140423144538.GN11096@twins.programming.kicks-ass.net>
+Date: Wed, 23 Apr 2014 16:49:55 +0200
+Message-ID: <CABPqkBT5xg+zQ45dugHiXM5XFYi+V3gsBmANevx25fE0S0iNXA@mail.gmail.com>
+Subject: Re: [PATCH] perf/x86/intel: Use rdmsrl_safe when initializing RAPL PMU.
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Venkatesh Srinivas <venkateshs@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 10:23:43AM -0400, Waiman Long wrote:
-> On 04/18/2014 05:40 PM, Waiman Long wrote:
-> >On 04/18/2014 03:05 PM, Peter Zijlstra wrote:
-> >>On Fri, Apr 18, 2014 at 01:52:50PM -0400, Waiman Long wrote:
-> >>>I am confused by your notation.
-> >>Nah, I think I was confused :-) Make the 1 _Q_LOCKED_VAL though, as
-> >>that's the proper constant to use.
-> >
-> >Everyone gets confused once in a while:-) I have plenty of that myself.
-> >
-> >I will change 1 to _Q_LOCKED_VAL as suggested.
-> >
-> >-Longman
-> 
-> 
-> The attached patch file contains the additional changes that I had
-> made to qspinlock.c file so far. Please let me know if you or others
-> have any additional feedbacks or changes that will need to go to the
-> next version of the patch series.
-> 
-> I am going to take vacation starting from tomorrow and will be back
-> on 5/5 (Mon). So I will not be able to respond to emails within this
-> period.
-> 
-> BTW, is there any chance that this patch can be merged to 3.16?
+On Wed, Apr 23, 2014 at 4:45 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Apr 23, 2014 at 04:31:32PM +0200, Stephane Eranian wrote:
+>> On Thu, Mar 13, 2014 at 8:36 PM, Venkatesh Srinivas
+>> <venkateshs@google.com> wrote:
+>> > CPUs which should support the RAPL counters according to
+>> > Family/Model/Stepping may still issue #GP when attempting to access
+>> > the RAPL MSRs. This may happen when Linux is running under KVM and
+>> > we are passing-through host F/M/S data, for example. Use rdmsrl_safe
+>> > to first access the RAPL_POWER_UNIT MSR; if this fails, do not
+>> > attempt to use this PMU.
+>> >
+>> > Signed-off-by: Venkatesh Srinivas <venkateshs@google.com>
+>> > ---
+>> >  arch/x86/kernel/cpu/perf_event_intel_rapl.c | 12 +++++++++---
+>> >  1 file changed, 9 insertions(+), 3 deletions(-)
+>> >
+>> > diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+>> > index 5ad35ad..95700e5 100644
+>> > --- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+>> > +++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+>> > @@ -511,6 +511,7 @@ static int rapl_cpu_prepare(int cpu)
+>> >         struct rapl_pmu *pmu = per_cpu(rapl_pmu, cpu);
+>> >         int phys_id = topology_physical_package_id(cpu);
+>> >         u64 ms;
+>> > +       u64 msr_rapl_power_unit_bits;
+>> >
+>> >         if (pmu)
+>> >                 return 0;
+>> > @@ -518,6 +519,9 @@ static int rapl_cpu_prepare(int cpu)
+>> >         if (phys_id < 0)
+>> >                 return -1;
+>> >
+>> > +       if (!rdmsrl_safe(MSR_RAPL_POWER_UNIT, &msr_rapl_power_unit_bits))
+>> > +               return -1;
+>> > +
+>> I have a problem with this patch on native hardware. This
+>> rdmsrl_safe() systematically
+>> fails when I know the MSR is perfectly valid on the CPU. Consequently, RAPL PMU
+>> is disabled when I tried on IvyBridge and Haswell CPUs.
+>>
+>> I don't know the internals of rdmsrl_safe(). Maybe it is invoked too
+>> early in the boot process.
+>
+> Weird; so the way it works is that it adds an exception table entry for
+> the wrmsr instruction, so when the wrmsr generates a fault due to being
+> an invalid msr the fault handler looks at the exception table, and finds
+> the entry, which instructs it to continue execution at the error path
+> and return -EFAULT.
+>
+On your machine, booted with 3.15-rc2, do you have /sys/devices/power?
+If not, and you have at least an SNB, you should have RAPL and that
+RAPL_UNIT MSR.
 
-Um, it needs to have Acks from KVM and Xen maintainers who have not
-done so. Also Peter needs to chime in. (BTW, please CC
-xen-devel@lists.xenproject.org next time you post so that David and Boris
-can take a peek at it).
+Proof is that if you read that MSR using /dev/cpu/msr it works just fine:
+# modprobe msr
+# rdmsr 0x606
+a1003
 
-I would strongly recommend you put all your patches on github (free git
-service) so that we can test it and poke it at during your vacation
-(and even after).
-
-> 
-> -Longman
-
-> diff --git a/kernel/locking/qspinlock.c b/kernel/locking/qspinlock.c
-> index be2adca..2e184b8 100644
-> --- a/kernel/locking/qspinlock.c
-> +++ b/kernel/locking/qspinlock.c
-> @@ -25,10 +25,6 @@
->  #include <asm/byteorder.h>
->  #include <asm/qspinlock.h>
->  
-> -#if !defined(__LITTLE_ENDIAN) && !defined(__BIG_ENDIAN)
-> -#error "Missing either LITTLE_ENDIAN or BIG_ENDIAN definition."
-> -#endif
-> -
->  /*
->   * The basic principle of a queue-based spinlock can best be understood
->   * by studying a classic queue-based spinlock implementation called the
-> @@ -200,7 +196,7 @@ clear_pending_set_locked(struct qspinlock *lock, u32 val)
->  {
->  	struct __qspinlock *l = (void *)lock;
->  
-> -	ACCESS_ONCE(l->locked_pending) = 1;
-> +	ACCESS_ONCE(l->locked_pending) = _Q_LOCKED_VAL;
->  }
->  
->  /*
-> @@ -567,16 +563,16 @@ static __always_inline int get_qlock(struct qspinlock *lock)
->  /**
->   * trylock_pending - try to acquire queue spinlock using the pending bit
->   * @lock : Pointer to queue spinlock structure
-> - * @pval : Pointer to value of the queue spinlock 32-bit word
-> + * @val  : Current value of the queue spinlock 32-bit word
->   * Return: 1 if lock acquired, 0 otherwise
->   *
->   * The pending bit won't be set as soon as one or more tasks queue up.
->   * This function should only be called when lock stealing will not happen.
->   * Otherwise, it has to be disabled.
->   */
-> -static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
-> +static inline int trylock_pending(struct qspinlock *lock, u32 val)
->  {
-> -	u32 old, new, val = *pval;
-> +	u32 old, new;
->  	int retry = 1;
->  
->  	/*
-> @@ -593,8 +589,7 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
->  		if (val & _Q_TAIL_MASK)
->  			return 0;
->  
-> -		if ((val & _Q_LOCKED_PENDING_MASK) ==
-> -		    (_Q_LOCKED_VAL|_Q_PENDING_VAL)) {
-> +		if (val == (_Q_LOCKED_VAL|_Q_PENDING_VAL)) {
->  			/*
->  			 * If both the lock and pending bits are set, we wait
->  			 * a while to see if that either bit will be cleared.
-> @@ -605,9 +600,9 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
->  			retry--;
->  			cpu_relax();
->  			cpu_relax();
-> -			*pval = val = atomic_read(&lock->val);
-> +			val = atomic_read(&lock->val);
->  			continue;
-> -		} else if ((val & _Q_LOCKED_PENDING_MASK) == _Q_PENDING_VAL) {
-> +		} else if (val == _Q_PENDING_VAL) {
->  			/*
->  			 * Pending bit is set, but not the lock bit.
->  			 * Assuming that the pending bit holder is going to
-> @@ -615,7 +610,7 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
->  			 * it is better to wait than to exit at this point.
->  			 */
->  			cpu_relax();
-> -			*pval = val = atomic_read(&lock->val);
-> +			val = atomic_read(&lock->val);
->  			continue;
->  		}
->  
-> @@ -627,7 +622,7 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
->  		if (old == val)
->  			break;
->  
-> -		*pval = val = old;
-> +		val = old;
->  	}
->  
->  	/*
-> @@ -643,7 +638,7 @@ static inline int trylock_pending(struct qspinlock *lock, u32 *pval)
->  	 *
->  	 * this wait loop must be a load-acquire such that we match the
->  	 * store-release that clears the locked bit and create lock
-> -	 * sequentiality; this because not all try_clear_pending_set_locked()
-> +	 * sequentiality; this because not all clear_pending_set_locked()
->  	 * implementations imply full barriers.
->  	 *
->  	 * When PV qspinlock is enabled, exit the pending bit code path and
-> @@ -835,6 +830,10 @@ notify_next:
->   * contended             :    (*,x,y) +--> (*,0,0) ---> (*,0,1) -'  :
->   *   queue               :         ^--'                             :
->   *
-> + * The pending bit processing is in the trylock_pending() function whereas
-> + * the uncontended and contended queue processing is in the
-> + * queue_spin_lock_slowerpath() function.
-> + *
->   * This slowpath only contains the faster pending bit and trylock codes.
->   * The slower queuing code is in the slowerpath function.
->   */
-> @@ -845,7 +844,7 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
->  
->  	BUILD_BUG_ON(CONFIG_NR_CPUS >= (1U << _Q_TAIL_CPU_BITS));
->  
-> -	if (trylock_pending(lock, &val))
-> +	if (trylock_pending(lock, val))
->  		return;	/* Lock acquired */
->  
->  	node = this_cpu_ptr(&qnodes[0]);
-> @@ -859,11 +858,11 @@ void queue_spin_lock_slowpath(struct qspinlock *lock, u32 val)
->  	pv_init_vars(&node->pv, cpu_nr);
->  
->  	/*
-> -	 * We touched a (possibly) cold cacheline; attempt the trylock once
-> -	 * more in the hope someone let go while we weren't watching as long
-> -	 * as no one was queuing.
-> +	 * We touched a (possibly) cold cacheline in the per-cpu queue node;
-> +	 * attempt the trylock once more in the hope someone let go while we
-> +	 * weren't watching.
->  	 */
-> -	if ((val & _Q_TAIL_MASK) || !queue_spin_trylock(lock))
-> +	if (!queue_spin_trylock(lock))
->  		queue_spin_lock_slowerpath(lock, node, tail);
->  
->  	/*
-
+So something is broken somewhere.
