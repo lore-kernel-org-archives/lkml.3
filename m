@@ -1,68 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932401AbaDWObh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:31:37 -0400
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:44140 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932347AbaDWObb (ORCPT
+	id S1756789AbaDWOgt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:36:49 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:39869 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932371AbaDWObg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:31:31 -0400
-Message-ID: <5357CEBF.5040300@cogentembedded.com>
-Date: Wed, 23 Apr 2014 18:31:27 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Felipe Balbi <balbi@ti.com>, Tim Bird <tbird20d@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
-Subject: Re: [PATCH v6 15/19] usb: phy: msm: Fix PTS definitions for MSM USB
- controller
-References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>			 <1398158438-21579-16-git-send-email-iivanov@mm-sol.com>			 <53566A23.8010508@cogentembedded.com>			 <1398259477.4724.218.camel@iivanov-dev>		 <1398260102.4724.223.camel@iivanov-dev>		 <5357C40E.7060000@cogentembedded.com>	 <1398261183.4724.226.camel@iivanov-dev>	 <5357C99F.6070009@cogentembedded.com> <1398262457.4724.228.camel@iivanov-dev>
-In-Reply-To: <1398262457.4724.228.camel@iivanov-dev>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Apr 2014 10:31:36 -0400
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kgene.kim@samsung.com, robh+dt@kernel.org, gregkh@linuxfoundation.org,
+        olof@lixom.net, balbi@ti.com, jg1.han@samsung.com, t.figa@samsung.com
+Subject: [PATCH v5 6/9] dts: exynos5420-peach-pit: Add Vbus regulator for USB 3.0
+Date: Wed, 23 Apr 2014 20:00:48 +0530
+Message-Id: <1398263451-18023-7-git-send-email-gautam.vivek@samsung.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1398263451-18023-1-git-send-email-gautam.vivek@samsung.com>
+References: <1398263451-18023-1-git-send-email-gautam.vivek@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Add required fixed-regulator for VBUS supply for USB 3.0
+controller phy.
 
-On 23-04-2014 18:14, Ivan T. Ivanov wrote:
+Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+---
 
->>>>>>>> --- a/include/linux/usb/msm_hsusb_hw.h
->>>>>>>> +++ b/include/linux/usb/msm_hsusb_hw.h
->>>>>>>> @@ -31,8 +31,9 @@
->>>>>>>>      #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
->>>>>>>>
->>>>>>>>      #define PORTSC_PHCD            (1 << 23) /* phy suspend mode */
->>>>>>>> -#define PORTSC_PTS_MASK         (3 << 30)
->>>>>>>> -#define PORTSC_PTS_ULPI         (3 << 30)
->>>>>>>> +#define PORTSC_PTS_MASK        (3 << 30)
->>>>>>>> +#define PORTSC_PTS_ULPI        (2 << 30)
->>>>>>>> +#define PORTSC_PTS_SERIAL      (3 << 30)
+This is first version of the patch for VBUS support for USB3DRD phy.
+v5 is just and indicative of the patch-series.
 
->>>>>>>        Please use tabs, not spaces here.
+ arch/arm/boot/dts/exynos5420-peach-pit.dts |   44 ++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
 
->>>>>> Thanks, will fix and resend.
-
->>>>> I answered too quickly. File contain tabs and spaces for
->>>>> indentation of definitions.
-
->>>>       You mean tabs and spaces on one line? Or sometimes tabs, sometimes spaces?
-
->>> In this particular hunk, original code uses spaces.
-
->>      That I saw. 8-)
->>      I was asking about this file in general.
-
-> Legacy :-) Could this be future cleanup?
-
-    OK, let's forget about the tabs for now...
-
-> Regards,
-> Ivan
-
-WBR, Sergei
+diff --git a/arch/arm/boot/dts/exynos5420-peach-pit.dts b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+index 4d61a5e..45c0fef 100644
+--- a/arch/arm/boot/dts/exynos5420-peach-pit.dts
++++ b/arch/arm/boot/dts/exynos5420-peach-pit.dts
+@@ -70,6 +70,20 @@
+ 			samsung,pin-pud = <0>;
+ 			samsung,pin-drv = <0>;
+ 		};
++
++		usb300_vbus_en: usb300-vbus-en {
++			samsung,pins = "gph0-0";
++			samsung,pin-function = <1>;
++			samsung,pin-pud = <0>;
++			samsung,pin-drv = <0>;
++		};
++
++		usb301_vbus_en: usb301-vbus-en {
++			samsung,pins = "gph0-1";
++			samsung,pin-function = <1>;
++			samsung,pin-pud = <0>;
++			samsung,pin-drv = <0>;
++		};
+ 	};
+ 
+ 	gpio-keys {
+@@ -103,6 +117,36 @@
+ 		status = "okay";
+ 	};
+ 
++	usb300_vbus_reg: regulator-usb300 {
++		compatible = "regulator-fixed";
++		regulator-name = "P5.0V_USB3CON0";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		gpio = <&gph0 0 0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb300_vbus_en>;
++		enable-active-high;
++	};
++
++	usb301_vbus_reg: regulator-usb301 {
++		compatible = "regulator-fixed";
++		regulator-name = "P5.0V_USB3CON1";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		gpio = <&gph0 1 0>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&usb301_vbus_en>;
++		enable-active-high;
++	};
++
++	phy@12100000 {
++		vbus-supply = <&usb300_vbus_reg>;
++	};
++
++	phy@12500000 {
++		vbus-supply = <&usb301_vbus_reg>;
++	};
++
+ 	mmc@12200000 {
+ 		status = "okay";
+ 		num-slots = <1>;
+-- 
+1.7.10.4
 
