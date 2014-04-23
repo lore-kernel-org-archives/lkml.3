@@ -1,79 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932269AbaDWPHB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:07:01 -0400
-Received: from host171.canaca.com ([67.55.55.225]:44653 "EHLO
-	host171.canaca.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753307AbaDWPG6 (ORCPT
+	id S932449AbaDWPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:07:28 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:44928 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757544AbaDWPHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:06:58 -0400
-Message-ID: <4977a0bbe5c8625d93f771983991f30a.squirrel@mungewell.org>
-In-Reply-To: <87r44ofw1x.fsf@rustcorp.com.au>
-References: <1398137612-9714-1-git-send-email-rusty@rustcorp.com.au>
-    <1398137612-9714-4-git-send-email-rusty@rustcorp.com.au>
-    <9d9a3af40f8a0da293e52610524674c8.squirrel@mungewell.org>
-    <87r44ofw1x.fsf@rustcorp.com.au>
-Date: Wed, 23 Apr 2014 11:06:54 -0400
-Subject: Re: [PATCH 3/9] drivers/hid/hid-lg4ff.c: avoid world-writable sysfs
- files.
-From: simon@mungewell.org
-To: "Rusty Russell" <rusty@rustcorp.com.au>
-Cc: =?iso-8859-1?Q?=22Michal_Mal=FD=22?= 
-	<madcatxster@devoid-pointer.net>,
-        linux-kernel@vger.kernel.org,
-        "HID CORE LAYER" <linux-input@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.22
+	Wed, 23 Apr 2014 11:07:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host171.canaca.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - mungewell.org
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <20140423144901.GA24220@redhat.com>
+References: <20140422180308.GA19038@redhat.com>
+	<CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
+	<alpine.LSU.2.11.1404221303060.6220@eggly.anvils>
+	<20140423144901.GA24220@redhat.com>
+Date: Wed, 23 Apr 2014 08:07:16 -0700
+X-Google-Sender-Auth: MztCJWMfkywAlq14FuLZoF-425Q
+Message-ID: <CA+55aFziPHmSP5yjxDP6h_hRY-H2VgWZKsqC7w8+B9d9wXqn6Q@mail.gmail.com>
+Subject: Re: 3.15rc2 hanging processes on exit.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> simon@mungewell.org writes:
->>> In line with practice for module parameters, we're adding a build-time
->>> check that sysfs files aren't world-writable.
->>
->> So this is the equivalent of 'chmod 774 ...' rather than 'chmod
->> 777...'?
+On Wed, Apr 23, 2014 at 7:49 AM, Dave Jones <davej@redhat.com> wrote:
 >
-> Yep.  Though not sure why it was 777 rather than 666...
+> So for reasons I can't figure out, I've not been able to hit it on 3.14
+> The only 'interesting' thing I've hit in overnight testing is this, which
+> I'm not sure if I've also seen in my .15rc testing, but it doesn't look
+> familiar to me.  (Though the vm oopses I've seen the last few months
+> are starting to all blur together in my memory)
 >
->> Yep I'm OK with that, however what it the recommended way to make sure
->> that the end user is able to send changes to this /sys portal? I asked
->> the
->> same question before regarding the led class /sys interface, but never
->> got
->> any suggestions.
->>
->> Signed-off-by: Simon Wood <simon@mungewell.org>
 >
-> If you need that, we'll need to make an exception.  That's one purpose
-> of spamming everyone with these changs...
+> kernel BUG at mm/mlock.c:82!
 
+That's
 
-What's the right way of doing it?... I don't need to be 'special'. ;-)
+  mlock_vma_page:
+    BUG_ON(!PageLocked(page));
 
-The '/sys/.../range' control allows the user to limit the rotation of the
-gaming wheel from a maximum of 900' down to match the 'car' they
-sim-driving. Probably not many people use it, but it probably should be
-assigned properly.
+which is odd, because:
 
-With gaming controllers the /dev/input/event* seem to get set
-appropriately, but I'm not sure how this happens.
+> Call Trace:
+>  [<ffffffffbe196612>] try_to_unmap_nonlinear+0x2a2/0x530
+>  [<ffffffffbe1972a7>] rmap_walk+0x157/0x320
+>  [<ffffffffbe1976e3>] try_to_unmap+0x93/0xf0
+>  [<ffffffffbe1bb8f6>] migrate_pages+0x3b6/0x7b0
 
-The same /should/ also happen for all the LED class controls, I don't want
-to have to 'sudo' just to set a LED on/off. This is currently a problem
-for (at least) hid-lg, hid-sony and hid-steelseries.
-Simon
+All the calls to "try_to_unmap()" in mm/migrate.c are preceded by the pattern
 
+        if (!trylock_page(page)) {
+                 ....
+                lock_page(page);
+        }
+
+where there are just a few "goto out" style cases for the "ok, we're
+not going to wait for this page lock" in there.
+
+Very odd.  Does anybody see anything I missed?
+
+              Linus
