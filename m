@@ -1,259 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421AbaDWP5b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:57:31 -0400
-Received: from mail-qc0-f202.google.com ([209.85.216.202]:43410 "EHLO
-	mail-qc0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932289AbaDWP5B (ORCPT
+	id S1757585AbaDWP5v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:57:51 -0400
+Received: from imap.devoid-pointer.net ([31.31.77.140]:49649 "EHLO
+	smtp.devoid-pointer.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932363AbaDWP5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:57:01 -0400
-From: Doug Anderson <dianders@chromium.org>
-To: Anton Vorontsov <anton@enomsg.org>
-Cc: olof@lixom.net, Sachin Kamat <sachin.kamat@linaro.org>,
-        ajaykumar.rs@samsung.com, linux-samsung-soc@vger.kernel.org,
-        broonie@kernel.org, lee.jones@linaro.org,
-        Doug Anderson <dianders@chromium.org>, Simon Glass <sjg@chromium.org>,
-        Michael Spang <spang@chromium.org>, Sean Paul <seanpaul@chromium.org>,
-        lgirdwood@gmail.com, linux-kernel@vger.kernel.org
-Subject: [RESEND PATCH v3 5/5] regulator: tps65090: Make FETs more reliable by adding retries
-Date: Wed, 23 Apr 2014 08:56:05 -0700
-Message-Id: <1398268565-4789-6-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 1.9.1.423.g4596e3a
-In-Reply-To: <1398268565-4789-3-git-send-email-dianders@chromium.org>
-References: <1398268565-4789-3-git-send-email-dianders@chromium.org>
+	Wed, 23 Apr 2014 11:57:25 -0400
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
+To: simon@mungewell.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, oneukum@suse.de,
+        linux-kernel@vger.kernel.org, jkosina@suse.cz, elias.vds@gmail.com,
+        anssi.hannula@iki.fi, linux-input@vger.kernel.org
+Subject: Re: [PATCH v2 09/24] input: Port hid-dr to ff-memless-next
+Date: Wed, 23 Apr 2014 17:57:20 +0200
+Message-ID: <8632820.WT3uD8DXZi@sigyn>
+User-Agent: KMail/4.13 (Linux/3.14.1-1-my-rd; KDE/4.13.0; x86_64; ; )
+In-Reply-To: <0792885b3347c5935a0af7a7a3f3bc70.squirrel@mungewell.org>
+References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net> <20140423154201.GA10531@core.coreip.homeip.net> <0792885b3347c5935a0af7a7a3f3bc70.squirrel@mungewell.org>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An issue was discovered with tps65090 where sometimes the FETs
-wouldn't actually turn on when requested (they would report
-overcurrent).  The most problematic FET was the one used for the LCD
-backlight on the Samsung ARM Chromebook (FET1).  Problems were
-especially prevalent when the device was plugged in to AC power (when
-the backlight voltage was higher).
+On Wednesday 23 of April 2014 11:47:05 simon@mungewell.org wrote:
+> > On Wed, Apr 23, 2014 at 03:14:44PM +0000, madcatxster@devoid-pointer.net
+> > 
+> > wrote:
+> >> This is another case where even the old code was flawed, right? Should
+> >> I try to stuff the fixes into these patches or would a few extra
+> >> patches addressing these problems be an easier to review solution? I
+> >> can append such patches to the MLNX patchset.
+> > 
+> > Changes addressing pre-existing problem should go into separate patches
+> > (preferably applicable first).
+> 
+> As a by-stander who would like to see MLNX move forward, should it be
+> heldback by pre-existing problems in drivers that the MLNX dev(s) don't
+> have hardware to test against...?
+> 
+> Simon.
 
-Mitigate the problem by adding retries on the enables of the FETs,
-which works around the problem fairly effectively.
+Either approach is fine be me - I can rebase the MLNX patchset against the fixes 
+and submit it again. I suppose that this is a good opportunity to fix a bunch 
+old issues that would pass unnoticed otherwise. I would however appreciate as 
+much comments regarding MLNX itself before I begin cleaning the ancient dust.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
-Signed-off-by: Simon Glass <sjg@chromium.org>
-Signed-off-by: Michael Spang <spang@chromium.org>
-Signed-off-by: Sean Paul <seanpaul@chromium.org>
-Reviewed-by: Simon Glass <sjg@chromium.org>
----
-Changes in v3:
-- Fixed kernel-doc notation for return
-
-Changes in v2:
-- Separated the overcurrent and retries changes into two patches.
-- No longer open code fet_is_enabled().
-- Fixed tps6090 typo.
-- For loop => "while true".
-- Removed a set of braces.
-
- drivers/regulator/tps65090-regulator.c | 155 +++++++++++++++++++++++++++++----
- 1 file changed, 140 insertions(+), 15 deletions(-)
-
-diff --git a/drivers/regulator/tps65090-regulator.c b/drivers/regulator/tps65090-regulator.c
-index ca04e9f..2057e2e 100644
---- a/drivers/regulator/tps65090-regulator.c
-+++ b/drivers/regulator/tps65090-regulator.c
-@@ -17,6 +17,7 @@
-  */
- 
- #include <linux/module.h>
-+#include <linux/delay.h>
- #include <linux/init.h>
- #include <linux/gpio.h>
- #include <linux/of_gpio.h>
-@@ -28,7 +29,13 @@
- #include <linux/regulator/of_regulator.h>
- #include <linux/mfd/tps65090.h>
- 
-+#define MAX_CTRL_READ_TRIES	5
-+#define MAX_FET_ENABLE_TRIES	1000
-+
-+#define CTRL_EN_BIT		0 /* Regulator enable bit, active high */
- #define CTRL_WT_BIT		2 /* Regulator wait time 0 bit */
-+#define CTRL_PG_BIT		4 /* Regulator power good bit, 1=good */
-+#define CTRL_TO_BIT		7 /* Regulator timeout bit, 1=wait */
- 
- #define MAX_OVERCURRENT_WAIT	3 /* Overcurrent wait must be <= this */
- 
-@@ -80,40 +87,158 @@ static int tps65090_reg_set_overcurrent_wait(struct tps65090_regulator *ri,
- 	return ret;
- }
- 
--static struct regulator_ops tps65090_reg_contol_ops = {
-+/**
-+ * tps65090_try_enable_fet - Try to enable a FET
-+ *
-+ * @rdev:	Regulator device
-+ *
-+ * Return: 0 if ok, -ENOTRECOVERABLE if the FET power good bit did not get
-+ * set, or some other -ve value if another error occurred (e.g. i2c error)
-+ */
-+static int tps65090_try_enable_fet(struct regulator_dev *rdev)
-+{
-+	unsigned int control;
-+	int ret, i;
-+
-+	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-+				 rdev->desc->enable_mask,
-+				 rdev->desc->enable_mask);
-+	if (ret < 0) {
-+		dev_err(&rdev->dev, "Error in updating reg %#x\n",
-+			rdev->desc->enable_reg);
-+		return ret;
-+	}
-+
-+	for (i = 0; i < MAX_CTRL_READ_TRIES; i++) {
-+		ret = regmap_read(rdev->regmap, rdev->desc->enable_reg,
-+				  &control);
-+		if (ret < 0)
-+			return ret;
-+
-+		if (!(control & BIT(CTRL_TO_BIT)))
-+			break;
-+
-+		usleep_range(1000, 1500);
-+	}
-+	if (!(control & BIT(CTRL_PG_BIT)))
-+		return -ENOTRECOVERABLE;
-+
-+	return 0;
-+}
-+
-+/**
-+ * tps65090_fet_enable - Enable a FET, trying a few times if it fails
-+ *
-+ * Some versions of the tps65090 have issues when turning on the FETs.
-+ * This function goes through several steps to ensure the best chance of the
-+ * FET going on.  Specifically:
-+ * - We'll make sure that we bump the "overcurrent wait" to the maximum, which
-+ *   increases the chances that we'll turn on properly.
-+ * - We'll retry turning the FET on multiple times (turning off in between).
-+ *
-+ * @rdev:	Regulator device
-+ *
-+ * Return: 0 if ok, non-zero if it fails.
-+ */
-+static int tps65090_fet_enable(struct regulator_dev *rdev)
-+{
-+	int ret, tries;
-+
-+	/*
-+	 * Try enabling multiple times until we succeed since sometimes the
-+	 * first try times out.
-+	 */
-+	tries = 0;
-+	while (true) {
-+		ret = tps65090_try_enable_fet(rdev);
-+		if (!ret)
-+			break;
-+		if (ret != -ENOTRECOVERABLE || tries == MAX_FET_ENABLE_TRIES)
-+			goto err;
-+
-+		/* Try turning the FET off (and then on again) */
-+		ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
-+					 rdev->desc->enable_mask, 0);
-+		if (ret)
-+			goto err;
-+
-+		tries++;
-+	}
-+
-+	if (tries)
-+		dev_warn(&rdev->dev, "reg %#x enable ok after %d tries\n",
-+			 rdev->desc->enable_reg, tries);
-+
-+	return 0;
-+err:
-+	dev_warn(&rdev->dev, "reg %#x enable failed\n", rdev->desc->enable_reg);
-+	WARN_ON(1);
-+
-+	return ret;
-+}
-+
-+static struct regulator_ops tps65090_reg_control_ops = {
- 	.enable		= regulator_enable_regmap,
- 	.disable	= regulator_disable_regmap,
- 	.is_enabled	= regulator_is_enabled_regmap,
- };
- 
-+static struct regulator_ops tps65090_fet_control_ops = {
-+	.enable		= tps65090_fet_enable,
-+	.disable	= regulator_disable_regmap,
-+	.is_enabled	= regulator_is_enabled_regmap,
-+};
-+
- static struct regulator_ops tps65090_ldo_ops = {
- };
- 
--#define tps65090_REG_DESC(_id, _sname, _en_reg, _ops)	\
-+#define tps65090_REG_DESC(_id, _sname, _en_reg, _en_bits, _ops)	\
- {							\
- 	.name = "TPS65090_RAILS"#_id,			\
- 	.supply_name = _sname,				\
- 	.id = TPS65090_REGULATOR_##_id,			\
- 	.ops = &_ops,					\
- 	.enable_reg = _en_reg,				\
--	.enable_mask = BIT(0),				\
-+	.enable_val = _en_bits,				\
-+	.enable_mask = _en_bits,			\
- 	.type = REGULATOR_VOLTAGE,			\
- 	.owner = THIS_MODULE,				\
- }
- 
- static struct regulator_desc tps65090_regulator_desc[] = {
--	tps65090_REG_DESC(DCDC1, "vsys1",   0x0C, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(DCDC2, "vsys2",   0x0D, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(DCDC3, "vsys3",   0x0E, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET1,  "infet1",  0x0F, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET2,  "infet2",  0x10, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET3,  "infet3",  0x11, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET4,  "infet4",  0x12, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET5,  "infet5",  0x13, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET6,  "infet6",  0x14, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(FET7,  "infet7",  0x15, tps65090_reg_contol_ops),
--	tps65090_REG_DESC(LDO1,  "vsys-l1", 0,    tps65090_ldo_ops),
--	tps65090_REG_DESC(LDO2,  "vsys-l2", 0,    tps65090_ldo_ops),
-+	tps65090_REG_DESC(DCDC1, "vsys1",   0x0C, BIT(CTRL_EN_BIT),
-+			  tps65090_reg_control_ops),
-+	tps65090_REG_DESC(DCDC2, "vsys2",   0x0D, BIT(CTRL_EN_BIT),
-+			  tps65090_reg_control_ops),
-+	tps65090_REG_DESC(DCDC3, "vsys3",   0x0E, BIT(CTRL_EN_BIT),
-+			  tps65090_reg_control_ops),
-+
-+	tps65090_REG_DESC(FET1,  "infet1",  0x0F,
-+			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
-+			  tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET2,  "infet2",  0x10,
-+			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
-+			  tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET3,  "infet3",  0x11,
-+			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
-+			  tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET4,  "infet4",  0x12,
-+			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
-+			  tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET5,  "infet5",  0x13,
-+			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
-+			  tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET6,  "infet6",  0x14,
-+			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
-+			  tps65090_fet_control_ops),
-+	tps65090_REG_DESC(FET7,  "infet7",  0x15,
-+			  BIT(CTRL_EN_BIT) | BIT(CTRL_PG_BIT),
-+			  tps65090_fet_control_ops),
-+
-+	tps65090_REG_DESC(LDO1,  "vsys-l1", 0, 0,
-+			  tps65090_ldo_ops),
-+	tps65090_REG_DESC(LDO2,  "vsys-l2", 0, 0,
-+			  tps65090_ldo_ops),
- };
- 
- static inline bool is_dcdc(int id)
--- 
-1.9.1.423.g4596e3a
-
+Thanks for your input,
+Michal
