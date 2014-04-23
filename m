@@ -1,39 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753468AbaDWIyl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:54:41 -0400
-Received: from david.siemens.de ([192.35.17.14]:38661 "EHLO david.siemens.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaDWIyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:54:36 -0400
-Message-ID: <53577FC0.5060501@siemens.com>
-Date: Wed, 23 Apr 2014 10:54:24 +0200
-From: Jan Kiszka <jan.kiszka@siemens.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
-MIME-Version: 1.0
-To: Carlo Vitucci <vitucci.carlo@gmail.com>, jailhouse-dev@googlegroups.com
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Sabony, Mazda" <Mazda.Sabony@amd.com>
-Subject: Re: Developer wanted: AMD64 port of Jailhouse hypervisor
-References: <534C2884.7050004@siemens.com> <b95ba76d-c3a9-458e-b9a9-10ca28886d55@googlegroups.com> <53577D3C.5060103@siemens.com> <e08f8eed-2465-494e-a170-5246d3109c8b@googlegroups.com>
-In-Reply-To: <e08f8eed-2465-494e-a170-5246d3109c8b@googlegroups.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753231AbaDWIxv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:53:51 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55316 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751706AbaDWIxs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 04:53:48 -0400
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 1/3] ARM: at91/dt: sam9261: Fix PLL output ranges and other clocks divisors
+Date: Wed, 23 Apr 2014 10:53:38 +0200
+Message-Id: <1398243220-20874-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-23 10:49, Carlo Vitucci wrote:
-> Sorry Jan,
->  my misyake. I was referring to ARMv8 architecture, but I wrote AMD64 at the beginning instead of ARM64... sorry for the confusion!
+Argument 3 (OUT) and 4 (ICPLL) of the atmel,pll-clk-output-ranges were missing.
+Also, the at91sam9261 doesn't really have a by 3 divisor.
 
-Ah, ok :). ARMv8 is on our roadmap, but likely after ARMv7, already due
-to the availability. However, everyone with the power to code (or to
-sponsor efforts) can reorder such plans.
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/boot/dts/at91sam9261.dtsi | 10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
-Jan
-
+diff --git a/arch/arm/boot/dts/at91sam9261.dtsi b/arch/arm/boot/dts/at91sam9261.dtsi
+index 561addceb81e..3ff239b26d72 100644
+--- a/arch/arm/boot/dts/at91sam9261.dtsi
++++ b/arch/arm/boot/dts/at91sam9261.dtsi
+@@ -564,7 +564,8 @@
+ 					reg = <0>;
+ 					atmel,clk-input-range = <1000000 32000000>;
+ 					#atmel,pll-clk-output-range-cells = <4>;
+-					atmel,pll-clk-output-ranges = <80000000 200000000 190000000 240000000>;
++					atmel,pll-clk-output-ranges = <80000000 200000000 0 1>,
++								<190000000 240000000 2 1>;
+ 				};
+ 
+ 				pllb: pllbck {
+@@ -575,7 +576,8 @@
+ 					reg = <1>;
+ 					atmel,clk-input-range = <1000000 32000000>;
+ 					#atmel,pll-clk-output-range-cells = <4>;
+-					atmel,pll-clk-output-ranges = <80000000 200000000 190000000 240000000>;
++					atmel,pll-clk-output-ranges = <80000000 200000000 0 1>,
++								<190000000 240000000 2 1>;
+ 				};
+ 
+ 				mck: masterck {
+@@ -584,13 +586,13 @@
+ 					interrupts-extended = <&pmc AT91_PMC_MCKRDY>;
+ 					clocks = <&clk32k>, <&main>, <&plla>, <&pllb>;
+ 					atmel,clk-output-range = <0 94000000>;
+-					atmel,clk-divisors = <1 2 4 3>;
++					atmel,clk-divisors = <1 2 4 0>;
+ 				};
+ 
+ 				usb: usbck {
+ 					compatible = "atmel,at91rm9200-clk-usb";
+ 					#clock-cells = <0>;
+-					atmel,clk-divisors = <1 2 4 3>;
++					atmel,clk-divisors = <1 2 4 0>;
+ 					clocks = <&pllb>;
+ 				};
+ 
 -- 
-Siemens AG, Corporate Technology, CT RTC ITP SES-DE
-Corporate Competence Center Embedded Linux
+1.9.1
+
