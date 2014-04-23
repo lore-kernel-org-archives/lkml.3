@@ -1,53 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721AbaDWKKs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 06:10:48 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42835 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756232AbaDWKKo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 06:10:44 -0400
-Date: Wed, 23 Apr 2014 12:10:38 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [perf] yet another 32/64-bit range check failure
-Message-ID: <20140423101038.GK11096@twins.programming.kicks-ass.net>
-References: <alpine.DEB.2.10.1404222329590.28273@vincent-weaver-1.um.maine.edu>
- <alpine.DEB.2.10.1404230011280.28524@vincent-weaver-1.um.maine.edu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.10.1404230011280.28524@vincent-weaver-1.um.maine.edu>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1756350AbaDWKMV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 06:12:21 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58409 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752570AbaDWKMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 06:12:18 -0400
+From: Michal Hocko <mhocko@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Rientjes <rientjes@google.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        <stable@vger.kernel.org>
+Subject: [PATCH -mm -repost] memcg: do not hang on OOM when killed by userspace OOM access to memory reserves
+Date: Wed, 23 Apr 2014 12:12:02 +0200
+Message-Id: <1398247922-2374-1-git-send-email-mhocko@suse.cz>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 12:14:52AM -0400, Vince Weaver wrote:
-> On Tue, 22 Apr 2014, Vince Weaver wrote:
-> 
-> > This is allowing events to be allocated memory but not being freed somehow
-> > before returning EINVAL (a memory leak).
-> > At least it looks like this is happening in the huge traces I have trying 
-> > to track down the perf_fuzzer memory corruption bug.
-> 
-> I can't find where the memory leak happens, but it looks like this in the 
-> trace:
-> 
-> [ 3524.626452] perf_fuz-1798    0.... 1271584315us : sys_enter: NR 298 (698e40, 706, ffffffff, f, 800000000000, 800000000000)
-> [ 3524.642312] perf_fuz-1798    0.... 1271584324us : kmalloc: call_site=ffffffff8113a575 ptr=ffff88007d5b0800 bytes_req=1272 bytes_alloc=2048 gfp_flags=GFP_KERNEL|GFP_ZERO
-> [ 3524.662598] perf_fuz-1798    0.... 1271584337us : sys_exit: NR 298 = -22
-> 
-> The call site for the kmalloc is in perf_event_alloc()
-> 
-> The memory is eventually freed as:
-> 
-> [ 3547.895534]   <idle>-0       0.Ns. 1271595088us : kfree: call_site=ffffffff811316aa ptr=ffff88007d5b0800
+Eric has reported that he can see task(s) stuck in memcg OOM handler
+regularly.  The only way out is to
 
-So perf_event_open() -> err_alloc: -> free_event() -> __free_event() ->
-call_rcu() -> free_event_rcu() -> kfree().
+	echo 0 > $GROUP/memory.oom_controll
 
-Would explain that, right? The memory is RCU freed, which means we need
-to wait a grace period before releasing it.
+His usecase is:
+
+- Setup a hierarchy with memory and the freezer (disable kernel oom and
+  have a process watch for oom).
+
+- In that memory cgroup add a process with one thread per cpu.
+
+- In one thread slowly allocate once per second I think it is 16M of ram
+  and mlock and dirty it (just to force the pages into ram and stay
+  there).
+
+- When oom is achieved loop:
+  * attempt to freeze all of the tasks.
+  * if frozen send every task SIGKILL, unfreeze, remove the directory in
+    cgroupfs.
+
+Eric has then pinpointed the issue to be memcg specific.
+
+All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
+Those that have received fatal signal will bypass the charge and should
+continue on their way out.  The tricky part is that the exit path might
+trigger a page fault (e.g.  exit_robust_list), thus the memcg charge,
+while its memcg is still under OOM because nobody has released any charges
+yet.
+
+Unlike with the in-kernel OOM handler the exiting task doesn't get
+TIF_MEMDIE set so it doesn't shortcut further charges of the killed task
+and falls to the memcg OOM again without any way out of it as there are no
+fatal signals pending anymore.
+
+This patch fixes the issue by checking PF_EXITING early in
+mem_cgroup_try_charge and bypass the charge same as if it had fatal
+signal pending or TIF_MEMDIE set.
+
+Normally exiting tasks (aka not killed) will bypass the charge now but
+this should be OK as the task is leaving and will release memory and
+increasing the memory pressure just to release it in a moment seems
+dubious wasting of cycles.  Besides that charges after exit_signals should
+be rare.
+
+Reported-by: Eric W. Biederman <ebiederm@xmission.com>
+Signed-off-by: Michal Hocko <mhocko@suse.cz>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: <stable@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+I am bringing this patch again (rebased on the current mmotm tree). I
+hope we can move forward finally. If there is still an opposition then
+I would really appreciate a concurrent approach so that we can discuss
+alternatives.
+
+http://comments.gmane.org/gmane.linux.kernel.stable/77650 is a reference
+to the followup discussion when the patch has been dropped from the
+mmotm last time.
+
+ mm/memcontrol.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index e59f5729e5e6..48d109af1fa8 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -2675,7 +2675,8 @@ static int mem_cgroup_try_charge(struct mem_cgroup *memcg,
+ 	 * free their memory.
+ 	 */
+ 	if (unlikely(test_thread_flag(TIF_MEMDIE) ||
+-		     fatal_signal_pending(current)))
++		     fatal_signal_pending(current) ||
++		     current->flags & PF_EXITING))
+ 		goto bypass;
+ 
+ 	if (unlikely(task_in_memcg_oom(current)))
+-- 
+1.9.2
+
