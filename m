@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755559AbaDWMgo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:36:44 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55137 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692AbaDWMgN (ORCPT
+	id S1755725AbaDWMhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:37:09 -0400
+Received: from mail-pa0-f48.google.com ([209.85.220.48]:35088 "EHLO
+	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754212AbaDWMhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:36:13 -0400
-Date: Wed, 23 Apr 2014 13:34:54 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Thomas Pfaff <tpfaff@pcs.com>
-Cc: <gregkh@linuxfoundation.org>, <jslaby@suse.cz>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] serial_core: fix uart PORT_UNKNOWN handling
-Message-ID: <20140423133454.402af61e@alan.etchedpixels.co.uk>
-In-Reply-To: <alpine.LNX.2.00.1404231135450.4361@lxtpfaff.pcs.ditec.de>
-References: <alpine.LNX.2.00.1404231135450.4361@lxtpfaff.pcs.ditec.de>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Apr 2014 08:37:07 -0400
+From: Kefeng Wang <kefeng.wang@linaro.org>
+To: Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: wangkefeng.wang@huawei.com, kefeng.wang@linaro.org
+Subject: [PATCH v5 1/3] ata: ahci: append new hflag AHCI_HFLAG_NO_FBS
+Date: Wed, 23 Apr 2014 20:36:41 +0800
+Message-Id: <1398256603-20160-2-git-send-email-kefeng.wang@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398256603-20160-1-git-send-email-kefeng.wang@linaro.org>
+References: <1398256603-20160-1-git-send-email-kefeng.wang@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014 12:33:22 +0200
-Thomas Pfaff <tpfaff@pcs.com> wrote:
+Append AHCI_HFLAG_NO_FBS to force turning off FBS flag.
 
-> From: "Thomas Pfaff" <tpfaff@pcs.com>
-> 
-> While porting a RS485 driver from 2.6.29 to 3.14, i noticed that the serial tty 
-> driver could break it by using uart ports that it does not own :
-> 
-> 1. uart_change_pm ist called during uart_open and calls the uart pm function
->    without checking for PORT_UNKNOWN.
->    The fix is to move uart_change_pm from uart_open to uart_port_startup.
-> 2. The return code from the uart request_port call in uart_set_info is not
->    handled properly, leading to the situation that the serial driver also
->    thinks it owns the uart ports.
->    This can triggered by doing following actions :
-> 
->    setserial /dev/ttyS0 uart none    # release the uart ports
->    modprobe lirc-serial              # or any other device that uses the uart
->    setserial /dev/ttyS0 uart 16550   # gives no error and the uart tty driver
->                                      # can use the ports as well
-> 
-> Signed-off-by: Thomas Pfaff <tpfaff@pcs.com>
-Reviewed-by: Alan Cox <alan@linux.intel.com>
+Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
+---
+ drivers/ata/ahci.h    |    1 +
+ drivers/ata/libahci.c |    5 +++++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
+index 51af275..60db49b 100644
+--- a/drivers/ata/ahci.h
++++ b/drivers/ata/ahci.h
+@@ -235,6 +235,7 @@ enum {
+ 						        port start (wait until
+ 						        error-handling stage) */
+ 	AHCI_HFLAG_MULTI_MSI		= (1 << 16), /* multiple PCI MSIs */
++	AHCI_HFLAG_NO_FBS		= (1 << 17), /* no FBS */
+ 
+ 	/* ap->flags bits */
+ 
+diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
+index 6bd4f66..e1cf859 100644
+--- a/drivers/ata/libahci.c
++++ b/drivers/ata/libahci.c
+@@ -457,6 +457,11 @@ void ahci_save_initial_config(struct device *dev,
+ 		cap |= HOST_CAP_FBS;
+ 	}
+ 
++	if ((cap & HOST_CAP_FBS) && (hpriv->flags & AHCI_HFLAG_NO_FBS)) {
++		dev_info(dev, "controller can't do FBS, turning off CAP_FBS\n");
++		cap &= ~HOST_CAP_FBS;
++	}
++
+ 	if (force_port_map && port_map != force_port_map) {
+ 		dev_info(dev, "forcing port_map 0x%x -> 0x%x\n",
+ 			 port_map, force_port_map);
+-- 
+1.7.9.5
+
