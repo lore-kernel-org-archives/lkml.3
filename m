@@ -1,219 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954AbaDWUcc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 16:32:32 -0400
-Received: from exprod5og116.obsmtp.com ([64.18.0.147]:59730 "HELO
-	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753368AbaDWUc2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 16:32:28 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA+b37P0XV81K4oBNnkXrVHYub=Bcuuw8nrFWUGVw-i8PJ8wGxQ@mail.gmail.com>
-References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
-	<CA+b37P3HqMFU6kGA+GH3YpGM_Z=TwNXL6jKu+ConR3kCk-Tp4g@mail.gmail.com>
-	<20140422101112.GA865@e106497-lin.cambridge.arm.com>
-	<CA+b37P0XV81K4oBNnkXrVHYub=Bcuuw8nrFWUGVw-i8PJ8wGxQ@mail.gmail.com>
-Date: Wed, 23 Apr 2014 13:32:27 -0700
-Message-ID: <CACoXjcm3wUOkD+Fh+WKXsi5Rxs8Y5G1YUHB15xUwJY7cCcZHBg@mail.gmail.com>
-Subject: Re: [PATCH v7 0/3] Add support for PCI in AArch64
-From: Tanmay Inamdar <tinamdar@apm.com>
-To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
-Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
+	id S1757971AbaDWUei (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 16:34:38 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:51169 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752748AbaDWUef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 16:34:35 -0400
+Message-ID: <1398285272.14329.6.camel@violet>
+Subject: Re: [PATCH 1/2] mfd: pm8x41: add support for Qualcomm 8x41 PMICs
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Courtney Cavin <courtney.cavin@sonymobile.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        LAKML <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Date: Wed, 23 Apr 2014 23:34:32 +0300
+In-Reply-To: <20140423181614.GK17066@sonymobile.com>
+References: <1398213110-28135-1-git-send-email-courtney.cavin@sonymobile.com>
+	 <1398259168.4724.217.camel@iivanov-dev>
+	 <20140423181614.GK17066@sonymobile.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sandeepa,
 
-On Tue, Apr 22, 2014 at 4:50 AM, Sandeepa Prabhu
-<sandeepa.prabhu@linaro.org> wrote:
-> On 22 April 2014 15:41, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
->> On Tue, Apr 22, 2014 at 09:58:28AM +0100, Sandeepa Prabhu wrote:
->>> On 14 March 2014 21:04, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
->>> > Hi,
->>> >
->>> > This patch adds support for PCI to AArch64. It is based on my v7 patch
->>> > that adds support for creating generic host bridge structure from
->>> > device tree. With that in place, I was able to boot a platform that
->>> > has PCIe host bridge support and use a PCIe network card.
->>> Hi Liviu,
->>>
->>> Are these patches (including your other patchset for device tree host
->>> bridge support ) available on a public git repo I can checkout from?
->>
->> Yes, I have pushed them into git://linux-arm.org/linux-ld.git
-> Thanks Liviu,
-> Just to understand, is the X-gene PCIe
-> (https://lwn.net/Articles/589733/) verified using the same patchset?
+On Wed, 2014-04-23 at 11:16 -0700, Courtney Cavin wrote:
+> On Wed, Apr 23, 2014 at 03:19:28PM +0200, Ivan T. Ivanov wrote:
+> > 
+> > Hi,
+> > 
+> > On Tue, 2014-04-22 at 17:31 -0700, Courtney Cavin wrote:
+> > > From: Josh Cartwright <joshc@codeaurora.org>
+> > > 
+> > > The Qualcomm 8941 and 8841 PMICs are components used with the Snapdragon
+> > > 800 series SoC family.  This driver exists largely as a glue mfd component,
+> > > it exists to be an owner of an SPMI regmap for children devices
+> > > described in device tree.
+> > > 
+> > 
+> > Thanks. This is exactly what I have planed to do :-)
+> > 
+> 
+> Sorry if I usurped your work!
 
-Yes. V5 version of X-Gene PCIe patches have verified Liviu's patchset
-on X-Gene platform.
+Noting to worry. I just was surprised how close it is to my vision ;-).
 
->
-> ~Sandeepa
->>
->> Best regards,
->> Liviu
->>
->>>
->>> Thanks,
->>> ~Sandeepa
->>>
->>> >
->>> > I have dropped the RFC tag from the subject as I now have the ambitious goal
->>> > of trying to get it mainlined.
->>> >
->>> > Changes from v6:
->>> >   - Guard the pci_domain_nr() inline implementation with #ifdef CONFIG_PCI as
->>> >     to avoid conflict with default empty version present in include/linux/pci.h.
->>> >     Thanks to Jingoo Han for catching this.
->>> >
->>> > Changes from v5:
->>> >   - Removed pcibios_fixup_bridge_ranges() as the week default version is fine.
->>> >   - Removed the ALIGN() call in pcibios_align_resource()
->>> >   - Stopped exporting pcibios_align_resource()
->>> >
->>> > Changes from v4:
->>> >   - Fixed the pci_domain_nr() implementation for arm64. Now we use
->>> >     find_pci_host_bride() to find the host bridge before we retrieve
->>> >     the domain number.
->>> >
->>> > Changes from v3:
->>> >   - Added Acks accumulated so far ;)
->>> >   - Still carrying Catalin's patch for moving the PCI_IO_BASE until it
->>> >     lands in linux-next or mainline, in order to ease applying the series
->>> >
->>> > Changes from v2:
->>> >   - Implement an arch specific version of pci_register_io_range() and
->>> >     pci_address_to_pio().
->>> >   - Return 1 from pci_proc_domain().
->>> >
->>> > Changes from v1:
->>> >   - Added Catalin's patch for moving the PCI_IO_BASE location and extend
->>> >     its size to 16MB
->>> >   - Integrated Arnd's version of pci_ioremap_io that uses a bitmap for
->>> >     keeping track of assigned IO space and returns an io_offset. At the
->>> >     moment the code is added in arch/arm64 but it can be moved in drivers/pci.
->>> >   - Added a fix for the generic ioport_map() function when !CONFIG_GENERIC_IOMAP
->>> >     as suggested by Arnd.
->>> >
->>> > v6 thread here: https://lkml.org/lkml/2014/3/5/41
->>> > v5 thread here: https://lkml.org/lkml/2014/3/4/307
->>> > v4 thread here: https://lkml.org/lkml/2014/3/3/298
->>> > v3 thread here: https://lkml.org/lkml/2014/2/28/211
->>> > v2 thread here: https://lkml.org/lkml/2014/2/27/255
->>> > v1 thread here: https://lkml.org/lkml/2014/2/3/389
->>> >
->>> >
->>> > The API used is different from the one used by ARM architecture. There is
->>> > no pci_common_init_dev() function and no hw_pci structure, as that is no
->>> > longer needed. Once the last signature is added to the legal agreement, I
->>> > will post the host bridge driver code that I am using. Meanwhile, here
->>> > is an example of what the probe function looks like, posted as an example:
->>> >
->>> > static int myhostbridge_probe(struct platform_device *pdev)
->>> > {
->>> >         int err;
->>> >         struct device_node *dev;
->>> >         struct pci_host_bridge *bridge;
->>> >         struct myhostbridge_port *pp;
->>> >         resource_size_t lastbus;
->>> >
->>> >         dev = pdev->dev.of_node;
->>> >
->>> >         if (!of_device_is_available(dev)) {
->>> >                 pr_warn("%s: disabled\n", dev->full_name);
->>> >                 return -ENODEV;
->>> >         }
->>> >
->>> >         pp = kzalloc(sizeof(struct myhostbridge_port), GFP_KERNEL);
->>> >         if (!pp)
->>> >                 return -ENOMEM;
->>> >
->>> >         bridge = of_create_pci_host_bridge(&pdev->dev, &myhostbridge_ops, pp);
->>> >         if (IS_ERR(bridge)) {
->>> >                 err = PTR_ERR(bridge);
->>> >                 goto bridge_create_fail;
->>> >         }
->>> >
->>> >         err = myhostbridge_setup(bridge->bus);
->>> >         if (err)
->>> >                 goto bridge_setup_fail;
->>> >
->>> >         /* We always enable PCI domains and we keep domain 0 backward
->>> >          * compatible in /proc for video cards
->>> >          */
->>> >         pci_add_flags(PCI_ENABLE_PROC_DOMAINS);
->>> >         pci_add_flags(PCI_REASSIGN_ALL_BUS | PCI_REASSIGN_ALL_RSRC);
->>> >
->>> >         lastbus = pci_scan_child_bus(bridge->bus);
->>> >         pci_bus_update_busn_res_end(bridge->bus, lastbus);
->>> >
->>> >         pci_assign_unassigned_bus_resources(bridge->bus);
->>> >
->>> >         pci_bus_add_devices(bridge->bus);
->>> >
->>> >         return 0;
->>> >
->>> > bridge_setup_fail:
->>> >         put_device(&bridge->dev);
->>> >         device_unregister(&bridge->dev);
->>> > bridge_create_fail:
->>> >         kfree(pp);
->>> >         return err;
->>> > }
->>> >
->>> > Best regards,
->>> > Liviu
->>> >
->>> >
->>> > Catalin Marinas (1):
->>> >   arm64: Extend the PCI I/O space to 16MB
->>> >
->>> > Liviu Dudau (2):
->>> >   Fix ioport_map() for !CONFIG_GENERIC_IOMAP cases.
->>> >   arm64: Add architecture support for PCI
->>> >
->>> >  Documentation/arm64/memory.txt |  16 +--
->>> >  arch/arm64/Kconfig             |  19 +++-
->>> >  arch/arm64/include/asm/Kbuild  |   1 +
->>> >  arch/arm64/include/asm/io.h    |   5 +-
->>> >  arch/arm64/include/asm/pci.h   |  51 +++++++++
->>> >  arch/arm64/kernel/Makefile     |   1 +
->>> >  arch/arm64/kernel/pci.c        | 173 +++++++++++++++++++++++++++++++
->>> >  include/asm-generic/io.h       |   2 +-
->>> >  8 files changed, 258 insertions(+), 10 deletions(-)
->>> >  create mode 100644 arch/arm64/include/asm/pci.h
->>> >  create mode 100644 arch/arm64/kernel/pci.c
->>> >
->>> > --
->>> > 1.9.0
->>> >
->>> >
->>> > _______________________________________________
->>> > linux-arm-kernel mailing list
->>> > linux-arm-kernel@lists.infradead.org
->>> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
->>>
->>
->> --
->> ====================
->> | I would like to |
->> | fix the world,  |
->> | but they're not |
->> | giving me the   |
->>  \ source code!  /
->>   ---------------
->>     ¯\_(ツ)_/¯
->>
+> 
+> > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > > Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+> > > ---
+> > >  drivers/mfd/Kconfig  | 13 +++++++++++
+> > >  drivers/mfd/Makefile |  1 +
+> > >  drivers/mfd/pm8x41.c | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+> > >  3 files changed, 77 insertions(+)
+> > >  create mode 100644 drivers/mfd/pm8x41.c
+> > > 
+> > 
+> > <snip>
+> > 
+> > > +
+> > > +static int pm8x41_probe(struct spmi_device *sdev)
+> > > +{
+> > > +	struct regmap *regmap;
+> > > +
+> > > +	regmap = devm_regmap_init_spmi_ext(sdev, &pm8x41_regmap_config);
+> > > +	if (IS_ERR(regmap)) {
+> > > +		dev_dbg(&sdev->dev, "regmap creation failed.\n");
+> > > +		return PTR_ERR(regmap);
+> > > +	}
+> > > +
+> > > +	return of_platform_populate(sdev->dev.of_node, NULL, NULL, &sdev->dev);
+> > 
+> > I think that this will not going to work. For example in this particular
+> > case, both controllers have "qcom,qpnp-revid" peripheral which is
+> > located at offset 0x100.
+> > 
+> > And the result is:
+> > 
+> > [    0.963944] sysfs: cannot create duplicate filename '/bus/platform/devices/100.revid'
+> > 
+> [...]
+> > 
+> > Any suggestions?
+> 
+> That's expected behavior actually.  You have two nodes in DT named the
+> same thing and at the same address.  This error is due to the fact that
+> all devices are put in '/bus/platform/devices/' with a name made from
+> the unit address and name specified in DT.  There's no other unique
+> information used to differentiate the devices.
+> 
+> If you simply change the names in DT, it works.  
+
+Sure, it will work. But they are part of different address spaces. 
+Why we should add, IMHO, artificial requirement that names should
+be unique? Is it possible to prefix child nodes with parent device 
+address? As side note, why they should be registered on the platform
+bus at all? To be honest I don't have solution.
+
+Regards,
+Ivan  
+
+> [...] qcom,qpnp-revid 100.qcom,pm8841-revid: PM8841 v2.0 options: 0, 0, 2, 2
+> [...] qcom,qpnp-revid 100.qcom,pm8941-revid: PM8941 v3.0 options: 2, 0, 0, 0
+> 
+> Whether this should be "fixed" in the device/bus/sysfs core, I don't
+> know, but it isn't specifically an issue with this driver, and there's
+> little-to-nothing I can do to fix it here.
+> 
+> -Courtney
+
+
+
