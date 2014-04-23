@@ -1,49 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbaDWFcX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 01:32:23 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:49141 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751338AbaDWFcW (ORCPT
+	id S1753080AbaDWFcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 01:32:47 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:38776 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaDWFcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 01:32:22 -0400
-Date: Wed, 23 Apr 2014 07:32:13 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Bugfix] sched: fix possible invalid memory access caused by CPU
- hot-addition
-Message-ID: <20140423053213.GV26782@laptop.programming.kicks-ass.net>
-References: <1398144435-26271-1-git-send-email-jiang.liu@linux.intel.com>
- <20140422081515.GF11182@twins.programming.kicks-ass.net>
- <53572939.7020509@linux.intel.com>
+	Wed, 23 Apr 2014 01:32:45 -0400
+Message-ID: <53575074.6010602@monstr.eu>
+Date: Wed, 23 Apr 2014 07:32:36 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53572939.7020509@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Guenter Roeck <linux@roeck-us.net>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Microblaze image hanging in qemu with 3.15-rc
+References: <20140422172356.GA15672@roeck-us.net>
+In-Reply-To: <20140422172356.GA15672@roeck-us.net>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="48GPD2HjwBGvANmXt1UD6EBt8jtmVDLDH"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 10:45:13AM +0800, Jiang Liu wrote:
-> Hi Peter,
-> 	It's not for memoryless node, but to solve a race window
-> in CPU hot-addition. The related CPU hot-addition flow is:
-> 1) Handle CPU hot-addition event
-> 1.a) gather platform specific information
-> 1.b) associate hot-added CPU with a node
-> 1.c) create CPU device
-> 2) User online hot-added CPUs through sysfs:
-> 2.a)	cpu_up()
-> 2.b)		->try_online_node()
-> 2.c)			->hotadd_new_pgdat()
-> 2.d)			->node_set_online()
-> 
-> So between 1.b and 2.c, kmalloc_node(nid) may cause invalid
-> memory access without the node_online(nid) check.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--48GPD2HjwBGvANmXt1UD6EBt8jtmVDLDH
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Any why was all this not in the Changelog?
+Hi Guenter,
+
+
+On 04/22/2014 07:23 PM, Guenter Roeck wrote:
+> Hi all,
+>=20
+> when trying to run a microblaze image with 3.15-rc1 or 3.15-rc2 in qemu=
+,
+> I get the following hangup. This used to work with earlier kernels
+> with the same configuration.
+>=20
+> Is this a known problem, or is something wrong with my configuration=20
+> or with my qemu command line ?
+
+Is this BE/LE version? Which qemu do you use?
+There is endian autodetection in timer and intc driver
+which can caused this problem.
+
+Thanks,
+Michal
+
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--48GPD2HjwBGvANmXt1UD6EBt8jtmVDLDH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlNXUHUACgkQykllyylKDCEmxwCdFM4AA13I0H3iiHYYqX+opUOL
+MWQAn32UfQv/K5SqFAZ+3yHUAdQwbbPf
+=/iSV
+-----END PGP SIGNATURE-----
+
+--48GPD2HjwBGvANmXt1UD6EBt8jtmVDLDH--
