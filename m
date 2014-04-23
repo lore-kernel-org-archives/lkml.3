@@ -1,69 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328AbaDWOPQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:15:16 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:34250 "EHLO extserv.mm-sol.com"
+	id S1753894AbaDWOQV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:16:21 -0400
+Received: from mga03.intel.com ([143.182.124.21]:8784 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751463AbaDWOPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:15:13 -0400
-Message-ID: <1398262457.4724.228.camel@iivanov-dev>
-Subject: Re: [PATCH v6 15/19] usb: phy: msm: Fix PTS definitions for MSM USB
- controller
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-Cc: Felipe Balbi <balbi@ti.com>, Tim Bird <tbird20d@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
-Date: Wed, 23 Apr 2014 17:14:17 +0300
-In-Reply-To: <5357C99F.6070009@cogentembedded.com>
-References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
-			 <1398158438-21579-16-git-send-email-iivanov@mm-sol.com>
-			 <53566A23.8010508@cogentembedded.com>
-			 <1398259477.4724.218.camel@iivanov-dev>
-		 <1398260102.4724.223.camel@iivanov-dev>
-		 <5357C40E.7060000@cogentembedded.com>
-	 <1398261183.4724.226.camel@iivanov-dev>
-	 <5357C99F.6070009@cogentembedded.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752276AbaDWOQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 10:16:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,912,1389772800"; 
+   d="scan'208";a="422522019"
+Date: Wed, 23 Apr 2014 10:16:17 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Eric Biggers <ebiggers3@gmail.com>
+Cc: viro@zeniv.linux.org.uk, bcrl@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-aio@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] aio: Fix type of iterator variable in do_io_submit()
+Message-ID: <20140423141617.GE13050@linux.intel.com>
+References: <1398207423-21119-1-git-send-email-ebiggers3@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398207423-21119-1-git-send-email-ebiggers3@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-23 at 18:09 +0400, Sergei Shtylyov wrote:
-> On 23-04-2014 17:53, Ivan T. Ivanov wrote:
-> 
-> >>>>>> --- a/include/linux/usb/msm_hsusb_hw.h
-> >>>>>> +++ b/include/linux/usb/msm_hsusb_hw.h
-> >>>>>> @@ -31,8 +31,9 @@
-> >>>>>>     #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
-> >>>>>>
-> >>>>>>     #define PORTSC_PHCD            (1 << 23) /* phy suspend mode */
-> >>>>>> -#define PORTSC_PTS_MASK         (3 << 30)
-> >>>>>> -#define PORTSC_PTS_ULPI         (3 << 30)
-> >>>>>> +#define PORTSC_PTS_MASK        (3 << 30)
-> >>>>>> +#define PORTSC_PTS_ULPI        (2 << 30)
-> >>>>>> +#define PORTSC_PTS_SERIAL      (3 << 30)
-> 
-> >>>>>       Please use tabs, not spaces here.
-> 
-> >>>> Thanks, will fix and resend.
-> 
-> >>> I answered too quickly. File contain tabs and spaces for
-> >>> indentation of definitions.
-> 
-> >>      You mean tabs and spaces on one line? Or sometimes tabs, sometimes spaces?
-> 
-> > In this particular hunk, original code uses spaces.
-> 
->     That I saw. 8-)
->     I was asking about this file in general.
+On Tue, Apr 22, 2014 at 05:57:03PM -0500, Eric Biggers wrote:
+> do_io_submit() iterated over the userspace iocb structure pointers using
+> a variable i of type 'int'.  This was wrong since 'nr', the number of
+> iocb structure pointers, could potentially be up to LONG_MAX /
+> sizeof(struct iocb *).  Fix it (and also remove the unnecessary
+> initialization to 0).
 
-Legacy :-) Could this be future cleanup? 
-
-Regards,
-Ivan
-
+You're not wrong, but do we *really* want users to be able to submit
+144115188075855872 I/Os with a single system call?  How about limiting
+them to a single billion?  Given that they have to allocate 64GB of
+*control* data structures to submit this many I/Os, I think this will
+be sufficient for many years to come.
