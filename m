@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710AbaDWMtx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:49:53 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42905 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425AbaDWMtv (ORCPT
+	id S1753131AbaDWMwN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:52:13 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:62553 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaDWMwK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:49:51 -0400
-Date: Wed, 23 Apr 2014 13:49:33 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nicolin Chen <Guangyu.Chen@freescale.com>
-Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
-        lgirdwood@gmail.com, tiwai@suse.de, perex@perex.cz
-Message-ID: <20140423124933.GB12304@sirena.org.uk>
-References: <1398078886-31505-1-git-send-email-Guangyu.Chen@freescale.com>
+	Wed, 23 Apr 2014 08:52:10 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VVZ3M5YIAeXhLfsz"
-Content-Disposition: inline
-In-Reply-To: <1398078886-31505-1-git-send-email-Guangyu.Chen@freescale.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: core: Don't break component searching if both id
- and num_dai are 0
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <20140422204522.GN8488@redhat.com>
+References: <20140421160655.GA4201@quad>
+	<20140422194031.GM8488@redhat.com>
+	<CABPqkBTcOT+BEd1dSrp6bz22o5g+ZvBwx5e4GZvbwft6No+Shw@mail.gmail.com>
+	<20140422204522.GN8488@redhat.com>
+Date: Wed, 23 Apr 2014 14:52:09 +0200
+Message-ID: <CABPqkBTUV65VD3D7Qcxi4=oTqBVS_WGpbFSqo561Zuex3D9ZwQ@mail.gmail.com>
+Subject: Re: [PATCH] perf tools: fix processing of pid/tid for mmap records
+From: Stephane Eranian <eranian@google.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jiri Olsa <jolsa@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, Namhyung Kim <namhyung@kernel.org>,
+        David Ahern <dsahern@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Apr 22, 2014 at 10:45 PM, Don Zickus <dzickus@redhat.com> wrote:
+> On Tue, Apr 22, 2014 at 09:50:17PM +0200, Stephane Eranian wrote:
+>> On Tue, Apr 22, 2014 at 9:40 PM, Don Zickus <dzickus@redhat.com> wrote:
+>> > On Mon, Apr 21, 2014 at 06:06:55PM +0200, Stephane Eranian wrote:
+>> >> perf tools: fix processing of pid/tid for mmap records
+>> >>
+>> >> Mmaps are global to a process (always). Processing them
+>> >> per-thread was causing some serious issues in case mmaps
+>> >> would overlap. The overlap fixups would only occur in the
+>> >> context of the thread which generated the overlapping
+>> >> mmap. But that was cause issues later on when a sample
+>> >> from another thread would fall into that overlapping
+>> >> mmap.
+>> >
+>> > eh?  You are basically reverting my patch for a similar problem. :-)
+>> >
+>> > I was running a large multi-threading program (specjbb) and the threads
+>> > were not being seperated into their own map'd areas.  So either I had to
+>> > lump all threads in to the same pid space or make the change you are
+>> > reverting.
+>> >
+>> I don't understand your problem. The address space is shared by ALL
+>> threads of a process. The mmaps are always shared by all threads?
+>
+> Sure.
+>
+>
+>>
+>> > The problem I had with the double pid (as you propose), I would later look
+>> > up samples based on pid/tid and there would be _no_ map available because
+>> > it was created as a pid/pid pair.  As a result, our c2c program would drop
+>> > thousands of samples on the floor (because there was no mapping for the
+>> > data address to get the major/minor/inode info).
+>>
+>> That is your problem. You should only lookup mapping baseds on pid only
+>> not pid/tid. Why do you need tid?
+>
+> Because the function is machine__findnew_thread not
+> machine__findnew_map.  I want the thread info.  That includes the tid,
+> comm and any other thread specific info.  :-)
+>
+But then, the two call should be separated: one to get the mapping, one to get
+the thread info. What's wrong with this approach?
 
---VVZ3M5YIAeXhLfsz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-
-On Mon, Apr 21, 2014 at 07:14:46PM +0800, Nicolin Chen wrote:
-> The commit e41975ed (ASoC: core: Fix the DAI name getting) added a break
-> within the "if (id < 0 || id >= pos->num_dai)" while the original design
-> of the search didn't break the loop if that condition contented but only
-> mark the ret error and let it go on to search the next component.
-
-Applied, thanks.
-
---VVZ3M5YIAeXhLfsz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTV7baAAoJELSic+t+oim90zkP/j9O52fsS9bzQTvWIUFMenuP
-h5dmOl2ClJph0sNxbRBJORrr9YNpx4ar7m+X058Rh9OwO23j8CFejewrb9/J46LF
-F4XuRhjk2ZnyPsTUwNvcb3HedOwfezH/IRBbMUhzRexXotfRpDZXtcv9yq5LQIQ+
-7pzo66+2jmRUF3xUXo8mQmXoRvVB0CAYyUbiaANOrHHZEyZHwZ+ZL63UrboQq9YS
-aBx+wG4eaGqnioWROaEASrz4+4TGi9exgGFgqKoWM7uepAG+UTw6EEGP1Jtzi/Au
-qE1ahn44SYJw5Jjs21kzbjB88m1MhiFF38ylRZpWAu3dDv42RU7L2uQ2J9fZsEjC
-4MTEFmgtmcLJ7xdXTPArvwIoDCzAtF2ZFov0aEGNb0cAbp6o6a7SIhmL+NFu6in4
-2bXwO79gAqO+mV57fwCzExGNmdWR9HyLvVcee2NS4j+5yLl2suMOx8YCePNVYI5T
-TYGKPI/iMwnKBLNlpDDsKtfj5hgwMurSZ7OZ/eZ4hSP3yH+bkfoabxHFAO/iVtE4
-MCudMlyV9awZdUHmPeEQlKwlfqd17lZBkYvGUFYtR0X5oqUD9uDcYEejpHvPb4CI
-OgEVNnoer9BDonjk1GUhH4JBKbDmsflSabpettMOL/VXFmyiiMzcNUwPzvYh/lPD
-g5rX8su+FQxMZTQRlsDL
-=NzA9
------END PGP SIGNATURE-----
-
---VVZ3M5YIAeXhLfsz--
+> The problem was the thread maps were not being shared internally, leading
+> to your problem and my problem.
+>
+> Jiri fixed that.  So now I can request a thread struct based on a pid/tid
+> and the map groups all point to the same one created by the pid.  As it
+> should.
+>
+>
+>>
+>> >
+>> > Now I modified our c2c program to lookup samples as pid/pid but now the
+>> > maps lost tid info, and I had to hack around that by carrying the tid info
+>> > in a private struct.
+>> >
+>> If you need the tid, then it is okay to carry it on the side. I believe mmap
+>> lookups should ONLY use pid. That is how the address space of a process
+>> is contructed.
+>
+> The tid is stored in the thread struct.  So if I have a pointer to the
+> thread struct, I shouldn't have to carry the tid on the side.  That was
+> the point. :-)  In fact the thread struct is inside the hist_entry which
+> is referenced by struct hist.  So now I can easily sort and display tid
+> without carrying anything on the side.
+>
+> But that only works if the pid/tid mappings are setup correctly.  Which I
+> believe Jiri has done with his recent patchset.
+>
+> Cheers,
+> Don
