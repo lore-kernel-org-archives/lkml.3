@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511AbaDWVv6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 17:51:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42309 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837AbaDWVv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 17:51:57 -0400
-Date: Wed, 23 Apr 2014 23:51:55 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Rik van Riel <riel@redhat.com>
-cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        joern@logfs.org, peterz@infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>, cxie@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC] sysrq: rcu-ify __handle_sysrq
-In-Reply-To: <535833AE.6010505@redhat.com>
-Message-ID: <alpine.LRH.2.00.1404232349350.1491@twin.jikos.cz>
-References: <20140423125352.704f9fb2@annuminas.surriel.com> <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz> <535833AE.6010505@redhat.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1751396AbaDWVyt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 17:54:49 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:65365 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751204AbaDWVyr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 17:54:47 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <5358288C.6030205@kernel.org>
+References: <1398125031-5826-1-git-send-email-dianders@chromium.org>
+	<5358288C.6030205@kernel.org>
+Date: Wed, 23 Apr 2014 14:54:45 -0700
+X-Google-Sender-Auth: ebTton0UstVEjR8-PCYVJk6mVkw
+Message-ID: <CAD=FV=Ws7R0+nJagXswnqowxFvrxh6vTmKM_jwz8mnGbKr_aSg@mail.gmail.com>
+Subject: Re: [PATCH] iio: adc: Nothing in ADC should be a bool CONFIG
+From: Doug Anderson <dianders@chromium.org>
+To: Jonathan Cameron <jic23@kernel.org>
+Cc: Lars-Peter Clausen <lars@metafoo.de>, Milo.Kim@ti.com,
+        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Russ.Dill@ti.com,
+        alexandre.belloni@free-electrons.com, oleksandr.kozaruk@ti.com,
+        B38611@freescale.com, johannes.thumshirn@men.de, sre@debian.org,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        linux-iio <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014, Rik van Riel wrote:
+Jonathan,
 
-> >> Echoing values into /proc/sysrq-trigger seems to be a popular way to
-> >> get information out of the kernel. However, dumping information about
-> >> thousands of processes, or hundreds of CPUs to serial console can
-> >> result in IRQs being blocked for minutes, resulting in various kinds
-> >> of cascade failures.
-> >>
-> >> The most common failure is due to interrupts being blocked for a very
-> >> long time. This can lead to things like failed IO requests, and other
-> >> things the system cannot easily recover from.
-> >>
-> >> This problem is easily fixable by making __handle_sysrq use RCU
-> >> instead of spin_lock_irqsave.
-> >>
-> >> This leaves the warning that RCU grace periods have not elapsed for a
-> >> long time, but the system will come back from that automatically.
-> > 
-> > This, however, will make RCU stall detector to send NMI to all online CPUs 
-> > so that they can dump their stacks.
-> 
-> It already does that, since several of the longer-running
-> sysrq handlers already grab rcu_read_lock(), for example
-> show_state().
-> 
-> > IOW, this might actually make the whole sysrq dump last for much longer, 
-> > and have the log polluted with all-CPU dumps for no good reason.
-> > 
-> > I wonder whether explicitly setting rcu_cpu_stall_suppress during sysrq 
-> > handling might be a viable workaround for this.
-> 
-> I suppose that would do the trick.
+On Wed, Apr 23, 2014 at 1:54 PM, Jonathan Cameron <jic23@kernel.org> wrote:
+> On 22/04/14 01:03, Doug Anderson wrote:
+>>
+>> The whole IIO subsystem can be moved to a module.  If you make it a
+>> module then stuff marked as "Y" in the adc directory simply won't be
+>> linked in properly.
+>>
+>> The two configs that were wrong were EXYNOS_ADC and LP8788_ADC.  I
+>> know for a fact that EXYNOS_ADC will work as a module (though it
+>> appears to crash when you unload it--that needs to be addressed
+>> separately).
+>
+> I'd really like to see this pinned down before taking this patch.
+> I can see you argument that the current approach is clearly wrong,
+> but swapping one issue for another is not an approach I'd particularly
+> like to take...
+>
+> I can't immediately spot the cause of the crash, but there are certainly
+> some interesting order issues in this driver.  Not enabling the vdd
+> regulator until after the userspace interfaces are exposed (by the
+> iio_device_register call) is interesting for a start.
+>
+> The remove doesn't run in the reverse of the probe order (see clocks
+> vs regulators for example.)
+>
+> Gah, my reviewing for one clearly missed some things in this driver.
 
-I can imagine Paul opposing this though ... this variable is supposed to 
-be changed only by cmdline/modparam, not really flipped during runtime as 
-a bandaid ... let's add Paul to CC.
+OK, fair enough.  I took a quick look and couldn't spot anything
+either.  I've requested that Samsung dig into these problems.  If they
+are unable to I will take a crack at it as time permits.  ;)
 
--- 
-Jiri Kosina
-SUSE Labs
+Thanks!
 
+-Doug
