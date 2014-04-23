@@ -1,82 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752640AbaDWExp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 00:53:45 -0400
-Received: from mga11.intel.com ([192.55.52.93]:15361 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752375AbaDWExo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 00:53:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,909,1389772800"; 
-   d="scan'208";a="525330197"
-Message-ID: <53574755.3080809@linux.intel.com>
-Date: Wed, 23 Apr 2014 12:53:41 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752700AbaDWEyA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 00:54:00 -0400
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:45853 "EHLO
+	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375AbaDWEx6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 00:53:58 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 2/9] perf hists: Introduce hists__add_nr_events()
+References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
+	<1398156591-11001-3-git-send-email-namhyung@kernel.org>
+	<20140422145203.GH1104@krava.brq.redhat.com>
+Date: Wed, 23 Apr 2014 13:53:56 +0900
+In-Reply-To: <20140422145203.GH1104@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Tue, 22 Apr 2014 16:52:03 +0200")
+Message-ID: <87bnvssl23.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-        Peter Zijlstra <peterz@infradead.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Bugfix] sched: fix possible invalid memory access caused by
- CPU hot-addition
-References: <1398144435-26271-1-git-send-email-jiang.liu@linux.intel.com> <20140422081515.GF11182@twins.programming.kicks-ass.net> <20140422130151.83bc4539364ca660c68de859@linux-foundation.org> <20140422200449.GF11096@twins.programming.kicks-ass.net> <alpine.DEB.2.02.1404221849330.4008@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.02.1404221849330.4008@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 22 Apr 2014 16:52:03 +0200, Jiri Olsa wrote:
+> On Tue, Apr 22, 2014 at 05:49:44PM +0900, Namhyung Kim wrote:
+>> +static void hists__add_nr_events(struct hists *hists, u32 type, u32 val)
+>> +{
+>> +	__events_stats__add(&hists->stats, type, val);
+>> +}
+>
+> adding static function with no usage breaks build..
+> we dont want that, eventhough it's fixed in the next commit
 
+Oops, my bad.  Will fix!
 
-On 2014/4/23 9:59, David Rientjes wrote:
-> On Tue, 22 Apr 2014, Peter Zijlstra wrote:
-> 
->> On Tue, Apr 22, 2014 at 01:01:51PM -0700, Andrew Morton wrote:
->>> On Tue, 22 Apr 2014 10:15:15 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
->>>
->>>> On Tue, Apr 22, 2014 at 01:27:15PM +0800, Jiang Liu wrote:
->>>>> When calling kzalloc_node(size, flags, node), we should first check
->>>>> whether node is onlined, otherwise it may cause invalid memory access
->>>>> as below.
->>>>
->>>> But this is only for memory less node crap, right? 
->>>
->>> um, why are memoryless nodes crap?
->>
->> Why wouldn't they be? Having CPUs with no local memory seems decidedly
->> suboptimal.
-> 
-> The quick fix for memoryless node issues is usually just do cpu_to_mem() 
-> rather than cpu_to_node() in the caller.  This assumes that the arch is 
-> setup correctly to handle memoryless nodes with 
-> CONFIG_HAVE_MEMORYLESS_NODES (and we've had problems recently with 
-> memoryless nodes not being configured correctly on powerpc).
-> 
-> That type of a fix would probably be better handled in the slab allocator, 
-> though, since kmalloc_node(nid) shouldn't crash just because nid is 
-> memoryless, we should be doing local_memory_node(node) when allocating the 
-> slab pages.
-> 
-> However, I don't think memoryless nodes are the problem here since Jiang 
-> is testing for !node_online(nid) in his patch, so it's a problem with 
-> cpu_to_node() pointing to an offline node.  It makes sense for the page 
-> allocator to crash in such a case, the node id is erroneous.
-> 
-> So either the cpu-to-node mapping is invalid or alloc_fair_sched_group() 
-> is allocating memory for a cpu on an offline node.  The 
-> for_each_possible_cpu() looks suspicious.  There's no guarantee that 
-> local_memory_node(node) for an offline node will return anything with 
-> affinity, so falling back to NUMA_NO_NODE looks appropriate in Jiang's 
-> patch.
-Hi David,
-	That's the case, alloc_fair_sched_group() is trying to allocate
-memory for CPU in offline node, which then access non-exist NODE_DATA.
-Thanks!
-Gerry
-
-> 
+Thanks,
+Namhyung
