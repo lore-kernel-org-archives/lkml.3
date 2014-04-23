@@ -1,89 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320AbaDWMqv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:46:51 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:59882 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754929AbaDWMeq (ORCPT
+	id S1753584AbaDWMqu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:46:50 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42898 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692AbaDWMqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:34:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v6 2/8] ARM: sunxi: Split out the various machines into separate files
-Date: Wed, 23 Apr 2014 14:33:50 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Emilio Lopez <emilio@elopez.com.ar>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, devicetree@vger.kernel.org,
-        Mike Turquette <mturquette@linaro.org>, andriy.shevchenko@intel.com,
-        linux-kernel@vger.kernel.org, zhuzhenhua@allwinnertech.com,
-        shuge@allwinnertech.com, linux-sunxi@googlegroups.com,
-        kevin.z.m.zh@gmail.com, sunny@allwinnertech.com,
-        dmaengine@vger.kernel.org
-References: <1397724379-15398-1-git-send-email-maxime.ripard@free-electrons.com> <1397724379-15398-3-git-send-email-maxime.ripard@free-electrons.com>
-In-Reply-To: <1397724379-15398-3-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 23 Apr 2014 08:46:43 -0400
+Date: Wed, 23 Apr 2014 13:46:29 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org
+Message-ID: <20140423124629.GA12304@sirena.org.uk>
+References: <20140423113941.GL21613@lee--X1>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404231433.51129.arnd@arndb.de>
-X-Provags-ID: V02:K0:+lek8zXc3IhYTzOiVez8YkQmY0xcQa7i0cRd4WecVNR
- L2qYlNDf+BRF0z2h40xGNbDs5QF8CroD8fBWv7kNgLAqOsbwCi
- UKl2Jc5GHNE3AmhlBG1A3EPrDCz7BUGkT1kEBVRvBkY8iEAvmc
- axvEVkoxWIoUFdcg4c/9Z1ik1zAUgS0gh4cyDetazabOW0D9gs
- dp8Ww56h3Ub8MfiXbmUbqY85m+xJJu28/tYTE2ZJPtP4I1r3I7
- VwGGTOBPVF/zqkRJdnM0t9u6s1SSi0F+sXgid3N38sXuw3HB2o
- TAIC79Ohlg9+JDYLAUdptOF8dylTxZ263ioparUZWIY6mpYPkH
- R10gsTSMwX0nLiyhoIoU=
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="PLySx9pBl73A+dIr"
+Content-Disposition: inline
+In-Reply-To: <20140423113941.GL21613@lee--X1>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [GIT PULL] regulator: First pull of MFD <-> Regulator IB (v3.16)
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 17 April 2014, Maxime Ripard wrote:
-> This will allow to add per-SoC hooks more easily.
-> 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> ---
->  arch/arm/mach-sunxi/Makefile  |   6 +-
->  arch/arm/mach-sunxi/restart.c | 104 +++++++++++++++++++++++++++
->  arch/arm/mach-sunxi/restart.h |  20 ++++++
->  arch/arm/mach-sunxi/sun4i.c   |  36 ++++++++++
->  arch/arm/mach-sunxi/sun5i.c   |  37 ++++++++++
->  arch/arm/mach-sunxi/sun6i.c   |  49 +++++++++++++
->  arch/arm/mach-sunxi/sun7i.c   |  36 ++++++++++
->  arch/arm/mach-sunxi/sunxi.c   | 164 ------------------------------------------
->  8 files changed, 287 insertions(+), 165 deletions(-)
 
-This doesn't look like a move in the right direction, and I don't see
-the connection with the DMA driver.
+--PLySx9pBl73A+dIr
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> diff --git a/arch/arm/mach-sunxi/restart.c b/arch/arm/mach-sunxi/restart.c
-> new file mode 100644
-> index 000000000000..3b89727ee943
-> --- /dev/null
-> +++ b/arch/arm/mach-sunxi/restart.c
+On Wed, Apr 23, 2014 at 12:39:41PM +0100, Lee Jones wrote:
 
-Splitting out the restart code is good, but please complete this by
-moving it into a driver directory. My preferred location would be
-within the watchdog driver, since it's really the same registers.
-You can turn on the watchdog driver as built-in in the defconfig.
-While it's not ideal that you can end up without a restart function
-if the driver does not get loaded, I would still prefer that over
-having the driver in the mach-sunxi directory.
+> Doug Anderson (3):
+>       mfd: tps65090: Don't tell child devices we have an IRQ if we don't
+>       mfd: tps65090: Stop caching most registers
+>       regulator: tps65090: Allow setting the overcurrent wait time
 
-An alternative would be to move the restart code into
-drivers/power/reset.
+Can you drop the last one please, I've already applied it?  I'd have
+expected just the first two (or probably even just the second one).  If
+you need it in your tree just grab the branch (or I can tag it if you
+like).
 
-> diff --git a/arch/arm/mach-sunxi/sunxi.c b/arch/arm/mach-sunxi/sunxi.c
-> deleted file mode 100644
-> index 460b5a4962ef..000000000000
-> --- a/arch/arm/mach-sunxi/sunxi.c
+I tend to apply these things early where they don't have dependencies
+due to the large number of reposts for unrelated changes in the series
+that tend to happen (and often several very similar serieses being in
+flight at once); I frequently end up just deleting them unread.  Not
+sure what the best way to handle this stuff is in general.
 
-Instead of splitting up this file, I think it would be better to
-reduce the number of special hacks required per machine. Note that
-for arm64 we require platforms not to have any code outside of
-the drivers directory, and I'd like to get to the same situation
-for much of arch/arm/mach-* as well.
+>  Documentation/devicetree/bindings/regulator/tps65090.txt |  4 ++++
+>  drivers/mfd/tps65090.c                                   | 41 +++++++++++++++++++++++++----------------
+>  drivers/power/tps65090-charger.c                         | 11 -----------
+>  drivers/regulator/tps65090-regulator.c                   | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/tps65090.h                             | 19 +++++++++++++++++++
+>  5 files changed, 104 insertions(+), 27 deletions(-)
 
-	Arnd
+Your formatting for these still seems to be messing up.
+
+--PLySx9pBl73A+dIr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTV7YiAAoJELSic+t+oim9g2kP/0MFvzRXIbXKJrtcGpox0AQc
+HfNnOUWFehgr2FzHieMXFllFmyhub9/DZl0kgR1658Kv+nLP3tzxcGBZMTnaGzSV
+MhkbHaA9Wg6g8uS0jH5OZiEwlhuvljOVAGiPXudClW29XmcvKs91en7XNS0TT1mc
+LAeYYNxPMqDtUWmFZLVdfstVbaoYhgW0L9Xcfv5NQahXC4L7baofOIRh/tOvcG3F
+PkbHW58egs+9BdcXWHDu9C35T2PUbJt0/zkfl0qBtK2f+Qn7IBbzgEkEZtqVUASL
+bpCvx2WDjrEfjUxzJ7vdcPH1tCkHbzLq3D1y8LjIZ/0vO04q495LoY4+ExnQP2lG
+YdI3fqtgbGBAF8CuZtBDTsi0J+8hgAtMF/LSs1R6II9qESDTZFoKBxyHuXRG9ZRp
+OKQFqTLePKqcBEmYLNgvg//Dg4IhZaiLashshKiAmgmSffXH2/xw9bZMjG5HMcgW
+7Z+c00Q6LF3vHRFiLPAI2Tq3NkJbhidk5UGtjvc6fdtpkEFsdyXhZYErLbvB/vRx
+d+GK4OtMhT0okoAVBoUl//XTDIIUyfXIMKnxVkSNn5QjQMqt8TDwe+dnUI4U1sCq
+PBtlgJEmgvDIxgibLE/lnhwLHpP1GrjLGs61qGMvxx04Kcrxk2iznb7e4BlKu48X
+6ZmnRtLTKwdqOfApoC+O
+=P2hl
+-----END PGP SIGNATURE-----
+
+--PLySx9pBl73A+dIr--
