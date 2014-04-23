@@ -1,87 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751835AbaDWWFQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:05:16 -0400
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:39486 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751807AbaDWWFF (ORCPT
+	id S1751544AbaDWWJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:09:57 -0400
+Received: from seldrel01.sonyericsson.com ([212.209.106.2]:4765 "EHLO
+	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751269AbaDWWJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:05:05 -0400
-Date: Wed, 23 Apr 2014 18:05:00 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Tim Kryger <tim.kryger@linaro.org>,
-        Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/4] mfd: bcm590xx: add support for second i2c slave
- address space
-Message-ID: <20140423220500.GA1127@beef>
-References: <1397501428-8857-1-git-send-email-mporter@linaro.org>
- <1397501428-8857-3-git-send-email-mporter@linaro.org>
- <20140416110603.GA19671@lee--X1>
- <20140416213141.GD12304@sirena.org.uk>
- <20140417065753.GC28725@lee--X1>
- <20140417222616.GK23695@beef>
- <20140422082139.GF17657@lee--X1>
- <20140423220126.GC4164@beef>
+	Wed, 23 Apr 2014 18:09:54 -0400
+Date: Wed, 23 Apr 2014 15:12:00 -0700
+From: Courtney Cavin <courtney.cavin@sonymobile.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [PATCH 1/2] mfd: pm8x41: add support for Qualcomm 8x41 PMICs
+Message-ID: <20140423221200.GL17066@sonymobile.com>
+References: <1398213110-28135-1-git-send-email-courtney.cavin@sonymobile.com>
+ <1398259168.4724.217.camel@iivanov-dev>
+ <20140423181614.GK17066@sonymobile.com>
+ <1398285272.14329.6.camel@violet>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20140423220126.GC4164@beef>
+In-Reply-To: <1398285272.14329.6.camel@violet>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 06:01:26PM -0400, Matt Porter wrote:
-> On Tue, Apr 22, 2014 at 09:21:39AM +0100, Lee Jones wrote:
-> > > > > > s/regmap/Regmap
-> > > > > 
-> > > > > It's consistently written regmap in all the documentation and so on :)
-> > > > 
-> > > > Furry muff; but the comments still stand for the acronyms.
-> > > > 
-> > > > > > addmap{0,1} doesn't quite sit right with me.
-> > > > > 
-> > > > > > REVISIT: Ah, it's address-map, rather than add map. Okay, not as bad
-> > > > > > as I first thought, but still, is there a better naming convention you
-> > > > > > could use?
-> > > > > 
-> > > > > addrmap or something?
-> > > > 
-> > > > Right, that was what I was thinking. However, I prefer something along
-> > > > the lines of 'i2c' and 'i2c_sec' or 'client' and 'client_slv' etc.
-> > > 
-> > > FWIW, the reason it's addmap{0,1} is that the datasheet has documents
-> > > ADDMAP=0 and the first bank of registers and ADDMAP=1 as the second bank
-> > > of registers. I adopted that to match the docs for the part.
-> > > 
-> > > I guess we could do i2c and i2c_sec, I'll just have to put a comment
-> > > correlating it to the h/w. Calling it 'slv' implies something else
-> > > so we should avoid that here. The notion of a "secondary" i2c device
-> > > is completely a Linux I2C subsystem fabrication which wouldn't exist
-> > > if it allowed multiple slave addresses per device. From a h/w
-> > > perspective there is really no primary and secondary relationship.
-> > > 
-> > > I'm fine with i2c/i2c_sec or addrmap0/1 and I will just comment to
-> > > correlate with the datasheet..pick one.
-> > 
-> > Let's stick method fabricated by the I2C subsystem. It may seem strange
-> > from a h/w perspective, but it is the way we (you) have coded it, as
-> > the first parameter of i2c_new_dummy() is the 'managing' (primary,
-> > parent, master, whatever) device, so '_sec' would suit as an
-> > identifying appendage for the resultant device.
+On Wed, Apr 23, 2014 at 10:34:32PM +0200, Ivan T. Ivanov wrote:
 > 
-> That works, I'll also switch to addrmap_[pri|sec] which touches the
-> regulator driver as well. That will keep the relationship  between device
-> and regmap clear.
+> On Wed, 2014-04-23 at 11:16 -0700, Courtney Cavin wrote:
+> > On Wed, Apr 23, 2014 at 03:19:28PM +0200, Ivan T. Ivanov wrote:
+> > > 
+> > > Hi,
+> > > 
+> > > On Tue, 2014-04-22 at 17:31 -0700, Courtney Cavin wrote:
+> > > > From: Josh Cartwright <joshc@codeaurora.org>
+> > > > 
+> > > > The Qualcomm 8941 and 8841 PMICs are components used with the Snapdragon
+> > > > 800 series SoC family.  This driver exists largely as a glue mfd component,
+> > > > it exists to be an owner of an SPMI regmap for children devices
+> > > > described in device tree.
+> > > > 
+> > > 
+> > > Thanks. This is exactly what I have planed to do :-)
+> > > 
+> > 
+> > Sorry if I usurped your work!
+> 
+> Noting to worry. I just was surprised how close it is to my vision ;-).
+> 
 
-Misspoke...I'm switching regmap[0|1] to regmap_[pri|sec] to keep that
-synced with i2c_[pri|sec]
+Well, you might notice how extremely close it is to what Josh posted in
+October in his SPMI series [1], so I can't take any credit there.
 
--Matt
+> > 
+> > > > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
+> > > > Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+> > > > ---
+> > > >  drivers/mfd/Kconfig  | 13 +++++++++++
+> > > >  drivers/mfd/Makefile |  1 +
+> > > >  drivers/mfd/pm8x41.c | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+> > > >  3 files changed, 77 insertions(+)
+> > > >  create mode 100644 drivers/mfd/pm8x41.c
+> > > > 
+> > > 
+> > > <snip>
+> > > 
+> > > > +
+> > > > +static int pm8x41_probe(struct spmi_device *sdev)
+> > > > +{
+> > > > +	struct regmap *regmap;
+> > > > +
+> > > > +	regmap = devm_regmap_init_spmi_ext(sdev, &pm8x41_regmap_config);
+> > > > +	if (IS_ERR(regmap)) {
+> > > > +		dev_dbg(&sdev->dev, "regmap creation failed.\n");
+> > > > +		return PTR_ERR(regmap);
+> > > > +	}
+> > > > +
+> > > > +	return of_platform_populate(sdev->dev.of_node, NULL, NULL, &sdev->dev);
+> > > 
+> > > I think that this will not going to work. For example in this particular
+> > > case, both controllers have "qcom,qpnp-revid" peripheral which is
+> > > located at offset 0x100.
+> > > 
+> > > And the result is:
+> > > 
+> > > [    0.963944] sysfs: cannot create duplicate filename '/bus/platform/devices/100.revid'
+> > > 
+> > [...]
+> > > 
+> > > Any suggestions?
+> > 
+> > That's expected behavior actually.  You have two nodes in DT named the
+> > same thing and at the same address.  This error is due to the fact that
+> > all devices are put in '/bus/platform/devices/' with a name made from
+> > the unit address and name specified in DT.  There's no other unique
+> > information used to differentiate the devices.
+> > 
+> > If you simply change the names in DT, it works.  
+> 
+> Sure, it will work. But they are part of different address spaces. 
+> Why we should add, IMHO, artificial requirement that names should
+> be unique? Is it possible to prefix child nodes with parent device 
+> address? As side note, why they should be registered on the platform
+> bus at all? To be honest I don't have solution.
+
+I agree, and it would appear that the ePAPR does as well.  Feel free to
+send patches!
+
+> > [...] qcom,qpnp-revid 100.qcom,pm8841-revid: PM8841 v2.0 options: 0, 0, 2, 2
+> > [...] qcom,qpnp-revid 100.qcom,pm8941-revid: PM8941 v3.0 options: 2, 0, 0, 0
+> > 
+> > Whether this should be "fixed" in the device/bus/sysfs core, I don't
+> > know, but it isn't specifically an issue with this driver, and there's
+> > little-to-nothing I can do to fix it here.
+> > 
+> > -Courtney
