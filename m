@@ -1,68 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844AbaDWQDh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 12:03:37 -0400
-Received: from moutng.kundenserver.de ([212.227.17.24]:56643 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235AbaDWQDe (ORCPT
+	id S1755056AbaDWQFo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 12:05:44 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:4309 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751663AbaDWQFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 12:03:34 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, wim@iguana.be,
-        dbaryshkov@gmail.com, dwmw2@infradead.org,
-        linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, arm@kernel.org
-Subject: Re: [PATCH 5/5] ARM: sunxi: Remove sun4i and sun7i machine definitions
-Date: Wed, 23 Apr 2014 18:02:51 +0200
-Message-ID: <1401022774.yKcHJAmPtb@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1398265476-29373-6-git-send-email-maxime.ripard@free-electrons.com>
-References: <1398265476-29373-1-git-send-email-maxime.ripard@free-electrons.com> <1398265476-29373-6-git-send-email-maxime.ripard@free-electrons.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:a6wBz9KrHQy8X7KkkyppnhMRoLXQMX9Tfc2WAuC1Ycw
- 75Ct0SNjAlu51+dMsVLOGF4T/ZWsozqvzn3fHdCSxPJylcMzdw
- 4kV2mkSigtARs4NahqeFxkf4X0aNxnz9TYMqkikUwAVYik01bl
- An9OY74I4sVHcw29KwowyIqBD0wLS/eOoGgZyfN6SQYy/4BKo9
- nr5uMOjfBboXXs3ZnyfxusYZ4BKQ79YjdBVfR/kE88RGqVDce7
- gW7jVbRKuKJQooxd3Z+4sfHjIXM8VlsBRTnzAIT0coDLSQmhpx
- FbmcgLZLguBR9N3DuagdPQejwsweHawIuOcGbIVqEcRUhlQ8aD
- iodsO0jW3pcCOBZ65jTQ=
+	Wed, 23 Apr 2014 12:05:42 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvQLAOfhV1NXQ6tr/2dsb2JhbABZgwarbplsgRkXdIJmHCMYgQIkE4hFAc8jjliEQAEDjmyKCAGKbIdpgzM7
+Date: Wed, 23 Apr 2014 18:05:39 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Tytso <tytso@mit.edu>, akpm <akpm@linux-foundation.org>
+Subject: [PATCH 1/1] fs/ext4/super.c: add __exit to
+ ext4_destroy_lazyinit_thread
+Message-Id: <20140423180539.0ddfc2477204f890c09f199d@skynet.be>
+X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 April 2014 17:04:36 Maxime Ripard wrote:
->  
-> -static void __init sunxi_dt_init(void)
-> -{
-> -       of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-> -}
-> -
-> -static const char * const sunxi_board_dt_compat[] = {
-> -       "allwinner,sun4i-a10",
-> -       "allwinner,sun5i-a10s",
-> -       "allwinner,sun5i-a13",
-> -       NULL,
-> -};
-> -
-> -DT_MACHINE_START(SUNXI_DT, "Allwinner A1X (Device Tree)")
-> -       .init_machine   = sunxi_dt_init,
-> -       .dt_compat      = sunxi_board_dt_compat,
-> -MACHINE_END
-> -
->  static const char * const sun6i_board_dt_compat[] = {
->         "allwinner,sun6i-a31",
->         NULL,
+ext4_destroy_lazyinit_thread is only called by __exit ext4_exit_fs
 
-I'd like to hear more opinions on this. We could either rely
-on the generic code, or we could keep the entry with just
-the .dt_compat line and the name, so /proc/cpuinfo contains
-a meaningful platform name.
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ext4/super.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Either approach works for me, but I think we should do this
-consistent across platforms. Olof, do you have an opinion?
-
-	Arnd
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index f3c6670..a2b097a 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -80,7 +80,7 @@ static struct dentry *ext4_mount(struct file_system_type *fs_type, int flags,
+ static inline int ext2_feature_set_ok(struct super_block *sb);
+ static inline int ext3_feature_set_ok(struct super_block *sb);
+ static int ext4_feature_set_ok(struct super_block *sb, int readonly);
+-static void ext4_destroy_lazyinit_thread(void);
++static void __exit ext4_destroy_lazyinit_thread(void);
+ static void ext4_unregister_li_request(struct super_block *sb);
+ static void ext4_clear_request_list(void);
+ static int ext4_reserve_clusters(struct ext4_sb_info *, ext4_fsblk_t);
+@@ -3155,7 +3155,7 @@ out:
+  * We do not need to lock anything since this is called on
+  * module unload.
+  */
+-static void ext4_destroy_lazyinit_thread(void)
++static void __exit ext4_destroy_lazyinit_thread(void)
+ {
+ 	/*
+ 	 * If thread exited earlier
+-- 
+1.9.1
