@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433AbaDWPJU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:09:20 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:42353 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755833AbaDWPJR (ORCPT
+	id S1757488AbaDWPJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:09:57 -0400
+Received: from fencepost.gnu.org ([208.118.235.10]:46479 "EHLO
+	fencepost.gnu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753826AbaDWPJz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:09:17 -0400
-Date: Wed, 23 Apr 2014 17:09:12 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Venkatesh Srinivas <venkateshs@google.com>,
-        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>
-Subject: Re: [PATCH] perf/x86/intel: Use rdmsrl_safe when initializing RAPL
- PMU.
-Message-ID: <20140423150912.GO11096@twins.programming.kicks-ass.net>
-References: <1394739386-22260-1-git-send-email-venkateshs@google.com>
- <CABPqkBRm8Ux15UY2+hF1TZdVsgVbYV+9XPiuh9m497Mr3oJ0Wg@mail.gmail.com>
- <20140423144538.GN11096@twins.programming.kicks-ass.net>
- <CABPqkBT5xg+zQ45dugHiXM5XFYi+V3gsBmANevx25fE0S0iNXA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CABPqkBT5xg+zQ45dugHiXM5XFYi+V3gsBmANevx25fE0S0iNXA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Wed, 23 Apr 2014 11:09:55 -0400
+Date: Wed, 23 Apr 2014 11:09:51 -0400
+Message-Id: <E1Wcyo3-0000Eg-UC@fencepost.gnu.org>
+From: ams@gnu.org (Alfred M. Szmidt)
+To: Jeff Layton <jlayton@redhat.com>
+CC: libc-alpha@sourceware.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tytso@mit.edu, dalias@libc.org,
+        mtk.manpages@gmail.com, samba-technical@lists.samba.org,
+        nfs-ganesha-devel@lists.sourceforge.net, carlos@redhat.com,
+        metze@samba.org, hch@infradead.org, bharrosh@panasas.com
+In-reply-to: <1398253172-9221-1-git-send-email-jlayton@redhat.com> (message
+	from Jeff Layton on Wed, 23 Apr 2014 07:39:32 -0400)
+Subject: Re: [RFC][glibc PATCH] fcntl-linux.h: add new definitions and manual updates for open file description locks
+Reply-to: ams@gnu.org
+References: <1398253172-9221-1-git-send-email-jlayton@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 04:49:55PM +0200, Stephane Eranian wrote:
-> On your machine, booted with 3.15-rc2, do you have /sys/devices/power?
-> If not, and you have at least an SNB, you should have RAPL and that
-> RAPL_UNIT MSR.
-> 
-> Proof is that if you read that MSR using /dev/cpu/msr it works just fine:
-> # modprobe msr
-> # rdmsr 0x606
-> a1003
-> 
-> So something is broken somewhere.
+   @@ -2890,7 +2894,7 @@ Get flags associated with the open file.  @xref{File Status Flags}.
+    Set flags associated with the open file.  @xref{File Status Flags}.
 
-I've not got SNB+ class hardware (for testing). But I believe you that
-there's something funny, I just do not understanding how *msr_safe()
-could cause this.
+    @item F_GETLK
+   -Get a file lock.  @xref{File Locks}.
+   +Test a file lock.  @xref{File Locks}.
+
+F_GETLK does get the (first) lock which blocks; it doesn't test for
+it.  "Retrieves information about the first blocking lock ..." or
+something might be better than the original
+
+   @@ -2898,6 +2902,18 @@ Set or clear a file lock.  @xref{File Locks}.
+    @item F_SETLKW
+    Like @code{F_SETLK}, but wait for completion.  @xref{File Locks}.
+
+   +@item F_OFD_GETLK
+   +Test a open file description lock.  @xref{Open File Description Locks}.
+   +Specific to Linux.
+
+Likewise.  You infact write that it does get the lock information
+later in the document wrt. F_OFD_GETLK.
