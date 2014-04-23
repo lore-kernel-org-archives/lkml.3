@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449AbaDWPH2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:07:28 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:44928 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757544AbaDWPHR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:07:17 -0400
+	id S1757555AbaDWPHo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:07:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61680 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755833AbaDWPHk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:07:40 -0400
+Date: Wed, 23 Apr 2014 17:07:14 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 7/7] perf hists/tui: Count callchain rows separately
+Message-ID: <20140423150714.GA2230@krava.brq.redhat.com>
+References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
+ <1398236408-8856-8-git-send-email-namhyung@kernel.org>
+ <20140423142915.GA27585@krava.brq.redhat.com>
+ <1398265053.1696.21.camel@leonhard>
 MIME-Version: 1.0
-In-Reply-To: <20140423144901.GA24220@redhat.com>
-References: <20140422180308.GA19038@redhat.com>
-	<CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
-	<alpine.LSU.2.11.1404221303060.6220@eggly.anvils>
-	<20140423144901.GA24220@redhat.com>
-Date: Wed, 23 Apr 2014 08:07:16 -0700
-X-Google-Sender-Auth: MztCJWMfkywAlq14FuLZoF-425Q
-Message-ID: <CA+55aFziPHmSP5yjxDP6h_hRY-H2VgWZKsqC7w8+B9d9wXqn6Q@mail.gmail.com>
-Subject: Re: 3.15rc2 hanging processes on exit.
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Jones <davej@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398265053.1696.21.camel@leonhard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 7:49 AM, Dave Jones <davej@redhat.com> wrote:
->
-> So for reasons I can't figure out, I've not been able to hit it on 3.14
-> The only 'interesting' thing I've hit in overnight testing is this, which
-> I'm not sure if I've also seen in my .15rc testing, but it doesn't look
-> familiar to me.  (Though the vm oopses I've seen the last few months
-> are starting to all blur together in my memory)
->
->
-> kernel BUG at mm/mlock.c:82!
+On Wed, Apr 23, 2014 at 11:57:33PM +0900, Namhyung Kim wrote:
+> 2014-04-23 (수), 16:29 +0200, Jiri Olsa:
+> > On Wed, Apr 23, 2014 at 04:00:08PM +0900, Namhyung Kim wrote:
+> > > When TUI hist browser expands/collapses callchains it accounted number
+> > > of callchain nodes into total entries to show.  However this code
+> > > ignores filtering so that it can make the cursor go to out of screen.
+> > 
+> > SNIP
+> > 
+> > hi,
+> > I needed following patch, otherwise following test case would segfault
+> > 
+> > - record with -g
+> > - report - unfold one symbol
+> > - search for nonsense
+> > 
+> > the reason is that after unfolding the symbol the nr_callchain_rows
+> > will get some number, which will cause the hist_browser__nr_entries
+> > function return (entries != 0) actually (entries == nr_callchain_rows)
+> > even if there's no entry passing the filter
+> 
+> Argh, right..  Thanks for spotting this.  I guess other filters (thread,
+> dso) have same problem.
+> 
+> > 
+> > fixing that by unfolding everything after the filter and reseting
+> > the nr_callchain_rows number
+> 
+> Hmm.. I think hists__remove_entry_filter() already folds them so how
+> about just setting ->nr_callchain_rows to 0 in hist_browser__reset()
+> instead?
 
-That's
+ok, sounds good
 
-  mlock_vma_page:
-    BUG_ON(!PageLocked(page));
-
-which is odd, because:
-
-> Call Trace:
->  [<ffffffffbe196612>] try_to_unmap_nonlinear+0x2a2/0x530
->  [<ffffffffbe1972a7>] rmap_walk+0x157/0x320
->  [<ffffffffbe1976e3>] try_to_unmap+0x93/0xf0
->  [<ffffffffbe1bb8f6>] migrate_pages+0x3b6/0x7b0
-
-All the calls to "try_to_unmap()" in mm/migrate.c are preceded by the pattern
-
-        if (!trylock_page(page)) {
-                 ....
-                lock_page(page);
-        }
-
-where there are just a few "goto out" style cases for the "ok, we're
-not going to wait for this page lock" in there.
-
-Very odd.  Does anybody see anything I missed?
-
-              Linus
+thanks,
+jirka
