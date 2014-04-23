@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983AbaDWNVP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:21:15 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:59896 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755513AbaDWNUI (ORCPT
+	id S1756073AbaDWNVm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:21:42 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:55708 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754723AbaDWNVL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:20:08 -0400
-Date: Wed, 23 Apr 2014 14:20:02 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] extcon: Immutable branch between MFD and Extcon
-Message-ID: <20140423132002.GI640@lee--X1>
+	Wed, 23 Apr 2014 09:21:11 -0400
+Date: Wed, 23 Apr 2014 14:20:33 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Jianguo Wu <wujianguo@huawei.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        Ben Dooks <ben.dooks@codethink.co.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Li Zefan <lizefan@huawei.com>, Wang Nan <wangnan0@huawei.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] ARM: mm: support big-endian page tables
+Message-ID: <20140423132033.GE5649@arm.com>
+References: <534F9F79.9050503@huawei.com>
+ <87ob00wau2.fsf@approximate.cambridge.arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87ob00wau2.fsf@approximate.cambridge.arm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
+Hi Jianguo,
 
-  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
+On Thu, Apr 17, 2014 at 10:43:01AM +0100, Marc Zyngier wrote:
+> On Thu, Apr 17 2014 at 10:31:37 am BST, Jianguo Wu <wujianguo@huawei.com> wrote:
+> > When enable LPAE and big-endian in a hisilicon board, while specify
+> > mem=384M mem=512M@7680M, will get bad page state:
+> >
+> > Freeing unused kernel memory: 180K (c0466000 - c0493000)
+> > BUG: Bad page state in process init  pfn:fa442
+> > page:c7749840 count:0 mapcount:-1 mapping:  (null) index:0x0
+> > page flags: 0x40000400(reserved)
+> > Modules linked in:
+> > CPU: 0 PID: 1 Comm: init Not tainted 3.10.27+ #66
+> > [<c000f5f0>] (unwind_backtrace+0x0/0x11c) from [<c000cbc4>] (show_stack+0x10/0x14)
+> > [<c000cbc4>] (show_stack+0x10/0x14) from [<c009e448>] (bad_page+0xd4/0x104)
+> > [<c009e448>] (bad_page+0xd4/0x104) from [<c009e520>] (free_pages_prepare+0xa8/0x14c)
+> > [<c009e520>] (free_pages_prepare+0xa8/0x14c) from [<c009f8ec>] (free_hot_cold_page+0x18/0xf0)
+> > [<c009f8ec>] (free_hot_cold_page+0x18/0xf0) from [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8)
+> > [<c00b5444>] (handle_pte_fault+0xcf4/0xdc8) from [<c00b6458>] (handle_mm_fault+0xf4/0x120)
+> > [<c00b6458>] (handle_mm_fault+0xf4/0x120) from [<c0013754>] (do_page_fault+0xfc/0x354)
+> > [<c0013754>] (do_page_fault+0xfc/0x354) from [<c0008400>] (do_DataAbort+0x2c/0x90)
+> > [<c0008400>] (do_DataAbort+0x2c/0x90) from [<c0008fb4>] (__dabt_usr+0x34/0x40)
 
-are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-extcon-3.16
+[...]
 
-for you to fetch changes up to 8a82b408acad29161c43072727151d373e68116a:
+Please can you put this into Russell's patch system? You can also add my
+ack:
 
-  regulator: max14577: Add support for MAX77836 regulators (2014-04-23 14:09:45 +0100)
+  Acked-by: Will Deacon <will.deacon@arm.com>
 
-----------------------------------------------------------------
-Immutable branch between MFD and Extcon due for v3.16 merge-window.
+You should also CC stable <stable@vger.kernel.org> in the commit log.
 
-----------------------------------------------------------------
-Chanwoo Choi (1):
-      extcon: max14577: Change extcon name instead of static name according to device type
+Cheers,
 
-Krzysztof Kozlowski (8):
-      mfd: max14577: Add muic prefix to regmap config
-      mfd: max14577: Add detection of device type
-      extcon: max14577: Add max14577 prefix to muic_irqs
-      extcon: max14577: Choose muic_irqs according to device type
-      mfd: max14577: Add MAX14577 prefix to IRQ defines
-      mfd: max77836: Add MAX77836 support to max14577 driver
-      extcon: max14577: Add support for MAX77836
-      regulator: max14577: Add support for MAX77836 regulators
-
- drivers/extcon/Kconfig               |   4 +-
- drivers/extcon/extcon-max14577.c     | 174 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------
- drivers/mfd/Kconfig                  |   6 +--
- drivers/mfd/max14577.c               | 315 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--------------------
- drivers/regulator/Kconfig            |   7 ++--
- drivers/regulator/max14577.c         | 277 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------
- include/linux/mfd/max14577-private.h | 222 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------
- include/linux/mfd/max14577.h         |  19 +++++++--
- 8 files changed, 836 insertions(+), 188 deletions(-)
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Will
