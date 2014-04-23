@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753630AbaDWLjM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 07:39:12 -0400
-Received: from mail-ob0-f178.google.com ([209.85.214.178]:46766 "EHLO
-	mail-ob0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361AbaDWLjH (ORCPT
+	id S1751936AbaDWLjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 07:39:51 -0400
+Received: from mail-we0-f179.google.com ([74.125.82.179]:58379 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168AbaDWLjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 07:39:07 -0400
+	Wed, 23 Apr 2014 07:39:46 -0400
+Date: Wed, 23 Apr 2014 12:39:41 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: broonie@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] regulator: First pull of MFD <-> Regulator IB (v3.16)
+Message-ID: <20140423113941.GL21613@lee--X1>
 MIME-Version: 1.0
-In-Reply-To: <20140417104925.GM28725@lee--X1>
-References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
-	<1397659455-13638-2-git-send-email-linus.walleij@linaro.org>
-	<20140417104925.GM28725@lee--X1>
-Date: Wed, 23 Apr 2014 13:39:06 +0200
-Message-ID: <CACRpkdaHQkOMx1NrAWkDd0prc1AqXRs-p69TX9ihoPUhx49oEQ@mail.gmail.com>
-Subject: Re: [PATCH 1/6] mfd: stmpe: root out static GPIO and IRQ assignments
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Silvio F <silvio.fricke@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        spear-devel <spear-devel@list.st.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 12:49 PM, Lee Jones <lee.jones@linaro.org> wrote:
->> The only platform using the STMPE expander now boots from
->> device tree using all-dynamic GPIO and IRQ number assignments, so
->> remove the mechanism to pass this from the device tree entirely.
->>
->> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
->> ---
->>  drivers/gpio/gpio-stmpe.c | 18 +++++-------------
->>  drivers/mfd/stmpe.c       |  3 +--
->>  include/linux/mfd/stmpe.h | 14 --------------
->>  3 files changed, 6 insertions(+), 29 deletions(-)
->
-> MFD changes look good to me.
->
-> Acked-by: Lee Jones <lee.jones@linaro.org>
->
-> Do you want me to set up and immutable branch between MFD and GPIO?
+The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
 
-That would be perfect. Can you stack up the MFD portions in patches
-1 thru 4 (given you're happy with the v2 of 3/6) and provide a branch
-to me, please?
+  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
 
-Yours,
-Linus Walleij
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git ib-mfd-regulator-3.16
+
+for you to fetch changes up to 60e91b51b515b20f85697fcd397911fdb97bbdca:
+
+  regulator: tps65090: Allow setting the overcurrent wait time (2014-04-23 12:34:01 +0100)
+
+----------------------------------------------------------------
+Immutable branch between MFD and Regulator due for v3.16 merge-window.
+
+----------------------------------------------------------------
+Doug Anderson (3):
+      mfd: tps65090: Don't tell child devices we have an IRQ if we don't
+      mfd: tps65090: Stop caching most registers
+      regulator: tps65090: Allow setting the overcurrent wait time
+
+ Documentation/devicetree/bindings/regulator/tps65090.txt |  4 ++++
+ drivers/mfd/tps65090.c                                   | 41 +++++++++++++++++++++++++----------------
+ drivers/power/tps65090-charger.c                         | 11 -----------
+ drivers/regulator/tps65090-regulator.c                   | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/mfd/tps65090.h                             | 19 +++++++++++++++++++
+ 5 files changed, 104 insertions(+), 27 deletions(-)
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
