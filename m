@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750AbaDWBTN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:19:13 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:58241 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803AbaDWBS5 (ORCPT
+	id S1755491AbaDWBUf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:20:35 -0400
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:58964 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754670AbaDWBTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:18:57 -0400
+	Tue, 22 Apr 2014 21:19:12 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: Grant Likely <grant.likely@linaro.org>, linux-kernel@vger.kernel.org,
         devicetree@vger.kernel.org
-Cc: Rob Herring <robh@kernel.org>, Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH v2 07/21] mips: convert fdt pointers to opaque pointers
-Date: Tue, 22 Apr 2014 20:18:07 -0500
-Message-Id: <1398215901-25609-8-git-send-email-robherring2@gmail.com>
+Cc: Rob Herring <robh@kernel.org>
+Subject: [PATCH v2 20/21] of/fdt: convert initial_boot_params to opaque pointer
+Date: Tue, 22 Apr 2014 20:18:20 -0500
+Message-Id: <1398215901-25609-21-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
 References: <1398215901-25609-1-git-send-email-robherring2@gmail.com>
@@ -23,154 +23,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <robh@kernel.org>
 
-The architecture code does not need to access the internals of the FDT
-blob directly, so make the pointers to it void * and use char arrays
-for section variables.
+Now that all accesses to FDT header data has been converted to accessor
+helpers, initial_boot_params can become an opaque pointer.
 
 Signed-off-by: Rob Herring <robh@kernel.org>
-Cc: Ralf Baechle <ralf@linux-mips.org>
 ---
 v2: no change
 
- arch/mips/include/asm/mips-boards/generic.h | 4 +---
- arch/mips/include/asm/prom.h                | 6 +++---
- arch/mips/kernel/prom.c                     | 2 +-
- arch/mips/lantiq/prom.c                     | 2 +-
- arch/mips/lantiq/prom.h                     | 2 +-
- arch/mips/mti-sead3/sead3-setup.c           | 8 ++++----
- arch/mips/ralink/of.c                       | 4 ++--
- 7 files changed, 13 insertions(+), 15 deletions(-)
+ drivers/of/fdt.c       | 2 +-
+ include/linux/of_fdt.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/mips/include/asm/mips-boards/generic.h b/arch/mips/include/asm/mips-boards/generic.h
-index 4861681..b969491 100644
---- a/arch/mips/include/asm/mips-boards/generic.h
-+++ b/arch/mips/include/asm/mips-boards/generic.h
-@@ -67,9 +67,7 @@
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index 358bcf0..a6f83ea 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -372,7 +372,7 @@ EXPORT_SYMBOL_GPL(of_fdt_unflatten_tree);
+ int __initdata dt_root_addr_cells;
+ int __initdata dt_root_size_cells;
  
- extern int mips_revision_sconid;
+-struct boot_param_header *initial_boot_params;
++void *initial_boot_params;
  
--#ifdef CONFIG_OF
--extern struct boot_param_header __dtb_start;
--#endif
-+extern char __dtb_start[];
+ #ifdef CONFIG_OF_EARLY_FLATTREE
  
- #ifdef CONFIG_PCI
- extern void mips_pcibios_init(void);
-diff --git a/arch/mips/include/asm/prom.h b/arch/mips/include/asm/prom.h
-index ccd2b75..a9494c0 100644
---- a/arch/mips/include/asm/prom.h
-+++ b/arch/mips/include/asm/prom.h
-@@ -21,13 +21,13 @@ extern void device_tree_init(void);
+diff --git a/include/linux/of_fdt.h b/include/linux/of_fdt.h
+index e10099c..1f882e1 100644
+--- a/include/linux/of_fdt.h
++++ b/include/linux/of_fdt.h
+@@ -78,7 +78,7 @@ extern void of_fdt_unflatten_tree(unsigned long *blob,
+ /* TBD: Temporary export of fdt globals - remove when code fully merged */
+ extern int __initdata dt_root_addr_cells;
+ extern int __initdata dt_root_size_cells;
+-extern struct boot_param_header *initial_boot_params;
++extern void *initial_boot_params;
  
- struct boot_param_header;
- 
--extern void __dt_setup_arch(struct boot_param_header *bph);
-+extern void __dt_setup_arch(void *bph);
- 
- #define dt_setup_arch(sym)						\
- ({									\
--	extern struct boot_param_header __dtb_##sym##_begin;		\
-+	extern char __dtb_##sym##_begin[];				\
- 									\
--	__dt_setup_arch(&__dtb_##sym##_begin);				\
-+	__dt_setup_arch(__dtb_##sym##_begin);				\
- })
- 
- #else /* CONFIG_OF */
-diff --git a/arch/mips/kernel/prom.c b/arch/mips/kernel/prom.c
-index 3c3b0df..5d39bb8 100644
---- a/arch/mips/kernel/prom.c
-+++ b/arch/mips/kernel/prom.c
-@@ -47,7 +47,7 @@ void * __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
- 	return __alloc_bootmem(size, align, __pa(MAX_DMA_ADDRESS));
- }
- 
--void __init __dt_setup_arch(struct boot_param_header *bph)
-+void __init __dt_setup_arch(void *bph)
- {
- 	if (!early_init_dt_scan(bph))
- 		return;
-diff --git a/arch/mips/lantiq/prom.c b/arch/mips/lantiq/prom.c
-index cdea687..7447d32 100644
---- a/arch/mips/lantiq/prom.c
-+++ b/arch/mips/lantiq/prom.c
-@@ -71,7 +71,7 @@ void __init plat_mem_setup(void)
- 	 * Load the builtin devicetree. This causes the chosen node to be
- 	 * parsed resulting in our memory appearing
- 	 */
--	__dt_setup_arch(&__dtb_start);
-+	__dt_setup_arch(__dtb_start);
- }
- 
- void __init device_tree_init(void)
-diff --git a/arch/mips/lantiq/prom.h b/arch/mips/lantiq/prom.h
-index 8e07b5f..69a4c58 100644
---- a/arch/mips/lantiq/prom.h
-+++ b/arch/mips/lantiq/prom.h
-@@ -26,6 +26,6 @@ struct ltq_soc_info {
- extern void ltq_soc_detect(struct ltq_soc_info *i);
- extern void ltq_soc_init(void);
- 
--extern struct boot_param_header __dtb_start;
-+extern char __dtb_start[];
- 
- #endif
-diff --git a/arch/mips/mti-sead3/sead3-setup.c b/arch/mips/mti-sead3/sead3-setup.c
-index bf7fe48..e43f480 100644
---- a/arch/mips/mti-sead3/sead3-setup.c
-+++ b/arch/mips/mti-sead3/sead3-setup.c
-@@ -69,17 +69,17 @@ static void __init parse_memsize_param(void)
- 	if (!memsize)
- 		return;
- 
--	offset = fdt_path_offset(&__dtb_start, "/memory");
-+	offset = fdt_path_offset(__dtb_start, "/memory");
- 	if (offset > 0) {
- 		uint64_t new_value;
- 		/*
- 		 * reg contains 2 32-bits BE values, offset and size. We just
- 		 * want to replace the size value without affecting the offset
- 		 */
--		prop_value = fdt_getprop(&__dtb_start, offset, "reg", &prop_len);
-+		prop_value = fdt_getprop(__dtb_start, offset, "reg", &prop_len);
- 		new_value = be64_to_cpu(*prop_value);
- 		new_value =  (new_value & ~0xffffffffllu) | memsize;
--		fdt_setprop_inplace_u64(&__dtb_start, offset, "reg", new_value);
-+		fdt_setprop_inplace_u64(__dtb_start, offset, "reg", new_value);
- 	}
- }
- 
-@@ -92,7 +92,7 @@ void __init plat_mem_setup(void)
- 	 * Load the builtin devicetree. This causes the chosen node to be
- 	 * parsed resulting in our memory appearing
- 	 */
--	__dt_setup_arch(&__dtb_start);
-+	__dt_setup_arch(__dtb_start);
- }
- 
- void __init device_tree_init(void)
-diff --git a/arch/mips/ralink/of.c b/arch/mips/ralink/of.c
-index 0170d82..91d7060 100644
---- a/arch/mips/ralink/of.c
-+++ b/arch/mips/ralink/of.c
-@@ -28,7 +28,7 @@
- __iomem void *rt_sysc_membase;
- __iomem void *rt_memc_membase;
- 
--extern struct boot_param_header __dtb_start;
-+extern char __dtb_start[];
- 
- __iomem void *plat_of_remap_node(const char *node)
- {
-@@ -63,7 +63,7 @@ void __init plat_mem_setup(void)
- 	 * Load the builtin devicetree. This causes the chosen node to be
- 	 * parsed resulting in our memory appearing
- 	 */
--	__dt_setup_arch(&__dtb_start);
-+	__dt_setup_arch(__dtb_start);
- 
- 	if (soc_info.mem_size)
- 		add_memory_region(soc_info.mem_base, soc_info.mem_size * SZ_1M,
+ extern char __dtb_start[];
+ extern char __dtb_end[];
 -- 
 1.9.1
 
