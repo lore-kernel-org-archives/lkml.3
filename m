@@ -1,101 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858AbaDWQf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 12:35:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:42091 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751916AbaDWQfz convert rfc822-to-8bit (ORCPT
+	id S1754970AbaDWQix (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 12:38:53 -0400
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:32855 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751311AbaDWQiv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 12:35:55 -0400
-Message-ID: <1398270945.4222.11.camel@fourier>
-Subject: Re: [PATCH 3.8 110/133] nfsd4: fix memory leak in
- nfsd4_encode_fattr()
-From: Kamal Mostafa <kamal@canonical.com>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com, "Yan, Zheng" <zheng.z.yan@intel.com>,
-        "J. Bruce Fields" <bfields@redhat.com>
-Date: Wed, 23 Apr 2014 09:35:45 -0700
-In-Reply-To: <20140423105633.GB3572@hercules>
-References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
-	 <1398197671-12786-111-git-send-email-kamal@canonical.com>
-	 <20140423105633.GB3572@hercules>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu1 
-Mime-Version: 1.0
+	Wed, 23 Apr 2014 12:38:51 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398238558.3347.22.camel@EMBLYSD005.adetelgroup.com>
+References: <1398181748-6500-1-git-send-email-hchaumette@adeneo-embedded.com>
+ <CAGVrzcZbN+XP5kLb=cEL__+T9W8AY2ZWCtdZCMk9YUwo1r8Cnw@mail.gmail.com> <1398238558.3347.22.camel@EMBLYSD005.adetelgroup.com>
+From: Florian Fainelli <f.fainelli@gmail.com>
+Date: Wed, 23 Apr 2014 09:38:10 -0700
+Message-ID: <CAGVrzcZk-LmkepEkjX4TD9CndcijH0DW-7VOpuUfdE7cYcdMEg@mail.gmail.com>
+Subject: Re: [PATCH] ARM: i.MX6: Add OF configuration support for ksz9031
+To: Hubert Chaumette <hchaumette@adeneo-embedded.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-23 at 11:56 +0100, Luis Henriques wrote:
-> Hi Kamal,
-> 
-> On Tue, Apr 22, 2014 at 01:14:08PM -0700, Kamal Mostafa wrote:
-> > 3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
-> > 
-> > ------------------
-> > 
-> > From: "Yan, Zheng" <zheng.z.yan@intel.com>
-> > 
-> > commit 18df11d0eacf67bbcd8dda755b568bbbd7264735 upstream.
-> > 
-> > fh_put() does not free the temporary file handle.
-> > 
-> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
-> > Signed-off-by: J. Bruce Fields <bfields@redhat.com>
-> > [ kamal: backport to 3.8 (context) ]
-> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-> > ---
-> >  fs/nfsd/nfs4xdr.c | 4 +++-
-> >  1 file changed, 3 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-> > index dc12d02..1418028 100644
-> > --- a/fs/nfsd/nfs4xdr.c
-> > +++ b/fs/nfsd/nfs4xdr.c
-> > @@ -2430,8 +2430,10 @@ out_acl:
-> >  
-> >  out:
-> >  	kfree(acl);
-> > -	if (fhp == &tempfh)
-> > +	if (fhp == &tempfh) {
-> >  		fh_put(&tempfh);
-> > +		kfree(tempfh);
-> 
-> This doesn't look correct to me as in 3.8 kernel the tempfh variable
-> is a 'struct svc_fh' and not a dynamically allocated structure.
-> 
-> This has changed only with commit d50e613 "nfsd4: decrease
-> nfsd4_encode_fattr stack usage", where tempfh was converted into a
-> 'struct svc_fh *'.
-> 
-> So, I believe you should drop this patch from 3.8.
+2014-04-23 0:35 GMT-07:00 Hubert Chaumette <hchaumette@adeneo-embedded.com>:
+> Le mardi 22 avril 2014 à 09:10 -0700, Florian Fainelli a écrit :
+>> 2014-04-22 8:49 GMT-07:00 Hubert Chaumette <hchaumette@adeneo-embedded.com>:
+>> > Adds support for ksz9031 PAD skew configuration over devicetree.
+>> >
+>> > Changes since v1:
+>> > - Removed ksz9021 and ksz9031 fixup deletions from arch/arm/mach-imx/mach-imx6q.c
+>>
+>> You should probably update the existing binding document in
+>> Documentation/devicetree/bindings/net/micrel-ksz9021.txt to cover the
+>> KSZ9031 PHY too.
+>
+> Should it be renamed in the process (micrel-ksz90x1.txt) ?
 
+That's a good question, I suppose that you could proceed to a rename
+after checking that this document is not referenced directly somewhere
+else in Documentation/devicetree/bindings/
 
-Ouch!  Good catch, Luis.  I'll drop it from 3.8-stable.
+>
+>> >
+>> > Signed-off-by: Hubert Chaumette <hchaumette@adeneo-embedded.com>
+>> > ---
+>> >  drivers/net/phy/micrel.c | 185 ++++++++++++++++++++++++++++++++++++++++++++++-
+>> >  1 file changed, 184 insertions(+), 1 deletion(-)
+>> >
+>> > diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
+>> > index 5a8993b..df56b26 100644
+>> > --- a/drivers/net/phy/micrel.c
+>> > +++ b/drivers/net/phy/micrel.c
+>> > @@ -242,6 +242,189 @@ static int ksz9021_config_init(struct phy_device *phydev)
+>> >         return 0;
+>> >  }
+>> >
+>> > +#define MII_KSZ9031RN_MMD_CTRL_REG     0x0d
+>> > +#define MII_KSZ9031RN_MMD_REGDATA_REG  0x0e
+>> > +#define OP_DATA                                1
+>> > +#define KSZ9031_PS_TO_REG              60
+>> > +
+>> > +/* Extended registers */
+>> > +#define MII_KSZ9031RN_CONTROL_PAD_SKEW 4
+>> > +#define MII_KSZ9031RN_RX_DATA_PAD_SKEW 5
+>> > +#define MII_KSZ9031RN_TX_DATA_PAD_SKEW 6
+>> > +#define MII_KSZ9031RN_CLK_PAD_SKEW     8
+>> > +
+>> > +static int ksz9031_extended_write(struct phy_device *phydev,
+>> > +                                 u8 mode, u32 dev_addr, u32 regnum, u16 val)
+>> > +{
+>> > +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, dev_addr);
+>> > +       phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, regnum);
+>> > +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, (mode << 14) | dev_addr);
+>> > +       return phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, val);
+>> > +}
+>> > +
+>> > +static int ksz9031_extended_read(struct phy_device *phydev,
+>> > +                                u8 mode, u32 dev_addr, u32 regnum)
+>> > +{
+>> > +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, dev_addr);
+>> > +       phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, regnum);
+>> > +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, (mode << 14) | dev_addr);
+>> > +       return phy_read(phydev, MII_KSZ9031RN_MMD_REGDATA_REG);
+>> > +}
+>> > +
+>> > +/* Two 5-bit fields register */
+>> > +static int ksz9031_load_clk_skew_values(struct phy_device *phydev,
+>> > +                                       struct device_node *of_node,
+>> > +                                       char *field1, char *field2)
+>> > +{
+>> > +       int val1 = -1;
+>> > +       int val2 = -2;
+>> > +       int newval;
+>> > +       int matches = 0;
+>> > +
+>> > +       if (!of_property_read_u32(of_node, field1, &val1))
+>> > +               matches++;
+>> > +
+>> > +       if (!of_property_read_u32(of_node, field2, &val2))
+>> > +               matches++;
+>> > +
+>> > +       if (!matches)
+>> > +               return 0;
+>> > +
+>> > +       if (matches < 2)
+>> > +               newval = ksz9031_extended_read(phydev, OP_DATA, 2,
+>> > +                               MII_KSZ9031RN_CLK_PAD_SKEW);
+>> > +       else
+>> > +               newval = 0;
+>> > +
+>> > +       if (val1 != -1)
+>> > +               newval = (newval & 0xffe0) |
+>> > +                        ((val1 / KSZ9031_PS_TO_REG) & 0x1f);
+>> > +
+>> > +       if (val2 != -2)
+>> > +               newval = (newval & 0xfc1f) |
+>> > +                        (((val2 / KSZ9031_PS_TO_REG) & 0x1f) << 5);
+>> > +
+>> > +       return ksz9031_extended_write(phydev, OP_DATA, 2,
+>> > +                       MII_KSZ9031RN_CLK_PAD_SKEW, newval);
+>> > +}
+>> > +
+>> > +/* Four 4-bit fields register */
+>> > +static int ksz9031_load_data_skew_values(struct phy_device *phydev,
+>> > +                                        struct device_node *of_node, u16 reg,
+>> > +                                        char *field1, char *field2,
+>> > +                                        char *field3, char *field4)
+>> > +{
+>> > +       int val1 = -1;
+>> > +       int val2 = -2;
+>> > +       int val3 = -3;
+>> > +       int val4 = -4;
+>> > +       int newval;
+>> > +       int matches = 0;
+>> > +
+>> > +       if (!of_property_read_u32(of_node, field1, &val1))
+>> > +               matches++;
+>> > +
+>> > +       if (!of_property_read_u32(of_node, field2, &val2))
+>> > +               matches++;
+>> > +
+>> > +       if (!of_property_read_u32(of_node, field3, &val3))
+>> > +               matches++;
+>> > +
+>> > +       if (!of_property_read_u32(of_node, field4, &val4))
+>> > +               matches++;
+>> > +
+>> > +       if (!matches)
+>> > +               return 0;
+>> > +
+>> > +       if (matches < 4)
+>> > +               newval = ksz9031_extended_read(phydev, OP_DATA, 2, reg);
+>> > +       else
+>> > +               newval = 0;
+>> > +
+>> > +       if (val1 != -1)
+>> > +               newval = (newval & 0xfff0) |
+>> > +                        (((val1 / KSZ9031_PS_TO_REG) & 0xf) << 0);
+>> > +
+>> > +       if (val2 != -2)
+>> > +               newval = (newval & 0xff0f) |
+>> > +                        (((val2 / KSZ9031_PS_TO_REG) & 0xf) << 4);
+>> > +
+>> > +       if (val3 != -3)
+>> > +               newval = (newval & 0xf0ff) |
+>> > +                        (((val3 / KSZ9031_PS_TO_REG) & 0xf) << 8);
+>> > +
+>> > +       if (val4 != -4)
+>> > +               newval = (newval & 0x0fff) |
+>> > +                        (((val4 / KSZ9031_PS_TO_REG) & 0xf) << 12);
+>>
+>> How about something like this:
+>>
+>> for (i = 0; i < 4; i++) {
+>>             if (val[i] != -i) {
+>>                     mask = 0xffff;
+>>                     mask <<= (0 << (i * 4));
+>>                     newval = (newval & mask) |
+>>                            (((val[i] / KSZ9031_PS_TO_REG) & 0xf) << (i *4);
+>>             }
+>> }
+>>
+>> Such that you could factor ksz9031_load_ctrl_skew_values() and
+>> ksz9031_load_data_skew_values() to specify the number of matches they
+>> should have?
+>
+> I'm on it.
+>
+> We could go further along this path and add a field length parameter to
+> also factor ksz9031_load_clk_skew_values()?
 
-Thanks for your review!
+Absolutely, that would be more future-proof and compact, so I am all
+for it. Thanks!
 
- -Kamal
-
-
-> Cheers,
-> --
-> Luís
-> 
-> > +	}
-> >  	return status;
-> >  out_nfserr:
-> >  	status = nfserrno(err);
-> > -- 
-> > 1.9.1
-> > 
-> > 
-> > -- 
-> > kernel-team mailing list
-> > kernel-team@lists.ubuntu.com
-> > https://lists.ubuntu.com/mailman/listinfo/kernel-team
-> 
-
-
+> A similar loop could be used in ksz9021_load_values_from_of().
+>
+-- 
+Florian
