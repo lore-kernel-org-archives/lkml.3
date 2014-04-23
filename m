@@ -1,257 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836AbaDWJDI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 05:03:08 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:37754 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257AbaDWJC6 (ORCPT
+	id S1755237AbaDWJGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 05:06:19 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:31152 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751577AbaDWJGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 05:02:58 -0400
-From: Tushar Behera <tushar.behera@linaro.org>
-To: alsa-devel@alsa-project.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org
-Cc: broonie@kernel.org, lgirdwood@gmail.com, robh+dt@kernel.org,
-        sbkim73@samsung.com, rdunlap@infradead.org, dianders@chromium.org
-Subject: [PATCH V2] ASoC: SAMSUNG: Add sound card driver for Snow board
-Date: Wed, 23 Apr 2014 14:31:45 +0530
-Message-Id: <1398243705-31151-1-git-send-email-tushar.behera@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Wed, 23 Apr 2014 05:06:14 -0400
+Date: Wed, 23 Apr 2014 12:05:57 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Michalis Pappas <mpappas@fastmail.fm>
+Cc: devel@driverdev.osuosl.org, Greg KH <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/3] staging: gdm72xx: Minor cleanup
+Message-ID: <20140423090557.GU26890@mwanda>
+References: <532BF9B0.2080008@fastmail.fm>
+ <20140418225229.GA28077@kroah.com>
+ <53534051.2020504@fastmail.fm>
+ <53534116.3040705@fastmail.fm>
+ <20140422093743.GC26890@mwanda>
+ <53570BAA.3080709@fastmail.fm>
+ <20140423080447.GS26890@mwanda>
+ <53577E96.10106@fastmail.fm>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53577E96.10106@fastmail.fm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added machine driver to instantiate I2S based sound card on Snow
-board. It has MAX98095 audio codec on board.
+On Wed, Apr 23, 2014 at 04:49:26PM +0800, Michalis Pappas wrote:
+> Hi Dan, thanks for looking at this. From the above snippet I realize
+> that I wasn't aware of the strict flag, so significantly less errors
+> were produced.
+> 
+> The issues I was referring to as pedantic are:
+> 
+> WARNING: unchecked sscanf return value
+> #296: FILE: gdm_wimax.c:296:
+> +               sscanf(e->dev->name, "wm%d", &idx);
+> 
+> does this really need to be checked?
 
-There are some other variants for Snow board which have MAX98090
-audio codec. Hence support for MAX98090 is also added to this
-driver.
+Just check it.  The code as is looks like a information leak (security
+vulnerability) until you realize that e->dev->name is probably a known,
+trusted string.
 
-Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
----
-Changes for V2:
-Addressed various comments from Mark Brown.
-1. Moved DAIFMT flags to dai_link. Removed snd_soc_dai_set_fmt calls.
-2. Removed BCLK settings.
-3. Moved sysclk settings to late_probe.
-4. Removed now empty snow_hw_params.
-5. Removed snow_init
-6. Used devm_snd_soc_register_card. Also removed empty remove function.
-7. Removed non-DT handling as the driver is DT only.
+> 
+> ERROR: Macros with complex values should be enclosed in parenthesis
+> #34: FILE: usb_ids.h:34:
+> +#define USB_DEVICE_BOOTLOADER(vid, pid)	\
+> +	{USB_DEVICE((vid), ((pid)&BL_PID_MASK)|B_DOWNLOAD)},	\
+> +	{USB_DEVICE((vid), ((pid)&BL_PID_MASK)|B_DOWNLOAD|B_DIFF_DL_DRV)}
+> 
+> these macros are only used for brevity in a subsequent array
+> declaration, so it seems that the parenthesis are not really needed.
 
-Additional nits:
-1. Renamed snow_driver_probe to snow_probe
-2. Removed unused pm_ops.
-3. Updated clock settings for I2S block (Earlier it was I2S_CDCLK,
-   whereas it should be I2S_RCLKSRC_0).
-4. Removed 'card-name' DT property as it was not used in earlier
-   sound-card driver DT bindings. Will be added later.
+Yeah.  You're right.  Just ignore this one.  Adding parenthis will break
+the build.
 
- Documentation/devicetree/bindings/sound/snow.txt |   17 +++
- sound/soc/samsung/Kconfig                        |   10 ++
- sound/soc/samsung/Makefile                       |    2 +
- sound/soc/samsung/snow.c                         |  129 ++++++++++++++++++++++
- 4 files changed, 158 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/snow.txt
- create mode 100644 sound/soc/samsung/snow.c
+checkpatch doesn't totally need to be happy.
 
-diff --git a/Documentation/devicetree/bindings/sound/snow.txt b/Documentation/devicetree/bindings/sound/snow.txt
-new file mode 100644
-index 0000000..6f3fd02
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/snow.txt
-@@ -0,0 +1,17 @@
-+Audio Binding for Snow boards
-+
-+Required properties:
-+- compatible : Can be one of the following,
-+			"google,snow-audio-max98090" or
-+			"google,snow-audio-max98095"
-+- samsung,i2s-controller: The phandle of the Samsung I2S0 controller
-+- samsung,audio-codec: The phandle of the audio codec
-+
-+Example:
-+
-+sound {
-+		compatible = "google,snow-audio-max98095";
-+
-+		samsung,i2s-controller = <&i2s0>;
-+		samsung,audio-codec = <&max98095>;
-+};
-diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
-index f2e2891..50aa289 100644
---- a/sound/soc/samsung/Kconfig
-+++ b/sound/soc/samsung/Kconfig
-@@ -231,3 +231,13 @@ config SND_SOC_LITTLEMILL
- 	select SND_SAMSUNG_I2S
- 	select MFD_WM8994
- 	select SND_SOC_WM8994
-+
-+config SND_SOC_SNOW
-+	tristate "Audio support for Google Snow boards"
-+	depends on SND_SOC_SAMSUNG
-+	select SND_SOC_MAX98090
-+	select SND_SOC_MAX98095
-+	select SND_SAMSUNG_I2S
-+	help
-+	  Say Y if you want to add audio support for various Snow
-+	  boards based on Exynos5 series of SoCs.
-diff --git a/sound/soc/samsung/Makefile b/sound/soc/samsung/Makefile
-index 86715d8..6d0212b 100644
---- a/sound/soc/samsung/Makefile
-+++ b/sound/soc/samsung/Makefile
-@@ -34,6 +34,7 @@ snd-soc-h1940-uda1380-objs := h1940_uda1380.o
- snd-soc-rx1950-uda1380-objs := rx1950_uda1380.o
- snd-soc-smdk-wm8580-objs := smdk_wm8580.o
- snd-soc-smdk-wm8994-objs := smdk_wm8994.o
-+snd-soc-snow-objs := snow.o
- snd-soc-smdk-wm9713-objs := smdk_wm9713.o
- snd-soc-s3c64xx-smartq-wm8987-objs := smartq_wm8987.o
- snd-soc-goni-wm8994-objs := goni_wm8994.o
-@@ -58,6 +59,7 @@ obj-$(CONFIG_SND_SOC_SAMSUNG_H1940_UDA1380) += snd-soc-h1940-uda1380.o
- obj-$(CONFIG_SND_SOC_SAMSUNG_RX1950_UDA1380) += snd-soc-rx1950-uda1380.o
- obj-$(CONFIG_SND_SOC_SAMSUNG_SMDK_WM8580) += snd-soc-smdk-wm8580.o
- obj-$(CONFIG_SND_SOC_SAMSUNG_SMDK_WM8994) += snd-soc-smdk-wm8994.o
-+obj-$(CONFIG_SND_SOC_SNOW) += snd-soc-snow.o
- obj-$(CONFIG_SND_SOC_SAMSUNG_SMDK_WM9713) += snd-soc-smdk-wm9713.o
- obj-$(CONFIG_SND_SOC_SMARTQ) += snd-soc-s3c64xx-smartq-wm8987.o
- obj-$(CONFIG_SND_SOC_SAMSUNG_SMDK_SPDIF) += snd-soc-smdk-spdif.o
-diff --git a/sound/soc/samsung/snow.c b/sound/soc/samsung/snow.c
-new file mode 100644
-index 0000000..e1a4b45
---- /dev/null
-+++ b/sound/soc/samsung/snow.c
-@@ -0,0 +1,129 @@
-+/*
-+ * ASoC machine driver for Snow boards
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-+
-+#include <sound/soc.h>
-+
-+#include "i2s.h"
-+
-+#define FIN_PLL_RATE		24000000
-+
-+static struct snd_soc_dai_link snow_dai[] = {
-+	{ /* Playback DAI i/f */
-+		.name = "Playback",
-+		.stream_name = "Playback",
-+		.codec_dai_name = "HiFi",
-+		.dai_fmt = SND_SOC_DAIFMT_I2S |
-+				SND_SOC_DAIFMT_NB_NF |
-+				SND_SOC_DAIFMT_CBS_CFS,
-+	}, { /* Capture DAI i/f */
-+		.name = "Capture",
-+		.stream_name = "Capture",
-+		.codec_dai_name = "HiFi",
-+		.dai_fmt = SND_SOC_DAIFMT_I2S |
-+				SND_SOC_DAIFMT_NB_NF |
-+				SND_SOC_DAIFMT_CBS_CFS,
-+	},
-+};
-+
-+static int snow_late_probe(struct snd_soc_card *card)
-+{
-+	struct snd_soc_dai *codec_dai = card->rtd[0].codec_dai;
-+	struct snd_soc_dai *cpu_dai = card->rtd[0].cpu_dai;
-+	int ret;
-+
-+	/* Set the MCLK rate for the codec */
-+	ret = snd_soc_dai_set_sysclk(codec_dai, 0,
-+					FIN_PLL_RATE, SND_SOC_CLOCK_IN);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* Select I2S Bus clock to set RCLK and BCLK */
-+	ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_RCLKSRC_0,
-+					0, SND_SOC_CLOCK_IN);
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static struct snd_soc_card snow_snd = {
-+	.name = "Snow-I2S",
-+	.dai_link = snow_dai,
-+	.num_links = ARRAY_SIZE(snow_dai),
-+
-+	.late_probe = snow_late_probe,
-+};
-+
-+static int snow_probe(struct platform_device *pdev)
-+{
-+	struct snd_soc_card *card = &snow_snd;
-+	struct device_node *i2s_node, *codec_node;
-+	int i, ret;
-+
-+	i2s_node = of_parse_phandle(pdev->dev.of_node,
-+				    "samsung,i2s-controller", 0);
-+	if (!i2s_node) {
-+		dev_err(&pdev->dev,
-+			"Property 'i2s-controller' missing or invalid\n");
-+		return -EINVAL;
-+	}
-+
-+	codec_node = of_parse_phandle(pdev->dev.of_node,
-+				      "samsung,audio-codec", 0);
-+	if (!codec_node) {
-+		dev_err(&pdev->dev,
-+			"Property 'audio-codec' missing or invalid\n");
-+		return -EINVAL;
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(snow_dai); i++) {
-+		snow_dai[i].codec_of_node = codec_node;
-+		snow_dai[i].cpu_of_node = i2s_node;
-+		snow_dai[i].platform_of_node = i2s_node;
-+	}
-+
-+	card->dev = &pdev->dev;
-+
-+	ret = devm_snd_soc_register_card(&pdev->dev, card);
-+	if (ret) {
-+		dev_err(&pdev->dev, "snd_soc_register_card failed (%d)\n", ret);
-+		return ret;
-+	}
-+
-+	return ret;
-+}
-+
-+static const struct of_device_id snow_of_match[] = {
-+	{ .compatible = "google,snow-audio-max98090", },
-+	{ .compatible = "google,snow-audio-max98095", },
-+	{},
-+};
-+
-+static struct platform_driver snow_driver = {
-+	.driver = {
-+		.name = "snow-audio",
-+		.owner = THIS_MODULE,
-+		.of_match_table = snow_of_match,
-+	},
-+	.probe = snow_probe,
-+};
-+
-+module_platform_driver(snow_driver);
-+
-+MODULE_DESCRIPTION("ALSA SoC Audio machine driver for Snow");
-+MODULE_LICENSE("GPL");
--- 
-1.7.9.5
+regards,
+dan carpenter
 
