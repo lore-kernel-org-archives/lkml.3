@@ -1,78 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbaDWFPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 01:15:25 -0400
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56794 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345AbaDWFPD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 01:15:03 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH 3/9] perf tools: Account entry stats when it's added to the output tree
-References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
-	<1398156591-11001-4-git-send-email-namhyung@kernel.org>
-	<20140422171048.GL1104@krava.brq.redhat.com>
-Date: Wed, 23 Apr 2014 14:14:59 +0900
-In-Reply-To: <20140422171048.GL1104@krava.brq.redhat.com> (Jiri Olsa's message
-	of "Tue, 22 Apr 2014 19:10:49 +0200")
-Message-ID: <8738h4sk30.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752879AbaDWFRG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 01:17:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61212 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752455AbaDWFRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 01:17:04 -0400
+Message-ID: <1398230210.2704.8.camel@adam.happyassassin.net>
+Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
+ ASUS T100TA
+From: Adam Williamson <awilliam@redhat.com>
+To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+Cc: "Jin, Yao" <yao.jin@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
+        mathias.nyman@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Date: Tue, 22 Apr 2014 22:16:50 -0700
+In-Reply-To: <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
+References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
+	 <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
+	 <5353A1F6.60602@linux.intel.com> <5353B8A4.1080900@linux.intel.com>
+	 <1398007690.2674.0.camel@adam.happyassassin.net>
+	 <5354BA59.2000008@linux.intel.com> <53551D0F.40906@linux.intel.com>
+	 <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 19:10:49 +0200, Jiri Olsa wrote:
-> On Tue, Apr 22, 2014 at 05:49:45PM +0900, Namhyung Kim wrote:
->
-> SNIP
->
->>  
->> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
->> index 1c77714f668d..f955ae5a41c5 100644
->> --- a/tools/perf/util/hist.c
->> +++ b/tools/perf/util/hist.c
->> @@ -344,9 +344,11 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
->>  		hists__calc_col_len(hists, h);
->>  		hists->nr_non_filtered_entries++;
->>  		hists->stats.total_non_filtered_period += h->stat.period;
->> +		hists->stats.nr_non_filtered_samples += h->stat.nr_events;
->>  	}
->>  	hists->nr_entries++;
->>  	hists->stats.total_period += h->stat.period;
->> +	hists__add_nr_events(hists, PERF_RECORD_SAMPLE, h->stat.nr_events);
->
-> while at it.. could hists__remove_entry_filter call hists__inc_nr_entries too?
+On Mon, 2014-04-21 at 10:30 -0400, Benjamin Tissoires wrote:
+> On Mon, Apr 21, 2014 at 9:28 AM, Jin, Yao <yao.jin@linux.intel.com> wrote:
+> >
+> >
+> > On 2014/4/21 14:27, Jin, Yao wrote:
+> >>
+> >>
+> >> On 2014/4/20 23:28, Adam Williamson wrote:
+> >>> On Sun, 2014-04-20 at 20:08 +0800, Jin, Yao wrote:
+> >>>> For the issue that touch screen doesn't work, could you check power
+> >>>> state of LPSS devices? For example:
+> >>>>
+> >>>> cd /sys/bus/acpi/devices
+> >>>> grep -H . */power_state
+> >>>>
+> >>>> If they are D3cold, it should be the reason why touch screen doesn't
+> >>>> work. That's another issue, unrelated to this gpio patch.
+> >>>
+> >>> The touch screen worked fine with kernel 3.14, and Benjamin looked at
+> >>> debug output from the attempt to load the touchscreen driver when
+> >>> diagnosing the problem, he's not just guessing. I am building a kernel
+> >>> without your patch to confirm that fixes it.
+> >>>
+> >>
+> >> I tried the clean kernel 3.14 with the boot option "nomodeset text" on
+> >> Dell Venue 11 Pro (If without "nomodeset",my ubuntu is being "black
+> >> screen", but that should be another i915 issue).
+> >>
+> >> After system starup, I executed the "startx" to launch the xwindow. In
+> >> xwindow, the touchscreen work.
+> >>
+> >> I tried the kernel 3.14 again with my gpio patch applied, the result was
+> >> the same, the touchscreen work.
+> >>
+> >> I also check the DSDT table of Dell Venue 11 Pro by searching the
+> >> keyword "Interrupt", I can't find any clue for the irq conflict.
+> >>
+> >> I'm sorry I don't have a Dell Venue 8 for testing, but I guess it's
+> >> similar to Dell Venue 11 Pro.
+> 
+> Sorry, my bad. Actually, this patch does not break the touchscreen,
+> but the other Adam applied does:
+> https://github.com/AdamWill/baytrail-m/blob/master/kernel/baytrail_gpio_quirk.patch
+> 
+> This one was to enable wifi, but it actually breaks the touchscreen.
+> I'll try to figure out which part of the patch breaks the touchscreen.
+> 
+> The good point is that I have a reproducer now on the Lenovo Miix 2,
+> so I'll be able to spot the pb easily.
+> 
+> Sorry for having been rude, and thanks for the tests.
 
-Nope, I (and Arnaldo) want to the default stats invariant - they are not
-changed by any filter.  As you can see hists__remove_entry_filter() only
-updates non-filtered stats.
+Well, I can't actually concur. See my results in
+https://bugzilla.kernel.org/show_bug.cgi?id=68291#c44 .
 
->
-> not sure about those 2 extra lines in hists__remove_entry_filter:
->
->         if (h->ms.unfolded)
->                 hists->nr_non_filtered_entries += h->nr_rows;
->         h->row_offset = 0;
->
-> maybe they should be added into hists__inc_nr_entries?
+1. A kernel with neither patch applied (and no hid-rmi driver) results
+in a working touchscreen.
+2. A kernel with only v3 of Doug's patch from
+https://bugzilla.kernel.org/show_bug.cgi?id=67921 results in a working
+touchscreen.
+3. A kernel with both v3 of Doug's patch and this IRQ descriptor
+conflict "fix" results in a broken touchscreen.
 
-Hmm.. this seems like a mix of generic code and UI-specific code.  The
-->nr_rows, ->row_offset and ->ms.unfolded are only used by TUI browser
-code AFAIK and it takes the folding state into account.
+Seems to me there really is some kind of problem with this patch...
+-- 
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
+http://www.happyassassin.net
 
-I think we should just make it folded to make things simple - and
-finally get rid of the UI-specific bits in the generic code.
-
-Thanks,
-Namhyung
