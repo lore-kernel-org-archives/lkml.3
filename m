@@ -1,92 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977AbaDWHap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:30:45 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:10740 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753888AbaDWHa0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:30:26 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-42-53576c10fe79
-Message-id: <53576C17.5000601@samsung.com>
-Date: Wed, 23 Apr 2014 16:30:31 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: Re: [PATCHv2] pinctrl: exynos: Add driver data for Exynos3250
-References: <1397439947-31592-1-git-send-email-cw00.choi@samsung.com>
- <CACRpkdaycY=Mba1pYQMv-Yq87JGfyJEnwmrT+qwDhrZ_4Rqs+g@mail.gmail.com>
-In-reply-to: <CACRpkdaycY=Mba1pYQMv-Yq87JGfyJEnwmrT+qwDhrZ_4Rqs+g@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLIsWRmVeSWpSXmKPExsWyRsSkSFcgJzzYYEUnn0XvgqtsFmeb3rBb
-	TPmznMli0+NrrBaXd81hs5hxfh+TxfoZr1ksjs1YwujA4XHn2h42j81L6j36tqxi9Pi8SS6A
-	JYrLJiU1J7MstUjfLoEr4+7b3IK97BUbTs9gaWCcwdbFyMkhIWAicfv2DihbTOLCvfVANheH
-	kMBSRokJxxfAFTVuuMQKkZjOKNG1fxUzSEJI4DWjxMLTRiA2r4CWxJwdd8EaWARUJfbMPMUE
-	YrMBxfe/uAEWFxUIk1g5/QoLRL2gxI/J98BsEQEdie5tP8EWMAu8YZJ49PgcUIKDQ1jATeJp
-	jyzE4h5GiWk3W9lBGjgFgiUenrwFtoBZQF1i0rxFzBC2vMTmNW+ZQRokBM6xS7z6PZEd4iIB
-	iW+TD4ENlRCQldh0gBniM0mJgytusExgFJuF5KZZSMbOQjJ2ASPzKkbR1ILkguKk9CJTveLE
-	3OLSvHS95PzcTYzAqDv979nEHYz3D1gfYkwGWjmRWUo0OR8YtXkl8YbGZkYWpiamxkbmlmak
-	CSuJ86Y/SgoSEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwLiENeNDzanpOssmrXsx5eDT3NBv
-	x1p7ilxnfZ7bcaK8P8Eq72KGXe6nI+EV2jcuOLglvGV6833+cd91C0zONjHYXT/+uO2/318R
-	Bk+Hk53qSm+X+u+55DfVqmLiRYHX9Qkb5aatqFhmd9An1/my7NbXW8K9txx8tKT03JYHLZ8u
-	zLWvsNqt/GutEktxRqKhFnNRcSIADA/FuNACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprFKsWRmVeSWpSXmKPExsVy+t9jQV2BnPBgg/XT2Sx6F1xlszjb9Ibd
-	Ysqf5UwWmx5fY7W4vGsOm8WM8/uYLNbPeM1icWzGEkYHDo871/aweWxeUu/Rt2UVo8fnTXIB
-	LFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QGco
-	KZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwlrGDPuvs0t2MteseH0DJYGxhls
-	XYycHBICJhKNGy6xQthiEhfurQeKc3EICUxnlOjav4oZJCEk8JpRYuFpIxCbV0BLYs6Ou2DN
-	LAKqEntmnmICsdmA4vtf3ACLiwqESaycfoUFol5Q4sfke2C2iICORPe2n6wgC5gF3jBJPHp8
-	DijBwSEs4CbxtEcWYnEPo8S0m63sIA2cAsESD0/eAlvALKAuMWneImYIW15i85q3zBMYBWYh
-	2TELSdksJGULGJlXMYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgTH9DOpHYwrGywOMQpwMCrx
-	8BasDAsWYk0sK67MPcQowcGsJMI78yNQiDclsbIqtSg/vqg0J7X4EGMyMAgmMkuJJucD001e
-	SbyhsYmZkaWRuaGFkbE5acJK4rwHWq0DhQTSE0tSs1NTC1KLYLYwcXBKNTAe+rkjxfD8vKXL
-	8+fMdiu4vDOWcZVrj7/ip9pH7235lG9qHHxRu/j59Icv+cKeNCpsNb3ywrOPO2TvytRrIdGb
-	Nq3LWTN737aJ0+Uun7pccKbsnLLAro1PJab9Skq3Xbt8qWhTy8cZeoySnXvXh6Z8e2fBe5u9
-	KEyO2zqMU9uAYcqhT29WJJt0KbEUZyQaajEXFScCALwPk3AtAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S932317AbaDWHaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:30:55 -0400
+Received: from dns-bn1lp0143.outbound.protection.outlook.com ([207.46.163.143]:47940
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755821AbaDWHaw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 03:30:52 -0400
+From: Xiubo Li <Li.Xiubo@freescale.com>
+To: <broonie@kernel.org>, <rob@landley.net>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Xiubo Li <Li.Xiubo@freescale.com>
+Subject: [PATCHv2 3/3] regmap: add DT endianness binding support.
+Date: Wed, 23 Apr 2014 14:46:35 +0800
+Message-ID: <1398235595-13370-4-git-send-email-Li.Xiubo@freescale.com>
+X-Mailer: git-send-email 1.8.0
+In-Reply-To: <1398235595-13370-1-git-send-email-Li.Xiubo@freescale.com>
+References: <1398235595-13370-1-git-send-email-Li.Xiubo@freescale.com>
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(189002)(199002)(50226001)(77982001)(74502001)(79102001)(44976005)(85852003)(4396001)(6806004)(74662001)(31966008)(80022001)(47776003)(20776003)(76482001)(92566001)(87936001)(88136002)(83072002)(83322001)(89996001)(87286001)(76176999)(36756003)(92726001)(77096999)(86362001)(46102001)(81342001)(48376002)(19580405001)(77156001)(50466002)(50986999)(99396002)(80976001)(81542001)(19580395003)(62966002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB508;H:az84smr01.freescale.net;FPR:2974DD.24D4E290.3BD1AB70.44E5B332.20347;MLV:sfv;PTR:gate-az5.freescale.com;MX:1;A:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Forefront-PRVS: 01901B3451
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 04:01 PM, Linus Walleij wrote:
-> On Mon, Apr 14, 2014 at 3:45 AM, Chanwoo Choi <cw00.choi@samsung.com> wrote:
-> 
->> From: Tomasz Figa <t.figa@samsung.com>
->>
->> This patch adds driver data (bank list and EINT layout) for Exynos3250
->> to pinctrl-exynos driver. Exynos3250 includes 158 multi-functional input/output
->> ports. There are 23 general port groups.
->>
->> Changes from v1:
->> - Add signed-off of sender
->> - Post only separated patch for pinctrl from following patchset(v1)
->>   : https://lkml.org/lkml/2014/4/10/286
->>
->> Cc: Thomas Abraham <thomas.abraham@linaro.org>
->> Cc: Linus Walleij <linus.walleij@linaro.org>
->> Cc: Kukjin Kim <kgene.kim@samsung.com>
->> Signed-off-by: Tomasz Figa <t.figa@samsung.com>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> This v2 patch applied.
-> 
+For many drivers which will support rich endianness of CPU<-->Dev
+need define DT properties by itself without the binding support.
 
-Thanks for your apply.
+The value endianness using regmap-mmio, for example:
+Index    CPU       Device     Endianess flag for DT property
+------------------------------------------------------------
+1        LE        LE         -
+2        LE        BE         'big-endian'
+3        BE        BE         -
+4        BE        LE         'little-endian'
 
-Best regards,
-Chanwoo Choi
+============
+
+Here add DT endianness binding support will define two string
+properties of the register and value endiannesses:
+
+'regmap-reg-endian' and 'regmap-val-endian'.
+
+And the value of them will be:
+'le' : REGMAP_ENDIAN_LITTLE
+'be' : REGMAP_ENDIAN_BIG
+'native' : REGMAP_ENDIAN_NATIVE
+Absent : REGMAP_ENDIAN_DEFAULT
+
+The value endianness for regmap-mmio, for example:
+Index    CPU       Device     Endianess flag for DT property
+------------------------------------------------------------
+1        LE        LE         'native' or absent
+2        LE        BE         'be'
+3        BE        BE         'native' or absent
+4        BE        LE         'le'
+
+Please see the following documetation for detail usage:
+    Documentation/devicetree/bindings/regmap/regmap-endianness.txt
+
+Signed-off-by: Xiubo Li <Li.Xiubo@freescale.com>
+---
+ drivers/base/regmap/regmap.c | 96 +++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 85 insertions(+), 11 deletions(-)
+
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index 8e8cea1..cfc9302 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -15,6 +15,7 @@
+ #include <linux/export.h>
+ #include <linux/mutex.h>
+ #include <linux/err.h>
++#include <linux/of.h>
+ #include <linux/rbtree.h>
+ #include <linux/sched.h>
+ 
+@@ -423,6 +424,81 @@ static void regmap_range_exit(struct regmap *map)
+ }
+ 
+ /**
++ * of_regmap_endian_get_by_name() - Parse and lookup the endianness referenced
++ * by a device node
++ * @np: pointer to clock consumer node
++ * @name: name of consumer's endianness input
++ *
++ * This function parses the device endianness property, and uses them to
++ * determine the endianness of the registers and values.
++ */
++static int of_regmap_endian_get_by_name(struct device_node *np,
++					const char *endian_name,
++					enum regmap_endian *out_endian)
++{
++	const char *endianness;
++	int ret;
++
++	if (!out_endian)
++		return -EINVAL;
++
++	/* Set the default endianness */
++	*out_endian = REGMAP_ENDIAN_DEFAULT;
++
++	/* Absent or being to use the flag from config of the drivers */
++	if (!of_find_property(np, endian_name, NULL))
++		return 0;
++
++	ret = of_property_read_string(np, endian_name, &endianness);
++	if (ret)
++		return ret;
++
++	if (!strcmp("le", endianness))
++		*out_endian = REGMAP_ENDIAN_LITTLE;
++	else if (!strcmp("be", endianness))
++		*out_endian = REGMAP_ENDIAN_BIG;
++	else if (!strcmp("native", endianness))
++		*out_endian = REGMAP_ENDIAN_NATIVE;
++
++	return 0;
++}
++
++static int of_regmap_get_endian(struct device *dev,
++				const struct regmap_bus *bus,
++				const struct regmap_config *config,
++				const char *endian_name,
++				enum regmap_endian *out_endian)
++{
++	int ret;
++
++	if (!out_endian)
++		return -EINVAL;
++
++	if (dev) {
++		ret = of_regmap_endian_get_by_name(dev->of_node, endian_name,
++						   out_endian);
++		if (ret < 0)
++			return ret;
++	}
++
++	if (*out_endian != REGMAP_ENDIAN_DEFAULT)
++		return 0;
++
++	/*
++	 * Parsing the endianness from driver's config
++	 * or bus, this is to be compatible with the
++	 * none DT and the old drivers.
++	 */
++	*out_endian = config->reg_format_endian;
++	if (*out_endian == REGMAP_ENDIAN_DEFAULT)
++		*out_endian = bus->reg_format_endian_default;
++	if (*out_endian == REGMAP_ENDIAN_DEFAULT)
++		*out_endian = REGMAP_ENDIAN_BIG;
++
++	return 0;
++}
++
++/**
+  * regmap_init(): Initialise register map
+  *
+  * @dev: Device that will be interacted with
+@@ -518,17 +594,15 @@ struct regmap *regmap_init(struct device *dev,
+ 		map->reg_read  = _regmap_bus_read;
+ 	}
+ 
+-	reg_endian = config->reg_format_endian;
+-	if (reg_endian == REGMAP_ENDIAN_DEFAULT)
+-		reg_endian = bus->reg_format_endian_default;
+-	if (reg_endian == REGMAP_ENDIAN_DEFAULT)
+-		reg_endian = REGMAP_ENDIAN_BIG;
+-
+-	val_endian = config->val_format_endian;
+-	if (val_endian == REGMAP_ENDIAN_DEFAULT)
+-		val_endian = bus->val_format_endian_default;
+-	if (val_endian == REGMAP_ENDIAN_DEFAULT)
+-		val_endian = REGMAP_ENDIAN_BIG;
++	ret = of_regmap_get_endian(dev, bus, config, "regmap-reg-endian",
++				   &reg_endian);
++	if (ret)
++		return ERR_PTR(ret);
++
++	ret = of_regmap_get_endian(dev, bus, config, "regmap-val-endian",
++				   &val_endian);
++	if (ret)
++		return ERR_PTR(ret);
+ 
+ 	switch (config->reg_bits + map->reg_shift) {
+ 	case 2:
+-- 
+1.8.4
 
