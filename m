@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751867AbaDWKrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 06:47:51 -0400
-Received: from mail.mev.co.uk ([62.49.15.74]:45291 "EHLO mail.mev.co.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751302AbaDWKrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 06:47:49 -0400
-Message-ID: <53579A4F.6010108@mev.co.uk>
-Date: Wed, 23 Apr 2014 11:47:43 +0100
-From: Ian Abbott <abbotti@mev.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1752332AbaDWKsF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 06:48:05 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:43931 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422AbaDWKsB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 06:48:01 -0400
 MIME-Version: 1.0
-To: Chase Southwood <chase.southwood@yahoo.com>, <gregkh@linuxfoundation.org>
-CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2 v4] staging: comedi: addi_apci_1564: tidy up apci1564_reset()
-References: <1397716383-699-1-git-send-email-chase.southwood@yahoo.com>
-In-Reply-To: <1397716383-699-1-git-send-email-chase.southwood@yahoo.com>
-Content-Type: text/plain; charset="us-ascii"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
- (10.0.0.4)
+In-Reply-To: <20140423084057.GY10722@phenom.ffwll.local>
+References: <1398179373-29966-1-git-send-email-thierry.reding@gmail.com>
+	<1398179373-29966-5-git-send-email-thierry.reding@gmail.com>
+	<20140422154807.GT10722@phenom.ffwll.local>
+	<20140423071714.GB31226@ulmo>
+	<20140423084057.GY10722@phenom.ffwll.local>
+Date: Wed, 23 Apr 2014 12:48:00 +0200
+Message-ID: <CANq1E4R3S4HdV8OcKw4jk2iLiMJgCPe1m=iNxaA_KfnaM0RFyQ@mail.gmail.com>
+Subject: Re: [RFC 4/5] drm: Introduce drm_set_unique()
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Thierry Reding <thierry.reding@gmail.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        linux-tegra@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-17 07:33, Chase Southwood wrote:
-> The reset function for this driver is a bit of a mess; clean it up to
-> ensure that it is functioning properly.
->
-> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
-> ---
-> 2: *Changed order of register accesses for digital input registers back to
-> original ordering.
-> *Removed read of digital output status register and reordered the accesses
-> of digital output registers to agree with the order found in addi_apci_2032.
-> *Fixed copy/paste error in the counter register reset lines.
->
-> 3: *Returned the reset callback to the boardinfo...oops.
-> *Don't write APCI1564_DO_IRQ_REG (it's read only).
-> *Don't clear counter reload values...counters have already been
-> disabled.
->
-> 4: Leave this in hwdrv_apci1564.c for now (it can be moved after separating
-> this driver from addi_common.c)
->
-> NB: This patch has been renamed in this version.  It was previously known
-> as "staging: comedi: addi_apci_1564: fixup and absorb apci1564_reset()"
->
->   .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 24 ++++++++++++++--------
->   1 file changed, 15 insertions(+), 9 deletions(-)
+Hi
 
-Looks okay and it addresses the concerns raised by Hartley.
+On Wed, Apr 23, 2014 at 10:40 AM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Wed, Apr 23, 2014 at 09:17:16AM +0200, Thierry Reding wrote:
+>> On second thought, wouldn't this be better located in drm_stub.c? It
+>> isn't really related to the IOCTL code except that one of the IOCTLs now
+>> uses the information set by this function. Logically I think it belongs
+>> with the likes of drm_dev_alloc() and drm_dev_register().
+>
+> Yeah makes sense. Tbh the entire split-up of these core drm functions is
+> still a bit messy, so I don't mind if it's a bit inconsistent really. We
+> can do the suffling when someone bothers with the kerneldoc for all of
+> them and pulls it into the drm docbook.
 
-Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+During drm_dev_*() cleanup, I tried to keep the following structure:
+  drm_drv.c: global drm-module setup
+  drm_stub.c: drm_device allocation, registration and lifetime management
+  drm_fops.c: reference-implementation of the drm file_operations
 
--- 
--=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
--=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
+The only thing that's wrongly placed is ioctl handling (which somehow
+ended up in drm_drv.c instead of drm_fops.c). drm_stub.c is where all
+the generic and mandatory DRM device handling is placed so yeah, I'd
+put the set_unique() there.
+
+Thanks
+David
