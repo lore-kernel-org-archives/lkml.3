@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753845AbaDWMf6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:35:58 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:55132 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751725AbaDWMfz (ORCPT
+	id S1754892AbaDWMgP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:36:15 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:47270 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725AbaDWMgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:35:55 -0400
-Date: Wed, 23 Apr 2014 13:35:44 +0100
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
- offloading
-Message-ID: <20140423133544.5598c18a@alan.etchedpixels.co.uk>
-In-Reply-To: <20140423110847.GB17824@quack.suse.cz>
-References: <1395770101-24534-1-git-send-email-jack@suse.cz>
-	<1395770101-24534-9-git-send-email-jack@suse.cz>
-	<20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
-	<20140326192815.GC18118@quack.suse.cz>
-	<20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
-	<20140422112259.5f106a44@alan.etchedpixels.co.uk>
-	<20140423110847.GB17824@quack.suse.cz>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Apr 2014 08:36:07 -0400
+Date: Wed, 23 Apr 2014 13:36:01 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Doug Anderson <dianders@chromium.org>
+Cc: swarren@nvidia.com, wsa@the-dreams.de, abrestic@chromium.org,
+        dgreid@chromium.org, olof@lixom.net, sjg@chromium.org,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 4/7] mfd: cros_ec: spi: Increase cros_ec_spi deadline
+ from 5ms to 100ms
+Message-ID: <20140423123601.GE640@lee--X1>
+References: <1398185154-19404-1-git-send-email-dianders@chromium.org>
+ <1398185154-19404-5-git-send-email-dianders@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398185154-19404-5-git-send-email-dianders@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > It's not worth adding for upstream anyway - not in that form. If it just
-> > used schedule_work it would be way way cleaner anyway.
->   Alan, please stop complaining that the patches don't use schedule_work()
-> when you didn't bother to answer to me when I was explaining to you twice
-> what is the problem with using schedule_work().
+On Tue, 22 Apr 2014, Doug Anderson wrote:
 
-I have not seen any response to the schedule_work() comment. If the
-filters ate it then I apologize.
+> We're adding i2c tunneling to the list of things that goes over
+> cros_ec.  i2c tunneling can be slooooooow, so increase our deadline to
+> 100ms to account for that.
+> 
+> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> Reviewed-by: Simon Glass <sjg@chromium.org>
+> Tested-by: Andrew Bresticker <abrestic@chromium.org>
+> Tested-by: Stephen Warren <swarren@nvidia.com>
+> ---
+> Changes in v2: None
+> 
+>  drivers/mfd/cros_ec_spi.c | 24 ++++++++++++++++--------
+>  1 file changed, 16 insertions(+), 8 deletions(-)
 
-> console. Plus for useful softlockup reports or oops messages you need also
-> the KERN_NOTICE and KERN_INFO messages - stack traces, cpu numbers, process
-> information - all this is printed with these levels.
+Waiting for other subsystems to Ack, so for now:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
 
-If there is softlockup and oops trace data being printed at KERN_INFO
-that could be fixed by changing the level.
-
-> These obvious places could be changed to print with lower log level I
-> assume but still I'm somewhat worried that some KERN_INFO messages that
-> would be useful for debugging a crash won't make it to console before the
-> crash happens.
-
-That's true whatever you do. Either your output is synchronous and makes
-it out because it is physically output before the box is permitted to go
-bang, or its asynchronous in which case be it work queue, thread or
-anything else it may not get out.
-
-Alan
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
