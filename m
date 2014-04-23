@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672AbaDWHUr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:20:47 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:65470 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754069AbaDWHUo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:20:44 -0400
+	id S1756948AbaDWHWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:22:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59698 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754032AbaDWHWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 03:22:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,910,1389772800"; 
+   d="scan'208";a="497886559"
+Date: Wed, 23 Apr 2014 10:28:39 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Lan Tianyu <tianyu.lan@intel.com>
+Cc: wsa@the-dreams.de, rjw@rjwysocki.net, awilliam@redhat.com, lenb@kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Resend Patch 7/9] I2C/ACPI: Add i2c ACPI operation region
+ support
+Message-ID: <20140423072839.GT30677@intel.com>
+References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
+ <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
+ <1398147855-9868-8-git-send-email-tianyu.lan@intel.com>
+ <20140422113638.GK30677@intel.com>
+ <53571D11.3070808@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFiDJ58oeUtXR_gqud9pw55wojY6PJRQp8PAyEfpDL_Let7u=Q@mail.gmail.com>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<1397824031-4892-4-git-send-email-lftan@altera.com>
-	<201404221433.17861.arnd@arndb.de>
-	<CAFiDJ58oeUtXR_gqud9pw55wojY6PJRQp8PAyEfpDL_Let7u=Q@mail.gmail.com>
-Date: Wed, 23 Apr 2014 09:20:42 +0200
-X-Google-Sender-Auth: 6t0ZRzzsEIcAyzEGxqISsSFJDTs
-Message-ID: <CAMuHMdX1xxuWhhBH0TKMtSEek5QDYchNVtC9QKoFQGr454_GVA@mail.gmail.com>
-Subject: Re: [PATCH 04/28] nios2: Exception handling
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53571D11.3070808@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ley,
+On Wed, Apr 23, 2014 at 09:53:21AM +0800, Lan Tianyu wrote:
+> Hi Mika:
+> 	Thanks a lot for your review.
+> 
+> On 2014年04月22日 19:36, Mika Westerberg wrote:
+> >> > +
+> >> > +	client.adapter = adapter;
+> >> > +	client.addr = sb->slave_address;
+> >> > +	client.flags = 0;
+> > I'm not sure if this is the correct way to use struct i2c_client
+> > (allocating it from stack and passing forward to functions that might
+> > expect a real i2c_client structure). It has ->dev and all.
+> 
+> I check all i2c_smbus_xxx helper functions and they are simple wrappers
+> of i2c_smbus_xfer(). Only adapter, addr and flags of struct client are
+> used in these functions.
 
-On Wed, Apr 23, 2014 at 4:47 AM, Ley Foon Tan <lftan@altera.com> wrote:
-> On Tue, Apr 22, 2014 at 8:33 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->> On Friday 18 April 2014, Ley Foon Tan wrote:
->>> +static const struct file_operations misalign_fops = {
->>> +       .open           = proc_misaligned_open,
->>> +       .read           = seq_read,
->>> +       .llseek         = seq_lseek,
->>> +       .release        = single_release,
->>> +       .write          = proc_misaligned_write,
->>> +};
->>> +#endif /* CONFIG_PROC_FS */
->>
->> We really shouldn't be doing new architecture specific procfs files
->> any more. I suggest you drop this one for now, and add back the
->> functionality using perf or ftrace at a later point.
->
-> Okay, will remove this.
+In that case I suppose it is OK to (ab)use the client structure like this.
 
-MIPS and powerpc handle this through debugfs, cfr.
-arch/mips/kernel/unaligned.c and arch/powerpc/kernel/traps.c.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+I think you still want to initialize the whole structure (unused fields
+with zero) before passing it to the wrappers.
