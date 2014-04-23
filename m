@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701AbaDWCvq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 22:51:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58235 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751485AbaDWCvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 22:51:45 -0400
-Message-ID: <53572AAA.4070207@zytor.com>
-Date: Tue, 22 Apr 2014 19:51:22 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755239AbaDWCxQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 22:53:16 -0400
+Received: from mail-qa0-f41.google.com ([209.85.216.41]:44062 "EHLO
+	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753361AbaDWCxO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 22:53:14 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: Why do we set _PAGE_DIRTY for page tables?
-References: <5356FCC1.6060807@zytor.com> <CA+55aFwsPs12_57YEBHdb4ti1BXSuDX_RPSf6S4JSRLGK_2X7Q@mail.gmail.com>
-In-Reply-To: <CA+55aFwsPs12_57YEBHdb4ti1BXSuDX_RPSf6S4JSRLGK_2X7Q@mail.gmail.com>
-X-Enigmail-Version: 1.6
+In-Reply-To: <20140422162432.GA17674@ravnborg.org>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<1397824031-4892-5-git-send-email-lftan@altera.com>
+	<20140422142443.GB15745@arch.cereza>
+	<20140422151458.GC1053@distanz.ch>
+	<20140422153522.GF15745@arch.cereza>
+	<20140422162432.GA17674@ravnborg.org>
+Date: Wed, 23 Apr 2014 10:53:13 +0800
+Message-ID: <CAFiDJ59ewAxAXFYe5EAt1sd+nTr9f53EkV4d9+gJM9PPOcUtvw@mail.gmail.com>
+Subject: Re: [PATCH 06/28] nios2: Memory management
+From: "LF.Tan" <lftan.linux@gmail.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Tobias Klauser <tklauser@distanz.ch>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/22/2014 07:48 PM, Linus Torvalds wrote:
-> On Tue, Apr 22, 2014 at 4:35 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> I just noticed this:
+On Wed, Apr 23, 2014 at 12:24 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>> Other than being "pretty" the above fix is to remove a mismatch type
+>> warning. You can get rid of the warning in different ways:
 >>
->> #define _PAGE_TABLE     (_PAGE_PRESENT | _PAGE_RW | _PAGE_USER |       \
->>                          _PAGE_ACCESSED | _PAGE_DIRTY)
->> #define _KERNPG_TABLE   (_PAGE_PRESENT | _PAGE_RW | _PAGE_ACCESSED |   \
->>                          _PAGE_DIRTY)
->>
->> Is there a reason we set _PAGE_DIRTY for page tables?  It has no
->> function, but doesn't do any harm either (the dirty bit is ignored for
->> page tables)... it just looks funny to me.
-> 
-> I think it just got copied, and at least the A bit does matter even in
-> page tables (well, it gets updated, I don't know how much that
-> "matters"). So the fact that D is ignored is actually the odd man out.
-> 
+>> ifdef __ASSEMBLY__
+>> define PAGE_SIZE       4096
+>> else
+>> define PAGE_SIZE       4096UL
+>> endif
+>
+> The usual way to do this is as follows:
+> #include <linux/const.h>
+>
+> #define PAGE_SHIFT   12
+> #define PAGE_SIZE    (_AC(1, UL) << PAGE_SHIFT)
+> #define PAGE_MASK    (~(PAGE_SIZE-1))
+>
+> _AC(1, UL) expands to 1 for assembler and 1UL for C code.
+>
+> This is also what was suggested above.
+>
+> Please follow this scheme for nios2 too.
+>
+>         Sam
+Sure, will change to this way.
 
-Yes, not setting the A bit means the hardware will take an assist to set
-the bit for us, which is a waste of time if we don't care about it.  The
-D bit is the one which made me wonder; I thought either it was just copy
-& paste, or that it got set to make it more analogous with large pages.
+Thanks.
 
-	-hpa
-
-
+Ley Foon
