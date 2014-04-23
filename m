@@ -1,128 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959AbaDWNU3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:20:29 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:59591 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750888AbaDWNUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:20:24 -0400
-Message-ID: <1398259168.4724.217.camel@iivanov-dev>
-Subject: Re: [PATCH 1/2] mfd: pm8x41: add support for Qualcomm 8x41 PMICs
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Courtney Cavin <courtney.cavin@sonymobile.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Wed, 23 Apr 2014 16:19:28 +0300
-In-Reply-To: <1398213110-28135-1-git-send-email-courtney.cavin@sonymobile.com>
-References: <1398213110-28135-1-git-send-email-courtney.cavin@sonymobile.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755983AbaDWNVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:21:15 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:59896 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513AbaDWNUI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:20:08 -0400
+Date: Wed, 23 Apr 2014 14:20:02 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: [GIT PULL] extcon: Immutable branch between MFD and Extcon
+Message-ID: <20140423132002.GI640@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
 
-Hi,
+  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
 
-On Tue, 2014-04-22 at 17:31 -0700, Courtney Cavin wrote:
-> From: Josh Cartwright <joshc@codeaurora.org>
-> 
-> The Qualcomm 8941 and 8841 PMICs are components used with the Snapdragon
-> 800 series SoC family.  This driver exists largely as a glue mfd component,
-> it exists to be an owner of an SPMI regmap for children devices
-> described in device tree.
-> 
+are available in the git repository at:
 
-Thanks. This is exactly what I have planed to do :-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/lee/mfd.git tags/ib-mfd-extcon-3.16
 
-> Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
-> ---
->  drivers/mfd/Kconfig  | 13 +++++++++++
->  drivers/mfd/Makefile |  1 +
->  drivers/mfd/pm8x41.c | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 77 insertions(+)
->  create mode 100644 drivers/mfd/pm8x41.c
-> 
+for you to fetch changes up to 8a82b408acad29161c43072727151d373e68116a:
 
-<snip>
+  regulator: max14577: Add support for MAX77836 regulators (2014-04-23 14:09:45 +0100)
 
-> +
-> +static int pm8x41_probe(struct spmi_device *sdev)
-> +{
-> +	struct regmap *regmap;
-> +
-> +	regmap = devm_regmap_init_spmi_ext(sdev, &pm8x41_regmap_config);
-> +	if (IS_ERR(regmap)) {
-> +		dev_dbg(&sdev->dev, "regmap creation failed.\n");
-> +		return PTR_ERR(regmap);
-> +	}
-> +
-> +	return of_platform_populate(sdev->dev.of_node, NULL, NULL, &sdev->dev);
+----------------------------------------------------------------
+Immutable branch between MFD and Extcon due for v3.16 merge-window.
 
-I think that this will not going to work. For example in this particular
-case, both controllers have "qcom,qpnp-revid" peripheral which is
-located at offset 0x100.
+----------------------------------------------------------------
+Chanwoo Choi (1):
+      extcon: max14577: Change extcon name instead of static name according to device type
 
-And the result is:
+Krzysztof Kozlowski (8):
+      mfd: max14577: Add muic prefix to regmap config
+      mfd: max14577: Add detection of device type
+      extcon: max14577: Add max14577 prefix to muic_irqs
+      extcon: max14577: Choose muic_irqs according to device type
+      mfd: max14577: Add MAX14577 prefix to IRQ defines
+      mfd: max77836: Add MAX77836 support to max14577 driver
+      extcon: max14577: Add support for MAX77836
+      regulator: max14577: Add support for MAX77836 regulators
 
-[    0.963944] sysfs: cannot create duplicate filename '/bus/platform/devices/100.revid'
+ drivers/extcon/Kconfig               |   4 +-
+ drivers/extcon/extcon-max14577.c     | 174 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------------
+ drivers/mfd/Kconfig                  |   6 +--
+ drivers/mfd/max14577.c               | 315 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++--------------------
+ drivers/regulator/Kconfig            |   7 ++--
+ drivers/regulator/max14577.c         | 277 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++----------------
+ include/linux/mfd/max14577-private.h | 222 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++------------------------
+ include/linux/mfd/max14577.h         |  19 +++++++--
+ 8 files changed, 836 insertions(+), 188 deletions(-)
 
-DT looks like this:
-
-spmi {
-	compatible = "qcom,spmi-pmic-arb";
-	reg-names = "core", "intr", "cnfg";
-	reg = <0xfc4cf000 0x1000>,
-	      <0xfc4cb000 0x1000>,
-	      <0xfc4ca000 0x1000>;
-
-	interrupt-names = "periph_irq";
-	interrupts = <0 190 0>;
-
-	qcom,ee = <0>;
-	qcom,channel = <0>;
-
-	#address-cells = <2>;
-	#size-cells = <0>;
-
-	interrupt-controller;
-	#interrupt-cells = <4>;
-
-	pm8941@0 {
-		compatible = "qcom,pm8941";
-		reg = <0x0 SPMI_USID>;
-
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		revid@100 {
-			compatible = "qcom,qpnp-revid";
-			reg = <0x100 0x100>;
-		};
-	};
-
-	pm8841@4 {
-		compatible = "qcom,pm8941";
-		reg = <0x4 SPMI_USID>;
-
-		#address-cells = <1>;
-		#size-cells = <0>;
-
-		revid@100 {
-			compatible = "qcom,qpnp-revid";
-			reg = <0x100 0x100>;
-		};
-	};
-};
-
-Any suggestions?
-
-Thanks, 
-Ivan
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
