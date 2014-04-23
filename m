@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232AbaDWAmj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 20:42:39 -0400
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:35877 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751349AbaDWAmh (ORCPT
+	id S1753055AbaDWApG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 20:45:06 -0400
+Received: from out4-smtp.messagingengine.com ([66.111.4.28]:34127 "EHLO
+	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751349AbaDWApE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 20:42:37 -0400
-Date: Tue, 22 Apr 2014 17:42:34 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Sheng-Liang Song <ssl@chromium.org>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Shawn Nematbakhsh <shawnn@chromium.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Input: atkbd - fix keyboard LG Electronics
-Message-ID: <20140423004233.GC22547@core.coreip.homeip.net>
-References: <1398185970-16331-1-git-send-email-ssl@chromium.org>
+	Tue, 22 Apr 2014 20:45:04 -0400
+X-Sasl-enc: jLSse0tJiEcCUPb0/OMcYgtIVx12EPRK158z6QV/tntD 1398213903
+Message-ID: <53570CF0.70607@fastmail.fm>
+Date: Wed, 23 Apr 2014 08:44:32 +0800
+From: Michalis Pappas <mpappas@fastmail.fm>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398185970-16331-1-git-send-email-ssl@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>
+CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v3 2/3] staging: gdm72xx: Removed completed task from TODO
+ list
+References: <532BF9B0.2080008@fastmail.fm> <20140418225229.GA28077@kroah.com> <53534051.2020504@fastmail.fm> <53534116.3040705@fastmail.fm> <20140422093743.GC26890@mwanda> <53570BAA.3080709@fastmail.fm>
+In-Reply-To: <53570BAA.3080709@fastmail.fm>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sheng-Liang,
 
-On Tue, Apr 22, 2014 at 09:59:30AM -0700, Sheng-Liang Song wrote:
-> After issuing ATKBD_CMD_RESET_DIS, LG Keyboard stop working.
-> The workaround is to issue ATKBD_CMD_RESET_DEF after ATKBD_CMD_RESET_DIS.
+Removed line related to replacement of kernel_thread with kthread, as issue 
+was fixed on ff5e4a1d2702 ('Staging: gdm72xx: gdm_usb: fix deprecated function 
+kernel_thread')
 
-Hmm, if ATKBD_CMD_RESET_DIS causes keyboard not working should we
-simply not call it on LG devices?
+Signed-off-by: Michalis Pappas <mpappas@fastmail.fm>
+---
+ drivers/staging/gdm72xx/TODO | 1 -
+ 1 file changed, 1 deletion(-)
 
-The idea for using ATKBD_CMD_RESET_DIS was for keyboard to stop
-generating scan codes so they do not interfere with detection/resume and
-issuing ATKBD_CMD_RESET_DEF right after ATKBD_CMD_RESET_DIS keeps
-keyboard in exactly the same state as it was before (i.e. generating
-scancodes).
-
-Thanks.
-
+diff --git a/drivers/staging/gdm72xx/TODO b/drivers/staging/gdm72xx/TODO
+index 5ab27fb..62d0cd6 100644
+--- a/drivers/staging/gdm72xx/TODO
++++ b/drivers/staging/gdm72xx/TODO
+@@ -1,3 +1,2 @@
+ TODO:
+-- Replace kernel_thread with kthread in gdm_usb.c
+ - Clean up coding style to meet kernel standard.
 -- 
-Dmitry
+1.7.12.1
+
