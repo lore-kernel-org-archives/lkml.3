@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792AbaDWNHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:07:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33302 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213AbaDWNHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:07:39 -0400
-Date: Wed, 23 Apr 2014 15:06:53 +0200
-From: chrubis@suse.cz
-To: ltp-list@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org, lwn@lwn.net
-Subject: [LTP] [ANNOUNCE] The Linux Test Project has been released for APRIL
- 2014
-Message-ID: <20140423130653.GA24742@rei>
+	id S1754589AbaDWNJx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:09:53 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:54581 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751102AbaDWNJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:09:50 -0400
+Date: Wed, 23 Apr 2014 15:09:44 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jean Pihet <jean.pihet@linaro.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        Masanari Iida <standby24x7@gmail.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Steven Rostedt <rostedt@goodmis.org>, stable@vger.kernel.org
+Subject: Re: [GIT PULL 0/4] perf/urgent fixes
+Message-ID: <20140423130944.GA23224@gmail.com>
+References: <1398252682-17185-1-git-send-email-jolsa@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1398252682-17185-1-git-send-email-jolsa@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good news everyone,
 
-The Linux Test Project test suite stable release for *April 2014* has
-been released.
+* Jiri Olsa <jolsa@redhat.com> wrote:
 
-Since the last release 210 patches by 27 authors were merged.
+> hi Ingo,
+> please consider pulling
+> 
+> thanks,
+> jirka
+> 
+> 
+> The following changes since commit fd741edc25600e1660abd00b5c1bbe967018c6a0:
+> 
+>   Merge tag 'perf-urgent-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/urgent (2014-04-20 09:53:55 +0200)
+> 
+> are available in the git repository at:
+> 
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to de04f8657de9d3351a2d5880f1f7080b23b798cf:
+> 
+>   tools lib traceevent: Fix memory leak in pretty_print() (2014-04-23 13:19:30 +0200)
+> 
+> ----------------------------------------------------------------
+> perf/urgent fixes:
+> 
+> Developer stuff:
+> . Fix memory leak and backward compatibility macros for pevent
+>   filter enums in traceevent library (Steven Rostedt)
+> 
+> . Disable libdw unwind for all but x86 arch (Jiri Olsa)
+> 
+> . Fix memory leak in sample_ustack (Masanari Iida)
+> 
+> Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Jiri Olsa (1):
+>       perf tools: Disable libdw unwind for all but x86 arch
+> 
+> Masanari Iida (1):
+>       perf tests x86: Fix memory leak in sample_ustack()
+> 
+> Steven Rostedt (2):
+>       tools lib traceevent: Fix backward compatibility macros for pevent filter enums
+>       tools lib traceevent: Fix memory leak in pretty_print()
+> 
+>  tools/lib/traceevent/event-parse.c       | 1 +
+>  tools/lib/traceevent/event-parse.h       | 4 ++--
+>  tools/perf/arch/x86/tests/dwarf-unwind.c | 1 +
+>  tools/perf/config/Makefile               | 8 ++++++++
+>  4 files changed, 12 insertions(+), 2 deletions(-)
 
-Notable changes are:
+Pulled, thanks a lot Jiri!
 
-* Continued effort to cleanup old testcases
-  (about 30 testcases were cleaned up/rewritten)
-
-* 20 new syscall testcases
-  15 existing testcases increased in coverage
-  (pselect, mprotect, mknodat, fchonwat, linkat, fanotify, inotify, fcntl, ...)
-
-* new tcp_fastopen, rcutorture and acpi_cpufreq testcases
-
-* out-of-tree build as well as cross compilation were fixed
-
-* bashism in runltp and few scripts was fixed
-  (should work fine on Debian with dash now)
-
-* ext4 features tests were fixed and added to default run
-
-* few testcases were fixed not to incorrectly fail on Btrfs
-
-* and many more smaller fixes
-
-
-The latest version of the test-suite contains 3000+ tests for the Linux
-OS and can be downloaded at:
-
-http://sourceforge.net/projects/ltp/files/LTP%20Source/ltp-20140422/
-
-The project pages as well as GIT repository are hosted on GitHub for
-quite some time now:
-
-https://github.com/linux-test-project/ltp
-http://linux-test-project.github.io/
-
-If you ever wondered how to write a LTP testcase, don't miss our
-developer documentation at:
-
-https://github.com/linux-test-project/ltp/wiki/Test-Writing-Guidelines
-https://github.com/linux-test-project/ltp/wiki/BuildSystem
-
-Patches, new tests, bugs, comments or questions should go to
-ltp-list@lists.sf.net
-
--- 
-Cyril Hrubis
-chrubis@suse.cz
+	Ingo
