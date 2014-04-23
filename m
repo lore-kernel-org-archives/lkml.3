@@ -1,101 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205AbaDWKqN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 06:46:13 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46687 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751744AbaDWKqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 06:46:08 -0400
-Message-ID: <5357999F.6010200@ti.com>
-Date: Wed, 23 Apr 2014 13:44:47 +0300
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+	id S1751867AbaDWKrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 06:47:51 -0400
+Received: from mail.mev.co.uk ([62.49.15.74]:45291 "EHLO mail.mev.co.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751302AbaDWKrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 06:47:49 -0400
+Message-ID: <53579A4F.6010108@mev.co.uk>
+Date: Wed, 23 Apr 2014 11:47:43 +0100
+From: Ian Abbott <abbotti@mev.co.uk>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Marek Belisko <marek@goldelico.com>
-CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
-        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
-        <rdunlap@infradead.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
-        <linux@arm.linux.org.uk>, <plagnioj@jcrosoft.com>,
-        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
-        <hns@goldelico.com>
-Subject: Re: [PATCH 1/2] omapdss: panel-tpo-td028ec1: Add DT support.
-References: <1398201168-25275-1-git-send-email-marek@goldelico.com> <1398201168-25275-2-git-send-email-marek@goldelico.com>
-In-Reply-To: <1398201168-25275-2-git-send-email-marek@goldelico.com>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature";
-	boundary="DwPKl9r4Shf3fKlmmjVbo0Jtpl6kGSx4L"
+To: Chase Southwood <chase.southwood@yahoo.com>, <gregkh@linuxfoundation.org>
+CC: <hsweeten@visionengravers.com>, <devel@driverdev.osuosl.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2 v4] staging: comedi: addi_apci_1564: tidy up apci1564_reset()
+References: <1397716383-699-1-git-send-email-chase.southwood@yahoo.com>
+In-Reply-To: <1397716383-699-1-git-send-email-chase.southwood@yahoo.com>
+Content-Type: text/plain; charset="us-ascii"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-ClientProxiedBy: MEVEXCHANGE.mev.local (10.0.0.4) To MEVEXCHANGE.mev.local
+ (10.0.0.4)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---DwPKl9r4Shf3fKlmmjVbo0Jtpl6kGSx4L
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On 2014-04-17 07:33, Chase Southwood wrote:
+> The reset function for this driver is a bit of a mess; clean it up to
+> ensure that it is functioning properly.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@yahoo.com>
+> ---
+> 2: *Changed order of register accesses for digital input registers back to
+> original ordering.
+> *Removed read of digital output status register and reordered the accesses
+> of digital output registers to agree with the order found in addi_apci_2032.
+> *Fixed copy/paste error in the counter register reset lines.
+>
+> 3: *Returned the reset callback to the boardinfo...oops.
+> *Don't write APCI1564_DO_IRQ_REG (it's read only).
+> *Don't clear counter reload values...counters have already been
+> disabled.
+>
+> 4: Leave this in hwdrv_apci1564.c for now (it can be moved after separating
+> this driver from addi_common.c)
+>
+> NB: This patch has been renamed in this version.  It was previously known
+> as "staging: comedi: addi_apci_1564: fixup and absorb apci1564_reset()"
+>
+>   .../comedi/drivers/addi-data/hwdrv_apci1564.c      | 24 ++++++++++++++--------
+>   1 file changed, 15 insertions(+), 9 deletions(-)
 
-On 23/04/14 00:12, Marek Belisko wrote:
+Looks okay and it addresses the concerns raised by Hartley.
 
->  static int td028ttec1_panel_probe(struct spi_device *spi)
->  {
->  	struct panel_drv_data *ddata;
-> @@ -418,6 +436,10 @@ static int td028ttec1_panel_probe(struct spi_devic=
-e *spi)
->  		r =3D td028ttec1_panel_probe_pdata(spi);
->  		if (r)
->  			return r;
-> +	} else if (spi->dev.of_node) {
-> +		r =3D td028ttec1_probe_of(spi);
-> +		if (r)
-> +			return r;
->  	} else {
->  		return -ENODEV;
->  	}
-> @@ -463,6 +485,13 @@ static int td028ttec1_panel_remove(struct spi_devi=
-ce *spi)
->  	return 0;
->  }
-> =20
-> +static const struct of_device_id td028ttec1_of_match[] =3D {
-> +	{ .compatible =3D "toppoly,td028ttec1", },
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-We need to hack a bit here for the time being. You need to have
-"omapdss," prefix for the compatible string in the driver, and add the
-panel's compatible string to arch/arm/mach-omap2/display.c:
-dss_compat_conv_list.
-
-The reason for this is that the drivers are omap specific, but the DT
-data is not.
-
-Otherwise looks good to me.
-
- Tomi
-
-
-
---DwPKl9r4Shf3fKlmmjVbo0Jtpl6kGSx4L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTV5mfAAoJEPo9qoy8lh7128IQAJrx+jxEdlDpr09EJExenS4g
-8AXWsMcK/2LWL+QMqkUTnLL797LXNxU7FwfkORfVzREbat/EmI1jXU5fJ90MwQzH
-94E16d+RCOMARWepY13H8WG70st4KZ3ApT1C5+k7kK3WsXkxxm6tovfRy75jMtFR
-7oWJRKzR/bSCveJ3deBmnWazY8Reat9zWGXZB7tTxQ8MWrn+KLJl3AnKhhCUL9mD
-fHe6rIlSrpQVAEuIh82rDBRR1m5EPIjiDHQWBz+/hhrldsd4b/A5GnykCf6USjAQ
-SFvYdtZpYdI15a4VZUkaKy88ImApsNGKQcUP45dQ+3wxfU57/OMfeUPL+yzS2CP0
-A6gTfs33qotHWIoGDpIW72w2lATfILI7LHfRavFh0GCZlwNywYhq32URJW5ZHwSk
-kt7/VT3IW9tv48p59knr0MG1czKFg8c2s4+hmCa53kuRCSMuinWt9+Sv4GpuOOkC
-j8KRK9PVl4WMAyswMRdxRQW3zota1kd7TJtjJgpSaqTaUlqR81b4qlZKnXXqDCOX
-OTB0PdGcVxNIL0NWKBtkZdvfWOKec9qkJFRWsuSheoyA1jXlNNlT/TT8mfZb+uSS
-uqP2rrbC3ZmGtTmxmsR3K9LvBZMAYFOir0nh5uzQukXrqIxdVg21pYtPzRmjFW4L
-nkGa+0zGXgkLcD/XjU2Y
-=qULE
------END PGP SIGNATURE-----
-
---DwPKl9r4Shf3fKlmmjVbo0Jtpl6kGSx4L--
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk>        )=-
+-=( Tel: +44 (0)161 477 1898   FAX: +44 (0)161 718 3587         )=-
