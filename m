@@ -1,103 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284AbaDWMiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:38:06 -0400
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:51362 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932234AbaDWMhy (ORCPT
+	id S932137AbaDWMhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:37:19 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:32772 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079AbaDWMhP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:37:54 -0400
-Date: Wed, 23 Apr 2014 13:37:46 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Doug Anderson <dianders@chromium.org>
-Cc: swarren@nvidia.com, wsa@the-dreams.de, abrestic@chromium.org,
-        dgreid@chromium.org, olof@lixom.net, sjg@chromium.org,
-        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Vincent Palatin <vpalatin@chromium.org>, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        rdunlap@infradead.org, sameo@linux.intel.com, jdelvare@suse.de,
-        shane.huang@amd.com, maxime.ripard@free-electrons.com,
-        laurent.pinchart+renesas@ideasonboard.com,
-        u.kleine-koenig@pengutronix.de, bjorn.andersson@sonymobile.com,
-        kevin.strasser@linux.intel.com, linux@prisktech.co.nz, andrew@lunn.ch,
-        andriy.shevchenko@linux.intel.com, schwidefsky@de.ibm.com,
-        matt.porter@linaro.org, ch.naveen@samsung.com,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: [PATCH v2 6/7] i2c: ChromeOS EC tunnel driver
-Message-ID: <20140423123746.GG640@lee--X1>
-References: <1398185154-19404-1-git-send-email-dianders@chromium.org>
- <1398185154-19404-7-git-send-email-dianders@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398185154-19404-7-git-send-email-dianders@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 Apr 2014 08:37:15 -0400
+From: Kefeng Wang <kefeng.wang@linaro.org>
+To: Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: wangkefeng.wang@huawei.com, kefeng.wang@linaro.org
+Subject: [PATCH v5 2/3] libahci_platform: add host_flags parameter in ahci_platform_init_host()
+Date: Wed, 23 Apr 2014 20:36:42 +0800
+Message-Id: <1398256603-20160-3-git-send-email-kefeng.wang@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398256603-20160-1-git-send-email-kefeng.wang@linaro.org>
+References: <1398256603-20160-1-git-send-email-kefeng.wang@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014, Doug Anderson wrote:
+Add a dynamic host_flags argument to make ahci_platform_init_host more flexible,
+then remove the AHCI_HFLAGS(...) argument from some driver's ata_port_info,
+and pass that in as the new argument.
 
-> On ARM Chromebooks we have a few devices that are accessed by both the
-> AP (the main "Application Processor") and the EC (the Embedded
-> Controller).  These are:
-> * The battery (sbs-battery).
-> * The power management unit tps65090.
-> 
-> On the original Samsung ARM Chromebook these devices were on an I2C
-> bus that was shared between the AP and the EC and arbitrated using
-> some extranal GPIOs (see i2c-arb-gpio-challenge).
-> 
-> The original arbitration scheme worked well enough but had some
-> downsides:
-> * It was nonstandard (not using standard I2C multimaster)
-> * It only worked if the EC-AP communication was I2C
-> * It was relatively hard to debug problems (hard to tell if i2c issues
->   were caused by the EC, the AP, or some device on the bus).
-> 
-> On the HP Chromebook 11 the design was changed to:
-> * The AP/EC comms were still i2c, but the battery/tps65090 were no
->   longer on the bus used for AP/EC communication.  The battery was
->   exposed to the AP through a limited i2c tunnel and tps65090 was
->   exposed to the AP through a custom Linux driver.
-> 
-> On the Samsung ARM Chromebook 2 the scheme is changed yet again, now:
-> * The AP/EC comms are now using SPI for faster speeds.
-> * The EC's i2c bus is exposed to the AP through a full i2c tunnel.
-> 
-> The upstream "tegra124-venice2" uses the same scheme as the Samsung
-> ARM Chromebook 2, though it has a different set of components on the
-> other side of the bus.
-> 
-> This driver supports the scheme used by the Samsung ARM Chromebook 2.
-> Future patches to this driver could add support for the battery tunnel
-> on the HP Chromebook 11 (and perhaps could even be used to access
-> tps65090 on the HP Chromebook 11 instead of using a special driver,
-> but I haven't researched that enough).
-> 
-> Signed-off-by: Vincent Palatin <vpalatin@chromium.org>
-> Signed-off-by: Simon Glass <sjg@chromium.org>
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
-> Tested-by: Andrew Bresticker <abrestic@chromium.org>
-> Tested-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Changes in v2:
-> - Update tunnel binding as per swarren
-> 
->  .../devicetree/bindings/i2c/i2c-cros-ec-tunnel.txt |  39 +++
->  drivers/i2c/busses/Kconfig                         |   9 +
->  drivers/i2c/busses/Makefile                        |   1 +
->  drivers/i2c/busses/i2c-cros-ec-tunnel.c            | 304 +++++++++++++++++++++
->  drivers/mfd/cros_ec.c                              |   5 +
+Cc: Hans de Geode <hdegoede@redhat.com>
+Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
+---
+ drivers/ata/ahci_da850.c       |    3 ++-
+ drivers/ata/ahci_imx.c         |    3 ++-
+ drivers/ata/ahci_platform.c    |    2 +-
+ drivers/ata/ahci_st.c          |    2 +-
+ drivers/ata/ahci_sunxi.c       |    9 ++++++---
+ drivers/ata/ahci_xgene.c       |    7 +++++--
+ drivers/ata/libahci_platform.c |    5 ++++-
+ include/linux/ahci_platform.h  |    1 +
+ 8 files changed, 22 insertions(+), 10 deletions(-)
 
-For the MFD changes:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
-
+diff --git a/drivers/ata/ahci_da850.c b/drivers/ata/ahci_da850.c
+index 2c83613..2b77d53 100644
+--- a/drivers/ata/ahci_da850.c
++++ b/drivers/ata/ahci_da850.c
+@@ -85,7 +85,8 @@ static int ahci_da850_probe(struct platform_device *pdev)
+ 
+ 	da850_sata_init(dev, pwrdn_reg, hpriv->mmio);
+ 
+-	rc = ahci_platform_init_host(pdev, hpriv, &ahci_da850_port_info, 0, 0);
++	rc = ahci_platform_init_host(pdev, hpriv, &ahci_da850_port_info,
++				     0, 0, 0);
+ 	if (rc)
+ 		goto disable_resources;
+ 
+diff --git a/drivers/ata/ahci_imx.c b/drivers/ata/ahci_imx.c
+index 497c7ab..e7e44a7 100644
+--- a/drivers/ata/ahci_imx.c
++++ b/drivers/ata/ahci_imx.c
+@@ -267,7 +267,8 @@ static int imx_ahci_probe(struct platform_device *pdev)
+ 	reg_val = clk_get_rate(imxpriv->ahb_clk) / 1000;
+ 	writel(reg_val, hpriv->mmio + HOST_TIMER1MS);
+ 
+-	ret = ahci_platform_init_host(pdev, hpriv, &ahci_imx_port_info, 0, 0);
++	ret = ahci_platform_init_host(pdev, hpriv, &ahci_imx_port_info,
++				      0, 0, 0);
+ 	if (ret)
+ 		imx_sata_disable(hpriv);
+ 
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index ef67e79..a476a1f 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -55,7 +55,7 @@ static int ahci_probe(struct platform_device *pdev)
+ 			goto disable_resources;
+ 	}
+ 
+-	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info, 0, 0);
++	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info, 0, 0, 0);
+ 	if (rc)
+ 		goto pdata_exit;
+ 
+diff --git a/drivers/ata/ahci_st.c b/drivers/ata/ahci_st.c
+index 6332222..2595598 100644
+--- a/drivers/ata/ahci_st.c
++++ b/drivers/ata/ahci_st.c
+@@ -166,7 +166,7 @@ static int st_ahci_probe(struct platform_device *pdev)
+ 	if (err)
+ 		return err;
+ 
+-	err = ahci_platform_init_host(pdev, hpriv, &st_ahci_port_info, 0, 0);
++	err = ahci_platform_init_host(pdev, hpriv, &st_ahci_port_info, 0, 0, 0);
+ 	if (err) {
+ 		ahci_platform_disable_resources(hpriv);
+ 		return err;
+diff --git a/drivers/ata/ahci_sunxi.c b/drivers/ata/ahci_sunxi.c
+index 42d3f64..543132a 100644
+--- a/drivers/ata/ahci_sunxi.c
++++ b/drivers/ata/ahci_sunxi.c
+@@ -157,8 +157,6 @@ static void ahci_sunxi_start_engine(struct ata_port *ap)
+ }
+ 
+ static const struct ata_port_info ahci_sunxi_port_info = {
+-	AHCI_HFLAGS(AHCI_HFLAG_32BIT_ONLY | AHCI_HFLAG_NO_MSI |
+-			  AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ),
+ 	.flags		= AHCI_FLAG_COMMON | ATA_FLAG_NCQ,
+ 	.pio_mask	= ATA_PIO4,
+ 	.udma_mask	= ATA_UDMA6,
+@@ -169,6 +167,7 @@ static int ahci_sunxi_probe(struct platform_device *pdev)
+ {
+ 	struct device *dev = &pdev->dev;
+ 	struct ahci_host_priv *hpriv;
++	unsigned int hflags;
+ 	int rc;
+ 
+ 	hpriv = ahci_platform_get_resources(pdev);
+@@ -185,7 +184,11 @@ static int ahci_sunxi_probe(struct platform_device *pdev)
+ 	if (rc)
+ 		goto disable_resources;
+ 
+-	rc = ahci_platform_init_host(pdev, hpriv, &ahci_sunxi_port_info, 0, 0);
++	hflags = AHCI_HFLAG_32BIT_ONLY | AHCI_HFLAG_NO_MSI |
++		 AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ,
++
++	rc = ahci_platform_init_host(pdev, hpriv, &ahci_sunxi_port_info,
++				     hflags, 0, 0);
+ 	if (rc)
+ 		goto disable_resources;
+ 
+diff --git a/drivers/ata/ahci_xgene.c b/drivers/ata/ahci_xgene.c
+index 77c89bf..020db96 100644
+--- a/drivers/ata/ahci_xgene.c
++++ b/drivers/ata/ahci_xgene.c
+@@ -303,7 +303,6 @@ static struct ata_port_operations xgene_ahci_ops = {
+ };
+ 
+ static const struct ata_port_info xgene_ahci_port_info = {
+-	AHCI_HFLAGS(AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ),
+ 	.flags = AHCI_FLAG_COMMON | ATA_FLAG_NCQ,
+ 	.pio_mask = ATA_PIO4,
+ 	.udma_mask = ATA_UDMA6,
+@@ -382,6 +381,7 @@ static int xgene_ahci_probe(struct platform_device *pdev)
+ 	struct ahci_host_priv *hpriv;
+ 	struct xgene_ahci_context *ctx;
+ 	struct resource *res;
++	unsigned int hflags;
+ 	int rc;
+ 
+ 	hpriv = ahci_platform_get_resources(pdev);
+@@ -450,7 +450,10 @@ static int xgene_ahci_probe(struct platform_device *pdev)
+ 		goto disable_resources;
+ 	}
+ 
+-	rc = ahci_platform_init_host(pdev, hpriv, &xgene_ahci_port_info, 0, 0);
++	hflags = AHCI_HFLAG_NO_PMP | AHCI_HFLAG_YES_NCQ,
++
++	rc = ahci_platform_init_host(pdev, hpriv, &xgene_ahci_port_info,
++				     hflags, 0, 0);
+ 	if (rc)
+ 		goto disable_resources;
+ 
+diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
+index 7cb3a85..d00fd52 100644
+--- a/drivers/ata/libahci_platform.c
++++ b/drivers/ata/libahci_platform.c
+@@ -283,6 +283,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_get_resources);
+  * @pdev: platform device pointer for the host
+  * @hpriv: ahci-host private data for the host
+  * @pi_template: template for the ata_port_info to use
++ * @host_flags: ahci host flags used in ahci_host_priv
+  * @force_port_map: param passed to ahci_save_initial_config
+  * @mask_port_map: param passed to ahci_save_initial_config
+  *
+@@ -296,6 +297,7 @@ EXPORT_SYMBOL_GPL(ahci_platform_get_resources);
+ int ahci_platform_init_host(struct platform_device *pdev,
+ 			    struct ahci_host_priv *hpriv,
+ 			    const struct ata_port_info *pi_template,
++			    unsigned int host_flags,
+ 			    unsigned int force_port_map,
+ 			    unsigned int mask_port_map)
+ {
+@@ -312,7 +314,8 @@ int ahci_platform_init_host(struct platform_device *pdev,
+ 	}
+ 
+ 	/* prepare host */
+-	hpriv->flags |= (unsigned long)pi.private_data;
++	pi.private_data = (void *)host_flags
++	hpriv->flags |= host_flags;
+ 
+ 	ahci_save_initial_config(dev, hpriv, force_port_map, mask_port_map);
+ 
+diff --git a/include/linux/ahci_platform.h b/include/linux/ahci_platform.h
+index 1f16d50..45897f6 100644
+--- a/include/linux/ahci_platform.h
++++ b/include/linux/ahci_platform.h
+@@ -44,6 +44,7 @@ struct ahci_host_priv *ahci_platform_get_resources(
+ int ahci_platform_init_host(struct platform_device *pdev,
+ 			    struct ahci_host_priv *hpriv,
+ 			    const struct ata_port_info *pi_template,
++			    unsigned int host_flags,
+ 			    unsigned int force_port_map,
+ 			    unsigned int mask_port_map);
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
