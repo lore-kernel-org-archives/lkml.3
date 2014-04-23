@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752683AbaDWAah (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 20:30:37 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:15140 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750927AbaDWAad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 20:30:33 -0400
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-CC: Josh Cartwright <joshc@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <devicetree@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>
-Subject: [PATCH 2/2] mfd: pm8x41: document device tree bindings
-Date: Tue, 22 Apr 2014 17:31:50 -0700
-Message-ID: <1398213110-28135-2-git-send-email-courtney.cavin@sonymobile.com>
-X-Mailer: git-send-email 1.8.1.5
-In-Reply-To: <1398213110-28135-1-git-send-email-courtney.cavin@sonymobile.com>
-References: <1398213110-28135-1-git-send-email-courtney.cavin@sonymobile.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1752771AbaDWAd3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 20:33:29 -0400
+Received: from ozlabs.org ([103.22.144.67]:40290 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750773AbaDWAd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 20:33:27 -0400
+Date: Wed, 23 Apr 2014 10:33:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the vfs tree
+Message-Id: <20140423103321.b936dc0700263bbaf617d03d@canb.auug.org.au>
+In-Reply-To: <20140422112653.bff070556db8f7d28187695a@canb.auug.org.au>
+References: <20140422112653.bff070556db8f7d28187695a@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Wed__23_Apr_2014_10_33_21_+1000_hIx4cr1L1+9Mwuv5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Cartwright <joshc@codeaurora.org>
+--Signature=_Wed__23_Apr_2014_10_33_21_+1000_hIx4cr1L1+9Mwuv5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Document the bindings used to describe the Qualcomm 8x41 PMICs.
+Hi Al,
 
-Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+On Tue, 22 Apr 2014 11:26:53 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the vfs tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>=20
+> fs/nfs/direct.c: In function 'nfs_direct_read_schedule_iovec':
+> fs/nfs/direct.c:382:4: error: implicit declaration of function 'vfree' [-=
+Werror=3Dimplicit-function-declaration]
+>     vfree(pagevec);
+>     ^
+>=20
+> Caused by commit 2703e4cd2d57 ("new helper: iov_iter_get_pages_alloc()").
+>=20
+> I have used the vfs tree from next-20140417 for today.
+
+With mixed feelings, I have added the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 23 Apr 2014 10:29:35 +1000
+Subject: [PATCH] vfs: using vfree requires including vmalloc.h
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- Documentation/devicetree/bindings/mfd/pm8x41.txt | 34 ++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/pm8x41.txt
+ fs/nfs/direct.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/Documentation/devicetree/bindings/mfd/pm8x41.txt b/Documentation/devicetree/bindings/mfd/pm8x41.txt
-new file mode 100644
-index 0000000..b865a4f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/pm8x41.txt
-@@ -0,0 +1,34 @@
-+Qualcomm PM8841 and PM8941 PMIC multi-function device bindings
-+
-+The PM8x41 PMICs are used with the Qualcomm Snapdragon 800 series SoCs, and are
-+interfaced to the chip via the SPMI (System Power Management Interface) bus.
-+Support for multiple independent functions are implemented by splitting the
-+16-bit SPMI slave address space into 256 smaller fixed-size regions, 256 bytes
-+each.  A function can consume one or more of these fixed-size register regions.
-+
-+Required properties:
-+- compatible: Must be one of:
-+     "qcom,pm8841"
-+     "qcom,pm8941"
-+- reg: Specifies the SPMI USID slave address for this device;
-+	See bindings/spmi/spmi.txt
-+- #address-cells = <1>
-+- #size-cells = <0>
-+
-+Each child node represents a function of the PM8x41.  Each child 'reg' entry
-+describes an offset within the USID slave address where the region starts.
-+
-+Example:
-+
-+pm8941@0 {
-+	compatible = "qcom,pm8941";
-+	reg = <0x0 SPMI_USID>;
-+
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+
-+	rtc@6000 {
-+		compatible = "...";
-+		reg = <0x6000 0x6100>;
-+	};
-+};
--- 
-1.8.1.5
+diff --git a/fs/nfs/direct.c b/fs/nfs/direct.c
+index 775cc5031eea..9116d9a49406 100644
+--- a/fs/nfs/direct.c
++++ b/fs/nfs/direct.c
+@@ -47,6 +47,7 @@
+ #include <linux/slab.h>
+ #include <linux/task_io_accounting_ops.h>
+ #include <linux/module.h>
++#include <linux/vmalloc.h>
+=20
+ #include <linux/nfs_fs.h>
+ #include <linux/nfs_page.h>
+--=20
+1.9.2
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Wed__23_Apr_2014_10_33_21_+1000_hIx4cr1L1+9Mwuv5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTVwpVAAoJEMDTa8Ir7ZwVg7AP/1UzjYWo4ABdcel5w+aRbj5d
+Tb1gQilVla+5wFiSMmcj8CjgV/uVjK5WMZueNC36zgbd12txX+nyFgkglHMMI1/D
+mWMM8FjCZGwXwZsVMw1jEDg9fOUj77BiqESiO2h09WeEpbCOb8kaBQ2twLVRBYXI
+DhoVzdwCLH9FE7Ac+0o9cfEmj60Wm3zMxbPHONtOt2+OAwCKI+XkafsooqyMyM7O
+KKJBxN6JkCZbOWjbc59iConPxZEQuZgl+Ad99NDkFd7BhUVX9a0VvJ3w6sE8vwEb
+TH3+LoGdGbzFiTObzsC9hpfB+xFTW1NYUSA3GeBym5JlummNcSBkFMhelkQ0wGAf
+cE0/H244m/98UaEvWSHo2hydhpWDYpVWFlGfFo4aDQCpDBBq9uRzYP0HpcPJnEtK
+ovkk6pJFYuKSm6j16eUaPD1PFh++mrme2jJyUstRqXpbdR58a+/Dnifa+oi3+EPx
+ZlYAE+m4gTUtii9GDhlNObCws3FJA/A+O9/8n5yhbd4VsWhdwFapvX27+Taj7T6i
+EE0u+ozUJWyBkx2bGiOLTusoNGMj6U4JUC8LkEfI4Z2Fi/vn4pyBbbqapvwYiZWh
+hAT+hzeOID2g4PjpzOgNplbTRYZmb4fR18JuxmnK6saJetVVLLq9vUIo2KBzc5AV
+s5IOJdxcYhJnTniNDI6W
+=pGfS
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__23_Apr_2014_10_33_21_+1000_hIx4cr1L1+9Mwuv5--
