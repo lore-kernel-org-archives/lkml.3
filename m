@@ -1,69 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250AbaDWIAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:00:30 -0400
-Received: from sym2.noone.org ([178.63.92.236]:43424 "EHLO sym2.noone.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435AbaDWIA0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:00:26 -0400
-Date: Wed, 23 Apr 2014 10:00:23 +0200
-From: Tobias Klauser <tklauser@distanz.ch>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
-Subject: Re: [PATCH 23/28] nios2: Nios2 registers
-Message-ID: <20140423080023.GD1053@distanz.ch>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
- <1397824031-4892-20-git-send-email-lftan@altera.com>
- <20140422123914.GB1053@distanz.ch>
- <CAFiDJ5-S8bD7Z+5XcwUK_mZ+ShCMp5nj7km4NSn+Ecck3xnBxQ@mail.gmail.com>
+	id S1757293AbaDWIBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:01:40 -0400
+Received: from mail-ob0-f192.google.com ([209.85.214.192]:52401 "EHLO
+	mail-ob0-f192.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103AbaDWIBi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 04:01:38 -0400
+X-Greylist: delayed 5506 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Apr 2014 04:01:38 EDT
+X-Google-Doc-Id: a331b2750c282cc7
+X-Google-Web-Client: true
+Date: Tue, 22 Apr 2014 23:21:33 -0700 (PDT)
+From: Carlo Vitucci <vitucci.carlo@gmail.com>
+To: jailhouse-dev@googlegroups.com
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Sabony, Mazda" <Mazda.Sabony@amd.com>
+Message-Id: <b95ba76d-c3a9-458e-b9a9-10ca28886d55@googlegroups.com>
+In-Reply-To: <534C2884.7050004@siemens.com>
+References: <534C2884.7050004@siemens.com>
+Subject: Re: Developer wanted: AMD64 port of Jailhouse hypervisor
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAFiDJ5-S8bD7Z+5XcwUK_mZ+ShCMp5nj7km4NSn+Ecck3xnBxQ@mail.gmail.com>
-X-Editor: Vi IMproved 7.2
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: multipart/mixed; 
+	boundary="----=_Part_445_30314692.1398234093217"
+X-Google-Token: EO233ZoF73-pWaP6yW40
+X-Google-IP: 88.131.84.244
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-23 at 09:10:26 +0200, Ley Foon Tan <lftan@altera.com> wrote:
-> Hi Tobias
-> 
-> 
-> On Tue, Apr 22, 2014 at 8:39 PM, Tobias Klauser <tklauser@distanz.ch> wrote:
-> > On 2014-04-18 at 14:27:06 +0200, Ley Foon Tan <lftan@altera.com> wrote:
-> 
-> >> +
-> >> +/* estatus register bits */
-> >> +#define ESTATUS_EPIE (1 << 0)        /* processor interrupt enable */
-> >> +#define ESTATUS_EU   (1 << 1)        /* user mode */
-> >> +#define ESTATUS_EH   (1 << 2)        /* Exception mode */
-> >> +
-> >> +/* tlbmisc register bits */
-> >> +#define TLBMISC_PID_SHIFT    4
-> >> +#define TLBMISC_PID_MASK     ((1UL << cpuinfo.tlb_pid_num_bits) - 1)
-> >
-> > You should probably #include <asm/cpuinfo.h> here since struct cpuinfo
-> > is used in the definition.
-> Okay, but I think we should add #ifndef __ASSEMBLY__ at #include
-> <asm/cpuinfo.h> and at line #define TLBMISC_PID_MASK.
-> Assembly source file might include this file as well.
+------=_Part_445_30314692.1398234093217
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Yes, makes sense.
+Il giorno luned=C3=AC 14 aprile 2014 20:27:16 UTC+2, J. Kiszka ha scritto:
+> Hi all,
+>=20
+>=20
+>=20
+> so far the Linux-based Jailhouse hypervisor [1] is only available for
+>=20
+> Intel x86 CPUs. I'm now very happy to announce that AMD is offering to
+>=20
+> sponsor the initial port of Jailhouse to the AMD64 architecture. Our
+>=20
+> resources here are unfortunately bound to different tasks, but if anyone
+>=20
+> out there with the required skills is interested in working on this
+>=20
+> project, just reply to this email or contact me and Mazda directly.
+>=20
+>=20
+>=20
+> The work to be done is manageable: we basically need corresponding
+>=20
+> implementations of vmx.c and vtd.c in the current Jailhouse code base -
+>=20
+> provided our existing abstractions were done right. Someone familiar
+>=20
+> with virtualization on x86 in general and, ideally, even on AMD
+>=20
+> processors should be able to complete this task within a couple of weeks.
+>=20
+>=20
+>=20
+> For more details on the Jailhouse architecture and implementations, see
+>=20
+> our slowly growing Documentation folder in the source tree or simply ask
+>=20
+> on the mailing list.
+>=20
+>=20
+>=20
+> Jan
+>=20
+>=20
+>=20
+> [1] https://github.com/siemens/jailhouse
+>=20
+>=20
+>=20
+> --=20
+>=20
+> Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+>=20
+> Corporate Competence Center Embedded Linux
 
-> >
-> >> +#define TLBMISC_WAY_MASK     0xf
-> >> +#define TLBMISC_WAY_SHIFT    20
-> >> +
-> >> +#define TLBMISC_PID  (TLBMISC_PID_MASK << TLBMISC_PID_SHIFT) /* TLB PID */
-> >> +#define TLBMISC_WE   (1 << 18)       /* TLB write enable */
-> >> +#define TLBMISC_RD   (1 << 19)       /* TLB read */
-> >> +#define TLBMISC_WAY  (TLBMISC_WAY_MASK << TLBMISC_WAY_SHIFT) /* TLB way */
-> >> +
-> >> +#endif /* _ASM_NIOS2_REGISTERS_H */
-> 
-> >>
-> 
+Hello jailhouse,
+ just a thought, if I could. AMD64 is not officially delivered and one
+ of the most important new features, that is the direct interrupt delivery,
+ is without a final specification. in other words, ARMv8 is the only suitab=
+le
+ architecture for Jailhouse porting, but there is still a bit fog around.
+Best Regards,
+Carlo
+------=_Part_445_30314692.1398234093217--
