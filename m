@@ -1,118 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680AbaDWWD1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:03:27 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59719 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633AbaDWWDU (ORCPT
+	id S1751754AbaDWWD6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:03:58 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:53255 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305AbaDWWDJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:03:20 -0400
-Date: Wed, 23 Apr 2014 15:03:18 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: NeilBrown <neilb@suse.de>
-Cc: Jan Kara <jack@suse.cz>, Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Dave Chinner <david@fromorbit.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Mel Gorman <mgorman@suse.com>, linux-mm@kvack.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] MM: avoid throttling reclaim for loop-back nfsd
- threads.
-Message-Id: <20140423150318.d4bcf234faa5bea7fcb57b9b@linux-foundation.org>
-In-Reply-To: <20140423024058.4725.71995.stgit@notabene.brown>
-References: <20140423022441.4725.89693.stgit@notabene.brown>
-	<20140423024058.4725.71995.stgit@notabene.brown>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Apr 2014 18:03:09 -0400
+Date: Thu, 24 Apr 2014 00:03:07 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: "Nikula, Jani" <jani.nikula@linux.intel.com>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.15-rc2: i915 regression: only top 20% of screen works in X
+Message-ID: <20140423220307.GA4626@amd.pavel.ucw.cz>
+References: <20140423202248.GA3621@amd.pavel.ucw.cz>
+ <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014 12:40:58 +1000 NeilBrown <neilb@suse.de> wrote:
-
-> When a loop-back NFS mount is active and the backing device for the
-> NFS mount becomes congested, that can impose throttling delays on the
-> nfsd threads.
+On Wed 2014-04-23 23:09:45, Daniel Vetter wrote:
+> On Wed, Apr 23, 2014 at 10:22 PM, Pavel Machek <pavel@ucw.cz> wrote:
+> > After update to 3.15-rc2, only top 20% of screen works on X.
+> >
+> > 00:02.0 VGA compatible controller: Intel Corporation 4 Series Chipset
+> > Integrated Graphics Controller (rev 03)
+> >
+> > 00:02.1 Display controller: Intel Corporation 4 Series Chipset
+> > Integrated Graphics Controller (rev 03)
+> >            Subsystem: Intel Corporation Device d614
+> >            Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+> >            ParErr- Stepping- SERR- FastB2B- DisINTx-
+> >            Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast
+> >            >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+> >            Latency: 0
+> >            Region 0: Memory at d0400000 (64-bit, non-prefetchable)
+> >            [size=1M]
+> >            Capabilities: <access denied>
+> >
+> > This worked before. I believe it worked in 3.14. It definitely works
+> > in 3.11-rc2.
 > 
-> These delays significantly reduce throughput and so the NFS mount
-> remains congested.
-> 
-> This results in a live lock and the reduced throughput persists.
-> 
-> This live lock has been found in testing with the 'wait_iff_congested'
-> call, and could possibly be caused by the 'congestion_wait' call.
-> 
-> This livelock is similar to the deadlock which justified the
-> introduction of PF_LESS_THROTTLE, and the same flag can be used to
-> remove this livelock.
-> 
-> To minimise the impact of the change, we still throttle nfsd when the
-> filesystem it is writing to is congested, but not when some separate
-> filesystem (e.g. the NFS filesystem) is congested.
-> 
-> Signed-off-by: NeilBrown <neilb@suse.de>
-> ---
->  mm/vmscan.c |   18 ++++++++++++++++--
->  1 file changed, 16 insertions(+), 2 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index a9c74b409681..e011a646de95 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1424,6 +1424,18 @@ putback_inactive_pages(struct lruvec *lruvec, struct list_head *page_list)
->  	list_splice(&pages_to_free, page_list);
->  }
->  
-> +/* If a kernel thread (such as nfsd for loop-back mounts) services
+> Screenshot or more detailed description of what "only top 20% of
+> screen works in X" means?
 
-/*
- * If ...
+Well, top cca 20% is ok, then I got repeated pattern of some part of screen.
 
-please
+> Anything in dmesg?
 
-> + * a backing device by writing to the page cache it sets PF_LESS_THROTTLE.
-> + * In that case we should only throttle if the backing device it is
-> + * writing to is congested.  In other cases it is safe to throttle.
-> + */
-> +static int current_may_throttle(void)
-> +{
-> +	return !(current->flags & PF_LESS_THROTTLE) ||
-> +		current->backing_dev_info == NULL ||
-> +		bdi_write_congested(current->backing_dev_info);
-> +}
-> +
->  /*
->   * shrink_inactive_list() is a helper for shrink_zone().  It returns the number
->   * of reclaimed pages
-> @@ -1552,7 +1564,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  		 * implies that pages are cycling through the LRU faster than
->  		 * they are written so also forcibly stall.
->  		 */
-> -		if (nr_unqueued_dirty == nr_taken || nr_immediate)
-> +		if ((nr_unqueued_dirty == nr_taken || nr_immediate)
-> +		    && current_may_throttle())
+That will take a look.
 
-	foo &&
-	bar
+> bisect result presuming that it reproduces reliably?
 
-please.  As you did in in current_may_throttle().
+If there's no other chance, I guess I could do bisect. But
+first.... Do you have similar hardware? Does it work for you? Are
+there any experimental changes that went in recently and I should
+try reverting first?
 
->  			congestion_wait(BLK_RW_ASYNC, HZ/10);
->  	}
->  
-> @@ -1561,7 +1574,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->  	 * is congested. Allow kswapd to continue until it starts encountering
->  	 * unqueued dirty pages or cycling through the LRU too quickly.
->  	 */
-> -	if (!sc->hibernation_mode && !current_is_kswapd())
-> +	if (!sc->hibernation_mode && !current_is_kswapd()
-> +	    && current_may_throttle())
-
-ditto
-
->  		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
->  
->  	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
-> 
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
