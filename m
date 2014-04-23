@@ -1,245 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757605AbaDWPPU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:15:20 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52663 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752553AbaDWPPO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:15:14 -0400
-Date: Wed, 23 Apr 2014 17:15:07 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Mateusz Guzik <mguzik@redhat.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Kay Sievers <kay@vrfy.org>
-Subject: Re: [RFC PATCH] cmdline: Hide "debug" from /proc/cmdline
-Message-ID: <20140423151507.GA31689@pd.tnic>
+	id S1757617AbaDWPQE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:16:04 -0400
+Received: from mail-la0-f46.google.com ([209.85.215.46]:42606 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655AbaDWPP6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:15:58 -0400
+Date: Wed, 23 Apr 2014 18:15:48 +0300
+From: Johan Hedberg <johan.hedberg@gmail.com>
+To: Andreas =?iso-8859-1?Q?Bie=DFmann?= <andreas@biessmann.de>
+Cc: linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        Gustavo Padovan <gustavo@padovan.org>, linux-bluetooth@vger.kernel.org
+Subject: Re: [PATCH] bluetooth:hci_ldisc: add tasklet for deferred TX handling
+Message-ID: <20140423151548.GA10025@t440s.P-661HNU-F1>
+Mail-Followup-To: Andreas =?iso-8859-1?Q?Bie=DFmann?= <andreas@biessmann.de>,
+	linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+	Gustavo Padovan <gustavo@padovan.org>,
+	linux-bluetooth@vger.kernel.org
+References: <1397661950-30408-1-git-send-email-andreas@biessmann.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1397661950-30408-1-git-send-email-andreas@biessmann.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Andreas,
 
-here's some more massaging of your patch. (Btw, let's start a new
-thread).
-
-On Wed, Apr 02, 2014 at 06:47:57PM -0700, Linus Torvalds wrote:
-> It's definitely not perfect - if we suppress output, and the process
-> then closes the file descriptor rather than continuing to write more,
-> you won't  get that "suppressed" message. But it's a usable starting
-> point for testing and commentary on the actual limits.
+On Wed, Apr 16, 2014, Andreas Bieﬂmann wrote:
+> This patch fixes a recursive locking scenario when using BCSP connection via
+> 8250 driver. The 8250 driver may tty_wakeup() in interrupt context which
+> results in hci_uart_tx_wakeup(). This in turn will call uart_write() in the
+> very same context and therefore will spin_lock() the same lock within the
+> same context.
 > 
-> So we should probably add reporting about suppressed messages at file
-> close time,
+> Here is the call stack:
+> 
+> ---8<---
+> =============================================
+> [ INFO: possible recursive locking detected ]
+> 3.4.87-gf1a3cc3 #3 Tainted: G           O
+> ---------------------------------------------
+> swapper/0 is trying to acquire lock:
+>  (&port_lock_key){-.-...}, at: [<c023e21c>] uart_write+0x60/0xfc
+> 
+> but task is already holding lock:
+>  (&port_lock_key){-.-...}, at: [<c0242830>] serial8250_handle_irq+0x24/0x88
+> 
+> other info that might help us debug this:
+>  Possible unsafe locking scenario:
+> 
+>        CPU0
+>        ----
+>   lock(&port_lock_key);
+>   lock(&port_lock_key);
+> 
+>  *** DEADLOCK ***
+> 
+>  May be due to missing lock nesting notation
+> 
+> 2 locks held by swapper/0:
+>  #0:  (&(&i->lock)->rlock){-.-...}, at: [<c0240f44>] serial8250_interrupt+0x2c/0xc0
+>  #1:  (&port_lock_key){-.-...}, at: [<c0242830>] serial8250_handle_irq+0x24/0x88
+> 
+> stack backtrace:
+> [<c0014234>] (unwind_backtrace+0x0/0xec) from [<c0398448>] (dump_stack+0x20/0x24)
+> [<c0398448>] (dump_stack+0x20/0x24) from [<c006eebc>] (print_deadlock_bug+0xb4/0xe4)
+> [<c006eebc>] (print_deadlock_bug+0xb4/0xe4) from [<c006f04c>] (check_deadlock.isra.20+0x160/0x18c)
+> [<c006f04c>] (check_deadlock.isra.20+0x160/0x18c) from [<c0070890>] (validate_chain.isra.24+0x4a4/0x4f0)
+> [<c0070890>] (validate_chain.isra.24+0x4a4/0x4f0) from [<c00715a0>] (__lock_acquire+0x670/0x740)
+> [<c00715a0>] (__lock_acquire+0x670/0x740) from [<c0071cb0>] (lock_acquire+0x138/0x15c)
+> [<c0071cb0>] (lock_acquire+0x138/0x15c) from [<c03a5904>] (_raw_spin_lock_irqsave+0x54/0x68)
+> [<c03a5904>] (_raw_spin_lock_irqsave+0x54/0x68) from [<c023e21c>] (uart_write+0x60/0xfc)
+> [<c023e21c>] (uart_write+0x60/0xfc) from [<bf0716d8>] (hci_uart_tx_wakeup+0x9c/0x160 [hci_uart])
+> [<bf0716d8>] (hci_uart_tx_wakeup+0x9c/0x160 [hci_uart]) from [<bf0717f4>] (hci_uart_tty_wakeup+0x58/0x5c [hci_uart])
+> [<bf0717f4>] (hci_uart_tty_wakeup+0x58/0x5c [hci_uart]) from [<c02246ec>] (tty_wakeup+0x48/0x68)
+> [<c02246ec>] (tty_wakeup+0x48/0x68) from [<c023efb0>] (uart_write_wakeup+0x2c/0x30)
+> [<c023efb0>] (uart_write_wakeup+0x2c/0x30) from [<c0241d0c>] (serial8250_tx_chars+0xf0/0x140)
+> [<c0241d0c>] (serial8250_tx_chars+0xf0/0x140) from [<c0242878>] (serial8250_handle_irq+0x6c/0x88)
+> [<c0242878>] (serial8250_handle_irq+0x6c/0x88) from [<c02428c4>] (serial8250_default_handle_irq+0x30/0x34)
+> [<c02428c4>] (serial8250_default_handle_irq+0x30/0x34) from [<c0240f5c>] (serial8250_interrupt+0x44/0xc0)
+> [<c0240f5c>] (serial8250_interrupt+0x44/0xc0) from [<c0087c70>] (handle_irq_event_percpu+0xc4/0x2cc)
+> [<c0087c70>] (handle_irq_event_percpu+0xc4/0x2cc) from [<c0087ec4>] (handle_irq_event+0x4c/0x6c)
+> [<c0087ec4>] (handle_irq_event+0x4c/0x6c) from [<c008a368>] (handle_edge_irq+0x114/0x14c)
+> [<c008a368>] (handle_edge_irq+0x114/0x14c) from [<c0087528>] (generic_handle_irq+0x40/0x54)
+> [<c0087528>] (generic_handle_irq+0x40/0x54) from [<c01f1900>] (gpio_irq_handler+0x168/0x1ac)
+> [<c01f1900>] (gpio_irq_handler+0x168/0x1ac) from [<c0087528>] (generic_handle_irq+0x40/0x54)
+> [<c0087528>] (generic_handle_irq+0x40/0x54) from [<c000ed7c>] (handle_IRQ+0x70/0x94)
+> [<c000ed7c>] (handle_IRQ+0x70/0x94) from [<c000877c>] (omap3_intc_handle_irq+0x64/0x78)
+> [<c000877c>] (omap3_intc_handle_irq+0x64/0x78) from [<c000df44>] (__irq_svc+0x44/0x78)
+> --->8---
+> 
+> Signed-off-by: Andreas Bieﬂmann <andreas@biessmann.de>
+> Cc: Marcel Holtmann <marcel@holtmann.org>
+> Cc: Gustavo Padovan <gustavo@padovan.org>
+> Cc: Johan Hedberg <johan.hedberg@gmail.com>
+> Cc: linux-bluetooth@vger.kernel.org
+> ---
+> 
+> It seems at least one other guy had the very same problem with another uart
+> (mpc52xx): http://www.spinics.net/lists/linux-rt-users/msg09246.html
+> 
+> I wonder, if my approach is right. It is runtime tested with 3.4.87 on our
+> board and work around the mentioned recursive locking. But I do not know, if
+> it should be fixed in another way.
+> If it is right, I'd work some more on it to get the fix mainline.
+> 
+>  drivers/bluetooth/hci_ldisc.c |   49 ++++++++++++++++++++++++++++++++++++-----
+>  drivers/bluetooth/hci_uart.h  |    2 ++
+>  2 files changed, 45 insertions(+), 6 deletions(-)
 
-see below.
+This seems to be tackling the same problem as the following patch from
+Felipe Balbi (of which a new revision was sent earlier today):
 
-> and we should tweak the limits (for example, perhaps not limit things
-> if the buffers are largely empty - which happens at bootup), but on
-> the whole I think this is a reasonable thing to do.
+	Subject: [PATCH 02/13] bluetooth: hci_ldisc: fix deadlock condition
 
-Err, help me out here pls, which buffers? Do you mean we should look at
-log_buf's fill level?
-
-> Whether it actually fixes the problem that Borislav had is
-> questionable, of course. For all I know, systemd debug mode generates
-> so much data in *other* ways and then causes feedback loops with the
-> kernel debugging that this patch is totally immaterial, and dmesg was
-> never the main issue. But unlike the "hide 'debug' from
-> /proc/cmdline", I think this patch at least _conceptually_ makes a lot
-> of sense, even if systemd gets fixed, so ...
-
-Ok, here's a dirty hack that issues ratelimit messages at release time.
-I probably should wrap it nicely in ratelimit_*() accessors instead
-of poking directly at ratelimit_state. Yeah, maybe a ratelimit_exit()
-wrapper which does all the fun automatically.
-
-Anyway, with it, it looks like this:
-
-[    3.098474] systemd-fstab-g: 4 callbacks suppressed
-[    9.256317] audit_printk_skb: 108 callbacks suppressed
-[   31.486281] systemd-journal: 464 callbacks suppressed
-
-In dmesg, it basically shuts up:
-
-...
-[    3.603657] systemd-journald[115]: Vacuuming...
-[    3.603666] systemd-journald[115]: Vacuuming done, freed 0 bytes
-[    3.603759] systemd-journald[115]: Assertion 'dual_timestamp_is_set(&e->timestamp)' failed at src/libsystemd/sd-event/sd-event.c:2204, function sd_event_get_now_monotonic(). Ignoring.
-[    3.603759] systemd-journald[115]: Flushing /dev/kmsg...
-[    3.603759] systemd-journald[115]: Assertion 'dual_timestamp_is_set(&e->timestamp)' failed at src/libsystemd/sd-event/sd-event.c:2204, function sd_event_get_now_monotonic(). Ignoring.
-[    3.603759] systemd-journald[115]: Assertion 'dual_timestamp_is_set(&e->timestamp)' failed at src/libsystemd/sd-event/sd-event.c:2204, function sd_event_get_now_monotonic(). Ignoring.
-[    3.603759] systemd-journald[115]: Assertion 'dual_timestamp_is_set(&e->timestamp)' failed at src/libsystemd/sd-event/sd-event.c:2204, function sd_event_get_now_monotonic(). Ignoring.
-[    3.640216] BTRFS info (device sda2): disk space caching is enabled
-[    3.815059] systemd-udevd[142]: starting version 210
-
-and then on shutdown, when it releases kmsg:
-
-...
-[  OK  ] Stopped target Local File Systems (Pre).
-         Stopping Remount Root and Kernel File Systems...
-[  OK  ] Stopped Remount Root and Kernel File Systems.
-[  OK  ] Reached target Shutdown.
-Sending SIGTERM to remaining processes...
-[   31.486281] systemd-journal: 464 callbacks suppressed
-[   32.246116] mtrr: no MTRR for fc000000,400000 found
-Sending SIGKILL to remaining processes...
-Unmounting file systems.
-[   32.356186] BTRFS info (device sda2): disk space caching is enabled
-Unmounting /tmp.
-[   32.392842] BTRFS info (device sda2): disk space caching is enabled
-Unmounting /var/log.
-...
-
-Comments?
-
-Thanks.
-
----
-diff --git a/include/linux/ratelimit.h b/include/linux/ratelimit.h
-index 0a260d8a18bf..ab8d9fb76789 100644
---- a/include/linux/ratelimit.h
-+++ b/include/linux/ratelimit.h
-@@ -7,6 +7,8 @@
- #define DEFAULT_RATELIMIT_INTERVAL	(5 * HZ)
- #define DEFAULT_RATELIMIT_BURST		10
- 
-+#define	RATELIMIT_MSG_ON_RELEASE	BIT(0)
-+
- struct ratelimit_state {
- 	raw_spinlock_t	lock;		/* protect the state */
- 
-@@ -15,6 +17,7 @@ struct ratelimit_state {
- 	int		printed;
- 	int		missed;
- 	unsigned long	begin;
-+	unsigned long	flags;
- };
- 
- #define DEFINE_RATELIMIT_STATE(name, interval_init, burst_init)		\
-@@ -28,12 +31,11 @@ struct ratelimit_state {
- static inline void ratelimit_state_init(struct ratelimit_state *rs,
- 					int interval, int burst)
- {
-+	memset(rs, 0, sizeof(*rs));
-+
- 	raw_spin_lock_init(&rs->lock);
- 	rs->interval = interval;
- 	rs->burst = burst;
--	rs->printed = 0;
--	rs->missed = 0;
--	rs->begin = 0;
- }
- 
- extern struct ratelimit_state printk_ratelimit_state;
-diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
-index 5b5fdd8eeb75..18cfa5f5b058 100644
---- a/kernel/printk/printk.c
-+++ b/kernel/printk/printk.c
-@@ -450,6 +450,7 @@ struct devkmsg_user {
- 	u64 seq;
- 	u32 idx;
- 	enum log_flags prev;
-+	struct ratelimit_state rs;
- 	struct mutex lock;
- 	char buf[8192];
- };
-@@ -461,11 +462,15 @@ static ssize_t devkmsg_writev(struct kiocb *iocb, const struct iovec *iv,
- 	int i;
- 	int level = default_message_loglevel;
- 	int facility = 1;	/* LOG_USER */
-+	struct file *file = iocb->ki_filp;
-+	struct devkmsg_user *user = file->private_data;
- 	size_t len = iov_length(iv, count);
- 	ssize_t ret = len;
- 
--	if (len > LOG_LINE_MAX)
-+	if (!user || len > LOG_LINE_MAX)
- 		return -EINVAL;
-+	if (!___ratelimit(&user->rs, current->comm))
-+		return ret;
- 	buf = kmalloc(len+1, GFP_KERNEL);
- 	if (buf == NULL)
- 		return -ENOMEM;
-@@ -696,21 +701,25 @@ static unsigned int devkmsg_poll(struct file *file, poll_table *wait)
- static int devkmsg_open(struct inode *inode, struct file *file)
- {
- 	struct devkmsg_user *user;
--	int err;
--
--	/* write-only does not need any file context */
--	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
--		return 0;
- 
--	err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
--				       SYSLOG_FROM_READER);
--	if (err)
--		return err;
-+	/* write-only does not need to check read permissions */
-+	if ((file->f_flags & O_ACCMODE) != O_WRONLY) {
-+		int err = check_syslog_permissions(SYSLOG_ACTION_READ_ALL,
-+					       SYSLOG_FROM_READER);
-+		if (err)
-+			return err;
-+	}
- 
- 	user = kmalloc(sizeof(struct devkmsg_user), GFP_KERNEL);
- 	if (!user)
- 		return -ENOMEM;
- 
-+	/* Configurable? */
-+	ratelimit_state_init(&user->rs, DEFAULT_RATELIMIT_INTERVAL, DEFAULT_RATELIMIT_BURST);
-+
-+	/* We'll say something at release time. */
-+	user->rs.flags |= RATELIMIT_MSG_ON_RELEASE;
-+
- 	mutex_init(&user->lock);
- 
- 	raw_spin_lock_irq(&logbuf_lock);
-@@ -729,6 +738,10 @@ static int devkmsg_release(struct inode *inode, struct file *file)
- 	if (!user)
- 		return 0;
- 
-+	if (user->rs.missed)
-+		pr_warning("%s: %d callbacks suppressed\n",
-+			   current->comm, user->rs.missed);
-+
- 	mutex_destroy(&user->lock);
- 	kfree(user);
- 	return 0;
-diff --git a/lib/ratelimit.c b/lib/ratelimit.c
-index 40e03ea2a967..97b461a9fd52 100644
---- a/lib/ratelimit.c
-+++ b/lib/ratelimit.c
-@@ -46,12 +46,13 @@ int ___ratelimit(struct ratelimit_state *rs, const char *func)
- 		rs->begin = jiffies;
- 
- 	if (time_is_before_jiffies(rs->begin + rs->interval)) {
--		if (rs->missed)
-+		if (rs->missed && !(rs->flags & RATELIMIT_MSG_ON_RELEASE))
- 			printk(KERN_WARNING "%s: %d callbacks suppressed\n",
- 				func, rs->missed);
- 		rs->begin   = 0;
- 		rs->printed = 0;
--		rs->missed  = 0;
-+		if (!(rs->flags & RATELIMIT_MSG_ON_RELEASE))
-+			rs->missed  = 0;
- 	}
- 	if (rs->burst && rs->burst > rs->printed) {
- 		rs->printed++;
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+Johan
