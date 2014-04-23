@@ -1,127 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757295AbaDWHeF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:34:05 -0400
-Received: from mga01.intel.com ([192.55.52.88]:1708 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756642AbaDWHeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:34:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,910,1389772800"; 
-   d="scan'208";a="525394964"
-Date: Wed, 23 Apr 2014 10:40:56 +0300
-From: Mika Westerberg <mika.westerberg@linux.intel.com>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Lan, Tianyu" <tianyu.lan@intel.com>,
-        "wsa@the-dreams.de" <wsa@the-dreams.de>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "awilliam@redhat.com" <awilliam@redhat.com>,
-        "lenb@kernel.org" <lenb@kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+	id S1755471AbaDWHfi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:35:38 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64070 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719AbaDWHff (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 03:35:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: Re: [Resend Patch 9/9] I2C/ACPI: Add CONFIG_I2C_ACPI config
-Message-ID: <20140423074056.GU30677@intel.com>
-References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com>
- <1398147855-9868-1-git-send-email-tianyu.lan@intel.com>
- <1398147855-9868-10-git-send-email-tianyu.lan@intel.com>
- <20140422114510.GM30677@intel.com>
- <53575227.7080407@intel.com>
- <1AE640813FDE7649BE1B193DEA596E88025577CB@SHSMSX101.ccr.corp.intel.com>
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
+Subject: Re: [PATCH 19/28] nios2: Device tree support
+Date: Wed, 23 Apr 2014 09:35:32 +0200
+Message-ID: <5432420.laaqgJK4HL@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAFiDJ588Gr0yNBT2jSgDAo+SY-e-xCB5Rs4uS5ZNeskqasgNpA@mail.gmail.com>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com> <201404221542.16481.arnd@arndb.de> <CAFiDJ588Gr0yNBT2jSgDAo+SY-e-xCB5Rs4uS5ZNeskqasgNpA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88025577CB@SHSMSX101.ccr.corp.intel.com>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V02:K0:0JWKICOX6x4669BvphBnmYpIZxf9em4f2vAD4yrSOXY
+ TWnLUU6QXOSd3z/VeYMqfJ0Vatd6Mj9qaqALdf9Rrj655M/4t8
+ llpP/TYi20BPlAz+PkUY2CgYmLT1UdsD/JzkqeJUrnx9/8PXfp
+ FZHAi3Zv/kGFg/Ic81dKSM4ZpM3UCiKhT6jlrygx9RV9RqNwhX
+ EpQ8ugGNXCZPQIxRVm83edDh26BR2h51aEW1bcdVH33b0S41dw
+ ErLaxLvd+fJu7YXfQz8kr9UxQFh0CQiTDcy4gozOujPfs8Nunc
+ zLDpMODLt8wItTQoPafmS+32Lp4LJNty4L3/gKVmxyXdIqT3m4
+ WtqveYjF0B+9HCbIAoAU=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 06:47:05AM +0000, Zheng, Lv wrote:
-> Hi, Tianyu
+On Wednesday 23 April 2014 14:52:47 Ley Foon Tan wrote:
+> On Tue, Apr 22, 2014 at 9:42 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Friday 18 April 2014, Ley Foon Tan wrote:
+> >> diff --git a/arch/nios2/boot/dts/3c120_devboard.dts b/arch/nios2/boot/dts/3c120_devboard.dts
 > 
-> > From: Lan, Tianyu
-> > Sent: Wednesday, April 23, 2014 1:40 PM
-> > 
-> > On 2014年04月22日 19:45, Mika Westerberg wrote:
-> > > On Tue, Apr 22, 2014 at 02:24:15PM +0800, Lan Tianyu wrote:
-> > >> This patch is to add CONFIG_I2C_ACPI. Current there is a race between
-> > >> removing I2C ACPI operation region and ACPI AML code accessing.
-> > >> So make i2c core built-in if CONFIG_I2C_ACPI is set.
-> > >>
-> > >> Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-> > >> ---
-> > >>  drivers/i2c/Kconfig  | 17 ++++++++++++++++-
-> > >>  drivers/i2c/Makefile |  2 +-
-> > >>  include/linux/i2c.h  |  2 +-
-> > >>  3 files changed, 18 insertions(+), 3 deletions(-)
-> > >>
-> > >> diff --git a/drivers/i2c/Kconfig b/drivers/i2c/Kconfig
-> > >> index 7b7ea32..c670d49 100644
-> > >> --- a/drivers/i2c/Kconfig
-> > >> +++ b/drivers/i2c/Kconfig
-> > >> @@ -2,7 +2,9 @@
-> > >>  # I2C subsystem configuration
-> > >>  #
-> > >>
-> > >> -menuconfig I2C
-> > >> +menu "I2C support"
-> > >> +
-> > >> +config I2C
-> > >>  	tristate "I2C support"
-> > >>  	select RT_MUTEXES
-> > >>  	---help---
-> > >> @@ -21,6 +23,17 @@ menuconfig I2C
-> > >>  	  This I2C support can also be built as a module.  If so, the module
-> > >>  	  will be called i2c-core.
-> > >>
-> > >> +config I2C_ACPI
-> > >> +	bool "I2C ACPI support"
-> > >> +	select I2C
-> > >> +	depends on ACPI
-> > >> +	default y
-> > >> +	help
-> > >> +	  Say Y here if you want to enable I2C ACPI function. ACPI table
-> > >> +	  provides I2C slave devices' information to enumerate these devices.
-> > >> +	  This option also allows ACPI AML code to access I2C slave devices
-> > >> +	  via I2C ACPI operation region to fulfill ACPI method.
-> > >> +
-> > >
-> > > I'm wondering, can we provide some sort of wrapper function from ACPI core
-> > > that is guaranteed to be built in to the kernel image and use it instead of
-> > > adding new Kconfig options?
-> > >
-> > Cc: LV
-> > 
-> > LV tried to fix the issue via wrapper solution in the ACPI code before.
-> > https://lkml.org/lkml/2013/7/23/87
-> > 
-> > He has a plan to resolve the issue in ACPICA later.
-> > 
-> > Other choice is to increase the i2c-core module count to prevent it
-> > being unloaded when i2c operation region handler is installed. Remove
-> > the code When LV finish his job.
-> 
-> You may see it implemented in ACPICA after several release.
-> If you need a fix for now, you can use the patch pointed to by the link you've provided,
-> Or you could find an updated one here:
->  acpi-ipmi13.patch archived in (https://bugzilla.kernel.org/attachment.cgi?id=112611)
-> 
-> I think the solution you've provided in this patch is also reasonable for now.
-> IPMI also uses a similar solution to solve this issue.
-> Please refer to the CONFIG_ACPI_IPMI.
-> 
-> The story can be found at:
-> http://www.spinics.net/lists/linux-acpi/msg49044.html
-> And the similar solution can be found at:
-> http://www.spinics.net/lists/linux-acpi/msg49184.html
+> >> +/dts-v1/;
+> >> +
+> >> +/ {
+> >> +     model = "ALTR,qsys_ghrd_3c120";
+> >> +     compatible = "ALTR,qsys_ghrd_3c120";
+> >
+> > You have a mix of "ALTR" and "altr" prefixes. The general recommendation
+> > is to use lower-case letters, which is also what is used on ARM socfpga,
+> > and what is documented in Documentation/devicetree/bindings/vendor-prefixes.txt
+> > for Altera.
+> Yes, the vendor prefix should be changed to lower case. FYI, this dts
+> file is generated by our dts generator tool called sopc2dts.
+> Our tool already aware of this requirement, but haven't support this yet.
+> I can edit this file manually to change 'ALTR' to 'altr', but I will
+> update nios2 code to match for both "ALTR" and "altr" for backward
+> compatibility. "ALTR" will be deprecated later. Are you okay with
+> this?
 
-Thanks for the pointers.
+You seem to have a large number of "ALTR" strings at the moment.
+I don't think it would be good to allow matching both variants
+everywhere, that would be a lot of extra code.
 
-Given that the IPMI problem was solved like this I guess I2C operation
-regions can follow the same pattern if there is no better solution
-available.
+If it's only about the root compatible property, I have no objections,
+but I don't know if it will help you when all the other strings don't
+match.
 
-Out of curiousity: how did you plan to fix this in ACPICA?
+> >> +     sopc@0 {
+> >> +             device_type = "soc";
+> >> +             ranges;
+> >> +             #address-cells = < 1 >;
+> >> +             #size-cells = < 1 >;
+> >> +             compatible = "ALTR,avalon", "simple-bus";
+> >> +             bus-frequency = < 125000000 >;
+> >> +
+> >> +             pb_cpu_to_io: bridge@0x8000000 {
+> >> +                     compatible = "simple-bus";
+> >> +                     reg = < 0x08000000 0x00800000 >;
+> >
+> > Are these all synthesized devices, or is there also some hardwired
+> > logic? It often makes sense to split out the reusable parts into
+> > a separate .dtsi file that gets included by every implementation.
+> All these are synthesized devices and the system hierarchy is also not
+> fixed and it is depends on user hardware design. It is highly
+> configurable.
+> So, we can't have a common .dtsi file.
+
+Ok, I see.
+
+> >> +                     #address-cells = < 1 >;
+> >> +                     #size-cells = < 1 >;
+> >> +                     ranges = < 0x00400000 0x08400000 0x00000020
+> >> +                             0x00004D40 0x08004D40 0x00000008
+> >> +                             0x00004D50 0x08004D50 0x00000008
+> >> +                             0x00004000 0x08004000 0x00000400
+> >> +                             0x00004400 0x08004400 0x00000040
+> >> +                             0x00004800 0x08004800 0x00000040
+> >> +                             0x00002000 0x08002000 0x00002000
+> >> +                             0x00004C80 0x08004C80 0x00000020
+> >> +                             0x00004CC0 0x08004CC0 0x00000010
+> >> +                             0x00004CE0 0x08004CE0 0x00000010
+> >> +                             0x00004D00 0x08004D00 0x00000010 >;
+> >
+
+> > - The ranges should reflect what the bus actually translates,
+> >   which is typically not individual bytes but rather whole
+> >   address ranges.
+> The ranges here reflect the address range translate by each device and
+> user can assign any base address they desired in our FPGA. The address
+> ranges might not in continuous regions as well. So, we will keep this
+> translation way.
+
+If you can support any address, why not just have an empty 'ranges'
+property?
+
+> >> +                     timer_1ms: timer@0x400000 {
+> >> +                             compatible = "ALTR,timer-1.0";
+> >> +
+> >> +                     sysid: sysid@0x4d40 {
+> >> +                             compatible = "ALTR,sysid-1.0";
+> >> +                             reg = < 0x00004D40 0x00000008 >;
+> >
+> >> +                     jtag_uart: serial@0x4d50 {
+> >> +                             compatible = "ALTR,juart-1.0";
+> >> +                             reg = < 0x00004D50 0x00000008 >;
+> >> +
+> >> +                     tse_mac: ethernet@0x4000 {
+> >> +                             compatible = "ALTR,tse-1.0";
+> >
+> >
+> > Does each one of these have a binding document in
+> > Documentation/devicetree/bindings?
+> jtag_uart and tse drivers are upstreamed. They already have their own
+> bindings doc:
+> Documentation/devicetree/bindings/serial/altera_jtaguart.txt
+> Documentation/devicetree/bindings/net/altera_tse.txt
+> 
+> I will add the binding doc for timer, but sysid driver is not in
+> mainline kernel yet. I will remove sysid entry from this file.
+
+Ok. BTW, could the sysid be used for the soc device strings, or
+is that something else?
+
+> >> +                             reg = < 0x00004000 0x00000400
+> >> +                                     0x00004400 0x00000040
+> >> +                                     0x00004800 0x00000040
+> >> +                                     0x00002000 0x00002000 >;
+> >> +                                reg-names = "control_port", "rx_csr", "tx_csr", "s1";
+> >
+> > - wrong order, missing "tx_desc" and "rx_desc" entries
+> FYI, TSE driver supports both SGDMA and MSGDMA soft IP and "tx_desc"
+> and "rx_desc" entries are for MSGDMA (see below). But this 3c120
+> hardware design is using TSE + SGDMA. So, the expect entries are
+> "control_port", "rx_csr", "tx_csr", "s1".
+> I can sort the entries order by their addresses.
+
+You can't reorder the registers, as they can be accessed by
+index in some OS, the strings are just annotations really.
+
+> Excerpt from Documentation/devicetree/bindings/net/altera_tse.txt
+> - reg-names: Should contain the reg names
+>   "control_port": MAC configuration space region
+>   "tx_csr":       xDMA Tx dispatcher control and status space region
+>   "tx_desc":      MSGDMA Tx dispatcher descriptor space region
+>   "rx_csr" :      xDMA Rx dispatcher control and status space region
+>   "rx_desc":      MSGDMA Rx dispatcher descriptor space region
+>   "rx_resp":      MSGDMA Rx dispatcher response space region
+>   "s1":           SGDMA descriptor memory
+
+The important part is
+
+- reg: Address and length of the register set for the device. It contains
+  the information of registers in the same order as described by reg-names.
+
+You can either provide dummy entries for tx_desc, rx_desc and rx_resp,
+or change the binding to reflect the current usage, and provide two
+different lists depending on the compatible string.
+
+> >> +                             max-frame-size = < 1518 >;
+> >> +                             local-mac-address = [ 02 00 00 00 00 00 ];
+> >> +                             phy-mode = "rgmii-id";
+> >> +                             ALTR,mii-id = < 0 >;
+> >
+> > ALTR,mii-id is not documented, and required "phy-addr" is missing.
+> Will remove ALTR,mii-id. "phy-addr" is not required if we provide "phy-handle".
+> 
+> Excerpt from Documentation/devicetree/bindings/net/altera_tse.txt:
+> - phy-addr: See ethernet.txt in the same directory. A configuration should
+>                 include phy-handle or phy-addr.
+
+Ok.
+
+> >> diff --git a/arch/nios2/boot/linked_dtb.S b/arch/nios2/boot/linked_dtb.S
+> >> new file mode 100644
+> >> index 0000000..071f922db338e2cb4064bc77bf346f50e584d04f
+> >> --- /dev/null
+> >> +++ b/arch/nios2/boot/linked_dtb.S
+> >> + */
+> >> +.section .dtb.init.rodata,"a"
+> >> +.incbin "arch/nios2/boot/system.dtb"
+> >
+> > Linking in the dtb file is really against the point of device trees.
+> > You should require boot loaders to pass the dtb seperately.
+> We do support pass the dtb from boot loaders. This is optional feature
+> that allow user to linking in dtb into kernel image if
+> CONFIG_DTB_SOURCE_BOOL is enabled. This is very useful for develpment
+> stage/debugging stage, where we can download vmlinux image directly
+> into SDRAM and boot without boot loader.
+> Noticed that other architectures have linking in dtd file as well, eg:
+> c6x and microblaze.
+
+Ok.
+
+	Arnd
