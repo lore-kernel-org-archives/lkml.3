@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751396AbaDWVyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 17:54:49 -0400
-Received: from mail-ve0-f181.google.com ([209.85.128.181]:65365 "EHLO
-	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbaDWVyr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 17:54:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <5358288C.6030205@kernel.org>
-References: <1398125031-5826-1-git-send-email-dianders@chromium.org>
-	<5358288C.6030205@kernel.org>
-Date: Wed, 23 Apr 2014 14:54:45 -0700
-X-Google-Sender-Auth: ebTton0UstVEjR8-PCYVJk6mVkw
-Message-ID: <CAD=FV=Ws7R0+nJagXswnqowxFvrxh6vTmKM_jwz8mnGbKr_aSg@mail.gmail.com>
-Subject: Re: [PATCH] iio: adc: Nothing in ADC should be a bool CONFIG
-From: Doug Anderson <dianders@chromium.org>
-To: Jonathan Cameron <jic23@kernel.org>
-Cc: Lars-Peter Clausen <lars@metafoo.de>, Milo.Kim@ti.com,
-        Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, Russ.Dill@ti.com,
-        alexandre.belloni@free-electrons.com, oleksandr.kozaruk@ti.com,
-        B38611@freescale.com, johannes.thumshirn@men.de, sre@debian.org,
-        Sachin Kamat <sachin.kamat@linaro.org>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1751456AbaDWV4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 17:56:47 -0400
+Received: from mout.gmx.net ([212.227.17.20]:53961 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751030AbaDWV4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 17:56:46 -0400
+From: Heinrich Schuchardt <xypron.glpk@gmx.de>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Heinrich Schuchardt <xypron.glpk@gmx.de>
+Subject: [PATCH 1/1] fanotify: for FAN_MARK_FLUSH check flags
+Date: Wed, 23 Apr 2014 23:55:51 +0200
+Message-Id: <1398290151-6502-1-git-send-email-xypron.glpk@gmx.de>
+X-Mailer: git-send-email 1.9.2
+X-Provags-ID: V03:K0:Cj2Q/xunml2Ia+c6jmhAl4MEiRUEtLCExPC6otPxMQbDgSpCDri
+ ELF/yMPlyZ+SfR3SKlnUpxzbb07sVdQqrBG+7qo2+E7VaIUkYwo4DVlH7c6YpFCiTKeNNzm
+ 3iLk7Q1oeua873CdQ5bpwZ6uKLU95oFwRN83DysA1eZFVC70VZ7tpQhU1bIBkPQUdvMtL8G
+ jijfbaTtZAmAmDo9ehsjw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan,
+If fanotify_mark is called with illegal value of arguments flags and marks
+it usually returns EINVAL.
 
-On Wed, Apr 23, 2014 at 1:54 PM, Jonathan Cameron <jic23@kernel.org> wrote:
-> On 22/04/14 01:03, Doug Anderson wrote:
->>
->> The whole IIO subsystem can be moved to a module.  If you make it a
->> module then stuff marked as "Y" in the adc directory simply won't be
->> linked in properly.
->>
->> The two configs that were wrong were EXYNOS_ADC and LP8788_ADC.  I
->> know for a fact that EXYNOS_ADC will work as a module (though it
->> appears to crash when you unload it--that needs to be addressed
->> separately).
->
-> I'd really like to see this pinned down before taking this patch.
-> I can see you argument that the current approach is clearly wrong,
-> but swapping one issue for another is not an approach I'd particularly
-> like to take...
->
-> I can't immediately spot the cause of the crash, but there are certainly
-> some interesting order issues in this driver.  Not enabling the vdd
-> regulator until after the userspace interfaces are exposed (by the
-> iio_device_register call) is interesting for a start.
->
-> The remove doesn't run in the reverse of the probe order (see clocks
-> vs regulators for example.)
->
-> Gah, my reviewing for one clearly missed some things in this driver.
+When fanotify_mark is called with FAN_MARK_FLUSH the argument flags is not
+checked for irrelevant flags like FAN_MARK_IGNORED_MASK.
 
-OK, fair enough.  I took a quick look and couldn't spot anything
-either.  I've requested that Samsung dig into these problems.  If they
-are unable to I will take a crack at it as time permits.  ;)
+The patch removes this inconsistency.
 
-Thanks!
+If an irrelevant flag is set error EINVAL is returned.
 
--Doug
+Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+---
+ fs/notify/fanotify/fanotify_user.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 287a22c..8bba549 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -819,7 +819,10 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
+ 	case FAN_MARK_REMOVE:
+ 		if (!mask)
+ 			return -EINVAL;
++		break;
+ 	case FAN_MARK_FLUSH:
++		if (flags & ~(FAN_MARK_MOUNT | FAN_MARK_FLUSH))
++			return -EINVAL;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+-- 
+1.9.2
+
