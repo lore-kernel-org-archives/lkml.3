@@ -1,125 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313AbaDWRfO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:35:14 -0400
-Received: from smtpout4.laposte.net ([193.253.67.229]:24489 "EHLO
-	smtpout.laposte.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753219AbaDWRfK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:35:10 -0400
-Date: Wed, 23 Apr 2014 19:35:02 +0200
-From: Bastien Armand <armand.bastien@laposte.net>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Willy Tarreau <willy@meta-x.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Monam Agarwal <monamagarwal123@gmail.com>,
-        Jake Champlin <jake.champlin.27@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] staging: panel: fix sparse warnings in lcd_write
-Message-ID: <20140423173435.GB10879@plop.dartybox.com>
-References: <20140418161057.GC1258@plop.dartybox.com>
- <20140422100144.GE26890@mwanda>
+	id S1757345AbaDWRfu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:35:50 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:58092 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932395AbaDWRfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 13:35:47 -0400
+From: Roger Quadros <rogerq@ti.com>
+To: <tony@atomide.com>
+CC: <kishon@ti.com>, <george.cherian@ti.com>, <balbi@ti.com>,
+        <balajitk@ti.com>, <hdegoede@redhat.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <devicetree@vger.kernel.org>,
+        Benoit Cousson <bcousson@baylibre.com>, Roger Quadros <rogerq@ti.com>
+Subject: [PATCH v4 2/4] ARM: dts: omap5: add sata node
+Date: Wed, 23 Apr 2014 20:35:33 +0300
+Message-ID: <1398274533-24735-1-git-send-email-rogerq@ti.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398274237-24510-1-git-send-email-rogerq@ti.com>
+References: <1398274237-24510-1-git-send-email-rogerq@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140422100144.GE26890@mwanda>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 01:01:45PM +0300, Dan Carpenter wrote:
-> Out of curiosity, have you tested this patch?
-> 
-> On Fri, Apr 18, 2014 at 06:10:57PM +0200, Bastien Armand wrote:
-> > This patch fixes two sparse warnings related to lcd_write :
-> > warning: incorrect type in argument 1 (different address spaces)
-> > warning: incorrect type in initializer (incompatible argument 2 
-> > (different address spaces))
-> > 
-> > lcd_write can be used from kernel space (in panel_lcd_print) or from user
-> > space. So we introduce the lcd_write_char function that will write a char to
-> > the device. We modify lcd_write and panel_lcd_print to use it. Finally we add
-> > __user annotation missing in lcd_write.
-> > 
-> > 
-> > Signed-off-by: Bastien Armand <armand.bastien@laposte.net>
-> > ---
-> >  drivers/staging/panel/panel.c |  205 ++++++++++++++++++++++-------------------
-> >  1 file changed, 109 insertions(+), 96 deletions(-)
-> > 
-> > diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-> > index 1569e26..dc34254 100644
-> > --- a/drivers/staging/panel/panel.c
-> > +++ b/drivers/staging/panel/panel.c
-> > @@ -1217,111 +1217,113 @@ static inline int handle_lcd_special_code(void)
-> >  	return processed;
-> >  }
-> >  ...
-> 
-> This is buggy.  You are getting the first character over and over.  You
-> should be doing:
-> 
-> 		if (get_user(c, tmp))
-> 			return -EFAULT;
-> 
-Hi,
+From: Balaji T K <balajitk@ti.com>
 
-You're totally right. I am sorry to have missed that... As the patch has
-been accepted in linux-next. I will send a correction right away.
+Add support for sata.
 
-> Btw, this whole function is terrible.  It should be reading larger
-> chunks at once instead of get_user() for each character.
-> 
-> 
+[Roger Q] Clean up.
 
-The aim of my patch was basically to add __user annotation. I tried to
-keep the change minimal to lessen the risk of regression (it seems I have
-failed here...). Perhaps, I can write an other patch to change that.
+CC: Benoit Cousson <bcousson@baylibre.com>
+CC: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Balaji T K <balajitk@ti.com>
+Signed-off-by: Roger Quadros <rogerq@ti.com>
+---
+ arch/arm/boot/dts/omap5.dtsi | 40 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 40 insertions(+)
 
-> > ...
-> >  static void panel_lcd_print(const char *s)
-> >  {
-> > -	if (lcd_enabled && lcd_initialized)
-> > -		lcd_write(NULL, s, strlen(s), NULL);
-> > +	const char *tmp = s;
-> > +	int count = strlen(s);
-> > +
-> > +	if (lcd_enabled && lcd_initialized) {
-> > +		for (; count-- > 0; tmp++) {
-> > +			if (!in_interrupt() && (((count + 1) & 0x1f) == 0))
-> > +				/* let's be a little nice with other processes
-> > +				   that need some CPU */
-> > +				schedule();
-> 
-> This schedule() isn't needed.  It just prints a line or two at start up
-> and some other debug output or something.  Small small.
-> 
+diff --git a/arch/arm/boot/dts/omap5.dtsi b/arch/arm/boot/dts/omap5.dtsi
+index 6f3de22..8ab6721 100644
+--- a/arch/arm/boot/dts/omap5.dtsi
++++ b/arch/arm/boot/dts/omap5.dtsi
+@@ -863,6 +863,46 @@
+ 
+ 			#thermal-sensor-cells = <1>;
+ 		};
++
++		omap_control_sata: control-phy@4a002374 {
++			compatible = "ti,control-phy-pipe3";
++			reg = <0x4a002374 0x4>;
++			reg-names = "power";
++			clocks = <&sys_clkin>;
++			clock-names = "sysclk";
++		};
++
++		/* OCP2SCP3 */
++		ocp2scp@4a090000 {
++			compatible = "ti,omap-ocp2scp";
++			#address-cells = <1>;
++			#size-cells = <1>;
++			reg = <0x4a090000 0x20>;
++			ranges;
++			ti,hwmods = "ocp2scp3";
++			sata_phy: phy@4a096000 {
++				compatible = "ti,phy-pipe3-sata";
++				reg = <0x4A096000 0x80>, /* phy_rx */
++				      <0x4A096400 0x64>, /* phy_tx */
++				      <0x4A096800 0x40>; /* pll_ctrl */
++				reg-names = "phy_rx", "phy_tx", "pll_ctrl";
++				ctrl-module = <&omap_control_sata>;
++				clocks = <&sys_clkin>;
++				clock-names = "sysclk";
++				#phy-cells = <0>;
++			};
++		};
++
++		sata: sata@4a141100 {
++			compatible = "snps,dwc-ahci";
++			reg = <0x4a140000 0x1100>, <0x4a141100 0x7>;
++			interrupts = <GIC_SPI 54 IRQ_TYPE_LEVEL_HIGH>;
++			phys = <&sata_phy>;
++			phy-names = "sata-phy";
++			clocks = <&sata_ref_clk>;
++			ti,hwmods = "sata";
++		};
++
+ 	};
+ };
+ 
+-- 
+1.8.3.2
 
-I hesitated to remove it. I leave it here as it was allready in lcd_write.
-Perhaps, I could send another patch to remove it.
-
-> regards,
-> dan carpenter
-> 
-
-Thanks for your review. It was really appreciated.
-
-Regards,
-bastien armand
-
-> > +
-> > +			lcd_write_char(*tmp);
-> > +		}
-> > +	}
-> >  }
-> > 
-> >  /* initialize the LCD driver */
-> > --
-> > 1.7.10.4
-> > 
-> > _______________________________________________
-> > devel mailing list
-> > devel@linuxdriverproject.org
-> > http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
