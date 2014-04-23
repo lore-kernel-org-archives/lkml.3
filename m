@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299AbaDWOzi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:55:38 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:61558 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755041AbaDWOvH (ORCPT
+	id S1757249AbaDWOzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:55:33 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:61624 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755071AbaDWOvI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:51:07 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-5a-5357d3594038
+	Wed, 23 Apr 2014 10:51:08 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-23-5357d359e3bd
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
@@ -18,342 +18,423 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>, Anton Vorontsov <anton@enomsg.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH part2 2/6] regulator/mfd: max14577: Export symbols for
- calculating charger current
-Date: Wed, 23 Apr 2014 16:50:36 +0200
-Message-id: <1398264640-12122-3-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Jenny Tc <jenny.tc@intel.com>
+Subject: [PATCH part2 3/6] charger: max14577: Configure battery-dependent
+ settings from DTS
+Date: Wed, 23 Apr 2014 16:50:37 +0200
+Message-id: <1398264640-12122-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
 References: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLLMWRmVeSWpSXmKPExsVy+t/xa7qRl8ODDV50iFgc3KppsXHGelaL
-	qQ+fsFlMevKe2WLiysnMFq9fGFqcbXrDbnH/61FGi29XOpgsLu+aw2ax9shddovT3awW62e8
-	ZnHg9ZjQ/4nRY+esu+wem1doeWxa1cnmcefaHjaPeScDPfq2rGL0+LxJLoAjissmJTUnsyy1
-	SN8ugSvj1rNr7AXrEyp27PnM3sD4IaCLkYNDQsBE4u8syy5GTiBTTOLCvfVsXYxcHEICSxkl
-	zk6dAOX0MUlMarjAAlLFJmAssXn5ErCEiEA3k0Trmp/sIA6zQC+TxIyrrawgVcICKRJ3TjWx
-	g6xgEVCV2L3cBCTMK+AusXn9fhaIdXISJ49NZgUp4RTwkLj81A4kLARU8vPNRNYJjLwLGBlW
-	MYqmliYXFCel5xrqFSfmFpfmpesl5+duYoQE6ZcdjIuPWR1iFOBgVOLhlVgeFizEmlhWXJl7
-	iFGCg1lJhHfJovBgId6UxMqq1KL8+KLSnNTiQ4xMHJxSDYwFh/gOSmoseKfwjmWDvOH0oAiJ
-	7oPsStfuKL54pOHtfP2DlpNz1qkLBXtN+pnbQ97PiX2Sd2/LzrQFm2/syTbSZucwPRamrnLW
-	9Rdv9unJ567yv5/Qob98xqTa7qTNnw5e7tj4qkQ3ZanpjRn+7c8u2J7SSz09TcFvasqDxzOU
-	J6kv6NDe03ZdiaU4I9FQi7moOBEA4NlSGTACAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrBLMWRmVeSWpSXmKPExsVy+t/xa7qRl8ODDda/sbQ4uFXTYuOM9awW
+	Ux8+YbOY9OQ9s8XElZOZLdZ+7WG3eP3C0OJs0xt2i/tfjzJafLvSwWRxedccNou1R+6yW5zu
+	ZrVYP+M1iwOfx4T+T4weO2fdZffYvELLY/Gel0wem1Z1snncubaHzWPeyUCPvi2rGD0+b5IL
+	4IzisklJzcksSy3St0vgyth7+jJrwbW4ii9z/zI3MM7y62Lk4JAQMJHY9yS3i5ETyBSTuHBv
+	PVsXIxeHkMBSRolfb98yQTh9TBKTGi6wgFSxCRhLbF6+BKxKRKCbSaJ1zU92EIdZYA2TxMbd
+	PewgVcICsRLvlj1iBbFZBFQlOk7cZAOxeQXcJZquzGeH2CcncfLYZFaQMzgFPCQuP7UDCQsB
+	lfx8M5F1AiPvAkaGVYyiqaXJBcVJ6blGesWJucWleel6yfm5mxghoft1B+PSY1aHGAU4GJV4
+	eCWWhwULsSaWFVfmHmKU4GBWEuFdsig8WIg3JbGyKrUoP76oNCe1+BAjEwenVAOj9r+N7PJd
+	UWaqmb/uNFb+Prb4wg6B+F2T/zFvznM3nnn75UK+EwEzdj/29D5a2TP5hWD0rrLvFQLCDDoN
+	xgsZDyRmSXxas+bUS45sP0+rB86nVxTHf/q5zWR14S/Pcz6KT11OLFm+OCfBdcq34iPXBWyl
+	42tn/dqnZhV/tC3s87G5mxlfPHn9XomlOCPRUIu5qDgRACGNFwY7AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch prepares for changing the max14577 charger driver to allow
-configuring battery-dependent settings from DTS.
+Remove hard-coded values for:
+ - Fast Charge current,
+ - End Of Charge current,
+ - Fast Charge timer,
+ - Overvoltage Protection Threshold,
+ - Battery Constant Voltage,
+and use DTS to configure them. This allows using the max14577 charger
+driver with different batteries.
 
-The patch moves from regulator driver to MFD core driver and exports:
- - function for calculating register value for charger's current;
- - table of limits for chargers (MAX14577, MAX77836).
-
-Previously they were used only by the max14577 regulator driver. In next
-patch the charger driver will use them as well. Exporting them will
-reduce unnecessary code duplication.
+Now the charger driver requires valid configuration data from DTS. In
+case of wrong configuration data it fails during probe. Patch adds
+of_compatible to the charger mfd cell in MFD driver core.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Mark Brown <broonie@linaro.org>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Jenny Tc <jenny.tc@intel.com>
 Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mfd/max14577.c               | 95 ++++++++++++++++++++++++++++++++++++
- drivers/regulator/max14577.c         | 80 ++----------------------------
- include/linux/mfd/max14577-private.h | 22 ++++-----
- include/linux/mfd/max14577.h         | 23 +++++++++
- 4 files changed, 133 insertions(+), 87 deletions(-)
+ drivers/mfd/max14577.c               |   5 +-
+ drivers/power/max14577_charger.c     | 232 +++++++++++++++++++++++++++++++----
+ include/linux/mfd/max14577-private.h |  16 +++
+ include/linux/mfd/max14577.h         |   8 ++
+ 4 files changed, 233 insertions(+), 28 deletions(-)
 
 diff --git a/drivers/mfd/max14577.c b/drivers/mfd/max14577.c
-index 484d372a4892..cef2149ac096 100644
+index cef2149ac096..13030573a8ca 100644
 --- a/drivers/mfd/max14577.c
 +++ b/drivers/mfd/max14577.c
-@@ -26,6 +26,87 @@
- #include <linux/mfd/max14577.h>
- #include <linux/mfd/max14577-private.h>
+@@ -116,7 +116,10 @@ static struct mfd_cell max14577_devs[] = {
+ 		.name = "max14577-regulator",
+ 		.of_compatible = "maxim,max14577-regulator",
+ 	},
+-	{ .name = "max14577-charger", },
++	{
++		.name = "max14577-charger",
++		.of_compatible = "maxim,max14577-charger",
++	},
+ };
  
-+/*
-+ * Table of valid charger currents for different Maxim chipsets.
-+ * It is placed here because it is used by both charger and regulator driver.
-+ */
-+const struct maxim_charger_current maxim_charger_currents[] = {
-+	[MAXIM_DEVICE_TYPE_UNKNOWN] = { 0, 0, 0, 0 },
-+	[MAXIM_DEVICE_TYPE_MAX14577] = {
-+		.min		= MAX14577_CHARGER_CURRENT_LIMIT_MIN,
-+		.high_start	= MAX14577_CHARGER_CURRENT_LIMIT_HIGH_START,
-+		.high_step	= MAX14577_CHARGER_CURRENT_LIMIT_HIGH_STEP,
-+		.max		= MAX14577_CHARGER_CURRENT_LIMIT_MAX,
-+	},
-+	[MAXIM_DEVICE_TYPE_MAX77836] = {
-+		.min		= MAX77836_CHARGER_CURRENT_LIMIT_MIN,
-+		.high_start	= MAX77836_CHARGER_CURRENT_LIMIT_HIGH_START,
-+		.high_step	= MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP,
-+		.max		= MAX77836_CHARGER_CURRENT_LIMIT_MAX,
-+	},
-+};
-+EXPORT_SYMBOL_GPL(maxim_charger_currents);
+ static struct mfd_cell max77836_devs[] = {
+diff --git a/drivers/power/max14577_charger.c b/drivers/power/max14577_charger.c
+index 19c8f42abf24..f32f94a9a144 100644
+--- a/drivers/power/max14577_charger.c
++++ b/drivers/power/max14577_charger.c
+@@ -19,6 +19,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/power_supply.h>
+ #include <linux/mfd/max14577-private.h>
++#include <linux/mfd/max14577.h>
+ 
+ struct max14577_charger {
+ 	struct device *dev;
+@@ -27,6 +28,8 @@ struct max14577_charger {
+ 
+ 	unsigned int		charging_state;
+ 	unsigned int		battery_state;
 +
-+/*
-+ * maxim_charger_calc_reg_current - Calculate register value for current
-+ * @limits:	constraints for charger, matching the MBCICHWRC register
-+ * @min_ua:	minimal requested current, micro Amps
-+ * @max_ua:	maximum requested current, micro Amps
-+ * @dst:	destination to store calculated register value
-+ *
-+ * Calculates the value of MBCICHWRC (Fast Battery Charge Current) register
-+ * for given current and stores it under pointed 'dst'. The stored value
-+ * combines low bit (MBCICHWRCL) and high bits (MBCICHWRCH). It is also
-+ * properly shifted.
-+ *
-+ * The calculated register value matches the current which:
-+ *  - is always between <limits.min, limits.max>;
-+ *  - is always less or equal to max_ua;
-+ *  - is the highest possible value;
-+ *  - may be lower than min_ua.
-+ *
-+ * On success returns 0. On error returns -EINVAL (requested min/max current
-+ * is outside of given charger limits) and 'dst' is not set.
-+ */
-+int maxim_charger_calc_reg_current(const struct maxim_charger_current *limits,
-+		unsigned int min_ua, unsigned int max_ua, u8 *dst)
++	struct max14577_charger_platform_data	*pdata;
+ };
+ 
+ /*
+@@ -178,15 +181,107 @@ static int max14577_get_present(struct max14577_charger *chg)
+ 	return 1;
+ }
+ 
++static inline int max14577_init_constant_voltage(struct max14577_charger *chg,
++		unsigned int uvolt)
++{
++	u8 reg_data;
++
++	if (uvolt < MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN ||
++			uvolt > MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX)
++		return -EINVAL;
++
++	if (uvolt == 4200000)
++		reg_data = 0x0;
++	else if (uvolt == MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX)
++		reg_data = 0x1f;
++	else if (uvolt <= 4280000) {
++		unsigned int val = uvolt;
++
++		val -= MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN;
++		val /= MAXIM_CHARGER_CONSTANT_VOLTAGE_STEP;
++		if (uvolt <= 4180000)
++			reg_data = 0x1 + val;
++		else
++			reg_data = val; /* Fix for gap between 4.18V and 4.22V */
++	} else
++		return -EINVAL;
++
++	reg_data <<= CHGCTRL3_MBCCVWRC_SHIFT;
++
++	return max14577_write_reg(chg->max14577->regmap,
++			MAX14577_CHG_REG_CHG_CTRL3, reg_data);
++}
++
++static inline int max14577_init_eoc(struct max14577_charger *chg,
++		unsigned int uamp)
 +{
 +	unsigned int current_bits = 0xf;
++	u8 reg_data;
 +
-+	if (min_ua > max_ua)
-+		return -EINVAL;
++	switch (chg->max14577->dev_type) {
++	case MAXIM_DEVICE_TYPE_MAX77836:
++		if (uamp < 5000)
++			return -EINVAL; /* Requested current is too low */
 +
-+	if (min_ua > limits->max || max_ua < limits->min)
-+		return -EINVAL;
++		if (uamp >= 7500 && uamp < 10000)
++			current_bits = 0x0;
++		else if (uamp <= 50000) {
++			/* <5000, 7499> and <10000, 50000> */
++			current_bits = uamp / 5000;
++		} else {
++			uamp = min(uamp, 100000U) - 50000U;
++			current_bits = 0xa + uamp / 10000;
++		}
++		break;
 +
-+	if (max_ua < limits->high_start) {
-+		/*
-+		 * Less than high_start, so set the minimal current
-+		 * (turn Low Bit off, 0 as high bits).
-+		 */
-+		*dst = 0x0;
-+		return 0;
++	case MAXIM_DEVICE_TYPE_MAX14577:
++	default:
++		if (uamp < MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN)
++			return -EINVAL; /* Requested current is too low */
++
++		uamp = min(uamp, MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX);
++		uamp -= MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN;
++		current_bits = uamp / MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP;
++		break;
 +	}
 +
-+	/* max_ua is in range: <high_start, infinite>, cut it to limits.max */
-+	max_ua = min(limits->max, max_ua);
-+	max_ua -= limits->high_start;
-+	/*
-+	 * There is no risk of overflow 'max_ua' here because:
-+	 *  - max_ua >= limits.high_start
-+	 *  - BUILD_BUG checks that 'limits' are: max >= high_start + high_step
-+	 */
-+	current_bits = max_ua / limits->high_step;
++	reg_data = current_bits << CHGCTRL5_EOCS_SHIFT;
 +
-+	/* Turn Low Bit on (use range <limits.high_start, limits.max>) ... */
-+	*dst = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
-+	/* and set proper High Bits */
-+	*dst |= current_bits << CHGCTRL4_MBCICHWRCH_SHIFT;
-+
-+	return 0;
++	return max14577_update_reg(chg->max14577->regmap,
++			MAX14577_CHG_REG_CHG_CTRL5, CHGCTRL5_EOCS_MASK,
++			reg_data);
 +}
-+EXPORT_SYMBOL_GPL(maxim_charger_calc_reg_current);
 +
- static struct mfd_cell max14577_devs[] = {
- 	{
- 		.name = "max14577-muic",
-@@ -465,6 +546,20 @@ static int __init max14577_i2c_init(void)
- 	BUILD_BUG_ON(ARRAY_SIZE(max14577_i2c_id) != MAXIM_DEVICE_TYPE_NUM);
- 	BUILD_BUG_ON(ARRAY_SIZE(max14577_dt_match) != MAXIM_DEVICE_TYPE_NUM);
- 
-+	/* Valid charger current values must be provided for each chipset */
-+	BUILD_BUG_ON(ARRAY_SIZE(maxim_charger_currents) != MAXIM_DEVICE_TYPE_NUM);
++static inline int max14577_init_fast_charge(struct max14577_charger *chg,
++		unsigned int uamp)
++{
++	u8 reg_data;
++	int ret;
++	const struct maxim_charger_current *limits =
++		&maxim_charger_currents[chg->max14577->dev_type];
 +
-+	/* Check for valid values for charger */
-+	BUILD_BUG_ON(MAX14577_CHARGER_CURRENT_LIMIT_HIGH_START +
-+			MAX14577_CHARGER_CURRENT_LIMIT_HIGH_STEP * 0xf !=
-+			MAX14577_CHARGER_CURRENT_LIMIT_MAX);
-+	BUILD_BUG_ON(MAX14577_CHARGER_CURRENT_LIMIT_HIGH_STEP == 0);
++	ret = maxim_charger_calc_reg_current(limits, uamp, uamp, &reg_data);
++	if (ret) {
++		dev_err(chg->dev, "Wrong value for fast charge: %u\n", uamp);
++		return ret;
++	}
 +
-+	BUILD_BUG_ON(MAX77836_CHARGER_CURRENT_LIMIT_HIGH_START +
-+			MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP * 0xf !=
-+			MAX77836_CHARGER_CURRENT_LIMIT_MAX);
-+	BUILD_BUG_ON(MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP == 0);
++	return max14577_update_reg(chg->max14577->regmap,
++			MAX14577_CHG_REG_CHG_CTRL4,
++			CHGCTRL4_MBCICHWRCL_MASK | CHGCTRL4_MBCICHWRCH_MASK,
++			reg_data);
++}
 +
- 	return i2c_add_driver(&max14577_i2c_driver);
- }
- subsys_initcall(max14577_i2c_init);
-diff --git a/drivers/regulator/max14577.c b/drivers/regulator/max14577.c
-index 5d9c605cf534..0ff5a20ac958 100644
---- a/drivers/regulator/max14577.c
-+++ b/drivers/regulator/max14577.c
-@@ -22,42 +22,6 @@
- #include <linux/mfd/max14577-private.h>
- #include <linux/regulator/of_regulator.h>
- 
--/*
-- * Valid limits of current for max14577 and max77836 chargers.
-- * They must correspond to MBCICHWRCL and MBCICHWRCH fields in CHGCTRL4
-- * register for given chipset.
-- */
--struct maxim_charger_current {
--	/* Minimal current, set in CHGCTRL4/MBCICHWRCL, uA */
--	unsigned int min;
--	/*
--	 * Minimal current when high setting is active,
--	 * set in CHGCTRL4/MBCICHWRCH, uA
--	 */
--	unsigned int high_start;
--	/* Value of one step in high setting, uA */
--	unsigned int high_step;
--	/* Maximum current of high setting, uA */
--	unsigned int max;
--};
--
--/* Table of valid charger currents for different Maxim chipsets */
--static const struct maxim_charger_current maxim_charger_currents[] = {
--	[MAXIM_DEVICE_TYPE_UNKNOWN] = { 0, 0, 0, 0 },
--	[MAXIM_DEVICE_TYPE_MAX14577] = {
--		.min		= MAX14577_REGULATOR_CURRENT_LIMIT_MIN,
--		.high_start	= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START,
--		.high_step	= MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP,
--		.max		= MAX14577_REGULATOR_CURRENT_LIMIT_MAX,
--	},
--	[MAXIM_DEVICE_TYPE_MAX77836] = {
--		.min		= MAX77836_REGULATOR_CURRENT_LIMIT_MIN,
--		.high_start	= MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_START,
--		.high_step	= MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_STEP,
--		.max		= MAX77836_REGULATOR_CURRENT_LIMIT_MAX,
--	},
--};
--
- static int max14577_reg_is_enabled(struct regulator_dev *rdev)
+ /*
+  * Sets charger registers to proper and safe default values.
+  * Some of these values are equal to defaults in MAX14577E
+  * data sheet but there are minor differences.
+  */
+-static void max14577_charger_reg_init(struct max14577_charger *chg)
++static int max14577_charger_reg_init(struct max14577_charger *chg)
  {
- 	int rid = rdev_get_id(rdev);
-@@ -103,8 +67,8 @@ static int max14577_reg_get_current_limit(struct regulator_dev *rdev)
- static int max14577_reg_set_current_limit(struct regulator_dev *rdev,
- 		int min_uA, int max_uA)
- {
--	int i, current_bits = 0xf;
+ 	struct regmap *rmap = chg->max14577->regmap;
  	u8 reg_data;
 +	int ret;
- 	struct max14577 *max14577 = rdev_get_drvdata(rdev);
- 	const struct maxim_charger_current *limits =
- 		&maxim_charger_currents[max14577->dev_type];
-@@ -112,35 +76,9 @@ static int max14577_reg_set_current_limit(struct regulator_dev *rdev,
- 	if (rdev_get_id(rdev) != MAX14577_CHARGER)
- 		return -EINVAL;
  
--	if (min_uA > limits->max || max_uA < limits->min)
--		return -EINVAL;
+ 	/*
+ 	 * Charger-Type Manual Detection, default off (set CHGTYPMAN to 0)
+@@ -198,10 +293,6 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
+ 			CDETCTRL1_CHGDETEN_MASK | CDETCTRL1_CHGTYPMAN_MASK,
+ 			reg_data);
+ 
+-	/* Battery Fast-Charge Timer, set to: 6hrs */
+-	reg_data = 0x3 << CHGCTRL1_TCHW_SHIFT;
+-	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
 -
--	if (max_uA < limits->high_start) {
--		/*
--		 * Less than high_start,
--		 * so set the minimal current (turn only Low Bit off)
--		 */
--		u8 reg_data = 0x0 << CHGCTRL4_MBCICHWRCL_SHIFT;
--		return max14577_update_reg(rdev->regmap,
--				MAX14577_CHG_REG_CHG_CTRL4,
--				CHGCTRL4_MBCICHWRCL_MASK, reg_data);
--	}
+ 	/*
+ 	 * Wall-Adapter Rapid Charge, default on
+ 	 * Battery-Charger, default on
+@@ -210,32 +301,57 @@ static void max14577_charger_reg_init(struct max14577_charger *chg)
+ 	reg_data |= 0x1 << CHGCTRL2_MBCHOSTEN_SHIFT;
+ 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL2, reg_data);
+ 
+-	/* Battery-Charger Constant Voltage (CV) Mode, set to: 4.35V */
+-	reg_data = 0xf << CHGCTRL3_MBCCVWRC_SHIFT;
+-	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL3, reg_data);
 -
 -	/*
--	 * max_uA is in range: <high_start, inifinite>, so search for
--	 * valid current starting from maximum current.
+-	 * Fast Battery-Charge Current Low,
+-	 * default 200-950mA (max14577) / 100-475mA (max77836)
+-	 *
+-	 * Fast Battery-Charge Current High,
+-	 * set to 450mA (max14577) / 225mA (max77836)
 -	 */
--	for (i = limits->max; i >= limits->high_start; i -= limits->high_step) {
--		if (i <= max_uA)
--			break;
--		current_bits--;
--	}
--	BUG_ON(current_bits < 0); /* Cannot happen */
--
--	/* Turn Low Bit on (use range high_start-max)... */
 -	reg_data = 0x1 << CHGCTRL4_MBCICHWRCL_SHIFT;
--	/* and set proper High Bits */
--	reg_data |= current_bits << CHGCTRL4_MBCICHWRCH_SHIFT;
-+	ret = maxim_charger_calc_reg_current(limits, min_uA, max_uA, &reg_data);
+-	reg_data |= 0x5 << CHGCTRL4_MBCICHWRCH_SHIFT;
+-	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL4, reg_data);
+-
+-	/* End-of-Charge Current, set to 50mA (max14577) / 7.5mA (max77836) */
+-	reg_data = 0x0 << CHGCTRL5_EOCS_SHIFT;
+-	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL5, reg_data);
+-
+ 	/* Auto Charging Stop, default off */
+ 	reg_data = 0x0 << CHGCTRL6_AUTOSTOP_SHIFT;
+ 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL6, reg_data);
+ 
+-	/* Overvoltage-Protection Threshold, set to 6.5V */
+-	reg_data = 0x2 << CHGCTRL7_OTPCGHCVS_SHIFT;
++	ret = max14577_init_constant_voltage(chg, chg->pdata->constant_uvolt);
++	if (ret)
++		return ret;
++
++	ret = max14577_init_eoc(chg, chg->pdata->eoc_uamp);
++	if (ret)
++		return ret;
++
++	ret = max14577_init_fast_charge(chg, chg->pdata->fast_charge_uamp);
++	if (ret)
++		return ret;
++
++	/* Initialize Battery Fast-Charge Timer */
++	switch (chg->pdata->fast_charge_timer) {
++	case 5 ... 7:
++		reg_data = chg->pdata->fast_charge_timer - 3;
++		break;
++	case 0:
++		/* Disable */
++		reg_data = 0x7;
++	default:
++		dev_err(chg->dev, "Wrong value for Fast-Charge Timer: %u\n",
++				chg->pdata->fast_charge_timer);
++		return -EINVAL;
++	}
++	reg_data <<= CHGCTRL1_TCHW_SHIFT;
++	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL1, reg_data);
++
++	/* Initialize Overvoltage-Protection Threshold */
++	switch (chg->pdata->ovp_uvolt) {
++	case 7500000:
++		reg_data = 0x0;
++		break;
++	case 6000000:
++	case 6500000:
++	case 7000000:
++		reg_data = 0x1 + (chg->pdata->ovp_uvolt - 6000000) / 500000;
++		break;
++	default:
++		dev_err(chg->dev, "Wrong value for OVP: %u\n",
++				chg->pdata->ovp_uvolt);
++		return -EINVAL;
++	}
++	reg_data <<= CHGCTRL7_OTPCGHCVS_SHIFT;
+ 	max14577_write_reg(rmap, MAX14577_REG_CHGCTRL7, reg_data);
++
++	return 0;
+ }
+ 
+ /* Support property from charger */
+@@ -295,6 +411,58 @@ static int max14577_charger_get_property(struct power_supply *psy,
+ 	return ret;
+ }
+ 
++#ifdef CONFIG_OF
++static struct max14577_charger_platform_data *max14577_charger_dt_init(
++		struct platform_device *pdev)
++{
++	struct max14577_charger_platform_data *pdata;
++	struct device_node *np = pdev->dev.of_node;
++	int ret;
++
++	if (!np) {
++		dev_err(&pdev->dev, "No charger OF node\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
++	if (!pdata) {
++		dev_err(&pdev->dev, "Memory alloc for charger pdata failed\n");
++		return ERR_PTR(-ENOMEM);
++	}
++
++	ret = of_property_read_u32(np, "maxim,fast-charge-timer",
++			&pdata->fast_charge_timer);
++	if (ret)
++		return ERR_PTR(ret);
++
++	ret = of_property_read_u32(np, "maxim,constant-uvolt",
++			&pdata->constant_uvolt);
++	if (ret)
++		return ERR_PTR(ret);
++
++	ret = of_property_read_u32(np, "maxim,fast-charge-uamp",
++			&pdata->fast_charge_uamp);
++	if (ret)
++		return ERR_PTR(ret);
++
++	ret = of_property_read_u32(np, "maxim,eoc-uamp", &pdata->eoc_uamp);
++	if (ret)
++		return ERR_PTR(ret);
++
++	ret = of_property_read_u32(np, "maxim,ovp-uvolt", &pdata->ovp_uvolt);
++	if (ret)
++		return ERR_PTR(ret);
++
++	return pdata;
++}
++#else /* CONFIG_OF */
++static struct max14577_charger_platform_data *max14577_charger_dt_init(
++		struct platform_device *pdev)
++{
++	return NULL;
++}
++#endif /* CONFIG_OF */
++
+ static int max14577_charger_probe(struct platform_device *pdev)
+ {
+ 	struct max14577_charger *chg;
+@@ -309,7 +477,13 @@ static int max14577_charger_probe(struct platform_device *pdev)
+ 	chg->dev = &pdev->dev;
+ 	chg->max14577 = max14577;
+ 
+-	max14577_charger_reg_init(chg);
++	chg->pdata = max14577_charger_dt_init(pdev);
++	if (IS_ERR_OR_NULL(chg->pdata))
++		return PTR_ERR(chg->pdata);
++
++	ret = max14577_charger_reg_init(chg);
 +	if (ret)
 +		return ret;
  
- 	return max14577_update_reg(rdev->regmap, MAX14577_CHG_REG_CHG_CTRL4,
- 			CHGCTRL4_MBCICHWRCL_MASK | CHGCTRL4_MBCICHWRCH_MASK,
-@@ -442,16 +380,6 @@ static struct platform_driver max14577_regulator_driver = {
+ 	chg->charger.name = "max14577-charger",
+ 	chg->charger.type = POWER_SUPPLY_TYPE_BATTERY,
+@@ -323,6 +497,10 @@ static int max14577_charger_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
  
- static int __init max14577_regulator_init(void)
- {
--	/* Check for valid values for charger */
--	BUILD_BUG_ON(MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START +
--			MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP * 0xf !=
--			MAX14577_REGULATOR_CURRENT_LIMIT_MAX);
--	BUILD_BUG_ON(MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_START +
--			MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_STEP * 0xf !=
--			MAX77836_REGULATOR_CURRENT_LIMIT_MAX);
--	/* Valid charger current values must be provided for each chipset */
--	BUILD_BUG_ON(ARRAY_SIZE(maxim_charger_currents) != MAXIM_DEVICE_TYPE_NUM);
--
- 	BUILD_BUG_ON(ARRAY_SIZE(max14577_supported_regulators) != MAX14577_REGULATOR_NUM);
- 	BUILD_BUG_ON(ARRAY_SIZE(max77836_supported_regulators) != MAX77836_REGULATOR_NUM);
++	/* Check for valid values for charger */
++	BUILD_BUG_ON(MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN +
++			MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP * 0xf !=
++			MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX);
+ 	return 0;
+ }
  
 diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
-index d6f321699b89..7d514839c764 100644
+index 7d514839c764..5c842f3b6da5 100644
 --- a/include/linux/mfd/max14577-private.h
 +++ b/include/linux/mfd/max14577-private.h
-@@ -281,17 +281,17 @@ enum max14577_charger_reg {
- #define CHGCTRL7_OTPCGHCVS_SHIFT	0
- #define CHGCTRL7_OTPCGHCVS_MASK		(0x3 << CHGCTRL7_OTPCGHCVS_SHIFT)
- 
--/* MAX14577 regulator current limits (as in CHGCTRL4 register), uA */
--#define MAX14577_REGULATOR_CURRENT_LIMIT_MIN		 90000
--#define MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_START	200000
--#define MAX14577_REGULATOR_CURRENT_LIMIT_HIGH_STEP	 50000
--#define MAX14577_REGULATOR_CURRENT_LIMIT_MAX		950000
--
--/* MAX77836 regulator current limits (as in CHGCTRL4 register), uA */
--#define MAX77836_REGULATOR_CURRENT_LIMIT_MIN		 45000
--#define MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_START	100000
--#define MAX77836_REGULATOR_CURRENT_LIMIT_HIGH_STEP	 25000
--#define MAX77836_REGULATOR_CURRENT_LIMIT_MAX		475000
-+/* MAX14577 charger current limits (as in CHGCTRL4 register), uA */
-+#define MAX14577_CHARGER_CURRENT_LIMIT_MIN		 90000U
-+#define MAX14577_CHARGER_CURRENT_LIMIT_HIGH_START	200000U
-+#define MAX14577_CHARGER_CURRENT_LIMIT_HIGH_STEP	 50000U
-+#define MAX14577_CHARGER_CURRENT_LIMIT_MAX		950000U
-+
-+/* MAX77836 charger current limits (as in CHGCTRL4 register), uA */
-+#define MAX77836_CHARGER_CURRENT_LIMIT_MIN		 45000U
-+#define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_START	100000U
-+#define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP	 25000U
-+#define MAX77836_CHARGER_CURRENT_LIMIT_MAX		475000U
- 
- /* MAX14577 regulator SFOUT LDO voltage, fixed, uV */
- #define MAX14577_REGULATOR_SAFEOUT_VOLTAGE		4900000
-diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
-index c83fbed1c7b6..3c098d57b1d1 100644
---- a/include/linux/mfd/max14577.h
-+++ b/include/linux/mfd/max14577.h
-@@ -74,4 +74,27 @@ struct max14577_platform_data {
- 	struct max14577_regulator_platform_data *regulators;
- };
+@@ -293,6 +293,22 @@ enum max14577_charger_reg {
+ #define MAX77836_CHARGER_CURRENT_LIMIT_HIGH_STEP	 25000U
+ #define MAX77836_CHARGER_CURRENT_LIMIT_MAX		475000U
  
 +/*
-+ * Valid limits of current for max14577 and max77836 chargers.
-+ * They must correspond to MBCICHWRCL and MBCICHWRCH fields in CHGCTRL4
-+ * register for given chipset.
++ * MAX14577 charger End-Of-Charge current limits
++ * (as in CHGCTRL5 register), uA
 + */
-+struct maxim_charger_current {
-+	/* Minimal current, set in CHGCTRL4/MBCICHWRCL, uA */
-+	unsigned int min;
-+	/*
-+	 * Minimal current when high setting is active,
-+	 * set in CHGCTRL4/MBCICHWRCH, uA
-+	 */
-+	unsigned int high_start;
-+	/* Value of one step in high setting, uA */
-+	unsigned int high_step;
-+	/* Maximum current of high setting, uA */
-+	unsigned int max;
++#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MIN		50000U
++#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_STEP		10000U
++#define MAX14577_CHARGER_EOC_CURRENT_LIMIT_MAX		200000U
++
++/*
++ * MAX14577/MAX77836 Battery Constant Voltage
++ * (as in CHGCTRL3 register), uV
++ */
++#define MAXIM_CHARGER_CONSTANT_VOLTAGE_MIN		4000000U
++#define MAXIM_CHARGER_CONSTANT_VOLTAGE_STEP		20000U
++#define MAXIM_CHARGER_CONSTANT_VOLTAGE_MAX		4350000U
++
+ /* MAX14577 regulator SFOUT LDO voltage, fixed, uV */
+ #define MAX14577_REGULATOR_SAFEOUT_VOLTAGE		4900000
+ 
+diff --git a/include/linux/mfd/max14577.h b/include/linux/mfd/max14577.h
+index 3c098d57b1d1..d068846a13cf 100644
+--- a/include/linux/mfd/max14577.h
++++ b/include/linux/mfd/max14577.h
+@@ -54,6 +54,14 @@ struct max14577_regulator_platform_data {
+ 	struct device_node *of_node;
+ };
+ 
++struct max14577_charger_platform_data {
++	unsigned int fast_charge_timer;
++	unsigned int constant_uvolt;
++	unsigned int fast_charge_uamp;
++	unsigned int eoc_uamp;
++	unsigned int ovp_uvolt;
 +};
 +
-+extern const struct maxim_charger_current maxim_charger_currents[];
-+extern int maxim_charger_calc_reg_current(const struct maxim_charger_current *limits,
-+		unsigned int min_ua, unsigned int max_ua, u8 *dst);
-+
- #endif /* __MAX14577_H__ */
+ /*
+  * MAX14577 MFD platform data
+  */
 -- 
 1.9.1
 
