@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754487AbaDWQOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 12:14:46 -0400
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:40603 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751489AbaDWQOp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 12:14:45 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvcLAJ7mV1NXQ6tr/2dsb2JhbABagwarbpIyhzqBGRd0gi0CNxwjGHERJBOIRQHOfY5YhEABA45shy+CWQGKbIdpgzM7
-Date: Wed, 23 Apr 2014 18:14:42 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, akpm <akpm@linux-foundation.org>,
-        fuse-devel@lists.sourceforge.net
-Subject: [PATCH 1/1] FS/FUSE: add __exit to fuse_ctl_cleanup
-Message-Id: <20140423181442.d4d07316c04a9a528a393ea1@skynet.be>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755272AbaDWQQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 12:16:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23425 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936AbaDWQQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 12:16:26 -0400
+Date: Wed, 23 Apr 2014 12:16:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
+        netdev@vger.kernel.org, tj@kernel.org, ssorce@redhat.com,
+        lpoetter@redhat.com, kay@redhat.com, luto@amacapital.net,
+        dwalsh@redhat.com
+Subject: Re: [PATCH 0/2] net: Implement SO_PEERCGROUP and SO_PASSCGROUP
+ socket options
+Message-ID: <20140423161621.GC24651@redhat.com>
+References: <1397596546-10153-1-git-send-email-vgoyal@redhat.com>
+ <20140422.160558.627080587952506099.davem@davemloft.net>
+ <20140423155512.GA24651@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423155512.GA24651@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fuse_ctl_cleanup is only called by __exit fuse_exit
+On Wed, Apr 23, 2014 at 11:55:12AM -0400, Vivek Goyal wrote:
+> On Tue, Apr 22, 2014 at 04:05:58PM -0400, David Miller wrote:
+> > From: Vivek Goyal <vgoyal@redhat.com>
+> > Date: Tue, 15 Apr 2014 17:15:44 -0400
+> > 
+> > > This is another version of patchset to add support passing cgroup
+> > > information of client over unix socket API.
+> > 
+> > I'm marking this patch series as "changes requested" in patchwork
+> > because if we still end up adding this feature SO_PASSCGROUP needs to
+> > be changed to behave like SO_PASSCRED.
+> 
+> Does this concern of passing of real uid apply to cgroups also. Even
+> if somebody tricks suid program to write to fd setup by under priviliged
+> program how would that pgram force setuid program to change cgroup.
+> 
+> To me passing cgroup information looks more like "pid" information where
+> we pass the actual pid of setuid program and not the pid of parent who
+> setup fd.
+> 
+> How would one trick setuid program change cgroup? If not, then this class
+> of attack does not seem to apply to SO_PASSCGROUP.
+> 
+> So I think real discussion here should be how "cgroup" information should
+> be used and not necessarily whether we should be passing cgroup
+> information of sender. This information is already available. One can
+> do SO_PASSCRED, get pid, get /proc/pid/cgroup and use cgroup in whatever
+> way they want.
 
-Cc: Miklos Szeredi <miklos@szeredi.hu>
-Cc: fuse-devel@lists.sourceforge.net
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/fuse/control.c | 2 +-
- fs/fuse/fuse_i.h  | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Kernel uses cgroup information to provide service differentiation. So lets
+say hypothetically I write a logging program which gets the cgroup of
+clinent and uses that information to limit the log file size. Is that
+a problem?
 
-diff --git a/fs/fuse/control.c b/fs/fuse/control.c
-index a0b0855..205e0d5 100644
---- a/fs/fuse/control.c
-+++ b/fs/fuse/control.c
-@@ -348,7 +348,7 @@ int __init fuse_ctl_init(void)
- 	return register_filesystem(&fuse_ctl_fs_type);
- }
- 
--void fuse_ctl_cleanup(void)
-+void __exit fuse_ctl_cleanup(void)
- {
- 	unregister_filesystem(&fuse_ctl_fs_type);
- }
-diff --git a/fs/fuse/fuse_i.h b/fs/fuse/fuse_i.h
-index a257ed8e..adfa2d5 100644
---- a/fs/fuse/fuse_i.h
-+++ b/fs/fuse/fuse_i.h
-@@ -725,7 +725,7 @@ int fuse_dev_init(void);
- void fuse_dev_cleanup(void);
- 
- int fuse_ctl_init(void);
--void fuse_ctl_cleanup(void);
-+void __exit fuse_ctl_cleanup(void);
- 
- /**
-  * Allocate a request
--- 
-1.9.1
+First of all I am not aware how would I force setuid program to change
+cgroup. So even if one tricks setuid program to effectively convert it
+into "suid cat", cgroup information remains the same and there is no
+privilige escalation here.
+
+And one example Andy had mentioned that what if I pass fd to a service
+which accepts fd and it is running in a cgroup. Then we have a problem
+at kernel level also. What if that fd is a regular file and that service
+it outputting tons of data. Kernel will apply all resource management
+rules based one cgroup of *priviliged service* and not based on
+caller's cgroup who passed the fd to priviliged service. 
+
+So to me passing cgroup information around at run time and use that
+information for resource management in user space will very much
+be in line with what kernel is doing and will be no different.
+
+Thanks
+Vivek
