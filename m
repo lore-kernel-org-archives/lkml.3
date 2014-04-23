@@ -1,324 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344AbaDWPvb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:51:31 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59097 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754223AbaDWPvX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:51:23 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, linus.walleij@linaro.org
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2 3/7] pinctrl: berlin: add the BG2 pinctrl driver
-Date: Wed, 23 Apr 2014 17:51:12 +0200
-Message-Id: <1398268276-9696-4-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com>
+	id S1757542AbaDWPwD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:52:03 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60578 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754717AbaDWPv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:51:57 -0400
+Date: Wed, 23 Apr 2014 10:49:27 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Fabio Estevam <festevam@gmail.com>, Tony Lindgren <tony@atomide.com>
+CC: Felipe Balbi <balbi@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        Marcel Holtmann <marcel@holtmann.org>, <gustavo@padovan.org>,
+        <johan.hedberg@gmail.com>, <jslaby@suse.cz>,
+        Grant Likely <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-bluetooth@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 08/13] tty: serial: omap: switch over to
+ platform_get_resource
+Message-ID: <20140423154927.GK9593@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1398265117-11793-1-git-send-email-balbi@ti.com>
+ <1398265117-11793-8-git-send-email-balbi@ti.com>
+ <CAOMZO5AUn7FsUXbY4NBfkZyZUbRNm3hcP3DC6vOYHi89xbaVYw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2pR2RtFp0tAjF3C"
+Content-Disposition: inline
+In-Reply-To: <CAOMZO5AUn7FsUXbY4NBfkZyZUbRNm3hcP3DC6vOYHi89xbaVYw@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the pin-controller driver for the Berlin BG2 SoC, with definition
-of its groups and functions. This uses the core Berlin pinctrl driver.
+--J2pR2RtFp0tAjF3C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
----
- drivers/pinctrl/berlin/Kconfig      |   4 +
- drivers/pinctrl/berlin/Makefile     |   1 +
- drivers/pinctrl/berlin/berlin-bg2.c | 251 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 256 insertions(+)
- create mode 100644 drivers/pinctrl/berlin/berlin-bg2.c
+On Wed, Apr 23, 2014 at 12:27:59PM -0300, Fabio Estevam wrote:
+> On Wed, Apr 23, 2014 at 11:58 AM, Felipe Balbi <balbi@ti.com> wrote:
+>=20
+> > @@ -1658,12 +1657,9 @@ static int serial_omap_probe(struct platform_dev=
+ice *pdev)
+> >                 omap_up_info =3D of_get_uart_port_info(&pdev->dev);
+> >                 pdev->dev.platform_data =3D omap_up_info;
+> >         } else {
+> > -               irq =3D platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+> > -               if (!irq) {
+> > -                       dev_err(&pdev->dev, "no irq resource?\n");
+> > -                       return -ENODEV;
+> > -               }
+> > -               uartirq =3D irq->start;
+> > +               uartirq =3D platform_get_irq(pdev, 0);
+> > +               if (uartirq < 0)
+> > +                       return -EPROBE_DEFER;
+>=20
+>=20
+> Maybe you could just do a 'return uartirq' here instead.
 
-diff --git a/drivers/pinctrl/berlin/Kconfig b/drivers/pinctrl/berlin/Kconfig
-index 58ecfd797dd8..1b34943bef1c 100644
---- a/drivers/pinctrl/berlin/Kconfig
-+++ b/drivers/pinctrl/berlin/Kconfig
-@@ -4,6 +4,10 @@ config PINCTRL_BERLIN
- 	bool
- 	select PINMUX
- 
-+config PINCTRL_BERLIN_BG2
-+	bool
-+	select PINCTRL_BERLIN
-+
- config PINCTRL_BERLIN_BG2Q
- 	bool
- 	select PINCTRL_BERLIN
-diff --git a/drivers/pinctrl/berlin/Makefile b/drivers/pinctrl/berlin/Makefile
-index 1866b1f2d1cf..e37e4e7a8838 100644
---- a/drivers/pinctrl/berlin/Makefile
-+++ b/drivers/pinctrl/berlin/Makefile
-@@ -1,2 +1,3 @@
- obj-$(CONFIG_PINCTRL_BERLIN)		+= berlin.o
-+obj-$(CONFIG_PINCTRL_BERLIN_BG2)	+= berlin-bg2.o
- obj-$(CONFIG_PINCTRL_BERLIN_BG2Q)	+= berlin-bg2q.o
-diff --git a/drivers/pinctrl/berlin/berlin-bg2.c b/drivers/pinctrl/berlin/berlin-bg2.c
-new file mode 100644
-index 000000000000..4a4efdc2232d
---- /dev/null
-+++ b/drivers/pinctrl/berlin/berlin-bg2.c
-@@ -0,0 +1,251 @@
-+/*
-+ * Marvell Berlin BG2 pinctrl driver.
-+ *
-+ * Copyright (C) 2014 Marvell Technology Group Ltd.
-+ *
-+ * Antoine Ténart <antoine.tenart@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
-+
-+#include "berlin.h"
-+
-+static const struct berlin_desc_group berlin2_soc_pinctrl_groups[] = {
-+	/* G */
-+	BERLIN_PINCTRL_GROUP("G0", 0x00, 0x1, 0x00,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "spi1"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G1", 0x00, 0x2, 0x01,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "spi1"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "usb1")),
-+	BERLIN_PINCTRL_GROUP("G2", 0x00, 0x2, 0x02,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "spi1"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "pwm"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "i2s0")),
-+	BERLIN_PINCTRL_GROUP("G3", 0x00, 0x2, 0x04,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "soc"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "spi1"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "i2s1")),
-+	BERLIN_PINCTRL_GROUP("G4", 0x00, 0x2, 0x06,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "spi1"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "pwm")),
-+	BERLIN_PINCTRL_GROUP("G5", 0x00, 0x3, 0x08,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "sts1"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "et"),
-+		/*
-+		 * Mode 0x3 mux i2s2 mclk *and* i2s3 mclk:
-+		 * add two functions so it can be used with other groups
-+		 * within the same subnode in the device tree
-+		 */
-+		BERLIN_PINCTRL_FUNCTION(0x3, "i2s2"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "i2s3")),
-+	BERLIN_PINCTRL_GROUP("G6", 0x00, 0x2, 0x0b,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "sts0"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "et")),
-+	BERLIN_PINCTRL_GROUP("G7", 0x00, 0x3, 0x0d,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "sts0"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "et"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "vdac")),
-+	BERLIN_PINCTRL_GROUP("G8", 0x00, 0x3, 0x10,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "sd0"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "et"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "usb0_dbg"),
-+		BERLIN_PINCTRL_FUNCTION(0x4, "sata_dbg"),
-+		BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G9", 0x00, 0x3, 0x13,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "sd0"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "et"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "usb0_dbg"),
-+		BERLIN_PINCTRL_FUNCTION(0x4, "sata_dbg"),
-+		BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G10", 0x00, 0x2, 0x16,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "soc"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "tw0"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "ptp")),
-+	BERLIN_PINCTRL_GROUP("G11", 0x00, 0x2, 0x18,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "soc"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "tw1"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "eddc")),
-+	BERLIN_PINCTRL_GROUP("G12", 0x00, 0x3, 0x1a,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "sts2"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "sata"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "sd1"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "usb0_dbg"),
-+		BERLIN_PINCTRL_FUNCTION(0x4, "sts1"),
-+		BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G13", 0x04, 0x3, 0x00,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "sata"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "sd1"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "usb0_dbg"),
-+		BERLIN_PINCTRL_FUNCTION(0x4, "sts1"),
-+		BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G14", 0x04, 0x1, 0x03,
-+		BERLIN_PINCTRL_FUNCTION_UNKNOW),
-+	BERLIN_PINCTRL_GROUP("G15", 0x04, 0x2, 0x04,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "et"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "osco")),
-+	BERLIN_PINCTRL_GROUP("G16", 0x04, 0x3, 0x06,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "fp")),
-+	BERLIN_PINCTRL_GROUP("G17", 0x04, 0x3, 0x09,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "fp")),
-+	BERLIN_PINCTRL_GROUP("G18", 0x04, 0x1, 0x0c,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "pll"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "i2s0")),
-+	BERLIN_PINCTRL_GROUP("G19", 0x04, 0x1, 0x0d,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "i2s0"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "pwm")),
-+	BERLIN_PINCTRL_GROUP("G20", 0x04, 0x1, 0x0e,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "spdif"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "arc")),
-+	BERLIN_PINCTRL_GROUP("G21", 0x04, 0x3, 0x0f,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "adac_dbg"),
-+		BERLIN_PINCTRL_FUNCTION(0x4, "pdm_a"),	/* gpio17..19,pdm */
-+		BERLIN_PINCTRL_FUNCTION(0x7, "pdm_b")),	/* gpio12..14,pdm */
-+	BERLIN_PINCTRL_GROUP("G22", 0x04, 0x3, 0x12,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "dv0"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "tw0"),
-+		BERLIN_PINCTRL_FUNCTION(0x4, "pwm")),
-+	BERLIN_PINCTRL_GROUP("G23", 0x04, 0x3, 0x15,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "vclki"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "dv0"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "i2s0"),
-+		BERLIN_PINCTRL_FUNCTION(0x4, "pwm"),
-+		BERLIN_PINCTRL_FUNCTION(0x7, "pdm")),
-+	BERLIN_PINCTRL_GROUP("G24", 0x04, 0x2, 0x18,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "i2s2"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "i2s1")),
-+	BERLIN_PINCTRL_GROUP("G25", 0x04, 0x2, 0x1a,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "nand"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "i2s2")),
-+	BERLIN_PINCTRL_GROUP("G26", 0x04, 0x1, 0x1c,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "nand"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "emmc")),
-+	BERLIN_PINCTRL_GROUP("G27", 0x04, 0x1, 0x1d,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "nand")),
-+	BERLIN_PINCTRL_GROUP("G28", 0x04, 0x2, 0x1e,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "dvo"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "sp")),
-+};
-+
-+static const struct berlin_desc_group berlin2_sysmgr_pinctrl_groups[] = {
-+	/* GSM */
-+	BERLIN_PINCTRL_GROUP("GSM0", 0x40, 0x2, 0x00,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "spi2"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "eth1")),
-+	BERLIN_PINCTRL_GROUP("GSM1", 0x40, 0x2, 0x02,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "spi2"),
-+		BERLIN_PINCTRL_FUNCTION(0x2, "eth1")),
-+	BERLIN_PINCTRL_GROUP("GSM2", 0x40, 0x2, 0x04,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "tw2"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "spi2")),
-+	BERLIN_PINCTRL_GROUP("GSM3", 0x40, 0x2, 0x06,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "uart0"),	/* CTS/RDS */
-+		BERLIN_PINCTRL_FUNCTION(0x2, "uart2"),	/* RX/TX */
-+		BERLIN_PINCTRL_FUNCTION(0x3, "tw2")),
-+	BERLIN_PINCTRL_GROUP("GSM4", 0x40, 0x2, 0x08,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "uart0"),	/* RX/TX */
-+		BERLIN_PINCTRL_FUNCTION(0x1, "irda0")),
-+	BERLIN_PINCTRL_GROUP("GSM5", 0x40, 0x2, 0x0a,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "uart1"),	/* RX/TX */
-+		BERLIN_PINCTRL_FUNCTION(0x2, "irda1"),
-+		BERLIN_PINCTRL_FUNCTION(0x3, "tw3")),
-+	BERLIN_PINCTRL_GROUP("GSM6", 0x40, 0x2, 0x0c,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "spi2"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "clki")),
-+	BERLIN_PINCTRL_GROUP("GSM7", 0x40, 0x1, 0x0e,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "hdmi")),
-+	BERLIN_PINCTRL_GROUP("GSM8", 0x40, 0x1, 0x0f,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "hdmi")),
-+	BERLIN_PINCTRL_GROUP("GSM9", 0x40, 0x1, 0x10,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "led")),
-+	BERLIN_PINCTRL_GROUP("GSM10", 0x40, 0x1, 0x11,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "led")),
-+	BERLIN_PINCTRL_GROUP("GSM11", 0x40, 0x1, 0x12,
-+		BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+		BERLIN_PINCTRL_FUNCTION(0x1, "led")),
-+};
-+
-+static const struct berlin_pinctrl_desc berlin2_soc_pinctrl_data = {
-+	.groups = berlin2_soc_pinctrl_groups,
-+	.ngroups = ARRAY_SIZE(berlin2_soc_pinctrl_groups),
-+};
-+
-+static const struct berlin_pinctrl_desc berlin2_sysmgr_pinctrl_data = {
-+	.groups = berlin2_sysmgr_pinctrl_groups,
-+	.ngroups = ARRAY_SIZE(berlin2_sysmgr_pinctrl_groups),
-+};
-+
-+static const struct of_device_id berlin2_pinctrl_match[] = {
-+	{
-+		.compatible = "marvell,berlin2-soc-pinctrl",
-+		.data = &berlin2_soc_pinctrl_data
-+	},
-+	{
-+		.compatible = "marvell,berlin2-sysmgr-pinctrl",
-+		.data = &berlin2_sysmgr_pinctrl_data
-+	},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, berlin2_pinctrl_match);
-+
-+static int berlin2_pinctrl_probe(struct platform_device *pdev)
-+{
-+	const struct of_device_id
-+		*device = of_match_device(berlin2_pinctrl_match, &pdev->dev);
-+
-+	return berlin_pinctrl_probe(pdev, device->data);
-+}
-+
-+static struct platform_driver berlin2_pinctrl_driver = {
-+	.probe	= berlin2_pinctrl_probe,
-+	.driver	= {
-+		.name = "berlin-bg2-pinctrl",
-+		.owner = THIS_MODULE,
-+		.of_match_table = berlin2_pinctrl_match,
-+	},
-+};
-+module_platform_driver(berlin2_pinctrl_driver);
-+
-+MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
-+MODULE_DESCRIPTION("Marvell Berlin BG2 pinctrl driver");
-+MODULE_LICENSE("GPL");
--- 
-1.8.3.2
+I don't mind either way, I'm only returning -EPROBE_DEFER because that's
+what the other branch of this conditional returns. Tony, what do you
+prefer ?
 
+--=20
+balbi
+
+--J2pR2RtFp0tAjF3C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTV+EHAAoJEIaOsuA1yqREsN4P/i0xuTdhVsrVgVr3HvUFVmnZ
+TUTkZEwE6xdUhrL26PxI7VBepAbyG3B6LdWXiVzGTcItIeaOQ8+J70OnRLZWY403
+GVUXYCXj2zd7sQBrhVIvtVUpnAkkUe3cFvxvzVYxFQ7ahM6HQuqOr93kP+cZN0rS
+BcuxeWcU9xK/hLnj1Chf973MoO7m8iLZ+sQtIu1B/73wBL+VYWKeShQr/620kidb
+6ZWld6hJ5PyN1rQmdwZh+elbSnzKl0gu4Iqr5lXSjyNzWgZKdibBzjmP2e4RbGea
+IkJwWDyuI0P0u5n/xajonLv7fZFa53+psGMK2wmAYIaPP94K6qirkvivbCtvDsLA
+dERAYcMnJEMlSJtPDS1YVDeyKjoSGdiL4qF2GVi5XY0rKDH4VVLqqkCxfDRQNyYJ
+OcW06+x7A7ItZhZwpbnex9Ne8Md0tczYyaLaMSx3n2HCHMJFN9ceyN+GG7WT2eCD
+NvhWpo70w34k5seba57pcLoCm1e7xxNAbq8CEIBbHIcQ6qxi4uIuYCZjTkpLeAhV
+bs3mzXwXLXj18rP4K8/UGo8ammjeOAJ8Ar51UG6fsPUnJtDbr0Xrqe/tSJfBTkxO
+ejJONva8Gt5DRwiWyySUDSGU5S2cCTXuGLgs4ZYzB1k+7zdOQ6sbcCVaJUeoyITe
+2duSUx/J3t00jwDzS8CU
+=wEnj
+-----END PGP SIGNATURE-----
+
+--J2pR2RtFp0tAjF3C--
