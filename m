@@ -1,244 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008AbaDWPZm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:25:42 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:58809 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752755AbaDWPZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:25:38 -0400
-Date: Wed, 23 Apr 2014 10:22:34 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-CC: <balbi@ti.com>, Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH 2/8] usb: host: xhci-plat: Add support for the Armada 38x
- glue code
-Message-ID: <20140423152234.GG9593@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
- <1397816563-9000-3-git-send-email-gregory.clement@free-electrons.com>
- <20140420032035.GB26893@saruman.home>
- <53576F79.6070908@free-electrons.com>
+	id S1754614AbaDWP0I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:26:08 -0400
+Received: from service87.mimecast.com ([91.220.42.44]:54183 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752755AbaDWP0B convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:26:01 -0400
+Message-ID: <5357DBA5.1010106@arm.com>
+Date: Wed, 23 Apr 2014 16:26:29 +0100
+From: Dietmar Eggemann <dietmar.eggemann@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Sw7tCqrGA+HQ0/zt"
-Content-Disposition: inline
-In-Reply-To: <53576F79.6070908@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Vincent Guittot <vincent.guittot@linaro.org>
+CC: "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@kernel.org" <mingo@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "tony.luck@intel.com" <tony.luck@intel.com>,
+        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
+        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
+        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
+Subject: Re: [PATCH v4 5/5] sched: ARM: create a dedicated scheduler topology
+ table
+References: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org> <1397209481-28542-6-git-send-email-vincent.guittot@linaro.org> <5357A802.1030804@arm.com> <CAKfTPtDnw-OZZekdE3oNGS11m6dfpS4veMNZ_Bezs-Lm7zn6QQ@mail.gmail.com>
+In-Reply-To: <CAKfTPtDnw-OZZekdE3oNGS11m6dfpS4veMNZ_Bezs-Lm7zn6QQ@mail.gmail.com>
+X-OriginalArrivalTime: 23 Apr 2014 15:26:13.0238 (UTC) FILETIME=[5C71E960:01CF5F08]
+X-MC-Unique: 114042316255901501
+Content-Type: text/plain; charset=WINDOWS-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sw7tCqrGA+HQ0/zt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 23/04/14 15:46, Vincent Guittot wrote:
+> On 23 April 2014 13:46, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
+>> Hi,
+>>
+>> I'm trying to use this approach of specifying different per-cpu views on
+>> sd flags on DIE level on a TC2 platform (cluster 0 w/ CPU0/1 and cluster
+>> 1 w/ CPU2/3/4 w/o SMT). It doesn't work like in the case for the GMC/MC
+>> sd level.
+>>
+>> If I use the following patch (just to illustrate the issue) on top
+>> (returning SD_SHARE_POWERDOMAIN in cpu_cpupower_flags() is bogus ... I
+>> just needed a flag function for GDIE level):
+>>
+>> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+>> index 71e1fec6d31a..803330d89c09 100644
+>> --- a/arch/arm/kernel/topology.c
+>> +++ b/arch/arm/kernel/topology.c
+>> @@ -194,6 +194,14 @@ const struct cpumask *cpu_corepower_mask(int cpu)
+>>         return &cpu_topology[cpu].thread_sibling;
+>>  }
+>>
+>> +const struct cpumask *cpu_cpupower_mask(int cpu)
+>> +{
+>> +       return cpu_topology[cpu].socket_id ?
+>> +                       cpumask_of_node(cpu_to_node(cpu)) :
+>> +                       &cpu_topology[cpu].core_sibling;
+>> +}
+>> +
+>> +
+>>  static void update_siblings_masks(unsigned int cpuid)
+>>  {
+>>         struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
+>> @@ -280,11 +288,18 @@ static inline const int cpu_corepower_flags(void)
+>>         return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
+>>  }
+>>
+>> +static inline const int cpu_cpupower_flags(void)
+>> +{
+>> +       return SD_SHARE_POWERDOMAIN;
+>> +}
+>> +
+>> +
+>>  static struct sched_domain_topology_level arm_topology[] = {
+>>  #ifdef CONFIG_SCHED_MC
+>>         { cpu_corepower_mask, cpu_corepower_flags, SD_INIT_NAME(GMC) },
+>>         { cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },
+>>  #endif
+>> +       { cpu_cpupower_mask, cpu_cpupower_flags, SD_INIT_NAME(GDIE) },
+>>         { cpu_cpu_mask, SD_INIT_NAME(DIE) },
+>>         { NULL, },
+>>  };
+>>
+>> so I get the following topology:
+>>
+>> CPU0: cpu_corepower_mask=0   (GMC)
+>> CPU0: cpu_coregroup_mask=0-1 (MC)
+>> CPU0:  cpu_cpupower_mask=0-1 (GDIE)
+>> CPU0:       cpu_cpu_mask=0-4 (DIE)
+>> CPU1: cpu_corepower_mask=1    ...
+>> CPU1: cpu_coregroup_mask=0-1
+>> CPU1:  cpu_cpupower_mask=0-1
+>> CPU1:       cpu_cpu_mask=0-4
+>> CPU2: cpu_corepower_mask=2
+>> CPU2: cpu_coregroup_mask=2-4
+>> CPU2:  cpu_cpupower_mask=0-4
+>> CPU2:       cpu_cpu_mask=0-4
+>> CPU3: cpu_corepower_mask=3
+>> CPU3: cpu_coregroup_mask=2-4
+>> CPU3:  cpu_cpupower_mask=0-4
+>> CPU3:       cpu_cpu_mask=0-4
+>> CPU4: cpu_corepower_mask=4
+>> CPU4: cpu_coregroup_mask=2-4
+>> CPU4:  cpu_cpupower_mask=0-4
+>> CPU4:       cpu_cpu_mask=0-4
+> 
+> You  have an inconsistency in your topology description:
 
-Hi,
+That's true functional-wise but I think that this is not the reason why
+the code in get_group()/build_sched_groups() isn't working correctly any
+more with this set-up.
 
-On Wed, Apr 23, 2014 at 09:44:57AM +0200, Gregory CLEMENT wrote:
-> > On Fri, Apr 18, 2014 at 12:22:37PM +0200, Gregory CLEMENT wrote:
-> >> For the armada 38x SoCs which come with an xhci controller, specific
-> >> initialization must be done during probe, especially in relation with
-> >> the MBus windows initialization. This patch adds this support.
-> >>
-> >> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> >> ---
-> >>  drivers/usb/host/Kconfig      |   7 +++
-> >>  drivers/usb/host/Makefile     |   1 +
-> >>  drivers/usb/host/xhci-mvebu.c | 105 +++++++++++++++++++++++++++++++++=
-+++++++++
-> >>  drivers/usb/host/xhci-mvebu.h |  21 +++++++++
-> >>  drivers/usb/host/xhci-plat.c  |  10 ++++
-> >>  5 files changed, 144 insertions(+)
-> >>  create mode 100644 drivers/usb/host/xhci-mvebu.c
-> >>  create mode 100644 drivers/usb/host/xhci-mvebu.h
-> >>
-> >> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
-> >> index 3d9e54062d62..e70943fac4a1 100644
-> >> --- a/drivers/usb/host/Kconfig
-> >> +++ b/drivers/usb/host/Kconfig
-> >> @@ -29,6 +29,13 @@ if USB_XHCI_HCD
-> >>  config USB_XHCI_PLATFORM
-> >>  	tristate
-> >> =20
-> >> +config USB_XHCI_MVEBU
-> >> +	tristate "xHCI support for Marvell Armada 38x"
-> >> +	select USB_XHCI_PLATFORM
-> >> +	---help---
-> >> +	  Say 'Y' to enable the support for the xHCI host controller
-> >> +	  found in Marvell Armada 38x ARM SOCs.
-> >> +
-> >>  endif # USB_XHCI_HCD
-> >> =20
-> >>  config USB_EHCI_HCD
-> >> diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
-> >> index 7530468c9a4f..7a8db7f7dc01 100644
-> >> --- a/drivers/usb/host/Makefile
-> >> +++ b/drivers/usb/host/Makefile
-> >> @@ -19,6 +19,7 @@ xhci-hcd-$(CONFIG_PCI)	+=3D xhci-pci.o
-> >> =20
-> >>  ifneq ($(CONFIG_USB_XHCI_PLATFORM), )
-> >>  	xhci-hcd-y		+=3D xhci-plat.o
-> >> +	xhci-hcd-$(CONFIG_USB_XHCI_MVEBU)	+=3D xhci-mvebu.o
-> >>  endif
-> >> =20
-> >>  obj-$(CONFIG_USB_WHCI_HCD)	+=3D whci/
-> >> diff --git a/drivers/usb/host/xhci-mvebu.c b/drivers/usb/host/xhci-mve=
-bu.c
-> >> new file mode 100644
-> >> index 000000000000..dc9c7648ab65
-> >> --- /dev/null
-> >> +++ b/drivers/usb/host/xhci-mvebu.c
-> >> @@ -0,0 +1,105 @@
-> >> +/*
-> >> + * Copyright (C) 2014 Marvell
-> >> + * Author: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> >> + *
-> >> + * This program is free software; you can redistribute it and/or
-> >> + * modify it under the terms of the GNU General Public License
-> >> + * version 2 as published by the Free Software Foundation.
-> >> + */
-> >> +
-> >> +#include <linux/clk.h>
-> >> +#include <linux/io.h>
-> >> +#include <linux/mbus.h>
-> >> +#include <linux/of.h>
-> >> +#include <linux/platform_device.h>
-> >> +
-> >> +#include "xhci.h"
-> >> +
-> >> +#define USB3_MAX_WINDOWS	4
-> >> +#define USB3_WIN_CTRL(w)	(0x0 + ((w) * 8))
-> >> +#define USB3_WIN_BASE(w)	(0x4 + ((w) * 8))
-> >> +
-> >> +static void __init mv_usb3_conf_mbus_windows(void __iomem *base,
-> >> +			const struct mbus_dram_target_info *dram)
-> >> +{
-> >> +	int win;
-> >> +
-> >> +	/* Clear all existing windows */
-> >> +	for (win =3D 0; win < USB3_MAX_WINDOWS; win++) {
-> >> +		writel(0, base + USB3_WIN_CTRL(win));
-> >> +		writel(0, base + USB3_WIN_BASE(win));
-> >> +	}
-> >> +
-> >> +	/* Program each DRAM CS in a seperate window */
-> >> +	for (win =3D 0; win < dram->num_cs; win++) {
-> >> +		const struct mbus_dram_window *cs =3D dram->cs + win;
-> >> +
-> >> +		writel(((cs->size - 1) & 0xffff0000) | (cs->mbus_attr << 8) |
-> >> +		       (dram->mbus_dram_target_id << 4) | 1,
-> >> +		       base + USB3_WIN_CTRL(win));
-> >> +
-> >> +		writel((cs->base & 0xffff0000), base + USB3_WIN_BASE(win));
-> >> +	}
-> >> +}
-> >> +
-> >> +int xhci_mvebu_probe(struct platform_device *pdev)
-> >> +{
-> >> +	struct resource	*res;
-> >> +	void __iomem	*base;
-> >> +	const struct mbus_dram_target_info *dram;
-> >> +	int ret;
-> >> +	struct clk *clk;
-> >> +
-> >> +	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> >> +	if (!res)
-> >> +		return -ENODEV;
-> >> +
-> >> +	/*
-> >> +	 * We don't use devm_ioremap() because this mapping should
-> >> +	 * only exists for the duration of this probe function.
-> >> +	 */
-> >> +	base =3D ioremap(res->start, resource_size(res));
-> >> +	if (!base)
-> >> +		return -ENODEV;
-> >> +
-> >> +	clk =3D devm_clk_get(&pdev->dev, NULL);
-> >> +	if (IS_ERR(clk)) {
-> >> +		iounmap(base);
-> >> +		return PTR_ERR(clk);
-> >> +	}
-> >> +
-> >> +	ret =3D clk_prepare_enable(clk);
-> >> +	if (ret < 0) {
-> >> +		iounmap(base);
-> >> +		return ret;
-> >> +	}
-> >=20
-> > it's best to teach generic xhci-plat about clocks, just make it
-> > optional.
->=20
-> OK
->=20
-> >=20
-> >> +	dram =3D mv_mbus_dram_info();
-> >> +	mv_usb3_conf_mbus_windows(base, dram);
-> >> +
-> >> +	/*
-> >> +	 * This memory area was only needed to configure the MBus
-> >> +	 * windows, and is therefore no longer useful.
-> >> +	 */
-> >> +	iounmap(base);
-> >=20
-> > so I suppose MBus is the Marvell interconnect, am I right ? Wouldn't you
-> > be duplicating this sort of initialization for most drivers ?
->=20
-> Actually most of them don't need it.
->=20
-> >=20
-> >> +	ret =3D common_xhci_plat_probe(pdev, clk);
-> >=20
-> > I would much rather reverse this, instead of exposing xhci-plat's probe,
-> > turn this mbus initialization into a quirk which will ioremap the extra
-> > resource, initialize some registers and iounmap it.
->=20
-> This approach have been inspired by what have been done for SDHCI and AHC=
-I.
-> The infrastructure allowing adding platform code is in the generic file b=
-ut
-> all the specific code is in the platform file.
->=20
-> But if for USB you think we should do it in a different way, I will do it.
+Like I said above the cpu_cpupower_flags() is just bogus and I only
+added it to illustrate the issue (Shouldn't have used
+SD_SHARE_POWERDOMAIN in the first place).
+Essentially what I want to do is bind an SD_SHARE_*FOO* flag to the GDIE
+related sd's of CPU2/3/4 and not to the DIE related sd's of CPU0/1.
 
-Yeah, I think it'll look slightly cleaner to have quirks called from
-xhci-plat rather than having the quirk call into xhci-plat. Just look at
-what *hci do on PCI-based platforms.
+I thought so far that I can achieve that by getting rid of GDIE sd level
+for CPU0/1 simply by choosing the cpu_foo_mask() function in such a way
+that it returns the same cpu mask as its child sd level (MC) and of DIE
+sd level for CPU2/3/4 because it returns the same cpu mask as its child
+sd level (GDIE) related cpu mask function. This will let sd degenerate
+do it's job of folding sd levels which it does. The only problem I have
+is that the groups are not created correctly any more.
 
---=20
-balbi
+I don't see right now how the flag SD_SHARE_FOO affects the code in
+get_group()/build_sched_groups().
 
---Sw7tCqrGA+HQ0/zt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Think of SD_SHARE_FOO of something I would like to have for all sd's of
+CPU's of cluster 1 (CPU2/3/4) and not on cluster 0 (CPU0/1) in the sd
+level where each CPU sees two groups (group0 containing CPU0/1 and
+group1 containing CPU2/3/4 or vice versa) (GDIE/DIE) .
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+-- Dietmar
 
-iQIcBAEBAgAGBQJTV9q6AAoJEIaOsuA1yqRE/KkQAKVyRLWqytavBGK6T+AxJrfI
-eWltYpofdYF53RJ+vmsFQIeSOzABnDRSjNrJ3e+IMnQs3C0/oalZd75jGdF4kbke
-ajPJjZLitWiVfo2HgJBhdkWcsWjRR+WjlMpkfFuFD2q1owAkRe9IS7pEylUX4J+F
-/3D6gK7dsmTwFSYZdYFm2jyJB5uZpxyp2dS6MoLX9xNmT2K8YNCHgJ12cocu+dwY
-G4Mg1Xij1bLIGVgCTmoxqRgJW2Yuw7BxNsG8ZpyUC4Gf7XTrsfz/XJ16LIQVMwzO
-vVdb9J4KNAAxrDRscebHptd1BbLonYE9thXOswS61Qck6EvGCaJMeAScZK5P/WXo
-gioTfPfmwtRTtpcuf1yRC3ND5TORt4auZI3K2krTyD4OAIFVhKc/Rhm2caFe75ls
-8fhy5m/ury79e80dgEjeepqHk5DBQrOfUSID3YRrFe+FXoyMfSxYxnXf82HlXTww
-aFtYibzbJu3ymoUQyy/Qt842BmHOWkVOlaSyaHwcHxZ8mtDW5SQSIEPdoCgObgJp
-5weSw0ZnWIRKGhaZkhtLLkzJeH9z/3Xk9A/NZqvLxqK5RzIRDgZJ6ZroRoxog63g
-KUVZ5O6yIHLRXt9UmsMPWUSRyY/PDQKYQXPuZ/WyrFSZsspxDt0zfYu4QNJI4jg4
-B4qHtXuU3Ab6w+2+lq1p
-=kF5i
------END PGP SIGNATURE-----
+> 
+> At GDIE level:
+> CPU1 cpu_cpupower_mask=0-1
+> but
+> CPU2 cpu_cpupower_mask=0-4
+> 
+> so CPU2 says that it shares power domain with CPU0 but CPU1 says the opposite
+> 
+> Regards
+> Vincent
+> 
+>>
+>> Firstly, I had to get rid of the cpumask_equal(cpu_map,
+>> sched_domain_span(sd)) condition in build_sched_domains() to allow that
+>> I can have two sd levels which span CPU 0-4 (for CPU2/3/4).
+>>
+>> But it still doesn't work correctly:
+>>
+>> dmesg snippet 2:
+>>
+>> CPU0 attaching sched-domain:
+>>  domain 0: span 0-1 level MC
+>>   groups: 0 1
+>>   domain 1: span 0-4 level DIE     <-- error (there's only one group)
+>>    groups: 0-4 (cpu_power = 2048)
+>> ...
+>> CPU2 attaching sched-domain:
+>>  domain 0: span 2-4 level MC
+>>   groups: 2 3 4
+>>   domain 1: span 0-4 level GDIE
+>> ERROR: domain->groups does not contain CPU2
+>>    groups:
+>> ERROR: domain->cpu_power not set
+>>
+>> ERROR: groups don't span domain->span
+>> ...
+>>
+>> It turns out that the function get_group() which is used a couple of
+>> times in build_sched_groups() uses a reference to sd->child and even
+>> though the degenerate functionality gets rid of GDIE for CPU0/1 and DIE
+>> for CPU2/3/4 the group set-up doesn't work as expected since sd->child
+>> for DIE is GDIE and not MC any more.
+>> So it looks like GMC/MC level is somehow special (GMC has no sd->child
+>> for TC2 or GMC/MC contains only one cpu per group?).
+>>
+>> Although this problem does not effect the current patch-set, people
+>> might think that they can apply this degenerate trick for other sd
+>> levels as well.
+>>
+>> I'm trying to fix get_group()/build_sched_groups() in such a way that my
+>> example would work but so far I haven't succeeded. The question for me
+>> remains ... is this application of the degenerate trick feasible at all
+>> in all sd levels, i.e. does it scale? What about platforms w/ SMT sd
+>> level which want to use this trick in GMC/MC level?
+>>
+>> Any hints are highly appreciated here.
+>>
+>> -- Dietmar
+>>
+>> On 11/04/14 10:44, Vincent Guittot wrote:
+>>> Create a dedicated topology table for ARM which will create new level to
+>>> differentiate CPUs that can or not powergate independantly from others.
+>>>
+>>> The patch gives an example of how to add domain that will take advantage of
+>>> SD_SHARE_POWERDOMAIN.
+>>>
+>>> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+>>> ---
+>>>  arch/arm/kernel/topology.c | 26 ++++++++++++++++++++++++++
+>>>  1 file changed, 26 insertions(+)
+>>>
+>>> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+>>> index 0bc94b1..71e1fec 100644
+>>> --- a/arch/arm/kernel/topology.c
+>>> +++ b/arch/arm/kernel/topology.c
+>>> @@ -185,6 +185,15 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
+>>>       return &cpu_topology[cpu].core_sibling;
+>>>  }
+>>>
+>>> +/*
+>>> + * The current assumption is that we can power gate each core independently.
+>>> + * This will be superseded by DT binding once available.
+>>> + */
+>>> +const struct cpumask *cpu_corepower_mask(int cpu)
+>>> +{
+>>> +     return &cpu_topology[cpu].thread_sibling;
+>>> +}
+>>> +
+>>>  static void update_siblings_masks(unsigned int cpuid)
+>>>  {
+>>>       struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
+>>> @@ -266,6 +275,20 @@ void store_cpu_topology(unsigned int cpuid)
+>>>               cpu_topology[cpuid].socket_id, mpidr);
+>>>  }
+>>>
+>>> +static inline const int cpu_corepower_flags(void)
+>>> +{
+>>> +     return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
+>>> +}
+>>> +
+>>> +static struct sched_domain_topology_level arm_topology[] = {
+>>> +#ifdef CONFIG_SCHED_MC
+>>> +     { cpu_corepower_mask, cpu_corepower_flags, SD_INIT_NAME(GMC) },
+>>> +     { cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },
+>>> +#endif
+>>> +     { cpu_cpu_mask, SD_INIT_NAME(DIE) },
+>>> +     { NULL, },
+>>> +};
+>>> +
+>>>  /*
+>>>   * init_cpu_topology is called at boot when only one cpu is running
+>>>   * which prevent simultaneous write access to cpu_topology array
+>>> @@ -289,4 +312,7 @@ void __init init_cpu_topology(void)
+>>>       smp_wmb();
+>>>
+>>>       parse_dt_topology();
+>>> +
+>>> +     /* Set scheduler topology descriptor */
+>>> +     set_sched_topology(arm_topology);
+>>>  }
+>>>
+>>
+>>
+> 
 
---Sw7tCqrGA+HQ0/zt--
+
