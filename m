@@ -1,79 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919AbaDWHgX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:36:23 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:37101 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899AbaDWHgU (ORCPT
+	id S1757299AbaDWHgb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:36:31 -0400
+Received: from smtp.adetelgroup.com ([94.247.26.71]:32990 "EHLO
+	hbg-pa71.hmc-pa.adm" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755809AbaDWHg0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:36:20 -0400
-Message-ID: <53576D68.30901@monstr.eu>
-Date: Wed, 23 Apr 2014 09:36:08 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
-MIME-Version: 1.0
-To: Sam Ravnborg <sam@ravnborg.org>
-CC: Will Deacon <will.deacon@arm.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, arnd@arndb.de, dhowells@redhat.com,
-        broonie@linaro.org, benh@kernel.crashing.org, peterz@infradead.org,
-        paulmck@linux.vnet.ibm.com
-Subject: Re: [PATCH 18/18] asm-generic: io: define relaxed accessor macros
- unconditionally
-References: <1397742261-15621-1-git-send-email-will.deacon@arm.com> <1397742261-15621-19-git-send-email-will.deacon@arm.com> <5356782A.9050809@monstr.eu> <20140423072327.GA1589@ravnborg.org>
-In-Reply-To: <20140423072327.GA1589@ravnborg.org>
-X-Enigmail-Version: 1.6
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="sBKvhTcVgXI4HURQgHNlniAPUFb9B1saV"
+	Wed, 23 Apr 2014 03:36:26 -0400
+Message-ID: <1398238558.3347.22.camel@EMBLYSD005.adetelgroup.com>
+Subject: Re: [PATCH] ARM: i.MX6: Add OF configuration support for ksz9031
+From: Hubert Chaumette <hchaumette@adeneo-embedded.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        netdev <netdev@vger.kernel.org>
+Date: Wed, 23 Apr 2014 09:35:58 +0200
+In-Reply-To: <CAGVrzcZbN+XP5kLb=cEL__+T9W8AY2ZWCtdZCMk9YUwo1r8Cnw@mail.gmail.com>
+References: <1398181748-6500-1-git-send-email-hchaumette@adeneo-embedded.com>
+	 <CAGVrzcZbN+XP5kLb=cEL__+T9W8AY2ZWCtdZCMk9YUwo1r8Cnw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---sBKvhTcVgXI4HURQgHNlniAPUFb9B1saV
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Le mardi 22 avril 2014 à 09:10 -0700, Florian Fainelli a écrit :
+> 2014-04-22 8:49 GMT-07:00 Hubert Chaumette <hchaumette@adeneo-embedded.com>:
+> > Adds support for ksz9031 PAD skew configuration over devicetree.
+> >
+> > Changes since v1:
+> > - Removed ksz9021 and ksz9031 fixup deletions from arch/arm/mach-imx/mach-imx6q.c
+> 
+> You should probably update the existing binding document in
+> Documentation/devicetree/bindings/net/micrel-ksz9021.txt to cover the
+> KSZ9031 PHY too.
 
-On 04/23/2014 09:23 AM, Sam Ravnborg wrote:
->> But I expect that all archs should use asm-generic/io.h to clean
->> architecture io.h exactly I have done it for Microblaze.
-> I took a quick look at sparc32 - doing this is a nice cleanup.
-> Thanks for the hint.
+Should it be renamed in the process (micrel-ksz90x1.txt) ?
 
-Nice. I had to fix some sparse warning which was introduce
-by this change. You should check them too if you haven't done it.
+> >
+> > Signed-off-by: Hubert Chaumette <hchaumette@adeneo-embedded.com>
+> > ---
+> >  drivers/net/phy/micrel.c | 185 ++++++++++++++++++++++++++++++++++++++++++++++-
+> >  1 file changed, 184 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/drivers/net/phy/micrel.c b/drivers/net/phy/micrel.c
+> > index 5a8993b..df56b26 100644
+> > --- a/drivers/net/phy/micrel.c
+> > +++ b/drivers/net/phy/micrel.c
+> > @@ -242,6 +242,189 @@ static int ksz9021_config_init(struct phy_device *phydev)
+> >         return 0;
+> >  }
+> >
+> > +#define MII_KSZ9031RN_MMD_CTRL_REG     0x0d
+> > +#define MII_KSZ9031RN_MMD_REGDATA_REG  0x0e
+> > +#define OP_DATA                                1
+> > +#define KSZ9031_PS_TO_REG              60
+> > +
+> > +/* Extended registers */
+> > +#define MII_KSZ9031RN_CONTROL_PAD_SKEW 4
+> > +#define MII_KSZ9031RN_RX_DATA_PAD_SKEW 5
+> > +#define MII_KSZ9031RN_TX_DATA_PAD_SKEW 6
+> > +#define MII_KSZ9031RN_CLK_PAD_SKEW     8
+> > +
+> > +static int ksz9031_extended_write(struct phy_device *phydev,
+> > +                                 u8 mode, u32 dev_addr, u32 regnum, u16 val)
+> > +{
+> > +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, dev_addr);
+> > +       phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, regnum);
+> > +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, (mode << 14) | dev_addr);
+> > +       return phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, val);
+> > +}
+> > +
+> > +static int ksz9031_extended_read(struct phy_device *phydev,
+> > +                                u8 mode, u32 dev_addr, u32 regnum)
+> > +{
+> > +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, dev_addr);
+> > +       phy_write(phydev, MII_KSZ9031RN_MMD_REGDATA_REG, regnum);
+> > +       phy_write(phydev, MII_KSZ9031RN_MMD_CTRL_REG, (mode << 14) | dev_addr);
+> > +       return phy_read(phydev, MII_KSZ9031RN_MMD_REGDATA_REG);
+> > +}
+> > +
+> > +/* Two 5-bit fields register */
+> > +static int ksz9031_load_clk_skew_values(struct phy_device *phydev,
+> > +                                       struct device_node *of_node,
+> > +                                       char *field1, char *field2)
+> > +{
+> > +       int val1 = -1;
+> > +       int val2 = -2;
+> > +       int newval;
+> > +       int matches = 0;
+> > +
+> > +       if (!of_property_read_u32(of_node, field1, &val1))
+> > +               matches++;
+> > +
+> > +       if (!of_property_read_u32(of_node, field2, &val2))
+> > +               matches++;
+> > +
+> > +       if (!matches)
+> > +               return 0;
+> > +
+> > +       if (matches < 2)
+> > +               newval = ksz9031_extended_read(phydev, OP_DATA, 2,
+> > +                               MII_KSZ9031RN_CLK_PAD_SKEW);
+> > +       else
+> > +               newval = 0;
+> > +
+> > +       if (val1 != -1)
+> > +               newval = (newval & 0xffe0) |
+> > +                        ((val1 / KSZ9031_PS_TO_REG) & 0x1f);
+> > +
+> > +       if (val2 != -2)
+> > +               newval = (newval & 0xfc1f) |
+> > +                        (((val2 / KSZ9031_PS_TO_REG) & 0x1f) << 5);
+> > +
+> > +       return ksz9031_extended_write(phydev, OP_DATA, 2,
+> > +                       MII_KSZ9031RN_CLK_PAD_SKEW, newval);
+> > +}
+> > +
+> > +/* Four 4-bit fields register */
+> > +static int ksz9031_load_data_skew_values(struct phy_device *phydev,
+> > +                                        struct device_node *of_node, u16 reg,
+> > +                                        char *field1, char *field2,
+> > +                                        char *field3, char *field4)
+> > +{
+> > +       int val1 = -1;
+> > +       int val2 = -2;
+> > +       int val3 = -3;
+> > +       int val4 = -4;
+> > +       int newval;
+> > +       int matches = 0;
+> > +
+> > +       if (!of_property_read_u32(of_node, field1, &val1))
+> > +               matches++;
+> > +
+> > +       if (!of_property_read_u32(of_node, field2, &val2))
+> > +               matches++;
+> > +
+> > +       if (!of_property_read_u32(of_node, field3, &val3))
+> > +               matches++;
+> > +
+> > +       if (!of_property_read_u32(of_node, field4, &val4))
+> > +               matches++;
+> > +
+> > +       if (!matches)
+> > +               return 0;
+> > +
+> > +       if (matches < 4)
+> > +               newval = ksz9031_extended_read(phydev, OP_DATA, 2, reg);
+> > +       else
+> > +               newval = 0;
+> > +
+> > +       if (val1 != -1)
+> > +               newval = (newval & 0xfff0) |
+> > +                        (((val1 / KSZ9031_PS_TO_REG) & 0xf) << 0);
+> > +
+> > +       if (val2 != -2)
+> > +               newval = (newval & 0xff0f) |
+> > +                        (((val2 / KSZ9031_PS_TO_REG) & 0xf) << 4);
+> > +
+> > +       if (val3 != -3)
+> > +               newval = (newval & 0xf0ff) |
+> > +                        (((val3 / KSZ9031_PS_TO_REG) & 0xf) << 8);
+> > +
+> > +       if (val4 != -4)
+> > +               newval = (newval & 0x0fff) |
+> > +                        (((val4 / KSZ9031_PS_TO_REG) & 0xf) << 12);
+> 
+> How about something like this:
+> 
+> for (i = 0; i < 4; i++) {
+>             if (val[i] != -i) {
+>                     mask = 0xffff;
+>                     mask <<= (0 << (i * 4));
+>                     newval = (newval & mask) |
+>                            (((val[i] / KSZ9031_PS_TO_REG) & 0xf) << (i *4);
+>             }
+> }
+> 
+> Such that you could factor ksz9031_load_ctrl_skew_values() and
+> ksz9031_load_data_skew_values() to specify the number of matches they
+> should have?
 
-As follow up we should move these to asm-generic/io.h too
-ioremap_writethrough
-ioremap_nocache
-ioremap_fullcache - used nowhere
-ioremap_wc
+I'm on it.
 
-Thanks,
-Michal
+We could go further along this path and add a field length parameter to
+also factor ksz9031_load_clk_skew_values()?
+A similar loop could be used in ksz9021_load_values_from_of().
 
---=20
-Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
-Maintainer of Linux kernel - Xilinx Zynq ARM architecture
-Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+> > +
+> > +       return ksz9031_extended_write(phydev, OP_DATA, 2, reg, newval);
+> > +}
+> > +
+> > +/* Two 4-bit fields register */
+> > +static int ksz9031_load_ctrl_skew_values(struct phy_device *phydev,
+> > +                                        struct device_node *of_node,
+> > +                                        char *field1, char *field2)
+> > +{
+> > +       int val1 = -1;
+> > +       int val2 = -2;
+> > +       int newval;
+> > +       int matches = 0;
+> > +
+> > +       if (!of_property_read_u32(of_node, field1, &val1))
+> > +               matches++;
+> > +
+> > +       if (!of_property_read_u32(of_node, field2, &val2))
+> > +               matches++;
+> > +
+> > +       if (!matches)
+> > +               return 0;
+> > +
+> > +       if (matches < 2)
+> > +               newval = ksz9031_extended_read(phydev, OP_DATA, 2,
+> > +                               MII_KSZ9031RN_CONTROL_PAD_SKEW);
+> > +       else
+> > +               newval = 0;
+> > +
+> > +       if (val1 != -1)
+> > +               newval = (newval & 0xfff0) |
+> > +                        (((val1 / KSZ9031_PS_TO_REG) & 0xf) << 0);
+> > +
+> > +       if (val2 != -2)
+> > +               newval = (newval & 0xff0f) |
+> > +                        (((val2 / KSZ9031_PS_TO_REG) & 0xf) << 4);
+> > +
+> > +       return ksz9031_extended_write(phydev, OP_DATA, 2,
+> > +                       MII_KSZ9031RN_CONTROL_PAD_SKEW, newval);
+> > +}
+> > +
+> > +static int ksz9031_config_init(struct phy_device *phydev)
+> > +{
+> > +       struct device *dev = &phydev->dev;
+> > +       struct device_node *of_node = dev->of_node;
+> > +
+> > +       if (!of_node && dev->parent->of_node)
+> > +               of_node = dev->parent->of_node;
+> > +
+> > +       if (of_node) {
+> > +               ksz9031_load_clk_skew_values(phydev, of_node,
+> > +                               "rxc-skew-ps", "txc-skew-ps");
+> > +
+> > +               ksz9031_load_data_skew_values(phydev, of_node,
+> > +                               MII_KSZ9031RN_RX_DATA_PAD_SKEW,
+> > +                               "rxd0-skew-ps", "rxd1-skew-ps",
+> > +                               "rxd2-skew-ps", "rxd3-skew-ps");
+> > +
+> > +               ksz9031_load_data_skew_values(phydev, of_node,
+> > +                               MII_KSZ9031RN_TX_DATA_PAD_SKEW,
+> > +                               "txd0-skew-ps", "txd1-skew-ps",
+> > +                               "txd2-skew-ps", "txd3-skew-ps");
+> > +
+> > +               ksz9031_load_ctrl_skew_values(phydev, of_node,
+> > +                               "txen-skew-ps", "rxdv-skew-ps");
+> > +       }
+> > +       return 0;
+> > +}
+> > +
+> >  #define KSZ8873MLL_GLOBAL_CONTROL_4    0x06
+> >  #define KSZ8873MLL_GLOBAL_CONTROL_4_DUPLEX     (1 << 6)
+> >  #define KSZ8873MLL_GLOBAL_CONTROL_4_SPEED      (1 << 4)
+> > @@ -428,7 +611,7 @@ static struct phy_driver ksphy_driver[] = {
+> >         .features       = (PHY_GBIT_FEATURES | SUPPORTED_Pause
+> >                                 | SUPPORTED_Asym_Pause),
+> >         .flags          = PHY_HAS_MAGICANEG | PHY_HAS_INTERRUPT,
+> > -       .config_init    = kszphy_config_init,
+> > +       .config_init    = ksz9031_config_init,
+> >         .config_aneg    = genphy_config_aneg,
+> >         .read_status    = genphy_read_status,
+> >         .ack_interrupt  = kszphy_ack_interrupt,
+> > --
+> > 1.9.2
+> >
 
 
 
---sBKvhTcVgXI4HURQgHNlniAPUFb9B1saV
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
-
-iEYEARECAAYFAlNXbWgACgkQykllyylKDCFBMwCgjhMefC5s9Yuk9YuliAT8VYiB
-W6QAnjlN1o7TnSeXoxvr7lRiNWvjHLC7
-=u2/A
------END PGP SIGNATURE-----
-
---sBKvhTcVgXI4HURQgHNlniAPUFb9B1saV--
