@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932172AbaDWHAP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:00:15 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:60261 "EHLO
+	id S932124AbaDWHAO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:00:14 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:60262 "EHLO
 	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753945AbaDWHAK (ORCPT
+	with ESMTP id S1753858AbaDWHAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 23 Apr 2014 03:00:10 -0400
 X-Original-SENDERIP: 10.177.220.181
@@ -16,151 +16,89 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
         Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 1/7] perf report: Count number of entries separately
-Date: Wed, 23 Apr 2014 16:00:02 +0900
-Message-Id: <1398236408-8856-2-git-send-email-namhyung@kernel.org>
+Subject: [PATCHSET 0/7] perf tools: Fixup for the --percentage change (v2)
+Date: Wed, 23 Apr 2014 16:00:01 +0900
+Message-Id: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
-References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hists->nr_entries is counted in multiple places so that they can
-confuse readers of the code.  This is a preparation of later change
-and do not intend any functional difference.
+Hello,
 
-Note that report__collapse_hists() now changed to return nothing since
-its return value (nr_samples) is only for checking if there's any data
-in the input file and this can be acheived by checking ->nr_entries.
+This patchset tries to fix bugs in percentage handling which is
+recently changed.  The perf top with symbol filter could cause a
+segfault (NULL pointer dereference) if the filter found no entry.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-report.c | 42 ++++++++++++++++++++++--------------------
- 1 file changed, 22 insertions(+), 20 deletions(-)
+In this patchset, I moved accounting of various histogram stats to be
+calculated at the time it actually shown to users.  Although I tested
+it on my system for a while, it needs more testing since it'll affect
+behaviors of many commands/usages.
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 76e2bb6cf571..aed52036468d 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -57,6 +57,7 @@ struct report {
- 	const char		*cpu_list;
- 	const char		*symbol_filter_str;
- 	float			min_percent;
-+	u64			nr_entries;
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
- 
-@@ -75,6 +76,17 @@ static int report__config(const char *var, const char *value, void *cb)
- 	return perf_default_config(var, value, cb);
- }
- 
-+static void report__inc_stats(struct report *rep, struct hist_entry *he)
-+{
-+	/*
-+	 * The @he is either of a newly created one or an existing one
-+	 * merging current sample.  We only want to count a new one so
-+	 * checking ->nr_events being 1.
-+	 */
-+	if (he->stat.nr_events == 1)
-+		rep->nr_entries++;
-+}
-+
- static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
- 				      struct perf_sample *sample, struct perf_evsel *evsel)
- {
-@@ -121,6 +133,8 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
- 			goto out;
- 	}
- 
-+	report__inc_stats(rep, he);
-+
- 	evsel->hists.stats.total_period += cost;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- 	if (!he->filtered)
-@@ -176,6 +190,8 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
- 					goto out;
- 			}
- 
-+			report__inc_stats(rep, he);
-+
- 			evsel->hists.stats.total_period += 1;
- 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- 			if (!he->filtered)
-@@ -212,6 +228,8 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
- 	if (ui__has_annotation())
- 		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
- 
-+	report__inc_stats(rep, he);
-+
- 	evsel->hists.stats.total_period += sample->period;
- 	if (!he->filtered)
- 		evsel->hists.stats.nr_non_filtered_samples++;
-@@ -486,24 +504,12 @@ static int report__browse_hists(struct report *rep)
- 	return ret;
- }
- 
--static u64 report__collapse_hists(struct report *rep)
-+static void report__collapse_hists(struct report *rep)
- {
- 	struct ui_progress prog;
- 	struct perf_evsel *pos;
--	u64 nr_samples = 0;
--	/*
-- 	 * Count number of histogram entries to use when showing progress,
-- 	 * reusing nr_samples variable.
-- 	 */
--	evlist__for_each(rep->session->evlist, pos)
--		nr_samples += pos->hists.nr_entries;
- 
--	ui_progress__init(&prog, nr_samples, "Merging related events...");
--	/*
--	 * Count total number of samples, will be used to check if this
-- 	 * session had any.
-- 	 */
--	nr_samples = 0;
-+	ui_progress__init(&prog, rep->nr_entries, "Merging related events...");
- 
- 	evlist__for_each(rep->session->evlist, pos) {
- 		struct hists *hists = &pos->hists;
-@@ -512,7 +518,6 @@ static u64 report__collapse_hists(struct report *rep)
- 			hists->symbol_filter_str = rep->symbol_filter_str;
- 
- 		hists__collapse_resort(hists, &prog);
--		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
- 
- 		/* Non-group events are considered as leader */
- 		if (symbol_conf.event_group &&
-@@ -525,14 +530,11 @@ static u64 report__collapse_hists(struct report *rep)
- 	}
- 
- 	ui_progress__finish();
--
--	return nr_samples;
- }
- 
- static int __cmd_report(struct report *rep)
- {
- 	int ret;
--	u64 nr_samples;
- 	struct perf_session *session = rep->session;
- 	struct perf_evsel *pos;
- 	struct perf_data_file *file = session->file;
-@@ -572,12 +574,12 @@ static int __cmd_report(struct report *rep)
- 		}
- 	}
- 
--	nr_samples = report__collapse_hists(rep);
-+	report__collapse_hists(rep);
- 
- 	if (session_done())
- 		return 0;
- 
--	if (nr_samples == 0) {
-+	if (rep->nr_entries == 0) {
- 		ui__error("The %s file has no samples!\n", file->path);
- 		return 0;
- 	}
+There're three main fields in the hists->stats to affect the output:
+number of samples, number of hist entries and total periods.
+
+Also there're three stages to process samples: at first, samples are
+converted to a hist entry and added to the input tree, and then they are
+moved to the collapsed tree if needed, and finally they're moved to the
+output tree to be shown to user.
+
+The (part of) stats are accounted when samples are added to the input
+tree and then reset before moving to the output tree, and re-counted
+during insertion to the output tree.
+
+I can see some reason to do it this way but it's basically not necessary
+and could make a problem in multi-threaded programs like perf top.
+
+The perf report does all these passes sequentially in a single thread so
+it seems no problem.  But perf top uses two threads - one for gathering
+samples (in the input tree) and another for (collapsing and) moving them
+to the output tree.  Thus accounting stat in parallel can result in an
+inaccurate stats and the output.
+
+So I'd like to get rid of the accounting on the input stage as you can
+see it just gets dropped before doing output resort.  I originally make
+the all three stats are accounted when doing output resort but changed
+mind to account number of samples in the input stage and others in the
+output stage.  Because it'd make more sense accounting number of events
+(sample event) in the input stage (as all other events are also
+accounted in the input stage) and it'd make less changes in code.
+
+So yes, it has a same problem of inaccurate number of samples, but its
+impact should be smaller than other stats - seeing increasing sample
+count (could be slightly inaccurate) without new entries in the browser.
+
+
+You can get this on the 'perf/percentage-v11' branch (yes, v11 - as
+it's continued from my previous series) in my tree
+
+  git://git.kenrel.org/pub/scm/linux/kernel/git/namhyung/linux-perf.git
+
+
+Any comments, review and testing are welcomed.
+
+Thanks,
+Namhyung
+
+
+Namhyung Kim (7):
+  perf report: Count number of entries separately
+  perf tools: Account entry stats when it's added to the output tree
+  perf hists: Add missing update on filtered stats in
+    hists__decay_entries()
+  perf ui/tui: Fix off-by-one in hist_browser__update_nr_entries()
+  perf ui/tui: Rename hist_browser__update_nr_entries()
+  perf top/tui: Update nr_entries properly after a filter is applied
+  perf hists/tui: Count callchain rows separately
+
+ tools/perf/builtin-annotate.c  |  3 +-
+ tools/perf/builtin-diff.c      | 23 ++++++-----
+ tools/perf/builtin-report.c    | 58 ++++++++++++---------------
+ tools/perf/ui/browsers/hists.c | 86 ++++++++++++++++++++++++++--------------
+ tools/perf/util/hist.c         | 89 +++++++++++++++++++++++++++---------------
+ tools/perf/util/hist.h         |  9 ++++-
+ 6 files changed, 162 insertions(+), 106 deletions(-)
+
 -- 
 1.9.2
 
