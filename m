@@ -1,182 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752274AbaDWW64 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:58:56 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:51668 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751957AbaDWW6D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:58:03 -0400
-From: Rob Herring <robherring2@gmail.com>
-To: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        thierry.reding@gmail.com, Rob Herring <robh@kernel.org>
-Subject: [PATCH 2/2] of/irq: do irq resolution in platform_get_irq
-Date: Wed, 23 Apr 2014 17:57:41 -0500
-Message-Id: <1398293861-7682-3-git-send-email-robherring2@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398293861-7682-1-git-send-email-robherring2@gmail.com>
-References: <1398293861-7682-1-git-send-email-robherring2@gmail.com>
+	id S1752298AbaDWXBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 19:01:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55900 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751545AbaDWXB3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 19:01:29 -0400
+Date: Wed, 23 Apr 2014 18:01:21 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: NeilBrown <neilb@suse.de>
+CC: Nishanth Menon <nm@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Greg KH <gregkh@linuxfoundation.org>, <marcel@holtmann.org>,
+        <gustavo@padovan.org>, <johan.hedberg@gmail.com>, <jslaby@suse.cz>,
+        <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 10/13] tty: serial: omap: remove some dead code
+Message-ID: <20140423230121.GC10924@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1398265117-11793-1-git-send-email-balbi@ti.com>
+ <1398265117-11793-10-git-send-email-balbi@ti.com>
+ <5357DDA8.4040206@ti.com>
+ <20140424084305.20c7f301@notabene.brown>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="/e2eDi0V/xtL+Mc8"
+Content-Disposition: inline
+In-Reply-To: <20140424084305.20c7f301@notabene.brown>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rob Herring <robh@kernel.org>
+--/e2eDi0V/xtL+Mc8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Currently we get the following kind of errors if we try to use interrupt
-phandles to irqchips that have not yet initialized:
+Hi,
 
-irq: no irq domain found for /ocp/pinmux@48002030 !
-------------[ cut here ]------------
-WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_device_alloc+0x144/0x184()
-Modules linked in:
-CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-00038-g42a9708 #1012
-(show_stack+0x14/0x1c)
-(dump_stack+0x6c/0xa0)
-(warn_slowpath_common+0x64/0x84)
-(warn_slowpath_null+0x1c/0x24)
-(of_device_alloc+0x144/0x184)
-(of_platform_device_create_pdata+0x44/0x9c)
-(of_platform_bus_create+0xd0/0x170)
-(of_platform_bus_create+0x12c/0x170)
-(of_platform_populate+0x60/0x98)
+On Thu, Apr 24, 2014 at 08:43:05AM +1000, NeilBrown wrote:
+> On Wed, 23 Apr 2014 10:35:04 -0500 Nishanth Menon <nm@ti.com> wrote:
+>=20
+> > On 04/23/2014 09:58 AM, Felipe Balbi wrote:
+> > > nobody passes a DTR_gpio to this driver, so
+> > > this code is not necessary.
+> > >=20
+> > > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > > ---
+> >=20
+> > Niel,
+> > this seems to revert the functionality introduced in
+> > commit 9574f36fb801035f6ab0fbb1b53ce2c12c17d100
+> > (OMAP/serial: Add support for driving a GPIO as DTR.)
+> >=20
+> > would you like to Ack this change?
+>=20
+> I have a couple of out-of-tree drivers that use this support.
+>=20
+> I hope to get back to working on that code one day and even get those dri=
+vers
+> upstream.  So I would really prefer this code to remain if it isn't causi=
+ng
+> any actual problems.
 
-This is because we're wrongly trying to populate resources that are not
-yet available. It's perfectly valid to create irqchips dynamically, so
-let's fix up the issue by resolving the interrupt resources when
-platform_get_irq is called.
+it causes problem with DT (not really). That suport is only available on
+legacy platform_data-based boot, it's not available on DT. I hear Tony
+is pretty close to turning OMAP3 DT-only.
 
-And then we also need to accept the fact that some irqdomains do not
-exist that early on, and only get initialized later on. So we can
-make the current WARN_ON into just into a pr_debug().
+> Of course, I can always re-submit it when I need it again, but that it ju=
+st
+> extra work all around.
 
-We still attempt to populate irq resources when we create the devices.
-This allows current drivers which don't use platform_get_irq to continue
-to function. Once all drivers are fixed, this code can be removed.
+I wonder how you will pass those attributes through DT considering they
+are *really* SW configuration. Why can't you use the real DTR pin, btw ?
 
-Suggested-by: Russell King <linux@arm.linux.org.uk>
-Signed-off-by: Rob Herring <robh@kernel.org>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
----
- drivers/base/platform.c |  7 ++++++-
- drivers/of/irq.c        | 26 ++++++++++++++++++++++++++
- drivers/of/platform.c   |  4 +++-
- include/linux/of_irq.h  |  7 ++++++-
- 4 files changed, 41 insertions(+), 3 deletions(-)
+--=20
+balbi
 
-diff --git a/drivers/base/platform.c b/drivers/base/platform.c
-index e714709..5b47210 100644
---- a/drivers/base/platform.c
-+++ b/drivers/base/platform.c
-@@ -13,6 +13,7 @@
- #include <linux/string.h>
- #include <linux/platform_device.h>
- #include <linux/of_device.h>
-+#include <linux/of_irq.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/dma-mapping.h>
-@@ -87,7 +88,11 @@ int platform_get_irq(struct platform_device *dev, unsigned int num)
- 		return -ENXIO;
- 	return dev->archdata.irqs[num];
- #else
--	struct resource *r = platform_get_resource(dev, IORESOURCE_IRQ, num);
-+	struct resource *r;
-+	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
-+		return of_irq_get(dev->dev.of_node, num);
-+
-+	r = platform_get_resource(dev, IORESOURCE_IRQ, num);
- 
- 	return r ? r->start : -ENXIO;
- #endif
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 9bcf2cf..ca01893 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -380,6 +380,32 @@ int of_irq_to_resource(struct device_node *dev, int index, struct resource *r)
- EXPORT_SYMBOL_GPL(of_irq_to_resource);
- 
- /**
-+ * of_irq_get - Decode a node's IRQ and return it as a Linux irq number
-+ * @dev: pointer to device tree node
-+ * @index: zero-based index of the irq
-+ *
-+ * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
-+ * is not yet created.
-+ *
-+ */
-+int of_irq_get(struct device_node *dev, int index)
-+{
-+	int rc;
-+	struct of_phandle_args oirq;
-+	struct irq_domain *domain;
-+
-+	rc = of_irq_parse_one(dev, index, &oirq);
-+	if (rc)
-+		return rc;
-+
-+	domain = irq_find_host(oirq.np);
-+	if (!domain)
-+		return -EPROBE_DEFER;
-+
-+	return irq_create_of_mapping(&oirq);
-+}
-+
-+/**
-  * of_irq_count - Count the number of IRQs a node uses
-  * @dev: pointer to device tree node
-  */
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 404d1da..bd47fbc 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -168,7 +168,9 @@ struct platform_device *of_device_alloc(struct device_node *np,
- 			rc = of_address_to_resource(np, i, res);
- 			WARN_ON(rc);
- 		}
--		WARN_ON(of_irq_to_resource_table(np, res, num_irq) != num_irq);
-+		if (of_irq_to_resource_table(np, res, num_irq) != num_irq)
-+			pr_debug("not all legacy IRQ resources mapped for %s\n",
-+				 np->name);
- 	}
- 
- 	dev->dev.of_node = of_node_get(np);
-diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
-index 3f23b44..bc9e51a 100644
---- a/include/linux/of_irq.h
-+++ b/include/linux/of_irq.h
-@@ -34,21 +34,26 @@ static inline int of_irq_parse_oldworld(struct device_node *device, int index,
- extern int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq);
- extern int of_irq_parse_one(struct device_node *device, int index,
- 			  struct of_phandle_args *out_irq);
--extern unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data);
- extern int of_irq_to_resource(struct device_node *dev, int index,
- 			      struct resource *r);
- extern int of_irq_to_resource_table(struct device_node *dev,
- 		struct resource *res, int nr_irqs);
-+extern unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data);
- 
- extern void of_irq_init(const struct of_device_id *matches);
- 
- #ifdef CONFIG_OF_IRQ
- extern int of_irq_count(struct device_node *dev);
-+extern int of_irq_get(struct device_node *dev, int index);
- #else
- static inline int of_irq_count(struct device_node *dev)
- {
- 	return 0;
- }
-+static inline int of_irq_get(struct device_node *dev, int index)
-+{
-+	return 0;
-+}
- #endif
- 
- #if defined(CONFIG_OF)
--- 
-1.9.1
+--/e2eDi0V/xtL+Mc8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTWEZBAAoJEIaOsuA1yqRE40wQAILR19zMkM/rKTjCVC1C2C0Z
+QgxHiiRQVI035WCwtRXqeEqGsUutycofiDI0sIOF37gh0oS1WVKctmJkhh70AipL
+tZv3KiXO3aX/xWuSLW16yT2D5WU4TdLndmzZB+7bkOST9aSHQ8LIBPEKgJQofruB
+IY4PZdJhi2ucWIsLNClL8VaR/YltpTEqdByIyxHBjd4Oacz6QV5QFF9ybyPomtKa
+/EBXi0ZBgUGKV+jTBesNb41hDHVzvZ/rvidTpmt0LgvWg/NdN7A2XPn6vMuIfPDz
+sUSpPAnt7zHSY8k/L/FuzK2mjBKQ6QX7spLLgKabQUachp8bgS+Psxud7omsUVj1
+W4XsAdbzrbaIp6/JRyMUTeuW0i5zxq4y8dUudqkOhRHhQWylrpHFJV79ELdHuFiY
+WUTZ58OyCOneb1FuOBq85S9GDgdefdqvyapG4qR48mxs5UYfExGe5YEM4zBqBNn5
+Y0qgDB/9XZwhc4+pN8LJjBiN0dqA87ZSESK9fVspOh26crg9Erh0CKRgBdFg8fyc
+sqSss/4yO5hKFY6TnyyxvwyYrEZubXq7z8gyEg7n2HLrf8UshfH4eWWf56gF0LBh
+b8FXvNr7spfgChwyQfHXTIy7mtywCGFda04qP8mOgCJZLBGhMuOx9/2OwGNVH/tD
+U459l1ufd8I6wDHLAPPh
+=xl8F
+-----END PGP SIGNATURE-----
+
+--/e2eDi0V/xtL+Mc8--
