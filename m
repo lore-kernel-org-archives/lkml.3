@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756718AbaDWBeP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:34:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756284AbaDWBcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755955AbaDWBcq (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 22 Apr 2014 21:32:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61146 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756284AbaDWBci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 21:32:38 -0400
 From: Richard Guy Briggs <rgb@redhat.com>
 To: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
         netdev@vger.kernel.org, selinux@tycho.nsa.gov,
         linux-security-module@vger.kernel.org
 Cc: Richard Guy Briggs <rgb@redhat.com>, davem@davemloft.net,
         jamal@mojatatu.com, eparis@redhat.com, sgrubb@redhat.com
-Subject: [PATCH 6/6][v2] audit: send multicast messages only if there are listeners
-Date: Tue, 22 Apr 2014 21:31:58 -0400
-Message-Id: <e131257eeebff6e2da08486ffd9146eb99ee8f61.1398215388.git.rgb@redhat.com>
+Subject: [PATCH 1/6][v2] netlink: simplify nfnetlink_bind
+Date: Tue, 22 Apr 2014 21:31:53 -0400
+Message-Id: <8ae3bd558cb6619428cc40e467d1643f9d382a0a.1398215388.git.rgb@redhat.com>
 In-Reply-To: <20140422.161904.1187535812839850973.davem@davemloft.net>
 References: <20140422.161904.1187535812839850973.davem@davemloft.net>
 In-Reply-To: <cover.1398215388.git.rgb@redhat.com>
@@ -23,28 +23,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Test first to see if there are any userspace multicast listeners bound to the
-socket before starting the multicast send work.
+Remove duplicity and simplify code flow by moving the rcu_read_unlock() above
+the condition and let the flow control exit naturally at the end of the
+function.
 
 Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- kernel/audit.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ net/netfilter/nfnetlink.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/audit.c b/kernel/audit.c
-index d272cc1..33531d7 100644
---- a/kernel/audit.c
-+++ b/kernel/audit.c
-@@ -435,6 +435,9 @@ static void kauditd_send_multicast_skb(struct sk_buff *skb)
- 	struct audit_net	*aunet = net_generic(&init_net, audit_net_id);
- 	struct sock		*sock = aunet->nlsk;
+diff --git a/net/netfilter/nfnetlink.c b/net/netfilter/nfnetlink.c
+index e8138da..0df800a 100644
+--- a/net/netfilter/nfnetlink.c
++++ b/net/netfilter/nfnetlink.c
+@@ -407,12 +407,9 @@ static void nfnetlink_bind(int group)
  
-+	if (!netlink_has_listeners(sock, AUDIT_NLGRP_READLOG))
-+		return;
-+
- 	/*
- 	 * The seemingly wasteful skb_copy() rather than bumping the refcount
- 	 * using skb_get() is necessary because non-standard mods are made to
+ 	rcu_read_lock();
+ 	ss = nfnetlink_get_subsys(type);
+-	if (!ss) {
+-		rcu_read_unlock();
+-		request_module("nfnetlink-subsys-%d", type);
+-		return;
+-	}
+ 	rcu_read_unlock();
++	if (!ss)
++		request_module("nfnetlink-subsys-%d", type);
+ }
+ #endif
+ 
 -- 
 1.7.1
 
