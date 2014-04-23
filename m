@@ -1,65 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756206AbaDWSrz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 14:47:55 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:50741 "EHLO
+	id S1757004AbaDWStM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 14:49:12 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:50756 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbaDWSrx convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754612AbaDWStJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 14:47:53 -0400
-Date: Wed, 23 Apr 2014 14:47:48 -0400 (EDT)
-Message-Id: <20140423.144748.1259564888396787227.davem@davemloft.net>
-To: linus.luessing@web.de
-Cc: netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-        stephen@networkplumber.org, linux-kernel@vger.kernel.org,
-        hannes@stressinduktion.org
-Subject: Re: [PATCH] bridge: simplify a br_multicast_query_received()
- function call
+	Wed, 23 Apr 2014 14:49:09 -0400
+Date: Wed, 23 Apr 2014 14:49:07 -0400 (EDT)
+Message-Id: <20140423.144907.2086744325555588840.davem@davemloft.net>
+To: haiyangz@microsoft.com
+Cc: netdev@vger.kernel.org, kys@microsoft.com, olaf@aepfle.de,
+        jasowang@redhat.com, linux-kernel@vger.kernel.org,
+        driverdev-devel@linuxdriverproject.org
+Subject: Re: [PATCH net-next,v2,1/2] hyperv: Remove recv_pkt_list and lock
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1398106775-14857-1-git-send-email-linus.luessing@web.de>
-References: <1398106775-14857-1-git-send-email-linus.luessing@web.de>
+In-Reply-To: <1398117284-5236-1-git-send-email-haiyangz@microsoft.com>
+References: <1398117284-5236-1-git-send-email-haiyangz@microsoft.com>
 X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 23 Apr 2014 11:47:51 -0700 (PDT)
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 23 Apr 2014 11:49:09 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Lüssing <linus.luessing@web.de>
-Date: Mon, 21 Apr 2014 20:59:35 +0200
+From: Haiyang Zhang <haiyangz@microsoft.com>
+Date: Mon, 21 Apr 2014 14:54:43 -0700
 
-> The call from the IPv6 part can be simplified as the beginning of the
-> calling function ensures that we end up here when having a proper IPv6
-> source address only.
+> Removed recv_pkt_list and lock, and updated related code, so that
+> the locking overhead is reduced especially when multiple channels
+> are in use.
 > 
-> Introduced by 6565b9eeef194afbb3beec80d6dd2447f4091f8c
-> ("bridge: multicast: add sanity check for query source addresses")
+> The recv_pkt_list isn't actually necessary because the packets are
+> processed sequentially in each channel. It has been replaced by a
+> local variable, and the related lock for this list is also removed.
+> The is_data_pkt field is not used in receive path, so its assignment
+> is cleaned up.
 > 
-> Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-> Signed-off-by: Linus Lüssing <linus.luessing@web.de>
-> ---
->  net/bridge/br_multicast.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/net/bridge/br_multicast.c b/net/bridge/br_multicast.c
-> index 7b757b5..d2c3aae 100644
-> --- a/net/bridge/br_multicast.c
-> +++ b/net/bridge/br_multicast.c
-> @@ -1282,8 +1282,7 @@ static int br_ip6_multicast_query(struct net_bridge *br,
->  		goto out;
->  	}
->  
-> -	br_multicast_query_received(br, port, &br->ip6_querier,
-> -				    !ipv6_addr_any(&ip6h->saddr),
-> +	br_multicast_query_received(br, port, &br->ip6_querier, 1,
->  				    is_general_query, max_delay);
->  
->  	if (!group)
+> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> Reviewed-by: K. Y. Srinivasan <kys@microsoft.com>
 
-This doesn't make any sense to me, is_general_query can be false at this
-point.
-
-Furthermore, even if your change would be correct, the argument is a
-boolean not an integer.
+Applied.
