@@ -1,483 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268AbaDWP4r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:56:47 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:59091 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753010AbaDWPvW (ORCPT
+	id S932341AbaDWP5D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:57:03 -0400
+Received: from mail-ig0-f202.google.com ([209.85.213.202]:51958 "EHLO
+	mail-ig0-f202.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755478AbaDWP4z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:51:22 -0400
-From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: sebastian.hesselbarth@gmail.com, linus.walleij@linaro.org
-Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
-        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+	Wed, 23 Apr 2014 11:56:55 -0400
+From: Doug Anderson <dianders@chromium.org>
+To: Anton Vorontsov <anton@enomsg.org>
+Cc: olof@lixom.net, Sachin Kamat <sachin.kamat@linaro.org>,
+        ajaykumar.rs@samsung.com, linux-samsung-soc@vger.kernel.org,
+        broonie@kernel.org, lee.jones@linaro.org,
+        Doug Anderson <dianders@chromium.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>, dwmw2@infradead.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/7] pinctrl: berlin: add the BG2Q pinctrl driver
-Date: Wed, 23 Apr 2014 17:51:11 +0200
-Message-Id: <1398268276-9696-3-git-send-email-antoine.tenart@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com>
-References: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Subject: [RESEND PATCH v3 2/5] charger: tps65090: Allow charger module to be used when no irq
+Date: Wed, 23 Apr 2014 08:56:02 -0700
+Message-Id: <1398268565-4789-3-git-send-email-dianders@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the pin-controller driver for the Berlin BG2Q SoC, with definition
-of its groups and functions. This uses the core Berlin pinctrl driver.
+On the ARM Chromebook tps65090 has two masters: the AP (the main
+processor running linux) and the EC (the embedded controller).  The AP
+is allowed to mess with FETs but the EC is in charge of charge control.
 
-Signed-off-by: Antoine Ténart <antoine.tenart@free-electrons.com>
+The tps65090 interupt line is routed to both the AP and the EC, which
+can cause quite a headache.  Having two people adjusting masks and
+acking interrupts is a recipe for disaster.
+
+In the shipping kernel we had a hack to have the AP pay attention to
+the IRQ but not to ack it.  It also wasn't supposed to configure the
+IRQ in any way.  That hack allowed us to detect when the device was
+charging without messing with the EC's state.
+
+The current tps65090 infrastructure makes the above difficult, and it
+was a bit of a hack to begin with.  Rather than uglify the driver to
+support it, just extend the driver's existing notion of "no irq" to
+the charger.  This makes the charger code poll every 2 seconds for AC
+detect, which is sufficient.
+
+For proper functioning, requires (mfd: tps65090: Don't tell child
+devices we have an IRQ if we don't).  If we don't have that patch
+we'll simply fail to probe on devices without an interrupt (just like
+we did before this patch).
+
+Signed-off-by: Doug Anderson <dianders@chromium.org>
 ---
- drivers/pinctrl/berlin/Kconfig       |   4 +
- drivers/pinctrl/berlin/Makefile      |   1 +
- drivers/pinctrl/berlin/berlin-bg2q.c | 413 +++++++++++++++++++++++++++++++++++
- 3 files changed, 418 insertions(+)
- create mode 100644 drivers/pinctrl/berlin/berlin-bg2q.c
+Changes in v3: None
+Changes in v2:
+- Split noirq (polling mode) changes into MFD and charger
 
-diff --git a/drivers/pinctrl/berlin/Kconfig b/drivers/pinctrl/berlin/Kconfig
-index df843e01a001..58ecfd797dd8 100644
---- a/drivers/pinctrl/berlin/Kconfig
-+++ b/drivers/pinctrl/berlin/Kconfig
-@@ -4,4 +4,8 @@ config PINCTRL_BERLIN
- 	bool
- 	select PINMUX
+ drivers/power/tps65090-charger.c | 76 +++++++++++++++++++++++++++++++---------
+ 1 file changed, 59 insertions(+), 17 deletions(-)
+
+diff --git a/drivers/power/tps65090-charger.c b/drivers/power/tps65090-charger.c
+index 8fc9d6d..cc26c12 100644
+--- a/drivers/power/tps65090-charger.c
++++ b/drivers/power/tps65090-charger.c
+@@ -17,9 +17,11 @@
+  */
+ #include <linux/delay.h>
+ #include <linux/err.h>
++#include <linux/freezer.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/kernel.h>
++#include <linux/kthread.h>
+ #include <linux/module.h>
+ #include <linux/of_device.h>
+ #include <linux/platform_device.h>
+@@ -43,11 +45,15 @@
+ #define TPS65090_VACG		BIT(1)
+ #define TPS65090_NOITERM	BIT(5)
  
-+config PINCTRL_BERLIN_BG2Q
-+	bool
-+	select PINCTRL_BERLIN
++#define POLL_INTERVAL		(HZ * 2)	/* Used when no irq */
 +
- endif
-diff --git a/drivers/pinctrl/berlin/Makefile b/drivers/pinctrl/berlin/Makefile
-index 251a2b4e1057..1866b1f2d1cf 100644
---- a/drivers/pinctrl/berlin/Makefile
-+++ b/drivers/pinctrl/berlin/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_PINCTRL_BERLIN)		+= berlin.o
-+obj-$(CONFIG_PINCTRL_BERLIN_BG2Q)	+= berlin-bg2q.o
-diff --git a/drivers/pinctrl/berlin/berlin-bg2q.c b/drivers/pinctrl/berlin/berlin-bg2q.c
-new file mode 100644
-index 000000000000..de5a6434be86
---- /dev/null
-+++ b/drivers/pinctrl/berlin/berlin-bg2q.c
-@@ -0,0 +1,413 @@
-+/*
-+ * Marvell Berlin BG2Q pinctrl driver
-+ *
-+ * Copyright (C) 2014 Marvell Technology Group Ltd.
-+ *
-+ * Antoine Ténart <antoine.tenart@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
+ struct tps65090_charger {
+ 	struct	device	*dev;
+ 	int	ac_online;
+ 	int	prev_ac_online;
+ 	int	irq;
++	struct task_struct	*poll_task;
++	bool			passive_mode;
+ 	struct power_supply	ac;
+ 	struct tps65090_platform_data *pdata;
+ };
+@@ -60,6 +66,9 @@ static int tps65090_low_chrg_current(struct tps65090_charger *charger)
+ {
+ 	int ret;
+ 
++	if (charger->passive_mode)
++		return 0;
 +
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/platform_device.h>
+ 	ret = tps65090_write(charger->dev->parent, TPS65090_REG_CG_CTRL5,
+ 			TPS65090_NOITERM);
+ 	if (ret < 0) {
+@@ -75,6 +84,9 @@ static int tps65090_enable_charging(struct tps65090_charger *charger)
+ 	int ret;
+ 	uint8_t ctrl0 = 0;
+ 
++	if (charger->passive_mode)
++		return 0;
 +
-+#include "berlin.h"
+ 	ret = tps65090_read(charger->dev->parent, TPS65090_REG_CG_CTRL0,
+ 			    &ctrl0);
+ 	if (ret < 0) {
+@@ -98,6 +110,9 @@ static int tps65090_config_charger(struct tps65090_charger *charger)
+ 	uint8_t intrmask = 0;
+ 	int ret;
+ 
++	if (charger->passive_mode)
++		return 0;
 +
-+static const struct berlin_desc_group berlin2q_soc_pinctrl_groups[] = {
-+	/* G */
-+	BERLIN_PINCTRL_GROUP("G0", 0x18, 0x3, 0x00,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "nand"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "emmc"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G1", 0x18, 0x3, 0x03,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "nand"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G2", 0x18, 0x3, 0x06,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "arc"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "lvds_vsync")),
-+	BERLIN_PINCTRL_GROUP("G3", 0x18, 0x3, 0x09,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "i2s2"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "lvds_lrid")),
-+	BERLIN_PINCTRL_GROUP("G4", 0x18, 0x3, 0x0c,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "pll"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "sd0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "rgmii"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "sata_dbg"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
-+			BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G5", 0x18, 0x3, 0x0f,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "sd0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "rgmii"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "sata_dbg"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
-+			BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G6", 0x18, 0x3, 0x12,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "soc"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "tw0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G7", 0x18, 0x3, 0x15,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "soc"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "tw1"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "eddc")),
-+	BERLIN_PINCTRL_GROUP("G8", 0x18, 0x3, 0x18,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "spi1"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G9", 0x18, 0x3, 0x1b,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "spi1"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "sata")),
-+	BERLIN_PINCTRL_GROUP("G10", 0x1c, 0x3, 0x00,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "spi1"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "i2s0"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "pwm"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "sata")),
-+	BERLIN_PINCTRL_GROUP("G11", 0x1c, 0x3, 0x03,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "soc"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "spi1"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "i2s1"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "pwm"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "sata")),
-+	BERLIN_PINCTRL_GROUP("G12", 0x1c, 0x3, 0x06,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "agc"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G13", 0x1c, 0x3, 0x09,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "sts1"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "rgmii"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
-+			BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G14", 0x1c, 0x3, 0x0c,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "sts0"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "sts1"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
-+			BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G15", 0x1c, 0x3, 0x0f,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "sts0"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "sts1"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "vdac"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
-+			BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G16", 0x1c, 0x3, 0x12,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "sts0"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "sts1"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "osco"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
-+			BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G17", 0x1c, 0x3, 0x15,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "rgmii"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "spdif"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "sts1"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "usb0_dbg"),
-+			BERLIN_PINCTRL_FUNCTION(0x7, "usb1_dbg")),
-+	BERLIN_PINCTRL_GROUP("G18", 0x1c, 0x3, 0x18,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "rgmii"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "i2s2"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "sts1")),
-+	BERLIN_PINCTRL_GROUP("G19", 0x1c, 0x3, 0x1b,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "rgmii"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "i2s3"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "sts1"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "osco")),
-+	BERLIN_PINCTRL_GROUP("G20", 0x20, 0x3, 0x00,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "demod"),
-+			/*
-+			 * Mode 0x4 mux usb2_dbg *and* usb3_dbg:
-+			 * add two functions so it can be used with other groups
-+			 * within the same subnode in the device tree
-+			 */
-+			BERLIN_PINCTRL_FUNCTION(0x4, "usb2_dbg"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "usb3_dbg")),
-+	BERLIN_PINCTRL_GROUP("G21", 0x20, 0x3, 0x03,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "sts2"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "demod")),
-+	BERLIN_PINCTRL_GROUP("G22", 0x20, 0x3, 0x06,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G23", 0x20, 0x3, 0x09,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "avif"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "usb2_dbg")),
-+	BERLIN_PINCTRL_GROUP("G24", 0x20, 0x3, 0x0c,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "demod"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "usb2_dbg")),
-+	BERLIN_PINCTRL_GROUP("G25", 0x20, 0x3, 0x0f,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "vga"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "avif"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "usb2_dbg")),
-+	BERLIN_PINCTRL_GROUP("G26", 0x20, 0x3, 0x12,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "lvds"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G27", 0x20, 0x3, 0x15,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "agc"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G28", 0x20, 0x3, 0x18,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "avif"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "usb2_dbg")),
-+	BERLIN_PINCTRL_GROUP("G29", 0x20, 0x3, 0x1b,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "scrd0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G30", 0x24, 0x3, 0x00,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "scrd1"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G31", 0x24, 0x3, 0x03,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "sd1"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("G32", 0x24, 0x3, 0x06,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "cam"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "sd1"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	/* GAV */
-+	BERLIN_PINCTRL_GROUP("GAV0", 0x24, 0x3, 0x09,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "lvds")),
-+	BERLIN_PINCTRL_GROUP("GAV1", 0x24, 0x3, 0x0c,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "vga")),
-+	BERLIN_PINCTRL_GROUP("GAV2", 0x24, 0x3, 0x0f,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "i2s3"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "pdm"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "adac")),
-+	BERLIN_PINCTRL_GROUP("GAV3", 0x24, 0x3, 0x12,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "i2s3"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "adac")),
-+	BERLIN_PINCTRL_GROUP("GAV4", 0x24, 0x3, 0x15,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "i2s1"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "adac")),
-+	BERLIN_PINCTRL_GROUP("GAV5", 0x24, 0x3, 0x18,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "spdif")),
-+	BERLIN_PINCTRL_GROUP("GAV6", 0x24, 0x3, 0x1b,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "i2s2")),
-+	BERLIN_PINCTRL_GROUP("GAV7", 0x28, 0x3, 0x00,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dvio"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "i2s3")),
-+	BERLIN_PINCTRL_GROUP("GAV8", 0x28, 0x3, 0x03,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dv0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "pwm")),
-+	BERLIN_PINCTRL_GROUP("GAV9", 0x28, 0x3, 0x06,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dv0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "pwm")),
-+	BERLIN_PINCTRL_GROUP("GAV10", 0x28, 0x3, 0x09,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dv0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "agc")),
-+	BERLIN_PINCTRL_GROUP("GAV11", 0x28, 0x3, 0x0c,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "dv0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "fp"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "i2s0"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "avio_pwm"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "vclki")),
-+	BERLIN_PINCTRL_GROUP("GAV12", 0x28, 0x3, 0x0f,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "i2s2"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "i2s1")),
-+	BERLIN_PINCTRL_GROUP("GAV13", 0x28, 0x3, 0x12,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "i2s2")),
-+	BERLIN_PINCTRL_GROUP("GAV14", 0x28, 0x3, 0x15,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "i2s2"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "i2s1")),
-+	BERLIN_PINCTRL_GROUP("GAV15", 0x28, 0x3, 0x18,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "i2s1"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "dac_dbg")),
-+	BERLIN_PINCTRL_GROUP("GAV16", 0x28, 0x3, 0x1b,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "i2s0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "i2s1"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "i2s3"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "pdm"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "dac_dbg")),
-+	BERLIN_PINCTRL_GROUP("GAV17", 0x2c, 0x3, 0x00,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "i2s0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "i2s1"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "pwm"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "i2s3"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "pdm"),
-+			BERLIN_PINCTRL_FUNCTION(0x6, "dac_dbg")),
-+	BERLIN_PINCTRL_GROUP("GAV18", 0x2c, 0x3, 0x03,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "spdif"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "arc")),
-+	BERLIN_PINCTRL_GROUP("GAV19", 0x2c, 0x3, 0x06,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "avio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "spdif"),
-+			BERLIN_PINCTRL_FUNCTION(0x4, "i2s3"),
-+			BERLIN_PINCTRL_FUNCTION(0x5, "pdm")),
-+};
-+
-+static const struct berlin_desc_group berlin2q_sysmgr_pinctrl_groups[] = {
-+	/* GSM */
-+	BERLIN_PINCTRL_GROUP("GSM0", 0x40, 0x2, 0x00,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "spi2"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "eth1")),
-+	BERLIN_PINCTRL_GROUP("GSM1", 0x40, 0x2, 0x02,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "spi2"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "eth1")),
-+	BERLIN_PINCTRL_GROUP("GSM2", 0x40, 0x2, 0x04,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "spi2"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "eddc")),
-+	BERLIN_PINCTRL_GROUP("GSM3", 0x40, 0x2, 0x06,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "spi2"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "eddc")),
-+	BERLIN_PINCTRL_GROUP("GSM4", 0x40, 0x1, 0x08,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "hdmi")),
-+	BERLIN_PINCTRL_GROUP("GSM5", 0x40, 0x1, 0x09,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "hdmi")),
-+	BERLIN_PINCTRL_GROUP("GSM6", 0x40, 0x1, 0x0a,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "hdmi")),
-+	BERLIN_PINCTRL_GROUP("GSM7", 0x40, 0x1, 0x0b,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "hdmi")),
-+	BERLIN_PINCTRL_GROUP("GSM8", 0x40, 0x1, 0x0c,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "hdmi")),
-+	BERLIN_PINCTRL_GROUP("GSM9", 0x40, 0x1, 0x0d,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "hdmi")),
-+	BERLIN_PINCTRL_GROUP("GSM10", 0x40, 0x1, 0x0e,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "led")),
-+	BERLIN_PINCTRL_GROUP("GSM11", 0x40, 0x1, 0x0f,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "led")),
-+	BERLIN_PINCTRL_GROUP("GSM12", 0x40, 0x2, 0x10,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "uart0"), /* RX/TX */
-+			BERLIN_PINCTRL_FUNCTION(0x1, "irda0"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("GSM13", 0x40, 0x2, 0x12,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "uart0"), /* CTS/RDS */
-+			BERLIN_PINCTRL_FUNCTION(0x2, "uart1"), /* RX/TX */
-+			BERLIN_PINCTRL_FUNCTION(0x3, "tw2")),
-+	BERLIN_PINCTRL_GROUP("GSM14", 0x40, 0x2, 0x14,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "uart1"), /* RX/TX */
-+			BERLIN_PINCTRL_FUNCTION(0x2, "irda1"),
-+			BERLIN_PINCTRL_FUNCTION(0x3, "tw3")),
-+	BERLIN_PINCTRL_GROUP("GSM15", 0x40, 0x2, 0x16,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "pwr"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "led"),
-+			BERLIN_PINCTRL_FUNCTION(0x2, "gpio")),
-+	BERLIN_PINCTRL_GROUP("GSM16", 0x40, 0x1, 0x18,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "eddc")),
-+	BERLIN_PINCTRL_GROUP("GSM17", 0x40, 0x1, 0x19,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "eddc")),
-+	BERLIN_PINCTRL_GROUP("GSM18", 0x40, 0x1, 0x1a,
-+			BERLIN_PINCTRL_FUNCTION(0x0, "gpio"),
-+			BERLIN_PINCTRL_FUNCTION(0x1, "eddc")),
-+};
-+
-+static const struct berlin_pinctrl_desc berlin2q_soc_pinctrl_data = {
-+	.groups = berlin2q_soc_pinctrl_groups,
-+	.ngroups = ARRAY_SIZE(berlin2q_soc_pinctrl_groups),
-+};
-+
-+static const struct berlin_pinctrl_desc berlin2q_sysmgr_pinctrl_data = {
-+	.groups = berlin2q_sysmgr_pinctrl_groups,
-+	.ngroups = ARRAY_SIZE(berlin2q_sysmgr_pinctrl_groups),
-+};
-+
-+static const struct of_device_id berlin2q_pinctrl_match[] = {
-+	{
-+		.compatible = "marvell,berlin2q-soc-pinctrl",
-+		.data = &berlin2q_soc_pinctrl_data,
-+	},
-+	{
-+		.compatible = "marvell,berlin2q-sysmgr-pinctrl",
-+		.data = &berlin2q_sysmgr_pinctrl_data,
-+	},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(of, berlin2q_pinctrl_match);
-+
-+static int berlin2q_pinctrl_probe(struct platform_device *pdev)
+ 	if (charger->pdata->enable_low_current_chrg) {
+ 		ret = tps65090_low_chrg_current(charger);
+ 		if (ret < 0) {
+@@ -175,10 +190,14 @@ static irqreturn_t tps65090_charger_isr(int irq, void *dev_id)
+ 	}
+ 
+ 	/* Clear interrupts. */
+-	ret = tps65090_write(charger->dev->parent, TPS65090_REG_INTR_STS, 0x00);
+-	if (ret < 0) {
+-		dev_err(charger->dev, "%s(): Error in writing reg 0x%x\n",
++	if (!charger->passive_mode) {
++		ret = tps65090_write(charger->dev->parent,
++				     TPS65090_REG_INTR_STS, 0x00);
++		if (ret < 0) {
++			dev_err(charger->dev,
++				"%s(): Error in writing reg 0x%x\n",
+ 				__func__, TPS65090_REG_INTR_STS);
++		}
+ 	}
+ 
+ 	if (charger->prev_ac_online != charger->ac_online)
+@@ -209,6 +228,18 @@ static struct tps65090_platform_data *
+ 
+ }
+ 
++static int tps65090_charger_poll_task(void *data)
 +{
-+	const struct of_device_id
-+		*device = of_match_device(berlin2q_pinctrl_match, &pdev->dev);
++	set_freezable();
 +
-+	return berlin_pinctrl_probe(pdev, device->data);
++	while (!kthread_should_stop()) {
++		schedule_timeout_interruptible(POLL_INTERVAL);
++		try_to_freeze();
++		tps65090_charger_isr(-1, data);
++	}
++	return 0;
 +}
 +
-+static struct platform_driver berlin2q_pinctrl_driver = {
-+	.probe	= berlin2q_pinctrl_probe,
-+	.driver	= {
-+		.name = "berlin-bg2q-pinctrl",
-+		.owner = THIS_MODULE,
-+		.of_match_table = berlin2q_pinctrl_match,
-+	},
-+};
-+module_platform_driver(berlin2q_pinctrl_driver);
+ static int tps65090_charger_probe(struct platform_device *pdev)
+ {
+ 	struct tps65090_charger *cdata;
+@@ -255,22 +286,10 @@ static int tps65090_charger_probe(struct platform_device *pdev)
+ 	}
+ 
+ 	irq = platform_get_irq(pdev, 0);
+-	if (irq <= 0) {
+-		dev_warn(&pdev->dev, "Unable to get charger irq = %d\n", irq);
+-		ret = irq;
+-		goto fail_unregister_supply;
+-	}
+-
++	if (irq < 0)
++		irq = NO_IRQ;
+ 	cdata->irq = irq;
+ 
+-	ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
+-		tps65090_charger_isr, 0, "tps65090-charger", cdata);
+-	if (ret) {
+-		dev_err(cdata->dev, "Unable to register irq %d err %d\n", irq,
+-			ret);
+-		goto fail_unregister_supply;
+-	}
+-
+ 	ret = tps65090_config_charger(cdata);
+ 	if (ret < 0) {
+ 		dev_err(&pdev->dev, "charger config failed, err %d\n", ret);
+@@ -296,6 +315,27 @@ static int tps65090_charger_probe(struct platform_device *pdev)
+ 		power_supply_changed(&cdata->ac);
+ 	}
+ 
++	if (irq != NO_IRQ) {
++		ret = devm_request_threaded_irq(&pdev->dev, irq, NULL,
++			tps65090_charger_isr, 0, "tps65090-charger", cdata);
++		if (ret) {
++			dev_err(cdata->dev,
++				"Unable to register irq %d err %d\n", irq,
++				ret);
++			goto fail_unregister_supply;
++		}
++	} else {
++		cdata->poll_task = kthread_run(tps65090_charger_poll_task,
++					      cdata, "ktps65090charger");
++		cdata->passive_mode = true;
++		if (IS_ERR(cdata->poll_task)) {
++			ret = PTR_ERR(cdata->poll_task);
++			dev_err(cdata->dev,
++				"Unable to run kthread err %d\n", ret);
++			goto fail_unregister_supply;
++		}
++	}
 +
-+MODULE_AUTHOR("Antoine Ténart <antoine.tenart@free-electrons.com>");
-+MODULE_DESCRIPTION("Marvell Berlin BG2Q pinctrl driver");
-+MODULE_LICENSE("GPL");
+ 	return 0;
+ 
+ fail_unregister_supply:
+@@ -308,6 +348,8 @@ static int tps65090_charger_remove(struct platform_device *pdev)
+ {
+ 	struct tps65090_charger *cdata = platform_get_drvdata(pdev);
+ 
++	if (cdata->irq == NO_IRQ)
++		kthread_stop(cdata->poll_task);
+ 	power_supply_unregister(&cdata->ac);
+ 
+ 	return 0;
 -- 
-1.8.3.2
+1.9.1.423.g4596e3a
 
