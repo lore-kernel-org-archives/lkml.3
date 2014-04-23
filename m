@@ -1,51 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752291AbaDWXVq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 19:21:46 -0400
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:55681 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaDWXVn (ORCPT
+	id S1752341AbaDWX2Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 19:28:24 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:58334 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbaDWX2W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 19:21:43 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Devicetree List <devicetree@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>
-Cc: Tim Kryger <tim.kryger@linaro.org>, Markus Mayer <markus.mayer@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
-Subject: [PATCH v2 0/4] Support additional regulators on BCM590xx
-Date: Wed, 23 Apr 2014 19:21:29 -0400
-Message-Id: <1398295293-11033-1-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
+	Wed, 23 Apr 2014 19:28:22 -0400
+Date: Wed, 23 Apr 2014 16:28:14 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Michal Hocko <mhocko@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH -mm -repost] memcg: do not hang on OOM when killed by
+ userspace OOM access to memory reserves
+In-Reply-To: <1398247922-2374-1-git-send-email-mhocko@suse.cz>
+Message-ID: <alpine.DEB.2.02.1404231627410.11506@chino.kir.corp.google.com>
+References: <1398247922-2374-1-git-send-email-mhocko@suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v1:
-	- Fix a several commit log typos and capitalization
-	- Drop use of addmap[0|1] in favor of i2c_[pri|sec]
-	- Replace regmap[0|1] with regmap_[pri|sec]
+On Wed, 23 Apr 2014, Michal Hocko wrote:
 
-This series enables support for 7 additional regulators on the BCM59056
-PMU. These regulators are accessed via a secondary I2C slave address.
-The MFD driver exposes an additional regmap descriptor for the additional
-address space and the regulator implements support for GPLDO1-6 and VBUS
-regulators.
+> Eric has reported that he can see task(s) stuck in memcg OOM handler
+> regularly.  The only way out is to
+> 
+> 	echo 0 > $GROUP/memory.oom_controll
+> 
+> His usecase is:
+> 
+> - Setup a hierarchy with memory and the freezer (disable kernel oom and
+>   have a process watch for oom).
+> 
+> - In that memory cgroup add a process with one thread per cpu.
+> 
+> - In one thread slowly allocate once per second I think it is 16M of ram
+>   and mlock and dirty it (just to force the pages into ram and stay
+>   there).
+> 
+> - When oom is achieved loop:
+>   * attempt to freeze all of the tasks.
+>   * if frozen send every task SIGKILL, unfreeze, remove the directory in
+>     cgroupfs.
+> 
+> Eric has then pinpointed the issue to be memcg specific.
+> 
+> All tasks are sitting on the memcg_oom_waitq when memcg oom is disabled.
+> Those that have received fatal signal will bypass the charge and should
+> continue on their way out.  The tricky part is that the exit path might
+> trigger a page fault (e.g.  exit_robust_list), thus the memcg charge,
+> while its memcg is still under OOM because nobody has released any charges
+> yet.
+> 
+> Unlike with the in-kernel OOM handler the exiting task doesn't get
+> TIF_MEMDIE set so it doesn't shortcut further charges of the killed task
+> and falls to the memcg OOM again without any way out of it as there are no
+> fatal signals pending anymore.
+> 
+> This patch fixes the issue by checking PF_EXITING early in
+> mem_cgroup_try_charge and bypass the charge same as if it had fatal
+> signal pending or TIF_MEMDIE set.
+> 
+> Normally exiting tasks (aka not killed) will bypass the charge now but
+> this should be OK as the task is leaving and will release memory and
+> increasing the memory pressure just to release it in a moment seems
+> dubious wasting of cycles.  Besides that charges after exit_signals should
+> be rare.
+> 
+> Reported-by: Eric W. Biederman <ebiederm@xmission.com>
+> Signed-off-by: Michal Hocko <mhocko@suse.cz>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Cc: <stable@vger.kernel.org>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-Matt Porter (4):
-  mfd: bcm590xx: update binding with additional BCM59056 regulators
-  mfd: bcm590xx: add support for secondary I2C slave address
-  regulator: bcm590xx: add support for regulators on secondary I2C slave
-  ARM: dts: bcm590xx: add support for GPLDO and VBUS regulators
+Acked-by: David Rientjes <rientjes@google.com>
 
- Documentation/devicetree/bindings/mfd/bcm590xx.txt |  4 +-
- arch/arm/boot/dts/bcm59056.dtsi                    | 21 +++++
- drivers/mfd/bcm590xx.c                             | 60 ++++++++++----
- drivers/regulator/bcm590xx-regulator.c             | 92 +++++++++++++++++++---
- include/linux/mfd/bcm590xx.h                       |  9 ++-
- 5 files changed, 158 insertions(+), 28 deletions(-)
-
--- 
-1.8.4
-
+I think we should wait for a Tested-by from Eric if this is going to be 
+backported to stable, though, to meet the criteria.
