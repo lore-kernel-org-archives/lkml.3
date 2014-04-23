@@ -1,50 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898AbaDWNRg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:17:36 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:55239 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773AbaDWNRd (ORCPT
+	id S1755232AbaDWNOS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:14:18 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37415 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143AbaDWNOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:17:33 -0400
-From: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 0/3] of: dts: enable memory@0 quirk for PPC32 only
-To: Leif Lindholm <leif.lindholm@linaro.org>
-Cc: Rob Herring <robherring2@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linaro Patches <patches@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Mark Rutland <mark.rutland@arm.com>
-In-Reply-To: <20140422140526.GK5904@bivouac.eciton.net>
-References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
-	<CAL_JsqL8B2ZY7ACXKX3J8VN5ukjKWuycgfDZpp4kYzBxg6BLmQ@mail.gmail.com>
-	<20140418124821.GE5904@bivouac.eciton.net>
-	<CAL_JsqKdFyhHfkcC1E9QuKjQTrXwoELYG+CFTpgf2-jqDvxGmA@mail.gmail.com>
-	<20140422130829.CA29DC4042C@trevor.secretlab.ca>
-	<20140422140526.GK5904@bivouac.eciton.net>
-Date: Wed, 23 Apr 2014 14:17:20 +0100
-Message-Id: <20140423131720.8C978C408D2@trevor.secretlab.ca>
+	Wed, 23 Apr 2014 09:14:12 -0400
+Date: Wed, 23 Apr 2014 06:13:36 -0700
+From: tip-bot for Jiri Olsa <tipbot@zytor.com>
+Message-ID: <tip-4dc549e58b6ebf63554cd466d5ceb0e9c70ab859@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@kernel.org, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        jean.pihet@linaro.org, namhyung@kernel.org, jolsa@redhat.com,
+        jwboyer@fedoraproject.org, fweisbec@gmail.com, dsahern@gmail.com,
+        tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, jean.pihet@linaro.org, namhyung@kernel.org,
+        jolsa@redhat.com, fweisbec@gmail.com, jwboyer@fedoraproject.org,
+        dsahern@gmail.com, tglx@linutronix.de, cjashfor@linux.vnet.ibm.com
+In-Reply-To: <1397988006-14158-1-git-send-email-jolsa@redhat.com>
+References: <1397988006-14158-1-git-send-email-jolsa@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf tools:
+  Disable libdw unwind for all but x86 arch
+Git-Commit-ID: 4dc549e58b6ebf63554cd466d5ceb0e9c70ab859
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 22 Apr 2014 15:05:26 +0100, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> On Tue, Apr 22, 2014 at 02:08:29PM +0100, Grant Likely wrote:
-> > > I would prefer to see a "WARN_ON(!IS_ENABLED(CONFIG_PPC32));" added here.
-> > 
-> > I completely agree.
-> 
-> OK. So do we keep this around on unaffected architectures in perpetuity?
-> 
-> Or can there be some cut-off date when the majority of DT-enabled
-> platforms can stop including this workaround which permits new incorrect
-> DTs to be implemented so long as they are incorrect in this particular
-> way?
+Commit-ID:  4dc549e58b6ebf63554cd466d5ceb0e9c70ab859
+Gitweb:     http://git.kernel.org/tip/4dc549e58b6ebf63554cd466d5ceb0e9c70ab859
+Author:     Jiri Olsa <jolsa@redhat.com>
+AuthorDate: Sun, 20 Apr 2014 10:50:00 +0200
+Committer:  Jiri Olsa <jolsa@redhat.com>
+CommitDate: Wed, 23 Apr 2014 13:19:18 +0200
 
-I'd be fine with a patch that can enable the workaround selectively for
-specific machines. Some people will still hit breakage, but we can fix
-that by adding their machine to the quirk list.
+perf tools: Disable libdw unwind for all but x86 arch
 
-g.
+So far there's only x86 libdw unwind support merged in perf.
+Disable it on all other architectures in case libdw unwind
+support is detected in system.
 
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1397988006-14158-1-git-send-email-jolsa@redhat.com
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+---
+ tools/perf/config/Makefile | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+index ee21fa9..a71fb39 100644
+--- a/tools/perf/config/Makefile
++++ b/tools/perf/config/Makefile
+@@ -34,6 +34,14 @@ ifeq ($(ARCH),arm)
+   LIBUNWIND_LIBS = -lunwind -lunwind-arm
+ endif
+ 
++# So far there's only x86 libdw unwind support merged in perf.
++# Disable it on all other architectures in case libdw unwind
++# support is detected in system. Add supported architectures
++# to the check.
++ifneq ($(ARCH),x86)
++  NO_LIBDW_DWARF_UNWIND := 1
++endif
++
+ ifeq ($(LIBUNWIND_LIBS),)
+   NO_LIBUNWIND := 1
+ else
