@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932334AbaDWOvT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:51:19 -0400
+	id S932284AbaDWOvR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:51:17 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:61558 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756640AbaDWOvL (ORCPT
+	with ESMTP id S1751718AbaDWOvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:51:11 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-61-5357d35be7a2
+	Wed, 23 Apr 2014 10:51:12 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-65-5357d35b14c7
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
@@ -18,160 +18,212 @@ Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Marek Szyprowski <m.szyprowski@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Tomasz Figa <t.figa@samsung.com>, Anton Vorontsov <anton@enomsg.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH part2 5/6] regulator: max14577: Implement SUSPEND mode for
- MAX77836 LDO-s
-Date: Wed, 23 Apr 2014 16:50:39 +0200
-Message-id: <1398264640-12122-6-git-send-email-k.kozlowski@samsung.com>
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        devicetree@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: [PATCH part2 6/6] devicetree: mfd: max14577: Add device tree bindings
+ document
+Date: Wed, 23 Apr 2014 16:50:40 +0200
+Message-id: <1398264640-12122-7-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
 References: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPLMWRmVeSWpSXmKPExsVy+t/xa7rRl8ODDeasY7U4uFXTYuOM9awW
-	Ux8+YbOY9OQ9s8XElZOZLV6/MLQ42/SG3eL+16OMFt+udDBZXN41h81i7ZG77Banu1kt1s94
-	zeLA6zGh/xOjx85Zd9k9Nq/Q8ti0qpPN4861PWwe804GevRtWcXo8XmTXABHFJdNSmpOZllq
-	kb5dAlfG8gfzmQqWKVccO7+DpYHxl2wXIyeHhICJRPu3KewQtpjEhXvr2boYuTiEBJYyStxo
-	vMsO4fQxSey/eosVpIpNwFhi8/IlYFUiAt1MEq1rfoJVMQv0MknMuNoKViUsEC3xo30amM0i
-	oCrx8cYPZhCbV8Bd4tybGWwQ++QkTh6bDFTDwcEp4CFx+akdSFgIqOTnm4msExh5FzAyrGIU
-	TS1NLihOSs811CtOzC0uzUvXS87P3cQICdQvOxgXH7M6xCjAwajEwyuxPCxYiDWxrLgy9xCj
-	BAezkgjvkkXhwUK8KYmVValF+fFFpTmpxYcYmTg4pRoYtbSnJFfe3qf03TMl4fW/FNPcNSqW
-	K3IUN3YJT9mvF37yJI9vo/bq27E6fg8/vI9Ns+u9vcnvZ/pRyWu/d63U277lR6BiyCN9S75P
-	3OHnJY9L+6kpO+40E8+MTeTnKOeZvvLIsUd7H77+tXxXmmV4aOWTnMkaPPznN8b/iLt1+nrW
-	zNBPE367K7EUZyQaajEXFScCACJRQV4yAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrDLMWRmVeSWpSXmKPExsVy+t/xa7rRl8ODDa4dMLM4uFXTYuOM9awW
+	Ux8+YbOY9OQ9s8X8I+dYLSaunMxs0f9mIavFuVcrGS1evzC0ONv0ht3i/tejjBbfrnQwWVze
+	NYfNYu2Ru+wWS69fZLKYMH0ti0Xr3iPsFqe7WS3Wz3jN4iDssWbeGkaPy329TB4T+j8xeuyc
+	dZfdY+XyL2wem1doeWxa1cnmcefaHjaPeScDPfq2rGL0+LxJLoA7issmJTUnsyy1SN8ugStj
+	8d5mxoJ/GhVPN05hb2Ccq9jFyMkhIWAiMffgR2YIW0ziwr31bF2MXBxCAksZJda3dLJDOH1M
+	Evuv3mIFqWITMJbYvHwJWJWIQDeTROuan2BVzAIvmCU2TfgPViUsECnx5sw6FhCbRUBV4n/3
+	QrA4r4C7RGPPIhaIfXISJ49NBopzcHAKeEhcfmoHEhYCKvn5ZiLrBEbeBYwMqxhFU0uTC4qT
+	0nMN9YoTc4tL89L1kvNzNzFCYuDLDsbFx6wOMQpwMCrx8EosDwsWYk0sK67MPcQowcGsJMK7
+	ZFF4sBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbG5ftvS0c922297lPIteqz6itlo7JU3ATVfjVt
+	ytE+tZs71jx1l+Bf16JHr9bZaT4J5zw7efr/xPQpYv/eHljpLXL+s0x5zF6701nTYszFBQ4m
+	TRYqOPD0h2IhX31w3/eK2tvlgcr39yWcCs8RlIiZfWehRvpHJuH330RtKi2XP+TXFS2KeJik
+	xFKckWioxVxUnAgAXOHZyF8CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The MAX77836 LDO regulators support low power mode. In this mode the
-maximum load current is 5 mA and the quiescent supply current is 1.5 uA.
+Add document describing device tree bindings for MAX14577 MFD
+drivers: MFD core, extcon, regulator and charger.
 
-This patch adds support for mode REGULATOR_MODE_STANDBY (and NORMAL) to
-LDO regulators by implementing the set_mode() and get_mode() operations.
-However the necessary regulator constraints (valid modes) are not parsed
-by of_regulator_match() so the driver adds them manually to the
-regulator init_data.
+Both MAX14577 and MAX77836 chipsets are documented.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
+Cc: Tomasz Figa <t.figa@samsung.com>
+Cc: devicetree@vger.kernel.org
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 ---
- drivers/regulator/max14577.c         | 61 ++++++++++++++++++++++++++++++++++--
- include/linux/mfd/max14577-private.h |  2 ++
- 2 files changed, 61 insertions(+), 2 deletions(-)
+ Documentation/devicetree/bindings/mfd/max14577.txt | 152 +++++++++++++++++++++
+ 1 file changed, 152 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/max14577.txt
 
-diff --git a/drivers/regulator/max14577.c b/drivers/regulator/max14577.c
-index 0ff5a20ac958..b7657d211a5b 100644
---- a/drivers/regulator/max14577.c
-+++ b/drivers/regulator/max14577.c
-@@ -18,9 +18,10 @@
- #include <linux/module.h>
- #include <linux/platform_device.h>
- #include <linux/regulator/driver.h>
-+#include <linux/regulator/machine.h>
-+#include <linux/regulator/of_regulator.h>
- #include <linux/mfd/max14577.h>
- #include <linux/mfd/max14577-private.h>
--#include <linux/regulator/of_regulator.h>
- 
- static int max14577_reg_is_enabled(struct regulator_dev *rdev)
- {
-@@ -85,6 +86,45 @@ static int max14577_reg_set_current_limit(struct regulator_dev *rdev,
- 			reg_data);
- }
- 
-+static unsigned int max77836_reg_ldo_get_mode(struct regulator_dev *rdev)
-+{
-+	u8 reg_data;
-+	int err;
+diff --git a/Documentation/devicetree/bindings/mfd/max14577.txt b/Documentation/devicetree/bindings/mfd/max14577.txt
+new file mode 100644
+index 000000000000..b235250a7b41
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/max14577.txt
+@@ -0,0 +1,152 @@
++Maxim MAX14577/77836 Multi-Function Device
 +
-+	err = max14577_read_reg(rdev->regmap, rdev->desc->enable_reg,
-+			&reg_data);
-+	if (err) {
-+		dev_err(rdev_get_dev(rdev),
-+				"Error reading control register for %d: %d\n",
-+				rdev_get_id(rdev), err);
-+		return REGULATOR_MODE_NORMAL;
-+	}
++MAX14577 is a Multi-Function Device with Micro-USB Interface Circuit, Li+
++Battery Charger and SFOUT LDO output for powering USB devices. It is
++interfaced to host controller using I2C.
 +
-+	reg_data &= rdev->desc->enable_mask;
++MAX77836 additionally contains PMIC (with two LDO regulators) and Fuel Gauge.
 +
-+	if (reg_data == MAX77836_CNFG1_LDO_PWRMD_LOW_POWER)
-+		return REGULATOR_MODE_STANDBY;
 +
-+	return REGULATOR_MODE_NORMAL;
-+}
++Required properties:
++- compatible : Must be "maxim,max14577" or "maxim,max77836".
++- reg : I2C slave address for the max14577 chip (0x25 for max14577/max77836)
++- interrupts : IRQ line for the chip.
++- interrupt-parent :  The parent interrupt controller.
 +
-+static int max77836_reg_ldo_set_mode(struct regulator_dev *rdev,
-+		unsigned int mode)
-+{
-+	switch (mode) {
-+	case REGULATOR_MODE_STANDBY:
-+		return max14577_update_reg(rdev->regmap,
-+				rdev->desc->enable_reg, rdev->desc->enable_mask,
-+				MAX77836_CNFG1_LDO_PWRMD_LOW_POWER);
 +
-+	case REGULATOR_MODE_NORMAL:
-+		return regulator_enable_regmap(rdev);
++Required nodes:
++ - charger :
++	Node for configuring the charger driver.
++	Required properties:
++		- compatible : "maxim,max14577-charger"
++			or "maxim,max77836-charger"
++		- maxim,fast-charge-timer : Timer in hours to trigger the
++			INT3/MBCCHGERR interrupt; Valid values:
++			- 5, 6 or 7 (hours),
++			- 0 to disable.
++		- maxim,fast-charge-uamp : Current in uA for Fast Charge;
++			Valid values:
++			- for max14577: 90000 - 950000;
++			- for max77836: 45000 - 475000;
++		- maxim,eoc-uamp : Current in uA for End-Of-Charge mode;
++			Valid values:
++			- for max14577: 50000 - 200000;
++			- for max77836: 5000 - 100000;
++		- maxim,ovp-uvolt : OverVoltage Protection Threshold in uV;
++			In an overvoltage condition, INT asserts and charging
++			stops. Valid values:
++			- 6000000, 6500000, 7000000, 7500000;
++		- maxim,constant-uvolt : Battery Constant Voltage in uV;
++			Valid values:
++			- 4000000 - 4280000 (step by 20000);
++			- 4350000;
 +
-+	default:
-+		return -EINVAL;
-+	}
-+}
 +
- static struct regulator_ops max14577_safeout_ops = {
- 	.is_enabled		= regulator_is_enabled_regmap,
- 	.enable			= regulator_enable_regmap,
-@@ -131,7 +171,8 @@ static struct regulator_ops max77836_ldo_ops = {
- 	.map_voltage		= regulator_map_voltage_linear,
- 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
- 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
--	/* TODO: add .set_suspend_mode */
-+	.get_mode		= max77836_reg_ldo_get_mode,
-+	.set_mode		= max77836_reg_ldo_set_mode,
- };
- 
- static const struct regulator_desc max77836_supported_regulators[] = {
-@@ -198,6 +239,19 @@ static struct of_regulator_match max77836_regulator_matches[] = {
- 	{ .name = "LDO2", },
- };
- 
-+static void
-+max77836_regulator_init_constraints(struct of_regulator_match *matches)
-+{
-+	int i;
-+	struct regulation_constraints *c;
++Optional nodes:
++- max14577-muic/max77836-muic :
++	Node used only by extcon consumers.
++	Required properties:
++		- compatible : "maxim,max14577-muic" or "maxim,max77836-muic"
 +
-+	for (i = MAX77836_LDO1; i <= MAX77836_LDO2; i++) {
-+		c = &matches[i].init_data->constraints;
-+		c->valid_modes_mask = REGULATOR_MODE_NORMAL
-+			| REGULATOR_MODE_STANDBY;
-+	}
-+}
++- regulators :
++	Required properties:
++		- compatible : "maxim,max14577-regulator"
++			or "maxim,max77836-regulator"
 +
- static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev,
- 		enum maxim_device_type dev_type)
- {
-@@ -232,6 +286,9 @@ static int max14577_regulator_dt_parse_pdata(struct platform_device *pdev,
- 
- 	of_node_put(np);
- 
-+	if (dev_type == MAXIM_DEVICE_TYPE_MAX77836)
-+		max77836_regulator_init_constraints(regulator_matches);
++	May contain a sub-node per regulator from the list below. Each
++	sub-node should contain the constraints and initialization information
++	for that regulator. See regulator.txt for a description of standard
++	properties for these sub-nodes.
 +
- 	return ret;
- }
- 
-diff --git a/include/linux/mfd/max14577-private.h b/include/linux/mfd/max14577-private.h
-index 5c842f3b6da5..9b03506b76ff 100644
---- a/include/linux/mfd/max14577-private.h
-+++ b/include/linux/mfd/max14577-private.h
-@@ -357,6 +357,8 @@ enum max77836_pmic_reg {
- #define MAX77836_CNFG1_LDO_TV_SHIFT		0
- #define MAX77836_CNFG1_LDO_PWRMD_MASK		(0x3 << MAX77836_CNFG1_LDO_PWRMD_SHIFT)
- #define MAX77836_CNFG1_LDO_TV_MASK		(0x3f << MAX77836_CNFG1_LDO_TV_SHIFT)
-+/* Value to write to CONFIG1/PWRMD field for enabling low power mode */
-+#define MAX77836_CNFG1_LDO_PWRMD_LOW_POWER	BIT(MAX77836_CNFG1_LDO_PWRMD_SHIFT)
- 
- /* LDO1/LDO2 CONFIG2 register */
- #define MAX77836_CNFG2_LDO_OVCLMPEN_SHIFT	7
++	List of valid regulator names:
++	- for max14577: CHARGER, SAFEOUT.
++	- for max77836: CHARGER, SAFEOUT, LDO1, LDO2.
++
++	The SAFEOUT is a fixed voltage regulator so there is no need to specify
++	voltages for it.
++
++
++Example:
++
++#include <dt-bindings/interrupt-controller/irq.h>
++
++max14577@25 {
++	compatible = "maxim,max14577";
++	reg = <0x25>;
++	interrupt-parent = <&gpx1>;
++	interrupts = <5 IRQ_TYPE_NONE>;
++
++	muic: max14577-muic {
++		compatible = "maxim,max14577-muic";
++	};
++
++	regulators {
++		compatible = "maxim,max14577-regulator";
++
++		SAFEOUT {
++			regulator-name = "SAFEOUT";
++		};
++		CHARGER {
++			regulator-name = "CHARGER";
++			regulator-min-microamp = <90000>;
++			regulator-max-microamp = <950000>;
++			regulator-boot-on;
++		};
++	};
++
++	charger {
++		compatible = "maxim,max14577-charger";
++
++		maxim,fast-charge-timer = <6>;
++		maxim,constant-uvolt = <4350000>;
++		maxim,fast-charge-uamp = <450000>;
++		maxim,eoc-uamp = <50000>;
++		maxim,ovp-uvolt = <6500000>;
++	};
++};
++
++
++max77836@25 {
++	compatible = "maxim,max77836";
++	reg = <0x25>;
++	interrupt-parent = <&gpx1>;
++	interrupts = <5 IRQ_TYPE_NONE>;
++
++	muic: max77836-muic {
++		compatible = "maxim,max77836-muic";
++	};
++
++	regulators {
++		compatible = "maxim,max77836-regulator";
++
++		SAFEOUT {
++			regulator-name = "SAFEOUT";
++		};
++		CHARGER {
++			regulator-name = "CHARGER";
++			regulator-min-microamp = <90000>;
++			regulator-max-microamp = <950000>;
++			regulator-boot-on;
++		};
++		LDO1 {
++			regulator-name = "LDO1";
++			regulator-min-microvolt = <2700000>;
++			regulator-max-microvolt = <2700000>;
++		};
++		LDO2 {
++			regulator-name = "LDO2";
++			regulator-min-microvolt = <800000>;
++			regulator-max-microvolt = <3950000>;
++		};
++	};
++
++	charger {
++		compatible = "maxim,max77836-charger";
++
++		maxim,fast-charge-timer = <6>;
++		maxim,constant-uvolt = <4350000>;
++		maxim,fast-charge-uamp = <225000>;
++		maxim,eoc-uamp = <7500>;
++		maxim,ovp-uvolt = <6500000>;
++	};
++};
 -- 
 1.9.1
 
