@@ -1,108 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752522AbaDWBHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:07:05 -0400
-Received: from mga02.intel.com ([134.134.136.20]:31723 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750773AbaDWBHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:07:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,908,1389772800"; 
-   d="scan'208";a="497741725"
-From: "Zheng, Lv" <lv.zheng@intel.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Brown, Len" <len.brown@intel.com>, Lv Zheng <zetalog@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-Subject: RE: [PATCH 1/4] ACPICA: Add <acpi/platform/aclinuxxf.h> to remove
- mis-ordered inclusion of <acpi/actypes.h> from <acpi/platform/aclinux.h>.
-Thread-Topic: [PATCH 1/4] ACPICA: Add <acpi/platform/aclinuxxf.h> to remove
- mis-ordered inclusion of <acpi/actypes.h> from <acpi/platform/aclinux.h>.
-Thread-Index: AQHPXaI9lV/jhfK5X0Sgd13es7oQhpsc3PXggAAaJwCAAW3ncA==
-Date: Wed, 23 Apr 2014 01:06:56 +0000
-Message-ID: <1AE640813FDE7649BE1B193DEA596E880255760D@SHSMSX101.ccr.corp.intel.com>
-References: <cover.1385110130.git.lv.zheng@intel.com>
- <3086544.JUcChlMM9C@vostro.rjw.lan>
- <1AE640813FDE7649BE1B193DEA596E8802556F33@SHSMSX101.ccr.corp.intel.com>
- <1465848.IEpXGNryLP@vostro.rjw.lan>
-In-Reply-To: <1465848.IEpXGNryLP@vostro.rjw.lan>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1752855AbaDWBP3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:15:29 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:64908 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbaDWBP0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 21:15:26 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-5c-5357142cb307
+Date: Wed, 23 Apr 2014 10:15:24 +0900
+From: Cho KyongHo <pullip.cho@samsung.com>
+To: Shaik Ameer Basha <shaik.samsung@gmail.com>
+Cc: Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        Linux DeviceTree <devicetree@vger.kernel.org>,
+        Linux IOMMU <iommu@lists.linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Samsung SOC <linux-samsung-soc@vger.kernel.org>,
+        Antonios Motakis <a.motakis@virtualopensystems.com>,
+        Grant Grundler <grundler@chromium.org>, Joerg Roedel <joro@8bytes.org>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Prathyush <prathyush.k@samsung.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Varun Sethi <Varun.Sethi@freescale.com>
+Subject: Re: [PATCH v11 20/27] iommu/exynos: allow having multiple System MMUs
+ for a master H/W
+Message-id: <20140423101524.4145e9f88300293e0cea92c4@samsung.com>
+In-reply-to: <CAOD6ATobD8HCJWXeRgoXYaBBuKxy_TPj_AuWOfdPhJRF=Gxz5w@mail.gmail.com>
+References: <20140314141050.c8bedcb66532d277c496796d@samsung.com>
+ <CAOD6ATobD8HCJWXeRgoXYaBBuKxy_TPj_AuWOfdPhJRF=Gxz5w@mail.gmail.com>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.10.14; i686-pc-mingw32)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpileLIzCtJLcpLzFFi42I5/e+Zvq6OSHiwwYtpNhZ37p5jtZh/BEi8
+	OvKDyWLBfmuLztkb2C16F1xls9j0+BqrxeVdc9gsZpzfx2RxYcVGdospiw6zWhx+085qcfJP
+	L6PFup2T2C3Wz3jNYjHz1hoWBwGPJwfnMXnMbrjI4vHvcD+Tx85Zd9k97lzbw+axeUm9x+Qb
+	yxk9+rasYvT4vEnO48rRM0wBXFFcNimpOZllqUX6dglcGfvnxBfM0a642f2csYHxuGQXIyeH
+	hICJRPvaK0wQtpjEhXvr2boYuTiEBJYxSvzp38rYxcgBVrRmOgdEfBGjxKrjC5khnMlMEjPm
+	XWAB6WYRUJV49rWBEcRmE9CSWD33OJgtIqAvceJ+N9gGZoHFrBIfHsuD2MICiRIPP00Ci/MK
+	OEpsbT7CDGJzCgRLHFy6iBFiQQejxLT2LcwQ51lIXGjqYIdoEJT4MfkeC8RQLYnN25pYIWx5
+	ic1r3oJdJyGwlkNi3ql/bBDXCUh8m3yIBeIdWYlNB6BmSkocXHGDZQKj2CwkY2chGTsLydgF
+	jMyrGEVTC5ILipPSi0z1ihNzi0vz0vWS83M3MULif+IOxvsHrA8xJgOtnMgsJZqcD0wfeSXx
+	hsZmRhamJqbGRuaWZqQJK4nzpj9KChISSE8sSc1OTS1ILYovKs1JLT7EyMTBKdXA6FRjoX2Y
+	/c3j4ss5UsmHLLKvNySF7TupEjmZtWdSzum2PRWiQhYazW+WbbS6nfqGTyj9QO6bQxM+K/j4
+	rH2u/JOr8En6lMn9hxsC1npdnvS/aONOKQe5VUaB02LOtc2KP7/8F+fdqcG5Gwy0zL5Mnsa1
+	aLcAk4W98oPyhcvY83niFh9cmVLbrMRSnJFoqMVcVJwIACIrOCwVAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrPKsWRmVeSWpSXmKPExsVy+t9jAV0dkfBgg76dphZ37p5jtZh/BEi8
+	OvKDyWLBfmuLztkb2C16F1xls9j0+BqrxeVdc9gsZpzfx2RxYcVGdospiw6zWhx+085qcfJP
+	L6PFup2T2C3Wz3jNYjHz1hoWBwGPJwfnMXnMbrjI4vHvcD+Tx85Zd9k97lzbw+axeUm9x+Qb
+	yxk9+rasYvT4vEnO48rRM0wBXFENjDYZqYkpqUUKqXnJ+SmZeem2St7B8c7xpmYGhrqGlhbm
+	Sgp5ibmptkouPgG6bpk5QL8oKZQl5pQChQISi4uV9O0wTQgNcdO1gGmM0PUNCYLrMTJAAwnr
+	GDP2z4kvmKNdcbP7OWMD43HJLkYODgkBE4k10zm6GDmBTDGJC/fWs3UxcnEICSxilFh1fCEz
+	hDOZSWLGvAssIFUsAqoSz742MILYbAJaEqvnHgezRQT0JU7c72YCsZkFFrNKfHgsD2ILCyRK
+	PPw0CSzOK+AosbX5CDOIzSkQLHFw6SJGiAUdjBLT2rcwQ5xhIXGhqYMdokFQ4sfkeywQQ7Uk
+	Nm9rYoWw5SU2r3nLPIFRYBaSsllIymYhKVvAyLyKUTS1ILmgOCk910ivODG3uDQvXS85P3cT
+	Izi5PJPewbiqweIQowAHoxIPr8TysGAh1sSy4srcQ4wSHMxKIrwzPwKFeFMSK6tSi/Lji0pz
+	UosPMSYDg2Mis5Rocj4w8eWVxBsam5gZWRqZWRiZmJuTJqwkznuw1TpQSCA9sSQ1OzW1ILUI
+	ZgsTB6dUA6MrU45b/Gq2kOTAH0nPT37Yz/7UxGKhhqDq6c8fzUI2M390LSpMXx5TUxr8oyf6
+	t+67BSlenL2CzRLVJ3o2eQmE3zo/7+ryV2LC/32eKRa0X1I9bGSxWEzgnoRgN6P5h5vtdaYF
+	j8zuSVdlMP97unCR9LKynSwtLNLH6+IW1mavUM7Xf8VUo8RSnJFoqMVcVJwIALae5fpyAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3N18EGw014226
 
-Hi, Rafael
-
-> From: Rafael J. Wysocki [mailto:rjw@rjwysocki.net]
-> Sent: Tuesday, April 22, 2014 7:16 PM
+On Tue, 22 Apr 2014 18:53:51 +0530, Shaik Ameer Basha wrote:
+> Hi KyongHo Cho,
 > 
-> On Tuesday, April 22, 2014 02:01:57 AM Zheng, Lv wrote:
-> > Hi,
+> 
+> 
+> On Fri, Mar 14, 2014 at 10:40 AM, Cho KyongHo <pullip.cho@samsung.com> wrote:
+> > Some master device descriptor like fimc-is which is an abstraction
+> > of very complex H/W may have multiple System MMUs. For those devices,
+> > the design of the link between System MMU and its master H/W is needed
+> > to be reconsidered.
 > >
-> > <skip>
+> > A link structure, sysmmu_list_data is introduced that provides a link
+> > to master H/W and that has a pointer to the device descriptor of a
+> > System MMU. Given a device descriptor of a master H/W, it is possible
+> > to traverse all System MMUs that must be controlled along with the
+> > master H/W.
 > >
-> > > > +#define ACPI_NATIVE_INTERFACE_HEADER	<acpi/platform/aclinuxxf.h>
-> > >
-> > > This is not good.
-> > >
-> > > We don't do things like this in the kernel, because they are confusing and hard
-> > > to debug if necessary, so please find a different way to make this work.
+> > Signed-off-by: Cho KyongHo <pullip.cho@samsung.com>
+> > ---
+> >  drivers/iommu/exynos-iommu.c |  534 ++++++++++++++++++++++++++----------------
+> >  1 file changed, 333 insertions(+), 201 deletions(-)
 > >
-> > I use this extra header file to collect:
-> 
-> I was not talking about the new header, which is basically OK, but about the
-> #define above, which is just too confusing to live.
-> 
-> Please use header file paths directly with #include.
-
-OK.
-
-> 
-> > 1. static inline OSL functions
-> > 2. divergences of prototypes that haven't been back ported to ACPICA.
-> > This file is useful for ACPICA release automation.
+> > diff --git a/drivers/iommu/exynos-iommu.c b/drivers/iommu/exynos-iommu.c
+> > index 84ba29a..7489343 100644
+> > --- a/drivers/iommu/exynos-iommu.c
+> > +++ b/drivers/iommu/exynos-iommu.c
+> > @@ -128,6 +128,10 @@
+> >  #define __master_clk_disable(data)     __clk_gate_ctrl(data, clk_master, dis)
 > >
-> > There are the following concerns that lead to the use of this solution:
-> > 1. for this extra header file itself
-> >     A. The new header file is OSPM specific, thus it needn't be upstreamed to ACPICA;
-> >     B. Since it needn't be upstreamed to ACPICA, ACPICA needn't determine the name of this extra header;
-> >     C. It has to be the last file included by <acpi/acpi.h>.
-> > 2. for the file that includes this extra header file
-> >     A. Currently there is no OSPM specific code in <acpi/acpi.h>.
-> > Thus I use a macro so that there is still no OSPM specific code in <acpi/acpi.h> and the name of the extra header can be determined
-> by OSPM.
+> 
+> [snip]
+> 
+> > +static int __init __sysmmu_init_master(struct device *dev)
+> > +{
+> > +       int ret;
+> > +       int i = 0;
+> > +       struct device_node *node;
+> > +
+> > +       while ((node = of_parse_phandle(dev->of_node, "mmu-masters", i++))) {
+> >                 struct platform_device *master = of_find_device_by_node(node);
+> > +               struct exynos_iommu_owner *owner;
+> > +               struct sysmmu_list_data *list_data;
 > >
-> > If you want another solution, is the following acceptable?
-> > 1. In <acpi/platform/aclinux.h>
-> >     #define ACPI_INCLUDE_EXTRA_NATIVE_HEADER	1
-> > 2. In <acpi/acpi.h> <- this is an ACPICA header file,
-> >     #ifdef ACPI_INCLUDE_EXTRA_NATIVE_HEADER
-> >     #include <acpi/platform/acextra.h>
-> >     #endif
-> > Note that in this solution, the name of the extra header file will be determined by ACPICA.
+> >                 if (!master) {
+> >                         dev_err(dev, "%s: mmu-master '%s' not found\n",
+> >                                 __func__, node->name);
+> > -                       return -EINVAL;
+> > +                       ret = -EINVAL;
+> > +                       goto err;
+> >                 }
+> >
+> > -               if (master->dev.archdata.iommu != NULL) {
+> > -                       dev_err(dev, "%s: '%s' is master of other MMU\n",
+> > -                               __func__, node->name);
+> > -                       return -EINVAL;
+> > +               owner = master->dev.archdata.iommu;
+> > +               if (!owner) {
+> > +                       owner = devm_kzalloc(dev, sizeof(*owner), GFP_KERNEL);
+> > +                       if (!owner) {
+> > +                               dev_err(dev,
+> > +                               "%s: Failed to allocate owner structure\n",
+> > +                               __func__);
+> > +                               ret = -ENOMEM;
+> > +                               goto err;
+> > +                       }
+> > +
+> > +                       INIT_LIST_HEAD(&owner->mmu_list);
+> > +                       INIT_LIST_HEAD(&owner->client);
+> > +                       owner->dev = &master->dev;
+> > +                       spin_lock_init(&owner->lock);
+> > +
+> > +                       master->dev.archdata.iommu = owner;
+> >                 }
+> >
+> > +               list_data = devm_kzalloc(dev, sizeof(*list_data), GFP_KERNEL);
+> > +               if (!list_data) {
+> > +                       dev_err(dev,
+> > +                               "%s: Failed to allocate sysmmu_list_data\n",
+> > +                               __func__);
+> > +                       ret = -ENOMEM;
+> > +                       goto err;
+> > +               }
+> > +
+> > +               INIT_LIST_HEAD(&list_data->entry);
+> > +               list_data->sysmmu = dev;
+> > +
+> >                 /*
+> > -                * archdata.iommu will be initialized with exynos_iommu_client
+> > -                * in sysmmu_hook_driver_register().
+> > +                * System MMUs are attached in the order of the presence
+> > +                * in device tree
+> >                  */
+> > -               master->dev.archdata.iommu = dev;
+> > +               list_add_tail(&list_data->entry, &owner->mmu_list);
+> >         }
+> >
+> > -       data->sysmmu = dev;
+> > -       rwlock_init(&data->lock);
+> > +       return 0;
+> > +err:
+> > +       while ((node = of_parse_phandle(dev->of_node, "mmu-masters", i++))) {
 > 
-> I think I see what you're trying to do now.  And I see that this ACPI_NATIVE_INTERFACE_HEADER
-> thing is already there in the Linus' tree which is not good at all.
+> Don't we need to reinitialize variable 'i' here before using?
+> i = 0;
 > 
-> I probably would create an extra ACPICA header, something like <acpios_opt.h>,
-> that would be empty for all hosts except for Linux and that would contain the
-> stuff you want to put into acextra.h in Linux.
-> 
-> That would be clean enough I suppose?
 
-Yes, it is clear.
-Thanks for the helping.
-I'll update this patch and re-send this series.
+Oh. You are right.
 
-Best regards
--Lv
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks.
+
+> 
+> 
+> 
+> > +               struct platform_device *master = of_find_device_by_node(node);
+> > +               struct exynos_iommu_owner *owner;
+> > +               struct sysmmu_list_data *list_data;
+> >
+> > -       platform_set_drvdata(pdev, data);
+> > +               if (!master)
+> > +                       continue;
+> >
+> > -       pm_runtime_enable(dev);
+> > -       data->runtime_active = !pm_runtime_enabled(dev);
+> > +               owner = master->dev.archdata.iommu;
+> > +               if (!owner)
+> > +                       continue;
+> >
+> > -       dev_dbg(dev, "Probed and initialized\n");
+> > -       return 0;
+> > +               for_each_sysmmu_list(owner->dev, list_data) {
+> > +                       if (list_data->sysmmu == dev) {
+> > +                               list_del(&list_data->entry);
+> > +                               kfree(list_data);
+> > +                               break;
+> > +                       }
+> > +               }
+> > +       }
+> > +
+> > +       return ret;
+> >  }
+> >
+> 
+> [snip]
