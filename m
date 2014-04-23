@@ -1,424 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757682AbaDWU3W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 16:29:22 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:60666
-	"EHLO p3plsmtps2ded01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755147AbaDWU3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 16:29:18 -0400
-x-originating-ip: 72.167.245.219
-From: "K. Y. Srinivasan" <kys@microsoft.com>
-To: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devel@linuxdriverproject.org, olaf@aepfle.de, apw@canonical.com,
-        jasowang@redhat.com
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH V1 net-next 1/1] hyperv: Enable sendbuf mechanism on the send path
-Date: Wed, 23 Apr 2014 14:24:45 -0700
-Message-Id: <1398288285-16268-1-git-send-email-kys@microsoft.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1757954AbaDWUcc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 16:32:32 -0400
+Received: from exprod5og116.obsmtp.com ([64.18.0.147]:59730 "HELO
+	exprod5og116.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753368AbaDWUc2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 16:32:28 -0400
+MIME-Version: 1.0
+In-Reply-To: <CA+b37P0XV81K4oBNnkXrVHYub=Bcuuw8nrFWUGVw-i8PJ8wGxQ@mail.gmail.com>
+References: <1394811258-1500-1-git-send-email-Liviu.Dudau@arm.com>
+	<CA+b37P3HqMFU6kGA+GH3YpGM_Z=TwNXL6jKu+ConR3kCk-Tp4g@mail.gmail.com>
+	<20140422101112.GA865@e106497-lin.cambridge.arm.com>
+	<CA+b37P0XV81K4oBNnkXrVHYub=Bcuuw8nrFWUGVw-i8PJ8wGxQ@mail.gmail.com>
+Date: Wed, 23 Apr 2014 13:32:27 -0700
+Message-ID: <CACoXjcm3wUOkD+Fh+WKXsi5Rxs8Y5G1YUHB15xUwJY7cCcZHBg@mail.gmail.com>
+Subject: Re: [PATCH v7 0/3] Add support for PCI in AArch64
+From: Tanmay Inamdar <tinamdar@apm.com>
+To: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+Cc: linux-pci <linux-pci@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        LAKML <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We send packets using a copy-free mechanism (this is the Guest to Host transport
-via VMBUS). While this is obviously optimal for large packets,
-it may not be optimal for small packets. Hyper-V host supports
-a second mechanism for sending packets that is "copy based". We implement that
-mechanism in this patch.
+Hello Sandeepa,
 
-In this version of the patch I have addressed a comment from David Miller.
+On Tue, Apr 22, 2014 at 4:50 AM, Sandeepa Prabhu
+<sandeepa.prabhu@linaro.org> wrote:
+> On 22 April 2014 15:41, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+>> On Tue, Apr 22, 2014 at 09:58:28AM +0100, Sandeepa Prabhu wrote:
+>>> On 14 March 2014 21:04, Liviu Dudau <Liviu.Dudau@arm.com> wrote:
+>>> > Hi,
+>>> >
+>>> > This patch adds support for PCI to AArch64. It is based on my v7 patch
+>>> > that adds support for creating generic host bridge structure from
+>>> > device tree. With that in place, I was able to boot a platform that
+>>> > has PCIe host bridge support and use a PCIe network card.
+>>> Hi Liviu,
+>>>
+>>> Are these patches (including your other patchset for device tree host
+>>> bridge support ) available on a public git repo I can checkout from?
+>>
+>> Yes, I have pushed them into git://linux-arm.org/linux-ld.git
+> Thanks Liviu,
+> Just to understand, is the X-gene PCIe
+> (https://lwn.net/Articles/589733/) verified using the same patchset?
 
-With this patch (and all of the other offload and VRSS patches), we are now able
-to almost saturate a 10G interface between Linux VMs on Hyper-V
-on different hosts - close to  9 Gbps as measured via iperf.
+Yes. V5 version of X-Gene PCIe patches have verified Liviu's patchset
+on X-Gene platform.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Reviewed-by: Haiyang Zhang <haiyangz@microsoft.com>
----
- drivers/net/hyperv/hyperv_net.h |   14 +++
- drivers/net/hyperv/netvsc.c     |  226 +++++++++++++++++++++++++++++++++++++--
- drivers/net/hyperv/netvsc_drv.c |    3 +-
- 3 files changed, 234 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/net/hyperv/hyperv_net.h b/drivers/net/hyperv/hyperv_net.h
-index d1f7826..4b7df5a 100644
---- a/drivers/net/hyperv/hyperv_net.h
-+++ b/drivers/net/hyperv/hyperv_net.h
-@@ -140,6 +140,8 @@ struct hv_netvsc_packet {
- 	void *send_completion_ctx;
- 	void (*send_completion)(void *context);
- 
-+	u32 send_buf_index;
-+
- 	/* This points to the memory after page_buf */
- 	struct rndis_message *rndis_msg;
- 
-@@ -582,6 +584,9 @@ struct nvsp_message {
- 
- #define NETVSC_RECEIVE_BUFFER_SIZE		(1024*1024*16)	/* 16MB */
- #define NETVSC_RECEIVE_BUFFER_SIZE_LEGACY	(1024*1024*15)  /* 15MB */
-+#define NETVSC_SEND_BUFFER_SIZE			(1024 * 1024)   /* 1MB */
-+#define NETVSC_INVALID_INDEX			-1
-+
- 
- #define NETVSC_RECEIVE_BUFFER_ID		0xcafe
- 
-@@ -607,6 +612,15 @@ struct netvsc_device {
- 	u32 recv_section_cnt;
- 	struct nvsp_1_receive_buffer_section *recv_section;
- 
-+	/* Send buffer allocated by us */
-+	void *send_buf;
-+	u32 send_buf_size;
-+	u32 send_buf_gpadl_handle;
-+	u32 send_section_cnt;
-+	u32 send_section_size;
-+	unsigned long *send_section_map;
-+	int map_words;
-+
- 	/* Used for NetVSP initialization protocol */
- 	struct completion channel_init_wait;
- 	struct nvsp_message channel_init_pkt;
-diff --git a/drivers/net/hyperv/netvsc.c b/drivers/net/hyperv/netvsc.c
-index bbee446..c041f63 100644
---- a/drivers/net/hyperv/netvsc.c
-+++ b/drivers/net/hyperv/netvsc.c
-@@ -28,6 +28,7 @@
- #include <linux/slab.h>
- #include <linux/netdevice.h>
- #include <linux/if_ether.h>
-+#include <asm/sync_bitops.h>
- 
- #include "hyperv_net.h"
- 
-@@ -80,7 +81,7 @@ get_in_err:
- }
- 
- 
--static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
-+static int netvsc_destroy_buf(struct netvsc_device *net_device)
- {
- 	struct nvsp_message *revoke_packet;
- 	int ret = 0;
-@@ -146,10 +147,62 @@ static int netvsc_destroy_recv_buf(struct netvsc_device *net_device)
- 		net_device->recv_section = NULL;
- 	}
- 
-+	/* Deal with the send buffer we may have setup.
-+	 * If we got a  send section size, it means we received a
-+	 * SendsendBufferComplete msg (ie sent
-+	 * NvspMessage1TypeSendReceiveBuffer msg) therefore, we need
-+	 * to send a revoke msg here
-+	 */
-+	if (net_device->send_section_size) {
-+		/* Send the revoke receive buffer */
-+		revoke_packet = &net_device->revoke_packet;
-+		memset(revoke_packet, 0, sizeof(struct nvsp_message));
-+
-+		revoke_packet->hdr.msg_type =
-+			NVSP_MSG1_TYPE_REVOKE_SEND_BUF;
-+		revoke_packet->msg.v1_msg.revoke_recv_buf.id = 0;
-+
-+		ret = vmbus_sendpacket(net_device->dev->channel,
-+				       revoke_packet,
-+				       sizeof(struct nvsp_message),
-+				       (unsigned long)revoke_packet,
-+				       VM_PKT_DATA_INBAND, 0);
-+		/* If we failed here, we might as well return and
-+		 * have a leak rather than continue and a bugchk
-+		 */
-+		if (ret != 0) {
-+			netdev_err(ndev, "unable to send "
-+				   "revoke send buffer to netvsp\n");
-+			return ret;
-+		}
-+	}
-+	/* Teardown the gpadl on the vsp end */
-+	if (net_device->send_buf_gpadl_handle) {
-+		ret = vmbus_teardown_gpadl(net_device->dev->channel,
-+					   net_device->send_buf_gpadl_handle);
-+
-+		/* If we failed here, we might as well return and have a leak
-+		 * rather than continue and a bugchk
-+		 */
-+		if (ret != 0) {
-+			netdev_err(ndev,
-+				   "unable to teardown send buffer's gpadl\n");
-+			return ret;
-+		}
-+		net_device->recv_buf_gpadl_handle = 0;
-+	}
-+	if (net_device->send_buf) {
-+		/* Free up the receive buffer */
-+		free_pages((unsigned long)net_device->send_buf,
-+			   get_order(net_device->send_buf_size));
-+		net_device->send_buf = NULL;
-+	}
-+	kfree(net_device->send_section_map);
-+
- 	return ret;
- }
- 
--static int netvsc_init_recv_buf(struct hv_device *device)
-+static int netvsc_init_buf(struct hv_device *device)
- {
- 	int ret = 0;
- 	int t;
-@@ -248,10 +301,90 @@ static int netvsc_init_recv_buf(struct hv_device *device)
- 		goto cleanup;
- 	}
- 
-+	/* Now setup the send buffer.
-+	 */
-+	net_device->send_buf =
-+		(void *)__get_free_pages(GFP_KERNEL|__GFP_ZERO,
-+					 get_order(net_device->send_buf_size));
-+	if (!net_device->send_buf) {
-+		netdev_err(ndev, "unable to allocate send "
-+			   "buffer of size %d\n", net_device->send_buf_size);
-+		ret = -ENOMEM;
-+		goto cleanup;
-+	}
-+
-+	/* Establish the gpadl handle for this buffer on this
-+	 * channel.  Note: This call uses the vmbus connection rather
-+	 * than the channel to establish the gpadl handle.
-+	 */
-+	ret = vmbus_establish_gpadl(device->channel, net_device->send_buf,
-+				    net_device->send_buf_size,
-+				    &net_device->send_buf_gpadl_handle);
-+	if (ret != 0) {
-+		netdev_err(ndev,
-+			   "unable to establish send buffer's gpadl\n");
-+		goto cleanup;
-+	}
-+
-+	/* Notify the NetVsp of the gpadl handle */
-+	init_packet = &net_device->channel_init_pkt;
-+	memset(init_packet, 0, sizeof(struct nvsp_message));
-+	init_packet->hdr.msg_type = NVSP_MSG1_TYPE_SEND_SEND_BUF;
-+	init_packet->msg.v1_msg.send_recv_buf.gpadl_handle =
-+		net_device->send_buf_gpadl_handle;
-+	init_packet->msg.v1_msg.send_recv_buf.id = 0;
-+
-+	/* Send the gpadl notification request */
-+	ret = vmbus_sendpacket(device->channel, init_packet,
-+			       sizeof(struct nvsp_message),
-+			       (unsigned long)init_packet,
-+			       VM_PKT_DATA_INBAND,
-+			       VMBUS_DATA_PACKET_FLAG_COMPLETION_REQUESTED);
-+	if (ret != 0) {
-+		netdev_err(ndev,
-+			   "unable to send send buffer's gpadl to netvsp\n");
-+		goto cleanup;
-+	}
-+
-+	t = wait_for_completion_timeout(&net_device->channel_init_wait, 5*HZ);
-+	BUG_ON(t == 0);
-+
-+	/* Check the response */
-+	if (init_packet->msg.v1_msg.
-+	    send_send_buf_complete.status != NVSP_STAT_SUCCESS) {
-+		netdev_err(ndev, "Unable to complete send buffer "
-+			   "initialization with NetVsp - status %d\n",
-+			   init_packet->msg.v1_msg.
-+			   send_recv_buf_complete.status);
-+		ret = -EINVAL;
-+		goto cleanup;
-+	}
-+
-+	/* Parse the response */
-+	net_device->send_section_size = init_packet->msg.
-+				v1_msg.send_send_buf_complete.section_size;
-+
-+	/* Section count is simply the size divided by the section size.
-+	 */
-+	net_device->send_section_cnt =
-+		net_device->send_buf_size/net_device->send_section_size;
-+
-+	dev_info(&device->device, "Send section size: %d, Section count:%d\n",
-+		 net_device->send_section_size, net_device->send_section_cnt);
-+
-+	/* Setup state for managing the send buffer. */
-+	net_device->map_words = DIV_ROUND_UP(net_device->send_section_cnt,
-+					     BITS_PER_LONG);
-+
-+	net_device->send_section_map =
-+		kzalloc(net_device->map_words * sizeof(ulong), GFP_KERNEL);
-+	if (net_device->send_section_map == NULL)
-+		goto cleanup;
-+
- 	goto exit;
- 
- cleanup:
--	netvsc_destroy_recv_buf(net_device);
-+	netvsc_destroy_buf(net_device);
- 
- exit:
- 	return ret;
-@@ -369,8 +502,9 @@ static int netvsc_connect_vsp(struct hv_device *device)
- 		net_device->recv_buf_size = NETVSC_RECEIVE_BUFFER_SIZE_LEGACY;
- 	else
- 		net_device->recv_buf_size = NETVSC_RECEIVE_BUFFER_SIZE;
-+	net_device->send_buf_size = NETVSC_SEND_BUFFER_SIZE;
- 
--	ret = netvsc_init_recv_buf(device);
-+	ret = netvsc_init_buf(device);
- 
- cleanup:
- 	return ret;
-@@ -378,7 +512,7 @@ cleanup:
- 
- static void netvsc_disconnect_vsp(struct netvsc_device *net_device)
- {
--	netvsc_destroy_recv_buf(net_device);
-+	netvsc_destroy_buf(net_device);
- }
- 
- /*
-@@ -440,6 +574,12 @@ static inline u32 hv_ringbuf_avail_percent(
- 	return avail_write * 100 / ring_info->ring_datasize;
- }
- 
-+static inline void netvsc_free_send_slot(struct netvsc_device *net_device,
-+					 u32 index)
-+{
-+	sync_change_bit(index, net_device->send_section_map);
-+}
-+
- static void netvsc_send_completion(struct netvsc_device *net_device,
- 				   struct hv_device *device,
- 				   struct vmpacket_descriptor *packet)
-@@ -447,6 +587,7 @@ static void netvsc_send_completion(struct netvsc_device *net_device,
- 	struct nvsp_message *nvsp_packet;
- 	struct hv_netvsc_packet *nvsc_packet;
- 	struct net_device *ndev;
-+	u32 send_index;
- 
- 	ndev = net_device->ndev;
- 
-@@ -477,6 +618,9 @@ static void netvsc_send_completion(struct netvsc_device *net_device,
- 
- 		/* Notify the layer above us */
- 		if (nvsc_packet) {
-+			send_index = nvsc_packet->send_buf_index;
-+			if (send_index != NETVSC_INVALID_INDEX)
-+				netvsc_free_send_slot(net_device, send_index);
- 			q_idx = nvsc_packet->q_idx;
- 			channel = nvsc_packet->channel;
- 			nvsc_packet->send_completion(nvsc_packet->
-@@ -504,6 +648,52 @@ static void netvsc_send_completion(struct netvsc_device *net_device,
- 
- }
- 
-+static u32 netvsc_get_next_send_section(struct netvsc_device *net_device)
-+{
-+	unsigned long index;
-+	u32 max_words = net_device->map_words;
-+	unsigned long *map_addr = (unsigned long *)net_device->send_section_map;
-+	u32 section_cnt = net_device->send_section_cnt;
-+	int ret_val = NETVSC_INVALID_INDEX;
-+	int i;
-+	int prev_val;
-+
-+	for (i = 0; i < max_words; i++) {
-+		if (!~(map_addr[i]))
-+			continue;
-+		index = ffz(map_addr[i]);
-+		prev_val = sync_test_and_set_bit(index, &map_addr[i]);
-+		if (prev_val)
-+			continue;
-+		if ((index + (i * BITS_PER_LONG)) >= section_cnt)
-+			break;
-+		ret_val = (index + (i * BITS_PER_LONG));
-+		break;
-+	}
-+	return ret_val;
-+}
-+
-+u32 netvsc_copy_to_send_buf(struct netvsc_device *net_device,
-+			    unsigned int section_index,
-+			    struct hv_netvsc_packet *packet)
-+{
-+	char *start = net_device->send_buf;
-+	char *dest = (start + (section_index * net_device->send_section_size));
-+	int i;
-+	u32 msg_size = 0;
-+
-+	for (i = 0; i < packet->page_buf_cnt; i++) {
-+		char *src = phys_to_virt(packet->page_buf[i].pfn << PAGE_SHIFT);
-+		u32 offset = packet->page_buf[i].offset;
-+		u32 len = packet->page_buf[i].len;
-+
-+		memcpy(dest, (src + offset), len);
-+		msg_size += len;
-+		dest += len;
-+	}
-+	return msg_size;
-+}
-+
- int netvsc_send(struct hv_device *device,
- 			struct hv_netvsc_packet *packet)
- {
-@@ -513,6 +703,10 @@ int netvsc_send(struct hv_device *device,
- 	struct net_device *ndev;
- 	struct vmbus_channel *out_channel = NULL;
- 	u64 req_id;
-+	unsigned int section_index = NETVSC_INVALID_INDEX;
-+	u32 msg_size = 0;
-+	struct sk_buff *skb;
-+
- 
- 	net_device = get_outbound_net_device(device);
- 	if (!net_device)
-@@ -528,10 +722,26 @@ int netvsc_send(struct hv_device *device,
- 		sendMessage.msg.v1_msg.send_rndis_pkt.channel_type = 1;
- 	}
- 
--	/* Not using send buffer section */
-+	/* Attempt to send via sendbuf */
-+	if (packet->total_data_buflen < net_device->send_section_size) {
-+		section_index = netvsc_get_next_send_section(net_device);
-+		if (section_index != NETVSC_INVALID_INDEX) {
-+			msg_size = netvsc_copy_to_send_buf(net_device,
-+							   section_index,
-+							   packet);
-+			skb = (struct sk_buff *)
-+			      (unsigned long)packet->send_completion_tid;
-+			if (skb)
-+				dev_kfree_skb_any(skb);
-+			packet->page_buf_cnt = 0;
-+		}
-+	}
-+	packet->send_buf_index = section_index;
-+
-+
- 	sendMessage.msg.v1_msg.send_rndis_pkt.send_buf_section_index =
--		0xFFFFFFFF;
--	sendMessage.msg.v1_msg.send_rndis_pkt.send_buf_section_size = 0;
-+		section_index;
-+	sendMessage.msg.v1_msg.send_rndis_pkt.send_buf_section_size = msg_size;
- 
- 	if (packet->send_completion)
- 		req_id = (ulong)packet;
-diff --git a/drivers/net/hyperv/netvsc_drv.c b/drivers/net/hyperv/netvsc_drv.c
-index c76b665..939e3af 100644
---- a/drivers/net/hyperv/netvsc_drv.c
-+++ b/drivers/net/hyperv/netvsc_drv.c
-@@ -236,10 +236,11 @@ static void netvsc_xmit_completion(void *context)
- 	struct hv_netvsc_packet *packet = (struct hv_netvsc_packet *)context;
- 	struct sk_buff *skb = (struct sk_buff *)
- 		(unsigned long)packet->send_completion_tid;
-+	u32 index = packet->send_buf_index;
- 
- 	kfree(packet);
- 
--	if (skb)
-+	if (skb && (index == NETVSC_INVALID_INDEX))
- 		dev_kfree_skb_any(skb);
- }
- 
--- 
-1.7.4.1
-
+>
+> ~Sandeepa
+>>
+>> Best regards,
+>> Liviu
+>>
+>>>
+>>> Thanks,
+>>> ~Sandeepa
+>>>
+>>> >
+>>> > I have dropped the RFC tag from the subject as I now have the ambitious goal
+>>> > of trying to get it mainlined.
+>>> >
+>>> > Changes from v6:
+>>> >   - Guard the pci_domain_nr() inline implementation with #ifdef CONFIG_PCI as
+>>> >     to avoid conflict with default empty version present in include/linux/pci.h.
+>>> >     Thanks to Jingoo Han for catching this.
+>>> >
+>>> > Changes from v5:
+>>> >   - Removed pcibios_fixup_bridge_ranges() as the week default version is fine.
+>>> >   - Removed the ALIGN() call in pcibios_align_resource()
+>>> >   - Stopped exporting pcibios_align_resource()
+>>> >
+>>> > Changes from v4:
+>>> >   - Fixed the pci_domain_nr() implementation for arm64. Now we use
+>>> >     find_pci_host_bride() to find the host bridge before we retrieve
+>>> >     the domain number.
+>>> >
+>>> > Changes from v3:
+>>> >   - Added Acks accumulated so far ;)
+>>> >   - Still carrying Catalin's patch for moving the PCI_IO_BASE until it
+>>> >     lands in linux-next or mainline, in order to ease applying the series
+>>> >
+>>> > Changes from v2:
+>>> >   - Implement an arch specific version of pci_register_io_range() and
+>>> >     pci_address_to_pio().
+>>> >   - Return 1 from pci_proc_domain().
+>>> >
+>>> > Changes from v1:
+>>> >   - Added Catalin's patch for moving the PCI_IO_BASE location and extend
+>>> >     its size to 16MB
+>>> >   - Integrated Arnd's version of pci_ioremap_io that uses a bitmap for
+>>> >     keeping track of assigned IO space and returns an io_offset. At the
+>>> >     moment the code is added in arch/arm64 but it can be moved in drivers/pci.
+>>> >   - Added a fix for the generic ioport_map() function when !CONFIG_GENERIC_IOMAP
+>>> >     as suggested by Arnd.
+>>> >
+>>> > v6 thread here: https://lkml.org/lkml/2014/3/5/41
+>>> > v5 thread here: https://lkml.org/lkml/2014/3/4/307
+>>> > v4 thread here: https://lkml.org/lkml/2014/3/3/298
+>>> > v3 thread here: https://lkml.org/lkml/2014/2/28/211
+>>> > v2 thread here: https://lkml.org/lkml/2014/2/27/255
+>>> > v1 thread here: https://lkml.org/lkml/2014/2/3/389
+>>> >
+>>> >
+>>> > The API used is different from the one used by ARM architecture. There is
+>>> > no pci_common_init_dev() function and no hw_pci structure, as that is no
+>>> > longer needed. Once the last signature is added to the legal agreement, I
+>>> > will post the host bridge driver code that I am using. Meanwhile, here
+>>> > is an example of what the probe function looks like, posted as an example:
+>>> >
+>>> > static int myhostbridge_probe(struct platform_device *pdev)
+>>> > {
+>>> >         int err;
+>>> >         struct device_node *dev;
+>>> >         struct pci_host_bridge *bridge;
+>>> >         struct myhostbridge_port *pp;
+>>> >         resource_size_t lastbus;
+>>> >
+>>> >         dev = pdev->dev.of_node;
+>>> >
+>>> >         if (!of_device_is_available(dev)) {
+>>> >                 pr_warn("%s: disabled\n", dev->full_name);
+>>> >                 return -ENODEV;
+>>> >         }
+>>> >
+>>> >         pp = kzalloc(sizeof(struct myhostbridge_port), GFP_KERNEL);
+>>> >         if (!pp)
+>>> >                 return -ENOMEM;
+>>> >
+>>> >         bridge = of_create_pci_host_bridge(&pdev->dev, &myhostbridge_ops, pp);
+>>> >         if (IS_ERR(bridge)) {
+>>> >                 err = PTR_ERR(bridge);
+>>> >                 goto bridge_create_fail;
+>>> >         }
+>>> >
+>>> >         err = myhostbridge_setup(bridge->bus);
+>>> >         if (err)
+>>> >                 goto bridge_setup_fail;
+>>> >
+>>> >         /* We always enable PCI domains and we keep domain 0 backward
+>>> >          * compatible in /proc for video cards
+>>> >          */
+>>> >         pci_add_flags(PCI_ENABLE_PROC_DOMAINS);
+>>> >         pci_add_flags(PCI_REASSIGN_ALL_BUS | PCI_REASSIGN_ALL_RSRC);
+>>> >
+>>> >         lastbus = pci_scan_child_bus(bridge->bus);
+>>> >         pci_bus_update_busn_res_end(bridge->bus, lastbus);
+>>> >
+>>> >         pci_assign_unassigned_bus_resources(bridge->bus);
+>>> >
+>>> >         pci_bus_add_devices(bridge->bus);
+>>> >
+>>> >         return 0;
+>>> >
+>>> > bridge_setup_fail:
+>>> >         put_device(&bridge->dev);
+>>> >         device_unregister(&bridge->dev);
+>>> > bridge_create_fail:
+>>> >         kfree(pp);
+>>> >         return err;
+>>> > }
+>>> >
+>>> > Best regards,
+>>> > Liviu
+>>> >
+>>> >
+>>> > Catalin Marinas (1):
+>>> >   arm64: Extend the PCI I/O space to 16MB
+>>> >
+>>> > Liviu Dudau (2):
+>>> >   Fix ioport_map() for !CONFIG_GENERIC_IOMAP cases.
+>>> >   arm64: Add architecture support for PCI
+>>> >
+>>> >  Documentation/arm64/memory.txt |  16 +--
+>>> >  arch/arm64/Kconfig             |  19 +++-
+>>> >  arch/arm64/include/asm/Kbuild  |   1 +
+>>> >  arch/arm64/include/asm/io.h    |   5 +-
+>>> >  arch/arm64/include/asm/pci.h   |  51 +++++++++
+>>> >  arch/arm64/kernel/Makefile     |   1 +
+>>> >  arch/arm64/kernel/pci.c        | 173 +++++++++++++++++++++++++++++++
+>>> >  include/asm-generic/io.h       |   2 +-
+>>> >  8 files changed, 258 insertions(+), 10 deletions(-)
+>>> >  create mode 100644 arch/arm64/include/asm/pci.h
+>>> >  create mode 100644 arch/arm64/kernel/pci.c
+>>> >
+>>> > --
+>>> > 1.9.0
+>>> >
+>>> >
+>>> > _______________________________________________
+>>> > linux-arm-kernel mailing list
+>>> > linux-arm-kernel@lists.infradead.org
+>>> > http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>>
+>>
+>> --
+>> ====================
+>> | I would like to |
+>> | fix the world,  |
+>> | but they're not |
+>> | giving me the   |
+>>  \ source code!  /
+>>   ---------------
+>>     ¯\_(ツ)_/¯
+>>
