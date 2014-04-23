@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757350AbaDWS6b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 14:58:31 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:43375 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756753AbaDWS63 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 14:58:29 -0400
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Subject: [PATCH] s390/ccwgroup: Fix memory corruption
-Date: Wed, 23 Apr 2014 20:58:45 +0200
-Message-Id: <1398279525-2837-1-git-send-email-borntraeger@de.ibm.com>
-X-Mailer: git-send-email 1.8.4.2
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042318-0542-0000-0000-000008C0D51D
+	id S1757687AbaDWS6w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 14:58:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21827 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755760AbaDWS6u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 14:58:50 -0400
+Date: Wed, 23 Apr 2014 14:58:35 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        Li Zefan <lizefan@huawei.com>, cgroups@vger.kernel.org
+Subject: Re: [PATCH RFC] blkcg: prepare blkcg knobs for default hierarchy
+Message-ID: <20140423185835.GD22755@redhat.com>
+References: <20140413013209.GC26252@mtj.dyndns.org>
+ <20140414180824.GB9552@redhat.com>
+ <20140414193214.GC16835@htj.dyndns.org>
+ <20140415135359.GA13033@redhat.com>
+ <20140415140650.GI1863@htj.dyndns.org>
+ <20140415141826.GB17018@redhat.com>
+ <20140423170141.GJ4781@htj.dyndns.org>
+ <20140423171720.GF24651@redhat.com>
+ <20140423185231.GA4163@mtj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423185231.GA4163@mtj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 0b60f9ead5d4816e7e3d6e28f4a0d22d4a1b2513 (s390: use
-device_remove_file_self() instead of device_schedule_callback())
+On Wed, Apr 23, 2014 at 02:52:31PM -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Wed, Apr 23, 2014 at 01:17:20PM -0400, Vivek Goyal wrote:
+> > I think we should just require two. One for measuring rate in terms
+> > of IOPS and other for measuring rate in terms of [kMG]B/sec.
+> 
+> I meant between cfq and blk-throttle.  Why do we have separate stats
+> for them to present ultimately the same numbers?
 
-caused random memory corruption on my s390 box. Turns out that the
-last element of the ccwgroup structure is of dynamic size, so we
-must move the newly introduced work structure _before_ the zero
-length array.
+Oh, sorry, I had misunderstood your question.
 
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
-CC: Tejun Heo <tj@kernel.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>
-CC: Sebastian Ott <sebott@linux.vnet.ibm.com>
-CC: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
----
- arch/s390/include/asm/ccwgroup.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+- Number of IOs serviced will be different at throttling layer and
+  CFQ layer as throttling accounts IO in terms of bios and CFQ
+  accounts in terms of number of requests.
 
-diff --git a/arch/s390/include/asm/ccwgroup.h b/arch/s390/include/asm/ccwgroup.h
-index 6e670f8..ebc2913 100644
---- a/arch/s390/include/asm/ccwgroup.h
-+++ b/arch/s390/include/asm/ccwgroup.h
-@@ -22,8 +22,8 @@ struct ccwgroup_device {
- /* public: */
- 	unsigned int count;
- 	struct device	dev;
--	struct ccw_device *cdev[0];
- 	struct work_struct ungroup_work;
-+	struct ccw_device *cdev[0];
- };
- 
- /**
--- 
-1.8.4.2
+- CFQ might not be operational on a device while throttling might be
+  on and one needs bytes stats.
 
+- In a custom kernel throttling might not be on and CFQ is on and
+  one needs the stats.
+
+So I think we do require duplication of some stats across throttling
+and CFQ, isn't it?
+
+Thanks
+Vivek
