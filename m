@@ -1,123 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753953AbaDWC0D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 22:26:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15969 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750860AbaDWCZ7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 22:25:59 -0400
-From: Steve Grubb <sgrubb@redhat.com>
-To: Richard Guy Briggs <rgb@redhat.com>
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org, davem@davemloft.net,
-        jamal@mojatatu.com, eparis@redhat.com
-Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
-Date: Tue, 22 Apr 2014 22:25:55 -0400
-Message-ID: <26389161.vp9iWSVLPX@x2>
-Organization: Red Hat
-User-Agent: KMail/4.12.4 (Linux/3.13.10-200.fc20.x86_64; KDE/4.12.4; x86_64; ; )
-In-Reply-To: <cover.1398215388.git.rgb@redhat.com>
-References: <20140422.161904.1187535812839850973.davem@davemloft.net> <cover.1398215388.git.rgb@redhat.com>
+	id S1754494AbaDWC11 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 22:27:27 -0400
+Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:51063
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750860AbaDWC10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 22:27:26 -0400
+From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] clocksource: fix clocksource_mmio_readX_down
+Thread-Topic: [PATCH] clocksource: fix clocksource_mmio_readX_down
+Thread-Index: AQHPWiVQpW+42AWBq0+3FzJmFl9tAZsddoYAgAEK5OA=
+Date: Wed, 23 Apr 2014 02:27:22 +0000
+Message-ID: <2f174001f11b4e1b89558cb170973875@BY2PR03MB505.namprd03.prod.outlook.com>
+References: <1397726874-6349-1-git-send-email-Li.Xiubo@freescale.com>
+ <535643FA.1080908@linaro.org>
+In-Reply-To: <535643FA.1080908@linaro.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [123.151.195.49]
+x-forefront-prvs: 01901B3451
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(164054003)(51704005)(79102001)(15395725003)(33646001)(92566001)(85852003)(74662001)(74502001)(20776003)(77982001)(31966008)(66066001)(86362001)(50986999)(83072002)(575784001)(81342001)(76176999)(81542001)(99286001)(19580395003)(80976001)(2656002)(87936001)(46102001)(80022001)(74316001)(83322001)(76576001)(4396001)(76482001)(54356999)(99396002)(77096999)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:FCD0FA00.8CE25CEC.45412E03.83EAEC38.201B1;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3N2RWg1014950
 
-On Tuesday, April 22, 2014 09:31:52 PM Richard Guy Briggs wrote:
-> This is a patch set Eric Paris and I have been working on to add a
-> restricted capability read-only netlink multicast socket to kernel audit to
-> enable userspace clients such as systemd/journald to receive audit logs, in
-> addition to the bidirectional auditd userspace client.
+> > diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
+> > index c0e2512..f17a0d1 100644
+> > --- a/drivers/clocksource/mmio.c
+> > +++ b/drivers/clocksource/mmio.c
+> > @@ -27,7 +27,7 @@ cycle_t clocksource_mmio_readl_up(struct clocksource *c)
+> >
+> >   cycle_t clocksource_mmio_readl_down(struct clocksource *c)
+> >   {
+> > -	return ~readl_relaxed(to_mmio_clksrc(c)->reg);
+> > +	return ~readl_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
+> >   }
+> >
+> >   cycle_t clocksource_mmio_readw_up(struct clocksource *c)
+> > @@ -37,7 +37,7 @@ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
+> >
+> >   cycle_t clocksource_mmio_readw_down(struct clocksource *c)
+> >   {
+> > -	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg);
+> > +	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
+> >   }
+> >
+> >   /**
+> 
+> 
+> Hi,
+> 
+> I realize there is some type confusion here:
+> 
+> cycle_t -> u64
+> readl_relaxed -> u32
+> readw_relaxed -> u16
+> 
+> and clocksource_mmio_readw_down returns a cast to unsigned (u32)
+> 
+> This patch makes sense but it obfuscate more the types in these
+> functions. Worth to clarify the functions first ?
+> 
 
-Do have the ability to separate of secadm_r and sysadm_r? By allowing this, we 
-will leak to a sysadmin that he is being audited by the security officer. In a 
-lot of cases, they are one in the same person. But for others, they are not. I 
-have a feeling this will cause problems for MLS systems.
+Yes, though the short type could be converted to the longer type automatically,
+It's better and worth to clarify it firstly.
 
-Also, shouldn't we have an audit event for every attempt to connect to this 
-socket? We really need to know where this information is getting leaked to.
-
--Steve
+I'll fix this, please see the next version.
 
 
-> Currently, auditd has the CAP_AUDIT_CONTROL and CAP_AUDIT_WRITE capabilities
-> (but uses CAP_NET_ADMIN).  The CAP_AUDIT_READ capability will be added for
-> use by read-only AUDIT_NLGRP_READLOG multicast group clients to the kaudit
-> subsystem.  This will remove the dependence on CAP_NET_ADMIN for the
-> multicast read-only socket.
-> 
-> 
-> Patches 1-3 provide a way for per-protocol bind functions to
-> signal an error and to be able to clean up after themselves.
-> 
-> The first netfilter cleanup patch has already been accepted by a netfilter
-> maintainer, though I don't see it upstream yet, so it is included for
-> completeness.
-> 
-> The second patch adds the per-protocol bind function return code to signal
-> to the netlink code that no further processing should be done and to undo
-> the work already done.
-> V1: This rev fixes a bug introduced by flattening the code in the last
-> posting. *V2: This rev moves the per-protocol bind call above the socket
-> exposure call and refactors out the unbind procedure.
-> 
-> The third provides a way per protocol to undo bind actions on DROP.
-> 
-> 
-> Patches 4-6 implement the audit multicast socket with capability checking.
-> 
-> The fourth patch adds the bind function capability check to multicast join
-> requests for audit.
-> 
-> The fifth patch adds the audit log read multicast group.  An assumption has
-> been made that systemd/journald reside in the initial network namespace. 
-> This could be changed to check the actual network namespace of
-> systemd/journald should this assumption no longer be true since audit now
-> supports all network namespaces.  This version of the patch now directly
-> sends the broadcast when the packet is ready rather than waiting until it
-> passes the queue.
-> 
-> The sixth checks if any clients actually exist before sending.
-> 
-> 
-> Since the net tree is busier than the audit tree, conflicts are more likely
-> and the audit patches depend on the net patches, it is proposed to have the
-> net tree carry this entire patchset for 3.16.  Are the net maintainers ok
-> with this?
-> 
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=887992
-> 
-> First posted:  
-> https://www.redhat.com/archives/linux-audit/2013-January/msg00008.html
-> https://lkml.org/lkml/2013/1/27/279
-> 
-> Please find source for a test program at:
-> 	http://people.redhat.com/rbriggs/audit-multicast-listen/
-> 
-> 
-> Richard Guy Briggs (6):
->   netlink: simplify nfnetlink_bind
->   netlink: have netlink per-protocol bind function return an error
->     code.
->   netlink: implement unbind to netlink_setsockopt
->     NETLINK_DROP_MEMBERSHIP
->   audit: add netlink audit protocol bind to check capabilities on
->     multicast join
->   audit: add netlink multicast group for log read
->   audit: send multicast messages only if there are listeners
-> 
->  include/linux/netlink.h             |    3 +-
->  include/uapi/linux/audit.h          |    8 ++++
->  include/uapi/linux/capability.h     |    7 +++-
->  kernel/audit.c                      |   64 ++++++++++++++++++++++++++++++--
-> net/netfilter/nfnetlink.c           |   10 ++---
->  net/netlink/af_netlink.c            |   70
-> +++++++++++++++++++++++++---------- net/netlink/af_netlink.h            |  
->  6 ++-
->  security/selinux/include/classmap.h |    2 +-
->  8 files changed, 135 insertions(+), 35 deletions(-)
+Thanks,
+BRs
+Xiubo
 
+
+> 
+> --
+>   <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
+> 
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+> 
+> 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
