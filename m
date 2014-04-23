@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242AbaDWHYy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:24:54 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:41381 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756728AbaDWHYv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:24:51 -0400
+	id S1757280AbaDWHZf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:25:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64010 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756188AbaDWHZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 03:25:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,910,1389772800"; 
+   d="scan'208";a="525389632"
+Message-ID: <5357691E.5020007@intel.com>
+Date: Wed, 23 Apr 2014 15:17:50 +0800
+From: Lan Tianyu <tianyu.lan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:14.0) Gecko/20120714 Thunderbird/14.0
 MIME-Version: 1.0
-In-Reply-To: <20140422162432.GA17674@ravnborg.org>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<1397824031-4892-5-git-send-email-lftan@altera.com>
-	<20140422142443.GB15745@arch.cereza>
-	<20140422151458.GC1053@distanz.ch>
-	<20140422153522.GF15745@arch.cereza>
-	<20140422162432.GA17674@ravnborg.org>
-Date: Wed, 23 Apr 2014 09:24:49 +0200
-X-Google-Sender-Auth: M-5sBdJ98a4e573wjitlUzg-n7A
-Message-ID: <CAMuHMdU2qmCeFWLGt9G8U0Pm_bP3WwV2qY6aJa0VQ=+aFFKSBg@mail.gmail.com>
-Subject: Re: [PATCH 06/28] nios2: Memory management
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Tobias Klauser <tklauser@distanz.ch>, Ley Foon Tan <lftan@altera.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        LeyFoon Tan <lftan.linux@gmail.com>, cltang@codesourcery.com
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: wsa@the-dreams.de, rjw@rjwysocki.net, awilliam@redhat.com, lenb@kernel.org,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [Resend Patch 7/9] I2C/ACPI: Add i2c ACPI operation region support
+References: <1397654682-7094-1-git-send-email-tianyu.lan@intel.com> <1398147855-9868-1-git-send-email-tianyu.lan@intel.com> <1398147855-9868-8-git-send-email-tianyu.lan@intel.com> <20140422113638.GK30677@intel.com> <53571D11.3070808@intel.com> <20140423072839.GT30677@intel.com>
+In-Reply-To: <20140423072839.GT30677@intel.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sam,
+On 2014年04月23日 15:28, Mika Westerberg wrote:
+> On Wed, Apr 23, 2014 at 09:53:21AM +0800, Lan Tianyu wrote:
+>> Hi Mika:
+>> 	Thanks a lot for your review.
+>>
+>> On 2014年04月22日 19:36, Mika Westerberg wrote:
+>>>>> +
+>>>>> +	client.adapter = adapter;
+>>>>> +	client.addr = sb->slave_address;
+>>>>> +	client.flags = 0;
+>>> I'm not sure if this is the correct way to use struct i2c_client
+>>> (allocating it from stack and passing forward to functions that might
+>>> expect a real i2c_client structure). It has ->dev and all.
+>>
+>> I check all i2c_smbus_xxx helper functions and they are simple wrappers
+>> of i2c_smbus_xfer(). Only adapter, addr and flags of struct client are
+>> used in these functions.
+> 
+> In that case I suppose it is OK to (ab)use the client structure like this.
+> 
+> I think you still want to initialize the whole structure (unused fields
+> with zero) before passing it to the wrappers.
+> 
 
-On Tue, Apr 22, 2014 at 6:24 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> #define PAGE_SIZE    (_AC(1, UL) << PAGE_SHIFT)
-> #define PAGE_MASK    (~(PAGE_SIZE-1))
->
-> _AC(1, UL) expands to 1 for assembler and 1UL for C code.
+Ok. I will do that.
 
-Ideally, PAGE_SIZE should be size_t, not unsigned long, avoiding issues
-like https://lkml.org/lkml/2014/4/13/78. But currently it's unsigned long
-everywhere, so nios2 should be consistent.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-- 
+Best regards
+Tianyu Lan
