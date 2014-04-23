@@ -1,89 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbaDWAxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 20:53:51 -0400
-Received: from mail-ve0-f175.google.com ([209.85.128.175]:37381 "EHLO
-	mail-ve0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751034AbaDWAxt (ORCPT
+	id S1753054AbaDWAyA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 20:54:00 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:63776 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900AbaDWAx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 20:53:49 -0400
+	Tue, 22 Apr 2014 20:53:56 -0400
+Message-ID: <53570F1F.1000709@gmail.com>
+Date: Wed, 23 Apr 2014 02:53:51 +0200
+From: poma <pomidorabelisima@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <5356916F.4000205@kernel.dk>
-References: <cover.1395840483.git.agordeev@redhat.com>
-	<20140422071057.GA13195@dhcp-26-169.brq.redhat.com>
-	<535676A1.3070706@kernel.dk>
-	<5356916F.4000205@kernel.dk>
-Date: Wed, 23 Apr 2014 08:53:48 +0800
-Message-ID: <CACVXFVMXh5ZP+ZsO2fV2mdKJrJF9AHg58v5KWmt_ZbEWvszsLw@mail.gmail.com>
-Subject: Re: [PATCH RFC 0/2] percpu_ida: Take into account CPU topology when
- stealing tags
-From: Ming Lei <tom.leiming@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Gordeev <agordeev@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kent Overstreet <kmo@daterainc.com>, Shaohua Li <shli@kernel.org>,
-        Nicholas Bellinger <nab@linux-iscsi.org>,
-        Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Linux Kernel list <linux-kernel@vger.kernel.org>
+CC: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+        Mailing-List fedora-kernel <kernel@lists.fedoraproject.org>,
+        Dan Williams <dan.j.williams@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Dave Jones <davej@redhat.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Francois Romieu <romieu@fr.zoreil.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Wei Liu <wei.liu2@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: debug_dma_assert_idle - snd_hda_intel - cpu touching an active
+ dma mapped cacheline
+References: <534F01D1.9000206@gmail.com> <534F858B.4060208@ladisch.de> <53500CDB.8050802@gmail.com>
+In-Reply-To: <53500CDB.8050802@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
 
-On Tue, Apr 22, 2014 at 11:57 PM, Jens Axboe <axboe@kernel.dk> wrote:
-> On 04/22/2014 08:03 AM, Jens Axboe wrote:
->> On 2014-04-22 01:10, Alexander Gordeev wrote:
->>> On Wed, Mar 26, 2014 at 02:34:22PM +0100, Alexander Gordeev wrote:
->>>> But other systems (more dense?) showed increased cache-hit rate
->>>> up to 20%, i.e. this one:
->>>
->>> Hello Gentlemen,
->>>
->>> Any feedback on this?
->>
->> Sorry for dropping the ball on this. Improvements wrt when to steal, how
->> much, and from whom are sorely needed in percpu_ida. I'll do a bench
->> with this on a system that currently falls apart with it.
->
-> Ran some quick numbers with three kernels:
->
-> stock           3.15-rc2
-> limit           3.15-rc2 + steal limit patch (attached)
+This one comes and goes...
 
-I am thinking/working on this sort of improving too, but my
-idea is to compute tags->nr_max_cache by below:
+------------[ cut here ]------------
+WARNING: CPU: 2 PID: 521 at lib/dma-debug.c:593
+debug_dma_assert_idle+0x159/0x1d0()
+snd_hda_intel 0000:00:07.0: DMA-API: cpu touching an active dma mapped
+cacheline [cln=0x03019000]
+------------[ cut here ]------------
+WARNING: CPU: 3 PID: 927 at lib/dma-debug.c:593
+debug_dma_assert_idle+0x159/0x1d0()
+snd_hda_intel 0000:00:07.0: DMA-API: cpu touching an active dma mapped
+cacheline [cln=0x03019000]
 
-                   nr_tags / hctx->max_nr_ctx
+CPU: 3 PID: 927 Comm: firewalld Not tainted 3.15.0-0.rc2.git1.1.fc21.i686 #1
 
-hctx->max_nr_ctx means the max sw queues mapped to the
-hw queue, which need to be introduced in the approach, actually,
-the value should represent the CPU topology info.
+Call Trace:
 
-It is a bit complicated to compute hctx->max_nr_ctx because
-we need to take account into CPU hotplug and probable
-user-defined mapping callback.
+ [<c0ae29dd>] dump_stack+0x48/0x60
 
-If user-defined mapping callback needn't to be considered, the
-hctx->max_nr_ctx can be figured out before mapping sw
-queue in blk_mq_init_queue() by supposing each CPU is
-online first, once it is done, the map for offline CPU is cleared,
-then start to call blk_mq_map_swqueue().
+ [<c0454402>] warn_slowpath_common+0x82/0xa0
 
-In my null_blk test on a quad core SMP VM:
+ [<c0750e09>] ? debug_dma_assert_idle+0x159/0x1d0
 
-     - 4 hw queue
-     - timer mode
+ [<c0750e09>] ? debug_dma_assert_idle+0x159/0x1d0
 
-With the above approach, tag allocation from local CPU can be
-improved from:
+ [<c045445e>] warn_slowpath_fmt+0x3e/0x60
 
-        5%   -> 50% for boot CPU
-        30% -> 90% for non-boot CPU.
+ [<c0750e09>] debug_dma_assert_idle+0x159/0x1d0
 
-If no one objects the idea, I'd like to post a patch for review.
+ [<c0586189>] ? anon_vma_prepare+0x29/0x140
+
+ [<c057a5be>] do_wp_page+0xce/0x890
+
+ [<c0640065>] ? ext4_releasepage+0x95/0x130
+
+ [<c057cbc2>] handle_mm_fault+0x662/0xb70
+
+ [<c0640065>] ? ext4_releasepage+0x95/0x130
+
+ [<c0aee997>] __do_page_fault+0x1a7/0x5d0
+
+ [<c04adcac>] ? trace_hardirqs_on_caller+0x13c/0x1e0
+
+ [<c04ff83c>] ? __audit_syscall_entry+0x8c/0xe0
+
+ [<c04add5b>] ? trace_hardirqs_on+0xb/0x10
+
+ [<c04adcac>] ? trace_hardirqs_on_caller+0x13c/0x1e0
+
+ [<c04adcac>] ? trace_hardirqs_on_caller+0x13c/0x1e0
+
+ [<c0aeedc0>] ? __do_page_fault+0x5d0/0x5d0
+
+ [<c0aeedda>] do_page_fault+0x1a/0x20
+
+ [<c0aeb7b4>] error_code+0x6c/0x74
+---[ end trace 0464944e27da06b8 ]---
+Mapped at:
+
+[<c074eeb2>] debug_dma_alloc_coherent+0x22/0x70
+
+[<f839de90>] snd_dma_alloc_pages+0x170/0x260 [snd_pcm]
+
+[<f839dfe2>] snd_dma_alloc_pages_fallback+0x62/0x90 [snd_pcm]
+
+[<f839e3b0>] snd_malloc_sgbuf_pages+0xf0/0x211 [snd_pcm]
+
+[<f839df23>] snd_dma_alloc_pages+0x203/0x260 [snd_pcm]
+CPU: 2 PID: 521 Comm: firewalld Tainted: G        W
+3.15.0-0.rc2.git1.1.fc21.i686 #1
+Call Trace:
+ [<c0ae29dd>] dump_stack+0x48/0x60
+ [<c0454402>] warn_slowpath_common+0x82/0xa0
+ [<c0750e09>] ? debug_dma_assert_idle+0x159/0x1d0
+ [<c0750e09>] ? debug_dma_assert_idle+0x159/0x1d0
+ [<c045445e>] warn_slowpath_fmt+0x3e/0x60
+ [<c0750e09>] debug_dma_assert_idle+0x159/0x1d0
+ [<c0586189>] ? anon_vma_prepare+0x29/0x140
+ [<c057a5be>] do_wp_page+0xce/0x890
+ [<c0640065>] ? ext4_releasepage+0x95/0x130
+ [<c057cbc2>] handle_mm_fault+0x662/0xb70
+ [<c0640065>] ? ext4_releasepage+0x95/0x130
+ [<c0aee997>] __do_page_fault+0x1a7/0x5d0
+ [<c04ff83c>] ? __audit_syscall_entry+0x8c/0xe0
+ [<c04add5b>] ? trace_hardirqs_on+0xb/0x10
+ [<c04adcac>] ? trace_hardirqs_on_caller+0x13c/0x1e0
+ [<c0aeedc0>] ? __do_page_fault+0x5d0/0x5d0
+ [<c0aeedda>] do_page_fault+0x1a/0x20
+ [<c0aeb7b4>] error_code+0x6c/0x74
+---[ end trace 0464944e27da06b9 ]---
+Mapped at:
+ [<c074eeb2>] debug_dma_alloc_coherent+0x22/0x70
+ [<f839de90>] snd_dma_alloc_pages+0x170/0x260 [snd_pcm]
+ [<f839dfe2>] snd_dma_alloc_pages_fallback+0x62/0x90 [snd_pcm]
+ [<f839e3b0>] snd_malloc_sgbuf_pages+0xf0/0x211 [snd_pcm]
+ [<f839df23>] snd_dma_alloc_pages+0x203/0x260 [snd_pcm]
 
 
-Thanks,
--- 
-Ming Lei
+https://bugzilla.redhat.com/attachment.cgi?id=888686
+
+dma debug: account for cachelines and read-only mappings in overlap tracking
+https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/lib/dma-debug.c?id=3b7a6418c7494b8bf0bf0537ddee1dedbca10f51
+
+Are these two in some relation?
+
+
+poma
+
+
