@@ -1,106 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982AbaDWITQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:19:16 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:43611 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751102AbaDWITM (ORCPT
+	id S1757313AbaDWIVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:21:08 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:55102 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751745AbaDWIVD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:19:12 -0400
-Date: Wed, 23 Apr 2014 17:18:42 +0900
-From: Daeseok Youn <daeseok.youn@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: rupert@rmuch.net, daeseok.youn@gmail.com, chad@dahc.us,
-        yongjun_wei@trendmicro.com.cn, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: silicom: remove redundant pci_get_drvdata() call
-Message-ID: <20140423081842.GA7498@devel>
+	Wed, 23 Apr 2014 04:21:03 -0400
+Date: Wed, 23 Apr 2014 10:21:00 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Cc: tj@kernel.org, alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] ata: ahci: add AHCI support for Berlin SoCs
+Message-ID: <20140423082100.GB24355@kwain>
+References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1398181105-19714-2-git-send-email-antoine.tenart@free-electrons.com>
+ <5356A4F4.6090107@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <5356A4F4.6090107@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pci_get_drvdata() and checking NULL for dev are
-called twice in while loop in is_bypass_dev().
+Sebastian,
 
-Signed-off-by: Daeseok Youn <daeseok.youn@gmail.com>
----
-This patch has an warning from checkpatch.pl.
-checkpatch.pl warning:
-WARNING: Too many leading tabs - consider code refactoring
+On Tue, Apr 22, 2014 at 07:20:52PM +0200, Sebastian Hesselbarth wrote:
+> On 04/22/2014 05:38 PM, Antoine Ténart wrote:
 
- drivers/staging/silicom/bypasslib/bypass.c |   51 ++++++++++++---------------
- 1 files changed, 23 insertions(+), 28 deletions(-)
+[…]
 
-diff --git a/drivers/staging/silicom/bypasslib/bypass.c b/drivers/staging/silicom/bypasslib/bypass.c
-index 09e00da..a58251f 100644
---- a/drivers/staging/silicom/bypasslib/bypass.c
-+++ b/drivers/staging/silicom/bypasslib/bypass.c
-@@ -149,38 +149,33 @@ static int is_bypass_dev(int if_index)
- 
- 	while ((pdev = pci_get_class(PCI_CLASS_NETWORK_ETHERNET << 8, pdev))) {
- 		dev = pci_get_drvdata(pdev);
--		if (dev != NULL) {
--			dev = pci_get_drvdata(pdev);
--			if ((dev != NULL) && (dev->ifindex == if_index)) {
--				if ((pdev->vendor == SILICOM_VID) &&
--				    (pdev->device >= SILICOM_BP_PID_MIN) &&
--				    (pdev->device <= SILICOM_BP_PID_MAX)) {
--					goto send_cmd;
--				}
-+		if ((dev != NULL) && (dev->ifindex == if_index)) {
-+			if ((pdev->vendor == SILICOM_VID) &&
-+			    (pdev->device >= SILICOM_BP_PID_MIN) &&
-+			    (pdev->device <= SILICOM_BP_PID_MAX)) {
-+				goto send_cmd;
-+			}
- #if defined(BP_VENDOR_SUPPORT) && defined(ETHTOOL_GDRVINFO)
--				else {
--					struct ethtool_drvinfo info;
--					const struct ethtool_ops *ops =
--					    dev->ethtool_ops;
--					int k = 0;
--
--					if (ops->get_drvinfo) {
--						memset(&info, 0, sizeof(info));
--						info.cmd = ETHTOOL_GDRVINFO;
--						ops->get_drvinfo(dev, &info);
--						for (; bp_desc_array[k]; k++)
--							if (!
--							    (strcmp
--							     (bp_desc_array[k],
--							      info.driver)))
--								goto send_cmd;
--
--					}
-+			else {
-+				struct ethtool_drvinfo info;
-+				const struct ethtool_ops *ops =
-+					dev->ethtool_ops;
-+				int k = 0;
-+
-+				if (ops->get_drvinfo) {
-+					memset(&info, 0, sizeof(info));
-+					info.cmd = ETHTOOL_GDRVINFO;
-+					ops->get_drvinfo(dev, &info);
-+					for (; bp_desc_array[k]; k++)
-+						if (!(strcmp(bp_desc_array[k],
-+							     info.driver)))
-+							goto send_cmd;
- 
- 				}
--#endif
--				return -1;
-+
- 			}
-+#endif
-+			return -1;
- 		}
- 	}
-  send_cmd:
+> > +static inline void ahci_berlin_reg_set(void __iomem *reg, u32 val)
+> > +{
+> > +	writel(val, reg);
+> > +}
+> 
+> Antoine,
+> 
+> if you really need to rename writel, the above function name should
+> end with _write.
+
+I renamed writel for consistency with ahci_berlin_reg_clear_set() and
+ahci_berlin_reg_setbits() but I can definitively drop it.
+
+> 
+> > +static inline void ahci_berlin_reg_clear_set(void __iomem *reg, u32 clear_val,
+> > +					     u32 set_val)
+> > +{
+> > +	u32 regval;
+> > +
+> > +	regval = readl(reg);
+> > +	regval &= ~(clear_val);
+> > +	regval |= set_val;
+> > +	writel(regval, reg);
+> > +}
+> 
+> ahci_berlin_reg_setbits(reg, val) == ahci_berlin_reg_clear_set(reg, 0, val);
+> 
+> Maybe get rid of the latter?
+
+Sure.
+
+> 
+> > +static void ahci_berlin_init(void __iomem *mmio)
+> > +{
+> > +	/* interface select */
+> > +	ahci_berlin_reg_set(mmio + HOST_VSA_ADDR, BIT(2));
+> > +	ahci_berlin_reg_set(mmio + HOST_VSA_ADDR,
+> > +			    BIT(21) | BIT(18) | BIT(5) | BIT(4) | BIT(2));
+> 
+> Any chance we get named #defines for the BIT()s above and below?
+
+I'm afraid I can't. I'd love to do so if someone has a clue on this matter.
+
+> > +	/* force_map is modified only if the property is found */
+> > +	of_property_read_u32(np, "marvell,force-port-map", &force_map);
+> > +	if (force_map)
+> > +		nports = force_map;
+> 
+> marvell,force-port-map is undocumented and its name does not reflect
+> what it is about. Before you just rename it to marvell,nr-ports or
+> something, how about having one sub-node per port:
+> 
+> sata_phy0: sata-phy@e90100 {
+> 	compatible = "marvell,berlin-sata-phy";
+> 	reg = <0xe90100 0x80>;
+> 	status = "disabled";
+> };
+> 
+> sata_phy1: sata-phy@e90180 {
+> 	compatible = "marvell,berlin-sata-phy";
+> 	reg = <0xe90180 0x80>;
+> 	status = "disabled";
+> };
+> 
+> ahci: sata@e90000 {
+> 	compatible = "marvell,berlin-ahci";
+> 	reg = <0xe90000 0x100>;
+> 	interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
+> 	#address-cells = <1>;
+> 	#size-cells = <0>;
+> 	status = "disabled";
+> 
+> 	sata-port@0 {
+> 		reg = <0>;
+> 		sata-phy = <&sata_phy0>;
+> 		status = "disabled";
+> 	};
+> 
+> 	sata-port@1 {
+> 		reg = <1>;
+> 		sata-phy = <&sata_phy1>;
+> 		status = "okay";
+> 	};
+> };
+> 
+> That way you can
+> (a) separate a PHY driver that has little code but is able to power-down
+>     the PHY even if there is no AHCI driver loaded.
+> (b) enable/disable each port individually.
+> (c) enable port1 while port0 is disabled.
+> (d) disable the PLL if there is no port enabled at all.
+
+That would be better, but as of now I'm not sure I have enough information on
+the PHY to do (a).
+
+I guess (b), (c) and (d) can still be done.
+
+Thanks for the review!
+
+Antoine
+
 -- 
-1.7.4.4
-
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
