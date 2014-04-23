@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbaDWMGq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:06:46 -0400
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:57810 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437AbaDWMGp (ORCPT
+	id S1752973AbaDWMHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:07:18 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:46597 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbaDWMHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:06:45 -0400
-From: Anders Darander <anders.darander@gmail.com>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, Anders Darander <anders.darander@gmail.com>
-Subject: [PATCH][linux-next]  staging/rtl8821ae: fix sparse address space warning
-Date: Wed, 23 Apr 2014 14:06:25 +0200
-Message-Id: <1398254785-2484-1-git-send-email-anders.darander@gmail.com>
-X-Mailer: git-send-email 2.0.0.rc0
+	Wed, 23 Apr 2014 08:07:16 -0400
+Message-ID: <5357ACF1.9070206@codeaurora.org>
+Date: Wed, 23 Apr 2014 07:07:13 -0500
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:28.0) Gecko/20100101 Firefox/28.0 SeaMonkey/2.25
+MIME-Version: 1.0
+To: Mathias Nyman <mathias.nyman@linux.intel.com>
+CC: Linus <linus.walleij@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
+References: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>	<1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com> <CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com> <534B93BA.6020406@linux.intel.com> <534BFAAF.3070805@codeaurora.org> <534D0370.50108@linux.intel.com> <535005BA.1040405@codeaurora.org> <5357A80B.8030701@linux.intel.com>
+In-Reply-To: <5357A80B.8030701@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When unmapping the pci memory, the pointer was explicitly casted to void*,
-thus omitting the __iomem designation.
+Mathias Nyman wrote:
+>
+> Helper functions to translate the ACPI GpioIO and GpioInt resources to
+> linux gpio numbers can be found in gpio/gpiolib-acpi.c together with
+> other ACPI and gpio related helper functions.
 
-Signed-off-by: Anders Darander <anders.darander@gmail.com>
----
- drivers/staging/rtl8821ae/pci.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Does this also cover pin control and pin muxing?  Sorry, but I sometimes 
+I get confused.  It appears to me that the GpioIo and GpioInt functions 
+require pin muxing, but I don't see that support in gpiolib-acpi.
 
-diff --git a/drivers/staging/rtl8821ae/pci.c b/drivers/staging/rtl8821ae/pci.c
-index a562aa6..d934ecb 100644
---- a/drivers/staging/rtl8821ae/pci.c
-+++ b/drivers/staging/rtl8821ae/pci.c
-@@ -2416,7 +2416,7 @@ fail3:
- 	ieee80211_free_hw(hw);
- 
- 	if (rtlpriv->io.pci_mem_start != 0)
--		pci_iounmap(pdev, (void *)rtlpriv->io.pci_mem_start);
-+		pci_iounmap(pdev, (void __iomem *)rtlpriv->io.pci_mem_start);
- 
- fail2:
- 	pci_release_regions(pdev);
-@@ -2479,7 +2479,7 @@ void rtl_pci_disconnect(struct pci_dev *pdev)
- 
- 	list_del(&rtlpriv->list);
- 	if (rtlpriv->io.pci_mem_start != 0) {
--		pci_iounmap(pdev, (void *)rtlpriv->io.pci_mem_start);
-+		pci_iounmap(pdev, (void __iomem *)rtlpriv->io.pci_mem_start);
- 		pci_release_regions(pdev);
- 	}
- 
 -- 
-2.0.0.rc0
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, hosted by The Linux Foundation.
