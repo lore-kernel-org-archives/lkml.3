@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756482AbaDWDzX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 23:55:23 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:45376 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668AbaDWDzU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 23:55:20 -0400
-Date: Tue, 22 Apr 2014 23:55:15 -0400 (EDT)
-Message-Id: <20140422.235515.1172733305552022632.davem@davemloft.net>
-To: rgb@redhat.com
-Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org, hadi@mojatatu.com,
-        eparis@redhat.com, sgrubb@redhat.com
+	id S1756526AbaDWD6B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 23:58:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18138 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753517AbaDWD57 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 23:57:59 -0400
+Message-ID: <1398225475.750.7.camel@localhost>
 Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140423014929.GL20182@madcap2.tricolour.ca>
-References: <cover.1398215388.git.rgb@redhat.com>
-	<20140422.214300.171999077259349189.davem@davemloft.net>
-	<20140423014929.GL20182@madcap2.tricolour.ca>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+From: Eric Paris <eparis@redhat.com>
+To: Steve Grubb <sgrubb@redhat.com>
+Cc: Richard Guy Briggs <rgb@redhat.com>, linux-audit@redhat.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        selinux@tycho.nsa.gov, linux-security-module@vger.kernel.org,
+        davem@davemloft.net, jamal@mojatatu.com
+Date: Tue, 22 Apr 2014 23:57:55 -0400
+In-Reply-To: <26389161.vp9iWSVLPX@x2>
+References: <20140422.161904.1187535812839850973.davem@davemloft.net>
+	 <cover.1398215388.git.rgb@redhat.com> <26389161.vp9iWSVLPX@x2>
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 22 Apr 2014 20:55:19 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Richard Guy Briggs <rgb@redhat.com>
-Date: Tue, 22 Apr 2014 21:49:29 -0400
-
-> On 14/04/22, David Miller wrote:
->> From: Richard Guy Briggs <rgb@redhat.com>
->> Date: Tue, 22 Apr 2014 21:31:52 -0400
->> 
->> > This is a patch set Eric Paris and I have been working on to add a restricted
->> > capability read-only netlink multicast socket to kernel audit to enable
->> > userspace clients such as systemd/journald to receive audit logs, in addition
->> > to the bidirectional auditd userspace client.
->> 
->> Series applied, thanks Richard.
+On Tue, 2014-04-22 at 22:25 -0400, Steve Grubb wrote:
+> On Tuesday, April 22, 2014 09:31:52 PM Richard Guy Briggs wrote:
+> > This is a patch set Eric Paris and I have been working on to add a
+> > restricted capability read-only netlink multicast socket to kernel audit to
+> > enable userspace clients such as systemd/journald to receive audit logs, in
+> > addition to the bidirectional auditd userspace client.
 > 
-> Thanks for your patience, David.  Can I assume you adopted the 3 audit
-> patches too, becuase of the dependence?
+> Do have the ability to separate of secadm_r and sysadm_r? By allowing this, we 
+> will leak to a sysadmin that he is being audited by the security officer. In a 
+> lot of cases, they are one in the same person. But for others, they are not. I 
+> have a feeling this will cause problems for MLS systems.
 
-Yes.
+Why?  This requires CAP_AUDIT_READ.  Just don't give CAP_AUDIT_READ to
+places you don't want to have read permission.  Exactly the same as you
+don't give CAP_AUDIT_CONTROL to sysadm_r.  (If we are giving
+CAP_AUDIT_CONTROL to sysadm_r and you think that any file protections
+on /var/log/audit/audit.log are adequate we are fooling ourselves!)
+
+> Also, shouldn't we have an audit event for every attempt to connect to this 
+> socket? We really need to know where this information is getting leaked to.
+
+We certainly can.  What would you like to see in that event?
+
+-Eric
+
