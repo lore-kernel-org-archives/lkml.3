@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932287AbaDWI0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:26:09 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:7310 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755203AbaDWI0H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:26:07 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ao94AOF4V1N5LEcvPGdsb2JhbAA/GoMGT4MVqAMGlAmFYoEWFwMBAQEBODWCJQEBBAE6HCMFCwgDDgoJJQ8FJQMHGhMJiDAHDjbPDxaOQgeEOQSYdJRIgVEr
-Date: Wed, 23 Apr 2014 18:25:38 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Ivan Pantovic <gyro.ivan@gmail.com>
-Cc: Speedy Milan <speedy.milan@gmail.com>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: rm -f * on large files very slow on XFS + MD RAID 6 volume of
- 15x 4TB of HDDs (52TB)
-Message-ID: <20140423082538.GR18672@dastard>
-References: <CAHuzUScfp19c_th_pfsZs05+yDz34MuEH-P1f+FF1dcivfH=5Q@mail.gmail.com>
- <20140423021835.GI15995@dastard>
- <53576A7D.9020303@gmail.com>
+	id S932459AbaDWI06 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:26:58 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49945 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750755AbaDWI04 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 04:26:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,910,1389772800"; 
+   d="scan'208";a="517801816"
+Date: Wed, 23 Apr 2014 11:34:30 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Adam Williamson <awilliam@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        "Jin, Yao" <yao.jin@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
+        mathias.nyman@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
+ ASUS T100TA
+Message-ID: <20140423083430.GV30677@intel.com>
+References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
+ <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
+ <5353A1F6.60602@linux.intel.com>
+ <5353B8A4.1080900@linux.intel.com>
+ <1398007690.2674.0.camel@adam.happyassassin.net>
+ <5354BA59.2000008@linux.intel.com>
+ <53551D0F.40906@linux.intel.com>
+ <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
+ <1398230210.2704.8.camel@adam.happyassassin.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53576A7D.9020303@gmail.com>
+In-Reply-To: <1398230210.2704.8.camel@adam.happyassassin.net>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 09:23:41AM +0200, Ivan Pantovic wrote:
+On Tue, Apr 22, 2014 at 10:16:50PM -0700, Adam Williamson wrote:
+> Well, I can't actually concur. See my results in
+> https://bugzilla.kernel.org/show_bug.cgi?id=68291#c44 .
 > 
-> >[root@drive-b ~]# xfs_db -r /dev/md0
-> >xfs_db> frag
-> >actual 11157932, ideal 11015175, fragmentation factor 1.28%
-> >xfs_db>
+> 1. A kernel with neither patch applied (and no hid-rmi driver) results
+> in a working touchscreen.
+> 2. A kernel with only v3 of Doug's patch from
+> https://bugzilla.kernel.org/show_bug.cgi?id=67921 results in a working
+> touchscreen.
+> 3. A kernel with both v3 of Doug's patch and this IRQ descriptor
+> conflict "fix" results in a broken touchscreen.
 > 
-> this is current level of fragmentation ... is it bad?
+> Seems to me there really is some kind of problem with this patch...
 
-http://xfs.org/index.php/XFS_FAQ#Q:_The_xfs_db_.22frag.22_command_says_I.27m_over_50.25._Is_that_bad.3F
+Can you try so that you have both patches applied and then this one? I'm
+suspecting that the ACPI GPIO operation region support might do something
+unexpected in this case.
 
-> some say over 1% is candidate for defrag? ...
-
-Some say that over 70% is usually not a problem:
-
-http://www.mythtv.org/wiki/XFS_Filesystem#Defragmenting_XFS_Partitions
-
-i.e. the level that becomes are problem is highly workload specific.
-So, you can't read *anything* in that number without know exactly
-what is in your filesystem, how the application(s) interact with it
-and so on. 
-
-Besides, I was asking specifically about the files you removed, not
-the files that remain in the filesystem. Given that you have 11
-million inodes in the filesystem, you probably removed the only
-significantly large files in the filesystem....
-
-So, the files your removed are now free space, so free space
-fragmentation is what we need to look at.  i.e. use the freesp
-command to dump the histogram and summary of the free space...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+index 555af733d5eb..1a9e0ab27141 100644
+--- a/drivers/pinctrl/pinctrl-baytrail.c
++++ b/drivers/pinctrl/pinctrl-baytrail.c
+@@ -557,6 +557,12 @@ static int byt_gpio_probe(struct platform_device *pdev)
+ 	gc->can_sleep = false;
+ 	gc->dev = dev;
+ 
++	ret = gpiochip_add(gc);
++	if (ret) {
++		dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
++		return ret;
++	}
++
+ 	/* set up interrupts  */
+ 	irq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+ 	if (irq_rc && irq_rc->start) {
+@@ -575,12 +581,6 @@ static int byt_gpio_probe(struct platform_device *pdev)
+ 		irq_set_chained_handler(hwirq, byt_gpio_irq_handler);
+ 	}
+ 
+-	ret = gpiochip_add(gc);
+-	if (ret) {
+-		dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
+-		return ret;
+-	}
+-
+ 	pm_runtime_enable(dev);
+ 
+ 	return 0;
