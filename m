@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756108AbaDWRyN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 13:54:13 -0400
-Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:47825
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752302AbaDWRyL convert rfc822-to-8bit (ORCPT
+	id S1754240AbaDWR4c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 13:56:32 -0400
+Received: from userp1040.oracle.com ([156.151.31.81]:21564 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751161AbaDWR4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 13:54:11 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: KY Srinivasan <kys@microsoft.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>
-Subject: RE: [PATCH 0/2] Eliminate spin locks in the vmbus channel callback
- path 
-Thread-Topic: [PATCH 0/2] Eliminate spin locks in the vmbus channel callback
- path 
-Thread-Index: AQHPU43HUwoZP4LED0ePzBPBp6g6VZsfkqrA
-Date: Wed, 23 Apr 2014 17:54:08 +0000
-Message-ID: <3d9592625f174cdfadd4bab4b10d4ff9@BY2PR03MB299.namprd03.prod.outlook.com>
-References: <1397007928-13555-1-git-send-email-kys@microsoft.com>
-In-Reply-To: <1397007928-13555-1-git-send-email-kys@microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2001:4898:80e0:ee43::3]
-x-forefront-prvs: 01901B3451
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(13464003)(377454003)(51704005)(77096999)(76176999)(50986999)(76576001)(54356999)(99286001)(19580405001)(83322001)(76482001)(74662001)(74502001)(31966008)(80022001)(74316001)(20776003)(87936001)(79102001)(2656002)(1511001)(81542001)(83072002)(19580395003)(81342001)(80976001)(33646001)(4396001)(85852003)(92566001)(2201001)(99396002)(86362001)(77982001)(46102001)(24736002)(3826001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB299;H:BY2PR03MB299.namprd03.prod.outlook.com;FPR:B85EFDC3.910C4D0F.B9740F8F.44F4097A.2024A;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Apr 2014 13:56:30 -0400
+Date: Wed, 23 Apr 2014 13:55:35 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Waiman Long <waiman.long@hp.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
+Message-ID: <20140423175535.GB11152@phenom.dumpdata.com>
+References: <1397747051-15401-6-git-send-email-Waiman.Long@hp.com>
+ <20140417155649.GR11096@twins.programming.kicks-ass.net>
+ <53504BB3.4010009@hp.com>
+ <20140418082716.GZ11096@twins.programming.kicks-ass.net>
+ <53516672.3010701@hp.com>
+ <20140418190519.GA11182@twins.programming.kicks-ass.net>
+ <53519BBF.7060506@hp.com>
+ <5357CCEF.2000606@hp.com>
+ <20140423145649.GE2777@phenom.dumpdata.com>
+ <5357FBDE.4040400@hp.com>
 MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5357FBDE.4040400@hp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: K. Y. Srinivasan [mailto:kys@microsoft.com]
-> Sent: Tuesday, April 8, 2014 6:45 PM
-> To: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> jasowang@redhat.com
-> Cc: KY Srinivasan
-> Subject: [PATCH 0/2] Eliminate spin locks in the vmbus channel callback path
+On Wed, Apr 23, 2014 at 01:43:58PM -0400, Waiman Long wrote:
+> On 04/23/2014 10:56 AM, Konrad Rzeszutek Wilk wrote:
+> >On Wed, Apr 23, 2014 at 10:23:43AM -0400, Waiman Long wrote:
+> >>On 04/18/2014 05:40 PM, Waiman Long wrote:
+> >>>On 04/18/2014 03:05 PM, Peter Zijlstra wrote:
+> >>>>On Fri, Apr 18, 2014 at 01:52:50PM -0400, Waiman Long wrote:
+> >>>>>I am confused by your notation.
+> >>>>Nah, I think I was confused :-) Make the 1 _Q_LOCKED_VAL though, as
+> >>>>that's the proper constant to use.
+> >>>Everyone gets confused once in a while:-) I have plenty of that myself.
+> >>>
+> >>>I will change 1 to _Q_LOCKED_VAL as suggested.
+> >>>
+> >>>-Longman
+> >>
+> >>The attached patch file contains the additional changes that I had
+> >>made to qspinlock.c file so far. Please let me know if you or others
+> >>have any additional feedbacks or changes that will need to go to the
+> >>next version of the patch series.
+> >>
+> >>I am going to take vacation starting from tomorrow and will be back
+> >>on 5/5 (Mon). So I will not be able to respond to emails within this
+> >>period.
+> >>
+> >>BTW, is there any chance that this patch can be merged to 3.16?
+> >Um, it needs to have Acks from KVM and Xen maintainers who have not
+> >done so. Also Peter needs to chime in. (BTW, please CC
+> >xen-devel@lists.xenproject.org next time you post so that David and Boris
+> >can take a peek at it).
 > 
-> Currently we map the channel handle to the channel under the protection of
-> a spin lock. Additionally, we dispatch the channel callback function under the
-> protection of the channel inbound lock (another spin lock). In some recent
-> nework performance runs, the time spent acquiring and releasing these locks
-> were identified as potential bottlenecks. This patch-set gets rid of these locks
-> by leveraging the interrupt bindings that we support starting with win8.
+> I will cc xen-devel@lists.xenproject.org when I sent out the next patch.
 > 
-> K. Y. Srinivasan (2):
->   Drivers: hv: Eliminate the channel spinlock in the callback path
->   Drivers: hv: vmbus: Implement per-CPU mapping of relid to channel
+> >I would strongly recommend you put all your patches on github (free git
+> >service) so that we can test it and poke it at during your vacation
+> >(and even after).
+> >
 > 
->  drivers/hv/channel.c      |   16 ++++++++++---
->  drivers/hv/channel_mgmt.c |   52
-> ++++++++++++++++++++++++++++++++++++++++----
->  drivers/hv/connection.c   |   35 +++++++++++++++++++++++-------
->  drivers/hv/hv.c           |    2 +
->  drivers/hv/hyperv_vmbus.h |    5 ++++
->  include/linux/hyperv.h    |    7 ++++++
->  6 files changed, 100 insertions(+), 17 deletions(-)
+> I am not used to setting up a public repo in github. If I create a
+> repo there, should I put a snapshot of the whole kernel source tree
+> or just a portion of the relevant files as the base? With the later,
+> it won't be buildable.
+
+You just push your local branch. It should look like a normal
+Linux tree with your commits on top.
+
 > 
-> --
-> 1.7.4.1
-
-Greg,
-
-Should I resend this patch set.
-
-K. Y
+> -Longman
