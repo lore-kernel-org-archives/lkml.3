@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751015AbaDWEJT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 00:09:19 -0400
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:44601 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750725AbaDWEJQ (ORCPT
+	id S1751665AbaDWELd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 00:11:33 -0400
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:42297 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750781AbaDWELb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 00:09:16 -0400
+	Wed, 23 Apr 2014 00:11:31 -0400
+Date: Wed, 23 Apr 2014 00:14:52 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [perf] yet another 32/64-bit range check failure
+In-Reply-To: <alpine.DEB.2.10.1404222329590.28273@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1404230011280.28524@vincent-weaver-1.um.maine.edu>
+References: <alpine.DEB.2.10.1404222329590.28273@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <1398210681-22976-1-git-send-email-dianders@chromium.org>
-References: <1398210681-22976-1-git-send-email-dianders@chromium.org>
-From: Alim Akhtar <alim.akhtar@gmail.com>
-Date: Wed, 23 Apr 2014 09:32:36 +0530
-Message-ID: <CAGOxZ52ChD+KExT75Zz5e4j7=fN5bt1py6C04V+czHOfv0tYNQ@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Don't print data errors
-To: Doug Anderson <dianders@chromium.org>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Yuvaraj Kumar C D <yuvaraj.cd@samsung.com>,
-        Alim Akhtar <alim.akhtar@samsung.com>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        chris@printf.net, Ulf Hansson <ulf.hansson@linaro.org>,
-        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Doug,
+On Tue, 22 Apr 2014, Vince Weaver wrote:
 
-On Wed, Apr 23, 2014 at 5:21 AM, Doug Anderson <dianders@chromium.org> wrote:
-> Data errors are completely expected during tuning.  Printing them out
-> is confusing people looking at the kernel logs.  They see things like:
->
->  [    3.613296] dwmmc_exynos 12200000.dwmmc0: data error, status 0x00000088
->
-> ...and they think something is wrong with their hardware.
->
-> Remove the printouts.  We'll leave it up to a higher level to report
-> about errors.
->
-> Signed-off-by: Doug Anderson <dianders@chromium.org>
+> This is allowing events to be allocated memory but not being freed somehow
+> before returning EINVAL (a memory leak).
+> At least it looks like this is happening in the huge traces I have trying 
+> to track down the perf_fuzzer memory corruption bug.
 
-This looks reasonable
-Reviewed-by: Alim Akhtar <alim.akhtar@samsung.com>
+I can't find where the memory leak happens, but it looks like this in the 
+trace:
 
-> ---
->  drivers/mmc/host/dw_mmc.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index cced599..4c8d423 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -1248,7 +1248,7 @@ static int dw_mci_data_complete(struct dw_mci *host, struct mmc_data *data)
->                         data->error = -EIO;
->                 }
->
-> -               dev_err(host->dev, "data error, status 0x%08x\n", status);
-> +               dev_dbg(host->dev, "data error, status 0x%08x\n", status);
->
->                 /*
->                  * After an error, there may be data lingering
-> --
-> 1.9.1.423.g4596e3a
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+[ 3524.626452] perf_fuz-1798    0.... 1271584315us : sys_enter: NR 298 (698e40, 706, ffffffff, f, 800000000000, 800000000000)
+[ 3524.642312] perf_fuz-1798    0.... 1271584324us : kmalloc: call_site=ffffffff8113a575 ptr=ffff88007d5b0800 bytes_req=1272 bytes_alloc=2048 gfp_flags=GFP_KERNEL|GFP_ZERO
+[ 3524.662598] perf_fuz-1798    0.... 1271584337us : sys_exit: NR 298 = -22
+
+The call site for the kmalloc is in perf_event_alloc()
+
+The memory is eventually freed as:
+
+[ 3547.895534]   <idle>-0       0.Ns. 1271595088us : kfree: call_site=ffffffff811316aa ptr=ffff88007d5b0800
 
 
-
--- 
-Regards,
-Alim
+Vince
