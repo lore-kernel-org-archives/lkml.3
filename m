@@ -1,74 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752154AbaDWLes (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 07:34:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:49780 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751378AbaDWLer (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 07:34:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,911,1389772800"; 
-   d="scan'208";a="526066001"
-Message-ID: <5357A80B.8030701@linux.intel.com>
-Date: Wed, 23 Apr 2014 14:46:19 +0300
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Timur Tabi <timur@codeaurora.org>
-CC: Linus <linus.walleij@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
-References: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>	<1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com> <CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com> <534B93BA.6020406@linux.intel.com> <534BFAAF.3070805@codeaurora.org> <534D0370.50108@linux.intel.com> <535005BA.1040405@codeaurora.org>
-In-Reply-To: <535005BA.1040405@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753188AbaDWLhT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 07:37:19 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:38570 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752985AbaDWLhO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 07:37:14 -0400
+From: Kefeng Wang <kefeng.wang@linaro.org>
+To: Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: wangkefeng.wang@huawei.com, kefeng.wang@linaro.org
+Subject: [PATCH v4 3/3] ahci: add support for Hisilicon sata
+Date: Wed, 23 Apr 2014 19:36:47 +0800
+Message-Id: <1398253008-17059-4-git-send-email-kefeng.wang@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398253008-17059-1-git-send-email-kefeng.wang@linaro.org>
+References: <1398253008-17059-1-git-send-email-kefeng.wang@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/17/2014 07:47 PM, Timur Tabi wrote:
-> On 04/15/2014 05:01 AM, Mathias Nyman wrote:
->>>
->>> This device will only be used on an ACPI system, right?  And isn't ACPI
->>> supposed to hide all the pinctrl programming from the OS?  I thought
->>> that was the whole point behind ACPI and the reason why ARM64 isn't
->>> going to use device trees.
->>>
->>
->> This was my starting point as well, and the driver was initially
->> submitted as a GPIO driver. But Linus W. suggested pinctrl instead, and
->> as he's the maintainer of both those subsystem I trust his judgment.
->
-> Do you think, for an ACPI pinctrl driver, that we will need to specify
-> any function groups?  When I look at the ASL that configures GPIOs, I
-> see only lines like this:
->
-> GpioIo (Exclusive, PullDefault, , , , "\\GIO0") {0x1D, 0x1E}
->
-> This tells me that ACPI will never use any of the names that are
-> defined.  I see that .get_function_name is called on my ACPI system, but
-> I don't see where it is used.
->
-> The reason I ask is because I would like to make a "generic" ACPI
-> pinctrl/gpio driver that doesn't specify any pin groups.  So if we use
-> the same pinctrl/gpio hardware on multiple SOCs, the only thing that the
-> driver needs from ACPI is the number of pins.
->
+The hip04 SoC of hisilicon has an AHCI compliant SATA controller,
+and it is compliant with the ahci 1.3 and sata 3.0 specification.
 
-Mika, Rafael (and me) have done some effort already on supporting ACPI 
-gpio resources.
+There is a wrong bit in HOST_CAP of hip04 sata controller, which
+enable unsupported feature of FBS, use AHCI_HFLAG_NO_FBS hflag to
+disable it.
 
-ACPI code creates a platfrom device out of the GPIO device defined ACPI 
-tables, with all the resources set, and a hook back to the ACPI node.
+Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
+---
+ .../devicetree/bindings/ata/ahci-platform.txt      |    3 ++-
+ drivers/ata/ahci_platform.c                        |    8 +++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-Helper functions to translate the ACPI GpioIO and GpioInt resources to 
-linux gpio numbers can be found in gpio/gpiolib-acpi.c together with 
-other ACPI and gpio related helper functions.
-
-see also
-Documentation/acpi/enumeration.txt for some GPIO and ACPI related info
-
--Mathias
+diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+index 48b285f..aab1d70 100644
+--- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
++++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+@@ -7,7 +7,8 @@ Required properties:
+ - compatible        : compatible list, one of "snps,spear-ahci",
+                       "snps,exynos5440-ahci", "ibm,476gtr-ahci",
+                       "allwinner,sun4i-a10-ahci", "fsl,imx53-ahci"
+-                      "fsl,imx6q-ahci" or "snps,dwc-ahci"
++                      "fsl,imx6q-ahci", "snps,dwc-ahci" or
++                      "hisilicon,hisi-ahci"
+ - interrupts        : <interrupt mapping for SATA IRQ>
+ - reg               : <registers mapping>
+ 
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index a476a1f..10d41c3 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -16,6 +16,7 @@
+ #include <linux/module.h>
+ #include <linux/pm.h>
+ #include <linux/device.h>
++#include <linux/of_device.h>
+ #include <linux/platform_device.h>
+ #include <linux/libata.h>
+ #include <linux/ahci_platform.h>
+@@ -33,6 +34,7 @@ static int ahci_probe(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	struct ahci_platform_data *pdata = dev_get_platdata(dev);
+ 	struct ahci_host_priv *hpriv;
++	unsigned int hflags = 0;
+ 	int rc;
+ 
+ 	hpriv = ahci_platform_get_resources(pdev);
+@@ -55,7 +57,11 @@ static int ahci_probe(struct platform_device *pdev)
+ 			goto disable_resources;
+ 	}
+ 
+-	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info, 0, 0, 0);
++	if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
++		hflags |= AHCI_HFLAG_NO_FBS;
++
++	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info,
++				     hflags, 0, 0);
+ 	if (rc)
+ 		goto pdata_exit;
+ 
+-- 
+1.7.9.5
 
