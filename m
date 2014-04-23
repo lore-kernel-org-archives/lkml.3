@@ -1,82 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755272AbaDWQQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 12:16:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23425 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751936AbaDWQQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 12:16:26 -0400
-Date: Wed, 23 Apr 2014 12:16:21 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: linux-kernel@vger.kernel.org, cgroups@vger.kernel.org,
-        netdev@vger.kernel.org, tj@kernel.org, ssorce@redhat.com,
-        lpoetter@redhat.com, kay@redhat.com, luto@amacapital.net,
-        dwalsh@redhat.com
-Subject: Re: [PATCH 0/2] net: Implement SO_PEERCGROUP and SO_PASSCGROUP
- socket options
-Message-ID: <20140423161621.GC24651@redhat.com>
-References: <1397596546-10153-1-git-send-email-vgoyal@redhat.com>
- <20140422.160558.627080587952506099.davem@davemloft.net>
- <20140423155512.GA24651@redhat.com>
+	id S1754476AbaDWQUS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 12:20:18 -0400
+Received: from avon.wwwdotorg.org ([70.85.31.133]:56116 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489AbaDWQUO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 12:20:14 -0400
+Message-ID: <5357E832.1000806@wwwdotorg.org>
+Date: Wed, 23 Apr 2014 10:20:02 -0600
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140423155512.GA24651@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Lee Jones <lee.jones@linaro.org>, Doug Anderson <dianders@chromium.org>
+CC: swarren@nvidia.com, wsa@the-dreams.de, abrestic@chromium.org,
+        dgreid@chromium.org, olof@lixom.net, sjg@chromium.org,
+        linux-samsung-soc@vger.kernel.org, linux-tegra@vger.kernel.org,
+        mark.rutland@arm.com, andrew@lunn.ch, thierry.reding@gmail.com,
+        linux-i2c@vger.kernel.org, matt.porter@linaro.org, jdelvare@suse.de,
+        laurent.pinchart+renesas@ideasonboard.com, vpalatin@chromium.org,
+        sameo@linux.intel.com, linux-doc@vger.kernel.org,
+        bjorn.andersson@sonymobile.com, u.kleine-koenig@pengutronix.de,
+        kevin.strasser@linux.intel.com, devicetree@vger.kernel.org,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk, robh+dt@kernel.org,
+        linux@arm.linux.org.uk, andriy.shevchenko@linux.intel.com,
+        ch.naveen@samsung.com, linux-arm-kernel@lists.infradead.org,
+        shane.huang@amd.com, rdunlap@infradead.org,
+        linux-kernel@vger.kernel.org, linux@prisktech.co.nz,
+        galak@codeaurora.org, schwidefsky@de.ibm.com,
+        maxime.ripard@free-electrons.com
+Subject: Re: [PATCH v2 0/7] Add cros_ec changes for newer boards
+References: <1398185154-19404-1-git-send-email-dianders@chromium.org> <20140423123240.GA640@lee--X1>
+In-Reply-To: <20140423123240.GA640@lee--X1>
+X-Enigmail-Version: 1.5.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 11:55:12AM -0400, Vivek Goyal wrote:
-> On Tue, Apr 22, 2014 at 04:05:58PM -0400, David Miller wrote:
-> > From: Vivek Goyal <vgoyal@redhat.com>
-> > Date: Tue, 15 Apr 2014 17:15:44 -0400
-> > 
-> > > This is another version of patchset to add support passing cgroup
-> > > information of client over unix socket API.
-> > 
-> > I'm marking this patch series as "changes requested" in patchwork
-> > because if we still end up adding this feature SO_PASSCGROUP needs to
-> > be changed to behave like SO_PASSCRED.
+On 04/23/2014 06:32 AM, Lee Jones wrote:
+> On Tue, 22 Apr 2014, Doug Anderson wrote:
 > 
-> Does this concern of passing of real uid apply to cgroups also. Even
-> if somebody tricks suid program to write to fd setup by under priviliged
-> program how would that pgram force setuid program to change cgroup.
-> 
-> To me passing cgroup information looks more like "pid" information where
-> we pass the actual pid of setuid program and not the pid of parent who
-> setup fd.
-> 
-> How would one trick setuid program change cgroup? If not, then this class
-> of attack does not seem to apply to SO_PASSCGROUP.
-> 
-> So I think real discussion here should be how "cgroup" information should
-> be used and not necessarily whether we should be passing cgroup
-> information of sender. This information is already available. One can
-> do SO_PASSCRED, get pid, get /proc/pid/cgroup and use cgroup in whatever
-> way they want.
+>> This series adds the most critical cros_ec changes for newer boards
+>> using cros_ec.  Specifically:
+>> * Fixes timing/locking issues with the previously upstreamed (but
+>>   never used upstream) cros_ec_spi driver.
+>> * Updates the cros_ec header file to the latest version which allows
+>>   us to use newer EC features like i2c tunneling.
+>> * Adds an i2c tunnel driver to allow communication to the EC's i2c
+>>   devices.
+>>
+>> This _doesn't_ get the EC driver fully up to speed with what's in the
+>> current Chromium OS trees.  There are a whole slew of cleanup patches
+>> there, an addition of an LPC transport mode, and exports of functions
+>> to userspace.  Once these patches land and we have functionality we
+>> can continue to pick more cleanup patches.
+...
+> Need to wait for the ARM, DT and I2C guys to review, at which point
+> I'll be happy to take in and supply a branch for them to pull from if
+> required. If there are no _true_ dependencies and the MFD changes can
+> be added independently without fear of build breakages, let me know
+> and I'll apply them separately.
 
-Kernel uses cgroup information to provide service differentiation. So lets
-say hypothetically I write a logging program which gets the cgroup of
-clinent and uses that information to limit the log file size. Is that
-a problem?
-
-First of all I am not aware how would I force setuid program to change
-cgroup. So even if one tricks setuid program to effectively convert it
-into "suid cat", cgroup information remains the same and there is no
-privilige escalation here.
-
-And one example Andy had mentioned that what if I pass fd to a service
-which accepts fd and it is running in a cgroup. Then we have a problem
-at kernel level also. What if that fd is a regular file and that service
-it outputting tons of data. Kernel will apply all resource management
-rules based one cgroup of *priviliged service* and not based on
-caller's cgroup who passed the fd to priviliged service. 
-
-So to me passing cgroup information around at run time and use that
-information for resource management in user space will very much
-be in line with what kernel is doing and will be no different.
-
-Thanks
-Vivek
+I believe there aren't direct dependencies between the patches. So, the
+MFD patches can be applied to the MFD tree and the DT patch applied to
+the Tegra tree. I'm simply waiting for the MFD patches to be applied
+before applying the DT patch so that I know the DT binding definition is
+fully accepted before applying a patch that uses it.
