@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751671AbaDWWSX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:18:23 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59759 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751161AbaDWWSW (ORCPT
+	id S1751821AbaDWWUQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:20:16 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:55310 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356AbaDWWUN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:18:22 -0400
-Date: Wed, 23 Apr 2014 15:18:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-next@vger.kernel.org,
-        nacc@linux.vnet.ibm.com, Richard Weinberger <richard@nod.at>
-Subject: Re: mmotm 2014-04-22-15-20 uploaded (uml 32- and 64-bit defconfigs)
-Message-Id: <20140423151819.d752391e323a850ca0aded57@linux-foundation.org>
-In-Reply-To: <20140424081019.596b5d23c624f5721ba0480a@canb.auug.org.au>
-References: <20140422222121.2FAB45A431E@corp2gmr1-2.hot.corp.google.com>
-	<5357F405.20205@infradead.org>
-	<20140423134131.778f0d0a@redhat.com>
-	<5357FCEB.2060507@infradead.org>
-	<20140423141600.4a303d95@redhat.com>
-	<20140423112442.5a5c8f23d580a65575e0c5fc@linux-foundation.org>
-	<20140424081019.596b5d23c624f5721ba0480a@canb.auug.org.au>
-X-Mailer: Sylpheed 3.2.0beta5 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Apr 2014 18:20:13 -0400
+MIME-Version: 1.0
+In-Reply-To: <5357D8CC.3080501@codeaurora.org>
+References: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>
+	<1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com>
+	<CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com>
+	<534B93BA.6020406@linux.intel.com>
+	<534BFAAF.3070805@codeaurora.org>
+	<534D0370.50108@linux.intel.com>
+	<535005BA.1040405@codeaurora.org>
+	<5357A80B.8030701@linux.intel.com>
+	<5357ACF1.9070206@codeaurora.org>
+	<20140423135915.GY30677@intel.com>
+	<5357D8CC.3080501@codeaurora.org>
+Date: Thu, 24 Apr 2014 00:20:12 +0200
+Message-ID: <CACRpkdbk8okbzaZgD=BqeMSOvbEvYNViqamd9i=NAaAWW=T9sQ@mail.gmail.com>
+Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Timur Tabi <timur@codeaurora.org>
+Cc: "Westerberg, Mika" <mika.westerberg@intel.com>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Apr 2014 08:10:19 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Wed, Apr 23, 2014 at 5:14 PM, Timur Tabi <timur@codeaurora.org> wrote:
 
-> Hi all,
-> 
-> On Wed, 23 Apr 2014 11:24:42 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
-> >
-> > I'll try moving hugepages_supported() into the #ifdef
-> > CONFIG_HUGETLB_PAGE section.
-> > 
-> > --- a/include/linux/hugetlb.h~hugetlb-ensure-hugepage-access-is-denied-if-hugepages-are-not-supported-fix-fix
-> > +++ a/include/linux/hugetlb.h
-> > @@ -412,6 +412,16 @@ static inline spinlock_t *huge_pte_lockp
-> >  	return &mm->page_table_lock;
-> >  }
-> >  
-> > +static inline bool hugepages_supported(void)
-> > +{
-> > +	/*
-> > +	 * Some platform decide whether they support huge pages at boot
-> > +	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
-> > +	 * there is no such support
-> > +	 */
-> > +	return HPAGE_SHIFT != 0;
-> > +}
-> > +
-> >  #else	/* CONFIG_HUGETLB_PAGE */
-> >  struct hstate {};
-> >  #define alloc_huge_page_node(h, nid) NULL
-> > @@ -460,14 +470,4 @@ static inline spinlock_t *huge_pte_lock(
-> >  	return ptl;
-> >  }
-> >  
-> > -static inline bool hugepages_supported(void)
-> > -{
-> > -	/*
-> > -	 * Some platform decide whether they support huge pages at boot
-> > -	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
-> > -	 * there is no such support
-> > -	 */
-> > -	return HPAGE_SHIFT != 0;
-> > -}
-> > -
-> >  #endif /* _LINUX_HUGETLB_H */
-> 
-> Clearly, noone reads my emails :-(
-> 
+> How are the pin muxes normally configured in ACPI?
 
-Stephen who?
+VERY good question.
 
-Oh, that guy who sends stuff first then comes last when others use LIFO :)
+>  All of our GPIOs have a
+> pinmux on them, and so if you want to use the pin for the non-default
+> functionality, you need to configure the mux.  Isn't that supposed to happen
+> with the through the pinctrl driver?  That is, when the kernel parses the
+> ASL, and it seems a command to configure pin #3 to function #4, it calls the
+> local pinctrl driver to do that?
+
+Let's suspect this is true. That is how GPIO work after all is it not?
+
+I guess the other option would be that all systems must come with a
+tailored set-up written in ASL, specific for each board configuration.
+
+Yours,
+Linus Walleij
