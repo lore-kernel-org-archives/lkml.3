@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725AbaDWMhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:37:09 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:35088 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754212AbaDWMhH (ORCPT
+	id S1755751AbaDWMh3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:37:29 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:40999 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754358AbaDWMhV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:37:07 -0400
+	Wed, 23 Apr 2014 08:37:21 -0400
 From: Kefeng Wang <kefeng.wang@linaro.org>
 To: Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
         Maxime Ripard <maxime.ripard@free-electrons.com>,
         linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: wangkefeng.wang@huawei.com, kefeng.wang@linaro.org
-Subject: [PATCH v5 1/3] ata: ahci: append new hflag AHCI_HFLAG_NO_FBS
-Date: Wed, 23 Apr 2014 20:36:41 +0800
-Message-Id: <1398256603-20160-2-git-send-email-kefeng.wang@linaro.org>
+Subject: [PATCH v5 3/3] ahci: add support for Hisilicon sata
+Date: Wed, 23 Apr 2014 20:36:43 +0800
+Message-Id: <1398256603-20160-4-git-send-email-kefeng.wang@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1398256603-20160-1-git-send-email-kefeng.wang@linaro.org>
 References: <1398256603-20160-1-git-send-email-kefeng.wang@linaro.org>
@@ -22,43 +22,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Append AHCI_HFLAG_NO_FBS to force turning off FBS flag.
+The hip04 SoC of hisilicon has an AHCI compliant SATA controller,
+and it is compliant with the ahci 1.3 and sata 3.0 specification.
 
-Signed-off-by: Haojian Zhuang <haojian.zhuang@linaro.org>
+There is a wrong bit in HOST_CAP of hip04 sata controller, which
+enable unsupported feature of FBS, use AHCI_HFLAG_NO_FBS hflag to
+disable it.
+
 Signed-off-by: Kefeng Wang <kefeng.wang@linaro.org>
 ---
- drivers/ata/ahci.h    |    1 +
- drivers/ata/libahci.c |    5 +++++
- 2 files changed, 6 insertions(+)
+ .../devicetree/bindings/ata/ahci-platform.txt      |    3 ++-
+ drivers/ata/ahci_platform.c                        |    8 +++++++-
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index 51af275..60db49b 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -235,6 +235,7 @@ enum {
- 						        port start (wait until
- 						        error-handling stage) */
- 	AHCI_HFLAG_MULTI_MSI		= (1 << 16), /* multiple PCI MSIs */
-+	AHCI_HFLAG_NO_FBS		= (1 << 17), /* no FBS */
+diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+index 48b285f..aab1d70 100644
+--- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
++++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+@@ -7,7 +7,8 @@ Required properties:
+ - compatible        : compatible list, one of "snps,spear-ahci",
+                       "snps,exynos5440-ahci", "ibm,476gtr-ahci",
+                       "allwinner,sun4i-a10-ahci", "fsl,imx53-ahci"
+-                      "fsl,imx6q-ahci" or "snps,dwc-ahci"
++                      "fsl,imx6q-ahci", "snps,dwc-ahci" or
++                      "hisilicon,hisi-ahci"
+ - interrupts        : <interrupt mapping for SATA IRQ>
+ - reg               : <registers mapping>
  
- 	/* ap->flags bits */
+diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+index a476a1f..10d41c3 100644
+--- a/drivers/ata/ahci_platform.c
++++ b/drivers/ata/ahci_platform.c
+@@ -16,6 +16,7 @@
+ #include <linux/module.h>
+ #include <linux/pm.h>
+ #include <linux/device.h>
++#include <linux/of_device.h>
+ #include <linux/platform_device.h>
+ #include <linux/libata.h>
+ #include <linux/ahci_platform.h>
+@@ -33,6 +34,7 @@ static int ahci_probe(struct platform_device *pdev)
+ 	struct device *dev = &pdev->dev;
+ 	struct ahci_platform_data *pdata = dev_get_platdata(dev);
+ 	struct ahci_host_priv *hpriv;
++	unsigned int hflags = 0;
+ 	int rc;
  
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index 6bd4f66..e1cf859 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -457,6 +457,11 @@ void ahci_save_initial_config(struct device *dev,
- 		cap |= HOST_CAP_FBS;
+ 	hpriv = ahci_platform_get_resources(pdev);
+@@ -55,7 +57,11 @@ static int ahci_probe(struct platform_device *pdev)
+ 			goto disable_resources;
  	}
  
-+	if ((cap & HOST_CAP_FBS) && (hpriv->flags & AHCI_HFLAG_NO_FBS)) {
-+		dev_info(dev, "controller can't do FBS, turning off CAP_FBS\n");
-+		cap &= ~HOST_CAP_FBS;
-+	}
+-	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info, 0, 0, 0);
++	if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
++		hflags |= AHCI_HFLAG_NO_FBS;
 +
- 	if (force_port_map && port_map != force_port_map) {
- 		dev_info(dev, "forcing port_map 0x%x -> 0x%x\n",
- 			 port_map, force_port_map);
++	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info,
++				     hflags, 0, 0);
+ 	if (rc)
+ 		goto pdata_exit;
+ 
 -- 
 1.7.9.5
 
