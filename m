@@ -1,123 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102AbaDWWtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:49:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42831 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751545AbaDWWtY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:49:24 -0400
-Date: Thu, 24 Apr 2014 08:49:16 +1000
-From: NeilBrown <neilb@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH revised - was 1/5] MM: avoid throttling reclaim for
- loop-back nfsd threads.
-Message-ID: <20140424084916.2f1da0c8@notabene.brown>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/ZslvOujvpOu=TtTjOBITTty"; protocol="application/pgp-signature"
+	id S1752125AbaDWWtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:49:50 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33678 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751401AbaDWWtt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 18:49:49 -0400
+Date: Thu, 24 Apr 2014 00:49:46 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
+Subject: Re: [PATCH 5/5] ARM: berlin/dt: add sdio clocks to BG2Q
+Message-ID: <20140423224946.GA12738@kwain>
+References: <1398261667-12621-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1398261667-12621-6-git-send-email-alexandre.belloni@free-electrons.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398261667-12621-6-git-send-email-alexandre.belloni@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/ZslvOujvpOu=TtTjOBITTty
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Alexandre,
 
+On Wed, Apr 23, 2014 at 04:01:07PM +0200, Alexandre Belloni wrote:
+> Add sdio clocks to the berlin2q.dtsi
+> Also reorder the syspll node
+> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  arch/arm/boot/dts/berlin2q.dtsi | 28 +++++++++++++++++++++-------
+>  1 file changed, 21 insertions(+), 7 deletions(-)
+> 
+> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+> index 5925e6a16749..0fc826305614 100644
+> --- a/arch/arm/boot/dts/berlin2q.dtsi
+> +++ b/arch/arm/boot/dts/berlin2q.dtsi
+> @@ -102,13 +102,6 @@
+>  			reg = <0xdd0170 0x8>;
+>  		};
+>  
+> -		syspll: syspll@ea0030 {
+> -			compatible = "marvell,berlin2q-pll";
+> -			clocks = <&smclk>;
+> -			#clock-cells = <0>;
+> -			reg = <0xea0030 0x8>;
+> -		};
+> -
+>  		apb@e80000 {
+>  			compatible = "simple-bus";
+>  			#address-cells = <1>;
+> @@ -191,6 +184,27 @@
+>  			};
+>  		};
+>  
+> +		syspll: syspll@ea0030 {
+> +			compatible = "marvell,berlin2q-pll";
+> +			clocks = <&smclk>;
+> +			#clock-cells = <0>;
+> +			reg = <0xea0030 0x8>;
+> +		};
+> +
+> +		sdio0xinclk: sdio0xinclk@ea0158 {
+> +			compatible = "marvell,berlin-clk";
+> +			clocks = <&syspll>;
+> +			#clock-cells = <0>;
+> +			reg = <0xea0158 4>;
 
+I believe you can use
 
-When a loop-back NFS mount is active and the backing device for the
-NFS mount becomes congested, that can impose throttling delays on the
-nfsd threads.
+			reg = <0xea0158 0x4>;
 
-These delays significantly reduce throughput and so the NFS mount
-remains congested.
+since you used an hex value in the previous node. Plus we tend to use
+hex values elsewhere too.
 
-This results in a live lock and the reduced throughput persists.
+> +		};
+> +
+> +		sdio1xinclk: sdio1xinclk@ea015c {
+> +			compatible = "marvell,berlin-clk";
+> +			clocks = <&syspll>;
+> +			#clock-cells = <0>;
+> +			reg = <0xea015c 4>;
 
-This live lock has been found in testing with the 'wait_iff_congested'
-call, and could possibly be caused by the 'congestion_wait' call.
+Ditto. This also applies to BG2/BG2CD and the documentation patches.
 
-This livelock is similar to the deadlock which justified the
-introduction of PF_LESS_THROTTLE, and the same flag can be used to
-remove this livelock.
+Thanks!
 
-To minimise the impact of the change, we still throttle nfsd when the
-filesystem it is writing to is congested, but not when some separate
-filesystem (e.g. the NFS filesystem) is congested.
+Antoine
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+> +		};
+> +
+>  		apb@fc0000 {
+>  			compatible = "simple-bus";
+>  			#address-cells = <1>;
+> -- 
+> 1.9.1
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index a9c74b409681..ce0e4dfc6d67 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -1425,6 +1425,19 @@ putback_inactive_pages(struct lruvec *lruvec, struct=
- list_head *page_list)
- }
-=20
- /*
-+ * If a kernel thread (such as nfsd for loop-back mounts) services
-+ * a backing device by writing to the page cache it sets PF_LESS_THROTTLE.
-+ * In that case we should only throttle if the backing device it is
-+ * writing to is congested.  In other cases it is safe to throttle.
-+ */
-+static int current_may_throttle(void)
-+{
-+	return !(current->flags & PF_LESS_THROTTLE) ||
-+		current->backing_dev_info =3D=3D NULL ||
-+		bdi_write_congested(current->backing_dev_info);
-+}
-+
-+/*
-  * shrink_inactive_list() is a helper for shrink_zone().  It returns the n=
-umber
-  * of reclaimed pages
-  */
-@@ -1552,7 +1565,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct=
- lruvec *lruvec,
- 		 * implies that pages are cycling through the LRU faster than
- 		 * they are written so also forcibly stall.
- 		 */
--		if (nr_unqueued_dirty =3D=3D nr_taken || nr_immediate)
-+		if ((nr_unqueued_dirty =3D=3D nr_taken || nr_immediate) &&
-+		    current_may_throttle())
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
- 	}
-=20
-@@ -1561,7 +1575,8 @@ shrink_inactive_list(unsigned long nr_to_scan, struct=
- lruvec *lruvec,
- 	 * is congested. Allow kswapd to continue until it starts encountering
- 	 * unqueued dirty pages or cycling through the LRU too quickly.
- 	 */
--	if (!sc->hibernation_mode && !current_is_kswapd())
-+	if (!sc->hibernation_mode && !current_is_kswapd() &&
-+	    current_may_throttle())
- 		wait_iff_congested(zone, BLK_RW_ASYNC, HZ/10);
-=20
- 	trace_mm_vmscan_lru_shrink_inactive(zone->zone_pgdat->node_id,
-
---Sig_/ZslvOujvpOu=TtTjOBITTty
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU1hDbDnsnt1WYoG5AQKczg//VjNRwC4g736Gt3Ec1HcynbycVjUzybHW
-yrFn67CeL0HK/J5bQX5Jw4Lvuws0EeRrfRyOnFScw5kIIfFiU6qSOtQEj09BVD58
-ZUFN4PdaMqd2YjLf/hzfJcw198kSm75CvYo8ZlsgSot0eDQmdCkaLsfPY4DJO2zP
-160qvrfMcSihq/e8V/pmmMkF+VfsiMhNx7+bNwjH9JinSl1UjWTt0j86paENuIIQ
-ubS/Xik2r8+MvK5LDQnSWYMhis+hiDPceELoykuTasOOxifdXw1SvRvp25N284xM
-q9sYP8XHVB4swQzEuQVxw8l4Htm9Yl3TOYw6yUWNDoSvNX/eTelcP78nB8UaBxZy
-ffBB/8snO7kelT1qGEmTWZva/jPCNWjeNYJrRjLBzPd9DVgl/zqZNKkpl/n/1yNX
-KeHXX2GBxh12B1uYAcvUT/7sGk954uHGIX9lK+DWhXWEwUTCAqMxpfKBNVrM5eWG
-PI/to5cWBN82V28tLVf3YzxlKlsJ8rDEyiNnOyR8xpKXRmF8a6Ol6zSTwIi/fRTm
-Xv/I3awk9PCGaezyv/cmbGkFbE3/BGxE7HTC4C4CEf0LJ7IxZFJs0drxu++3YNkT
-DoPWivg2YBB8XxFm7U1usGWHnmqF48oWj4yUn6rkuA1/ob/398kc1L2GPUXeE0gW
-2uerYmLgsPY=
-=Fo/n
------END PGP SIGNATURE-----
-
---Sig_/ZslvOujvpOu=TtTjOBITTty--
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
