@@ -1,82 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755641AbaDWIlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:41:10 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:49256 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755399AbaDWIlD (ORCPT
+	id S1755831AbaDWImc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:42:32 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:53173 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750955AbaDWIm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:41:03 -0400
-Date: Wed, 23 Apr 2014 10:40:57 +0200
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [RFC 4/5] drm: Introduce drm_set_unique()
-Message-ID: <20140423084057.GY10722@phenom.ffwll.local>
-Mail-Followup-To: Thierry Reding <thierry.reding@gmail.com>,
-	dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-	linux-kernel@vger.kernel.org,
-	Russell King <rmk+kernel@arm.linux.org.uk>
-References: <1398179373-29966-1-git-send-email-thierry.reding@gmail.com>
- <1398179373-29966-5-git-send-email-thierry.reding@gmail.com>
- <20140422154807.GT10722@phenom.ffwll.local>
- <20140423071714.GB31226@ulmo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140423071714.GB31226@ulmo>
-X-Operating-System: Linux phenom 3.14.0+ 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 23 Apr 2014 04:42:29 -0400
+X-AuditID: cbfee61a-b7f2b6d000006c4d-41-53577cf42447
+From: Weijie Yang <weijie.yang@samsung.com>
+To: "'Andrew Morton'" <akpm@linux-foundation.org>
+Cc: "'Minchan Kim'" <minchan@kernel.org>, "'Nitin Gupta'" <ngupta@vflare.org>,
+        iamjoonsoo.kim@lge.com,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Bob Liu'" <bob.liu@oracle.com>, weijie.yang.kh@gmail.com,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Subject: [PATCH RESEND] zram: correct offset usage in zram_bio_discard
+Date: Wed, 23 Apr 2014 16:41:15 +0800
+Message-id: <000001cf5ecf$f4f4f850$dedee8f0$%yang@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9ez8mDZWljxjzHRwmAox3SRtRIPg==
+Content-language: zh-cn
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMLMWRmVeSWpSXmKPExsVy+t9jQd0vNeHBBjf2C1nMWb+GzaLr1FQW
+	i5XdzWwWl3fNYbNY9vU9u8WGllnsFms/P2a3eHLiP4sDh8fOWXfZPTat6mTz6Hp7hcnjxIzf
+	LB4fn95i8dj5aTOrx+dNcgHsUVw2Kak5mWWpRfp2CVwZT08tZSr4yV3x7VZEA+MVzi5GTg4J
+	AROJA1vXMUPYYhIX7q1n62Lk4hASmM4osfDTc3YI5w+jxKI7K8Gq2AS0Je72b2TtYuTgEBHQ
+	l2hr0QAJMwu0Mkl0HFYEsYUF3CQed08AK2ERUJXobKgACfMK2Ek0Pv/KAmELSvyYfI8FolVd
+	YtK8RcwQtrzE5jVvmUFaJYDij/7qgoRFBPQkGv5PZ4IoEZfYeOQWywRGgVlIJs1CMmkWkkmz
+	kLQsYGRZxSiaWpBcUJyUnmuoV5yYW1yal66XnJ+7iREcFc+kdjCubLA4xCjAwajEw1uwMixY
+	iDWxrLgy9xCjBAezkghvTHl4sBBvSmJlVWpRfnxRaU5q8SFGaQ4WJXHeA63WgUIC6Yklqdmp
+	qQWpRTBZJg5OqQZG9rlJZ18Lt3/rsQp5MVfzSMvrk6XvBbSjg8yXsAizP2w0XsDw6oGeqyj/
+	erkQ5sXrJM4pvrCzlInwCkm5aFBXbna7IFBC4lZwmzvL3GfLNrtcOJFeH/JhF5cit7rkN9Mv
+	p1n9J7Lf7NEU+WBcb6p7lcl+74ND/zmY5c7eMbEUq3Fujbr05YMSS3FGoqEWc1FxIgC3qbgW
+	hgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 09:17:16AM +0200, Thierry Reding wrote:
-> On Tue, Apr 22, 2014 at 05:48:07PM +0200, Daniel Vetter wrote:
-> > On Tue, Apr 22, 2014 at 05:09:32PM +0200, Thierry Reding wrote:
-> > > From: Thierry Reding <treding@nvidia.com>
-> > > 
-> > > Add a helper function that allows drivers to statically set the unique
-> > > name of the device. This will allow platform and USB drivers to get rid
-> > > of their DRM bus implementations and directly use drm_dev_alloc() and
-> > > drm_dev_register().
-> > > 
-> > > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > > ---
-> > >  drivers/gpu/drm/drm_ioctl.c | 37 +++++++++++++++++++++++++++++++------
-> > >  drivers/gpu/drm/drm_stub.c  |  1 +
-> > >  include/drm/drmP.h          |  3 +++
-> > >  3 files changed, 35 insertions(+), 6 deletions(-)
-> > > 
-> > > diff --git a/drivers/gpu/drm/drm_ioctl.c b/drivers/gpu/drm/drm_ioctl.c
-> > > index 2dd3a6d8382b..371db3bef60c 100644
-> > > --- a/drivers/gpu/drm/drm_ioctl.c
-> > > +++ b/drivers/gpu/drm/drm_ioctl.c
-> > > @@ -42,6 +42,20 @@
-> > >  #include <asm/mtrr.h>
-> > >  #endif
-> > >  
-> > > +int drm_set_unique(struct drm_device *dev, const char *fmt, ...)
-> > 
-> > Can you please add a bit of kerneldoc for this? drm_ioctl.c isn't yet
-> > pulled into the drm reference docbook, but better to have it there
-> > already.
-> 
-> On second thought, wouldn't this be better located in drm_stub.c? It
-> isn't really related to the IOCTL code except that one of the IOCTLs now
-> uses the information set by this function. Logically I think it belongs
-> with the likes of drm_dev_alloc() and drm_dev_register().
+We want to skip the physical block(PAGE_SIZE) which is partially
+covered by the discard bio, so we check the remaining size and
+subtract it if there is a need to goto the next physical block.
 
-Yeah makes sense. Tbh the entire split-up of these core drm functions is
-still a bit messy, so I don't mind if it's a bit inconsistent really. We
-can do the suffling when someone bothers with the kerneldoc for all of
-them and pulls it into the drm docbook.
--Daniel
+The current offset usage in zram_bio_discard is incorrect, it will
+cause its upper filesystem breakdown.
+Consider the following scenario:
+on some architecture or config, PAGE_SIZE is 64K for example,
+filesystem is set up on zram disk without PAGE_SIZE aligned,
+a discard bio leads to a offset = 4K and size=72K,
+normally, it should not really discard any physical block as it
+partially cover two physical blocks.
+However, with the current offset usage, it will discard the second
+physical block and free its memory, which will cause filesystem breakdown.
+
+This patch corrects the offset usage in zram_bio_discard.
+
+Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+---
+ drivers/block/zram/zram_drv.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 9849b52..48eccb3 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -572,10 +572,10 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+ 	 * skipping this logical block is appropriate here.
+ 	 */
+ 	if (offset) {
+-		if (n < offset)
++		if (n <= (PAGE_SIZE - offset))
+ 			return;
+ 
+-		n -= offset;
++		n -= (PAGE_SIZE - offset);
+ 		index++;
+ 	}
+ 
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.10.4
+
+
