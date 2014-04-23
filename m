@@ -1,38 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574AbaDWPOa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:14:30 -0400
-Received: from mail-qg0-f41.google.com ([209.85.192.41]:64154 "EHLO
-	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752692AbaDWPOU (ORCPT
+	id S1757588AbaDWPOk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:14:40 -0400
+Received: from mail-ob0-f181.google.com ([209.85.214.181]:49531 "EHLO
+	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692AbaDWPOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:14:20 -0400
-Date: Wed, 23 Apr 2014 11:14:16 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: containers@lists.linux-foundation.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET cgroup/for-3.16] cgroup: implement unified hierarchy,
- v2
-Message-ID: <20140423151416.GF4781@htj.dyndns.org>
-References: <1397511430-2673-1-git-send-email-tj@kernel.org>
+	Wed, 23 Apr 2014 11:14:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1397511430-2673-1-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140423150912.GO11096@twins.programming.kicks-ass.net>
+References: <1394739386-22260-1-git-send-email-venkateshs@google.com>
+	<CABPqkBRm8Ux15UY2+hF1TZdVsgVbYV+9XPiuh9m497Mr3oJ0Wg@mail.gmail.com>
+	<20140423144538.GN11096@twins.programming.kicks-ass.net>
+	<CABPqkBT5xg+zQ45dugHiXM5XFYi+V3gsBmANevx25fE0S0iNXA@mail.gmail.com>
+	<20140423150912.GO11096@twins.programming.kicks-ass.net>
+Date: Wed, 23 Apr 2014 17:14:33 +0200
+Message-ID: <CABPqkBTSKeza=Ax0yGEfMTq5B8NSQHyvfFBe8qVa-h0dE=UCYg@mail.gmail.com>
+Subject: Re: [PATCH] perf/x86/intel: Use rdmsrl_safe when initializing RAPL PMU.
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Venkatesh Srinivas <venkateshs@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 05:36:58PM -0400, Tejun Heo wrote:
-> Hello,
-> 
-> This is v2 of the unified hierarchy patchset.  Changes from v1[1] are,
+On Wed, Apr 23, 2014 at 5:09 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, Apr 23, 2014 at 04:49:55PM +0200, Stephane Eranian wrote:
+>> On your machine, booted with 3.15-rc2, do you have /sys/devices/power?
+>> If not, and you have at least an SNB, you should have RAPL and that
+>> RAPL_UNIT MSR.
+>>
+>> Proof is that if you read that MSR using /dev/cpu/msr it works just fine:
+>> # modprobe msr
+>> # rdmsr 0x606
+>> a1003
+>>
+>> So something is broken somewhere.
+>
+> I've not got SNB+ class hardware (for testing). But I believe you that
+> there's something funny, I just do not understanding how *msr_safe()
+> could cause this.
 
-Applied to cgroup/for-3.16.
-
-Thanks.
-
--- 
-tejun
+Or the logic of the test in rapl_cpu_prepare() is wrong, maybe?
+Wouldn't rdmsrl_safe() return 0 on success?
