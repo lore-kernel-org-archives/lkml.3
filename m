@@ -1,82 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045AbaDWLmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 07:42:19 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:56673 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751725AbaDWLmO (ORCPT
+	id S1754057AbaDWLmg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 07:42:36 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:42796 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751660AbaDWLme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 07:42:14 -0400
-Message-ID: <1398253309.7767.136.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: in kernel 2.6.x, tun/tap nic supports vlan packets
-From: Ben Hutchings <ben@decadent.org.uk>
-To: zhuyj <zyjzyj2000@gmail.com>
-Cc: Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, joe@perches.com, julia.lawall@lip6.fr,
-        dingtianhong@huawei.com, linux-kernel@vger.kernel.org,
-        jasowang@redhat.com, mst@redhat.com,
-        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
-        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
-        "Tao, Yue" <Yue.Tao@windriver.com>
-Date: Wed, 23 Apr 2014 12:41:49 +0100
-In-Reply-To: <53577036.2040307@gmail.com>
-References: <534F4C1E.1000006@gmail.com> <20140417050228.GC8243@1wt.eu>
-	 <1398189237.7767.77.camel@deadeye.wl.decadent.org.uk>
-	 <53577036.2040307@gmail.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-22v6WCIoSPmTGYbBNNgO"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Wed, 23 Apr 2014 07:42:34 -0400
+Date: Wed, 23 Apr 2014 12:42:17 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        monstr@monstr.eu, pankaj.dubey@samsung.com,
+        Samuel Ortiz <sameo@linux.intel.com>, arnd@arndb.de
+Message-ID: <20140423114217.GW12304@sirena.org.uk>
+References: <3eb785d83c406f4a57508dc03610b05492e12bfd.1396969250.git.michal.simek@xilinx.com>
+ <20140423100530.GG21613@lee--X1>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DIb3sg5pdHOHT/bM"
+Content-Disposition: inline
+In-Reply-To: <20140423100530.GG21613@lee--X1>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v3] mfd: syscon: Support early initialization
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---=-22v6WCIoSPmTGYbBNNgO
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+--DIb3sg5pdHOHT/bM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On Wed, 2014-04-23 at 15:48 +0800, zhuyj wrote:
-> On 04/23/2014 01:53 AM, Ben Hutchings wrote:
-[...]
-> > For what it's worth, I would recommend against applying this.  I don't
-> > think even Red Hat has backported the VLAN changes, and they have been
-> > quite aggressive about backporting features to RHEL 6.
-> If we do not merge these patches, maybe RHEL 6 can not make tap driver=
-=20
-> support vlan well.
+On Wed, Apr 23, 2014 at 11:05:30AM +0100, Lee Jones wrote:
 
-RHEL 6 isn't based on 2.6.32.y, they do all their own backporting.
+> > +struct regmap *syscon_early_regmap_lookup_by_phandle(struct device_node *np,
+> > +						     const char *property)
+> > +{
+> > +	struct device_node *syscon_np;
+> > +	struct syscon *syscon;
+> > +
+> > +	syscon_np = of_parse_phandle(np, property, 0);
+> > +	if (!syscon_np)
+> > +		return ERR_PTR(-ENODEV);
+> > +
+> > +	syscon = syscon_np->data;
+> > +
+> > +	of_node_put(syscon_np);
+> > +
+> > +	return syscon->regmap;
+> > +}
+> > +EXPORT_SYMBOL_GPL(syscon_early_regmap_lookup_by_phandle);
 
-Ben.
+I don't know what this is doing but it looks dodgy, we're returning
+something stored in the DT node after dropping our reference to the DT
+node.  For FDT systems this probably makes no difference since we don't
+actually free the node but someone might decide to do something like
+clear data that's associated with a node (however that happened) when
+the node goes unreferenced.
 
---=20
-Ben Hutchings
-Beware of programmers who carry screwdrivers. - Leonard Brandwein
+> > -	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> > -	if (!res)
+> > -		return -ENOENT;
+> > +	*syscon_p = (struct syscon *)&syscon;
 
---=-22v6WCIoSPmTGYbBNNgO
+What's this cast for?
+
+--DIb3sg5pdHOHT/bM
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIVAwUAU1em/ee/yOyVhhEJAQpRtQ/5AYv96is6qtCzv/jbI9cRIVACT+ZWbV1O
-wLoDJvykX7oBcL9VhBPNdvqwspcfq/9ZtSW4N90g5zi2oNPHUL9GzJFoSthtAXTn
-EJKZkgte8fUWtowJBgyrLXE83XRuLTF39YIeGazQd8nx8U558Q/3pwJrg+35zjdV
-8bFQXrBzQGLZFpRGAjvYcKMqLSVXLoSDG/VBbv4QNTT2lQ0y5EA34vBySJax9cEv
-akna6Ea72r1xL9Zyv5kqutLjkFUouSX2CwrkK7BauaR9wffzyYaB8oaees3CCsiv
-rRMsrNxzFfZB+f6uVyskH27pRji9eYoVcXRS+BnPUJS7QHv8cggMiZh7Xmo/sF4t
-4eWBysYP6Ywmfhoop/eMYXiwrw6b+B2y2M83pjkABV252KpmGGB0mSt3yTXYt0OS
-YpvgXYYaIn7qm2MzeWtGdPSB1vKkJFjaf5WXQIxDnF0we2UcbZHb74EctYnS+Rc3
-ZJe7KxugPxwNjPRikA+seT5c/VcD2YanDzJA/YKXmgcW6EO8i8au6w/tMZeupnpq
-Yay4In9NsA1zHPTRcKMG59aw2ypcZEw9h5Kn44xijt/okcJeBLywfc6YrBshUOrk
-ICFU3T7hQueJErK37HtbdZIwlaHmIbEr+eYWEWvqiVy5dh+Qda7CvOHRCc6zQKUj
-MAEBXOjj8WQ=
-=RAEV
+iQIcBAEBAgAGBQJTV6cVAAoJELSic+t+oim9mVwP/1Z0gYhiXUxGNQqd6JGp04XT
+0vDtE3F9T70vWmsPvcUtJ9aq0pqzmopHCqkzFDL6exyHY/2VcqdiqubCzizV20Bh
+wVEwJHc4/aVphKdEnJStNGVoS5X/6ozjFqZP5N6J9Y/YVhem7/5InpZhSGLyT0+e
+sZLmq8xar5K18tMNbxt+9dwnYR6jkcyasW+SX2807mpk5wmN+JCMdFQKo/8HI2an
+lFsqd2a7MYJAA26NoDV8A8GAtG4NpoK3KUtd0RrJxG3EEnBlr4iL6+fGfUxMbHBu
+ZdfIrBxQman5BEe/xFgwgfk4mYPXtbuI/p1fphIWNXftIXb1GONvw9/jYx2PkZJo
+SdZYEfPJzxdnBztRn0+/FoQAs2HZOb4tUXCXpnZTZQSraHPSmvJnmFuRhyKDcdyS
+88ECGPmbgc2qbP4j8fyIVCCzsDKxed2qKYe5Fx8RboZPAFs7k0KtpLPt8E2Ktg49
+Ds/r68ji3sIW4YR5zh1r7aQYjQabn/WZ4O8Te1gaPwyPTK01s4OwvopBMuKdNiKO
+RaqwhQotXyMNTcJ+UJ+UkI61ap49oMqmwYNpM4HPJ05Gcb1cUPRyNNzPYF0QUw8F
+wtawFJOYzMfnGxOHEfP34qfNzR9eqFAQEKZCW9d9PHSRNrjU0/4QLc2umaU92dAn
+hn9IvMbhEjM6MD91T28L
+=H9kr
 -----END PGP SIGNATURE-----
 
---=-22v6WCIoSPmTGYbBNNgO--
+--DIb3sg5pdHOHT/bM--
