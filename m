@@ -1,49 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958AbaDWBtj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:49:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753361AbaDWBtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753385AbaDWBtg (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 22 Apr 2014 21:49:36 -0400
-Date: Tue, 22 Apr 2014 21:49:29 -0400
-From: Richard Guy Briggs <rgb@redhat.com>
-To: David Miller <davem@davemloft.net>, linux-audit@redhat.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: selinux@tycho.nsa.gov, linux-security-module@vger.kernel.org,
-        hadi@mojatatu.com, eparis@redhat.com, sgrubb@redhat.com
-Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
-Message-ID: <20140423014929.GL20182@madcap2.tricolour.ca>
-References: <20140422.161904.1187535812839850973.davem@davemloft.net>
- <cover.1398215388.git.rgb@redhat.com>
- <20140422.214300.171999077259349189.davem@davemloft.net>
+Received: from mail-ve0-f176.google.com ([209.85.128.176]:57606 "EHLO
+	mail-ve0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751034AbaDWBtd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 21:49:33 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140422.214300.171999077259349189.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CACRpkdZDjC1KxM2yJqsgpg2MxBamX1EObsuahB-2c+ShuBXm8A@mail.gmail.com>
+References: <1397544101-18135-1-git-send-email-wens@csie.org>
+ <1397544101-18135-2-git-send-email-wens@csie.org> <CACRpkdZDjC1KxM2yJqsgpg2MxBamX1EObsuahB-2c+ShuBXm8A@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Wed, 23 Apr 2014 10:49:12 +0900
+Message-ID: <CAAVeFuL7B7kVw7ME=Vo_snhG27aBphKO8Uzvzen1gyD=R2ETNA@mail.gmail.com>
+Subject: Re: [PATCH 1/7] gpiolib: gpiolib-of: Implement device tree gpio-names
+ based lookup
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Chen-Yu Tsai <wens@csie.org>, Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-sunxi <linux-sunxi@googlegroups.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/04/22, David Miller wrote:
-> From: Richard Guy Briggs <rgb@redhat.com>
-> Date: Tue, 22 Apr 2014 21:31:52 -0400
-> 
-> > This is a patch set Eric Paris and I have been working on to add a restricted
-> > capability read-only netlink multicast socket to kernel audit to enable
-> > userspace clients such as systemd/journald to receive audit logs, in addition
-> > to the bidirectional auditd userspace client.
-> 
-> Series applied, thanks Richard.
+On Wed, Apr 23, 2014 at 12:02 AM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> On Tue, Apr 15, 2014 at 8:41 AM, Chen-Yu Tsai <wens@csie.org> wrote:
+>
+>> This patch provides of_get_gpiod_flags_by_name(), which looks up GPIO
+>> phandles by name only, through gpios/gpio-names, and not by index.
+>>
+>> Signed-off-by: Chen-Yu Tsai <wens@csie.org>
+>
+> Like Alexandre I have no strong opinion on this alternative scheme.
 
-Thanks for your patience, David.  Can I assume you adopted the 3 audit
-patches too, becuase of the dependence?
+Yeah this new lookup scheme probably does no harm, but I think it
+should be a little bit more motivated as it is, after all, introducing
+more potential confusion for DT users.
 
-- RGB
+It does not look like this new lookup scheme is necessary to Chen-Yu's
+patchset and that he could as well have used the current one. Right
+now there is only one way to define GPIOs - if we introduce a second
+one, then which one should new DT users choose? Which one looks
+better? I can already endless fights taking place over this.
 
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Does this new lookup help with some of the existing problems we have
+like ACPI/DT lookup compatibility?
+
+I just need to be given one practical reason to give my ack.
+
+Alex.
