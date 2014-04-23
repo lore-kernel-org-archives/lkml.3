@@ -1,49 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478AbaDWDgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 23:36:50 -0400
-Received: from mail-qa0-f44.google.com ([209.85.216.44]:34451 "EHLO
-	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751154AbaDWDgs (ORCPT
+	id S1756335AbaDWDhy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 23:37:54 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:54966 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755850AbaDWDhN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 23:36:48 -0400
-Date: Tue, 22 Apr 2014 23:40:07 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: linux-kernel@vger.kernel.org
-cc: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [perf] yet another 32/64-bit range check failure
-Message-ID: <alpine.DEB.2.10.1404222329590.28273@vincent-weaver-1.um.maine.edu>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 22 Apr 2014 23:37:13 -0400
+From: John Stultz <john.stultz@linaro.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <john.stultz@linaro.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <peterz@infradead.org>, Jiri Bohac <jbohac@suse.cz>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [RFC][PATCH 3/3] timekeeping: Use printk_deferred when holding timekeeping seqlock
+Date: Tue, 22 Apr 2014 20:36:58 -0700
+Message-Id: <1398224218-4429-4-git-send-email-john.stultz@linaro.org>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398224218-4429-1-git-send-email-john.stultz@linaro.org>
+References: <1398224218-4429-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jiri Bohac pointed out that there are rare but potential deadlock
+possibilities when calling printk while holding the timekeeping
+seqlock.
 
-More fun found by the perf_fuzzer...
+This is due to printk() triggering console sem wakeup, which can
+cause scheduling code to trigger hrtimers which may try to read
+the time.
 
-In kernel/events/core.c 
-SYSCALL_DEFINE5(perf_event_open,
+Specifically, as Jiri pointed out, that path is:
+  printk
+    vprintk_emit
+      console_unlock
+        up(&console_sem)
+          __up
+	    wake_up_process
+	      try_to_wake_up
+	        ttwu_do_activate
+		  ttwu_activate
+		    activate_task
+		      enqueue_task
+		        enqueue_task_fair
+			  hrtick_update
+			    hrtick_start_fair
+			      hrtick_start_fair
+			        get_time
+				  ktime_get
+				    --> endless loop on
+				    read_seqcount_retry(&timekeeper_seq, ...)
 
-We check if flags is valid like this:
+This patch tries to avoid this issue by using printk_deferred (previously
+named printk_sched) which should defer printing via a irq_work_queue.
 
-        /* for future expandability... */
-        if (flags & ~PERF_FLAG_ALL)
-                return -EINVAL;
+Cc: Jan Kara <jack@suse.cz>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Bohac <jbohac@suse.cz>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Reported-by: Jiri Bohac <jbohac@suse.cz>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ kernel/time/ntp.c         | 15 +++++++++------
+ kernel/time/timekeeping.c |  7 ++++---
+ 2 files changed, 13 insertions(+), 9 deletions(-)
 
-but flags is a 64-bit value but ~PERF_FLAG_ALL is 32-bit.
+diff --git a/kernel/time/ntp.c b/kernel/time/ntp.c
+index 419a52c..5b0ac4d 100644
+--- a/kernel/time/ntp.c
++++ b/kernel/time/ntp.c
+@@ -786,8 +786,9 @@ static long hardpps_update_freq(struct pps_normtime freq_norm)
+ 		time_status |= STA_PPSERROR;
+ 		pps_errcnt++;
+ 		pps_dec_freq_interval();
+-		pr_err("hardpps: PPSERROR: interval too long - %ld s\n",
+-				freq_norm.sec);
++		printk_deferred(KERN_ERR
++			"hardpps: PPSERROR: interval too long - %ld s\n",
++			freq_norm.sec);
+ 		return 0;
+ 	}
+ 
+@@ -800,7 +801,8 @@ static long hardpps_update_freq(struct pps_normtime freq_norm)
+ 	delta = shift_right(ftemp - pps_freq, NTP_SCALE_SHIFT);
+ 	pps_freq = ftemp;
+ 	if (delta > PPS_MAXWANDER || delta < -PPS_MAXWANDER) {
+-		pr_warning("hardpps: PPSWANDER: change=%ld\n", delta);
++		printk_deferred(KERN_WARNING
++				"hardpps: PPSWANDER: change=%ld\n", delta);
+ 		time_status |= STA_PPSWANDER;
+ 		pps_stbcnt++;
+ 		pps_dec_freq_interval();
+@@ -844,8 +846,9 @@ static void hardpps_update_phase(long error)
+ 	 * the time offset is updated.
+ 	 */
+ 	if (jitter > (pps_jitter << PPS_POPCORN)) {
+-		pr_warning("hardpps: PPSJITTER: jitter=%ld, limit=%ld\n",
+-		       jitter, (pps_jitter << PPS_POPCORN));
++		printk_deferred(KERN_WARNING
++				"hardpps: PPSJITTER: jitter=%ld, limit=%ld\n",
++				jitter, (pps_jitter << PPS_POPCORN));
+ 		time_status |= STA_PPSJITTER;
+ 		pps_jitcnt++;
+ 	} else if (time_status & STA_PPSTIME) {
+@@ -902,7 +905,7 @@ void __hardpps(const struct timespec *phase_ts, const struct timespec *raw_ts)
+ 		time_status |= STA_PPSJITTER;
+ 		/* restart the frequency calibration interval */
+ 		pps_fbase = *raw_ts;
+-		pr_err("hardpps: PPSJITTER: bad pulse\n");
++		printk_deferred(KERN_ERR "hardpps: PPSJITTER: bad pulse\n");
+ 		return;
+ 	}
+ 
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index f7df8ea..ffd3113 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -852,8 +852,9 @@ static void __timekeeping_inject_sleeptime(struct timekeeper *tk,
+ 							struct timespec *delta)
+ {
+ 	if (!timespec_valid_strict(delta)) {
+-		printk(KERN_WARNING "__timekeeping_inject_sleeptime: Invalid "
+-					"sleep delta value!\n");
++		printk_deferred(KERN_WARNING
++				"__timekeeping_inject_sleeptime: Invalid "
++				"sleep delta value!\n");
+ 		return;
+ 	}
+ 	tk_xtime_add(tk, delta);
+@@ -1157,7 +1158,7 @@ static void timekeeping_adjust(struct timekeeper *tk, s64 offset)
+ 
+ 	if (unlikely(tk->clock->maxadj &&
+ 		(tk->mult + adj > tk->clock->mult + tk->clock->maxadj))) {
+-		printk_once(KERN_WARNING
++		printk_once_deferred(KERN_WARNING
+ 			"Adjusting %s more than 11%% (%ld vs %ld)\n",
+ 			tk->clock->name, (long)tk->mult + adj,
+ 			(long)tk->clock->mult + tk->clock->maxadj);
+-- 
+1.8.3.2
 
-This means values like 0x800000000000ULL are treated as valid even though 
-they aren't.
-
-This is allowing events to be allocated memory but not being freed somehow
-before returning EINVAL (a memory leak).
-At least it looks like this is happening in the huge traces I have trying 
-to track down the perf_fuzzer memory corruption bug.
-
-I'd send a patch to fix the above, but it's late and I can't figure out 
-where exactly to stick ULL to get PERF_FLAG_ALL to be upgraded to 64-bit.
-
-Vince
