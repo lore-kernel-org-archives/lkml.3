@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755818AbaDWONT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:13:19 -0400
+	id S1755688AbaDWONR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:13:17 -0400
 Received: from mailout1.w1.samsung.com ([210.118.77.11]:10814 "EHLO
 	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299AbaDWONO (ORCPT
+	with ESMTP id S1752084AbaDWONN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:13:14 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-d0-5357ca7704aa
+	Wed, 23 Apr 2014 10:13:13 -0400
+X-AuditID: cbfec7f4-b7fb36d000006ff7-cd-5357ca76b87a
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sangbeom Kim <sbkim73@samsung.com>, Samuel Ortiz <sameo@linux.intel.com>,
         Lee Jones <lee.jones@linaro.org>, linux-kernel@vger.kernel.org
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v2 RESEND 2/2] mfd: sec-core: Update sec_pmic documentation
-Date: Wed, 23 Apr 2014 16:13:06 +0200
-Message-id: <1398262386-10568-2-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v2 RESEND 1/2] mfd: sec-core: Remove duplicated device type
+ from sec_pmic_dev
+Date: Wed, 23 Apr 2014 16:13:05 +0200
+Message-id: <1398262386-10568-1-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
-In-reply-to: <1398262386-10568-1-git-send-email-k.kozlowski@samsung.com>
-References: <1398262386-10568-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMJMWRmVeSWpSXmKPExsVy+t/xK7rlp8KDDRZ+ErB4/cLQ4v7Xo4wW
-	l3fNYbM43c1qcXHFFyYHVo871/awecw7GejRt2UVo8fnTXIBLFFcNimpOZllqUX6dglcGe+n
-	KxS0CFW8nXycsYHxOF8XIyeHhICJxOrtT9khbDGJC/fWs4HYQgJLGSU2/M7pYuQCsvuYJNZc
-	+M0KkmATMJbYvHwJG0hCRKCPUeL82zWMIAlmAUOJn+/+gE0SFvCWOL93GjOIzSKgKvFp4iSw
-	OK+Au8T5qQ3MENvkJE4emww2lFPAQ+Lvnj52iM3uEu23jzJPYORdwMiwilE0tTS5oDgpPddQ
-	rzgxt7g0L10vOT93EyMkYL7sYFx8zOoQowAHoxIPr8TysGAh1sSy4srcQ4wSHMxKIrxLFoUH
-	C/GmJFZWpRblxxeV5qQWH2Jk4uCUamBcrR/6qF771c4ffat83I1S1Jhzc+6xaiiHlD2sXxv6
-	5rWO2oGXGstrEqOu5n7Ucu/qyu+csyCJqWDGIud9kcv1b/uo77303ujOY44IcW4D9+jKFmuL
-	OhP22Nip6qIPAn7t//XKRrFoJZ96sgDbAq9Slx/7/m8XbtHbouX6Zkb9+Qn7WR0umymxFGck
-	GmoxFxUnAgCOAnlr9gEAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrLJMWRmVeSWpSXmKPExsVy+t/xK7plp8KDDS69tLJ4/cLQ4v7Xo4wW
+	l3fNYbM43c1qcXHFFyYHVo871/awecw7GejRt2UVo8fnTXIBLFFcNimpOZllqUX6dglcGX+n
+	7GYteCFWsezgL9YGxptCXYycHBICJhLHPjcyQ9hiEhfurWfrYuTiEBJYyijx6Mdfdginj0li
+	w+TZ7CBVbALGEpuXLwGrEhHoY5Q4/3YNI0iCWcBQ4ue7P2BFwgLxEt9/TgazWQRUJeZf+8sK
+	YvMKuEvsnN4CtU5O4uSxyawTGLkXMDKsYhRNLU0uKE5KzzXUK07MLS7NS9dLzs/dxAgJgi87
+	GBcfszrEKMDBqMTDK7E8LFiINbGsuDL3EKMEB7OSCO+SReHBQrwpiZVVqUX58UWlOanFhxiZ
+	ODilGhhL9rUG/yhdbHLLy+wz244DxxM2vo4WeZshcyvt5s/aZfVvsgvvdPDsPZ8bx5mSOvON
+	7neZA+/UJVMsxLY4yzovrrvD86/s1C2Ro05+KSVfpqsw5J/bPkM95fPtzofcdQ4JznfbhZhU
+	C3VLrqg4KHH/vrFxuvePW4UTD4Ro8BpNL7N43zxl2k8lluKMREMt5qLiRACbnyUH4AEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the documentation for sec_pmic state container structure to
-reflect current code.
+The device type was stored in sec_pmic_dev state container twice:
+ - unsigned long type (initialized from of_device_id or i2c_device_id)
+ - int device_type (initialized as above or from board files when there
+   is no DTS)
+
+The 'type' field was never used outside of probe so it can be safely
+removed.
+
+Change also the device_type in sec_pmic_dev and sec_platform_data to
+unsigned long to avoid any casts.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Acked-by: Lee Jones <lee.jones@linaro.org>
@@ -41,52 +47,76 @@ Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
 
 Changes since v1:
- - Update documentation after review from Lee Jones.
+ - Change device_type field of sec_platform_data from int to unsigned long.
+ - Update commit msg.
 ---
- include/linux/mfd/samsung/core.h | 30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
+ drivers/mfd/sec-core.c           | 5 +++--
+ drivers/mfd/sec-irq.c            | 2 +-
+ include/linux/mfd/samsung/core.h | 3 +--
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
+diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
+index 1cf27521fff4..700d9a3f2d8f 100644
+--- a/drivers/mfd/sec-core.c
++++ b/drivers/mfd/sec-core.c
+@@ -266,6 +266,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 	struct sec_platform_data *pdata = dev_get_platdata(&i2c->dev);
+ 	const struct regmap_config *regmap, *regmap_rtc;
+ 	struct sec_pmic_dev *sec_pmic;
++	unsigned long device_type;
+ 	int ret;
+ 
+ 	sec_pmic = devm_kzalloc(&i2c->dev, sizeof(struct sec_pmic_dev),
+@@ -277,7 +278,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 	sec_pmic->dev = &i2c->dev;
+ 	sec_pmic->i2c = i2c;
+ 	sec_pmic->irq = i2c->irq;
+-	sec_pmic->type = sec_i2c_get_driver_data(i2c, id);
++	device_type = sec_i2c_get_driver_data(i2c, id);
+ 
+ 	if (sec_pmic->dev->of_node) {
+ 		pdata = sec_pmic_i2c_parse_dt_pdata(sec_pmic->dev);
+@@ -285,7 +286,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
+ 			ret = PTR_ERR(pdata);
+ 			return ret;
+ 		}
+-		pdata->device_type = sec_pmic->type;
++		pdata->device_type = device_type;
+ 	}
+ 	if (pdata) {
+ 		sec_pmic->device_type = pdata->device_type;
+diff --git a/drivers/mfd/sec-irq.c b/drivers/mfd/sec-irq.c
+index 64e7913aadc6..654e2c1dbf7a 100644
+--- a/drivers/mfd/sec-irq.c
++++ b/drivers/mfd/sec-irq.c
+@@ -385,7 +385,7 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
+ 				  &sec_pmic->irq_data);
+ 		break;
+ 	default:
+-		dev_err(sec_pmic->dev, "Unknown device type %d\n",
++		dev_err(sec_pmic->dev, "Unknown device type %lu\n",
+ 			sec_pmic->device_type);
+ 		return -EINVAL;
+ 	}
 diff --git a/include/linux/mfd/samsung/core.h b/include/linux/mfd/samsung/core.h
-index 55540b524b5a..68f1377e5c07 100644
+index 157e32b6ca28..55540b524b5a 100644
 --- a/include/linux/mfd/samsung/core.h
 +++ b/include/linux/mfd/samsung/core.h
-@@ -24,19 +24,23 @@ enum sec_device_type {
- };
+@@ -46,13 +46,12 @@ struct sec_pmic_dev {
+ 	struct i2c_client *i2c;
+ 	struct i2c_client *rtc;
  
- /**
-- * struct sec_pmic_dev - s5m87xx master device for sub-drivers
-- * @dev: master device of the chip (can be used to access platform data)
-- * @pdata: pointer to private data used to pass platform data to child
-- * @i2c: i2c client private data for regulator
-- * @rtc: i2c client private data for rtc
-- * @iolock: mutex for serializing io access
-- * @irqlock: mutex for buslock
-- * @irq_base: base IRQ number for sec-pmic, required for IRQs
-- * @irq: generic IRQ number for s5m87xx
-- * @ono: power onoff IRQ number for s5m87xx
-- * @irq_masks_cur: currently active value
-- * @irq_masks_cache: cached hardware value
-- * @type: indicate which s5m87xx "variant" is used
-+ * struct sec_pmic_dev - s2m/s5m master device for sub-drivers
-+ * @dev:		Master device of the chip
-+ * @pdata:		Platform data populated with data from DTS
-+ *			or board files
-+ * @regmap_pmic:	Regmap associated with PMIC's I2C address
-+ * @i2c:		I2C client of the main driver
-+ * @device_type:	Type of device, matches enum sec_device_type
-+ * @irq_base:		Base IRQ number for device, required for IRQs
-+ * @irq:		Generic IRQ number for device
-+ * @irq_data:		Runtime data structure for IRQ controller
-+ * @ono:		Power onoff IRQ number for s5m87xx
-+ * @wakeup:		Whether or not this is a wakeup device
-+ * @wtsr_smpl:		Whether or not to enable in RTC driver the Watchdog
-+ *			Timer Software Reset (registers set to default value
-+ *			after PWRHOLD falling) and Sudden Momentary Power Loss
-+ *			(PMIC will enter power on sequence after short drop in
-+ *			VBATT voltage).
-  */
- struct sec_pmic_dev {
- 	struct device *dev;
+-	int device_type;
++	unsigned long device_type;
+ 	int irq_base;
+ 	int irq;
+ 	struct regmap_irq_chip_data *irq_data;
+ 
+ 	int ono;
+-	unsigned long type;
+ 	bool wakeup;
+ 	bool wtsr_smpl;
+ };
 -- 
 1.9.1
 
