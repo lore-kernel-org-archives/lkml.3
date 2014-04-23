@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752125AbaDWWtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:49:50 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:33678 "EHLO
+	id S1752164AbaDWWv3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:51:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:33685 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751401AbaDWWtt (ORCPT
+	with ESMTP id S1751289AbaDWWv2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:49:49 -0400
-Date: Thu, 24 Apr 2014 00:49:46 +0200
+	Wed, 23 Apr 2014 18:51:28 -0400
+Date: Thu, 24 Apr 2014 00:51:25 +0200
 From: Antoine =?iso-8859-1?Q?T=E9nart?= 
 	<antoine.tenart@free-electrons.com>
 To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 Cc: Mike Turquette <mturquette@linaro.org>, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-Subject: Re: [PATCH 5/5] ARM: berlin/dt: add sdio clocks to BG2Q
-Message-ID: <20140423224946.GA12738@kwain>
+Subject: Re: [PATCH 4/5] ARM: berlin/dt: add sdio clocks to BG2CD
+Message-ID: <20140423225125.GB12738@kwain>
 References: <1398261667-12621-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1398261667-12621-6-git-send-email-alexandre.belloni@free-electrons.com>
+ <1398261667-12621-5-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398261667-12621-6-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1398261667-12621-5-git-send-email-alexandre.belloni@free-electrons.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,71 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Alexandre,
 
-On Wed, Apr 23, 2014 at 04:01:07PM +0200, Alexandre Belloni wrote:
-> Add sdio clocks to the berlin2q.dtsi
-> Also reorder the syspll node
+On Wed, Apr 23, 2014 at 04:01:06PM +0200, Alexandre Belloni wrote:
+> Add sdio clocks to the berlin2cd.dtsi
+> Also reorder the PLLs nodes by address
 > 
 > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 > ---
->  arch/arm/boot/dts/berlin2q.dtsi | 28 +++++++++++++++++++++-------
->  1 file changed, 21 insertions(+), 7 deletions(-)
+>  arch/arm/boot/dts/berlin2cd.dtsi | 42 ++++++++++++++++++++++++++--------------
+>  1 file changed, 28 insertions(+), 14 deletions(-)
 > 
-> diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
-> index 5925e6a16749..0fc826305614 100644
-> --- a/arch/arm/boot/dts/berlin2q.dtsi
-> +++ b/arch/arm/boot/dts/berlin2q.dtsi
-> @@ -102,13 +102,6 @@
->  			reg = <0xdd0170 0x8>;
+> diff --git a/arch/arm/boot/dts/berlin2cd.dtsi b/arch/arm/boot/dts/berlin2cd.dtsi
+> index bd4e9dd4867e..9b3faeee0728 100644
+> --- a/arch/arm/boot/dts/berlin2cd.dtsi
+> +++ b/arch/arm/boot/dts/berlin2cd.dtsi
+> @@ -79,20 +79,6 @@
+>  			clocks = <&twdclk>;
 >  		};
 >  
-> -		syspll: syspll@ea0030 {
-> -			compatible = "marvell,berlin2q-pll";
+> -		syspll: syspll@ea0014 {
+> -			compatible = "marvell,berlin2-pll";
 > -			clocks = <&smclk>;
 > -			#clock-cells = <0>;
-> -			reg = <0xea0030 0x8>;
+> -			reg = <0xf7ea0014 8>;
+> -		};
+> -
+> -		cpupll: cpupll@ea003c {
+> -			compatible = "marvell,berlin2-pll";
+> -			clocks = <&smclk>;
+> -			#clock-cells = <0>;
+> -			reg = <0xf7ea003c 8>;
 > -		};
 > -
 >  		apb@e80000 {
 >  			compatible = "simple-bus";
 >  			#address-cells = <1>;
-> @@ -191,6 +184,27 @@
+> @@ -183,6 +169,34 @@
 >  			};
 >  		};
 >  
-> +		syspll: syspll@ea0030 {
-> +			compatible = "marvell,berlin2q-pll";
+> +		syspll: syspll@ea0014 {
+> +			compatible = "marvell,berlin2-pll";
 > +			clocks = <&smclk>;
 > +			#clock-cells = <0>;
-> +			reg = <0xea0030 0x8>;
-> +		};
-> +
-> +		sdio0xinclk: sdio0xinclk@ea0158 {
-> +			compatible = "marvell,berlin-clk";
-> +			clocks = <&syspll>;
-> +			#clock-cells = <0>;
-> +			reg = <0xea0158 4>;
+> +			reg = <0xf7ea0014 8>;
 
-I believe you can use
-
-			reg = <0xea0158 0x4>;
-
-since you used an hex value in the previous node. Plus we tend to use
-hex values elsewhere too.
+You can drop the 'f7' here
 
 > +		};
 > +
-> +		sdio1xinclk: sdio1xinclk@ea015c {
-> +			compatible = "marvell,berlin-clk";
-> +			clocks = <&syspll>;
+> +		cpupll: cpupll@ea003c {
+> +			compatible = "marvell,berlin2-pll";
+> +			clocks = <&smclk>;
 > +			#clock-cells = <0>;
-> +			reg = <0xea015c 4>;
+> +			reg = <0xf7ea003c 8>;
 
-Ditto. This also applies to BG2/BG2CD and the documentation patches.
+and here.
 
 Thanks!
 
 Antoine
 
+> +		};
+> +
+> +		sdio0xinclk: sdio0xinclk@ea023c {
+> +			compatible = "marvell,berlin-clk";
+> +			clocks = <&syspll>;
+> +			#clock-cells = <0>;
+> +			reg = <0xea023c 4>;
+> +		};
+> +
+> +		sdio1xinclk: sdio1xinclk@ea0240 {
+> +			compatible = "marvell,berlin-clk";
+> +			clocks = <&syspll>;
+> +			#clock-cells = <0>;
+> +			reg = <0xea0240 4>;
 > +		};
 > +
 >  		apb@fc0000 {
