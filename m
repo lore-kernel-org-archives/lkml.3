@@ -1,113 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbaDWBup (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 21:50:45 -0400
-Received: from e06smtp16.uk.ibm.com ([195.75.94.112]:35752 "EHLO
-	e06smtp16.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754245AbaDWBun (ORCPT
+	id S1754976AbaDWBvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 21:51:40 -0400
+Received: from mail-qa0-f73.google.com ([209.85.216.73]:56260 "EHLO
+	mail-qa0-f73.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754706AbaDWBvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 21:50:43 -0400
-Message-ID: <1398217832.2805.33.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [RFC PATCH v5 2/2] Use kernfs_break_active_protection() for
- device online store callbacks
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, rafael.j.wysocki@intel.com,
-        toshi.kani@hp.com
-Date: Wed, 23 Apr 2014 09:50:32 +0800
-In-Reply-To: <24546121.zVbmBfcmRG@vostro.rjw.lan>
-References: <1397461649.12943.1.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140421224606.GE22730@htj.dyndns.org>
-	 <1398137679.2805.28.camel@ThinkPad-T5421.cn.ibm.com>
-	 <24546121.zVbmBfcmRG@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042301-3548-0000-0000-000008D263BF
+	Tue, 22 Apr 2014 21:51:36 -0400
+From: Sheng-Liang Song <ssl@chromium.org>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Sheng-Liang Song <ssl@chromium.org>,
+        Shawn Nematbakhsh <shawnn@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: atkbd - fix keyboard LG Electronics
+Date: Tue, 22 Apr 2014 18:51:22 -0700
+Message-Id: <1398217882-29778-1-git-send-email-ssl@chromium.org>
+X-Mailer: git-send-email 1.9.1.423.g4596e3a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-22 at 12:11 +0200, Rafael J. Wysocki wrote:
-> On Tuesday, April 22, 2014 11:34:39 AM Li Zhong wrote:
-> > On Mon, 2014-04-21 at 18:46 -0400, Tejun Heo wrote:
-> > > Hello,
-> > > 
-> > > On Mon, Apr 21, 2014 at 05:23:50PM +0800, Li Zhong wrote:
-> > > 
-> > > Proper /** function comment would be nice.
-> > 
-> > Ok, will try to write some in next version.
-> > 
-> > > 
-> > > > +struct kernfs_node *lock_device_hotplug_sysfs(struct device *dev,
-> > > > +					       struct device_attribute *attr)
-> > > 
-> > > I can see why you did this but let's please not require the user of
-> > > this function to see how the thing is working internally.  Let's
-> > > return int and keep track of (or look up again) the kernfs_node
-> > > internally.
-> > 
-> > Ok, it also makes the prototype of lock and unlock look more consistent
-> > and comfortable. 
-> > 
-> > > 
-> > > >  {
-> > > ...
-> > > > +	/*
-> > > > +	 * We assume device_hotplug_lock must be acquired before removing
-> > > 
-> > > Is this assumption true?  If so, can we add lockdep assertions in
-> > > places to verify and enforce this?  If not, aren't we just feeling
-> > > good when the reality is broken?
-> > 
-> > It seems not true ... I think there are devices that don't have the
-> > online/offline concept, we just need to add it, remove it, like ethernet
-> > cards. 
-> 
-> Well, I haven't been following this closely (I was travelling, sorry), but
-> there certainly are devices without online/offline.  That currently is only
-> present for CPUs, memory blocks and ACPI containers (if I remember correctly).
-> 
-> > 
-> > Maybe we could change the comments above, like:
-> > 	/* We assume device_hotplug_lock must be acquired before 
-> > 	 * removing devices, which have online/offline sysfs knob, 
-> > 	 * and some locks are needed to serialize the online/offline
-> > 	 * callbacks and device removing. ...
-> > ? 
-> 
-> Lockdep assertions would be better than this in my opinion.
+After issuing ATKBD_CMD_RESET_DIS, LG Keyboard stop working.
+The workaround is to remove ATKBD_CMD_RESET_DIS for LG Keyboards.
 
-This is talking about the lock required in the other process, the device
-removing process, e.g. that in remove_memory() below. So I guess no
-lockdep assertions needed here. Or I misunderstand your point? 
+In order to keep the minimum changes to the current atkbd driver,
+I add logic to apply the patch if and only if the device is LG LW25-B7HV or P1-J273B.
+---
+ drivers/input/keyboard/atkbd.c | 28 +++++++++++++++++++++++++++-
+ 1 file changed, 27 insertions(+), 1 deletion(-)
 
-> > 
-> > And we could add lockdep assertions in cpu and memory related code? e.g.
-> > remove_memory(), unregister_cpu()
-> > 
-> > Currently, remove_memory() has comments for the function:
-> > 
-> >  * NOTE: The caller must call lock_device_hotplug() to serialize hotplug
-> >  * and online/offline operations before this call, as required by
-> >  * try_offline_node().
-> >  */
-> >     
-> > maybe it could be removed with the lockdep assertion.
-> 
-> No, please don't remove it.  It is there to explain where the locking requirement
-> comes from.
-
-OK, I see. I think I'll just add lockdep assertions, and keep the
-comments there. 
-
-Thanks, Zhong
-
-> 
-
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index 2626773..9f82533 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -243,6 +243,8 @@ static void (*atkbd_platform_fixup)(struct atkbd *, const void *data);
+ static void *atkbd_platform_fixup_data;
+ static unsigned int (*atkbd_platform_scancode_fixup)(struct atkbd *, unsigned int);
+ 
++static void *atkbd_deactivate_fixup;
++
+ static ssize_t atkbd_attr_show_helper(struct device *dev, char *buf,
+ 				ssize_t (*handler)(struct atkbd *, char *));
+ static ssize_t atkbd_attr_set_helper(struct device *dev, const char *buf, size_t count,
+@@ -698,11 +700,13 @@ static int atkbd_activate(struct atkbd *atkbd)
+  * atkbd_deactivate() resets and disables the keyboard from sending
+  * keystrokes.
+  */
+-
+ static void atkbd_deactivate(struct atkbd *atkbd)
+ {
+ 	struct ps2dev *ps2dev = &atkbd->ps2dev;
+ 
++	if (atkbd_deactivate_fixup)
++		return;
++
+ 	if (ps2_command(ps2dev, NULL, ATKBD_CMD_RESET_DIS))
+ 		dev_err(&ps2dev->serio->dev,
+ 			"Failed to deactivate keyboard on %s\n",
+@@ -1638,6 +1642,12 @@ static int __init atkbd_setup_scancode_fixup(const struct dmi_system_id *id)
+ 	return 1;
+ }
+ 
++static int __init atkbd_setup_deactivate(const struct dmi_system_id *id)
++{
++	atkbd_deactivate_fixup = id->driver_data;
++	return 1;
++}
++
+ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
+ 	{
+ 		.matches = {
+@@ -1775,6 +1785,22 @@ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
+ 		.callback = atkbd_setup_scancode_fixup,
+ 		.driver_data = atkbd_oqo_01plus_scancode_fixup,
+ 	},
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LW25-B7HV"),
++		},
++		.callback = atkbd_setup_deactivate,
++		.driver_data = (void*) 1,
++	},
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "P1-J273B"),
++		},
++		.callback = atkbd_setup_deactivate,
++		.driver_data = (void*) 1,
++	},
+ 	{ }
+ };
+ 
+-- 
+1.9.1.423.g4596e3a
 
