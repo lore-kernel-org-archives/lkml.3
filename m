@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757749AbaDWSSn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 14:18:43 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:62828 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752505AbaDWSSk (ORCPT
+	id S1757816AbaDWSUn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 14:20:43 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:40032 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754307AbaDWSUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 14:18:40 -0400
-Message-ID: <535803FC.1040605@colorfullife.com>
-Date: Wed, 23 Apr 2014 20:18:36 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 23 Apr 2014 14:20:41 -0400
+Message-ID: <53580476.6040801@infradead.org>
+Date: Wed, 23 Apr 2014 11:20:38 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
-        aswin@hp.com, linux-mm@kvack.org
-Subject: Re: [PATCH 5/4] ipc,shm: minor cleanups
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com> <1398221636.6345.9.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1398221636.6345.9.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Luiz Capitulino <lcapitulino@redhat.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-next@vger.kernel.org,
+        nacc@linux.vnet.ibm.com, Richard Weinberger <richard@nod.at>
+Subject: Re: mmotm 2014-04-22-15-20 uploaded (uml 32- and 64-bit defconfigs)
+References: <20140422222121.2FAB45A431E@corp2gmr1-2.hot.corp.google.com>	<5357F405.20205@infradead.org>	<20140423134131.778f0d0a@redhat.com>	<5357FCEB.2060507@infradead.org> <20140423141600.4a303d95@redhat.com>
+In-Reply-To: <20140423141600.4a303d95@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 04:53 AM, Davidlohr Bueso wrote:
-> -  Breakup long function names/args.
-> -  Cleaup variable declaration.
-s/Cleaup/Cleanup/
-> -  s/current->mm/mm
->
-> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+On 04/23/14 11:16, Luiz Capitulino wrote:
+> On Wed, 23 Apr 2014 10:48:27 -0700
+> Randy Dunlap <rdunlap@infradead.org> wrote:
+> 
+>> On 04/23/14 10:41, Luiz Capitulino wrote:
+>>> On Wed, 23 Apr 2014 10:10:29 -0700
+>>> Randy Dunlap <rdunlap@infradead.org> wrote:
+>>>
+>>>> On 04/22/14 15:21, akpm@linux-foundation.org wrote:
+>>>>> The mm-of-the-moment snapshot 2014-04-22-15-20 has been uploaded to
+>>>>>
+>>>>>    http://www.ozlabs.org/~akpm/mmotm/
+>>>>>
+>>>>> mmotm-readme.txt says
+>>>>>
+>>>>> README for mm-of-the-moment:
+>>>>>
+>>>>> http://www.ozlabs.org/~akpm/mmotm/
+>>>>>
+>>>>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+>>>>> more than once a week.
+>>>>>
+>>>>> You will need quilt to apply these patches to the latest Linus release (3.x
+>>>>> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+>>>>> http://ozlabs.org/~akpm/mmotm/series
+>>>>>
+>>>>
+>>>> include/linux/hugetlb.h:468:9: error: 'HPAGE_SHIFT' undeclared (first use in this function)
+>>>
+>>> The patch adding HPAGE_SHIFT usage to hugetlb.h in current mmotm is this:
+>>>
+>>> http://www.ozlabs.org/~akpm/mmotm/broken-out/hugetlb-ensure-hugepage-access-is-denied-if-hugepages-are-not-supported.patch
+>>>
+>>> But I can't reproduce the issue to be sure what the problem is. Are you
+>>> building the kernel on 32bits? Can you provide the output of
+>>> "grep -i huge .config" or send your .config in private?
+>>>
+>>
+>> [adding Richard to cc:]
+>>
+>>
+>> As in $subject, if I build uml x86 32-bit or 64-bit defconfig, the build fails with
+>> this error.
+> 
+> Oh, I missed the subject info completely. Sorry about that.
+> 
+> So, the issue really seems to be introduced by patch:
+> 
+>  hugetlb-ensure-hugepage-access-is-denied-if-hugepages-are-not-supported.patch
+> 
+> And the problem is that UML doesn't define HPAGE_SHIFT. The following patch
+> fixes it, but I'll let Nishanth decide what to do here.
 
-> @@ -681,7 +679,8 @@ copy_shmid_from_user(struct shmid64_ds *out, void __user *buf, int version)
->   	}
->   }
->   
-> -static inline unsigned long copy_shminfo_to_user(void __user *buf, struct shminfo64 *in, int version)
-> +static inline unsigned long copy_shminfo_to_user(void __user *buf,
-> +						 struct shminfo64 *in, int version)
-Checkpatch still complains - does removing one tab help?
+Thanks for tracking it down.
 
---
-     Manfred
+
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 4eace5e..3aab7df 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -458,6 +458,10 @@ static inline spinlock_t *huge_pte_lock(struct hstate *h,
+>  	return ptl;
+>  }
+>  
+> +#ifndef HPAGE_SHIFT
+> +#define HPAGE_SHIFT 0
+> +#endif
+> +
+>  static inline bool hugepages_supported(void)
+>  {
+>  	/*
+> 
+
+
+-- 
+~Randy
