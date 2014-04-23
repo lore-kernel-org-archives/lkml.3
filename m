@@ -1,52 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490AbaDWUxj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 16:53:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29265 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932087AbaDWUxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 16:53:36 -0400
-Message-ID: <5358284B.7020706@redhat.com>
-Date: Wed, 23 Apr 2014 16:53:31 -0400
-From: Daniel J Walsh <dwalsh@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932568AbaDWUxt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 16:53:49 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:38939 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932087AbaDWUxo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 16:53:44 -0400
+Message-ID: <53582853.30009@gmail.com>
+Date: Wed, 23 Apr 2014 23:53:39 +0300
+From: Nadav Amit <nadav.amit@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>, Andy Lutomirski <luto@amacapital.net>
-CC: David Miller <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        cgroups@vger.kernel.org, Network Development <netdev@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Simo Sorce <ssorce@redhat.com>,
-        lpoetter@redhat.com, kay@redhat.com
-Subject: Re: [PATCH 0/2] net: Implement SO_PEERCGROUP and SO_PASSCGROUP socket
- options
-References: <1397596546-10153-1-git-send-email-vgoyal@redhat.com> <20140422.160558.627080587952506099.davem@davemloft.net> <CALCETrWHA5ZmzOHnz9LO+7v4byc8QiynGyjE_ju5sjokNqrjZA@mail.gmail.com> <20140422.162927.2182797573155988911.davem@davemloft.net> <CALCETrX_TCbKy-3W590wG3rq9O3Hzbqc_wu3EGg7PKn2NNsTpQ@mail.gmail.com> <20140423190532.GE22755@redhat.com>
-In-Reply-To: <20140423190532.GE22755@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Gleb Natapov <gleb@kernel.org>, Nadav Amit <namit@cs.technion.ac.il>,
+        pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
+        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] KVM: x86: RSI/RDI/RCX are zero-extended when affected
+ by string ops
+References: <1397777591-6147-1-git-send-email-namit@cs.technion.ac.il> <1397794294-8414-1-git-send-email-namit@cs.technion.ac.il> <20140420092646.GB30377@minantech.com> <5356067D.40003@gmail.com> <20140423195832.GA32528@amt.cnet> <20140423201103.GA1167@amt.cnet>
+In-Reply-To: <20140423201103.GA1167@amt.cnet>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 04/23/2014 03:05 PM, Vivek Goyal wrote:
-> On Tue, Apr 22, 2014 at 01:31:13PM -0700, Andy Lutomirski wrote:
-> [..]
->>> Otherwise, without SO_PASSCGROUP, there is no way for datagram sockets
->>> to find out the peer's open() time cgroup.
->> Right.
+On 4/23/14, 11:11 PM, Marcelo Tosatti wrote:
+> On Wed, Apr 23, 2014 at 04:58:32PM -0300, Marcelo Tosatti wrote:
+>> On Tue, Apr 22, 2014 at 09:04:45AM +0300, Nadav Amit wrote:
+>>> Gleb,
+>>>
+>>> On 4/20/14, 12:26 PM, Gleb Natapov wrote:
+>>>> On Fri, Apr 18, 2014 at 07:11:33AM +0300, Nadav Amit wrote:
+>>>>> When using address-size override prefix with string instructions in long-mode,
+>>>>> ESI/EDI/ECX are zero extended if they are affected by the instruction
+>>>>> (incremented/decremented).  Currently, the KVM emulator does not do so.
+>>>>>
+>>>>> In addition, although it is not well-documented, when address override prefix
+>>>>> is used with REP-string instruction, RCX high half is zeroed even if ECX was
+>>>>> zero on the first iteration. Therefore, the emulator should clear the upper
+>>>>> part of RCX in this case, as x86 CPUs do.
+>>>>>
+>>>>> Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
+>>>>> ---
+>>>>> :100644 100644 69e2636... a69ed67... M	arch/x86/kvm/emulate.c
+>>>>>   arch/x86/kvm/emulate.c |    4 ++++
+>>>>>   1 file changed, 4 insertions(+)
+>>>>>
+>>>>> diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
+>>>>> index 69e2636..a69ed67 100644
+>>>>> --- a/arch/x86/kvm/emulate.c
+>>>>> +++ b/arch/x86/kvm/emulate.c
+>>>>> @@ -491,6 +491,8 @@ register_address_increment(struct x86_emulate_ctxt *ctxt, unsigned long *reg, in
+>>>>>   	else
+>>>>>   		mask = ad_mask(ctxt);
+>>>>>   	masked_increment(reg, mask, inc);
+>>>>> +	if (ctxt->ad_bytes == 4)
+>>>>> +		*reg &= 0xffffffff;
+>>>> *reg=(u32)*reg; and you can do it inside else part.
+>>>>
+>>>> register_address_increment() is used also by jmp_rel and loop instructions,
+>>>> is this correct for both of those too? Probably yes.
+>>>>
+>>> It appears to be so.
+>>> Results of 32-bit operations are implicitly zero extended to 64-bit
+>>> values, and this appears to apply to all 32 bit operations,
+>>> including implicit ones. Therefore it seems to apply to all these
+>>> operations.
+>>>
+>>>>>   }
+>>>>>
+>>>>>   static void rsp_increment(struct x86_emulate_ctxt *ctxt, int inc)
+>>>>> @@ -4567,6 +4569,8 @@ int x86_emulate_insn(struct x86_emulate_ctxt *ctxt)
+>>>>>   	if (ctxt->rep_prefix && (ctxt->d & String)) {
+>>>>>   		/* All REP prefixes have the same first termination condition */
+>>>>>   		if (address_mask(ctxt, reg_read(ctxt, VCPU_REGS_RCX)) == 0) {
+>>>>> +			if (ctxt->ad_bytes == 4)
+>>>>> +				*reg_write(ctxt, VCPU_REGS_RCX) = 0;
+>>>> Does zero extension happens even if ECX was zero at the beginning on an instruction or only during
+>>>> ECX modification. If later it is already covered in register_address_increment, no?
+>>> The observed behaviour of the Sandy-Bridge I use, is that even if
+>>> ECX is zero on the first iteration, the high half of RCX is zeroed.
+>>> Therefore, this is a different case, which was not covered in
+>>> register_address_increment. I agree it is totally undocumented.
+>>> Following your previous comment - I may have missed the case in
+>>> which loop instruction is executed with ECX = 0 while RCX != 0 and
+>>> the address size is 32 bit. I will test this case soon (yet, it is
+>>> lower on my priority list).
 >>
->> I'd still like to know what userspace applications want this feature.
->> The canonical example seems to be journald, but journald doesn't use
->> unix datagram sockets AFAICS,
-> Dan Walsh mentiond that systemd also monitors /dev/log (datagram socket) and
-> logs everything in journal. There this information should be useful.
+>> In 64-bit mode, the operand size for all near branches (CALL, RET, JCC,
+>> JCXZ, JMP, and LOOP) is forced to 64 bits.
+>>
+>> These instructions update the 64-bit RIP without the need for a REX
+>> operand-size prefix.
+>>
+>> The following aspects of near branches are controlled by the effective
+>> operand size:
+>> • Truncation of the size of the instruction pointer
+>> ...
+>>
+>> In 64-bit mode, all of the above actions are forced to 64 bits
+>> regardless of operand size prefixes (operand size
+>> prefixes are silently ignored). However, the displacement field for
+>> relative branches is still limited to 32 bits and the
+>> address size for near branches is not forced in 64-bit mode.
+>> Address sizes affect the size of RCX used for JCXZ and LOOP; they also
+>> impact the address calculation for memory
+>> indirect branches. Such addresses are 64 bits by default; but they can
+>> be overridden to 32 bits by an address size
+>> prefix.
+>>
+>> So it seems your patch incorrectly handles "rex call" for example.
 >
-> Thanks
-> Vivek
-I am fine with collecting only the information available at "open".  I
-can potentially see other Userspace Resource Constraints being built
-based on the Cgroup the process is in.  For example openshift wants to 
-limit the amount of email a process can send to only a few per second,
-which might be able to be controlled by a relay listening on a
-particular socket. Then it could change the rules based on the
-Cgroup/Unit file the calling process was in. 
+> Err, operand size is forced to 64-bits, not address size.
+>
+> "The following aspects of near branches are controlled by the effective
+> operand size:
+>   • Truncation of the size of the instruction pointer"
+>
+> Still, "67h call" should not truncate EIP (which your patch does).
+>
+Yes, I missed it.
+But if I am not mistaken again, it means that the existing 
+implementation of jmp_rel is broken as well when address-size override 
+prefix is used. In this case, as I see it, the existing masking would 
+cause the carry from the add operation to the lower half of the rip not 
+to be added to the rip higher half.
+
+I guess another patch is needed for that as well.
+
+Nadav
