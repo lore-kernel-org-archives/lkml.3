@@ -1,189 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734AbaDWXOc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 19:14:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43040 "EHLO mx2.suse.de"
+	id S1752245AbaDWXSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 19:18:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11515 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751173AbaDWXOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 19:14:31 -0400
-Date: Thu, 24 Apr 2014 09:14:19 +1000
-From: NeilBrown <neilb@suse.de>
-To: Anna Schumaker <Anna.Schumaker@netapp.com>
-Cc: Jan Kara <jack@suse.cz>, Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "Dave Chinner" <david@fromorbit.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        "Mel Gorman" <mgorman@suse.com>,
-        Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] SUNRPC: track when a client connection is routed to
- the local host.
-Message-ID: <20140424091419.0ba0cfd3@notabene.brown>
-In-Reply-To: <5357C3AC.9090203@netapp.com>
-References: <20140423022441.4725.89693.stgit@notabene.brown>
-	<20140423024058.4725.7703.stgit@notabene.brown>
-	<5357C3AC.9090203@netapp.com>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1751317AbaDWXSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 19:18:21 -0400
+Message-ID: <1398295096.2673.17.camel@adam.happyassassin.net>
+Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
+ ASUS T100TA
+From: Adam Williamson <awilliam@redhat.com>
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        "Jin, Yao" <yao.jin@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
+        mathias.nyman@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        dougvj@gmail.com
+Date: Wed, 23 Apr 2014 16:18:16 -0700
+In-Reply-To: <20140423122344.GX30677@intel.com>
+References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
+	 <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
+	 <5353A1F6.60602@linux.intel.com> <5353B8A4.1080900@linux.intel.com>
+	 <1398007690.2674.0.camel@adam.happyassassin.net>
+	 <5354BA59.2000008@linux.intel.com> <53551D0F.40906@linux.intel.com>
+	 <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
+	 <1398230210.2704.8.camel@adam.happyassassin.net>
+	 <20140423083430.GV30677@intel.com> <20140423122344.GX30677@intel.com>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/cOLNjfjwl9x5Dua.BH=I80E"; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/cOLNjfjwl9x5Dua.BH=I80E
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2014-04-23 at 15:23 +0300, Mika Westerberg wrote:
+> On Wed, Apr 23, 2014 at 11:34:30AM +0300, Mika Westerberg wrote:
+> > On Tue, Apr 22, 2014 at 10:16:50PM -0700, Adam Williamson wrote:
+> > > Well, I can't actually concur. See my results in
+> > > https://bugzilla.kernel.org/show_bug.cgi?id=68291#c44 .
+> > > 
+> > > 1. A kernel with neither patch applied (and no hid-rmi driver) results
+> > > in a working touchscreen.
+> > > 2. A kernel with only v3 of Doug's patch from
+> > > https://bugzilla.kernel.org/show_bug.cgi?id=67921 results in a working
+> > > touchscreen.
+> > > 3. A kernel with both v3 of Doug's patch and this IRQ descriptor
+> > > conflict "fix" results in a broken touchscreen.
+> > > 
+> > > Seems to me there really is some kind of problem with this patch...
+> > 
+> > Can you try so that you have both patches applied and then this one? I'm
+> > suspecting that the ACPI GPIO operation region support might do something
+> > unexpected in this case.
+> 
+> I'm able to reproduce this problem here now and it seems not related to the
+> ACPI GPIO operation regions.
+> 
+> This patch changes call to irq_domain_add_linear() to
+> irq_domain_add_simple() and somehow that changes the behaviour so that I
+> get non-working touchscreen:
+> 
+> ...
+> [   37.434998] i2c_hid i2c-ATML1000:00: failed to reset device.
+> [   37.435009] i2c_hid i2c-ATML1000:00: i2c_hid_set_power
+> [   37.435021] i2c_hid i2c-ATML1000:00: __i2c_hid_command: cmd=fb 00 01 08
+> [   38.439897] i2c_hid i2c-ATML1000:00: can't add hid device: -61
+> [   38.440749] i2c_hid: probe of i2c-ATML1000:00 failed with error -61
+> 
+> It never gets an interrupt when the device reset is ready.
+> 
+> Jin, do you have any idea what is going on?
 
-On Wed, 23 Apr 2014 09:44:12 -0400 Anna Schumaker <Anna.Schumaker@netapp.co=
-m>
-wrote:
+Well, hum - I did an encore:
 
-> On 04/22/2014 10:40 PM, NeilBrown wrote:
-> > If requests are being sent to the local host, then NFS will
-> > need to take care to avoid deadlocks.
-> >
-> > So keep track when accepting a connection or sending a UDP request
-> > and set a flag in the svc_xprt when the peer connected to is local.
-> >
-> > The interface rpc_is_foreign() is provided to check is a given client
-> > is connected to a foreign server.  When it returns zero it is either
-> > not connected or connected to a local server and in either case
-> > greater care is needed.
-> >
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> > ---
-> >  include/linux/sunrpc/clnt.h |    1 +
-> >  include/linux/sunrpc/xprt.h |    1 +
-> >  net/sunrpc/clnt.c           |   25 +++++++++++++++++++++++++
-> >  net/sunrpc/xprtsock.c       |   17 +++++++++++++++++
-> >  4 files changed, 44 insertions(+)
-> >
-> > diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
-> > index 8af2804bab16..5d626cc5ab01 100644
-> > --- a/include/linux/sunrpc/clnt.h
-> > +++ b/include/linux/sunrpc/clnt.h
-> > @@ -173,6 +173,7 @@ void		rpc_force_rebind(struct rpc_clnt *);
-> >  size_t		rpc_peeraddr(struct rpc_clnt *, struct sockaddr *, size_t);
-> >  const char	*rpc_peeraddr2str(struct rpc_clnt *, enum rpc_display_forma=
-t_t);
-> >  int		rpc_localaddr(struct rpc_clnt *, struct sockaddr *, size_t);
-> > +int		rpc_is_foreign(struct rpc_clnt *);
-> > =20
-> >  #endif /* __KERNEL__ */
-> >  #endif /* _LINUX_SUNRPC_CLNT_H */
-> > diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
-> > index 8097b9df6773..318ee37bc358 100644
-> > --- a/include/linux/sunrpc/xprt.h
-> > +++ b/include/linux/sunrpc/xprt.h
-> > @@ -340,6 +340,7 @@ int			xs_swapper(struct rpc_xprt *xprt, int enable);
-> >  #define XPRT_CONNECTION_ABORT	(7)
-> >  #define XPRT_CONNECTION_CLOSE	(8)
-> >  #define XPRT_CONGESTED		(9)
-> > +#define XPRT_LOCAL		(10)
-> > =20
-> >  static inline void xprt_set_connected(struct rpc_xprt *xprt)
-> >  {
-> > diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
-> > index 0edada973434..454cea69b373 100644
-> > --- a/net/sunrpc/clnt.c
-> > +++ b/net/sunrpc/clnt.c
-> > @@ -1109,6 +1109,31 @@ const char *rpc_peeraddr2str(struct rpc_clnt *cl=
-nt,
-> >  }
-> >  EXPORT_SYMBOL_GPL(rpc_peeraddr2str);
-> > =20
-> > +/**
-> > + * rpc_is_foreign - report is rpc client was recently connected to
-> > + *                  remote host
-> > + * @clnt: RPC client structure
-> > + *
-> > + * If the client is not connected, or connected to the local host
-> > + * (any IP address), then return 0.  Only return non-zero if the
-> > + * most recent state was a connection to a remote host.
-> > + * For UDP the client always appears to be connected, and the
-> > + * remoteness of the host is of the destination of the last transmissi=
-on.
-> > + */
-> > +int rpc_is_foreign(struct rpc_clnt *clnt)
-> > +{
-> > +	struct rpc_xprt *xprt;
-> > +	int conn_foreign;
-> > +
-> > +	rcu_read_lock();
-> > +	xprt =3D rcu_dereference(clnt->cl_xprt);
-> > +	conn_foreign =3D (xprt && xprt_connected(xprt)
-> > +			&& !test_bit(XPRT_LOCAL, &xprt->state));
-> > +	rcu_read_unlock();
-> > +	return conn_foreign;
-> > +}
-> > +EXPORT_SYMBOL_GPL(rpc_is_foreign);
-> > +
-> >  static const struct sockaddr_in rpc_inaddr_loopback =3D {
-> >  	.sin_family		=3D AF_INET,
-> >  	.sin_addr.s_addr	=3D htonl(INADDR_ANY),
-> > diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-> > index 0addefca8e77..74796cf37d5b 100644
-> > --- a/net/sunrpc/xprtsock.c
-> > +++ b/net/sunrpc/xprtsock.c
-> > @@ -642,6 +642,15 @@ static int xs_udp_send_request(struct rpc_task *ta=
-sk)
-> >  			xdr->len - req->rq_bytes_sent, status);
-> > =20
-> >  	if (status >=3D 0) {
-> > +		struct dst_entry *dst;
-> > +		rcu_read_lock();
-> > +		dst =3D rcu_dereference(transport->sock->sk->sk_dst_cache);
-> > +		if (dst && dst->dev && (dst->dev->features & NETIF_F_LOOPBACK))
-> > +			set_bit(XPRT_LOCAL, &xprt->state);
-> > +		else
-> > +			clear_bit(XPRT_LOCAL, &xprt->state);
-> > +		rcu_read_unlock();
-> > +
-> You repeat this block of code a bit later.  Can you please make it an inl=
-ine helper function?
+4. A kernel with this IRQ descriptor conflict 'fix' but *without* Doug's
+patch results in a working touch screen.
 
-Thanks for the suggestion.
-I've put
+So unless I made a mistake somewhere, it looks like it's really the
+combination of patches that causes trouble. Neither
+http://dougvj.net/baytrail_gpio_quirk_v3.patch nor this patch alone
+breaks the touch screen, but the combination of the two does.
+-- 
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
+http://www.happyassassin.net
 
-static inline int sock_is_loopback(struct sock *sk)
-{
-	struct dst_entry *dst;
-	int loopback =3D 0;
-	rcu_read_lock();
-	dst =3D rcu_dereference(sk->sk_dst_cache);
-	if (dst && dst->dev &&
-	    (dst->dev->features & NETIF_F_LOOPBACK))
-		loopback =3D 1;
-	rcu_read_unlock();
-	return loopback;
-}
-
-
-in sunrpc.h, and used it for both the server-side and the client side.
-
-NeilBrown
-
---Sig_/cOLNjfjwl9x5Dua.BH=I80E
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU1hJSznsnt1WYoG5AQIuPg/9EScpKqpA9AEORKfK9w/MreIQOaHAPItr
-2ZAoUbPa6N0aoSWZBLk4GA9oPZLvDMi/3gDbWpGjJoAR4osi+PSA8f078GNnSAFM
-JGsuO+xnP1HMQAd2QjEY3fDg+ns9si2BORfWtpebDmTqZNjxiP0VyeBJEvTfR97I
-w48aD4cJn8VGi4bs7kqa7fBPBktenUAD1/I9pQCK3gjfFuOkUjCDEGD8Uj+aWb12
-5hT+adr+Z1y/c35J45AG86YKQQDdUIib1nMELwQ/RwrJoC3qkaudkyJNROUqUot1
-tH1jHl5DClMvWzbIdEUNh2SRoQ13tbvile3N32oN3rDmRHiHM3eYOwc9GFgLFent
-xlLB73fbJLvO8lnRqsWdXwLtM9BCCN+t6yzDWnCHD1bTTxs+rMbfx+UWKI98bsPF
-NOUuVr0c0UD3HTM2GsKrR91lb7ZBZcTdwJIhswaSq0ZTjmkTiQC7Y7UC1MfXVBlA
-pO6PvEQUQXKcoVKVHBqv2VmZLD1ll2PDhh010dg4iwVTPLUCT+Zt/JkHbvV+rD9L
-sSiHXzdVGWPft5W1d1zZkRXwDA34e1cCp2JibBrsKIXMcUp7zksuN23kPwJFVdPl
-GznVzho/oGIanVF8QhHO219zD2/+x65OG8iDH27SFJjVvpcyRVfM3xOx7DqD6m9W
-LpXIcr1FmSE=
-=mIQG
------END PGP SIGNATURE-----
-
---Sig_/cOLNjfjwl9x5Dua.BH=I80E--
