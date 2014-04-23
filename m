@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770AbaDWDUW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 23:20:22 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:51544 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaDWDUT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 23:20:19 -0400
-Date: Tue, 22 Apr 2014 20:20:44 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Frank Rowand <frowand.list@gmail.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] sysfs, device-tree: aid for debugging device tree boot
- problems
-Message-ID: <20140423032044.GA26233@kroah.com>
-References: <53571685.5060403@gmail.com>
+	id S1755835AbaDWDUw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 23:20:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50477 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755132AbaDWDUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 23:20:50 -0400
+Date: Tue, 22 Apr 2014 21:30:05 -0400
+From: Richard Guy Briggs <rgb@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-audit@redhat.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, selinux@tycho.nsa.gov,
+        linux-security-module@vger.kernel.org, eparis@redhat.com,
+        hadi@mojatatu.com, sgrubb@redhat.com
+Subject: Re: [PATCH 2/6] netlink: have netlink per-protocol bind function
+ return an error code.
+Message-ID: <20140423013005.GB20182@madcap2.tricolour.ca>
+References: <20140324183406.GE28666@madcap2.tricolour.ca>
+ <cover.1397831970.git.rgb@redhat.com>
+ <c9a8a0879bc9f375bb3484f8e86189a8af5aa142.1397831970.git.rgb@redhat.com>
+ <20140422.161904.1187535812839850973.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <53571685.5060403@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140422.161904.1187535812839850973.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 06:25:25PM -0700, Frank Rowand wrote:
-> Create some infrastructure to aid trouble shooting device tree related
-> boot issues.
+On 14/04/22, David Miller wrote:
+> From: Richard Guy Briggs <rgb@redhat.com>
+> Date: Fri, 18 Apr 2014 13:34:06 -0400
 > 
-> Add a %driver_name file to each device tree node sysfs directory which has had
-> a driver bound to it.  This allows detecting device tree nodes which failed
-> to be bound to any driver.
+> > @@ -1449,6 +1453,26 @@ static int netlink_bind(struct socket *sock, struct sockaddr *addr,
+> >  	if (!nladdr->nl_groups && (nlk->groups == NULL || !(u32)nlk->groups[0]))
+> >  		return 0;
+> >  
+> > +	if (nlk->netlink_bind && nladdr->nl_groups) {
+> > +		int i;
+> > +
+> > +		for (i = 0; i < nlk->ngroups; i++) {
+> > +			int undo;
+> > +
+> > +			if (!test_bit(i, (long unsigned int *)&nladdr->nl_groups))
+> > +				continue;
+> > +			err = nlk->netlink_bind(i);
+> > +			if (!err)
+> > +				continue;
+> > +			if (!nlk->portid)
+> > +				netlink_remove(sk);
+> > +			for (undo = 0; undo < i; undo++)
+> > +				if (nlk->netlink_unbind)
+> > +					nlk->netlink_unbind(undo);
+> > +			return err;
+> > +		}
+> > +	}
+> > +
+> 
+> It took me a while to figure out why you need to do the netlink_remove() in
+> the error path.
+> 
+> I think it's really asking for trouble to allow the socket to have temporary
+> visibility if we end up signalling an error.
 
-Why is this needed, shouldn't there already be a "driver" symlink in
-sysfs for these devices when a driver binds to them?  The rest of the
-driver model works that way, why is of devices any different?
+The risk seems small, but I agree it is sloppy.
 
-> Examples of using the %driver_name file (note that /proc/device-tree is a
-> link to the base of the device tree sysfs tree):
-> 
-> 
->   1) To find list of device tree nodes with no driver:
-> 
->   # A few false positives may be reported.  For example,
->   #   node_full_path of "." is the board.
->   #
->   # output is: node_full_path compatible_string
->   #
->   cd /proc/device-tree
->   for k in `find . -type d`; do
->      if [[ -f ${k}/compatible && ! -f ${k}/%driver_name ]] ; then
->         if [[ "`cat ${k}/compatible`" != "simple-bus" ]] ; then
->            echo `echo ${k} | sed -e 's|./||'` `cat ${k}/compatible`
->         fi
->      fi
->   done | sort
-> 
-> 
->   2) To find list of device tree nodes with a bound driver:
-> 
->   # output is:  node_full_path driver_name
->   #
->   cd /proc/device-tree
->   for k in `find . -name %driver_name` ; do
->      echo `echo ${k} | sed -e 's|./||' -e 's|/%driver_name$||'` `cat ${k}`
->   done | sort
-> 
-> 
->   3) To find list of device tree nodes with a bound driver:
-> 
->   # output is:  driver_name node_full_path
->   #
->   cd /proc/device-tree
->   for k in `find . -name %driver_name` ; do
->      echo `cat ${k}` `echo ${k} | sed -e 's|./||' -e 's|/%driver_name$||'`
->   done | sort
+> It seems safest if we only do the autobind/insert once we are absolutely
+> certain that the bind() will fully succeed.  This means that you have to
+> do this bind validation loop before autobind/insert.
 
-If we take this patch, these examples should be somewhere in the
-documentation to make it easy for others.
+Ok, done.  This revision ends up being a bit cleaner than the previous
+one because I've refactored out the unbind loop into netlink_unbind()
+due to it needing to be called if the netlink_insert/autobind() fails as
+well.  In the factorization process I noticed that unrequested groups
+were being unnecessarily unbound.  It also provoked assigning the var
+"groups" from "nladdr->nl_groups" making things easier to read.
 
-> Signed-off-by: Frank Rowand <frank.rowand@sonymobile.com>
+> Please make this change and resubmit this series, thanks.
 
-Minor nit, your From: line doesn't match this signed-off-by: so
-something has to change (or add a new From: line, like SubmittingPatches
-decribes how to do.)
+Compiled and tested.  New patchset to follow.
 
-thanks,
+- RGB
 
-greg k-h
+--
+Richard Guy Briggs <rbriggs@redhat.com>
+Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
+Remote, Ottawa, Canada
+Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
