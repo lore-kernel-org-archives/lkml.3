@@ -1,102 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326AbaDWS0g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 14:26:36 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43123 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752500AbaDWS0f (ORCPT
+	id S1757022AbaDWSaf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 14:30:35 -0400
+Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:20518
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753564AbaDWSac convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 14:26:35 -0400
-Date: Wed, 23 Apr 2014 19:26:11 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Zi Shen Lim <zlim@broadcom.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20140423182611.GF12304@sirena.org.uk>
-References: <1398217214-12204-1-git-send-email-zlim@broadcom.com>
- <1398217214-12204-3-git-send-email-zlim@broadcom.com>
- <20140423103648.GM12304@sirena.org.uk>
- <20140423172720.GA18588@lc-sj1-5012.sj.broadcom.com>
+	Wed, 23 Apr 2014 14:30:32 -0400
+X-Greylist: delayed 895 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Apr 2014 14:30:32 EDT
+From: "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>
+To: Chung-Lin Tang <cltang@codesourcery.com>
+CC: Ley Foon Tan <lftan@altera.com>, Arnd Bergmann <arnd@arndb.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "Catalin.Marinas@arm.com" <Catalin.Marinas@arm.com>,
+        Andrew Pinski <apinski@cavium.com>
+Subject: Re: [PATCH 00/28] nios2 Linux kernel port
+Thread-Topic: [PATCH 00/28] nios2 Linux kernel port
+Thread-Index: AQHPXx3VtXWNi/pT6kai6tyZi4xMSJsfgc3v
+Date: Wed, 23 Apr 2014 18:15:34 +0000
+Message-ID: <E780DB23-B6A3-427B-8F33-71378088A3F5@caviumnetworks.com>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<5354AD36.5090809@zytor.com>
+	<CAFiDJ5861HE4AXtio-8uNJppWE2oaPt9_OKyGV=Myb_3vPrOVA@mail.gmail.com>
+	<16597012.pEkDc99HDN@wuerfel>
+ <CAFiDJ5_dUpVTSeC36AfNKVN7BOa9GQ5vwSEWricm=8Sam9mR2A@mail.gmail.com>,<5357FF8E.9010809@codesourcery.com>
+In-Reply-To: <5357FF8E.9010809@codesourcery.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [64.2.3.195]
+x-forefront-prvs: 01901B3451
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019001)(6009001)(428001)(377454003)(479174003)(164054003)(24454002)(189002)(199002)(51704005)(99286001)(99396002)(4396001)(83716003)(80976001)(54356999)(50986999)(76176999)(79102001)(92726001)(85852003)(92566001)(77982001)(66066001)(80022001)(20776003)(74502001)(74662001)(31966008)(86362001)(19580395003)(19580405001)(83322001)(81342001)(81542001)(36756003)(46102001)(33656001)(87936001)(2656002)(83072002)(82746002)(76482001)(100906001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR07MB125;H:CO1PR07MB127.namprd07.prod.outlook.com;FPR:B642FCE3.AFF2A845.7DFB336E.EBD551.2021E;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="7v9iR3M+zmFtWrmF"
-Content-Disposition: inline
-In-Reply-To: <20140423172720.GA18588@lc-sj1-5012.sj.broadcom.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH 2/2] arm64: topology: add MPIDR-based detection
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-OriginatorOrg: caviumnetworks.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---7v9iR3M+zmFtWrmF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-On Wed, Apr 23, 2014 at 10:27:20AM -0700, Zi Shen Lim wrote:
+> On Apr 23, 2014, at 10:59 AM, "Chung-Lin Tang" <cltang@codesourcery.com> wrote:
+> 
+>> On 2014/4/22 07:20 PM, Ley Foon Tan wrote:
+>> On Tue, Apr 22, 2014 at 6:56 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>>> On Tuesday 22 April 2014 18:37:11 Ley Foon Tan wrote:
+>>>>>> Hi Arnd and Peter Anvin,
+>>>>>> 
+>>>>>> Other than 64-bit time_t, clock_t and suseconds_t, can you confirm
+>>>>>> that we don't need to have 64 bit off_t? See detail in link below.
+>>>>>> I can submit the patches for 64-bit time changes
+>>>>>> (include/asm-generic/posix_types.h and other archs) if everyone is
+>>>>>> agreed on this.
+>>>> 
+>>>> Yes.
+>> Okay, will doing that.
+> 
+> I believe that arm64 ILP32 will also be affected. What is the status of
+> this configuration? Has the glibc/kernel ABI been finalized?
 
-> Or is it likely that some folks may opt to skip aff2, and simply use aff3?
-> Mark, is there precedence for such usage of affinity levels?
+Not yet.  I am still working out the signal handling part. But we already agreed on 64bit time_t, clock_t, and suseconds_t.  And we agreed to a 64bit offset_t too. 
 
-Not that I'm aware of at the minute myself but of course this code may
-end up running on some enterprise distribution with an extended support
-time with hardware that isn't even on the drawing board now.
+On a related note suseconds in the timespec in posix is defined to be long. So it would nice if the kernel ignores the upper 32bits so we (glibc developers) can fix this for new targets including x32 and arm64/ilp32. 
 
-> > I had been intending to just combine all the bits from affinitly levels
-> > above the CPU number into a single number until we know what to do with
-> > them individually.  We shouldn't just ignore them.
+Thanks,
+Andrew
 
-> I agree we shouldn't ignore aff3 if someone is already using it.
-
-> I'm not sure how combining them into a single number helps with topology.
-> We already started out with a cpuid, no?
-
-It will at least ensure that all clusters get assigned a unique ID and
-we don't end up discarding some of the information and coming out with
-two identically numbered clusters which then have identically numbered
-CPUs inside of them which doesn't seem clever.
-
-When I was looking at this it wasn't sufficiently clear to me that the
-cluster clustering would be well modelled by sockets as the scheduler
-currently assumes them, nor what to do with additional levels of that
-(the DT binding allows for infinite levels).  Punting and just putting
-all clusters at the same level avoids active bugs and seems fairly
-conservative.
-
-> Perhaps we should just add a new 'socket_id' and that will accommodate
-> all cases (up to aff3).
-
-Not in the non-MT case where we've got two levels above the cluster ID
-in affinity level 1 unless we just combine 2 and 3 (which would be
-reasonable enough of course).
-
---7v9iR3M+zmFtWrmF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTWAXAAAoJELSic+t+oim9NZsP/1Ba3SPl/LRNVu+TfhCz4SbI
-kpiJxO7i9ixvCj/1S3gBbBOrwyPDEO4388Dasen+FAEq4WroXS68JYZSENK/8O5g
-TDabI7qNb0pdFpWa9CsG8ATVH+a+2Sv3WrOh3kKpgfaBr9O817mK5SBiDGysQ/5z
-Q+rGbpX1jGOqNB6Xh6mUy/datJqzXz4r7CKWP8vQwXf7Xt0bbI48fyos1TJ1LpHv
-hcVA4uAowgtaKbLU+aB+bFMdOPk6zTtOlXPsmyxS1PlO7rWM4miN7/xNr3FxiXmH
-4iCdWiKBbwdWSRQdPgAgTjAPNxjxn3JNNmmwX/LZrRnPgBbPIjpc+MB6ldYiIGcO
-loVMxoVexGQSkU3EK+ljb/Dgx4Mvr043S9z7Z9yGhNmbg01sTvVclPZBLTG4fIH5
-GaQauJ0Ndsox9eOjy+wQYYeFaev+en30lE3OmbYMyZ0voGyBGXWfU9MdkYg8GITf
-k24n/YJSA77rDCDwgKADftO8Q3uDX2DwCnF5KhsS4E4/rfwsaa5e4etoHlhctu0J
-uPpsQ2a/3v7Wz13jTmPHBeVOs5bSgouybSKsnTFn6RPl1Ozi4HyJ/HauzfrWIW8K
-YLepTNsKpnfA+8Im5wzN0QxDeMmXDY9t37ZKqtXHETfcjct4KlQrwwAMWabblGCx
-t7AguNAnLUB98OL4RKjO
-=3a6q
------END PGP SIGNATURE-----
-
---7v9iR3M+zmFtWrmF--
+> 
+> Thanks,
+> Chung-Lin
+> 
