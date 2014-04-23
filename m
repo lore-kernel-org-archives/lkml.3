@@ -1,167 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752290AbaDWXeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 19:34:19 -0400
-Received: from seldrel01.sonyericsson.com ([212.209.106.2]:19348 "EHLO
-	seldrel01.sonyericsson.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751461AbaDWXeQ (ORCPT
+	id S1752073AbaDWXmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 19:42:22 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23572 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525AbaDWXmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 19:34:16 -0400
-Date: Wed, 23 Apr 2014 16:36:22 -0700
-From: Courtney Cavin <courtney.cavin@sonymobile.com>
-To: Josh Cartwright <joshc@codeaurora.org>
-CC: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+	Wed, 23 Apr 2014 19:42:21 -0400
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 99.127.230.128
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19LW0fd3qGX2QbLzdkIfcPf
+Date: Wed, 23 Apr 2014 16:42:13 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>,
         Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        David Collins <collinsd@codeaurora.org>
-Subject: Re: [PATCH 1/2] mfd: pm8x41: add support for Qualcomm 8x41 PMICs
-Message-ID: <20140423233621.GM17066@sonymobile.com>
-References: <1398213110-28135-1-git-send-email-courtney.cavin@sonymobile.com>
- <20140423214626.GA3215@joshc.qualcomm.com>
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        thierry.reding@gmail.com, Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH 2/2] of/irq: do irq resolution in platform_get_irq
+Message-ID: <20140423234213.GE6053@atomide.com>
+References: <1398293861-7682-1-git-send-email-robherring2@gmail.com>
+ <1398293861-7682-3-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140423214626.GA3215@joshc.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398293861-7682-3-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 11:46:26PM +0200, Josh Cartwright wrote:
-> On Tue, Apr 22, 2014 at 05:31:49PM -0700, Courtney Cavin wrote:
-> > From: Josh Cartwright <joshc@codeaurora.org>
-> > 
-> > The Qualcomm 8941 and 8841 PMICs are components used with the Snapdragon
-> > 800 series SoC family.  This driver exists largely as a glue mfd component,
-> > it exists to be an owner of an SPMI regmap for children devices
-> > described in device tree.
-> > 
-> > Signed-off-by: Josh Cartwright <joshc@codeaurora.org>
-> > Signed-off-by: Courtney Cavin <courtney.cavin@sonymobile.com>
+* Rob Herring <robherring2@gmail.com> [140423 15:58]:
+> From: Rob Herring <robh@kernel.org>
 > 
-> Hey Courtney-
+> Currently we get the following kind of errors if we try to use interrupt
+> phandles to irqchips that have not yet initialized:
 > 
-> Thanks for picking this up!
-
-Well, I've been poking you about it for months now, so I figured I'd
-stop being annoying, and start being productive.
-
+> irq: no irq domain found for /ocp/pinmux@48002030 !
+> ------------[ cut here ]------------
+> WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_device_alloc+0x144/0x184()
+> Modules linked in:
+> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-00038-g42a9708 #1012
+> (show_stack+0x14/0x1c)
+> (dump_stack+0x6c/0xa0)
+> (warn_slowpath_common+0x64/0x84)
+> (warn_slowpath_null+0x1c/0x24)
+> (of_device_alloc+0x144/0x184)
+> (of_platform_device_create_pdata+0x44/0x9c)
+> (of_platform_bus_create+0xd0/0x170)
+> (of_platform_bus_create+0x12c/0x170)
+> (of_platform_populate+0x60/0x98)
 > 
-> One thing that I had meant to do is rename this thing.  Nothing about
-> this is PM8841/PM8941 specific at all.  It should apply equally to all
-> Qualcomm's PMICs which implement QPNP.
+> This is because we're wrongly trying to populate resources that are not
+> yet available. It's perfectly valid to create irqchips dynamically, so
+> let's fix up the issue by resolving the interrupt resources when
+> platform_get_irq is called.
 > 
-> Perhaps a better name would be "qcom-pmic-qpnp".
-
-What's a QPNP?  Really.  I've heard you speak about it before as being a
-definition of the register layout for interrupts, but I have no
-documentation on it.
-
-I would argue here from my understanding that this driver isn't specific
-to QPNP either.  With that in mind we could just go with
-"qcom-pmic-spmi".  In fact just "spmi-ext" would not be incorrect, as
-this driver has little to do with PMICs at all.
-
-My point here is that we can easily make this into something very
-generic, but that only causes problems in the future when it's not
-"generic enough", and we have to add quirks.  If in the future Qualcomm
-releases a pm8A41, and it's qpnp, but not spmi, or spmi, but not 'ext',
-then we need to either change this driver dramatically, or write a new
-one.  I like keeping this driver name specific to what we know it
-supports.  We can rename it in the future if deemed appropriate, but I'd
-rather not make it something that which turns out to be wrong at some
-later point.
-
-Having said all of this, I have no doubt that your HW engineers will
-find a way to break our interpretation of their naming scheme... once
-again.
-
+> And then we also need to accept the fact that some irqdomains do not
+> exist that early on, and only get initialized later on. So we can
+> make the current WARN_ON into just into a pr_debug().
 > 
-> [..]
-> > +++ b/drivers/mfd/pm8x41.c
-> > @@ -0,0 +1,63 @@
-> > +/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify
-> > + * it under the terms of the GNU General Public License version 2 and
-> > + * only version 2 as published by the Free Software Foundation.
-> > + *
-> > + * This program is distributed in the hope that it will be useful,
-> > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> > + * GNU General Public License for more details.
-> > + */
-> > +#include <linux/kernel.h>
-> > +#include <linux/module.h>
-> > +#include <linux/spmi.h>
-> > +#include <linux/regmap.h>
-> > +#include <linux/of_platform.h>
-> > +
-> > +static const struct regmap_config pm8x41_regmap_config = {
-> > +	.reg_bits	= 16,
-> > +	.val_bits	= 8,
-> > +	.max_register	= 0xFFFF,
-> > +};
+> We still attempt to populate irq resources when we create the devices.
+> This allows current drivers which don't use platform_get_irq to continue
+> to function. Once all drivers are fixed, this code can be removed.
 > 
-> This reminds me.  David Collins (CC'd) noticed that there are usecases
-> where peripheral drivers will need to be accessing registers from atomic
-> context, so we should probably be setting .fast_io in the SPMI
-> regmap_bus structures, but we can tackle that when we get there.
+> Suggested-by: Russell King <linux@arm.linux.org.uk>
+> Signed-off-by: Rob Herring <robh@kernel.org>
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
 
-Hrm.  Please comment on this David.  I would like to see a solid
-use-case before even considering that.
+Great, works for me. Hopefully this patch is non-intrusive enough for
+people for the -rc cycle too?
 
-> > +
-> > +static int pm8x41_remove_child(struct device *dev, void *unused)
-> > +{
-> > +	platform_device_unregister(to_platform_device(dev));
-> > +	return 0;
-> > +}
-> > +
-> > +static void pm8x41_remove(struct spmi_device *sdev)
-> > +{
-> > +	device_for_each_child(&sdev->dev, NULL, pm8x41_remove_child);
-> > +}
-> > +
-> > +static int pm8x41_probe(struct spmi_device *sdev)
-> > +{
-> > +	struct regmap *regmap;
-> > +
-> > +	regmap = devm_regmap_init_spmi_ext(sdev, &pm8x41_regmap_config);
-> > +	if (IS_ERR(regmap)) {
-> > +		dev_dbg(&sdev->dev, "regmap creation failed.\n");
-> > +		return PTR_ERR(regmap);
-> > +	}
-> > +
-> > +	return of_platform_populate(sdev->dev.of_node, NULL, NULL, &sdev->dev);
-> > +}
-> > +
-> > +static const struct of_device_id pm8x41_id_table[] = {
-> > +	{ .compatible = "qcom,pm8841", },
-> > +	{ .compatible = "qcom,pm8941", },
-> > +	{},
-> > +};
-> > +MODULE_DEVICE_TABLE(of, pm8x41_id_table);
+Tested-by: Tony Lindgren <tony@atomide.com>
+
+> ---
+>  drivers/base/platform.c |  7 ++++++-
+>  drivers/of/irq.c        | 26 ++++++++++++++++++++++++++
+>  drivers/of/platform.c   |  4 +++-
+>  include/linux/of_irq.h  |  7 ++++++-
+>  4 files changed, 41 insertions(+), 3 deletions(-)
 > 
-> I'm thinking we should probably have a generic compatible entry as well,
-> "qcom,pmic-qpnp" or similar.  We should still specify in the binding
-> that PMIC slaves specify a version-specific string as well as the
-> generic string.  That is, a slave should have:
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index e714709..5b47210 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -13,6 +13,7 @@
+>  #include <linux/string.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/of_device.h>
+> +#include <linux/of_irq.h>
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/dma-mapping.h>
+> @@ -87,7 +88,11 @@ int platform_get_irq(struct platform_device *dev, unsigned int num)
+>  		return -ENXIO;
+>  	return dev->archdata.irqs[num];
+>  #else
+> -	struct resource *r = platform_get_resource(dev, IORESOURCE_IRQ, num);
+> +	struct resource *r;
+> +	if (IS_ENABLED(CONFIG_OF_IRQ) && dev->dev.of_node)
+> +		return of_irq_get(dev->dev.of_node, num);
+> +
+> +	r = platform_get_resource(dev, IORESOURCE_IRQ, num);
+>  
+>  	return r ? r->start : -ENXIO;
+>  #endif
+> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+> index 9bcf2cf..ca01893 100644
+> --- a/drivers/of/irq.c
+> +++ b/drivers/of/irq.c
+> @@ -380,6 +380,32 @@ int of_irq_to_resource(struct device_node *dev, int index, struct resource *r)
+>  EXPORT_SYMBOL_GPL(of_irq_to_resource);
+>  
+>  /**
+> + * of_irq_get - Decode a node's IRQ and return it as a Linux irq number
+> + * @dev: pointer to device tree node
+> + * @index: zero-based index of the irq
+> + *
+> + * Returns Linux irq number on success, or -EPROBE_DEFER if the irq domain
+> + * is not yet created.
+> + *
+> + */
+> +int of_irq_get(struct device_node *dev, int index)
+> +{
+> +	int rc;
+> +	struct of_phandle_args oirq;
+> +	struct irq_domain *domain;
+> +
+> +	rc = of_irq_parse_one(dev, index, &oirq);
+> +	if (rc)
+> +		return rc;
+> +
+> +	domain = irq_find_host(oirq.np);
+> +	if (!domain)
+> +		return -EPROBE_DEFER;
+> +
+> +	return irq_create_of_mapping(&oirq);
+> +}
+> +
+> +/**
+>   * of_irq_count - Count the number of IRQs a node uses
+>   * @dev: pointer to device tree node
+>   */
+> diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+> index 404d1da..bd47fbc 100644
+> --- a/drivers/of/platform.c
+> +++ b/drivers/of/platform.c
+> @@ -168,7 +168,9 @@ struct platform_device *of_device_alloc(struct device_node *np,
+>  			rc = of_address_to_resource(np, i, res);
+>  			WARN_ON(rc);
+>  		}
+> -		WARN_ON(of_irq_to_resource_table(np, res, num_irq) != num_irq);
+> +		if (of_irq_to_resource_table(np, res, num_irq) != num_irq)
+> +			pr_debug("not all legacy IRQ resources mapped for %s\n",
+> +				 np->name);
+>  	}
+>  
+>  	dev->dev.of_node = of_node_get(np);
+> diff --git a/include/linux/of_irq.h b/include/linux/of_irq.h
+> index 3f23b44..bc9e51a 100644
+> --- a/include/linux/of_irq.h
+> +++ b/include/linux/of_irq.h
+> @@ -34,21 +34,26 @@ static inline int of_irq_parse_oldworld(struct device_node *device, int index,
+>  extern int of_irq_parse_raw(const __be32 *addr, struct of_phandle_args *out_irq);
+>  extern int of_irq_parse_one(struct device_node *device, int index,
+>  			  struct of_phandle_args *out_irq);
+> -extern unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data);
+>  extern int of_irq_to_resource(struct device_node *dev, int index,
+>  			      struct resource *r);
+>  extern int of_irq_to_resource_table(struct device_node *dev,
+>  		struct resource *res, int nr_irqs);
+> +extern unsigned int irq_create_of_mapping(struct of_phandle_args *irq_data);
+>  
+>  extern void of_irq_init(const struct of_device_id *matches);
+>  
+>  #ifdef CONFIG_OF_IRQ
+>  extern int of_irq_count(struct device_node *dev);
+> +extern int of_irq_get(struct device_node *dev, int index);
+>  #else
+>  static inline int of_irq_count(struct device_node *dev)
+>  {
+>  	return 0;
+>  }
+> +static inline int of_irq_get(struct device_node *dev, int index)
+> +{
+> +	return 0;
+> +}
+>  #endif
+>  
+>  #if defined(CONFIG_OF)
+> -- 
+> 1.9.1
 > 
-> 	compatible = "qcom,pm8841", "qcom,pmic-qpnp";
-> 
-> ...in case we would ever need to differentiate in the future.
-> 
-> (I recall that in a previous version I had done this, but I don't
-> remember why I had changed it..)
-
-I gave this some thought but came to the conclusion that there is no
-benefit of adding a generic compatible to a new binding.  Please clarify
-a use-case where this would be ... useful.
-
-Thanks for the review!
-
--Courtney
