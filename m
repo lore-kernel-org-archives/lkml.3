@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872AbaDWIuk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:50:40 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:43837 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752709AbaDWIuf (ORCPT
+	id S1752964AbaDWIwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:52:50 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:37802 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750890AbaDWIwr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:50:35 -0400
-Date: Wed, 23 Apr 2014 10:50:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Stanislav Meduna <stano@meduna.org>,
-        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
-        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
-Message-ID: <20140423085031.GI11096@twins.programming.kicks-ass.net>
-References: <534C3606.7010206@meduna.org>
- <534C731F.1050406@meduna.org>
- <534DADF1.6060608@meduna.org>
- <20140422115439.GA20669@linutronix.de>
- <20140422094657.5b6ca1e2@gandalf.local.home>
- <20140422140918.GE11096@twins.programming.kicks-ass.net>
- <53577559.9090501@linutronix.de>
+	Wed, 23 Apr 2014 04:52:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53577559.9090501@linutronix.de>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <20140417104409.GL28725@lee--X1>
+References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
+	<1397659455-13638-4-git-send-email-linus.walleij@linaro.org>
+	<20140417104409.GL28725@lee--X1>
+Date: Wed, 23 Apr 2014 10:52:47 +0200
+Message-ID: <CACRpkdayYN73f+sQfr3bgTygWvUPDeDVp3kdzF39gnc++nS=qQ@mail.gmail.com>
+Subject: Re: [PATCH 3/6] mfd: stmpe: prope properly from the device tree
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Silvio F <silvio.fricke@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 10:10:01AM +0200, Sebastian Andrzej Siewior wrote:
-> On 04/22/2014 04:09 PM, Peter Zijlstra wrote:
-> > On Tue, Apr 22, 2014 at 09:46:57AM -0400, Steven Rostedt wrote:
-> >>>  According to lockdep a trylock should not fail on UP.
-> > 
-> > Oh!? Where does it say that? A trylock can fail at all times.
-> 
-> kernel/locking/spinlock_debug.c:
-> 
-> int do_raw_spin_trylock(raw_spinlock_t *lock)
->  {
->          int ret = arch_spin_trylock(&lock->raw_lock);
-> 
->          if (ret)
->                  debug_spin_lock_after(lock);
->  #ifndef CONFIG_SMP
->          /*
->           * Must not happen on UP:
->           */
->          SPIN_BUG_ON(!ret, lock, "trylock failure on UP");
->  #endif
->          return ret;
->  }
-> 
-> How can a trylock (spinlock, not mutex) fail on UP? That would mean the
-> lock is not interrupt safe.
-> Unless, you attempt to take the lock from interrupt context via trylock
-> while in general you take the spinlock in process context with
-> interrupts enabled.
+On Thu, Apr 17, 2014 at 12:44 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-But that's not lockdep. That's the spinlock debugging code, entirely
-different beasts.
+>> +#ifdef CONFIG_OF
+>
+> Didn't you say that the only platform using this device is DT only? So
+> why don't we make the driver depend on OF and get rid of this ugly
+> #ifdeffery?
+
+OK fixing.
+
+>> +     {
+>> +             .compatible = "st,stmpe2403",
+>> +             .data = (void *)STMPE2403,
+>> +     },
+>> +     {},
+>> +};
+>
+> If none of these stray over 80 chars, I think I'd like to see
+> of_device_id tables as single line entries
+
+OK.
+
+>> +     if (partnum < 0)
+>> +             partnum = id->driver_data;
+>
+> Should this be able to fail and for us to still carry on?
+
+Actually yes, to stay compatible with elder device trees that use
+the trick to just have the node name correspond to the I2C ID
+instead of using compatible, this needs to be preserved. But I'll
+add a small nag print about it.
+
+Yours,
+Linus Walleij
