@@ -1,113 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751766AbaDWWKb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:10:31 -0400
-Received: from ozlabs.org ([103.22.144.67]:45978 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696AbaDWWK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:10:29 -0400
-Date: Thu, 24 Apr 2014 08:10:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Luiz Capitulino <lcapitulino@redhat.com>,
-        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-next@vger.kernel.org,
-        nacc@linux.vnet.ibm.com, Richard Weinberger <richard@nod.at>
-Subject: Re: mmotm 2014-04-22-15-20 uploaded (uml 32- and 64-bit defconfigs)
-Message-Id: <20140424081019.596b5d23c624f5721ba0480a@canb.auug.org.au>
-In-Reply-To: <20140423112442.5a5c8f23d580a65575e0c5fc@linux-foundation.org>
-References: <20140422222121.2FAB45A431E@corp2gmr1-2.hot.corp.google.com>
-	<5357F405.20205@infradead.org>
-	<20140423134131.778f0d0a@redhat.com>
-	<5357FCEB.2060507@infradead.org>
-	<20140423141600.4a303d95@redhat.com>
-	<20140423112442.5a5c8f23d580a65575e0c5fc@linux-foundation.org>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Apr_2014_08_10_19_+1000_C5fgHkTa+5.T.lB_"
+	id S1751768AbaDWWMg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:12:36 -0400
+Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:44752 "EHLO
+	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751305AbaDWWMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 18:12:34 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArNfAEM6WFN5LEcvPGdsb2JhbABagwaDZIUKowKZboEbFwMBAQEBODWCJQEBBAE6HCMQCAMOCgklDwUlAwcaE4g5B81oFxaOQgeEOQSYdJRIgVEr
+Date: Thu, 24 Apr 2014 08:12:29 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Ivan Pantovic <gyro.ivan@gmail.com>
+Cc: Speedy Milan <speedy.milan@gmail.com>, linux-kernel@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: rm -f * on large files very slow on XFS + MD RAID 6 volume of
+ 15x 4TB of HDDs (52TB)
+Message-ID: <20140423221229.GS18672@dastard>
+References: <CAHuzUScfp19c_th_pfsZs05+yDz34MuEH-P1f+FF1dcivfH=5Q@mail.gmail.com>
+ <20140423021835.GI15995@dastard>
+ <53576A7D.9020303@gmail.com>
+ <20140423082538.GR18672@dastard>
+ <53578632.1060005@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53578632.1060005@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Apr_2014_08_10_19_+1000_C5fgHkTa+5.T.lB_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 23, 2014 at 11:21:54AM +0200, Ivan Pantovic wrote:
+> Hi Dave,
+> 
+> >xfs_db> freesp
+> >   from      to extents  blocks    pct
+> >      1       1   52463   52463   0.00
+> >      2       3   73270  181394   0.01
+> >      4       7  134526  739592   0.03
+> >      8      15  250469 2870193   0.12
+> >     16      31  581572 13465403   0.58
+> >     32      63  692386 32096932   1.37
+> >     64     127 1234204 119157757   5.09
 
-Hi all,
+So these are the small free spaces that lead to problems. There's
+around 3 million small free space extents in the filesystems,
+totalling 7% of the free space. That's quite a lot, and it means
+that there is a good chance that small allocations will find these
+small free spaces rather than find a large extent and start from
+there.
 
-On Wed, 23 Apr 2014 11:24:42 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> I'll try moving hugepages_supported() into the #ifdef
-> CONFIG_HUGETLB_PAGE section.
->=20
-> --- a/include/linux/hugetlb.h~hugetlb-ensure-hugepage-access-is-denied-if=
--hugepages-are-not-supported-fix-fix
-> +++ a/include/linux/hugetlb.h
-> @@ -412,6 +412,16 @@ static inline spinlock_t *huge_pte_lockp
->  	return &mm->page_table_lock;
->  }
-> =20
-> +static inline bool hugepages_supported(void)
-> +{
-> +	/*
-> +	 * Some platform decide whether they support huge pages at boot
-> +	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
-> +	 * there is no such support
-> +	 */
-> +	return HPAGE_SHIFT !=3D 0;
-> +}
-> +
->  #else	/* CONFIG_HUGETLB_PAGE */
->  struct hstate {};
->  #define alloc_huge_page_node(h, nid) NULL
-> @@ -460,14 +470,4 @@ static inline spinlock_t *huge_pte_lock(
->  	return ptl;
->  }
-> =20
-> -static inline bool hugepages_supported(void)
-> -{
-> -	/*
-> -	 * Some platform decide whether they support huge pages at boot
-> -	 * time. On these, such as powerpc, HPAGE_SHIFT is set to 0 when
-> -	 * there is no such support
-> -	 */
-> -	return HPAGE_SHIFT !=3D 0;
-> -}
-> -
->  #endif /* _LINUX_HUGETLB_H */
+> >    128     255   91015 16690243   0.71
+> >    256     511   18977 6703895   0.29
+> >    512    1023   12821 8611576   0.37
+> >   1024    2047   23209 33177541   1.42
+> >   2048    4095   43282 101126831   4.32
+> >   4096    8191   12726 55814285   2.39
+> >   8192   16383    2138 22750157   0.97
+> >  16384   32767    1033 21790120   0.93
+> >  32768   65535     433 19852497   0.85
+> >  65536  131071     254 23052185   0.99
+> > 131072  262143     204 37833000   1.62
+> > 262144  524287     229 89970969   3.85
+> > 524288 1048575     164 124210580   5.31
+> >1048576 2097151     130 173193687   7.40
+> >2097152 4194303      22 61297862   2.62
+> >4194304 8388607      16 97070435   4.15
+> >8388608 16777215      26 320475332  13.70
+> >16777216 33554431       6 133282461   5.70
+> >33554432 67108863      12 616939026  26.37
+> >134217728 268435328       1 207504563   8.87
 
-Clearly, noone reads my emails :-(
+There are some large free spaces still, so your filesystem is still
+in fairly good shape from that perspective. You can get a better
+idea of whether the fragmentation is isolated to specific AGs by
+using the freesp -a <agno> command to dump each individual freespace
+index. You can then use the xfs_bmap command to find files that are
+located in those fragmented AGs.
 
-This is exactly what I reported and the fix I applied to yesterday's
-linux-next ...
+The only way to fix freespace fragmentation right now is to remove
+the extents that are chopping up the freespace. Moving data around
+on a per-directory basis (e.g. cp the regular files to a temp
+directory, rename them back over the original) is one way of
+acheiving this, though you have to carefully control the destination
+AG and make sure it is an AG that is made up mostly of contiguous
+freespace to begin with....
 
---=20
+But you only really need to do this if you are seeing ongoing
+problems. Often just freeing up space in the filesystem will fix the
+problem...
+
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
---Signature=_Thu__24_Apr_2014_08_10_19_+1000_C5fgHkTa+5.T.lB_
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTWDpRAAoJEMDTa8Ir7ZwVKVAP/AkvWVgtYaFlN2HpaXXZ2b86
-6149Yd/RBCxH3exY5J0hBrSYtc2nvsA60p/d6TfWll0EBA9cVPv5AyNhWqmEtjlS
-QMfCnlgaK4MMR2R+E2xL764sQsGQZRilgdDShe0ukgyfT6+CcPRrWCN3WaoCQTl4
-SEF8gFmdPeZ0I242CXJnBvge6/gRlssSyXhExP+63aqPi9mJiM1/Aj396el413hx
-o1uBRcN8ur3d9x2iyrOsMTwdVdd40Q1f1b+4rHpsiHkLgrbpK6Rx6LZy7KPdCsHI
-Pykpd2ccXvIHCo7tfF7CURRlu/iIyJFSFnHy1JErVcJC5tyx3AMiQDbKb/vYQdeN
-YVIYVybX0TX20cVLz2cua5sW3o/gPmtIaibELGmz05LGP0aHd+sQ/82DBrTHrW9T
-0limrH7vIk3WkO8T1fRzPxg3Dq4VsD/suWD6SllsZlYEMJpdQH9Y+oDiPlF5uisL
-2uGG5J3qvkmu1DR3MGT449zebYjF8NtvYeBLxM+oN/Nbw4+tQiG10yMoL5LasaRQ
-f1D8EPcTSxU618j0/22VJC1fIpkNrV0rmqnAT6+MO+gYxbylpZFjVp61X3y5JwOT
-y9dkPW9sU4SdG1Q3MDOaZx9SuNDfsM1F8W1NyLEUEwSUi6pdPIPd3kRUISCmpQp7
-7EiBVPN49Ol6GFGbKdyV
-=Z0Qm
------END PGP SIGNATURE-----
-
---Signature=_Thu__24_Apr_2014_08_10_19_+1000_C5fgHkTa+5.T.lB_--
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
