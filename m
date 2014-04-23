@@ -1,69 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752124AbaDWWyP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:54:15 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:57468 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894AbaDWWyN (ORCPT
+	id S1752226AbaDWW6H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:58:07 -0400
+Received: from mail-oa0-f52.google.com ([209.85.219.52]:62440 "EHLO
+	mail-oa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931AbaDWW6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:54:13 -0400
-Message-ID: <53584491.6000604@codeaurora.org>
-Date: Wed, 23 Apr 2014 17:54:09 -0500
-From: Timur Tabi <timur@codeaurora.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:28.0) Gecko/20100101 Firefox/28.0 SeaMonkey/2.25
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: "Westerberg, Mika" <mika.westerberg@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
-References: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>	<1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com>	<CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com>	<534B93BA.6020406@linux.intel.com>	<534BFAAF.3070805@codeaurora.org>	<534D0370.50108@linux.intel.com>	<535005BA.1040405@codeaurora.org>	<5357A80B.8030701@linux.intel.com>	<5357ACF1.9070206@codeaurora.org>	<20140423135915.GY30677@intel.com>	<5357D8CC.3080501@codeaurora.org> <CACRpkdbk8okbzaZgD=BqeMSOvbEvYNViqamd9i=NAaAWW=T9sQ@mail.gmail.com>
-In-Reply-To: <CACRpkdbk8okbzaZgD=BqeMSOvbEvYNViqamd9i=NAaAWW=T9sQ@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Apr 2014 18:58:02 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        thierry.reding@gmail.com, Rob Herring <robh@kernel.org>
+Subject: [PATCH 1/2] of: selftest: add deferred probe interrupt test
+Date: Wed, 23 Apr 2014 17:57:40 -0500
+Message-Id: <1398293861-7682-2-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398293861-7682-1-git-send-email-robherring2@gmail.com>
+References: <1398293861-7682-1-git-send-email-robherring2@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Walleij wrote:
->> >  All of our GPIOs have a
->> >pinmux on them, and so if you want to use the pin for the non-default
->> >functionality, you need to configure the mux.  Isn't that supposed to happen
->> >with the through the pinctrl driver?  That is, when the kernel parses the
->> >ASL, and it seems a command to configure pin #3 to function #4, it calls the
->> >local pinctrl driver to do that?
-> Let's suspect this is true. That is how GPIO work after all is it not?
+From: Rob Herring <robh@kernel.org>
 
-With device trees, function groups are defined by name in the driver, 
-and the device tree contains these same names as links between nodes. 
-This works well.
+Signed-off-by: Rob Herring <robh@kernel.org>
+---
+ drivers/of/selftest.c                          | 32 ++++++++++++++++++++++++++
+ drivers/of/testcase-data/tests-interrupts.dtsi | 12 ++++++++++
+ 2 files changed, 44 insertions(+)
 
-In ACPI, it appears that no such infrastructure exists.
-
-> I guess the other option would be that all systems must come with a
-> tailored set-up written in ASL, specific for each board configuration.
-
-That makes sense (U-Boot does fixups of the device tree based on actual 
-board config, so it's conceivable that UEFI could do the same for ASL). 
-  However, that would require either
-
-1) UEFI programs the GPIO muxes directly, without specifying any mux 
-information in ASL and without using the Linux driver to program the muxes.
-
-or
-
-2) ASL contains code to program the muxes, and Linux parses that ASL and 
-calls the pinctrl driver to program the hardware.
-
-I don't know which direction the Community wants to use.  If we go with 
-option #1, then there is no need for the pinctrl driver to specify 
-function groups at all.  This means we would not need a separate pinctrl 
-driver for each SOC, like we do today.
-
-
+diff --git a/drivers/of/selftest.c b/drivers/of/selftest.c
+index ae44500..fe70b86 100644
+--- a/drivers/of/selftest.c
++++ b/drivers/of/selftest.c
+@@ -10,6 +10,7 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_irq.h>
++#include <linux/of_platform.h>
+ #include <linux/list.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+@@ -427,6 +428,36 @@ static void __init of_selftest_match_node(void)
+ 	}
+ }
+ 
++static void __init of_selftest_platform_populate(void)
++{
++	int irq;
++	struct device_node *np;
++	struct platform_device *pdev;
++
++	np = of_find_node_by_path("/testcase-data");
++	of_platform_populate(np, of_default_bus_match_table, NULL, NULL);
++
++	/* Test that a missing irq domain returns -EPROBE_DEFER */
++	np = of_find_node_by_path("/testcase-data/testcase-device1");
++	pdev = of_find_device_by_node(np);
++	if (!pdev)
++		selftest(0, "device 1 creation failed\n");
++	irq = platform_get_irq(pdev, 0);
++	if (irq != -EPROBE_DEFER)
++		selftest(0, "device deferred probe failed - %d\n", irq);
++
++	/* Test that a parsing failure does not return -EPROBE_DEFER */
++	np = of_find_node_by_path("/testcase-data/testcase-device2");
++	pdev = of_find_device_by_node(np);
++	if (!pdev)
++		selftest(0, "device 2 creation failed\n");
++	irq = platform_get_irq(pdev, 0);
++	if (irq >= 0 || irq == -EPROBE_DEFER)
++		selftest(0, "device parsing error failed - %d\n", irq);
++
++	selftest(1, "passed");
++}
++
+ static int __init of_selftest(void)
+ {
+ 	struct device_node *np;
+@@ -445,6 +476,7 @@ static int __init of_selftest(void)
+ 	of_selftest_parse_interrupts();
+ 	of_selftest_parse_interrupts_extended();
+ 	of_selftest_match_node();
++	of_selftest_platform_populate();
+ 	pr_info("end of selftest - %i passed, %i failed\n",
+ 		selftest_results.passed, selftest_results.failed);
+ 	return 0;
+diff --git a/drivers/of/testcase-data/tests-interrupts.dtsi b/drivers/of/testcase-data/tests-interrupts.dtsi
+index c843720..45cbdf8 100644
+--- a/drivers/of/testcase-data/tests-interrupts.dtsi
++++ b/drivers/of/testcase-data/tests-interrupts.dtsi
+@@ -54,5 +54,17 @@
+ 						      <&test_intmap1 1 2>;
+ 			};
+ 		};
++
++		testcase-device1 {
++			compatible = "testcase-device";
++			interrupt-parent = <&test_intc0>;
++			interrupts = <1>;
++		};
++
++		testcase-device2 {
++			compatible = "testcase-device";
++			interrupts = <1>;
++		};
+ 	};
++
+ };
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the
-Code Aurora Forum, hosted by The Linux Foundation.
+1.9.1
+
