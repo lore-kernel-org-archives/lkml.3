@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932525AbaDWP7O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:59:14 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:50188 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932458AbaDWP7L (ORCPT
+	id S1756793AbaDWP7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:59:35 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:33424 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752081AbaDWP73 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:59:11 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>, wim@iguana.be,
-        dbaryshkov@gmail.com, dwmw2@infradead.org,
-        linux-sunxi@googlegroups.com, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 2/5] power: reset: Add Allwinner A31 reset code
-Date: Wed, 23 Apr 2014 17:58:20 +0200
-Message-ID: <8237209.ZduvMhRroZ@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1398265476-29373-3-git-send-email-maxime.ripard@free-electrons.com>
-References: <1398265476-29373-1-git-send-email-maxime.ripard@free-electrons.com> <1398265476-29373-3-git-send-email-maxime.ripard@free-electrons.com>
+	Wed, 23 Apr 2014 11:59:29 -0400
+Date: Wed, 23 Apr 2014 08:59:24 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Michal =?iso-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jkosina@suse.cz, elias.vds@gmail.com, anssi.hannula@iki.fi,
+        simon@mungewell.org
+Subject: Re: [PATCH v2 01/24] input: Add ff-memless-next module
+Message-ID: <20140423155923.GB10531@core.coreip.homeip.net>
+References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net>
+ <1398175209-9565-2-git-send-email-madcatxster@devoid-pointer.net>
+ <1398255179.32091.1.camel@linux-fkkt.site>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V02:K0:dItBJTiu3zGEULhEuCctKOJ28Fbwydc3+ZWEjgPnbma
- skvQeWA6bsU6i651LbN0nF0CkNZHFBNTXaArFROvYCfuk3B5He
- iS2QDyla2nRGJQgQzFlc9doezadFmXPlHJ8lxXI+isII447UY7
- Rm+1y7cK4xYkrkyuvs74K7TLjTcpB8DYdR3gctaL6G8LlJoOYl
- xRieZjSC/ZrOsKgY4v/bvtBKqKPtw9PRUReXvOOEvG6PLo/DJ/
- v6ZDZldZn+Sb/nJRERZfI3JYOLsA8I8HogdAQ0Rb03uYOgM2ZL
- lQBmkm4teAccS87NwLRi5EHtJ1O9JILAKHWbgtRX7fUJ4iJLsi
- LkaAUDSCRmVuVK6zfnFs=
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398255179.32091.1.camel@linux-fkkt.site>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 April 2014 17:04:33 Maxime Ripard wrote:
-> That code used to be in the machine code, but it's more fit here with other
-> restart hooks.
+On Wed, Apr 23, 2014 at 02:12:59PM +0200, Oliver Neukum wrote:
+> On Tue, 2014-04-22 at 15:59 +0200, Michal Malý wrote:
+> > +/* Some devices might have a limit on how many uncombinable effects
+> > + * can be played at once */
+> > +static int mlnx_upload_conditional(struct mlnx_device *mlnxdev,
+> > +                                  const struct ff_effect *effect)
+> > +{
+> > +       struct mlnx_effect_command ecmd = {
+> > +               .cmd = MLNX_UPLOAD_UNCOMB,
+> > +               .u.uncomb.id = effect->id,
+> > +               .u.uncomb.effect = effect
+> > +       };
+> > +       return mlnxdev->control_effect(mlnxdev->dev, mlnxdev->private,
+> > &ecmd);
+> > +}
+> > +
 > 
-> That will allow to cleanup the machine directory, while waiting for a proper
-> watchdog driver for the A31.
+> This mean you are building the structure on the stack
 > 
-> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> 
+> 1. Are you sure nobody retains a reference?
+> 2. That is needlessly inefficient
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Why is it inefficient?
+
+-- 
+Dmitry
