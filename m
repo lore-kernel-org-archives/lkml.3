@@ -1,141 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824AbaDWNmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:42:05 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:56757 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286AbaDWN35 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756012AbaDWN35 (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 23 Apr 2014 09:29:57 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-91-5357c05406f7
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:56848 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754286AbaDWN3u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:29:50 -0400
+X-AuditID: cbfec7f5-b7fae6d000004d6d-90-5357c04b9039
 From: Dmitry Kasatkin <d.kasatkin@samsung.com>
 To: zohar@linux.vnet.ibm.com, dhowells@redhat.com, jmorris@namei.org
 Cc: roberto.sassu@polito.it, linux-security-module@vger.kernel.org,
         linux-kernel@vger.kernel.org, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 16/20] ima: load policy from the kernel
-Date: Wed, 23 Apr 2014 16:30:34 +0300
-Message-id: <558a8e9da9e9ca542a484cd14de82896028a6f6e.1398259638.git.d.kasatkin@samsung.com>
+Subject: [PATCH 05/20] integrity: provide builtin 'trusted' keyrings
+Date: Wed, 23 Apr 2014 16:30:23 +0300
+Message-id: <2819d76b5ba38aee0028dc5910727a2da268fc60.1398259638.git.d.kasatkin@samsung.com>
 X-Mailer: git-send-email 1.8.3.2
 In-reply-to: <cover.1398259638.git.d.kasatkin@samsung.com>
 References: <cover.1398259638.git.d.kasatkin@samsung.com>
 In-reply-to: <cover.1398259638.git.d.kasatkin@samsung.com>
 References: <cover.1398259638.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprALMWRmVeSWpSXmKPExsVy+t/xq7ohB8KDDR7/lba49Xcvs8W7pt8s
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xq7reB8KDDf5O07C49Xcvs8W7pt8s
 	FuvWL2ayuLxrDpvFh55HbBYvd31jt/i0YhKzA7vHg0ObWTx6vid7nF5Z7PF+31U2j74tqxg9
-	Pm+SC2CL4rJJSc3JLEst0rdL4Mo48U2j4LdkxZXnb5gaGL+KdjFycEgImEjMaqzpYuQEMsUk
-	Ltxbz9bFyMUhJLCUUeLS9xusEE4nk8SFmWvZQKrYBPQkNjT/YAexRQRcJHbP6WMCKWIW6GGU
-	2P1nMTNIQljAXGL6yjdgRSwCqhJfbq0Fi/MKxEnsbO1nglinILHsC0ScU8BK4k/zdLB6IQFL
-	ie+TJuMUn8DIv4CRYRWjaGppckFxUnquoV5xYm5xaV66XnJ+7iZGSCh+2cG4+JjVIUYBDkYl
-	Hl6J5WHBQqyJZcWVuYcYJTiYlUR4lywKDxbiTUmsrEotyo8vKs1JLT7EyMTBKdXAqPL7sC6P
-	s+6mG//emLN61y+fNP+qcpFndFNSK1NU+JpyhyWH19Sceu0dd7pjpbqaofD6QNafstqK/zv3
-	LF2ynNvg6uctMgcZy1Lm3E8JKjrWdMd1q76Oa2fww8DW8vcfrFYpquXJijav2P7CYZ1y8c3z
-	P8TDzi7yLMuXPb1lwpHNoun517n2K7EUZyQaajEXFScCAGlv3uojAgAA
+	Pm+SC2CL4rJJSc3JLEst0rdL4Mp419LFVLBVquL3myXMDYzfRbsYOTkkBEwk1r9ZwQhhi0lc
+	uLeerYuRi0NIYCmjxJH3FxghnE4mieNTZrOAVLEJ6ElsaP7BDmKLCLhI7J7TxwRSxCzQwyix
+	+89iZpCEMFBi9s+3YA0sAqoSi+c3s4LYvAJxEm09v5kg1ilILPuyFqyeU8BK4k/zdLChQgKW
+	Et8nTcYpPoGRfwEjwypG0dTS5ILipPRcI73ixNzi0rx0veT83E2MkHD8uoNx6TGrQ4wCHIxK
+	PLwSy8OChVgTy4orcw8xSnAwK4nwLlkUHizEm5JYWZValB9fVJqTWnyIkYmDU6qB0exXzUQL
+	tV3/+EsT5dmEgnX/By68PP+z4M177zf8rUpJdWjhd+FQmrH+vtjRnvvd/FsORRuUpCfdEDhU
+	8OrdgoPhMRW9zAGn1qw5z6+78dytK4wNrRVfjKaeufjY/faL1F7xeacnSnbece44d6risjNv
+	xFLB/UWrt+Y3/Ity2nrkPovvGdVZy5VYijMSDbWYi4oTATxpOzclAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch provide IMA policy loading from the kernel.
-When CONFIG_IMA_KERNEL_POLICY is enabled, kernel tries
-to load default /etc/ima_policy. Policy signature must
-be located in /etc/ima_policy.sig.
+Provide creation of trusted keyrings, which require all keys
+added to the keyrings be signed by an existing trusted key
+on the system trusted keyring.
 
 Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 ---
- security/integrity/ima/Kconfig    |  7 +++++++
- security/integrity/ima/ima.h      |  8 ++++++++
- security/integrity/ima/ima_fs.c   | 18 +++++++++++++++++-
- security/integrity/ima/ima_init.c |  1 +
- 4 files changed, 33 insertions(+), 1 deletion(-)
+ security/integrity/Kconfig     |  4 ++++
+ security/integrity/digsig.c    | 31 +++++++++++++++++++++++++++++++
+ security/integrity/integrity.h | 10 ++++++++++
+ 3 files changed, 45 insertions(+)
 
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index 465cef4..b00044f 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -153,3 +153,10 @@ config IMA_POLICY_LOADER
+diff --git a/security/integrity/Kconfig b/security/integrity/Kconfig
+index b16c9cd..89f226a 100644
+--- a/security/integrity/Kconfig
++++ b/security/integrity/Kconfig
+@@ -47,6 +47,10 @@ config INTEGRITY_AUDIT
+ 	  be enabled by specifying 'integrity_audit=1' on the kernel
+ 	  command line.
  
- 	  Loading policy is like:
- 	  echo /etc/ima/ima_policy > /sys/kernel/security/ima/policy
++config INTEGRITY_TRUSTED_KEYRING
++	def_bool n
++	depends on IMA_TRUSTED_KEYRING || EVM_TRUSTED_KEYRING
 +
-+config IMA_KERNEL_POLICY
-+	bool "Load IMA policy from the kernel"
-+	depends on IMA_POLICY_LOADER
-+	default n
-+	help
-+	  This option enables IMA policy loading from the kernel.
-diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-index f2722bb..3727cf7 100644
---- a/security/integrity/ima/ima.h
-+++ b/security/integrity/ima/ima.h
-@@ -179,6 +179,14 @@ static inline ssize_t ima_read_policy(char *data)
+ source security/integrity/ima/Kconfig
+ source security/integrity/evm/Kconfig
+ 
+diff --git a/security/integrity/digsig.c b/security/integrity/digsig.c
+index b4af4eb..45adc07 100644
+--- a/security/integrity/digsig.c
++++ b/security/integrity/digsig.c
+@@ -13,7 +13,9 @@
+ #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+ 
+ #include <linux/err.h>
++#include <linux/sched.h>
+ #include <linux/rbtree.h>
++#include <linux/cred.h>
+ #include <linux/key-type.h>
+ #include <linux/digsig.h>
+ 
+@@ -56,3 +58,32 @@ int integrity_digsig_verify(const unsigned int id, const char *sig, int siglen,
+ 
+ 	return -EOPNOTSUPP;
+ }
++
++#ifdef CONFIG_INTEGRITY_TRUSTED_KEYRING
++int integrity_init_keyring(const unsigned int id)
++{
++	const struct cred *cred = current_cred();
++	const struct user_struct *user = cred->user;
++
++	pr_notice("initialize trusted keyring: %s\n", keyring_name[id]);
++
++	/* this function relies that init_root_keyring() was executed
++	 * in 'keys' subsystem, which is initialized before integrity
++	 */
++
++	keyring[id] = keyring_alloc(keyring_name[id], KUIDT_INIT(0),
++				    KGIDT_INIT(0), cred,
++				    ((KEY_POS_ALL & ~KEY_POS_SETATTR) |
++				     KEY_USR_VIEW | KEY_USR_READ),
++				    KEY_ALLOC_NOT_IN_QUOTA, user->uid_keyring);
++	if (IS_ERR(keyring[id])) {
++		long rc = PTR_ERR(keyring[id]);
++		pr_err("Can't allocate %s keyring (%ld)\n",
++		       keyring_name[id], rc);
++		keyring[id] = NULL;
++		return rc;
++	}
++	set_bit(KEY_FLAG_TRUSTED_ONLY, &keyring[id]->flags);
++	return 0;
++}
++#endif
+diff --git a/security/integrity/integrity.h b/security/integrity/integrity.h
+index 2fb5e53..dd26ad0 100644
+--- a/security/integrity/integrity.h
++++ b/security/integrity/integrity.h
+@@ -137,6 +137,7 @@ static inline int integrity_digsig_verify(const unsigned int id,
+ #ifdef CONFIG_INTEGRITY_ASYMMETRIC_KEYS
+ int asymmetric_verify(struct key *keyring, const char *sig,
+ 		      int siglen, const char *data, int datalen);
++
+ #else
+ static inline int asymmetric_verify(struct key *keyring, const char *sig,
+ 				    int siglen, const char *data, int datalen)
+@@ -145,6 +146,15 @@ static inline int asymmetric_verify(struct key *keyring, const char *sig,
  }
  #endif
  
-+#ifdef CONFIG_IMA_KERNEL_POLICY
-+void ima_load_policy(char *path);
++#ifdef CONFIG_INTEGRITY_TRUSTED_KEYRING
++int integrity_init_keyring(const unsigned int id);
 +#else
-+static inline void ima_load_policy(char *path)
++static inline int integrity_init_keyring(const unsigned int id)
 +{
++	return 0;
 +}
 +#endif
 +
- /* Appraise integrity measurements */
- #define IMA_APPRAISE_ENFORCE	0x01
- #define IMA_APPRAISE_FIX	0x02
-diff --git a/security/integrity/ima/ima_fs.c b/security/integrity/ima/ima_fs.c
-index bde7a0e..d050a5c 100644
---- a/security/integrity/ima/ima_fs.c
-+++ b/security/integrity/ima/ima_fs.c
-@@ -319,7 +319,7 @@ static int ima_open_policy(struct inode *inode, struct file *filp)
-  * point to the new policy rules, and remove the securityfs policy file,
-  * assuming a valid policy.
-  */
--static int ima_release_policy(struct inode *inode, struct file *file)
-+static void ima_check_policy(void)
- {
- 	if (!valid_policy) {
- 		ima_delete_rules();
-@@ -328,6 +328,11 @@ static int ima_release_policy(struct inode *inode, struct file *file)
- 		ima_update_policy();
- 	}
- 	clear_bit(IMA_FS_BUSY, &ima_fs_flags);
-+}
-+
-+static int ima_release_policy(struct inode *inode, struct file *file)
-+{
-+	ima_check_policy();
- 	return 0;
- }
- 
-@@ -338,6 +343,17 @@ static const struct file_operations ima_measure_policy_ops = {
- 	.llseek = generic_file_llseek,
- };
- 
-+#ifdef CONFIG_IMA_KERNEL_POLICY
-+void __init ima_load_policy(char *path)
-+{
-+	if (test_and_set_bit(IMA_FS_BUSY, &ima_fs_flags))
-+		return;
-+	if (ima_read_policy(path) < 0)
-+		valid_policy = 0;
-+	ima_check_policy();
-+}
-+#endif
-+
- int __init ima_fs_init(void)
- {
- 	ima_dir = securityfs_create_dir("ima", NULL);
-diff --git a/security/integrity/ima/ima_init.c b/security/integrity/ima/ima_init.c
-index c13d6a8..d1a6483 100644
---- a/security/integrity/ima/ima_init.c
-+++ b/security/integrity/ima/ima_init.c
-@@ -109,6 +109,7 @@ int __init ima_init(void)
- 	ima_init_policy();
- 	integrity_init_keyring(INTEGRITY_KEYRING_IMA);
- 	integrity_load_x509(INTEGRITY_KEYRING_IMA, "/etc/keys/x509_ima.der");
-+	ima_load_policy("/etc/ima_policy");
- 
- 	return ima_fs_init();
- }
+ #ifdef CONFIG_INTEGRITY_AUDIT
+ /* declarations */
+ void integrity_audit_msg(int audit_msgno, struct inode *inode,
 -- 
 1.8.3.2
 
