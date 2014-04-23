@@ -1,92 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370AbaDWOna (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:43:30 -0400
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:48759 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757339AbaDWOnY (ORCPT
+	id S1756049AbaDWOoE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:44:04 -0400
+Received: from mtaout28.012.net.il ([80.179.55.184]:60398 "EHLO
+	mtaout28.012.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719AbaDWOn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:43:24 -0400
-Subject: Re: [PATCH 2/7] perf tools: Account entry stats when it's added to
- the output tree
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20140423133536.GC11124@krava.brq.redhat.com>
-References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
-	 <1398236408-8856-3-git-send-email-namhyung@kernel.org>
-	 <20140423133536.GC11124@krava.brq.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Apr 2014 23:43:16 +0900
-Message-ID: <1398264196.1696.12.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 23 Apr 2014 10:43:59 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Apr 2014 10:43:59 EDT
+Date: Wed, 23 Apr 2014 17:38:52 +0300
+From: Oren Twaig <oren@scalemp.com>
+Subject: [PATCH] X86: Hook apic vector allocation domain only when interrupt routing are set to ignore
+X-012-Sender: ira_oren@012.net.il
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
+Message-id: <5357D07C.5080407@scalemp.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1; format=flowed
+Content-transfer-encoding: 7bit
+X-Antivirus: avast! (VPS 140423-0, 04/23/2014), Outbound message
+X-Antivirus-Status: Clean
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Set all inclusive vector allocation domain only if interrupt routing is 
+set to ignore. When in comply mode, vector allocation behavior isn't 
+changed.
 
-2014-04-23 (수), 15:35 +0200, Jiri Olsa:
-> On Wed, Apr 23, 2014 at 04:00:03PM +0900, Namhyung Kim wrote:
-> > Currently, accounting each sample is done in multiple places - once
-> > when adding them to the input tree, other when adding them to the
-> > output tree.  It's not only confusing but also can cause a subtle
-> > problem since concurrent processing like in perf top might see the
-> > updated stats before adding entries into the output tree - like seeing
-> > more (blank) lines at the end and/or slight inaccurate percentage.
-> > 
-> > To fix this, only account the entries when it's moved into the output
-> > tree so that they cannot be seen prematurely.  There're some
-> > exceptional cases here and there - they should be addressed separately
-> > with comments.
-> 
-> sry to be PITA, but need to ask you to split the patch,
-> otherwise I'd get beaten for that ;-)
+Signed-off-by: Oren Twaig <oren@scalemp.com>
+Acked-by: Shai Fultheim <shai@scalemp.com>
+---
+diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
+index f6584a9..60a195d 100644
+--- a/arch/x86/kernel/vsmp_64.c
++++ b/arch/x86/kernel/vsmp_64.c
+@@ -27,6 +27,9 @@
+  #define TOPOLOGY_REGISTER_OFFSET 0x10
 
-No problem.  I'll split it in the next spin.
+  #if defined CONFIG_PCI && defined CONFIG_PARAVIRT
++
++static int irc = 1;
++
+  /*
+   * Interrupt control on vSMPowered systems:
+   * ~AC is a shadow of IF.  If IF is 'on' AC should be 'off'
+@@ -101,6 +104,10 @@ static void __init set_vsmp_pv_ops(void)
+  #ifdef CONFIG_SMP
+      if (cap & ctl & BIT(8)) {
+          ctl &= ~BIT(8);
++
++        /* Interrupt routing set to ignore */
++        irc = 0;
++
+  #ifdef CONFIG_PROC_FS
+          /* Don't let users change irq affinity via procfs */
+          no_irq_affinity = 1;
+@@ -218,7 +225,9 @@ static void vsmp_apic_post_init(void)
+  {
+      /* need to update phys_pkg_id */
+      apic->phys_pkg_id = apicid_phys_pkg_id;
+-    apic->vector_allocation_domain = fill_vector_allocation_domain;
++
++    if (!irc)
++        apic->vector_allocation_domain = fill_vector_allocation_domain;
+  }
 
-> 
-> I can see several separated changes here:
->  * remove stats for input tree (as stated in changelog)
->  * hists__inc_nr_entries -> hists__inc_stats rename
->  * add hists__reset_stats function
->  * move hists__calc_col_len out of hists__inc_nr_entries
-> 
-> 
-> > 
-> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> > ---
-> 
-> SNIP
-> 
-> >  
-> > diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-> > index aed52036468d..4bdcc040b216 100644
-> > --- a/tools/perf/builtin-report.c
-> > +++ b/tools/perf/builtin-report.c
-> > @@ -85,6 +85,10 @@ static void report__inc_stats(struct report *rep, struct hist_entry *he)
-> >  	 */
-> >  	if (he->stat.nr_events == 1)
-> >  		rep->nr_entries++;
-> > +
-> > +	hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
-> > +	if (!he->filtered)
-> > +		he->hists->stats.nr_non_filtered_samples++;
-> 
-> could you put here some comments as for the diff command
-> I mean why is this exception in stats counting for input tree
-
-Will do as well.
-
-Thanks,
-Namhyung
+  void __init vsmp_init(void)
 
 
+---
+This email is free from viruses and malware because avast! Antivirus protection is active.
+http://www.avast.com
 
