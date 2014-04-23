@@ -1,77 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250AbaDWNaG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:30:06 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:55980 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755594AbaDWN3v (ORCPT
+	id S1756280AbaDWNaW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:30:22 -0400
+Received: from g9t1613g.houston.hp.com ([15.240.0.71]:58594 "EHLO
+	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755077AbaDWNaQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:29:51 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-71-5357c04ed8b1
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-To: zohar@linux.vnet.ibm.com, dhowells@redhat.com, jmorris@namei.org
-Cc: roberto.sassu@polito.it, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Dmitry Kasatkin <d.kasatkin@samsung.com>
-Subject: [PATCH 09/20] evm: create '_evm' as a builtin 'trusted' keyring
-Date: Wed, 23 Apr 2014 16:30:27 +0300
-Message-id: <f793666712900a3d339371a54cb2fc1e24f48827.1398259638.git.d.kasatkin@samsung.com>
-X-Mailer: git-send-email 1.8.3.2
-In-reply-to: <cover.1398259638.git.d.kasatkin@samsung.com>
-References: <cover.1398259638.git.d.kasatkin@samsung.com>
-In-reply-to: <cover.1398259638.git.d.kasatkin@samsung.com>
-References: <cover.1398259638.git.d.kasatkin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprELMWRmVeSWpSXmKPExsVy+t/xq7p+B8KDDX7s0bG49Xcvs8W7pt8s
-	FuvWL2ayuLxrDpvFh55HbBYvd31jt/i0YhKzA7vHg0ObWTx6vid7nF5Z7PF+31U2j74tqxg9
-	Pm+SC2CL4rJJSc3JLEst0rdL4Mro2X2BreAHV8WXWwsZGxh7ObsYOTkkBEwkJrV+ZIGwxSQu
-	3FvP1sXIxSEksJRRYt/VZewQTieTxM0b18Gq2AT0JDY0/2AHsUUEXCR2z+ljAiliFuhhlNj9
-	ZzEzSEJYwEPi9+ztjCA2i4CqxMN9U9lAbF6BOIk/c1ZCrVOQWPZlLVg9p4CVxJ/m6WBDhQQs
-	Jb5PmoxTfAIj/wJGhlWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIeH4ZQfj4mNWhxgFOBiV
-	eHgllocFC7EmlhVX5h5ilOBgVhLhXbIoPFiINyWxsiq1KD++qDQntfgQIxMHp1QDY+0MKQ3R
-	/j+ZG6+Frlxcxau2Ns1b6pLbrLOCEu9XpDkGG7xt/8p7mc8gewPPZu5XN/6ecub9aFb9a6n8
-	zOoPkaIsZ74JV9fND38qa7/leNkUb/ee/8++3RZkPrJtfmToTN7s7ZW5kdO0stasiqivPWds
-	mZw+s8IsdVKrVOnsiY2W03i2HHJrV2Ipzkg01GIuKk4EAAKarFglAgAA
+	Wed, 23 Apr 2014 09:30:16 -0400
+From: "J S, Ajesh" <ajesh.js@hp.com>
+To: "clm@fb.com" <clm@fb.com>, "jbacik@fb.com" <jbacik@fb.com>
+CC: "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 001/001] btrfs: Mechanism to modify the permission of a
+ subvolume 
+Thread-Topic: [PATCH 001/001] btrfs: Mechanism to modify the permission of a
+ subvolume 
+Thread-Index: Ac9e99iHjeArEQIQQNGoH9v0JpmHTg==
+Date: Wed, 23 Apr 2014 13:28:01 +0000
+Message-ID: <1C24A869E87C7B45BE3E2BB439AB8F8C0D13DAE0@G5W2738.americas.hpqcorp.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [15.193.49.18]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Require all keys added to the EVM keyring be signed by an
-existing trusted key on the system trusted keyring.
+From: Ajesh JS <ajesh.js@hp.com>
 
-Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
----
- security/integrity/evm/Kconfig    | 8 ++++++++
- security/integrity/evm/evm_main.c | 2 ++
- 2 files changed, 10 insertions(+)
+This patch provides a mechanism to modify the permission of a subvolume in a btrfs file system
+This helps to apply a policy of having read-write subvolume inside a read-only subvolume.
+One use case is to have the whole root file system as a read-only subvolume and have /etc as a read-write subvolume inside.
 
-diff --git a/security/integrity/evm/Kconfig b/security/integrity/evm/Kconfig
-index df20a2f..3f9098c6 100644
---- a/security/integrity/evm/Kconfig
-+++ b/security/integrity/evm/Kconfig
-@@ -43,3 +43,11 @@ config EVM_EXTRA_SMACK_XATTRS
- 	  additional info to the calculation, requires existing EVM
- 	  labeled file systems to be relabeled.
+Signed-off-by: Ajesh JS <ajesh.js@hp.com>
+Reviewed-by: Liverance Fletcher <fletch@hp.com>; Clemenceau, <Matthieu matthieu.clemenceau@hp.com>
+"-------------------------------------------------------------------------"
+diff -rup linux-3.13.6/fs/btrfs/ioctl.c linux-3.13.6_btrfs/fs/btrfs/ioctl.c
+--- linux-3.13.6/fs/btrfs/ioctl.c	2014-03-07 11:37:02.000000000 +0530
++++ linux-3.13.6_btrfs/fs/btrfs/ioctl.c	2014-03-19 14:25:28.375139699 +0530
+@@ -1636,6 +1636,68 @@ out:
+ 	return ret;
+ }
  
-+config EVM_TRUSTED_KEYRING
-+	bool "Require all keys on the _evm keyring be signed"
-+	depends on EVM && SYSTEM_TRUSTED_KEYRING
-+	select INTEGRITY_TRUSTED_KEYRING
-+	default n
-+	help
-+	   This option requires that all keys added to the _evm
-+	   keyring be signed by a key on the system trusted keyring.
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index 4c00adb..8a11920 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -447,6 +447,8 @@ static int __init init_evm(void)
- 
- 	evm_init_config();
- 
-+	integrity_init_keyring(INTEGRITY_KEYRING_EVM);
++static noinline int btrfs_ioctl_subvol_modify(struct file *file,
++						void __user *arg)
++{
++	struct btrfs_ioctl_vol_args_v2 *vol_args;
++	struct inode *inode = file_inode(file);
++	struct btrfs_root *root = BTRFS_I(inode)->root;
++	struct btrfs_trans_handle *trans;
++	u64 root_flags;
++	u64 flags;
++	int ret = 0;
 +
- 	error = evm_init_secfs();
- 	if (error < 0) {
- 		pr_info("Error registering secfs\n");
--- 
-1.8.3.2
-
++	ret = mnt_want_write_file(file);
++	if (ret)
++		goto out;
++
++	if (btrfs_ino(inode) != BTRFS_FIRST_FREE_OBJECTID) {
++		ret = -EINVAL;
++		goto out_drop_write;
++	}
++	vol_args = memdup_user(arg, sizeof(*vol_args));
++	if (IS_ERR(vol_args))
++		goto out_drop_write;
++	vol_args->name[BTRFS_SUBVOL_NAME_MAX] = '\0';
++	flags = vol_args->flags;
++	if (!inode_owner_or_capable(inode)) {
++		ret = -EACCES;
++		goto out_drop_write;
++	}
++
++	down_write(&root->fs_info->subvol_sem);
++	root_flags = btrfs_root_flags(&root->root_item);
++
++	if (flags & BTRFS_SUBVOL_RDONLY) {
++		btrfs_set_root_flags(&root->root_item,
++					root_flags | BTRFS_ROOT_SUBVOL_RDONLY);
++		printk(KERN_INFO "Setting %s to ro\n", vol_args->name);
++	} else {
++		btrfs_set_root_flags(&root->root_item,
++					root_flags & ~BTRFS_ROOT_SUBVOL_RDONLY);
++		printk(KERN_INFO "Setting %s to rw\n", vol_args->name);
++	}
++
++	trans = btrfs_start_transaction(root, 1);
++	if (IS_ERR(trans)) {
++		ret = PTR_ERR(trans);
++		goto out_reset;
++	}
++
++	ret = btrfs_update_root(trans, root->fs_info->tree_root,
++					&root->root_key, &root->root_item);
++	btrfs_commit_transaction(trans, root);
++
++out_reset:
++	if (ret)
++		btrfs_set_root_flags(&root->root_item, root_flags);
++	up_write(&root->fs_info->subvol_sem);
++out_drop_write:
++	mnt_drop_write_file(file);
++out:
++	return ret;
++}
++
+ static noinline int btrfs_ioctl_subvol_getflags(struct file *file,
+ 						void __user *arg)
+ {
+@@ -4509,6 +4571,8 @@ long btrfs_ioctl(struct file *file, unsi
+ 		return btrfs_ioctl_snap_create(file, argp, 1);
+ 	case BTRFS_IOC_SUBVOL_CREATE_V2:
+ 		return btrfs_ioctl_snap_create_v2(file, argp, 1);
++	case BTRFS_IOC_SUBVOL_MODIFY:
++		return btrfs_ioctl_subvol_modify(file, argp);
+ 	case BTRFS_IOC_SNAP_DESTROY:
+ 		return btrfs_ioctl_snap_destroy(file, argp);
+ 	case BTRFS_IOC_SUBVOL_GETFLAGS:
+diff -rup linux-3.13.6/include/uapi/linux/btrfs.h linux-3.13.6_btrfs/include/uapi/linux/btrfs.h
+--- linux-3.13.6/include/uapi/linux/btrfs.h	2014-03-07 11:37:02.000000000 +0530
++++ linux-3.13.6_btrfs/include/uapi/linux/btrfs.h	2014-03-19 15:34:30.648255239 +0530
+@@ -606,5 +606,7 @@ static inline char *btrfs_err_str(enum b
+ 				    struct btrfs_ioctl_dev_replace_args)
+ #define BTRFS_IOC_FILE_EXTENT_SAME _IOWR(BTRFS_IOCTL_MAGIC, 54, \
+ 					 struct btrfs_ioctl_same_args)
++#define BTRFS_IOC_SUBVOL_MODIFY _IOW(BTRFS_IOCTL_MAGIC, 55, \
++				   struct btrfs_ioctl_vol_args_v2)
+ 
+ #endif /* _UAPI_LINUX_BTRFS_H */
