@@ -1,101 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754235AbaDWMln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:41:43 -0400
-Received: from mail-ob0-f173.google.com ([209.85.214.173]:47465 "EHLO
-	mail-ob0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005AbaDWMli (ORCPT
+	id S1755774AbaDWMmB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:42:01 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:55058 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753009AbaDWMl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:41:38 -0400
-MIME-Version: 1.0
-X-Originating-IP: [217.156.156.35]
-In-Reply-To: <201404231418.05174.arnd@arndb.de>
-References: <1398247687-13453-1-git-send-email-james.hogan@imgtec.com>
-	<1398247687-13453-4-git-send-email-james.hogan@imgtec.com>
-	<201404231418.05174.arnd@arndb.de>
-Date: Wed, 23 Apr 2014 13:41:37 +0100
-X-Google-Sender-Auth: DnvbcFNxUo0iyUUjGomMrueoR4U
-Message-ID: <CAAG0J9-2=rP3RP08eEjd17R3wEaeiUtGfWD-LeqXV=y9sBamfA@mail.gmail.com>
-Subject: Re: [RFC 3/3] asm-generic: Drop renameat syscall from default list
-From: James Hogan <james.hogan@imgtec.com>
-To: Arnd Bergmann <arnd@arndb.de>, Miklos Szeredi <mszeredi@suse.cz>
-Cc: linux-arch@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org,
-        Richard Kuo <rkuo@codeaurora.org>, linux-hexagon@vger.kernel.org,
-        metag <linux-metag@vger.kernel.org>, Jonas Bonn <jonas@southpole.se>,
-        linux@openrisc.net, Chen Liqin <liqin.linux@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 Apr 2014 08:41:56 -0400
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-gpio@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH 3/4 v2] gpio: tc3589x: get rid of static IRQ and GPIO bases
+Date: Wed, 23 Apr 2014 14:41:46 +0200
+Message-Id: <1398256906-25118-1-git-send-email-linus.walleij@linaro.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 April 2014 13:18, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 23 April 2014, James Hogan wrote:
->> The new renameat2 syscall provides all the functionality provided by the
->> renameat syscall and adds flags, so future architectures won't need to
->> include renameat.
->>
->> Therefore drop the renameat syscall from the generic syscall list unless
->> __ARCH_WANT_RENAMEAT is defined by the architecture's unistd.h prior to
->> including asm-generic/unistd.h, and adjust all architectures using the
->> generic syscall list to define it so that no in-tree architectures are
->> affected.
->
-> I should have read this one before replying to patch 2 ;-)
->
->> Signed-off-by: James Hogan <james.hogan@imgtec.com>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: linux-arch@vger.kernel.org
->> Cc: Vineet Gupta <vgupta@synopsys.com>
->> Cc: Catalin Marinas <catalin.marinas@arm.com>
->> Cc: Will Deacon <will.deacon@arm.com>
->> Cc: linux-arm-kernel@lists.infradead.org
->> Cc: Mark Salter <msalter@redhat.com>
->> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
->> Cc: linux-c6x-dev@linux-c6x.org
->> Cc: Richard Kuo <rkuo@codeaurora.org>
->> Cc: linux-hexagon@vger.kernel.org
->> Cc: linux-metag@vger.kernel.org
->> Cc: Jonas Bonn <jonas@southpole.se>
->> Cc: linux@lists.openrisc.net
->> Cc: Chen Liqin <liqin.linux@gmail.com>
->> Cc: Lennox Wu <lennox.wu@gmail.com>
->> Cc: Chris Metcalf <cmetcalf@tilera.com>
->> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
->> ---
->> Is this the approach we want to take to keep the default syscall list
->> minimal? We could for example have made renameat2 use the renameat
->> syscall number for new arches, but it seemed best to leave a gap for new
->> arches to improve consistency of numbering.
->
-> I think leaving the hole is best.
->
->> This patch is a no-op for arches in tree, so there's no harm for this to
->> wait for the v3.16 merge window.
->
-> Sounds good. I guess I'll have to put this into my asm-generic tree
-> then, unless I can get the nios2 maintainers to pick it up.
+The static IRQ and GPIO base is not used on any platforms with
+this chip (only Ux500, only device tree). Get rid of the static
+assignments forever, and rely on dynamic IRQ and GPIO descriptor
+allocation.
 
-Okay, thanks.
+Cc: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ChangeLog v1->v2:
+- Be more thorough, delete all static GPIO and IRQ assignments.
 
-> If you don't mind, can you submit the first two patches to Linus
-> directly?
+Lee/Sam: can you either ACK this small(ish) change so I can
+take it through the GPIO tree or provide an immutable TC3589x
+branch including any other TC3589x patches I've written or
+may have arrived?
+---
+ drivers/gpio/gpio-tc3589x.c | 12 ++----------
+ drivers/mfd/tc3589x.c       |  9 +++------
+ include/linux/mfd/tc3589x.h | 11 -----------
+ 3 files changed, 5 insertions(+), 27 deletions(-)
 
-It appears Miklos Szeredi beat me to it with patch 1 (adding renameat2
-syscall to asm-generic unistd.h), and will be submitting it to Linus
-at some point as part of his renameat2 series.
-Miklos: Do you think it makes sense for you to include my second patch
-in your series too since it's renameat2 related?
-http://marc.info/?l=linux-kernel&m=139824773305016&w=2
+diff --git a/drivers/gpio/gpio-tc3589x.c b/drivers/gpio/gpio-tc3589x.c
+index 113e50cb1f59..fee8c73cf8c8 100644
+--- a/drivers/gpio/gpio-tc3589x.c
++++ b/drivers/gpio/gpio-tc3589x.c
+@@ -32,9 +32,6 @@ struct tc3589x_gpio {
+ 	struct device *dev;
+ 	struct mutex irq_lock;
+ 	struct irq_domain *domain;
+-
+-	int irq_base;
+-
+ 	/* Caches of interrupt control registers for bus_lock */
+ 	u8 regs[CACHE_NR_REGS][CACHE_NR_BANKS];
+ 	u8 oldregs[CACHE_NR_REGS][CACHE_NR_BANKS];
+@@ -290,8 +287,6 @@ static struct irq_domain_ops tc3589x_irq_ops = {
+ static int tc3589x_gpio_irq_init(struct tc3589x_gpio *tc3589x_gpio,
+ 				struct device_node *np)
+ {
+-	int base = tc3589x_gpio->irq_base;
+-
+ 	/*
+ 	 * If this results in a linear domain, irq_create_mapping() will
+ 	 * take care of allocating IRQ descriptors at runtime. When a base
+@@ -299,7 +294,7 @@ static int tc3589x_gpio_irq_init(struct tc3589x_gpio *tc3589x_gpio,
+ 	 * domain is instantiated.
+ 	 */
+ 	tc3589x_gpio->domain = irq_domain_add_simple(np,
+-			tc3589x_gpio->chip.ngpio, base, &tc3589x_irq_ops,
++			tc3589x_gpio->chip.ngpio, 0, &tc3589x_irq_ops,
+ 			tc3589x_gpio);
+ 	if (!tc3589x_gpio->domain) {
+ 		dev_err(tc3589x_gpio->dev, "Failed to create irqdomain\n");
+@@ -342,15 +337,12 @@ static int tc3589x_gpio_probe(struct platform_device *pdev)
+ 	tc3589x_gpio->chip = template_chip;
+ 	tc3589x_gpio->chip.ngpio = tc3589x->num_gpio;
+ 	tc3589x_gpio->chip.dev = &pdev->dev;
+-	tc3589x_gpio->chip.base = (pdata) ? pdata->gpio_base : -1;
++	tc3589x_gpio->chip.base = -1;
+ 
+ #ifdef CONFIG_OF_GPIO
+ 	tc3589x_gpio->chip.of_node = np;
+ #endif
+ 
+-	tc3589x_gpio->irq_base = tc3589x->irq_base ?
+-		tc3589x->irq_base + TC3589x_INT_GPIO(0) : 0;
+-
+ 	/* Bring the GPIO module out of reset */
+ 	ret = tc3589x_set_bits(tc3589x, TC3589x_RSTCTRL,
+ 			       TC3589x_RSTCTRL_GPIRST, 0);
+diff --git a/drivers/mfd/tc3589x.c b/drivers/mfd/tc3589x.c
+index bd83accc0f6d..972b00d0220f 100644
+--- a/drivers/mfd/tc3589x.c
++++ b/drivers/mfd/tc3589x.c
+@@ -241,10 +241,8 @@ static struct irq_domain_ops tc3589x_irq_ops = {
+ 
+ static int tc3589x_irq_init(struct tc3589x *tc3589x, struct device_node *np)
+ {
+-	int base = tc3589x->irq_base;
+-
+ 	tc3589x->domain = irq_domain_add_simple(
+-		np, TC3589x_NR_INTERNAL_IRQS, base,
++		np, TC3589x_NR_INTERNAL_IRQS, 0,
+ 		&tc3589x_irq_ops, tc3589x);
+ 
+ 	if (!tc3589x->domain) {
+@@ -298,7 +296,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
+ 	if (blocks & TC3589x_BLOCK_GPIO) {
+ 		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_gpio,
+ 				      ARRAY_SIZE(tc3589x_dev_gpio), NULL,
+-				      tc3589x->irq_base, tc3589x->domain);
++				      0, tc3589x->domain);
+ 		if (ret) {
+ 			dev_err(tc3589x->dev, "failed to add gpio child\n");
+ 			return ret;
+@@ -309,7 +307,7 @@ static int tc3589x_device_init(struct tc3589x *tc3589x)
+ 	if (blocks & TC3589x_BLOCK_KEYPAD) {
+ 		ret = mfd_add_devices(tc3589x->dev, -1, tc3589x_dev_keypad,
+ 				      ARRAY_SIZE(tc3589x_dev_keypad), NULL,
+-				      tc3589x->irq_base, tc3589x->domain);
++				      0, tc3589x->domain);
+ 		if (ret) {
+ 			dev_err(tc3589x->dev, "failed to keypad child\n");
+ 			return ret;
+@@ -404,7 +402,6 @@ static int tc3589x_probe(struct i2c_client *i2c,
+ 	tc3589x->dev = &i2c->dev;
+ 	tc3589x->i2c = i2c;
+ 	tc3589x->pdata = pdata;
+-	tc3589x->irq_base = pdata->irq_base;
+ 
+ 	switch (version) {
+ 	case TC3589X_TC35893:
+diff --git a/include/linux/mfd/tc3589x.h b/include/linux/mfd/tc3589x.h
+index 6b8e1ff4672b..c07aba9a1a2a 100644
+--- a/include/linux/mfd/tc3589x.h
++++ b/include/linux/mfd/tc3589x.h
+@@ -111,15 +111,12 @@ enum tx3589x_block {
+ #define TC3589x_INT_PORIRQ	7
+ 
+ #define TC3589x_NR_INTERNAL_IRQS	8
+-#define TC3589x_INT_GPIO(x)	(TC3589x_NR_INTERNAL_IRQS + (x))
+ 
+ struct tc3589x {
+ 	struct mutex lock;
+ 	struct device *dev;
+ 	struct i2c_client *i2c;
+ 	struct irq_domain *domain;
+-
+-	int irq_base;
+ 	int num_gpio;
+ 	struct tc3589x_platform_data *pdata;
+ };
+@@ -165,13 +162,10 @@ struct tc3589x_keypad_platform_data {
+ 
+ /**
+  * struct tc3589x_gpio_platform_data - TC3589x GPIO platform data
+- * @gpio_base: first gpio number assigned to TC3589x.  A maximum of
+- *	       %TC3589x_NR_GPIOS GPIOs will be allocated.
+  * @setup: callback for board-specific initialization
+  * @remove: callback for board-specific teardown
+  */
+ struct tc3589x_gpio_platform_data {
+-	int gpio_base;
+ 	void (*setup)(struct tc3589x *tc3589x, unsigned gpio_base);
+ 	void (*remove)(struct tc3589x *tc3589x, unsigned gpio_base);
+ };
+@@ -179,18 +173,13 @@ struct tc3589x_gpio_platform_data {
+ /**
+  * struct tc3589x_platform_data - TC3589x platform data
+  * @block: bitmask of blocks to enable (use TC3589x_BLOCK_*)
+- * @irq_base: base IRQ number.  %TC3589x_NR_IRQS irqs will be used.
+  * @gpio: GPIO-specific platform data
+  * @keypad: keypad-specific platform data
+  */
+ struct tc3589x_platform_data {
+ 	unsigned int block;
+-	int irq_base;
+ 	struct tc3589x_gpio_platform_data *gpio;
+ 	const struct tc3589x_keypad_platform_data *keypad;
+ };
+ 
+-#define TC3589x_NR_GPIOS	24
+-#define TC3589x_NR_IRQS		TC3589x_INT_GPIO(TC3589x_NR_GPIOS)
+-
+ #endif
+-- 
+1.9.0
 
-Otherwise I'm happy to take it or both patches for v3.15.
-
-Cheers
-James
