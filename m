@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbaDWC11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 22:27:27 -0400
-Received: from mail-bn1blp0187.outbound.protection.outlook.com ([207.46.163.187]:51063
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750860AbaDWC10 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 22:27:26 -0400
-From: "Li.Xiubo@freescale.com" <Li.Xiubo@freescale.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] clocksource: fix clocksource_mmio_readX_down
-Thread-Topic: [PATCH] clocksource: fix clocksource_mmio_readX_down
-Thread-Index: AQHPWiVQpW+42AWBq0+3FzJmFl9tAZsddoYAgAEK5OA=
-Date: Wed, 23 Apr 2014 02:27:22 +0000
-Message-ID: <2f174001f11b4e1b89558cb170973875@BY2PR03MB505.namprd03.prod.outlook.com>
-References: <1397726874-6349-1-git-send-email-Li.Xiubo@freescale.com>
- <535643FA.1080908@linaro.org>
-In-Reply-To: <535643FA.1080908@linaro.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.49]
-x-forefront-prvs: 01901B3451
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(164054003)(51704005)(79102001)(15395725003)(33646001)(92566001)(85852003)(74662001)(74502001)(20776003)(77982001)(31966008)(66066001)(86362001)(50986999)(83072002)(575784001)(81342001)(76176999)(81542001)(99286001)(19580395003)(80976001)(2656002)(87936001)(46102001)(80022001)(74316001)(83322001)(76576001)(4396001)(76482001)(54356999)(99396002)(77096999)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB505;H:BY2PR03MB505.namprd03.prod.outlook.com;FPR:FCD0FA00.8CE25CEC.45412E03.83EAEC38.201B1;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1753713AbaDWCcd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 22:32:33 -0400
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:34756 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751154AbaDWCcb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 22 Apr 2014 22:32:31 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <20140422125539.f40a414ca0dbae703a23b977@linux-foundation.org>
+References: <000001cf5dd8$ecf1c360$c6d54a20$%yang@samsung.com>
+	<20140422125539.f40a414ca0dbae703a23b977@linux-foundation.org>
+Date: Wed, 23 Apr 2014 10:32:30 +0800
+Message-ID: <CAL1ERfM2VGyNUGYdQQyEyqyycnPMoHZn5Vk2Fo3WXL37KmFzCA@mail.gmail.com>
+Subject: Re: [PATCH] zram: correct offset usage in zram_bio_discard
+From: Weijie Yang <weijie.yang.kh@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Weijie Yang <weijie.yang@samsung.com>, Minchan Kim <minchan@kernel.org>,
+        Nitin Gupta <ngupta@vflare.org>, iamjoonsoo.kim@lge.com,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
+        Bob Liu <bob.liu@oracle.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3N2RWg1014950
 
-> > diff --git a/drivers/clocksource/mmio.c b/drivers/clocksource/mmio.c
-> > index c0e2512..f17a0d1 100644
-> > --- a/drivers/clocksource/mmio.c
-> > +++ b/drivers/clocksource/mmio.c
-> > @@ -27,7 +27,7 @@ cycle_t clocksource_mmio_readl_up(struct clocksource *c)
-> >
-> >   cycle_t clocksource_mmio_readl_down(struct clocksource *c)
-> >   {
-> > -	return ~readl_relaxed(to_mmio_clksrc(c)->reg);
-> > +	return ~readl_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
-> >   }
-> >
-> >   cycle_t clocksource_mmio_readw_up(struct clocksource *c)
-> > @@ -37,7 +37,7 @@ cycle_t clocksource_mmio_readw_up(struct clocksource *c)
-> >
-> >   cycle_t clocksource_mmio_readw_down(struct clocksource *c)
-> >   {
-> > -	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg);
-> > +	return ~(unsigned)readw_relaxed(to_mmio_clksrc(c)->reg) & c->mask;
-> >   }
-> >
-> >   /**
-> 
-> 
-> Hi,
-> 
-> I realize there is some type confusion here:
-> 
-> cycle_t -> u64
-> readl_relaxed -> u32
-> readw_relaxed -> u16
-> 
-> and clocksource_mmio_readw_down returns a cast to unsigned (u32)
-> 
-> This patch makes sense but it obfuscate more the types in these
-> functions. Worth to clarify the functions first ?
-> 
+On Wed, Apr 23, 2014 at 3:55 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Tue, 22 Apr 2014 11:14:02 +0800 Weijie Yang <weijie.yang@samsung.com> wrote:
+>
+>> we want to skip the logical block which is partially covered by
+>> the discard bio, so check the remaining size and subtract it if
+>> there is a need to goto the next logical block.
+>>
+>> This patch corrects the offset usage in zram_bio_discard.
+>>
+>
+> What were the end-user visible effects of the bug?
+>
+> Please always include this information when fixing something so that
+> others can work out which kernel(s) need patching.
+>
 
-Yes, though the short type could be converted to the longer type automatically,
-It's better and worth to clarify it firstly.
+Thanks for your advise, I will resend this patch and add the end-user
+visible effect information.
 
-I'll fix this, please see the next version.
-
-
-Thanks,
-BRs
-Xiubo
-
-
-> 
 > --
->   <http://www.linaro.org/> Linaro.org â”‚ Open source software for ARM SoCs
-> 
-> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-> <http://twitter.com/#!/linaroorg> Twitter |
-> <http://www.linaro.org/linaro-blog/> Blog
-> 
-> 
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
