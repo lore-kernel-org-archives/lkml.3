@@ -1,95 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaDWM5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:57:45 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:37139 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354AbaDWM5o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:57:44 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-d9-5357b8c6396f
-From: Jingoo Han <jg1.han@samsung.com>
-To: "'Krzysztof Kozlowski'" <k.kozlowski@samsung.com>
-Cc: "'Alessandro Zummo'" <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        linux-kernel@vger.kernel.org,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Haojian Zhuang'" <haojian.zhuang@linaro.org>,
-        "'Sachin Kamat'" <sachin.kamat@linaro.org>,
-        "'Jingoo Han'" <jg1.han@samsung.com>
-References: <1398256168-493-1-git-send-email-k.kozlowski@samsung.com>
-In-reply-to: <1398256168-493-1-git-send-email-k.kozlowski@samsung.com>
-Subject: Re: [PATCH RESEND 1/2] rtc: 88pm860x: Use of_get_child_by_name
-Date: Wed, 23 Apr 2014 21:57:42 +0900
-Message-id: <000c01cf5ef3$9d482a90$d7d87fb0$%han@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: Ac9e76xsw0Xq6PRVRASSEcaxpMmXngAA6dOA
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNIsWRmVeSWpSXmKPExsVy+t8zfd1jO8KDDTZONrFYcvEqu8Wc9WvY
-	LC6fO8xocXnhJVaL1y8MLS7vmsNmsb+zg9Hi5J9eRgcOjz0TT7J53Lm2h83jxIzfLB59W1Yx
-	ekyf95PJ4/MmuQC2KC6blNSczLLUIn27BK6MBc/ushdcYK9YsuYcWwPjLLYuRk4OCQETiU8f
-	50LZYhIX7q0Hsrk4hASWMUps3bSbFabozLkX7BCJRYwSU67cZYVwfjNKzPr1gRGkik1ATeLL
-	l8PsILaIgLHEmplLwUYxC0xjklhx5TlQBwdQh6vEjLmFIDWcAm4S+9vmsYDYwgLuEksbvzOB
-	2CwCqhJHd/wHm8krYCtxbvMJNghbUOLH5Htg9cwCWhLrdx5ngrDlJTavecsMMl5CQF3i0V9d
-	iBOMJJYtPwdVLiKx78U7RpBzJAT+sku8vvCMFWKXgMS3yYdYIHplJTYdYIZ4WFLi4IobLBOA
-	vkOyeRaSzbOQbJ6FZMUCRpZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGCER3beD8eYB60OM
-	yUDrJzJLiSbnAxNCXkm8obGZkYWpiamxkbmlGWnCSuK8ix4mBQkJpCeWpGanphakFsUXleak
-	Fh9iZOLglGpgzONarZHKMPns54WC76vf79xn9/a27Tq/KXqsB3KdOe02TPsksd/jb8EXk/lX
-	5xoKvXxt/fxGrvaqRU4LF9innX9roCZhl9Am/ElBxUP1rq2n4f7DnOe+Tm9mbfj0/YPPcutn
-	dUwB0Vu6gi5VnWK5ueiS2xzjGbyPbU4qS18NWHLz8O9nc0PU9iixFGckGmoxFxUnAgB5nYbT
-	/gIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrBKsWRmVeSWpSXmKPExsVy+t9jAd1jO8KDDV5c0rdYcvEqu8Wc9WvY
-	LC6fO8xocXnhJVaL1y8MLS7vmsNmsb+zg9Hi5J9eRgcOjz0TT7J53Lm2h83jxIzfLB59W1Yx
-	ekyf95PJ4/MmuQC2qAZGm4zUxJTUIoXUvOT8lMy8dFsl7+B453hTMwNDXUNLC3MlhbzE3FRb
-	JRefAF23zBygg5QUyhJzSoFCAYnFxUr6dpgmhIa46VrANEbo+oYEwfUYGaCBhHWMGQue3WUv
-	uMBesWTNObYGxllsXYycHBICJhJnzr1gh7DFJC7cWw8U5+IQEljEKDHlyl1WCOc3o8SsXx8Y
-	QarYBNQkvnw5DNYhImAssWbmUrAOZoFpTBIrrjwH6uAA6nCVmDG3EKSGU8BNYn/bPBYQW1jA
-	XWJp43cmEJtFQFXi6I7/YDN5BWwlzm0+wQZhC0r8mHwPrJ5ZQEti/c7jTBC2vMTmNW+ZQcZL
-	CKhLPPqrC3GCkcSy5eegykUk9r14xziBUWgWkkmzkEyahWTSLCQtCxhZVjGKphYkFxQnpeca
-	6hUn5haX5qXrJefnbmIEp4tnUjsYVzZYHGIU4GBU4uEtWBkWLMSaWFZcmXuIUYKDWUmEd8mi
-	8GAh3pTEyqrUovz4otKc1OJDjMlAj05klhJNzgemsrySeENjEzMjSyMzCyMTc3PShJXEeQ+0
-	WgcKCaQnlqRmp6YWpBbBbGHi4JRqYHTqUHhx9cYdjR28+xwvyb+UTfl5RWfz3pnz43Ys/7yh
-	xLvbSurJ46Zf6z9ZOkkvyKt+z9cy60/p31t39vpsLYmYVrzmaY7Rk8VP+t/YHl125FBX991t
-	B+Yvy98vtqS0OEatSyBYynHJQwmtXWu3toWUterta9qfPnXi84YGGV09pb+yLJ6TFmxVYinO
-	SDTUYi4qTgQAZlVB81sDAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1753536AbaDWM6z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:58:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33887 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752171AbaDWM6y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 08:58:54 -0400
+Date: Wed, 23 Apr 2014 08:58:28 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
+ output fields (v4)
+Message-ID: <20140423125828.GL5328@redhat.com>
+References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
+ <20140422211647.GO8488@redhat.com>
+ <87lhuwr2pk.fsf@sejong.aot.lge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87lhuwr2pk.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, April 23, 2014 9:29 PM, Krzysztof Kozlowski wrote:
+On Wed, Apr 23, 2014 at 03:15:35PM +0900, Namhyung Kim wrote:
+> Hi Don,
 > 
-> Use of_get_child_by_name to obtain reference to charger node instead of
-> of_find_node_by_name which can walk outside of the parent node.
+> On Tue, 22 Apr 2014 17:16:47 -0400, Don Zickus wrote:
+> > On Wed, Apr 16, 2014 at 12:05:37PM +0900, Namhyung Kim wrote:
+> >> Hello,
+> >> 
+> >> This is a patchset implementing -F/--fields option to setup output
+> >> field/column as Ingo requested.  It depends on my --percentage
+> >> patchset [1].
+> >> 
+> >> The -F option can receive any sort keys that -s option recognize, plus
+> >> following fields (name can be changed):
+> >> 
+> >>   overhead, overhead_sys, overhead_us, sample, period
+> >> 
+> >> The overhead_guest_sys and overhead_guest_us might be avaiable when
+> >> you profile guest machines.
+> >> 
+> >> Output will be sorted by in order of fields and sort keys passed by -s
+> >> option will be added to the output field list automatically.  If you
+> >> want to change the order of sorting you can give -s option in addition
+> >> to -F option.  To support old behavior, it'll also prepend 'overhead'
+> >> field to the sort keys unless you give -F option explicitly.
+> >
+> > So I am struggling a little bit to get this working correctly.  I had it
+> > in my head that I could sort internally with -s and re-sort the output
+> > based on -F, but it doesn't seem to be working that way.
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-
-Reviewed-by: Jingoo Han <jg1.han@samsung.com>
-
-Best regards,
-Jingoo Han
-
-> ---
->  drivers/rtc/rtc-88pm860x.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> Hmm.. probably it's me miss something on perf mem side..  I don't have
+> an access to a machine to test it now.
 > 
-> diff --git a/drivers/rtc/rtc-88pm860x.c b/drivers/rtc/rtc-88pm860x.c
-> index 816504846cdd..fb9e3c63b4ac 100644
-> --- a/drivers/rtc/rtc-88pm860x.c
-> +++ b/drivers/rtc/rtc-88pm860x.c
-> @@ -293,7 +293,7 @@ static int pm860x_rtc_dt_init(struct platform_device *pdev,
->  	int ret;
->  	if (!np)
->  		return -ENODEV;
-> -	np = of_find_node_by_name(np, "rtc");
-> +	np = of_get_child_by_name(np, "rtc");
->  	if (!np) {
->  		dev_err(&pdev->dev, "failed to find rtc node\n");
->  		return -ENODEV;
-> --
-> 1.9.1
+> >
+> > For example with
+> >
+> > ./perf mem record -a grep -r foo /* > /dev/null
+> > ./perf mem report -F overhead,symbol_daddr,pid -s symbol_daddr,pid --stdio 
+> >
+> > I was thinking I could sort everything based on the symbol_daddr and pid.
+> > Then re-sort the output to display the highest 'symbol_daddr,pid' pair.
+> > But it didn't seem to work that way.  Instead it seems like I get the
+> > original sort just displayed in the -F format.
+> 
+> Could you please show me the output of your example?
 
+
+# To display the perf.data header info, please use --header/--header-only
+# options.
+#
+# Samples: 96K of event 'cpu/mem-loads/pp'
+# Total weight : 1102938
+# Sort order   : symbol_daddr,pid
+#
+# Overhead Data Symbol          Command:  Pid
+# ........ ......................................................................
+#
+     0.00%  [k] 0xffff8807a8c1cf80 grep:116437
+     0.00%  [k] 0xffff8807a8c8cee0 grep:116437
+     0.00%  [k] 0xffff8807a8dceea0 grep:116437
+     0.01%  [k] 0xffff8807a9298dc0 grep:116437
+     0.01%  [k] 0xffff8807a934be40 grep:116437
+     0.00%  [k] 0xffff8807a9416ec0 grep:116437
+     0.02%  [k] 0xffff8807a9735700 grep:116437
+     0.00%  [k] 0xffff8807a98e9460 grep:116437
+     0.02%  [k] 0xffff8807a9afc890 grep:116437
+     0.00%  [k] 0xffff8807aa64feb0 grep:116437
+     0.02%  [k] 0xffff8807aa6b0030 grep:116437
+
+Cheers,
+Don
