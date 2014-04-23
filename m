@@ -1,62 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239AbaDWCxQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 22 Apr 2014 22:53:16 -0400
-Received: from mail-qa0-f41.google.com ([209.85.216.41]:44062 "EHLO
-	mail-qa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753361AbaDWCxO (ORCPT
+	id S1755914AbaDWCyF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 22 Apr 2014 22:54:05 -0400
+Received: from g2t2354.austin.hp.com ([15.217.128.53]:40883 "EHLO
+	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751248AbaDWCyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 22 Apr 2014 22:53:14 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140422162432.GA17674@ravnborg.org>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<1397824031-4892-5-git-send-email-lftan@altera.com>
-	<20140422142443.GB15745@arch.cereza>
-	<20140422151458.GC1053@distanz.ch>
-	<20140422153522.GF15745@arch.cereza>
-	<20140422162432.GA17674@ravnborg.org>
-Date: Wed, 23 Apr 2014 10:53:13 +0800
-Message-ID: <CAFiDJ59ewAxAXFYe5EAt1sd+nTr9f53EkV4d9+gJM9PPOcUtvw@mail.gmail.com>
-Subject: Re: [PATCH 06/28] nios2: Memory management
-From: "LF.Tan" <lftan.linux@gmail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Tobias Klauser <tklauser@distanz.ch>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
-Content-Type: text/plain; charset=UTF-8
+	Tue, 22 Apr 2014 22:54:03 -0400
+Message-ID: <1398221636.6345.9.camel@buesod1.americas.hpqcorp.net>
+Subject: [PATCH 5/4] ipc,shm: minor cleanups
+From: Davidlohr Bueso <davidlohr@hp.com>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
+        aswin@hp.com, linux-mm@kvack.org
+Date: Tue, 22 Apr 2014 19:53:56 -0700
+In-Reply-To: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 12:24 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
->> Other than being "pretty" the above fix is to remove a mismatch type
->> warning. You can get rid of the warning in different ways:
->>
->> ifdef __ASSEMBLY__
->> define PAGE_SIZE       4096
->> else
->> define PAGE_SIZE       4096UL
->> endif
->
-> The usual way to do this is as follows:
-> #include <linux/const.h>
->
-> #define PAGE_SHIFT   12
-> #define PAGE_SIZE    (_AC(1, UL) << PAGE_SHIFT)
-> #define PAGE_MASK    (~(PAGE_SIZE-1))
->
-> _AC(1, UL) expands to 1 for assembler and 1UL for C code.
->
-> This is also what was suggested above.
->
-> Please follow this scheme for nios2 too.
->
->         Sam
-Sure, will change to this way.
+-  Breakup long function names/args.
+-  Cleaup variable declaration.
+-  s/current->mm/mm
 
-Thanks.
+Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+---
+ ipc/shm.c | 40 +++++++++++++++++-----------------------
+ 1 file changed, 17 insertions(+), 23 deletions(-)
 
-Ley Foon
+diff --git a/ipc/shm.c b/ipc/shm.c
+index f000696..584d02e 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -480,15 +480,13 @@ static const struct vm_operations_struct shm_vm_ops = {
+ static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
+ {
+ 	key_t key = params->key;
+-	int shmflg = params->flg;
++	int id, error, shmflg = params->flg;
+ 	size_t size = params->u.size;
+-	int error;
+-	struct shmid_kernel *shp;
+ 	size_t numpages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-	struct file *file;
+ 	char name[13];
+-	int id;
+ 	vm_flags_t acctflag = 0;
++	struct shmid_kernel *shp;
++	struct file *file;
+ 
+ 	if (size < SHMMIN || size > ns->shm_ctlmax)
+ 		return -EINVAL;
+@@ -681,7 +679,8 @@ copy_shmid_from_user(struct shmid64_ds *out, void __user *buf, int version)
+ 	}
+ }
+ 
+-static inline unsigned long copy_shminfo_to_user(void __user *buf, struct shminfo64 *in, int version)
++static inline unsigned long copy_shminfo_to_user(void __user *buf,
++						 struct shminfo64 *in, int version)
+ {
+ 	switch (version) {
+ 	case IPC_64:
+@@ -711,8 +710,8 @@ static inline unsigned long copy_shminfo_to_user(void __user *buf, struct shminf
+  * Calculate and add used RSS and swap pages of a shm.
+  * Called with shm_ids.rwsem held as a reader
+  */
+-static void shm_add_rss_swap(struct shmid_kernel *shp,
+-	unsigned long *rss_add, unsigned long *swp_add)
++static void shm_add_rss_swap(struct shmid_kernel *shp, unsigned long *rss_add,
++			     unsigned long *swp_add)
+ {
+ 	struct inode *inode;
+ 
+@@ -739,7 +738,7 @@ static void shm_add_rss_swap(struct shmid_kernel *shp,
+  * Called with shm_ids.rwsem held as a reader
+  */
+ static void shm_get_stat(struct ipc_namespace *ns, unsigned long *rss,
+-		unsigned long *swp)
++			 unsigned long *swp)
+ {
+ 	int next_id;
+ 	int total, in_use;
+@@ -1047,21 +1046,16 @@ out_unlock1:
+ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+ 	      unsigned long shmlba)
+ {
+-	struct shmid_kernel *shp;
+-	unsigned long addr;
+-	unsigned long size;
++	unsigned long addr, size, flags, prot, populate = 0;
+ 	struct file *file;
+-	int    err;
+-	unsigned long flags;
+-	unsigned long prot;
+-	int acc_mode;
++	int acc_mode, err = -EINVAL;
+ 	struct ipc_namespace *ns;
+ 	struct shm_file_data *sfd;
++	struct shmid_kernel *shp;
+ 	struct path path;
+ 	fmode_t f_mode;
+-	unsigned long populate = 0;
++	struct mm_struct *mm = current->mm;
+ 
+-	err = -EINVAL;
+ 	if (shmid < 0)
+ 		goto out;
+ 	else if ((addr = (ulong)shmaddr)) {
+@@ -1161,20 +1155,20 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+ 	if (err)
+ 		goto out_fput;
+ 
+-	down_write(&current->mm->mmap_sem);
++	down_write(&mm->mmap_sem);
+ 	if (addr && !(shmflg & SHM_REMAP)) {
+ 		err = -EINVAL;
+ 		if (addr + size < addr)
+ 			goto invalid;
+ 
+-		if (find_vma_intersection(current->mm, addr, addr + size))
++		if (find_vma_intersection(mm, addr, addr + size))
+ 			goto invalid;
+ 		/*
+ 		 * If shm segment goes below stack, make sure there is some
+ 		 * space left for the stack to grow (at least 4 pages).
+ 		 */
+-		if (addr < current->mm->start_stack &&
+-		    addr > current->mm->start_stack - size - PAGE_SIZE * 5)
++		if (addr < mm->start_stack &&
++		    addr > mm->start_stack - size - PAGE_SIZE * 5)
+ 			goto invalid;
+ 	}
+ 
+@@ -1184,7 +1178,7 @@ long do_shmat(int shmid, char __user *shmaddr, int shmflg, ulong *raddr,
+ 	if (IS_ERR_VALUE(addr))
+ 		err = (long)addr;
+ invalid:
+-	up_write(&current->mm->mmap_sem);
++	up_write(&mm->mmap_sem);
+ 	if (populate)
+ 		mm_populate(addr, populate);
+ 
+-- 
+1.8.1.4
+
+
+
