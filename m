@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756122AbaDWNqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:46:07 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:32815 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757173AbaDWNpy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:45:54 -0400
-Message-ID: <5357C40E.7060000@cogentembedded.com>
-Date: Wed, 23 Apr 2014 17:45:50 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1755281AbaDWNrH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:47:07 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:44846 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756527AbaDWNq4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:46:56 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Al Viro <viro@zeniv.linux.org.uk>, <tytso@mit.edu>,
+        <adilger.kernel@dilger.ca>
+CC: <linux-ext4@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-fsdevel@vger.kernel.org>
+Subject: [PATCH 1/2] fs: read_write: Check ->aio_write in __kernel_write() and vfs_write()
+Date: Wed, 23 Apr 2014 16:46:45 +0300
+Message-ID: <1398260806-19340-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398260806-19340-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1398260806-19340-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Felipe Balbi <balbi@ti.com>, Tim Bird <tbird20d@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
-Subject: Re: [PATCH v6 15/19] usb: phy: msm: Fix PTS definitions for MSM USB
- controller
-References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>	 <1398158438-21579-16-git-send-email-iivanov@mm-sol.com>	 <53566A23.8010508@cogentembedded.com>	 <1398259477.4724.218.camel@iivanov-dev> <1398260102.4724.223.camel@iivanov-dev>
-In-Reply-To: <1398260102.4724.223.camel@iivanov-dev>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Do similar checks as it has been done in vfs_read for the aio_write
+callback.
+ext4 for example does not provide aio_write callback causing NULL pointer
+dereference in do_sync_write() without this check.
 
-On 23-04-2014 17:35, Ivan T. Ivanov wrote:
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ fs/read_write.c | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
->>>> --- a/include/linux/usb/msm_hsusb_hw.h
->>>> +++ b/include/linux/usb/msm_hsusb_hw.h
->>>> @@ -31,8 +31,9 @@
->>>>    #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
->>>>
->>>>    #define PORTSC_PHCD            (1 << 23) /* phy suspend mode */
->>>> -#define PORTSC_PTS_MASK         (3 << 30)
->>>> -#define PORTSC_PTS_ULPI         (3 << 30)
->>>> +#define PORTSC_PTS_MASK        (3 << 30)
->>>> +#define PORTSC_PTS_ULPI        (2 << 30)
->>>> +#define PORTSC_PTS_SERIAL      (3 << 30)
-
->>>      Please use tabs, not spaces here.
-
->> Thanks, will fix and resend.
-
-> I answered too quickly. File contain tabs and spaces for
-> indentation of definitions.
-
-    You mean tabs and spaces on one line? Or sometimes tabs, sometimes spaces?
-
-> Should I still use tabs here?
-
-    If they are already used, why not?
-
-> Regards,
-> Ivan
-
-WBR, Sergei
+diff --git a/fs/read_write.c b/fs/read_write.c
+index b6336a54f70d..009d8542a889 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -500,8 +500,10 @@ ssize_t __kernel_write(struct file *file, const char *buf, size_t count, loff_t
+ 		count =  MAX_RW_COUNT;
+ 	if (file->f_op->write)
+ 		ret = file->f_op->write(file, p, count, pos);
+-	else
++	else if (file->f_op->aio_write)
+ 		ret = do_sync_write(file, p, count, pos);
++	else
++		ret = new_sync_write(file, p, count, pos);
+ 	set_fs(old_fs);
+ 	if (ret > 0) {
+ 		fsnotify_modify(file);
+@@ -528,8 +530,10 @@ ssize_t vfs_write(struct file *file, const char __user *buf, size_t count, loff_
+ 		file_start_write(file);
+ 		if (file->f_op->write)
+ 			ret = file->f_op->write(file, buf, count, pos);
+-		else
++		else if (file->f_op->aio_write)
+ 			ret = do_sync_write(file, buf, count, pos);
++		else
++			ret = new_sync_write(file, buf, count, pos);
+ 		if (ret > 0) {
+ 			fsnotify_modify(file);
+ 			add_wchar(current, ret);
+-- 
+1.9.2
 
