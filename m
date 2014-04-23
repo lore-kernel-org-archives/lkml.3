@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932135AbaDWOtn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:49:43 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:56249 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755493AbaDWOti (ORCPT
+	id S1756070AbaDWOtk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:49:40 -0400
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:49404 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755124AbaDWOtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:49:38 -0400
+	Wed, 23 Apr 2014 10:49:36 -0400
+Date: Wed, 23 Apr 2014 10:49:33 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] libata fixes for v3.15-rc2
+Message-ID: <20140423144933.GE4781@htj.dyndns.org>
 MIME-Version: 1.0
-In-Reply-To: <CAL_JsqJSSHMaR=NJ3XWscxz1dKtG1N18W6JNDNKY3r3vtf9AXQ@mail.gmail.com>
-References: <1353509071-8658-1-git-send-email-grant.likely@secretlab.ca>
- <CAL_JsqJFM1e2Y7GykK06KuZ8fD8iZ=64W1i+tqibJ9datCUR0Q@mail.gmail.com>
- <20140423140508.2575AC408D2@trevor.secretlab.ca> <CAL_JsqJSSHMaR=NJ3XWscxz1dKtG1N18W6JNDNKY3r3vtf9AXQ@mail.gmail.com>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Wed, 23 Apr 2014 15:49:17 +0100
-X-Google-Sender-Auth: tWoMW5M1qfbMVNrnQDXyyWZkj3Y
-Message-ID: <CACxGe6vA2+BwJkA_N0m=c9GcdRUQotdjjDg=Vh10EJOcNxpPTQ@mail.gmail.com>
-Subject: Re: [RFC] driver-core: Remove dummy 'platform_bus'
-To: Rob Herring <robherring2@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kay Sievers <kay.sievers@vrfy.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 3:16 PM, Rob Herring <robherring2@gmail.com> wrote:
-> On Wed, Apr 23, 2014 at 9:05 AM, Grant Likely <grant.likely@linaro.org> wrote:
->> On Mon, 21 Apr 2014 16:05:29 -0500, Rob Herring <robherring2@gmail.com> wrote:
->>> On Wed, Nov 21, 2012 at 8:44 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>> > The "platform_bus" (note: not platform_bus_type) only exists as an empty
->>> > directory to put platform devices into. However, it really doesn't make
->>> > sense to segregate all the platform devices into a sub directory when
->>> > typically they are memory mapped devices that doen't go through any
->>> > particular bus. Particularly on embedded type platforms the platform_bus
->>> > directory doesn't add anything.
->>> >
->>> > However, this will probably just end up breaking some userspace that
->>> > depends on the /sys/devices/platform/ path to be present (no matter how
->>> > much we protest that userspace must not depend on paths in sysfs). So
->>> > while I'm seriously proposing this change, it may just be unacceptable
->>> > ABI breakage
->>>
->>> An old thread, but was there ever a conclusion to this? We now have a
->>> mixture of using platform_bus as the parent or not on various ARM
->>> platforms.
->>
->> We kind of concluded in the opposite direction. Instead of removing the
->> /sys/device/platform directory, the drivers/of code should be changed to
->> use it.
->>
->> The following patch is sufficient to have the same effect. It doesn't
->> unify the OF and non-OF paths of platform device addition, but it gets
->> them closer. I've been nervous about applying it because I'm concerned
->> about userspace breakage, but maybe it just needs to be merged and we
->> can quirk out systems that break.
->
-> Given that we've changed practically all device names in converting to
-> DT and I haven't heard of any complaints, we may be okay.
->
-> We also have some platforms (imx6 for example) setting the parent to
-> an soc device. I still need to understand why the soc device needs to
-> be the parent, but it is pointless platform variation in my book. It
-> would also change the paths when someone has the whim to add an soc
-> device.
+Hello, Linus.
 
-Yes, that is just dumb and should be discouraged.
+libata fixes for v3.15-rc2.  Dan updated tag allocation to accomodate
+devices which choke when tags jump back and forth.  Quite a few ahci
+MSI related fixes.  A couple config dependency fixes and other misc
+fixes.
 
-g.
+The following changes since commit b33ce442993865180292df2a314ee5251ba38b50:
+
+  Merge branch 'for-3.15/drivers' of git://git.kernel.dk/linux-block (2014-04-01 19:43:53 -0700)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata.git for-3.15-fixes
+
+for you to fetch changes up to 8a4aeec8d2d6a3edeffbdfae451cdf05cbf0fefd:
+
+  libata/ahci: accommodate tag ordered controllers (2014-04-18 15:56:03 -0400)
+
+Thanks.
+
+----------------------------------------------------------------
+Alexander Gordeev (3):
+      ahci: Ensure "MSI Revert to Single Message" mode is not enforced
+      ahci: Use pci_enable_msi_exact() instead of pci_enable_msi_range()
+      ahci: Do not receive interrupts sent by dummy ports
+
+Bartlomiej Zolnierkiewicz (3):
+      pata_at91: fix ata_host_activate() failure handling
+      pata_arasan_cf: fix ata_host_activate() failure handling
+      pata_samsung_cf: fix ata_host_activate() failure handling
+
+Dan Williams (1):
+      libata/ahci: accommodate tag ordered controllers
+
+David Milburn (1):
+      ahci: do not request irq for dummy port
+
+Jean Delvare (1):
+      ata: fix i.MX AHCI driver dependencies
+
+Martin K. Petersen (1):
+      libata: Update queued trim blacklist for M5x0 drives
+
+Tejun Heo (1):
+      libata: make AHCI_XGENE depend on PHY_XGENE
+
+ drivers/ata/Kconfig           |  5 ++---
+ drivers/ata/ahci.c            | 35 +++++++++++++++++++++--------------
+ drivers/ata/ahci.h            |  1 +
+ drivers/ata/libata-core.c     | 27 +++++++++++++++++----------
+ drivers/ata/pata_arasan_cf.c  |  7 +++++--
+ drivers/ata/pata_at91.c       | 11 ++++++-----
+ drivers/ata/pata_samsung_cf.c | 10 +++++++---
+ include/linux/libata.h        |  1 +
+ 8 files changed, 60 insertions(+), 37 deletions(-)
+
+-- 
+tejun
