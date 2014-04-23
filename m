@@ -1,95 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987AbaDWKpn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 06:45:43 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50429 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751431AbaDWKpj (ORCPT
+	id S1752205AbaDWKqN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 06:46:13 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:46687 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744AbaDWKqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 06:45:39 -0400
-Date: Wed, 23 Apr 2014 11:45:28 +0100
-From: Mark Rutland <mark.rutland@arm.com>
-To: Grant Likely <grant.likely@linaro.org>
-Cc: Leif Lindholm <leif.lindholm@linaro.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 3/3] of: Handle memory@0 node on PPC32 only
-Message-ID: <20140423104528.GD30036@e106331-lin.cambridge.arm.com>
-References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
- <1397756521-29387-4-git-send-email-leif.lindholm@linaro.org>
- <CAMuHMdXBNWum7UJ95uT2hwTd1b5C8ebF2LQ4T-A+RS80p7MH=A@mail.gmail.com>
- <20140418125924.GF5904@bivouac.eciton.net>
- <20140422133515.E7A0BC40754@trevor.secretlab.ca>
+	Wed, 23 Apr 2014 06:46:08 -0400
+Message-ID: <5357999F.6010200@ti.com>
+Date: Wed, 23 Apr 2014 13:44:47 +0300
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140422133515.E7A0BC40754@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Marek Belisko <marek@goldelico.com>
+CC: <robh+dt@kernel.org>, <pawel.moll@arm.com>, <mark.rutland@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <rdunlap@infradead.org>, <bcousson@baylibre.com>, <tony@atomide.com>,
+        <linux@arm.linux.org.uk>, <plagnioj@jcrosoft.com>,
+        <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-fbdev@vger.kernel.org>,
+        <hns@goldelico.com>
+Subject: Re: [PATCH 1/2] omapdss: panel-tpo-td028ec1: Add DT support.
+References: <1398201168-25275-1-git-send-email-marek@goldelico.com> <1398201168-25275-2-git-send-email-marek@goldelico.com>
+In-Reply-To: <1398201168-25275-2-git-send-email-marek@goldelico.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="DwPKl9r4Shf3fKlmmjVbo0Jtpl6kGSx4L"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 02:35:15PM +0100, Grant Likely wrote:
-> On Fri, 18 Apr 2014 13:59:24 +0100, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> > Hi Geert,
-> > 
-> > On Fri, Apr 18, 2014 at 10:04:15AM +0200, Geert Uytterhoeven wrote:
-> > > On Thu, Apr 17, 2014 at 7:42 PM, Leif Lindholm <leif.lindholm@linaro.org> wrote:
-> > > > In order to deal with an firmware bug on a specific ppc32 platform
-> > > > (longtrail), early_init_dt_scan_memory() looks for a node called
-> > > > memory@0 on all platforms. Restrict this quirk to ppc32 kernels only.
-> > > 
-> > > This breaks backwards compatibilty with old DTSes (at least on ARM/MIPS,
-> > > where you added the missing property in patches 1 and 2 of the series)?
-> > 
-> > As Rob said in response to 0/3, the MIPSs would likely not be affected,
-> > since they embed the DT.
-> > 
-> > > For the Longtrail, I don't care much anymore, as mine died in 2004.
-> > > AFAIK, there have never been many users anyway.
-> > 
-> > There are still a few mentions of it under arch/powerpc/, so I wouldn't
-> > want to be the one to kill it off...
-> > 
-> > How about the below v2 3/3 to address the ARM platform?
-> 
-> The problem with this approach is that selecting one board that needs it
-> automatically makes it active for all boards. It would need to be
-> something more like the following:
-> 
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 399e242e1a42..55d65b2b4c74 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -887,12 +887,10 @@ int __init early_init_dt_scan_memory(unsigned long node, const char *uname,
->  
->  	/* We are scanning "memory" nodes only */
->  	if (type == NULL) {
-> -		/*
-> -		 * The longtrail doesn't have a device_type on the
-> -		 * /memory node, so look for the node called /memory@0.
-> -		 */
->  		if (depth != 1 || strcmp(uname, "memory@0") != 0)
->  			return 0;
-> +		if (!of_flat_dt_match(dt_root, memory_quirk_list))
-> +			return 0;
->  	} else if (strcmp(type, "memory") != 0)
->  		return 0;
->  
-> With a list of compatible properties for affected boards.
+--DwPKl9r4Shf3fKlmmjVbo0Jtpl6kGSx4L
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-That looks sane to me.
+On 23/04/14 00:12, Marek Belisko wrote:
 
-Does anyone have a LongTrail DT to hand, and if so does the root have a
-compatible string? From grepping through the kernel I could only find a
-model string ("IBM,LongTrail").
+>  static int td028ttec1_panel_probe(struct spi_device *spi)
+>  {
+>  	struct panel_drv_data *ddata;
+> @@ -418,6 +436,10 @@ static int td028ttec1_panel_probe(struct spi_devic=
+e *spi)
+>  		r =3D td028ttec1_panel_probe_pdata(spi);
+>  		if (r)
+>  			return r;
+> +	} else if (spi->dev.of_node) {
+> +		r =3D td028ttec1_probe_of(spi);
+> +		if (r)
+> +			return r;
+>  	} else {
+>  		return -ENODEV;
+>  	}
+> @@ -463,6 +485,13 @@ static int td028ttec1_panel_remove(struct spi_devi=
+ce *spi)
+>  	return 0;
+>  }
+> =20
+> +static const struct of_device_id td028ttec1_of_match[] =3D {
+> +	{ .compatible =3D "toppoly,td028ttec1", },
 
-Is anyone aware of strings other than that and "st-ericsson,ccu8540" to
-look out for?
+We need to hack a bit here for the time being. You need to have
+"omapdss," prefix for the compatible string in the driver, and add the
+panel's compatible string to arch/arm/mach-omap2/display.c:
+dss_compat_conv_list.
 
-Cheers,
-Mark.
+The reason for this is that the drivers are omap specific, but the DT
+data is not.
+
+Otherwise looks good to me.
+
+ Tomi
+
+
+
+--DwPKl9r4Shf3fKlmmjVbo0Jtpl6kGSx4L
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTV5mfAAoJEPo9qoy8lh7128IQAJrx+jxEdlDpr09EJExenS4g
+8AXWsMcK/2LWL+QMqkUTnLL797LXNxU7FwfkORfVzREbat/EmI1jXU5fJ90MwQzH
+94E16d+RCOMARWepY13H8WG70st4KZ3ApT1C5+k7kK3WsXkxxm6tovfRy75jMtFR
+7oWJRKzR/bSCveJ3deBmnWazY8Reat9zWGXZB7tTxQ8MWrn+KLJl3AnKhhCUL9mD
+fHe6rIlSrpQVAEuIh82rDBRR1m5EPIjiDHQWBz+/hhrldsd4b/A5GnykCf6USjAQ
+SFvYdtZpYdI15a4VZUkaKy88ImApsNGKQcUP45dQ+3wxfU57/OMfeUPL+yzS2CP0
+A6gTfs33qotHWIoGDpIW72w2lATfILI7LHfRavFh0GCZlwNywYhq32URJW5ZHwSk
+kt7/VT3IW9tv48p59knr0MG1czKFg8c2s4+hmCa53kuRCSMuinWt9+Sv4GpuOOkC
+j8KRK9PVl4WMAyswMRdxRQW3zota1kd7TJtjJgpSaqTaUlqR81b4qlZKnXXqDCOX
+OTB0PdGcVxNIL0NWKBtkZdvfWOKec9qkJFRWsuSheoyA1jXlNNlT/TT8mfZb+uSS
+uqP2rrbC3ZmGtTmxmsR3K9LvBZMAYFOir0nh5uzQukXrqIxdVg21pYtPzRmjFW4L
+nkGa+0zGXgkLcD/XjU2Y
+=qULE
+-----END PGP SIGNATURE-----
+
+--DwPKl9r4Shf3fKlmmjVbo0Jtpl6kGSx4L--
