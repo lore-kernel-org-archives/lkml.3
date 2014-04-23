@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751821AbaDWWUQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:20:16 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:55310 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356AbaDWWUN (ORCPT
+	id S1751716AbaDWWZG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:25:06 -0400
+Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:16569 "EHLO
+	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751269AbaDWWZD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:20:13 -0400
+	Wed, 23 Apr 2014 18:25:03 -0400
+Message-ID: <53583DA8.4030901@hp.com>
+Date: Wed, 23 Apr 2014 18:24:40 -0400
+From: Waiman Long <waiman.long@hp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:10.0.12) Gecko/20130109 Thunderbird/10.0.12
 MIME-Version: 1.0
-In-Reply-To: <5357D8CC.3080501@codeaurora.org>
-References: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>
-	<1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com>
-	<CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com>
-	<534B93BA.6020406@linux.intel.com>
-	<534BFAAF.3070805@codeaurora.org>
-	<534D0370.50108@linux.intel.com>
-	<535005BA.1040405@codeaurora.org>
-	<5357A80B.8030701@linux.intel.com>
-	<5357ACF1.9070206@codeaurora.org>
-	<20140423135915.GY30677@intel.com>
-	<5357D8CC.3080501@codeaurora.org>
-Date: Thu, 24 Apr 2014 00:20:12 +0200
-Message-ID: <CACRpkdbk8okbzaZgD=BqeMSOvbEvYNViqamd9i=NAaAWW=T9sQ@mail.gmail.com>
-Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Timur Tabi <timur@codeaurora.org>
-Cc: "Westerberg, Mika" <mika.westerberg@intel.com>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        Scott J Norton <scott.norton@hp.com>, Chegu Vinod <chegu_vinod@hp.com>
+Subject: Re: [PATCH v9 05/19] qspinlock: Optimize for smaller NR_CPUS
+References: <1397747051-15401-6-git-send-email-Waiman.Long@hp.com> <20140417155649.GR11096@twins.programming.kicks-ass.net> <53504BB3.4010009@hp.com> <20140418082716.GZ11096@twins.programming.kicks-ass.net> <53516672.3010701@hp.com> <20140418190519.GA11182@twins.programming.kicks-ass.net> <53519BBF.7060506@hp.com> <5357CCEF.2000606@hp.com> <20140423145649.GE2777@phenom.dumpdata.com> <5357FBDE.4040400@hp.com> <20140423175535.GB11152@phenom.dumpdata.com>
+In-Reply-To: <20140423175535.GB11152@phenom.dumpdata.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 5:14 PM, Timur Tabi <timur@codeaurora.org> wrote:
+On 04/23/2014 01:55 PM, Konrad Rzeszutek Wilk wrote:
+> On Wed, Apr 23, 2014 at 01:43:58PM -0400, Waiman Long wrote:
+>> On 04/23/2014 10:56 AM, Konrad Rzeszutek Wilk wrote:
+>>> On Wed, Apr 23, 2014 at 10:23:43AM -0400, Waiman Long wrote:
+>>>> On 04/18/2014 05:40 PM, Waiman Long wrote:
+>>>>> On 04/18/2014 03:05 PM, Peter Zijlstra wrote:
+>>>>>> On Fri, Apr 18, 2014 at 01:52:50PM -0400, Waiman Long wrote:
+>>>>>>> I am confused by your notation.
+>>>>>> Nah, I think I was confused :-) Make the 1 _Q_LOCKED_VAL though, as
+>>>>>> that's the proper constant to use.
+>>>>> Everyone gets confused once in a while:-) I have plenty of that myself.
+>>>>>
+>>>>> I will change 1 to _Q_LOCKED_VAL as suggested.
+>>>>>
+>>>>> -Longman
+>>>> The attached patch file contains the additional changes that I had
+>>>> made to qspinlock.c file so far. Please let me know if you or others
+>>>> have any additional feedbacks or changes that will need to go to the
+>>>> next version of the patch series.
+>>>>
+>>>> I am going to take vacation starting from tomorrow and will be back
+>>>> on 5/5 (Mon). So I will not be able to respond to emails within this
+>>>> period.
+>>>>
+>>>> BTW, is there any chance that this patch can be merged to 3.16?
+>>> Um, it needs to have Acks from KVM and Xen maintainers who have not
+>>> done so. Also Peter needs to chime in. (BTW, please CC
+>>> xen-devel@lists.xenproject.org next time you post so that David and Boris
+>>> can take a peek at it).
+>> I will cc xen-devel@lists.xenproject.org when I sent out the next patch.
+>>
+>>> I would strongly recommend you put all your patches on github (free git
+>>> service) so that we can test it and poke it at during your vacation
+>>> (and even after).
+>>>
+>> I am not used to setting up a public repo in github. If I create a
+>> repo there, should I put a snapshot of the whole kernel source tree
+>> or just a portion of the relevant files as the base? With the later,
+>> it won't be buildable.
+> You just push your local branch. It should look like a normal
+> Linux tree with your commits on top.
 
-> How are the pin muxes normally configured in ACPI?
+I will try that with my next version.
 
-VERY good question.
+-Longman
 
->  All of our GPIOs have a
-> pinmux on them, and so if you want to use the pin for the non-default
-> functionality, you need to configure the mux.  Isn't that supposed to happen
-> with the through the pinctrl driver?  That is, when the kernel parses the
-> ASL, and it seems a command to configure pin #3 to function #4, it calls the
-> local pinctrl driver to do that?
-
-Let's suspect this is true. That is how GPIO work after all is it not?
-
-I guess the other option would be that all systems must come with a
-tailored set-up written in ASL, specific for each board configuration.
-
-Yours,
-Linus Walleij
