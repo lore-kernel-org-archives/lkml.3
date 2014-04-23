@@ -1,91 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751794AbaDWIt3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:49:29 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:42139 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781AbaDWIt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:49:26 -0400
-Message-ID: <1398242909.4724.204.camel@iivanov-dev>
-Subject: Re: [PATCH v6 01/19] usb: phy: msm: Make driver selectable on
- ARCH_QCOM
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: balbi@ti.com
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Date: Wed, 23 Apr 2014 11:48:29 +0300
-In-Reply-To: <20140422152425.GL5524@saruman.home>
-References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
-	 <1398158438-21579-2-git-send-email-iivanov@mm-sol.com>
-	 <20140422145701.GI5524@saruman.home>
-	 <1398179795.4724.170.camel@iivanov-dev>
-	 <20140422152425.GL5524@saruman.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752412AbaDWItr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:49:47 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:43485 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752103AbaDWItn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 04:49:43 -0400
+Date: Wed, 23 Apr 2014 10:49:37 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Stanislav Meduna <stano@meduna.org>,
+        "linux-rt-users@vger.kernel.org" <linux-rt-users@vger.kernel.org>,
+        Linux ARM Kernel <linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: BUG: spinlock trylock failure on UP, i.MX28 3.12.15-rt25
+Message-ID: <20140423084937.GH11096@twins.programming.kicks-ass.net>
+References: <534C3606.7010206@meduna.org>
+ <534C731F.1050406@meduna.org>
+ <534DADF1.6060608@meduna.org>
+ <20140422115439.GA20669@linutronix.de>
+ <20140422094657.5b6ca1e2@gandalf.local.home>
+ <53569E05.8010600@linutronix.de>
+ <20140422134802.73fc1fa4@gandalf.local.home>
+ <20140422141650.7f43d5ba@gandalf.local.home>
+ <53576859.8060706@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53576859.8060706@linutronix.de>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-22 at 10:24 -0500, Felipe Balbi wrote:
-> On Tue, Apr 22, 2014 at 06:16:35PM +0300, Ivan T. Ivanov wrote:
-> > 
-> > Hi, 
-> > 
-> > On Tue, 2014-04-22 at 09:57 -0500, Felipe Balbi wrote:
-> > > On Tue, Apr 22, 2014 at 12:20:20PM +0300, Ivan T. Ivanov wrote:
-> > > > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> > > > 
-> > > > Controller could be found on APQ and MSM platforms,
-> > > > make configuration description more generic.
-> > > > 
-> > > > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> > > > ---
-> > > >  drivers/usb/phy/Kconfig | 6 +++---
-> > > >  1 file changed, 3 insertions(+), 3 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/usb/phy/Kconfig b/drivers/usb/phy/Kconfig
-> > > > index 416e0c8..0c668a3 100644
-> > > > --- a/drivers/usb/phy/Kconfig
-> > > > +++ b/drivers/usb/phy/Kconfig
-> > > > @@ -171,11 +171,11 @@ config USB_ISP1301
-> > > >  	  module will be called phy-isp1301.
-> > > > 
-> > > >  config USB_MSM_OTG
-> > > > -	tristate "OTG support for Qualcomm on-chip USB controller"
-> > > > -	depends on (USB || USB_GADGET) && ARCH_MSM
-> > > > +	tristate "Qualcomm on-chip USB OTG controller support"
-> > > > +	depends on (USB || USB_GADGET) && (ARCH_MSM || ARCH_QCOM)
-> > > 
-> > > I would actually drop USB || USB_GADGET dependency here just make it
-> > > easier to enable the driver on Kconfig, other you have to enable
-> > > USB_SUPPORT, then enable USB, go back one menu level, go down to PHY
-> > > menu, and choose this driver.
-> > > 
-> > 
-> > Because phy directory already depends on USB_SUPPORT?
+On Wed, Apr 23, 2014 at 09:14:33AM +0200, Sebastian Andrzej Siewior wrote:
+> On 04/22/2014 08:16 PM, Steven Rostedt wrote:
+> > --- a/kernel/timer.c
+> > +++ b/kernel/timer.c
+> > @@ -1447,6 +1447,12 @@ static void run_timer_softirq(struct softirq_action *h)
+> >  		__run_timers(base);
+> >  }
+> >  
+> > +#ifdef CONFIG_SMP
+> > +#define timer_should_raise_softirq(lock)	!spin_do_trylock(lock)
+> > +#else
+> > +#define timer_should_raise_softirq(lock)	1
+> > +#endif
+> > +
 > 
-> right
+> No. The lock may be taken but it also may be available no matter if UP
+> or not. With this patch applied the lockdep splat will go away but the
+> FULL_NO_HZ people will come back because the timer softirq is scheduled
+> even if no timer has expired.
 
-Build fails if USB and USB_GADGET are not selected. 
-of_usb_get_dr_mode is part of USB_COMMON. 
-
-...
-
-if USB_SUPPORT
-
-config USB_COMMON
-	tristate
-	default y
-	depends on USB || USB_GADGET
-
-...
-
-of_usb_get_dr_mode() is no part of this patch, but should I remove
-dependency here and add it several patches later?
-
-Regards,
-Ivan
-
-
+You can do FULL_NO_HZ on UP ? That seems rather pointless, as there
+isn't a 'spare' CPU to do all the timekeeping on.
