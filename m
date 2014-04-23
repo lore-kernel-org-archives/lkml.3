@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758139AbaDWVSs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 17:18:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28707 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756858AbaDWVSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 17:18:46 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: akpm@linux-foundation.org, x86@kernel.org, davem@davemloft.net,
-        sparclinux@vger.kernel.org, mguzik@redhat.com,
-        Don Zickus <dzickus@redhat.com>
-Subject: [PATCH 0/2 V4] Print traces on softlockup
-Date: Wed, 23 Apr 2014 16:40:03 -0400
-Message-Id: <1398285605-147082-1-git-send-email-dzickus@redhat.com>
+	id S1757319AbaDWVXF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 17:23:05 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:61043 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756149AbaDWVXD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 17:23:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140423132238.GJ640@lee--X1>
+References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
+	<1397659455-13638-2-git-send-email-linus.walleij@linaro.org>
+	<20140417104925.GM28725@lee--X1>
+	<CACRpkdaHQkOMx1NrAWkDd0prc1AqXRs-p69TX9ihoPUhx49oEQ@mail.gmail.com>
+	<20140423132238.GJ640@lee--X1>
+Date: Wed, 23 Apr 2014 23:23:01 +0200
+Message-ID: <CACRpkdaHFGNaddteKYKz+zzYuhRXnAyzHzJ-cfx1h9mB-YWzew@mail.gmail.com>
+Subject: Re: [PATCH 1/6] mfd: stmpe: root out static GPIO and IRQ assignments
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Silvio F <silvio.fricke@gmail.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        Shawn Guo <shawn.guo@linaro.org>,
+        Viresh Kumar <viresh.linux@gmail.com>,
+        Shiraz Hashim <shiraz.hashim@st.com>,
+        spear-devel <spear-devel@list.st.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added more patches to handle the 'uniprocessor' panic case by sending NMIs
-to every cpu but self.  Only affects x86, sparc.
+On Wed, Apr 23, 2014 at 3:22 PM, Lee Jones <lee.jones@linaro.org> wrote:
 
-V4: roll x86 and sparc patches into patch1
-    add CONFIG_SMP in various places based on Andrew's suggestion
-V3: wrap x86 code with get/put_cpu based on Oleg's suggestions
-V2: expand from one patch to 4
+>> That would be perfect. Can you stack up the MFD portions in patches
+>> 1 thru 4 (given you're happy with the v2 of 3/6) and provide a branch
+>> to me, please?
+>
+> How are you planning on sending 3/6?
 
-Aaron Tomlin (4):
-  nmi: Provide the option to issue an NMI back trace to every cpu but
-    current
-  x86, nmi: Add more flexible NMI back trace support
-  sparc64, nmi: Add more flexible NMI back trace support
-  watchdog: Printing traces for all cpus on lockup detection
+Hum, I just sent it ... by mail...
+http://marc.info/?l=linux-kernel&m=139825313606633&w=2
 
- Documentation/kernel-parameters.txt |    5 +++++
- Documentation/sysctl/kernel.txt     |   17 +++++++++++++++++
- arch/sparc/include/asm/irq_64.h     |    2 +-
- arch/sparc/kernel/process_64.c      |   14 +++++++++-----
- arch/x86/include/asm/irq.h          |    2 +-
- arch/x86/kernel/apic/hw_nmi.c       |   17 +++++++++++++----
- include/linux/nmi.h                 |   12 +++++++++++-
- kernel/sysctl.c                     |    9 +++++++++
- kernel/watchdog.c                   |   32 ++++++++++++++++++++++++++++++++
- 9 files changed, 98 insertions(+), 12 deletions(-)
+> Can you send it attached to v1 please?
 
-Aaron Tomlin (2):
-  nmi: Provide the option to issue an NMI back trace to every cpu but
-    current
-  watchdog: Printing traces for all cpus on lockup detection
+Do you mean you want me to repost the entire series?
 
- Documentation/kernel-parameters.txt |    5 +++++
- Documentation/sysctl/kernel.txt     |   17 +++++++++++++++++
- arch/sparc/include/asm/irq_64.h     |    2 +-
- arch/sparc/kernel/process_64.c      |   14 +++++++++-----
- arch/x86/include/asm/irq.h          |    2 +-
- arch/x86/kernel/apic/hw_nmi.c       |   17 +++++++++++++----
- include/linux/nmi.h                 |   14 +++++++++++++-
- kernel/sysctl.c                     |   11 +++++++++++
- kernel/watchdog.c                   |   34 ++++++++++++++++++++++++++++++++++
- 9 files changed, 104 insertions(+), 12 deletions(-)
-
+Yours,
+Linus Walleij
