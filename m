@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756951AbaDWO7o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:59:44 -0400
-Received: from hqemgate14.nvidia.com ([216.228.121.143]:17217 "EHLO
-	hqemgate14.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113AbaDWO7m (ORCPT
+	id S1756818AbaDWPBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:01:00 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:51619 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752211AbaDWPA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:59:42 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp07.nvidia.com on Wed, 23 Apr 2014 07:51:12 -0700
-Date: Wed, 23 Apr 2014 17:59:39 +0300
-From: Peter De Schrijver <pdeschrijver@nvidia.com>
-To: <mturquette@linaro.org>
-CC: Prashant Gaikwad <pgaikwad@nvidia.com>,
-        "swarren@wwwdotorg.org" <swarren@wwwdotorg.org>,
-        "thierry.reding@gmail.com" <thierry.reding@gmail.com>,
-        "rob.herring@calxeda.com" <rob.herring@calxeda.com>,
-        "pawel.moll@arm.com" <pawel.moll@arm.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>
-Subject: pull request for Tegra PLLE fixes
-Message-ID: <20140423145939.GA11307@tbergstrom-lnx.Nvidia.com>
+	Wed, 23 Apr 2014 11:00:57 -0400
+Date: Wed, 23 Apr 2014 16:00:47 +0100
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] regulator: First pull of MFD <-> Regulator IB (v3.16)
+Message-ID: <20140423150047.GH6264@lee--X1>
+References: <20140423113941.GL21613@lee--X1>
+ <20140423124629.GA12304@sirena.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140423124629.GA12304@sirena.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+> > Doug Anderson (3):
+> >       mfd: tps65090: Don't tell child devices we have an IRQ if we don't
+> >       mfd: tps65090: Stop caching most registers
+> >       regulator: tps65090: Allow setting the overcurrent wait time
+> 
+> Can you drop the last one please, I've already applied it?  I'd have
+> expected just the first two (or probably even just the second one).  If
+> you need it in your tree just grab the branch (or I can tag it if you
+> like).
+> 
+> I tend to apply these things early where they don't have dependencies
+> due to the large number of reposts for unrelated changes in the series
+> that tend to happen (and often several very similar serieses being in
+> flight at once); I frequently end up just deleting them unread.  Not
+> sure what the best way to handle this stuff is in general.
 
-This fixes a number of stability problems with PCIe on Tegra30.
+I know that you due, which I think makes things easier for you, but
+more difficult for everyone else (author, other maintainers). Applying
+cross-subsystem patches also makes things difficult down the line.
 
-The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+Not sure what do do about the last patch now, as it has MFD changes
+which aren't in the MFD tree. All well and good if no one else touches
+that hunk for the remainder of the cycle, but if they do we're likely
+to have merge conflicts.
 
-  Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+I'll re-spin Monday.
 
-are available in the git repository at:
-  git://nv-tegra.nvidia.com/user/pdeschrijver/linux.git  clk-tegra-fixes-3.15
+> >  Documentation/devicetree/bindings/regulator/tps65090.txt |  4 ++++
+> >  drivers/mfd/tps65090.c                                   | 41 +++++++++++++++++++++++++----------------
+> >  drivers/power/tps65090-charger.c                         | 11 -----------
+> >  drivers/regulator/tps65090-regulator.c                   | 56 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/mfd/tps65090.h                             | 19 +++++++++++++++++++
+> >  5 files changed, 104 insertions(+), 27 deletions(-)
+> 
+> Your formatting for these still seems to be messing up.
 
-Thierry Reding (3):
-      clk: tegra: Fix PLLE programming
-      clk: tegra: Introduce divider mask and shift helpers
-      clk: tegra: Fix enabling of PLLE
+How so? Looks fine for me I think?
 
- drivers/clk/tegra/clk-pll.c |   64 +++++++++++++++++++++++++++++--------------
- 1 files changed, 43 insertions(+), 21 deletions(-)
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
