@@ -1,42 +1,317 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752973AbaDWMHS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:07:18 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:46597 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437AbaDWMHQ (ORCPT
+	id S1751925AbaDWMLn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:11:43 -0400
+Received: from mail-oa0-f42.google.com ([209.85.219.42]:50606 "EHLO
+	mail-oa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751354AbaDWMLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:07:16 -0400
-Message-ID: <5357ACF1.9070206@codeaurora.org>
-Date: Wed, 23 Apr 2014 07:07:13 -0500
-From: Timur Tabi <timur@codeaurora.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:28.0) Gecko/20100101 Firefox/28.0 SeaMonkey/2.25
+	Wed, 23 Apr 2014 08:11:41 -0400
 MIME-Version: 1.0
-To: Mathias Nyman <mathias.nyman@linux.intel.com>
-CC: Linus <linus.walleij@linaro.org>, Grant Likely <grant.likely@secretlab.ca>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
-References: <1371555182-12418-1-git-send-email-mathias.nyman@linux.intel.com>	<1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com> <CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com> <534B93BA.6020406@linux.intel.com> <534BFAAF.3070805@codeaurora.org> <534D0370.50108@linux.intel.com> <535005BA.1040405@codeaurora.org> <5357A80B.8030701@linux.intel.com>
-In-Reply-To: <5357A80B.8030701@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1398235235-4239-1-git-send-email-namhyung@kernel.org>
+References: <1398235235-4239-1-git-send-email-namhyung@kernel.org>
+Date: Wed, 23 Apr 2014 14:11:40 +0200
+Message-ID: <CABPqkBSgRmtnoGzb2KfLKK4QNkhUVzceU81x+o+PTLwNL3uL+A@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] perf record: Propagate exit status of a command
+ line workload
+From: Stephane Eranian <eranian@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathias Nyman wrote:
+On Wed, Apr 23, 2014 at 8:40 AM, Namhyung Kim <namhyung@kernel.org> wrote:
+> Currently perf record doesn't propagate the exit status of a workload
+> given by the command line.  But sometimes it'd useful if it's
+> propagated so that a monitoring script can handle errors
+> appropriately.
 >
-> Helper functions to translate the ACPI GpioIO and GpioInt resources to
-> linux gpio numbers can be found in gpio/gpiolib-acpi.c together with
-> other ACPI and gpio related helper functions.
+> To do that, it got rid of exit handlers and run/call them directly in
+> the __cmd_record().  I don't see any reason why those are in a form of
+> exit handlers in the first place.  Also it cleaned up the resouce
+> management code in record__exit().
+>
+> With this change, perf record returns the child exit status in case of
+> normal termination.  (Not sure what should be returned on abnormal
+> cases though).
+>
+> Example run of Stephane's case:
+>
+>   $ perf record false && echo yes || echo no
+>   [ perf record: Woken up 1 times to write data ]
+>   [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
+>   no
+>
+> And Jiri's case (error in parent):
+>
+>   $ perf record -m 10G true && echo yes || echo no
+>   rounding mmap pages size to 17179869184 bytes (4194304 pages)
+>   failed to mmap with 12 (Cannot allocate memory)
+>   no
+>
+> Reported-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-record.c | 119 ++++++++++++++++++--------------------------
+>  1 file changed, 49 insertions(+), 70 deletions(-)
+>
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index eb524f91bffe..d315be9e9be2 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -152,26 +152,6 @@ static void sig_handler(int sig)
+>         signr = sig;
+>  }
+>
+> -static void record__sig_exit(int exit_status __maybe_unused, void *arg)
+> -{
+> -       struct record *rec = arg;
+> -       int status;
+> -
+> -       if (rec->evlist->workload.pid > 0) {
+> -               if (!child_finished)
+> -                       kill(rec->evlist->workload.pid, SIGTERM);
+> -
+> -               wait(&status);
+> -               if (WIFSIGNALED(status))
+> -                       psignal(WTERMSIG(status), rec->progname);
+> -       }
+> -
+> -       if (signr == -1 || signr == SIGUSR1)
+> -               return;
+> -
+> -       signal(signr, SIG_DFL);
+> -}
+> -
+>  static int record__open(struct record *rec)
+>  {
+>         char msg[512];
+> @@ -243,27 +223,6 @@ static int process_buildids(struct record *rec)
+>                                               size, &build_id__mark_dso_hit_ops);
+>  }
+>
+> -static void record__exit(int status, void *arg)
+> -{
+> -       struct record *rec = arg;
+> -       struct perf_data_file *file = &rec->file;
+> -
+> -       if (status != 0)
+> -               return;
+> -
+> -       if (!file->is_pipe) {
+> -               rec->session->header.data_size += rec->bytes_written;
+> -
+> -               if (!rec->no_buildid)
+> -                       process_buildids(rec);
+> -               perf_session__write_header(rec->session, rec->evlist,
+> -                                          file->fd, true);
+> -               perf_session__delete(rec->session);
+> -               perf_evlist__delete(rec->evlist);
+> -               symbol__exit();
+> -       }
+> -}
+> -
+>  static void perf_event__synthesize_guest_os(struct machine *machine, void *data)
+>  {
+>         int err;
+> @@ -356,6 +315,7 @@ static void workload_exec_failed_signal(int signo, siginfo_t *info,
+>  static int __cmd_record(struct record *rec, int argc, const char **argv)
+>  {
+>         int err;
+> +       int status = 0;
+>         unsigned long waking = 0;
+>         const bool forks = argc > 0;
+>         struct machine *machine;
+> @@ -367,7 +327,6 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+>
+>         rec->progname = argv[0];
+>
+> -       on_exit(record__sig_exit, rec);
+>         signal(SIGCHLD, sig_handler);
+>         signal(SIGINT, sig_handler);
+>         signal(SIGTERM, sig_handler);
+> @@ -394,26 +353,21 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+>
+>         if (record__open(rec) != 0) {
+>                 err = -1;
+> -               goto out_delete_session;
+> +               goto out_child;
+>         }
+>
+>         if (!rec->evlist->nr_groups)
+>                 perf_header__clear_feat(&session->header, HEADER_GROUP_DESC);
+>
+> -       /*
+> -        * perf_session__delete(session) will be called at record__exit()
+> -        */
+> -       on_exit(record__exit, rec);
+> -
+>         if (file->is_pipe) {
+>                 err = perf_header__write_pipe(file->fd);
+>                 if (err < 0)
+> -                       goto out_delete_session;
+> +                       goto out_child;
+>         } else {
+>                 err = perf_session__write_header(session, rec->evlist,
+>                                                  file->fd, false);
+>                 if (err < 0)
+> -                       goto out_delete_session;
+> +                       goto out_child;
+>         }
+>
+>         if (!rec->no_buildid
+> @@ -421,7 +375,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+>                 pr_err("Couldn't generate buildids. "
+>                        "Use --no-buildid to profile anyway.\n");
+>                 err = -1;
+> -               goto out_delete_session;
+> +               goto out_child;
+>         }
+>
+>         machine = &session->machines.host;
+> @@ -431,7 +385,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+>                                                    process_synthesized_event);
+>                 if (err < 0) {
+>                         pr_err("Couldn't synthesize attrs.\n");
+> -                       goto out_delete_session;
+> +                       goto out_child;
+>                 }
+>
+>                 if (have_tracepoints(&rec->evlist->entries)) {
+> @@ -447,7 +401,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+>                                                                   process_synthesized_event);
+>                         if (err <= 0) {
+>                                 pr_err("Couldn't record tracing data.\n");
+> -                               goto out_delete_session;
+> +                               goto out_child;
+>                         }
+>                         rec->bytes_written += err;
+>                 }
+> @@ -475,7 +429,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+>         err = __machine__synthesize_threads(machine, tool, &opts->target, rec->evlist->threads,
+>                                             process_synthesized_event, opts->sample_address);
+>         if (err != 0)
+> -               goto out_delete_session;
+> +               goto out_child;
+>
+>         if (rec->realtime_prio) {
+>                 struct sched_param param;
+> @@ -484,7 +438,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+>                 if (sched_setscheduler(0, SCHED_FIFO, &param)) {
+>                         pr_err("Could not set realtime priority.\n");
+>                         err = -1;
+> -                       goto out_delete_session;
+> +                       goto out_child;
+>                 }
+>         }
+>
+> @@ -512,7 +466,7 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+>
+>                 if (record__mmap_read_all(rec) < 0) {
+>                         err = -1;
+> -                       goto out_delete_session;
+> +                       goto out_child;
+>                 }
+>
+>                 if (hits == rec->samples) {
+> @@ -538,28 +492,52 @@ static int __cmd_record(struct record *rec, int argc, const char **argv)
+>                 const char *emsg = strerror_r(workload_exec_errno, msg, sizeof(msg));
+>                 pr_err("Workload failed: %s\n", emsg);
+>                 err = -1;
+> -               goto out_delete_session;
+> +               goto out_child;
+>         }
+>
+> -       if (quiet || signr == SIGUSR1)
+> -               return 0;
+> +       if (!quiet) {
+> +               fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
+>
+> -       fprintf(stderr, "[ perf record: Woken up %ld times to write data ]\n", waking);
+> +               /*
+> +                * Approximate RIP event size: 24 bytes.
+> +                */
+> +               fprintf(stderr,
+> +                       "[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
+> +                       (double)rec->bytes_written / 1024.0 / 1024.0,
+> +                       file->path,
+> +                       rec->bytes_written / 24);
+> +       }
+>
+> -       /*
+> -        * Approximate RIP event size: 24 bytes.
+> -        */
+> -       fprintf(stderr,
+> -               "[ perf record: Captured and wrote %.3f MB %s (~%" PRIu64 " samples) ]\n",
+> -               (double)rec->bytes_written / 1024.0 / 1024.0,
+> -               file->path,
+> -               rec->bytes_written / 24);
+> +out_child:
+> +       if (forks) {
+> +               int exit_status;
+>
+> -       return 0;
+> +               if (!child_finished)
+> +                       kill(rec->evlist->workload.pid, SIGTERM);
+> +
+> +               wait(&exit_status);
+> +
+> +               if (err < 0)
+Not quite this. Although this works with my test case with 'false'.
+It fails when I tried the opposite test case:
 
-Does this also cover pin control and pin muxing?  Sorry, but I sometimes 
-I get confused.  It appears to me that the GpioIo and GpioInt functions 
-require pin muxing, but I don't see that support in gpiolib-acpi.
+$ perf record true && echo yes || echo no
+  [ perf record: Woken up 1 times to write data ]
+  [ perf record: Captured and wrote 0.013 MB perf.data (~589 samples) ]
+  no
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the
-Code Aurora Forum, hosted by The Linux Foundation.
+The return code in this case is 255. I tracked it down to err being last set
+by poll() which got interrupted by SIGCHLD. So I think the err value must
+be overridden somehow in this case. Maybe something like:
+
+                        err = poll(evsel_list->pollfd, evsel_list->nr_fds, -1);
+                        if (err < 0 &&  errno == EINTR && forks && done)
+                                err = 0;
+
+
+> +                       status = err;
+> +               else if (WIFEXITED(exit_status))
+> +                       status = WEXITSTATUS(exit_status);
+> +               else if (WIFSIGNALED(status))
+> +                       psignal(WTERMSIG(status), rec->progname);
+> +       } else
+> +               status = err;
+> +
+> +       if (!err && !file->is_pipe) {
+> +               rec->session->header.data_size += rec->bytes_written;
+> +
+> +               if (!rec->no_buildid)
+> +                       process_buildids(rec);
+> +               perf_session__write_header(rec->session, rec->evlist,
+> +                                          file->fd, true);
+> +       }
+>
+>  out_delete_session:
+>         perf_session__delete(session);
+> -       return err;
+> +       return status;
+>  }
+>
+>  #define BRANCH_OPT(n, m) \
+> @@ -988,6 +966,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __maybe_unused)
+>
+>         err = __cmd_record(&record, argc, argv);
+>  out_symbol_exit:
+> +       perf_evlist__delete(rec->evlist);
+>         symbol__exit();
+>         return err;
+>  }
+> --
+> 1.9.2
+>
