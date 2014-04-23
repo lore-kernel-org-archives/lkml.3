@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888AbaDWMQB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:16:01 -0400
-Received: from moutng.kundenserver.de ([212.227.126.131]:52022 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753704AbaDWMPu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:15:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: James Hogan <james.hogan@imgtec.com>
-Subject: Re: [PATCH 1/3] asm-generic: Add renameat2 syscall
-Date: Wed, 23 Apr 2014 14:13:52 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Vineet Gupta <vgupta@synopsys.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        linux-arm-kernel@lists.infradead.org, Mark Salter <msalter@redhat.com>,
-        Aurelien Jacquiot <a-jacquiot@ti.com>, linux-c6x-dev@linux-c6x.org,
-        Richard Kuo <rkuo@codeaurora.org>, linux-hexagon@vger.kernel.org,
-        linux-metag@vger.kernel.org, Jonas Bonn <jonas@southpole.se>,
-        linux@openrisc.net, Chen Liqin <liqin.linux@gmail.com>,
-        Lennox Wu <lennox.wu@gmail.com>, Chris Metcalf <cmetcalf@tilera.com>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>
-References: <1398247687-13453-1-git-send-email-james.hogan@imgtec.com> <1398247687-13453-2-git-send-email-james.hogan@imgtec.com>
-In-Reply-To: <1398247687-13453-2-git-send-email-james.hogan@imgtec.com>
+	id S1753972AbaDWMQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:16:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7766 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751800AbaDWMQK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 08:16:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,911,1389772800"; 
+   d="scan'208";a="525535628"
+Date: Wed, 23 Apr 2014 15:23:44 +0300
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+To: Adam Williamson <awilliam@redhat.com>
+Cc: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        "Jin, Yao" <yao.jin@linux.intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
+        mathias.nyman@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
+ ASUS T100TA
+Message-ID: <20140423122344.GX30677@intel.com>
+References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
+ <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
+ <5353A1F6.60602@linux.intel.com>
+ <5353B8A4.1080900@linux.intel.com>
+ <1398007690.2674.0.camel@adam.happyassassin.net>
+ <5354BA59.2000008@linux.intel.com>
+ <53551D0F.40906@linux.intel.com>
+ <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
+ <1398230210.2704.8.camel@adam.happyassassin.net>
+ <20140423083430.GV30677@intel.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404231413.53113.arnd@arndb.de>
-X-Provags-ID: V02:K0:Ct/RzVCLGbF/W8H5i090IagGKPkUSE6dMsGgyYKBhTL
- ywi05K9A6bXf9t9WgdPwyfXgZHV3e4onc2ZoTKQU6uulCDD3QS
- TJSkW3DK9jhPVUrO0JcjEfmbGmLKmBkIYxm72UUMNhq/BWt+Fz
- g1l0GDuBGDM2a0auThY9VSRTUiS4zRy8ozGvzlioWjRlhQg3zX
- iolZkKe6KcjnZ0yRm7+bDGeqU4ND09lm6Tr0RVzo9vYBMK0SxS
- bLmKLdVHlW7qzLaG+saakLm6YnVELYXqHfWbekhqOEwuTCQAmj
- GdUKTYnsq7XzzFpAX6I0sFyVUZyshuSG2cwdCGV/7XDeboAWnC
- ZN9iwyGnB+IUcZNLCdhw=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423083430.GV30677@intel.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 April 2014, James Hogan wrote:
-> Add the renameat2 syscall to the generic syscall list, which is used by
-> the following architectures: arc, arm64, c6x, hexagon, metag, openrisc,
-> score, tile, unicore32.
+On Wed, Apr 23, 2014 at 11:34:30AM +0300, Mika Westerberg wrote:
+> On Tue, Apr 22, 2014 at 10:16:50PM -0700, Adam Williamson wrote:
+> > Well, I can't actually concur. See my results in
+> > https://bugzilla.kernel.org/show_bug.cgi?id=68291#c44 .
+> > 
+> > 1. A kernel with neither patch applied (and no hid-rmi driver) results
+> > in a working touchscreen.
+> > 2. A kernel with only v3 of Doug's patch from
+> > https://bugzilla.kernel.org/show_bug.cgi?id=67921 results in a working
+> > touchscreen.
+> > 3. A kernel with both v3 of Doug's patch and this IRQ descriptor
+> > conflict "fix" results in a broken touchscreen.
+> > 
+> > Seems to me there really is some kind of problem with this patch...
 > 
-> Signed-off-by: James Hogan <james.hogan@imgtec.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: linux-arch@vger.kernel.org
-> Cc: Vineet Gupta <vgupta@synopsys.com>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: linux-arm-kernel@lists.infradead.org
-> Cc: Mark Salter <msalter@redhat.com>
-> Cc: Aurelien Jacquiot <a-jacquiot@ti.com>
-> Cc: linux-c6x-dev@linux-c6x.org
-> Cc: Richard Kuo <rkuo@codeaurora.org>
-> Cc: linux-hexagon@vger.kernel.org
-> Cc: linux-metag@vger.kernel.org
-> Cc: Jonas Bonn <jonas@southpole.se>
-> Cc: linux@lists.openrisc.net
-> Cc: Chen Liqin <liqin.linux@gmail.com>
-> Cc: Lennox Wu <lennox.wu@gmail.com>
-> Cc: Chris Metcalf <cmetcalf@tilera.com>
-> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Can you try so that you have both patches applied and then this one? I'm
+> suspecting that the ACPI GPIO operation region support might do something
+> unexpected in this case.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+I'm able to reproduce this problem here now and it seems not related to the
+ACPI GPIO operation regions.
+
+This patch changes call to irq_domain_add_linear() to
+irq_domain_add_simple() and somehow that changes the behaviour so that I
+get non-working touchscreen:
+
+...
+[   37.434998] i2c_hid i2c-ATML1000:00: failed to reset device.
+[   37.435009] i2c_hid i2c-ATML1000:00: i2c_hid_set_power
+[   37.435021] i2c_hid i2c-ATML1000:00: __i2c_hid_command: cmd=fb 00 01 08
+[   38.439897] i2c_hid i2c-ATML1000:00: can't add hid device: -61
+[   38.440749] i2c_hid: probe of i2c-ATML1000:00 failed with error -61
+
+It never gets an interrupt when the device reset is ready.
+
+Jin, do you have any idea what is going on?
