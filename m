@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757888AbaDWTA0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 15:00:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:40830 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756122AbaDWTAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 15:00:21 -0400
-Date: Wed, 23 Apr 2014 21:00:15 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-        venkateshs@google.com, ak@linux.intel.com, zheng.z.yan@intel.com
-Subject: Re: [PATCH] perf/x86: fix RAPL rdmsrl_safe() usage
-Message-ID: <20140423190015.GF25378@pd.tnic>
-References: <20140423170418.GA12767@quad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20140423170418.GA12767@quad>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1757906AbaDWTAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 15:00:30 -0400
+Received: from fencepost.gnu.org ([208.118.235.10]:55082 "EHLO
+	fencepost.gnu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756122AbaDWTA1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 15:00:27 -0400
+Date: Wed, 23 Apr 2014 15:00:06 -0400
+Message-Id: <E1Wd2Os-00061e-GU@fencepost.gnu.org>
+From: ams@gnu.org (Alfred M. Szmidt)
+To: Jeff Layton <jlayton@redhat.com>
+CC: libc-alpha@sourceware.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, tytso@mit.edu, dalias@libc.org,
+        mtk.manpages@gmail.com, samba-technical@lists.samba.org,
+        nfs-ganesha-devel@lists.sourceforge.net, carlos@redhat.com,
+        metze@samba.org, hch@infradead.org, bharrosh@panasas.com
+In-reply-to: <20140423112843.77889d16@tlielax.poochiereds.net> (message from
+	Jeff Layton on Wed, 23 Apr 2014 11:28:43 -0400)
+Subject: Re: [RFC][glibc PATCH] fcntl-linux.h: add new definitions and
+ manual updates for open file description locks
+Reply-to: ams@gnu.org
+References: <1398253172-9221-1-git-send-email-jlayton@redhat.com>
+	<E1Wcyo3-0000Eg-UC@fencepost.gnu.org> <20140423112843.77889d16@tlielax.poochiereds.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 07:04:19PM +0200, Stephane Eranian wrote:
-> 
-> This patch fixes a bug introduced by commit 24223657.
+   > Likewise.  You infact write that it does get the lock information
+   > later in the document wrt. F_OFD_GETLK.
 
-Maybe add
+   Sorry, I disagree here...GETLK is really a misnomer, IMO. TESTLK
+   would have been a better name.
 
-Fixes: <commit-id>
+   GETLK are used is to "get the first lock".
 
-tag?
+   It's a way to test whether a particular lock can be applied, and to
+   return information about a conflicting lock if it can't. If, for
+   instance there is no conflicting lock, then you don't "get" any
+   lock information back (l_type just gets reset to F_UNLCK).
 
-> The rdmsrl_safe() function returns 0 on success.
-> The current code was failing to detect the RAPL PMU
-> on real hardware  (missing /sys/devices/power) because
-> the return value of rdmsrl_safe() was misinterpreted.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
-
-Acked-by: Borislav Petkov <bp@suse.de>
-
--- 
-Regards/Gruss,
-    Boris.
-
-Sent from a fat crate under my desk. Formatting is fine.
---
+While I kinda see your point, it isn't what GETLK does; it really does
+get you information about the first lock -- you're not testing
+anything.  It is also the terminology used in the POSIX standard.
