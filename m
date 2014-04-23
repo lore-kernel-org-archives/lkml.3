@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756762AbaDWPs7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:48:59 -0400
-Received: from mail-la0-f42.google.com ([209.85.215.42]:54682 "EHLO
-	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753114AbaDWPs4 (ORCPT
+	id S1755213AbaDWPvX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:51:23 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:59079 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751156AbaDWPvV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:48:56 -0400
+	Wed, 23 Apr 2014 11:51:21 -0400
+From: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: sebastian.hesselbarth@gmail.com, linus.walleij@linaro.org
+Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        alexandre.belloni@free-electrons.com, zmxu@marvell.com,
+        jszhang@marvell.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 0/7] ARM: berlin: add pinctrl support
+Date: Wed, 23 Apr 2014 17:51:09 +0200
+Message-Id: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
-In-Reply-To: <20140423114039.GY4963@mwanda>
-References: <57bf4e51f05fad506a0d1638852a5233b359e1dc.1398194946.git.luto@amacapital.net>
- <20140423114039.GY4963@mwanda>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 23 Apr 2014 08:48:34 -0700
-Message-ID: <CALCETrXhY-XdAk_cUbQfVN2=2jx-6J3wX7DYMeAiML=VOhM+SA@mail.gmail.com>
-Subject: Re: [PATCH] crypto_user: Fix out-of-bounds read
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: linux-crypto@vger.kernel.org, "security@kernel.org" <security@kernel.org>,
-        Herbert Xu <herbert@gondor.apana.org.au>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "David S. Miller" <davem@davemloft.net>, stable@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 23, 2014 4:40 AM, "Dan Carpenter" <dan.carpenter@oracle.com> wrote:
->
-> On Tue, Apr 22, 2014 at 12:30:28PM -0700, Andy Lutomirski wrote:
-> > This is unlikely to be exploitable for anything except an OOPS.
-> >
-> > Cc: stable@vger.kernel.org
-> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
-> > ---
-> >
-> > Notes:
-> >     This is entirely untested, but it looks obviously correct to me.
-> >
-> >  crypto/crypto_user.c | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/crypto/crypto_user.c b/crypto/crypto_user.c
-> > index 1512e41..bc7c4b5 100644
-> > --- a/crypto/crypto_user.c
-> > +++ b/crypto/crypto_user.c
-> > @@ -460,7 +460,7 @@ static int crypto_user_rcv_msg(struct sk_buff *skb, struct nlmsghdr *nlh)
-> >       int type, err;
-> >
-> >       type = nlh->nlmsg_type;
-> > -     if (type > CRYPTO_MSG_MAX)
-> > +     if (type < CRYPTO_MSG_BASE || type > CRYPTO_MSG_MAX)
-> >               return -EINVAL;
->
-> Adding a check here is obviously harmless but I think this is only
-> called from netlink_rcv_skb() which already checks:
->
->         if (nlh->nlmsg_type < NLMSG_MIN_TYPE)
->                 goto ack;
->
-> NLMSG_MIN_TYPE is 0x10 as well, so I don't think we can hit your
-> condition.
->
-> Your patch freaked me out a little because this is one of the bugs that
-> I should have caught throught static analysis.
+This series adds support for the Marvell Berlin pin-controller, allowing
+to configure the pin muxing from the device tree.
 
-BUILD_BUG_ON(NLMSG_MIN_TYPE != CRYPTO_MSG_BASE) might be a better
-thing to add, then.
+The Berlin pin-controller support is divided into 3 drivers, each
+driving one Berlin SoC. These drivers use a Berlin common part.
 
-I don't feel so bad for missing this.
+This series applies on top of patches introducing the Marvell Berlin
+BG2Q you can find on Sebastian's berlin/for-next branch[1] and the patch
+allowing not to define the get_group_pins() function[2].
 
->
-> regards,
-> dan carpenter
->
+Tested on the Berlin BG2Q.
+
+[1] https://github.com/shesselba/linux-berlin/commits/berlin/for-next
+[2] https://patchwork.kernel.org/patch/3964491/
+
+Changes since v1:
+        - moved the driver to a specific berlin/ directory
+        - divided the pin-controller driver into three (one per SoC) and
+          reworked the driver dependencies accordingly
+        - reworked the device tree bindings
+        - removed the reg-names and reworked the driver to allow
+          splitting the two pin-controllers into two separate nodes in
+          the device tree
+        - updated the documentation
+        - removed unnecessary checks
+        - added support to mux multiple groups with the same function
+        - added BG2, BG2 and BG2CD function definitions
+
+Antoine Ténart (7):
+  pinctrl: berlin: add the core pinctrl driver for Marvell Berlin SoCs
+  pinctrl: berlin: add the BG2Q pinctrl driver
+  pinctrl: berlin: add the BG2 pinctrl driver
+  pinctrl: berlin: add the BG2CD pinctrl driver
+  ARM: berlin: add the pinctrl dependency for the Marvell Berlin SoCs
+  Documentation: add the Marvell Berlin pinctrl documentation
+  ARM: dts: berlin: add the pinctrl node and muxing setup for uarts
+
+ .../bindings/pinctrl/marvell,berlin-pinctrl.txt    |  44 +++
+ arch/arm/boot/dts/berlin2.dtsi                     |  24 ++
+ arch/arm/boot/dts/berlin2cd.dtsi                   |  17 +
+ arch/arm/boot/dts/berlin2q.dtsi                    |  24 ++
+ arch/arm/mach-berlin/Kconfig                       |   4 +
+ drivers/pinctrl/Kconfig                            |   1 +
+ drivers/pinctrl/Makefile                           |   1 +
+ drivers/pinctrl/berlin/Kconfig                     |  19 +
+ drivers/pinctrl/berlin/Makefile                    |   4 +
+ drivers/pinctrl/berlin/berlin-bg2.c                | 251 +++++++++++++
+ drivers/pinctrl/berlin/berlin-bg2cd.c              | 194 ++++++++++
+ drivers/pinctrl/berlin/berlin-bg2q.c               | 413 +++++++++++++++++++++
+ drivers/pinctrl/berlin/berlin.c                    | 347 +++++++++++++++++
+ drivers/pinctrl/berlin/berlin.h                    |  71 ++++
+ 14 files changed, 1414 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/pinctrl/marvell,berlin-pinctrl.txt
+ create mode 100644 drivers/pinctrl/berlin/Kconfig
+ create mode 100644 drivers/pinctrl/berlin/Makefile
+ create mode 100644 drivers/pinctrl/berlin/berlin-bg2.c
+ create mode 100644 drivers/pinctrl/berlin/berlin-bg2cd.c
+ create mode 100644 drivers/pinctrl/berlin/berlin-bg2q.c
+ create mode 100644 drivers/pinctrl/berlin/berlin.c
+ create mode 100644 drivers/pinctrl/berlin/berlin.h
+
+-- 
+1.8.3.2
+
