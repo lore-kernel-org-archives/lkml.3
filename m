@@ -1,84 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914AbaDWWcE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:32:04 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40192 "EHLO mga02.intel.com"
+	id S1751791AbaDWWf1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:35:27 -0400
+Received: from ozlabs.org ([103.22.144.67]:33226 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751401AbaDWWcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:32:01 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,914,1389772800"; 
-   d="scan'208";a="526638697"
-Subject: [PATCH] sched: Skip double execution of pick_next_task_fair
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-        Len Brown <len.brown@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 23 Apr 2014 15:31:57 -0700
-Message-ID: <1398292317.2970.63.camel@schen9-DESK>
+	id S1751348AbaDWWfZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 18:35:25 -0400
+Date: Thu, 24 Apr 2014 08:35:15 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Davidlohr Bueso <davidlohr@hp.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Manfred Spraul <manfred@colorfullife.com>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
+        aswin@hp.com, linux-mm@kvack.org
+Subject: Re: [PATCH 5/4] ipc,shm: minor cleanups
+Message-Id: <20140424083515.b113760f062072e69d1899ac@canb.auug.org.au>
+In-Reply-To: <20140423152755.7f323cfd0e6901a2907afca8@linux-foundation.org>
+References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>
+	<1398221636.6345.9.camel@buesod1.americas.hpqcorp.net>
+	<53574AA5.1060205@gmail.com>
+	<1398230745.27667.2.camel@buesod1.americas.hpqcorp.net>
+	<20140423152755.7f323cfd0e6901a2907afca8@linux-foundation.org>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-1.fc14) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__24_Apr_2014_08_35_15_+1000_wcig3Jp=HffsP76."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code will call pick_next_task_fair a second time
-in the slow path if we did not pull any task in our first try.
-This is really unnecessary as we already know no task can
-be pulled and it doubles the delay for the cpu to enter idle.
+--Signature=_Thu__24_Apr_2014_08_35_15_+1000_wcig3Jp=HffsP76.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-We instrumented some network workloads and that saw that
-pick_next_task_fair is frequently called twice before a cpu enters idle.
-The call to pick_next_task_fair can add
-non trivial latency as it calls load_balance which runs find_busiest_group
-on an hierarchy of sched domains spanning the cpus for a large system.  For
-some 4 socket systems, we saw almost 0.25 msec spent per call
-of pick_next_task_fair before a cpu can be idled.
+On Wed, 23 Apr 2014 15:27:55 -0700 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
+>
+> On Tue, 22 Apr 2014 22:25:45 -0700 Davidlohr Bueso <davidlohr@hp.com> wro=
+te:
+>=20
+> > On Wed, 2014-04-23 at 07:07 +0200, Michael Kerrisk (man-pages) wrote:
+> > > On 04/23/2014 04:53 AM, Davidlohr Bueso wrote:
+> > > > -  Breakup long function names/args.
+> > > > -  Cleaup variable declaration.
+> > > > -  s/current->mm/mm
+> > > >=20
+> > > > Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
+> > > > ---
+> > > >  ipc/shm.c | 40 +++++++++++++++++-----------------------
+> > > >  1 file changed, 17 insertions(+), 23 deletions(-)
+> > > >=20
+> > > > diff --git a/ipc/shm.c b/ipc/shm.c
+> > > > index f000696..584d02e 100644
+> > > > --- a/ipc/shm.c
+> > > > +++ b/ipc/shm.c
+> > > > @@ -480,15 +480,13 @@ static const struct vm_operations_struct shm_=
+vm_ops =3D {
+> > > >  static int newseg(struct ipc_namespace *ns, struct ipc_params *par=
+ams)
+> > > >  {
+> > > >  	key_t key =3D params->key;
+> > > > -	int shmflg =3D params->flg;
+> > > > +	int id, error, shmflg =3D params->flg;
+> > >=20
+> > > It's largely a matter of taste (and I may be in a minority), and I kn=
+ow
+> > > there's certainly precedent in the kernel code, but I don't much like=
+ the=20
+> > > style of mixing variable declarations that have initializers, with ot=
+her
+> > > unrelated declarations (e.g., variables without initializers). What i=
+s=20
+> > > the gain? One less line of text? That's (IMO) more than offset by the=
+=20
+> > > small loss of readability.
+> >=20
+> > Yes, it's taste. And yes, your in the minority, at least in many core
+> > kernel components and ipc.
+>=20
+> I'm with Michael.
+>=20
+> - Putting multiple definitions on the same line (whether or not they
+>   are initialized there) makes it impossible to add little comments
+>   documenting them.  And we need more little comments documenting
+>   locals.
+>=20
+> - Having multiple definitions on the same line is maddening when the
+>   time comes to resolve patch conflicts.  And it increases the
+>   likelihood of conflicts in the first place.
+>=20
+> - It makes it much harder to *find* a definition.
 
-This patch skips pick_next_task_fair in the slow path if it
-has already been invoked.
+And it changes a line that has nothing to do with the patch.
 
-Tim
+Sometimes the minority are right :-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Signed-off-by: Tim Chen <tim.c.chen@linux.intel.com>
----
- kernel/sched/core.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+--Signature=_Thu__24_Apr_2014_08_35_15_+1000_wcig3Jp=HffsP76.
+Content-Type: application/pgp-signature
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 1d1b87b..4053437 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -2583,6 +2583,7 @@ pick_next_task(struct rq *rq, struct task_struct *prev)
- {
- 	const struct sched_class *class = &fair_sched_class;
- 	struct task_struct *p;
-+	int skip_fair = 0;
- 
- 	/*
- 	 * Optimization: we know that if all tasks are in
-@@ -2591,12 +2592,17 @@ pick_next_task(struct rq *rq, struct task_struct *prev)
- 	if (likely(prev->sched_class == class &&
- 		   rq->nr_running == rq->cfs.h_nr_running)) {
- 		p = fair_sched_class.pick_next_task(rq, prev);
--		if (likely(p && p != RETRY_TASK))
-+		if (!p)
-+			skip_fair = 1;
-+		else if (likely(p != RETRY_TASK))
- 			return p;
- 	}
- 
- again:
- 	for_each_class(class) {
-+		/* if we have already failed to pull fair task, skip */
-+		if (class == &fair_sched_class && skip_fair)
-+			continue;
- 		p = class->pick_next_task(rq, prev);
- 		if (p) {
- 			if (unlikely(p == RETRY_TASK))
--- 
-1.7.11.7
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBCAAGBQJTWEApAAoJEMDTa8Ir7ZwVh5MP/AjyWRpF1vz5tM8Xy0uStunV
++sWsjHOtwRV3FoSoVtFMFhrUVT3wGE4eBy8VIIdSPyk+sfUQ3JRRUCl49Sdy29A8
+S2PMPZpqCFaKjNs0P/K+0lFIoq/GHROwFQsgyZtCmEpLGHP4Yc3mZGMwugbosy7I
+fpdJcYBG63GbHrkadTp7OnL5tKb604isrkGr1tDw9VYiOovlq/u3huXX8QAX/zqB
+Z65QBQy8R/CzAVD6I6VfVCXWwZ54obPbF3sjmq0IH7cjrY/wi9FB+LIDBPckyHR1
+0ca0hDmSn0MB+OWAPeJJgrq7p0v3MjxQdzAcfiRznR/GKBlP1t7cYEiqDJl+DhaB
+D876joQXDoUqkxclT42LbR0vyCUy6SRMNPvXWZz/XrS6JA9Gssi2cgDgCu1NbvP5
+p1MPZPXO4Tnk4iqFezp09U7QAY0gUat742b9dv8jyKozupYkEzpkduZfTei6S5kJ
+PZn0ykE32RAWNo2Js16thsfyYHXFEqjpv70l/MIfnjJ5BEidxYOz0GXmc/vDy/iq
+ixFXmTZhWeC+uPoudUf7fBzPLFcxs1M1HBxPhwFZw//A3Kq54Y5Ls+etPJ922s3j
+ftCgIEGgac/CiUbVLRogIYCfs2rzs29EvFZEyy/TPm627onH/yeAOcnuOrT/ClHG
+nXbrJfzMpgXzC5/plvbd
+=18lG
+-----END PGP SIGNATURE-----
 
+--Signature=_Thu__24_Apr_2014_08_35_15_+1000_wcig3Jp=HffsP76.--
