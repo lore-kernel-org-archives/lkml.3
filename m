@@ -1,82 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279AbaDWQxD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 12:53:03 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:61888 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756343AbaDWQw7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 12:52:59 -0400
-From: Will Deacon <will.deacon@arm.com>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
-        <stable@vger.kernel.org>, Victor Kamensky <victor.kamensky@linaro.org>
-Subject: [PATCH] word-at-a-time: avoid undefined behaviour in zero_bytemask macro
-Date: Wed, 23 Apr 2014 17:52:52 +0100
-Message-Id: <1398271972-15177-1-git-send-email-will.deacon@arm.com>
-X-Mailer: git-send-email 1.9.2
+	id S1756973AbaDWQzC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 12:55:02 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28581 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752530AbaDWQzA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 12:55:00 -0400
+Date: Wed, 23 Apr 2014 12:53:52 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: joern@logfs.org, peterz@infradead.org, akpm@linux-foundation.org,
+        cxie@redhat.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH RFC] sysrq: rcu-ify __handle_sysrq
+Message-ID: <20140423125352.704f9fb2@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The asm-generic, big-endian version of zero_bytemask creates a mask of
-bytes preceding the first zero-byte by left shifting ~0ul based on the
-position of the first zero byte.
+Echoing values into /proc/sysrq-trigger seems to be a popular way to
+get information out of the kernel. However, dumping information about
+thousands of processes, or hundreds of CPUs to serial console can
+result in IRQs being blocked for minutes, resulting in various kinds
+of cascade failures.
 
-Unfortunately, if the first (top) byte is zero, the output of
-prep_zero_mask has only the top bit set, resulting in undefined C
-behaviour as we shift left by an amount equal to the width of the type.
-As it happens, GCC doesn't manage to spot this through the call to fls(),
-but the issue remains if architectures choose to implement their shift
-instructions differently.
+The most common failure is due to interrupts being blocked for a very
+long time. This can lead to things like failed IO requests, and other
+things the system cannot easily recover from.
 
-An example would be arch/arm/ (AArch32), where LSL Rd, Rn, #32 results
-in Rd == 0x0, whilst on arch/arm64 (AArch64) LSL Xd, Xn, #64 results in
-Xd == Xn.
+This problem is easily fixable by making __handle_sysrq use RCU
+instead of spin_lock_irqsave.
 
-Rather than check explicitly for the problematic shift, this patch adds
-an extra shift by 1, replacing fls with __fls. Since zero_bytemask is
-never called with a zero argument (has_zero() is used to check the data
-first), we don't need to worry about calling __fls(0), which is
-undefined.
+This leaves the warning that RCU grace periods have not elapsed for a
+long time, but the system will come back from that automatically.
 
-Cc: <stable@vger.kernel.org>
-Cc: Victor Kamensky <victor.kamensky@linaro.org>
-Signed-off-by: Will Deacon <will.deacon@arm.com>
+It also leaves sysrq-from-irq-context when the sysrq keys are pressed,
+but that is probably desired since people want that to work in situations
+where the system is already hosed.
+
+The callers of register_sysrq_key and unregister_sysrq_key appear to be
+capable of sleeping.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reported-by: Madper Xie <cxie@redhat.com>
 ---
+ drivers/tty/sysrq.c | 18 ++++++++++++------
+ 1 file changed, 12 insertions(+), 6 deletions(-)
 
-Hi Linus,
-
-Victor reported this with a big-endian arm64 system. This is the
-cleanest, most efficient solution I could come up with, but it would be
-helpful if you could please confirm my assumption that zero_bytemask(0)
-is nonsensical.
-
-Cheers,
-
-Will
-
- include/asm-generic/word-at-a-time.h | 8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
-
-diff --git a/include/asm-generic/word-at-a-time.h b/include/asm-generic/word-at-a-time.h
-index d3909effd725..d96deb443f18 100644
---- a/include/asm-generic/word-at-a-time.h
-+++ b/include/asm-generic/word-at-a-time.h
-@@ -50,11 +50,7 @@ static inline bool has_zero(unsigned long val, unsigned long *data, const struct
+diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+index ce396ec..3c61e9b 100644
+--- a/drivers/tty/sysrq.c
++++ b/drivers/tty/sysrq.c
+@@ -510,9 +510,8 @@ void __handle_sysrq(int key, bool check_mask)
+ 	struct sysrq_key_op *op_p;
+ 	int orig_log_level;
+ 	int i;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	rcu_read_lock();
+ 	/*
+ 	 * Raise the apparent loglevel to maximum so that the sysrq header
+ 	 * is shown to provide the user with positive feedback.  We do not
+@@ -554,7 +553,7 @@ void __handle_sysrq(int key, bool check_mask)
+ 		printk("\n");
+ 		console_loglevel = orig_log_level;
+ 	}
+-	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++	rcu_read_unlock();
  }
  
- #ifndef zero_bytemask
--#ifdef CONFIG_64BIT
--#define zero_bytemask(mask)	(~0ul << fls64(mask))
--#else
--#define zero_bytemask(mask)	(~0ul << fls(mask))
--#endif /* CONFIG_64BIT */
--#endif /* zero_bytemask */
-+#define zero_bytemask(mask) (~0ul << __fls(mask) << 1)
-+#endif
+ void handle_sysrq(int key)
+@@ -1043,16 +1042,23 @@ static int __sysrq_swap_key_ops(int key, struct sysrq_key_op *insert_op_p,
+                                 struct sysrq_key_op *remove_op_p)
+ {
+ 	int retval;
+-	unsigned long flags;
  
- #endif /* _ASM_WORD_AT_A_TIME_H */
--- 
-1.9.2
+-	spin_lock_irqsave(&sysrq_key_table_lock, flags);
++	spin_lock(&sysrq_key_table_lock);
+ 	if (__sysrq_get_key_op(key) == remove_op_p) {
+ 		__sysrq_put_key_op(key, insert_op_p);
+ 		retval = 0;
+ 	} else {
+ 		retval = -1;
+ 	}
+-	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
++	spin_unlock(&sysrq_key_table_lock);
++
++	/*
++	 * A concurrent __handle_sysrq eitehr got the old op or the new op.
++	 * Wait for it to go away before returning, so the code for an old
++	 * op is not freed (eg. on module unload) while it is in use.
++	 */
++	synchronize_rcu();
++
+ 	return retval;
+ }
+ 
 
