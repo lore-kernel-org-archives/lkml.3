@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344AbaDWNWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 09:22:52 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:62626 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753525AbaDWNWv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 09:22:51 -0400
-Date: Wed, 23 Apr 2014 14:22:38 +0100
-From: Lee Jones <lee.jones@linaro.org>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Silvio F <silvio.fricke@gmail.com>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Shawn Guo <shawn.guo@linaro.org>,
-        Viresh Kumar <viresh.linux@gmail.com>,
-        Shiraz Hashim <shiraz.hashim@st.com>,
-        spear-devel <spear-devel@list.st.com>
-Subject: Re: [PATCH 1/6] mfd: stmpe: root out static GPIO and IRQ assignments
-Message-ID: <20140423132238.GJ640@lee--X1>
-References: <1397659455-13638-1-git-send-email-linus.walleij@linaro.org>
- <1397659455-13638-2-git-send-email-linus.walleij@linaro.org>
- <20140417104925.GM28725@lee--X1>
- <CACRpkdaHQkOMx1NrAWkDd0prc1AqXRs-p69TX9ihoPUhx49oEQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CACRpkdaHQkOMx1NrAWkDd0prc1AqXRs-p69TX9ihoPUhx49oEQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755213AbaDWNZf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 09:25:35 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:59848 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752607AbaDWNZd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 09:25:33 -0400
+Message-ID: <1398259477.4724.218.camel@iivanov-dev>
+Subject: Re: [PATCH v6 15/19] usb: phy: msm: Fix PTS definitions for MSM USB
+ controller
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+Cc: Felipe Balbi <balbi@ti.com>, Tim Bird <tbird20d@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
+Date: Wed, 23 Apr 2014 16:24:37 +0300
+In-Reply-To: <53566A23.8010508@cogentembedded.com>
+References: <1398158438-21579-1-git-send-email-iivanov@mm-sol.com>
+	 <1398158438-21579-16-git-send-email-iivanov@mm-sol.com>
+	 <53566A23.8010508@cogentembedded.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> The only platform using the STMPE expander now boots from
-> >> device tree using all-dynamic GPIO and IRQ number assignments, so
-> >> remove the mechanism to pass this from the device tree entirely.
-> >>
-> >> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> >> ---
-> >>  drivers/gpio/gpio-stmpe.c | 18 +++++-------------
-> >>  drivers/mfd/stmpe.c       |  3 +--
-> >>  include/linux/mfd/stmpe.h | 14 --------------
-> >>  3 files changed, 6 insertions(+), 29 deletions(-)
-> >
-> > MFD changes look good to me.
-> >
-> > Acked-by: Lee Jones <lee.jones@linaro.org>
-> >
-> > Do you want me to set up and immutable branch between MFD and GPIO?
+Hi,
+
+On Tue, 2014-04-22 at 17:09 +0400, Sergei Shtylyov wrote:
+> Hello.
 > 
-> That would be perfect. Can you stack up the MFD portions in patches
-> 1 thru 4 (given you're happy with the v2 of 3/6) and provide a branch
-> to me, please?
+> On 22-04-2014 13:20, Ivan T. Ivanov wrote:
+> 
+> > From: Tim Bird <tbird20d@gmail.com>
+> 
+> > Fix the value used for Parallel Transceiver Select (PTS) for the MSM USB
+> > controller.  This is a standard chipidea PORTSC definition, where
+> > a PHY_TYPE of 10b (<<30) is ULPI and 11b (<<30) is SERIAL.
+> > Fix the definitions and use them correctly in the driver code.
+> 
+> > Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+> > ---
+> >   drivers/usb/phy/phy-msm-usb.c    | 8 +++++---
+> >   include/linux/usb/msm_hsusb_hw.h | 5 +++--
+> >   2 files changed, 8 insertions(+), 5 deletions(-)
+> 
+> > diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+> > index dababf9..e83d13a 100644
+> > --- a/drivers/usb/phy/phy-msm-usb.c
+> > +++ b/drivers/usb/phy/phy-msm-usb.c
+> > @@ -287,8 +287,9 @@ static int msm_link_reset(struct msm_otg *motg)
+> >   	if (motg->phy_number)
+> >   		writel(readl(USB_PHY_CTRL2) | BIT(16), USB_PHY_CTRL2);
+> >
+> > +	/* put transciever in serial mode as part of reset */
+> 
+>     s/transciever/transceiver/
+> 
+> [...]
+> 
+> > diff --git a/include/linux/usb/msm_hsusb_hw.h b/include/linux/usb/msm_hsusb_hw.h
+> > index 575c743..98d3dd8 100644
+> > --- a/include/linux/usb/msm_hsusb_hw.h
+> > +++ b/include/linux/usb/msm_hsusb_hw.h
+> > @@ -31,8 +31,9 @@
+> >   #define USB_USBINTR          (MSM_USB_BASE + 0x0148)
+> >
+> >   #define PORTSC_PHCD            (1 << 23) /* phy suspend mode */
+> > -#define PORTSC_PTS_MASK         (3 << 30)
+> > -#define PORTSC_PTS_ULPI         (3 << 30)
+> > +#define PORTSC_PTS_MASK        (3 << 30)
+> > +#define PORTSC_PTS_ULPI        (2 << 30)
+> > +#define PORTSC_PTS_SERIAL      (3 << 30)
+> 
+>     Please use tabs, not spaces here.
 
-How are you planning on sending 3/6?
+Thanks, will fix and resend.
 
-Can you send it attached to v1 please?
+Ivan
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> 
+> WBR, Sergei
+> 
+
+
