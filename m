@@ -1,43 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821AbaDWHBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:01:32 -0400
-Received: from smtp.adetelgroup.com ([94.247.26.71]:32899 "EHLO
-	hbg-pa71.hmc-pa.adm" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754120AbaDWHBa convert rfc822-to-8bit (ORCPT
+	id S932305AbaDWHAU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:00:20 -0400
+Received: from lgeamrelo04.lge.com ([156.147.1.127]:60300 "EHLO
+	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754039AbaDWHAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:01:30 -0400
-Message-ID: <1398236460.3347.9.camel@EMBLYSD005.adetelgroup.com>
-Subject: Re: [PATCH] ARM: i.MX6: Add OF configuration support for ksz9031
-From: Hubert Chaumette <hchaumette@adeneo-embedded.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: f.fainelli@gmail.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Date: Wed, 23 Apr 2014 09:01:00 +0200
-In-Reply-To: <20140422162117.GL3461@piout.net>
-References: <1398181748-6500-1-git-send-email-hchaumette@adeneo-embedded.com>
-	 <20140422162117.GL3461@piout.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b3 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+	Wed, 23 Apr 2014 03:00:11 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 3/7] perf hists: Add missing update on filtered stats in hists__decay_entries()
+Date: Wed, 23 Apr 2014 16:00:04 +0900
+Message-Id: <1398236408-8856-4-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
+References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+When a filter is used for perf top, its hists->nr_non_filtered_entries
+was not updated after it removed an entry in hists__decay_entries().
+Also hists->stats.total_non_filtered_period was missed too.
 
-Le mardi 22 avril 2014 à 18:21 +0200, Alexandre Belloni a écrit :
-As this is version two of your patch, you should probably use [PATCHv2].
-> 
-Indeed, it seems --subject-prefix is *not* a /send-email/ option...
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/hist.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-Also, this doesn't have anything to do with i.mx6 anymore. I think youe
-> subject line should look like:
-> [PATCHv2] net: phy: micrel: Add DT configuration support for ksz9031
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 3ebc3cd09f42..fb17bf22433b 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -225,14 +225,18 @@ static void he_stat__decay(struct he_stat *he_stat)
+ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
+ {
+ 	u64 prev_period = he->stat.period;
++	u64 diff;
  
-I didn't change it to avoid breaking the patch's history. I'll do it for
-next iterations. Thanks for your input.
-
-Hubert
+ 	if (prev_period == 0)
+ 		return true;
+ 
+ 	he_stat__decay(&he->stat);
+ 
++	diff = prev_period - he->stat.period;
++
++	hists->stats.total_period -= diff;
+ 	if (!he->filtered)
+-		hists->stats.total_period -= prev_period - he->stat.period;
++		hists->stats.total_non_filtered_period -= diff;
+ 
+ 	return he->stat.period == 0;
+ }
+@@ -259,8 +263,11 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
+ 			if (sort__need_collapse)
+ 				rb_erase(&n->rb_node_in, &hists->entries_collapsed);
+ 
+-			hist_entry__free(n);
+ 			--hists->nr_entries;
++			if (!n->filtered)
++				--hists->nr_non_filtered_entries;
++
++			hist_entry__free(n);
+ 		}
+ 	}
+ }
+-- 
+1.9.2
 
