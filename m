@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751804AbaDWWFB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 18:05:01 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:40413 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241AbaDWWE7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 18:04:59 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1751835AbaDWWFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 18:05:16 -0400
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:39486 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751807AbaDWWFF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 18:05:05 -0400
+Date: Wed, 23 Apr 2014 18:05:00 -0400
+From: Matt Porter <mporter@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>,
+        Devicetree List <devicetree@vger.kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Tim Kryger <tim.kryger@linaro.org>,
+        Markus Mayer <markus.mayer@linaro.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        DRI mailing list <dri-devel@lists.freedesktop.org>,
-        Christian =?ISO-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>
-Subject: Re: [git pull] drm fixes
-Date: Wed, 23 Apr 2014 18:04:50 -0400
-Message-ID: <2963840.VTDy2Dfbed@grover>
-Organization: me
-User-Agent: KMail/4.13 (Linux/3.15.0-1-git; KDE/4.13.0; x86_64; ; )
-In-Reply-To: <CAPM=9tyHwYJ4CTFPZD4zLNFQyct8A_UmoyUMgR_bBZR5bJB+Pw@mail.gmail.com>
-References: <alpine.DEB.2.00.1404190810001.7507@skynet.skynet.ie> <CA+55aFwbOQCcd1qsW0rA+bQxN2Vgm9x832ZKmB7fndFX7DBE3w@mail.gmail.com> <CAPM=9tyHwYJ4CTFPZD4zLNFQyct8A_UmoyUMgR_bBZR5bJB+Pw@mail.gmail.com>
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 2/4] mfd: bcm590xx: add support for second i2c slave
+ address space
+Message-ID: <20140423220500.GA1127@beef>
+References: <1397501428-8857-1-git-send-email-mporter@linaro.org>
+ <1397501428-8857-3-git-send-email-mporter@linaro.org>
+ <20140416110603.GA19671@lee--X1>
+ <20140416213141.GD12304@sirena.org.uk>
+ <20140417065753.GC28725@lee--X1>
+ <20140417222616.GK23695@beef>
+ <20140422082139.GF17657@lee--X1>
+ <20140423220126.GC4164@beef>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140423220126.GC4164@beef>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 April 2014 07:54:17 Dave Airlie wrote:
-> On Wed, Apr 23, 2014 at 1:59 AM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> > Dave, mind sending me a pull request for drm fixes?
-> >
-> > There's now at least these two:
-> >
-> >  - "drm/radeon/aux: fix hpd assignment for aux bus"
-> >  - "drm/radeon: use fixed PPL ref divider if needed"
-> >
-> > that look like fairly fatal regressions when they affect somebody.
-> >
-> > The fact that we already had *two* independent bugs be reported within
-> > days of that last out-of-merge-window pull request makes me very
-> > unhappy with the state of drm pulls.
-> >
-> > So please make sure that future fixes really are *fixes*. For
-> > regressions only. No more games like this.
+On Wed, Apr 23, 2014 at 06:01:26PM -0400, Matt Porter wrote:
+> On Tue, Apr 22, 2014 at 09:21:39AM +0100, Lee Jones wrote:
+> > > > > > s/regmap/Regmap
+> > > > > 
+> > > > > It's consistently written regmap in all the documentation and so on :)
+> > > > 
+> > > > Furry muff; but the comments still stand for the acronyms.
+> > > > 
+> > > > > > addmap{0,1} doesn't quite sit right with me.
+> > > > > 
+> > > > > > REVISIT: Ah, it's address-map, rather than add map. Okay, not as bad
+> > > > > > as I first thought, but still, is there a better naming convention you
+> > > > > > could use?
+> > > > > 
+> > > > > addrmap or something?
+> > > > 
+> > > > Right, that was what I was thinking. However, I prefer something along
+> > > > the lines of 'i2c' and 'i2c_sec' or 'client' and 'client_slv' etc.
+> > > 
+> > > FWIW, the reason it's addmap{0,1} is that the datasheet has documents
+> > > ADDMAP=0 and the first bank of registers and ADDMAP=1 as the second bank
+> > > of registers. I adopted that to match the docs for the part.
+> > > 
+> > > I guess we could do i2c and i2c_sec, I'll just have to put a comment
+> > > correlating it to the h/w. Calling it 'slv' implies something else
+> > > so we should avoid that here. The notion of a "secondary" i2c device
+> > > is completely a Linux I2C subsystem fabrication which wouldn't exist
+> > > if it allowed multiple slave addresses per device. From a h/w
+> > > perspective there is really no primary and secondary relationship.
+> > > 
+> > > I'm fine with i2c/i2c_sec or addrmap0/1 and I will just comment to
+> > > correlate with the datasheet..pick one.
+> > 
+> > Let's stick method fabricated by the I2C subsystem. It may seem strange
+> > from a h/w perspective, but it is the way we (you) have coded it, as
+> > the first parameter of i2c_new_dummy() is the 'managing' (primary,
+> > parent, master, whatever) device, so '_sec' would suit as an
+> > identifying appendage for the resultant device.
 > 
-> The pll fallout is fixes for the initial feature that was in the merge window,
-> Tuning plls for monitors is always a pain in the ass, the previous algorithm
-> took a couple of kernels a few years back to get where it was, unfortunately
-> HDMI came along and showed up a bunch of its shortcomings. I'm happy
-> Alex and Christian are on top of things in terms of tracking regressions
-> and making sure they get fixed,
-> 
-> the AUX fix yes I'm a bit pissed off about myself, but I missed a pull
-> from a few
-> weeks ago, felt guilty, and maybe should have chosen the other path and let it
-> wait a merge,
-> 
-> Christian just sent me a -fixes pull with all of these in it and I'll
-> send it on to you
-> in a few mins.
+> That works, I'll also switch to addrmap_[pri|sec] which touches the
+> regulator driver as well. That will keep the relationship  between device
+> and regmap clear.
 
-Hi
+Misspoke...I'm switching regmap[0|1] to regmap_[pri|sec] to keep that
+synced with i2c_[pri|sec]
 
-Given the fun I had with rc1 I decided to try this pull before rc2 and its working fine here.
-
-Thanks!
-
-Ed Tomlinson
+-Matt
