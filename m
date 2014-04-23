@@ -1,294 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533AbaDWPZS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:25:18 -0400
-Received: from nblzone-211-213.nblnetworks.fi ([83.145.211.213]:38035 "EHLO
-	hillosipuli.retiisi.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751307AbaDWPZJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:25:09 -0400
-Date: Wed, 23 Apr 2014 18:24:35 +0300
-From: Sakari Ailus <sakari.ailus@iki.fi>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-media@vger.kernel.org, linux-leds@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        s.nawrocki@samsung.com, a.hajda@samsung.com, kyungmin.park@samsung.com
-Subject: Re: [PATCH/RFC v3 5/5] media: Add registration helpers for V4L2
- flash sub-devices
-Message-ID: <20140423152435.GJ8753@valkosipuli.retiisi.org.uk>
-References: <1397228216-6657-1-git-send-email-j.anaszewski@samsung.com>
- <1397228216-6657-6-git-send-email-j.anaszewski@samsung.com>
- <20140416182141.GG8753@valkosipuli.retiisi.org.uk>
- <534F9044.6080508@samsung.com>
+	id S1754008AbaDWPZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:25:42 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:58809 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752755AbaDWPZi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:25:38 -0400
+Date: Wed, 23 Apr 2014 10:22:34 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+CC: <balbi@ti.com>, Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        <linux-arm-kernel@lists.infradead.org>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 2/8] usb: host: xhci-plat: Add support for the Armada 38x
+ glue code
+Message-ID: <20140423152234.GG9593@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1397816563-9000-1-git-send-email-gregory.clement@free-electrons.com>
+ <1397816563-9000-3-git-send-email-gregory.clement@free-electrons.com>
+ <20140420032035.GB26893@saruman.home>
+ <53576F79.6070908@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Sw7tCqrGA+HQ0/zt"
 Content-Disposition: inline
-In-Reply-To: <534F9044.6080508@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <53576F79.6070908@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jacek,
+--Sw7tCqrGA+HQ0/zt
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Apr 17, 2014 at 10:26:44AM +0200, Jacek Anaszewski wrote:
-> Hi Sakari,
-> 
-> Thanks for the review.
-> 
-> On 04/16/2014 08:21 PM, Sakari Ailus wrote:
-> >Hi Jacek,
-> >
-> >Thanks for the update!
-> >
-> [...]
-> >>+static inline enum led_brightness v4l2_flash_intensity_to_led_brightness(
-> >>+					struct led_ctrl *config,
-> >>+					u32 intensity)
-> >
-> >Fits on a single line.
-> >
-> >>+{
-> >>+	return intensity / config->step;
-> >
-> >Shouldn't you first decrement the minimum before the division?
-> 
-> Brightness level 0 means that led is off. Let's consider following case:
-> 
-> intensity - 15625
-> config->step - 15625
-> intensity / config->step = 1 (the lowest possible current level)
+Hi,
 
-In V4L2 controls the minimum is not off, and zero might not be a possible
-value since minimum isn't divisible by step.
+On Wed, Apr 23, 2014 at 09:44:57AM +0200, Gregory CLEMENT wrote:
+> > On Fri, Apr 18, 2014 at 12:22:37PM +0200, Gregory CLEMENT wrote:
+> >> For the armada 38x SoCs which come with an xhci controller, specific
+> >> initialization must be done during probe, especially in relation with
+> >> the MBus windows initialization. This patch adds this support.
+> >>
+> >> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> >> ---
+> >>  drivers/usb/host/Kconfig      |   7 +++
+> >>  drivers/usb/host/Makefile     |   1 +
+> >>  drivers/usb/host/xhci-mvebu.c | 105 +++++++++++++++++++++++++++++++++=
++++++++++
+> >>  drivers/usb/host/xhci-mvebu.h |  21 +++++++++
+> >>  drivers/usb/host/xhci-plat.c  |  10 ++++
+> >>  5 files changed, 144 insertions(+)
+> >>  create mode 100644 drivers/usb/host/xhci-mvebu.c
+> >>  create mode 100644 drivers/usb/host/xhci-mvebu.h
+> >>
+> >> diff --git a/drivers/usb/host/Kconfig b/drivers/usb/host/Kconfig
+> >> index 3d9e54062d62..e70943fac4a1 100644
+> >> --- a/drivers/usb/host/Kconfig
+> >> +++ b/drivers/usb/host/Kconfig
+> >> @@ -29,6 +29,13 @@ if USB_XHCI_HCD
+> >>  config USB_XHCI_PLATFORM
+> >>  	tristate
+> >> =20
+> >> +config USB_XHCI_MVEBU
+> >> +	tristate "xHCI support for Marvell Armada 38x"
+> >> +	select USB_XHCI_PLATFORM
+> >> +	---help---
+> >> +	  Say 'Y' to enable the support for the xHCI host controller
+> >> +	  found in Marvell Armada 38x ARM SOCs.
+> >> +
+> >>  endif # USB_XHCI_HCD
+> >> =20
+> >>  config USB_EHCI_HCD
+> >> diff --git a/drivers/usb/host/Makefile b/drivers/usb/host/Makefile
+> >> index 7530468c9a4f..7a8db7f7dc01 100644
+> >> --- a/drivers/usb/host/Makefile
+> >> +++ b/drivers/usb/host/Makefile
+> >> @@ -19,6 +19,7 @@ xhci-hcd-$(CONFIG_PCI)	+=3D xhci-pci.o
+> >> =20
+> >>  ifneq ($(CONFIG_USB_XHCI_PLATFORM), )
+> >>  	xhci-hcd-y		+=3D xhci-plat.o
+> >> +	xhci-hcd-$(CONFIG_USB_XHCI_MVEBU)	+=3D xhci-mvebu.o
+> >>  endif
+> >> =20
+> >>  obj-$(CONFIG_USB_WHCI_HCD)	+=3D whci/
+> >> diff --git a/drivers/usb/host/xhci-mvebu.c b/drivers/usb/host/xhci-mve=
+bu.c
+> >> new file mode 100644
+> >> index 000000000000..dc9c7648ab65
+> >> --- /dev/null
+> >> +++ b/drivers/usb/host/xhci-mvebu.c
+> >> @@ -0,0 +1,105 @@
+> >> +/*
+> >> + * Copyright (C) 2014 Marvell
+> >> + * Author: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> >> + *
+> >> + * This program is free software; you can redistribute it and/or
+> >> + * modify it under the terms of the GNU General Public License
+> >> + * version 2 as published by the Free Software Foundation.
+> >> + */
+> >> +
+> >> +#include <linux/clk.h>
+> >> +#include <linux/io.h>
+> >> +#include <linux/mbus.h>
+> >> +#include <linux/of.h>
+> >> +#include <linux/platform_device.h>
+> >> +
+> >> +#include "xhci.h"
+> >> +
+> >> +#define USB3_MAX_WINDOWS	4
+> >> +#define USB3_WIN_CTRL(w)	(0x0 + ((w) * 8))
+> >> +#define USB3_WIN_BASE(w)	(0x4 + ((w) * 8))
+> >> +
+> >> +static void __init mv_usb3_conf_mbus_windows(void __iomem *base,
+> >> +			const struct mbus_dram_target_info *dram)
+> >> +{
+> >> +	int win;
+> >> +
+> >> +	/* Clear all existing windows */
+> >> +	for (win =3D 0; win < USB3_MAX_WINDOWS; win++) {
+> >> +		writel(0, base + USB3_WIN_CTRL(win));
+> >> +		writel(0, base + USB3_WIN_BASE(win));
+> >> +	}
+> >> +
+> >> +	/* Program each DRAM CS in a seperate window */
+> >> +	for (win =3D 0; win < dram->num_cs; win++) {
+> >> +		const struct mbus_dram_window *cs =3D dram->cs + win;
+> >> +
+> >> +		writel(((cs->size - 1) & 0xffff0000) | (cs->mbus_attr << 8) |
+> >> +		       (dram->mbus_dram_target_id << 4) | 1,
+> >> +		       base + USB3_WIN_CTRL(win));
+> >> +
+> >> +		writel((cs->base & 0xffff0000), base + USB3_WIN_BASE(win));
+> >> +	}
+> >> +}
+> >> +
+> >> +int xhci_mvebu_probe(struct platform_device *pdev)
+> >> +{
+> >> +	struct resource	*res;
+> >> +	void __iomem	*base;
+> >> +	const struct mbus_dram_target_info *dram;
+> >> +	int ret;
+> >> +	struct clk *clk;
+> >> +
+> >> +	res =3D platform_get_resource(pdev, IORESOURCE_MEM, 1);
+> >> +	if (!res)
+> >> +		return -ENODEV;
+> >> +
+> >> +	/*
+> >> +	 * We don't use devm_ioremap() because this mapping should
+> >> +	 * only exists for the duration of this probe function.
+> >> +	 */
+> >> +	base =3D ioremap(res->start, resource_size(res));
+> >> +	if (!base)
+> >> +		return -ENODEV;
+> >> +
+> >> +	clk =3D devm_clk_get(&pdev->dev, NULL);
+> >> +	if (IS_ERR(clk)) {
+> >> +		iounmap(base);
+> >> +		return PTR_ERR(clk);
+> >> +	}
+> >> +
+> >> +	ret =3D clk_prepare_enable(clk);
+> >> +	if (ret < 0) {
+> >> +		iounmap(base);
+> >> +		return ret;
+> >> +	}
+> >=20
+> > it's best to teach generic xhci-plat about clocks, just make it
+> > optional.
+>=20
+> OK
+>=20
+> >=20
+> >> +	dram =3D mv_mbus_dram_info();
+> >> +	mv_usb3_conf_mbus_windows(base, dram);
+> >> +
+> >> +	/*
+> >> +	 * This memory area was only needed to configure the MBus
+> >> +	 * windows, and is therefore no longer useful.
+> >> +	 */
+> >> +	iounmap(base);
+> >=20
+> > so I suppose MBus is the Marvell interconnect, am I right ? Wouldn't you
+> > be duplicating this sort of initialization for most drivers ?
+>=20
+> Actually most of them don't need it.
+>=20
+> >=20
+> >> +	ret =3D common_xhci_plat_probe(pdev, clk);
+> >=20
+> > I would much rather reverse this, instead of exposing xhci-plat's probe,
+> > turn this mbus initialization into a quirk which will ioremap the extra
+> > resource, initialize some registers and iounmap it.
+>=20
+> This approach have been inspired by what have been done for SDHCI and AHC=
+I.
+> The infrastructure allowing adding platform code is in the generic file b=
+ut
+> all the specific code is in the platform file.
+>=20
+> But if for USB you think we should do it in a different way, I will do it.
 
-I wonder how to best take that into account.
+Yeah, I think it'll look slightly cleaner to have quirks called from
+xhci-plat rather than having the quirk call into xhci-plat. Just look at
+what *hci do on PCI-based platforms.
 
-> >>+}
-> >>+
-> >>+static inline u32 v4l2_flash_led_brightness_to_intensity(
-> >>+					struct led_ctrl *config,
-> >>+					enum led_brightness brightness)
-> >>+{
-> >>+	return brightness * config->step;
-> >
-> >And do the opposite here?
+--=20
+balbi
 
-..
+--Sw7tCqrGA+HQ0/zt
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> >>+			return -EINVAL;
-> >>+		return v4l2_call_flash_op(strobe_set, led_cdev, true);
-> >>+	case V4L2_CID_FLASH_STROBE_STOP:
-> >>+		return v4l2_call_flash_op(strobe_set, led_cdev, false);
-> >>+	case V4L2_CID_FLASH_TIMEOUT:
-> >>+		ret =  v4l2_call_flash_op(timeout_set, led_cdev, c->val);
-> >>+	case V4L2_CID_FLASH_INTENSITY:
-> >>+		/* no conversion is needed */
-> >>+		return v4l2_call_flash_op(flash_brightness_set, led_cdev,
-> >>+								c->val);
-> >>+	case V4L2_CID_FLASH_INDICATOR_INTENSITY:
-> >>+		/* no conversion is needed */
-> >>+		return v4l2_call_flash_op(indicator_brightness_set, led_cdev,
-> >>+								c->val);
-> >>+	case V4L2_CID_FLASH_TORCH_INTENSITY:
-> >>+		if (ctrl->led_mode->val == V4L2_FLASH_LED_MODE_TORCH) {
-> >>+			torch_brightness =
-> >>+				v4l2_flash_intensity_to_led_brightness(
-> >>+						&led_cdev->brightness_ctrl,
-> >>+						ctrl->torch_intensity->val);
-> >>+			v4l2_call_flash_op(brightness_set, led_cdev,
-> >>+						torch_brightness);
-> >
-> >I could be missing something but don't torch and indicator require similar
-> >handling?
-> 
-> Why? Torch units need conversion whereas indicator units don't.
-> Moreover they have different LED API.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-I missed it was already in micro-Amps.
+iQIcBAEBAgAGBQJTV9q6AAoJEIaOsuA1yqRE/KkQAKVyRLWqytavBGK6T+AxJrfI
+eWltYpofdYF53RJ+vmsFQIeSOzABnDRSjNrJ3e+IMnQs3C0/oalZd75jGdF4kbke
+ajPJjZLitWiVfo2HgJBhdkWcsWjRR+WjlMpkfFuFD2q1owAkRe9IS7pEylUX4J+F
+/3D6gK7dsmTwFSYZdYFm2jyJB5uZpxyp2dS6MoLX9xNmT2K8YNCHgJ12cocu+dwY
+G4Mg1Xij1bLIGVgCTmoxqRgJW2Yuw7BxNsG8ZpyUC4Gf7XTrsfz/XJ16LIQVMwzO
+vVdb9J4KNAAxrDRscebHptd1BbLonYE9thXOswS61Qck6EvGCaJMeAScZK5P/WXo
+gioTfPfmwtRTtpcuf1yRC3ND5TORt4auZI3K2krTyD4OAIFVhKc/Rhm2caFe75ls
+8fhy5m/ury79e80dgEjeepqHk5DBQrOfUSID3YRrFe+FXoyMfSxYxnXf82HlXTww
+aFtYibzbJu3ymoUQyy/Qt842BmHOWkVOlaSyaHwcHxZ8mtDW5SQSIEPdoCgObgJp
+5weSw0ZnWIRKGhaZkhtLLkzJeH9z/3Xk9A/NZqvLxqK5RzIRDgZJ6ZroRoxog63g
+KUVZ5O6yIHLRXt9UmsMPWUSRyY/PDQKYQXPuZ/WyrFSZsspxDt0zfYu4QNJI4jg4
+B4qHtXuU3Ab6w+2+lq1p
+=kF5i
+-----END PGP SIGNATURE-----
 
-> >>+		}
-> >>+		return 0;
-> >>+	}
-> >>+
-> >>+	return -EINVAL;
-> >>+}
-> >>+
-> >>+static const struct v4l2_ctrl_ops v4l2_flash_ctrl_ops = {
-> >>+	.g_volatile_ctrl = v4l2_flash_g_volatile_ctrl,
-> >>+	.s_ctrl = v4l2_flash_s_ctrl,
-> >>+};
-> >>+
-> >>+static int v4l2_flash_init_controls(struct v4l2_flash *v4l2_flash)
-> >>+
-> >>+{
-> >>+	struct led_classdev *led_cdev = v4l2_flash->led_cdev;
-> >>+	struct led_flash *flash = led_cdev->flash;
-> >>+	bool has_indicator = flash->indicator_brightness;
-> >>+	struct v4l2_ctrl *ctrl;
-> >>+	struct led_ctrl *ctrl_cfg;
-> >>+	unsigned int mask;
-> >>+	int ret, max, num_ctrls;
-> >>+
-> >>+	num_ctrls = flash->has_flash_led ? 8 : 2;
-> >>+	if (flash->fault_flags)
-> >>+		++num_ctrls;
-> >>+	if (has_indicator)
-> >>+		++num_ctrls;
-> >>+
-> >>+	v4l2_ctrl_handler_init(&v4l2_flash->hdl, num_ctrls);
-> >>+
-> >>+	mask = 1 << V4L2_FLASH_LED_MODE_NONE |
-> >>+	       1 << V4L2_FLASH_LED_MODE_TORCH;
-> >>+	if (flash->has_flash_led)
-> >>+		mask |= 1 << V4L2_FLASH_LED_MODE_FLASH;
-> >>+
-> >>+	/* Configure FLASH_LED_MODE ctrl */
-> >>+	v4l2_flash->ctrl.led_mode = v4l2_ctrl_new_std_menu(
-> >>+			&v4l2_flash->hdl,
-> >>+			&v4l2_flash_ctrl_ops, V4L2_CID_FLASH_LED_MODE,
-> >>+			V4L2_FLASH_LED_MODE_TORCH, ~mask,
-> >>+			V4L2_FLASH_LED_MODE_NONE);
-> >>+
-> >>+	/* Configure TORCH_INTENSITY ctrl */
-> >>+	ctrl_cfg = &led_cdev->brightness_ctrl;
-> >>+	ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-> >>+				 V4L2_CID_FLASH_TORCH_INTENSITY,
-> >>+				 ctrl_cfg->min, ctrl_cfg->max,
-> >>+				 ctrl_cfg->step, ctrl_cfg->val);
-> >>+	if (ctrl)
-> >>+		ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
-> >>+	v4l2_flash->ctrl.torch_intensity = ctrl;
-> >>+
-> >>+	if (flash->has_flash_led) {
-> >>+		/* Configure FLASH_STROBE_SOURCE ctrl */
-> >>+		mask = 1 << V4L2_FLASH_STROBE_SOURCE_SOFTWARE;
-> >>+
-> >>+		if (flash->has_external_strobe) {
-> >>+			mask |= 1 << V4L2_FLASH_STROBE_SOURCE_EXTERNAL;
-> >>+			max = V4L2_FLASH_STROBE_SOURCE_EXTERNAL;
-> >>+		} else {
-> >>+			max = V4L2_FLASH_STROBE_SOURCE_SOFTWARE;
-> >>+		}
-> >>+
-> >>+		v4l2_flash->ctrl.source = v4l2_ctrl_new_std_menu(
-> >>+					&v4l2_flash->hdl,
-> >>+					&v4l2_flash_ctrl_ops,
-> >>+					V4L2_CID_FLASH_STROBE_SOURCE,
-> >>+					max,
-> >>+					~mask,
-> >>+					V4L2_FLASH_STROBE_SOURCE_SOFTWARE);
-> >>+
-> >>+		/* Configure FLASH_STROBE ctrl */
-> >>+		ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-> >>+					  V4L2_CID_FLASH_STROBE, 0, 1, 1, 0);
-> >>+
-> >>+		/* Configure FLASH_STROBE_STOP ctrl */
-> >>+		ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-> >>+					  V4L2_CID_FLASH_STROBE_STOP,
-> >>+					  0, 1, 1, 0);
-> >>+
-> >>+		/* Configure FLASH_STROBE_STATUS ctrl */
-> >>+		ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-> >>+					 V4L2_CID_FLASH_STROBE_STATUS,
-> >>+					 0, 1, 1, 1);
-> >>+		if (ctrl)
-> >>+			ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE |
-> >>+				       V4L2_CTRL_FLAG_READ_ONLY;
-> >>+
-> >>+		/* Configure FLASH_TIMEOUT ctrl */
-> >>+		ctrl_cfg = &flash->timeout;
-> >>+		ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-> >>+					 V4L2_CID_FLASH_TIMEOUT, ctrl_cfg->min,
-> >>+					 ctrl_cfg->max, ctrl_cfg->step,
-> >>+					 ctrl_cfg->val);
-> >>+		if (ctrl)
-> >>+			ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
-> >>+
-> >>+		/* Configure FLASH_INTENSITY ctrl */
-> >>+		ctrl_cfg = &flash->brightness;
-> >>+		ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-> >>+					 V4L2_CID_FLASH_INTENSITY,
-> >>+					 ctrl_cfg->min, ctrl_cfg->max,
-> >>+					 ctrl_cfg->step, ctrl_cfg->val);
-> >>+		if (ctrl)
-> >>+			ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
-> >>+
-> >>+		if (flash->fault_flags) {
-> >>+			/* Configure FLASH_FAULT ctrl */
-> >>+			ctrl = v4l2_ctrl_new_std(&v4l2_flash->hdl,
-> >>+						 &v4l2_flash_ctrl_ops,
-> >>+						 V4L2_CID_FLASH_FAULT, 0,
-> >>+						 flash->fault_flags,
-> >>+						 0, 0);
-> >>+			if (ctrl)
-> >>+				ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE |
-> >>+					       V4L2_CTRL_FLAG_READ_ONLY;
-> >>+		}
-> >>+		if (has_indicator) {
-> >
-> >In theory it's possible to have an indicator without the flash. So I'd keep
-> >the two independent.
-> 
-> OK.
-> 
-> >>+			/* Configure FLASH_INDICATOR_INTENSITY ctrl */
-> >>+			ctrl_cfg = flash->indicator_brightness;
-> >>+			ctrl = v4l2_ctrl_new_std(
-> >>+					&v4l2_flash->hdl, &v4l2_flash_ctrl_ops,
-> >>+					V4L2_CID_FLASH_INDICATOR_INTENSITY,
-> >>+					ctrl_cfg->min, ctrl_cfg->max,
-> >>+					ctrl_cfg->step, ctrl_cfg->val);
-> >>+			if (ctrl)
-> >>+				ctrl->flags |= V4L2_CTRL_FLAG_VOLATILE;
-> >>+		}
-> >>+	}
-> >>+
-> >>+	if (v4l2_flash->hdl.error) {
-> >>+		ret = v4l2_flash->hdl.error;
-> >>+		goto error_free;
-> >>+	}
-> >>+
-> >>+	ret = v4l2_ctrl_handler_setup(&v4l2_flash->hdl);
-> >>+	if (ret < 0)
-> >>+		goto error_free;
-> >>+
-> >>+	v4l2_flash->subdev.ctrl_handler = &v4l2_flash->hdl;
-> >>+
-> >>+	return 0;
-> >>+
-> >>+error_free:
-> >>+	v4l2_ctrl_handler_free(&v4l2_flash->hdl);
-> >>+	return ret;
-> >>+}
-> >>+
-> >>+/*
-> >>+ * V4L2 subdev internal operations
-> >>+ */
-> >>+
-> >>+static int v4l2_flash_open(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh)
-> >>+{
-> >>+	struct v4l2_flash *v4l2_flash = v4l2_subdev_to_v4l2_flash(sd);
-> >>+	struct led_classdev *led_cdev = v4l2_flash->led_cdev;
-> >>+
-> >>+	mutex_lock(&led_cdev->led_lock);
-> >>+	v4l2_call_flash_op(sysfs_lock, led_cdev);
-> >
-> >Have you thought about device power management yet?
-> 
-> Having in mind that the V4L2 Flash sub-device is only a wrapper
-> for LED driver, shouldn't power management be left to the
-> drivers?
-
-How does the LED controller driver know it needs to power the device up in
-that case?
-
-I think an s_power() op which uses PM runtime to set the power state until
-V4L2 sub-device switches to it should be enough. But I'm fine leaving it out
-from this patchset.
-
--- 
-Kind regards,
-
-Sakari Ailus
-e-mail: sakari.ailus@iki.fi	XMPP: sailus@retiisi.org.uk
+--Sw7tCqrGA+HQ0/zt--
