@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752229AbaDWMAz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 08:00:55 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:36012 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751655AbaDWMAw (ORCPT
+	id S1752278AbaDWMCl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 08:02:41 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:55296 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751725AbaDWMCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 08:00:52 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.139.80.5]
-In-Reply-To: <20140423102718.GA6434@n2100.arm.linux.org.uk>
-References: <1397211951-20549-1-git-send-email-miklos@szeredi.hu>
-	<1397211951-20549-3-git-send-email-miklos@szeredi.hu>
-	<20140411103351.GJ16119@n2100.arm.linux.org.uk>
-	<CAJfpegvZ-n4sT0ojj9iUg_R5gMZHT0caad6TpOdcmF=pdiXkqg@mail.gmail.com>
-	<20140411115421.GL16119@n2100.arm.linux.org.uk>
-	<CAJfpegtenNUCEAJ3SZpQ8NYcdbCeS8pVxaT767szkR1PF8YPNA@mail.gmail.com>
-	<20140411124502.GO16119@n2100.arm.linux.org.uk>
-	<20140423102718.GA6434@n2100.arm.linux.org.uk>
-Date: Wed, 23 Apr 2014 14:00:51 +0200
-Message-ID: <CAJfpegv0iJtzukJMbWR2n7ANxAQmLnf+ekRfmf8V5RdyK20w6Q@mail.gmail.com>
-Subject: Re: [PATCH 02/15] arm: __NR_syscalls fix
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Wade Farnsworth <wade_farnsworth@mentor.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        linux-arch <linux-arch@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <mszeredi@suse.cz>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 23 Apr 2014 08:02:38 -0400
+From: Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 4/4] of/irq: Typo s/interrupts-names/interrupt-names/g
+To: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Geert Uytterhoeven <geert+renesas@glider.be>
+In-Reply-To: <1398192025-31523-4-git-send-email-geert+renesas@glider.be>
+References: <1398192025-31523-1-git-send-email-geert+renesas@glider.be>
+	<1398192025-31523-4-git-send-email-geert+renesas@glider.be>
+Date: Wed, 23 Apr 2014 13:02:25 +0100
+Message-Id: <20140423120226.0E1FDC40969@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 12:27 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Apr 11, 2014 at 01:45:02PM +0100, Russell King - ARM Linux wrote:
->> On Fri, Apr 11, 2014 at 02:02:32PM +0200, Miklos Szeredi wrote:
->> > On Fri, Apr 11, 2014 at 1:54 PM, Russell King - ARM Linux
->> > <linux@arm.linux.org.uk> wrote:
->> > > On Fri, Apr 11, 2014 at 01:50:50PM +0200, Miklos Szeredi wrote:
->> > >> Yes, and the padding will be of wrong length if NR_syscalls is
->> > >> incorrect (which may be Oopsable?).  At least that is my impression
->> > >> from a casual glance.
->> > >
->> > > Please explain.
->> >
->> > Look at ending lines of arch/arm/kernel/calls.S: if  NR_syscalls is a
->> > multiple of 4, then syscalls_padding will be zero.  I.e. no padding
->> > despite the fact that there is in fact only 382 system calls in table
->> > and there should be 2 sys_ni_syscall pads.
->>
->> Hmm, it looks like you're right... this used to work fine until...
->>
->> commit 1f66e06fb6414732bef7bf4a071ef76a837badec
->> Author: Wade Farnsworth <wade_farnsworth@mentor.com>
->> Date:   Fri Sep 7 18:18:25 2012 +0100
->>
->>     ARM: 7524/1: support syscall tracing
->>
->> because the tracing code wanted to know the number of syscalls.  I don't
->> know what the answer is here, because the current solution is IMHO far
->> to fragile.
->
-> Actually, no, you're wrong.  Look closely at the definitions. __NR_syscalls
-> is not the same as NR_syscalls.
->
-> __NR_syscalls is the statically defined size of the syscall table for
-> *probes purposes.
->
-> NR_syscalls is the assembly-counted number of CALL() macros in
-> arch/arm/kernel/calls.S.
+On Tue, 22 Apr 2014 20:40:25 +0200, Geert Uytterhoeven <geert+renesas@glider.be> wrote:
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-All I can say is: UGGGGH.
+Thanks Geert,
 
-But I've not had close encounters with arch code, so this may be
-acceptable to you.  Whatever...
+Applied all, but squashed into a single patch. I'll send it up to Linus
+as a fix for 3.15
 
-Thanks,
-Miklos
+g.
+
+> ---
+>  drivers/of/irq.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+> index 9bcf2cf19357..e2e4c548a42f 100644
+> --- a/drivers/of/irq.c
+> +++ b/drivers/of/irq.c
+> @@ -364,7 +364,7 @@ int of_irq_to_resource(struct device_node *dev, int index, struct resource *r)
+>  
+>  		memset(r, 0, sizeof(*r));
+>  		/*
+> -		 * Get optional "interrupts-names" property to add a name
+> +		 * Get optional "interrupt-names" property to add a name
+>  		 * to the resource.
+>  		 */
+>  		of_property_read_string_index(dev, "interrupt-names", index,
+> -- 
+> 1.7.9.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
