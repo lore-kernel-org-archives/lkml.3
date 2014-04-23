@@ -1,162 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932132AbaDWPFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 11:05:32 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:58560 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751653AbaDWPFY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 11:05:24 -0400
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Arnd Bergmann <arnd@arndb.de>, wim@iguana.be, dbaryshkov@gmail.com,
-        dwmw2@infradead.org
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-watchdog@vger.kernel.org, linux-sunxi@googlegroups.com,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: [PATCH 2/5] power: reset: Add Allwinner A31 reset code
-Date: Wed, 23 Apr 2014 17:04:33 +0200
-Message-Id: <1398265476-29373-3-git-send-email-maxime.ripard@free-electrons.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398265476-29373-1-git-send-email-maxime.ripard@free-electrons.com>
-References: <1398265476-29373-1-git-send-email-maxime.ripard@free-electrons.com>
+	id S1755435AbaDWPEn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 11:04:43 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:32894 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757197AbaDWPBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 11:01:15 -0400
+From: Felipe Balbi <balbi@ti.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+CC: <marcel@holtmann.org>, <gustavo@padovan.org>, <johan.hedberg@gmail.com>,
+        <jslaby@suse.cz>, <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 10/13] tty: serial: omap: remove some dead code
+Date: Wed, 23 Apr 2014 09:58:34 -0500
+Message-ID: <1398265117-11793-10-git-send-email-balbi@ti.com>
+X-Mailer: git-send-email 1.9.2.459.g68773ac
+In-Reply-To: <1398265117-11793-1-git-send-email-balbi@ti.com>
+References: <1398265117-11793-1-git-send-email-balbi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That code used to be in the machine code, but it's more fit here with other
-restart hooks.
+nobody passes a DTR_gpio to this driver, so
+this code is not necessary.
 
-That will allow to cleanup the machine directory, while waiting for a proper
-watchdog driver for the A31.
-
-Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/power/reset/Kconfig        |  7 ++++
- drivers/power/reset/Makefile       |  1 +
- drivers/power/reset/sun6i-reboot.c | 85 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 93 insertions(+)
- create mode 100644 drivers/power/reset/sun6i-reboot.c
+ drivers/tty/serial/omap-serial.c | 39 ---------------------------------------
+ 1 file changed, 39 deletions(-)
 
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index fa0e4e057b99..67aeb6ec08f9 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -43,6 +43,13 @@ config POWER_RESET_RESTART
- 	  Instead they restart, and u-boot holds the SoC until the
- 	  user presses a key. u-boot then boots into Linux.
+diff --git a/drivers/tty/serial/omap-serial.c b/drivers/tty/serial/omap-serial.c
+index b46aaf3..6654682 100644
+--- a/drivers/tty/serial/omap-serial.c
++++ b/drivers/tty/serial/omap-serial.c
+@@ -163,10 +163,6 @@ struct uart_omap_port {
+ 	u8			wakeups_enabled;
+ 	u32			features;
  
-+config POWER_RESET_SUN6I
-+	bool "Allwinner A31 SoC reset driver"
-+	depends on ARCH_SUNXI
-+	depends on POWER_RESET
-+	help
-+	  Reboot support for the Allwinner A31 SoCs.
-+
- config POWER_RESET_VEXPRESS
- 	bool "ARM Versatile Express power-off and reset driver"
- 	depends on ARM || ARM64
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index a5b4a77d1a41..950fdc011c7a 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -3,5 +3,6 @@ obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
- obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
- obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
- obj-$(CONFIG_POWER_RESET_RESTART) += restart-poweroff.o
-+obj-$(CONFIG_POWER_RESET_SUN6I) += sun6i-reboot.o
- obj-$(CONFIG_POWER_RESET_VEXPRESS) += vexpress-poweroff.o
- obj-$(CONFIG_POWER_RESET_XGENE) += xgene-reboot.o
-diff --git a/drivers/power/reset/sun6i-reboot.c b/drivers/power/reset/sun6i-reboot.c
-new file mode 100644
-index 000000000000..af2cd7ff2fe8
---- /dev/null
-+++ b/drivers/power/reset/sun6i-reboot.c
-@@ -0,0 +1,85 @@
-+/*
-+ * Allwinner A31 SoCs reset code
-+ *
-+ * Copyright (C) 2012-2014 Maxime Ripard
-+ *
-+ * Maxime Ripard <maxime.ripard@free-electrons.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2.  This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of_address.h>
-+#include <linux/platform_device.h>
-+#include <linux/reboot.h>
-+
-+#include <asm/system_misc.h>
-+
-+#define SUN6I_WATCHDOG1_IRQ_REG		0x00
-+#define SUN6I_WATCHDOG1_CTRL_REG	0x10
-+#define SUN6I_WATCHDOG1_CTRL_RESTART		BIT(0)
-+#define SUN6I_WATCHDOG1_CONFIG_REG	0x14
-+#define SUN6I_WATCHDOG1_CONFIG_RESTART		BIT(0)
-+#define SUN6I_WATCHDOG1_CONFIG_IRQ		BIT(1)
-+#define SUN6I_WATCHDOG1_MODE_REG	0x18
-+#define SUN6I_WATCHDOG1_MODE_ENABLE		BIT(0)
-+
-+static void __iomem *wdt_base;
-+
-+static void sun6i_wdt_restart(enum reboot_mode mode, const char *cmd)
-+{
-+	if (!wdt_base)
-+		return;
-+
-+	/* Disable interrupts */
-+	writel(0, wdt_base + SUN6I_WATCHDOG1_IRQ_REG);
-+
-+	/* We want to disable the IRQ and just reset the whole system */
-+	writel(SUN6I_WATCHDOG1_CONFIG_RESTART,
-+		wdt_base + SUN6I_WATCHDOG1_CONFIG_REG);
-+
-+	/* Enable timer. The default and lowest interval value is 0.5s */
-+	writel(SUN6I_WATCHDOG1_MODE_ENABLE,
-+		wdt_base + SUN6I_WATCHDOG1_MODE_REG);
-+
-+	/* Restart the watchdog. */
-+	writel(SUN6I_WATCHDOG1_CTRL_RESTART,
-+		wdt_base + SUN6I_WATCHDOG1_CTRL_REG);
-+
-+	while (1) {
-+		mdelay(5);
-+		writel(SUN6I_WATCHDOG1_MODE_ENABLE,
-+			wdt_base + SUN6I_WATCHDOG1_MODE_REG);
-+	}
-+}
-+
-+static int sun6i_reboot_probe(struct platform_device *pdev)
-+{
-+	wdt_base = of_iomap(pdev->dev.of_node, 0);
-+	if (!wdt_base) {
-+		WARN(1, "failed to map watchdog base address");
-+		return -ENODEV;
-+	}
-+
-+	arm_pm_restart = sun6i_wdt_restart;
-+
-+	return 0;
-+}
-+
-+static struct of_device_id sun6i_reboot_of_match[] = {
-+	{ .compatible = "allwinner,sun6i-a31-wdt" },
-+	{}
-+};
-+
-+static struct platform_driver sun6i_reboot_driver = {
-+	.probe = sun6i_reboot_probe,
-+	.driver = {
-+		.name = "sun6i-reboot",
-+		.of_match_table = sun6i_reboot_of_match,
-+	},
-+};
-+module_platform_driver(sun6i_reboot_driver);
+-	int			DTR_gpio;
+-	int			DTR_inverted;
+-	int			DTR_active;
+-
+ 	struct serial_rs485	rs485;
+ 	int			rts_gpio;
+ 
+@@ -694,16 +690,6 @@ static void serial_omap_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ 	serial_out(up, UART_MCR, up->mcr);
+ 	pm_runtime_mark_last_busy(up->dev);
+ 	pm_runtime_put_autosuspend(up->dev);
+-
+-	if (gpio_is_valid(up->DTR_gpio) &&
+-	    !!(mctrl & TIOCM_DTR) != up->DTR_active) {
+-		up->DTR_active = !up->DTR_active;
+-		if (gpio_cansleep(up->DTR_gpio))
+-			schedule_work(&up->qos_work);
+-		else
+-			gpio_set_value(up->DTR_gpio,
+-				       up->DTR_active != up->DTR_inverted);
+-	}
+ }
+ 
+ static void serial_omap_break_ctl(struct uart_port *port, int break_state)
+@@ -847,9 +833,6 @@ static void serial_omap_uart_qos_work(struct work_struct *work)
+ 						qos_work);
+ 
+ 	pm_qos_update_request(&up->pm_qos_request, up->latency);
+-	if (gpio_is_valid(up->DTR_gpio))
+-		gpio_set_value_cansleep(up->DTR_gpio,
+-					up->DTR_active != up->DTR_inverted);
+ }
+ 
+ static void
+@@ -1672,28 +1655,6 @@ static int serial_omap_probe(struct platform_device *pdev)
+ 	if (IS_ERR(base))
+ 		return PTR_ERR(base);
+ 
+-	if (gpio_is_valid(omap_up_info->DTR_gpio) &&
+-	    omap_up_info->DTR_present) {
+-		ret = devm_gpio_request(&pdev->dev, omap_up_info->DTR_gpio,
+-				"omap-serial");
+-		if (ret < 0)
+-			return ret;
+-		ret = gpio_direction_output(omap_up_info->DTR_gpio,
+-					    omap_up_info->DTR_inverted);
+-		if (ret < 0)
+-			return ret;
+-	}
+-
+-	if (gpio_is_valid(omap_up_info->DTR_gpio) &&
+-	    omap_up_info->DTR_present) {
+-		up->DTR_gpio = omap_up_info->DTR_gpio;
+-		up->DTR_inverted = omap_up_info->DTR_inverted;
+-	} else {
+-		up->DTR_gpio = -EINVAL;
+-	}
+-
+-	up->DTR_active = 0;
+-
+ 	up->dev = &pdev->dev;
+ 	up->port.dev = &pdev->dev;
+ 	up->port.type = PORT_OMAP;
 -- 
-1.9.1
+1.9.2.459.g68773ac
 
