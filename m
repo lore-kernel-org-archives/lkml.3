@@ -1,100 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090AbaDWO2t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:28:49 -0400
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:61265 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753155AbaDWO2p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:28:45 -0400
+	id S1756918AbaDWO3p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:29:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27892 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754345AbaDWO3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 10:29:41 -0400
+Date: Wed, 23 Apr 2014 16:29:16 +0200
+From: Jiri Olsa <jolsa@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 7/7] perf hists/tui: Count callchain rows separately
+Message-ID: <20140423142915.GA27585@krava.brq.redhat.com>
+References: <1398236408-8856-1-git-send-email-namhyung@kernel.org>
+ <1398236408-8856-8-git-send-email-namhyung@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <5357A594.6050404@linux.intel.com>
-References: <1397443272-31467-1-git-send-email-yao.jin@linux.intel.com>
-	<534B4C6D.5070003@linux.intel.com>
-	<CACRpkdYXD-Fd0tFJtir8ifsTqdBvA0Rznc4Hmzoq_ByBjTahdw@mail.gmail.com>
-	<5357A594.6050404@linux.intel.com>
-Date: Wed, 23 Apr 2014 16:28:45 +0200
-Message-ID: <CACRpkdYztACye5Xht3f4UuaWDA0gB7t2rgRmpTaL330YcxYhfQ@mail.gmail.com>
-Subject: Re: [PATCH] pinctrl-baytrail: workaround for irq descriptor conflict
- on ASUS T100TA
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>
-Cc: "Jin, Yao" <yao.jin@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Krogerus, Heikki" <heikki.krogerus@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398236408-8856-8-git-send-email-namhyung@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 1:35 PM, Mathias Nyman
-<mathias.nyman@linux.intel.com> wrote:
+On Wed, Apr 23, 2014 at 04:00:08PM +0900, Namhyung Kim wrote:
+> When TUI hist browser expands/collapses callchains it accounted number
+> of callchain nodes into total entries to show.  However this code
+> ignores filtering so that it can make the cursor go to out of screen.
 
-> The real issue to my understanding is that the x86 io-apic code is not
-> really capable of living together with other interrupt controllers at the
-> same time. There are some assumptions that interrupts 0-15 belong to the
-> legacy ISA world, from there on we got io-apic PCI interrupts
-> ( I think io-apic interrupt controller handles something like 24 - 48
-> interrupts?) we want to be outside that range until this is fixed.
->
-> The x86 io-apic code does nasty things, for example the function
-> that allocates the irq and the private chip data assumes that if the irq
-> descriptor is taken, (returns -EEXISTS) then io-apic just must have reserved
-> it earlier and can anyway use it, and access the chip data in a format only
-> io-apic (struct irq_cfg) uses. This is of course not the case if a gpio
-> interrupt controller like pinctrl-baytrail reserved the interrupt descriptor
-> earler.  -> oops
->
-> here's the io_apic.c function:
->
-> static struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, int node)
-> {
->         int res = irq_alloc_desc_at(at, node);
->         struct irq_cfg *cfg;
->
->         if (res < 0) {
->                 if (res != -EEXIST)
->                         return NULL;
->                 cfg = irq_get_chip_data(at);
->                 if (cfg)
->                         return cfg;
->         }
->
->         cfg = alloc_irq_cfg(at, node);
->         if (cfg)
->                 irq_set_chip_data(at, cfg);
->         else
->                 irq_free_desc(at);
->         return cfg;
-> }
->
-> We tried to fix this particular issue (make sure the interrupt belongs to a
-> io_apic controller before letting io_apic touch it), but we just opened a
-> can of worms of other issues I don't know how to deal with.
+SNIP
 
-This looks pretty scary.
+hi,
+I needed following patch, otherwise following test case would segfault
 
-io_apic.c is maintained by every single kernel bigshot and I sure
-as hell would like to not under any circumstance step on its toes
-so whatever solution we can think of until the next merge window
-will be applied. (AFICT this affects all baytrails, no desktops etc).
+- record with -g
+- report - unfold one symbol
+- search for nonsense
 
-However this is a first time for an embedded irqchip (coupled
-with GPIO ACPI) creeping into the x86 world, so it needs some
-attention I think, do we have a direction forward for peaceful
-coexistence of several irq controllers picking some IRQ
-numbers/descriptors dynamically as they probe, also on
-x86 systems?
+the reason is that after unfolding the symbol the nr_callchain_rows
+will get some number, which will cause the hist_browser__nr_entries
+function return (entries != 0) actually (entries == nr_callchain_rows)
+even if there's no entry passing the filter
 
-Other archs doesn't seem to have this problem, but they also
-do not have the same legacy.
+fixing that by unfolding everything after the filter and reseting
+the nr_callchain_rows number
 
-Yours,
-Linus Walleij
+feel free to merge this with your change if you agree ;-)
+
+thanks,
+jirka
+
+
+---
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 5b81c0d..1cf5f45 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -312,6 +312,8 @@ __hist_browser__set_folding(struct hist_browser *browser, bool unfold)
+ 	struct rb_node *nd;
+ 	struct hists *hists = browser->hists;
+ 
++	browser->nr_callchain_rows = 0;
++
+ 	for (nd = rb_first(&hists->entries);
+ 	     (nd = hists__filter_entries(nd, hists, browser->min_pcnt)) != NULL;
+ 	     nd = rb_next(nd)) {
+@@ -323,7 +325,6 @@ __hist_browser__set_folding(struct hist_browser *browser, bool unfold)
+ 
+ static void hist_browser__set_folding(struct hist_browser *browser, bool unfold)
+ {
+-	browser->nr_callchain_rows = 0;
+ 	__hist_browser__set_folding(browser, unfold);
+ 
+ 	browser->b.nr_entries = hist_browser__nr_entries(browser);
+@@ -1507,6 +1508,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
+ 					delay_secs * 2) == K_ENTER) {
+ 				hists->symbol_filter_str = *buf ? buf : NULL;
+ 				hists__filter_by_symbol(hists);
++				__hist_browser__set_folding(browser, false);
+ 				hist_browser__reset(browser);
+ 			}
+ 			continue;
