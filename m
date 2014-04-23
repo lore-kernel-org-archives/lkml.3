@@ -1,234 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494AbaDWOrA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 10:47:00 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:47360 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593AbaDWOq6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 10:46:58 -0400
+	id S1754576AbaDWOtQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 10:49:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12319 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751246AbaDWOtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 10:49:12 -0400
+Date: Wed, 23 Apr 2014 10:49:01 -0400
+From: Dave Jones <davej@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>
+Subject: Re: 3.15rc2 hanging processes on exit.
+Message-ID: <20140423144901.GA24220@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Hugh Dickins <hughd@google.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	linux-mm <linux-mm@kvack.org>
+References: <20140422180308.GA19038@redhat.com>
+ <CA+55aFxjADAB80AV6qK-b4QPzP7fgog_EyH-7dSpWVgzpZmL8Q@mail.gmail.com>
+ <alpine.LSU.2.11.1404221303060.6220@eggly.anvils>
 MIME-Version: 1.0
-In-Reply-To: <5357A802.1030804@arm.com>
-References: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
- <1397209481-28542-6-git-send-email-vincent.guittot@linaro.org> <5357A802.1030804@arm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Wed, 23 Apr 2014 16:46:38 +0200
-Message-ID: <CAKfTPtDnw-OZZekdE3oNGS11m6dfpS4veMNZ_Bezs-Lm7zn6QQ@mail.gmail.com>
-Subject: Re: [PATCH v4 5/5] sched: ARM: create a dedicated scheduler topology table
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1404221303060.6220@eggly.anvils>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 April 2014 13:46, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
-> Hi,
->
-> I'm trying to use this approach of specifying different per-cpu views on
-> sd flags on DIE level on a TC2 platform (cluster 0 w/ CPU0/1 and cluster
-> 1 w/ CPU2/3/4 w/o SMT). It doesn't work like in the case for the GMC/MC
-> sd level.
->
-> If I use the following patch (just to illustrate the issue) on top
-> (returning SD_SHARE_POWERDOMAIN in cpu_cpupower_flags() is bogus ... I
-> just needed a flag function for GDIE level):
->
-> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
-> index 71e1fec6d31a..803330d89c09 100644
-> --- a/arch/arm/kernel/topology.c
-> +++ b/arch/arm/kernel/topology.c
-> @@ -194,6 +194,14 @@ const struct cpumask *cpu_corepower_mask(int cpu)
->         return &cpu_topology[cpu].thread_sibling;
->  }
->
-> +const struct cpumask *cpu_cpupower_mask(int cpu)
-> +{
-> +       return cpu_topology[cpu].socket_id ?
-> +                       cpumask_of_node(cpu_to_node(cpu)) :
-> +                       &cpu_topology[cpu].core_sibling;
-> +}
-> +
-> +
->  static void update_siblings_masks(unsigned int cpuid)
->  {
->         struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
-> @@ -280,11 +288,18 @@ static inline const int cpu_corepower_flags(void)
->         return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
->  }
->
-> +static inline const int cpu_cpupower_flags(void)
-> +{
-> +       return SD_SHARE_POWERDOMAIN;
-> +}
-> +
-> +
->  static struct sched_domain_topology_level arm_topology[] = {
->  #ifdef CONFIG_SCHED_MC
->         { cpu_corepower_mask, cpu_corepower_flags, SD_INIT_NAME(GMC) },
->         { cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },
->  #endif
-> +       { cpu_cpupower_mask, cpu_cpupower_flags, SD_INIT_NAME(GDIE) },
->         { cpu_cpu_mask, SD_INIT_NAME(DIE) },
->         { NULL, },
->  };
->
-> so I get the following topology:
->
-> CPU0: cpu_corepower_mask=0   (GMC)
-> CPU0: cpu_coregroup_mask=0-1 (MC)
-> CPU0:  cpu_cpupower_mask=0-1 (GDIE)
-> CPU0:       cpu_cpu_mask=0-4 (DIE)
-> CPU1: cpu_corepower_mask=1    ...
-> CPU1: cpu_coregroup_mask=0-1
-> CPU1:  cpu_cpupower_mask=0-1
-> CPU1:       cpu_cpu_mask=0-4
-> CPU2: cpu_corepower_mask=2
-> CPU2: cpu_coregroup_mask=2-4
-> CPU2:  cpu_cpupower_mask=0-4
-> CPU2:       cpu_cpu_mask=0-4
-> CPU3: cpu_corepower_mask=3
-> CPU3: cpu_coregroup_mask=2-4
-> CPU3:  cpu_cpupower_mask=0-4
-> CPU3:       cpu_cpu_mask=0-4
-> CPU4: cpu_corepower_mask=4
-> CPU4: cpu_coregroup_mask=2-4
-> CPU4:  cpu_cpupower_mask=0-4
-> CPU4:       cpu_cpu_mask=0-4
+On Tue, Apr 22, 2014 at 01:17:33PM -0700, Hugh Dickins wrote:
+ > On Tue, 22 Apr 2014, Linus Torvalds wrote:
 
-You  have an inconsistency in your topology description:
+ > (Dave, do you have time to confirm that by running new trinity on 3.14?)
 
-At GDIE level:
-CPU1 cpu_cpupower_mask=0-1
-but
-CPU2 cpu_cpupower_mask=0-4
+So for reasons I can't figure out, I've not been able to hit it on 3.14
+The only 'interesting' thing I've hit in overnight testing is this, which
+I'm not sure if I've also seen in my .15rc testing, but it doesn't look
+familiar to me.  (Though the vm oopses I've seen the last few months
+are starting to all blur together in my memory)
 
-so CPU2 says that it shares power domain with CPU0 but CPU1 says the opposite
 
-Regards
-Vincent
+kernel BUG at mm/mlock.c:82!
+invalid opcode: 0000 [#1] PREEMPT SMP DEBUG_PAGEALLOC
+Modules linked in: 8021q garp sctp bridge stp dlci snd_seq_dummy fuse rfcomm bnep tun hidp llc2 af_key ipt_ULOG scsi_transport_iscsi can_bcm nfnetlink nfc caif_s
+ocket caif af_802154 phonet af_rxrpc can_raw can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 coretemp 
+hwmon x86_pkg_temp_thermal kvm_intel kvm snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_codec_generic snd_hda_intel snd_hda_codec xfs snd_hwdep snd_seq snd_seq_device snd_pcm
+ e1000e crct10dif_pclmul snd_timer libcrc32c btusb crc32c_intel snd bluetooth usb_debug ghash_clmulni_intel ptp serio_raw soundcore microcode pcspkr shpchp pps_core 6lowpan_iphc rfkill
+CPU: 0 PID: 26655 Comm: trinity-c66 Not tainted 3.14.0+ #195
+task: ffff8800802a3560 ti: ffff8801b35be000 task.ti: ffff8801b35be000
+RIP: 0010:[<ffffffffbe18e383>]  [<ffffffffbe18e383>] mlock_vma_page+0x93/0xa0
+RSP: 0000:ffff8801b35bf800  EFLAGS: 00010246
+RAX: 001000000038003c RBX: ffffea000064f240 RCX: 000000000064f240
+RDX: 80000000193c9827 RSI: 0000000000002000 RDI: ffffea000064f240
+RBP: ffff8801b35bf808 R08: 0000000000000000 R09: 0000000000000001
+R10: 0000000000000000 R11: 0000000000000000 R12: ffffea000064f240
+R13: ffff88019a63e000 R14: 0000000000a00000 R15: ffff880240281600
+FS:  00007f11e9e9d740(0000) GS:ffff880244000000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 0000000037c00000 CR3: 000000023b6aa000 CR4: 00000000001407f0
+DR0: 0000000001282000 DR1: 00007ff54ceef000 DR2: 000000000092e000
+DR3: 0000000000000000 DR6: 00000000fffe0ff0 DR7: 0000000000000600
+Stack:
+ 0000000000a02000 ffff8801b35bf8a8 ffffffffbe196612 ffffffffbe195539
+ ffffea00068824c0 0000000000100000 ffff8802387c8988 ffff8802387c89f8
+ 0000000000020000 ffff88009a3587d0 0000000100000001 0000000000a00000
+Call Trace:
+ [<ffffffffbe196612>] try_to_unmap_nonlinear+0x2a2/0x530
+ [<ffffffffbe195539>] ? __page_check_address+0x39/0x160
+ [<ffffffffbe1972a7>] rmap_walk+0x157/0x320
+ [<ffffffffbe1976e3>] try_to_unmap+0x93/0xf0
+ [<ffffffffbe195ed0>] ? page_remove_rmap+0xe0/0xe0
+ [<ffffffffbe195270>] ? invalid_migration_vma+0x30/0x30
+ [<ffffffffbe196370>] ? try_to_unmap_one+0x4a0/0x4a0
+ [<ffffffffbe196da0>] ? anon_vma_clone+0x140/0x140
+ [<ffffffffbe1bb8f6>] migrate_pages+0x3b6/0x7b0
+ [<ffffffffbe182930>] ? isolate_freepages_block+0x360/0x360
+ [<ffffffffbe183e9a>] compact_zone+0x3aa/0x560
+ [<ffffffffbe1840f2>] compact_zone_order+0xa2/0x110
+ [<ffffffffbe165aac>] ? get_page_from_freelist+0x12c/0x9d0
+ [<ffffffffbe1844c1>] try_to_compact_pages+0x101/0x130
+ [<ffffffffbe73c415>] __alloc_pages_direct_compact+0xac/0x1d0
+ [<ffffffffbe167330>] __alloc_pages_nodemask+0x910/0xb00
+ [<ffffffffbe1acf41>] alloc_pages_vma+0xf1/0x1b0
+ [<ffffffffbe1c06bd>] ? do_huge_pmd_anonymous_page+0xfd/0x3b0
+ [<ffffffffbe1c06bd>] do_huge_pmd_anonymous_page+0xfd/0x3b0
+ [<ffffffffbe18afed>] handle_mm_fault+0x15d/0xc40
+ [<ffffffffbe74d91a>] ? __do_page_fault+0x14a/0x610
+ [<ffffffffbe74d97e>] __do_page_fault+0x1ae/0x610
+ [<ffffffffbe0bfbde>] ? put_lock_stats.isra.23+0xe/0x30
+ [<ffffffffbe0c03b6>] ? lock_rel ---[ end trace 5628b2984151295b ]---
 
->
-> Firstly, I had to get rid of the cpumask_equal(cpu_map,
-> sched_domain_span(sd)) condition in build_sched_domains() to allow that
-> I can have two sd levels which span CPU 0-4 (for CPU2/3/4).
->
-> But it still doesn't work correctly:
->
-> dmesg snippet 2:
->
-> CPU0 attaching sched-domain:
->  domain 0: span 0-1 level MC
->   groups: 0 1
->   domain 1: span 0-4 level DIE     <-- error (there's only one group)
->    groups: 0-4 (cpu_power = 2048)
-> ...
-> CPU2 attaching sched-domain:
->  domain 0: span 2-4 level MC
->   groups: 2 3 4
->   domain 1: span 0-4 level GDIE
-> ERROR: domain->groups does not contain CPU2
->    groups:
-> ERROR: domain->cpu_power not set
->
-> ERROR: groups don't span domain->span
-> ...
->
-> It turns out that the function get_group() which is used a couple of
-> times in build_sched_groups() uses a reference to sd->child and even
-> though the degenerate functionality gets rid of GDIE for CPU0/1 and DIE
-> for CPU2/3/4 the group set-up doesn't work as expected since sd->child
-> for DIE is GDIE and not MC any more.
-> So it looks like GMC/MC level is somehow special (GMC has no sd->child
-> for TC2 or GMC/MC contains only one cpu per group?).
->
-> Although this problem does not effect the current patch-set, people
-> might think that they can apply this degenerate trick for other sd
-> levels as well.
->
-> I'm trying to fix get_group()/build_sched_groups() in such a way that my
-> example would work but so far I haven't succeeded. The question for me
-> remains ... is this application of the degenerate trick feasible at all
-> in all sd levels, i.e. does it scale? What about platforms w/ SMT sd
-> level which want to use this trick in GMC/MC level?
->
-> Any hints are highly appreciated here.
->
-> -- Dietmar
->
-> On 11/04/14 10:44, Vincent Guittot wrote:
->> Create a dedicated topology table for ARM which will create new level to
->> differentiate CPUs that can or not powergate independantly from others.
->>
->> The patch gives an example of how to add domain that will take advantage of
->> SD_SHARE_POWERDOMAIN.
->>
->> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
->> ---
->>  arch/arm/kernel/topology.c | 26 ++++++++++++++++++++++++++
->>  1 file changed, 26 insertions(+)
->>
->> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
->> index 0bc94b1..71e1fec 100644
->> --- a/arch/arm/kernel/topology.c
->> +++ b/arch/arm/kernel/topology.c
->> @@ -185,6 +185,15 @@ const struct cpumask *cpu_coregroup_mask(int cpu)
->>       return &cpu_topology[cpu].core_sibling;
->>  }
->>
->> +/*
->> + * The current assumption is that we can power gate each core independently.
->> + * This will be superseded by DT binding once available.
->> + */
->> +const struct cpumask *cpu_corepower_mask(int cpu)
->> +{
->> +     return &cpu_topology[cpu].thread_sibling;
->> +}
->> +
->>  static void update_siblings_masks(unsigned int cpuid)
->>  {
->>       struct cputopo_arm *cpu_topo, *cpuid_topo = &cpu_topology[cpuid];
->> @@ -266,6 +275,20 @@ void store_cpu_topology(unsigned int cpuid)
->>               cpu_topology[cpuid].socket_id, mpidr);
->>  }
->>
->> +static inline const int cpu_corepower_flags(void)
->> +{
->> +     return SD_SHARE_PKG_RESOURCES  | SD_SHARE_POWERDOMAIN;
->> +}
->> +
->> +static struct sched_domain_topology_level arm_topology[] = {
->> +#ifdef CONFIG_SCHED_MC
->> +     { cpu_corepower_mask, cpu_corepower_flags, SD_INIT_NAME(GMC) },
->> +     { cpu_coregroup_mask, cpu_core_flags, SD_INIT_NAME(MC) },
->> +#endif
->> +     { cpu_cpu_mask, SD_INIT_NAME(DIE) },
->> +     { NULL, },
->> +};
->> +
->>  /*
->>   * init_cpu_topology is called at boot when only one cpu is running
->>   * which prevent simultaneous write access to cpu_topology array
->> @@ -289,4 +312,7 @@ void __init init_cpu_topology(void)
->>       smp_wmb();
->>
->>       parse_dt_topology();
->> +
->> +     /* Set scheduler topology descriptor */
->> +     set_sched_topology(arm_topology);
->>  }
->>
->
->
+
