@@ -1,105 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707AbaDWJWB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 05:22:01 -0400
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:37466 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752375AbaDWJV6 (ORCPT
+	id S1754936AbaDWJ0G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 05:26:06 -0400
+Received: from mail-yh0-f57.google.com ([209.85.213.57]:53150 "EHLO
+	mail-yh0-f57.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751047AbaDWJ0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 05:21:58 -0400
-Message-ID: <53578632.1060005@gmail.com>
-Date: Wed, 23 Apr 2014 11:21:54 +0200
-From: Ivan Pantovic <gyro.ivan@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130215 Thunderbird/17.0.3
+	Wed, 23 Apr 2014 05:26:03 -0400
+X-Greylist: delayed 1688 seconds by postgrey-1.27 at vger.kernel.org; Wed, 23 Apr 2014 05:26:03 EDT
+X-Google-Doc-Id: 50c6bb2b24432481
+X-Google-Web-Client: true
+Date: Wed, 23 Apr 2014 01:49:06 -0700 (PDT)
+From: Carlo Vitucci <vitucci.carlo@gmail.com>
+To: jailhouse-dev@googlegroups.com
+Cc: Carlo Vitucci <vitucci.carlo@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "Sabony, Mazda" <Mazda.Sabony@amd.com>
+Message-Id: <e08f8eed-2465-494e-a170-5246d3109c8b@googlegroups.com>
+In-Reply-To: <53577D3C.5060103@siemens.com>
+References: <534C2884.7050004@siemens.com> <b95ba76d-c3a9-458e-b9a9-10ca28886d55@googlegroups.com>
+ <53577D3C.5060103@siemens.com>
+Subject: Re: Developer wanted: AMD64 port of Jailhouse hypervisor
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Speedy Milan <speedy.milan@gmail.com>, linux-kernel@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: rm -f * on large files very slow on XFS + MD RAID 6 volume of
- 15x 4TB of HDDs (52TB)
-References: <CAHuzUScfp19c_th_pfsZs05+yDz34MuEH-P1f+FF1dcivfH=5Q@mail.gmail.com> <20140423021835.GI15995@dastard> <53576A7D.9020303@gmail.com> <20140423082538.GR18672@dastard>
-In-Reply-To: <20140423082538.GR18672@dastard>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/mixed; 
+	boundary="----=_Part_47_7521642.1398242946354"
+X-Google-Token: EIL93ZoFe2vrrwlvouk0
+X-Google-IP: 88.131.84.244
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+------=_Part_47_7521642.1398242946354
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-> xfs_db> freesp
->    from      to extents  blocks    pct
->       1       1   52463   52463   0.00
->       2       3   73270  181394   0.01
->       4       7  134526  739592   0.03
->       8      15  250469 2870193   0.12
->      16      31  581572 13465403   0.58
->      32      63  692386 32096932   1.37
->      64     127 1234204 119157757   5.09
->     128     255   91015 16690243   0.71
->     256     511   18977 6703895   0.29
->     512    1023   12821 8611576   0.37
->    1024    2047   23209 33177541   1.42
->    2048    4095   43282 101126831   4.32
->    4096    8191   12726 55814285   2.39
->    8192   16383    2138 22750157   0.97
->   16384   32767    1033 21790120   0.93
->   32768   65535     433 19852497   0.85
->   65536  131071     254 23052185   0.99
->  131072  262143     204 37833000   1.62
->  262144  524287     229 89970969   3.85
->  524288 1048575     164 124210580   5.31
-> 1048576 2097151     130 173193687   7.40
-> 2097152 4194303      22 61297862   2.62
-> 4194304 8388607      16 97070435   4.15
-> 8388608 16777215      26 320475332  13.70
-> 16777216 33554431       6 133282461   5.70
-> 33554432 67108863      12 616939026  26.37
-> 134217728 268435328       1 207504563   8.87
-> xfs_db>
+Il giorno mercoled=C3=AC 23 aprile 2014 10:43:40 UTC+2, J. Kiszka ha scritt=
+o:
+> On 2014-04-23 08:21, Carlo Vitucci wrote:
+>=20
+> > Il giorno luned=C3=AC 14 aprile 2014 20:27:16 UTC+2, J. Kiszka ha scrit=
+to:
+>=20
+> >> Hi all,
+>=20
+> >>
+>=20
+> >>
+>=20
+> >>
+>=20
+> >> so far the Linux-based Jailhouse hypervisor [1] is only available for
+>=20
+> >>
+>=20
+> >> Intel x86 CPUs. I'm now very happy to announce that AMD is offering to
+>=20
+> >>
+>=20
+> >> sponsor the initial port of Jailhouse to the AMD64 architecture. Our
+>=20
+> >>
+>=20
+> >> resources here are unfortunately bound to different tasks, but if anyo=
+ne
+>=20
+> >>
+>=20
+> >> out there with the required skills is interested in working on this
+>=20
+> >>
+>=20
+> >> project, just reply to this email or contact me and Mazda directly.
+>=20
+> >>
+>=20
+> >>
+>=20
+> >>
+>=20
+> >> The work to be done is manageable: we basically need corresponding
+>=20
+> >>
+>=20
+> >> implementations of vmx.c and vtd.c in the current Jailhouse code base =
+-
+>=20
+> >>
+>=20
+> >> provided our existing abstractions were done right. Someone familiar
+>=20
+> >>
+>=20
+> >> with virtualization on x86 in general and, ideally, even on AMD
+>=20
+> >>
+>=20
+> >> processors should be able to complete this task within a couple of wee=
+ks.
+>=20
+> >>
+>=20
+> >>
+>=20
+> >>
+>=20
+> >> For more details on the Jailhouse architecture and implementations, se=
+e
+>=20
+> >>
+>=20
+> >> our slowly growing Documentation folder in the source tree or simply a=
+sk
+>=20
+> >>
+>=20
+> >> on the mailing list.
+>=20
+> >>
+>=20
+> >>
+>=20
+> >>
+>=20
+> >> Jan
+>=20
+> >>
+>=20
+> >>
+>=20
+> >>
+>=20
+> >> [1] https://github.com/siemens/jailhouse
+>=20
+> >>
+>=20
+> >>
+>=20
+> >>
+>=20
+> >> --=20
+>=20
+> >>
+>=20
+> >> Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+>=20
+> >>
+>=20
+> >> Corporate Competence Center Embedded Linux
+>=20
+> >=20
+>=20
+> > Hello jailhouse,
+>=20
+> >  just a thought, if I could. AMD64 is not officially delivered and one
+>=20
+> >  of the most important new features, that is the direct interrupt deliv=
+ery,
+>=20
+> >  is without a final specification. in other words, ARMv8 is the only su=
+itable
+>=20
+> >  architecture for Jailhouse porting, but there is still a bit fog aroun=
+d.
+>=20
+>=20
+>=20
+> I'm not sure if I got your point yet: AMD64 stands for the
+>=20
+> well-established x86-64 architecture with AMD-specific parts like the
+>=20
+> virtualization extensions. All these transistors and specs are broadly
+>=20
+> available for years.
+>=20
+>=20
+>=20
+> Regarding direct interrupt delivery: on Intel, we do not depend on
+>=20
+> specific hardware support to provide this feature, and I bet we can port
+>=20
+> that approach to AMD as well.
+>=20
+>=20
+>=20
+> Jan
+>=20
+>=20
+>=20
+> --=20
+>=20
+> Siemens AG, Corporate Technology, CT RTC ITP SES-DE
+>=20
+> Corporate Competence Center Embedded Linux
 
-well now it is quite obvious that file fragmentation was actually the issue.
-
-this is what munin has to say about that time frame when files were deleted.
-
-http://picpaste.com/df_inode-pinpoint_1397768678_1397876678-kpwd9loR.png
-http://picpaste.com/df-pinpoint_1397768678_1397876678-pQ7ZCTPu.png
-
-although the drives were "only" 50% busy while deleting all those inodes.
-
-it's quite interesting how we got there in the first place thanks to 
-bacula backup and some other hardware failure not related to the backup 
-server.
-
-On 04/23/2014 10:25 AM, Dave Chinner wrote:
-> On Wed, Apr 23, 2014 at 09:23:41AM +0200, Ivan Pantovic wrote:
->>> [root@drive-b ~]# xfs_db -r /dev/md0
->>> xfs_db> frag
->>> actual 11157932, ideal 11015175, fragmentation factor 1.28%
->>> xfs_db>
->> this is current level of fragmentation ... is it bad?
-> http://xfs.org/index.php/XFS_FAQ#Q:_The_xfs_db_.22frag.22_command_says_I.27m_over_50.25._Is_that_bad.3F
->
->> some say over 1% is candidate for defrag? ...
-> Some say that over 70% is usually not a problem:
->
-> http://www.mythtv.org/wiki/XFS_Filesystem#Defragmenting_XFS_Partitions
->
-> i.e. the level that becomes are problem is highly workload specific.
-> So, you can't read *anything* in that number without know exactly
-> what is in your filesystem, how the application(s) interact with it
-> and so on.
->
-> Besides, I was asking specifically about the files you removed, not
-> the files that remain in the filesystem. Given that you have 11
-> million inodes in the filesystem, you probably removed the only
-> significantly large files in the filesystem....
->
-> So, the files your removed are now free space, so free space
-> fragmentation is what we need to look at.  i.e. use the freesp
-> command to dump the histogram and summary of the free space...
->
-> Cheers,
->
-> Dave.
-
+Sorry Jan,
+ my misyake. I was referring to ARMv8 architecture, but I wrote AMD64 at th=
+e beginning instead of ARM64... sorry for the confusion!
+BR/
+Carlo
+------=_Part_47_7521642.1398242946354--
