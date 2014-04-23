@@ -1,73 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589AbaDWQdA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 12:33:00 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:40441 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755959AbaDWQcd convert rfc822-to-8bit (ORCPT
+	id S1754858AbaDWQf6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 12:35:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:42091 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751916AbaDWQfz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 12:32:33 -0400
-Date: Wed, 23 Apr 2014 17:32:28 +0100
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Chander Kashyap <chander.kashyap@linaro.org>
-Cc: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "rjw@rjwysocki.net" <rjw@rjwysocki.net>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        Chander Kashyap <k.chander@samsung.com>
-Subject: Re: [Patch v2 2/4] driver: cpuidle: cpuidle-big-little: init driver
- for Exynos5420
-Message-ID: <20140423163228.GC1243@e102568-lin.cambridge.arm.com>
-References: <1398080958-21677-5-git-send-email-chander.kashyap@linaro.org>
- <1398245154-18771-1-git-send-email-chander.kashyap@linaro.org>
- <1398245154-18771-3-git-send-email-chander.kashyap@linaro.org>
-MIME-Version: 1.0
-In-Reply-To: <1398245154-18771-3-git-send-email-chander.kashyap@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginalArrivalTime: 23 Apr 2014 16:32:44.0214 (UTC) FILETIME=[A7408560:01CF5F11]
-X-MC-Unique: 114042317323004201
-Content-Type: text/plain; charset=WINDOWS-1252
+	Wed, 23 Apr 2014 12:35:55 -0400
+Message-ID: <1398270945.4222.11.camel@fourier>
+Subject: Re: [PATCH 3.8 110/133] nfsd4: fix memory leak in
+ nfsd4_encode_fattr()
+From: Kamal Mostafa <kamal@canonical.com>
+To: Luis Henriques <luis.henriques@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com, "Yan, Zheng" <zheng.z.yan@intel.com>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Date: Wed, 23 Apr 2014 09:35:45 -0700
+In-Reply-To: <20140423105633.GB3572@hercules>
+References: <1398197671-12786-1-git-send-email-kamal@canonical.com>
+	 <1398197671-12786-111-git-send-email-kamal@canonical.com>
+	 <20140423105633.GB3572@hercules>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 10:25:52AM +0100, Chander Kashyap wrote:
-> Add "samsung,exynos5420" compatible string to initialize generic
-> big-little cpuidle driver for Exynos5420.
+On Wed, 2014-04-23 at 11:56 +0100, Luis Henriques wrote:
+> Hi Kamal,
 > 
-> Signed-off-by: Chander Kashyap <chander.kashyap@linaro.org>
-> Signed-off-by: Chander Kashyap <k.chander@samsung.com>
-> Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  drivers/cpuidle/cpuidle-big_little.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> On Tue, Apr 22, 2014 at 01:14:08PM -0700, Kamal Mostafa wrote:
+> > 3.8.13.22 -stable review patch.  If anyone has any objections, please let me know.
+> > 
+> > ------------------
+> > 
+> > From: "Yan, Zheng" <zheng.z.yan@intel.com>
+> > 
+> > commit 18df11d0eacf67bbcd8dda755b568bbbd7264735 upstream.
+> > 
+> > fh_put() does not free the temporary file handle.
+> > 
+> > Signed-off-by: Yan, Zheng <zheng.z.yan@intel.com>
+> > Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+> > [ kamal: backport to 3.8 (context) ]
+> > Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+> > ---
+> >  fs/nfsd/nfs4xdr.c | 4 +++-
+> >  1 file changed, 3 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+> > index dc12d02..1418028 100644
+> > --- a/fs/nfsd/nfs4xdr.c
+> > +++ b/fs/nfsd/nfs4xdr.c
+> > @@ -2430,8 +2430,10 @@ out_acl:
+> >  
+> >  out:
+> >  	kfree(acl);
+> > -	if (fhp == &tempfh)
+> > +	if (fhp == &tempfh) {
+> >  		fh_put(&tempfh);
+> > +		kfree(tempfh);
 > 
-> diff --git a/drivers/cpuidle/cpuidle-big_little.c b/drivers/cpuidle/cpuidle-big_little.c
-> index b45fc62..d0fac53 100644
-> --- a/drivers/cpuidle/cpuidle-big_little.c
-> +++ b/drivers/cpuidle/cpuidle-big_little.c
-> @@ -170,7 +170,8 @@ static int __init bl_idle_init(void)
->  	/*
->  	 * Initialize the driver just for a compliant set of machines
->  	 */
-> -	if (!of_machine_is_compatible("arm,vexpress,v2p-ca15_a7"))
-> +	if (!of_machine_is_compatible("arm,vexpress,v2p-ca15_a7") &&
-> +		(!of_machine_is_compatible("samsung,exynos5420")))
->  		return -ENODEV;
+> This doesn't look correct to me as in 3.8 kernel the tempfh variable
+> is a 'struct svc_fh' and not a dynamically allocated structure.
+> 
+> This has changed only with commit d50e613 "nfsd4: decrease
+> nfsd4_encode_fattr stack usage", where tempfh was converted into a
+> 'struct svc_fh *'.
+> 
+> So, I believe you should drop this patch from 3.8.
 
-We should handle the string matching differently, we can't keep adding
-comparisons.
 
-Daniel raised the point already: what about the idle tables (data and
-number of states ?). TC2 has just a cluster state, and specific
-latencies, which are highly unlikely to be correct for this platform.
+Ouch!  Good catch, Luis.  I'll drop it from 3.8-stable.
 
-Lorenzo
+Thanks for your review!
+
+ -Kamal
+
+
+> Cheers,
+> --
+> Luís
+> 
+> > +	}
+> >  	return status;
+> >  out_nfserr:
+> >  	status = nfserrno(err);
+> > -- 
+> > 1.9.1
+> > 
+> > 
+> > -- 
+> > kernel-team mailing list
+> > kernel-team@lists.ubuntu.com
+> > https://lists.ubuntu.com/mailman/listinfo/kernel-team
+> 
+
 
