@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221AbaDWIFi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 04:05:38 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:51167 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756795AbaDWIFH (ORCPT
+	id S1757442AbaDWIG1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 04:06:27 -0400
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:46474 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757313AbaDWIFe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 04:05:07 -0400
-Date: Wed, 23 Apr 2014 11:04:47 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Michalis Pappas <mpappas@fastmail.fm>
-Cc: Greg KH <gregkh@linuxfoundation.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/3] staging: gdm72xx: Minor cleanup
-Message-ID: <20140423080447.GS26890@mwanda>
-References: <532BF9B0.2080008@fastmail.fm>
- <20140418225229.GA28077@kroah.com>
- <53534051.2020504@fastmail.fm>
- <53534116.3040705@fastmail.fm>
- <20140422093743.GC26890@mwanda>
- <53570BAA.3080709@fastmail.fm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53570BAA.3080709@fastmail.fm>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Wed, 23 Apr 2014 04:05:34 -0400
+From: Tushar Behera <tushar.behera@linaro.org>
+To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: broonie@kernel.org, lgirdwood@gmail.com, sbkim73@samsung.com,
+        jassisinghbrar@gmail.com, kgene.kim@samsung.com
+Subject: [PATCH] ASoC: SAMSUNG: Don't clear clock setting during i2s_startup
+Date: Wed, 23 Apr 2014 13:34:24 +0530
+Message-Id: <1398240264-21285-1-git-send-email-tushar.behera@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 08:39:06AM +0800, Michalis Pappas wrote:
-> After all patches have been applied, the only remaining issue on the
-> TODO list is to conform to the coding standards.  The remaining issues
-> reported by checkpatch.pl are probably pedantic, so if agreed, that
-> task can be removed from the list too.
+In exiting kernel, if DAIFMT flags are set in dai_link and I2S is
+set to run in master mode, the I2S clocks are not getting configured
+resulting in no output.
 
-So I did a:
-for i in $(find drivers/staging/gdm72xx/ -name \*.c) ; do ./scripts/checkpatch.pl --strict -f $i 2>&1 ; done | tee err-list
+Existing code clears the current I2S clock settings during i2s_startup
+and requires that the clocks are reconfigured. It then assumes that
+sound-card driver would call snd_soc_dai_{set_sysclk/set_fmt} to
+configure the root clock.
 
-I didn't look through all the issues but the ones I looked at seemed
-valid.  The "no space after a cast" rule is good because cast precedence
-used to be a common source of bugs.
+1. Since I2S clock settings remain fixed for a board, it would be better
+to set the clocks once during sound-card probe.
 
-The code in extract_qos_list() was badly mangled to get around the 80
-character limit and checkpatch.pl finds that.  That function is very
-ugly.  Just reverse the if statements instead of jamming the code up
-								against
-								the
-								far
-								right
-								side of
-								the
-								screen.
+2. Also if the DAIFMT flags are set in dai_link, snd_soc_dai_set_fmt is
+called during DAI probe.
 
-		if (!qcb->csr[i].enabled)
-			continue;
-		if (qcb->csr[i].qos_buf_count >= qcb->qos_limit_size)
-			continue;
-		if (list_empty(&qcb->qos_list[i]))
-			continue;
+If both these conditions are true, then I2S clock remains unconfigured
+during audio playback. Fix this by removing the code to clear
+rclk_srcrate in i2s_startup. Instead, reset this during DAI probe.
 
-Also why is returning a u32?  Kernel style is int.  But this doesn't
-return errors and the callers don't check so it should be void.  This
-driver suffers from prefering u32 over int in many places.
+Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+---
+The patch is based on v3.15-rc2.
 
-This was my only static checker warning (harmless):
-drivers/staging/gdm72xx/gdm_wimax.c:780 gdm_wimax_transmit_pkt()
-	warn: we tested 'len' before and it was 'true'
+ sound/soc/samsung/i2s.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-In gdm_usb_send(), the "BUG_ON(len > TX_BUF_SIZE - padding - 1);" should
-be proper error handling.
-
-I didn't really do a proper review of this code when I saw all the
-checkpatch.pl complaints still.
-
-regards,
-dan carpenter
+diff --git a/sound/soc/samsung/i2s.c b/sound/soc/samsung/i2s.c
+index 048ead9..6e61db7 100644
+--- a/sound/soc/samsung/i2s.c
++++ b/sound/soc/samsung/i2s.c
+@@ -724,9 +724,6 @@ static int i2s_startup(struct snd_pcm_substream *substream,
+ 	else
+ 		i2s->mode |= DAI_MANAGER;
+ 
+-	/* Enforce set_sysclk in Master mode */
+-	i2s->rclk_srcrate = 0;
+-
+ 	if (!any_active(i2s) && (i2s->quirks & QUIRK_NEED_RSTCLR))
+ 		writel(CON_RSTCLR, i2s->addr + I2SCON);
+ 
+@@ -984,6 +981,7 @@ probe_exit:
+ 	/* Reset any constraint on RFS and BFS */
+ 	i2s->rfs = 0;
+ 	i2s->bfs = 0;
++	i2s->rclk_srcrate = 0;
+ 	i2s_txctrl(i2s, 0);
+ 	i2s_rxctrl(i2s, 0);
+ 	i2s_fifo(i2s, FIC_TXFLUSH);
+-- 
+1.7.9.5
 
