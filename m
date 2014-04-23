@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbaDWE52 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 00:57:28 -0400
-Received: from mail-ee0-f51.google.com ([74.125.83.51]:36407 "EHLO
-	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750844AbaDWE51 (ORCPT
+	id S1752711AbaDWE6Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 00:58:24 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:52533 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752215AbaDWE6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 00:57:27 -0400
-Message-ID: <53574830.8050807@gmail.com>
-Date: Wed, 23 Apr 2014 06:57:20 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Wed, 23 Apr 2014 00:58:23 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 3/9] perf tools: Account entry stats when it's added to the output tree
+References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
+	<1398156591-11001-4-git-send-email-namhyung@kernel.org>
+	<20140422145449.GI1104@krava.brq.redhat.com>
+Date: Wed, 23 Apr 2014 13:58:22 +0900
+In-Reply-To: <20140422145449.GI1104@krava.brq.redhat.com> (Jiri Olsa's message
+	of "Tue, 22 Apr 2014 16:54:49 +0200")
+Message-ID: <877g6gskup.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@infradead.org>, Jan Moskyto Matejka <mq@suse.cz>
-CC: mtk.manpages@gmail.com, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] proc: fix documentation for /proc/stat, line "intr"
-References: <1398180580-8089-1-git-send-email-mq@suse.cz> <5356B2AB.3020005@gmail.com> <5356EEBB.5040402@infradead.org>
-In-Reply-To: <5356EEBB.5040402@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 12:35 AM, Randy Dunlap wrote:
-> On 04/22/14 11:19, Michael Kerrisk (man-pages) wrote:
->> On 04/22/2014 05:29 PM, Jan Moskyto Matejka wrote:
->>> The sum at the beginning of line "intr" includes also unnumbered interrupts.
->>> It implies that the sum at the beginning isn't the sum of the remainder of the
->>> line, not even an estimation.
->>>
->>> Fixed the documentation to mention that.
->>
->> I'm not really doubting what you claim, Jan, but it would be really
->> helpful if you provided some data to support the proposed change
->> (Kernel source references, or notes about testing you've done, or 
->> pointers to mailing list threads, authoritative note that you are
->> the maintainer of some relevant kernel subsystem...). Do you have
->> something like that? (It's also useful for the change log.)
-> 
-> I wouldn't mind more of a changelog, but the additional text is
-> certainly correct.
+On Tue, 22 Apr 2014 16:54:49 +0200, Jiri Olsa wrote:
+> On Tue, Apr 22, 2014 at 05:49:45PM +0900, Namhyung Kim wrote:
+>
+> SNIP
+>
+>>  }
+>>  
+>>  static int process_sample_event(struct perf_tool *tool,
+>> @@ -234,19 +230,17 @@ static int __cmd_annotate(struct perf_annotate *ann)
+>>  	total_nr_samples = 0;
+>>  	evlist__for_each(session->evlist, pos) {
+>>  		struct hists *hists = &pos->hists;
+>> -		u32 nr_samples = hists->stats.nr_events[PERF_RECORD_SAMPLE];
+>>  
+>> -		if (nr_samples > 0) {
+>
+> so this condition of having some data is handled in the
+> resort I guess.. hm, it will just iterate 0 times ;-)
 
-Sorry -- I wrote the reply in a hurry, having first mistaken the patch
-as being something to apply in man-pages. I should have looked more
-closely ;-).
+Right.  But I decided to keep this logic as is - will explain on other thread.
 
-> Thanks.  I'll apply the patch, but more changelog comments are welcome.
+>
+>> -			total_nr_samples += nr_samples;
+>> -			hists__collapse_resort(hists, NULL);
+>> -			hists__output_resort(hists);
+>> +		hists__collapse_resort(hists, NULL);
+>> +		hists__output_resort(hists);
+>>  
+>> -			if (symbol_conf.event_group &&
+>> -			    !perf_evsel__is_group_leader(pos))
+>> -				continue;
+>> +		if (symbol_conf.event_group &&
+>> +		    !perf_evsel__is_group_leader(pos))
+>> +			continue;
+>>  
+>> -			hists__find_annotations(hists, pos, ann);
+>> -		}
+>> +		hists__find_annotations(hists, pos, ann);
+>> +
+>> +		total_nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
+>>  	}
+>>  
+>>  	if (total_nr_samples == 0) {
+>>  
+>
+> SNIP
+>
+>> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+>> index 1c77714f668d..f955ae5a41c5 100644
+>> --- a/tools/perf/util/hist.c
+>> +++ b/tools/perf/util/hist.c
+>> @@ -344,9 +344,11 @@ void hists__inc_nr_entries(struct hists *hists, struct hist_entry *h)
+>
+> I was wondering for a while about the name of this function
+> since it no longer increments only nr_entries.. but could not
+> think about any good replacement ;-)
+>
+> We could also add hists__reset_nr_entries for the zeroing code.
 
-Amen.
+How about hists__inc_stats() and hists__reset_stats()?
 
-Cheers,
+>
+>
+>>  		hists__calc_col_len(hists, h);
+>
+> also having hists__calc_col_len called here seems strange
 
-Michael
+Agreed.  I'll move this out of the function.
 
-
->>> Signed-off-by: Jan Moskyto Matejka <mq@suse.cz>
->>> ---
->>>  Documentation/filesystems/proc.txt | 5 +++--
->>>  1 file changed, 3 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/Documentation/filesystems/proc.txt b/Documentation/filesystems/proc.txt
->>> index f00bee1..4e6f9d0 100644
->>> --- a/Documentation/filesystems/proc.txt
->>> +++ b/Documentation/filesystems/proc.txt
->>> @@ -1245,8 +1245,9 @@ second).  The meanings of the columns are as follows, from left to right:
->>>  
->>>  The "intr" line gives counts of interrupts  serviced since boot time, for each
->>>  of the  possible system interrupts.   The first  column  is the  total of  all
->>> -interrupts serviced; each  subsequent column is the  total for that particular
->>> -interrupt.
->>> +interrupts serviced  including  unnumbered  architecture specific  interrupts;
->>> +each  subsequent column is the  total for that particular numbered interrupt.
->>> +Unnumbered interrupts are not shown, only summed into the total.
->>>  
->>>  The "ctxt" line gives the total number of context switches across all CPUs.
->>>  
->>>
->>
->>
-> 
-> 
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Thanks,
+Namhyung
