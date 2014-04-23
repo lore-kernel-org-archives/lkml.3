@@ -1,60 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748AbaDWGHl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 02:07:41 -0400
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:54637 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752310AbaDWGHk (ORCPT
+	id S1753807AbaDWGJq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 02:09:46 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:46164 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752219AbaDWGJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 02:07:40 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@gmail.com
-From: Namhyung Kim <namhyung@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jiri Olsa <jolsa@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 0/3] tools lib traceevent: Options for plugins
-References: <20140422194824.319892442@goodmis.org>
-Date: Wed, 23 Apr 2014 15:07:38 +0900
-In-Reply-To: <20140422194824.319892442@goodmis.org> (Steven Rostedt's message
-	of "Tue, 22 Apr 2014 15:48:24 -0400")
-Message-ID: <87ppk8r32t.fsf@sejong.aot.lge.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
+	Wed, 23 Apr 2014 02:09:44 -0400
+Date: Wed, 23 Apr 2014 08:09:38 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 0/9] perf tools: Fixup for the --percentage change
+Message-ID: <20140423060938.GA20455@gmail.com>
+References: <1398156591-11001-1-git-send-email-namhyung@kernel.org>
+ <20140422095557.GB10813@gmail.com>
+ <87k3agsla6.fsf@sejong.aot.lge.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87k3agsla6.fsf@sejong.aot.lge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
 
-On Tue, 22 Apr 2014 15:48:24 -0400, Steven Rostedt wrote:
-> trace-cmd has a way to set options for plugins, via the command
-> line parameter. For example, you can add or remove the parent
-> from being printed in function tracing by adding:
->
->   -O parent=1
->   -O parent=0
->
-> This is passed later to the plugin in. But the plugin itself requires
-> registering to the application what options it supplies.
->
-> This is a three patch series. The first is to set a flag in pevent
-> that would prevent plugins from being loaded. This can be supplied
-> by the command line as well to produce the old "raw" events.
->
-> The second patch adds the infrastructure to let plugins have options.
->
-> The third patch adds the options "parent" and "indent" to the
-> function plugin. The indent option lets the user print functions
-> with or without indenting by their parents.
->
-> All that needs to be done now is to add the options to the perf
-> command line. Namhyung? ;-)
+* Namhyung Kim <namhyung@kernel.org> wrote:
 
-Well, I'll think about it, maybe next week (or later ;-p)?
+> Hi Ingo,
+> 
+> On Tue, 22 Apr 2014 11:55:57 +0200, Ingo Molnar wrote:
+> > I gave it some quick testing and after fixing a trivial merge conflict 
+> > in tools/lib/lockdep/Makefile all seems to be working fine.
+> 
+> Thanks for testing!
+> 
+> >
+> > But while looking at it I remembered one of my old UI complains about 
+> > perf top and report, the hard to read nature of:
+> >
+> >    Event count (approx.): 226958779
+> >
+> > the values displayed are typically way too large to be easily human 
+> > readable. More importantly, they are also nonsensical! That we have a 
+> > sampling interval and can sum up all the intervals sampled has very 
+> > little meaning to the overwhelming majority of humans looking at the 
+> > data.
+> >
+> > And printing that just spams the visual field and confuses people.
+> >
+> > People care about the quality and speed of sampling itself, not 
+> > directly the interval of sampling (which will often be variable with 
+> > auto-freq sampling).
+> 
+> You meant 'period' by 'interval', right?
+
+Yeah.
+
+> There's --show-total-period option (should be equivalent to -F period
+> later) in perf report, so there might be people want to see the numbers
+> IMHO.
+> 
+> >
+> > So instead of:
+> >
+> >   Samples: 42K of event 'cycles', Event count (approx.): 226958779
+> >
+> > How about only printing this in 'perf top' and 'perf report':
+> >
+> >   Captured 42.1K 'cycles' event samples
+> >
+> > Note the extra decimal (which helps monitor smaller changes as well), 
+> > and note the different wording.
+> >
+> > Thoughts?
+> 
+> Well, I'm okay to add the extra decimal, but it seems that it only makes
+> sense when the unit is 'K'..
+> 
+> And I think it might be worth adding filtered sample count as well if
+> filtering is enabled something like:
+> 
+>   Captured 13.2K/42.1K 'cycles' event samples
+
+Yeah. Maybe make it:
+
+    Filtered 13.2K out of 42.1K 'cycles' event samples
+
+or so.
 
 Thanks,
-Namhyung
+
+	Ingo
