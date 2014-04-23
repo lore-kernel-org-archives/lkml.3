@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488AbaDWHSj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 03:18:39 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:55364 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858AbaDWHSh (ORCPT
+	id S1756672AbaDWHUr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 03:20:47 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:65470 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754069AbaDWHUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 03:18:37 -0400
-Date: Wed, 23 Apr 2014 09:17:16 +0200
-From: Thierry Reding <thierry.reding@gmail.com>
-To: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org,
-        Russell King <rmk+kernel@arm.linux.org.uk>
-Subject: Re: [RFC 4/5] drm: Introduce drm_set_unique()
-Message-ID: <20140423071714.GB31226@ulmo>
-References: <1398179373-29966-1-git-send-email-thierry.reding@gmail.com>
- <1398179373-29966-5-git-send-email-thierry.reding@gmail.com>
- <20140422154807.GT10722@phenom.ffwll.local>
+	Wed, 23 Apr 2014 03:20:44 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="3lcZGd9BuhuYXNfi"
-Content-Disposition: inline
-In-Reply-To: <20140422154807.GT10722@phenom.ffwll.local>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAFiDJ58oeUtXR_gqud9pw55wojY6PJRQp8PAyEfpDL_Let7u=Q@mail.gmail.com>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<1397824031-4892-4-git-send-email-lftan@altera.com>
+	<201404221433.17861.arnd@arndb.de>
+	<CAFiDJ58oeUtXR_gqud9pw55wojY6PJRQp8PAyEfpDL_Let7u=Q@mail.gmail.com>
+Date: Wed, 23 Apr 2014 09:20:42 +0200
+X-Google-Sender-Auth: 6t0ZRzzsEIcAyzEGxqISsSFJDTs
+Message-ID: <CAMuHMdX1xxuWhhBH0TKMtSEek5QDYchNVtC9QKoFQGr454_GVA@mail.gmail.com>
+Subject: Re: [PATCH 04/28] nios2: Exception handling
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Ley,
 
---3lcZGd9BuhuYXNfi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 23, 2014 at 4:47 AM, Ley Foon Tan <lftan@altera.com> wrote:
+> On Tue, Apr 22, 2014 at 8:33 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>> On Friday 18 April 2014, Ley Foon Tan wrote:
+>>> +static const struct file_operations misalign_fops = {
+>>> +       .open           = proc_misaligned_open,
+>>> +       .read           = seq_read,
+>>> +       .llseek         = seq_lseek,
+>>> +       .release        = single_release,
+>>> +       .write          = proc_misaligned_write,
+>>> +};
+>>> +#endif /* CONFIG_PROC_FS */
+>>
+>> We really shouldn't be doing new architecture specific procfs files
+>> any more. I suggest you drop this one for now, and add back the
+>> functionality using perf or ftrace at a later point.
+>
+> Okay, will remove this.
 
-On Tue, Apr 22, 2014 at 05:48:07PM +0200, Daniel Vetter wrote:
-> On Tue, Apr 22, 2014 at 05:09:32PM +0200, Thierry Reding wrote:
-> > From: Thierry Reding <treding@nvidia.com>
-> >=20
-> > Add a helper function that allows drivers to statically set the unique
-> > name of the device. This will allow platform and USB drivers to get rid
-> > of their DRM bus implementations and directly use drm_dev_alloc() and
-> > drm_dev_register().
-> >=20
-> > Signed-off-by: Thierry Reding <treding@nvidia.com>
-> > ---
-> >  drivers/gpu/drm/drm_ioctl.c | 37 +++++++++++++++++++++++++++++++------
-> >  drivers/gpu/drm/drm_stub.c  |  1 +
-> >  include/drm/drmP.h          |  3 +++
-> >  3 files changed, 35 insertions(+), 6 deletions(-)
-> >=20
-> > diff --git a/drivers/gpu/drm/drm_ioctl.c b/drivers/gpu/drm/drm_ioctl.c
-> > index 2dd3a6d8382b..371db3bef60c 100644
-> > --- a/drivers/gpu/drm/drm_ioctl.c
-> > +++ b/drivers/gpu/drm/drm_ioctl.c
-> > @@ -42,6 +42,20 @@
-> >  #include <asm/mtrr.h>
-> >  #endif
-> > =20
-> > +int drm_set_unique(struct drm_device *dev, const char *fmt, ...)
->=20
-> Can you please add a bit of kerneldoc for this? drm_ioctl.c isn't yet
-> pulled into the drm reference docbook, but better to have it there
-> already.
+MIPS and powerpc handle this through debugfs, cfr.
+arch/mips/kernel/unaligned.c and arch/powerpc/kernel/traps.c.
 
-On second thought, wouldn't this be better located in drm_stub.c? It
-isn't really related to the IOCTL code except that one of the IOCTLs now
-uses the information set by this function. Logically I think it belongs
-with the likes of drm_dev_alloc() and drm_dev_register().
+Gr{oetje,eeting}s,
 
-Thierry
+                        Geert
 
---3lcZGd9BuhuYXNfi
-Content-Type: application/pgp-signature
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTV2j6AAoJEN0jrNd/PrOhns8QAKJMDsLDrjshdO63vOCPEEtm
-YvHN0a/NBTOSlSME16RVmSH9QQWXavWPSGhmT9N+w41VMOdz2VU1veclIfTAjcP4
-u51UHEInfXEX/42Orc08df/5uq303Phr0snMFI+/aZZ1sDFjyye3TMlGRnMCRFSt
-FARi9z/sh0r/hp2VVpVe62yrHskOfcNbfvgvqOx5rb35nH8bUuK8mp6BALu8xMJO
-vF7ZT4OQo2lbY5R+L4kxiMAbViROGNcjnY4g6wVjwNUfsQV6syI7UYFE9nudPj2O
-zJOakx84nL2wx5k0PNX31MN7uCoNHvnaulmIDLnV2AxOdldlSZG+CLGWkT752gFY
-uyEGmUmrcvF76x63CmNIGIyYsqC0dp2AuHIxBbYGeSX7gQ5qL6dcTLiCZPrSQ7mS
-HZIg+so6CQ3EiSOC71oKJWoMwWeq69GUZ7DO/H7O1C5GGhbxMuqKtFywMIQ0V76u
-lRlkKgZOnEIqRgikTY30O0+Ox5rsTdDLIMIDNaBaLTUJtDCE4tDmleTCzAacCL0c
-XLBmf94ZPfaMTd+ilsMaklhABcuNTPOuOtCbmaHe8+2MuUna/egTVssbtXGYRm2m
-TEGDTte/EXQX2UZyp0G2yEDn4aT69wFQIrr5J1KdIrUqk6eaPC4nFU5WzYf7lAGp
-cqYUU2Sp1ng5GO5drUur
-=5lee
------END PGP SIGNATURE-----
-
---3lcZGd9BuhuYXNfi--
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
