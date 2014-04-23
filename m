@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456AbaDWV4r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 17:56:47 -0400
-Received: from mout.gmx.net ([212.227.17.20]:53961 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751030AbaDWV4q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 17:56:46 -0400
-From: Heinrich Schuchardt <xypron.glpk@gmx.de>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Heinrich Schuchardt <xypron.glpk@gmx.de>
-Subject: [PATCH 1/1] fanotify: for FAN_MARK_FLUSH check flags
-Date: Wed, 23 Apr 2014 23:55:51 +0200
-Message-Id: <1398290151-6502-1-git-send-email-xypron.glpk@gmx.de>
-X-Mailer: git-send-email 1.9.2
-X-Provags-ID: V03:K0:Cj2Q/xunml2Ia+c6jmhAl4MEiRUEtLCExPC6otPxMQbDgSpCDri
- ELF/yMPlyZ+SfR3SKlnUpxzbb07sVdQqrBG+7qo2+E7VaIUkYwo4DVlH7c6YpFCiTKeNNzm
- 3iLk7Q1oeua873CdQ5bpwZ6uKLU95oFwRN83DysA1eZFVC70VZ7tpQhU1bIBkPQUdvMtL8G
- jijfbaTtZAmAmDo9ehsjw==
+	id S1751503AbaDWV6J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 17:58:09 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:52769 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030AbaDWV6F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 17:58:05 -0400
+Date: Wed, 23 Apr 2014 22:58:04 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Fengwei Yin <yfw.kernel@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix seq_read dead loop and trigger memory allocation
+ failure.
+Message-ID: <20140423215804.GU18016@ZenIV.linux.org.uk>
+References: <1398089562-5925-1-git-send-email-yfw.kernel@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398089562-5925-1-git-send-email-yfw.kernel@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If fanotify_mark is called with illegal value of arguments flags and marks
-it usually returns EINVAL.
+On Mon, Apr 21, 2014 at 10:12:42PM +0800, Fengwei Yin wrote:
+> When dump /proc/xxx/maps, if d_path return error in seq_path, the
+> buffer will be exhaust and trigger dead loop in seq_read. Till
+> kmalloc fails with -ENOMEM.
 
-When fanotify_mark is called with FAN_MARK_FLUSH the argument flags is not
-checked for irrelevant flags like FAN_MARK_IGNORED_MASK.
+*WHAT* d_path error?  -ENAMETOOLONG, aka. "you've got too little space"?
 
-The patch removes this inconsistency.
+> @@ -295,8 +295,16 @@ show_map_vma(struct seq_file *m, struct vm_area_struct *vma, int is_pid)
+>  	 * special [heap] marker for the heap:
+>  	 */
+>  	if (file) {
+> +		size_t sz;
+>  		seq_pad(m, ' ');
+> -		seq_path(m, &file->f_path, "\n");
+> +		/* Save current count. Once seq_path return negtive value,
+> +		 * we need to restore saved count. Otherwise, seq_path will
+> +		 * exhaust the buffer and make seq_read dead loop till
+> +		 * m->buff allocation failure.
+> +		 */
+> +		sz = m->count;
+> +		if (seq_path(m, &file->f_path, "\n") < 0)
+> +			m->count = sz;
 
-If an irrelevant flag is set error EINVAL is returned.
-
-Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
----
- fs/notify/fanotify/fanotify_user.c | 3 +++
- 1 file changed, 3 insertions(+)
-
-diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-index 287a22c..8bba549 100644
---- a/fs/notify/fanotify/fanotify_user.c
-+++ b/fs/notify/fanotify/fanotify_user.c
-@@ -819,7 +819,10 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
- 	case FAN_MARK_REMOVE:
- 		if (!mask)
- 			return -EINVAL;
-+		break;
- 	case FAN_MARK_FLUSH:
-+		if (flags & ~(FAN_MARK_MOUNT | FAN_MARK_FLUSH))
-+			return -EINVAL;
- 		break;
- 	default:
- 		return -EINVAL;
--- 
-1.9.2
-
+NAK.  No way in hell.  Any code playing with m->count that way is broken.
+Post the reproducer for that infinite loop; then we'll be able to see
+what triggers an impossible error from d_path().  _That_ is where the bug
+is, assuming it exists at all.
