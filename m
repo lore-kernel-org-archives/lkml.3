@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531AbaDXJY2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:24:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47021 "EHLO
+	id S1754883AbaDXIz6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:55:58 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46970 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754895AbaDXIz7 (ORCPT
+	with ESMTP id S1754811AbaDXIzq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:55:59 -0400
+	Thu, 24 Apr 2014 04:55:46 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>,
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 153/182] ALSA: hda/realtek - Add support of ALC288 codec
-Date: Thu, 24 Apr 2014 09:51:18 +0100
-Message-Id: <1398329507-5911-154-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 144/182] x86-64, modify_ldt: Ban 16-bit segments on 64-bit kernels
+Date: Thu, 24 Apr 2014 09:51:09 +0100
+Message-Id: <1398329507-5911-145-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,37 +28,52 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kailang Yang <kailang@realtek.com>
+From: "H. Peter Anvin" <hpa@linux.intel.com>
 
-commit 7c66593286bcd153e4868383e675673a27071bd5 upstream.
+commit b3b42ac2cbae1f3cecbb6229964a4d48af31d382 upstream.
 
-Signed-off-by: Kailang Yang <kailang@realtek.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+The IRET instruction, when returning to a 16-bit segment, only
+restores the bottom 16 bits of the user space stack pointer.  We have
+a software workaround for that ("espfix") for the 32-bit kernel, but
+it relies on a nonzero stack segment base which is not available in
+32-bit mode.
+
+Since 16-bit support is somewhat crippled anyway on a 64-bit kernel
+(no V86 mode), and most (if not quite all) 64-bit processors support
+virtualization for the users who really need it, simply reject
+attempts at creating a 16-bit segment when running on top of a 64-bit
+kernel.
+
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Link: http://lkml.kernel.org/n/tip-kicdm89kzw9lldryb1br9od0@git.kernel.org
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/ldt.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 9716e68..78a42ab 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -4078,6 +4078,7 @@ static int patch_alc269(struct hda_codec *codec)
- 		spec->codec_variant = ALC269_TYPE_ALC284;
- 		break;
- 	case 0x10ec0286:
-+	case 0x10ec0288:
- 		spec->codec_variant = ALC269_TYPE_ALC286;
- 		break;
- 	case 0x10ec0255:
-@@ -4830,6 +4831,7 @@ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
- 	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
- 	{ .id = 0x10ec0284, .name = "ALC284", .patch = patch_alc269 },
- 	{ .id = 0x10ec0286, .name = "ALC286", .patch = patch_alc269 },
-+	{ .id = 0x10ec0288, .name = "ALC288", .patch = patch_alc269 },
- 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
- 	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
+diff --git a/arch/x86/kernel/ldt.c b/arch/x86/kernel/ldt.c
+index ebc9873..af1d14a 100644
+--- a/arch/x86/kernel/ldt.c
++++ b/arch/x86/kernel/ldt.c
+@@ -229,6 +229,17 @@ static int write_ldt(void __user *ptr, unsigned long bytecount, int oldmode)
+ 		}
+ 	}
+ 
++	/*
++	 * On x86-64 we do not support 16-bit segments due to
++	 * IRET leaking the high bits of the kernel stack address.
++	 */
++#ifdef CONFIG_X86_64
++	if (!ldt_info.seg_32bit) {
++		error = -EINVAL;
++		goto out_unlock;
++	}
++#endif
++
+ 	fill_ldt(&ldt, &ldt_info);
+ 	if (oldmode)
+ 		ldt.avl = 0;
 -- 
 1.9.1
 
