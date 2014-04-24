@@ -1,90 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589AbaDXNWb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:22:31 -0400
-Received: from mail-la0-f48.google.com ([209.85.215.48]:43475 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753240AbaDXNW3 (ORCPT
+	id S1756108AbaDXNXK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:23:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55800 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753681AbaDXNXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:22:29 -0400
+	Thu, 24 Apr 2014 09:23:07 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Subject: Re: [RFC PATCH 0/4] vmlinux.lds.h clean-ups
+Date: Thu, 24 Apr 2014 15:23:01 +0200
+User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>, Rob Herring <robh@kernel.org>
+References: <1395949317-8738-1-git-send-email-robherring2@gmail.com> <CAL_JsqKn_erNnGwdXwg6C08pHHQuQn-4fpmp70agvH5ok=P9-g@mail.gmail.com>
+In-Reply-To: <CAL_JsqKn_erNnGwdXwg6C08pHHQuQn-4fpmp70agvH5ok=P9-g@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <5357E1B4.2030705@redhat.com>
-References: <20140422.161904.1187535812839850973.davem@davemloft.net>
-	<cover.1398215388.git.rgb@redhat.com>
-	<26389161.vp9iWSVLPX@x2>
-	<1398225475.750.7.camel@localhost>
-	<5357C2D2.5060700@redhat.com>
-	<1398264152.2596.25.camel@flatline.rdu.redhat.com>
-	<5357DE12.7040905@redhat.com>
-	<1398267458.2562.0.camel@flatline.rdu.redhat.com>
-	<5357E1B4.2030705@redhat.com>
-Date: Thu, 24 Apr 2014 09:22:27 -0400
-Message-ID: <CACLa4psQyoaZTE7R0qiog_biMKXyeGtLc1AQUuEPtemMYcDCSQ@mail.gmail.com>
-Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
-From: Eric Paris <eparis@parisplace.org>
-To: Daniel J Walsh <dwalsh@redhat.com>
-Cc: Eric Paris <eparis@redhat.com>, Linux Netdev List <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        linux-audit@redhat.com, SE-Linux <selinux@tycho.nsa.gov>,
-        jamal@mojatatu.com, Steve Grubb <sgrubb@redhat.com>,
-        David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201404241523.01452.arnd@arndb.de>
+X-Provags-ID: V02:K0:cbi14mtHCnQ+/gfV+0ygS5+FTrbVKBmYmD2/fprQ4WI
+ bWXsKtntX2J/P8mtDSSxoUUMqPdAwZW3vljomUvtuJP/Wi3MSz
+ uwuaXLAVf7uMEk+NeItr/EuVeNl66z6TMSromrm9KfOJtmwaXZ
+ Ye/vQAMct5VMkYacJzUSHieH+h3WfKC+QBfLVY3Vgd7urDSq73
+ s/+dkx/UOKzfpG4fuD/sX2JTYV1QXP3BEV91au2gJ41oZ8q5wi
+ rTwsYvlvkXBQzpgL32r1g32MXhddlo1tkYo1ixekdeffdND4jY
+ h6AvVH2IEC+XG/Nw4wYmGRckSwkI8riDDHVEMb+HEEXxL2ziZn
+ jQAIw8ITIjZhKm5ZPX+U=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-They would be equivalent if and only if journald had CAP_AUDIT_READ.
+On Tuesday 15 April 2014, Rob Herring wrote:
+> >
+> >  arch/arm/kernel/devtree.c         |  11 +--
+> >  drivers/irqchip/irqchip.c         |   6 +-
+> >  include/asm-generic/vmlinux.lds.h | 142 +++++++++++---------------------------
+> 
+> Arnd, Any comments on this series?
+> 
 
-I suggest you take CAP_AUDIT_READ away from journald on systems which
-need the secadm/sysadmin split (which is a ridiculously stupid split
-anyway, but who am I to complain?)
+No qualified comments. The linker script is always magic to me. For all I can
+tell, it's all good and you can add an Acked-by from me if that helps you,
+but I'm not able to judge whether it's correct. Do you want to merge it
+through the DT git?
 
-On Wed, Apr 23, 2014 at 11:52 AM, Daniel J Walsh <dwalsh@redhat.com> wrote:
-> Meaning looking at the journal would be equivalent to looking at
-> /var/log/audit/audit.log.
->
->
-> On 04/23/2014 11:37 AM, Eric Paris wrote:
->> On Wed, 2014-04-23 at 11:36 -0400, Daniel J Walsh wrote:
->>> I guess the problem would be that the sysadm_t would be able to look at
->>> the journal which would now contain the audit content.
->> right.  so include it in the sysadm_secadm bool
->>
->>> On 04/23/2014 10:42 AM, Eric Paris wrote:
->>>> On Wed, 2014-04-23 at 09:40 -0400, Daniel J Walsh wrote:
->>>>> Here are the capabilities we currently give to sysadm_t with
->>>>> sysadm_secadm    1.0.0    Disabled
->>>>>
->>>>>    allow sysadm_t sysadm_t : capability { chown dac_override
->>>>> dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable
->>>>> net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner
->>>>> sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice
->>>>> sys_resource sys_time sys_tty_config mknod lease audit_write setfcap } ;
->>>>>    allow sysadm_t sysadm_t : capability { setgid setuid sys_chroot }
->>>>>
->>>>>    allow sysadm_t sysadm_t : capability2 { syslog block_suspend } ;
->>>>>
->>>>> cap_audit_write might be a problem?
->>>> cap_audit_write is fine.
->>>>
->>>> syslogd_t (aka journal) is going to need the new permission
->>>> cap_audit_read.  Also, as steve pointed out, someone may be likely to
->>>> want to be able to disable that permission easily.
->>>>
->>>> -Eric
->>>>
->>
->> _______________________________________________
->> Selinux mailing list
->> Selinux@tycho.nsa.gov
->> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
->> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
->>
->>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	Arnd
