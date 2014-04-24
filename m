@@ -1,70 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758069AbaDXPDp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:03:45 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:52724 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758048AbaDXPDl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:03:41 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Thu, 24 Apr 2014 16:03:27 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jikos@jikos.cz>
-Subject: Re: 3.15-rc2: i915 regression: only top 20% of screen works in X
-Message-ID: <20140424150327.GL31221@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Pavel Machek <pavel@ucw.cz>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
-	dri-devel <dri-devel@lists.freedesktop.org>,
-	kernel list <linux-kernel@vger.kernel.org>,
-	Jiri Kosina <jikos@jikos.cz>
-References: <20140423202248.GA3621@amd.pavel.ucw.cz>
- <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
- <20140423220952.GA3627@amd.pavel.ucw.cz>
- <20140424055023.GA31221@nuc-i3427.alporthouse.com>
- <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
- <20140424134345.GA20861@amd.pavel.ucw.cz>
+	id S1758084AbaDXPEF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:04:05 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45722 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757906AbaDXPEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:04:01 -0400
+Message-ID: <535927DF.90404@ti.com>
+Date: Thu, 24 Apr 2014 18:03:59 +0300
+From: Tero Kristo <t-kristo@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424134345.GA20861@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Mike Turquette <mturquette@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: ti: clk-7xx: Correct ABE DPLL configuration
+References: <1396446525-20302-1-git-send-email-peter.ujfalusi@ti.com> <533C1AC2.1000307@ti.com> <533CFFB3.9070201@ti.com> <5358D534.2070205@ti.com>
+In-Reply-To: <5358D534.2070205@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 03:43:45PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > Like Chris said please test latest drm-intel-nighlty from
-> > http://cgit.freedesktop.org/drm-intel to make sure that the recently
-> > merged mitigation measures work properly. But those won't get your gpu
-> > back, only the display and it's only for 3.16. We're still hunting a
-> 
-> What does it means "won't get my gpu back, just my display"? Gpu is
-> the thing driving the display... no?
+On 04/24/2014 12:11 PM, Peter Ujfalusi wrote:
+> Mike, Tero,
+>
+> On 04/03/2014 09:29 AM, Peter Ujfalusi wrote:
+>> On 04/02/2014 05:12 PM, Tero Kristo wrote:
+>>> On 04/02/2014 04:48 PM, Peter Ujfalusi wrote:
+>>>> ABE DPLL frequency need to be lowered from 361267200
+>>>> to 180633600 to facilitate the ATL requironments.
+>>>> The dpll_abe_m2x2_ck clock need to be set to double
+>>>> of ABE DPLL rate in order to have correct clocks
+>>>> for audio.
+>>>
+>>> Do you have some sort of TRM reference for this?
+>>
+>> The ATL's max divider is 32.
+>> For audio purpose the clock coming out from the ATL instance should be
+>> 128 * fs. It is only possible to have 44.1KHz sampling rate with ABE DPLL set
+>> to 361267200 or 180633600. Which means:
+>> The atl generated clock should be 128 * 44100 = 5644800
+>>  From ABE_DPLL 361267200 we would need to have 64 as divider (ATL can't do this).
+>>  From the suggested ABE_DPLL of 180633600 we can use ATL divider of 32, which
+>> is the maximum it can do.
+>>
+>> So the reason for the change is to have ATLPCLK clock which can be used for
+>> audio in the future, the 361267200 is just too high.
+>
+> Tero: can I have your ack for this patch or do you have further concerns?
 
-We think of it as discrete functional units, i.e. the display engine is
-separate from the GPU. What happens here is that the render engine
-doesn't respond to our commands to set it up, but that should not
-prevent us from setting the register values in the display engine to drive
-the actual outputs.
- 
-> I checked out drm-intel-nightly. Now I can see some kernel messages
-> scrolling around on vga console (improvement?), but then end up with
-> completely blank screen, and dead machine, AFAICT. Can't seem to ping
-> it.
+Yea looks good to me, except for the fact that there is some work on 
+getting default rate/parent support through DT. I would like a comment 
+from Mike about the estimate when this can get in, and whether we should 
+merge intermediate solutions still like this.
 
-Eeek. Do you have netconsole handy?
--Chris
+Anyway, you can consider this patch acked by me, I'll let Mike to decide 
+what to do with it though.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
+-Tero
+
+> Mike: do you want me to resend this patch?
+>
+> Thanks,
+> Péter
+>
+>>
+>>>
+>>> -Tero
+>>>
+>>>>
+>>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>>> ---
+>>>>    drivers/clk/ti/clk-7xx.c | 7 ++++++-
+>>>>    1 file changed, 6 insertions(+), 1 deletion(-)
+>>>>
+>>>> diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
+>>>> index f7e40734c819..19a55bf407dd 100644
+>>>> --- a/drivers/clk/ti/clk-7xx.c
+>>>> +++ b/drivers/clk/ti/clk-7xx.c
+>>>> @@ -16,7 +16,7 @@
+>>>>    #include <linux/clkdev.h>
+>>>>    #include <linux/clk/ti.h>
+>>>>
+>>>> -#define DRA7_DPLL_ABE_DEFFREQ                361267200
+>>>> +#define DRA7_DPLL_ABE_DEFFREQ                180633600
+>>>>    #define DRA7_DPLL_GMAC_DEFFREQ                1000000000
+>>>>
+>>>>
+>>>> @@ -322,6 +322,11 @@ int __init dra7xx_dt_clk_init(void)
+>>>>        if (rc)
+>>>>            pr_err("%s: failed to configure ABE DPLL!\n", __func__);
+>>>>
+>>>> +    dpll_ck = clk_get_sys(NULL, "dpll_abe_m2x2_ck");
+>>>> +    rc = clk_set_rate(dpll_ck, DRA7_DPLL_ABE_DEFFREQ * 2);
+>>>> +    if (rc)
+>>>> +        pr_err("%s: failed to configure ABE DPLL m2x2!\n", __func__);
+>>>> +
+>>>>        dpll_ck = clk_get_sys(NULL, "dpll_gmac_ck");
+>>>>        rc = clk_set_rate(dpll_ck, DRA7_DPLL_GMAC_DEFFREQ);
+>>>>        if (rc)
+>>>>
+>>>
+>>
+>>
+>
+
