@@ -1,38 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292AbaDXNsc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:48:32 -0400
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:58963 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757235AbaDXNsX (ORCPT
+	id S1757374AbaDXNui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:50:38 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:37951 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756051AbaDXNug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:48:23 -0400
-Date: Thu, 24 Apr 2014 15:48:17 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/4] workqueue: Move workqueue bus attr to device
- attribute
-Message-ID: <20140424134815.GA4797@localhost.localdomain>
-References: <1395940862-31428-1-git-send-email-fweisbec@gmail.com>
- <1395940862-31428-2-git-send-email-fweisbec@gmail.com>
- <CAKohpok=W_302w2yhof_x6LnB6Eqxvr8MOKjm13bUmhJT3RZ+A@mail.gmail.com>
+	Thu, 24 Apr 2014 09:50:36 -0400
+Message-ID: <5359165F.5040102@icomera.com>
+Date: Thu, 24 Apr 2014 15:49:19 +0200
+From: gundberg <per.gundberg@icomera.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKohpok=W_302w2yhof_x6LnB6Eqxvr8MOKjm13bUmhJT3RZ+A@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] watchdog: kempld-wdt: Use the correct value when configuring
+ the prescaler with the watchdog
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Viresh,
+Use the prescaler index, rather than its value, to configure the watchdog.
+This will prevent a mismatch with the prescaler used to calculate the cycles.
 
-On Thu, Apr 03, 2014 at 12:39:37PM +0530, Viresh Kumar wrote:
-> Nothing much, just some nitpicks :)
+Signed-off-by: Per Gundberg <per.gundberg@icomera.com>
+---
+ drivers/watchdog/kempld_wdt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks for your reviews, but I'm eventually dropping these two patches :)
+--- src/drivers/watchdog/kempld_wdt.c.orig	2014-04-24 07:32:08.463745055 +0000
++++ src/drivers/watchdog/kempld_wdt.c	2014-04-24 07:34:09.839739808 +0000
+@@ -163,7 +163,7 @@ static int kempld_wdt_set_stage_timeout(
+ 	kempld_get_mutex(pld);
+ 	stage_cfg = kempld_read8(pld, KEMPLD_WDT_STAGE_CFG(stage->id));
+ 	stage_cfg &= ~STAGE_CFG_PRESCALER_MASK;
+-	stage_cfg |= STAGE_CFG_SET_PRESCALER(prescaler);
++	stage_cfg |= STAGE_CFG_SET_PRESCALER(PRESCALER_21);
+ 	kempld_write8(pld, KEMPLD_WDT_STAGE_CFG(stage->id), stage_cfg);
+ 	kempld_write32(pld, KEMPLD_WDT_STAGE_TIMEOUT(stage->id),
+ 			stage_timeout);
