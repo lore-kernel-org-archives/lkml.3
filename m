@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754034AbaDXIxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:53:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46578 "EHLO
+	id S1755665AbaDXKnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:43:04 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46594 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785AbaDXIxi (ORCPT
+	with ESMTP id S1754024AbaDXIxm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:38 -0400
+	Thu, 24 Apr 2014 04:53:42 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Lee Jones <lee.jones@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 071/182] mfd: max8998: Fix possible NULL pointer dereference on i2c_new_dummy error
-Date: Thu, 24 Apr 2014 09:49:56 +0100
-Message-Id: <1398329507-5911-72-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 074/182] mfd: 88pm860x: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Thu, 24 Apr 2014 09:49:59 +0100
+Message-Id: <1398329507-5911-75-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -30,39 +30,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit ed26f87b9f71693a1d1ee85f5e6209601505080f upstream.
+commit 159ce52a6b777fc82fa0b51c7440e25f9e4c6feb upstream.
 
-During probe the driver allocates dummy I2C device for RTC with i2c_new_dummy() but it does not check the return value of this call.
+During probe the driver allocates dummy I2C device for companion chip
+with i2c_new_dummy() but it does not check the return value of this call.
 
 In case of error (i2c_new_device(): memory allocation failure or I2C
 address cannot be used) this function returns NULL which is later used
-by i2c_unregister_device().
+by regmap_init_i2c().
 
-If i2c_new_dummy() fails for RTC device, fail also the probe for
+If i2c_new_dummy() fails for companion device, fail also the probe for
 main MFD driver.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mfd/max8998.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ drivers/mfd/88pm860x-core.c | 5 +++++
+ 1 file changed, 5 insertions(+)
 
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index 21af51a..7c169e6 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -214,6 +214,10 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
- 	mutex_init(&max8998->iolock);
- 
- 	max8998->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
-+	if (!max8998->rtc) {
-+		dev_err(&i2c->dev, "Failed to allocate I2C device for RTC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(max8998->rtc, max8998);
- 
- 	max8998_irq_init(max8998);
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index ec94081..df63945 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -1179,6 +1179,11 @@ static int pm860x_probe(struct i2c_client *client,
+ 		chip->companion_addr = pdata->companion_addr;
+ 		chip->companion = i2c_new_dummy(chip->client->adapter,
+ 						chip->companion_addr);
++		if (!chip->companion) {
++			dev_err(&client->dev,
++				"Failed to allocate I2C companion device\n");
++			return -ENODEV;
++		}
+ 		chip->regmap_companion = regmap_init_i2c(chip->companion,
+ 							&pm860x_regmap_config);
+ 		if (IS_ERR(chip->regmap_companion)) {
 -- 
 1.9.1
 
