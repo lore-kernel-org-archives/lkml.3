@@ -1,343 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758483AbaDXP4j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:56:39 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:51297 "EHLO extserv.mm-sol.com"
+	id S932400AbaDXP6d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:58:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59531 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758288AbaDXPtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:49:14 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Felipe Balbi <balbi@ti.com>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        David Brown <davidb@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Subject: [PATCH v7 12/20] usb: phy: msm: Add device tree support and binding information
-Date: Thu, 24 Apr 2014 18:48:07 +0300
-Message-Id: <1398354495-20782-13-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
-References: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
+	id S932202AbaDXP63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:58:29 -0400
+Message-ID: <1398355101.2708.5.camel@adam.happyassassin.net>
+Authentication-Results: mail.happyassassin.net; dmarc=none header.from=redhat.com
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
+ ASUS T100TA
+From: Adam Williamson <awilliam@redhat.com>
+To: "Jin, Yao" <yao.jin@linux.intel.com>
+Cc: Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
+        mathias.nyman@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 24 Apr 2014 08:58:21 -0700
+In-Reply-To: <5359120E.2030007@linux.intel.com>
+References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
+	 <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
+	 <5353A1F6.60602@linux.intel.com> <5353B8A4.1080900@linux.intel.com>
+	 <1398007690.2674.0.camel@adam.happyassassin.net>
+	 <5354BA59.2000008@linux.intel.com> <53551D0F.40906@linux.intel.com>
+	 <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
+	 <1398230210.2704.8.camel@adam.happyassassin.net>
+	 <20140423083430.GV30677@intel.com> <20140423122344.GX30677@intel.com>
+	 <5359120E.2030007@linux.intel.com>
+Organization: Red Hat
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+On Thu, 2014-04-24 at 21:30 +0800, Jin, Yao wrote:
+> 
+> On 2014/4/23 20:23, Mika Westerberg wrote:
+> > On Wed, Apr 23, 2014 at 11:34:30AM +0300, Mika Westerberg wrote:
+> >> On Tue, Apr 22, 2014 at 10:16:50PM -0700, Adam Williamson wrote:
+> >>> Well, I can't actually concur. See my results in
+> >>> https://bugzilla.kernel.org/show_bug.cgi?id=68291#c44 .
+> >>>
+> >>> 1. A kernel with neither patch applied (and no hid-rmi driver) results
+> >>> in a working touchscreen.
+> >>> 2. A kernel with only v3 of Doug's patch from
+> >>> https://bugzilla.kernel.org/show_bug.cgi?id=67921 results in a working
+> >>> touchscreen.
+> >>> 3. A kernel with both v3 of Doug's patch and this IRQ descriptor
+> >>> conflict "fix" results in a broken touchscreen.
+> >>>
+> >>> Seems to me there really is some kind of problem with this patch...
+> >>
+> >> Can you try so that you have both patches applied and then this one? I'm
+> >> suspecting that the ACPI GPIO operation region support might do something
+> >> unexpected in this case.
+> > 
+> > I'm able to reproduce this problem here now and it seems not related to the
+> > ACPI GPIO operation regions.
+> > 
+> > This patch changes call to irq_domain_add_linear() to
+> > irq_domain_add_simple() and somehow that changes the behaviour so that I
+> > get non-working touchscreen:
+> > 
+> > ...
+> > [   37.434998] i2c_hid i2c-ATML1000:00: failed to reset device.
+> > [   37.435009] i2c_hid i2c-ATML1000:00: i2c_hid_set_power
+> > [   37.435021] i2c_hid i2c-ATML1000:00: __i2c_hid_command: cmd=fb 00 01 08
+> > [   38.439897] i2c_hid i2c-ATML1000:00: can't add hid device: -61
+> > [   38.440749] i2c_hid: probe of i2c-ATML1000:00 failed with error -61
+> > 
+> > It never gets an interrupt when the device reset is ready.
+> > 
+> > Jin, do you have any idea what is going on?
+> > 
+> 
+> Maybe neither the patch (http://dougvj.net/baytrail_gpio_quirk_v3.patch)
+> nor my patch breaks the touch screen.
+> 
+> I have tried the clean 3.15-rc2 with following patch which just adds
+> back the ACPIID "INT33FC", but the touch screen still doesn't work (To
+> avoid the i915 crash issue, I use with the boot option "nomodeset" in test).
+> 
+> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> index 69e29f4..d79c6d7 100644
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -180,6 +180,7 @@ static const struct acpi_device_id
+> acpi_lpss_device_ids[] = {
+>         { "80860F14", (unsigned long)&byt_sdio_dev_desc },
+>         { "80860F41", (unsigned long)&byt_i2c_dev_desc },
+>         { "INT33B2", },
+> +       { "INT33FC", },
+> 
+>         { "INT3430", (unsigned long)&lpt_dev_desc },
+>         { "INT3431", (unsigned long)&lpt_dev_desc },
+> diff --git a/drivers/pinctrl/pinctrl-baytrail.c
+> b/drivers/pinctrl/pinctrl-baytrail.c
+> index 6e8301f..447f1dc 100644
+> --- a/drivers/pinctrl/pinctrl-baytrail.c
+> +++ b/drivers/pinctrl/pinctrl-baytrail.c
+> @@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
+> 
+>  static const struct acpi_device_id byt_gpio_acpi_match[] = {
+>         { "INT33B2", 0 },
+> +       { "INT33FC", 0 },
+>         { }
+>  };
+>  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
+> 
+> Since the clean 3.15-rc2 doesn't contain "INT33FC", so the baytrail gpio
+> doesn't actually go into effect.
 
-Allows controller to be specified via device tree.
+Grmph. Well, I'm almost sure that my test with only v3 of Doug's patch
+included both of those changes - and for me, that resulted in a working
+touchscreen - but it's just vaguely possible I'd dropped one of them
+(the two patches both try and add INT33FC to pinctrl-baytrail.c , so I
+have to keep jiggling that chunk between the patches depending on which
+combination I'm trying to apply to the build I'm doing). I can try and
+do yet another test build today...
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- .../devicetree/bindings/usb/msm-hsusb.txt          |  67 ++++++++++++
- drivers/usb/phy/phy-msm-usb.c                      | 113 +++++++++++++++++----
- include/linux/usb/msm_hsusb.h                      |   6 +-
- 3 files changed, 165 insertions(+), 21 deletions(-)
-
-diff --git a/Documentation/devicetree/bindings/usb/msm-hsusb.txt b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-index 5ea26c6..ee4123d 100644
---- a/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-+++ b/Documentation/devicetree/bindings/usb/msm-hsusb.txt
-@@ -15,3 +15,70 @@ Example EHCI controller device node:
- 		usb-phy = <&usb_otg>;
- 	};
-
-+USB PHY with optional OTG:
-+
-+Required properties:
-+- compatible:   Should contain:
-+  "qcom,usb-otg-ci" for chipsets with ChipIdea 45nm PHY
-+  "qcom,usb-otg-snps" for chipsets with Synopsys 28nm PHY
-+
-+- regs:         Offset and length of the register set in the memory map
-+- interrupts:   interrupt-specifier for the OTG interrupt.
-+
-+- clocks:       A list of phandle + clock-specifier pairs for the
-+                clocks listed in clock-names
-+- clock-names:  Should contain the following:
-+  "phy"         USB PHY reference clock
-+  "core"        Protocol engine clock
-+  "iface"       Interface bus clock
-+  "alt_core"    Protocol engine clock for targets with asynchronous
-+                reset methodology. (optional)
-+
-+- vdccx-supply: phandle to the regulator for the vdd supply for
-+                digital circuit operation.
-+- v1p8-supply:  phandle to the regulator for the 1.8V supply
-+- v3p3-supply:  phandle to the regulator for the 3.3V supply
-+
-+- resets:       A list of phandle + reset-specifier pairs for the
-+                resets listed in reset-names
-+- reset-names:  Should contain the following:
-+  "phy"         USB PHY controller reset
-+  "link"        USB LINK controller reset
-+
-+- qcom,otg-control: OTG control (VBUS and ID notifications) can be one of
-+                1 - PHY control
-+                2 - PMIC control
-+
-+Optional properties:
-+- dr_mode:      One of "host", "peripheral" or "otg". Defaults to "otg"
-+
-+- qcom,phy-init-sequence: PHY configuration sequence values. This is related to Device
-+                Mode Eye Diagram test. Start address at which these values will be
-+                written is ULPI_EXT_VENDOR_SPECIFIC. Value of -1 is reserved as
-+                "do not overwrite default value at this address".
-+                For example: qcom,phy-init-sequence = < -1 0x63 >;
-+                Will update only value at address ULPI_EXT_VENDOR_SPECIFIC + 1.
-+
-+Example HSUSB OTG controller device node:
-+
-+    usb@f9a55000 {
-+        compatible = "qcom,usb-otg-snps";
-+        reg = <0xf9a55000 0x400>;
-+        interrupts = <0 134 0>;
-+        dr_mode = "peripheral";
-+
-+        clocks = <&gcc GCC_XO_CLK>, <&gcc GCC_USB_HS_SYSTEM_CLK>,
-+                <&gcc GCC_USB_HS_AHB_CLK>;
-+
-+        clock-names = "phy", "core", "iface";
-+
-+        vddcx-supply = <&pm8841_s2_corner>;
-+        v1p8-supply = <&pm8941_l6>;
-+        v3p3-supply = <&pm8941_l24>;
-+
-+        resets = <&gcc GCC_USB2A_PHY_BCR>, <&gcc GCC_USB_HS_BCR>;
-+        reset-names = "phy", "link";
-+
-+        qcom,otg-control = <1>;
-+        qcom,phy-init-sequence = < -1 0x63 >;
-+	};
-diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 8a7a324..4ed1ded 100644
---- a/drivers/usb/phy/phy-msm-usb.c
-+++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -30,9 +30,12 @@
- #include <linux/debugfs.h>
- #include <linux/seq_file.h>
- #include <linux/pm_runtime.h>
-+#include <linux/of.h>
-+#include <linux/of_device.h>
-
- #include <linux/usb.h>
- #include <linux/usb/otg.h>
-+#include <linux/usb/of.h>
- #include <linux/usb/ulpi.h>
- #include <linux/usb/gadget.h>
- #include <linux/usb/hcd.h>
-@@ -217,16 +220,16 @@ static struct usb_phy_io_ops msm_otg_io_ops = {
- static void ulpi_init(struct msm_otg *motg)
- {
- 	struct msm_otg_platform_data *pdata = motg->pdata;
--	int *seq = pdata->phy_init_seq;
-+	int *seq = pdata->phy_init_seq, idx;
-+	u32 addr = ULPI_EXT_VENDOR_SPECIFIC;
-
--	if (!seq)
--		return;
-+	for (idx = 0; idx < pdata->phy_init_sz; idx++) {
-+		if (seq[idx] == -1)
-+			continue;
-
--	while (seq[0] >= 0) {
- 		dev_vdbg(motg->phy.dev, "ulpi: write 0x%02x to 0x%02x\n",
--				seq[0], seq[1]);
--		ulpi_write(&motg->phy, seq[0], seq[1]);
--		seq += 2;
-+				seq[idx], addr + idx);
-+		ulpi_write(&motg->phy, seq[idx], addr + idx);
- 	}
- }
-
-@@ -1343,25 +1346,95 @@ static void msm_otg_debugfs_cleanup(void)
- 	debugfs_remove(msm_otg_dbg_root);
- }
-
-+static struct of_device_id msm_otg_dt_match[] = {
-+	{
-+		.compatible = "qcom,usb-otg-ci",
-+		.data = (void *) CI_45NM_INTEGRATED_PHY
-+	},
-+	{
-+		.compatible = "qcom,usb-otg-snps",
-+		.data = (void *) SNPS_28NM_INTEGRATED_PHY
-+	},
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, msm_otg_dt_match);
-+
-+static int msm_otg_read_dt(struct platform_device *pdev, struct msm_otg *motg)
-+{
-+	struct msm_otg_platform_data *pdata;
-+	const struct of_device_id *id;
-+	struct device_node *node = pdev->dev.of_node;
-+	struct property *prop;
-+	int len, ret, words;
-+	u32 val;
-+
-+	pdata = devm_kzalloc(&pdev->dev, sizeof(*pdata), GFP_KERNEL);
-+	if (!pdata)
-+		return -ENOMEM;
-+
-+	motg->pdata = pdata;
-+
-+	id = of_match_device(msm_otg_dt_match, &pdev->dev);
-+	pdata->phy_type = (int) id->data;
-+
-+	pdata->mode = of_usb_get_dr_mode(node);
-+	if (pdata->mode == USB_DR_MODE_UNKNOWN)
-+		pdata->mode = USB_DR_MODE_OTG;
-+
-+	pdata->otg_control = OTG_PHY_CONTROL;
-+	if (!of_property_read_u32(node, "qcom,otg-control", &val))
-+		if (val == OTG_PMIC_CONTROL)
-+			pdata->otg_control = val;
-+
-+	prop = of_find_property(node, "qcom,phy-init-sequence", &len);
-+	if (!prop || !len)
-+		return 0;
-+
-+	words = len / sizeof(u32);
-+
-+	if (words >= ULPI_EXT_VENDOR_SPECIFIC) {
-+		dev_warn(&pdev->dev, "Too big PHY init sequence %d\n", words);
-+		return 0;
-+	}
-+
-+	pdata->phy_init_seq = devm_kzalloc(&pdev->dev, len, GFP_KERNEL);
-+	if (!pdata->phy_init_seq) {
-+		dev_warn(&pdev->dev, "No space for PHY init sequence\n");
-+		return 0;
-+	}
-+
-+	ret = of_property_read_u32_array(node, "qcom,phy-init-sequence",
-+					 pdata->phy_init_seq, words);
-+	if (!ret)
-+		pdata->phy_init_sz = words;
-+
-+	return 0;
-+}
-+
- static int msm_otg_probe(struct platform_device *pdev)
- {
- 	int ret = 0;
-+	struct device_node *np = pdev->dev.of_node;
-+	struct msm_otg_platform_data *pdata;
- 	struct resource *res;
- 	struct msm_otg *motg;
- 	struct usb_phy *phy;
-
--	dev_info(&pdev->dev, "msm_otg probe\n");
--	if (!dev_get_platdata(&pdev->dev)) {
--		dev_err(&pdev->dev, "No platform data given. Bailing out\n");
--		return -ENODEV;
--	}
--
- 	motg = devm_kzalloc(&pdev->dev, sizeof(struct msm_otg), GFP_KERNEL);
- 	if (!motg) {
- 		dev_err(&pdev->dev, "unable to allocate msm_otg\n");
- 		return -ENOMEM;
- 	}
-
-+	pdata = dev_get_platdata(&pdev->dev);
-+	if (!pdata) {
-+		if (!np)
-+			return -ENXIO;
-+		ret = msm_otg_read_dt(pdev, motg);
-+		if (ret)
-+			return ret;
-+	}
-+
- 	motg->phy.otg = devm_kzalloc(&pdev->dev, sizeof(struct usb_otg),
- 				     GFP_KERNEL);
- 	if (!motg->phy.otg) {
-@@ -1369,17 +1442,17 @@ static int msm_otg_probe(struct platform_device *pdev)
- 		return -ENOMEM;
- 	}
-
--	motg->pdata = dev_get_platdata(&pdev->dev);
- 	phy = &motg->phy;
- 	phy->dev = &pdev->dev;
-
--	motg->phy_reset_clk = devm_clk_get(&pdev->dev, "usb_phy_clk");
-+	motg->phy_reset_clk = devm_clk_get(&pdev->dev,
-+					   np ? "phy" : "usb_phy_clk");
- 	if (IS_ERR(motg->phy_reset_clk)) {
- 		dev_err(&pdev->dev, "failed to get usb_phy_clk\n");
- 		return PTR_ERR(motg->phy_reset_clk);
- 	}
-
--	motg->clk = devm_clk_get(&pdev->dev, "usb_hs_clk");
-+	motg->clk = devm_clk_get(&pdev->dev, np ? "core" : "usb_hs_clk");
- 	if (IS_ERR(motg->clk)) {
- 		dev_err(&pdev->dev, "failed to get usb_hs_clk\n");
- 		return PTR_ERR(motg->clk);
-@@ -1391,7 +1464,7 @@ static int msm_otg_probe(struct platform_device *pdev)
- 	 * operation and USB core cannot tolerate frequency changes on
- 	 * CORE CLK.
- 	 */
--	motg->pclk = devm_clk_get(&pdev->dev, "usb_hs_pclk");
-+	motg->pclk = devm_clk_get(&pdev->dev, np ? "iface" : "usb_hs_pclk");
- 	if (IS_ERR(motg->pclk)) {
- 		dev_err(&pdev->dev, "failed to get usb_hs_pclk\n");
- 		return PTR_ERR(motg->pclk);
-@@ -1402,7 +1475,8 @@ static int msm_otg_probe(struct platform_device *pdev)
- 	 * clock is introduced to remove the dependency on AXI
- 	 * bus frequency.
- 	 */
--	motg->core_clk = devm_clk_get(&pdev->dev, "usb_hs_core_clk");
-+	motg->core_clk = devm_clk_get(&pdev->dev,
-+				      np ? "alt_core" : "usb_hs_core_clk");
-
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	motg->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
-@@ -1491,7 +1565,7 @@ static int msm_otg_probe(struct platform_device *pdev)
- 	device_init_wakeup(&pdev->dev, 1);
-
- 	if (motg->pdata->mode == USB_DR_MODE_OTG &&
--			motg->pdata->otg_control == OTG_USER_CONTROL) {
-+		motg->pdata->otg_control == OTG_USER_CONTROL) {
- 		ret = msm_otg_debugfs_init(motg);
- 		if (ret)
- 			dev_dbg(&pdev->dev, "Can not create mode change file\n");
-@@ -1644,6 +1718,7 @@ static struct platform_driver msm_otg_driver = {
- 		.name = DRIVER_NAME,
- 		.owner = THIS_MODULE,
- 		.pm = &msm_otg_dev_pm_ops,
-+		.of_match_table = msm_otg_dt_match,
- 	},
- };
-
-diff --git a/include/linux/usb/msm_hsusb.h b/include/linux/usb/msm_hsusb.h
-index 262ed80..bd68299 100644
---- a/include/linux/usb/msm_hsusb.h
-+++ b/include/linux/usb/msm_hsusb.h
-@@ -100,8 +100,9 @@ enum usb_chg_type {
- /**
-  * struct msm_otg_platform_data - platform device data
-  *              for msm_otg driver.
-- * @phy_init_seq: PHY configuration sequence. val, reg pairs
-- *              terminated by -1.
-+ * @phy_init_seq: PHY configuration sequence values. Value of -1 is reserved as
-+ *              "do not overwrite default vaule at this address".
-+ * @phy_init_sz: PHY configuration sequence size.
-  * @vbus_power: VBUS power on/off routine.
-  * @power_budget: VBUS power budget in mA (0 will be treated as 500mA).
-  * @mode: Supported mode (OTG/peripheral/host).
-@@ -109,6 +110,7 @@ enum usb_chg_type {
-  */
- struct msm_otg_platform_data {
- 	int *phy_init_seq;
-+	int phy_init_sz;
- 	void (*vbus_power)(bool on);
- 	unsigned power_budget;
- 	enum usb_dr_mode mode;
---
-1.8.3.2
+I don't know if you're building from upstream or basing on the Fedora
+Rawhide kernel, but if you're doing the latter, you need to use a very
+recent build or revert the patch that adds the hid-rmi driver that's
+queued for 3.16 upstream, or else you'll run into a *different* bug that
+breaks the touchscreen, btw. I kinda assumed I'm the only one building
+modified Fedora kernels and everyone else is just building the upstream
+code directly, but maybe not.
+-- 
+Adam Williamson
+Fedora QA Community Monkey
+IRC: adamw | Twitter: AdamW_Fedora | XMPP: adamw AT happyassassin . net
+http://www.happyassassin.net
 
