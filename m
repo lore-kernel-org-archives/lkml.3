@@ -1,126 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282AbaDXWSn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:18:43 -0400
-Received: from g4t3426.houston.hp.com ([15.201.208.54]:14004 "EHLO
-	g4t3426.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752619AbaDXWSk (ORCPT
+	id S1758570AbaDXWTA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:19:00 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:37851 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758050AbaDXWSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:18:40 -0400
-Message-ID: <1398377917.3509.32.camel@j-VirtualBox>
-Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
- whenever newidle balance is attempted
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        alex.shi@linaro.org, efault@gmx.de, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
-Date: Thu, 24 Apr 2014 15:18:37 -0700
-In-Reply-To: <20140424171453.GZ11096@twins.programming.kicks-ass.net>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
-	 <1398303035-18255-2-git-send-email-jason.low2@hp.com>
-	 <5358E417.8090503@linux.vnet.ibm.com>
-	 <20140424120415.GS11096@twins.programming.kicks-ass.net>
-	 <20140424124438.GT13658@twins.programming.kicks-ass.net>
-	 <1398358417.3509.11.camel@j-VirtualBox>
-	 <20140424171453.GZ11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 24 Apr 2014 18:18:54 -0400
+Date: Thu, 24 Apr 2014 15:18:52 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Jiri Kosina <jkosina@suse.cz>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, akpm@linux-foundation.org, cxie@redhat.com,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] printk: Print cpu number along with time
+In-Reply-To: <alpine.LNX.2.00.1404250005020.8903@pobox.suse.cz>
+Message-ID: <alpine.DEB.2.02.1404241518210.24983@chino.kir.corp.google.com>
+References: <20140423125352.704f9fb2@annuminas.surriel.com> <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz> <20140424005247.GA17713@logfs.org> <20140424194024.GA25446@logfs.org> <20140424195821.GA3092@kroah.com>
+ <alpine.LNX.2.00.1404250005020.8903@pobox.suse.cz>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-24 at 19:14 +0200, Peter Zijlstra wrote:
-> On Thu, Apr 24, 2014 at 09:53:37AM -0700, Jason Low wrote:
+On Fri, 25 Apr 2014, Jiri Kosina wrote:
+
+> > > +#ifdef CONFIG_PRINTK_CPU
+> > > +	if (!buf)
+> > > +		return snprintf(NULL, 0, "[%5lu.000000,%02x] ",
 > > 
-> > So I thought that the original rationale (commit 1bd77f2d) behind
-> > updating rq->next_balance in idle_balance() is that, if we are going
-> > idle (!pulled_task), we want to ensure that the next_balance gets
-> > calculated without the busy_factor.
-> > 
-> > If the rq is busy, then rq->next_balance gets updated based on
-> > sd->interval * busy_factor. However, when the rq goes from "busy"
-> > to idle, rq->next_balance might still have been calculated under
-> > the assumption that the rq is busy. Thus, if we are going idle, we
-> > would then properly update next_balance without the busy factor
-> > if we update when !pulled_task.
-> > 
+> > %02x for a cpu?  What happens on machines with 8k cpus?
 > 
-> Its late here and I'm confused!
+> Ummm ... what issue do you see here, Greg? It'll print 0x1f40, no?
 > 
-> So the for_each_domain() loop calculates a new next_balance based on
-> ->balance_interval (which has that busy_factor on, right).
+
+I think he's referring to the alignment with %02x.
+
+> > And is this really an issue?  Debugging by using printk is fun, but not 
+> > really something that people need to add a cpu number to.  Why not just 
+> > use a tracepoint in your code to get the needed information instead?
 > 
-> But if it fails to pull anything, we'll (potentially) iterate the entire
-> tree up to the largest domain; and supposedly set next_balanced to the
-> largest possible interval.
+> Well, if you have dmesg dump from panic that happens every other year, and 
+> you have to do post-mortem analysis on it, I am pretty sure you would love 
+> to be able to figure out how the stack traces would look like without 
+> inter-CPU interleaving. And I am pretty sure you wouldn't want to 
+> insert/enable a tracepoint and wait another two years for the bug to 
+> trigger again.
 > 
-> So when we go from busy to idle (!pulled_task), we actually set
-> ->next_balance to the longest interval. Whereas the commit you
-> referenced says it sets it to a shorter while.
-> 
-> Not seeing it.
 
-So this is the way I understand that code:
-
-In rebalance_domain, next_balance is suppose to be set to the
-minimum of all sd->last_balance + interval so that we properly call
-into rebalance_domains() if one of the domains is due for a balance.
-
-In the domain traversals:
-
-	if (time_after(next_balance, sd->last_balance + interval))
-		next_balance = sd->last_balance + interval;
-
-we update next_balance to a new value if the current next_balance
-is after, and we only update next_balance to a smaller value.
-
-In rebalance_domains, we have code:
-
-	interval = sd->balance_interval;
-	if (idle != CPU_IDLE)
-		interval *= sd->busy_factor;
-
-	...
-
-	if (time_after(next_balance, sd->last_balance + interval)) {
-		next_balance = sd->last_balance + interval;
-
-	...
-
-	rq->next_balance = next_balance;
-
-In the CPU_IDLE case, interval would not include the busy factor,
-whereas in the !CPU_IDLE case, we multiply the interval by the
-sd->busy_factor.
-
-So as an example, if a CPU is not idle and we run this:
-
-rebalance_domain()
-	interval = 1 ms;
-	if (idle != CPU_IDLE)
-		interval *= 64;
-
-	next_balance = sd->last_balance + 64 ms
-
-	rq->next_balance = next_balance
-
-The rq->next_balance is set to a large value since the CPU is not idle.
-
-Then, let's say the CPU then goes idle 1 ms later. The
-rq->next_balance can be up to 63 ms later, because we computed
-it when the CPU is not idle. Now that we are going idle,
-we would have to wait a long time for the next balance.
-
-So I believe that the initial reason why rq->next_balance was
-updated in idle_balance is that if the CPU is in the process 
-of going idle (!pulled_task in idle_balance()), we can reset the
-rq->next_balance based on the interval = 1 ms, as oppose to
-having it remain up to 64 ms later (in idle_balance(), interval
-doesn't get multiplied by sd->busy_factor).
-
-
-
+Sounds like the appropriate fix would be to serialize stack dumping to the 
+kernel log.
