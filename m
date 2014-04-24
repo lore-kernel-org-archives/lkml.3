@@ -1,116 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755875AbaDXJPk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:15:40 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:55545 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753364AbaDXJPh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 05:15:37 -0400
-Message-ID: <5358D635.7010809@ti.com>
-Date: Thu, 24 Apr 2014 12:15:33 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: <lee.jones@linaro.org>
-CC: <sameo@linux.intel.com>, <devicetree@vger.kernel.org>,
-        <linux-doc@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] mfd: twl6040: Optional clk32k clock handling
-References: <1396522482-32036-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1396522482-32036-1-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	id S1755004AbaDXI4L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:56:11 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46950 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752970AbaDXIzl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 04:55:41 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Lennart Poettering <lpoetter@redhat.com>,
+        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 137/182] wait: fix reparent_leader() vs EXIT_DEAD->EXIT_ZOMBIE race
+Date: Thu, 24 Apr 2014 09:51:02 +0100
+Message-Id: <1398329507-5911-138-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee,
+3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-On 04/03/2014 01:54 PM, Peter Ujfalusi wrote:
-> In certain boards the source for the clk32k clock can be gated. In these
-> boards the clk32k clock can be provided to the driver and it is going to be
-> enabled/disabled when it is needed.
-> If the clk32k clock is not provided the driver will assume that it is always
-> running.
+------------------
 
-Do you want me to resend this patch, it seams to be missing from next still.
+From: Oleg Nesterov <oleg@redhat.com>
 
-Thanks,
-Péter
+commit dfccbb5e49a621c1b21a62527d61fc4305617aca upstream.
 
-> 
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  Documentation/devicetree/bindings/mfd/twl6040.txt |  2 ++
->  drivers/mfd/twl6040.c                             | 10 ++++++++++
->  include/linux/mfd/twl6040.h                       |  2 ++
->  3 files changed, 14 insertions(+)
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/twl6040.txt b/Documentation/devicetree/bindings/mfd/twl6040.txt
-> index 0f5dd709d752..a41157b5d930 100644
-> --- a/Documentation/devicetree/bindings/mfd/twl6040.txt
-> +++ b/Documentation/devicetree/bindings/mfd/twl6040.txt
-> @@ -19,6 +19,8 @@ Required properties:
->  
->  Optional properties, nodes:
->  - enable-active-high: To power on the twl6040 during boot.
-> +- clocks: phandle to the clk32k clock provider
-> +- clock-names: Must be "clk32k"
->  
->  Vibra functionality
->  Required properties:
-> diff --git a/drivers/mfd/twl6040.c b/drivers/mfd/twl6040.c
-> index 2e6504a8e1e3..12b314ea48dc 100644
-> --- a/drivers/mfd/twl6040.c
-> +++ b/drivers/mfd/twl6040.c
-> @@ -291,6 +291,8 @@ int twl6040_power(struct twl6040 *twl6040, int on)
->  		if (twl6040->power_count++)
->  			goto out;
->  
-> +		clk_prepare_enable(twl6040->clk32k);
-> +
->  		/* Allow writes to the chip */
->  		regcache_cache_only(twl6040->regmap, false);
->  
-> @@ -346,6 +348,8 @@ int twl6040_power(struct twl6040 *twl6040, int on)
->  
->  		twl6040->sysclk = 0;
->  		twl6040->mclk = 0;
-> +
-> +		clk_disable_unprepare(twl6040->clk32k);
->  	}
->  
->  out:
-> @@ -644,6 +648,12 @@ static int twl6040_probe(struct i2c_client *client,
->  
->  	i2c_set_clientdata(client, twl6040);
->  
-> +	twl6040->clk32k = devm_clk_get(&client->dev, "clk32k");
-> +	if (IS_ERR(twl6040->clk32k)) {
-> +		dev_info(&client->dev, "clk32k is not handled\n");
-> +		twl6040->clk32k = NULL;
-> +	}
-> +
->  	twl6040->supplies[0].supply = "vio";
->  	twl6040->supplies[1].supply = "v2v1";
->  	ret = devm_regulator_bulk_get(&client->dev, TWL6040_NUM_SUPPLIES,
-> diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
-> index a69d16b30c18..8f9fc3d26e6d 100644
-> --- a/include/linux/mfd/twl6040.h
-> +++ b/include/linux/mfd/twl6040.h
-> @@ -28,6 +28,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/mfd/core.h>
->  #include <linux/regulator/consumer.h>
-> +#include <linux/clk.h>
->  
->  #define TWL6040_REG_ASICID		0x01
->  #define TWL6040_REG_ASICREV		0x02
-> @@ -223,6 +224,7 @@ struct twl6040 {
->  	struct regmap *regmap;
->  	struct regmap_irq_chip_data *irq_data;
->  	struct regulator_bulk_data supplies[2]; /* supplies for vio, v2v1 */
-> +	struct clk *clk32k;
->  	struct mutex mutex;
->  	struct mutex irq_mutex;
->  	struct mfd_cell cells[TWL6040_CELLS];
-> 
+wait_task_zombie() first does EXIT_ZOMBIE->EXIT_DEAD transition and
+drops tasklist_lock.  If this task is not the natural child and it is
+traced, we change its state back to EXIT_ZOMBIE for ->real_parent.
+
+The last transition is racy, this is even documented in 50b8d257486a
+"ptrace: partially fix the do_wait(WEXITED) vs EXIT_DEAD->EXIT_ZOMBIE
+race".  wait_consider_task() tries to detect this transition and clear
+->notask_error but we can't rely on ptrace_reparented(), debugger can
+exit and do ptrace_unlink() before its sub-thread sets EXIT_ZOMBIE.
+
+And there is another problem which were missed before: this transition
+can also race with reparent_leader() which doesn't reset >exit_signal if
+EXIT_DEAD, assuming that this task must be reaped by someone else.  So
+the tracee can be re-parented with ->exit_signal != SIGCHLD, and if
+/sbin/init doesn't use __WALL it becomes unreapable.
+
+Change reparent_leader() to update ->exit_signal even if EXIT_DEAD.
+Note: this is the simple temporary hack for -stable, it doesn't try to
+solve all problems, it will be reverted by the next changes.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Jan Kratochvil <jan.kratochvil@redhat.com>
+Reported-by: Michal Schmidt <mschmidt@redhat.com>
+Tested-by: Michal Schmidt <mschmidt@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Lennart Poettering <lpoetter@redhat.com>
+Cc: Roland McGrath <roland@hack.frob.com>
+Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ kernel/exit.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/exit.c b/kernel/exit.c
+index b79d882..dcde2c4 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -559,9 +559,6 @@ static void reparent_leader(struct task_struct *father, struct task_struct *p,
+ 				struct list_head *dead)
+ {
+ 	list_move_tail(&p->sibling, &p->real_parent->children);
+-
+-	if (p->exit_state == EXIT_DEAD)
+-		return;
+ 	/*
+ 	 * If this is a threaded reparent there is no need to
+ 	 * notify anyone anything has happened.
+@@ -569,9 +566,19 @@ static void reparent_leader(struct task_struct *father, struct task_struct *p,
+ 	if (same_thread_group(p->real_parent, father))
+ 		return;
+ 
+-	/* We don't want people slaying init.  */
++	/*
++	 * We don't want people slaying init.
++	 *
++	 * Note: we do this even if it is EXIT_DEAD, wait_task_zombie()
++	 * can change ->exit_state to EXIT_ZOMBIE. If this is the final
++	 * state, do_notify_parent() was already called and ->exit_signal
++	 * doesn't matter.
++	 */
+ 	p->exit_signal = SIGCHLD;
+ 
++	if (p->exit_state == EXIT_DEAD)
++		return;
++
+ 	/* If it has exited notify the new parent about this child's death. */
+ 	if (!p->ptrace &&
+ 	    p->exit_state == EXIT_ZOMBIE && thread_group_empty(p)) {
+-- 
+1.9.1
+
