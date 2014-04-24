@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757161AbaDXNcY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:32:24 -0400
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:60004 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755826AbaDXNbV convert rfc822-to-8bit (ORCPT
+	id S1757323AbaDXNd3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:33:29 -0400
+Received: from mail-ve0-f172.google.com ([209.85.128.172]:53170 "EHLO
+	mail-ve0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001AbaDXNdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:31:21 -0400
+	Thu, 24 Apr 2014 09:33:20 -0400
 MIME-Version: 1.0
-In-Reply-To: <2784123.GhF2tcctEM@vostro.rjw.lan>
-References: <liocsk$le0$1@ger.gmane.org>
-	<20140424052151.GA9449@sucs.org>
-	<2784123.GhF2tcctEM@vostro.rjw.lan>
-Date: Thu, 24 Apr 2014 16:31:19 +0300
-Message-ID: <CAPWNY8X3fVAM3kcdWmg0BcQuNw84ROY+wQsh-JzfxGEt1uWFQQ@mail.gmail.com>
-Subject: Re: [REGRESSION] Media keys cause "ACPI: \_SB_.ATKD: Unsupported
- event" on ASUS laptop
-From: =?UTF-8?Q?Mantas_Mikul=C4=97nas?= <grawity@gmail.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Sitsofe Wheeler <sitsofe@yahoo.com>, Len Brown <lenb@kernel.org>,
-        Robert Moore <robert.moore@intel.com>, Lv Zheng <lv.zheng@intel.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20140424103639.GC19564@arm.com>
+References: <1397648803-15961-1-git-send-email-steve.capper@linaro.org>
+	<20140424102229.GA28014@linaro.org>
+	<20140424103639.GC19564@arm.com>
+Date: Thu, 24 Apr 2014 08:33:19 -0500
+Message-ID: <CAL_JsqLC4GzVXQ0ei26JEn5cL9JdmfYUr31_qGgUvU2HyezBWQ@mail.gmail.com>
+Subject: Re: [PATCH V2 0/5] Huge pages for short descriptors on ARM
+From: Rob Herring <robherring2@gmail.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Steve Capper <steve.capper@linaro.org>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "gerald.schaefer@de.ibm.com" <gerald.schaefer@de.ibm.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 1:51 PM, Rafael J. Wysocki <rjw@rjwysocki.net> wrote:
-> On Thursday, April 24, 2014 06:21:52 AM Sitsofe Wheeler wrote:
->> On Thu, Apr 17, 2014 at 02:11:15PM +0300, Mantas Mikulėnas wrote:
->> > After commit 1a699476e258 [two months ago], Linux has stopped
->> > recognizing the media & function keys on my laptop's keyboard (the
->> > laptop is ASUS K52JT.206).
->> >
->> > When I press any of the Fn keys (Play/Pause, Stop, Prev, Next, Vol+,
->> > Vol-, Mute, WiFi, Brightness +/-...), I get the following messages in dmesg:
->> >
->> > | ACPI: \_SB_.ATKD: Unsupported event type 0x45
->> > | ACPI: \_SB_.ATKD: Unsupported event type 0x43
->> > | ACPI: \_SB_.ATKD: Unsupported event type 0x40
->> > | etc.
+On Thu, Apr 24, 2014 at 5:36 AM, Will Deacon <will.deacon@arm.com> wrote:
+> Hi Steve,
+>
+> On Thu, Apr 24, 2014 at 11:22:29AM +0100, Steve Capper wrote:
+>> On Wed, Apr 16, 2014 at 12:46:38PM +0100, Steve Capper wrote:
+
+[...]
+
+>> I'm not sure how to proceed with these patches. I was thinking that
+>> they could be picked up into linux-next? If that sounds reasonable;
+>> Andrew, would you like to take the mm/ patch and Russell could you
+>> please take the arch/arm patches?
 >>
->> I'm seeing the same problem with an EeePC 900's volume and brightness
->> keys:
->> [ 90.098518] ACPI: \_SB_.ATKD: Unsupported event type 0x14
->> [   90.785202] ACPI: \_SB_.ATKD: Unsupported event type 0x15
->> [  457.062072] ACPI: \_SB_.ATKD: Unsupported event type 0x2e
->> [  457.926754] ACPI: \_SB_.ATKD: Unsupported event type 0x2d
->> [  458.418740] ACPI: \_SB_.ATKD: Unsupported event type 0x2c
->> [  458.821482] ACPI: \_SB_.ATKD: Unsupported event type 0x2b
->> [  459.240896] ACPI: \_SB_.ATKD: Unsupported event type 0x2a
+>> Also, I was hoping to get these into 3.16. Are there any objections to
+>> that?
 >
-> Does this patch help:
->
-> ---
->  drivers/acpi/bus.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
+> Who is asking for this code? We already support hugepages for LPAE systems,
+> so this would be targetting what? A9? I'm reluctant to add ~400 lines of
+> subtle, low-level mm code to arch/arm/ if it doesn't have any active users.
 
-Yes, it seems to be working fine.
+I can't really speak to the who so much anymore. I can say on the
+server front, it was not only Calxeda asking for this.
 
+Presumably there are also performance benefits on older systems even
+with 128MB-1GB of RAM. Given that KVM guests can only use 3GB of RAM,
+enabling LPAE in guest kernels has little benefit. So this may still
+be useful on LPAE capable systems. Also, Oracle Java will use
+hugetlbfs if available and Java performance needs all the help it can
+get.
 
-Thanks!
+> I guess I'm after some commitment that this is (a) useful to somebody and
+> (b) going to be tested regularly, otherwise it will go the way of things
+> like big-endian, where we end up carrying around code which is broken more
+> often than not (although big-endian is more self-contained).
 
--- 
-Mantas Mikulėnas <grawity@gmail.com>
+One key difference here is enabling THP is or should be transparent
+(to state the obvious) to users. While the BE code itself may be
+self-contained, using BE is very much not in that category.
+Potentially every driver on a platform could be broken for BE. Case in
+point, the Calxeda xgmac driver is broken on BE due to using __raw i/o
+accessors instead of relaxed variants.
+
+Rob
