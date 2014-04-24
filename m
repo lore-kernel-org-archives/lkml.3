@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757975AbaDXOpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:45:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:60024 "EHLO bear.ext.ti.com"
+	id S1757621AbaDXOrk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:47:40 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:43193 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757519AbaDXOpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:45:49 -0400
-Date: Thu, 24 Apr 2014 09:45:33 -0500
+	id S1755990AbaDXOri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 10:47:38 -0400
+Date: Thu, 24 Apr 2014 09:47:17 -0500
 From: Felipe Balbi <balbi@ti.com>
 To: Chanwoo Choi <cw00.choi@samsung.com>
 CC: <linux-kernel@vger.kernel.org>, <myungjoo.ham@samsung.com>, <balbi@ti.com>,
         <gg@slimlogic.co.uk>, <kishon@ti.com>,
         <ckeepax@opensource.wolfsonmicro.com>, <broonie@kernel.org>,
-        <k.kozlowski@samsung.com>, <kyungmin.park@samsung.com>
-Subject: Re: [PATCHv3 3/9] extcon: max8997: Use devm_extcon_dev_allocate for
+        <k.kozlowski@samsung.com>, <kyungmin.park@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCHv3 9/9] extcon: palmas: Use devm_extcon_dev_allocate for
  extcon_dev
-Message-ID: <20140424144533.GH26661@saruman.home>
+Message-ID: <20140424144717.GI26661@saruman.home>
 Reply-To: <balbi@ti.com>
 References: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
- <1398342897-23670-4-git-send-email-cw00.choi@samsung.com>
+ <1398342897-23670-10-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FUaywKC54iCcLzqT"
+	protocol="application/pgp-signature"; boundary="PMULwz+zIGJzpDN9"
 Content-Disposition: inline
-In-Reply-To: <1398342897-23670-4-git-send-email-cw00.choi@samsung.com>
+In-Reply-To: <1398342897-23670-10-git-send-email-cw00.choi@samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---FUaywKC54iCcLzqT
+--PMULwz+zIGJzpDN9
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Apr 24, 2014 at 09:34:51PM +0900, Chanwoo Choi wrote:
+On Thu, Apr 24, 2014 at 09:34:57PM +0900, Chanwoo Choi wrote:
 > This patch use devm_extcon_dev_allocate() to simplify the memory control
 > of extcon device.
 >=20
+> Cc: Graeme Gregory <gg@slimlogic.co.uk>
+> Cc: Kishon Vijay Abraham I <kishon@ti.com>
+> Cc: Felipe Balbi <balbi@ti.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
 > Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/extcon/extcon-max8997.c | 5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
->=20
-> diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8=
-997.c
-> index 804a446..e2ee2f5 100644
-> --- a/drivers/extcon/extcon-max8997.c
-> +++ b/drivers/extcon/extcon-max8997.c
-> @@ -699,8 +699,7 @@ static int max8997_muic_probe(struct platform_device =
-*pdev)
->  	}
-> =20
->  	/* External connector */
-> -	info->edev =3D devm_kzalloc(&pdev->dev, sizeof(struct extcon_dev),
-> -				  GFP_KERNEL);
-> +	info->edev =3D devm_extcon_dev_allocate(&pdev->dev, max8997_extcon_cabl=
-e);
->  	if (!info->edev) {
+> Acked-by: Lee Jones <lee.jones@linaro.org>
 
-and here you never check for IS_ERR(info->evdev)
+Tested-by: Felipe Balbi <balbi@ti.com>
 
-NAK
-
-I suspect all following patches have the same defect.
+*BUT* you need to fix NULL vs ERR_PTR return in your code. The way this
+is, we can easily dereference an ERR_PTR because the code doesn't test
+for it. I suggest always returning valid pointer or ERR_PTR and avoid
+returning NULL at all.
 
 --=20
 balbi
 
---FUaywKC54iCcLzqT
+--PMULwz+zIGJzpDN9
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTWSONAAoJEIaOsuA1yqRE36UP/Rl7i8pmm6IkKKql5aje4Qdq
-zZUiy3xo7CuVPnWp4E8SWDAOo6T+D2rfzQMxlh9PBfcI//QchCV54ZhaHsVwDjxw
-YhQAR9WjMfCF5reXY1rlrWUZbEei3DJpiJXFs9D/z4JtpIvT5qZA7vf21pt94eE9
-QLY+PYlU51vecGp3MQF88ka0iBRgQhB3T5uUsV/C36XYf+wYSYqgPLGPO6ULJomV
-0LZFv8EMne/LrEZPDEJF8jzF0c7t6nWIxSCdnw1H8wVt/MSbhwfrtlDhXNoB17ej
-mqgpKxxJkNTA+ecnx2YnWH2+s6zKXcwDpXmQ3k5gY2UDNlDZAQICKoveeSd+aV41
-+Z2M0tuJKkv9snQ3JiU0jE5Kuv/xhJK48V9t/U+9CMJ5w5UmboEBUpDfXplHX/1N
-qoWH1NwuzXejNkhsPhHTcMwplvx1+D9Xqs/BSrn4AGaQV0GvXglz5/gsc+YjAwXZ
-M7GuiHu8jo47Blq9xLweJiW9s1TgvzcsWzlazbxt+G7ud8r+zgiIcMvbZB2a+w6F
-91eAzsce5cTcpOKNsP2HJsvsDQzIng8YaYAs4BRGJgnd3l8/pfDWcVBqVT40B6P/
-I9hcDri1zTJJY+8jrnDuSWEreTPswReyEIzsa7mbZ0QdJUJTHBcgRwXXFycxKWyQ
-691ME1Z5cAntw6L2icXP
-=Bz0l
+iQIcBAEBAgAGBQJTWSP1AAoJEIaOsuA1yqREEh0P/iU6OC0q9XwjDmwupJPrf2As
+5owMg5SqFjpSqtFcNKWMXJALWGniBJ6UF/KAb2AIRmY7RrndK5AUDdbgSS9Miiwb
+qLzpkeUD6xnsv7SxeZZ1DFXEzyNNQzaECG1W2oZYcM1JiODtQAKs2eWF9Wa72CJG
+VHNelkxPjjNfqbKMJhzA15fcUPgjEUWaC9KLQ0e6zPE1gI/yPlpPiqEBwzwP5LhL
+hikDYe5d+Lsz7hHl99d4vOqPNvmgFeeXVh53Vq+9vIspWqaCsqh386AACKCZZ859
+ANTOdc3KDrdDZjolAmpS6pdVbgn0GV3e2U3uof33G4PeUvKREJm9t/Zvmv7/3hEv
+NE2abRRzmAEX9jusZuuSg8zwnjbjwhKZwW9oiszypudz/p5nTkQCHw99j79V4Vsu
+1LRDWhc27C6fwEQm8hF6c8hPWgZRBM6kwF8yL3T4HwgLvFet/s/YJNmhb+/5BjlG
+w6NETzpHbjSiru3pRzst6JG9cXZ096Ejb64EtqgDfdZHEnBoGHGx/Z+yFd/htkVF
+f/zT63+7m9TEFcL0bEhk23eB750Nf7AaLpqGwsMdgmRB4VklAI4pultegiMinpiv
+60UoNms7SQORZHuIsu3mo6jVJWxAjHCSHtlIIOXMmzRUy09RtukXUlHrJbE06yib
+j7qToWJZr6AVsgSHKqDz
+=8HnA
 -----END PGP SIGNATURE-----
 
---FUaywKC54iCcLzqT--
+--PMULwz+zIGJzpDN9--
