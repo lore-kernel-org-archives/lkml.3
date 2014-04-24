@@ -1,111 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756425AbaDXLhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:37:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46418 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753635AbaDXIwx (ORCPT
+	id S1756623AbaDXLi2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:38:28 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:54172 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753891AbaDXLiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:53 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>,
-        Kamlakant Patel <kamlakant.patel@broadcom.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 041/182] jffs2: Fix crash due to truncation of csize
-Date: Thu, 24 Apr 2014 09:49:26 +0100
-Message-Id: <1398329507-5911-42-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 07:38:19 -0400
+Message-ID: <5358F7A3.1000108@hitachi.com>
+Date: Thu, 24 Apr 2014 20:38:11 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -tip v9 25/26] kprobes: Introduce kprobe cache to reduce
+ cache misshits
+References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140417081931.26341.47154.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140424090134.GC7768@gmail.com>
+In-Reply-To: <20140424090134.GC7768@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+(2014/04/24 18:01), Ingo Molnar wrote:
+> 
+> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>> Introduce kprobe cache to reduce cache misshits for
+>> massive multiple kprobes.
+>> For stress testing kprobes, we need to activate kprobes
+>> as many as possible. This situation causes cache miss
+>> hit storm on kprobe hash-list. kprobe hashlist is already
+>> enlarged to 4k entries and this is still small for 40k
+>> kprobes.
+>>
+>> For example, when registering 40k probes on the hlist and
+>> enabling 20k probes, perf tools shows still a lot of
+>> cache-misses are on the get_kprobe.
+>>   ----
+>>   Samples: 633  of event 'cache-misses', Event count (approx.): 3414776
+>>   +  68.13%  [k] get_kprobe
+>>   +   4.38%  [k] ftrace_lookup_ip
+>>   +   2.54%  [k] kprobe_ftrace_handler
+>>   ----
+>>
+>> Also, I found that the most of the kprobes are not hit.
+>> In that case, to reduce cache-misses, we can reduce the
+>> random memory access by introducing a per-cpu cache which
+>> caches the address of frequently used kprobe data structure
+>> and its probe address.
+>>
+>> With kpcache enabled, the get_kprobe_cached goes down to
+>> around 4-5% of cache-misses with 20k probes.
+>>   ----
+>>   Samples: 729  of event 'cache-misses', Event count (approx.): 690125
+>>   +  14.49%  [k] ftrace_lookup_ip
+>>   +   5.61%  [k] kprobe_trace_func
+>>   +   5.17%  [k] kprobe_ftrace_handler
+>>   +   4.62%  [k] get_kprobe_cached
+>>   ----
+>>
+>> Of course this reduces the enabling time too.
+>>
+>> Without this fix (just enlarge hash table):
+>> (2934 sec, 1 min intervals for each 2000 probes enabled)
+>>
+>>   ----
+>>   Enabling trace events: start at 1393921862
+>>   0 1393921864 a2mp_chan_alloc_skb_cb_38581
+>>   ...
+>>   19999 1393924928 nfs4_open_confirm_done_11785
+>>   ----
+>>
+>> With this fix:
+>> (2025 sec, 1 min intervals for each 2000 probes enabled)
+> 
+> That's a nice speedup.
 
-------------------
+Thanks :)
 
-From: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
+> 
+> So I don't think this should be a Kconfig entry, just enable it 
+> unconditionally. That will further simplify the code.
 
-commit 41bf1a24c1001f4d0d41a78e1ac575d2f14789d7 upstream.
+Hmm, it consumes some amount of memory (36KB/core) just for the
+case of several thousand of kprobes. On enterprise servers and desktop
+it's OK, no problem. But I think, some embedded systems with small
+resources will not want that. So, how about enabling Kconfig by default?
 
-mounting JFFS2 partition sometimes crashes with this call trace:
+Thank you,
 
-[ 1322.240000] Kernel bug detected[#1]:
-[ 1322.244000] Cpu 2
-[ 1322.244000] $ 0   : 0000000000000000 0000000000000018 000000003ff00070 0000000000000001
-[ 1322.252000] $ 4   : 0000000000000000 c0000000f3980150 0000000000000000 0000000000010000
-[ 1322.260000] $ 8   : ffffffffc09cd5f8 0000000000000001 0000000000000088 c0000000ed300de8
-[ 1322.268000] $12   : e5e19d9c5f613a45 ffffffffc046d464 0000000000000000 66227ba5ea67b74e
-[ 1322.276000] $16   : c0000000f1769c00 c0000000ed1e0200 c0000000f3980150 0000000000000000
-[ 1322.284000] $20   : c0000000f3a80000 00000000fffffffc c0000000ed2cfbd8 c0000000f39818f0
-[ 1322.292000] $24   : 0000000000000004 0000000000000000
-[ 1322.300000] $28   : c0000000ed2c0000 c0000000ed2cfab8 0000000000010000 ffffffffc039c0b0
-[ 1322.308000] Hi    : 000000000000023c
-[ 1322.312000] Lo    : 000000000003f802
-[ 1322.316000] epc   : ffffffffc039a9f8 check_tn_node+0x88/0x3b0
-[ 1322.320000]     Not tainted
-[ 1322.324000] ra    : ffffffffc039c0b0 jffs2_do_read_inode_internal+0x1250/0x1e48
-[ 1322.332000] Status: 5400f8e3    KX SX UX KERNEL EXL IE
-[ 1322.336000] Cause : 00800034
-[ 1322.340000] PrId  : 000c1004 (Netlogic XLP)
-[ 1322.344000] Modules linked in:
-[ 1322.348000] Process jffs2_gcd_mtd7 (pid: 264, threadinfo=c0000000ed2c0000, task=c0000000f0e68dd8, tls=0000000000000000)
-[ 1322.356000] Stack : c0000000f1769e30 c0000000ed010780 c0000000ed010780 c0000000ed300000
-        c0000000f1769c00 c0000000f3980150 c0000000f3a80000 00000000fffffffc
-        c0000000ed2cfbd8 ffffffffc039c0b0 ffffffffc09c6340 0000000000001000
-        0000000000000dec ffffffffc016c9d8 c0000000f39805a0 c0000000f3980180
-        0000008600000000 0000000000000000 0000000000000000 0000000000000000
-        0001000000000dec c0000000f1769d98 c0000000ed2cfb18 0000000000010000
-        0000000000010000 0000000000000044 c0000000f3a80000 c0000000f1769c00
-        c0000000f3d207a8 c0000000f1769d98 c0000000f1769de0 ffffffffc076f9c0
-        0000000000000009 0000000000000000 0000000000000000 ffffffffc039cf90
-        0000000000000017 ffffffffc013fbdc 0000000000000001 000000010003e61c
-        ...
-[ 1322.424000] Call Trace:
-[ 1322.428000] [<ffffffffc039a9f8>] check_tn_node+0x88/0x3b0
-[ 1322.432000] [<ffffffffc039c0b0>] jffs2_do_read_inode_internal+0x1250/0x1e48
-[ 1322.440000] [<ffffffffc039cf90>] jffs2_do_crccheck_inode+0x70/0xd0
-[ 1322.448000] [<ffffffffc03a1b80>] jffs2_garbage_collect_pass+0x160/0x870
-[ 1322.452000] [<ffffffffc03a392c>] jffs2_garbage_collect_thread+0xdc/0x1f0
-[ 1322.460000] [<ffffffffc01541c8>] kthread+0xb8/0xc0
-[ 1322.464000] [<ffffffffc0106d18>] kernel_thread_helper+0x10/0x18
-[ 1322.472000]
-[ 1322.472000]
-Code: 67bd0050  94a4002c  2c830001 <00038036> de050218  2403fffc  0080a82d  00431824  24630044
-[ 1322.480000] ---[ end trace b052bb90e97dfbf5 ]---
 
-The variable csize in structure jffs2_tmp_dnode_info is of type uint16_t, but it
-is used to hold the compressed data length(csize) which is declared as uint32_t.
-So, when the value of csize exceeds 16bits, it gets truncated when assigned to
-tn->csize. This is causing a kernel BUG.
-Changing the definition of csize in jffs2_tmp_dnode_info to uint32_t fixes the issue.
-
-Signed-off-by: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
-Signed-off-by: Kamlakant Patel <kamlakant.patel@broadcom.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- fs/jffs2/nodelist.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/jffs2/nodelist.h b/fs/jffs2/nodelist.h
-index e4619b0..fa35ff7 100644
---- a/fs/jffs2/nodelist.h
-+++ b/fs/jffs2/nodelist.h
-@@ -231,7 +231,7 @@ struct jffs2_tmp_dnode_info
- 	uint32_t version;
- 	uint32_t data_crc;
- 	uint32_t partial_crc;
--	uint16_t csize;
-+	uint32_t csize;
- 	uint16_t overlapped;
- };
- 
 -- 
-1.9.1
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
