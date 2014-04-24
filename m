@@ -1,127 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173AbaDXP0R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:26:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49173 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569AbaDXP0M (ORCPT
+	id S1758099AbaDXP1S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:27:18 -0400
+Received: from mail-yk0-f180.google.com ([209.85.160.180]:48174 "EHLO
+	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757400AbaDXP1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:26:12 -0400
-Date: Thu, 24 Apr 2014 10:26:01 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Balaji T K <balajitk@ti.com>
-CC: <balbi@ti.com>, <chris@printf.net>, <ulf.hansson@linaro.org>,
-        <linux-mmc@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/5] mmc: host: omap_hsmmc: a few improvements
-Message-ID: <20140424152601.GR26661@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1395878690-9650-1-git-send-email-balbi@ti.com>
- <20140421173203.GH22794@saruman.home>
- <53568B04.4050703@ti.com>
- <20140422154858.GN5524@saruman.home>
- <53592BF5.6020104@ti.com>
+	Thu, 24 Apr 2014 11:27:15 -0400
+X-Greylist: delayed 79088 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Apr 2014 11:27:15 EDT
+Date: Thu, 24 Apr 2014 12:27:09 -0300
+From: Gustavo Padovan <gustavo@padovan.org>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: bluetooth-next 2014-04-24
+Message-ID: <20140424152709.GE7832@joana>
+Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
+	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
+	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="N+qDRRsDvMgizTft"
+	protocol="application/pgp-signature"; boundary="U+BazGySraz5kW0T"
 Content-Disposition: inline
-In-Reply-To: <53592BF5.6020104@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---N+qDRRsDvMgizTft
+
+--U+BazGySraz5kW0T
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Thu, Apr 24, 2014 at 08:51:25PM +0530, Balaji T K wrote:
-> On Tuesday 22 April 2014 09:18 PM, Felipe Balbi wrote:
-> >Hi,
-> >
-> >On Tue, Apr 22, 2014 at 09:00:12PM +0530, Balaji T K wrote:
-> >>On Monday 21 April 2014 11:02 PM, Felipe Balbi wrote:
-> >>>Hi,
-> >>>
-> >>>On Wed, Mar 26, 2014 at 07:04:45PM -0500, Felipe Balbi wrote:
-> >>>>this series lets us access the newer registers introduced
-> >>>>back in OMAP4 which give us some valid information about
-> >>>>the OMAP HSMMC IP like max block size, support for ADMA,
-> >>>>support for Retention.
-> >>>>
-> >>>>Right now, only setting max_blk_size correctly as supporting
-> >>>>ADMA and Retention will take a lot of work.
-> >>>>
-> >>>>Tested on OMAP5 uEVM.
-> >>>>
-> >>>>Felipe Balbi (5):
-> >>>>   mmc: host: omap_hsmmc: pass host as an argument
-> >>>>   mmc: host: omap_hsmmc: add reg_offset field
-> >>>>   mmc: host: omap_hsmmc: introduce new accessor functions
-> >>>>   mmc: host: omap_hsmmc: switch over to new accessors
-> >>>>   mmc: host: omap_hsmmc: set max_blk_size correctly
-> >>
-> >>Got mislead by your reply to this series, about the alternative way of
-> >>reading memory size from CAPA register
-> >
-> >sure, we can do that if you prefer, I just felt I wouldn't touch
-> > platforms I can't really test :-s
->=20
-> I think so, since those 3 newer registers are not documented for all plat=
-forms.
-> Not sure whether it is valid in those cases where it is not documented.
->=20
-> Since capa register has these info and can be applied uniformly across
-> all paltforms, I feel reading capa register is the way to go. Do you
-> still think there is a need for new api with no offset ?
+Hi John,
 
-that same HWINFO register gives you information about availability of
-ADMA or not.
+Here goes some patches for the -next release. There is nothing really speci=
+al
+for this pull request, just a bunch of refactors, fixes and clean ups.=20
 
-> >>>this has been here for almost a month, any comments ?
-> >>>
-> >>
-> >>Do you see any performance impact with this series ?
-> >
-> >in the normal case ? no... it helps only with large transfers
-> >
->=20
-> Do you have the numbers ?
-> Is it for read or write,
-> how large should the transfer size be ?
+Please pull, or let me know of any problems! Thanks.
 
-no numbers available... didn't save anything.
+	Gustavo
 
-> I couldn't get any performance improvements with this patch series,
-> Could you please share your test setup, may be I am missing something.
+---
+The following changes since commit e8b1ab9e6d30394e0df3e4f60bf56c4dc9bf0863:
 
-just OMAP5 uEVM with UHS-I memory card.
+  Bluetooth: Fix returning peer address in pending connect state (2014-03-2=
+6 09:31:33 -0700)
 
---=20
-balbi
+are available in the git repository at:
 
---N+qDRRsDvMgizTft
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.gi=
+t for-upstream
+
+for you to fetch changes up to 22e70786413ed05950207eda7be420c280b776d7:
+
+  Bluetooth: Remove hci_h4 unused defines (2014-04-24 11:55:26 -0300)
+
+----------------------------------------------------------------
+Andre Guedes (1):
+      Bluetooth: Use memdup_user in le_auto_conn_write()
+
+Bing Zhao (2):
+      Bluetooth: btmrvl: separate write-to-clear function from interrupt ha=
+ndler
+      Bluetooth: btmrvl: implement read-to-clear for SD8897 interrupts
+
+Johan Hedberg (15):
+      Bluetooth: Refactor advertising report processing into its own functi=
+on
+      Bluetooth: Move local identity address setting to a central place
+      Bluetooth: Fix LE responder/initiator address setting
+      Bluetooth: Add error mapping for Directed Advertising Timeout
+      Bluetooth: Don't send device found events during passive scanning
+      Bluetooth: Add scan_rsp parameter to mgmt_device_found()
+      Bluetooth: Add directed advertising support through connect()
+      Bluetooth: Merge ADV_IND/ADV_SCAN_IND and SCAN_RSP together
+      Bluetooth: Remove redundant NULL check
+      Bluetooth: Fix line splitting of mgmt_device_found parameters
+      Bluetooth: Don't send device found events for duplicate reports
+      Bluetooth: Store also RSSI for pending advertising reports
+      Bluetooth: Fix RSSI value in device found event from disabling scan
+      Bluetooth: Remove unnecessary NULL check in hci_inquiry_cache_update
+      Bluetooth: Fix address in unmergeable device found events
+
+Lukasz Rymanowski (3):
+      Bluetooth: Keep msec in DISCOV_INTERLEAVED_TIMEOUT
+      Bluetooth: Add new debugfs parameter
+      Bluetooth: Keep msec in DISCOV_LE_TIMEOUT
+
+Marcel Holtmann (1):
+      Bluetooth: Return EOPNOTSUPP for HCISETRAW ioctl command
+
+Mikel Astiz (3):
+      Bluetooth: Refactor hci_get_auth_req()
+      Bluetooth: Refactor code for outgoing dedicated bonding
+      Bluetooth: Request MITM Protection when initiator
+
+Petri Gynther (1):
+      Bluetooth: btmrvl: Fix btmrvl_send_module_cfg_cmd()
+
+Poulain, Loic (1):
+      Bluetooth: Remove hci_h4 unused defines
+
+Timo Mueller (1):
+      Bluetooth: Use MITM Protection when IO caps allow it
+
+ drivers/bluetooth/btmrvl_drv.h   |   4 +-
+ drivers/bluetooth/btmrvl_main.c  |  19 +++-
+ drivers/bluetooth/btmrvl_sdio.c  | 103 ++++++++++++++++----
+ drivers/bluetooth/btmrvl_sdio.h  |   3 +
+ drivers/bluetooth/hci_h4.c       |   7 --
+ include/net/bluetooth/hci.h      |   1 +
+ include/net/bluetooth/hci_core.h |  13 ++-
+ net/bluetooth/hci_conn.c         |  81 ++++++++++++++--
+ net/bluetooth/hci_core.c         |  20 ++--
+ net/bluetooth/hci_event.c        | 246 +++++++++++++++++++++++++++++++++++=
+------------
+ net/bluetooth/hci_sock.c         |  11 +--
+ net/bluetooth/lib.c              |   1 +
+ net/bluetooth/mgmt.c             |  36 ++++---
+ 13 files changed, 407 insertions(+), 138 deletions(-)
+
+
+
+--U+BazGySraz5kW0T
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTWS0JAAoJEIaOsuA1yqREvAAP/RIwXEg2eu1Zyokzylq5Fm6w
-f4S2M8wpKaoKKvi8QalZ31szXnLDC2jyEaHBmc7X0BPS2AZysnI8a/2dwOJ6QDDR
-Ftz+AtZJYQ5vSt5HYMvLgzzmQcIoAw7bEoKMqlrHEZFWEmyVCB7YCT1w2eYKrNWJ
-O5GAXJ6oZ11zw9byWEsa/W/NxhlqvJEW/tJZZIs0899/1MYxvYYBK/wnTwnQ7RsU
-UEob3vCNZdhoNFjYi4lTgrMVB8pH78W100Oii69a+lvNn/KkRrE2b6k7EvPdzirK
-U59Oq/GA1izde4hTH916Ai0BlVR9hTXg9W347QtvkYXSjkQHDN7+mWFs3BT9CTGd
-OsvrE8qlRw93lRf8UgzRL495nfrR1hwSDqP1JRqY6UHT8eC41UnKmHcIcUc8k8L7
-Yw6oXqE52I8QqhwD5Q7+D/qwBATwZxzotfzqqhjMiwvf8uPdXlnW5wk2AcsIKGvG
-/m6lM7kPLuGbhG6qHw9pxxxf5yEdjZ+lBwOycF1PHhXvKMR38/l63iEH85GyBVRL
-WP/0O3VlqKFI1fjZ+yfS2D1s4AkwGsfGm4fqJruPgSpPHqmNVzuXSxTLk71Ae5z/
-1mgV42M3lSO1hsJp0mvMQ3HFrKmO1RBO8qxlqyPGc+TQMuWxv6eG0bGPc05N3ktI
-dqy7NylSantxN9kwN1ZJ
-=dUdu
+iQIcBAEBAgAGBQJTWS1NAAoJEPs3PUX4s20ohvYP/RU10NTJw5n8If0Lu9kvaxPW
+uQcjFv79pN0CgjhoRaQQ9JAeAH5wWDJJYOspP5bqhTOr9yxsacyHxalW7AJFIxsb
+sm5goDObARrSGiPrCVvQVQSil/jUfBw7ksUwYwSEvFNkPs9L46kh0t06BSupg+JU
+gVxWL+6J0wOm/SDIIaW85awzbqriXf11z78uq402PtMiUemH2Sh2KTlkg/k2BH7n
+LNdOTZASRVQbgToGcIe/Rb9OtedUxcmFo5DfqGVrx/nYrowxx4FvJJLedfVd7KNG
+zgnaIM9XQDz/D8y+DUrtdOpHfSqP57gAEyb9A5H9/Ic9K2OeXevicDvxOtyWEKjT
+YgRrfxSKyeOYVG5XBXDRDMfpZfCUukhkoewcCBXOe49wT+c8nUyNxlUfGs0kS8hp
+8ZoKJhoX1SB6t9PkArjV7e47Gf/Q2E+se/RrmnRcTy6VEqCyc4ChgXqyqmSFjiSO
+Thm7rO/2I3qAJNOxJmruTOA9+vYNIgyglZGXuKlkFYqDsLjlUXTCywq7nXYaHbSt
+EsdQlLsS3D50dsTgdHa0l+hv4XuqsMe4Ctn3XWWZqgz6G4vwmQOdIMFdSwtXAh92
+rWxkiLsH9BWpZaIC4eeAwDwXgAe8JE86xyu7hijVLdkSeXDEWVSgVhRyBQ8GSC5V
+6lUsLNsHJYrRETtPi0Nq
+=lFEO
 -----END PGP SIGNATURE-----
 
---N+qDRRsDvMgizTft--
+--U+BazGySraz5kW0T--
