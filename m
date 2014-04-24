@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757321AbaDXNjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:39:42 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43923 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617AbaDXNjh (ORCPT
+	id S1756678AbaDXNls (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:41:48 -0400
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:36473 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753204AbaDXNlq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:39:37 -0400
-Date: Thu, 24 Apr 2014 14:39:20 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: alsa-devel@alsa-project.org, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
-        devicetree@vger.kernel.org, lgirdwood@gmail.com, robh+dt@kernel.org,
-        sbkim73@samsung.com, rdunlap@infradead.org, dianders@chromium.org
-Message-ID: <20140424133920.GA12304@sirena.org.uk>
-References: <1398243705-31151-1-git-send-email-tushar.behera@linaro.org>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fqxOrU+oVxTp8sLK"
-Content-Disposition: inline
-In-Reply-To: <1398243705-31151-1-git-send-email-tushar.behera@linaro.org>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V2] ASoC: SAMSUNG: Add sound card driver for Snow board
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Thu, 24 Apr 2014 09:41:46 -0400
+Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
+ output fields (v4)
+From: Namhyung Kim <namhyung@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20140423125828.GL5328@redhat.com>
+References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
+	 <20140422211647.GO8488@redhat.com> <87lhuwr2pk.fsf@sejong.aot.lge.com>
+	 <20140423125828.GL5328@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Apr 2014 22:41:39 +0900
+Message-ID: <1398346899.1681.18.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Don,
 
---fqxOrU+oVxTp8sLK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+2014-04-23 (수), 08:58 -0400, Don Zickus:
+> On Wed, Apr 23, 2014 at 03:15:35PM +0900, Namhyung Kim wrote:
+> > On Tue, 22 Apr 2014 17:16:47 -0400, Don Zickus wrote:
+> > > ./perf mem record -a grep -r foo /* > /dev/null
+> > > ./perf mem report -F overhead,symbol_daddr,pid -s symbol_daddr,pid --stdio 
+> > >
+> > > I was thinking I could sort everything based on the symbol_daddr and pid.
+> > > Then re-sort the output to display the highest 'symbol_daddr,pid' pair.
+> > > But it didn't seem to work that way.  Instead it seems like I get the
+> > > original sort just displayed in the -F format.
+> > 
+> > Could you please show me the output of your example?
+> 
+> 
+> # To display the perf.data header info, please use --header/--header-only
+> # options.
+> #
+> # Samples: 96K of event 'cpu/mem-loads/pp'
+> # Total weight : 1102938
+> # Sort order   : symbol_daddr,pid
+> #
+> # Overhead Data Symbol          Command:  Pid
+> # ........ ......................................................................
+> #
+>      0.00%  [k] 0xffff8807a8c1cf80 grep:116437
+>      0.00%  [k] 0xffff8807a8c8cee0 grep:116437
+>      0.00%  [k] 0xffff8807a8dceea0 grep:116437
+>      0.01%  [k] 0xffff8807a9298dc0 grep:116437
+>      0.01%  [k] 0xffff8807a934be40 grep:116437
+>      0.00%  [k] 0xffff8807a9416ec0 grep:116437
+>      0.02%  [k] 0xffff8807a9735700 grep:116437
+>      0.00%  [k] 0xffff8807a98e9460 grep:116437
+>      0.02%  [k] 0xffff8807a9afc890 grep:116437
+>      0.00%  [k] 0xffff8807aa64feb0 grep:116437
+>      0.02%  [k] 0xffff8807aa6b0030 grep:116437
 
-On Wed, Apr 23, 2014 at 02:31:45PM +0530, Tushar Behera wrote:
+Hmm.. it seems that it's exactly sorted by the data symbol addresses, so
+I don't see any problem here.  What did you expect?  If you want to see
+those symbol_daddr,pid pair to be sorted by overhead, you can use the
+one of -F or -s option only.
 
-> +Required properties:
-> +- compatible : Can be one of the following,
-> +			"google,snow-audio-max98090" or
-> +			"google,snow-audio-max98095"
-> +- samsung,i2s-controller: The phandle of the Samsung I2S0 controller
+IOW, "perf mem report -F overhead,symbol_daddr,pid" and "perf mem report
+-s symbol_daddr,pid" should show same result.  FYI but "perf mem report
+-F overhead,symbol_daddr,pid -s symbol_addr,pid" will be different.
 
-This should be any I2S controller, not just I2S0?
+It's due to a compatibility reason.  If -s option is used without -F
+option, it'll prepend 'overhead' sort key to preserve old behavior (adds
+the fields to output but sort by overhead only).
 
-> +- samsung,audio-codec: The phandle of the audio codec
+Thanks,
+Namhyung
 
-This binding only has one I2S controller and CODEC.  However...
 
-> +static struct snd_soc_dai_link snow_dai[] = {
-> +	{ /* Playback DAI i/f */
-> +		.name = "Playback",
-> +		.stream_name = "Playback",
-> +		.codec_dai_name = "HiFi",
-> +		.dai_fmt = SND_SOC_DAIFMT_I2S |
-> +				SND_SOC_DAIFMT_NB_NF |
-> +				SND_SOC_DAIFMT_CBS_CFS,
-> +	}, { /* Capture DAI i/f */
-> +		.name = "Capture",
-> +		.stream_name = "Capture",
-> +		.codec_dai_name = "HiFi",
-> +		.dai_fmt = SND_SOC_DAIFMT_I2S |
-> +				SND_SOC_DAIFMT_NB_NF |
-> +				SND_SOC_DAIFMT_CBS_CFS,
-> +	},
-> +};
-
-...for some reason we have separate capture and playback DAI links
-defined.  Why is that?  Also, why is the secondary I2S playback stream
-not supported (this may be a reason to restrict to only the one I2S
-interface)?
-
-Please also use subject lines consistent with the subsystem - NO NEED TO
-SHOUT.
-
---fqxOrU+oVxTp8sLK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTWRQFAAoJELSic+t+oim9FLEP/2a7HlgBLyAyhlBpVVq4cudI
-UXXiPqrnYEprtqB+UouodnWQDLcn7EuEIa2YiE9Z9YbzUmn/0rNusq1UBgzkgTZo
-OOSiKknpOqJmwHig39tXdoyW+Q3Gf2FP945rcHI38ogXDqYt6OVNCJ93wOutYBpf
-tKgejkbuSYLLB7ypk+x0xtmipWA6/0TLwf06CBGtICzWk7SoGdZP54rFtjacTEYJ
-x4XXlGMJX1Wp8vrRopSSHFWSMXet8m2lFvRgv8PIvHyQZsrvSGNS4v1hdSiqSoyH
-Vl0tp68YPcoK25RJojB0n4gPKoXi2ysqv1U3yvPtCXee+cUmaHv2P/HvR4VtVkMh
-uAaiDab6fbisJOPL3iSrZKgZulzLac9mUpO4Tqe09E7OdwJK4ffLXt/mBaPxh79A
-g+eScceRhWEpfy8nW5Kxe8/blRy8E/QX2H9Ray5e9k17tLCtfvnQ51uXM2bHt1EI
-bCDNz8wxJSRBWyU2UwjLqRTSAUYiC2HVEoYksDyIzycUZ+fyZyP1ryiPtEKZixgb
-fnRFyEeO5pn+HFH4ANxGp6UK2doZMLSFAvap6KSaIsHm4usZ9gLsgarMzdKCcLcL
-tmPea5SImfWgqKzh41Zy1pFmwzlyUhfoAD3AQgtcMQbkJHgFa1qFdRR53UApOyoh
-ncpz8pHpV7F85EYSLPwM
-=3Q3e
------END PGP SIGNATURE-----
-
---fqxOrU+oVxTp8sLK--
