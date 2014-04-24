@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751762AbaDXCKH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 22:10:07 -0400
-Received: from mail-pb0-f42.google.com ([209.85.160.42]:56276 "EHLO
-	mail-pb0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269AbaDXCKE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 22:10:04 -0400
-Message-ID: <53587280.4020101@gmail.com>
-Date: Thu, 24 Apr 2014 10:10:08 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Ben Hutchings <ben@decadent.org.uk>
-CC: Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, joe@perches.com, julia.lawall@lip6.fr,
-        dingtianhong@huawei.com, linux-kernel@vger.kernel.org,
-        jasowang@redhat.com, mst@redhat.com,
-        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
-        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
-        "Tao, Yue" <Yue.Tao@windriver.com>, zhuyj <zyjzyj2000@gmail.com>
-Subject: Re: in kernel 2.6.x, tun/tap nic supports vlan packets
-References: <534F4C1E.1000006@gmail.com> <20140417050228.GC8243@1wt.eu>	 <1398189237.7767.77.camel@deadeye.wl.decadent.org.uk>	 <53577036.2040307@gmail.com> <1398253309.7767.136.camel@deadeye.wl.decadent.org.uk>
-In-Reply-To: <1398253309.7767.136.camel@deadeye.wl.decadent.org.uk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1751480AbaDXCYX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 22:24:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44062 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751047AbaDXCYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 22:24:21 -0400
+Date: Thu, 24 Apr 2014 12:24:07 +1000
+From: NeilBrown <neilb@suse.de>
+To: <balbi@ti.com>
+Cc: Nishanth Menon <nm@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
+        <marcel@holtmann.org>, <gustavo@padovan.org>,
+        <johan.hedberg@gmail.com>, <jslaby@suse.cz>, <grant.likely@linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <devicetree@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH 10/13] tty: serial: omap: remove some dead code
+Message-ID: <20140424122407.106384bc@notabene.brown>
+In-Reply-To: <20140424014334.GD13374@saruman.home>
+References: <1398265117-11793-1-git-send-email-balbi@ti.com>
+	<1398265117-11793-10-git-send-email-balbi@ti.com>
+	<5357DDA8.4040206@ti.com>
+	<20140424084305.20c7f301@notabene.brown>
+	<20140423230121.GC10924@saruman.home>
+	<20140424101329.02e6a62f@notabene.brown>
+	<20140424012100.GB13374@saruman.home>
+	<20140424114115.51ab3f98@notabene.brown>
+	<20140424014334.GD13374@saruman.home>
+X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/X34t7Wbc9mHYz7pv8U.Qbv."; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 07:41 PM, Ben Hutchings wrote:
-> On Wed, 2014-04-23 at 15:48 +0800, zhuyj wrote:
->> On 04/23/2014 01:53 AM, Ben Hutchings wrote:
-> [...]
->>> For what it's worth, I would recommend against applying this.  I don't
->>> think even Red Hat has backported the VLAN changes, and they have been
->>> quite aggressive about backporting features to RHEL 6.
->> If we do not merge these patches, maybe RHEL 6 can not make tap driver
->> support vlan well.
-> RHEL 6 isn't based on 2.6.32.y, they do all their own backporting.
-Hi, Ben
+--Sig_/X34t7Wbc9mHYz7pv8U.Qbv.
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-It is well known that extraction vlan tag is not implemented in kernel 
-2.6.32.y.  Kernel 2.6.32.y depends on nic hardware to extract vlan tag.
-So if the patches are not applied, tap driver can not support vlan well.
+On Wed, 23 Apr 2014 20:43:34 -0500 Felipe Balbi <balbi@ti.com> wrote:
 
-Best Regards!
-Zhu Yanjun
-> Ben.
->
+> so, Ack for $subject or not ?
+>=20
 
+Just at the moment I'm finding it hard to care.
+So
+ Acked-by: NeilBrown <neilb@suse.de>
+
+Whatever....
+
+NeilBrown
+
+--Sig_/X34t7Wbc9mHYz7pv8U.Qbv.
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIVAwUBU1h1yDnsnt1WYoG5AQK/fBAAju+nejoMEvj1BptVeWVrZdHGPFUk/VGb
+9qVki2U5fkBC9kcPd1/5OzPnB7Kyztgh+XmDWwwBLCIhoAW8kdmi/sLWkxxppBf3
+3L5tkqPIfrxqTFbpGiog/lcmjwZ0lnpP5Ew9fpI3XqpMfQFiEtZEgiqV5wdiEpO9
+t1FIenW48PtiJnj3F3qh+p7Ghp/0xwHvdRDQkGGFkgKE40tMEgPKwBlFvRpeXawE
+IIcrHY9Mmmo6VOa+pV/STD8Eeuor+V8i8ZcVwLVksP5YY9cxCmXRjUCUkw0BI/4P
+jit7eDGDVW+9g5KdZK1PRIGg69JVBXRHUqn03Gd3JwP2becXv37KV7Sn4tQPk7ls
+JzkCVEqqDvFyAaVDGKv1ylz3HAIfGZsQ+HN+BSQfySDyOohuapJfBkpLESGkqUmZ
+/aCnWRa6BckaZcn6n//UiY91evvu5YGHb2+NchNg/WLftEf/nBuvoH2CO06gSp6j
+FdqWfMpALDekPitbHMkj9zvAiwPhArce7bswmXKWBa9r8XKvmHdSOKuV23ajV3y3
+qNcZKWzLold7etMiCNSTJllQF99n8SUJ6tjWUel0MKavau8FzBJzkcNWUMtGdEuy
+WCPoG17b0A2ex3awDeWybnPcETE7e+rsHhFtnIrD2C7TMRoXASGfJx9YX/UTbpfX
+xZbIlCrSkss=
+=tmpn
+-----END PGP SIGNATURE-----
+
+--Sig_/X34t7Wbc9mHYz7pv8U.Qbv.--
