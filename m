@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362AbaDXRIQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:08:16 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:60946 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758695AbaDXRIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:08:12 -0400
-Date: Thu, 24 Apr 2014 13:08:10 -0400 (EDT)
-Message-Id: <20140424.130810.1854514715764795522.davem@davemloft.net>
-To: zlim.lnx@gmail.com
-Cc: nico@fluxnic.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        joe@perches.com
-Subject: Re: [PATCH] smc91x: improve definition of debug macros
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1398222282-8926-1-git-send-email-zlim.lnx@gmail.com>
-References: <1398222282-8926-1-git-send-email-zlim.lnx@gmail.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 24 Apr 2014 10:08:12 -0700 (PDT)
+	id S932480AbaDXRIl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:08:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17309 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932410AbaDXRIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 13:08:37 -0400
+From: Denys Vlasenko <dvlasenk@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>
+Subject: [PATCH] uprobes/x86: Refuse to attach uprobe to "word-sized" branch insns
+Date: Thu, 24 Apr 2014 19:08:24 +0200
+Message-Id: <1398359304-26472-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zi Shen Lim <zlim.lnx@gmail.com>
-Date: Tue, 22 Apr 2014 20:04:42 -0700
+All branch insns on x86 can be prefixed with the operand-size
+override prefix, 0x66. It was only ever useful for performing
+jumps to 32-bit offsets in 16-bit code segments.
 
-> Redefine some macros that were conditioned upon SMC_DEBUG level.
-> 
-> By allowing compiler to verify parameters used by these macros
-> unconditionally, we can flag compilation failures.
-> 
-> Compiler will still optimize out the unused code path depending on
-> SMC_DEBUG, so this is a net gain.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> Signed-off-by: Zi Shen Lim <zlim.lnx@gmail.com>
+In 32-bit code, such instructions are useless since
+they cause IP truncation to 16 bits, and in case of call insns,
+they save only 16 bits of return address and misalign
+the stack pointer as a "bonus".
 
-Applied, thanks.
+In 64-bit code, such instructions are treated differently by Intel
+and AMD CPUs: Intel ignores the prefix altogether,
+AMD treats them the same as in 32-bit mode.
+
+Before this patch, the emulation code would execute
+the instructions as if they have no 0x66 prefix.
+
+With this patch, we refuse to attach uprobes to such insns.
+
+Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>
+---
+ arch/x86/kernel/uprobes.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+index ace2291..29b152d 100644
+--- a/arch/x86/kernel/uprobes.c
++++ b/arch/x86/kernel/uprobes.c
+@@ -582,6 +582,7 @@ static struct uprobe_xol_ops branch_xol_ops = {
+ /* Returns -ENOSYS if branch_xol_ops doesn't handle this insn */
+ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+ {
++	int i;
+ 	u8 opc1 = OPCODE1(insn);
+ 
+ 	/* has the side-effect of processing the entire instruction */
+@@ -612,6 +613,17 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+ 			return -ENOSYS;
+ 	}
+ 
++	/*
++	 * 16-bit overrides such as CALLW (66 e8 nn nn) are not supported.
++	 * Intel and AMD behavior differ in 64-bit mode: Intel ignores 66 prefix.
++	 * No one uses these insns.
++	 * Reject any branch insns with such prefix.
++	 */
++	for (i = 0; i < insn->prefixes.nbytes; i++) {
++		if (insn->prefixes.bytes[i] == 0x66)
++			return -ENOTSUPP;
++	}
++
+ 	auprobe->branch.opc1 = opc1;
+ 	auprobe->branch.ilen = insn->length;
+ 	auprobe->branch.offs = insn->immediate.value;
+-- 
+1.8.1.4
+
