@@ -1,166 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753291AbaDXI3C (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:29:02 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:38540 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752412AbaDXIYH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:24:07 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 06/11] perf tools: Account entry stats when it's added to the output tree
-Date: Thu, 24 Apr 2014 17:23:58 +0900
-Message-Id: <1398327843-31845-7-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
-References: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
+	id S1753354AbaDXIa2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:30:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46719 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752162AbaDXIaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 04:30:24 -0400
+Date: Thu, 24 Apr 2014 09:30:18 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Shaohua Li <shli@kernel.org>
+Cc: Dan Streetman <ddstreet@ieee.org>, Hugh Dickins <hughd@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Shaohua Li <shli@fusionio.com>, Weijie Yang <weijieut@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] swap: change swap_info singly-linked list to
+ list_head
+Message-ID: <20140424083018.GO23991@suse.de>
+References: <alpine.LSU.2.11.1402232344280.1890@eggly.anvils>
+ <1397336454-13855-1-git-send-email-ddstreet@ieee.org>
+ <1397336454-13855-2-git-send-email-ddstreet@ieee.org>
+ <20140423103400.GH23991@suse.de>
+ <20140424001705.GA8066@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20140424001705.GA8066@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, accounting each sample is done in multiple places - once
-when adding them to the input tree, other when adding them to the
-output tree.  It's not only confusing but also can cause a subtle
-problem since concurrent processing like in perf top might see the
-updated stats before adding entries into the output tree - like seeing
-more (blank) lines at the end and/or slight inaccurate percentage.
+On Thu, Apr 24, 2014 at 08:17:05AM +0800, Shaohua Li wrote:
+> On Wed, Apr 23, 2014 at 11:34:00AM +0100, Mel Gorman wrote:
+> > > @@ -366,7 +361,7 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
+> > >  		}
+> > >  		vm_unacct_memory(pages);
+> > >  		*unused = pages_to_unuse;
+> > > -		*swapid = type;
+> > > +		*swapid = si->type;
+> > >  		ret = 0;
+> > >  		break;
+> > >  	}
+> > > @@ -413,7 +408,7 @@ void frontswap_shrink(unsigned long target_pages)
+> > >  	/*
+> > >  	 * we don't want to hold swap_lock while doing a very
+> > >  	 * lengthy try_to_unuse, but swap_list may change
+> > > -	 * so restart scan from swap_list.head each time
+> > > +	 * so restart scan from swap_list_head each time
+> > >  	 */
+> > >  	spin_lock(&swap_lock);
+> > >  	ret = __frontswap_shrink(target_pages, &pages_to_unuse, &type);
+> > > diff --git a/mm/swapfile.c b/mm/swapfile.c
+> > > index 4a7f7e6..b958645 100644
+> > > --- a/mm/swapfile.c
+> > > +++ b/mm/swapfile.c
+> > > @@ -51,14 +51,14 @@ atomic_long_t nr_swap_pages;
+> > >  /* protected with swap_lock. reading in vm_swap_full() doesn't need lock */
+> > >  long total_swap_pages;
+> > >  static int least_priority;
+> > > -static atomic_t highest_priority_index = ATOMIC_INIT(-1);
+> > >  
+> > >  static const char Bad_file[] = "Bad swap file entry ";
+> > >  static const char Unused_file[] = "Unused swap file entry ";
+> > >  static const char Bad_offset[] = "Bad swap offset entry ";
+> > >  static const char Unused_offset[] = "Unused swap offset entry ";
+> > >  
+> > > -struct swap_list_t swap_list = {-1, -1};
+> > > +/* all active swap_info */
+> > > +LIST_HEAD(swap_list_head);
+> > >  
+> > >  struct swap_info_struct *swap_info[MAX_SWAPFILES];
+> > >  
+> > > @@ -640,66 +640,50 @@ no_page:
+> > >  
+> > >  swp_entry_t get_swap_page(void)
+> > >  {
+> > > -	struct swap_info_struct *si;
+> > > +	struct swap_info_struct *si, *next;
+> > >  	pgoff_t offset;
+> > > -	int type, next;
+> > > -	int wrapped = 0;
+> > > -	int hp_index;
+> > > +	struct list_head *tmp;
+> > >  
+> > >  	spin_lock(&swap_lock);
+> > >  	if (atomic_long_read(&nr_swap_pages) <= 0)
+> > >  		goto noswap;
+> > >  	atomic_long_dec(&nr_swap_pages);
+> > >  
+> > > -	for (type = swap_list.next; type >= 0 && wrapped < 2; type = next) {
+> > > -		hp_index = atomic_xchg(&highest_priority_index, -1);
+> > > -		/*
+> > > -		 * highest_priority_index records current highest priority swap
+> > > -		 * type which just frees swap entries. If its priority is
+> > > -		 * higher than that of swap_list.next swap type, we use it.  It
+> > > -		 * isn't protected by swap_lock, so it can be an invalid value
+> > > -		 * if the corresponding swap type is swapoff. We double check
+> > > -		 * the flags here. It's even possible the swap type is swapoff
+> > > -		 * and swapon again and its priority is changed. In such rare
+> > > -		 * case, low prority swap type might be used, but eventually
+> > > -		 * high priority swap will be used after several rounds of
+> > > -		 * swap.
+> > > -		 */
+> > > -		if (hp_index != -1 && hp_index != type &&
+> > > -		    swap_info[type]->prio < swap_info[hp_index]->prio &&
+> > > -		    (swap_info[hp_index]->flags & SWP_WRITEOK)) {
+> > > -			type = hp_index;
+> > > -			swap_list.next = type;
+> > > -		}
+> > > -
+> > > -		si = swap_info[type];
+> > > -		next = si->next;
+> > > -		if (next < 0 ||
+> > > -		    (!wrapped && si->prio != swap_info[next]->prio)) {
+> > > -			next = swap_list.head;
+> > > -			wrapped++;
+> > > -		}
+> > > -
+> > > +	list_for_each(tmp, &swap_list_head) {
+> > > +		si = list_entry(tmp, typeof(*si), list);
+> > >  		spin_lock(&si->lock);
+> > > -		if (!si->highest_bit) {
+> > > -			spin_unlock(&si->lock);
+> > > -			continue;
+> > > -		}
+> > > -		if (!(si->flags & SWP_WRITEOK)) {
+> > > +		if (!si->highest_bit || !(si->flags & SWP_WRITEOK)) {
+> > >  			spin_unlock(&si->lock);
+> > >  			continue;
+> > >  		}
+> > >  
+> > > -		swap_list.next = next;
+> > > +		/*
+> > > +		 * rotate the current swap_info that we're going to use
+> > > +		 * to after any other swap_info that have the same prio,
+> > > +		 * so that all equal-priority swap_info get used equally
+> > > +		 */
+> > > +		next = si;
+> > > +		list_for_each_entry_continue(next, &swap_list_head, list) {
+> > > +			if (si->prio != next->prio)
+> > > +				break;
+> > > +			list_rotate_left(&si->list);
+> > > +			next = si;
+> > > +		}
+> > >  
+> > 
+> > The list manipulations will be a lot of cache writes as the list is shuffled
+> > around. On slow storage I do not think this will be noticable but it may
+> > be noticable on faster swap devices that are SSD based. I've added Shaohua
+> > Li to the cc as he has been concerned with the performance of swap in the
+> > past. Shaohua, can you run this patchset through any of your test cases
+> > with the addition that multiple swap files are used to see if the cache
+> > writes are noticable? You'll need multiple swap files, some of which are
+> > at equal priority so the list shuffling logic is triggered.
+> 
+> get_swap_page isn't hot so far (and we hold the swap_lock, which isn't
+> contended), guess it's because other problems hide it, for example tlb flush
+> overhead.
+> 
 
-To fix this, only account the entries when it's moved into the output
-tree so that they cannot be seen prematurely.  There're some
-exceptional cases here and there - they should be addressed separately
-with comments.
+The old method was not free either but I wanted to be sure you were
+aware of the series just in case. Thanks.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-annotate.c |  3 +--
- tools/perf/builtin-diff.c     | 13 +++++++++----
- tools/perf/builtin-report.c   | 24 ++++++++++--------------
- tools/perf/util/hist.c        |  1 -
- 4 files changed, 20 insertions(+), 21 deletions(-)
-
-diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-index 0da603b79b61..d30d2c2e2a7a 100644
---- a/tools/perf/builtin-annotate.c
-+++ b/tools/perf/builtin-annotate.c
-@@ -46,7 +46,7 @@ struct perf_annotate {
- };
- 
- static int perf_evsel__add_sample(struct perf_evsel *evsel,
--				  struct perf_sample *sample,
-+				  struct perf_sample *sample __maybe_unused,
- 				  struct addr_location *al,
- 				  struct perf_annotate *ann)
- {
-@@ -70,7 +70,6 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
- 		return -ENOMEM;
- 
- 	ret = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
--	evsel->hists.stats.total_period += sample->period;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- 	return ret;
- }
-diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
-index 52d91ac4e6c8..f3b10dcf6838 100644
---- a/tools/perf/builtin-diff.c
-+++ b/tools/perf/builtin-diff.c
-@@ -341,11 +341,16 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
- 		return -1;
- 	}
- 
--	if (al.filtered == 0) {
--		evsel->hists.stats.total_non_filtered_period += sample->period;
--		evsel->hists.nr_non_filtered_entries++;
--	}
-+	/*
-+	 * The total_period is updated here before going to the output
-+	 * tree since normally only the baseline hists will call
-+	 * hists__output_resort() and precompute needs the total
-+	 * period in order to sort entries by percentage delta.
-+	 */
- 	evsel->hists.stats.total_period += sample->period;
-+	if (!al.filtered)
-+		evsel->hists.stats.total_non_filtered_period += sample->period;
-+
- 	return 0;
- }
- 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index aed52036468d..89c95289fd51 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -85,6 +85,16 @@ static void report__inc_stats(struct report *rep, struct hist_entry *he)
- 	 */
- 	if (he->stat.nr_events == 1)
- 		rep->nr_entries++;
-+
-+	/*
-+	 * Only counts number of samples at this stage as it's more
-+	 * natural to do it here and non-sample events are also
-+	 * counted in perf_session_deliver_event().  The dump_trace
-+	 * requires this info is ready before going to the output tree.
-+	 */
-+	hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
-+	if (!he->filtered)
-+		he->hists->stats.nr_non_filtered_samples++;
- }
- 
- static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
-@@ -135,10 +145,6 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
- 
- 	report__inc_stats(rep, he);
- 
--	evsel->hists.stats.total_period += cost;
--	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
--	if (!he->filtered)
--		evsel->hists.stats.nr_non_filtered_samples++;
- 	err = hist_entry__append_callchain(he, sample);
- out:
- 	return err;
-@@ -189,13 +195,7 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
- 				if (err)
- 					goto out;
- 			}
--
- 			report__inc_stats(rep, he);
--
--			evsel->hists.stats.total_period += 1;
--			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
--			if (!he->filtered)
--				evsel->hists.stats.nr_non_filtered_samples++;
- 		} else
- 			goto out;
- 	}
-@@ -230,10 +230,6 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
- 
- 	report__inc_stats(rep, he);
- 
--	evsel->hists.stats.total_period += sample->period;
--	if (!he->filtered)
--		evsel->hists.stats.nr_non_filtered_samples++;
--	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- out:
- 	return err;
- }
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 8d5cfcc3bc63..6d0d2d75db68 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -382,7 +382,6 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
- 	if (!he)
- 		return NULL;
- 
--	hists->nr_entries++;
- 	rb_link_node(&he->rb_node_in, parent, p);
- 	rb_insert_color(&he->rb_node_in, hists->entries_in);
- out:
 -- 
-1.9.2
-
+Mel Gorman
+SUSE Labs
