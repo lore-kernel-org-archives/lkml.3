@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362AbaDXWba (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:31:30 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39532 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120AbaDXVqF (ORCPT
+	id S1757081AbaDXWcQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:32:16 -0400
+Received: from mail-ve0-f173.google.com ([209.85.128.173]:61233 "EHLO
+	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754743AbaDXWcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:05 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Whitney <enwlinux@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.14 25/33] ext4: fix partial cluster handling for bigalloc file systems
-Date: Thu, 24 Apr 2014 14:48:38 -0700
-Message-Id: <20140424214453.288432907@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
-References: <20140424214449.423169713@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 24 Apr 2014 18:32:14 -0400
 MIME-Version: 1.0
+In-Reply-To: <53598F2F.1030306@linux.intel.com>
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com>
+ <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com>
+ <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com> <53598F2F.1030306@linux.intel.com>
+From: Andrew Lutomirski <amluto@gmail.com>
+Date: Thu, 24 Apr 2014 15:31:54 -0700
+Message-ID: <CAObL_7H0omGZTW2jRa+cZdaKM1y8z2Uh5mPZqW4AX4Qgea8Ydw@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: comex <comexk@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Apr 24, 2014 at 3:24 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> On 04/23/2014 09:53 PM, Andrew Lutomirski wrote:
+>>>
+>>> - The user can put arbitrary data in registers before returning to the
+>>> LDT in order to get it saved at a known address accessible from the
+>>> kernel.  With SMAP and KASLR this might otherwise be difficult.
+>>
+>> For one thing, this only matters on Haswell.  Otherwise the user can
+>> put arbitrary data in userspace.
+>>
+>> On Haswell, the HPET fixmap is currently a much simpler vector that
+>> can do much the same thing, as long as you're willing to wait for the
+>> HPET counter to contain some particular value.  I have patches that
+>> will fix that as a side effect.
+>>
+>> Would it pay to randomize the location of the espfix area?  Another
+>> somewhat silly idea is to add some random offset to the CPU number mod
+>> NR_CPUS so that at attacker won't know which ministack is which.
+>
+> Since we store the espfix stack location explicitly, as long as the
+> scrambling happens in the initialization code that's fine.  However, we
+> don't want to reduce locality lest we massively blow up the memory
+> requirements.
 
-------------------
+I was imagining just randomizing a couple of high bits so the whole
+espfix area moves as a unit.
 
-From: Eric Whitney <enwlinux@gmail.com>
+>
+> We could XOR with a random constant with no penalty at all.  Only
+> problem is that this happens early, so the entropy system is not yet
+> available.  Fine if we have RDRAND, but...
 
-commit c06344939422bbd032ac967223a7863de57496b5 upstream.
+How many people have SMAP and not RDRAND?  I think this is a complete
+nonissue for non-SMAP systems.
 
-Commit 9cb00419fa, which enables hole punching for bigalloc file
-systems, exposed a bug introduced by commit 6ae06ff51e in an earlier
-release.  When run on a bigalloc file system, xfstests generic/013, 068,
-075, 083, 091, 100, 112, 127, 263, 269, and 270 fail with e2fsck errors
-or cause kernel error messages indicating that previously freed blocks
-are being freed again.
+>> Peter, is this idea completely nuts?  The only exceptions that can
+>> happen there are NMI, MCE, #DB, #SS, and #GP.  The first four use IST,
+>> so they won't double-fault.
+>
+> It is completely nuts, but sometimes completely nuts is actually useful.
+>  It is more complexity, to be sure, but it doesn't seem completely out
+> of the realm of reason, and avoids having to unwind the ministack except
+> in the normally-fatal #DF handler.  #DFs are documented as not
+> recoverable, but we might be able to do something here.
+>
+> The only real disadvantage I see is the need for more bookkeeping
+> metadata.  Basically the bitmask in espfix_64.c now needs to turn into
+> an array, plus we need a second percpu variable.  Given that if
+> CONFIG_NR_CPUS=8192 the array has 128 entries I think we can survive that.
 
-The latter commit optimizes the selection of the starting extent in
-ext4_ext_rm_leaf() when hole punching by beginning with the extent
-supplied in the path argument rather than with the last extent in the
-leaf node (as is still done when truncating).  However, the code in
-rm_leaf that initially sets partial_cluster to track cluster sharing on
-extent boundaries is only guaranteed to run if rm_leaf starts with the
-last node in the leaf.  Consequently, partial_cluster is not correctly
-initialized when hole punching, and a cluster on the boundary of a
-punched region that should be retained may instead be deallocated.
+Doing something in #DF needs percpu data?  What am I missing?
 
-Signed-off-by: Eric Whitney <enwlinux@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/ext4/extents.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
-
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2585,6 +2585,27 @@ ext4_ext_rm_leaf(handle_t *handle, struc
- 	ex_ee_block = le32_to_cpu(ex->ee_block);
- 	ex_ee_len = ext4_ext_get_actual_len(ex);
- 
-+	/*
-+	 * If we're starting with an extent other than the last one in the
-+	 * node, we need to see if it shares a cluster with the extent to
-+	 * the right (towards the end of the file). If its leftmost cluster
-+	 * is this extent's rightmost cluster and it is not cluster aligned,
-+	 * we'll mark it as a partial that is not to be deallocated.
-+	 */
-+
-+	if (ex != EXT_LAST_EXTENT(eh)) {
-+		ext4_fsblk_t current_pblk, right_pblk;
-+		long long current_cluster, right_cluster;
-+
-+		current_pblk = ext4_ext_pblock(ex) + ex_ee_len - 1;
-+		current_cluster = (long long)EXT4_B2C(sbi, current_pblk);
-+		right_pblk = ext4_ext_pblock(ex + 1);
-+		right_cluster = (long long)EXT4_B2C(sbi, right_pblk);
-+		if (current_cluster == right_cluster &&
-+			EXT4_PBLK_COFF(sbi, right_pblk))
-+			*partial_cluster = -right_cluster;
-+	}
-+
- 	trace_ext4_ext_rm_leaf(inode, start, ex, *partial_cluster);
- 
- 	while (ex >= EXT_FIRST_EXTENT(eh) &&
-
-
+--Andy
