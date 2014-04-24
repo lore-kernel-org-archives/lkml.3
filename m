@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753415AbaDXMWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:22:13 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:57683 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175AbaDXMWL (ORCPT
+	id S1753627AbaDXMWS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:22:18 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:63783 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753175AbaDXMWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:22:11 -0400
-X-IronPort-AV: E=Sophos;i="4.97,918,1389744000"; 
-   d="scan'208";a="123077875"
-Message-ID: <535901F0.3010908@citrix.com>
-Date: Thu, 24 Apr 2014 13:22:08 +0100
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
+	Thu, 24 Apr 2014 08:22:15 -0400
+Date: Thu, 24 Apr 2014 08:21:49 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: ftrace/kprobes: Warning when insmod two modules
+Message-ID: <20140424082149.71b09e0f@gandalf.local.home>
+In-Reply-To: <87k3afdvn3.fsf@rustcorp.com.au>
+References: <1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com>
+	<5330164D.6030507@hitachi.com>
+	<20140324105939.7f823b81@gandalf.local.home>
+	<87bnvunhs9.fsf@rustcorp.com.au>
+	<20140422094103.39488700@gandalf.local.home>
+	<87k3afdvn3.fsf@rustcorp.com.au>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Julien Grall <julien.grall@linaro.org>
-CC: <stefano.stabellini@eu.citrix.com>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
-        <ian.campbell@citrix.com>, <konrad.wilk@oracle.com>
-Subject: Re: [PATCH] arm/xen: Remove definiition of virt_to_pfn in asm/xen/page.h
-References: <1397836474-10478-1-git-send-email-julien.grall@linaro.org>
-In-Reply-To: <1397836474-10478-1-git-send-email-julien.grall@linaro.org>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.80.2.76]
-X-DLP: MIA2
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18/04/14 16:54, Julien Grall wrote:
-> virt_to_pfn has been defined in asm/memory.h by the commit e26a9e0 "ARM: Better
-> virt_to_page() handling"
-> 
-> This will result of a compilation warning when CONFIG_XEN is enabled.
-> 
-> arch/arm/include/asm/xen/page.h:80:0: warning: "virt_to_pfn" redefined [enabled by default]
->  #define virt_to_pfn(v)          (PFN_DOWN(__pa(v)))
->  ^
-> In file included from arch/arm/include/asm/page.h:163:0,
->                  from arch/arm/include/asm/xen/page.h:4,
->                  from include/xen/page.h:4,
->                  from arch/arm/xen/grant-table.c:33:
-> 
-> The definition in memory.h is nearly the same (it directly expand PFN_DOWN),
-> so we can safely drop virt_to_pfn in xen include.
+On Thu, 24 Apr 2014 17:08:56 +0930
+Rusty Russell <rusty@rustcorp.com.au> wrote:
 
+> OTOH, if it's just ftrace (do tracepoints have an issue?) I'd rather
+> hardcode a ftrace_init_module() call in exactly the right place.
+> Notifiers which are sensitive to their exact call location tend give me
+> the creeps...
 
-This breaks the arm build for me.
+I think I like this solution the best. I believe it was the original
+solution for ftrace until we realized that it can be also done by a
+notifier.
 
-/local/davidvr/work/k.org/tip/drivers/block/xen-blkfront.c: In function
-‘setup_blkring’:
-/local/davidvr/work/k.org/tip/drivers/block/xen-blkfront.c:1236:2:
-error: implicit declaration of function ‘virt_to_pfn’
-[-Werror=implicit-function-declaration]
-  err = xenbus_grant_ring(dev, virt_to_mfn(info->ring.sring));
-  ^
+It also makes it more in line with what the core kernel does, as I
+considered notifiers similar to initcalls and the init code for ftrace
+is hard coded in init/main.c and not done by initcalls, as it is
+important to be done before anything else.
 
-David
+Yeah, a ftrace_init_module() hard coded in where the module state is
+still MODULE_STATE_UNFORMED, would work.
+
+-- Steve
