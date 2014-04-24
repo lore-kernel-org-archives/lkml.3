@@ -1,265 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961AbaDXWhF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:37:05 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:21230 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755681AbaDXWgj (ORCPT
+	id S1758180AbaDXWh5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:37:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39527 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754968AbaDXVqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:36:39 -0400
-X-IronPort-AV: E=Sophos;i="4.97,922,1389772800"; 
-   d="scan'208";a="26157699"
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-CC: Tim Kryger <tim.kryger@linaro.org>,
-        Mike Looijmans <mike.looijmans@topic.nl>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "Linux MMC List" <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] mmc: sdhci: Use mmc core regulator infrastucture
-Date: Thu, 24 Apr 2014 15:36:29 -0700
-Message-ID: <1398378989-14575-1-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	Thu, 24 Apr 2014 17:46:01 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Claudio Takahasi <claudio.takahasi@openbossa.org>,
+        Johan Hedberg <johan.hedberg@intel.com>
+Subject: [PATCH 3.14 16/33] Bluetooth: Fix removing Long Term Key
+Date: Thu, 24 Apr 2014 14:48:29 -0700
+Message-Id: <20140424214451.959177369@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
+References: <20140424214449.423169713@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch the common SDHCI code over to use mmc_host's regulator pointers
-and remove the ones in the sdhci_host structure.  Additionally, use the
-common mmc_regulator_get_supply function to get the regulators and set
-the ocr_avail mask.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-This change sets the ocr_avail directly based upon the voltage ranges
-supported which ensures ocr_avail is set correctly while allowing the
-use of regulators that can't provide exactly 1.8v, 3.0v, or 3.3v.
+------------------
 
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+From: Claudio Takahasi <claudio.takahasi@openbossa.org>
+
+commit 5981a8821b774ada0be512fd9bad7c241e17657e upstream.
+
+This patch fixes authentication failure on LE link re-connection when
+BlueZ acts as slave (peripheral). LTK is removed from the internal list
+after its first use causing PIN or Key missing reply when re-connecting
+the link. The LE Long Term Key Request event indicates that the master
+is attempting to encrypt or re-encrypt the link.
+
+Pre-condition: BlueZ host paired and running as slave.
+How to reproduce(master):
+
+  1) Establish an ACL LE encrypted link
+  2) Disconnect the link
+  3) Try to re-establish the ACL LE encrypted link (fails)
+
+> HCI Event: LE Meta Event (0x3e) plen 19
+      LE Connection Complete (0x01)
+        Status: Success (0x00)
+        Handle: 64
+        Role: Slave (0x01)
+...
+@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
+> HCI Event: LE Meta Event (0x3e) plen 13
+      LE Long Term Key Request (0x05)
+        Handle: 64
+        Random number: 875be18439d9aa37
+        Encryption diversifier: 0x76ed
+< HCI Command: LE Long Term Key Request Reply (0x08|0x001a) plen 18
+        Handle: 64
+        Long term key: 2aa531db2fce9f00a0569c7d23d17409
+> HCI Event: Command Complete (0x0e) plen 6
+      LE Long Term Key Request Reply (0x08|0x001a) ncmd 1
+        Status: Success (0x00)
+        Handle: 64
+> HCI Event: Encryption Change (0x08) plen 4
+        Status: Success (0x00)
+        Handle: 64
+        Encryption: Enabled with AES-CCM (0x01)
+...
+@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 3
+< HCI Command: LE Set Advertise Enable (0x08|0x000a) plen 1
+        Advertising: Enabled (0x01)
+> HCI Event: Command Complete (0x0e) plen 4
+      LE Set Advertise Enable (0x08|0x000a) ncmd 1
+        Status: Success (0x00)
+> HCI Event: LE Meta Event (0x3e) plen 19
+      LE Connection Complete (0x01)
+        Status: Success (0x00)
+        Handle: 64
+        Role: Slave (0x01)
+...
+@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
+> HCI Event: LE Meta Event (0x3e) plen 13
+      LE Long Term Key Request (0x05)
+        Handle: 64
+        Random number: 875be18439d9aa37
+        Encryption diversifier: 0x76ed
+< HCI Command: LE Long Term Key Request Neg Reply (0x08|0x001b) plen 2
+        Handle: 64
+> HCI Event: Command Complete (0x0e) plen 6
+      LE Long Term Key Request Neg Reply (0x08|0x001b) ncmd 1
+        Status: Success (0x00)
+        Handle: 64
+> HCI Event: Disconnect Complete (0x05) plen 4
+        Status: Success (0x00)
+        Handle: 64
+        Reason: Authentication Failure (0x05)
+@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 0
+
+Signed-off-by: Claudio Takahasi <claudio.takahasi@openbossa.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ net/bluetooth/hci_event.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-This patch is the same as the following series only squashed together.
-https://lkml.org/lkml/2014/4/17/653
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3593,7 +3593,13 @@ static void hci_le_ltk_request_evt(struc
+ 
+ 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
+ 
+-	if (ltk->type & HCI_SMP_STK) {
++	/* Ref. Bluetooth Core SPEC pages 1975 and 2004. STK is a
++	 * temporary key used to encrypt a connection following
++	 * pairing. It is used during the Encrypted Session Setup to
++	 * distribute the keys. Later, security can be re-established
++	 * using a distributed LTK.
++	 */
++	if (ltk->type == HCI_SMP_STK_SLAVE) {
+ 		list_del(&ltk->list);
+ 		kfree(ltk);
+ 	}
 
- drivers/mmc/host/sdhci.c  |   96 +++++++++++++++++----------------------------
- include/linux/mmc/sdhci.h |    3 --
- 2 files changed, 35 insertions(+), 64 deletions(-)
-
-diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 9a79fc4..2d081d8 100644
---- a/drivers/mmc/host/sdhci.c
-+++ b/drivers/mmc/host/sdhci.c
-@@ -1429,6 +1429,7 @@ static void sdhci_request(struct mmc_host *mmc, struct mmc_request *mrq)
- 
- static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
- {
-+	struct mmc_host *mmc = host->mmc;
- 	unsigned long flags;
- 	int vdd_bit = -1;
- 	u8 ctrl;
-@@ -1437,8 +1438,9 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
- 
- 	if (host->flags & SDHCI_DEVICE_DEAD) {
- 		spin_unlock_irqrestore(&host->lock, flags);
--		if (host->vmmc && ios->power_mode == MMC_POWER_OFF)
--			mmc_regulator_set_ocr(host->mmc, host->vmmc, 0);
-+		if (!IS_ERR(mmc->supply.vmmc) &&
-+		    ios->power_mode == MMC_POWER_OFF)
-+			mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, 0);
- 		return;
- 	}
- 
-@@ -1463,9 +1465,9 @@ static void sdhci_do_set_ios(struct sdhci_host *host, struct mmc_ios *ios)
- 	else
- 		vdd_bit = sdhci_set_power(host, ios->vdd);
- 
--	if (host->vmmc && vdd_bit != -1) {
-+	if (!IS_ERR(mmc->supply.vmmc) && vdd_bit != -1) {
- 		spin_unlock_irqrestore(&host->lock, flags);
--		mmc_regulator_set_ocr(host->mmc, host->vmmc, vdd_bit);
-+		mmc_regulator_set_ocr(host->mmc, mmc->supply.vmmc, vdd_bit);
- 		spin_lock_irqsave(&host->lock, flags);
- 	}
- 
-@@ -1742,6 +1744,7 @@ static void sdhci_enable_sdio_irq(struct mmc_host *mmc, int enable)
- static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
- 						struct mmc_ios *ios)
- {
-+	struct mmc_host *mmc = host->mmc;
- 	u16 ctrl;
- 	int ret;
- 
-@@ -1760,8 +1763,9 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
- 		ctrl &= ~SDHCI_CTRL_VDD_180;
- 		sdhci_writew(host, ctrl, SDHCI_HOST_CONTROL2);
- 
--		if (host->vqmmc) {
--			ret = regulator_set_voltage(host->vqmmc, 2700000, 3600000);
-+		if (!IS_ERR(mmc->supply.vqmmc)) {
-+			ret = regulator_set_voltage(mmc->supply.vqmmc, 2700000,
-+						    3600000);
- 			if (ret) {
- 				pr_warning("%s: Switching to 3.3V signalling voltage "
- 						" failed\n", mmc_hostname(host->mmc));
-@@ -1781,8 +1785,8 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
- 
- 		return -EAGAIN;
- 	case MMC_SIGNAL_VOLTAGE_180:
--		if (host->vqmmc) {
--			ret = regulator_set_voltage(host->vqmmc,
-+		if (!IS_ERR(mmc->supply.vqmmc)) {
-+			ret = regulator_set_voltage(mmc->supply.vqmmc,
- 					1700000, 1950000);
- 			if (ret) {
- 				pr_warning("%s: Switching to 1.8V signalling voltage "
-@@ -1811,8 +1815,9 @@ static int sdhci_do_start_signal_voltage_switch(struct sdhci_host *host,
- 
- 		return -EAGAIN;
- 	case MMC_SIGNAL_VOLTAGE_120:
--		if (host->vqmmc) {
--			ret = regulator_set_voltage(host->vqmmc, 1100000, 1300000);
-+		if (!IS_ERR(mmc->supply.vqmmc)) {
-+			ret = regulator_set_voltage(mmc->supply.vqmmc, 1100000,
-+						    1300000);
- 			if (ret) {
- 				pr_warning("%s: Switching to 1.2V signalling voltage "
- 						" failed\n", mmc_hostname(host->mmc));
-@@ -2975,25 +2980,22 @@ int sdhci_add_host(struct sdhci_host *host)
- 	    !(host->mmc->caps & MMC_CAP_NONREMOVABLE))
- 		mmc->caps |= MMC_CAP_NEEDS_POLL;
- 
-+	/* If there are external regulators, get them */
-+	if (mmc_regulator_get_supply(mmc) == -EPROBE_DEFER)
-+		return -EPROBE_DEFER;
-+
- 	/* If vqmmc regulator and no 1.8V signalling, then there's no UHS */
--	host->vqmmc = regulator_get_optional(mmc_dev(mmc), "vqmmc");
--	if (IS_ERR_OR_NULL(host->vqmmc)) {
--		if (PTR_ERR(host->vqmmc) < 0) {
--			pr_info("%s: no vqmmc regulator found\n",
--				mmc_hostname(mmc));
--			host->vqmmc = NULL;
--		}
--	} else {
--		ret = regulator_enable(host->vqmmc);
--		if (!regulator_is_supported_voltage(host->vqmmc, 1700000,
--			1950000))
-+	if (!IS_ERR(mmc->supply.vqmmc)) {
-+		ret = regulator_enable(mmc->supply.vqmmc);
-+		if (!regulator_is_supported_voltage(mmc->supply.vqmmc, 1700000,
-+						    1950000))
- 			caps[1] &= ~(SDHCI_SUPPORT_SDR104 |
- 					SDHCI_SUPPORT_SDR50 |
- 					SDHCI_SUPPORT_DDR50);
- 		if (ret) {
- 			pr_warn("%s: Failed to enable vqmmc regulator: %d\n",
- 				mmc_hostname(mmc), ret);
--			host->vqmmc = NULL;
-+			mmc->supply.vqmmc = NULL;
- 		}
- 	}
- 
-@@ -3054,34 +3056,6 @@ int sdhci_add_host(struct sdhci_host *host)
- 
- 	ocr_avail = 0;
- 
--	host->vmmc = regulator_get_optional(mmc_dev(mmc), "vmmc");
--	if (IS_ERR_OR_NULL(host->vmmc)) {
--		if (PTR_ERR(host->vmmc) < 0) {
--			pr_info("%s: no vmmc regulator found\n",
--				mmc_hostname(mmc));
--			host->vmmc = NULL;
--		}
--	}
--
--#ifdef CONFIG_REGULATOR
--	/*
--	 * Voltage range check makes sense only if regulator reports
--	 * any voltage value.
--	 */
--	if (host->vmmc && regulator_get_voltage(host->vmmc) > 0) {
--		ret = regulator_is_supported_voltage(host->vmmc, 2700000,
--			3600000);
--		if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_330)))
--			caps[0] &= ~SDHCI_CAN_VDD_330;
--		if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_300)))
--			caps[0] &= ~SDHCI_CAN_VDD_300;
--		ret = regulator_is_supported_voltage(host->vmmc, 1700000,
--			1950000);
--		if ((ret <= 0) || (!(caps[0] & SDHCI_CAN_VDD_180)))
--			caps[0] &= ~SDHCI_CAN_VDD_180;
--	}
--#endif /* CONFIG_REGULATOR */
--
- 	/*
- 	 * According to SD Host Controller spec v3.00, if the Host System
- 	 * can afford more than 150mA, Host Driver should set XPC to 1. Also
-@@ -3090,8 +3064,8 @@ int sdhci_add_host(struct sdhci_host *host)
- 	 * value.
- 	 */
- 	max_current_caps = sdhci_readl(host, SDHCI_MAX_CURRENT);
--	if (!max_current_caps && host->vmmc) {
--		u32 curr = regulator_get_current_limit(host->vmmc);
-+	if (!max_current_caps && !IS_ERR(mmc->supply.vmmc)) {
-+		u32 curr = regulator_get_current_limit(mmc->supply.vmmc);
- 		if (curr > 0) {
- 
- 			/* convert to SDHCI_MAX_CURRENT format */
-@@ -3131,8 +3105,11 @@ int sdhci_add_host(struct sdhci_host *host)
- 				   SDHCI_MAX_CURRENT_MULTIPLIER;
- 	}
- 
-+	if (mmc->ocr_avail)
-+		ocr_avail &= mmc->ocr_avail;
-+
- 	if (host->ocr_mask)
--		ocr_avail = host->ocr_mask;
-+		ocr_avail &= host->ocr_mask;
- 
- 	mmc->ocr_avail = ocr_avail;
- 	mmc->ocr_avail_sdio = ocr_avail;
-@@ -3288,6 +3265,7 @@ EXPORT_SYMBOL_GPL(sdhci_add_host);
- 
- void sdhci_remove_host(struct sdhci_host *host, int dead)
- {
-+	struct mmc_host *mmc = host->mmc;
- 	unsigned long flags;
- 
- 	if (dead) {
-@@ -3325,15 +3303,11 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
- 	tasklet_kill(&host->card_tasklet);
- 	tasklet_kill(&host->finish_tasklet);
- 
--	if (host->vmmc) {
--		regulator_disable(host->vmmc);
--		regulator_put(host->vmmc);
--	}
-+	if (!IS_ERR(mmc->supply.vmmc))
-+		regulator_disable(mmc->supply.vmmc);
- 
--	if (host->vqmmc) {
--		regulator_disable(host->vqmmc);
--		regulator_put(host->vqmmc);
--	}
-+	if (!IS_ERR(mmc->supply.vqmmc))
-+		regulator_disable(mmc->supply.vqmmc);
- 
- 	kfree(host->adma_desc);
- 	kfree(host->align_buffer);
-diff --git a/include/linux/mmc/sdhci.h b/include/linux/mmc/sdhci.h
-index 7be12b8..0e3c3f8 100644
---- a/include/linux/mmc/sdhci.h
-+++ b/include/linux/mmc/sdhci.h
-@@ -108,9 +108,6 @@ struct sdhci_host {
- 
- 	const struct sdhci_ops *ops;	/* Low level hw interface */
- 
--	struct regulator *vmmc;		/* Power regulator (vmmc) */
--	struct regulator *vqmmc;	/* Signaling regulator (vccq) */
--
- 	/* Internal data */
- 	struct mmc_host *mmc;	/* MMC structure */
- 	u64 dma_mask;		/* custom DMA mask */
--- 
-1.7.9.5
 
