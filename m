@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911AbaDXWkl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:40:41 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:41384 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143AbaDXWkg (ORCPT
+	id S1758981AbaDXWlO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:41:14 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39505 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752714AbaDXVpy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:40:36 -0400
-Message-ID: <535992DD.3060808@infradead.org>
-Date: Thu, 24 Apr 2014 15:40:29 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	Thu, 24 Apr 2014 17:45:54 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 01/33] user namespace: fix incorrect memory barriers
+Date: Thu, 24 Apr 2014 14:48:14 -0700
+Message-Id: <20140424214449.635796436@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
+References: <20140424214449.423169713@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, linux-next@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>
-In-Reply-To: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/14 13:08, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2014-04-24-13-07 has been uploaded to
-> 
->    http://www.ozlabs.org/~akpm/mmotm/
-> 
-> mmotm-readme.txt says
-> 
-> README for mm-of-the-moment:
-> 
-> http://www.ozlabs.org/~akpm/mmotm/
-> 
-> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
-> more than once a week.
-> 
-> You will need quilt to apply these patches to the latest Linus release (3.x
-> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
-> http://ozlabs.org/~akpm/mmotm/series
-> 
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-uml on x86_64 defconfig:
+------------------
 
-drivers/built-in.o: In function `__handle_sysrq':
-drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
-drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
+From: Mikulas Patocka <mpatocka@redhat.com>
+
+commit e79323bd87808fdfbc68ce6c5371bd224d9672ee upstream.
+
+smp_read_barrier_depends() can be used if there is data dependency between
+the readers - i.e. if the read operation after the barrier uses address
+that was obtained from the read operation before the barrier.
+
+In this file, there is only control dependency, no data dependecy, so the
+use of smp_read_barrier_depends() is incorrect. The code could fail in the
+following way:
+* the cpu predicts that idx < entries is true and starts executing the
+  body of the for loop
+* the cpu fetches map->extent[0].first and map->extent[0].count
+* the cpu fetches map->nr_extents
+* the cpu verifies that idx < extents is true, so it commits the
+  instructions in the body of the for loop
+
+The problem is that in this scenario, the cpu read map->extent[0].first
+and map->nr_extents in the wrong order. We need a full read memory barrier
+to prevent it.
+
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/user_namespace.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
+
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -152,7 +152,7 @@ static u32 map_id_range_down(struct uid_
+ 
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -176,7 +176,7 @@ static u32 map_id_down(struct uid_gid_ma
+ 
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -199,7 +199,7 @@ static u32 map_id_up(struct uid_gid_map
+ 
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].lower_first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -615,9 +615,8 @@ static ssize_t map_write(struct file *fi
+ 	 * were written before the count of the extents.
+ 	 *
+ 	 * To achieve this smp_wmb() is used on guarantee the write
+-	 * order and smp_read_barrier_depends() is guaranteed that we
+-	 * don't have crazy architectures returning stale data.
+-	 *
++	 * order and smp_rmb() is guaranteed that we don't have crazy
++	 * architectures returning stale data.
+ 	 */
+ 	mutex_lock(&id_map_mutex);
+ 
 
 
--- 
-~Randy
