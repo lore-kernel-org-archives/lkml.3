@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758748AbaDXSHf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 14:07:35 -0400
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:61119 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758127AbaDXSHd (ORCPT
+	id S1758837AbaDXSRl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 14:17:41 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:35071 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758455AbaDXSRi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 14:07:33 -0400
+	Thu, 24 Apr 2014 14:17:38 -0400
+Message-ID: <5359553A.1040109@linuxfoundation.org>
+Date: Thu, 24 Apr 2014 14:17:30 -0400
+From: Konstantin Ryabitsev <konstantin@linuxfoundation.org>
+Organization: Linux Foundation
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <1398361868.6766.0.camel@dabdike>
-References: <cover.1397461652.git.agordeev@redhat.com> <20140424170903.GA29593@google.com>
- <1398361868.6766.0.camel@dabdike>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Thu, 24 Apr 2014 12:07:12 -0600
-Message-ID: <CAErSpo6nf0adD40w+99b2Nn4yO8bL=qGNV1akAMR7XkTk23ZHw@mail.gmail.com>
-Subject: Re: [PATCH v2 RESEND 00/23] scsi: Use pci_enable_msix_range() instead
- of pci_enable_msix()
-To: James Bottomley <jbottomley@parallels.com>
-Cc: "DL-MPTFusionLinux@lsi.com" <DL-MPTFusionLinux@lsi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "intel-linux-scu@intel.com" <intel-linux-scu@intel.com>,
-        "iss_storagedev@hp.com" <iss_storagedev@hp.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-        "qla2xxx-upstream@qlogic.com" <qla2xxx-upstream@qlogic.com>,
-        "agordeev@redhat.com" <agordeev@redhat.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "support@lsi.com" <support@lsi.com>,
-        "iscsi-driver@qlogic.com" <iscsi-driver@qlogic.com>
-Content-Type: text/plain; charset=UTF-8
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Fengguang Wu <fengguang.wu@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: kbuild test robot status reports
+References: <20140424103349.28534973@gandalf.local.home>
+In-Reply-To: <20140424103349.28534973@gandalf.local.home>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ protocol="application/pgp-signature";
+ boundary="WPURhpKvIPkXpCIPUvD5gmvbkGt6W5qL0"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 11:51 AM, James Bottomley
-<jbottomley@parallels.com> wrote:
-> On Thu, 2014-04-24 at 11:09 -0600, Bjorn Helgaas wrote:
->> On Mon, Apr 14, 2014 at 10:05:24AM +0200, Alexander Gordeev wrote:
->> > Hello,
->> >
->> > This series is against 3.15-rc1.
->> >
->> > As result of deprecation of MSI-X/MSI enablement functions
->> > pci_enable_msix() and pci_enable_msi_block() all drivers
->> > using these two interfaces need to be updated to use the
->> > new pci_enable_msi_range()  or pci_enable_msi_exact()
->> > and pci_enable_msix_range() or pci_enable_msix_exact()
->> > interfaces.
->>
->> Hi James,
->>
->> These depend on f7fc32c, which appeared in v3.15-rc1.  I had intended
->> to merge these scsi updates at the same time, but I failed.  Would you
->> like to take them now that f7fc32c is upstream?
->
-> OK, will add them.  I'm planning to base the scsi-misc tree on -rc3 once
-> we have our current crop of fixes upstream.
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--WPURhpKvIPkXpCIPUvD5gmvbkGt6W5qL0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Great, thanks!
+On 24/04/14 10:33 AM, Steven Rostedt wrote:
+> Next, and this is why I Cc'd Konstantin, maybe it would be prudent to
+> have a web site show the status of your tests?  Where we can see if a
+> test is in progress, finished, found new errors or not.
+>=20
+> Ideally, it would be hosted on kernel.org. Maybe you and Konstantin
+> could organize something. Maybe just a redirect to another website. I
+> feel this would be very useful to have. That way, I don't need to ask
+> to be emailed, but instead just go check a website to see where the
+> test is at.
+>=20
+> Maybe you already have this?
 
-Bjorn
+Hi, all:
+
+If there isn't already a status page in place, then the easiest for me
+would be a json status file that I can format and display on a webpage.
+I can either pull or listen for incoming submissions. Pull is preferred,
+as that would remove the need for us to set up some kind of authenticatio=
+n.
+
+Either way, it shouldn't be too hard to implement.
+
+-K
+
+
+--WPURhpKvIPkXpCIPUvD5gmvbkGt6W5qL0
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iQGcBAEBCAAGBQJTWVU6AAoJEI6WedmufEle+KwMAIO/0scdRxTaXA37Qq92gr+a
+F50SmrTBqq1y3ZjtvkmpTAH/T6FLFUMatOVaa7g7w6VDigSRQ199BEDFUq7QSQn5
+YBDUD5uhatcd4nK0bwaGOdUWbe9RPFQNP2wXor3reSZ0jIYiSb3032cwtuiFM5U6
+VwjeOo2aQ8Xyfxi45SqwoWHSfrNHXRSNKiwPdAH/90g3SLbC6vspa8ewC5YGuJAL
+CGEmVa4DEohL0Mq4IrDTRx0DArjnRPEYW4rSo2cZrplW/Ibr8+7KvjWM3CKBQo9/
+J1lrpv/VjR/2FDJorSMurQyPyRkn7TgQga+l80DwHRAIs9+x9hUIpDKJ62RyEZiA
+ohob+Ni7QCHZtHHd/2Dntr7q6zaT1GjpGEVqzzSUeg3UkHZ+glIw81m2y8QzyzJn
+1P9fcCTkyqE73g/We8Gtu42KyCeg5qbrCNr8rwt6bGtEUNjXji4/AMcsH761ZeVL
+cqP5flL9HJ/hxeGCKOq+u0lBmwVHQbaPY11Fom4gMg==
+=9VlM
+-----END PGP SIGNATURE-----
+
+--WPURhpKvIPkXpCIPUvD5gmvbkGt6W5qL0--
