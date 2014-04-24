@@ -1,56 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757803AbaDXPVT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:21:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27293 "EHLO mx1.redhat.com"
+	id S1758073AbaDXPVg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:21:36 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34075 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757262AbaDXPVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:21:16 -0400
-Date: Thu, 24 Apr 2014 11:21:04 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: return of perf task_ctx_sched_out bug.
-Message-ID: <20140424152104.GA13144@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>
+	id S1757911AbaDXPVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:21:32 -0400
+Message-ID: <53592BF5.6020104@ti.com>
+Date: Thu, 24 Apr 2014 20:51:25 +0530
+From: Balaji T K <balajitk@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120827 Thunderbird/15.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <balbi@ti.com>
+CC: <chris@printf.net>, <ulf.hansson@linaro.org>, <linux-mmc@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] mmc: host: omap_hsmmc: a few improvements
+References: <1395878690-9650-1-git-send-email-balbi@ti.com> <20140421173203.GH22794@saruman.home> <53568B04.4050703@ti.com> <20140422154858.GN5524@saruman.home>
+In-Reply-To: <20140422154858.GN5524@saruman.home>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I haven't seen this in a while.
+On Tuesday 22 April 2014 09:18 PM, Felipe Balbi wrote:
+> Hi,
+>
+> On Tue, Apr 22, 2014 at 09:00:12PM +0530, Balaji T K wrote:
+>> On Monday 21 April 2014 11:02 PM, Felipe Balbi wrote:
+>>> Hi,
+>>>
+>>> On Wed, Mar 26, 2014 at 07:04:45PM -0500, Felipe Balbi wrote:
+>>>> this series lets us access the newer registers introduced
+>>>> back in OMAP4 which give us some valid information about
+>>>> the OMAP HSMMC IP like max block size, support for ADMA,
+>>>> support for Retention.
+>>>>
+>>>> Right now, only setting max_blk_size correctly as supporting
+>>>> ADMA and Retention will take a lot of work.
+>>>>
+>>>> Tested on OMAP5 uEVM.
+>>>>
+>>>> Felipe Balbi (5):
+>>>>    mmc: host: omap_hsmmc: pass host as an argument
+>>>>    mmc: host: omap_hsmmc: add reg_offset field
+>>>>    mmc: host: omap_hsmmc: introduce new accessor functions
+>>>>    mmc: host: omap_hsmmc: switch over to new accessors
+>>>>    mmc: host: omap_hsmmc: set max_blk_size correctly
+>>
+>> Got mislead by your reply to this series, about the alternative way of
+>> reading memory size from CAPA register
+>
+> sure, we can do that if you prefer, I just felt I wouldn't touch
+ > platforms I can't really test :-s
 
-WARNING: CPU: 0 PID: 25574 at kernel/events/core.c:2384 task_ctx_sched_out+0x6b/0x80()
-Modules linked in: 8021q garp dccp_ipv4 dccp bridge stp snd_seq_dummy sctp fuse hidp bnep tun rfcomm llc2 af_key nfnetlink scsi_transport_iscsi ipt_ULOG can_bcm can_raw nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic snd_hda_intel snd_hda_controller xfs snd_hda_codec snd_hwdep e1000e libcrc32c crct10dif_pclmul snd_seq snd_seq_device crc32c_intel snd_pcm btusb bluetooth ghash_clmulni_intel snd_timer snd ptp pcspkr pps_core serio_raw microcode shpchp 6lowpan_iphc usb_debug rfkill soundcore
-CPU: 0 PID: 25574 Comm: trinity-c76 Not tainted 3.15.0-rc2+ #197
- 0000000000000009 000000006f572b93 ffff8802389b3df0 ffffffff8b74671d
- 0000000000000000 ffff8802389b3e28 ffffffff8b06d45d ffff8802441d7ad8
- ffff880111e6adf0 0000000000000286 ffff88023fb8b5c0 ffff880111e6adf0
-Call Trace:
- [<ffffffff8b74671d>] dump_stack+0x4e/0x7a
- [<ffffffff8b06d45d>] warn_slowpath_common+0x7d/0xa0
- [<ffffffff8b06d58a>] warn_slowpath_null+0x1a/0x20
- [<ffffffff8b14f6eb>] task_ctx_sched_out+0x6b/0x80
- [<ffffffff8b152988>] perf_event_comm+0x108/0x260
- [<ffffffff8b152880>] ? perf_event_fork+0x20/0x20
- [<ffffffff8b0bf746>] ? lock_release_holdtime.part.24+0xe6/0x160
- [<ffffffff8b0a3ccd>] ? get_parent_ip+0xd/0x50
- [<ffffffff8b1ce63f>] set_task_comm+0x4f/0xc0
- [<ffffffff8b086829>] SyS_prctl+0x1d9/0x480
- [<ffffffff8b75aa64>] tracesys+0xdd/0xe2
+I think so, since those 3 newer registers are not documented for all platforms.
+Not sure whether it is valid in those cases where it is not documented.
 
+Since capa register has these info and can be
+applied uniformly across all paltforms, I feel reading capa register is the
+way to go. Do you still think there is a need for new api with no offset ?
 
-Last time you looked into this, you had me run some debug patches,
-which caused a bunch of spew:
-http://permalink.gmane.org/gmane.linux.kernel/1648614
+>
+>>> this has been here for almost a month, any comments ?
+>>>
+>>
+>> Do you see any performance impact with this series ?
+>
+> in the normal case ? no... it helps only with large transfers
+>
 
-I've not been running with that patch since then, but if it's going to
-be useful I can try and resurrect it.
+Do you have the numbers ?
+Is it for read or write,
+how large should the transfer size be ?
 
-	Dave
-
+I couldn't get any performance improvements with this patch series,
+Could you please share your test setup, may be I am missing something.
