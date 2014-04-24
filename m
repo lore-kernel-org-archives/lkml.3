@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757673AbaDXOdw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:33:52 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:50250 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754085AbaDXOdv (ORCPT
+	id S1757664AbaDXOfX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:35:23 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:37147 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132AbaDXOfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:33:51 -0400
-Date: Thu, 24 Apr 2014 10:33:49 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Fengguang Wu <fengguang.wu@intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Konstantin Ryabitsev <konstantin@linuxfoundation.org>
-Subject: kbuild test robot status reports
-Message-ID: <20140424103349.28534973@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Thu, 24 Apr 2014 10:35:21 -0400
+Date: Thu, 24 Apr 2014 10:35:17 -0400
+From: Tejun Heo <tj@kernel.org>
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com
+Subject: Re: [PATCH] USB: serial: fix sysfs-attribute removal deadlock
+Message-ID: <20140424143517.GC14460@htj.dyndns.org>
+References: <1398245539-1618-1-git-send-email-jhovold@gmail.com>
+ <20140423141908.GA4781@htj.dyndns.org>
+ <1398328155.2805.100.camel@ThinkPad-T5421.cn.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398328155.2805.100.camel@ThinkPad-T5421.cn.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fengguang,
+On Thu, Apr 24, 2014 at 04:29:15PM +0800, Li Zhong wrote:
+> On Wed, 2014-04-23 at 10:19 -0400, Tejun Heo wrote:
+> > cc'ing Li Zhong who's working on a simliar issue in the following
+> > thread and quoting whole body.
+> > 
+> >   http://thread.gmane.org/gmane.linux.kernel/1680706
+> > 
+> > Li, this is another variation of the same problem.  Maybe this can be
+> > covered by your work too?
+> 
+> It seems to me that it is about write something to driver attribute, and
+> driver unloading. If so, maybe it's not easy to reuse the help functions
+> created for device attribute, and device removing.
+> 
+> But I guess the idea to break the active protection could still be
+> applied here:
+> 
+> Maybe we could try_module_get() here (like the other option suggested by
+> Johan?), and break active protection if we could get the module,
+> something like below? 
 
-I believe in Kernel Summit, we asked about having a notifier for when
-your tests finish even if it didn't find anything. I've been told that
-this has been implemented.
+I don't get why try_module_get() matters here.  We can't call into
+->store if the object at hand is already destroyed and the underlying
+module can't go away if the target device is still alive.
+try_module_get() doesn't actually protect the object.  Why does that
+matter?  This is self removal, right?  Can you please take a look at
+kernfs_remove_self()?
 
-First I would like to request tests run on my linux-trace.git after
-things have been pushed to it, notify me with a success (or failed)
-status. I'd like to know when things are finished.
+Thanks.
 
-Next, and this is why I Cc'd Konstantin, maybe it would be prudent to
-have a web site show the status of your tests?  Where we can see if a
-test is in progress, finished, found new errors or not.
-
-Ideally, it would be hosted on kernel.org. Maybe you and Konstantin
-could organize something. Maybe just a redirect to another website. I
-feel this would be very useful to have. That way, I don't need to ask
-to be emailed, but instead just go check a website to see where the
-test is at.
-
-Maybe you already have this?
-
-Thanks or all you effort,
-
--- Steve
+-- 
+tejun
