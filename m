@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755082AbaDXJWP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:22:15 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47040 "EHLO
+	id S1755431AbaDXJWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:22:47 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47027 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123AbaDXI4D (ORCPT
+	with ESMTP id S1754809AbaDXI4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:56:03 -0400
+	Thu, 24 Apr 2014 04:56:00 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Viresh Kumar <viresh.kumar@linaro.org>, linaro-kernel@lists.linaro.org,
-        fweisbec@gmail.com, Arvind.Chauhan@arm.com,
-        linaro-networking@linaro.org, Thomas Gleixner <tglx@linutronix.de>,
+Cc: Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 155/182] tick-common: Fix wrong check in tick_check_replacement()
-Date: Thu, 24 Apr 2014 09:51:20 +0100
-Message-Id: <1398329507-5911-156-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 154/182] user namespace: fix incorrect memory barriers
+Date: Thu, 24 Apr 2014 09:51:19 +0100
+Message-Id: <1398329507-5911-155-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -29,46 +28,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Viresh Kumar <viresh.kumar@linaro.org>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit 521c42990e9d561ed5ed9f501f07639d0512b3c9 upstream.
+commit e79323bd87808fdfbc68ce6c5371bd224d9672ee upstream.
 
-tick_check_replacement() returns if a replacement of clock_event_device is
-possible or not. It does this as the first check:
+smp_read_barrier_depends() can be used if there is data dependency between
+the readers - i.e. if the read operation after the barrier uses address
+that was obtained from the read operation before the barrier.
 
-	if (tick_check_percpu(curdev, newdev, smp_processor_id()))
-		return false;
+In this file, there is only control dependency, no data dependecy, so the
+use of smp_read_barrier_depends() is incorrect. The code could fail in the
+following way:
+* the cpu predicts that idx < entries is true and starts executing the
+  body of the for loop
+* the cpu fetches map->extent[0].first and map->extent[0].count
+* the cpu fetches map->nr_extents
+* the cpu verifies that idx < extents is true, so it commits the
+  instructions in the body of the for loop
 
-Thats wrong. tick_check_percpu() returns true when the device is
-useable. Check for false instead.
+The problem is that in this scenario, the cpu read map->extent[0].first
+and map->nr_extents in the wrong order. We need a full read memory barrier
+to prevent it.
 
-[ tglx: Massaged changelog ]
-
-Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
-Cc: linaro-kernel@lists.linaro.org
-Cc: fweisbec@gmail.com
-Cc: Arvind.Chauhan@arm.com
-Cc: linaro-networking@linaro.org
-Link: http://lkml.kernel.org/r/486a02efe0246635aaba786e24b42d316438bf3b.1397537987.git.viresh.kumar@linaro.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/time/tick-common.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/user_namespace.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
-index 64522ec..271ce26 100644
---- a/kernel/time/tick-common.c
-+++ b/kernel/time/tick-common.c
-@@ -260,7 +260,7 @@ static bool tick_check_preferred(struct clock_event_device *curdev,
- bool tick_check_replacement(struct clock_event_device *curdev,
- 			    struct clock_event_device *newdev)
- {
--	if (tick_check_percpu(curdev, newdev, smp_processor_id()))
-+	if (!tick_check_percpu(curdev, newdev, smp_processor_id()))
- 		return false;
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 9064b91..9bea1d7 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -148,7 +148,7 @@ static u32 map_id_range_down(struct uid_gid_map *map, u32 id, u32 count)
  
- 	return tick_check_preferred(curdev, newdev);
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -172,7 +172,7 @@ static u32 map_id_down(struct uid_gid_map *map, u32 id)
+ 
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -195,7 +195,7 @@ static u32 map_id_up(struct uid_gid_map *map, u32 id)
+ 
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].lower_first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -611,9 +611,8 @@ static ssize_t map_write(struct file *file, const char __user *buf,
+ 	 * were written before the count of the extents.
+ 	 *
+ 	 * To achieve this smp_wmb() is used on guarantee the write
+-	 * order and smp_read_barrier_depends() is guaranteed that we
+-	 * don't have crazy architectures returning stale data.
+-	 *
++	 * order and smp_rmb() is guaranteed that we don't have crazy
++	 * architectures returning stale data.
+ 	 */
+ 	mutex_lock(&id_map_mutex);
+ 
 -- 
 1.9.1
 
