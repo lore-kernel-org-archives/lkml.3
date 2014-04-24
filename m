@@ -1,204 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181AbaDXLOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:14:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46496 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787AbaDXIxO (ORCPT
+	id S1756019AbaDXLRB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:17:01 -0400
+Received: from mail-la0-f49.google.com ([209.85.215.49]:46706 "EHLO
+	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753868AbaDXLQx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:14 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Tomas Winkler <tomas.winkler@intel.com>,
-        Alexander Usyskin <alexander.usyskin@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 055/182] mei: fix memory leak of pending write cb objects
-Date: Thu, 24 Apr 2014 09:49:40 +0100
-Message-Id: <1398329507-5911-56-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 07:16:53 -0400
+Message-ID: <5358F2A1.40106@cogentembedded.com>
+Date: Thu, 24 Apr 2014 15:16:49 +0400
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Geert Uytterhoeven <geert+renesas@glider.be>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: Ben Dooks <ben.dooks@codethink.co.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-sh@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH 1/6] PM / clock_ops: Add helpers combining generic runtime
+ and generic clock PM
+References: <1398335198-26555-1-git-send-email-geert+renesas@glider.be> <1398335198-26555-2-git-send-email-geert+renesas@glider.be>
+In-Reply-To: <1398335198-26555-2-git-send-email-geert+renesas@glider.be>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+Hello.
 
-------------------
+On 24-04-2014 14:26, Geert Uytterhoeven wrote:
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+> Add helpers pm_generic_runtime_clk_suspend() and
+> pm_generic_clk_runtime_resume(), combining generic runtime PM and generic
+> clock PM.
 
-commit cc99ecfdac01215594c73907726b12f251c21e20 upstream.
+> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
 
-Write callbacks are released on the write completed path but
-when file handler is closed before the writes are
-completed those are left dangling on write and write_waiting queues.
+[...]
 
-We add mei_io_list_free function to perform this task
+> diff --git a/include/linux/pm_clock.h b/include/linux/pm_clock.h
+> index 6981aa288c45..bf1e4d09a0ca 100644
+> --- a/include/linux/pm_clock.h
+> +++ b/include/linux/pm_clock.h
+> @@ -35,6 +35,8 @@ extern int pm_clk_add_clk(struct device *dev, struct clk *clk);
+>   extern void pm_clk_remove(struct device *dev, const char *con_id);
+>   extern int pm_clk_suspend(struct device *dev);
+>   extern int pm_clk_resume(struct device *dev);
+> +extern int pm_generic_runtime_clk_suspend(struct device *dev);
+> +extern int pm_generic_clk_runtime_resume(struct device *dev);
 
-Also move static functions to client.c form client.h
+    Shouldn't these function names be symmetric? I think '_clk' and '_runtime' 
+need swapping in one case.
 
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.11: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/misc/mei/client.c | 76 ++++++++++++++++++++++++++++++++++-------------
- drivers/misc/mei/client.h | 17 -----------
- 2 files changed, 55 insertions(+), 38 deletions(-)
-
-diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
-index b254132..12513e2 100644
---- a/drivers/misc/mei/client.c
-+++ b/drivers/misc/mei/client.c
-@@ -74,23 +74,69 @@ int mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
- 
- 
- /**
-- * mei_io_list_flush - removes list entry belonging to cl.
-+ * mei_cl_cmp_id - tells if the clients are the same
-  *
-- * @list:  An instance of our list structure
-- * @cl: host client
-+ * @cl1: host client 1
-+ * @cl2: host client 2
-+ *
-+ * returns true  - if the clients has same host and me ids
-+ *         false - otherwise
-+ */
-+static inline bool mei_cl_cmp_id(const struct mei_cl *cl1,
-+				const struct mei_cl *cl2)
-+{
-+	return cl1 && cl2 &&
-+		(cl1->host_client_id == cl2->host_client_id) &&
-+		(cl1->me_client_id == cl2->me_client_id);
-+}
-+
-+/**
-+ * mei_io_list_flush - removes cbs belonging to cl.
-+ *
-+ * @list:  an instance of our list structure
-+ * @cl:    host client, can be NULL for flushing the whole list
-+ * @free:  whether to free the cbs
-  */
--void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl)
-+static void __mei_io_list_flush(struct mei_cl_cb *list,
-+				struct mei_cl *cl, bool free)
- {
- 	struct mei_cl_cb *cb;
- 	struct mei_cl_cb *next;
- 
-+	/* enable removing everything if no cl is specified */
- 	list_for_each_entry_safe(cb, next, &list->list, list) {
--		if (cb->cl && mei_cl_cmp_id(cl, cb->cl))
-+		if (!cl || (cb->cl && mei_cl_cmp_id(cl, cb->cl))) {
- 			list_del(&cb->list);
-+			if (free)
-+				mei_io_cb_free(cb);
-+		}
- 	}
- }
- 
- /**
-+ * mei_io_list_flush - removes list entry belonging to cl.
-+ *
-+ * @list:  An instance of our list structure
-+ * @cl: host client
-+ */
-+static inline void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl)
-+{
-+	__mei_io_list_flush(list, cl, false);
-+}
-+
-+
-+/**
-+ * mei_io_list_free - removes cb belonging to cl and free them
-+ *
-+ * @list:  An instance of our list structure
-+ * @cl: host client
-+ */
-+static inline void mei_io_list_free(struct mei_cl_cb *list, struct mei_cl *cl)
-+{
-+	__mei_io_list_flush(list, cl, true);
-+}
-+
-+/**
-  * mei_io_cb_free - free mei_cb_private related memory
-  *
-  * @cb: mei callback struct
-@@ -192,8 +238,8 @@ int mei_cl_flush_queues(struct mei_cl *cl)
- 
- 	dev_dbg(&cl->dev->pdev->dev, "remove list entry belonging to cl\n");
- 	mei_io_list_flush(&cl->dev->read_list, cl);
--	mei_io_list_flush(&cl->dev->write_list, cl);
--	mei_io_list_flush(&cl->dev->write_waiting_list, cl);
-+	mei_io_list_free(&cl->dev->write_list, cl);
-+	mei_io_list_free(&cl->dev->write_waiting_list, cl);
- 	mei_io_list_flush(&cl->dev->ctrl_wr_list, cl);
- 	mei_io_list_flush(&cl->dev->ctrl_rd_list, cl);
- 	mei_io_list_flush(&cl->dev->amthif_cmd_list, cl);
-@@ -915,20 +961,8 @@ void mei_cl_all_read_wakeup(struct mei_device *dev)
-  */
- void mei_cl_all_write_clear(struct mei_device *dev)
- {
--	struct mei_cl_cb *cb, *next;
--	struct list_head *list;
--
--	list = &dev->write_list.list;
--	list_for_each_entry_safe(cb, next, list, list) {
--		list_del(&cb->list);
--		mei_io_cb_free(cb);
--	}
--
--	list = &dev->write_waiting_list.list;
--	list_for_each_entry_safe(cb, next, list, list) {
--		list_del(&cb->list);
--		mei_io_cb_free(cb);
--	}
-+	mei_io_list_free(&dev->write_list, NULL);
-+	mei_io_list_free(&dev->write_waiting_list, NULL);
- }
- 
- 
-diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
-index b1717bb..78df8f0 100644
---- a/drivers/misc/mei/client.h
-+++ b/drivers/misc/mei/client.h
-@@ -45,8 +45,6 @@ static inline void mei_io_list_init(struct mei_cl_cb *list)
- {
- 	INIT_LIST_HEAD(&list->list);
- }
--void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl);
--
- /*
-  * MEI Host Client Functions
-  */
-@@ -61,21 +59,6 @@ int mei_cl_unlink(struct mei_cl *cl);
- int mei_cl_flush_queues(struct mei_cl *cl);
- struct mei_cl_cb *mei_cl_find_read_cb(struct mei_cl *cl);
- 
--/**
-- * mei_cl_cmp_id - tells if file private data have same id
-- *
-- * @fe1: private data of 1. file object
-- * @fe2: private data of 2. file object
-- *
-- * returns true  - if ids are the same and not NULL
-- */
--static inline bool mei_cl_cmp_id(const struct mei_cl *cl1,
--				const struct mei_cl *cl2)
--{
--	return cl1 && cl2 &&
--		(cl1->host_client_id == cl2->host_client_id) &&
--		(cl1->me_client_id == cl2->me_client_id);
--}
- static inline bool mei_cl_is_transitioning(struct mei_cl *cl)
- {
- 	return (MEI_FILE_INITIALIZING == cl->state ||
--- 
-1.9.1
+WBR, Sergei
 
