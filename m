@@ -1,37 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756900AbaDXM21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:28:27 -0400
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:53780 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753282AbaDXM2X (ORCPT
+	id S1756935AbaDXM2r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:28:47 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:61102 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753210AbaDXM2o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:28:23 -0400
-Date: Thu, 24 Apr 2014 08:28:08 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Kefeng Wang <kefeng.wang@linaro.org>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        wangkefeng.wang@huawei.com
-Subject: Re: [PATCH v5 0/3] ahci: add support for hisilicon sata
-Message-ID: <20140424122808.GL4781@htj.dyndns.org>
-References: <1398256603-20160-1-git-send-email-kefeng.wang@linaro.org>
- <20140423142726.GC4781@htj.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140423142726.GC4781@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Apr 2014 08:28:44 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linaro-kernel@lists.linaro.org, Peter Griffin <peter.griffin@linaro.org>
+Subject: [PATCH 00/13] video: Arnds randconfig fixes for video
+Date: Thu, 24 Apr 2014 13:28:16 +0100
+Message-Id: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 10:27:26AM -0400, Tejun Heo wrote:
-> Applied to libata/for-3.16.
+This patchset series addresses various bugs found and fixed by Arnd Bergmann 
+whilst doing randconfig builds.
 
-Reverted due to build failure.  I was apparently too dependent on
-build-bot but what the hell?  This isn't acceptable.
+My involvement has been to review, add/check the maintainers are correct
+and submit upstream to try and reduce the backlog.
+
+Regards,
+
+Peter.
+
+Arnd Bergmann (11):
+  video: sh_mobile_lcdcfb depends on meram
+  video: omap2dss: fix LPAE warnings
+  video: clarify I2C dependencies
+  video/omap: fix modular build
+  video/mbx: fix building debugfs support
+  video: export fb_prepare_logo
+  video: atmel needs FB_BACKLIGHT
+  video/pxa: LCD_CORGI needs BACKLIGHT_CLASS_DEVICE
+  video/nuc900: allow modular build
+  video/backlight: LP855X needs PWM
+  video: omap: allow building on !MMU
+
+Peter Griffin (2):
+  video/backlight: LM3630A needs PWM
+  video/backlight: LP8788 needs PWM
+
+ drivers/video/backlight/Kconfig        |    8 ++++----
+ drivers/video/fbdev/Kconfig            |    6 +++++-
+ drivers/video/fbdev/core/fbmem.c       |    1 +
+ drivers/video/fbdev/mbx/Makefile       |    3 +--
+ drivers/video/fbdev/mbx/mbxdebugfs.c   |    2 +-
+ drivers/video/fbdev/mbx/mbxfb.c        |    2 ++
+ drivers/video/fbdev/omap/Kconfig       |    9 +++++++++
+ drivers/video/fbdev/omap/Makefile      |   23 ++++++++++++-----------
+ drivers/video/fbdev/omap/lcdc.c        |   28 +++++-----------------------
+ drivers/video/fbdev/omap/omapfb_main.c |    1 +
+ drivers/video/fbdev/omap2/dss/dispc.c  |    6 +++---
+ include/linux/omap-dma.h               |    2 +-
+ include/video/omapdss.h                |    4 ++--
+ 13 files changed, 47 insertions(+), 48 deletions(-)
 
 -- 
-tejun
+1.7.9.5
+
