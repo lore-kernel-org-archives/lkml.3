@@ -1,78 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757735AbaDXO15 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:27:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61665 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757159AbaDXO1z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:27:55 -0400
-Message-ID: <1398349637.3010.68.camel@deneb.redhat.com>
-Subject: Re: linux-next: manual merge of the akpm-current tree with the arm
- tree
-From: Mark Salter <msalter@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Liu Hua <sdu.liu@huawei.com>
-Date: Thu, 24 Apr 2014 10:27:17 -0400
-In-Reply-To: <20140424152516.47a704ec9b749f98b9a93048@canb.auug.org.au>
-References: <20140424152516.47a704ec9b749f98b9a93048@canb.auug.org.au>
-Organization: Red Hat, Inc
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature";
-	boundary="=-tdbjfuO+TpuUFruJcMmH"
-Mime-Version: 1.0
+	id S1757786AbaDXO2Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:28:24 -0400
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:43783 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757450AbaDXO14 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 10:27:56 -0400
+Message-ID: <53591F65.9010001@de.ibm.com>
+Date: Thu, 24 Apr 2014 16:27:49 +0200
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
+CC: Dominik Dingel <dingel@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] KVM: async_pf: use_mm/mm_users fixes
+References: <20140421132543.GA13594@redhat.com>
+In-Reply-To: <20140421132543.GA13594@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042414-0542-0000-0000-000008C36A5F
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 21/04/14 15:25, Oleg Nesterov wrote:
+> Hello.
+> 
+> Completely untested and I know nothing about kvm ;) Please review.
+> 
+> But use_mm() really looks misleading, and the usage of mm_users looks
+> "obviously wrong". I already sent this change while we were discussing
+> vmacache, but it was ignored. Since then kvm_async_page_present_sync()
+> was added into async_pf_execute() into async_pf_execute(), but it seems
+> to me that use_mm() is still unnecessary.
+> 
+> Oleg.
+> 
+>  virt/kvm/async_pf.c |   10 ++++------
+>  1 files changed, 4 insertions(+), 6 deletions(-)
+> 
 
---=-tdbjfuO+TpuUFruJcMmH
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+I gave both patches some testing on s390, seems fine. I think patch2 really
+does fix a bug. So if Paolo, Marcelo, Gleb agree (maybe do a test on x86 for
+async_pf) both patches are good to go. Given that somebody tests this on x86:
 
-On Thu, 2014-04-24 at 15:25 +1000, Stephen Rothwell wrote:
-> Hi Andrew,
->=20
-> Today's linux-next merge of the akpm-current tree got a conflict in
-> arch/arm/include/asm/fixmap.h between commits 4221e2e6b316 ("ARM: 8031/1:
-> fixmap: remove FIX_KMAP_BEGIN and FIX_KMAP_END") and a05e54c103b0 ("ARM:
-> 8031/2: change fixmap mapping region to support 32 CPUs") from the arm
-> tree and commit a665f864487d ("arm: use generic fixmap.h") from the
-> akpm-current tree.
->=20
-> I fixed it up (I have just dropped the akpm-current tree patch for now)
-> and can carry the fix as necessary (no action is required).
-
-I'm okay with just dropping it from Andrew's tree. We never got an ack
-for it. Now that the generic fixmap and early_ioremap patches are in
-Linus' tree, it would probably be best to fold the arm fixmap change
-into a new patch set adding early_ioremap to arm.
-
---Mark
-
-
---=-tdbjfuO+TpuUFruJcMmH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAABAgAGBQJTWR9cAAoJEOiN4VijXeFPOi4P/3WArQrh9Ge9Y4dNnbl77zRE
-S0yhpJHAHmE6YI613zeX0uPfl5/MES+QAKziIiykfdmQi3aaEK9S9qot5BTSyZXq
-nGqKgE5GFB97/Nve/9H+4KuPRJ1LcY6TQjTxqSAAQ11jVetlq5Zs0CeIRkn/2HN0
-AoSHtw3vVsoSjwql6lD4ourLvcuuqaKLAvKRe0dkPxp91FfxFMODB1XZBZd09Alb
-EHUwvLdPt9zTZo1wILiitolXmZSJoNasZLFw/sVlmnjkSra1xIxDhWkrVAOCQ+9l
-+kqV3NkoiatlfIcyD7atEt6fRo05161Bv+dS1Sz9mC5G4Gd2BV8JTo+jv19AWQZG
-yMAJjLs5mi9rVhYKiyk0UNl7AkWEwKb9Y1DPAjO4UQ+46OMRmbensM+0iirDmxaa
-FNGTQJMrGXihmFPS0KoWlWJL9l7dK4RADcF4J2b1UYEKs3nSA6BHn/04TxXBBspo
-CkQnWb7X4SwsC4oyFqPAf666AiXM0EfDQTgtVWY71aW7OMgMZPtBNgUXZ/sKAjfR
-dLUz+VTxe4KO1FrBsoSsjXk3pKtEQree9mgCGf9v0GZd5ZLwu8iKRB3Qyrl+VaWL
-0UlnR+KRr2QLy6ZFguP/khIELjtXSNbOi0iCotI0ta8/eYif1Cmon/h16vE4f0HQ
-vj+rY3MGw22Jg+egzdmZ
-=lvqK
------END PGP SIGNATURE-----
-
---=-tdbjfuO+TpuUFruJcMmH--
+Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
