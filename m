@@ -1,211 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754064AbaDXKtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:49:08 -0400
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:19345
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755968AbaDXKqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:46:25 -0400
-From: Anders Berg <anders.berg@lsi.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        Mike Turquette <mturquette@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>
-CC: Linus Walleij <linus.walleij@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Anders Berg <anders.berg@lsi.com>
-Subject: [PATCH v2 5/6] power: reset: Add Axxia system reset driver
-Date: Thu, 24 Apr 2014 12:44:08 +0200
-Message-ID: <20de23893874dfb87e407967da10b5caf5d93e9b.1398335771.git.anders.berg@lsi.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <cover.1398335771.git.anders.berg@lsi.com>
-References: <cover.1398335771.git.anders.berg@lsi.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [213.121.150.226]
-X-ClientProxiedBy: BY2PR07CA040.namprd07.prod.outlook.com (10.141.251.15) To
- CO1PR07MB377.namprd07.prod.outlook.com (10.141.74.156)
-X-Forefront-PRVS: 01917B1794
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019001)(6009001)(428001)(189002)(199002)(80976001)(83322001)(19580405001)(50226001)(53416003)(31966008)(74662001)(19580395003)(99396002)(85852003)(77982001)(89996001)(47776003)(46102001)(83072002)(42186004)(79102001)(76482001)(20776003)(80022001)(66066001)(4396001)(74502001)(575784001)(86362001)(93916002)(87286001)(88136002)(36756003)(50466002)(33646001)(87976001)(76176999)(77156001)(50986999)(81542001)(81342001)(62966002)(48376002)(92726001)(92566001)(2004002);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR07MB377;H:swsaberg01.lsi.com;FPR:F085DAE6.ACE8910D.48D5AE8A.83C5C342.20498;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-OriginatorOrg: lsi.com
+	id S1754275AbaDXKtm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:49:42 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:58500 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932AbaDXKtG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 06:49:06 -0400
+X-AuditID: cbfee61b-b7f766d00000646c-b1-5358ec1fb2fd
+From: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+To: Tushar Behera <tushar.behera@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com
+Subject: Re: [PATCH] thermal: samsung: Only update available threshold limits
+Date: Thu, 24 Apr 2014 12:48:38 +0200
+Message-id: <1705902.4858U1S3Zd@amdc1032>
+User-Agent: KMail/4.8.4 (Linux/3.2.0-54-generic-pae; KDE/4.8.5; i686; ; )
+In-reply-to: <1397453895-6688-1-git-send-email-tushar.behera@linaro.org>
+References: <1397453895-6688-1-git-send-email-tushar.behera@linaro.org>
+MIME-version: 1.0
+Content-transfer-encoding: 7Bit
+Content-type: text/plain; charset=ISO-8859-1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t9jAV35NxHBBie2ylis2f+TyeLyrjls
+	Fp97jzBazDi/j8niycM+Nov2v3vZHNg8Fu95yeRx59oeNo/jN7YzeXzeJBfAEsVlk5Kak1mW
+	WqRvl8CVsWbeK+aCm0IVL4/yNTA+4eti5OSQEDCROPBxGhOELSZx4d56ti5GLg4hgUWMEucu
+	LIZyWpgk7nRtYQWpYhOwkpjYvooRxBYR0JF4sGgvC0gRs0Avo8TnndfARgkL+Erc6bwEZHNw
+	sAioSnx5aAUS5hXQlNiz9hVYiaiAp8SO7SvZQEo4BTwkjl5RBjGFBNwltkNs4hUQlPgx+R4L
+	iM0sIC+xb/9UVghbR2J/6zS2CYwCs5CUzUJSNgtJ2QJG5lWMoqkFyQXFSem5RnrFibnFpXnp
+	esn5uZsYwcH8THoH46oGi0OMAhyMSjy8CrfCg4VYE8uKK3MPMUpwMCuJ8P55HhEsxJuSWFmV
+	WpQfX1Sak1p8iFGag0VJnPdgq3WgkEB6YklqdmpqQWoRTJaJg1OqgXFNfNOBVbV+p6IE8xe0
+	XYw537lL/vL3bRMeCJvwuv6qmcr9rHTSRxmRtQXn89Re6NdqFS2cG8hhuMPrk+/U+t+tN1id
+	AhcflonveXDv4YOOM9MCnFbnu3wrE689MT/j/Ov9ai7Plf3n/5u6R0Hjp5cQz6Ovr54wZC/L
+	2KNalMJ3YKbS08k6K18osRRnJBpqMRcVJwIAGClvJWICAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add Axxia (AXM55xx) SoC system reset driver. This driver handles only system
-reboot (and not power-off).
 
-Signed-off-by: Anders Berg <anders.berg@lsi.com>
----
- .../bindings/power_supply/axxia-reset.txt          | 20 +++++
- drivers/power/reset/Kconfig                        |  8 ++
- drivers/power/reset/Makefile                       |  1 +
- drivers/power/reset/axxia-reset.c                  | 97 ++++++++++++++++++++++
- 4 files changed, 126 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/power_supply/axxia-reset.txt
- create mode 100644 drivers/power/reset/axxia-reset.c
+Hi,
 
-diff --git a/Documentation/devicetree/bindings/power_supply/axxia-reset.txt b/Documentation/devicetree/bindings/power_supply/axxia-reset.txt
-new file mode 100644
-index 0000000..47e720d
---- /dev/null
-+++ b/Documentation/devicetree/bindings/power_supply/axxia-reset.txt
-@@ -0,0 +1,20 @@
-+Axxia Restart Driver
-+
-+This driver can do reset of the Axxia SoC. It uses the registers in the syscon
-+block to initiate a chip reset.
-+
-+Required Properties:
-+  -compatible: "lsi,axm55xx-reset"
-+  -syscon: phandle to the syscon node.
-+
-+Example:
-+
-+	syscon: syscon@2010030000 {
-+		compatible = "lsi,axxia-syscon", "syscon";
-+		reg = <0x20 0x10030000 0 0x2000>;
-+	};
-+
-+	reset: reset@2010031000 {
-+		compatible = "lsi,axm55xx-reset";
-+		syscon = <&syscon>;
-+	};
-diff --git a/drivers/power/reset/Kconfig b/drivers/power/reset/Kconfig
-index fa0e4e0..49b46e6 100644
---- a/drivers/power/reset/Kconfig
-+++ b/drivers/power/reset/Kconfig
-@@ -12,6 +12,14 @@ config POWER_RESET_AS3722
- 	help
- 	  This driver supports turning off board via a ams AS3722 power-off.
- 
-+config POWER_RESET_AXXIA
-+	bool "LSI Axxia reset driver"
-+	depends on POWER_RESET && ARCH_AXXIA
-+	help
-+	  This driver supports restart for Axxia SoC.
-+
-+	  Say Y if you have an Axxia family SoC.
-+
- config POWER_RESET_GPIO
- 	bool "GPIO power-off driver"
- 	depends on OF_GPIO && POWER_RESET
-diff --git a/drivers/power/reset/Makefile b/drivers/power/reset/Makefile
-index a5b4a77..16c0516 100644
---- a/drivers/power/reset/Makefile
-+++ b/drivers/power/reset/Makefile
-@@ -1,4 +1,5 @@
- obj-$(CONFIG_POWER_RESET_AS3722) += as3722-poweroff.o
-+obj-$(CONFIG_POWER_RESET_AXXIA) += axxia-reset.o
- obj-$(CONFIG_POWER_RESET_GPIO) += gpio-poweroff.o
- obj-$(CONFIG_POWER_RESET_MSM) += msm-poweroff.o
- obj-$(CONFIG_POWER_RESET_QNAP) += qnap-poweroff.o
-diff --git a/drivers/power/reset/axxia-reset.c b/drivers/power/reset/axxia-reset.c
-new file mode 100644
-index 0000000..a16eb50
---- /dev/null
-+++ b/drivers/power/reset/axxia-reset.c
-@@ -0,0 +1,97 @@
-+/*
-+ * Reset driver for Axxia devices
-+ *
-+ * Copyright (C) 2014 LSI
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+#include <linux/delay.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/mfd/syscon.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/platform_device.h>
-+#include <linux/reboot.h>
-+#include <linux/regmap.h>
-+
-+#include <asm/system_misc.h>
-+
-+
-+#define SC_CRIT_WRITE_KEY	0x1000
-+#define SC_LATCH_ON_RESET	0x1004
-+#define SC_RESET_CONTROL	0x1008
-+#define   RSTCTL_RST_ZERO	(1<<3)
-+#define   RSTCTL_RST_FAB	(1<<2)
-+#define   RSTCTL_RST_CHIP	(1<<1)
-+#define   RSTCTL_RST_SYS	(1<<0)
-+#define SC_EFUSE_INT_STATUS	0x180c
-+#define   EFUSE_READ_DONE	(1<<31)
-+
-+static struct regmap *syscon;
-+
-+static void do_axxia_restart(enum reboot_mode reboot_mode, const char *cmd)
-+{
-+	/* Access Key (0xab) */
-+	regmap_write(syscon, SC_CRIT_WRITE_KEY, 0xab);
-+	/* Select internal boot from 0xffff0000 */
-+	regmap_write(syscon, SC_LATCH_ON_RESET, 0x00000040);
-+	/* Assert ResetReadDone (to avoid hanging in boot ROM) */
-+	regmap_write(syscon, SC_EFUSE_INT_STATUS, EFUSE_READ_DONE);
-+	/* Assert chip reset */
-+	regmap_update_bits(syscon, SC_RESET_CONTROL,
-+			   RSTCTL_RST_CHIP, RSTCTL_RST_CHIP);
-+}
-+
-+static int axxia_reset_probe(struct platform_device *pdev)
-+{
-+	struct device *dev = &pdev->dev;
-+	struct device_node *dev_np = dev->of_node;
-+	struct device_node *syscon_np;
-+
-+	syscon_np = of_parse_phandle(dev_np, "syscon", 0);
-+	if (!syscon_np) {
-+		pr_err("%s: no handle to syscon node\n", dev_np->name);
-+		return -ENODEV;
-+	}
-+
-+	syscon = syscon_node_to_regmap(syscon_np);
-+	if (IS_ERR(syscon)) {
-+		pr_err("%s: could not locate syscon regmap\n", dev_np->name);
-+		return PTR_ERR(syscon);
-+	}
-+
-+	arm_pm_restart = do_axxia_restart;
-+
-+	return 0;
-+}
-+
-+static const struct of_device_id of_axxia_reset_match[] = {
-+	{ .compatible = "lsi,axm55xx-reset", },
-+	{},
-+};
-+MODULE_DEVICE_TABLE(of, of_axxia_reset_match);
-+
-+static struct platform_driver axxia_reset_driver = {
-+	.probe = axxia_reset_probe,
-+	.driver = {
-+		.name = "axxia-reset",
-+		.of_match_table = of_match_ptr(of_axxia_reset_match),
-+	},
-+};
-+
-+static int __init axxia_reset_init(void)
-+{
-+	return platform_driver_register(&axxia_reset_driver);
-+}
-+device_initcall(axxia_reset_init);
--- 
-1.8.3.2
+On Monday, April 14, 2014 11:08:15 AM Tushar Behera wrote:
+> Currently the threshold limits are updated in 2 stages, once for all
+> software trigger levels and again for hardware trip point.
+> 
+> While updating the software trigger levels, it overwrites the threshold
+> limit for hardware trip point thereby forcing the Exynos core to issue
+> an emergency shutdown.
+
+On what SoC type have you encountered this problem?  It doesn't seem to
+happen on older SoCs (at least Exynos4210 and Exynos4x12 ones).
+
+> Updating only the required fields in threshold register fixes this issue.
+
+With the current code there is indeed a time window during which threshold
+limit for hardware trip point is set to zero so the fix is correct.
+
+> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
+> ---
+> Based on v3.15-rc1.
+> 
+>  drivers/thermal/samsung/exynos_tmu.c |    4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
+> index 0d96a51..ffccc89 100644
+> --- a/drivers/thermal/samsung/exynos_tmu.c
+> +++ b/drivers/thermal/samsung/exynos_tmu.c
+> @@ -225,6 +225,8 @@ skip_calib_data:
+>  			trigger_levs++;
+>  	}
+>  
+> +	rising_threshold = readl(data->base + reg->threshold_th0);
+
+You may move this inside "} else {" block as rising_threshold
+is not used for data->soc == SOC_ARCH_EXYNOS4210 case.
+
+Also rising_threshold initialization to zero at the beginning of
+exynos_tmu_initialize() is not needed anylonger.
+
+> +
+>  	if (data->soc == SOC_ARCH_EXYNOS4210) {
+>  		/* Write temperature code for threshold */
+>  		threshold_code = temp_to_code(data, pdata->threshold);
+> @@ -249,6 +251,7 @@ skip_calib_data:
+>  				ret = threshold_code;
+>  				goto out;
+>  			}
+> +			rising_threshold &= ~(0xff << 8 * i);
+>  			rising_threshold |= threshold_code << 8 * i;
+>  			if (pdata->threshold_falling) {
+>  				threshold_code = temp_to_code(data,
+> @@ -281,6 +284,7 @@ skip_calib_data:
+>  			}
+>  			if (i == EXYNOS_MAX_TRIGGER_PER_REG - 1) {
+>  				/* 1-4 level to be assigned in th0 reg */
+> +				rising_threshold &= ~(0xff << 8 * i);
+>  				rising_threshold |= threshold_code << 8 * i;
+>  				writel(rising_threshold,
+>  					data->base + reg->threshold_th0);
+
+Best regards,
+--
+Bartlomiej Zolnierkiewicz
+Samsung R&D Institute Poland
+Samsung Electronics
 
