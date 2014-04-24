@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623AbaDXJs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:48:28 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46817 "EHLO
+	id S1754528AbaDXIy4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:54:56 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46791 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531AbaDXIy5 (ORCPT
+	with ESMTP id S1752970AbaDXIyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:54:57 -0400
+	Thu, 24 Apr 2014 04:54:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Takashi Iwai <tiwai@suse.de>,
+Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Dave Airlie <airlied@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 119/182] ALSA: hda - Fix silent speaker output due to mute LED fixup
-Date: Thu, 24 Apr 2014 09:50:44 +0100
-Message-Id: <1398329507-5911-120-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 114/182] drm/qxl: unset a pointer in sync_obj_unref
+Date: Thu, 24 Apr 2014 09:50:39 +0100
+Message-Id: <1398329507-5911-115-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,42 +28,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Maarten Lankhorst <maarten.lankhorst@canonical.com>
 
-commit 415d555e6b398b00fc1733f0113065a54df9106a upstream.
+commit 41ccec352f3c823931a7d9d2a9c7880c14d7415a upstream.
 
-The recent fixups for HP laptops to support the mute LED made the
-speaker output silent on some machines.  It turned out that they use
-the NID 0x18 for the speaker while it's also used for controlling the
-LED via VREF bits although the current driver code blindly assumes
-that such a node is a mic pin (where 0x18 is usually so).
+This fixes a BUG_ON(bo->sync_obj != NULL); in ttm_bo_release_list.
 
-This patch fixes the problem by only changing the VREF bits and
-keeping the other pin ctl bits.
-
-Reported-and-tested-by: Hui Wang <hui.wang@canonical.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Maarten Lankhorst <maarten.lankhorst@canonical.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/gpu/drm/qxl/qxl_ttm.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 740902f1..16096332 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -2967,8 +2967,9 @@ static void alc269_fixup_mic_mute_hook(void *private_data, int enabled)
+diff --git a/drivers/gpu/drm/qxl/qxl_ttm.c b/drivers/gpu/drm/qxl/qxl_ttm.c
+index 1dfd84c..ab69791 100644
+--- a/drivers/gpu/drm/qxl/qxl_ttm.c
++++ b/drivers/gpu/drm/qxl/qxl_ttm.c
+@@ -431,6 +431,7 @@ static int qxl_sync_obj_flush(void *sync_obj)
  
- 	if (spec->mute_led_polarity)
- 		enabled = !enabled;
--	pinval = AC_PINCTL_IN_EN |
--		(enabled ? AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80);
-+	pinval = snd_hda_codec_get_pin_target(codec, spec->mute_led_nid);
-+	pinval &= ~AC_PINCTL_VREFEN;
-+	pinval |= enabled ? AC_PINCTL_VREF_HIZ : AC_PINCTL_VREF_80;
- 	if (spec->mute_led_nid)
- 		snd_hda_set_pin_ctl_cache(codec, spec->mute_led_nid, pinval);
+ static void qxl_sync_obj_unref(void **sync_obj)
+ {
++	*sync_obj = NULL;
  }
+ 
+ static void *qxl_sync_obj_ref(void *sync_obj)
 -- 
 1.9.1
 
