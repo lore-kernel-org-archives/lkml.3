@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306AbaDXDSA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 23:18:00 -0400
-Received: from mail-pb0-f47.google.com ([209.85.160.47]:37972 "EHLO
-	mail-pb0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbaDXDR7 (ORCPT
+	id S1752388AbaDXD0H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 23:26:07 -0400
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:55165 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478AbaDXD0E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 23:17:59 -0400
-Message-ID: <53588262.5020104@linaro.org>
-Date: Thu, 24 Apr 2014 08:47:54 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-pm@vger.kernel.org
-CC: rui.zhang@intel.com, eduardo.valentin@ti.com,
-        Amit Daniel Kachhap <amit.daniel@samsung.com>
-Subject: Re: [PATCH] thermal: samsung: Only update available threshold limits
-References: <1397453895-6688-1-git-send-email-tushar.behera@linaro.org>
-In-Reply-To: <1397453895-6688-1-git-send-email-tushar.behera@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Wed, 23 Apr 2014 23:26:04 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: arnd@arndb.de, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Cc: haver@linux.vnet.ibm.com, Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] misc: genwqe: Fix format string mismatch in card_debugfs.c
+Date: Thu, 24 Apr 2014 12:25:49 +0900
+Message-Id: <1398309949-23305-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.0.0.rc0.26.g779792a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 11:08 AM, Tushar Behera wrote:
-> Currently the threshold limits are updated in 2 stages, once for all
-> software trigger levels and again for hardware trip point.
-> 
-> While updating the software trigger levels, it overwrites the threshold
-> limit for hardware trip point thereby forcing the Exynos core to issue
-> an emergency shutdown.
-> 
-> Updating only the required fields in threshold register fixes this issue.
-> 
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> ---
-> Based on v3.15-rc1.
-> 
->  drivers/thermal/samsung/exynos_tmu.c |    4 ++++
->  1 file changed, 4 insertions(+)
-> 
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c b/drivers/thermal/samsung/exynos_tmu.c
-> index 0d96a51..ffccc89 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -225,6 +225,8 @@ skip_calib_data:
->  			trigger_levs++;
->  	}
->  
-> +	rising_threshold = readl(data->base + reg->threshold_th0);
-> +
->  	if (data->soc == SOC_ARCH_EXYNOS4210) {
->  		/* Write temperature code for threshold */
->  		threshold_code = temp_to_code(data, pdata->threshold);
-> @@ -249,6 +251,7 @@ skip_calib_data:
->  				ret = threshold_code;
->  				goto out;
->  			}
-> +			rising_threshold &= ~(0xff << 8 * i);
->  			rising_threshold |= threshold_code << 8 * i;
->  			if (pdata->threshold_falling) {
->  				threshold_code = temp_to_code(data,
-> @@ -281,6 +284,7 @@ skip_calib_data:
->  			}
->  			if (i == EXYNOS_MAX_TRIGGER_PER_REG - 1) {
->  				/* 1-4 level to be assigned in th0 reg */
-> +				rising_threshold &= ~(0xff << 8 * i);
->  				rising_threshold |= threshold_code << 8 * i;
->  				writel(rising_threshold,
->  					data->base + reg->threshold_th0);
-> 
+Fix two format string mismatch in genwqe_init_debugfs()
 
-Adding Amit to get Samsung specific review.
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+---
+ drivers/misc/genwqe/card_debugfs.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
+diff --git a/drivers/misc/genwqe/card_debugfs.c b/drivers/misc/genwqe/card_debugfs.c
+index 50d2096..0a33ade 100644
+--- a/drivers/misc/genwqe/card_debugfs.c
++++ b/drivers/misc/genwqe/card_debugfs.c
+@@ -348,7 +348,7 @@ int genwqe_init_debugfs(struct genwqe_dev *cd)
+ 	char name[64];
+ 	unsigned int i;
+ 
+-	sprintf(card_name, "%s%u_card", GENWQE_DEVNAME, cd->card_idx);
++	sprintf(card_name, "%s%d_card", GENWQE_DEVNAME, cd->card_idx);
+ 
+ 	root = debugfs_create_dir(card_name, cd->debugfs_genwqe);
+ 	if (!root) {
+@@ -454,7 +454,7 @@ int genwqe_init_debugfs(struct genwqe_dev *cd)
+ 	}
+ 
+ 	for (i = 0; i <  GENWQE_MAX_VFS; i++) {
+-		sprintf(name, "vf%d_jobtimeout_msec", i);
++		sprintf(name, "vf%u_jobtimeout_msec", i);
+ 
+ 		file = debugfs_create_u32(name, 0666, root,
+ 					  &cd->vf_jobtimeout_msec[i]);
 -- 
-Tushar Behera
+2.0.0.rc0.26.g779792a
+
