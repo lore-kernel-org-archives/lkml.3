@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426AbaDXJqr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:46:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46827 "EHLO
+	id S1754553AbaDXIy7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:54:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46793 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754554AbaDXIzA (ORCPT
+	with ESMTP id S1754348AbaDXIyj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:55:00 -0400
+	Thu, 24 Apr 2014 04:54:39 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alex Deucher <alexander.deucher@amd.com>,
+Cc: Huacai Chen <chenhc@lemote.com>, John Crispin <john@phrozen.org>,
+        "Steven J. Hill" <Steven.Hill@imgtec.com>,
+        Aurelien Jarno <aurelien@aurel32.net>, linux-mips@linux-mips.org,
+        Fuxin Zhang <zhangfx@lemote.com>, Zhangjin Wu <wuzhangjin@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 121/182] drm/radeon: fix typo in spectre_golden_registers
-Date: Thu, 24 Apr 2014 09:50:46 +0100
-Message-Id: <1398329507-5911-122-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 107/182] MIPS: Hibernate: Flush TLB entries in swsusp_arch_resume()
+Date: Thu, 24 Apr 2014 09:50:32 +0100
+Message-Id: <1398329507-5911-108-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,30 +31,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alex Deucher <alexdeucher@gmail.com>
+From: Huacai Chen <chenhc@lemote.com>
 
-commit f1553174a207f68a4ec19d436003097e0a4dc405 upstream.
+commit c14af233fbe279d0e561ecf84f1208b1bae087ef upstream.
 
-Signed-off-by: Alex Deucher <alexander.deucher@amd.com>
-Reviewed-by: Christian König <christian.koenig@amd.com>
+The original MIPS hibernate code flushes cache and TLB entries in
+swsusp_arch_resume(). But they are removed in Commit 44eeab67416711
+(MIPS: Hibernation: Remove SMP TLB and cacheflushing code.). A cross-
+CPU flush is surely unnecessary because all but the local CPU have
+already been disabled. But a local flush (at least the TLB flush) is
+needed. When we do hibernation on Loongson-3 with an E1000E NIC, it is
+very easy to produce a kernel panic (kernel page fault, or unaligned
+access). The root cause is E1000E driver use vzalloc_node() to allocate
+pages, the stale TLB entries of the booting kernel will be misused by
+the resumed target kernel.
+
+Signed-off-by: Huacai Chen <chenhc@lemote.com>
+Cc: John Crispin <john@phrozen.org>
+Cc: Steven J. Hill <Steven.Hill@imgtec.com>
+Cc: Aurelien Jarno <aurelien@aurel32.net>
+Cc: linux-mips@linux-mips.org
+Cc: Fuxin Zhang <zhangfx@lemote.com>
+Cc: Zhangjin Wu <wuzhangjin@gmail.com>
+Patchwork: https://patchwork.linux-mips.org/patch/6643/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/gpu/drm/radeon/cik.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/power/hibernate.S | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/gpu/drm/radeon/cik.c b/drivers/gpu/drm/radeon/cik.c
-index 7ab8bdc..bf96acf 100644
---- a/drivers/gpu/drm/radeon/cik.c
-+++ b/drivers/gpu/drm/radeon/cik.c
-@@ -271,7 +271,7 @@ static const u32 spectre_golden_registers[] =
- 	0x8a14, 0xf000003f, 0x00000007,
- 	0x8b24, 0xffffffff, 0x00ffffff,
- 	0x28350, 0x3f3f3fff, 0x00000082,
--	0x28355, 0x0000003f, 0x00000000,
-+	0x28354, 0x0000003f, 0x00000000,
- 	0x3e78, 0x00000001, 0x00000002,
- 	0x913c, 0xffff03df, 0x00000004,
- 	0xc768, 0x00000008, 0x00000008,
+diff --git a/arch/mips/power/hibernate.S b/arch/mips/power/hibernate.S
+index 7e0277a..32a7c82 100644
+--- a/arch/mips/power/hibernate.S
++++ b/arch/mips/power/hibernate.S
+@@ -43,6 +43,7 @@ LEAF(swsusp_arch_resume)
+ 	bne t1, t3, 1b
+ 	PTR_L t0, PBE_NEXT(t0)
+ 	bnez t0, 0b
++	jal local_flush_tlb_all /* Avoid TLB mismatch after kernel resume */
+ 	PTR_LA t0, saved_regs
+ 	PTR_L ra, PT_R31(t0)
+ 	PTR_L sp, PT_R29(t0)
 -- 
 1.9.1
 
