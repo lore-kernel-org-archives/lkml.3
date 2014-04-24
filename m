@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758438AbaDXQPN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:15:13 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:46059 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756478AbaDXQPJ (ORCPT
+	id S1755928AbaDXQQK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:16:10 -0400
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:49920 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758326AbaDXQBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:15:09 -0400
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20140424160529.GD13573@quack.suse.cz>
-References: <1397940833-6386-1-git-send-email-xypron.glpk@gmx.de>
- <20140422134044.GE366@quack.suse.cz> <CAKgNAkh=Shj6UO6x_KieQEYUoY+guokNute0iwUfiSYFJbeTfQ@mail.gmail.com>
- <20140422140747.GF366@quack.suse.cz> <20140424090441.GA6723@quack.suse.cz>
- <5359177E.1070907@gmx.de> <20140424160529.GD13573@quack.suse.cz>
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Date: Thu, 24 Apr 2014 18:14:48 +0200
-Message-ID: <CAKgNAki+0VTA53ibaZy0e-Qt6STpUBsbQKMAUHr1ePd3hJPg7Q@mail.gmail.com>
-Subject: Re: [PATCH 1/1] fanotify: check permissions when creating file descriptor
-To: Jan Kara <jack@suse.cz>
-Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>, Eric Paris <eparis@redhat.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 24 Apr 2014 12:01:20 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [RESEND PATCH v5 0/5] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
+Date: Thu, 24 Apr 2014 17:00:41 +0100
+Message-Id: <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1396886056-18132-1-git-send-email-daniel.thompson@linaro.org>
+References: <1396886056-18132-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> This means a listener may have read authorization for /home and mark
->> this mount.
->> Afterwards, while you sign a git tag, it will receive a FAN_OPEN event
->> and use the file descriptor supplied in the event to overwrite your
->> /home/jankara/.gnupg/secring.pgp
->> though the file is chmod 600 and the listener is neither root nor you.
->   Ah, right. Thanks for explaining this to me. I'm not really too excited
-> about this as a security issue because once the process has CAP_SYS_ADMIN
-> it basically owns the machine (it is sadly one of those capabilities which
-> is too broad)
+This patchset removes some single-platform compatibility tricks related
+to DEBUG_LL and, as a result, allows multi_v7_defconfig derived builds
+to enable DEBUG_LL without forcibly selecting of the PL01X's DEBUG_LL
+implementation (which doesn't work on some platforms).
 
-Yup. https://lwn.net/Articles/486306/
+- Tidy a couple of existing defconfig's so they continue to issue
+  DEBUG_LL messages to PL01X when the subsequent changes come along.
+- Limit DEBUG_LL_UART_NONE to platforms that support it
+- Fix a potential build problem on EP93XX
+- Get rid of the compatibility code that causes us to forcibly enable
+  DEBUG_UART_PL01X 
 
-> but I agree checking permissions when creating the fd is
-> reasonable.
->
->                                                                 Honza
-> --
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+Daniel Thompson (5):
+  ARM: versatile: Enable DEBUG_LL_UART_PL01X
+  ARM: ep93xx: Enable DEBUG_LL_UART_PL01X
+  ARM: Conceal DEBUG_LL_UART_NONE from unsupported platforms
+  arm: Seperate DEBUG_UART_PHYS from DEBUG_LL on EP93XX
+  arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
 
+ arch/arm/Kconfig.debug               | 23 +++++++++++++++--------
+ arch/arm/configs/ep93xx_defconfig    |  1 +
+ arch/arm/configs/versatile_defconfig |  1 +
+ 3 files changed, 17 insertions(+), 8 deletions(-)
 
+Changes since v4:
+
+- Rebased to latest mainline (and tested again). No functional changes.
+
+Changes since v3:
+
+- Converted from a single patch to a series.
+- Tested defconfig builds of all impacted platforms.
+
+Changes since v2:
+
+- Switch from def_bool to bool (thanks Russell King)
+
+Changes since v1:
+
+- Remove pointless single platform support (thanks Arnd Bergmann)
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+1.9.0
+
