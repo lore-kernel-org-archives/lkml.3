@@ -1,65 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889AbaDYDdc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 23:33:32 -0400
-Received: from g6t1526.atlanta.hp.com ([15.193.200.69]:48047 "EHLO
-	g6t1526.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897AbaDYDda (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 23:33:30 -0400
-Message-ID: <1398396806.12047.6.camel@j-VirtualBox>
-Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
- balance if there are runnable tasks
-From: Jason Low <jason.low2@hp.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        alex.shi@linaro.org, preeti@linux.vnet.ibm.com,
-        vincent.guittot@linaro.org, morten.rasmussen@arm.com, aswin@hp.com,
-        chegu_vinod@hp.com
-Date: Thu, 24 Apr 2014 20:33:26 -0700
-In-Reply-To: <1398393955.5273.4.camel@marge.simpson.net>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
-	 <1398303035-18255-4-git-send-email-jason.low2@hp.com>
-	 <20140424071541.GZ26782@laptop.programming.kicks-ass.net>
-	 <1398357789.3509.6.camel@j-VirtualBox>
-	 <20140424165219.GX11096@twins.programming.kicks-ass.net>
-	 <1398393955.5273.4.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751965AbaDYDf3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 23:35:29 -0400
+Received: from mga03.intel.com ([143.182.124.21]:19839 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751176AbaDYDf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 23:35:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,924,1389772800"; 
+   d="scan'208";a="423648337"
+Date: Fri, 25 Apr 2014 03:30:05 +0800
+From: Yuyang Du <yuyang.du@intel.com>
+To: mingo@redhat.com, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org
+Cc: arjan.van.de.ven@intel.com, len.brown@intel.com,
+        rafael.j.wysocki@intel.com, alan.cox@intel.com, mark.gross@intel.com,
+        morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        yuyang.du@intel.com
+Subject: [RFC] A new CPU load metric for power-efficient scheduler: CPU
+ ConCurrency
+Message-ID: <20140424193004.GA2467@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-25 at 04:45 +0200, Mike Galbraith wrote:
-> On Thu, 2014-04-24 at 18:52 +0200, Peter Zijlstra wrote: 
-> > On Thu, Apr 24, 2014 at 09:43:09AM -0700, Jason Low wrote:
-> > > If the below patch is what you were referring to, I believe this
-> > > can help too. This was also something that I was testing out before
-> > > we went with those patches which compares avg_idle with idle balance
-> > > cost. I recall seeing somewhere around a +7% performance improvement
-> > > in at least least 1 of the AIM7 workloads. I can do some more testing
-> > > with this.
-> > 
-> > Yes, exactly that.
-> > 
-> > I can't remember the details, but I suspect we feared the less agressive
-> > idle balance due to that patch (it will only pull a single task, instead
-> > of multiple) would cause more idle_balance invocations and thereby
-> > decrease throughput.
-> > 
-> > So I suppose something with _many_ bursty threads which leads to severe
-> > inequalities would be the workload to trigger that.
-> > 
-> > Not sure we've ever seen that.. maybe Mike remembers, he seems to have a
-> > head for such details.
-> 
-> I don't recall ever seeing such.
+Hi Ingo, PeterZ, and others,
 
-Hmmm, could commit: 1b9508f6831e (sched: Rate-limit newidle) be related
-to what Peter's referring to? The patch mentioned that the rate-limit
-benefited "sysbench oltp".
+The current scheduler’s load balancing is completely work-conserving. In some
+workload, generally low CPU utilization but immersed with CPU bursts of
+transient tasks, migrating task to engage all available CPUs for
+work-conserving can lead to significant overhead: cache locality loss,
+idle/active HW state transitional latency and power, shallower idle state,
+etc, which are both power and performance inefficient especially for today’s
+low power processors in mobile. 
 
+This RFC introduces a sense of idleness-conserving into work-conserving (by
+all means, we really don’t want to be overwhelming in only one way). But to
+what extent the idleness-conserving should be, bearing in mind that we don’t
+want to sacrifice performance? We first need a load/idleness indicator to that
+end.
 
+Thanks to CFS’s “model an ideal, precise multi-tasking CPU”, tasks can be seen
+as concurrently running (the tasks in the runqueue). So it is natural to use
+task concurrency as load indicator. Having said that, we do two things:
+
+1)	Divide continuous time into periods of time, and average task concurrency
+in period, for tolerating the transient bursts:
+a = sum(concurrency * time) / period
+2)	Exponentially decay past periods, and synthesize them all, for hysteresis
+to load drops or resilience to load rises (let f be decaying factor, and a_x
+the xth period average since period 0):
+s = a_n + f^1 * a_n-1 + f^2 * a_n-2 +, …..,+ f^(n-1) * a_1 + f^n * a_0
+
+We name this load indicator as CPU ConCurrency (CC): task concurrency
+determines how many CPUs are needed to be running concurrently.
+
+To track CC, we intercept the scheduler in 1) enqueue, 2) dequeue, 3)
+scheduler tick, and 4) enter/exit idle.
+
+By CC, we implemented a Workload Consolidation patch on two Intel mobile
+platforms (a quad-core composed of two dual-core modules): contain load and load
+balancing in the first dual-core when aggregated CC low, and if not in the
+full quad-core. Results show that we got power savings and no substantial
+performance regression (even gains for some).
+
+Thanks,
+Yuyang
