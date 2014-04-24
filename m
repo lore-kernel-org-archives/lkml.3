@@ -1,114 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752571AbaDXUFo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 16:05:44 -0400
-Received: from mail-la0-f43.google.com ([209.85.215.43]:47911 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710AbaDXUFn (ORCPT
+	id S1752684AbaDXUHj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 16:07:39 -0400
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:53047 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751754AbaDXUHh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 16:05:43 -0400
+	Thu, 24 Apr 2014 16:07:37 -0400
 MIME-Version: 1.0
-In-Reply-To: <CALhHN=oYVjMqQG8XyHuWik14R6hGUSbt986YLXqH361gio6CjQ@mail.gmail.com>
-References: <1397645621-32447-1-git-send-email-janusz.dziedzic@tieto.com>
- <CAB=NE6VNHBrk+HWGLZxNOBFXsGv6XLQus8zTx-AP2Ye6jbgnPA@mail.gmail.com> <CALhHN=oYVjMqQG8XyHuWik14R6hGUSbt986YLXqH361gio6CjQ@mail.gmail.com>
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-Date: Thu, 24 Apr 2014 13:05:20 -0700
-X-Google-Sender-Auth: EiKff0T3q87C5o45YHJxvTnm9qM
-Message-ID: <CAB=NE6U631JBCXMx_foeC7-LtiyA94XP3sc5FBFsoeL1mYC4jQ@mail.gmail.com>
-Subject: Re: [PATCH] cfg80211: reg: track crda request
-To: Janusz Dziedzic <janusz.dziedzic@tieto.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Lennart Poettering <mzoybt@0pointer.net>,
+In-Reply-To: <1398358432.2293.17.camel@dhcp-9-2-203-236.watson.ibm.com>
+References: <cover.1398259638.git.d.kasatkin@samsung.com>
+	<0f7915604c69374f15cbaf36c499a5d88264e89d.1398259638.git.d.kasatkin@samsung.com>
+	<1398358432.2293.17.camel@dhcp-9-2-203-236.watson.ibm.com>
+Date: Thu, 24 Apr 2014 23:07:35 +0300
+Message-ID: <CACE9dm_JhUDQHBok2HXKMgLCF6XOfVk=ZHOqpsqXhOCU=BJGqw@mail.gmail.com>
+Subject: Re: [PATCH 01/20] KEYS: verify a certificate is signed by a 'trusted' key
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        David Howells <dhowells@redhat.com>, James Morris <jmorris@namei.org>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        linux-security-module@vger.kernel.org,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 12:24 PM, Janusz Dziedzic
-<janusz.dziedzic@tieto.com> wrote:
-> On 22 April 2014 19:33, Luis R. Rodriguez <mcgrof@do-not-panic.com> wrote:
->> As is, we don't ever bail out and could end up triggering CRDA to be
->> called every ~3 seconds with this patch. This is why I had added the
->> opportunistic triggers, which are technically still in place today but
->> there are only a few entries for those to kick off: beacon hints on 5
->> GHz for cards that enable beacon hints. I don't think its a good idea
->> we have a a recurring timer trigger for this. I think we need to
->> consider a time at which we should give up on CRDA being present and
->> instead rely on userspace to let us know its ready (ideally userspace
->> would do something with inotify on the path) so we can kick the queue
->> again.
+On 24 April 2014 19:53, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> On Wed, 2014-04-23 at 16:30 +0300, Dmitry Kasatkin wrote:
+>> From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 >>
+>> Only public keys, with certificates signed by an existing
+>> 'trusted' key on the system trusted keyring, should be added
+>> to a trusted keyring.  This patch adds support for verifying
+>> a certificate's signature.
+>>
+>> This is derived from David Howells pkcs7_request_asymmetric_key() patch.
+>>
+>> Changes:
+>> - Flaged out the code to prevent build break if system keyring
+>>   is not enabled (Dmitry).
 >
-> I think about such counter/limitation before.
-> But next I remove such counter.
-> In case we don't have CRDA nor using INTERNAL_REGD - this mean we
-> don't have correct regulatory configuration.
+> An updated version of this patch was posted, which resolves the Kconfig
+> issues.  There are a number of other issues which need to be addressed,
+> before this patch can be upstreamed.  Please refer to the patch
+> description for more details -
+> http://marc.info/?l=linux-security-module&m=138672063109662&w=2
+>
 
-Just a clarification -- by don't have correct regulatory configuration
-you mean 'limited' regulatory configuration, or restricted -- the
-world regulatory domain.
+Oh. I was using this patch from your public tree..
+Updated version is missing there and I missed it out.
+Will rebase on the top of it as soon as it is available.
 
-> Why then should we stop warning about this?
 
-WARN_ONCE() should solve this and get users / system integrators who
-don't install either to do so, having a message pop up on the log ever
-3 seconds however is doomed to cause a rant by anyone. An example
-reasonable complaint might come from system integrators who are
-comfortable with the restricted world regulatory domain, or by some
-system integrators who are OK with the custom regulatory domains which
-some drivers have that the API supports. Filling up their hard drive's
-is not nice, specially if we can avoid it sensibly.
+> Reminder, as per Documentation/SubmittingPatches: "#ifdefs are ugly",
+> please no ifdefs in C code.
+>
 
-I'm learning that with systemd's socket activation support [0] we
-should have a guarantee that any messages sent by the kernel even
-early can can eventually be eaten up by udev, but what is unclear to
-me is if udev will queue up any pending requests for rules to be
-triggered for a binary which is on a filesystem not yet mounted. In
-other words -- I think we should strive to solve this on userspace as
-adding support for this in the kernel seems silly if we can do it in
-userspace to solve all similar type of udev event rule dependency on
-binaries.
+Right, we know it.
 
-Since I am not exactly sure if without systemd udev will get all
-kernel events, even during early boot, I do think having something
-sort of timeout for now maybe with WARN_ONCE() is reasonable but do
-not think something recurring would be good.
+Making separate C file for one function isn't ugly?
 
-[0] http://0pointer.de/blog/projects/socket-activation.html
+- Dmitry
 
-> In case we will have counter eg. 10 x 3 seconds, we can't be sure if that is:
-> - not mounted fs (fsck other ...) case
+> thanks,
+>
+> Mimi
+>
+>>
+>> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+>> Signed-off-by: David Howells <dhowells@redhat.com>
+>> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
+>> ---
+>>  crypto/asymmetric_keys/x509_public_key.c | 85 +++++++++++++++++++++++++++++++-
+>>  1 file changed, 84 insertions(+), 1 deletion(-)
+>>
+>> diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
+>> index 382ef0d..d279f43 100644
+>> --- a/crypto/asymmetric_keys/x509_public_key.c
+>> +++ b/crypto/asymmetric_keys/x509_public_key.c
+>> @@ -18,6 +18,7 @@
+>>  #include <linux/asn1_decoder.h>
+>>  #include <keys/asymmetric-subtype.h>
+>>  #include <keys/asymmetric-parser.h>
+>> +#include <keys/system_keyring.h>
+>>  #include <crypto/hash.h>
+>>  #include "asymmetric_keys.h"
+>>  #include "public_key.h"
+>> @@ -102,6 +103,82 @@ int x509_check_signature(const struct public_key *pub,
+>>  }
+>>  EXPORT_SYMBOL_GPL(x509_check_signature);
+>>
+>> +#ifdef CONFIG_SYSTEM_TRUSTED_KEYRING
+>> +/*
+>> + * Find a key in the given keyring by issuer and authority.
+>> + */
+>> +static struct key *x509_request_asymmetric_key(
+>> +     struct key *keyring,
+>> +     const char *signer, size_t signer_len,
+>> +     const char *authority, size_t auth_len)
+>> +{
+>> +     key_ref_t key;
+>> +     char *id;
+>> +
+>> +     /* Construct an identifier. */
+>> +     id = kmalloc(signer_len + 2 + auth_len + 1, GFP_KERNEL);
+>> +     if (!id)
+>> +             return ERR_PTR(-ENOMEM);
+>> +
+>> +     memcpy(id, signer, signer_len);
+>> +     id[signer_len + 0] = ':';
+>> +     id[signer_len + 1] = ' ';
+>> +     memcpy(id + signer_len + 2, authority, auth_len);
+>> +     id[signer_len + 2 + auth_len] = 0;
+>> +
+>> +     pr_debug("Look up: \"%s\"\n", id);
+>> +
+>> +     key = keyring_search(make_key_ref(keyring, 1),
+>> +                          &key_type_asymmetric, id);
+>> +     if (IS_ERR(key))
+>> +             pr_debug("Request for module key '%s' err %ld\n",
+>> +                      id, PTR_ERR(key));
+>> +     kfree(id);
+>> +
+>> +     if (IS_ERR(key)) {
+>> +             switch (PTR_ERR(key)) {
+>> +                     /* Hide some search errors */
+>> +             case -EACCES:
+>> +             case -ENOTDIR:
+>> +             case -EAGAIN:
+>> +                     return ERR_PTR(-ENOKEY);
+>> +             default:
+>> +                     return ERR_CAST(key);
+>> +             }
+>> +     }
+>> +
+>> +     pr_devel("<==%s() = 0 [%x]\n", __func__, key_serial(key_ref_to_ptr(key)));
+>> +     return key_ref_to_ptr(key);
+>> +}
+>> +
+>> +/*
+>> + * Check the new certificate against the ones in the trust keyring.  If one of
+>> + * those is the signing key and validates the new certificate, then mark the
+>> + * new certificate as being trusted.
+>> + *
+>> + * Return 0 if the new certificate was successfully validated, 1 if we couldn't
+>> + * find a matching parent certificate in the trusted list and an error if there
+>> + * is a matching certificate but the signature check fails.
+>> + */
+>> +static int x509_validate_trust(struct x509_certificate *cert,
+>> +                            struct key *trust_keyring)
+>> +{
+>> +     const struct public_key *pk;
+>> +     struct key *key;
+>> +     int ret = 1;
+>> +
+>> +     key = x509_request_asymmetric_key(trust_keyring,
+>> +                                       cert->issuer, strlen(cert->issuer),
+>> +                                       cert->authority,
+>> +                                       strlen(cert->authority));
+>> +     if (!IS_ERR(key))  {
+>> +             pk = key->payload.data;
+>> +             ret = x509_check_signature(pk, cert);
+>> +     }
+>> +     return ret;
+>> +}
+>> +#endif
+>> +
+>>  /*
+>>   * Attempt to parse a data blob for a key as an X509 certificate.
+>>   */
+>> @@ -155,9 +232,15 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
+>>       /* Check the signature on the key if it appears to be self-signed */
+>>       if (!cert->authority ||
+>>           strcmp(cert->fingerprint, cert->authority) == 0) {
+>> -             ret = x509_check_signature(cert->pub, cert);
+>> +             ret = x509_check_signature(cert->pub, cert); /* self-signed */
+>>               if (ret < 0)
+>>                       goto error_free_cert;
+>> +     } else {
+>> +#ifdef CONFIG_SYSTEM_TRUSTED_KEYRING
+>> +             ret = x509_validate_trust(cert, system_trusted_keyring);
+>> +             if (!ret)
+>> +                     prep->trusted = 1;
+>> +#endif
+>>       }
+>>
+>>       /* Propose a description */
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Hadn't considered at what point a forced long fsck might last but
-again this is an issue other udev rules would run into as well.
 
-> - there isn't any CRDA in the system (quite possible when using openwrt) case
 
-Well we can distinguish this by the type of call that set the
-regulatory domain, if the db.txt was compiled into the kernel cfg80211
-manages setting that, so we can distinguish there if needed, right now
-set_regdom() doesn't tell us if an internal db was used or not, but
-that can easily change. Also if we need to change code to behave
-differently for the timeout consideration, or maybe disregard it,
-config_enabled(CONFIG_CFG80211_INTERNAL_REGDB) can be used.
-
-> - when have a lot of messages in dmesg you will not know there is not
-> CRDA in the system
-
-Since you broke out the different cases -- I think this timeout seems
-to make more sense now only if CONFIG_CFG80211_INTERNAL_REGDB was not
-enabled, at least using WARN_ONCE() as that can be important for any
-system integrator, but CONFIG_CFG80211_INTERNAL_REGDB was enabled a
-simple info message stating CRDA was not found seems reasonable.
-
-> In case of recurring timer when you will check dmes you will be sure
-> there isn't any CRDA binary - and there will be clear message about
-> this.
-> Because of that I didn't add this counter.
-
-I think we can do better, let me know what you think of the above.
-
-  Luis
+-- 
+Thanks,
+Dmitry
