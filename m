@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758180AbaDXWh5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:37:57 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39527 "EHLO
+	id S1757409AbaDXWhy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:37:54 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39546 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754968AbaDXVqB (ORCPT
+	with ESMTP id S1754984AbaDXVqB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Apr 2014 17:46:01 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Claudio Takahasi <claudio.takahasi@openbossa.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [PATCH 3.14 16/33] Bluetooth: Fix removing Long Term Key
-Date: Thu, 24 Apr 2014 14:48:29 -0700
-Message-Id: <20140424214451.959177369@linuxfoundation.org>
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: [PATCH 3.14 17/33] ima: restore the original behavior for sending data with ima template
+Date: Thu, 24 Apr 2014 14:48:30 -0700
+Message-Id: <20140424214452.115729933@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
 References: <20140424214449.423169713@linuxfoundation.org>
@@ -29,101 +29,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Claudio Takahasi <claudio.takahasi@openbossa.org>
+From: Roberto Sassu <roberto.sassu@polito.it>
 
-commit 5981a8821b774ada0be512fd9bad7c241e17657e upstream.
+commit c019e307ad82a8ee652b8ccbacf69ae94263b07b upstream.
 
-This patch fixes authentication failure on LE link re-connection when
-BlueZ acts as slave (peripheral). LTK is removed from the internal list
-after its first use causing PIN or Key missing reply when re-connecting
-the link. The LE Long Term Key Request event indicates that the master
-is attempting to encrypt or re-encrypt the link.
+With the new template mechanism introduced in IMA since kernel 3.13,
+the format of data sent through the binary_runtime_measurements interface
+is slightly changed. Now, for a generic measurement, the format of
+template data (after the template name) is:
 
-Pre-condition: BlueZ host paired and running as slave.
-How to reproduce(master):
+template_len | field1_len | field1 | ... | fieldN_len | fieldN
 
-  1) Establish an ACL LE encrypted link
-  2) Disconnect the link
-  3) Try to re-establish the ACL LE encrypted link (fails)
+In addition, fields containing a string now include the '\0' termination
+character.
 
-> HCI Event: LE Meta Event (0x3e) plen 19
-      LE Connection Complete (0x01)
-        Status: Success (0x00)
-        Handle: 64
-        Role: Slave (0x01)
-...
-@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
-> HCI Event: LE Meta Event (0x3e) plen 13
-      LE Long Term Key Request (0x05)
-        Handle: 64
-        Random number: 875be18439d9aa37
-        Encryption diversifier: 0x76ed
-< HCI Command: LE Long Term Key Request Reply (0x08|0x001a) plen 18
-        Handle: 64
-        Long term key: 2aa531db2fce9f00a0569c7d23d17409
-> HCI Event: Command Complete (0x0e) plen 6
-      LE Long Term Key Request Reply (0x08|0x001a) ncmd 1
-        Status: Success (0x00)
-        Handle: 64
-> HCI Event: Encryption Change (0x08) plen 4
-        Status: Success (0x00)
-        Handle: 64
-        Encryption: Enabled with AES-CCM (0x01)
-...
-@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 3
-< HCI Command: LE Set Advertise Enable (0x08|0x000a) plen 1
-        Advertising: Enabled (0x01)
-> HCI Event: Command Complete (0x0e) plen 4
-      LE Set Advertise Enable (0x08|0x000a) ncmd 1
-        Status: Success (0x00)
-> HCI Event: LE Meta Event (0x3e) plen 19
-      LE Connection Complete (0x01)
-        Status: Success (0x00)
-        Handle: 64
-        Role: Slave (0x01)
-...
-@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
-> HCI Event: LE Meta Event (0x3e) plen 13
-      LE Long Term Key Request (0x05)
-        Handle: 64
-        Random number: 875be18439d9aa37
-        Encryption diversifier: 0x76ed
-< HCI Command: LE Long Term Key Request Neg Reply (0x08|0x001b) plen 2
-        Handle: 64
-> HCI Event: Command Complete (0x0e) plen 6
-      LE Long Term Key Request Neg Reply (0x08|0x001b) ncmd 1
-        Status: Success (0x00)
-        Handle: 64
-> HCI Event: Disconnect Complete (0x05) plen 4
-        Status: Success (0x00)
-        Handle: 64
-        Reason: Authentication Failure (0x05)
-@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 0
+Instead, the format for the 'ima' template should be:
 
-Signed-off-by: Claudio Takahasi <claudio.takahasi@openbossa.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+SHA1 digest | event name length | event name
+
+It must be noted that while in the IMA 3.13 code 'event name length' is
+'IMA_EVENT_NAME_LEN_MAX + 1' (256 bytes), so that the template digest
+is calculated correctly, and 'event name' contains '\0', in the pre 3.13
+code 'event name length' is exactly the string length and 'event name'
+does not contain the termination character.
+
+The patch restores the behavior of the IMA code pre 3.13 for the 'ima'
+template so that legacy userspace tools obtain a consistent behavior
+when receiving data from the binary_runtime_measurements interface
+regardless of which kernel version is used.
+
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ security/integrity/ima/ima.h              |    2 +-
+ security/integrity/ima/ima_fs.c           |    2 ++
+ security/integrity/ima/ima_template_lib.c |   10 +++++++---
+ 3 files changed, 10 insertions(+), 4 deletions(-)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3593,7 +3593,13 @@ static void hci_le_ltk_request_evt(struc
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -27,7 +27,7 @@
+ #include "../integrity.h"
  
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
+ enum ima_show_type { IMA_SHOW_BINARY, IMA_SHOW_BINARY_NO_FIELD_LEN,
+-		     IMA_SHOW_ASCII };
++		     IMA_SHOW_BINARY_OLD_STRING_FMT, IMA_SHOW_ASCII };
+ enum tpm_pcrs { TPM_PCR0 = 0, TPM_PCR8 = 8 };
  
--	if (ltk->type & HCI_SMP_STK) {
-+	/* Ref. Bluetooth Core SPEC pages 1975 and 2004. STK is a
-+	 * temporary key used to encrypt a connection following
-+	 * pairing. It is used during the Encrypted Session Setup to
-+	 * distribute the keys. Later, security can be re-established
-+	 * using a distributed LTK.
-+	 */
-+	if (ltk->type == HCI_SMP_STK_SLAVE) {
- 		list_del(&ltk->list);
- 		kfree(ltk);
+ /* digest size for IMA, fits SHA1 or MD5 */
+--- a/security/integrity/ima/ima_fs.c
++++ b/security/integrity/ima/ima_fs.c
+@@ -160,6 +160,8 @@ static int ima_measurements_show(struct
+ 
+ 		if (is_ima_template && strcmp(field->field_id, "d") == 0)
+ 			show = IMA_SHOW_BINARY_NO_FIELD_LEN;
++		if (is_ima_template && strcmp(field->field_id, "n") == 0)
++			show = IMA_SHOW_BINARY_OLD_STRING_FMT;
+ 		field->field_show(m, show, &e->template_data[i]);
  	}
+ 	return 0;
+--- a/security/integrity/ima/ima_template_lib.c
++++ b/security/integrity/ima/ima_template_lib.c
+@@ -109,13 +109,16 @@ static void ima_show_template_data_binar
+ 					  enum data_formats datafmt,
+ 					  struct ima_field_data *field_data)
+ {
++	u32 len = (show == IMA_SHOW_BINARY_OLD_STRING_FMT) ?
++	    strlen(field_data->data) : field_data->len;
++
+ 	if (show != IMA_SHOW_BINARY_NO_FIELD_LEN)
+-		ima_putc(m, &field_data->len, sizeof(u32));
++		ima_putc(m, &len, sizeof(len));
+ 
+-	if (!field_data->len)
++	if (!len)
+ 		return;
+ 
+-	ima_putc(m, field_data->data, field_data->len);
++	ima_putc(m, field_data->data, len);
+ }
+ 
+ static void ima_show_template_field_data(struct seq_file *m,
+@@ -129,6 +132,7 @@ static void ima_show_template_field_data
+ 		break;
+ 	case IMA_SHOW_BINARY:
+ 	case IMA_SHOW_BINARY_NO_FIELD_LEN:
++	case IMA_SHOW_BINARY_OLD_STRING_FMT:
+ 		ima_show_template_data_binary(m, show, datafmt, field_data);
+ 		break;
+ 	default:
 
 
