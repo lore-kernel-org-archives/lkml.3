@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288AbaDXVBQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:01:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43516 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752556AbaDXVBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:01:14 -0400
-Date: Thu, 24 Apr 2014 17:00:15 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
- output fields (v4)
-Message-ID: <20140424210015.GJ8488@redhat.com>
-References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
- <20140422211647.GO8488@redhat.com>
- <87lhuwr2pk.fsf@sejong.aot.lge.com>
- <20140423125828.GL5328@redhat.com>
- <1398346899.1681.18.camel@leonhard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398346899.1681.18.camel@leonhard>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753481AbaDXVCX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:02:23 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:55316 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753415AbaDXVCV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:02:21 -0400
+From: Tejun Heo <tj@kernel.org>
+To: lizefan@huawei.com
+Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
+        mhocko@suse.cz, nasa4836@gmail.com
+Subject: [PATCHSET cgroup/for-3.16] cgroup: implement css->id
+Date: Thu, 24 Apr 2014 17:02:07 -0400
+Message-Id: <1398373333-1521-1-git-send-email-tj@kernel.org>
+X-Mailer: git-send-email 1.9.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 10:41:39PM +0900, Namhyung Kim wrote:
-> Hi Don,
-> 
-> 2014-04-23 (수), 08:58 -0400, Don Zickus:
-> > On Wed, Apr 23, 2014 at 03:15:35PM +0900, Namhyung Kim wrote:
-> > > On Tue, 22 Apr 2014 17:16:47 -0400, Don Zickus wrote:
-> > > > ./perf mem record -a grep -r foo /* > /dev/null
-> > > > ./perf mem report -F overhead,symbol_daddr,pid -s symbol_daddr,pid --stdio 
-> > > >
-> > > > I was thinking I could sort everything based on the symbol_daddr and pid.
-> > > > Then re-sort the output to display the highest 'symbol_daddr,pid' pair.
-> > > > But it didn't seem to work that way.  Instead it seems like I get the
-> > > > original sort just displayed in the -F format.
-> > > 
-> > > Could you please show me the output of your example?
-> > 
-> > 
-> > # To display the perf.data header info, please use --header/--header-only
-> > # options.
-> > #
-> > # Samples: 96K of event 'cpu/mem-loads/pp'
-> > # Total weight : 1102938
-> > # Sort order   : symbol_daddr,pid
-> > #
-> > # Overhead Data Symbol          Command:  Pid
-> > # ........ ......................................................................
-> > #
-> >      0.00%  [k] 0xffff8807a8c1cf80 grep:116437
-> >      0.00%  [k] 0xffff8807a8c8cee0 grep:116437
-> >      0.00%  [k] 0xffff8807a8dceea0 grep:116437
-> >      0.01%  [k] 0xffff8807a9298dc0 grep:116437
-> >      0.01%  [k] 0xffff8807a934be40 grep:116437
-> >      0.00%  [k] 0xffff8807a9416ec0 grep:116437
-> >      0.02%  [k] 0xffff8807a9735700 grep:116437
-> >      0.00%  [k] 0xffff8807a98e9460 grep:116437
-> >      0.02%  [k] 0xffff8807a9afc890 grep:116437
-> >      0.00%  [k] 0xffff8807aa64feb0 grep:116437
-> >      0.02%  [k] 0xffff8807aa6b0030 grep:116437
-> 
-> Hmm.. it seems that it's exactly sorted by the data symbol addresses, so
-> I don't see any problem here.  What did you expect?  If you want to see
-> those symbol_daddr,pid pair to be sorted by overhead, you can use the
-> one of -F or -s option only.
+Hello,
 
-Good question.  I guess I was hoping to see things sorted by overhead, but
-as you said removing all the -F options gives me that.  I have been
-distracted with other fires this week, I lost focus at what I was trying
-to accomplish.
+Until now, cgroup->id has been used to identify all the associated
+csses and css_from_id() takes cgroup ID and returns the matching css
+by looking up the cgroup and then dereferencing the css associated
+with it; however, now that the lifetimes of cgroup and css are
+separate, this is incorrect and breaks on the unified hierarchy when a
+controller is disabled and enabled back again before the previous
+instance is released.
 
-Let me figure that out again and try to come up with a more clear email
-explaining what I was looking for (for myself at least :-) ).
+This series adds css->id which is a subsystem-unique ID and converts
+css_from_id() to look up by the new css->id instead.  memcg is the
+only user of css_from_id() and also converted to use css->id instead.
 
-Sorry for the distraction.
+ 0001-cgroup-make-flags-and-subsys_masks-unsigned-int.patch
+ 0002-cgroup-memcg-allocate-cgroup-ID-from-1.patch
+ 0003-cgroup-protect-cgroup_root-cgroup_idr-with-a-spinloc.patch
+ 0004-cgroup-use-RCU-free-in-create_css-failure-path.patch
+ 0005-cgroup-update-init_css-into-init_and_link_css.patch
+ 0006-cgroup-memcg-implement-css-id-and-convert-css_from_i.patch
 
-Cheers,
-Don
+0001-0003 are related prep/cleanups.
+
+0004-0006 add css->id and convert css_from_id() and its user to it.
+
+This patchset is on top of
+
+  cgroup/for-3.16 f8f22e53a262 ("cgroup: implement dynamic subtree controller enable/disable on the default hierarchy")
++ [1] [PATCHSET cgroup/for-3.16] cgroup: implement cgroup.populated
++ [2] Misc comment / warning cleanups
+
+and available in the following git branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/cgroup.git review-css_id
+
+diffstat follows.
+
+ include/linux/cgroup.h |   21 ++++--
+ kernel/cgroup.c        |  164 ++++++++++++++++++++++++++++++++-----------------
+ mm/memcontrol.c        |   10 --
+ 3 files changed, 126 insertions(+), 69 deletions(-)
+
+Thanks.
+
+--
+tejun
+
+[1] http://lkml.kernel.org/g/1397056052-2829-1-git-send-email-tj@kernel.org
+[2] http://lkml.kernel.org/g/1397748555-6647-1-git-send-email-nasa4836@gmail.com
+    http://lkml.kernel.org/g/1397748544-6570-1-git-send-email-nasa4836@gmail.com
+    http://lkml.kernel.org/g/1397748534-6490-1-git-send-email-nasa4836@gmail.com
+    http://lkml.kernel.org/g/1397757955.3104.11.camel@joe-AO725
