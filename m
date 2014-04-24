@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755263AbaDXJSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:18:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47051 "EHLO
+	id S1754944AbaDXI4F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:56:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46960 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754948AbaDXI4G (ORCPT
+	with ESMTP id S1754805AbaDXIzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:56:06 -0400
+	Thu, 24 Apr 2014 04:55:42 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tomas Winkler <tomas.winkler@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: David Henningsson <david.henningsson@canonical.com>,
+        Hui Wang <hui.wang@canonical.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 158/182] mei: me: do not load the driver if the FW doesn't support MEI interface
-Date: Thu, 24 Apr 2014 09:51:23 +0100
-Message-Id: <1398329507-5911-159-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 142/182] ALSA: hda - add headset mic detect quirk for a Dell laptop
+Date: Thu, 24 Apr 2014 09:51:07 +0100
+Message-Id: <1398329507-5911-143-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,89 +28,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Winkler <tomas.winkler@intel.com>
+From: Hui Wang <hui.wang@canonical.com>
 
-commit 5e6533a6f52f1a8283b2f818f5828be99a417dd6 upstream.
+commit 137bcc33c6fd775579c7d9d266e1972f56cf5cab upstream.
 
-NM and SPS  FW types that may run on ME device on server platforms
-do not have valid MEI/HECI interface and driver should not
-be bound to it as this might lead to system hung.
-In practice not all BIOSes effectively hide such devices from the
-OS and in some cases it is not possible.
+When we plug a 3-ring headset on the Dell machine (VID: 0x10ec0283,
+SID: 0x10280667), the headset mic can't be detected, after apply this
+patch, the headset mic can work well.
 
-We determine FW type by examining Host FW status registers in order to
-unbind the driver.
-In this patch we are adding check for ME on Cougar Point, Lynx Point
-Devices
-
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
-Tested-by: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+BugLink: https://bugs.launchpad.net/bugs/1297581
+Cc: David Henningsson <david.henningsson@canonical.com>
+Signed-off-by: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/misc/mei/hw-me-regs.h |  5 +++++
- drivers/misc/mei/pci-me.c     | 30 +++++++++++++++++++++++-------
- 2 files changed, 28 insertions(+), 7 deletions(-)
+ sound/pci/hda/patch_realtek.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
-index 66f411a..cabc043 100644
---- a/drivers/misc/mei/hw-me-regs.h
-+++ b/drivers/misc/mei/hw-me-regs.h
-@@ -115,6 +115,11 @@
- #define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
- 
- #define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
-+
-+/* Host Firmware Status Registers in PCI Config Space */
-+#define PCI_CFG_HFS_1         0x40
-+#define PCI_CFG_HFS_2         0x48
-+
- /*
-  * MEI HW Section
-  */
-diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
-index e637318..20fb058 100644
---- a/drivers/misc/mei/pci-me.c
-+++ b/drivers/misc/mei/pci-me.c
-@@ -100,15 +100,31 @@ static bool mei_me_quirk_probe(struct pci_dev *pdev,
- 				const struct pci_device_id *ent)
- {
- 	u32 reg;
--	if (ent->device == MEI_DEV_ID_PBG_1) {
--		pci_read_config_dword(pdev, 0x48, &reg);
--		/* make sure that bit 9 is up and bit 10 is down */
--		if ((reg & 0x600) == 0x200) {
--			dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
--			return false;
--		}
-+	/* Cougar Point || Patsburg */
-+	if (ent->device == MEI_DEV_ID_CPT_1 ||
-+	    ent->device == MEI_DEV_ID_PBG_1) {
-+		pci_read_config_dword(pdev, PCI_CFG_HFS_2, &reg);
-+		/* make sure that bit 9 (NM) is up and bit 10 (DM) is down */
-+		if ((reg & 0x600) == 0x200)
-+			goto no_mei;
- 	}
-+
-+	/* Lynx Point */
-+	if (ent->device == MEI_DEV_ID_LPT_H  ||
-+	    ent->device == MEI_DEV_ID_LPT_W  ||
-+	    ent->device == MEI_DEV_ID_LPT_HR) {
-+		/* Read ME FW Status check for SPS Firmware */
-+		pci_read_config_dword(pdev, PCI_CFG_HFS_1, &reg);
-+		/* if bits [19:16] = 15, running SPS Firmware */
-+		if ((reg & 0xf0000) == 0xf0000)
-+			goto no_mei;
-+	}
-+
- 	return true;
-+
-+no_mei:
-+	dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
-+	return false;
- }
- /**
-  * mei_probe - Device Initialization Routine
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 16096332..9716e68 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -3808,6 +3808,7 @@ static const struct snd_pci_quirk alc269_fixup_tbl[] = {
+ 	SND_PCI_QUIRK(0x1028, 0x0629, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x0638, "Dell Inspiron 5439", ALC290_FIXUP_MONO_SPEAKERS),
+ 	SND_PCI_QUIRK(0x1028, 0x063e, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
++	SND_PCI_QUIRK(0x1028, 0x0667, "Dell", ALC269_FIXUP_DELL1_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x15cc, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x1028, 0x15cd, "Dell X5 Precision", ALC269_FIXUP_DELL2_MIC_NO_PRESENCE),
+ 	SND_PCI_QUIRK(0x103c, 0x1586, "HP", ALC269_FIXUP_HP_MUTE_LED_MIC2),
 -- 
 1.9.1
 
