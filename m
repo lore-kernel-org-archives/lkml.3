@@ -1,138 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758758AbaDXQI5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:08:57 -0400
+	id S1758743AbaDXQI4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:08:56 -0400
 Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:8996 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758716AbaDXQIy (ORCPT
+	by vger.kernel.org with ESMTP id S1758514AbaDXQIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:08:54 -0400
-Message-Id: <20140424160851.071881458@goodmis.org>
+	Thu, 24 Apr 2014 12:08:51 -0400
+Message-Id: <20140424160850.450820777@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 24 Apr 2014 12:06:31 -0400
+Date: Thu, 24 Apr 2014 12:06:27 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 5/7] ktest: Remove unused functions
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Satoru Takeuchi <satoru.takeuchi@gmail.com>
+Subject: [for-next][PATCH 1/7] ktest: add 2nd parameter of run_command() to set the redirect target
+ file
 References: <20140424160626.491010573@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0005-ktest-Remove-unused-functions.patch
+Content-Disposition: inline; filename=0001-ktest-add-2nd-parameter-of-run_command-to-set-the-re.patch
 X-RR-Connecting-IP: 107.14.168.130:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+From: Satoru Takeuchi <satoru.takeuchi@gmail.com>
 
-After the rewrite of the config bisect, there were several unused
-functions that can be removed.
+If we'd like to set the redirect target file of run_command(),
+we should define $redirect before calling this function and should undef it
+after calling this function. Since it's user-unfriendly, add 2nd parameter of
+run_command() for this purpose.
 
-One of the unused functions printed out the failed config nicer than
-what the rewrite did, so I kept that and used it to output the
-bad config.
+Link: http://lkml.kernel.org/r/87vbvwokq8.wl%satoru.takeuchi@gmail.com
 
+Signed-off-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- tools/testing/ktest/ktest.pl | 63 +-------------------------------------------
- 1 file changed, 1 insertion(+), 62 deletions(-)
+ tools/testing/ktest/ktest.pl | 11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
 diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
-index 59697ea..8805668 100755
+index 4063156..f731ef6 100755
 --- a/tools/testing/ktest/ktest.pl
 +++ b/tools/testing/ktest/ktest.pl
-@@ -2807,27 +2807,6 @@ sub process_config_ignore {
-     assign_configs \%config_ignore, $config;
+@@ -149,7 +149,6 @@ my $bisect_ret_abort;
+ my $bisect_ret_default;
+ my $in_patchcheck = 0;
+ my $run_test;
+-my $redirect;
+ my $buildlog;
+ my $testlog;
+ my $dmesg;
+@@ -1529,7 +1528,7 @@ sub fail {
  }
  
--sub read_current_config {
--    my ($config_ref) = @_;
--
--    %{$config_ref} = ();
--    undef %{$config_ref};
--
--    my @key = keys %{$config_ref};
--    if ($#key >= 0) {
--	print "did not delete!\n";
--	exit;
--    }
--    open (IN, "$output_config");
--
--    while (<IN>) {
--	if (/^(CONFIG\S+)=(.*)/) {
--	    ${$config_ref}{$1} = $2;
--	}
--    }
--    close(IN);
--}
--
- sub get_dependencies {
-     my ($config) = @_;
+ sub run_command {
+-    my ($command) = @_;
++    my ($command, $redirect) = @_;
+     my $dolog = 0;
+     my $dord = 0;
+     my $pid;
+@@ -2265,9 +2264,7 @@ sub build {
+     # Run old config regardless, to enforce min configurations
+     make_oldconfig;
  
-@@ -2947,23 +2926,6 @@ sub run_config_bisect_test {
-     return run_bisect_test $type, "oldconfig";
+-    $redirect = "$buildlog";
+-    my $build_ret = run_command "$make $build_options";
+-    undef $redirect;
++    my $build_ret = run_command "$make $build_options", $buildlog;
+ 
+     if (defined($post_build)) {
+ 	# Because a post build may change the kernel version
+@@ -2360,9 +2357,7 @@ sub child_run_test {
+     $poweroff_on_error = 0;
+     $die_on_failure = 1;
+ 
+-    $redirect = "$testlog";
+-    run_command $run_test or $failed = 1;
+-    undef $redirect;
++    run_command $run_test, $testlog or $failed = 1;
+ 
+     exit $failed;
  }
- 
--sub process_passed {
--    my (%configs) = @_;
--
--    doprint "These configs had no failure: (Enabling them for further compiles)\n";
--    # Passed! All these configs are part of a good compile.
--    # Add them to the min options.
--    foreach my $config (keys %configs) {
--	if (defined($config_list{$config})) {
--	    doprint " removing $config\n";
--	    $config_ignore{$config} = $config_list{$config};
--	    delete $config_list{$config};
--	}
--    }
--    doprint "config copied to $outputdir/config_good\n";
--    run_command "cp -f $output_config $outputdir/config_good";
--}
--
- sub process_failed {
-     my ($config) = @_;
- 
-@@ -3066,7 +3028,7 @@ sub run_config_bisect {
-     if (!$runtest && $len_diff > 0) {
- 
- 	if ($len_diff == 1) {
--	    doprint "The bad config setting is: $diff_arr[0]\n";
-+	    process_failed $diff_arr[0];
- 	    return 1;
- 	}
- 	my %tmp_config = %bad_configs;
-@@ -3471,29 +3433,6 @@ sub read_depends {
-     read_kconfig($kconfig);
- }
- 
--sub read_config_list {
--    my ($config) = @_;
--
--    open (IN, $config)
--	or dodie "Failed to read $config";
--
--    while (<IN>) {
--	if (/^((CONFIG\S*)=.*)/) {
--	    if (!defined($config_ignore{$2})) {
--		$config_list{$2} = $1;
--	    }
--	}
--    }
--
--    close(IN);
--}
--
--sub read_output_config {
--    my ($config) = @_;
--
--    assign_configs \%config_ignore, $config;
--}
--
- sub make_new_config {
-     my @configs = @_;
- 
 -- 
 1.8.5.3
 
