@@ -1,135 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758649AbaDXQEA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:04:00 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:34376 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758624AbaDXQD2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:03:28 -0400
-Message-Id: <20140424160320.462975510@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Thu, 24 Apr 2014 12:02:37 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [for-next][PATCH 5/8] tracing: Allow irq/preempt tracers to be used by instances
-References: <20140424160232.271454710@goodmis.org>
+	id S1758667AbaDXQEJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:04:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758260AbaDXQED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 12:04:03 -0400
+Message-ID: <535935ED.8050707@redhat.com>
+Date: Thu, 24 Apr 2014 12:03:57 -0400
+From: Daniel J Walsh <dwalsh@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0005-tracing-Allow-irq-preempt-tracers-to-be-used-by-inst.patch
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+To: Eric Paris <eparis@redhat.com>
+CC: Linux Netdev List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        linux-audit@redhat.com, SE-Linux <selinux@tycho.nsa.gov>,
+        jamal@mojatatu.com, Steve Grubb <sgrubb@redhat.com>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
+References: <20140422.161904.1187535812839850973.davem@davemloft.net> <cover.1398215388.git.rgb@redhat.com> <26389161.vp9iWSVLPX@x2> <1398225475.750.7.camel@localhost> <5357C2D2.5060700@redhat.com> <1398264152.2596.25.camel@flatline.rdu.redhat.com> <5357DE12.7040905@redhat.com> <1398267458.2562.0.camel@flatline.rdu.redhat.com> <5357E1B4.2030705@redhat.com> <CACLa4psQyoaZTE7R0qiog_biMKXyeGtLc1AQUuEPtemMYcDCSQ@mail.gmail.com> <535926B8.7060304@redhat.com> <1398351780.750.10.camel@localhost>
+In-Reply-To: <1398351780.750.10.camel@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Yes that would be the long term fix.  But it would involve journal
+labelling individual data records.  IE Records from audit.log would be
+audit_log_t, while messages from syslog would be var_log_t,  Or some
+other kind of crazyness.
 
-The irqsoff, preemptoff and preemptirqsoff tracers can now be used by
-instances. But they may only be used by one instance at a time (including
-the top level directory). This allows multiple tracers to run while the
-irqsoff (and friends) tracer is running simultaneously.
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_irqsoff.c | 24 +++++++++++++++++-------
- 1 file changed, 17 insertions(+), 7 deletions(-)
-
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 40aa300..9bb104f 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -597,8 +597,13 @@ static void stop_irqsoff_tracer(struct trace_array *tr, int graph)
- 	unregister_irqsoff_function(tr, graph);
- }
- 
--static void __irqsoff_tracer_init(struct trace_array *tr)
-+static bool irqsoff_busy;
-+
-+static int __irqsoff_tracer_init(struct trace_array *tr)
- {
-+	if (irqsoff_busy)
-+		return -EBUSY;
-+
- 	save_flags = trace_flags;
- 
- 	/* non overwrite screws up the latency tracers */
-@@ -617,6 +622,9 @@ static void __irqsoff_tracer_init(struct trace_array *tr)
- 	if (start_irqsoff_tracer(tr, (tr->flags & TRACE_ARRAY_FL_GLOBAL &&
- 				      is_graph())))
- 		printk(KERN_ERR "failed to start irqsoff tracer\n");
-+
-+	irqsoff_busy = true;
-+	return 0;
- }
- 
- static void irqsoff_tracer_reset(struct trace_array *tr)
-@@ -629,6 +637,8 @@ static void irqsoff_tracer_reset(struct trace_array *tr)
- 	set_tracer_flag(tr, TRACE_ITER_LATENCY_FMT, lat_flag);
- 	set_tracer_flag(tr, TRACE_ITER_OVERWRITE, overwrite_flag);
- 	ftrace_reset_array_ops(tr);
-+
-+	irqsoff_busy = false;
- }
- 
- static void irqsoff_tracer_start(struct trace_array *tr)
-@@ -646,8 +656,7 @@ static int irqsoff_tracer_init(struct trace_array *tr)
- {
- 	trace_type = TRACER_IRQS_OFF;
- 
--	__irqsoff_tracer_init(tr);
--	return 0;
-+	return __irqsoff_tracer_init(tr);
- }
- static struct tracer irqsoff_tracer __read_mostly =
- {
-@@ -667,6 +676,7 @@ static struct tracer irqsoff_tracer __read_mostly =
- #endif
- 	.open           = irqsoff_trace_open,
- 	.close          = irqsoff_trace_close,
-+	.allow_instances = true,
- 	.use_max_tr	= true,
- };
- # define register_irqsoff(trace) register_tracer(&trace)
-@@ -679,8 +689,7 @@ static int preemptoff_tracer_init(struct trace_array *tr)
- {
- 	trace_type = TRACER_PREEMPT_OFF;
- 
--	__irqsoff_tracer_init(tr);
--	return 0;
-+	return __irqsoff_tracer_init(tr);
- }
- 
- static struct tracer preemptoff_tracer __read_mostly =
-@@ -701,6 +710,7 @@ static struct tracer preemptoff_tracer __read_mostly =
- #endif
- 	.open		= irqsoff_trace_open,
- 	.close		= irqsoff_trace_close,
-+	.allow_instances = true,
- 	.use_max_tr	= true,
- };
- # define register_preemptoff(trace) register_tracer(&trace)
-@@ -715,8 +725,7 @@ static int preemptirqsoff_tracer_init(struct trace_array *tr)
- {
- 	trace_type = TRACER_IRQS_OFF | TRACER_PREEMPT_OFF;
- 
--	__irqsoff_tracer_init(tr);
--	return 0;
-+	return __irqsoff_tracer_init(tr);
- }
- 
- static struct tracer preemptirqsoff_tracer __read_mostly =
-@@ -737,6 +746,7 @@ static struct tracer preemptirqsoff_tracer __read_mostly =
- #endif
- 	.open		= irqsoff_trace_open,
- 	.close		= irqsoff_trace_close,
-+	.allow_instances = true,
- 	.use_max_tr	= true,
- };
- 
--- 
-1.8.5.3
-
+On 04/24/2014 11:03 AM, Eric Paris wrote:
+> On Thu, 2014-04-24 at 10:59 -0400, Daniel J Walsh wrote:
+>> I don't disagree.  I would think the real solution to this would be to
+>> not allow sysadm_t to get to SystemHigh, where all of the logging data
+>> will be stored.
+> make journalctl a userspace object manager and do selinux checks on if
+> it can see individual records?  so secadm_t running journalctl would see
+> them and sysadm running journalctl wouldn't see them?
+>
+> Sounds elegant.  Who is going to code it?  *NOT IT!*
+>
+>> On 04/24/2014 09:22 AM, Eric Paris wrote:
+>>> They would be equivalent if and only if journald had CAP_AUDIT_READ.
+>>>
+>>> I suggest you take CAP_AUDIT_READ away from journald on systems which
+>>> need the secadm/sysadmin split (which is a ridiculously stupid split
+>>> anyway, but who am I to complain?)
+>>>
+>>> On Wed, Apr 23, 2014 at 11:52 AM, Daniel J Walsh <dwalsh@redhat.com> wrote:
+>>>> Meaning looking at the journal would be equivalent to looking at
+>>>> /var/log/audit/audit.log.
+>>>>
+>>>>
+>>>> On 04/23/2014 11:37 AM, Eric Paris wrote:
+>>>>> On Wed, 2014-04-23 at 11:36 -0400, Daniel J Walsh wrote:
+>>>>>> I guess the problem would be that the sysadm_t would be able to look at
+>>>>>> the journal which would now contain the audit content.
+>>>>> right.  so include it in the sysadm_secadm bool
+>>>>>
+>>>>>> On 04/23/2014 10:42 AM, Eric Paris wrote:
+>>>>>>> On Wed, 2014-04-23 at 09:40 -0400, Daniel J Walsh wrote:
+>>>>>>>> Here are the capabilities we currently give to sysadm_t with
+>>>>>>>> sysadm_secadm    1.0.0    Disabled
+>>>>>>>>
+>>>>>>>>    allow sysadm_t sysadm_t : capability { chown dac_override
+>>>>>>>> dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable
+>>>>>>>> net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner
+>>>>>>>> sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice
+>>>>>>>> sys_resource sys_time sys_tty_config mknod lease audit_write setfcap } ;
+>>>>>>>>    allow sysadm_t sysadm_t : capability { setgid setuid sys_chroot }
+>>>>>>>>
+>>>>>>>>    allow sysadm_t sysadm_t : capability2 { syslog block_suspend } ;
+>>>>>>>>
+>>>>>>>> cap_audit_write might be a problem?
+>>>>>>> cap_audit_write is fine.
+>>>>>>>
+>>>>>>> syslogd_t (aka journal) is going to need the new permission
+>>>>>>> cap_audit_read.  Also, as steve pointed out, someone may be likely to
+>>>>>>> want to be able to disable that permission easily.
+>>>>>>>
+>>>>>>> -Eric
+>>>>>>>
+>>>>> _______________________________________________
+>>>>> Selinux mailing list
+>>>>> Selinux@tycho.nsa.gov
+>>>>> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+>>>>> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+>>>>>
+>>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>> _______________________________________________
+>>> Selinux mailing list
+>>> Selinux@tycho.nsa.gov
+>>> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+>>> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+>>>
+>>>
+>
+> _______________________________________________
+> Selinux mailing list
+> Selinux@tycho.nsa.gov
+> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+>
+>
 
