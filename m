@@ -1,129 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932558AbaDXWAn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:00:43 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39862 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756961AbaDXVxT (ORCPT
+	id S1757429AbaDXWCO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:02:14 -0400
+Received: from tiger.mobileactivedefense.com ([217.174.251.109]:47455 "EHLO
+	tiger.mobileactivedefense.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753319AbaDXWCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:53:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Claudio Takahasi <claudio.takahasi@openbossa.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [PATCH 3.4 22/27] Bluetooth: Fix removing Long Term Key
-Date: Thu, 24 Apr 2014 14:55:56 -0700
-Message-Id: <20140424215552.635422825@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
+	Thu, 24 Apr 2014 18:02:10 -0400
+From: Rainer Weikusat <rweikusat@mobileactivedefense.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Eric Dumazet <edumazet@google.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 3.4 03/27] net: unix: non blocking recvmsg() should not return -EINTR
+In-Reply-To: <20140424215552.041408348@linuxfoundation.org> (Greg
+	Kroah-Hartman's message of "Thu, 24 Apr 2014 14:55:37 -0700")
 References: <20140424215551.942390050@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	<20140424215552.041408348@linuxfoundation.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+Date: Thu, 24 Apr 2014 23:01:54 +0100
+Message-ID: <874n1i8jzh.fsf@sable.mobileactivedefense.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
+> 3.4-stable review patch.  If anyone has any objections, please let me
+> know.
 
-------------------
+Since this is a machine generated bulk e-mail (as far as I understand
+this) which is specifically not intended to be sent to me as person, as
+per Eric Dumazet earlier statements, I object to being on the recipient
+list without an opportunity to be removed from it as I have repeatedly
+requested.
 
-From: Claudio Takahasi <claudio.takahasi@openbossa.org>
-
-commit 5981a8821b774ada0be512fd9bad7c241e17657e upstream.
-
-This patch fixes authentication failure on LE link re-connection when
-BlueZ acts as slave (peripheral). LTK is removed from the internal list
-after its first use causing PIN or Key missing reply when re-connecting
-the link. The LE Long Term Key Request event indicates that the master
-is attempting to encrypt or re-encrypt the link.
-
-Pre-condition: BlueZ host paired and running as slave.
-How to reproduce(master):
-
-  1) Establish an ACL LE encrypted link
-  2) Disconnect the link
-  3) Try to re-establish the ACL LE encrypted link (fails)
-
-> HCI Event: LE Meta Event (0x3e) plen 19
-      LE Connection Complete (0x01)
-        Status: Success (0x00)
-        Handle: 64
-        Role: Slave (0x01)
-...
-@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
-> HCI Event: LE Meta Event (0x3e) plen 13
-      LE Long Term Key Request (0x05)
-        Handle: 64
-        Random number: 875be18439d9aa37
-        Encryption diversifier: 0x76ed
-< HCI Command: LE Long Term Key Request Reply (0x08|0x001a) plen 18
-        Handle: 64
-        Long term key: 2aa531db2fce9f00a0569c7d23d17409
-> HCI Event: Command Complete (0x0e) plen 6
-      LE Long Term Key Request Reply (0x08|0x001a) ncmd 1
-        Status: Success (0x00)
-        Handle: 64
-> HCI Event: Encryption Change (0x08) plen 4
-        Status: Success (0x00)
-        Handle: 64
-        Encryption: Enabled with AES-CCM (0x01)
-...
-@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 3
-< HCI Command: LE Set Advertise Enable (0x08|0x000a) plen 1
-        Advertising: Enabled (0x01)
-> HCI Event: Command Complete (0x0e) plen 4
-      LE Set Advertise Enable (0x08|0x000a) ncmd 1
-        Status: Success (0x00)
-> HCI Event: LE Meta Event (0x3e) plen 19
-      LE Connection Complete (0x01)
-        Status: Success (0x00)
-        Handle: 64
-        Role: Slave (0x01)
-...
-@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
-> HCI Event: LE Meta Event (0x3e) plen 13
-      LE Long Term Key Request (0x05)
-        Handle: 64
-        Random number: 875be18439d9aa37
-        Encryption diversifier: 0x76ed
-< HCI Command: LE Long Term Key Request Neg Reply (0x08|0x001b) plen 2
-        Handle: 64
-> HCI Event: Command Complete (0x0e) plen 6
-      LE Long Term Key Request Neg Reply (0x08|0x001b) ncmd 1
-        Status: Success (0x00)
-        Handle: 64
-> HCI Event: Disconnect Complete (0x05) plen 4
-        Status: Success (0x00)
-        Handle: 64
-        Reason: Authentication Failure (0x05)
-@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 0
-
-Signed-off-by: Claudio Takahasi <claudio.takahasi@openbossa.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- net/bluetooth/hci_event.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
-
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3383,7 +3383,13 @@ static inline void hci_le_ltk_request_ev
- 
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
- 
--	if (ltk->type & HCI_SMP_STK) {
-+	/* Ref. Bluetooth Core SPEC pages 1975 and 2004. STK is a
-+	 * temporary key used to encrypt a connection following
-+	 * pairing. It is used during the Encrypted Session Setup to
-+	 * distribute the keys. Later, security can be re-established
-+	 * using a distributed LTK.
-+	 */
-+	if (ltk->type == HCI_SMP_STK_SLAVE) {
- 		list_del(&ltk->list);
- 		kfree(ltk);
- 	}
-
-
+Insofar my understanding of European spam legislation goes, this is
+illegal.
