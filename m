@@ -1,62 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758149AbaDXPXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:23:12 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:39770 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758125AbaDXPXI (ORCPT
+	id S1757911AbaDXP0C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:26:02 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:52901 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754569AbaDXPZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:23:08 -0400
-Date: Thu, 24 Apr 2014 12:22:32 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
-Subject: Re: [PATCH 08/28] nios2: MMU Fault handling
-Message-ID: <20140424152232.GD1735@arch.cereza>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
- <1397824031-4892-6-git-send-email-lftan@altera.com>
- <20140422143036.GD15745@arch.cereza>
- <CAFiDJ59KHkh549PBezijr-UektFQtQaZ_5fP5qqRvsVC-e2uxw@mail.gmail.com>
+	Thu, 24 Apr 2014 11:25:59 -0400
+Message-ID: <53592D04.4040001@codeaurora.org>
+Date: Thu, 24 Apr 2014 10:25:56 -0500
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFiDJ59KHkh549PBezijr-UektFQtQaZ_5fP5qqRvsVC-e2uxw@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: "Westerberg, Mika" <mika.westerberg@intel.com>
+CC: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
+References: <534B93BA.6020406@linux.intel.com> <534BFAAF.3070805@codeaurora.org> <534D0370.50108@linux.intel.com> <535005BA.1040405@codeaurora.org> <5357A80B.8030701@linux.intel.com> <5357ACF1.9070206@codeaurora.org> <20140423135915.GY30677@intel.com> <5357D8CC.3080501@codeaurora.org> <20140424063546.GA30677@intel.com> <5358F30E.9080402@codeaurora.org> <20140424115848.GG30677@intel.com>
+In-Reply-To: <20140424115848.GG30677@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 24, Ley Foon Tan wrote:
-> On Tue, Apr 22, 2014 at 10:30 PM, Ezequiel Garcia
-> <ezequiel.garcia@free-electrons.com> wrote:
-> > Hello Ley Foon,
-> >
-> > On Apr 18, Ley Foon Tan wrote:
-> >> +
-> >> +bad_area_nosemaphore:
-> >> +     /* User mode accesses just cause a SIGSEGV */
-> >> +     if (user_mode(regs)) {
-> >
-> > I found that it's useful to add some printing here, just as ARM
-> > does. I carry this patch on my kernel:
-> >
-> > +               printk(KERN_INFO "%s: unhandled page fault (%d) at 0x%08lx, cause %ld\n",
-> > +                      current->comm, SIGSEGV, address, cause);
-> > +               show_regs(regs);
-> >
-> > Do you think we could do something like it? Maybe with a compile time option?
-> Yes, this is useful debug message. I can add this.
-> Prefer not to add new compile time option, I think this shouldn't
-> happen frequently.
+On 04/24/2014 06:58 AM, Westerberg, Mika wrote:
+>> >No, that's my point.  I was expecting the pinmux functions of the
+>> >pinctrl driver are used by ACPI, but apparently they aren't, and
+>> >that's why I'm asking.
 
-No, it shouldn't happen frequently. You can take a look at what ARM does.
-They use a DEBUG_USER compile-time option, much more complex than my silly
-proposal.
+> Which functions?
+
+The functions in struct pinmux_ops, like get_function_groups.  Will 
+these functions ever be called on an ACPI system?
+
 -- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, hosted by the Linux Foundation.
