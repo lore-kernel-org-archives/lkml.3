@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756353AbaDXLbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:31:11 -0400
-Received: from mga02.intel.com ([134.134.136.20]:35882 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756123AbaDXLbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 07:31:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,918,1389772800"; 
-   d="scan'208";a="518778872"
-Date: Thu, 24 Apr 2014 14:38:22 +0300
-From: "Westerberg, Mika" <mika.westerberg@intel.com>
-To: Timur Tabi <timur@codeaurora.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
-Message-ID: <20140424113822.GF30677@intel.com>
-References: <534BFAAF.3070805@codeaurora.org>
- <534D0370.50108@linux.intel.com>
- <535005BA.1040405@codeaurora.org>
- <5357A80B.8030701@linux.intel.com>
- <5357ACF1.9070206@codeaurora.org>
- <20140423135915.GY30677@intel.com>
- <5357D8CC.3080501@codeaurora.org>
- <CACRpkdbk8okbzaZgD=BqeMSOvbEvYNViqamd9i=NAaAWW=T9sQ@mail.gmail.com>
- <20140424062719.GZ30677@intel.com>
- <5358F362.6080006@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5358F362.6080006@codeaurora.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753725AbaDXIxB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:53:01 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46443 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753662AbaDXIw6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 04:52:58 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Brian Norris <computersforpeace@gmail.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 038/182] jffs2: remove from wait queue after schedule()
+Date: Thu, 24 Apr 2014 09:49:23 +0100
+Message-Id: <1398329507-5911-39-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 06:20:02AM -0500, Timur Tabi wrote:
-> Westerberg, Mika wrote:
-> >Typically this is done by the boot firmware (BIOS in this case). So the OS
-> >doesn't need to deal with that.
-> >
-> >AFAICT ACPI doesn't know anything about pin muxing.
-> 
-> In that case, would it be correct to say that a Linux pinctrl driver
-> for an ACPI-only platform should not define pinmux function groups,
-> because they'll never be used?
+3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-No because you can have a GPIO controller on ACPI machine that allows you
-to do some sort of pin muxing. What I'm saying is that ACPI itself doesn't
-have such knowledge and hence we don't support such things in
-gpiolib-acpi.c.
+------------------
+
+From: Li Zefan <lizefan@huawei.com>
+
+commit 3ead9578443b66ddb3d50ed4f53af8a0c0298ec5 upstream.
+
+@wait is a local variable, so if we don't remove it from the wait queue
+list, later wake_up() may end up accessing invalid memory.
+
+This was spotted by eyes.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/jffs2/nodemgmt.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/fs/jffs2/nodemgmt.c b/fs/jffs2/nodemgmt.c
+index 0331072..bbae5b1 100644
+--- a/fs/jffs2/nodemgmt.c
++++ b/fs/jffs2/nodemgmt.c
+@@ -179,6 +179,7 @@ int jffs2_reserve_space(struct jffs2_sb_info *c, uint32_t minsize,
+ 					spin_unlock(&c->erase_completion_lock);
+ 
+ 					schedule();
++					remove_wait_queue(&c->erase_wait, &wait);
+ 				} else
+ 					spin_unlock(&c->erase_completion_lock);
+ 			} else if (ret)
+-- 
+1.9.1
+
