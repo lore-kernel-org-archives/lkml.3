@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753507AbaDXIwc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:52:32 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46328 "EHLO
+	id S1753656AbaDXIwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:52:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46386 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753404AbaDXIw1 (ORCPT
+	with ESMTP id S1753550AbaDXIwn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:27 -0400
+	Thu, 24 Apr 2014 04:52:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Wolfram Sang <wsa@the-dreams.de>, Hans de Goede <hdegoede@redhat.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 022/182] [media] media: gspca: sn9c20x: add ID for Genius Look 1320 V2
-Date: Thu, 24 Apr 2014 09:49:07 +0100
-Message-Id: <1398329507-5911-23-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 033/182] rtlwifi: rtl8188ee: Fix too long disable of IRQs
+Date: Thu, 24 Apr 2014 09:49:18 +0100
+Message-Id: <1398329507-5911-34-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,43 +28,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Wolfram Sang <wsa@the-dreams.de>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 61f0319193c44adbbada920162d880b1fdb3aeb3 upstream.
+commit 6b6392715856d563719991e9ce95e773491a8983 upstream.
 
-Signed-off-by: Wolfram Sang <wsa@the-dreams.de>
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
+In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
+rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
+<olivier@trillion01.com> fixed a problem caused by an extra long disabling
+of interrupts. This patch makes the same fix for rtl8188ee.
+
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- Documentation/video4linux/gspca.txt | 1 +
- drivers/media/usb/gspca/sn9c20x.c   | 1 +
- 2 files changed, 2 insertions(+)
+ drivers/net/wireless/rtlwifi/rtl8188ee/hw.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/video4linux/gspca.txt b/Documentation/video4linux/gspca.txt
-index 1e6b653..d2ba80b 100644
---- a/Documentation/video4linux/gspca.txt
-+++ b/Documentation/video4linux/gspca.txt
-@@ -55,6 +55,7 @@ zc3xx		0458:700f	Genius VideoCam Web V2
- sonixj		0458:7025	Genius Eye 311Q
- sn9c20x		0458:7029	Genius Look 320s
- sonixj		0458:702e	Genius Slim 310 NB
-+sn9c20x		0458:7045	Genius Look 1320 V2
- sn9c20x		0458:704a	Genius Slim 1320
- sn9c20x		0458:704c	Genius i-Look 1321
- sn9c20x		045e:00f4	LifeCam VX-6000 (SN9C20x + OV9650)
-diff --git a/drivers/media/usb/gspca/sn9c20x.c b/drivers/media/usb/gspca/sn9c20x.c
-index f4453d5..ceb5404 100644
---- a/drivers/media/usb/gspca/sn9c20x.c
-+++ b/drivers/media/usb/gspca/sn9c20x.c
-@@ -2359,6 +2359,7 @@ static const struct usb_device_id device_table[] = {
- 	{USB_DEVICE(0x045e, 0x00f4), SN9C20X(OV9650, 0x30, 0)},
- 	{USB_DEVICE(0x145f, 0x013d), SN9C20X(OV7660, 0x21, 0)},
- 	{USB_DEVICE(0x0458, 0x7029), SN9C20X(HV7131R, 0x11, 0)},
-+	{USB_DEVICE(0x0458, 0x7045), SN9C20X(MT9M112, 0x5d, LED_REVERSE)},
- 	{USB_DEVICE(0x0458, 0x704a), SN9C20X(MT9M112, 0x5d, 0)},
- 	{USB_DEVICE(0x0458, 0x704c), SN9C20X(MT9M112, 0x5d, 0)},
- 	{USB_DEVICE(0xa168, 0x0610), SN9C20X(HV7131R, 0x11, 0)},
+diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
+index e06971b..f923d8c 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
+@@ -1025,9 +1025,20 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
+ 	bool rtstatus = true;
+ 	int err = 0;
+ 	u8 tmp_u1b, u1byte;
++	unsigned long flags;
+ 
+ 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "Rtl8188EE hw init\n");
+ 	rtlpriv->rtlhal.being_init_adapter = true;
++	/* As this function can take a very long time (up to 350 ms)
++	 * and can be called with irqs disabled, reenable the irqs
++	 * to let the other devices continue being serviced.
++	 *
++	 * It is safe doing so since our own interrupts will only be enabled
++	 * in a subsequent step.
++	 */
++	local_save_flags(flags);
++	local_irq_enable();
++
+ 	rtlpriv->intf_ops->disable_aspm(hw);
+ 
+ 	tmp_u1b = rtl_read_byte(rtlpriv, REG_SYS_CLKR+1);
+@@ -1043,7 +1054,7 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
+ 	if (rtstatus != true) {
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
+ 		err = 1;
+-		return err;
++		goto exit;
+ 	}
+ 
+ 	err = rtl88e_download_fw(hw, false);
+@@ -1051,8 +1062,7 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
+ 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
+ 			 "Failed to download FW. Init HW without FW now..\n");
+ 		err = 1;
+-		rtlhal->fw_ready = false;
+-		return err;
++		goto exit;
+ 	} else {
+ 		rtlhal->fw_ready = true;
+ 	}
+@@ -1135,10 +1145,12 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
+ 	}
+ 	rtl_write_byte(rtlpriv, REG_NAV_CTRL+2,  ((30000+127)/128));
+ 	rtl88e_dm_init(hw);
++exit:
++	local_irq_restore(flags);
+ 	rtlpriv->rtlhal.being_init_adapter = false;
+ 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "end of Rtl8188EE hw init %x\n",
+ 		 err);
+-	return 0;
++	return err;
+ }
+ 
+ static enum version_8188e _rtl88ee_read_chip_version(struct ieee80211_hw *hw)
 -- 
 1.9.1
 
