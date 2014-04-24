@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932159AbaDXWAa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:00:30 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38498 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753624AbaDXWAZ (ORCPT
+	id S1757818AbaDXWI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:08:58 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39848 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756946AbaDXVxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:00:25 -0400
-Date: Fri, 25 Apr 2014 00:00:24 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jikos@jikos.cz>
-Subject: Re: [bisect result] Re: 3.15-rc2: i915 regression: only top 20% of
- screen works in X
-Message-ID: <20140424220024.GA27250@atrey.karlin.mff.cuni.cz>
-References: <20140423202248.GA3621@amd.pavel.ucw.cz>
- <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
- <20140423220952.GA3627@amd.pavel.ucw.cz>
- <20140424055023.GA31221@nuc-i3427.alporthouse.com>
- <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
- <20140424194037.GB30333@amd.pavel.ucw.cz>
- <20140424201521.GN31221@nuc-i3427.alporthouse.com>
+	Thu, 24 Apr 2014 17:53:18 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Tomas Cech <tcech@suse.cz>,
+        Corey Minyard <minyard@acm.org>,
+        openipmi-developer@lists.sourceforge.net,
+        Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.4 21/27] Char: ipmi_bt_sm, fix infinite loop
+Date: Thu, 24 Apr 2014 14:55:55 -0700
+Message-Id: <20140424215552.607458494@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
+References: <20140424215551.942390050@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424201521.GN31221@nuc-i3427.alporthouse.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> > > And if you can indeed reliably reproduce this a bisect could be really useful.
-> > 
-> > And we have a winner here :-)
-> > 
-> > Ok, it was not as painfull as I feared.
-> > 
-> > It does not revert cleanly, but doing it by hand was not that bad.
-> 
-> Oh my. That is bizarre, can you check whether you have
+------------------
 
-> commit 9991ae787a0c87fe7c783b4b6f4754c3cdbb6213
-> Author: Chris Wilson <chris@chris-wilson.co.uk>
-> Date:   Wed Apr 2 16:36:07 2014 +0100
-> 
->     drm/i915: Move all ring resets before setting the HWS page
-> 
-> in your latest kernel? That just makes
+From: Jiri Slaby <jslaby@suse.cz>
 
-No, I don't have that one.
+commit a94cdd1f4d30f12904ab528152731fb13a812a16 upstream.
 
-> To confirm, on drm-intel-nightly you used a patch like:
+In read_all_bytes, we do
 
-I did not use drm-intel-nightly, but 3.15-rc2, because
-drm-intel-nightly did not work at all. (Netconsole is not that easy to
-set up, and I'd prefer not debugging 2 problems at the same time.)
+  unsigned char i;
+  ...
+  bt->read_data[0] = BMC2HOST;
+  bt->read_count = bt->read_data[0];
+  ...
+  for (i = 1; i <= bt->read_count; i++)
+    bt->read_data[i] = BMC2HOST;
 
-Let me check with my patch reverted and 9991ae applied.
+If bt->read_data[0] == bt->read_count == 255, we loop infinitely in the
+'for' loop.  Make 'i' an 'int' instead of 'char' to get rid of the
+overflow and finish the loop after 255 iterations every time.
 
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-and-debugged-by: Rui Hui Dian <rhdian@novell.com>
+Cc: Tomas Cech <tcech@suse.cz>
+Cc: Corey Minyard <minyard@acm.org>
+Cc: <openipmi-developer@lists.sourceforge.net>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/char/ipmi/ipmi_bt_sm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -352,7 +352,7 @@ static inline void write_all_bytes(struc
+ 
+ static inline int read_all_bytes(struct si_sm_data *bt)
+ {
+-	unsigned char i;
++	unsigned int i;
+ 
+ 	/*
+ 	 * length is "framing info", minimum = 4: NetFn, Seq, Cmd, cCode.
+
+
