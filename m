@@ -1,70 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752914AbaDXAyy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 20:54:54 -0400
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:46983 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751892AbaDXAyw (ORCPT
+	id S1752414AbaDXBCa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 21:02:30 -0400
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:48629 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581AbaDXBC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 20:54:52 -0400
+	Wed, 23 Apr 2014 21:02:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAFLxGvyn4q3VfRrAcjO6meZ1UJwRZ5-yeaMExGX5ogtnuAkPBQ@mail.gmail.com>
-References: <CALCETrXE_T-3eKmVKZNkAfoyvC0CcUATDK7fGPvQrR9H=RHQag@mail.gmail.com>
- <CAFLxGvyn4q3VfRrAcjO6meZ1UJwRZ5-yeaMExGX5ogtnuAkPBQ@mail.gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 23 Apr 2014 17:54:31 -0700
-Message-ID: <CALCETrUOEFwnYqKNtB3XKqsM1HNnOR9x-MXV8mjdR6ErUL3jGg@mail.gmail.com>
-Subject: Re: How do I make a clean mount namespace?
-To: Richard Weinberger <richard.weinberger@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <CACRpkdaJM4RcMaNOoNnACfkRiQP9xxNSfNjV8nygA1GXYdJrfw@mail.gmail.com>
+References: <1393842463-5206-1-git-send-email-thloh@altera.com>
+	<CACRpkdaJM4RcMaNOoNnACfkRiQP9xxNSfNjV8nygA1GXYdJrfw@mail.gmail.com>
+Date: Thu, 24 Apr 2014 08:55:31 +0800
+X-Google-Sender-Auth: DOQTxtvznUgvCmVuJx7dkpqfDkg
+Message-ID: <CAOLUe6bP-kBx9U3Kmfgu5iAUDkryCDubyJybDTpSCFkBd8RvMA@mail.gmail.com>
+Subject: Re: [PATCH V7 1/1] drivers/gpio: Altera soft IP GPIO driver and
+ devicetree binding
+From: Tien Hock Loh <thloh@altera.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Tien Hock Loh <thloh@altera.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Dinh Nguyen <dinguyen@altera.com>,
+        "lftan@altera.com" <lftan@altera.com>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 1:01 PM, Richard Weinberger
-<richard.weinberger@gmail.com> wrote:
-> On Wed, Apr 23, 2014 at 12:12 AM, Andy Lutomirski <luto@amacapital.net> wrote:
->> I want to set up a little container.  So I unshare the mount namespace
->> and mount something somewhere (say /mnt) that I want to be my new
->> root.  Now what?
->>
->> pivot_root("/mnt", "/mnt/garbage") seems to frequently return -EBUSY.
->>
->> mounting /mnt onto / using MS_MOVE seems to succeed, but / still
->> points at the old root.
->>
->> Am I missing a clean way to do this?  I want a way to say "make this
->> mountpoint be the root of the whole mount namespace and lazy-unmount
->> everything outside it".  If there is no straightforward way to do
->> that, can we add one?
+On Wed, Apr 23, 2014 at 9:32 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Mon, Mar 3, 2014 at 11:27 AM,  <thloh@altera.com> wrote:
 >
-> I fear you have to read /proc/mounts and umount() everything in the
-> correct order.
-> If you find a better way, please tell. :-)
+>> From: Tien Hock Loh <thloh@altera.com>
+>>
+>> Add driver support for Altera GPIO soft IP, including interrupts and I/O.
+>> Tested on Altera CV SoC board using dipsw and LED using LED framework.
+>>
+>> Signed-off-by: Tien Hock Loh <thloh@altera.com>
 >
+> Some time has passed since this was posted and we now have
+> GPIO irqchip helpers in the gpiolib core.
+>
+> If you repost this, please reform this driver to use the gpiochip
+> irqchip helpers in the manner of e.g. drivers/gpio/gpio-pl061.c.
+>
+> More examples and documentation is available on the "devel"
+> branch in the gpio git tree (also in linux-next).
 
-How about adding a new syscall:
+OK noted. I'll do that.
 
-int change_root_mount(const char *path, unsigned long flags);
+Thanks for the info.
 
-This requires CAP_SYS_ADMIN and it requires that the caller is not
-chrooted.  path must be a mountpoint and flags must be zero.
-
-It lazy-unmounts everything outside path, and it moves path to /.
-When it's done, the current process's root is '/'.  If you want to
-retain temporary access to outside things, you can keep an fd open.
-If the old root is shared, it is made private.  It's okay for path to
-be shared (I think).
-
-If other things are already running in the current mount namespace,
-then their root directory stays the same, so they keep working, but
-they may be a little confused.
-
-I think this could replace pivot_root for most use cases, and it could
-simplify programs like switch_root.
-
-Thoughts?
-
---Andy
+>
+> Yours,
+> Linus Walleij
