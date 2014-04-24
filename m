@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758268AbaDXWV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:21:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60752 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756210AbaDXWVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:21:21 -0400
-Date: Fri, 25 Apr 2014 00:21:20 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: David Rientjes <rientjes@google.com>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?ISO-8859-15?Q?J=F6rn_Engel?= <joern@logfs.org>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, akpm@linux-foundation.org, cxie@redhat.com,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] printk: Print cpu number along with time
-In-Reply-To: <alpine.DEB.2.02.1404241518210.24983@chino.kir.corp.google.com>
-Message-ID: <alpine.LNX.2.00.1404250020370.8903@pobox.suse.cz>
-References: <20140423125352.704f9fb2@annuminas.surriel.com> <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz> <20140424005247.GA17713@logfs.org> <20140424194024.GA25446@logfs.org> <20140424195821.GA3092@kroah.com> <alpine.LNX.2.00.1404250005020.8903@pobox.suse.cz>
- <alpine.DEB.2.02.1404241518210.24983@chino.kir.corp.google.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755361AbaDXVqM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:46:12 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753914AbaDXVpz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:45:55 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Tomas Cech <tcech@suse.cz>,
+        Corey Minyard <minyard@acm.org>,
+        openipmi-developer@lists.sourceforge.net,
+        Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 02/33] Char: ipmi_bt_sm, fix infinite loop
+Date: Thu, 24 Apr 2014 14:48:15 -0700
+Message-Id: <20140424214449.792396888@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
+References: <20140424214449.423169713@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Apr 2014, David Rientjes wrote:
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-> > Well, if you have dmesg dump from panic that happens every other year, and 
-> > you have to do post-mortem analysis on it, I am pretty sure you would love 
-> > to be able to figure out how the stack traces would look like without 
-> > inter-CPU interleaving. And I am pretty sure you wouldn't want to 
-> > insert/enable a tracepoint and wait another two years for the bug to 
-> > trigger again.
-> 
-> Sounds like the appropriate fix would be to serialize stack dumping to the 
-> kernel log.
+------------------
 
-That's rather difficult, as it can be done both from NMI and non-NMI 
-contexts, and those are very hard to synchronize.
+From: Jiri Slaby <jslaby@suse.cz>
 
--- 
-Jiri Kosina
-SUSE Labs
+commit a94cdd1f4d30f12904ab528152731fb13a812a16 upstream.
+
+In read_all_bytes, we do
+
+  unsigned char i;
+  ...
+  bt->read_data[0] = BMC2HOST;
+  bt->read_count = bt->read_data[0];
+  ...
+  for (i = 1; i <= bt->read_count; i++)
+    bt->read_data[i] = BMC2HOST;
+
+If bt->read_data[0] == bt->read_count == 255, we loop infinitely in the
+'for' loop.  Make 'i' an 'int' instead of 'char' to get rid of the
+overflow and finish the loop after 255 iterations every time.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-and-debugged-by: Rui Hui Dian <rhdian@novell.com>
+Cc: Tomas Cech <tcech@suse.cz>
+Cc: Corey Minyard <minyard@acm.org>
+Cc: <openipmi-developer@lists.sourceforge.net>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/char/ipmi/ipmi_bt_sm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -352,7 +352,7 @@ static inline void write_all_bytes(struc
+ 
+ static inline int read_all_bytes(struct si_sm_data *bt)
+ {
+-	unsigned char i;
++	unsigned int i;
+ 
+ 	/*
+ 	 * length is "framing info", minimum = 4: NetFn, Seq, Cmd, cCode.
+
+
