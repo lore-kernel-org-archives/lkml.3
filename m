@@ -1,128 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932423AbaDXWAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:00:37 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39866 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756973AbaDXVxT (ORCPT
+	id S1757656AbaDXWGs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:06:48 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38672 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479AbaDXWGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:53:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jayachandran C <jchandra@broadcom.com>,
-        Kamlakant Patel <kamlakant.patel@broadcom.com>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.4 23/27] jffs2: Fix segmentation fault found in stress test
-Date: Thu, 24 Apr 2014 14:55:57 -0700
-Message-Id: <20140424215552.669409447@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
-References: <20140424215551.942390050@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 24 Apr 2014 18:06:39 -0400
+Date: Fri, 25 Apr 2014 00:06:38 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jikos@jikos.cz>
+Subject: Re: [bisect result] Re: 3.15-rc2: i915 regression: only top 20% of
+ screen works in X
+Message-ID: <20140424220638.GA29385@atrey.karlin.mff.cuni.cz>
+References: <20140423202248.GA3621@amd.pavel.ucw.cz>
+ <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
+ <20140423220952.GA3627@amd.pavel.ucw.cz>
+ <20140424055023.GA31221@nuc-i3427.alporthouse.com>
+ <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
+ <20140424194037.GB30333@amd.pavel.ucw.cz>
+ <20140424201521.GN31221@nuc-i3427.alporthouse.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140424201521.GN31221@nuc-i3427.alporthouse.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+> On Thu, Apr 24, 2014 at 09:40:38PM +0200, Pavel Machek wrote:
+> > Hi!
+> > 
+> > > And if you can indeed reliably reproduce this a bisect could be really useful.
+> > 
+> > And we have a winner here :-)
+> > 
+> > Ok, it was not as painfull as I feared.
+> > 
+> > It does not revert cleanly, but doing it by hand was not that bad.
+> 
+> Oh my. That is bizarre, can you check whether you have
+> 
+> commit 9991ae787a0c87fe7c783b4b6f4754c3cdbb6213
 
-------------------
+Yes, with that commit, graphics is back to working state. Please push
+it to mainline soon -- it fixes a regression. Feel free  to add
 
-From: Kamlakant Patel <kamlakant.patel@broadcom.com>
+Tested-by: Pavel Machek <pavel@ucw.cz>
 
-commit 3367da5610c50e6b83f86d366d72b41b350b06a2 upstream.
+Thanks,
+								Pavel
 
-Creating a large file on a JFFS2 partition sometimes crashes with this call
-trace:
-
-[  306.476000] CPU 13 Unable to handle kernel paging request at virtual address c0000000dfff8002, epc == ffffffffc03a80a8, ra == ffffffffc03a8044
-[  306.488000] Oops[#1]:
-[  306.488000] Cpu 13
-[  306.492000] $ 0   : 0000000000000000 0000000000000000 0000000000008008 0000000000008007
-[  306.500000] $ 4   : c0000000dfff8002 000000000000009f c0000000e0007cde c0000000ee95fa58
-[  306.508000] $ 8   : 0000000000000001 0000000000008008 0000000000010000 ffffffffffff8002
-[  306.516000] $12   : 0000000000007fa9 000000000000ff0e 000000000000ff0f 80e55930aebb92bb
-[  306.524000] $16   : c0000000e0000000 c0000000ee95fa5c c0000000efc80000 ffffffffc09edd70
-[  306.532000] $20   : ffffffffc2b60000 c0000000ee95fa58 0000000000000000 c0000000efc80000
-[  306.540000] $24   : 0000000000000000 0000000000000004
-[  306.548000] $28   : c0000000ee950000 c0000000ee95f738 0000000000000000 ffffffffc03a8044
-[  306.556000] Hi    : 00000000000574a5
-[  306.560000] Lo    : 6193b7a7e903d8c9
-[  306.564000] epc   : ffffffffc03a80a8 jffs2_rtime_compress+0x98/0x198
-[  306.568000]     Tainted: G        W
-[  306.572000] ra    : ffffffffc03a8044 jffs2_rtime_compress+0x34/0x198
-[  306.580000] Status: 5000f8e3    KX SX UX KERNEL EXL IE
-[  306.584000] Cause : 00800008
-[  306.588000] BadVA : c0000000dfff8002
-[  306.592000] PrId  : 000c1100 (Netlogic XLP)
-[  306.596000] Modules linked in:
-[  306.596000] Process dd (pid: 170, threadinfo=c0000000ee950000, task=c0000000ee6e0858, tls=0000000000c47490)
-[  306.608000] Stack : 7c547f377ddc7ee4 7ffc7f967f5d7fae 7f617f507fc37ff4 7e7d7f817f487f5f
-        7d8e7fec7ee87eb3 7e977ff27eec7f9e 7d677ec67f917f67 7f3d7e457f017ed7
-        7fd37f517f867eb2 7fed7fd17ca57e1d 7e5f7fe87f257f77 7fd77f0d7ede7fdb
-        7fba7fef7e197f99 7fde7fe07ee37eb5 7f5c7f8c7fc67f65 7f457fb87f847e93
-        7f737f3e7d137cd9 7f8e7e9c7fc47d25 7dbb7fac7fb67e52 7ff17f627da97f64
-        7f6b7df77ffa7ec5 80057ef17f357fb3 7f767fa27dfc7fd5 7fe37e8e7fd07e53
-        7e227fcf7efb7fa1 7f547e787fa87fcc 7fcb7fc57f5a7ffb 7fc07f6c7ea97e80
-        7e2d7ed17e587ee0 7fb17f9d7feb7f31 7f607e797e887faa 7f757fdd7c607ff3
-        7e877e657ef37fbd 7ec17fd67fe67ff7 7ff67f797ff87dc4 7eef7f3a7c337fa6
-        7fe57fc97ed87f4b 7ebe7f097f0b8003 7fe97e2a7d997cba 7f587f987f3c7fa9
-        ...
-[  306.676000] Call Trace:
-[  306.680000] [<ffffffffc03a80a8>] jffs2_rtime_compress+0x98/0x198
-[  306.684000] [<ffffffffc0394f10>] jffs2_selected_compress+0x110/0x230
-[  306.692000] [<ffffffffc039508c>] jffs2_compress+0x5c/0x388
-[  306.696000] [<ffffffffc039dc58>] jffs2_write_inode_range+0xd8/0x388
-[  306.704000] [<ffffffffc03971bc>] jffs2_write_end+0x16c/0x2d0
-[  306.708000] [<ffffffffc01d3d90>] generic_file_buffered_write+0xf8/0x2b8
-[  306.716000] [<ffffffffc01d4e7c>] __generic_file_aio_write+0x1ac/0x350
-[  306.720000] [<ffffffffc01d50a0>] generic_file_aio_write+0x80/0x168
-[  306.728000] [<ffffffffc021f7dc>] do_sync_write+0x94/0xf8
-[  306.732000] [<ffffffffc021ff6c>] vfs_write+0xa4/0x1a0
-[  306.736000] [<ffffffffc02202e8>] SyS_write+0x50/0x90
-[  306.744000] [<ffffffffc0116cc0>] handle_sys+0x180/0x1a0
-[  306.748000]
-[  306.748000]
-Code: 020b202d  0205282d  90a50000 <90840000> 14a40038  00000000  0060602d  0000282d  016c5823
-[  306.760000] ---[ end trace 79dd088435be02d0 ]---
-Segmentation fault
-
-This crash is caused because the 'positions' is declared as an array of signed
-short. The value of position is in the range 0..65535, and will be converted
-to a negative number when the position is greater than 32767 and causes a
-corruption and crash. Changing the definition to 'unsigned short' fixes this
-issue
-
-Signed-off-by: Jayachandran C <jchandra@broadcom.com>
-Signed-off-by: Kamlakant Patel <kamlakant.patel@broadcom.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/jffs2/compr_rtime.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/fs/jffs2/compr_rtime.c
-+++ b/fs/jffs2/compr_rtime.c
-@@ -33,7 +33,7 @@ static int jffs2_rtime_compress(unsigned
- 				unsigned char *cpage_out,
- 				uint32_t *sourcelen, uint32_t *dstlen)
- {
--	short positions[256];
-+	unsigned short positions[256];
- 	int outpos = 0;
- 	int pos=0;
- 
-@@ -74,7 +74,7 @@ static int jffs2_rtime_decompress(unsign
- 				  unsigned char *cpage_out,
- 				  uint32_t srclen, uint32_t destlen)
- {
--	short positions[256];
-+	unsigned short positions[256];
- 	int outpos = 0;
- 	int pos=0;
- 
-
-
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
