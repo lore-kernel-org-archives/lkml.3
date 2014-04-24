@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004AbaDXI4L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:56:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46950 "EHLO
+	id S1754968AbaDXI4I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:56:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46958 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970AbaDXIzl (ORCPT
+	with ESMTP id S1754803AbaDXIzm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:55:41 -0400
+	Thu, 24 Apr 2014 04:55:42 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Lennart Poettering <lpoetter@redhat.com>,
-        Roland McGrath <roland@hack.frob.com>, Tejun Heo <tj@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+Cc: Jens Axboe <axboe@fb.com>, Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 137/182] wait: fix reparent_leader() vs EXIT_DEAD->EXIT_ZOMBIE race
-Date: Thu, 24 Apr 2014 09:51:02 +0100
-Message-Id: <1398329507-5911-138-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 140/182] lib/percpu_counter.c: fix bad percpu counter state during suspend
+Date: Thu, 24 Apr 2014 09:51:05 +0100
+Message-Id: <1398329507-5911-141-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -31,80 +28,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Jens Axboe <axboe@fb.com>
 
-commit dfccbb5e49a621c1b21a62527d61fc4305617aca upstream.
+commit e39435ce68bb4685288f78b1a7e24311f7ef939f upstream.
 
-wait_task_zombie() first does EXIT_ZOMBIE->EXIT_DEAD transition and
-drops tasklist_lock.  If this task is not the natural child and it is
-traced, we change its state back to EXIT_ZOMBIE for ->real_parent.
+I got a bug report yesterday from Laszlo Ersek in which he states that
+his kvm instance fails to suspend.  Laszlo bisected it down to this
+commit 1cf7e9c68fe8 ("virtio_blk: blk-mq support") where virtio-blk is
+converted to use the blk-mq infrastructure.
 
-The last transition is racy, this is even documented in 50b8d257486a
-"ptrace: partially fix the do_wait(WEXITED) vs EXIT_DEAD->EXIT_ZOMBIE
-race".  wait_consider_task() tries to detect this transition and clear
-->notask_error but we can't rely on ptrace_reparented(), debugger can
-exit and do ptrace_unlink() before its sub-thread sets EXIT_ZOMBIE.
+After digging a bit, it became clear that the issue was with the queue
+drain.  blk-mq tracks queue usage in a percpu counter, which is
+incremented on request alloc and decremented when the request is freed.
+The initial hunt was for an inconsistency in blk-mq, but everything
+seemed fine.  In fact, the counter only returned crazy values when
+suspend was in progress.
 
-And there is another problem which were missed before: this transition
-can also race with reparent_leader() which doesn't reset >exit_signal if
-EXIT_DEAD, assuming that this task must be reaped by someone else.  So
-the tracee can be re-parented with ->exit_signal != SIGCHLD, and if
-/sbin/init doesn't use __WALL it becomes unreapable.
+When a CPU is unplugged, the percpu counters merges that CPU state with
+the general state.  blk-mq takes care to register a hotcpu notifier with
+the appropriate priority, so we know it runs after the percpu counter
+notifier.  However, the percpu counter notifier only merges the state
+when the CPU is fully gone.  This leaves a state transition where the
+CPU going away is no longer in the online mask, yet it still holds
+private values.  This means that in this state, percpu_counter_sum()
+returns invalid results, and the suspend then hangs waiting for
+abs(dead-cpu-value) requests to complete which of course will never
+happen.
 
-Change reparent_leader() to update ->exit_signal even if EXIT_DEAD.
-Note: this is the simple temporary hack for -stable, it doesn't try to
-solve all problems, it will be reverted by the next changes.
+Fix this by clearing the state earlier, so we never have a case where
+the CPU isn't in online mask but still holds private state.  This bug
+has been there since forever, I guess we don't have a lot of users where
+percpu counters needs to be reliable during the suspend cycle.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Jan Kratochvil <jan.kratochvil@redhat.com>
-Reported-by: Michal Schmidt <mschmidt@redhat.com>
-Tested-by: Michal Schmidt <mschmidt@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Lennart Poettering <lpoetter@redhat.com>
-Cc: Roland McGrath <roland@hack.frob.com>
-Cc: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jens Axboe <axboe@fb.com>
+Reported-by: Laszlo Ersek <lersek@redhat.com>
+Tested-by: Laszlo Ersek <lersek@redhat.com>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/exit.c | 15 +++++++++++----
- 1 file changed, 11 insertions(+), 4 deletions(-)
+ lib/percpu_counter.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index b79d882..dcde2c4 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -559,9 +559,6 @@ static void reparent_leader(struct task_struct *father, struct task_struct *p,
- 				struct list_head *dead)
- {
- 	list_move_tail(&p->sibling, &p->real_parent->children);
--
--	if (p->exit_state == EXIT_DEAD)
--		return;
- 	/*
- 	 * If this is a threaded reparent there is no need to
- 	 * notify anyone anything has happened.
-@@ -569,9 +566,19 @@ static void reparent_leader(struct task_struct *father, struct task_struct *p,
- 	if (same_thread_group(p->real_parent, father))
- 		return;
+diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
+index 93c5d5e..741a426 100644
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -166,7 +166,7 @@ static int percpu_counter_hotcpu_callback(struct notifier_block *nb,
+ 	struct percpu_counter *fbc;
  
--	/* We don't want people slaying init.  */
-+	/*
-+	 * We don't want people slaying init.
-+	 *
-+	 * Note: we do this even if it is EXIT_DEAD, wait_task_zombie()
-+	 * can change ->exit_state to EXIT_ZOMBIE. If this is the final
-+	 * state, do_notify_parent() was already called and ->exit_signal
-+	 * doesn't matter.
-+	 */
- 	p->exit_signal = SIGCHLD;
+ 	compute_batch_value();
+-	if (action != CPU_DEAD)
++	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
+ 		return NOTIFY_OK;
  
-+	if (p->exit_state == EXIT_DEAD)
-+		return;
-+
- 	/* If it has exited notify the new parent about this child's death. */
- 	if (!p->ptrace &&
- 	    p->exit_state == EXIT_ZOMBIE && thread_group_empty(p)) {
+ 	cpu = (unsigned long)hcpu;
 -- 
 1.9.1
 
