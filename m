@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755547AbaDXJKg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:10:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47102 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755074AbaDXI4T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:56:19 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 167/182] USB: fix crash during hotplug of PCI USB controller card
-Date: Thu, 24 Apr 2014 09:51:32 +0100
-Message-Id: <1398329507-5911-168-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1755599AbaDXJLZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:11:25 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55346 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754182AbaDXJLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 05:11:20 -0400
+Message-ID: <5358D534.2070205@ti.com>
+Date: Thu, 24 Apr 2014 12:11:16 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Tero Kristo <t-kristo@ti.com>, Mike Turquette <mturquette@linaro.org>
+CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] clk: ti: clk-7xx: Correct ABE DPLL configuration
+References: <1396446525-20302-1-git-send-email-peter.ujfalusi@ti.com> <533C1AC2.1000307@ti.com> <533CFFB3.9070201@ti.com>
+In-Reply-To: <533CFFB3.9070201@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+Mike, Tero,
 
-------------------
+On 04/03/2014 09:29 AM, Peter Ujfalusi wrote:
+> On 04/02/2014 05:12 PM, Tero Kristo wrote:
+>> On 04/02/2014 04:48 PM, Peter Ujfalusi wrote:
+>>> ABE DPLL frequency need to be lowered from 361267200
+>>> to 180633600 to facilitate the ATL requironments.
+>>> The dpll_abe_m2x2_ck clock need to be set to double
+>>> of ABE DPLL rate in order to have correct clocks
+>>> for audio.
+>>
+>> Do you have some sort of TRM reference for this?
+> 
+> The ATL's max divider is 32.
+> For audio purpose the clock coming out from the ATL instance should be
+> 128 * fs. It is only possible to have 44.1KHz sampling rate with ABE DPLL set
+> to 361267200 or 180633600. Which means:
+> The atl generated clock should be 128 * 44100 = 5644800
+> From ABE_DPLL 361267200 we would need to have 64 as divider (ATL can't do this).
+> From the suggested ABE_DPLL of 180633600 we can use ATL divider of 32, which
+> is the maximum it can do.
+> 
+> So the reason for the change is to have ATLPCLK clock which can be used for
+> audio in the future, the 361267200 is just too high.
 
-From: Alan Stern <stern@rowland.harvard.edu>
+Tero: can I have your ack for this patch or do you have further concerns?
+Mike: do you want me to resend this patch?
 
-commit a2ff864b53eac9a0e9b05bfe9d1781ccd6c2af71 upstream.
+Thanks,
+Péter
 
-The code in hcd-pci.c that matches up EHCI controllers with their
-companion UHCI or OHCI controllers assumes that the private drvdata
-fields don't get set too early.  However, it turns out that this field
-gets set by usb_create_hcd(), before hcd-pci expects it, and this can
-result in a crash when two controllers are probed in parallel (as can
-happen when a new controller card is hotplugged).
-
-The companions_rwsem lock was supposed to prevent this sort of thing,
-but usb_create_hcd() is called outside the scope of the rwsem.
-
-A simple solution is to check that the root-hub pointer has been
-initialized as well as the drvdata field.  This doesn't happen until
-usb_add_hcd() is called; that call and the check are both protected by
-the rwsem.
-
-This patch should be applied to stable kernels from 3.10 onward.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Stefani Seibold <stefani@seibold.net>
-Tested-by: Stefani Seibold <stefani@seibold.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/core/hcd-pci.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/usb/core/hcd-pci.c b/drivers/usb/core/hcd-pci.c
-index caeb8d6..4676917 100644
---- a/drivers/usb/core/hcd-pci.c
-+++ b/drivers/usb/core/hcd-pci.c
-@@ -75,7 +75,7 @@ static void for_each_companion(struct pci_dev *pdev, struct usb_hcd *hcd,
- 				PCI_SLOT(companion->devfn) != slot)
- 			continue;
- 		companion_hcd = pci_get_drvdata(companion);
--		if (!companion_hcd)
-+		if (!companion_hcd || !companion_hcd->self.root_hub)
- 			continue;
- 		fn(pdev, hcd, companion, companion_hcd);
- 	}
--- 
-1.9.1
+> 
+>>
+>> -Tero
+>>
+>>>
+>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>>> ---
+>>>   drivers/clk/ti/clk-7xx.c | 7 ++++++-
+>>>   1 file changed, 6 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
+>>> index f7e40734c819..19a55bf407dd 100644
+>>> --- a/drivers/clk/ti/clk-7xx.c
+>>> +++ b/drivers/clk/ti/clk-7xx.c
+>>> @@ -16,7 +16,7 @@
+>>>   #include <linux/clkdev.h>
+>>>   #include <linux/clk/ti.h>
+>>>
+>>> -#define DRA7_DPLL_ABE_DEFFREQ                361267200
+>>> +#define DRA7_DPLL_ABE_DEFFREQ                180633600
+>>>   #define DRA7_DPLL_GMAC_DEFFREQ                1000000000
+>>>
+>>>
+>>> @@ -322,6 +322,11 @@ int __init dra7xx_dt_clk_init(void)
+>>>       if (rc)
+>>>           pr_err("%s: failed to configure ABE DPLL!\n", __func__);
+>>>
+>>> +    dpll_ck = clk_get_sys(NULL, "dpll_abe_m2x2_ck");
+>>> +    rc = clk_set_rate(dpll_ck, DRA7_DPLL_ABE_DEFFREQ * 2);
+>>> +    if (rc)
+>>> +        pr_err("%s: failed to configure ABE DPLL m2x2!\n", __func__);
+>>> +
+>>>       dpll_ck = clk_get_sys(NULL, "dpll_gmac_ck");
+>>>       rc = clk_set_rate(dpll_ck, DRA7_DPLL_GMAC_DEFFREQ);
+>>>       if (rc)
+>>>
+>>
+> 
+> 
 
