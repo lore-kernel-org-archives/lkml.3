@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752642AbaDXIEO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:04:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50243 "EHLO
+	id S1752586AbaDXIEI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:04:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50240 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752448AbaDXIEC (ORCPT
+	with ESMTP id S1752440AbaDXIEB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:04:02 -0400
-Date: Thu, 24 Apr 2014 01:03:49 -0700
-From: tip-bot for Masanari Iida <tipbot@zytor.com>
-Message-ID: <tip-db66d756c74acb886c51f11b501c2fe622018a0a@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        tglx@linutronix.de, standby24x7@gmail.com
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, standby24x7@gmail.com
-In-Reply-To: <1397753955-2914-1-git-send-email-standby24x7@gmail.com>
-References: <1397753955-2914-1-git-send-email-standby24x7@gmail.com>
+	Thu, 24 Apr 2014 04:04:01 -0400
+Date: Thu, 24 Apr 2014 01:03:36 -0700
+From: tip-bot for Stephane Eranian <tipbot@zytor.com>
+Message-ID: <tip-9f7ff8931e3c5ddc8535476971ec9501e9555c05@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@kernel.org, tglx@linutronix.de, bp@suse.de,
+        venkateshs@google.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, bp@suse.de,
+        venkateshs@google.com
+In-Reply-To: <20140423170418.GA12767@quad>
+References: <20140423170418.GA12767@quad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched/docbook: Fix 'make htmldocs'
-  warnings caused by missing description
-Git-Commit-ID: db66d756c74acb886c51f11b501c2fe622018a0a
+Subject: [tip:perf/urgent] perf/x86: Fix RAPL rdmsrl_safe() usage
+Git-Commit-ID: 9f7ff8931e3c5ddc8535476971ec9501e9555c05
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,50 +33,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  db66d756c74acb886c51f11b501c2fe622018a0a
-Gitweb:     http://git.kernel.org/tip/db66d756c74acb886c51f11b501c2fe622018a0a
-Author:     Masanari Iida <standby24x7@gmail.com>
-AuthorDate: Fri, 18 Apr 2014 01:59:15 +0900
+Commit-ID:  9f7ff8931e3c5ddc8535476971ec9501e9555c05
+Gitweb:     http://git.kernel.org/tip/9f7ff8931e3c5ddc8535476971ec9501e9555c05
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Wed, 23 Apr 2014 19:04:19 +0200
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 24 Apr 2014 09:28:32 +0200
+CommitDate: Thu, 24 Apr 2014 08:12:41 +0200
 
-sched/docbook: Fix 'make htmldocs' warnings caused by missing description
+perf/x86: Fix RAPL rdmsrl_safe() usage
 
-When 'flags' argument to sched_{set,get}attr() syscalls were
-added in:
+This patch fixes a bug introduced by:
 
-  6d35ab48090b ("sched: Add 'flags' argument to sched_{set,get}attr() syscalls")
+  24223657806a ("perf/x86/intel: Use rdmsrl_safe() when initializing RAPL PMU")
 
-no description for 'flags' was added. It causes the following warnings on "make htmldocs":
+The rdmsrl_safe() function returns 0 on success.
+The current code was failing to detect the RAPL PMU
+on real hardware  (missing /sys/devices/power) because
+the return value of rdmsrl_safe() was misinterpreted.
 
-  Warning(/kernel/sched/core.c:3645): No description found for parameter 'flags'
-  Warning(/kernel/sched/core.c:3789): No description found for parameter 'flags'
-
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Acked-by: Borislav Petkov <bp@suse.de>
+Acked-by: Venkatesh Srinivas <venkateshs@google.com>
 Cc: peterz@infradead.org
-Link: http://lkml.kernel.org/r/1397753955-2914-1-git-send-email-standby24x7@gmail.com
+Cc: zheng.z.yan@intel.com
+Link: http://lkml.kernel.org/r/20140423170418.GA12767@quad
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 2 ++
- 1 file changed, 2 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_rapl.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 268a45e..9fe2190 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -3639,6 +3639,7 @@ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
-  * sys_sched_setattr - same as above, but with extended sched_attr
-  * @pid: the pid in question.
-  * @uattr: structure containing the extended parameters.
-+ * @flags: for future extension.
-  */
- SYSCALL_DEFINE3(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr,
- 			       unsigned int, flags)
-@@ -3783,6 +3784,7 @@ err_size:
-  * @pid: the pid in question.
-  * @uattr: structure containing the extended parameters.
-  * @size: sizeof(attr) for fwd/bwd comp.
-+ * @flags: for future extension.
-  */
- SYSCALL_DEFINE4(sched_getattr, pid_t, pid, struct sched_attr __user *, uattr,
- 		unsigned int, size, unsigned int, flags)
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+index 7c87424..619f769 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
+@@ -543,7 +543,8 @@ static int rapl_cpu_prepare(int cpu)
+ 	if (phys_id < 0)
+ 		return -1;
+ 
+-	if (!rdmsrl_safe(MSR_RAPL_POWER_UNIT, &msr_rapl_power_unit_bits))
++	/* protect rdmsrl() to handle virtualization */
++	if (rdmsrl_safe(MSR_RAPL_POWER_UNIT, &msr_rapl_power_unit_bits))
+ 		return -1;
+ 
+ 	pmu = kzalloc_node(sizeof(*pmu), GFP_KERNEL, cpu_to_node(cpu));
