@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307AbaDXMst (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:48:49 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43865 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753663AbaDXMs1 (ORCPT
+	id S1757120AbaDXMtP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:49:15 -0400
+Received: from mail-ee0-f48.google.com ([74.125.83.48]:47789 "EHLO
+	mail-ee0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753639AbaDXMtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:48:27 -0400
-Date: Thu, 24 Apr 2014 13:48:03 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Anton Vorontsov <anton@enomsg.org>
-Message-ID: <20140424124803.GW12304@sirena.org.uk>
-References: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
- <1398264640-12122-3-git-send-email-k.kozlowski@samsung.com>
+	Thu, 24 Apr 2014 08:49:12 -0400
+Message-ID: <53590845.1090405@linaro.org>
+Date: Thu, 24 Apr 2014 13:49:09 +0100
+From: Julien Grall <julien.grall@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131104 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BWRtCqNGKifRcW6m"
-Content-Disposition: inline
-In-Reply-To: <1398264640-12122-3-git-send-email-k.kozlowski@samsung.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH part2 2/6] regulator/mfd: max14577: Export symbols for
- calculating charger current
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: David Vrabel <david.vrabel@citrix.com>
+CC: stefano.stabellini@eu.citrix.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        ian.campbell@citrix.com, konrad.wilk@oracle.com
+Subject: Re: [PATCH] arm/xen: Remove definiition of virt_to_pfn in asm/xen/page.h
+References: <1397836474-10478-1-git-send-email-julien.grall@linaro.org> <535901F0.3010908@citrix.com>
+In-Reply-To: <535901F0.3010908@citrix.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi David,
 
---BWRtCqNGKifRcW6m
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 04/24/2014 01:22 PM, David Vrabel wrote:
+> On 18/04/14 16:54, Julien Grall wrote:
+>> virt_to_pfn has been defined in asm/memory.h by the commit e26a9e0 "ARM: Better
+>> virt_to_page() handling"
+>>
+>> This will result of a compilation warning when CONFIG_XEN is enabled.
+>>
+>> arch/arm/include/asm/xen/page.h:80:0: warning: "virt_to_pfn" redefined [enabled by default]
+>>  #define virt_to_pfn(v)          (PFN_DOWN(__pa(v)))
+>>  ^
+>> In file included from arch/arm/include/asm/page.h:163:0,
+>>                  from arch/arm/include/asm/xen/page.h:4,
+>>                  from include/xen/page.h:4,
+>>                  from arch/arm/xen/grant-table.c:33:
+>>
+>> The definition in memory.h is nearly the same (it directly expand PFN_DOWN),
+>> so we can safely drop virt_to_pfn in xen include.
+> 
+> 
+> This breaks the arm build for me.
+> 
+> /local/davidvr/work/k.org/tip/drivers/block/xen-blkfront.c: In function
+> ‘setup_blkring’:
+> /local/davidvr/work/k.org/tip/drivers/block/xen-blkfront.c:1236:2:
+> error: implicit declaration of function ‘virt_to_pfn’
+> [-Werror=implicit-function-declaration]
+>   err = xenbus_grant_ring(dev, virt_to_mfn(info->ring.sring));
+>   ^
 
-On Wed, Apr 23, 2014 at 04:50:36PM +0200, Krzysztof Kozlowski wrote:
-> This patch prepares for changing the max14577 charger driver to allow
-> configuring battery-dependent settings from DTS.
+I don't have any issue to build the following branch with this patch on:
+	- v3.15-rc2
+	- xentip master
+	- xentip for-linus-3.16
 
-Acked-by: Mark Brown <broonie@linaro.org>
+Regards,
 
---BWRtCqNGKifRcW6m
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTWQgAAAoJELSic+t+oim9Nf8P/03cQSnYiQCnK2neDp46eN3D
-9TUydYILnUTskue/9mZuyAM9hhhoe9zkTBsYLLMDs42+ECNUkqTqCXJUdd6Gz5b3
-EbYTHTt/OCrkjHH0hUSlKawVXw2w0dgEkCYnpiCU9v3bcZKPiwAZ7NvK/AOv6+T2
-odTGpOh4GmVLBwHVYxVPXwzRpNe20PWrZ6QI0ofaMKDDOXkuiyW4/sskPoklcRmt
-E6Ew7oVGVjs+1djyJPUdi8qwHf9E/xU8yDImzkcWms+xexvsIIFVhW5rb2kNbddR
-wVGWBnGzoqMYZ16FgaO6usvCYUhMswdjYSwuEDCk/P5bYE+ntYAxIR/oAysDlf1n
-jyPqAN5ND6CmymyGuHNzXxExFagJjtQC6W7BujQ11DJUAdrh7R6wbU3f4sH4p3Uz
-X2DTqc/HHMZzBPSF5t7GuewKYJYlwSbNTp19aHrHyPsmpGtN5JfDZkFY+I0SXDAk
-jQKubjF3Me1rX//R2e367eImDdHrS3aOrJ98gVz4XKhUg0vYAN+EBkrFee0RP/1s
-WHSyfvzsAUxpXVqh8qclEhwk/CqyUYNUi4kRVf95qaZKoDwJ1+XjEe1Bn/+YZ04e
-MsqHM6FYM2g4dV5q2bGL/SbOWzm6bgMrIYpEkr6AIvtBq63rtRCcIgb2J4qw5xbY
-Ktmfci8zUhTTDUpqHtR2
-=2Lcs
------END PGP SIGNATURE-----
-
---BWRtCqNGKifRcW6m--
+-- 
+Julien Grall
