@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123AbaDXKl1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:41:27 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46618 "EHLO
+	id S1754067AbaDXIxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:53:45 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46599 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754074AbaDXIxt (ORCPT
+	with ESMTP id S1754037AbaDXIxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:49 -0400
+	Thu, 24 Apr 2014 04:53:43 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian Austin <brian.austin@cirrus.com>, Mark Brown <broonie@linaro.org>,
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 079/182] ASoC: cs42l51: Fix SOC_DOUBLE_R_SX_TLV shift values for ADC, PCM, and Analog kcontrols
-Date: Thu, 24 Apr 2014 09:50:04 +0100
-Message-Id: <1398329507-5911-80-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 075/182] mfd: max77693: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Thu, 24 Apr 2014 09:50:00 +0100
+Message-Id: <1398329507-5911-76-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,56 +28,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Austin <brian.austin@cirrus.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 7272e051157ccd5871b5d939548d0ba5a94a2965 upstream.
+commit ad09dd6a1f5d6244bd89314015af506ba7f9810a upstream.
 
-The shift values for the ADC,PCM, and Analog kcontrols were wrong causing wrong values for the SOC_DOUBLE_R_SX_TLV macros
-Fixed the TLV for aout_tlv to show -102dB correctly
+During probe the driver allocates dummy I2C devices for MUIC and haptic
+with i2c_new_dummy() but it does not check the return value of this
+calls.
 
-Fixes: 1d99f2436d (ASoC: core: Rework SOC_DOUBLE_R_SX_TLV add SOC_SINGLE_SX_TLV)
-Reported-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Signed-off-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by devm_regmap_init_i2c() and i2c_unregister_device().
+
+If i2c_new_dummy() fails for MUIC or haptic devices, fail also the probe
+for main MFD driver.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/cs42l51.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/mfd/max77693.c | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
 
-diff --git a/sound/soc/codecs/cs42l51.c b/sound/soc/codecs/cs42l51.c
-index 1e0fa3b..e1dfebb 100644
---- a/sound/soc/codecs/cs42l51.c
-+++ b/sound/soc/codecs/cs42l51.c
-@@ -124,9 +124,8 @@ static int cs42l51_set_chan_mix(struct snd_kcontrol *kcontrol,
+diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
+index 9e60fed..299970f 100644
+--- a/drivers/mfd/max77693.c
++++ b/drivers/mfd/max77693.c
+@@ -149,9 +149,18 @@ static int max77693_i2c_probe(struct i2c_client *i2c,
+ 		dev_info(max77693->dev, "device ID: 0x%x\n", reg_data);
  
- static const DECLARE_TLV_DB_SCALE(adc_pcm_tlv, -5150, 50, 0);
- static const DECLARE_TLV_DB_SCALE(tone_tlv, -1050, 150, 0);
--/* This is a lie. after -102 db, it stays at -102 */
--/* maybe a range would be better */
--static const DECLARE_TLV_DB_SCALE(aout_tlv, -11550, 50, 0);
-+
-+static const DECLARE_TLV_DB_SCALE(aout_tlv, -10200, 50, 0);
+ 	max77693->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
++	if (!max77693->muic) {
++		dev_err(max77693->dev, "Failed to allocate I2C device for MUIC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max77693->muic, max77693);
  
- static const DECLARE_TLV_DB_SCALE(boost_tlv, 1600, 1600, 0);
- static const char *chan_mix[] = {
-@@ -141,7 +140,7 @@ static const struct soc_enum cs42l51_chan_mix =
- static const struct snd_kcontrol_new cs42l51_snd_controls[] = {
- 	SOC_DOUBLE_R_SX_TLV("PCM Playback Volume",
- 			CS42L51_PCMA_VOL, CS42L51_PCMB_VOL,
--			6, 0x19, 0x7F, adc_pcm_tlv),
-+			0, 0x19, 0x7F, adc_pcm_tlv),
- 	SOC_DOUBLE_R("PCM Playback Switch",
- 			CS42L51_PCMA_VOL, CS42L51_PCMB_VOL, 7, 1, 1),
- 	SOC_DOUBLE_R_SX_TLV("Analog Playback Volume",
-@@ -149,7 +148,7 @@ static const struct snd_kcontrol_new cs42l51_snd_controls[] = {
- 			0, 0x34, 0xE4, aout_tlv),
- 	SOC_DOUBLE_R_SX_TLV("ADC Mixer Volume",
- 			CS42L51_ADCA_VOL, CS42L51_ADCB_VOL,
--			6, 0x19, 0x7F, adc_pcm_tlv),
-+			0, 0x19, 0x7F, adc_pcm_tlv),
- 	SOC_DOUBLE_R("ADC Mixer Switch",
- 			CS42L51_ADCA_VOL, CS42L51_ADCB_VOL, 7, 1, 1),
- 	SOC_SINGLE("Playback Deemphasis Switch", CS42L51_DAC_CTL, 3, 1, 0),
+ 	max77693->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
++	if (!max77693->haptic) {
++		dev_err(max77693->dev, "Failed to allocate I2C device for Haptic\n");
++		ret = -ENODEV;
++		goto err_i2c_haptic;
++	}
+ 	i2c_set_clientdata(max77693->haptic, max77693);
+ 
+ 	/*
+@@ -187,8 +196,9 @@ err_mfd:
+ 	max77693_irq_exit(max77693);
+ err_irq:
+ err_regmap_muic:
+-	i2c_unregister_device(max77693->muic);
+ 	i2c_unregister_device(max77693->haptic);
++err_i2c_haptic:
++	i2c_unregister_device(max77693->muic);
+ 	return ret;
+ }
+ 
 -- 
 1.9.1
 
