@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757818AbaDXOzv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:55:51 -0400
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50484 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344AbaDXOzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:55:49 -0400
-X-Originating-IP: 50.43.32.211
-Date: Thu, 24 Apr 2014 07:55:35 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
-Cc: akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
-        eparis@redhat.com, paul.gortmaker@windriver.com, vapier@gentoo.org,
-        kyungsik.lee@lge.com, jslaby@suse.cz, dwight.engen@oracle.com,
-        pefoley2@pefoley.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/1] init/Kconfig: improve CC_OPTIMIZE_FOR_SIZE
- documentation
-Message-ID: <20140424145535.GA2969@jtriplet-mobl1>
-References: <1398341254-4626-1-git-send-email-michael.opdenacker@free-electrons.com>
+	id S932091AbaDXO4E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:56:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58043 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757878AbaDXOz4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 10:55:56 -0400
+Date: Thu, 24 Apr 2014 16:55:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: Avi Kivity <avi.kivity@gmail.com>, Gleb Natapov <gleb@kernel.org>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Dominik Dingel <dingel@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] KVM: async_pf: use_mm/mm_users fixes
+Message-ID: <20140424145545.GA17450@redhat.com>
+References: <20140421132543.GA13594@redhat.com> <53591F65.9010001@de.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398341254-4626-1-git-send-email-michael.opdenacker@free-electrons.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <53591F65.9010001@de.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 02:07:33PM +0200, Michael Opdenacker wrote:
-> This patch proposes to warn users about the negative performance
-> impact of CC_OPTIMIZE_FOR_SIZE (compiling with -Os instead of -O2).
-> For the moment, we are just advising users not to select this option,
-> but extra details would be useful.
-> 
-> I made some experiments with this option. All of them yielded
-> degraded overall boot time. The kernel is smaller and hence is copied
-> and started earlier, but the benefits are quickly offset by the
-> slower kernel code. Even the total boot time is usually worse
-> than with a regular kernel.
-> 
-> Here are my latest results, on Atmel SAMA5D3 Xplained (ARM),
-> Linux 3.10, gzip compressed kernel:
-> 
-> Timestamp		O2		Os		Diff
-> Starting kernel 	4.307 s 	5.593 s 	-94 ms
-> Starting init		4.213 s 	5.549 s 	-44 ms
-> Login prompt		21.085 s	22.900 s 	+1.815 s 
+On 04/24, Christian Borntraeger wrote:
+>
+> On 21/04/14 15:25, Oleg Nesterov wrote:
+> > Hello.
+> >
+> > Completely untested and I know nothing about kvm ;) Please review.
+> >
+> > But use_mm() really looks misleading, and the usage of mm_users looks
+> > "obviously wrong". I already sent this change while we were discussing
+> > vmacache, but it was ignored. Since then kvm_async_page_present_sync()
+> > was added into async_pf_execute() into async_pf_execute(), but it seems
+> > to me that use_mm() is still unnecessary.
+> >
+> > Oleg.
+> >
+> >  virt/kvm/async_pf.c |   10 ++++------
+> >  1 files changed, 4 insertions(+), 6 deletions(-)
+> >
+>
+> I gave both patches some testing on s390, seems fine. I think patch2 really
+> does fix a bug. So if Paolo, Marcelo, Gleb agree (maybe do a test on x86 for
+> async_pf) both patches are good to go. Given that somebody tests this on x86:
+>
+> Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
-Did you get the times in the upper two rows transposed row/column?  Based
-on the diffs, I'd guess 4.213s goes in Os "Starting kernel", and 5.593s
-goes in O2 "Starting init".
+Thanks!
 
-- Josh Triplett
+I think x86 should be fine, it doesn't select CONFIG_KVM_ASYNC_PF_SYNC and
+get_user_pages() is certainly fine without use_mm(). And I still think it
+should do get_user_pages(tsk => NULL) but this is minor.
+
+Oleg.
+
