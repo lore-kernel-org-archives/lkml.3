@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763AbaDXQK5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:10:57 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:47108 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758643AbaDXQKs (ORCPT
+	id S932367AbaDXQLg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:11:36 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:8996 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758611AbaDXQIw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:10:48 -0400
-From: Grant Likely <grant.likely@linaro.org>
-Subject: Re: [PATCH 2/2] of/irq: do irq resolution in platform_get_irq
-To: Tony Lindgren <tony@atomide.com>, Rob Herring <robherring2@gmail.com>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
-        thierry.reding@gmail.com, Rob Herring <robh@kernel.org>
-In-Reply-To: <20140423234213.GE6053@atomide.com>
-References: <1398293861-7682-1-git-send-email-robherring2@gmail.com>
-	<1398293861-7682-3-git-send-email-robherring2@gmail.com>
-	<20140423234213.GE6053@atomide.com>
-Date: Thu, 24 Apr 2014 17:10:39 +0100
-Message-Id: <20140424161039.CF96CC40921@trevor.secretlab.ca>
+	Thu, 24 Apr 2014 12:08:52 -0400
+Message-Id: <20140424160850.920871089@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 24 Apr 2014 12:06:30 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 4/7] ktest: Put back in the CONFIG_BISECT_CHECK
+References: <20140424160626.491010573@goodmis.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0004-ktest-Put-back-in-the-CONFIG_BISECT_CHECK.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014 16:42:13 -0700, Tony Lindgren <tony@atomide.com> wrote:
-> * Rob Herring <robherring2@gmail.com> [140423 15:58]:
-> > From: Rob Herring <robh@kernel.org>
-> > 
-> > Currently we get the following kind of errors if we try to use interrupt
-> > phandles to irqchips that have not yet initialized:
-> > 
-> > irq: no irq domain found for /ocp/pinmux@48002030 !
-> > ------------[ cut here ]------------
-> > WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_device_alloc+0x144/0x184()
-> > Modules linked in:
-> > CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-00038-g42a9708 #1012
-> > (show_stack+0x14/0x1c)
-> > (dump_stack+0x6c/0xa0)
-> > (warn_slowpath_common+0x64/0x84)
-> > (warn_slowpath_null+0x1c/0x24)
-> > (of_device_alloc+0x144/0x184)
-> > (of_platform_device_create_pdata+0x44/0x9c)
-> > (of_platform_bus_create+0xd0/0x170)
-> > (of_platform_bus_create+0x12c/0x170)
-> > (of_platform_populate+0x60/0x98)
-> > 
-> > This is because we're wrongly trying to populate resources that are not
-> > yet available. It's perfectly valid to create irqchips dynamically, so
-> > let's fix up the issue by resolving the interrupt resources when
-> > platform_get_irq is called.
-> > 
-> > And then we also need to accept the fact that some irqdomains do not
-> > exist that early on, and only get initialized later on. So we can
-> > make the current WARN_ON into just into a pr_debug().
-> > 
-> > We still attempt to populate irq resources when we create the devices.
-> > This allows current drivers which don't use platform_get_irq to continue
-> > to function. Once all drivers are fixed, this code can be removed.
-> > 
-> > Suggested-by: Russell King <linux@arm.linux.org.uk>
-> > Signed-off-by: Rob Herring <robh@kernel.org>
-> > Signed-off-by: Tony Lindgren <tony@atomide.com>
-> 
-> Great, works for me. Hopefully this patch is non-intrusive enough for
-> people for the -rc cycle too?
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Both patches look good. I've put them in my tree and will push it out
-shortly. I want to make sure there are no regressions on PowerPC, so
-I'll give it a few days in linux-next before asking Linus to pull.
+The new rewrite left out the CONFIG_BISECT_CHECK, which allows the
+user to test that their "bad" config still is bad and their "good"
+config still is good. This is especially important as the configs
+are passed through a "make oldconfig" to update them with the lastest
+kernel. Things could change that causes a bad config to work, or a
+good config to break. The check is done after the configs have run
+through the oldconfig processing.
 
-Tony, how far back does this need to be backported?
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ tools/testing/ktest/ktest.pl | 25 +++++++++++++++++++++++--
+ 1 file changed, 23 insertions(+), 2 deletions(-)
 
-g.
+diff --git a/tools/testing/ktest/ktest.pl b/tools/testing/ktest/ktest.pl
+index 52f558e..59697ea 100755
+--- a/tools/testing/ktest/ktest.pl
++++ b/tools/testing/ktest/ktest.pl
+@@ -3125,6 +3125,7 @@ sub config_bisect {
+     my ($i) = @_;
+ 
+     my $type = $config_bisect_type;
++    my $ret;
+ 
+     $bad_config = $config_bisect;
+ 
+@@ -3134,7 +3135,7 @@ sub config_bisect {
+ 	$good_config = $minconfig;
+     } else {
+ 	doprint "No config specified, checking if defconfig works";
+-	my $ret = run_bisect_test $type, "defconfig";
++	$ret = run_bisect_test $type, "defconfig";
+ 	if (!$ret) {
+ 	    fail "Have no good config to compare with, please set CONFIG_BISECT_GOOD";
+ 	    return 1;
+@@ -3166,7 +3167,27 @@ sub config_bisect {
+     save_config \%good_configs, $good_config;
+     save_config \%bad_configs, $bad_config;
+ 
+-    my $ret;
++
++    if (defined($config_bisect_check) && $config_bisect_check ne "0") {
++	if ($config_bisect_check ne "good") {
++	    doprint "Testing bad config\n";
++
++	    $ret = run_bisect_test $type, "useconfig:$bad_config";
++	    if ($ret) {
++		fail "Bad config succeeded when expected to fail!";
++		return 0;
++	    }
++	}
++	if ($config_bisect_check ne "bad") {
++	    doprint "Testing good config\n";
++
++	    $ret = run_bisect_test $type, "useconfig:$good_config";
++	    if (!$ret) {
++		fail "Good config failed when expected to succeed!";
++		return 0;
++	    }
++	}
++    }
+ 
+     do {
+ 	$ret = run_config_bisect \%good_configs, \%bad_configs;
+-- 
+1.8.5.3
+
 
