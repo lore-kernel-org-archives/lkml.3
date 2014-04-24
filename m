@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756475AbaDXV57 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:57:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39852 "EHLO
+	id S932249AbaDXV6g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:58:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39848 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757086AbaDXVxV (ORCPT
+	with ESMTP id S1757006AbaDXVxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:53:21 -0400
+	Thu, 24 Apr 2014 17:53:20 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dan Carpenter <dan.carpenter@oracle.com>,
+        Fabio Estevam <festevam@gmail.com>,
+        Fabio Estevam <fabio.estevam@freescale.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 15/27] isdnloop: several buffer overflows
-Date: Thu, 24 Apr 2014 14:55:49 -0700
-Message-Id: <20140424215552.417961567@linuxfoundation.org>
+Subject: [PATCH 3.4 12/27] ipv6: some ipv6 statistic counters failed to disable bh
+Date: Thu, 24 Apr 2014 14:55:46 -0700
+Message-Id: <20140424215552.324044549@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
 References: <20140424215551.942390050@linuxfoundation.org>
@@ -29,95 +32,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <dan.carpenter@oracle.com>
+From: Hannes Frederic Sowa <hannes@stressinduktion.org>
 
-[ Upstream commit 7563487cbf865284dcd35e9ef5a95380da046737 ]
+[ Upstream commit 43a43b6040165f7b40b5b489fe61a4cb7f8c4980 ]
 
-There are three buffer overflows addressed in this patch.
+After commit c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify
+processing to workqueue") some counters are now updated in process context
+and thus need to disable bh before doing so, otherwise deadlocks can
+happen on 32-bit archs. Fabio Estevam noticed this while while mounting
+a NFS volume on an ARM board.
 
-1) In isdnloop_fake_err() we add an 'E' to a 60 character string and
-then copy it into a 60 character buffer.  I have made the destination
-buffer 64 characters and I'm changed the sprintf() to a snprintf().
+As a compensation for missing this I looked after the other *_STATS_BH
+and found three other calls which need updating:
 
-2) In isdnloop_parse_cmd(), p points to a 6 characters into a 60
-character buffer so we have 54 characters.  The ->eazlist[] is 11
-characters long.  I have modified the code to return if the source
-buffer is too long.
+1) icmp6_send: ip6_fragment -> icmpv6_send -> icmp6_send (error handling)
+2) ip6_push_pending_frames: rawv6_sendmsg -> rawv6_push_pending_frames -> ...
+   (only in case of icmp protocol with raw sockets in error handling)
+3) ping6_v6_sendmsg (error handling)
 
-3) In isdnloop_command() the cbuf[] array was 60 characters long but the
-max length of the string then can be up to 79 characters.  I made the
-cbuf array 80 characters long and changed the sprintf() to snprintf().
-I also removed the temporary "dial" buffer and changed it to use "p"
-directly.
-
-Unfortunately, we pass the "cbuf" string from isdnloop_command() to
-isdnloop_writecmd() which truncates anything over 60 characters to make
-it fit in card->omsg[].  (It can accept values up to 255 characters so
-long as there is a '\n' character every 60 characters).  For now I have
-just fixed the memory corruption bug and left the other problems in this
-driver alone.
-
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Fixes: c15b1ccadb323ea ("ipv6: move DAD and addrconf_verify processing to workqueue")
+Reported-by: Fabio Estevam <festevam@gmail.com>
+Tested-by: Fabio Estevam <fabio.estevam@freescale.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
 Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/isdn/isdnloop/isdnloop.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ net/ipv6/icmp.c       |    2 +-
+ net/ipv6/ip6_output.c |    4 ++--
+ net/ipv6/mcast.c      |   11 ++++++-----
+ 3 files changed, 9 insertions(+), 8 deletions(-)
 
---- a/drivers/isdn/isdnloop/isdnloop.c
-+++ b/drivers/isdn/isdnloop/isdnloop.c
-@@ -518,9 +518,9 @@ static isdnloop_stat isdnloop_cmd_table[
- static void
- isdnloop_fake_err(isdnloop_card *card)
- {
--	char buf[60];
-+	char buf[64];
+--- a/net/ipv6/icmp.c
++++ b/net/ipv6/icmp.c
+@@ -501,7 +501,7 @@ void icmpv6_send(struct sk_buff *skb, u8
+ 			      np->tclass, NULL, &fl6, (struct rt6_info*)dst,
+ 			      MSG_DONTWAIT, np->dontfrag);
+ 	if (err) {
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTERRORS);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTERRORS);
+ 		ip6_flush_pending_frames(sk);
+ 	} else {
+ 		err = icmpv6_push_pending_frames(sk, &fl6, &tmp_hdr,
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1661,8 +1661,8 @@ int ip6_push_pending_frames(struct sock
+ 	if (proto == IPPROTO_ICMPV6) {
+ 		struct inet6_dev *idev = ip6_dst_idev(skb_dst(skb));
  
--	sprintf(buf, "E%s", card->omsg);
-+	snprintf(buf, sizeof(buf), "E%s", card->omsg);
- 	isdnloop_fake(card, buf, -1);
- 	isdnloop_fake(card, "NAK", -1);
- }
-@@ -903,6 +903,8 @@ isdnloop_parse_cmd(isdnloop_card *card)
- 	case 7:
- 		/* 0x;EAZ */
- 		p += 3;
-+		if (strlen(p) >= sizeof(card->eazlist[0]))
-+			break;
- 		strcpy(card->eazlist[ch - 1], p);
- 		break;
- 	case 8:
-@@ -1133,7 +1135,7 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
- {
- 	ulong a;
- 	int i;
--	char cbuf[60];
-+	char cbuf[80];
- 	isdn_ctrl cmd;
- 	isdnloop_cdef cdef;
+-		ICMP6MSGOUT_INC_STATS_BH(net, idev, icmp6_hdr(skb)->icmp6_type);
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
++		ICMP6MSGOUT_INC_STATS(net, idev, icmp6_hdr(skb)->icmp6_type);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
+ 	}
  
-@@ -1198,7 +1200,6 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
- 			break;
- 		if ((c->arg & 255) < ISDNLOOP_BCH) {
- 			char *p;
--			char dial[50];
- 			char dcode[4];
+ 	err = ip6_local_out(skb);
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -1430,11 +1430,12 @@ static void mld_sendpack(struct sk_buff
+ 		      dst_output);
+ out:
+ 	if (!err) {
+-		ICMP6MSGOUT_INC_STATS_BH(net, idev, ICMPV6_MLD2_REPORT);
+-		ICMP6_INC_STATS_BH(net, idev, ICMP6_MIB_OUTMSGS);
+-		IP6_UPD_PO_STATS_BH(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
+-	} else
+-		IP6_INC_STATS_BH(net, idev, IPSTATS_MIB_OUTDISCARDS);
++		ICMP6MSGOUT_INC_STATS(net, idev, ICMPV6_MLD2_REPORT);
++		ICMP6_INC_STATS(net, idev, ICMP6_MIB_OUTMSGS);
++		IP6_UPD_PO_STATS(net, idev, IPSTATS_MIB_OUTMCAST, payload_len);
++	} else {
++		IP6_INC_STATS(net, idev, IPSTATS_MIB_OUTDISCARDS);
++	}
  
- 			a = c->arg;
-@@ -1210,10 +1211,10 @@ isdnloop_command(isdn_ctrl *c, isdnloop_
- 			} else
- 				/* Normal Dial */
- 				strcpy(dcode, "CAL");
--			strcpy(dial, p);
--			sprintf(cbuf, "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
--				dcode, dial, c->parm.setup.si1,
--				c->parm.setup.si2, c->parm.setup.eazmsn);
-+			snprintf(cbuf, sizeof(cbuf),
-+				 "%02d;D%s_R%s,%02d,%02d,%s\n", (int) (a + 1),
-+				 dcode, p, c->parm.setup.si1,
-+				 c->parm.setup.si2, c->parm.setup.eazmsn);
- 			i = isdnloop_writecmd(cbuf, strlen(cbuf), 0, card);
- 		}
- 		break;
+ 	rcu_read_unlock();
+ 	return;
 
 
