@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758921AbaDXWXA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:23:00 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39672 "EHLO
+	id S1758892AbaDXWW7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:22:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39680 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755290AbaDXVqK (ORCPT
+	with ESMTP id S1754827AbaDXVqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:10 -0400
+	Thu, 24 Apr 2014 17:46:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 3.10 03/23] x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
-Date: Thu, 24 Apr 2014 14:48:33 -0700
-Message-Id: <20140424214826.345862159@linuxfoundation.org>
+        Ian Abbott <abbotti@mev.co.uk>
+Subject: [PATCH 3.10 04/23] staging: comedi: 8255_pci: initialize MITE data window
+Date: Thu, 24 Apr 2014 14:48:34 -0700
+Message-Id: <20140424214826.466992548@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
 References: <20140424214825.933835556@linuxfoundation.org>
@@ -30,64 +28,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Ian Abbott <abbotti@mev.co.uk>
 
-commit 6f8a1b335fde143b7407036e2368d3cd6eb55674 upstream.
+commit 268d1e799663b795cba15c64f5d29407786a9dd4 upstream.
 
-Commit 03bbcb2e7e2 (iommu/vt-d: add quirk for broken interrupt
-remapping on 55XX chipsets) properly disables irq remapping on the
-5500/5520 chipsets that don't correctly perform that feature.
+According to National Instruments' PCI-DIO-96/PXI-6508/PCI-6503 User
+Manual, the physical address in PCI BAR1 needs to be OR'ed with 0x80 and
+written to register offset 0xC0 in the "MITE" registers (BAR0).  Do so
+during initialization of the National Instruments boards handled by the
+"8255_pci" driver.  The boards were previously handled by the
+"ni_pcidio" driver, where the initialization was done by `mite_setup()`
+in the "mite" module.  The "mite" module comes with too much extra
+baggage for the "8255_pci" driver to deal with so use a local, simpler
+initialization function.
 
-However, when I wrote it, I followed the errata sheet linked in that
-commit too closely, and explicitly tied the activation of the quirk to
-revision 0x13 of the chip, under the assumption that earlier revisions
-were not in the field.  Recently a system was reported to be suffering
-from this remap bug and the quirk hadn't triggered, because the
-revision id register read at a lower value that 0x13, so the quirk
-test failed improperly.  Given this, it seems only prudent to adjust
-this quirk so that any revision less than 0x13 has the quirk asserted.
-
-[ tglx: Removed the 0x12 comparison of pci id 3405 as this is covered
-    	by the <= 0x13 check already ]
-
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/1394649873-14913-1-git-send-email-nhorman@tuxdriver.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/early-quirks.c |   15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ drivers/staging/comedi/drivers/8255_pci.c |   34 ++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -202,18 +202,15 @@ static void __init intel_remapping_check
- 	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
+--- a/drivers/staging/comedi/drivers/8255_pci.c
++++ b/drivers/staging/comedi/drivers/8255_pci.c
+@@ -59,6 +59,7 @@ Configuration Options: not applicable, u
+ #include "../comedidev.h"
  
- 	/*
-- 	 * Revision 13 of all triggering devices id in this quirk have
--	 * a problem draining interrupts when irq remapping is enabled,
--	 * and should be flagged as broken.  Additionally revisions 0x12
--	 * and 0x22 of device id 0x3405 has this problem.
-+	 * Revision <= 13 of all triggering devices id in this quirk
-+	 * have a problem draining interrupts when irq remapping is
-+	 * enabled, and should be flagged as broken. Additionally
-+	 * revision 0x22 of device id 0x3405 has this problem.
- 	 */
--	if (revision == 0x13)
-+	if (revision <= 0x13)
- 		set_irq_remapping_broken();
--	else if ((device == 0x3405) &&
--	    ((revision == 0x12) ||
--	     (revision == 0x22)))
-+	else if (device == 0x3405 && revision == 0x22)
- 		set_irq_remapping_broken();
--
- }
+ #include "8255.h"
++#include "mite.h"
  
- #define QFLAG_APPLY_ONCE 	0x1
+ enum pci_8255_boardid {
+ 	BOARD_ADLINK_PCI7224,
+@@ -82,6 +83,7 @@ struct pci_8255_boardinfo {
+ 	const char *name;
+ 	int dio_badr;
+ 	int n_8255;
++	unsigned int has_mite:1;
+ };
+ 
+ static const struct pci_8255_boardinfo pci_8255_boards[] = {
+@@ -129,36 +131,43 @@ static const struct pci_8255_boardinfo p
+ 		.name		= "ni_pci-dio-96",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 4,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PCIDIO96B] = {
+ 		.name		= "ni_pci-dio-96b",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 4,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PXI6508] = {
+ 		.name		= "ni_pxi-6508",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 4,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PCI6503] = {
+ 		.name		= "ni_pci-6503",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 1,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PCI6503B] = {
+ 		.name		= "ni_pci-6503b",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 1,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PCI6503X] = {
+ 		.name		= "ni_pci-6503x",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 1,
++		.has_mite	= 1,
+ 	},
+ 	[BOARD_NI_PXI_6503] = {
+ 		.name		= "ni_pxi-6503",
+ 		.dio_badr	= 1,
+ 		.n_8255		= 1,
++		.has_mite	= 1,
+ 	},
+ };
+ 
+@@ -166,6 +175,25 @@ struct pci_8255_private {
+ 	void __iomem *mmio_base;
+ };
+ 
++static int pci_8255_mite_init(struct pci_dev *pcidev)
++{
++	void __iomem *mite_base;
++	u32 main_phys_addr;
++
++	/* ioremap the MITE registers (BAR 0) temporarily */
++	mite_base = pci_ioremap_bar(pcidev, 0);
++	if (!mite_base)
++		return -ENOMEM;
++
++	/* set data window to main registers (BAR 1) */
++	main_phys_addr = pci_resource_start(pcidev, 1);
++	writel(main_phys_addr | WENAB, mite_base + MITE_IODWBSR);
++
++	/* finished with MITE registers */
++	iounmap(mite_base);
++	return 0;
++}
++
+ static int pci_8255_mmio(int dir, int port, int data, unsigned long iobase)
+ {
+ 	void __iomem *mmio_base = (void __iomem *)iobase;
+@@ -205,6 +233,12 @@ static int pci_8255_auto_attach(struct c
+ 	if (ret)
+ 		return ret;
+ 
++	if (board->has_mite) {
++		ret = pci_8255_mite_init(pcidev);
++		if (ret)
++			return ret;
++	}
++
+ 	is_mmio = (pci_resource_flags(pcidev, board->dio_badr) &
+ 		   IORESOURCE_MEM) != 0;
+ 	if (is_mmio) {
 
 
