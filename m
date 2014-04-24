@@ -1,90 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757081AbaDXWcQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:32:16 -0400
-Received: from mail-ve0-f173.google.com ([209.85.128.173]:61233 "EHLO
-	mail-ve0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754743AbaDXWcO (ORCPT
+	id S1757226AbaDXWbd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:31:33 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39546 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841AbaDXVqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:32:14 -0400
+	Thu, 24 Apr 2014 17:46:05 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Oleg Nesterov <oleg@redhat.com>,
+        Sree Harsha Totakura <sreeharsha@totakura.in>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Jeff Dike <jdike@addtoit.com>, Ingo Molnar <mingo@elte.hu>,
+        Andrey Vagin <avagin@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 33/33] exit: call disassociate_ctty() before exit_task_namespaces()
+Date: Thu, 24 Apr 2014 14:48:46 -0700
+Message-Id: <20140424214454.395738129@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
+References: <20140424214449.423169713@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-In-Reply-To: <53598F2F.1030306@linux.intel.com>
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com>
- <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com>
- <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com> <53598F2F.1030306@linux.intel.com>
-From: Andrew Lutomirski <amluto@gmail.com>
-Date: Thu, 24 Apr 2014 15:31:54 -0700
-Message-ID: <CAObL_7H0omGZTW2jRa+cZdaKM1y8z2Uh5mPZqW4AX4Qgea8Ydw@mail.gmail.com>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-To: "H. Peter Anvin" <hpa@linux.intel.com>
-Cc: comex <comexk@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 3:24 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
-> On 04/23/2014 09:53 PM, Andrew Lutomirski wrote:
->>>
->>> - The user can put arbitrary data in registers before returning to the
->>> LDT in order to get it saved at a known address accessible from the
->>> kernel.  With SMAP and KASLR this might otherwise be difficult.
->>
->> For one thing, this only matters on Haswell.  Otherwise the user can
->> put arbitrary data in userspace.
->>
->> On Haswell, the HPET fixmap is currently a much simpler vector that
->> can do much the same thing, as long as you're willing to wait for the
->> HPET counter to contain some particular value.  I have patches that
->> will fix that as a side effect.
->>
->> Would it pay to randomize the location of the espfix area?  Another
->> somewhat silly idea is to add some random offset to the CPU number mod
->> NR_CPUS so that at attacker won't know which ministack is which.
->
-> Since we store the espfix stack location explicitly, as long as the
-> scrambling happens in the initialization code that's fine.  However, we
-> don't want to reduce locality lest we massively blow up the memory
-> requirements.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-I was imagining just randomizing a couple of high bits so the whole
-espfix area moves as a unit.
+------------------
 
->
-> We could XOR with a random constant with no penalty at all.  Only
-> problem is that this happens early, so the entropy system is not yet
-> available.  Fine if we have RDRAND, but...
+From: Oleg Nesterov <oleg@redhat.com>
 
-How many people have SMAP and not RDRAND?  I think this is a complete
-nonissue for non-SMAP systems.
+commit c39df5fa37b0623589508c95515b4aa1531c524e upstream.
 
->> Peter, is this idea completely nuts?  The only exceptions that can
->> happen there are NMI, MCE, #DB, #SS, and #GP.  The first four use IST,
->> so they won't double-fault.
->
-> It is completely nuts, but sometimes completely nuts is actually useful.
->  It is more complexity, to be sure, but it doesn't seem completely out
-> of the realm of reason, and avoids having to unwind the ministack except
-> in the normally-fatal #DF handler.  #DFs are documented as not
-> recoverable, but we might be able to do something here.
->
-> The only real disadvantage I see is the need for more bookkeeping
-> metadata.  Basically the bitmask in espfix_64.c now needs to turn into
-> an array, plus we need a second percpu variable.  Given that if
-> CONFIG_NR_CPUS=8192 the array has 128 entries I think we can survive that.
+Commit 8aac62706ada ("move exit_task_namespaces() outside of
+exit_notify()") breaks pppd and the exiting service crashes the kernel:
 
-Doing something in #DF needs percpu data?  What am I missing?
+    BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
+    IP: ppp_register_channel+0x13/0x20 [ppp_generic]
+    Call Trace:
+      ppp_asynctty_open+0x12b/0x170 [ppp_async]
+      tty_ldisc_open.isra.2+0x27/0x60
+      tty_ldisc_hangup+0x1e3/0x220
+      __tty_hangup+0x2c4/0x440
+      disassociate_ctty+0x61/0x270
+      do_exit+0x7f2/0xa50
 
---Andy
+ppp_register_channel() needs ->net_ns and current->nsproxy == NULL.
+
+Move disassociate_ctty() before exit_task_namespaces(), it doesn't make
+sense to delay it after perf_event_exit_task() or cgroup_exit().
+
+This also allows to use task_work_add() inside the (nontrivial) code
+paths in disassociate_ctty().
+
+Investigated by Peter Hurley.
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Sree Harsha Totakura <sreeharsha@totakura.in>
+Cc: Peter Hurley <peter@hurleysoftware.com>
+Cc: Sree Harsha Totakura <sreeharsha@totakura.in>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Jeff Dike <jdike@addtoit.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Andrey Vagin <avagin@openvz.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ kernel/exit.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -791,6 +791,8 @@ void do_exit(long code)
+ 	exit_shm(tsk);
+ 	exit_files(tsk);
+ 	exit_fs(tsk);
++	if (group_dead)
++		disassociate_ctty(1);
+ 	exit_task_namespaces(tsk);
+ 	exit_task_work(tsk);
+ 	check_stack_usage();
+@@ -806,13 +808,9 @@ void do_exit(long code)
+ 
+ 	cgroup_exit(tsk, 1);
+ 
+-	if (group_dead)
+-		disassociate_ctty(1);
+-
+ 	module_put(task_thread_info(tsk)->exec_domain->module);
+ 
+ 	proc_exit_connector(tsk);
+-
+ 	/*
+ 	 * FIXME: do that only when needed, using sched_exit tracepoint
+ 	 */
+
+
