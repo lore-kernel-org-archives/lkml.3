@@ -1,75 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791AbaDXRfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:35:23 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55334 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753900AbaDXRfS (ORCPT
+	id S1758494AbaDXRkG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:40:06 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:11431 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753483AbaDXRkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:35:18 -0400
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: lee.jones@linaro.org
-Cc: sameo@linux.intel.com, broonie@kernel.org, carlo@caione.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: [PATCH] mfd: core: Don't use devres functions before device is added
-Date: Thu, 24 Apr 2014 18:27:25 +0100
-Message-Id: <1398360445-27107-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.2.5
+	Thu, 24 Apr 2014 13:40:04 -0400
+Date: Thu, 24 Apr 2014 13:39:55 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiaxing Wang <wangjiaxing@insigma.com.cn>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tracing:Do not profile dumpstack utilities to fix stack
+ trace output
+Message-ID: <20140424133955.0804f30b@gandalf.local.home>
+In-Reply-To: <53530AF7.7020807@insigma.com.cn>
+References: <1397893546-7465-1-git-send-email-wangjiaxing@insigma.com.cn>
+	<20140419111820.2a8a3ac8@gandalf.local.home>
+	<53530AF7.7020807@insigma.com.cn>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The supply aliases for the MFD devices were being added using devres but
-the device hasn't been added at this point and as such we can't use
-devres.
+On Sun, 20 Apr 2014 07:47:03 +0800
+Jiaxing Wang <wangjiaxing@insigma.com.cn> wrote:
 
-The MFD already has a function that removes devices this patch uses the
-non-devres versions of the supply alias functions and adds an unregister
-in mfd_remove_devices_fn.
+> So the problem is caused by dumpstack utilities get traced by function_graph
+> tracer, and disable the profiling of them fixes this.
 
-Reported-by: Carlo Caione <carlo@caione.org>
-Reported-by: Mark Brown <broonie@kernel.org>
-Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
----
- drivers/mfd/mfd-core.c |   11 +++++++----
- 1 files changed, 7 insertions(+), 4 deletions(-)
+OK, that makes sense. Thanks.
 
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index 2676492..892d343 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -102,7 +102,7 @@ static int mfd_add_device(struct device *parent, int id,
- 	pdev->dev.dma_mask = parent->dma_mask;
- 	pdev->dev.dma_parms = parent->dma_parms;
- 
--	ret = devm_regulator_bulk_register_supply_alias(
-+	ret = regulator_bulk_register_supply_alias(
- 			&pdev->dev, cell->parent_supplies,
- 			parent, cell->parent_supplies,
- 			cell->num_parent_supplies);
-@@ -182,9 +182,9 @@ static int mfd_add_device(struct device *parent, int id,
- 	return 0;
- 
- fail_alias:
--	devm_regulator_bulk_unregister_supply_alias(&pdev->dev,
--						    cell->parent_supplies,
--						    cell->num_parent_supplies);
-+	regulator_bulk_unregister_supply_alias(&pdev->dev,
-+					       cell->parent_supplies,
-+					       cell->num_parent_supplies);
- fail_res:
- 	kfree(res);
- fail_device:
-@@ -238,6 +238,9 @@ static int mfd_remove_devices_fn(struct device *dev, void *c)
- 	pdev = to_platform_device(dev);
- 	cell = mfd_get_cell(pdev);
- 
-+	regulator_bulk_unregister_supply_alias(dev, cell->parent_supplies,
-+					       cell->num_parent_supplies);
-+
- 	/* find the base address of usage_count pointers (for freeing) */
- 	if (!*usage_count || (cell->usage_count < *usage_count))
- 		*usage_count = cell->usage_count;
--- 
-1.7.2.5
-
+-- Steve
