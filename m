@@ -1,41 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006AbaDXVm4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:42:56 -0400
-Received: from mail-ob0-f177.google.com ([209.85.214.177]:41733 "EHLO
-	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203AbaDXVmy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:42:54 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAPDyKFp12-g0EXvnp0z2pQfiFxTRZMK4nK8y0XMUhUeDSOwNEA@mail.gmail.com>
-References: <1397847510-17199-1-git-send-email-tim.kryger@linaro.org>
-	<CAPDyKFp12-g0EXvnp0z2pQfiFxTRZMK4nK8y0XMUhUeDSOwNEA@mail.gmail.com>
-Date: Thu, 24 Apr 2014 14:42:54 -0700
-Message-ID: <CAAYSxhoK=6wPqCm3RbRRkftCX6RoN_eGdisSPrxE9mPjBF6M-g@mail.gmail.com>
-Subject: Re: [PATCH] mmc: core: Try other signal levels during power up
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Chris Ball <chris@printf.net>, Linux MMC <linux-mmc@vger.kernel.org>,
+	id S1754340AbaDXVoy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:44:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38808 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752605AbaDXVos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:44:48 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+CC: Tony Lindgren <tony@atomide.com>, Joel Fernandes <joelf@ti.com>
+Subject: [PATCH 04/26] ARM: OMAP: dmtimer: Add function to check if timer is running
+Date: Thu, 24 Apr 2014 16:43:47 -0500
+Message-ID: <1398375849-6017-5-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398375849-6017-1-git-send-email-joelf@ti.com>
+References: <1398375849-6017-1-git-send-email-joelf@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 1:38 AM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 18 April 2014 20:58, Tim Kryger <tim.kryger@linaro.org> wrote:
+Inorder to move non-DM timer specific code that modifies the "idlect"
+mask on OMAP1, from dmtimer code, to OMAP1 specific timer initialization code,
+we introduce a new function that can possibly be reused for other purposes in
+the future. The function just checks if a timer is running based on the timer ID
+which should be same as pdev->id. This allows us to cleanly separate the timer vs
+non-timer bits and keep the timer bits in the dmtimer code.
 
->>  void mmc_power_up(struct mmc_host *host, u32 ocr)
->>  {
->> +       int err;
->> +
->
-> The variable err is not needed, since we don't plan on printing it nor
-> returning it. Please remove and handle the return code directly in the
-> if statements.
+Signed-off-by: Joel Fernandes <joelf@ti.com>
+---
+ arch/arm/plat-omap/dmtimer.c              |   29 +++++++++++++++++++++++++++++
+ arch/arm/plat-omap/include/plat/dmtimer.h |    2 ++
+ 2 files changed, 31 insertions(+)
 
-Sure.  I'll send out an updated version shortly.
+diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
+index 4debb3d..86b2641 100644
+--- a/arch/arm/plat-omap/dmtimer.c
++++ b/arch/arm/plat-omap/dmtimer.c
+@@ -187,6 +187,35 @@ int omap_dm_timer_reserve_systimer(int id)
+ 	return 0;
+ }
+ 
++/*
++ * Check if a timer is running based on timer_id, used for OMAP1 currently.
++ */
++int omap_dm_timer_is_running(int timer_id)
++{
++	int i = 1, ret = 0;
++	struct omap_dm_timer *timer = NULL;
++	unsigned long flags;
++
++	spin_lock_irqsave(&dm_timer_lock, flags);
++	list_for_each_entry(timer, &omap_timer_list, node) {
++		if (i == timer_id) {
++			u32 l;
++			l = omap_dm_timer_read_reg(timer, OMAP_TIMER_CTRL_REG);
++			if (l & OMAP_TIMER_CTRL_ST) {
++				ret = 1;
++				goto done;
++			} else {
++				goto done;
++			}
++		}
++		i++;
++	}
++done:
++	spin_unlock_irqrestore(&dm_timer_lock, flags);
++	return ret;
++}
++EXPORT_SYMBOL_GPL(omap_dm_timer_is_running);
++
+ static struct omap_dm_timer *_omap_dm_timer_request(int req_type, void *data)
+ {
+ 	struct omap_dm_timer *timer = NULL, *t;
+diff --git a/arch/arm/plat-omap/include/plat/dmtimer.h b/arch/arm/plat-omap/include/plat/dmtimer.h
+index 2861b15..41df0a6 100644
+--- a/arch/arm/plat-omap/include/plat/dmtimer.h
++++ b/arch/arm/plat-omap/include/plat/dmtimer.h
+@@ -135,6 +135,8 @@ void omap_dm_timer_disable(struct omap_dm_timer *timer);
+ 
+ int omap_dm_timer_get_irq(struct omap_dm_timer *timer);
+ 
++int omap_dm_timer_is_running(int timer_id);
++
+ u32 omap_dm_timer_modify_idlect_mask(u32 inputmask);
+ struct clk *omap_dm_timer_get_fclk(struct omap_dm_timer *timer);
+ 
+-- 
+1.7.9.5
 
-Thanks,
-Tim
