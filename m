@@ -1,245 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752AbaDXKhi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:37:38 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49246 "EHLO mx2.suse.de"
+	id S1755949AbaDXKiC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:38:02 -0400
+Received: from mga09.intel.com ([134.134.136.24]:40390 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755348AbaDXKhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:37:32 -0400
-Date: Thu, 24 Apr 2014 11:37:27 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Hansen <dave@sr71.net>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        ak@linux.intel.com, riel@redhat.com, alex.shi@linaro.org,
-        dave.hansen@linux.intel.com, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 5/6] x86: mm: new tunable for single vs full TLB flush
-Message-ID: <20140424103727.GT23991@suse.de>
-References: <20140421182418.81CF7519@viggo.jf.intel.com>
- <20140421182426.D6DD1E8F@viggo.jf.intel.com>
+	id S1754234AbaDXKh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 06:37:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,918,1389772800"; 
+   d="scan'208";a="498805096"
+Message-ID: <5358E982.4030106@intel.com>
+Date: Thu, 24 Apr 2014 18:37:54 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140421182426.D6DD1E8F@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephane Eranian <eranian@google.com>
+CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
+References: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com>	<20140418105354.GA29167@gmail.com>	<53548008.3040504@intel.com>	<20140422113545.GA14950@gmail.com>	<CABPqkBTHv3U6L4fKOvsFcaWR8HcOEaqGGxRMRn-+O68a0BLCuA@mail.gmail.com>	<20140424081408.GA7709@gmail.com>	<5358E6A2.3020505@intel.com> <CABPqkBRihMr=+X_Gb5dSYfForTpGA6XZGfTHOA3PZNAHTJDPkg@mail.gmail.com>
+In-Reply-To: <CABPqkBRihMr=+X_Gb5dSYfForTpGA6XZGfTHOA3PZNAHTJDPkg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 11:24:26AM -0700, Dave Hansen wrote:
-> 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> Most of the logic here is in the documentation file.  Please take
-> a look at it.
-> 
-> I know we've come full-circle here back to a tunable, but this
-> new one is *WAY* simpler.  I challenge anyone to describe in one
-> sentence how the old one worked. 
+On 04/24/2014 06:36 PM, Stephane Eranian wrote:
+> On Thu, Apr 24, 2014 at 12:25 PM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
+>> On 04/24/2014 04:14 PM, Ingo Molnar wrote:
+>>>
+>>> * Stephane Eranian <eranian@google.com> wrote:
+>>>
+>>>>>> Most of the codes without comments are hardware specific codes.
+>>>>>> The corresponding contents in Intel uncore documents are big
+>>>>>> tables/lists, nothing tricky/interesting. I really don't know how
+>>>>>> to comment these code.
+>>>>>
+>>>>> Have a look at other PMU drivers, such as
+>>>>> arch/x86/kernel/cpu/perf_event_intel_rapl.c, which begin with a
+>>>>> general explanation attached below.
+>>>>
+>>>> I think a more useful modularization would be to split that huge
+>>>> file (perf_event_intel_uncore.c) into smaller files like we do for
+>>>> the core PMU. There is just too much stuff in this file for my own
+>>>> taste. Hard to navigate and I spend quite some time looking at it
+>>>> and modifying it!
+>>>>
+>>>> You could follow the model of the core PMU support files.
+>>>> You'd have a "core" file with the common routines, and then
+>>>> a file perf processor:
+>>>>     - perf_event_intel_uncore.c
+>>>>     - perf_event_intel_snbep_uncore.c
+>>>>     - perf_event_intel_nhmex_uncore.c
+>>>>     - perf_event_intel_ivt_uncore.c
+>>>>     - ...
+>>>>
+>>>> Each processor specific module, would be a kernel module. The core
+>>>> could be one too. Note that this would not alleviate the need for
+>>>> some basic descriptions at the beginning of each file outlining the
+>>>> PMU boxes exported to a minimum.
+>>
+>> Most of hardware specific codes in the Intel uncore driver are for SandyBridge/IvyBridge/Haswell. Uncore subsystem in these CPUs are similar. One module per CPU type means we have to duplicate lots of code. I don't think it's a good idea.
+>>
+> Then, at least split nhm_ex from the rest. It is very big.
 
-Challenge accepted.
+Ok, will do.
 
-Based on the characteristics of the CPU and a given process, something
-semi-random will happen at flush time which may or may not benefit the
-workload.
+Regards
+Yan, Zheng
 
-> Here's the way the new one
-> works:
-> 
-> 	If we are flushing more pages than the ceiling, we use
-> 	the full flush, otherwise we use per-page flushes.
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> ---
-> 
->  b/Documentation/x86/tlb.txt |   72 ++++++++++++++++++++++++++++++++++++++++++++
->  b/arch/x86/mm/tlb.c         |   46 ++++++++++++++++++++++++++++
->  2 files changed, 118 insertions(+)
-> 
-> diff -puN arch/x86/mm/tlb.c~new-tunable-for-single-vs-full-tlb-flush arch/x86/mm/tlb.c
-> --- a/arch/x86/mm/tlb.c~new-tunable-for-single-vs-full-tlb-flush	2014-04-21 11:10:35.901884997 -0700
-> +++ b/arch/x86/mm/tlb.c	2014-04-21 11:10:35.905885179 -0700
-> @@ -274,3 +274,49 @@ void flush_tlb_kernel_range(unsigned lon
->  		on_each_cpu(do_kernel_range_flush, &info, 1);
->  	}
->  }
-> +
-> +static ssize_t tlbflush_read_file(struct file *file, char __user *user_buf,
-> +			     size_t count, loff_t *ppos)
-> +{
-> +	char buf[32];
-> +	unsigned int len;
-> +
-> +	len = sprintf(buf, "%ld\n", tlb_single_page_flush_ceiling);
-> +	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
-> +}
-> +
-> +static ssize_t tlbflush_write_file(struct file *file,
-> +		 const char __user *user_buf, size_t count, loff_t *ppos)
-> +{
-> +	char buf[32];
-> +	ssize_t len;
-> +	int ceiling;
-> +
-> +	len = min(count, sizeof(buf) - 1);
-> +	if (copy_from_user(buf, user_buf, len))
-> +		return -EFAULT;
-> +
-> +	buf[len] = '\0';
-> +	if (kstrtoint(buf, 0, &ceiling))
-> +		return -EINVAL;
-> +
-> +	if (ceiling < 0)
-> +		return -EINVAL;
-> +
-> +	tlb_single_page_flush_ceiling = ceiling;
-> +	return count;
-> +}
-> +
-> +static const struct file_operations fops_tlbflush = {
-> +	.read = tlbflush_read_file,
-> +	.write = tlbflush_write_file,
-> +	.llseek = default_llseek,
-> +};
-> +
-> +static int __init create_tlb_single_page_flush_ceiling(void)
-> +{
-> +	debugfs_create_file("tlb_single_page_flush_ceiling", S_IRUSR | S_IWUSR,
-> +			    arch_debugfs_dir, NULL, &fops_tlbflush);
-> +	return 0;
-> +}
-> +late_initcall(create_tlb_single_page_flush_ceiling);
-> diff -puN /dev/null Documentation/x86/tlb.txt
-> --- /dev/null	2014-04-10 11:28:14.066815724 -0700
-> +++ b/Documentation/x86/tlb.txt	2014-04-21 11:10:35.924886036 -0700
-> @@ -0,0 +1,72 @@
-> +nWhen the kernel unmaps or modified the attributes of a range of
-> +memory, it has two choices:
+>>
+>>>
+>>> This structure you outline sounds like a good first step, I like it.
+>>>
+>>> To simplify this restructuring, initially we could even keep the core
+>>> uncore bits in the core (ha!), to not have module-on-module
+>>> dependencies.
+>>>
+>>> Thanks,
+>>>
+>>>       Ingo
+>>>
+>>
 
-s/nWhen/When
-
-> + 1. Flush the entire TLB with a two-instruction sequence.  This is
-> +    a quick operation, but it causes collateral damage: TLB entries
-> +    from areas other than the one we are trying to flush will be
-> +    destroyed and must be refilled later, at some cost.
-> + 2. Use the invlpg instruction to invalidate a single page at a
-> +    time.  This could potentialy cost many more instructions, but
-> +    it is a much more precise operation, causing no collateral
-> +    damage to other TLB entries.
-> +
-
-It's not stated that there is no range flush instruction for x86 but
-anyone who cares about this area should know that.
-
-> +Which method to do depends on a few things:
-> + 1. The size of the flush being performed.  A flush of the entire
-> +    address space is obviously better performed by flushing the
-> +    entire TLB than doing 2^48/PAGE_SIZE individual flushes.
-> + 2. The contents of the TLB.  If the TLB is empty, then there will
-> +    be no collateral damage caused by doing the global flush, and
-> +    all of the individual flush will have ended up being wasted
-> +    work.
-> + 3. The size of the TLB.  The larger the TLB, the more collateral
-> +    damage we do with a full flush.  So, the larger the TLB, the
-> +    more attrative an individual flush looks.  Data and
-> +    instructions have separate TLBs, as do different page sizes.
-> + 4. The microarchitecture.  The TLB has become a multi-level
-> +    cache on modern CPUs, and the global flushes have become more
-> +    expensive relative to single-page flushes.
-> +
-> +There is obviously no way the kernel can know all these things,
-> +especially the contents of the TLB during a given flush.  The
-> +sizes of the flush will vary greatly depending on the workload as
-> +well.  There is essentially no "right" point to choose.
-> +
-> +You may be doing too many individual invalidations if you see the
-> +invlpg instruction (or instructions _near_ it) show up high in
-> +profiles.  If you believe that individual invalidatoins being
-> +called too often, you can lower the tunable:
-> +
-
-s/invalidatoins/invalidations/
-
-> +	/sys/debug/kernel/x86/tlb_single_page_flush_ceiling
-> +
-
-You do not describe how to use the tracepoints but again anyone investigating
-this area should know how to do it already so *shrugs*. Rolling a systemtap
-script to display the information would be a short job.
-
-> +This will cause us to do the global flush for more cases.
-> +Lowering it to 0 will disable the use of the individual flushes.
-> +Setting it to 1 is a very conservative setting and it should
-> +never need to be 0 under normal circumstances.
-> +
-> +Despite the fact that a single individual flush on x86 is
-> +guaranteed to flush a full 2MB, hugetlbfs always uses the full
-> +flushes.  THP is treated exactly the same as normal memory.
-> +
-
-You are the second person that told me this and I felt the manual was
-unclear on this subject. I was told that it might be a documentation bug
-but because this discussion was in a bar I completely failed to follow up
-on it. Specifically this part in 4.10.2.3 caused me problems when I last
-looked at the area.
-
-	If the paging structures specify a translation using a page
-	larger than 4 KBytes, some processors may choose to cache multiple
-	smaller-page TLB entries for that translation. Each such TLB entry
-	would be associated with a page number corresponding to the smaller
-	page size (e.g., bits 47:12 of a linear address with IA-32e paging),
-	even though part of that page number (e.g., bits 20:12) are part
-	of the offset with respect to the page specified by the paging
-	structures. The upper bits of the physical address in such a TLB
-	entry are derived from the physical address in the PDE used to
-	create the translation, while the lower bits come from the linear
-	address of the access for which the translation is created. There
-	is no way for software to be aware that multiple translations for
-	smaller pages have been used for a large page.
-
-	If software modifies the paging structures so that the page size
-	used for a 4-KByte range of linear addresses changes, the TLBs may
-	subsequently contain multiple translations for the address range
-	(one for each page size).  A reference to a linear address in the
-	address range may use any of these translations. Which translation
-	is used may vary from one execution to another, and the choice
-	may be implementation-specific.
-
-This was ambiguous to me because of "some processors may choose to cache
-multiple smaller-page TLB entries for that translation". The second
-paragraph appears to partially contradict that but I could not see an
-architectural guarantee that flushing a page address within a huge page
-entry was guaranteed to flush all entries.
-
-I understand that there are definite problems around the time of
-splitting/collapsing a large page where care has to be taken that old TLB
-entries are not present but that's a different case.
-
-> +You might see invlpg inside of flush_tlb_mm_range() show up in
-> +profiles, or you can use the trace_tlb_flush() tracepoints. to
-> +determine how long the flush operations are taking.
-> +
-> +Essentially, you are balancing the cycles you spend doing invlpg
-> +with the cycles that you spend refilling the TLB later.
-> +
-> +You can measure how expensive TLB refills are by using
-> +performance counters and 'perf stat', like this:
-> +
-> +perf stat -e
-> +	cpu/event=0x8,umask=0x84,name=dtlb_load_misses_walk_duration/,
-> +	cpu/event=0x8,umask=0x82,name=dtlb_load_misses_walk_completed/,
-> +	cpu/event=0x49,umask=0x4,name=dtlb_store_misses_walk_duration/,
-> +	cpu/event=0x49,umask=0x2,name=dtlb_store_misses_walk_completed/,
-> +	cpu/event=0x85,umask=0x4,name=itlb_misses_walk_duration/,
-> +	cpu/event=0x85,umask=0x2,name=itlb_misses_walk_completed/
-> +
-> +That works on an IvyBridge-era CPU (i5-3320M).  Different CPUs
-> +may have differently-named counters, but they should at least
-> +be there in some form.  You can use pmu-tools 'ocperf list'
-> +(https://github.com/andikleen/pmu-tools) to find the right
-> +counters for a given CPU.
-> +
-
--- 
-Mel Gorman
-SUSE Labs
