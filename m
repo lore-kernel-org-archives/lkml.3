@@ -1,145 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758807AbaDXWWS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:22:18 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39693 "EHLO
+	id S1758921AbaDXWXA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:23:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39672 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755329AbaDXVqM (ORCPT
+	with ESMTP id S1755290AbaDXVqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:12 -0400
+	Thu, 24 Apr 2014 17:46:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: [PATCH 3.10 00/23] 3.10.38-stable review
-Date: Thu, 24 Apr 2014 14:48:30 -0700
-Message-Id: <20140424214825.933835556@linuxfoundation.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 3.10 03/23] x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
+Date: Thu, 24 Apr 2014 14:48:33 -0700
+Message-Id: <20140424214826.345862159@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
+References: <20140424214825.933835556@linuxfoundation.org>
 User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is the start of the stable review cycle for the 3.10.38 release.
-There are 23 patches in this series, all will be posted as a response
-to this one.  If anyone has any issues with these being applied, please
-let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-Responses should be made by Sat Apr 26 21:48:09 UTC 2014.
-Anything received after that time might be too late.
+------------------
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.10.38-rc1.gz
-and the diffstat can be found below.
+From: Neil Horman <nhorman@tuxdriver.com>
 
-thanks,
+commit 6f8a1b335fde143b7407036e2368d3cd6eb55674 upstream.
 
-greg k-h
+Commit 03bbcb2e7e2 (iommu/vt-d: add quirk for broken interrupt
+remapping on 55XX chipsets) properly disables irq remapping on the
+5500/5520 chipsets that don't correctly perform that feature.
 
--------------
-Pseudo-Shortlog of commits:
+However, when I wrote it, I followed the errata sheet linked in that
+commit too closely, and explicitly tied the activation of the quirk to
+revision 0x13 of the chip, under the assumption that earlier revisions
+were not in the field.  Recently a system was reported to be suffering
+from this remap bug and the quirk hadn't triggered, because the
+revision id register read at a lower value that 0x13, so the quirk
+test failed improperly.  Given this, it seems only prudent to adjust
+this quirk so that any revision less than 0x13 has the quirk asserted.
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-    Linux 3.10.38-rc1
+[ tglx: Removed the 0x12 comparison of pci id 3405 as this is covered
+    	by the <= 0x13 check already ]
 
-Oleg Nesterov <oleg@redhat.com>
-    exit: call disassociate_ctty() before exit_task_namespaces()
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/1394649873-14913-1-git-send-email-nhorman@tuxdriver.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-Oleg Nesterov <oleg@redhat.com>
-    wait: fix reparent_leader() vs EXIT_DEAD->EXIT_ZOMBIE race
+---
+ arch/x86/kernel/early-quirks.c |   15 ++++++---------
+ 1 file changed, 6 insertions(+), 9 deletions(-)
 
-David S. Miller <davem@davemloft.net>
-    sparc64: Make sure %pil interrupts are enabled during hypervisor yield.
-
-Dave Kleikamp <dave.kleikamp@oracle.com>
-    sparc64: don't treat 64-bit syscall return codes as 32-bit
-
-Paul Gortmaker <paul.gortmaker@windriver.com>
-    sparc32: fix build failure for arch_jump_label_transform
-
-Dave Kleikamp <dave.kleikamp@oracle.com>
-    Revert "sparc64: Fix __copy_{to,from}_user_inatomic defines."
-
-oftedal <oftedal@gmail.com>
-    sparc: PCI: Fix incorrect address calculation of PCI Bridge windows on Simba-bridges
-
-Li Zefan <lizefan@huawei.com>
-    jffs2: remove from wait queue after schedule()
-
-Li Zefan <lizefan@huawei.com>
-    jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
-
-Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
-    jffs2: Fix crash due to truncation of csize
-
-Kamlakant Patel <kamlakant.patel@broadcom.com>
-    jffs2: Fix segmentation fault found in stress test
-
-Eric Whitney <enwlinux@gmail.com>
-    ext4: fix partial cluster handling for bigalloc file systems
-
-Eric Whitney <enwlinux@gmail.com>
-    ext4: fix error return from ext4_ext_handle_uninitialized_extents()
-
-Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-    Btrfs: skip submitting barrier for missing device
-
-Jan Kara <jack@suse.cz>
-    bdi: avoid oops on device removal
-
-Derek Basehore <dbasehore@chromium.org>
-    backing_dev: fix hung task on sync
-
-Claudio Takahasi <claudio.takahasi@openbossa.org>
-    Bluetooth: Fix removing Long Term Key
-
-Oleg Nesterov <oleg@redhat.com>
-    pid_namespace: pidns_get() should check task_active_pid_ns() != NULL
-
-Hannes Reinecke <hare@suse.de>
-    tty: Set correct tty name in 'active' sysfs attribute
-
-Ian Abbott <abbotti@mev.co.uk>
-    staging: comedi: 8255_pci: initialize MITE data window
-
-Neil Horman <nhorman@tuxdriver.com>
-    x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
-
-Jiri Slaby <jslaby@suse.cz>
-    Char: ipmi_bt_sm, fix infinite loop
-
-Mikulas Patocka <mpatocka@redhat.com>
-    user namespace: fix incorrect memory barriers
-
-
--------------
-
-Diffstat:
-
- Makefile                                  |  4 ++--
- arch/sparc/Kconfig                        |  2 +-
- arch/sparc/include/asm/uaccess_64.h       |  4 ++--
- arch/sparc/kernel/pci.c                   |  4 ++--
- arch/sparc/kernel/process_64.c            |  4 +++-
- arch/sparc/kernel/syscalls.S              |  4 ++--
- arch/x86/kernel/early-quirks.c            | 15 ++++++--------
- drivers/char/ipmi/ipmi_bt_sm.c            |  2 +-
- drivers/staging/comedi/drivers/8255_pci.c | 34 +++++++++++++++++++++++++++++++
- drivers/tty/tty_io.c                      | 23 +++++++++++++++------
- fs/btrfs/disk-io.c                        |  4 ++++
- fs/ext4/extents.c                         | 29 ++++++++++++++++++++++++--
- fs/fs-writeback.c                         | 31 ++++++++++++++++++++--------
- fs/jffs2/compr_rtime.c                    |  4 ++--
- fs/jffs2/nodelist.h                       |  2 +-
- fs/jffs2/nodemgmt.c                       | 14 +++++++++----
- include/linux/backing-dev.h               |  2 +-
- kernel/exit.c                             | 21 +++++++++++--------
- kernel/pid_namespace.c                    |  4 +++-
- kernel/user_namespace.c                   | 11 +++++-----
- mm/backing-dev.c                          | 16 +++++++++++----
- net/bluetooth/hci_event.c                 |  8 +++++++-
- 22 files changed, 177 insertions(+), 65 deletions(-)
+--- a/arch/x86/kernel/early-quirks.c
++++ b/arch/x86/kernel/early-quirks.c
+@@ -202,18 +202,15 @@ static void __init intel_remapping_check
+ 	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
+ 
+ 	/*
+- 	 * Revision 13 of all triggering devices id in this quirk have
+-	 * a problem draining interrupts when irq remapping is enabled,
+-	 * and should be flagged as broken.  Additionally revisions 0x12
+-	 * and 0x22 of device id 0x3405 has this problem.
++	 * Revision <= 13 of all triggering devices id in this quirk
++	 * have a problem draining interrupts when irq remapping is
++	 * enabled, and should be flagged as broken. Additionally
++	 * revision 0x22 of device id 0x3405 has this problem.
+ 	 */
+-	if (revision == 0x13)
++	if (revision <= 0x13)
+ 		set_irq_remapping_broken();
+-	else if ((device == 0x3405) &&
+-	    ((revision == 0x12) ||
+-	     (revision == 0x22)))
++	else if (device == 0x3405 && revision == 0x22)
+ 		set_irq_remapping_broken();
+-
+ }
+ 
+ #define QFLAG_APPLY_ONCE 	0x1
 
 
