@@ -1,175 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967AbaDXWRl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:17:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39728 "EHLO
+	id S1758442AbaDXWR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:17:57 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40033 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755420AbaDXVqO (ORCPT
+	with ESMTP id S1757959AbaDXWRx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:14 -0400
+	Thu, 24 Apr 2014 18:17:53 -0400
+Date: Thu, 24 Apr 2014 15:20:46 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        Derek Basehore <dbasehore@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 09/23] bdi: avoid oops on device removal
-Date: Thu, 24 Apr 2014 14:48:39 -0700
-Message-Id: <20140424214827.088702900@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
-References: <20140424214825.933835556@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, akpm@linux-foundation.org, cxie@redhat.com,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] printk: Print cpu number along with time
+Message-ID: <20140424222046.GB4098@kroah.com>
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+ <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+ <20140424005247.GA17713@logfs.org>
+ <20140424194024.GA25446@logfs.org>
+ <20140424195821.GA3092@kroah.com>
+ <alpine.LNX.2.00.1404250005020.8903@pobox.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1404250005020.8903@pobox.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Fri, Apr 25, 2014 at 12:12:06AM +0200, Jiri Kosina wrote:
+> On Thu, 24 Apr 2014, Greg Kroah-Hartman wrote:
+> 
+> > > +#ifdef CONFIG_PRINTK_CPU
+> > > +	if (!buf)
+> > > +		return snprintf(NULL, 0, "[%5lu.000000,%02x] ",
+> > 
+> > %02x for a cpu?  What happens on machines with 8k cpus?
+> 
+> Ummm ... what issue do you see here, Greg? It'll print 0x1f40, no?
 
-------------------
+Yes, just not be as "pretty" and aligned properly :)
 
-From: Jan Kara <jack@suse.cz>
+> > And is this really an issue?  Debugging by using printk is fun, but not 
+> > really something that people need to add a cpu number to.  Why not just 
+> > use a tracepoint in your code to get the needed information instead?
+> 
+> Well, if you have dmesg dump from panic that happens every other year, and 
+> you have to do post-mortem analysis on it, I am pretty sure you would love 
+> to be able to figure out how the stack traces would look like without 
+> inter-CPU interleaving. And I am pretty sure you wouldn't want to 
+> insert/enable a tracepoint and wait another two years for the bug to 
+> trigger again.
 
-commit 5acda9d12dcf1ad0d9a5a2a7c646de3472fa7555 upstream.
+Fair enough, and the multi-oops message drives that home.
 
-After commit 839a8e8660b6 ("writeback: replace custom worker pool
-implementation with unbound workqueue") when device is removed while we
-are writing to it we crash in bdi_writeback_workfn() ->
-set_worker_desc() because bdi->dev is NULL.
+But does this break things like 'dmesg --human' mode that is in
+util-linux?
 
-This can happen because even though bdi_unregister() cancels all pending
-flushing work, nothing really prevents new ones from being queued from
-balance_dirty_pages() or other places.
+thanks,
 
-Fix the problem by clearing BDI_registered bit in bdi_unregister() and
-checking it before scheduling of any flushing work.
-
-Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
-
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Signed-off-by: Jan Kara <jack@suse.cz>
-Cc: Derek Basehore <dbasehore@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/fs-writeback.c           |   23 ++++++++++++++++++-----
- include/linux/backing-dev.h |    2 +-
- mm/backing-dev.c            |   13 +++++++++----
- 3 files changed, 28 insertions(+), 10 deletions(-)
-
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -87,16 +87,29 @@ static inline struct inode *wb_inode(str
- #define CREATE_TRACE_POINTS
- #include <trace/events/writeback.h>
- 
-+static void bdi_wakeup_thread(struct backing_dev_info *bdi)
-+{
-+	spin_lock_bh(&bdi->wb_lock);
-+	if (test_bit(BDI_registered, &bdi->state))
-+		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+	spin_unlock_bh(&bdi->wb_lock);
-+}
-+
- static void bdi_queue_work(struct backing_dev_info *bdi,
- 			   struct wb_writeback_work *work)
- {
- 	trace_writeback_queue(bdi, work);
- 
- 	spin_lock_bh(&bdi->wb_lock);
-+	if (!test_bit(BDI_registered, &bdi->state)) {
-+		if (work->done)
-+			complete(work->done);
-+		goto out_unlock;
-+	}
- 	list_add_tail(&work->list, &bdi->work_list);
--	spin_unlock_bh(&bdi->wb_lock);
--
- 	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+out_unlock:
-+	spin_unlock_bh(&bdi->wb_lock);
- }
- 
- static void
-@@ -112,7 +125,7 @@ __bdi_start_writeback(struct backing_dev
- 	work = kzalloc(sizeof(*work), GFP_ATOMIC);
- 	if (!work) {
- 		trace_writeback_nowork(bdi);
--		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+		bdi_wakeup_thread(bdi);
- 		return;
- 	}
- 
-@@ -159,7 +172,7 @@ void bdi_start_background_writeback(stru
- 	 * writeback as soon as there is no other work to do.
- 	 */
- 	trace_writeback_wake_background(bdi);
--	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
-+	bdi_wakeup_thread(bdi);
- }
- 
- /*
-@@ -1016,7 +1029,7 @@ void bdi_writeback_workfn(struct work_st
- 	current->flags |= PF_SWAPWRITE;
- 
- 	if (likely(!current_is_workqueue_rescuer() ||
--		   list_empty(&bdi->bdi_list))) {
-+		   !test_bit(BDI_registered, &bdi->state))) {
- 		/*
- 		 * The normal path.  Keep writing back @bdi until its
- 		 * work_list is empty.  Note that this path is also taken
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -95,7 +95,7 @@ struct backing_dev_info {
- 	unsigned int max_ratio, max_prop_frac;
- 
- 	struct bdi_writeback wb;  /* default writeback info for this bdi */
--	spinlock_t wb_lock;	  /* protects work_list */
-+	spinlock_t wb_lock;	  /* protects work_list & wb.dwork scheduling */
- 
- 	struct list_head work_list;
- 
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -296,7 +296,10 @@ void bdi_wakeup_thread_delayed(struct ba
- 	unsigned long timeout;
- 
- 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
--	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-+	spin_lock_bh(&bdi->wb_lock);
-+	if (test_bit(BDI_registered, &bdi->state))
-+		queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-+	spin_unlock_bh(&bdi->wb_lock);
- }
- 
- /*
-@@ -309,9 +312,6 @@ static void bdi_remove_from_list(struct
- 	spin_unlock_bh(&bdi_lock);
- 
- 	synchronize_rcu_expedited();
--
--	/* bdi_list is now unused, clear it to mark @bdi dying */
--	INIT_LIST_HEAD(&bdi->bdi_list);
- }
- 
- int bdi_register(struct backing_dev_info *bdi, struct device *parent,
-@@ -362,6 +362,11 @@ static void bdi_wb_shutdown(struct backi
- 	 */
- 	bdi_remove_from_list(bdi);
- 
-+	/* Make sure nobody queues further work */
-+	spin_lock_bh(&bdi->wb_lock);
-+	clear_bit(BDI_registered, &bdi->state);
-+	spin_unlock_bh(&bdi->wb_lock);
-+
- 	/*
- 	 * Drain work list and shutdown the delayed_work.  At this point,
- 	 * @bdi->bdi_list is empty telling bdi_Writeback_workfn() that @bdi
-
-
+greg k-h
