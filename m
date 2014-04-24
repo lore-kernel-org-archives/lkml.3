@@ -1,27 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758471AbaDXWgE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:36:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39532 "EHLO
+	id S1757270AbaDXWgA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:36:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754832AbaDXVqC (ORCPT
+	with ESMTP id S1755003AbaDXVqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Apr 2014 17:46:02 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Derek Basehore <dbasehore@chromium.org>, Jan Kara <jack@suse.cz>,
-        Alexander Viro <viro@zento.linux.org.uk>, Tejun Heo <tj@kernel.org>,
-        "Darrick J. Wong" <darrick.wong@oracle.com>,
-        Kees Cook <keescook@chromium.org>, Benson Leung <bleung@chromium.org>,
-        Sonny Rao <sonnyrao@chromium.org>,
-        Luigi Semenzato <semenzato@chromium.org>, Jens Axboe <axboe@kernel.dk>,
-        Dave Chinner <david@fromorbit.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 18/33] backing_dev: fix hung task on sync
-Date: Thu, 24 Apr 2014 14:48:31 -0700
-Message-Id: <20140424214452.265729903@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH 3.14 11/33] kernfs: protect lazy kernfs_iattrs allocation with mutex
+Date: Thu, 24 Apr 2014 14:48:24 -0700
+Message-Id: <20140424214451.135716435@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
 References: <20140424214449.423169713@linuxfoundation.org>
@@ -36,94 +28,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Derek Basehore <dbasehore@chromium.org>
+From: Tejun Heo <tj@kernel.org>
 
-commit 6ca738d60c563d5c6cf6253ee4b8e76fa77b2b9e upstream.
+commit 4afddd60a770560d370d6f85c5aef57c16bf7502 upstream.
 
-bdi_wakeup_thread_delayed() used the mod_delayed_work() function to
-schedule work to writeback dirty inodes.  The problem with this is that
-it can delay work that is scheduled for immediate execution, such as the
-work from sync_inodes_sb().  This can happen since mod_delayed_work()
-can now steal work from a work_queue.  This fixes the problem by using
-queue_delayed_work() instead.  This is a regression caused by commit
-839a8e8660b6 ("writeback: replace custom worker pool implementation with
-unbound workqueue").
+kernfs_iattrs is allocated lazily when operations which require it
+take place; unfortunately, the lazy allocation and returning weren't
+properly synchronized and when there are multiple concurrent
+operations, it might end up returning kernfs_iattrs which hasn't
+finished initialization yet or different copies to different callers.
 
-The reason that this causes a problem is that laptop-mode will change
-the delay, dirty_writeback_centisecs, to 60000 (10 minutes) by default.
-In the case that bdi_wakeup_thread_delayed() races with
-sync_inodes_sb(), sync will be stopped for 10 minutes and trigger a hung
-task.  Even if dirty_writeback_centisecs is not long enough to cause a
-hung task, we still don't want to delay sync for that long.
+Fix it by synchronizing with a mutex.  This can be smarter with memory
+barriers but let's go there if it actually turns out to be necessary.
 
-We fix the problem by using queue_delayed_work() when we want to
-schedule writeback sometime in future.  This function doesn't change the
-timer if it is already armed.
-
-For the same reason, we also change bdi_writeback_workfn() to
-immediately queue the work again in the case that the work_list is not
-empty.  The same problem can happen if the sync work is run on the
-rescue worker.
-
-[jack@suse.cz: update changelog, add comment, use bdi_wakeup_thread_delayed()]
-Signed-off-by: Derek Basehore <dbasehore@chromium.org>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Cc: Alexander Viro <viro@zento.linux.org.uk>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: "Darrick J. Wong" <darrick.wong@oracle.com>
-Cc: Derek Basehore <dbasehore@chromium.org>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Benson Leung <bleung@chromium.org>
-Cc: Sonny Rao <sonnyrao@chromium.org>
-Cc: Luigi Semenzato <semenzato@chromium.org>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Link: http://lkml.kernel.org/g/533ABA32.9080602@oracle.com
+Reported-by: Sasha Levin <sasha.levin@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fs-writeback.c |    8 ++++----
- mm/backing-dev.c  |    5 ++++-
- 2 files changed, 8 insertions(+), 5 deletions(-)
+ fs/kernfs/inode.c |   14 ++++++++++----
+ 1 file changed, 10 insertions(+), 4 deletions(-)
 
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -1039,10 +1039,10 @@ void bdi_writeback_workfn(struct work_st
- 		trace_writeback_pages_written(pages_written);
- 	}
+--- a/fs/kernfs/inode.c
++++ b/fs/kernfs/inode.c
+@@ -48,14 +48,18 @@ void __init kernfs_inode_init(void)
  
--	if (!list_empty(&bdi->work_list) ||
--	    (wb_has_dirty_io(wb) && dirty_writeback_interval))
--		queue_delayed_work(bdi_wq, &wb->dwork,
--			msecs_to_jiffies(dirty_writeback_interval * 10));
-+	if (!list_empty(&bdi->work_list))
-+		mod_delayed_work(bdi_wq, &wb->dwork, 0);
-+	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
-+		bdi_wakeup_thread_delayed(bdi);
- 
- 	current->flags &= ~PF_SWAPWRITE;
- }
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -288,13 +288,16 @@ int bdi_has_dirty_io(struct backing_dev_
-  * Note, we wouldn't bother setting up the timer, but this function is on the
-  * fast-path (used by '__mark_inode_dirty()'), so we save few context switches
-  * by delaying the wake-up.
-+ *
-+ * We have to be careful not to postpone flush work if it is scheduled for
-+ * earlier. Thus we use queue_delayed_work().
-  */
- void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+ static struct kernfs_iattrs *kernfs_iattrs(struct kernfs_node *kn)
  {
- 	unsigned long timeout;
++	static DEFINE_MUTEX(iattr_mutex);
++	struct kernfs_iattrs *ret;
+ 	struct iattr *iattrs;
  
- 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
--	mod_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
-+	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	mutex_lock(&iattr_mutex);
++
+ 	if (kn->iattr)
+-		return kn->iattr;
++		goto out_unlock;
+ 
+ 	kn->iattr = kzalloc(sizeof(struct kernfs_iattrs), GFP_KERNEL);
+ 	if (!kn->iattr)
+-		return NULL;
++		goto out_unlock;
+ 	iattrs = &kn->iattr->ia_iattr;
+ 
+ 	/* assign default attributes */
+@@ -65,8 +69,10 @@ static struct kernfs_iattrs *kernfs_iatt
+ 	iattrs->ia_atime = iattrs->ia_mtime = iattrs->ia_ctime = CURRENT_TIME;
+ 
+ 	simple_xattrs_init(&kn->iattr->xattrs);
+-
+-	return kn->iattr;
++out_unlock:
++	ret = kn->iattr;
++	mutex_unlock(&iattr_mutex);
++	return ret;
  }
  
- /*
+ static int __kernfs_setattr(struct kernfs_node *kn, const struct iattr *iattr)
 
 
