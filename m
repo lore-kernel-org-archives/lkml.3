@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454AbaDXVqP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:46:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39546 "EHLO
+	id S1756727AbaDXVw7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:52:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39716 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754852AbaDXVp6 (ORCPT
+	with ESMTP id S1755445AbaDXVqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:45:58 -0400
+	Thu, 24 Apr 2014 17:46:15 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lan Tianyu <tianyu.lan@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: [PATCH 3.14 07/33] ACPI / button: Add ACPI Button event via netlink routine
-Date: Thu, 24 Apr 2014 14:48:20 -0700
-Message-Id: <20140424214450.532547836@linuxfoundation.org>
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Josef Bacik <jbacik@fb.com>
+Subject: [PATCH 3.10 10/23] Btrfs: skip submitting barrier for missing device
+Date: Thu, 24 Apr 2014 14:48:40 -0700
+Message-Id: <20140424214827.213305119@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
-References: <20140424214449.423169713@linuxfoundation.org>
+In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
+References: <20140424214825.933835556@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,42 +25,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lan Tianyu <tianyu.lan@intel.com>
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
-commit 0bf6368ee8f25826d0645c0f7a4f17c8845356a4 upstream.
+commit f88ba6a2a44ee98e8d59654463dc157bb6d13c43 upstream.
 
-Commit 1696d9d (ACPI: Remove the old /proc/acpi/event interface)
-removed ACPI Button event which originally was sent to userspace via
-/proc/acpi/event. This caused ACPI shutdown regression on gentoo
-in VirtualBox. Now ACPI events are sent to userspace via netlink,
-so add ACPI Button event back via netlink routine.
+I got an error on v3.13:
+ BTRFS error (device sdf1) in write_all_supers:3378: errno=-5 IO failure (errors while submitting device barriers.)
 
-References: https://bugzilla.kernel.org/show_bug.cgi?id=71721
-Reported-and-tested-by: Richard Musil <richard.musil@gmail.com>
-Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+how to reproduce:
+  > mkfs.btrfs -f -d raid1 /dev/sdf1 /dev/sdf2
+  > wipefs -a /dev/sdf2
+  > mount -o degraded /dev/sdf1 /mnt
+  > btrfs balance start -f -sconvert=single -mconvert=single -dconvert=single /mnt
+
+The reason of the error is that barrier_all_devices() failed to submit
+barrier to the missing device.  However it is clear that we cannot do
+anything on missing device, and also it is not necessary to care chunks
+on the missing device.
+
+This patch stops sending/waiting barrier if device is missing.
+
+Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/button.c |    4 ++++
+ fs/btrfs/disk-io.c |    4 ++++
  1 file changed, 4 insertions(+)
 
---- a/drivers/acpi/button.c
-+++ b/drivers/acpi/button.c
-@@ -302,6 +302,10 @@ static void acpi_button_notify(struct ac
- 			input_sync(input);
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -3161,6 +3161,8 @@ static int barrier_all_devices(struct bt
+ 	/* send down all the barriers */
+ 	head = &info->fs_devices->devices;
+ 	list_for_each_entry_rcu(dev, head, dev_list) {
++		if (dev->missing)
++			continue;
+ 		if (!dev->bdev) {
+ 			errors_send++;
+ 			continue;
+@@ -3175,6 +3177,8 @@ static int barrier_all_devices(struct bt
  
- 			pm_wakeup_event(&device->dev, 0);
-+			acpi_bus_generate_netlink_event(
-+					device->pnp.device_class,
-+					dev_name(&device->dev),
-+					event, ++button->pushed);
- 		}
- 		break;
- 	default:
+ 	/* wait for all the barriers */
+ 	list_for_each_entry_rcu(dev, head, dev_list) {
++		if (dev->missing)
++			continue;
+ 		if (!dev->bdev) {
+ 			errors_wait++;
+ 			continue;
 
 
