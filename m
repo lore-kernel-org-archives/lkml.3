@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758594AbaDXQCd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:02:33 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:48544 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758032AbaDXQC1 (ORCPT
+	id S1758604AbaDXQDF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:03:05 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:52763 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758204AbaDXQBZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:02:27 -0400
-MIME-Version: 1.0
-In-Reply-To: <20140424152232.GD1735@arch.cereza>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<1397824031-4892-6-git-send-email-lftan@altera.com>
-	<20140422143036.GD15745@arch.cereza>
-	<CAFiDJ59KHkh549PBezijr-UektFQtQaZ_5fP5qqRvsVC-e2uxw@mail.gmail.com>
-	<20140424152232.GD1735@arch.cereza>
-Date: Fri, 25 Apr 2014 00:02:13 +0800
-X-Google-Sender-Auth: FLXvQ2CQXkiN2LtESflEKaaV63M
-Message-ID: <CAFiDJ5-r1SW9qbE4Oghg4cTZUA_qu2RfBj0YLafcFVGweBctoQ@mail.gmail.com>
-Subject: Re: [PATCH 08/28] nios2: MMU Fault handling
-From: Ley Foon Tan <lftan@altera.com>
-To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
-Content-Type: text/plain; charset=UTF-8
+	Thu, 24 Apr 2014 12:01:25 -0400
+From: Daniel Thompson <daniel.thompson@linaro.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
+        Daniel Thompson <daniel.thompson@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>
+Subject: [RESEND PATCH v5 3/5] ARM: Conceal DEBUG_LL_UART_NONE from unsupported platforms
+Date: Thu, 24 Apr 2014 17:00:44 +0100
+Message-Id: <1398355246-29571-4-git-send-email-daniel.thompson@linaro.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org>
+References: <1396886056-18132-1-git-send-email-daniel.thompson@linaro.org>
+ <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 11:22 PM, Ezequiel Garcia
-<ezequiel.garcia@free-electrons.com> wrote:
->> > I found that it's useful to add some printing here, just as ARM
->> > does. I carry this patch on my kernel:
->> >
->> > +               printk(KERN_INFO "%s: unhandled page fault (%d) at 0x%08lx, cause %ld\n",
->> > +                      current->comm, SIGSEGV, address, cause);
->> > +               show_regs(regs);
->> >
->> > Do you think we could do something like it? Maybe with a compile time option?
->> Yes, this is useful debug message. I can add this.
->> Prefer not to add new compile time option, I think this shouldn't
->> happen frequently.
->
-> No, it shouldn't happen frequently. You can take a look at what ARM does.
-> They use a DEBUG_USER compile-time option, much more complex than my silly
-> proposal.
-For now, we can print it always if this shouldn't happen frequently.
-Compile time option can be added later if we have more other debug
-stuff to print later.
+Only a small handful of platforms support DEBUG_LL_UART_NONE but it
+lurks in the menus of every single platform config ready to break the
+build. This is an especial problem for defconfigs since it is often
+selected by default.
 
-Thanks.
+This patch limit this choice only to platforms capable of supporting it.
 
-Regard,
-Ley Foon
+Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+---
+ arch/arm/Kconfig.debug | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index 4a2fc0b..450e6f7 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -842,7 +842,18 @@ choice
+ 
+ 	config DEBUG_LL_UART_NONE
+ 		bool "No low-level debugging UART"
+-		depends on !ARCH_MULTIPLATFORM
++		depends on ARCH_AT91 || \
++			ARCH_CLPS711X || \
++			ARCH_FOOTBRIDGE || \
++			ARCH_KS8695 || \
++			ARCH_NETX || \
++			ARCH_OMAP1 || \
++			ARCH_SA1100 || \
++			ARCH_S3C24XX || \
++			ARCH_S3C64XX || \
++			ARCH_S5P64X0 || \
++			ARCH_S5PC100 || \
++			ARCH_S5PV210
+ 		help
+ 		  Say Y here if your platform doesn't provide a UART option
+ 		  above. This relies on your platform choosing the right UART
+-- 
+1.9.0
+
