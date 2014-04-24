@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142AbaDXQcQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:32:16 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59772 "EHLO
+	id S1758353AbaDXQcP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:32:15 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59762 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756693AbaDXQcI (ORCPT
+	with ESMTP id S1754038AbaDXQcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:32:08 -0400
+	Thu, 24 Apr 2014 12:32:07 -0400
 From: Andy Gross <agross@codeaurora.org>
 To: linux-kernel@vger.kernel.org
 Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -14,9 +14,9 @@ Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Santosh Shilimkar <santosh.shilimkar@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Andy Gross <agross@codeaurora.org>
-Subject: [Patch v2 3/4] soc: qcom: Add GSBI driver
-Date: Thu, 24 Apr 2014 11:31:21 -0500
-Message-Id: <1398357082-5102-4-git-send-email-agross@codeaurora.org>
+Subject: [Patch v2 2/4] soc: qcom: Add device tree binding for GSBI
+Date: Thu, 24 Apr 2014 11:31:20 -0500
+Message-Id: <1398357082-5102-3-git-send-email-agross@codeaurora.org>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1398357082-5102-1-git-send-email-agross@codeaurora.org>
 References: <1398357082-5102-1-git-send-email-agross@codeaurora.org>
@@ -24,160 +24,132 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The GSBI (General Serial Bus Interface) driver controls the overarching
-configuration of the shared serial bus infrastructure on APQ8064, IPQ8064, and
-earlier QCOM processors.  The GSBI supports UART, I2C, SPI, and UIM
-functionality in various combinations.
+Add device tree binding support for the QCOM GSBI driver.
 
 Signed-off-by: Andy Gross <agross@codeaurora.org>
 ---
- drivers/soc/Kconfig          |    3 +-
- drivers/soc/Makefile         |    5 +++
- drivers/soc/qcom/Kconfig     |   11 ++++++
- drivers/soc/qcom/Makefile    |    1 +
- drivers/soc/qcom/qcom_gsbi.c |   84 ++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 103 insertions(+), 1 deletion(-)
- create mode 100644 drivers/soc/Makefile
- create mode 100644 drivers/soc/qcom/Kconfig
- create mode 100644 drivers/soc/qcom/Makefile
- create mode 100644 drivers/soc/qcom/qcom_gsbi.c
+ .../devicetree/bindings/soc/qcom/qcom,gsbi.txt     |   78 ++++++++++++++++++++
+ include/dt-bindings/soc/qcom,gsbi.h                |   26 +++++++
+ 2 files changed, 104 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,gsbi.txt
+ create mode 100644 include/dt-bindings/soc/qcom,gsbi.h
 
-diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
-index 58bd962..07a11be 100644
---- a/drivers/soc/Kconfig
-+++ b/drivers/soc/Kconfig
-@@ -1,4 +1,5 @@
- menu "SOC specific Drivers"
- 
-+source "drivers/soc/qcom/Kconfig"
+diff --git a/Documentation/devicetree/bindings/soc/qcom/qcom,gsbi.txt b/Documentation/devicetree/bindings/soc/qcom/qcom,gsbi.txt
+new file mode 100644
+index 0000000..4ce24d4
+--- /dev/null
++++ b/Documentation/devicetree/bindings/soc/qcom/qcom,gsbi.txt
+@@ -0,0 +1,78 @@
++QCOM GSBI (General Serial Bus Interface) Driver
 +
- endmenu
--`
-diff --git a/drivers/soc/Makefile b/drivers/soc/Makefile
-new file mode 100644
-index 0000000..0f7c447
---- /dev/null
-+++ b/drivers/soc/Makefile
-@@ -0,0 +1,5 @@
-+#
-+# Makefile for the Linux Kernel SOC specific device drivers.
-+#
++The GSBI controller is modeled as a node with zero or more child nodes, each
++representing a serial sub-node device that is mux'd as part of the GSBI
++configuration settings.  The mode setting will govern the input/output mode of
++the 4 GSBI IOs.
 +
-+obj-$(CONFIG_ARCH_QCOM)		+= qcom/
-diff --git a/drivers/soc/qcom/Kconfig b/drivers/soc/qcom/Kconfig
-new file mode 100644
-index 0000000..7bd2c94
---- /dev/null
-+++ b/drivers/soc/qcom/Kconfig
-@@ -0,0 +1,11 @@
-+#
-+# QCOM Soc drivers
-+#
-+config QCOM_GSBI
-+        tristate "QCOM General Serial Bus Interface"
-+        depends on ARCH_QCOM
-+        help
-+          Say y here to enable GSBI support.  The GSBI provides control
-+          functions for connecting the underlying serial UART, SPI, and I2C
-+          devices to the output pins.
++Required properties:
++- compatible: must contain "qcom,gsbi-v1.0.0" for APQ8064/IPQ8064
++- reg: Address range for GSBI registers
++- clocks: required clock
++- clock-names: must contain "iface" entry
++- qcom,mode : indicates MUX value for configuration of the serial interface.
++  Please reference dt-bindings/soc/qcom,gsbi.h for valid mux values.
 +
-diff --git a/drivers/soc/qcom/Makefile b/drivers/soc/qcom/Makefile
++Optional properties:
++- qcom,crci : indicates CRCI MUX value for QUP CRCI ports.  Please reference
++  dt-bindings/soc/qcom,gsbi.h for valid CRCI mux values.
++
++Required properties if child node exists:
++- #address-cells: Must be 1
++- #size-cells: Must be 1
++- ranges: Must be present
++
++Properties for children:
++
++A GSBI controller node can contain 0 or more child nodes representing serial
++devices.  These serial devices can be a QCOM UART, I2C controller, spi
++controller, or some combination of aforementioned devices.
++
++See the following for child node definitions:
++Documentation/devicetree/bindings/i2c/qcom,i2c-qup.txt
++Documentation/devicetree/bindings/spi/qcom,spi-qup.txt
++Documentation/devicetree/bindings/serial/qcom,msm-uartdm.txt
++
++Example for APQ8064:
++
++#include <dt-bindings/soc/qcom,gsbi.h>
++
++	gsbi4@16300000 {
++		compatible = "qcom,gsbi-v1.0.0";
++		reg = <0x16300000 0x100>;
++		clocks = <&gcc GSBI4_H_CLK>;
++		clock-names = "iface";
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++		qcom,mode = <GSBI_PROT_I2C_UART>;
++		qcom,crci = <GSBI_CRCI_QUP>;
++
++		/* child nodes go under here */
++
++		i2c_qup4: i2c@16380000 {
++		        compatible = "qcom,i2c-qup-v1.1.1";
++		        reg = <0x16380000 0x1000>;
++		        interrupts = <0 153 0>;
++
++		        clocks = <&gcc GSBI4_QUP_CLK>, <&gcc GSBI4_H_CLK>;
++		        clock-names = "core", "iface";
++
++		        clock-frequency = <200000>;
++
++		        #address-cells = <1>;
++		        #size-cells = <0>;
++
++		 };
++
++		uart4:	serial@16340000 {
++			compatible = "qcom,msm-uartdm-v1.3", "qcom,msm-uartdm";
++			reg = <0x16340000 0x1000>,
++				<0x16300000 0x1000>;
++			interrupts = <0 152 0x0>;
++			clocks = <&gcc GSBI4_UART_CLK>, <&gcc GSBI4_H_CLK>;
++			clock-names = "core", "iface";
++			status = "ok";
++		};
++	};
++
+diff --git a/include/dt-bindings/soc/qcom,gsbi.h b/include/dt-bindings/soc/qcom,gsbi.h
 new file mode 100644
-index 0000000..4389012
+index 0000000..7ac4292
 --- /dev/null
-+++ b/drivers/soc/qcom/Makefile
-@@ -0,0 +1 @@
-+obj-$(CONFIG_QCOM_GSBI)	+=	qcom_gsbi.o
-diff --git a/drivers/soc/qcom/qcom_gsbi.c b/drivers/soc/qcom/qcom_gsbi.c
-new file mode 100644
-index 0000000..061dd06
---- /dev/null
-+++ b/drivers/soc/qcom/qcom_gsbi.c
-@@ -0,0 +1,84 @@
-+/*
-+ * Copyright (c) 2014, The Linux foundation. All rights reserved.
++++ b/include/dt-bindings/soc/qcom,gsbi.h
+@@ -0,0 +1,26 @@
++/* Copyright (c) 2013, The Linux Foundation. All rights reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License rev 2 and
-+ * only rev 2 as published by the free Software foundation.
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
 + *
 + * This program is distributed in the hope that it will be useful,
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or fITNESS fOR A PARTICULAR PURPOSE.  See the
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 + * GNU General Public License for more details.
 + */
++#ifndef __DT_BINDINGS_QCOM_GSBI_H
++#define __DT_BINDINGS_QCOM_GSBI_H
 +
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/of.h>
-+#include <linux/of_platform.h>
-+#include <linux/platform_device.h>
++#define GSBI_PROT_IDLE		0
++#define GSBI_PROT_I2C_UIM	1
++#define GSBI_PROT_I2C		2
++#define GSBI_PROT_SPI		3
++#define GSBI_PROT_UART_W_FC	4
++#define GSBI_PROT_UIM		5
++#define GSBI_PROT_I2C_UART	6
 +
-+#define GSBI_CTRL_REG		0x0000
-+#define GSBI_PROTOCOL_SHIFT	4
++#define GSBI_CRCI_QUP		0
++#define GSBI_CRCI_UART		1
 +
-+static int gsbi_probe(struct platform_device *pdev)
-+{
-+	struct device_node *node = pdev->dev.of_node;
-+	struct resource *res;
-+	void __iomem *base;
-+	struct clk *hclk;
-+	u32 mode, crci = 0;
-+
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	base = devm_ioremap_resource(&pdev->dev, res);
-+	if (IS_ERR(base))
-+		return PTR_ERR(base);
-+
-+	if (of_property_read_u32(node, "qcom,mode", &mode)) {
-+		dev_err(&pdev->dev, "missing mode configuration\n");
-+		return -EINVAL;
-+	}
-+
-+	/* not required, so default to 0 if not present */
-+	of_property_read_u32(node, "qcom,crci", &crci);
-+
-+	dev_info(&pdev->dev, "GSBI port protocol: %d crci: %d\n", mode, crci);
-+
-+	hclk = devm_clk_get(&pdev->dev, "iface");
-+	if (IS_ERR(hclk))
-+		return PTR_ERR(hclk);
-+
-+	clk_prepare_enable(hclk);
-+
-+	writel_relaxed((mode << GSBI_PROTOCOL_SHIFT) | crci,
-+				base + GSBI_CTRL_REG);
-+
-+	/* make sure the gsbi control write is not reordered */
-+	wmb();
-+
-+	clk_disable_unprepare(hclk);
-+
-+	return of_platform_populate(pdev->dev.of_node, NULL, NULL, &pdev->dev);
-+}
-+
-+static const struct of_device_id gsbi_dt_match[] = {
-+	{ .compatible = "qcom,gsbi-v1.0.0", },
-+};
-+
-+MODULE_DEVICE_TABLE(of, gsbi_dt_match);
-+
-+static struct platform_driver gsbi_driver = {
-+	.driver = {
-+		.name		= "gsbi",
-+		.owner		= THIS_MODULE,
-+		.of_match_table	= gsbi_dt_match,
-+	},
-+	.probe = gsbi_probe,
-+};
-+
-+module_platform_driver(gsbi_driver);
-+
-+MODULE_AUTHOR("Andy Gross <agross@codeaurora.org>");
-+MODULE_DESCRIPTION("QCOM GSBI driver");
-+MODULE_LICENSE("GPL v2");
++#endif
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 hosted by The Linux Foundation
