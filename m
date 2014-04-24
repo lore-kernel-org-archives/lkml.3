@@ -1,162 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756858AbaDXMqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:46:25 -0400
-Received: from mx12.netapp.com ([216.240.18.77]:10788 "EHLO mx12.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753734AbaDXMqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:46:22 -0400
-X-IronPort-AV: E=Sophos;i="4.97,918,1389772800"; 
-   d="scan'208";a="160152539"
-Message-ID: <53590798.80309@netapp.com>
-Date: Thu, 24 Apr 2014 08:46:16 -0400
-From: Anna Schumaker <Anna.Schumaker@netapp.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Jan Kara <jack@suse.cz>, Jeff Layton <jlayton@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Dave Chinner <david@fromorbit.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Mel Gorman <mgorman@suse.com>,
-        "Andrew Morton" <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-        <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 4/5] SUNRPC: track when a client connection is routed
- to the local host.
-References: <20140423022441.4725.89693.stgit@notabene.brown>	<20140423024058.4725.7703.stgit@notabene.brown>	<5357C3AC.9090203@netapp.com> <20140424091419.0ba0cfd3@notabene.brown>
-In-Reply-To: <20140424091419.0ba0cfd3@notabene.brown>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+	id S1756983AbaDXMrJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:47:09 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:33458 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756092AbaDXMe4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 08:34:56 -0400
+X-AuditID: cbfee68f-b7eff6d000002b70-4f-535904ef5af5
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@samsung.com, balbi@ti.com, gg@slimlogic.co.uk, kishon@ti.com,
+        ckeepax@opensource.wolfsonmicro.com, broonie@kernel.org,
+        k.kozlowski@samsung.com, kyungmin.park@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCHv3 2/9] extcon: Add devm_extcon_dev_allocate/free to manage the
+ resource of extcon device
+Date: Thu, 24 Apr 2014 21:34:50 +0900
+Message-id: <1398342897-23670-3-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.0
+In-reply-to: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
+References: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupgkeLIzCtJLcpLzFFi42JZI2JSoPueJTLYYNsVNouD9+stpj58wmbx
+	b8oNdovrX56zWvRvcbF4/cLQ4sLTHjaLs01v2C0u75rDZnG7cQWbA5fHplWdbB4vJ/5m8+jb
+	sorRY+qUv4wex29sZ/L4vEkugC2KyyYlNSezLLVI3y6BK+PEzivsBVfkK3b/3czawNgu1cXI
+	ySEhYCIxv2cvC4QtJnHh3nq2LkYuDiGBpYwSL3pessEVdRxgh0hMZ5Rob7nCDJIQEmhikpj+
+	WA7EZhPQktj/4gZYg4iAgsTm3mesIA3MAs8YJU5cPQHWICyQJTHnz2KwdSwCqhKPP01nArF5
+	BVwlPs2dyg6xTU7iw55HYDangJvE2QtX2SCWuUqsbPgHNlRCYBu7xKuX11ghBglIfJt8CGgo
+	B1BCVmLTAWaIOZISB1fcYJnAKLyAkWEVo2hqQXJBcVJ6kbFecWJucWleul5yfu4mRmAsnP73
+	rH8H490D1ocYk4HGTWSWEk3OB8ZSXkm8obGZkYWpiamxkbmlGWnCSuK89x8mBQkJpCeWpGan
+	phakFsUXleakFh9iZOLglGpgLFRRWfN6TfDudn+7nQICVbOjd9w/3zXBfbPcEabiRFffrB5F
+	FyO3xZZCeZUMH9ZXmsilvIrjcl71ZfNzySnCqhEn15ypvZQsvjlqG0OQyY2FxZNZZ4Sdi6xn
+	Cu5/vf5tyULx0l6NgEe/Ax6Zli2cUjF1q3SQj6bGyl+32FZsrDe9tkXGvthPiaU4I9FQi7mo
+	OBEAvKQhN5sCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKIsWRmVeSWpSXmKPExsVy+t9jQd13LJHBBl/7rS0O3q+3mPrwCZvF
+	vyk32C2uf3nOatG/xcXi9QtDiwtPe9gszja9Ybe4vGsOm8XtxhVsDlwem1Z1snm8nPibzaNv
+	yypGj6lT/jJ6HL+xncnj8ya5ALaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMzA0NdQ0sL
+	cyWFvMTcVFslF58AXbfMHKDDlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB9RgZoIGE
+	NYwZJ3ZeYS+4Il+x++9m1gbGdqkuRk4OCQETifkdB9ghbDGJC/fWs3UxcnEICUxnlGhvucIM
+	khASaGKSmP5YDsRmE9CS2P/iBhuILSKgILG59xkrSAOzwDNGiRNXT4A1CAtkScz5s5gFxGYR
+	UJV4/Gk6E4jNK+Aq8WnuVKhtchIf9jwCszkF3CTOXrjKBrHMVWJlwz/WCYy8CxgZVjGKphYk
+	FxQnpeca6hUn5haX5qXrJefnbmIER9ozqR2MKxssDjEKcDAq8fAeuBAeLMSaWFZcmXuIUYKD
+	WUmEd/a/iGAh3pTEyqrUovz4otKc1OJDjMlAV01klhJNzgcmgbySeENjEzMjSyNzQwsjY3PS
+	hJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYDwt1XJ13/P27MVbwiYbvctdIt1W02fwyIOZ
+	J9jrCedqT6Gin+sWxt86sKK7oz/4nZmdeLTp7zTeBQa7jzeKZWXbvL09/XFc1dynIaaaNR4/
+	Kw++Snz70i2p+uvaxmN765SOst32drV/+S/85AZjxw88vewzDXYo+nMEHtbRW2Drr7NiVpTk
+	VyWW4oxEQy3mouJEAPnq+nn4AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 07:14 PM, NeilBrown wrote:
-> On Wed, 23 Apr 2014 09:44:12 -0400 Anna Schumaker <Anna.Schumaker@netapp.com>
-> wrote:
-> 
->> On 04/22/2014 10:40 PM, NeilBrown wrote:
->>> If requests are being sent to the local host, then NFS will
->>> need to take care to avoid deadlocks.
->>>
->>> So keep track when accepting a connection or sending a UDP request
->>> and set a flag in the svc_xprt when the peer connected to is local.
->>>
->>> The interface rpc_is_foreign() is provided to check is a given client
->>> is connected to a foreign server.  When it returns zero it is either
->>> not connected or connected to a local server and in either case
->>> greater care is needed.
->>>
->>> Signed-off-by: NeilBrown <neilb@suse.de>
->>> ---
->>>  include/linux/sunrpc/clnt.h |    1 +
->>>  include/linux/sunrpc/xprt.h |    1 +
->>>  net/sunrpc/clnt.c           |   25 +++++++++++++++++++++++++
->>>  net/sunrpc/xprtsock.c       |   17 +++++++++++++++++
->>>  4 files changed, 44 insertions(+)
->>>
->>> diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
->>> index 8af2804bab16..5d626cc5ab01 100644
->>> --- a/include/linux/sunrpc/clnt.h
->>> +++ b/include/linux/sunrpc/clnt.h
->>> @@ -173,6 +173,7 @@ void		rpc_force_rebind(struct rpc_clnt *);
->>>  size_t		rpc_peeraddr(struct rpc_clnt *, struct sockaddr *, size_t);
->>>  const char	*rpc_peeraddr2str(struct rpc_clnt *, enum rpc_display_format_t);
->>>  int		rpc_localaddr(struct rpc_clnt *, struct sockaddr *, size_t);
->>> +int		rpc_is_foreign(struct rpc_clnt *);
->>>  
->>>  #endif /* __KERNEL__ */
->>>  #endif /* _LINUX_SUNRPC_CLNT_H */
->>> diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
->>> index 8097b9df6773..318ee37bc358 100644
->>> --- a/include/linux/sunrpc/xprt.h
->>> +++ b/include/linux/sunrpc/xprt.h
->>> @@ -340,6 +340,7 @@ int			xs_swapper(struct rpc_xprt *xprt, int enable);
->>>  #define XPRT_CONNECTION_ABORT	(7)
->>>  #define XPRT_CONNECTION_CLOSE	(8)
->>>  #define XPRT_CONGESTED		(9)
->>> +#define XPRT_LOCAL		(10)
->>>  
->>>  static inline void xprt_set_connected(struct rpc_xprt *xprt)
->>>  {
->>> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
->>> index 0edada973434..454cea69b373 100644
->>> --- a/net/sunrpc/clnt.c
->>> +++ b/net/sunrpc/clnt.c
->>> @@ -1109,6 +1109,31 @@ const char *rpc_peeraddr2str(struct rpc_clnt *clnt,
->>>  }
->>>  EXPORT_SYMBOL_GPL(rpc_peeraddr2str);
->>>  
->>> +/**
->>> + * rpc_is_foreign - report is rpc client was recently connected to
->>> + *                  remote host
->>> + * @clnt: RPC client structure
->>> + *
->>> + * If the client is not connected, or connected to the local host
->>> + * (any IP address), then return 0.  Only return non-zero if the
->>> + * most recent state was a connection to a remote host.
->>> + * For UDP the client always appears to be connected, and the
->>> + * remoteness of the host is of the destination of the last transmission.
->>> + */
->>> +int rpc_is_foreign(struct rpc_clnt *clnt)
->>> +{
->>> +	struct rpc_xprt *xprt;
->>> +	int conn_foreign;
->>> +
->>> +	rcu_read_lock();
->>> +	xprt = rcu_dereference(clnt->cl_xprt);
->>> +	conn_foreign = (xprt && xprt_connected(xprt)
->>> +			&& !test_bit(XPRT_LOCAL, &xprt->state));
->>> +	rcu_read_unlock();
->>> +	return conn_foreign;
->>> +}
->>> +EXPORT_SYMBOL_GPL(rpc_is_foreign);
->>> +
->>>  static const struct sockaddr_in rpc_inaddr_loopback = {
->>>  	.sin_family		= AF_INET,
->>>  	.sin_addr.s_addr	= htonl(INADDR_ANY),
->>> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
->>> index 0addefca8e77..74796cf37d5b 100644
->>> --- a/net/sunrpc/xprtsock.c
->>> +++ b/net/sunrpc/xprtsock.c
->>> @@ -642,6 +642,15 @@ static int xs_udp_send_request(struct rpc_task *task)
->>>  			xdr->len - req->rq_bytes_sent, status);
->>>  
->>>  	if (status >= 0) {
->>> +		struct dst_entry *dst;
->>> +		rcu_read_lock();
->>> +		dst = rcu_dereference(transport->sock->sk->sk_dst_cache);
->>> +		if (dst && dst->dev && (dst->dev->features & NETIF_F_LOOPBACK))
->>> +			set_bit(XPRT_LOCAL, &xprt->state);
->>> +		else
->>> +			clear_bit(XPRT_LOCAL, &xprt->state);
->>> +		rcu_read_unlock();
->>> +
->> You repeat this block of code a bit later.  Can you please make it an inline helper function?
-> 
-> Thanks for the suggestion.
-> I've put
-> 
-> static inline int sock_is_loopback(struct sock *sk)
-> {
-> 	struct dst_entry *dst;
-> 	int loopback = 0;
-> 	rcu_read_lock();
-> 	dst = rcu_dereference(sk->sk_dst_cache);
-> 	if (dst && dst->dev &&
-> 	    (dst->dev->features & NETIF_F_LOOPBACK))
-> 		loopback = 1;
-> 	rcu_read_unlock();
-> 	return loopback;
-> }
-> 
-> 
-> in sunrpc.h, and used it for both the server-side and the client side.
+This patch add device managed devm_extcon_dev_{allocate,free} to automatically
+free the memory of extcon_dev structure without handling free operation.
 
-Awesome, thanks!
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+---
+ drivers/extcon/extcon-class.c | 70 +++++++++++++++++++++++++++++++++++--------
+ include/linux/extcon.h        | 11 +++++++
+ 2 files changed, 69 insertions(+), 12 deletions(-)
 
-Anna
-> 
-> NeilBrown
-> 
+diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+index bec66d4..f369168 100644
+--- a/drivers/extcon/extcon-class.c
++++ b/drivers/extcon/extcon-class.c
+@@ -604,6 +604,64 @@ void extcon_dev_free(struct extcon_dev *edev)
+ }
+ EXPORT_SYMBOL_GPL(extcon_dev_free);
+ 
++static int devm_extcon_dev_match(struct device *dev, void *res, void *data)
++{
++	struct extcon_dev **r = res;
++
++	if (!r || !*r) {
++		WARN_ON(!r || !*r);
++		return 0;
++	}
++
++	return *r == data;
++}
++
++static void devm_extcon_dev_release(struct device *dev, void *res)
++{
++	extcon_dev_free(*(struct extcon_dev **)res);
++}
++
++/**
++ * devm_extcon_dev_allocate - Allocate managed extcon device
++ * @dev:		device owning the extcon device being created
++ * @supported_cable:	Array of supported cable names ending with NULL.
++ *			If supported_cable is NULL, cable name related APIs
++ *			are disabled.
++ *
++ * This function manages automatically the memory of extcon device using device
++ * resource management and simplify the control of freeing the memory of extcon
++ * device.
++ *
++ * Returns the pointer memory of allocated extcon_dev if success or NULL if fail
++ */
++struct extcon_dev *devm_extcon_dev_allocate(struct device *dev,
++					    const char **supported_cable)
++{
++	struct extcon_dev **ptr, *edev;
++
++	ptr = devres_alloc(devm_extcon_dev_release, sizeof(*ptr), GFP_KERNEL);
++	if (!ptr)
++		return NULL;
++
++	edev = extcon_dev_allocate(supported_cable);
++	if (!IS_ERR(edev)) {
++		*ptr = edev;
++		devres_add(dev, ptr);
++	} else {
++		devres_free(ptr);
++	}
++
++	return edev;
++}
++EXPORT_SYMBOL_GPL(devm_extcon_dev_allocate);
++
++void devm_extcon_dev_free(struct device *dev, struct extcon_dev *edev)
++{
++	WARN_ON(devres_release(dev, devm_extcon_dev_release,
++			       devm_extcon_dev_match, edev));
++}
++EXPORT_SYMBOL_GPL(devm_extcon_dev_free);
++
+ /**
+  * extcon_dev_register() - Register a new extcon device
+  * @edev	: the new extcon device (should be allocated before calling)
+@@ -863,18 +921,6 @@ static void devm_extcon_dev_unreg(struct device *dev, void *res)
+ 	extcon_dev_unregister(*(struct extcon_dev **)res);
+ }
+ 
+-static int devm_extcon_dev_match(struct device *dev, void *res, void *data)
+-{
+-	struct extcon_dev **r = res;
+-
+-	if (!r || !*r) {
+-		WARN_ON(!r || !*r);
+-		return 0;
+-	}
+-
+-	return *r == data;
+-}
+-
+ /**
+  * devm_extcon_dev_register() - Resource-managed extcon_dev_register()
+  * @dev:	device to allocate extcon device
+diff --git a/include/linux/extcon.h b/include/linux/extcon.h
+index f4fc983..3fd831b 100644
+--- a/include/linux/extcon.h
++++ b/include/linux/extcon.h
+@@ -196,6 +196,9 @@ extern struct extcon_dev *extcon_get_extcon_dev(const char *extcon_name);
+  */
+ extern struct extcon_dev *extcon_dev_allocate(const char **cables);
+ extern void extcon_dev_free(struct extcon_dev *edev);
++extern struct extcon_dev *devm_extcon_dev_allocate(struct device *dev,
++						   const char **cables);
++extern void devm_extcon_dev_free(struct device *dev, struct extcon_dev *edev);
+ 
+ /*
+  * get/set/update_state access the 32b encoded state value, which represents
+@@ -280,6 +283,14 @@ static inline struct extcon_dev *extcon_dev_allocate(const char **cables)
+ 
+ static inline void extcon_dev_free(struct extcon_dev *edev) { }
+ 
++static inline struct extcon_dev *devm_extcon_dev_allocate(struct device *dev,
++							  const char **cables)
++{
++	return ERR_PTR(-ENOMEM);
++}
++
++static inline void devm_extcon_dev_free(struct extcon_dev *edev) { }
++
+ static inline u32 extcon_get_state(struct extcon_dev *edev)
+ {
+ 	return 0;
+-- 
+1.8.0
 
