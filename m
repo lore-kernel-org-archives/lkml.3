@@ -1,150 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521AbaDXVbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:31:11 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:37730 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752568AbaDXVbJ (ORCPT
+	id S1753882AbaDXVbx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:31:53 -0400
+Received: from mx6-phx2.redhat.com ([209.132.183.39]:46841 "EHLO
+	mx6-phx2.redhat.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116AbaDXVbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:31:09 -0400
-Date: Thu, 24 Apr 2014 15:31:06 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Rajat Jain <rajatxjain@gmail.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
-Subject: Re: [PATCH] pci/pciehp: Allow polling/irq mode to be decided on a
- per-port basis
-Message-ID: <20140424213106.GI29593@google.com>
-References: <5339FF99.2050200@gmail.com>
+	Thu, 24 Apr 2014 17:31:51 -0400
+X-Greylist: delayed 2786 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Apr 2014 17:31:51 EDT
+Date: Thu, 24 Apr 2014 16:45:12 -0400 (EDT)
+From: Paolo Bonzini <pbonzini@redhat.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@kernel.org>,
+        kvm@vger.kernel.org, linux-pci@vger.kernel.org
+Message-ID: <1917070890.8703765.1398372312996.JavaMail.zimbra@redhat.com>
+In-Reply-To: <20140421133848.GC25116@dhcp-26-169.brq.redhat.com>
+References: <1392804931-30671-11-git-send-email-agordeev@redhat.com> <20140221170504.GN17353@dhcp-26-207.brq.redhat.com> <530788C1.6030109@redhat.com> <20140221185620.GA18725@dhcp-26-207.brq.redhat.com> <5307C6D9.4030503@redhat.com> <20140222085030.GA26794@dhcp-26-207.brq.redhat.com> <530866A2.7080804@redhat.com> <20140421133848.GC25116@dhcp-26-169.brq.redhat.com>
+Subject: Re: [PATCH v2] kvm: Use pci_enable_msix_exact() instead of
+ pci_enable_msix()
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5339FF99.2050200@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.82.11]
+X-Mailer: Zimbra 8.0.6_GA_5922 (ZimbraWebClient - FF28 (Linux)/8.0.6_GA_5922)
+Thread-Topic: Use pci_enable_msix_exact() instead of pci_enable_msix()
+Thread-Index: Z4CUuP/0Isg3VZ9Idl3+bBbZ/HzN7Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 31, 2014 at 04:51:53PM -0700, Rajat Jain wrote:
-> Today, there is a global pciehp_poll_mode module parameter using which
-> either _all_ the hot-pluggable ports are to use polling, or _all_ the
-> ports are to use interrupts.
+> > >>> So, do I have to pull something (which I'd rather not, since pulling
+> > >>> the wrong thing in a submaintainer tree will make Linus angry), or
+> > >>> should I do it in the next merge window after pci_enable_msix_exact
+> > >>> gets in?
+> > >So it is already in.
+> > 
+> > It is not, because maintainer branches are not rebased.  KVM
+> > development is based on 3.14-rc1, and will not get that commit until
+> > the first 3.15 pull request is sent to Linux.
+> > 
+> > No big deal, I'll include this patch in a second 3.15 pull request.
 > 
-> In a system where a certain port has IRQ issues, today the only option
-> is to use the parameter that converts ALL the ports to use polling mode.
-> This is not good, and hence this patch intruduces a bit field that can
-> be set using a PCI quirk that indicates that polling should always be
-> used for this particular PCIe port. The remaining ports can still
-> hoose to continue to operate in whatever mode they wish to.
+> Hi Paolo,
 > 
-> Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-> Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-> Signed-off-by: Guenter Roeck <groeck@juniper.net>
+> I believe it is safe to pull it now?
 
-I'm willing to merge this, but I'd prefer to merge it along with a quirk
-that actually sets dev->hotplug_polling.  Otherwise it's dead code and I'll
-have no way to tell whether we need to keep it.
+Yup, vacation got in the way of doing this during the merge window but I
+can safely send this for -rc next week.  It was on my todo list.
 
-Bjorn
-
-> ---
->  drivers/pci/hotplug/pciehp.h     |    1 +
->  drivers/pci/hotplug/pciehp_hpc.c |   16 ++++++++++------
->  include/linux/pci.h              |    1 +
->  3 files changed, 12 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
-> index d208791..753a3b4 100644
-> --- a/drivers/pci/hotplug/pciehp.h
-> +++ b/drivers/pci/hotplug/pciehp.h
-> @@ -98,6 +98,7 @@ struct controller {
->  	unsigned int no_cmd_complete:1;
->  	unsigned int link_active_reporting:1;
->  	unsigned int notification_enabled:1;
-> +	unsigned int use_polling:1;	/* Always uses polling for this slot */
->  	unsigned int power_fault_detected;
->  };
->  
-> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
-> index d7d058f..d210d23 100644
-> --- a/drivers/pci/hotplug/pciehp_hpc.c
-> +++ b/drivers/pci/hotplug/pciehp_hpc.c
-> @@ -82,7 +82,7 @@ static inline int pciehp_request_irq(struct controller *ctrl)
->  	int retval, irq = ctrl->pcie->irq;
->  
->  	/* Install interrupt polling timer. Start with 10 sec delay */
-> -	if (pciehp_poll_mode) {
-> +	if (ctrl->use_polling) {
->  		init_timer(&ctrl->poll_timer);
->  		start_int_poll_timer(ctrl, 10);
->  		return 0;
-> @@ -98,7 +98,7 @@ static inline int pciehp_request_irq(struct controller *ctrl)
->  
->  static inline void pciehp_free_irq(struct controller *ctrl)
->  {
-> -	if (pciehp_poll_mode)
-> +	if (ctrl->use_polling)
->  		del_timer_sync(&ctrl->poll_timer);
->  	else
->  		free_irq(ctrl->pcie->irq, ctrl);
-> @@ -131,7 +131,7 @@ static int pcie_poll_cmd(struct controller *ctrl)
->  
->  static void pcie_wait_cmd(struct controller *ctrl, int poll)
->  {
-> -	unsigned int msecs = pciehp_poll_mode ? 2500 : 1000;
-> +	unsigned int msecs = ctrl->use_polling ? 2500 : 1000;
->  	unsigned long timeout = msecs_to_jiffies(msecs);
->  	int rc;
->  
-> @@ -595,7 +595,7 @@ void pcie_enable_notification(struct controller *ctrl)
->  		cmd |= PCI_EXP_SLTCTL_PDCE;
->  	if (MRL_SENS(ctrl))
->  		cmd |= PCI_EXP_SLTCTL_MRLSCE;
-> -	if (!pciehp_poll_mode)
-> +	if (!ctrl->use_polling)
->  		cmd |= PCI_EXP_SLTCTL_HPIE | PCI_EXP_SLTCTL_CCIE;
->  
->  	mask = (PCI_EXP_SLTCTL_PDCE | PCI_EXP_SLTCTL_ABPE |
-> @@ -642,14 +642,14 @@ int pciehp_reset_slot(struct slot *slot, int probe)
->  	stat_mask |= PCI_EXP_SLTSTA_DLLSC;
->  
->  	pcie_write_cmd(ctrl, 0, ctrl_mask);
-> -	if (pciehp_poll_mode)
-> +	if (ctrl->use_polling)
->  		del_timer_sync(&ctrl->poll_timer);
->  
->  	pci_reset_bridge_secondary_bus(ctrl->pcie->port);
->  
->  	pcie_capability_write_word(pdev, PCI_EXP_SLTSTA, stat_mask);
->  	pcie_write_cmd(ctrl, ctrl_mask, ctrl_mask);
-> -	if (pciehp_poll_mode)
-> +	if (ctrl->use_polling)
->  		int_poll_timeout(ctrl->poll_timer.data);
->  
->  	return 0;
-> @@ -789,6 +789,10 @@ struct controller *pcie_init(struct pcie_device *dev)
->                  ctrl_dbg(ctrl, "Link Active Reporting supported\n");
->                  ctrl->link_active_reporting = 1;
->          }
-> +	if (pciehp_poll_mode || dev->port->hotplug_polling) {
-> +		ctrl_info(ctrl, "will use polling\n");
-> +		ctrl->use_polling = 1;
-> +	}
->  
->  	/* Clear all remaining event bits in Slot Status register */
->  	pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index a13d682..b2ec72e 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -336,6 +336,7 @@ struct pci_dev {
->  	unsigned int	is_virtfn:1;
->  	unsigned int	reset_fn:1;
->  	unsigned int    is_hotplug_bridge:1;
-> +	unsigned int    hotplug_polling:1; /* Port uses polling for hotplug */
->  	unsigned int    __aer_firmware_first_valid:1;
->  	unsigned int	__aer_firmware_first:1;
->  	unsigned int	broken_intx_masking:1;
-> -- 
-> 1.7.9.5
-> 
+Paolo
