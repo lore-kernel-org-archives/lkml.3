@@ -1,67 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370AbaDXLcm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:32:42 -0400
-Received: from casper.infradead.org ([85.118.1.10]:36711 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756024AbaDXLch (ORCPT
+	id S1756426AbaDXLdR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:33:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46453 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753702AbaDXIxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 07:32:37 -0400
-Date: Thu, 24 Apr 2014 13:32:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: Jason Low <jason.low2@hp.com>, "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "aswin@hp.com" <aswin@hp.com>,
-        "chegu_vinod@hp.com" <chegu_vinod@hp.com>
-Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
- balance if there are runnable tasks
-Message-ID: <20140424113231.GR11096@twins.programming.kicks-ass.net>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
- <1398303035-18255-4-git-send-email-jason.low2@hp.com>
- <20140424103059.GL2500@e103034-lin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424103059.GL2500@e103034-lin>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Thu, 24 Apr 2014 04:53:00 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 046/182] arm64: Make DMA coherent and strongly ordered mappings not executable
+Date: Thu, 24 Apr 2014 09:49:31 +0100
+Message-Id: <1398329507-5911-47-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 11:30:59AM +0100, Morten Rasmussen wrote:
-> On Thu, Apr 24, 2014 at 02:30:35AM +0100, Jason Low wrote:
-> > @@ -6704,7 +6703,12 @@ static int idle_balance(struct rq *this_rq)
-> >  		interval = msecs_to_jiffies(sd->balance_interval);
-> >  		if (time_after(next_balance, sd->last_balance + interval))
-> >  			next_balance = sd->last_balance + interval;
-> > -		if (pulled_task)
-> > +
-> > +		/*
-> > +		 * Stop searching for tasks to pull if there are
-> > +		 * now runnable tasks on this rq.
-> > +		 */
-> > +		if (pulled_task || this_rq->nr_running > 0)
-> 
-> Should this be cfs tasks instead?
-> 
-> +		if (pulled_task || this_rq->cfs.h_nr_running > 0)
-> 
-> 3.15-rc2 commit 35805ff8f4fc535ac85330170d3c56829c87c677 seems to
-> indicate that using rq->nr_running may lead to trouble.
-> 
-> The other two patches look good to me.
+3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-No, this really wants to be nr_running, we want to bail the idle
-balancer when there's anything runnable present.
+------------------
 
-Note how out: is very careful to return -1 (which results in RETRY_TASK)
-when rq->nr_running != rq->cfs.h_nr_running.
+From: Catalin Marinas <catalin.marinas@arm.com>
 
-That same out: test also makes problem that commit fixes impossible
-again.
+commit de2db7432917a82b62d55bb59635586eeca6d1bd upstream.
+
+pgprot_{dmacoherent,writecombine,noncached} don't need to generate
+executable mappings with side-effects like __sync_icache_dcache() being
+called when the mapping is in user space.
+
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-by: Bharat Bhushan <Bharat.Bhushan@freescale.com>
+Tested-by: Laura Abbott <lauraa@codeaurora.org>
+Tested-by: Bharat Bhushan <Bharat.Bhushan@freescale.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ arch/arm64/include/asm/pgtable.h | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
+index bb969e9..5dee621 100644
+--- a/arch/arm64/include/asm/pgtable.h
++++ b/arch/arm64/include/asm/pgtable.h
+@@ -253,11 +253,11 @@ static inline int has_transparent_hugepage(void)
+  * Mark the prot value as uncacheable and unbufferable.
+  */
+ #define pgprot_noncached(prot) \
+-	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRnE))
++	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_DEVICE_nGnRnE) | PTE_PXN | PTE_UXN)
+ #define pgprot_writecombine(prot) \
+-	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
++	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC) | PTE_PXN | PTE_UXN)
+ #define pgprot_dmacoherent(prot) \
+-	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC))
++	__pgprot_modify(prot, PTE_ATTRINDX_MASK, PTE_ATTRINDX(MT_NORMAL_NC) | PTE_PXN | PTE_UXN)
+ #define __HAVE_PHYS_MEM_ACCESS_PROT
+ struct file;
+ extern pgprot_t phys_mem_access_prot(struct file *file, unsigned long pfn,
+-- 
+1.9.1
+
