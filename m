@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbaDXIYX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:24:23 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:38643 "EHLO
+	id S1753146AbaDXI0M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:26:12 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:38770 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752837AbaDXIYL (ORCPT
+	with ESMTP id S1752964AbaDXIYW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:24:11 -0400
+	Thu, 24 Apr 2014 04:24:22 -0400
 X-Original-SENDERIP: 10.177.220.181
 X-Original-MAILFROM: namhyung@kernel.org
 From: Namhyung Kim <namhyung@kernel.org>
@@ -16,9 +16,9 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
         Namhyung Kim <namhyung@kernel.org>,
         LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
         Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 07/11] perf hists: Add missing update on filtered stats in hists__decay_entries()
-Date: Thu, 24 Apr 2014 17:23:59 +0900
-Message-Id: <1398327843-31845-8-git-send-email-namhyung@kernel.org>
+Subject: [PATCH 10/11] perf top/tui: Update nr_entries properly after a filter is applied
+Date: Thu, 24 Apr 2014 17:24:02 +0900
+Message-Id: <1398327843-31845-11-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
 References: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
@@ -26,52 +26,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a filter is used for perf top, its hists->nr_non_filtered_entries
-was not updated after it removed an entry in hists__decay_entries().
-Also hists->stats.total_non_filtered_period was missed too.
+The hist_browser__reset() is only called right after a filter is
+applied so it needs to udpate browser->nr_entries properly.  We cannot
+use hists->nr_non_filtered_entreis directly since it's possible that
+such entries are also filtered out by minimum percentage limit.
+
+In addition when a filter is used for perf top, hist browser's
+nr_entries field was not updated after applying the filter.  But it
+needs to be updated as new samples are coming.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/hist.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ tools/perf/ui/browsers/hists.c | 20 ++++++++++++++++----
+ tools/perf/util/hist.h         |  6 ++++++
+ 2 files changed, 22 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 6d0d2d75db68..7f0236cea4fe 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -225,14 +225,18 @@ static void he_stat__decay(struct he_stat *he_stat)
- static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 769295bf2c10..886eee0062e0 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -35,6 +35,11 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ 				const char *ev_name);
+ static void hist_browser__update_nr_entries(struct hist_browser *hb);
+ 
++static bool hist_browser__has_filter(struct hist_browser *hb)
++{
++	return hists__has_filter(hb->hists) || hb->min_pcnt;
++}
++
+ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
  {
- 	u64 prev_period = he->stat.period;
-+	u64 diff;
+ 	/* 3 == +/- toggle symbol before actual hist_entry rendering */
+@@ -44,7 +49,8 @@ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
  
- 	if (prev_period == 0)
- 		return true;
- 
- 	he_stat__decay(&he->stat);
- 
-+	diff = prev_period - he->stat.period;
-+
-+	hists->stats.total_period -= diff;
- 	if (!he->filtered)
--		hists->stats.total_period -= prev_period - he->stat.period;
-+		hists->stats.total_non_filtered_period -= diff;
- 
- 	return he->stat.period == 0;
+ static void hist_browser__reset(struct hist_browser *browser)
+ {
+-	browser->b.nr_entries = browser->hists->nr_entries;
++	hist_browser__update_nr_entries(browser);
++	browser->b.nr_entries = browser->nr_non_filtered_entries;
+ 	hist_browser__refresh_dimensions(browser);
+ 	ui_browser__reset_index(&browser->b);
  }
-@@ -259,8 +263,11 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
- 			if (sort__need_collapse)
- 				rb_erase(&n->rb_node_in, &hists->entries_collapsed);
+@@ -319,9 +325,10 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 	int delay_secs = hbt ? hbt->refresh : 0;
  
--			hist_entry__free(n);
- 			--hists->nr_entries;
-+			if (!n->filtered)
-+				--hists->nr_non_filtered_entries;
+ 	browser->b.entries = &browser->hists->entries;
+-	browser->b.nr_entries = browser->hists->nr_entries;
+-	if (browser->min_pcnt)
++	if (hist_browser__has_filter(browser))
+ 		browser->b.nr_entries = browser->nr_non_filtered_entries;
++	else
++		browser->b.nr_entries = browser->hists->nr_entries;
+ 
+ 	hist_browser__refresh_dimensions(browser);
+ 	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
+@@ -338,7 +345,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 			u64 nr_entries;
+ 			hbt->timer(hbt->arg);
+ 
+-			if (browser->min_pcnt) {
++			if (hist_browser__has_filter(browser)) {
+ 				hist_browser__update_nr_entries(browser);
+ 				nr_entries = browser->nr_non_filtered_entries;
+ 			} else {
+@@ -1347,6 +1354,11 @@ static void hist_browser__update_nr_entries(struct hist_browser *hb)
+ 	u64 nr_entries = 0;
+ 	struct rb_node *nd = rb_first(&hb->hists->entries);
+ 
++	if (hb->min_pcnt == 0) {
++		hb->nr_non_filtered_entries = hb->hists->nr_non_filtered_entries;
++		return;
++	}
 +
-+			hist_entry__free(n);
- 		}
- 	}
- }
+ 	while ((nd = hists__filter_entries(nd, hb->hists,
+ 					   hb->min_pcnt)) != NULL) {
+ 		nr_entries++;
+diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
+index ef1ad7a948c0..38c3e874c164 100644
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -129,6 +129,12 @@ void hists__filter_by_dso(struct hists *hists);
+ void hists__filter_by_thread(struct hists *hists);
+ void hists__filter_by_symbol(struct hists *hists);
+ 
++static inline bool hists__has_filter(struct hists *hists)
++{
++	return hists->thread_filter || hists->dso_filter ||
++		hists->symbol_filter_str;
++}
++
+ u16 hists__col_len(struct hists *hists, enum hist_column col);
+ void hists__set_col_len(struct hists *hists, enum hist_column col, u16 len);
+ bool hists__new_col_len(struct hists *hists, enum hist_column col, u16 len);
 -- 
 1.9.2
 
