@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756051AbaDXN4y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:56:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53117 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753857AbaDXN4x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:56:53 -0400
-Date: Thu, 24 Apr 2014 15:56:49 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Pavel Machek <pavel@ucw.cz>
-cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: 3.15-rc2: i915 regression: only top 20% of screen works in X
-In-Reply-To: <20140424133652.GA19610@amd.pavel.ucw.cz>
-Message-ID: <alpine.LRH.2.00.1404241555440.1491@twin.jikos.cz>
-References: <20140423202248.GA3621@amd.pavel.ucw.cz> <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com> <20140423220952.GA3627@amd.pavel.ucw.cz> <20140424055023.GA31221@nuc-i3427.alporthouse.com> <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
- <20140424133652.GA19610@amd.pavel.ucw.cz>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756398AbaDXOA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:00:58 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:57222 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753259AbaDXOA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 10:00:56 -0400
+Date: Thu, 24 Apr 2014 15:00:43 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        LKML <linux-kernel@vger.kernel.org>, pmladek@suse.cz,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH 8/8] printk: Add config option for disabling printk
+ offloading
+Message-ID: <20140424150043.13587920@alan.etchedpixels.co.uk>
+In-Reply-To: <alpine.LRH.2.00.1404232341100.1491@twin.jikos.cz>
+References: <1395770101-24534-1-git-send-email-jack@suse.cz>
+	<1395770101-24534-9-git-send-email-jack@suse.cz>
+	<20140326172332.5f1e1bfb@alan.etchedpixels.co.uk>
+	<20140326192815.GC18118@quack.suse.cz>
+	<20140418115438.1e65e07af17e3ba6d7c554db@linux-foundation.org>
+	<20140422112259.5f106a44@alan.etchedpixels.co.uk>
+	<20140423110847.GB17824@quack.suse.cz>
+	<20140423111750.88ad799bb271a1fe0bed119f@linux-foundation.org>
+	<20140423221609.0d3b536f@alan.etchedpixels.co.uk>
+	<alpine.LRH.2.00.1404232341100.1491@twin.jikos.cz>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Apr 2014, Pavel Machek wrote:
+On Wed, 23 Apr 2014 23:41:59 +0200 (CEST)
+Jiri Kosina <jkosina@suse.cz> wrote:
 
-> > > [drm:init_ring_common] *ERROR* render ring initialization failed ctl
-> > > 0001f001 head 00002034 tail 00000000 start 0012f000
-> > >
-> > > Jiri has been seeing a similar issue creep in during resume, but it is
-> > > not reliable enough to bisect. Is your boot failure reliable enough to
-> > > bisect? Also drm-intel-nightly should mitigate this failure and allow
-> > > i915.ko to continue to load and run X, which would be worth testing to
-> > > make sure that works as intended.
-> > 
-> > Oh right, g4x going beserk :( Apparently something changed in 3.15
-> > somewhere which made this much more likely, but like Chris said in
-> > Jiri's case it's too unreliable to reproduce for a bisect. We've had
-> > this come&go pretty much ever since kms support was merged and never
-> > tracked it down.
+> On Wed, 23 Apr 2014, One Thousand Gnomes wrote:
 > 
-> So far I went back to 3.14, and yes, graphics works there.
+> > Given this all only affects huge boxes and the only fix we have right 
+> > now is hideously ugly I'd rather it stayed in the vendor hacks to their 
+> > trees, until someone is inspired to sort it properly.
 > 
-> Back to 3.15, put it to smaller monitor. This time, top 30% of screen
-> works, and last working scanline is copied to the rest 60% of
-> screen. [With the exception of mouse cursor, that somehow affects that
-> magically.]
-> 
-> > The bug is https://bugs.freedesktop.org/show_bug.cgi?id=76554
-> > 
-> > Like Chris said please test latest drm-intel-nighlty from
-> > http://cgit.freedesktop.org/drm-intel to make sure that the recently
-> > merged mitigation measures work properly. But those won't get your gpu
-> > back, only the display and it's only for 3.16. We're still hunting a
-> > proper fix for 3.15.
-> 
-> So you know where the bug is or not?
+> I have to say I am rather disappointed by this statement, indirectly 
+> implying that vanilla kernel doesn't care about booting properly on huge 
+> boxes.
 
-No, but there is a workaround for cases kernel finds out that it cannot 
-execute GPU commands (because the rings failed to initialize), and instead 
-it falls back to CPU rendering directly into the framebuffer.
+You read what you like into it, but don't imply that I don't care about
+big boxes. It's a corner case. We shouldn't muck the rest of the system
+up by botchfixing for a corner case. It's not a regression.
 
-So it's highly sub-optimal, but works around the complete wreckage.
+Find a clean fix for it and it's different, but the clean fix seems to be
+involve getting a chunk of the continuing tty into tty_port work done.
 
--- 
-Jiri Kosina
-SUSE Labs
-
+Alan
