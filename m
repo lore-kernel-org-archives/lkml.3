@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758353AbaDXWU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:20:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39694 "EHLO
+	id S1756857AbaDXWU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:20:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39700 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755366AbaDXVqM (ORCPT
+	with ESMTP id S1753914AbaDXVqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:12 -0400
+	Thu, 24 Apr 2014 17:46:13 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Claudio Takahasi <claudio.takahasi@openbossa.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [PATCH 3.10 07/23] Bluetooth: Fix removing Long Term Key
-Date: Thu, 24 Apr 2014 14:48:37 -0700
-Message-Id: <20140424214826.819576785@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.10 16/23] jffs2: remove from wait queue after schedule()
+Date: Thu, 24 Apr 2014 14:48:46 -0700
+Message-Id: <20140424214827.980128152@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
 References: <20140424214825.933835556@linuxfoundation.org>
@@ -29,101 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Claudio Takahasi <claudio.takahasi@openbossa.org>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 5981a8821b774ada0be512fd9bad7c241e17657e upstream.
+commit 3ead9578443b66ddb3d50ed4f53af8a0c0298ec5 upstream.
 
-This patch fixes authentication failure on LE link re-connection when
-BlueZ acts as slave (peripheral). LTK is removed from the internal list
-after its first use causing PIN or Key missing reply when re-connecting
-the link. The LE Long Term Key Request event indicates that the master
-is attempting to encrypt or re-encrypt the link.
+@wait is a local variable, so if we don't remove it from the wait queue
+list, later wake_up() may end up accessing invalid memory.
 
-Pre-condition: BlueZ host paired and running as slave.
-How to reproduce(master):
+This was spotted by eyes.
 
-  1) Establish an ACL LE encrypted link
-  2) Disconnect the link
-  3) Try to re-establish the ACL LE encrypted link (fails)
-
-> HCI Event: LE Meta Event (0x3e) plen 19
-      LE Connection Complete (0x01)
-        Status: Success (0x00)
-        Handle: 64
-        Role: Slave (0x01)
-...
-@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
-> HCI Event: LE Meta Event (0x3e) plen 13
-      LE Long Term Key Request (0x05)
-        Handle: 64
-        Random number: 875be18439d9aa37
-        Encryption diversifier: 0x76ed
-< HCI Command: LE Long Term Key Request Reply (0x08|0x001a) plen 18
-        Handle: 64
-        Long term key: 2aa531db2fce9f00a0569c7d23d17409
-> HCI Event: Command Complete (0x0e) plen 6
-      LE Long Term Key Request Reply (0x08|0x001a) ncmd 1
-        Status: Success (0x00)
-        Handle: 64
-> HCI Event: Encryption Change (0x08) plen 4
-        Status: Success (0x00)
-        Handle: 64
-        Encryption: Enabled with AES-CCM (0x01)
-...
-@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 3
-< HCI Command: LE Set Advertise Enable (0x08|0x000a) plen 1
-        Advertising: Enabled (0x01)
-> HCI Event: Command Complete (0x0e) plen 4
-      LE Set Advertise Enable (0x08|0x000a) ncmd 1
-        Status: Success (0x00)
-> HCI Event: LE Meta Event (0x3e) plen 19
-      LE Connection Complete (0x01)
-        Status: Success (0x00)
-        Handle: 64
-        Role: Slave (0x01)
-...
-@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
-> HCI Event: LE Meta Event (0x3e) plen 13
-      LE Long Term Key Request (0x05)
-        Handle: 64
-        Random number: 875be18439d9aa37
-        Encryption diversifier: 0x76ed
-< HCI Command: LE Long Term Key Request Neg Reply (0x08|0x001b) plen 2
-        Handle: 64
-> HCI Event: Command Complete (0x0e) plen 6
-      LE Long Term Key Request Neg Reply (0x08|0x001b) ncmd 1
-        Status: Success (0x00)
-        Handle: 64
-> HCI Event: Disconnect Complete (0x05) plen 4
-        Status: Success (0x00)
-        Handle: 64
-        Reason: Authentication Failure (0x05)
-@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 0
-
-Signed-off-by: Claudio Takahasi <claudio.takahasi@openbossa.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ fs/jffs2/nodemgmt.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -3619,7 +3619,13 @@ static void hci_le_ltk_request_evt(struc
+--- a/fs/jffs2/nodemgmt.c
++++ b/fs/jffs2/nodemgmt.c
+@@ -179,6 +179,7 @@ int jffs2_reserve_space(struct jffs2_sb_
+ 					spin_unlock(&c->erase_completion_lock);
  
- 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
- 
--	if (ltk->type & HCI_SMP_STK) {
-+	/* Ref. Bluetooth Core SPEC pages 1975 and 2004. STK is a
-+	 * temporary key used to encrypt a connection following
-+	 * pairing. It is used during the Encrypted Session Setup to
-+	 * distribute the keys. Later, security can be re-established
-+	 * using a distributed LTK.
-+	 */
-+	if (ltk->type == HCI_SMP_STK_SLAVE) {
- 		list_del(&ltk->list);
- 		kfree(ltk);
- 	}
+ 					schedule();
++					remove_wait_queue(&c->erase_wait, &wait);
+ 				} else
+ 					spin_unlock(&c->erase_completion_lock);
+ 			} else if (ret)
 
 
