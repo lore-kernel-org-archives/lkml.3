@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984AbaDXIdL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:33:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46766 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928AbaDXIdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:33:08 -0400
-Date: Thu, 24 Apr 2014 09:33:04 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Dave Hansen <dave@sr71.net>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        ak@linux.intel.com, riel@redhat.com, alex.shi@linaro.org,
-        dave.hansen@linux.intel.com
-Subject: Re: [PATCH 1/6] x86: mm: clean up tlb flushing code
-Message-ID: <20140424083304.GP23991@suse.de>
-References: <20140421182418.81CF7519@viggo.jf.intel.com>
- <20140421182420.307A0C57@viggo.jf.intel.com>
+	id S1753008AbaDXIeN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:34:13 -0400
+Received: from mail-qa0-f44.google.com ([209.85.216.44]:57790 "EHLO
+	mail-qa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752697AbaDXIeK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 04:34:10 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140421182420.307A0C57@viggo.jf.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1397782021-31396-1-git-send-email-tim.kryger@linaro.org>
+References: <1397782021-31396-1-git-send-email-tim.kryger@linaro.org>
+Date: Thu, 24 Apr 2014 10:34:09 +0200
+Message-ID: <CAPDyKFpZ_0U+y=ho8c4nmaoT3cB-v6+cwsWm0O8TrTrL-yHzCg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] SDHCI should use more common MMC structs and functions
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Tim Kryger <tim.kryger@linaro.org>
+Cc: Chris Ball <chris@printf.net>, Mike Looijmans <mike.looijmans@topic.nl>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Linux MMC List <linux-mmc@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 11:24:20AM -0700, Dave Hansen wrote:
-> 
-> From: Dave Hansen <dave.hansen@linux.intel.com>
-> 
-> The
-> 
-> 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
-> 
-> line of code is not exactly the easiest to audit, especially when
-> it ends up at two different indentation levels.  This eliminates
-> one of the the copy-n-paste versions.  It also gives us a unified
-> exit point for each path through this function.  We need this in
-> a minute for our tracepoint.
-> 
-> 
-> Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-> ---
-> 
->  b/arch/x86/mm/tlb.c |   23 +++++++++++------------
->  1 file changed, 11 insertions(+), 12 deletions(-)
-> 
-> diff -puN arch/x86/mm/tlb.c~simplify-tlb-code arch/x86/mm/tlb.c
-> --- a/arch/x86/mm/tlb.c~simplify-tlb-code	2014-04-21 11:10:34.431818610 -0700
-> +++ b/arch/x86/mm/tlb.c	2014-04-21 11:10:34.435818791 -0700
-> @@ -161,23 +161,24 @@ void flush_tlb_current_task(void)
->  void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
->  				unsigned long end, unsigned long vmflag)
->  {
-> +	int need_flush_others_all = 1;
->  	unsigned long addr;
->  	unsigned act_entries, tlb_entries = 0;
->  	unsigned long nr_base_pages;
->  
+On 18 April 2014 02:46, Tim Kryger <tim.kryger@linaro.org> wrote:
+> This series updates SDHCI to use the common regulator infrastructure that mmc
+> core provides.
+>
+> Tim Kryger (2):
+>   mmc: sdhci: Use supplies in common mmc_host struct
+>   mmc: sdhci: Use common mmc_regulator_get_supply
 
-Could make that bool but otherwise
+Both patches looks good, but I would prefer if you could squash them
+into one patch.
 
-Acked-by: Mel Gorman <mgorman@suse.de>
+Kind regards
+Ulf Hansson
 
--- 
-Mel Gorman
-SUSE Labs
+>
+>  drivers/mmc/host/sdhci.c  |   96 +++++++++++++++++----------------------------
+>  include/linux/mmc/sdhci.h |    3 --
+>  2 files changed, 35 insertions(+), 64 deletions(-)
+>
+> --
+> 1.7.9.5
+>
