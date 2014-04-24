@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466AbaDXKm7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:42:59 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47253 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503AbaDXKmy (ORCPT
+	id S1755725AbaDXKov (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:44:51 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46589 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754010AbaDXIxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:42:54 -0400
-Date: Thu, 24 Apr 2014 12:42:52 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jikos@jikos.cz>
-Subject: Re: 3.15-rc2: i915 regression: only top 20% of screen works in X
-Message-ID: <20140424104252.GA6743@amd.pavel.ucw.cz>
-References: <20140423202248.GA3621@amd.pavel.ucw.cz>
- <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
- <20140423220952.GA3627@amd.pavel.ucw.cz>
- <20140424055023.GA31221@nuc-i3427.alporthouse.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424055023.GA31221@nuc-i3427.alporthouse.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 24 Apr 2014 04:53:40 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 073/182] mfd: 88pm860x: Fix I2C device resource leak on regmap init fail
+Date: Thu, 24 Apr 2014 09:49:58 +0100
+Message-Id: <1398329507-5911-74-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-> > > > After update to 3.15-rc2, only top 20% of screen works on X.
-> > > >
-> > > > 00:02.0 VGA compatible controller: Intel Corporation 4 Series Chipset
-> > > > Integrated Graphics Controller (rev 03)
-> > > >
-> > > > 00:02.1 Display controller: Intel Corporation 4 Series Chipset
-> > > > Integrated Graphics Controller (rev 03)
-> > > >            Subsystem: Intel Corporation Device d614
-> > > >            Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
-> > > >            ParErr- Stepping- SERR- FastB2B- DisINTx-
-> > > >            Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast
-> > > >            >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-> > > >            Latency: 0
-> > > >            Region 0: Memory at d0400000 (64-bit, non-prefetchable)
-> > > >            [size=1M]
-> > > >            Capabilities: <access denied>
-> > > >
-> > > > This worked before. I believe it worked in 3.14. It definitely works
-> > > > in 3.11-rc2.
-> > > 
-> > > Screenshot or more detailed description of what "only top 20% of
-> > > screen works in X" means?
-> > > Anything in dmesg?
-> > 
-> > Actually yes, dmesg suggests it is quite
-> > sick. drivers/gpu/drm/drm_mm.c:767 warning triggered
-> > repeatedly. Also.. initial framebuffer does not work ; I don't seem to
-> > see anything before X start up. (This is Debian 6.0.9)
-> 
-> That says that i915.ko failed to initialise the GPU (or rather the GPU
-> wasn't responding) and bailed during module load. The key line here is
+------------------
 
-> [drm:init_ring_common] *ERROR* render ring initialization failed ctl
-> 0001f001 head 00002034 tail 00000000 start 0012f000
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-Actually, I'm not using modules -- everything is build-in. Can you try
-that config? Perhaps you can then reproduce the failure.
+commit a7ab1c8b261305af583ce26bb4a14f555fdaa73e upstream.
 
-> Jiri has been seeing a similar issue creep in during resume, but it is
-> not reliable enough to bisect. Is your boot failure reliable enough to
-> bisect? Also drm-intel-nightly should mitigate this failure and allow
-> i915.ko to continue to load and run X, which would be worth testing to
-> make sure that works as intended.
+During probe the driver allocates dummy I2C device for companion chip
+and then allocates a regmap for it. If regmap_init_i2c() fails then the
+I2C driver (allocated with i2c_new_dummy()) is not freed and this
+resource leaks.
 
-So far it failed 100% of time, but this is my main machine, so
-bringing it down for extended periods is no-no.
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/mfd/88pm860x-core.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Greetings to Prague :-). Jiri, do you have  i915 a module or build-in?
-
-Best regards,
-									Pavel
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index eeb481d..ec94081 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -1185,6 +1185,7 @@ static int pm860x_probe(struct i2c_client *client,
+ 			ret = PTR_ERR(chip->regmap_companion);
+ 			dev_err(&chip->companion->dev,
+ 				"Failed to allocate register map: %d\n", ret);
++			i2c_unregister_device(chip->companion);
+ 			return ret;
+ 		}
+ 		i2c_set_clientdata(chip->companion, chip);
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.1
+
