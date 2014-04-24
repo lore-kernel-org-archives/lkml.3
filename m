@@ -1,62 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236AbaDXJal (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:30:41 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:50863 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754988AbaDXJaf (ORCPT
+	id S1755620AbaDXJbo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:31:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46931 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754702AbaDXIzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 05:30:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <201404240924.s3O9OYCC021688@toshiba.co.jp>
-References: <cover.1395322529.git.viresh.kumar@linaro.org>
-	<201404240725.s3O7PrUv003720@toshiba.co.jp>
-	<CAKohpokt-O3BAGMzE_=heVBZQOwp0C7eT8ZA2485DgNi3+Xcqg@mail.gmail.com>
-	<201404240832.s3O8WHd0011014@toshiba.co.jp>
-	<CAKohpokk4rGeP3QfVT5_HBO4pc=22yPBLV78D++y1Ab72y1OJQ@mail.gmail.com>
-	<201404240924.s3O9OYCC021688@toshiba.co.jp>
-Date: Thu, 24 Apr 2014 15:00:34 +0530
-Message-ID: <CAKohponA4-cm2_FB=8R8aVEWNhtUfOUebcfzn7W+XR0zKHCtxw@mail.gmail.com>
-Subject: Re: [RFC 0/4] Migrate timers away from cpuset on setting cpuset.quiesce
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 24 Apr 2014 04:55:36 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Michal Hocko <mhocko@suse.cz>,
+        Wanpeng Li <liwanp@linux.vnet.ibm.com>,
+        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 135/182] mm: hugetlb: fix softlockup when a large number of hugepages are freed.
+Date: Thu, 24 Apr 2014 09:51:00 +0100
+Message-Id: <1398329507-5911-136-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 April 2014 14:54, Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp> wrote:
-> Why didn't you just apply the patch on top of your tree so that the
-> information included in the git commit (e.g: my name and mail) remains?
->
-> This part:
->
-> cpuset: quiesce: change irq disable/enable by irq save/restore
->
-> The function __migrate_timers can be called under interrupt context
-> or thread context depending on the core where the system call was
-> executed. In case it executes under interrupt context, it
-> seems a bad idea to leave interrupts enabled after migrating the
-> timers. In fact, this caused kernel errors on the ARM architecture and
-> on the x86_64 architecture with the 3.10 kernel (backported version
-> of the cpuset-quiesce patch).
->
-> Signed-off-by: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
-> Signed-off-by: Yoshitake Kobayashi <yoshitake.kobayashi@toshiba.co.jp>
+3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-That's what I told you earlier when I said this:
+------------------
 
-> I can't keep it as a separate patch and so would be required to merge
-> it into my original patch..
+From: "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>
 
-And the reason being: "No patch is supposed to break things, otherwise
-git bisect wouldn't work smoothly".. And so git bisect would complain
-this issue after my patch and so I have to merge the fixes you gave into
-the original patch as its not yet merged.
+commit 55f67141a8927b2be3e51840da37b8a2320143ed upstream.
+
+When I decrease the value of nr_hugepage in procfs a lot, softlockup
+happens.  It is because there is no chance of context switch during this
+process.
+
+On the other hand, when I allocate a large number of hugepages, there is
+some chance of context switch.  Hence softlockup doesn't happen during
+this process.  So it's necessary to add the context switch in the
+freeing process as same as allocating process to avoid softlockup.
+
+When I freed 12 TB hugapages with kernel-2.6.32-358.el6, the freeing
+process occupied a CPU over 150 seconds and following softlockup message
+appeared twice or more.
+
+$ echo 6000000 > /proc/sys/vm/nr_hugepages
+$ cat /proc/sys/vm/nr_hugepages
+6000000
+$ grep ^Huge /proc/meminfo
+HugePages_Total:   6000000
+HugePages_Free:    6000000
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+$ echo 0 > /proc/sys/vm/nr_hugepages
+
+BUG: soft lockup - CPU#16 stuck for 67s! [sh:12883] ...
+Pid: 12883, comm: sh Not tainted 2.6.32-358.el6.x86_64 #1
+Call Trace:
+  free_pool_huge_page+0xb8/0xd0
+  set_max_huge_pages+0x128/0x190
+  hugetlb_sysctl_handler_common+0x113/0x140
+  hugetlb_sysctl_handler+0x1e/0x20
+  proc_sys_call_handler+0x97/0xd0
+  proc_sys_write+0x14/0x20
+  vfs_write+0xb8/0x1a0
+  sys_write+0x51/0x90
+  __audit_syscall_exit+0x265/0x290
+  system_call_fastpath+0x16/0x1b
+
+I have not confirmed this problem with upstream kernels because I am not
+able to prepare the machine equipped with 12TB memory now.  However I
+confirmed that the amount of decreasing hugepages was directly
+proportional to the amount of required time.
+
+I measured required times on a smaller machine.  It showed 130-145
+hugepages decreased in a millisecond.
+
+  Amount of decreasing     Required time      Decreasing rate
+  hugepages                     (msec)         (pages/msec)
+  ------------------------------------------------------------
+  10,000 pages == 20GB         70 -  74          135-142
+  30,000 pages == 60GB        208 - 229          131-144
+
+It means decrement of 6TB hugepages will trigger softlockup with the
+default threshold 20sec, in this decreasing rate.
+
+Signed-off-by: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Hocko <mhocko@suse.cz>
+Cc: Wanpeng Li <liwanp@linux.vnet.ibm.com>
+Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ mm/hugetlb.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+index 4cf641f..b9f86f8 100644
+--- a/mm/hugetlb.c
++++ b/mm/hugetlb.c
+@@ -1480,6 +1480,7 @@ static unsigned long set_max_huge_pages(struct hstate *h, unsigned long count,
+ 	while (min_count < persistent_huge_pages(h)) {
+ 		if (!free_pool_huge_page(h, nodes_allowed, 0))
+ 			break;
++		cond_resched_lock(&hugetlb_lock);
+ 	}
+ 	while (count < persistent_huge_pages(h)) {
+ 		if (!adjust_pool_surplus(h, nodes_allowed, 1))
+-- 
+1.9.1
+
