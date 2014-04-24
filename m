@@ -1,57 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214AbaDXPhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:37:22 -0400
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:47021 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757903AbaDXPhU (ORCPT
+	id S1758265AbaDXPhx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:37:53 -0400
+Received: from mail-pa0-f50.google.com ([209.85.220.50]:55921 "EHLO
+	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757903AbaDXPhv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:37:20 -0400
-Date: Thu, 24 Apr 2014 11:37:16 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 1/4] workqueue: Create low-level unbound workqueues
- cpumask
-Message-ID: <20140424153716.GG14460@htj.dyndns.org>
-References: <1398350256-7834-1-git-send-email-fweisbec@gmail.com>
- <1398350256-7834-2-git-send-email-fweisbec@gmail.com>
+	Thu, 24 Apr 2014 11:37:51 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398350256-7834-2-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+To: Maxime COQUELIN <maxime.coquelin@st.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1391012648-12481-3-git-send-email-maxime.coquelin@st.com>
+Cc: kernel@stlinux.com, maxime.coquelin@st.com
+References: <1391012648-12481-1-git-send-email-maxime.coquelin@st.com>
+ <1391012648-12481-3-git-send-email-maxime.coquelin@st.com>
+Message-ID: <20140424153742.23156.29975@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH 2/3] clk: divider: Add round to closest divider
+Date: Thu, 24 Apr 2014 08:37:42 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 04:37:33PM +0200, Frederic Weisbecker wrote:
-> Create a cpumask that limit the affinity of all unbound workqueues.
-> This cpumask is controlled though a file at the root of the workqueue
-> sysfs directory.
+Quoting Maxime COQUELIN (2014-01-29 08:24:07)
+> In some cases, we want to be able to round the divider to the closest one,
+> instead than rounding up.
 > 
-> It works on a lower-level than the per WQ_SYSFS workqueues cpumask files
-> such that the effective cpumask applied for a given unbound workqueue is
-> the intersection of /sys/devices/virtual/workqueue/$WORKQUEUE/cpumask and
-> the new /sys/devices/virtual/workqueue/cpumask_unbounds file.
+> This patch adds a new CLK_DIVIDER_ROUND_CLOSEST flag to specify the divider
+> has to round to closest div, keeping rounding up as de default behaviour.
 
-Let's drop "_unbounds" postfix and name it just "cpumask".  We don't
-apply it to per-cpu workqueues now but that really is an
-implementation detail and later when (and if) we actually distinguish
-per-cpu usages for correctness from for optimization, we may as well
-apply the same cpumask to per-cpu ones too.
+I've taken patch #2 and #3 into clk-next for 3.16.
 
-Another thing with naming is that I didn't anticipate having
-attributes at the top directory so the workqueue directories aren't
-namespaced.  Maybe we want to namespace top level knobs?
-"system_cpumask" maybe?  Any better ideas?
+Thanks!
+Mike
 
-Thanks.
-
--- 
-tejun
+> 
+> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+> ---
+>  drivers/clk/clk-divider.c    |   69 ++++++++++++++++++++++++++++++++++++++++--
+>  include/linux/clk-provider.h |    3 ++
+>  2 files changed, 70 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
+> index 2137d58..1eaa5d8 100644
+> --- a/drivers/clk/clk-divider.c
+> +++ b/drivers/clk/clk-divider.c
+> @@ -43,6 +43,17 @@ static unsigned int _get_table_maxdiv(const struct clk_div_table *table)
+>         return maxdiv;
+>  }
+>  
+> +static unsigned int _get_table_mindiv(const struct clk_div_table *table)
+> +{
+> +       unsigned int mindiv = UINT_MAX;
+> +       const struct clk_div_table *clkt;
+> +
+> +       for (clkt = table; clkt->div; clkt++)
+> +               if (clkt->div < mindiv)
+> +                       mindiv = clkt->div;
+> +       return mindiv;
+> +}
+> +
+>  static unsigned int _get_maxdiv(struct clk_divider *divider)
+>  {
+>         if (divider->flags & CLK_DIVIDER_ONE_BASED)
+> @@ -162,6 +173,24 @@ static int _round_up_table(const struct clk_div_table *table, int div)
+>         return up;
+>  }
+>  
+> +static int _round_down_table(const struct clk_div_table *table, int div)
+> +{
+> +       const struct clk_div_table *clkt;
+> +       int down = _get_table_mindiv(table);
+> +
+> +       for (clkt = table; clkt->div; clkt++) {
+> +               if (clkt->div == div)
+> +                       return clkt->div;
+> +               else if (clkt->div > div)
+> +                       continue;
+> +
+> +               if ((div - clkt->div) < (div - down))
+> +                       down = clkt->div;
+> +       }
+> +
+> +       return down;
+> +}
+> +
+>  static int _div_round_up(struct clk_divider *divider,
+>                 unsigned long parent_rate, unsigned long rate)
+>  {
+> @@ -175,6 +204,42 @@ static int _div_round_up(struct clk_divider *divider,
+>         return div;
+>  }
+>  
+> +static int _div_round_closest(struct clk_divider *divider,
+> +               unsigned long parent_rate, unsigned long rate)
+> +{
+> +       int up, down, div;
+> +
+> +       up = down = div = DIV_ROUND_CLOSEST(parent_rate, rate);
+> +
+> +       if (divider->flags & CLK_DIVIDER_POWER_OF_TWO) {
+> +               up = __roundup_pow_of_two(div);
+> +               down = __rounddown_pow_of_two(div);
+> +       } else if (divider->table) {
+> +               up = _round_up_table(divider->table, div);
+> +               down = _round_down_table(divider->table, div);
+> +       }
+> +
+> +       return (up - div) <= (div - down) ? up : down;
+> +}
+> +
+> +static int _div_round(struct clk_divider *divider, unsigned long parent_rate,
+> +               unsigned long rate)
+> +{
+> +       if (divider->flags & CLK_DIVIDER_ROUND_CLOSEST)
+> +               return _div_round_closest(divider, parent_rate, rate);
+> +
+> +       return _div_round_up(divider, parent_rate, rate);
+> +}
+> +
+> +static bool _is_best_div(struct clk_divider *divider,
+> +               int rate, int now, int best)
+> +{
+> +       if (divider->flags & CLK_DIVIDER_ROUND_CLOSEST)
+> +               return abs(rate - now) < abs(rate - best);
+> +
+> +       return now <= rate && now > best;
+> +}
+> +
+>  static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+>                 unsigned long *best_parent_rate)
+>  {
+> @@ -190,7 +255,7 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+>  
+>         if (!(__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT)) {
+>                 parent_rate = *best_parent_rate;
+> -               bestdiv = _div_round_up(divider, parent_rate, rate);
+> +               bestdiv = _div_round(divider, parent_rate, rate);
+>                 bestdiv = bestdiv == 0 ? 1 : bestdiv;
+>                 bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
+>                 return bestdiv;
+> @@ -217,7 +282,7 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
+>                 parent_rate = __clk_round_rate(__clk_get_parent(hw->clk),
+>                                 MULT_ROUND_UP(rate, i));
+>                 now = parent_rate / i;
+> -               if (now <= rate && now > best) {
+> +               if (_is_best_div(divider, rate, now, best)) {
+>                         bestdiv = i;
+>                         best = now;
+>                         *best_parent_rate = parent_rate;
+> diff --git a/include/linux/clk-provider.h b/include/linux/clk-provider.h
+> index 7e59253..595f0ba 100644
+> --- a/include/linux/clk-provider.h
+> +++ b/include/linux/clk-provider.h
+> @@ -275,6 +275,8 @@ struct clk_div_table {
+>   *   of this register, and mask of divider bits are in higher 16-bit of this
+>   *   register.  While setting the divider bits, higher 16-bit should also be
+>   *   updated to indicate changing divider bits.
+> + * CLK_DIVIDER_ROUND_CLOSEST - Makes the best calculated divider to be rounded
+> + *     to the closest integer instead of the up one.
+>   */
+>  struct clk_divider {
+>         struct clk_hw   hw;
+> @@ -290,6 +292,7 @@ struct clk_divider {
+>  #define CLK_DIVIDER_POWER_OF_TWO       BIT(1)
+>  #define CLK_DIVIDER_ALLOW_ZERO         BIT(2)
+>  #define CLK_DIVIDER_HIWORD_MASK                BIT(3)
+> +#define CLK_DIVIDER_ROUND_CLOSEST      BIT(4)
+>  
+>  extern const struct clk_ops clk_divider_ops;
+>  struct clk *clk_register_divider(struct device *dev, const char *name,
+> -- 
+> 1.7.9.5
+> 
