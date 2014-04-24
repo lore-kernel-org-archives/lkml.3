@@ -1,322 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbaDXAhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 20:37:24 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:49889 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751272AbaDXAhW (ORCPT
+	id S1752793AbaDXAiL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 20:38:11 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:18672 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544AbaDXAiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 20:37:22 -0400
-Date: Thu, 24 Apr 2014 02:37:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 3/3] nohz: Fix iowait overcounting if iowait task migrates
-Message-ID: <20140424003717.GB27571@localhost.localdomain>
-References: <1398279636-21503-1-git-send-email-dvlasenk@redhat.com>
- <1398279636-21503-3-git-send-email-dvlasenk@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398279636-21503-3-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 Apr 2014 20:38:07 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-aa-53585cedb1ea
+From: Anton Tikhomirov <av.tikhomirov@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
+        stern@rowland.harvard.edu, balbi@ti.com, kgene.kim@samsung.com,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
+ <002b01cf5f52$a7bc0d70$f7342850$%tikhomirov@samsung.com>
+In-reply-to: <002b01cf5f52$a7bc0d70$f7342850$%tikhomirov@samsung.com>
+Subject: RE: [PATCH 1/3] usb: ohci-exynos: Make provision for vdd regulators
+Date: Thu, 24 Apr 2014 09:38:04 +0900
+Message-id: <002e01cf5f55$74aff060$5e0fd120$%tikhomirov@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ks_c_5601-1987
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9dW7xThSfjkrSrQe+CdXtZr3k56gB9L0nAAAEPc3A=
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJIsWRmVeSWpSXmKPExsVy+t8zI923MRHBBrc2yVkcvF9v0XblILtF
+	8+L1bBaXF15itehdcJXNYtPja6wWl3fNYbOYvaSfxWLG+X1MFouWtTJbTPh9gc2B22P/3DXs
+	HpuX1HvMvvuD0aNvyypGj+M3tjN5fN4kF8AWxWWTkpqTWZZapG+XwJXx4Ph/loJ3KhXHtz5n
+	bmBcLtvFyMkhIWAisfrXMyYIW0ziwr31bF2MXBxCAssYJR6dPsQOU3T97W6oxHRGiW1tE5hB
+	EkIC/xgl9rXlg9hsAkYSLw9uBIuLCORKzHq7khmkgVngBaPEyb2nGCG6mxgl2jfuAxrFwcEp
+	4CqxaoIRSIOwgI/E59mrwJpZBFQl1nedYgGxeQVcJB7eOMsEYQtK/Jh8DyzOLGAg8X5WHyuE
+	LS+xec1bZpCREgLqEo/+6kLcYCXx581zZogScYlJDx6yg5wgITCRQ+LHnSuMELsEJL5NPsQC
+	0SsrsekAM8TDkhIHV9xgmcAoMQvJ5llINs9CsnkWkhULGFlWMYqmFiQXFCelF5nqFSfmFpfm
+	pesl5+duYoRE+8QdjPcPWB9iTAZaP5FZSjQ5H5gs8kriDY3NjCxMTUyNjcwtzUgTVhLnTX+U
+	FCQkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qBsUvxftKOiX5WYh+TOE+6qicf3b/o3QGBOYcf
+	2f6N5zD7tPTG+9WcqYcnikYIPjHJ+HvL17DFr+5w0rNfDtufXwqfF36v57NYmxHfbiYB89fL
+	+7Q8qmOcloqulbeQqtrNyyvKUdbAERtafUN78vu843zTszdfexEftP/qtjlfD969qzZLwkB5
+	vhJLcUaioRZzUXEiABTQG7gMAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGKsWRmVeSWpSXmKPExsVy+t9jQd23MRHBBg1XJSwO3q+3aLtykN2i
+	efF6NovLCy+xWvQuuMpmsenxNVaLy7vmsFnMXtLPYjHj/D4mi0XLWpktJvy+wObA7bF/7hp2
+	j81L6j1m3/3B6NG3ZRWjx/Eb25k8Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1
+	MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6T0mhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQ
+	XI+RARpIWMeY8eD4f5aCdyoVx7c+Z25gXC7bxcjJISFgInH97W42CFtM4sK99UA2F4eQwHRG
+	iW1tE5hBEkIC/xgl9rXlg9hsAkYSLw9uBIuLCORKzHq7khmkgVngBaPEyb2nGCG6mxgl2jfu
+	AxrFwcEp4CqxaoIRSIOwgI/E59mrwJpZBFQl1nedYgGxeQVcJB7eOMsEYQtK/Jh8DyzOLGAg
+	8X5WHyuELS+xec1bZpCREgLqEo/+6kLcYCXx581zZogScYlJDx6yT2AUmoVk0iwkk2YhmTQL
+	ScsCRpZVjKKpBckFxUnpuYZ6xYm5xaV56XrJ+bmbGMGp5JnUDsaVDRaHGAU4GJV4eA9cCA8W
+	Yk0sK67MPcQowcGsJMKb5xERLMSbklhZlVqUH19UmpNafIgxGejRicxSosn5wDSXVxJvaGxi
+	ZmRpZGZhZGJuTpqwkjjvgVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MEj4fdBh/TtpoM6nnHdNf
+	JcsUnxNMlyXLFgXzWW77vnzPT405K4OPW3Ob7v/tXmyyvSDYZN6TsscVC5dPeq9yLfM5f4bb
+	ujv2jit4rqnV74mzdf7QXqSUIhTdW1n0asOUxnydzOmxb51rp4e15F78vq2Sv3bdrtw1Lztu
+	OvtHHLuc8PPgv5mlSizFGYmGWsxFxYkAwtjYUGkDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 09:00:36PM +0200, Denys Vlasenko wrote:
-> Before this change, if last IO-blocked task wakes up
-> on a different CPU, the original CPU may stay idle for much longer,
-> and the entire time it stays idle is accounted as iowait time.
+Hi,
+
+> Hi,
 > 
-> This change adds struct tick_sched::iowait_exittime member.
-> On entry to idle, it is set to KTIME_MAX.
-> Last IO-blocked task, if migrated, sets it to current time.
-> Note that this can happen only once per each idle period:
-> new iowaiting tasks can't magically appear on idle CPU's rq.
+> > -----Original Message-----
+> > From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-
+> > owner@vger.kernel.org] On Behalf Of Vivek Gautam
+> > Sent: Monday, April 21, 2014 9:17 PM
+> >
+> > Facilitate getting required 3.3V and 1.0V VDD supply for
+> > OHCI controller on Exynos.
+> >
+> > With patches for regulators' nodes merged in 3.15:
+> > c8c253f ARM: dts: Add regulator entries to smdk5420
+> > 275dcd2 ARM: dts: add max77686 pmic node for smdk5250,
+> >
+> > certain perripherals will now need to ensure that,
+> > they request VDD regulators in their drivers, and enable
+> > them so as to make them working.
+> >
+> > Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> > Cc: Jingoo Han <jg1.han@samsung.com>
+> > ---
+> >
+> > Based on 'usb-next' branch of Greg's usb tree.
+> >
+> >  drivers/usb/host/ohci-exynos.c |   47
+> > ++++++++++++++++++++++++++++++++++++++++
+> >  1 file changed, 47 insertions(+)
+> >
+> > diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-
+> > exynos.c
+> > index 68588d8..e2e72a8 100644
+> > --- a/drivers/usb/host/ohci-exynos.c
+> > +++ b/drivers/usb/host/ohci-exynos.c
+> > @@ -18,6 +18,7 @@
+> >  #include <linux/module.h>
+> >  #include <linux/of.h>
+> >  #include <linux/platform_device.h>
+> > +#include <linux/regulator/consumer.h>
+> >  #include <linux/usb/phy.h>
+> >  #include <linux/usb/samsung_usb_phy.h>
+> >  #include <linux/usb.h>
+> > @@ -37,6 +38,8 @@ struct exynos_ohci_hcd {
+> >  	struct clk *clk;
+> >  	struct usb_phy *phy;
+> >  	struct usb_otg *otg;
+> > +	struct regulator *vdd33;
+> > +	struct regulator *vdd10;
+> >  };
+> >
+> >  static void exynos_ohci_phy_enable(struct platform_device *pdev)
+> > @@ -98,6 +101,28 @@ static int exynos_ohci_probe(struct
+> platform_device
+> > *pdev)
+> >  		exynos_ohci->otg = phy->otg;
+> >  	}
+> >
+> > +	exynos_ohci->vdd33 = devm_regulator_get(&pdev->dev, "vdd33");
+> > +	if (IS_ERR(exynos_ohci->vdd33)) {
+> > +		err = PTR_ERR(exynos_ohci->vdd33);
+> > +		goto fail_regulator1;
+> > +	}
+> > +	err = regulator_enable(exynos_ohci->vdd33);
+> > +	if (err) {
+> > +		dev_err(&pdev->dev, "Failed to enable VDD33 supply\n");
+> > +		goto fail_regulator1;
+> > +	}
+> > +
+> > +	exynos_ohci->vdd10 = devm_regulator_get(&pdev->dev, "vdd10");
+> > +	if (IS_ERR(exynos_ohci->vdd10)) {
+> > +		err = PTR_ERR(exynos_ohci->vdd10);
+> > +		goto fail_regulator2;
+> > +	}
+> > +	err = regulator_enable(exynos_ohci->vdd10);
+> > +	if (err) {
+> > +		dev_err(&pdev->dev, "Failed to enable VDD10 supply\n");
+> > +		goto fail_regulator2;
+> > +	}
+> > +
 > 
-> If iowait_exittime is set, then (iowait_exittime - idle_entrytime)
-> gets accounted as iowait, and the remaining (now - iowait_exittime)
-> as "true" idle.
+> Do we need to skip regulator settings together with PHY configuration
+> in case of exynos5440?
 > 
-> Run-tested: /proc/stats no longer go backwards.
+> >  skip_phy:
+> >  	exynos_ohci->clk = devm_clk_get(&pdev->dev, "usbhost");
+> >
+> > @@ -154,6 +179,10 @@ fail_add_hcd:
+> >  fail_io:
+> >  	clk_disable_unprepare(exynos_ohci->clk);
+> >  fail_clk:
+> > +	regulator_disable(exynos_ohci->vdd10);
+> > +fail_regulator2:
+> > +	regulator_disable(exynos_ohci->vdd33);
+> > +fail_regulator1:
+> >  	usb_put_hcd(hcd);
+> >  	return err;
+> >  }
+> > @@ -172,6 +201,9 @@ static int exynos_ohci_remove(struct
+> > platform_device *pdev)
+> >
+> >  	clk_disable_unprepare(exynos_ohci->clk);
+> >
+> > +	regulator_disable(exynos_ohci->vdd10);
+> > +	regulator_disable(exynos_ohci->vdd33);
+> > +
+> >  	usb_put_hcd(hcd);
+> >
+> >  	return 0;
+> > @@ -208,6 +240,9 @@ static int exynos_ohci_suspend(struct device *dev)
+> >
+> >  	clk_disable_unprepare(exynos_ohci->clk);
+> >
+> > +	regulator_disable(exynos_ohci->vdd10);
+> > +	regulator_disable(exynos_ohci->vdd33);
+> > +
+> >  	spin_unlock_irqrestore(&ohci->lock, flags);
+> >
+> >  	return 0;
+> > @@ -218,6 +253,18 @@ static int exynos_ohci_resume(struct device *dev)
+> >  	struct usb_hcd *hcd			= dev_get_drvdata(dev);
+> >  	struct exynos_ohci_hcd *exynos_ohci	= to_exynos_ohci(hcd);
+> >  	struct platform_device *pdev		= to_platform_device(dev);
+> > +	int ret;
+> > +
+> > +	ret = regulator_enable(exynos_ohci->vdd33);
+> > +	if (ret) {
+> > +		dev_err(dev, "Failed to enable VDD33 supply\n");
+> > +		return ret;
 > 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> Cc: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
-> Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> ---
->  include/linux/tick.h     |  3 ++
->  kernel/sched/core.c      | 20 ++++++++++++++
->  kernel/time/tick-sched.c | 72 ++++++++++++++++++++++++++++++++++++++++++++----
->  3 files changed, 89 insertions(+), 6 deletions(-)
+> Not sure, but shall we continue resuming and do everything
+> we can in case of error? At least it will avoid
+> WARN_ON(clk->enable_count == 0) on next system suspend.
+
+On the other hand, if power is not applied to the controller,
+register access in ohci_resume() may lead to undefined behavior.
+What's your opinion?
+
 > 
-> diff --git a/include/linux/tick.h b/include/linux/tick.h
-> index b84773c..2a27883 100644
-> --- a/include/linux/tick.h
-> +++ b/include/linux/tick.h
-> @@ -67,6 +67,7 @@ struct tick_sched {
->  	ktime_t				idle_exittime;
->  	ktime_t				idle_sleeptime;
->  	ktime_t				iowait_sleeptime;
-> +	ktime_t				iowait_exittime;
->  	ktime_t				sleep_length;
->  	unsigned long			last_jiffies;
->  	unsigned long			next_jiffies;
-> @@ -139,6 +140,7 @@ extern void tick_nohz_irq_exit(void);
->  extern ktime_t tick_nohz_get_sleep_length(void);
->  extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
->  extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
-> +extern void tick_nohz_iowait_to_idle(int cpu);
->  
->  # else /* !CONFIG_NO_HZ_COMMON */
->  static inline int tick_nohz_tick_stopped(void)
-> @@ -157,6 +159,7 @@ static inline ktime_t tick_nohz_get_sleep_length(void)
->  }
->  static inline u64 get_cpu_idle_time_us(int cpu, u64 *unused) { return -1; }
->  static inline u64 get_cpu_iowait_time_us(int cpu, u64 *unused) { return -1; }
-> +static inline void tick_nohz_iowait_to_idle(int cpu) { }
->  # endif /* !CONFIG_NO_HZ_COMMON */
->  
->  #ifdef CONFIG_NO_HZ_FULL
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 9cae286..08dd220 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4255,6 +4255,9 @@ EXPORT_SYMBOL_GPL(yield_to);
->   */
->  void __sched io_schedule(void)
->  {
-> +#ifdef CONFIG_NO_HZ_COMMON
-> +	int cpu_on_entry = smp_processor_id();
-> +#endif
->  	struct rq *rq = raw_rq();
->  
->  	delayacct_blkio_start();
-> @@ -4263,13 +4266,23 @@ void __sched io_schedule(void)
->  	current->in_iowait = 1;
->  	schedule();
->  	current->in_iowait = 0;
-> +#ifdef CONFIG_NO_HZ_COMMON
-> +	if (atomic_dec_and_test(&rq->nr_iowait)) {
-> +		if (smp_processor_id() != cpu_on_entry)
-> +			tick_nohz_iowait_to_idle(cpu_on_entry);
-
-The update on tick_nohz_iowait_to_idle() can happen anytime,
-possibly too late.
-
-There can be races like this:
-
-               CPU 0                     CPU 1
-               --------------------------------
-
-     //task A goes to sleep (iowait)
-                                         //task A wakes up
-                                         atomic_dec_and_test(nr_iowait) {
-                                            now  = ktime_get(); // now == X
-     //task B runs
-     //Pending iowait time i flushed
-     //task B sleeps (iowait)
-     //now = Y
-                                         //task A is preempted
-                                         //task B runs
-                                         atomic_dec_and_test(nr_iowait) {
-                                            now  = ktime_get(); // now == Y
-                                         //task B is preempted
-                                         //task A runs back
-                                            iowait_exittime = Z
-     // account pending iowait time
-     // delta = X - Y
-
-Here the delta accounted is X - Y, which is probably a negative delta. So the
-whole time between Z and Y is forgotten.
-
-Now the race is tight and maybe not important in practice because preemption slices
-should be short so only tiny chuncks may be overriden.
-
-> +	}
-> +#else
->  	atomic_dec(&rq->nr_iowait);
-> +#endif
->  	delayacct_blkio_end();
->  }
->  EXPORT_SYMBOL(io_schedule);
->  
->  long __sched io_schedule_timeout(long timeout)
->  {
-> +#ifdef CONFIG_NO_HZ_COMMON
-> +	int cpu_on_entry = smp_processor_id();
-> +#endif
->  	struct rq *rq = raw_rq();
->  	long ret;
->  
-> @@ -4279,7 +4292,14 @@ long __sched io_schedule_timeout(long timeout)
->  	current->in_iowait = 1;
->  	ret = schedule_timeout(timeout);
->  	current->in_iowait = 0;
-> +#ifdef CONFIG_NO_HZ_COMMON
-> +	if (atomic_dec_and_test(&rq->nr_iowait)) {
-> +		if (smp_processor_id() != cpu_on_entry)
-> +			tick_nohz_iowait_to_idle(cpu_on_entry);
-> +	}
-> +#else
->  	atomic_dec(&rq->nr_iowait);
-> +#endif
->  	delayacct_blkio_end();
->  	return ret;
->  }
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index a99770e..679a577 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -403,17 +403,48 @@ static void tick_nohz_update_jiffies(ktime_t now)
->  	touch_softlockup_watchdog();
->  }
->  
-> +/*
-> + * Race prevention for idle/iowait counters:
-> + *
-> + * On entry and exit to idle/iowait states,
-> + * ts->idle_entrytime, ts->{idle,iowait}_sleeptime and ts->idle_active
-> + * fields are updated in this order, serialized with smp_wmb().
-> + * On exit, ts->idle_entrytime is zeroed.
-> + *
-> + * The readers - get_cpu_{idle,iowait}_time_us() - fetch these fields
-> + * in reversed order, serialized with smp_rmb().
-> + * If ts->idle_active == 0, reading of ts->idle_entrytime (and one smp_rmb())
-> + * are not necessary. If ts->idle_active != 0, ts->idle_entrytime
-> + * (which is needed anyway for calculations)
-> + * needs to be checked for zero, and reads need to be done anew if it is zeroed.
-> + *
-> + * This implements a seqlock-like race detection without needing additional
-> + * data fields and read-modify-write ops on them.
-> + */
->  static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
->  {
-> -	ktime_t delta;
-> +	ktime_t delta, entry;
->  
->  	/* Updates the per cpu time idle statistics counters */
-> -	delta = ktime_sub(now, ts->idle_entrytime);
-> +	entry = ts->idle_entrytime;
-> +	delta = ktime_sub(now, entry);
->  	ts->idle_entrytime.tv64 = 0;
->  	smp_wmb();
->  
-> -	if (ts->idle_active == 2)
-> +	if (ts->idle_active == 2) {
-> +		ktime_t end = ts->iowait_exittime;
-> +
-> +		if (end.tv64 != KTIME_MAX) {
-> +			/*
-> +			 * Last iowaiting task on our rq was woken up on other CPU
-> +			 * sometime in the past, it updated ts->iowait_exittime.
-> +			 */
-> +			delta = ktime_sub(now, end);
-> +			ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
-> +			delta = ktime_sub(end, entry);
-> +		}
->  		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
-> +	}
->  	else
->  		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
->  
-> @@ -430,10 +461,18 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
->  	ts->idle_entrytime = now;
->  	smp_wmb();
->  	ts->idle_active = nr_iowait_cpu(smp_processor_id()) ? 2 : 1;
-> +	ts->iowait_exittime.tv64 = KTIME_MAX;
->  	sched_clock_idle_sleep_event();
->  	return now;
->  }
->  
-> +void tick_nohz_iowait_to_idle(int cpu)
-> +{
-> +	struct tick_sched *ts = tick_get_tick_sched(cpu);
-> +
-> +	ts->iowait_exittime = ktime_get();
-> +}
-> +
->  /**
->   * get_cpu_idle_time_us - get the total idle time of a cpu
->   * @cpu: CPU number to query
-> @@ -467,7 +506,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
->  	active = ACCESS_ONCE(ts->idle_active);
->  	smp_rmb();
->  	count = ACCESS_ONCE(ts->idle_sleeptime);
-> -	if (active == 1) {
-> +	if (active /* either 1 or 2 */) {
->  		ktime_t delta, start;
->  
->  		smp_rmb();
-> @@ -479,6 +518,18 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
->  			 */
->  			goto again;
->  		}
-> +		if (active == 2) {
-> +			/* This idle period started as "iowait idle" */
-> +			ktime_t iowait_exit = ACCESS_ONCE(ts->iowait_exittime);
-> +
-> +			if (iowait_exit.tv64 == KTIME_MAX)
-> +				goto skip; /* and it still is */
-> +			/*
-> +			 * This CPU used to be "iowait idle", but iowait task
-> +			 * has migrated. The rest of idle time is "true idle":
-> +			 */
-> +			start = iowait_exit;
-> +		}
->  		delta = ktime_sub(now, start);
->  		count = ktime_add(count, delta);
->  	} else {
-> @@ -488,6 +539,7 @@ u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
->  		 * we fetched idle_active, so count must be valid.
->  		 */
->  	}
-> + skip:
->  
->  	return ktime_to_us(count);
->  }
-> @@ -527,7 +579,7 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
->  	smp_rmb();
->  	count = ACCESS_ONCE(ts->iowait_sleeptime);
->  	if (active == 2) {
-> -		ktime_t delta, start;
-> +		ktime_t delta, start, end;
->  
->  		smp_rmb();
->  		start = ACCESS_ONCE(ts->idle_entrytime);
-> @@ -538,7 +590,15 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
->  			 */
->  			goto again;
->  		}
-> -		delta = ktime_sub(now, start);
-> +		/*
-> +		 * If last iowaiting task on our rq was woken up on other CPU
-> +		 * sometime in the past, it updated ts->iowait_exittime.
-> +		 * Otherwise, ts->iowait_exittime == KTIME_MAX.
-> +		 */
-> +		end = ACCESS_ONCE(ts->iowait_exittime);
-> +		if (end.tv64 == KTIME_MAX)
-> +			end = now;
-> +		delta = ktime_sub(end, start);
->  		count = ktime_add(count, delta);
->  	} else {
->  		/*
-> -- 
-> 1.8.1.4
+> > +	}
+> > +	ret = regulator_enable(exynos_ohci->vdd10);
+> > +	if (ret) {
+> > +		dev_err(dev, "Failed to enable VDD10 supply\n");
+> > +		return ret;
+> > +	}
+> >
+> >  	clk_prepare_enable(exynos_ohci->clk);
+> >
+> > --
 > 
+> Thanks
+
+Thanks
+
