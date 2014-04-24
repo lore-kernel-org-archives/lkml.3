@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690AbaDXQGF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:06:05 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.225]:17474 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758620AbaDXQD0 (ORCPT
+	id S1758699AbaDXQGX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:06:23 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:41070 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757450AbaDXQGS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:03:26 -0400
-Message-Id: <20140424160320.831795066@goodmis.org>
-User-Agent: quilt/0.61-1
-Date: Thu, 24 Apr 2014 12:02:39 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@redhat.com>, PaX Team <pageexec@freemail.hu>,
-        Mathias Krause <minipli@googlemail.com>
-Subject: [for-next][PATCH 7/8] ftrace: Statically initialize pm notifier block
-References: <20140424160232.271454710@goodmis.org>
+	Thu, 24 Apr 2014 12:06:18 -0400
+Date: Thu, 24 Apr 2014 13:05:45 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Arnd Bergmann <arnd@arndb.de>, Ley Foon Tan <lftan@altera.com>
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, lftan.linux@gmail.com,
+        cltang@codesourcery.com
+Subject: Re: [PATCH 19/28] nios2: Device tree support
+Message-ID: <20140424160545.GE1735@arch.cereza>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+ <1397824031-4892-16-git-send-email-lftan@altera.com>
+ <201404221542.16481.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0007-ftrace-Statically-initialize-pm-notifier-block.patch
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201404221542.16481.arnd@arndb.de>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathias Krause <minipli@googlemail.com>
+On Apr 22, Arnd Bergmann wrote:
+> On Friday 18 April 2014, Ley Foon Tan wrote:
+> 
+> Are these all synthesized devices, or is there also some hardwired
+> logic? It often makes sense to split out the reusable parts into
+> a separate .dtsi file that gets included by every implementation.
+> 
 
-Instead of initializing the pm notifier block in register_ftrace_graph(),
-initialize it statically. This safes us some code.
+In case you are not aware of this, devicetree files for Nios-II
+SoCs are produced through an automated tool calle sopc2dts:
 
-Found in the PaX patch, written by the PaX Team.
+http://www.alterawiki.com/wiki/Sopc2dts
+http://git.rocketboards.org/sopc-tools.git/
 
-Link: http://lkml.kernel.org/p/1396186310-3156-1-git-send-email-minipli@googlemail.com
+You feed it with a sopcinfo file (AFAIK, Altera's specific format) and
+you obtain a full-fledged devicetree source file. Usually it works
+out-of-the-box, although I like to go over it and fix ranges, whitespaces,
+and do some cleaning.
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: PaX Team <pageexec@freemail.hu>
-Signed-off-by: Mathias Krause <minipli@googlemail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ftrace.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+So I'm wondering -given we have such superb tool- why would we want to
+include the devicetree source's in the kernel? 
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 8f61ef7..846888e 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4860,7 +4860,6 @@ ftrace_enable_sysctl(struct ctl_table *table, int write,
- #ifdef CONFIG_FUNCTION_GRAPH_TRACER
- 
- static int ftrace_graph_active;
--static struct notifier_block ftrace_suspend_notifier;
- 
- int ftrace_graph_entry_stub(struct ftrace_graph_ent *trace)
- {
-@@ -5036,6 +5035,10 @@ static void update_function_graph_func(void)
- 		ftrace_graph_entry = ftrace_graph_entry_test;
- }
- 
-+static struct notifier_block ftrace_suspend_notifier = {
-+	.notifier_call = ftrace_suspend_notifier_call,
-+};
-+
- int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 			trace_func_graph_ent_t entryfunc)
- {
-@@ -5049,7 +5052,6 @@ int register_ftrace_graph(trace_func_graph_ret_t retfunc,
- 		goto out;
- 	}
- 
--	ftrace_suspend_notifier.notifier_call = ftrace_suspend_notifier_call;
- 	register_pm_notifier(&ftrace_suspend_notifier);
- 
- 	ftrace_graph_active++;
+First, we'll be only supporting a *specific* configuration. Second, the
+dts is trivially easy to obtain.
+
+The binding documentation should be enough specification, and there's no
+need for further reference or examples.
 -- 
-1.8.5.3
-
-
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
