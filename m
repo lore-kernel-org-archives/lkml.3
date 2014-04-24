@@ -1,65 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752441AbaDXG2M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 02:28:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:54695 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752015AbaDXG2L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 02:28:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,917,1389772800"; 
-   d="scan'208";a="518576195"
-Date: Thu, 24 Apr 2014 09:35:46 +0300
-From: "Westerberg, Mika" <mika.westerberg@intel.com>
-To: Timur Tabi <timur@codeaurora.org>
-Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Linus <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
-Message-ID: <20140424063546.GA30677@intel.com>
-References: <1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com>
- <CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com>
- <534B93BA.6020406@linux.intel.com>
- <534BFAAF.3070805@codeaurora.org>
- <534D0370.50108@linux.intel.com>
- <535005BA.1040405@codeaurora.org>
- <5357A80B.8030701@linux.intel.com>
- <5357ACF1.9070206@codeaurora.org>
- <20140423135915.GY30677@intel.com>
- <5357D8CC.3080501@codeaurora.org>
+	id S1751936AbaDXGdB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 02:33:01 -0400
+Received: from mail-qg0-f44.google.com ([209.85.192.44]:43176 "EHLO
+	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471AbaDXGc6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 02:32:58 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5357D8CC.3080501@codeaurora.org>
-Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <002e01cf5f55$74aff060$5e0fd120$%tikhomirov@samsung.com>
+References: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
+	<002b01cf5f52$a7bc0d70$f7342850$%tikhomirov@samsung.com>
+	<002e01cf5f55$74aff060$5e0fd120$%tikhomirov@samsung.com>
+Date: Thu, 24 Apr 2014 12:02:57 +0530
+X-Google-Sender-Auth: Rj-ekDI9bLO_WSDrwm749uLYgWc
+Message-ID: <CAFp+6iFTVKHcF8zyfmFcrALHDaRHwXOC3Wbd7rv_X5LvjznPgg@mail.gmail.com>
+Subject: Re: [PATCH 1/3] usb: ohci-exynos: Make provision for vdd regulators
+From: Vivek Gautam <gautam.vivek@samsung.com>
+To: Anton Tikhomirov <av.tikhomirov@samsung.com>
+Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 10:14:20AM -0500, Timur Tabi wrote:
-> Westerberg, Mika wrote:
-> >It doesn't do any pin control nor muxing and I'm not sure if it is
-> >required. Can you elaborate why you think pin muxing is required with
-> >GpioIo/GpioInt resources?
-> 
-> How are the pin muxes normally configured in ACPI?  All of our GPIOs
-> have a pinmux on them, and so if you want to use the pin for the
-> non-default functionality, you need to configure the mux.  Isn't
-> that supposed to happen with the through the pinctrl driver?
+Hi,
 
-It's the BIOS that handles all this even though there are several
-"alternate functions" in the GPIO hardware. BIOS goes and configures those
-according what the platform needs and those that are GPIOs/IRQs it will
-create corresponding GpioIo/GpioInt along with the device that uses them.
 
-Of course if you have a custom board and your BIOS doesn't handle this, you
-are going to need some sort of pinctrl driver.
+On Thu, Apr 24, 2014 at 6:08 AM, Anton Tikhomirov
+<av.tikhomirov@samsung.com> wrote:
+> Hi,
+>
+>> Hi,
+>>
+>> > -----Original Message-----
+>> > From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-
+>> > owner@vger.kernel.org] On Behalf Of Vivek Gautam
+>> > Sent: Monday, April 21, 2014 9:17 PM
+>> >
+>> > Facilitate getting required 3.3V and 1.0V VDD supply for
+>> > OHCI controller on Exynos.
+>> >
+>> > With patches for regulators' nodes merged in 3.15:
+>> > c8c253f ARM: dts: Add regulator entries to smdk5420
+>> > 275dcd2 ARM: dts: add max77686 pmic node for smdk5250,
+>> >
+>> > certain perripherals will now need to ensure that,
+>> > they request VDD regulators in their drivers, and enable
+>> > them so as to make them working.
+>> >
+>> > Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+>> > Cc: Jingoo Han <jg1.han@samsung.com>
+>> > ---
+>> >
+>> > Based on 'usb-next' branch of Greg's usb tree.
+>> >
+>> >  drivers/usb/host/ohci-exynos.c |   47
+>> > ++++++++++++++++++++++++++++++++++++++++
+>> >  1 file changed, 47 insertions(+)
+>> >
+>> > diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-
+>> > exynos.c
+>> > index 68588d8..e2e72a8 100644
+>> > --- a/drivers/usb/host/ohci-exynos.c
+>> > +++ b/drivers/usb/host/ohci-exynos.c
 
-> That is, when the kernel parses the ASL, and it seems a command to
-> configure pin #3 to function #4, it calls the local pinctrl driver to do
-> that?
+[snip]
 
-I'm not aware of ASL code that allows you to do that. Do you have examples?
+>> >  static void exynos_ohci_phy_enable(struct platform_device *pdev)
+>> > @@ -98,6 +101,28 @@ static int exynos_ohci_probe(struct
+>> platform_device
+>> > *pdev)
+>> >             exynos_ohci->otg = phy->otg;
+>> >     }
+>> >
+>> > +   exynos_ohci->vdd33 = devm_regulator_get(&pdev->dev, "vdd33");
+>> > +   if (IS_ERR(exynos_ohci->vdd33)) {
+>> > +           err = PTR_ERR(exynos_ohci->vdd33);
+>> > +           goto fail_regulator1;
+>> > +   }
+>> > +   err = regulator_enable(exynos_ohci->vdd33);
+>> > +   if (err) {
+>> > +           dev_err(&pdev->dev, "Failed to enable VDD33 supply\n");
+>> > +           goto fail_regulator1;
+>> > +   }
+>> > +
+>> > +   exynos_ohci->vdd10 = devm_regulator_get(&pdev->dev, "vdd10");
+>> > +   if (IS_ERR(exynos_ohci->vdd10)) {
+>> > +           err = PTR_ERR(exynos_ohci->vdd10);
+>> > +           goto fail_regulator2;
+>> > +   }
+>> > +   err = regulator_enable(exynos_ohci->vdd10);
+>> > +   if (err) {
+>> > +           dev_err(&pdev->dev, "Failed to enable VDD10 supply\n");
+>> > +           goto fail_regulator2;
+>> > +   }
+>> > +
+>>
+>> Do we need to skip regulator settings together with PHY configuration
+>> in case of exynos5440?
+>>
+>> >  skip_phy:
+>> >     exynos_ohci->clk = devm_clk_get(&pdev->dev, "usbhost");
+>> >
+
+[snip]
+
+>> > @@ -218,6 +253,18 @@ static int exynos_ohci_resume(struct device *dev)
+>> >     struct usb_hcd *hcd                     = dev_get_drvdata(dev);
+>> >     struct exynos_ohci_hcd *exynos_ohci     = to_exynos_ohci(hcd);
+>> >     struct platform_device *pdev            = to_platform_device(dev);
+>> > +   int ret;
+>> > +
+>> > +   ret = regulator_enable(exynos_ohci->vdd33);
+>> > +   if (ret) {
+>> > +           dev_err(dev, "Failed to enable VDD33 supply\n");
+>> > +           return ret;
+>>
+>> Not sure, but shall we continue resuming and do everything
+>> we can in case of error? At least it will avoid
+>> WARN_ON(clk->enable_count == 0) on next system suspend.
+
+True, i will modify it.
+>
+> On the other hand, if power is not applied to the controller,
+> register access in ohci_resume() may lead to undefined behavior.
+> What's your opinion?
+
+AFA i think, it is obvious that the regulators would not work without
+a VDD supply.
+So the question is, do we have VDD LDOs available on all Exynos
+systems for usb ?
+>From the schemata of Exynos5250 and Exynos5420 boards, i can see the
+required VDD LDOs
+for USB. Unfortunately at present i don't have a Exynos4* schemata.
+
+If regulator is not a mandatory, then we can make it option similar to
+what Jingoo has also suggested
+in subsequent mail.
+
+[snip]
+
+
+-- 
+Best Regards
+Vivek Gautam
+Samsung R&D Institute, Bangalore
+India
