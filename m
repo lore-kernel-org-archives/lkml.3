@@ -1,76 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233AbaDXVtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:49:08 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39758 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755559AbaDXVqS (ORCPT
+	id S1756315AbaDXVtq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:49:46 -0400
+Received: from mail-oa0-f47.google.com ([209.85.219.47]:48368 "EHLO
+	mail-oa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753979AbaDXVtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:18 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Bob Picco <bob.picco@oracle.com>, Allen Pais <allen.pais@oracle.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH 3.10 20/23] sparc64: dont treat 64-bit syscall return codes as 32-bit
-Date: Thu, 24 Apr 2014 14:48:50 -0700
-Message-Id: <20140424214828.492412388@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
-References: <20140424214825.933835556@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 24 Apr 2014 17:49:42 -0400
 MIME-Version: 1.0
+In-Reply-To: <1398288285-16268-1-git-send-email-kys@microsoft.com>
+References: <1398288285-16268-1-git-send-email-kys@microsoft.com>
+Date: Thu, 24 Apr 2014 17:49:41 -0400
+Message-ID: <CAJUuVQ7V+Se0auKdaiqPZr8i2WcNqWhHUwz8r85DKKCjnjtrvQ@mail.gmail.com>
+Subject: Re: [PATCH V1 net-next 1/1] hyperv: Enable sendbuf mechanism on the
+ send path
+From: Andev <debiandev@gmail.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: davem@davemloft.net, netdev@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, devel@linuxdriverproject.org,
+        olaf@aepfle.de, apw@canonical.com, jasowang@redhat.com
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Wed, Apr 23, 2014 at 5:24 PM, K. Y. Srinivasan <kys@microsoft.com> wrote:
 
-------------------
+>  drivers/net/hyperv/hyperv_net.h |   14 +++
+>  drivers/net/hyperv/netvsc.c     |  226 +++++++++++++++++++++++++++++++++++++--
+>  drivers/net/hyperv/netvsc_drv.c |    3 +->  3 files changed, 234 insertions(+), 9 deletions(-)
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+I just looked over netvsc.c and it could definitely use a more
+consistent coding style.
 
-[ Upstream commit 1535bd8adbdedd60a0ee62e28fd5225d66434371 ]
-
-When checking a system call return code for an error,
-linux_sparc_syscall was sign-extending the lower 32-bit value and
-comparing it to -ERESTART_RESTARTBLOCK. lseek can return valid return
-codes whose lower 32-bits alone would indicate a failure (such as 4G-1).
-Use the whole 64-bit value to check for errors. Only the 32-bit path
-should sign extend the lower 32-bit value.
-
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Acked-by: Bob Picco <bob.picco@oracle.com>
-Acked-by: Allen Pais <allen.pais@oracle.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/syscalls.S |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/arch/sparc/kernel/syscalls.S
-+++ b/arch/sparc/kernel/syscalls.S
-@@ -189,7 +189,8 @@ linux_sparc_syscall32:
- 	 mov	%i0, %l5				! IEU1
- 5:	call	%l7					! CTI	Group brk forced
- 	 srl	%i5, 0, %o5				! IEU1
--	ba,a,pt	%xcc, 3f
-+	ba,pt	%xcc, 3f
-+	 sra	%o0, 0, %o0
- 
- 	/* Linux native system calls enter here... */
- 	.align	32
-@@ -217,7 +218,6 @@ linux_sparc_syscall:
- 3:	stx	%o0, [%sp + PTREGS_OFF + PT_V9_I0]
- ret_sys_call:
- 	ldx	[%sp + PTREGS_OFF + PT_V9_TSTATE], %g3
--	sra	%o0, 0, %o0
- 	mov	%ulo(TSTATE_XCARRY | TSTATE_ICARRY), %g2
- 	sllx	%g2, 32, %g2
- 
-
-
+Your use of goto exit/cleanup in some functions and returning directly
+on errors in others could use a cleanup. Please consider doing that
+while you are touching those files.
