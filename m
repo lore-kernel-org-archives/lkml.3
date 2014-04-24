@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753400AbaDXIwX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:52:23 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46275 "EHLO
+	id S1756420AbaDXLxg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:53:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46317 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306AbaDXIwN (ORCPT
+	with ESMTP id S1753306AbaDXIwX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:13 -0400
+	Thu, 24 Apr 2014 04:52:23 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
+Cc: Lv Zheng <lv.zheng@intel.com>, Bob Moore <robert.moore@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 011/182] hvc: ensure hvc_init is only ever called once in hvc_console.c
-Date: Thu, 24 Apr 2014 09:48:56 +0100
-Message-Id: <1398329507-5911-12-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 021/182] ACPICA: Restore code that repairs NULL package elements in return values.
+Date: Thu, 24 Apr 2014 09:49:06 +0100
+Message-Id: <1398329507-5911-22-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -29,73 +28,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
+From: Lv Zheng <lv.zheng@intel.com>
 
-commit f76a1cbed18c86e2d192455f0daebb48458965f3 upstream.
+commit 61db45ca21630f5ab7f678d54c5d969c21647854 upstream.
 
-Commit 3e6c6f630a5282df8f3393a59f10eb9c56536d23 ("Delay creation of
-khcvd thread") moved the call of hvc_init from being a device_initcall
-into hvc_alloc, and used a non-null hvc_driver as indication of whether
-hvc_init had already been called.
+The original code was lost accidently, it was not generated along with the
+following commit of mechanism improvements and thus not get merged:
 
-The problem with this is that hvc_driver is only assigned a value
-at the bottom of hvc_init, and so there is a window where multiple
-hvc_alloc calls can be in progress at the same time and hence try
-and call hvc_init multiple times.  Previously the use of device_init
-guaranteed that hvc_init was only called once.
+  Commit: d5a36100f62fa6db5541344e08b361b34e9114c5
+  Subject: ACPICA: Add mechanism for early object repairs on a per-name basis
 
-This manifests itself as sporadic instances of two hvc_init calls
-racing each other, and with the loser of the race getting -EBUSY
-from tty_register_driver() and hence that virtual console fails:
+  Adds the framework to allow object repairs very early in the
+  return object analysis. Enables repairs like string->unicode,
+  etc.
 
-    Couldn't register hvc console driver
-    virtio-ports vport0p1: error -16 allocating hvc for port
+This patch restores the implementation of the NULL element repair code for
+ACPI_RTYPE_NONE.  In the original design, ACPI_RTYPE_NONE is defined to
+collect simple NULL object repairs.
+Lv Zheng.
 
-Here we add an atomic_t to guarantee we'll never run hvc_init twice.
-
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Fixes: 3e6c6f630a52 ("Delay creation of khcvd thread")
-Reported-by: Jim Somerville <Jim.Somerville@windriver.com>
-Tested-by: Jim Somerville <Jim.Somerville@windriver.com>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=67901
+Signed-off-by: Lv Zheng <lv.zheng@intel.com>
+Signed-off-by: Bob Moore <robert.moore@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/tty/hvc/hvc_console.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+ drivers/acpi/acpica/nsrepair.c | 25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/tty/hvc/hvc_console.c b/drivers/tty/hvc/hvc_console.c
-index eb255e8..a2a2645 100644
---- a/drivers/tty/hvc/hvc_console.c
-+++ b/drivers/tty/hvc/hvc_console.c
-@@ -31,6 +31,7 @@
- #include <linux/list.h>
- #include <linux/module.h>
- #include <linux/major.h>
-+#include <linux/atomic.h>
- #include <linux/sysrq.h>
- #include <linux/tty.h>
- #include <linux/tty_flip.h>
-@@ -70,6 +71,9 @@ static struct task_struct *hvc_task;
- /* Picks up late kicks after list walk but before schedule() */
- static int hvc_kicked;
- 
-+/* hvc_init is triggered from hvc_alloc, i.e. only when actually used */
-+static atomic_t hvc_needs_init __read_mostly = ATOMIC_INIT(-1);
+diff --git a/drivers/acpi/acpica/nsrepair.c b/drivers/acpi/acpica/nsrepair.c
+index f8e71ea..b2d2473 100644
+--- a/drivers/acpi/acpica/nsrepair.c
++++ b/drivers/acpi/acpica/nsrepair.c
+@@ -207,13 +207,30 @@ acpi_ns_simple_repair(struct acpi_evaluate_info *info,
+ 	 * this predefined name. Either one return value is expected, or none,
+ 	 * for both methods and other objects.
+ 	 *
+-	 * Exit now if there is no return object. Warning if one was expected.
++	 * Try to fix if there was no return object. Warning if failed to fix.
+ 	 */
+ 	if (!return_object) {
+ 		if (expected_btypes && (!(expected_btypes & ACPI_RTYPE_NONE))) {
+-			ACPI_WARN_PREDEFINED((AE_INFO, info->full_pathname,
+-					      ACPI_WARN_ALWAYS,
+-					      "Missing expected return value"));
++			if (package_index != ACPI_NOT_PACKAGE_ELEMENT) {
++				ACPI_WARN_PREDEFINED((AE_INFO,
++						      info->full_pathname,
++						      ACPI_WARN_ALWAYS,
++						      "Found unexpected NULL package element"));
 +
- static int hvc_init(void);
++				status =
++				    acpi_ns_repair_null_element(info,
++								expected_btypes,
++								package_index,
++								return_object_ptr);
++				if (ACPI_SUCCESS(status)) {
++					return (AE_OK);	/* Repair was successful */
++				}
++			} else {
++				ACPI_WARN_PREDEFINED((AE_INFO,
++						      info->full_pathname,
++						      ACPI_WARN_ALWAYS,
++						      "Missing expected return value"));
++			}
  
- #ifdef CONFIG_MAGIC_SYSRQ
-@@ -842,7 +846,7 @@ struct hvc_struct *hvc_alloc(uint32_t vtermno, int data,
- 	int i;
- 
- 	/* We wait until a driver actually comes along */
--	if (!hvc_driver) {
-+	if (atomic_inc_not_zero(&hvc_needs_init)) {
- 		int err = hvc_init();
- 		if (err)
- 			return ERR_PTR(err);
+ 			return (AE_AML_NO_RETURN_VALUE);
+ 		}
 -- 
 1.9.1
 
