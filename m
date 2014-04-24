@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754999AbaDXJi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:38:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46892 "EHLO
+	id S1755196AbaDXJjW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:39:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46872 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701AbaDXIzZ (ORCPT
+	with ESMTP id S1754433AbaDXIzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:55:25 -0400
+	Thu, 24 Apr 2014 04:55:13 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Mischa Jonker <mjonker@synopsys.com>, Vineet Gupta <vgupta@synopsys.com>,
-        Francois Bedard <Francois.Bedard@synopsys.com>,
+Cc: Junxiao Bi <junxiao.bi@oracle.com>,
+        Sunil Mushran <sunil.mushran@gmail.com>,
+        Joel Becker <jlbec@evilplan.org>, Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 131/182] ARC: [nsimosci] Change .dts to use generic 8250 UART
-Date: Thu, 24 Apr 2014 09:50:56 +0100
-Message-Id: <1398329507-5911-132-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 126/182] ocfs2: dlm: fix lock migration crash
+Date: Thu, 24 Apr 2014 09:50:51 +0100
+Message-Id: <1398329507-5911-127-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,54 +31,121 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mischa Jonker <mjonker@synopsys.com>
+From: Junxiao Bi <junxiao.bi@oracle.com>
 
-commit 6eda477b3c54b8236868c8784e5e042ff14244f0 upstream.
+commit 34aa8dac482f1358d59110d5e3a12f4351f6acaa upstream.
 
-The Synopsys APB DW UART has a couple of special features that are not
-in the System C model. In 3.8, the 8250_dw driver didn't really use these
-features, but from 3.9 onwards, the 8250_dw driver has become incompatible
-with our model.
+This issue was introduced by commit 800deef3f6f8 ("ocfs2: use
+list_for_each_entry where benefical") in 2007 where it replaced
+list_for_each with list_for_each_entry.  The variable "lock" will point
+to invalid data if "tmpq" list is empty and a panic will be triggered
+due to this.  Sunil advised reverting it back, but the old version was
+also not right.  At the end of the outer for loop, that
+list_for_each_entry will also set "lock" to an invalid data, then in the
+next loop, if the "tmpq" list is empty, "lock" will be an stale invalid
+data and cause the panic.  So reverting the list_for_each back and reset
+"lock" to NULL to fix this issue.
 
-Signed-off-by: Mischa Jonker <mjonker@synopsys.com>
-Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
-Cc: Francois Bedard <Francois.Bedard@synopsys.com>
+Another concern is that this seemes can not happen because the "tmpq"
+list should not be empty.  Let me describe how.
+
+old lock resource owner(node 1):                                  migratation target(node 2):
+image there's lockres with a EX lock from node 2 in
+granted list, a NR lock from node x with convert_type
+EX in converting list.
+dlm_empty_lockres() {
+ dlm_pick_migration_target() {
+   pick node 2 as target as its lock is the first one
+   in granted list.
+ }
+ dlm_migrate_lockres() {
+   dlm_mark_lockres_migrating() {
+     res->state |= DLM_LOCK_RES_BLOCK_DIRTY;
+     wait_event(dlm->ast_wq, !dlm_lockres_is_dirty(dlm, res));
+	 //after the above code, we can not dirty lockres any more,
+     // so dlm_thread shuffle list will not run
+                                                                   downconvert lock from EX to NR
+                                                                   upconvert lock from NR to EX
+<<< migration may schedule out here, then
+<<< node 2 send down convert request to convert type from EX to
+<<< NR, then send up convert request to convert type from NR to
+<<< EX, at this time, lockres granted list is empty, and two locks
+<<< in the converting list, node x up convert lock followed by
+<<< node 2 up convert lock.
+
+	 // will set lockres RES_MIGRATING flag, the following
+	 // lock/unlock can not run
+     dlm_lockres_release_ast(dlm, res);
+   }
+
+   dlm_send_one_lockres()
+                                                                 dlm_process_recovery_data()
+                                                                   for (i=0; i<mres->num_locks; i++)
+                                                                     if (ml->node == dlm->node_num)
+                                                                       for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+                                                                        list_for_each_entry(lock, tmpq, list)
+                                                                        if (lock) break; <<< lock is invalid as grant list is empty.
+                                                                       }
+                                                                       if (lock->ml.node != ml->node)
+                                                                         BUG() >>> crash here
+ }
+
+I see the above locks status from a vmcore of our internal bug.
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
+Cc: Sunil Mushran <sunil.mushran@gmail.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/arc/boot/dts/nsimosci.dts | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ fs/ocfs2/dlm/dlmrecovery.c | 14 ++++++++------
+ 1 file changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/arch/arc/boot/dts/nsimosci.dts b/arch/arc/boot/dts/nsimosci.dts
-index ea16d78..8bd238c 100644
---- a/arch/arc/boot/dts/nsimosci.dts
-+++ b/arch/arc/boot/dts/nsimosci.dts
-@@ -11,7 +11,7 @@
+diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
+index 773bd32..a6f006d 100644
+--- a/fs/ocfs2/dlm/dlmrecovery.c
++++ b/fs/ocfs2/dlm/dlmrecovery.c
+@@ -1747,13 +1747,13 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+ 				     struct dlm_migratable_lockres *mres)
+ {
+ 	struct dlm_migratable_lock *ml;
+-	struct list_head *queue;
++	struct list_head *queue, *iter;
+ 	struct list_head *tmpq = NULL;
+ 	struct dlm_lock *newlock = NULL;
+ 	struct dlm_lockstatus *lksb = NULL;
+ 	int ret = 0;
+ 	int i, j, bad;
+-	struct dlm_lock *lock = NULL;
++	struct dlm_lock *lock;
+ 	u8 from = O2NM_MAX_NODES;
+ 	unsigned int added = 0;
+ 	__be64 c;
+@@ -1788,14 +1788,16 @@ static int dlm_process_recovery_data(struct dlm_ctxt *dlm,
+ 			/* MIGRATION ONLY! */
+ 			BUG_ON(!(mres->flags & DLM_MRES_MIGRATION));
  
- / {
- 	compatible = "snps,nsimosci";
--	clock-frequency = <80000000>;	/* 80 MHZ */
-+	clock-frequency = <20000000>;	/* 20 MHZ */
- 	#address-cells = <1>;
- 	#size-cells = <1>;
- 	interrupt-parent = <&intc>;
-@@ -44,15 +44,14 @@
- 		};
- 
- 		uart0: serial@c0000000 {
--			compatible = "snps,dw-apb-uart";
-+			compatible = "ns8250";
- 			reg = <0xc0000000 0x2000>;
- 			interrupts = <11>;
--			#clock-frequency = <80000000>;
- 			clock-frequency = <3686400>;
- 			baud = <115200>;
- 			reg-shift = <2>;
- 			reg-io-width = <4>;
--			status = "okay";
-+			no-loopback-test = <1>;
- 		};
- 
- 		pgu0: pgu@c9000000 {
++			lock = NULL;
+ 			spin_lock(&res->spinlock);
+ 			for (j = DLM_GRANTED_LIST; j <= DLM_BLOCKED_LIST; j++) {
+ 				tmpq = dlm_list_idx_to_ptr(res, j);
+-				list_for_each_entry(lock, tmpq, list) {
+-					if (lock->ml.cookie != ml->cookie)
+-						lock = NULL;
+-					else
++				list_for_each(iter, tmpq) {
++					lock = list_entry(iter,
++						  struct dlm_lock, list);
++					if (lock->ml.cookie == ml->cookie)
+ 						break;
++					lock = NULL;
+ 				}
+ 				if (lock)
+ 					break;
 -- 
 1.9.1
 
