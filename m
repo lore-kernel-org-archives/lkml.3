@@ -1,59 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755215AbaDXJjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:39:44 -0400
-Received: from mail-bn1blp0190.outbound.protection.outlook.com ([207.46.163.190]:40880
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753145AbaDXJjh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 05:39:37 -0400
-Date: Thu, 24 Apr 2014 17:45:42 +0800
-From: Robin Gong <b38343@freescale.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-CC: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
-        <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] dma: imx-sdma: add support for sdma memory copy
-Message-ID: <20140424094537.GA26556@Robin-OptiPlex-780>
-References: <1398316184-16824-1-git-send-email-b38343@freescale.com>
- <1398329406.11914.258.camel@smile.fi.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1398329406.11914.258.camel@smile.fi.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(24454002)(189002)(199002)(164054003)(377424004)(51704005)(83322001)(81342001)(19580405001)(76482001)(46102001)(76176999)(23726002)(80976001)(99396002)(33656001)(50986999)(50466002)(46406003)(6806004)(54356999)(83506001)(74502001)(20776003)(83072002)(80022001)(77982001)(47776003)(92566001)(4396001)(87936001)(19580395003)(77096999)(33716001)(44976005)(81542001)(79102001)(92726001)(97756001)(85852003)(31966008)(74662001)(42262001);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR03MB030;H:az84smr01.freescale.net;FPR:FE36FB6A.A0E09C35.B1F063E8.5E5419F3.201AB;MLV:sfv;PTR:gate-az5.freescale.com;MX:1;A:1;LANG:en;
-X-Forefront-PRVS: 01917B1794
-X-OriginatorOrg: freescale.com
+	id S1755121AbaDXJjU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:39:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46875 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754439AbaDXIzN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 04:55:13 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Junxiao Bi <junxiao.bi@oracle.com>, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 127/182] ocfs2: dlm: fix recovery hung
+Date: Thu, 24 Apr 2014 09:50:52 +0100
+Message-Id: <1398329507-5911-128-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 11:50:06AM +0300, Andy Shevchenko wrote:
-> On Thu, 2014-04-24 at 13:09 +0800, Robin Gong wrote:
-> > add "device_prep_dma_memcpy" and "device_prep_dma_sg" for memory copy by sdma.
-> > 
-> > Signed-off-by: Robin Gong <b38343@freescale.com>
-> > 
-> > ---
-> > change:
-> > --v2:
-> >   1. correct some printk format, such as %pad for dma_addr_t
-> >   2. split duplicated code in prep_dma_memcpy and prep_dma_sg to make code clean.
-> 
-> Thanks for an update. One small comment below.
-> 
-> > +
-> > +static int check_bd_buswidth(struct sdma_buffer_descriptor *bd,
-> > +			     struct sdma_channel *sdmac, int count,
-> > +			     dma_addr_t dma_dst, dma_addr_t dma_src)
-> > +{
-> > +	int ret = 0;
-> > +
-> > +	if (sdmac->word_size > DMA_SLAVE_BUSWIDTH_4_BYTES)
-> > +		ret =  -EINVAL;
-> 
-> I think two lines above are redundant since you have default path in the
-> switch.
->
-Thanks, will remove it in next version.
+3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+
+------------------
+
+From: Junxiao Bi <junxiao.bi@oracle.com>
+
+commit ded2cf71419b9353060e633b59e446c42a6a2a09 upstream.
+
+There is a race window in dlm_do_recovery() between dlm_remaster_locks()
+and dlm_reset_recovery() when the recovery master nearly finish the
+recovery process for a dead node.  After the master sends FINALIZE_RECO
+message in dlm_remaster_locks(), another node may become the recovery
+master for another dead node, and then send the BEGIN_RECO message to
+all the nodes included the old master, in the handler of this message
+dlm_begin_reco_handler() of old master, dlm->reco.dead_node and
+dlm->reco.new_master will be set to the second dead node and the new
+master, then in dlm_reset_recovery(), these two variables will be reset
+to default value.  This will cause new recovery master can not finish
+the recovery process and hung, at last the whole cluster will hung for
+recovery.
+
+old recovery master:                                 new recovery master:
+dlm_remaster_locks()
+                                                  become recovery master for
+                                                  another dead node.
+                                                  dlm_send_begin_reco_message()
+dlm_begin_reco_handler()
+{
+ if (dlm->reco.state & DLM_RECO_STATE_FINALIZE) {
+  return -EAGAIN;
+ }
+ dlm_set_reco_master(dlm, br->node_idx);
+ dlm_set_reco_dead_node(dlm, br->dead_node);
+}
+dlm_reset_recovery()
+{
+ dlm_set_reco_dead_node(dlm, O2NM_INVALID_NODE_NUM);
+ dlm_set_reco_master(dlm, O2NM_INVALID_NODE_NUM);
+}
+                                                  will hang in dlm_remaster_locks() for
+                                                  request dlm locks info
+
+Before send FINALIZE_RECO message, recovery master should set
+DLM_RECO_STATE_FINALIZE for itself and clear it after the recovery done,
+this can break the race windows as the BEGIN_RECO messages will not be
+handled before DLM_RECO_STATE_FINALIZE flag is cleared.
+
+A similar race may happen between new recovery master and normal node
+which is in dlm_finalize_reco_handler(), also fix it.
+
+Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
+Reviewed-by: Srinivas Eeda <srinivas.eeda@oracle.com>
+Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ fs/ocfs2/dlm/dlmrecovery.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ocfs2/dlm/dlmrecovery.c b/fs/ocfs2/dlm/dlmrecovery.c
+index a6f006d..d826837 100644
+--- a/fs/ocfs2/dlm/dlmrecovery.c
++++ b/fs/ocfs2/dlm/dlmrecovery.c
+@@ -537,7 +537,10 @@ master_here:
+ 		/* success!  see if any other nodes need recovery */
+ 		mlog(0, "DONE mastering recovery of %s:%u here(this=%u)!\n",
+ 		     dlm->name, dlm->reco.dead_node, dlm->node_num);
+-		dlm_reset_recovery(dlm);
++		spin_lock(&dlm->spinlock);
++		__dlm_reset_recovery(dlm);
++		dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
++		spin_unlock(&dlm->spinlock);
+ 	}
+ 	dlm_end_recovery(dlm);
+ 
+@@ -695,6 +698,14 @@ static int dlm_remaster_locks(struct dlm_ctxt *dlm, u8 dead_node)
+ 		if (all_nodes_done) {
+ 			int ret;
+ 
++			/* Set this flag on recovery master to avoid
++			 * a new recovery for another dead node start
++			 * before the recovery is not done. That may
++			 * cause recovery hung.*/
++			spin_lock(&dlm->spinlock);
++			dlm->reco.state |= DLM_RECO_STATE_FINALIZE;
++			spin_unlock(&dlm->spinlock);
++
+ 			/* all nodes are now in DLM_RECO_NODE_DATA_DONE state
+ 	 		 * just send a finalize message to everyone and
+ 	 		 * clean up */
+@@ -2866,8 +2877,8 @@ int dlm_finalize_reco_handler(struct o2net_msg *msg, u32 len, void *data,
+ 				BUG();
+ 			}
+ 			dlm->reco.state &= ~DLM_RECO_STATE_FINALIZE;
++			__dlm_reset_recovery(dlm);
+ 			spin_unlock(&dlm->spinlock);
+-			dlm_reset_recovery(dlm);
+ 			dlm_kick_recovery_thread(dlm);
+ 			break;
+ 		default:
+-- 
+1.9.1
+
