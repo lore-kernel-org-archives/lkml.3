@@ -1,142 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850AbaDXOit (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:38:49 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:33691 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757634AbaDXOhr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:37:47 -0400
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
-Subject: [PATCH 3/4] workqueue: Allow modifying low level unbound workqueue cpumask
-Date: Thu, 24 Apr 2014 16:37:35 +0200
-Message-Id: <1398350256-7834-4-git-send-email-fweisbec@gmail.com>
-X-Mailer: git-send-email 1.8.3.1
-In-Reply-To: <1398350256-7834-1-git-send-email-fweisbec@gmail.com>
-References: <1398350256-7834-1-git-send-email-fweisbec@gmail.com>
+	id S1757923AbaDXOjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:39:46 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44332 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757619AbaDXOjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 10:39:42 -0400
+Date: Thu, 24 Apr 2014 09:39:31 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Balaji T K <balajitk@ti.com>
+CC: Felipe Balbi <balbi@ti.com>, <chris@printf.net>, <ulf.hansson@linaro.org>,
+        <linux-mmc@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/5] mmc: host: omap_hsmmc: a few improvements
+Message-ID: <20140424143931.GE26661@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1395878690-9650-1-git-send-email-balbi@ti.com>
+ <53592037.8050106@ti.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="fWddYNRDgTk9wQGZ"
+Content-Disposition: inline
+In-Reply-To: <53592037.8050106@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allow to modify the low-level unbound workqueues cpumask through
-sysfs. This is performed by traversing the entire workqueue list
-and calling apply_workqueue_attrs() on the unbound workqueues.
+--fWddYNRDgTk9wQGZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ordered workqueues need some specific treatment and will be dealt with
-in a subsequent patch.
+On Thu, Apr 24, 2014 at 08:01:19PM +0530, Balaji T K wrote:
+> On Thursday 27 March 2014 05:34 AM, Felipe Balbi wrote:
+> >Hi,
+> >
+> >this series lets us access the newer registers introduced
+> >back in OMAP4 which give us some valid information about
+> >the OMAP HSMMC IP like max block size, support for ADMA,
+> >support for Retention.
+>=20
+> "Support for Retention" looks interesting, can you shed more lights on
+> it
 
-Cc: Christoph Lameter <cl@linux.com>
-Cc: Kevin Hilman <khilman@linaro.org>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Mike Galbraith <bitbucket@online.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
----
- kernel/workqueue.c | 63 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 file changed, 61 insertions(+), 2 deletions(-)
+HWINFO has a bit (bit 6) which tells you whether retention is supported,
+it's in all TRMs since OMAP3630 or so.
 
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 2c38e32..387ce38 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -293,7 +293,7 @@ static DEFINE_SPINLOCK(wq_mayday_lock);	/* protects wq->maydays list */
- static LIST_HEAD(workqueues);		/* PL: list of all workqueues */
- static bool workqueue_freezing;		/* PL: have wqs started freezing? */
- 
--static cpumask_var_t wq_unbound_cpumask;
-+static cpumask_var_t wq_unbound_cpumask; /* PL: low level cpumask for all unbound wqs */
- 
- /* the per-cpu worker pools */
- static DEFINE_PER_CPU_SHARED_ALIGNED(struct worker_pool [NR_STD_WORKER_POOLS],
-@@ -3325,19 +3325,78 @@ static struct bus_type wq_subsys = {
- 	.dev_groups			= wq_sysfs_groups,
- };
- 
-+static int apply_workqueue_attrs_locked(struct workqueue_struct *wq,
-+					const struct workqueue_attrs *attrs);
-+
-+/* Must be called with wq_unbound_mutex held */
-+static int unbounds_cpumask_apply_all(cpumask_var_t cpumask)
-+{
-+	struct workqueue_struct *wq;
-+
-+	list_for_each_entry(wq, &workqueues, list) {
-+		struct workqueue_attrs *attrs;
-+
-+		if (!(wq->flags & WQ_UNBOUND))
-+			continue;
-+		/* Ordered workqueues need specific treatment */
-+		if (wq->flags & __WQ_ORDERED)
-+			continue;
-+
-+		attrs = wq_sysfs_prep_attrs(wq);
-+		if (!attrs)
-+			return -ENOMEM;
-+
-+		WARN_ON_ONCE(apply_workqueue_attrs_locked(wq, attrs));
-+		free_workqueue_attrs(attrs);
-+	}
-+
-+	return 0;
-+}
-+
-+static ssize_t unbounds_cpumask_store(struct device *dev,
-+				      struct device_attribute *attr,
-+				      const char *buf, size_t count)
-+{
-+	cpumask_var_t cpumask;
-+	int ret = -EINVAL;
-+
-+	if (!zalloc_cpumask_var(&cpumask, GFP_KERNEL))
-+		return -ENOMEM;
-+
-+	ret = cpumask_parse(buf, cpumask);
-+	if (ret)
-+		goto out;
-+
-+	get_online_cpus();
-+	if (cpumask_intersects(cpumask, cpu_online_mask)) {
-+		mutex_lock(&wq_pool_mutex);
-+		cpumask_copy(wq_unbound_cpumask, cpumask);
-+		ret = unbounds_cpumask_apply_all(cpumask);
-+		mutex_unlock(&wq_pool_mutex);
-+	}
-+	put_online_cpus();
-+out:
-+	free_cpumask_var(cpumask);
-+	return ret ? ret : count;
-+}
-+
- static ssize_t unbounds_cpumask_show(struct device *dev,
- 				     struct device_attribute *attr, char *buf)
- {
- 	int written;
- 
-+	mutex_lock(&wq_pool_mutex);
- 	written = cpumask_scnprintf(buf, PAGE_SIZE, wq_unbound_cpumask);
-+	mutex_unlock(&wq_pool_mutex);
-+
- 	written += scnprintf(buf + written, PAGE_SIZE - written, "\n");
- 
- 	return written;
- }
- 
- static struct device_attribute wq_sysfs_cpumask_attr =
--	__ATTR(cpumask_unbounds, 0444, unbounds_cpumask_show, NULL);
-+	__ATTR(cpumask_unbounds, 0644, unbounds_cpumask_show,
-+	       unbounds_cpumask_store);
- 
- static int __init wq_sysfs_init(void)
- {
--- 
-1.8.3.1
+"6	RERETMODE		Retention mode generic parameter
+				This bit field indicates whether the
+				retention mode is supported using the
+				pin PIRFFRET.
 
+				0x0: Retention mode disabled
+				0x1: Retention mode enabled"
+
+--=20
+balbi
+
+--fWddYNRDgTk9wQGZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTWSIjAAoJEIaOsuA1yqREYi0QAJ0isNNTkVzz0NmZhgRvFbqM
+7vgsoY1+hOLXV8nuu3YOFGwTd1whldV5Qg17OgwH5cKUOEK4IfsP/P57b1M2GMIq
+PgFhAss0FvzfHnY0vIxwkcO4OlYq3D2hn7cLIV9LxRhooPLcl+vllbB76Pgm/+ew
+rh3mz1950fIiYOfzMDRj7y8uNcKc5qr7pJj2/baxIWFmBcME2VnVaJCLM7+u9SCf
+p8ut75KKmZZTkWw17t8ts4qvtzFEBw3aLLxxs3kk79AwoSNcCqxfH0xOYNXLqAGa
+Q0XIZ5q1AUNsDw7sWFrZbyl9V3s7Lu8Kp8F2tb20xaY24UHfNWX+DOb7bpcOaI07
+eRJwXK4hilFsicTBjX/O1mRkIElXDWAxSahE0uJ8kXXyx1JDy7UasvlFp4Z7IUvZ
+ufH1APYyofMusKHvPu7ENEu4C+SmP2mVA5F6iTSOcNyS75VHCEW6D6VchSpmV0Tw
+kaDIulOz5UuwmtWudcyZoOE46E4fyK0uGD/XRojmRoK/GznJNEOypLxYzm7mOhKc
+XzUgoVkqAxgp/9I/FJkZFa7pZG5jwuksuMNAr28Q5PXacCUvcUS9Iekhquyl8wpf
+4kyn0v3Fba0B+rWgyb3E3rAQ2uevrg8Fk9bvg7xJ8Ug3mLQ6fnFZqAXhsUuTachE
+nkYZ2YORRN1qxYzm+EMw
+=LcfW
+-----END PGP SIGNATURE-----
+
+--fWddYNRDgTk9wQGZ--
