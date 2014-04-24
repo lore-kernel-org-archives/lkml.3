@@ -1,166 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbaDXI3B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:29:01 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:38524 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbaDXIYH (ORCPT
+	id S1752771AbaDXIdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:33:07 -0400
+Received: from inet-tsb5.toshiba.co.jp ([202.33.96.24]:53200 "EHLO
+	imx2.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928AbaDXIdA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:24:07 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 01/11] perf report: Count number of entries separately
-Date: Thu, 24 Apr 2014 17:23:53 +0900
-Message-Id: <1398327843-31845-2-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
-References: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
+	Thu, 24 Apr 2014 04:33:00 -0400
+Message-Id: <201404240832.s3O8WHd0011014@toshiba.co.jp>
+Date: Thu, 24 Apr 2014 17:31:55 +0900
+From: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>,
+        Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYg==?= =?UTF-8?B?ZWNrZXI=?= 
+	<fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Cgroups <cgroups@vger.kernel.org>
+Subject: Re: [RFC 0/4] Migrate timers away from cpuset on setting cpuset.quiesce
+References: <cover.1395322529.git.viresh.kumar@linaro.org>	<201404240725.s3O7PrUv003720@toshiba.co.jp> <CAKohpokt-O3BAGMzE_=heVBZQOwp0C7eT8ZA2485DgNi3+Xcqg@mail.gmail.com>
+In-Reply-To: <CAKohpokt-O3BAGMzE_=heVBZQOwp0C7eT8ZA2485DgNi3+Xcqg@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hists->nr_entries is counted in multiple places so that they can
-confuse readers of the code.  This is a preparation of later change
-and do not intend any functional difference.
 
-Note that report__collapse_hists() now changed to return nothing since
-its return value (nr_samples) is only for checking if there's any data
-in the input file and this can be acheived by checking ->nr_entries.
+On 2014/04/24 16:43, Viresh Kumar wrote:
+> On 24 April 2014 12:55, Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp> wrote:
+>> I tried your set of patches for isolating particular CPU cores from unpinned
+>> timers. On x86_64 they were working fine, however I found out that on ARM
+>> they would fail under the following test:
+> 
+> I am happy that these drew attention from somebody Atleast :)
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/builtin-report.c | 42 ++++++++++++++++++++++--------------------
- 1 file changed, 22 insertions(+), 20 deletions(-)
+Thanks to you for your hard work.
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 76e2bb6cf571..aed52036468d 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -57,6 +57,7 @@ struct report {
- 	const char		*cpu_list;
- 	const char		*symbol_filter_str;
- 	float			min_percent;
-+	u64			nr_entries;
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
- 
-@@ -75,6 +76,17 @@ static int report__config(const char *var, const char *value, void *cb)
- 	return perf_default_config(var, value, cb);
- }
- 
-+static void report__inc_stats(struct report *rep, struct hist_entry *he)
-+{
-+	/*
-+	 * The @he is either of a newly created one or an existing one
-+	 * merging current sample.  We only want to count a new one so
-+	 * checking ->nr_events being 1.
-+	 */
-+	if (he->stat.nr_events == 1)
-+		rep->nr_entries++;
-+}
-+
- static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
- 				      struct perf_sample *sample, struct perf_evsel *evsel)
- {
-@@ -121,6 +133,8 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
- 			goto out;
- 	}
- 
-+	report__inc_stats(rep, he);
-+
- 	evsel->hists.stats.total_period += cost;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- 	if (!he->filtered)
-@@ -176,6 +190,8 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
- 					goto out;
- 			}
- 
-+			report__inc_stats(rep, he);
-+
- 			evsel->hists.stats.total_period += 1;
- 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- 			if (!he->filtered)
-@@ -212,6 +228,8 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
- 	if (ui__has_annotation())
- 		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
- 
-+	report__inc_stats(rep, he);
-+
- 	evsel->hists.stats.total_period += sample->period;
- 	if (!he->filtered)
- 		evsel->hists.stats.nr_non_filtered_samples++;
-@@ -486,24 +504,12 @@ static int report__browse_hists(struct report *rep)
- 	return ret;
- }
- 
--static u64 report__collapse_hists(struct report *rep)
-+static void report__collapse_hists(struct report *rep)
- {
- 	struct ui_progress prog;
- 	struct perf_evsel *pos;
--	u64 nr_samples = 0;
--	/*
-- 	 * Count number of histogram entries to use when showing progress,
-- 	 * reusing nr_samples variable.
-- 	 */
--	evlist__for_each(rep->session->evlist, pos)
--		nr_samples += pos->hists.nr_entries;
- 
--	ui_progress__init(&prog, nr_samples, "Merging related events...");
--	/*
--	 * Count total number of samples, will be used to check if this
-- 	 * session had any.
-- 	 */
--	nr_samples = 0;
-+	ui_progress__init(&prog, rep->nr_entries, "Merging related events...");
- 
- 	evlist__for_each(rep->session->evlist, pos) {
- 		struct hists *hists = &pos->hists;
-@@ -512,7 +518,6 @@ static u64 report__collapse_hists(struct report *rep)
- 			hists->symbol_filter_str = rep->symbol_filter_str;
- 
- 		hists__collapse_resort(hists, &prog);
--		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
- 
- 		/* Non-group events are considered as leader */
- 		if (symbol_conf.event_group &&
-@@ -525,14 +530,11 @@ static u64 report__collapse_hists(struct report *rep)
- 	}
- 
- 	ui_progress__finish();
--
--	return nr_samples;
- }
- 
- static int __cmd_report(struct report *rep)
- {
- 	int ret;
--	u64 nr_samples;
- 	struct perf_session *session = rep->session;
- 	struct perf_evsel *pos;
- 	struct perf_data_file *file = session->file;
-@@ -572,12 +574,12 @@ static int __cmd_report(struct report *rep)
- 		}
- 	}
- 
--	nr_samples = report__collapse_hists(rep);
-+	report__collapse_hists(rep);
- 
- 	if (session_done())
- 		return 0;
- 
--	if (nr_samples == 0) {
-+	if (rep->nr_entries == 0) {
- 		ui__error("The %s file has no samples!\n", file->path);
- 		return 0;
- 	}
+>> # mount -t cpuset none /cpuset
+>> # cd /cpuset
+>> # mkdir rt
+>> # cd rt
+>> # echo 1 > cpus
+>> # echo 1 > cpu_exclusive
+>> # cd
+>> # taskset 0x2 ./setquiesce.sh  <--- contains "echo 1 > /cpuset/rt/quiesce"
+>> [   75.622375] ------------[ cut here ]------------
+>> [   75.627258] WARNING: CPU: 0 PID: 0 at kernel/locking/lockdep.c:2595 __migrate_hrtimers+0x17c/0x1bc()
+>> [   75.636840] DEBUG_LOCKS_WARN_ON(current->hardirq_context)
+>> [   75.636840] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.0-rc1-37710-g23c8f02 #1
+>> [   75.649627] [<c0014d18>] (unwind_backtrace) from [<c00119e8>] (show_stack+0x10/0x14)
+>> [   75.649627] [<c00119e8>] (show_stack) from [<c065b61c>] (dump_stack+0x78/0x94)
+>> [   75.662689] [<c065b61c>] (dump_stack) from [<c003e9a4>] (warn_slowpath_common+0x60/0x84)
+>> [   75.670410] [<c003e9a4>] (warn_slowpath_common) from [<c003ea24>] (warn_slowpath_fmt+0x30/0x40)
+>> [   75.677673] [<c003ea24>] (warn_slowpath_fmt) from [<c005d7b0>] (__migrate_hrtimers+0x17c/0x1bc)
+>> [   75.677673] [<c005d7b0>] (__migrate_hrtimers) from [<c009e004>] (generic_smp_call_function_single_interrupt+0x8c/0x104)
+>> [   75.699645] [<c009e004>] (generic_smp_call_function_single_interrupt) from [<c00134d0>] (handle_IPI+0xa4/0x16c)
+>> [   75.706970] [<c00134d0>] (handle_IPI) from [<c0008614>] (gic_handle_irq+0x54/0x5c)
+>> [   75.715087] [<c0008614>] (gic_handle_irq) from [<c0012624>] (__irq_svc+0x44/0x5c)
+>> [   75.725311] Exception stack(0xc08a3f58 to 0xc08a3fa0)
+> 
+> I couldn't understand why we went via a interrupt here ? Probably CPU1
+> was idle and was woken up with a IPI and then this happened. But in
+> that case too,
+> shouldn't the script run from process context instead ?
+
+In kernel/cpuset.c:quiesce_cpuset() you are using the function
+'smp_call_function_any' which asks CPU cores in 'cpumask' to
+execute the functions 'hrtimer_quiesce_cpu' and 'timer_quiesce_cpu'.
+
+In the case above, 'cpumask' corresponds to core 0. Since I'm forcing
+the call to be executed from core 1 (by using taskset),
+an inter-processor interrupt is sent to core 0 for those functions
+to be executed.
+
+>> I also backported your patches to Linux 3.10.y and found the same problem
+>> both in ARM and x86_64.
+> 
+> There are very few changes in between 3.10 and latest for timers/hrtimers
+> and so things are expected to be the same.
+> 
+>> However, I think I figured out the reason for those
+>> errors. Please, could you check the patch below (it applies on the top of
+>> your tree, branch isolate-cpusets) and let me know what you think?
+> 
+> Okay, just to let you know, I have also found some issues and they are
+> now pushed in my tree.. Also it is rebased over 3.15-rc2 now.
+
+Ok, thank you! I see that you have already fixed the problem. I tested
+your tree on ARM and now it seems to work correctly.
+
+
+
+> 
+>> -------------------------PATCH STARTS HERE---------------------------------
+>> cpuset: quiesce: change irq disable/enable by irq save/restore
+>>
+>> The function __migrate_timers can be called under interrupt context
+>> or thread context depending on the core where the system call was
+>> executed. In case it executes under interrupt context, it
+> 
+> How exactly?
+
+See my reply above.
+
+>> seems a bad idea to leave interrupts enabled after migrating the
+>> timers. In fact, this caused kernel errors on the ARM architecture and
+>> on the x86_64 architecture with the 3.10 kernel (backported version
+>> of the cpuset-quiesce patch).
+> 
+> I can't keep it as a separate patch and so would be required to merge
+> it into my original patch..
+> 
+> Thanks for your inputs :)
+> --
+> To unsubscribe from this list: send the line "unsubscribe cgroups" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> 
+
+Thanks,
+Daniel
+
 -- 
-1.9.2
-
+Toshiba Corporate Software Engineering Center
+Daniel SANGORRIN
+E-mail:  daniel.sangorrin@toshiba.co.jp
