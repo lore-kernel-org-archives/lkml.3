@@ -1,103 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729AbaDXKcn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:32:43 -0400
-Received: from prifuk.cz ([31.31.77.140]:49703 "EHLO smtp.devoid-pointer.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753550AbaDXKcf convert rfc822-to-8bit (ORCPT
+	id S1755972AbaDXKdu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:33:50 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43699 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752684AbaDXKdo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:32:35 -0400
-From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
-To: Oliver Neukum <oneukum@suse.de>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
-        anssi.hannula@iki.fi, simon@mungewell.org
-Subject: Re: [PATCH v2 09/24] input: Port hid-dr to ff-memless-next
-Date: Thu, 24 Apr 2014 12:32:28 +0200
-Message-ID: <2156054.MZkXeC543k@sigyn>
-User-Agent: KMail/4.13 (Linux/3.14.1-1-my-rd; KDE/4.13.0; x86_64; ; )
-In-Reply-To: <1398260463.32091.5.camel@linux-fkkt.site>
-References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net> <1398175209-9565-10-git-send-email-madcatxster@devoid-pointer.net> <1398260463.32091.5.camel@linux-fkkt.site>
+	Thu, 24 Apr 2014 06:33:44 -0400
+Date: Thu, 24 Apr 2014 11:33:29 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net, linux-spi@vger.kernel.org
+Message-ID: <20140424103329.GL12304@sirena.org.uk>
+References: <20140423224035.1de64093@gandalf.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cjvfPnFZRrNVeVma"
+Content-Disposition: inline
+In-Reply-To: <20140423224035.1de64093@gandalf.local.home>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH] spi-bfin: Add missing gpio.h include
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 of April 2014 15:41:03 Oliver Neukum wrote:
-> On Tue, 2014-04-22 at 15:59 +0200, Michal Malý wrote:
-> >  static int drff_play(struct input_dev *dev, void *data,
-> > 
-> > -                                struct ff_effect *effect)
-> > +                       const struct mlnx_effect_command *command)
-> > 
-> >  {
-> >  
-> >         struct hid_device *hid = input_get_drvdata(dev);
-> >         struct drff_device *drff = data;
-> > 
-> > +       const struct mlnx_rumble_force *rumble_force =
-> > &command->u.rumble_force;
-> > 
-> >         int strong, weak;
-> > 
-> > -       strong = effect->u.rumble.strong_magnitude;
-> > -       weak = effect->u.rumble.weak_magnitude;
-> > +       strong = rumble_force->strong;
-> > +       weak = rumble_force->weak;
-> > 
-> >         dbg_hid("called with 0x%04x 0x%04x", strong, weak);
-> > 
-> > -       if (strong || weak) {
-> > -               strong = strong * 0xff / 0xffff;
-> > -               weak = weak * 0xff / 0xffff;
-> > -
-> > -               /* While reverse engineering this device, I found that
-> > when
-> > -                  this value is set, it causes the strong rumble to
-> > function
-> > -                  at a near maximum speed, so we'll bypass it. */
-> > -               if (weak == 0x0a)
-> > -                       weak = 0x0b;
-> > -
-> > -               drff->report->field[0]->value[0] = 0x51;
-> > -               drff->report->field[0]->value[1] = 0x00;
-> > -               drff->report->field[0]->value[2] = weak;
-> > -               drff->report->field[0]->value[4] = strong;
-> > -               hid_hw_request(hid, drff->report, HID_REQ_SET_REPORT);
-> > -
-> > -               drff->report->field[0]->value[0] = 0xfa;
-> > -               drff->report->field[0]->value[1] = 0xfe;
-> > -       } else {
-> > +       switch (command->cmd) {
-> > +       case MLNX_START_RUMBLE:
-> > +               if (strong || weak) {
-> > +                       strong = strong * 0xff / 0xffff;
-> > +                       weak = weak * 0xff / 0xffff;
-> > +
-> > +                       /* While reverse engineering this device, I
-> > found that when
-> > +                       this value is set, it causes the strong rumble
-> > to function
-> > +                       at a near maximum speed, so we'll bypass it.
-> > */
-> > +                       if (weak == 0x0a)
-> > +                               weak = 0x0b;
-> > +
-> > +                       drff->report->field[0]->value[0] = 0x51;
-> > +                       drff->report->field[0]->value[1] = 0x00;
-> > +                       drff->report->field[0]->value[2] = weak;
-> > +                       drff->report->field[0]->value[4] = strong;
-> 
-> This looks like an endianness bug.
 
-I don't have a big endian machine to check but why would this be an endianness 
-issue? We're dealing with values all the time here, not addresses so I'd 
-expect the 'weak' and 'strong' values to be truncated if they won't fit into 
-byte. Division done beforehand makes sure that the values are within <0; 255> 
-range. As far as I can see this is quite common in the HID and Input code. Am 
-I missing something here?
+--cjvfPnFZRrNVeVma
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
-Michal
+On Wed, Apr 23, 2014 at 10:40:35PM -0400, Steven Rostedt wrote:
+> Running my ktest.pl tests on all the archs, I stumbled over this for
+> 3.15-rc2:
+
+Applied, thanks.
+
+--cjvfPnFZRrNVeVma
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTWOh2AAoJELSic+t+oim96wIP/10wKxXpZnvcov0aFSd6tz8t
+hjoCVt8YdK2DQqTqzY8e3EXSveFC7zJfGIXekE+Hu3ndGzhJol/pPYA9aMwQRUf8
+CHZbLYiHc3kspbd2yC97PcOBSNoLNYHgfWCyxVN1dMM6rWffB3MYynMwEfFQLtJc
+c1N8AhRJCcdxC0f+aL+C+0K0ml/jpUGer359fCofJAPrNGlF2136ZWeJ2GE+1u+w
+5vGlGH0Rh7v/gM/PfYPti4noBb1VQlh9hd9PJLi7rmqGGF7Gh4Rk2esB4Hnosbe5
+AppIXV6hecYVd7tkh8+++3bwAxK4LvBxK7MSsYq8Xq/LtU3Ng3TFoRjblB7fXDPY
+CAFW44nLEDiCqI3eRowezppeARCn+r0AseLOU/SvejhyN9rcgPANS7mIcBzP/1nO
+hrlb2zagSKl+2Wn+vrfiCoHddQfuzjGFEV/5GgFFVBe34qEvaBY+DiC8MpQdkl9W
+dZZBYcGhRqRaAhOsrPK/ITyQhKlAyeP8otsgKPmNwSrVMTG9TnAB2uWpz9eywPqw
+6A1vGe7JD7Ngk1mhz2mOkSTvVNX2q1gRKnX3cEvTTeJ9p3y8s6O/jQJ3d60C43ET
+DGFyZhoU9JJ/VyU+alveA3YqtyMaD1i7z9fzpju6ZLiClSGHjFy4rtb0xseuGmNz
+v8G1l8Xo3F08eYAPcuu6
+=JXkB
+-----END PGP SIGNATURE-----
+
+--cjvfPnFZRrNVeVma--
