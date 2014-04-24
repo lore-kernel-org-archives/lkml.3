@@ -1,57 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758245AbaDXPdb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:33:31 -0400
-Received: from mail-qa0-f48.google.com ([209.85.216.48]:37679 "EHLO
-	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757767AbaDXPdZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:33:25 -0400
-Date: Thu, 24 Apr 2014 11:33:20 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Mike Galbraith <bitbucket@online.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>
-Subject: Re: [PATCH 4/4] workqueue: Handle ordered workqueues on
- cpumask_unbounds change
-Message-ID: <20140424153320.GF14460@htj.dyndns.org>
-References: <1398350256-7834-1-git-send-email-fweisbec@gmail.com>
- <1398350256-7834-5-git-send-email-fweisbec@gmail.com>
+	id S1758200AbaDXPbj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:31:39 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:34683 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754569AbaDXPbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:31:31 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Grygorii Strashko <grygorii.strashko@ti.com>
+Subject: [PATCH v3 4/7] of: configure the platform device dma parameters
+Date: Thu, 24 Apr 2014 11:30:04 -0400
+Message-ID: <1398353407-2345-5-git-send-email-santosh.shilimkar@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
+References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398350256-7834-5-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 04:37:36PM +0200, Frederic Weisbecker wrote:
-> Ordered unbound workqueues need some special care if we want to
-> modify their CPU affinity. These can't be simply handled through
-> apply_workqueue_attrs() since it works by hot plugging worker pools
-> which has parallelism side effects and this would break ordering.
-> 
-> The way we solve this is to change the affinity of the (presumaly
-> unique) worker backing the ordered workqueues.
-> 
-> NOTE: Now like Lai said, there may be bad side effects on this because
-> ordered wq may share their worker pool with non-ordered workqueues.
-> So changing the affinity of the worker itself is not a nice solution.
-> This patch is very likely to be replaced by Lai's patch
-> "workqueue: allow changing attributions of ordered workqueue"
-> https://lkml.org/lkml/2014/4/15/181
+Retrieve DMA configuration from DT and setup platform device's DMA
+parameters. The DMA configuration in DT has to be specified using
+"dma-ranges" and "dma-coherent" properties if supported.
 
-Yeah, it bothers me that we're taking two completely different
-approaches for ordered and !ordered workqueues.  The only difference
-between them is concurrency and it probably would be a better idea to
-address that directly.
+We setup dma_pfn_offset using "dma-ranges" and dma_coherent_ops
+using "dma-coherent" device tree properties.
 
-Thanks.
+The set_arch_dma_coherent_ops macro has to be defined by arch if
+it supports coherent dma_ops. Otherwise, set_arch_dma_coherent_ops() is
+declared as nop.
 
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+---
+ drivers/of/platform.c       |   48 ++++++++++++++++++++++++++++++++++++++++---
+ include/linux/dma-mapping.h |    7 +++++++
+ 2 files changed, 52 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 48de98f..270c0b9 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -187,6 +187,50 @@ struct platform_device *of_device_alloc(struct device_node *np,
+ EXPORT_SYMBOL(of_device_alloc);
+ 
+ /**
++ * of_dma_configure - Setup DMA configuration
++ * @dev:	Device to apply DMA configuration
++ *
++ * Try to get devices's DMA configuration from DT and update it
++ * accordingly.
++ *
++ * In case if platform code need to use own special DMA configuration,it
++ * can use Platform bus notifier and handle BUS_NOTIFY_ADD_DEVICE event
++ * to fix up DMA configuration.
++ */
++static void of_dma_configure(struct device *dev)
++{
++	u64 dma_addr, paddr, size;
++	int ret;
++
++	dev->coherent_dma_mask = DMA_BIT_MASK(32);
++	if (!dev->dma_mask)
++		dev->dma_mask = &dev->coherent_dma_mask;
++
++	/*
++	 * if dma-coherent property exist, call arch hook to setup
++	 * dma coherent operations.
++	 */
++	if (of_dma_is_coherent(dev->of_node)) {
++		set_arch_dma_coherent_ops(dev);
++		dev_dbg(dev, "device is dma coherent\n");
++	}
++
++	/*
++	 * if dma-ranges property doesn't exist - just return else
++	 * setup the dma offset
++	 */
++	ret = of_dma_get_range(dev->of_node, &dma_addr, &paddr, &size);
++	if ((ret == -ENODEV) || (ret < 0)) {
++		dev_dbg(dev, "no dma range information to setup\n");
++		return;
++	}
++
++	/* DMA ranges found. Calculate and set dma_pfn_offset */
++	dev->dma_pfn_offset = PFN_DOWN(paddr - dma_addr);
++	dev_dbg(dev, "dma_pfn_offset(%#08lx)\n", dev->dma_pfn_offset);
++}
++
++/**
+  * of_platform_device_create_pdata - Alloc, initialize and register an of_device
+  * @np: pointer to node to create device for
+  * @bus_id: name to assign device
+@@ -214,9 +258,7 @@ static struct platform_device *of_platform_device_create_pdata(
+ #if defined(CONFIG_MICROBLAZE)
+ 	dev->archdata.dma_mask = 0xffffffffUL;
+ #endif
+-	dev->dev.coherent_dma_mask = DMA_BIT_MASK(32);
+-	if (!dev->dev.dma_mask)
+-		dev->dev.dma_mask = &dev->dev.coherent_dma_mask;
++	of_dma_configure(&dev->dev);
+ 	dev->dev.bus = &platform_bus_type;
+ 	dev->dev.platform_data = platform_data;
+ 
+diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+index fd4aee2..c7d9b1b 100644
+--- a/include/linux/dma-mapping.h
++++ b/include/linux/dma-mapping.h
+@@ -123,6 +123,13 @@ static inline int dma_coerce_mask_and_coherent(struct device *dev, u64 mask)
+ 
+ extern u64 dma_get_required_mask(struct device *dev);
+ 
++#ifndef set_arch_dma_coherent_ops
++static inline int set_arch_dma_coherent_ops(struct device *dev)
++{
++	return 0;
++}
++#endif
++
+ static inline unsigned int dma_get_max_seg_size(struct device *dev)
+ {
+ 	return dev->dma_parms ? dev->dma_parms->max_segment_size : 65536;
 -- 
-tejun
+1.7.9.5
+
