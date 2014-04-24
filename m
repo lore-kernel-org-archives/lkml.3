@@ -1,80 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459AbaDXKZv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:25:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:15578 "EHLO mga09.intel.com"
+	id S1754832AbaDXK0a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:26:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21072 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754283AbaDXKZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:25:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,918,1389772800"; 
-   d="scan'208";a="498798155"
-Message-ID: <5358E6A2.3020505@intel.com>
-Date: Thu, 24 Apr 2014 18:25:38 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754548AbaDXK0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 06:26:25 -0400
+Date: Thu, 24 Apr 2014 12:26:23 +0200
+From: Karel Zak <kzak@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        util-linux@vger.kernel.org
+Subject: [ANNOUNCE] util-linux v2.24.2
+Message-ID: <20140424102623.GF2405@x2.net.home>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
-References: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com> <20140418105354.GA29167@gmail.com> <53548008.3040504@intel.com> <20140422113545.GA14950@gmail.com> <CABPqkBTHv3U6L4fKOvsFcaWR8HcOEaqGGxRMRn-+O68a0BLCuA@mail.gmail.com> <20140424081408.GA7709@gmail.com>
-In-Reply-To: <20140424081408.GA7709@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 04:14 PM, Ingo Molnar wrote:
-> 
-> * Stephane Eranian <eranian@google.com> wrote:
-> 
->>>> Most of the codes without comments are hardware specific codes. 
->>>> The corresponding contents in Intel uncore documents are big 
->>>> tables/lists, nothing tricky/interesting. I really don't know how 
->>>> to comment these code.
->>>
->>> Have a look at other PMU drivers, such as
->>> arch/x86/kernel/cpu/perf_event_intel_rapl.c, which begin with a
->>> general explanation attached below.
->>
->> I think a more useful modularization would be to split that huge 
->> file (perf_event_intel_uncore.c) into smaller files like we do for 
->> the core PMU. There is just too much stuff in this file for my own 
->> taste. Hard to navigate and I spend quite some time looking at it 
->> and modifying it!
->>
->> You could follow the model of the core PMU support files.
->> You'd have a "core" file with the common routines, and then
->> a file perf processor:
->>     - perf_event_intel_uncore.c
->>     - perf_event_intel_snbep_uncore.c
->>     - perf_event_intel_nhmex_uncore.c
->>     - perf_event_intel_ivt_uncore.c
->>     - ...
->>
->> Each processor specific module, would be a kernel module. The core 
->> could be one too. Note that this would not alleviate the need for 
->> some basic descriptions at the beginning of each file outlining the 
->> PMU boxes exported to a minimum.
 
-Most of hardware specific codes in the Intel uncore driver are for SandyBridge/IvyBridge/Haswell. Uncore subsystem in these CPUs are similar. One module per CPU type means we have to duplicate lots of code. I don't think it's a good idea.
+ The util-linux stable bugfix release v2.23.2 is available at
 
-Regards
-Yan, Zheng
+   ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.24
 
-> 
-> This structure you outline sounds like a good first step, I like it.
-> 
-> To simplify this restructuring, initially we could even keep the core 
-> uncore bits in the core (ha!), to not have module-on-module 
-> dependencies.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
+ Feedback and bug reports, as always, are welcomed.
 
+  Karel
+
+
+Util-linux 2.24.2 Release Notes
+===============================
+
+addpart:
+   - minor man page improvements  [Ondrej Oprala]
+blockdev:
+   - Some minor corrections to the manual  [Bjarni Ingi Gislason]
+build-sys:
+   - don't connect _DEPENDENCIES and _LIBADD  [Karel Zak]
+   - fix .h.in usage in libblkid and libmount  [Karel Zak]
+   - libmount/python/__init__.py is always a dist file  [Ruediger Meier]
+chcpu:
+   - cleanup return codes  [Karel Zak]
+   - cleanup stdout/stderr usage  [Karel Zak]
+delpart:
+   - minor man page improvements  [Ondrej Oprala]
+dmesg:
+   - -w output not line-buffered  [Karel Zak]
+   - don't report EPIPE  [Karel Zak]
+docs:
+   - update AUTHORS file  [Karel Zak]
+fallocate:
+   - Clarify that space can also be deallocated  [Rodrigo Campos]
+fdformat:
+   - Some minor change to the manual  [Bjarni Ingi Gislason]
+fdisk:
+   - don't colorize "foo " prefixes  [Karel Zak]
+flock:
+   - use nfs4 fallback on EBADF too  [Karel Zak]
+fsck:
+   - Some typographical corrections to the manual  [Bjarni Ingi Gislason]
+fsck.minix:
+   - A few typographical corrections to the manual  [Bjarni Ingi Gislason]
+fstrim:
+   - add hint to man page  [Karel Zak]
+getopt:
+   - getopt.1 The usual doc dir is /usr/share/doc, not .../docs  [Ville Skyttä]
+hwclock:
+   - fix possible hang and other set_hardware_clock_exact() issues  [Chris MacGregor]
+include/closestream:
+   - don't wipe errno on EPIPE  [Karel Zak]
+ipcs:
+   - cleanup jumplabel stlyes  [Ruediger Meier]
+   - fix ipc_msg_get_info fallback case  [Ruediger Meier]
+   - fix ipc_sem_get_info fallback case  [Ruediger Meier]
+   - fix ipc_shm_get_info fallback case  [Ruediger Meier]
+   - fix memleak in ipc_*_get_info functions  [Ruediger Meier]
+isosize:
+   - A few typographical changes to the manual  [Bjarni Ingi Gislason]
+last:
+   - fix minor typos in the man page  [Ondrej Oprala]
+lib/sysfs:
+   - make dirent d_type usage more robust  [Karel Zak]
+libblkid:
+   - add extra checks to XFS prober  [Karel Zak]
+libfdisk:
+   - fix logical partition reorder command  [Karel Zak]
+   - make qsort_r() optional  [Karel Zak]
+   - properly implement read-only mode  [Karel Zak]
+libmount:
+   - FS id and parent ID could be zero  [Karel Zak]
+   - accept (deleted) path suffix in mountinfo file  [Karel Zak]
+   - initialize *root to NULL in mnt_table_get_root_fs  [Thomas Bächler]
+login:
+   - fix minor typos in the man page  [Ondrej Oprala]
+losetup:
+   - wait for udev  [Karel Zak]
+lscpu:
+   - cleanup, use _PATH_SYS_CPU/NODE  [Ruediger Meier]
+   - don't abort if cache size is unknown  [Ruediger Meier]
+   - don't assume filesystem supports d_type when searching for NUMA nodes  [Stewart Smith]
+   - read_hypervisor_dmi  only fallback to memory scan on x86/x86_64  [Stewart Smith]
+mkfs:
+   - Some typographical changes to the manual  [Bjarni Ingi Gislason]
+mkfs.bfs:
+   - One typographical correction to the manual  [Bjarni Ingi Gislason]
+mkfs.cramfs:
+   - Some typographical corrections to the manual  [Bjarni Ingi Gislason]
+mkfs.minix:
+   - Some typographical changes in the manual  [Bjarni Ingi Gislason]
+mkswap:
+   - Some minor typographical corrections to the manual  [Bjarni Ingi Gislason]
+more:
+   - improve formatting and wording of man page and help text  [Benno Schulenberg]
+mount:
+   - apply "nofail" to MNT_ERR_NOSOURCE libmount error  [Karel Zak]
+   - fix --all and nofail return code  [Karel Zak]
+   - mount.8 Some typographical and prefix corrections to the manual  [Bjarni Ingi Gislason]
+   - remove obsolete and confusing statement from mount.8  [Phillip Susi]
+   - update mount.8 about barrier mount options defaults  [Ruediger Meier]
+nologin:
+   - minor man page improvements  [Ondrej Oprala]
+nsenter:
+   - fix set{gid,uid} order,drop supplementary groups  [Karel Zak]
+partx:
+   - Improve the typesetting of the manual  [Bjarni Ingi Gislason]
+   - make dirent d_type usage more robust  [Karel Zak]
+po:
+   - merge changes  [Karel Zak]
+   - update cs.po (from translationproject.org)  [Petr Písař]
+   - update da.po (from translationproject.org)  [Joe Hansen]
+   - update de.po (from translationproject.org)  [Mario Blättermann]
+raw:
+   - Improve the typesetting of the manual  [Bjarni Ingi Gislason]
+renice:
+   - correct max priority in renice man page  [Phillip Susi]
+runuser:
+   - fix minor typos in the man page  [Ondrej Oprala]
+script:
+   - Also flush writes to timing file.  [Jesper Dahl Nyerup]
+   - time from end of read() call partially fixes #58  [Wolfgang Richter]
+scriptreplay:
+   - no need to skip first time value or last bytes fixes #58  [Wolfgang Richter]
+setarch:
+   - Fix ppc64le architectures  [Anton Blanchard]
+setpriv:
+   - Fix --apparmor-profile  [Andy Lutomirski]
+su:
+   - don't use kill(0, ...) when propagate signal  [Karel Zak]
+   - fix minor typos in the man page  [Ondrej Oprala]
+sulogin:
+   - minor man page improvements  [Ondrej Oprala]
+swaplabel:
+   - Improve the typesetting of the manual  [Bjarni Ingi Gislason]
+   - wrong version number in check  [Sami Kerola]
+switch_root:
+   - make dirent d_type usage more robust  [Karel Zak]
+   - verify initramfs by f_type, not devno  [Dave Reisner]
+tests:
+   - add fdisk 'f' command MBR test  [Karel Zak]
+   - add lscpu dump for ppc cpu with no cache size  [Ruediger Meier]
+   - clean up backport  [Karel Zak]
+   - cleanup, remove unused lscpu output  [Ruediger Meier]
+   - update Py parse mountinfo test  [Karel Zak]
+   - update libmount tabdiff tests  [Karel Zak]
+   - use old output format  [Karel Zak]
+umount:
+   - fix typo in usage  [Jonathan Liu]
+   - more robust success message for --all  [Karel Zak]
+unshare:
+   - include libmount.h to provide missing MS_* defines  [Ruediger Meier]
+utmpdump:
+   - minor man page improvements  [Ondrej Oprala]
+vipw:
+   - minor man page improvements  [Ondrej Oprala]
+
+-- 
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
