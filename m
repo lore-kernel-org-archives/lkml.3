@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177AbaDXTtN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 15:49:13 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:38905 "EHLO
+	id S1751747AbaDXTvw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 15:51:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38936 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203AbaDXTtK (ORCPT
+	with ESMTP id S1751138AbaDXTvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 15:49:10 -0400
-Date: Thu, 24 Apr 2014 12:52:03 -0700
+	Thu, 24 Apr 2014 15:51:51 -0400
+Date: Thu, 24 Apr 2014 12:54:44 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Robert Baldyga <r.baldyga@samsung.com>
-Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org, rob@landley.net,
-        myungjoo.ham@samsung.com, cw00.choi@samsung.com, dbaryshkov@gmail.com,
-        dwmw2@infradead.org, balbi@ti.com, grant.likely@linaro.org,
-        ldewangan@nvidia.com, kishon@ti.com, gg@slimlogic.co.uk,
-        anton@enomsg.org, jonghwa3.lee@samsung.com, rongjun.ying@csr.com,
-        linux@roeck-us.net, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        patches@opensource.wolfsonmicro.com, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, aaro.koskinen@iki.fi,
-        m.szyprowski@samsung.com, t.figa@samsung.com
-Subject: Re: [PATCH v2 00/13] extcon: major rework
-Message-ID: <20140424195203.GG12809@kroah.com>
-References: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
+To: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL 0/4] phy: fixes for 3.15 -rc2
+Message-ID: <20140424195444.GA25939@kroah.com>
+References: <1397877704-2755-1-git-send-email-kishon@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1397475984-28001-1-git-send-email-r.baldyga@samsung.com>
+In-Reply-To: <1397877704-2755-1-git-send-email-kishon@ti.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 14, 2014 at 01:46:11PM +0200, Robert Baldyga wrote:
-> This patchset adds many improvements to extcon class driver and extcon
-> provider drivers. It changes extcon API to faster and safer by replaceing
-> function taking extcon and cable names with functions working with
-> structures representing this objects.
+On Sat, Apr 19, 2014 at 08:51:40AM +0530, Kishon Vijay Abraham I wrote:
+> Hi Greg,
+> 
+> Here's the PULL requeust for PHY subsystem for this -rc cycle. It consissts of
+> a bunch of critical fixes in PHY.
+> 
+> Let me know if I have to change anything.
 
-What is "faster" exactly?  How did you measure this?  What benchmarks
-can be run to test this claim?
+Now all applied.
 
-thanks,
+> The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+> 
+>   Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git tags/for-3.15-rc2
+
+Ah crap, I took them as patches, not as a git pull request, very sorry
+about that, my fault.
 
 greg k-h
