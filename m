@@ -1,112 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480AbaDXLYT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:24:19 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:52409 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404AbaDXLYQ (ORCPT
+	id S932076AbaDXLZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:25:26 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:34324 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001AbaDXLZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 07:24:16 -0400
-Message-ID: <5358F458.1030300@hitachi.com>
-Date: Thu, 24 Apr 2014 20:24:08 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
-        mingo@redhat.com, Rob Landley <rob@landley.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>, systemtap@sourceware.org
-Subject: Re: [PATCH -tip v9 20/26] kprobes: Support blacklist functions in
- module
-References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140417081856.26341.53535.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140424085601.GA7768@gmail.com>
-In-Reply-To: <20140424085601.GA7768@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Thu, 24 Apr 2014 07:25:20 -0400
+X-Nat-Received: from [202.181.97.72]:37317 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1398338717.11958
+To: linux-security-module@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        miklos@szeredi.hu
+Subject: [PATCH (for 3.15) 4/5] TOMOYO: Handle the rename flags.
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <20140117144126.GG24171@tucsk.piliscsaba.szeredi.hu>
+	<53523D16.9020101@gmail.com>
+	<201404192108.JGJ78110.MFOFFHJOOVtLQS@I-love.SAKURA.ne.jp>
+	<CAJfpeguus=9GuvEKua4U-VF=nonzLgU5VFHqt8xRTTYU7RL-zQ@mail.gmail.com>
+	<201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>
+In-Reply-To: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>
+Message-Id: <201404242025.HDC69212.OFQJVOStHFLMFO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Thu, 24 Apr 2014 20:25:11 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 24042014 #7805673, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/24 17:56), Ingo Molnar wrote:
->> diff --git a/include/linux/module.h b/include/linux/module.h
->> index f520a76..2fdb673 100644
->> --- a/include/linux/module.h
->> +++ b/include/linux/module.h
->> @@ -16,6 +16,7 @@
->>  #include <linux/kobject.h>
->>  #include <linux/moduleparam.h>
->>  #include <linux/jump_label.h>
->> +#include <linux/kprobes.h>
-> 
-> This include breaks the x86 build:
-> 
->   CC      arch/x86/kernel/jump_label.o
->   In file included from arch/x86/kernel/jump_label.c:14:0:
->   /fast/mingo/tip/arch/x86/include/asm/kprobes.h:35:12: error: conflicting types for ‘kprobe_opcode_t' typedef u8 kprobe_opcode_t;
->   [...]
+>From 85b260e2e72962efb3991a606496cf237e739bb0 Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Thu, 24 Apr 2014 20:09:01 +0900
+Subject: [PATCH (for 3.15) 4/5] TOMOYO: Handle the rename flags.
 
-Hmm, this error seems very odd... and I don't see
+For TOMOYO, the RENAME_EXCHANGE flag means "check swapname permission once
+rather than checking rename permission twice". This patch adds swapname
+permission to TOMOYO.
 
-> 
-> But the #include kprobes.h is unnecessary to begin with, as no kprobe 
-> specific types are used.
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ security/tomoyo/common.c |    1 +
+ security/tomoyo/common.h |    5 ++++-
+ security/tomoyo/file.c   |   10 +++++++++-
+ security/tomoyo/tomoyo.c |    4 +++-
+ security/tomoyo/util.c   |    1 +
+ 5 files changed, 18 insertions(+), 3 deletions(-)
 
-OK, anyway I'll remove that.
-
-> 
->>  #include <linux/export.h>
->>  
->>  #include <linux/percpu.h>
->> @@ -357,6 +358,10 @@ struct module {
->>  	unsigned int num_ftrace_callsites;
->>  	unsigned long *ftrace_callsites;
->>  #endif
->> +#ifdef CONFIG_KPROBES
->> +	unsigned int num_kprobe_blacklist;
->> +	unsigned long  *kprobe_blacklist;
->> +#endif
-> 
-> There's a small coding style problem here.
-> 
-> More importantly, I think more should be done to make sure that module 
-> symbols are marked properly: since the module is going to register the 
-> kprobes handler, that would be a perfect place to emit a warning, 
-> right?
-> 
-> In fact, why don't kprobe handlers get added to the exclusion list 
-> explicitly, when the handler gets registered? With such an approach 
-> handlers are automatically nokprobe and don't need any annotation - 
-> which is a far more robust usage model.
-
-Ah, I see. That is because there are some local functions called only
-from the kprobe handlers. It is easy to blacklist the kprobe handlers
-itself, but not for the functions which are only called from them. :(
-
-So, I can add a patch which automatically add handler functions to
-blacklist. But that is another story. I think this patch is also
-required.
-
-Thank you,
-
-> 
-> So I'm skipping this patch and the next one that makes use of it.
-> 
-> Thanks,
-> 
-> 	Ingo
-> 
-
-
+diff --git a/security/tomoyo/common.c b/security/tomoyo/common.c
+index 283862a..86747a7 100644
+--- a/security/tomoyo/common.c
++++ b/security/tomoyo/common.c
+@@ -36,6 +36,7 @@ const char * const tomoyo_mac_keywords[TOMOYO_MAX_MAC_INDEX
+ 	[TOMOYO_MAC_FILE_MKCHAR]     = "mkchar",
+ 	[TOMOYO_MAC_FILE_LINK]       = "link",
+ 	[TOMOYO_MAC_FILE_RENAME]     = "rename",
++	[TOMOYO_MAC_FILE_SWAPNAME]   = "swapname",
+ 	[TOMOYO_MAC_FILE_CHMOD]      = "chmod",
+ 	[TOMOYO_MAC_FILE_CHOWN]      = "chown",
+ 	[TOMOYO_MAC_FILE_CHGRP]      = "chgrp",
+diff --git a/security/tomoyo/common.h b/security/tomoyo/common.h
+index b897d48..0349ae9 100644
+--- a/security/tomoyo/common.h
++++ b/security/tomoyo/common.h
+@@ -276,6 +276,7 @@ enum tomoyo_network_acl_index {
+ enum tomoyo_path2_acl_index {
+ 	TOMOYO_TYPE_LINK,
+ 	TOMOYO_TYPE_RENAME,
++	TOMOYO_TYPE_SWAPNAME,
+ 	TOMOYO_TYPE_PIVOT_ROOT,
+ 	TOMOYO_MAX_PATH2_OPERATION
+ };
+@@ -335,6 +336,7 @@ enum tomoyo_mac_index {
+ 	TOMOYO_MAC_FILE_MKCHAR,
+ 	TOMOYO_MAC_FILE_LINK,
+ 	TOMOYO_MAC_FILE_RENAME,
++	TOMOYO_MAC_FILE_SWAPNAME,
+ 	TOMOYO_MAC_FILE_CHMOD,
+ 	TOMOYO_MAC_FILE_CHOWN,
+ 	TOMOYO_MAC_FILE_CHGRP,
+@@ -730,7 +732,8 @@ struct tomoyo_mkdev_acl {
+ };
+ 
+ /*
+- * Structure for "file rename", "file link" and "file pivot_root" directive.
++ * Structure for "file rename", "file swapname", "file link" and
++ * "file pivot_root" directive.
+  */
+ struct tomoyo_path2_acl {
+ 	struct tomoyo_acl_info head; /* type = TOMOYO_TYPE_PATH2_ACL */
+diff --git a/security/tomoyo/file.c b/security/tomoyo/file.c
+index 4003907..c7d9546 100644
+--- a/security/tomoyo/file.c
++++ b/security/tomoyo/file.c
+@@ -38,6 +38,7 @@ const u8 tomoyo_pnnn2mac[TOMOYO_MAX_MKDEV_OPERATION] = {
+ const u8 tomoyo_pp2mac[TOMOYO_MAX_PATH2_OPERATION] = {
+ 	[TOMOYO_TYPE_LINK]       = TOMOYO_MAC_FILE_LINK,
+ 	[TOMOYO_TYPE_RENAME]     = TOMOYO_MAC_FILE_RENAME,
++	[TOMOYO_TYPE_SWAPNAME]   = TOMOYO_MAC_FILE_SWAPNAME,
+ 	[TOMOYO_TYPE_PIVOT_ROOT] = TOMOYO_MAC_FILE_PIVOT_ROOT,
+ };
+ 
+@@ -874,7 +875,7 @@ int tomoyo_mkdev_perm(const u8 operation, struct path *path,
+ }
+ 
+ /**
+- * tomoyo_path2_perm - Check permission for "rename", "link" and "pivot_root".
++ * tomoyo_path2_perm - Check permission for "rename", "swapname", "link" and "pivot_root".
+  *
+  * @operation: Type of operation.
+  * @path1:      Pointer to "struct path".
+@@ -916,6 +917,13 @@ int tomoyo_path2_perm(const u8 operation, struct path *path1,
+ 		tomoyo_add_slash(&buf1);
+ 		tomoyo_add_slash(&buf2);
+ 		break;
++	case TOMOYO_TYPE_SWAPNAME:
++		/* Cross rename requires both inodes to exist. */
++		if (S_ISDIR(path1->dentry->d_inode->i_mode))
++			tomoyo_add_slash(&buf1);
++		if (S_ISDIR(path2->dentry->d_inode->i_mode))
++			tomoyo_add_slash(&buf2);
++		break;
+ 	}
+ 	r.obj = &obj;
+ 	r.param_type = TOMOYO_TYPE_PATH2_ACL;
+diff --git a/security/tomoyo/tomoyo.c b/security/tomoyo/tomoyo.c
+index ac7dd97..8e9fb4a 100644
+--- a/security/tomoyo/tomoyo.c
++++ b/security/tomoyo/tomoyo.c
+@@ -299,7 +299,9 @@ static int tomoyo_path_rename(struct path *old_parent,
+ {
+ 	struct path path1 = { old_parent->mnt, old_dentry };
+ 	struct path path2 = { new_parent->mnt, new_dentry };
+-	return tomoyo_path2_perm(TOMOYO_TYPE_RENAME, &path1, &path2);
++	return tomoyo_path2_perm((flags & RENAME_EXCHANGE) ?
++				 TOMOYO_TYPE_SWAPNAME : TOMOYO_TYPE_RENAME,
++				 &path1, &path2);
+ }
+ 
+ /**
+diff --git a/security/tomoyo/util.c b/security/tomoyo/util.c
+index 2952ba5..f0ac0be 100644
+--- a/security/tomoyo/util.c
++++ b/security/tomoyo/util.c
+@@ -34,6 +34,7 @@ const u8 tomoyo_index2category[TOMOYO_MAX_MAC_INDEX] = {
+ 	[TOMOYO_MAC_FILE_MKCHAR]     = TOMOYO_MAC_CATEGORY_FILE,
+ 	[TOMOYO_MAC_FILE_LINK]       = TOMOYO_MAC_CATEGORY_FILE,
+ 	[TOMOYO_MAC_FILE_RENAME]     = TOMOYO_MAC_CATEGORY_FILE,
++	[TOMOYO_MAC_FILE_SWAPNAME]   = TOMOYO_MAC_CATEGORY_FILE,
+ 	[TOMOYO_MAC_FILE_CHMOD]      = TOMOYO_MAC_CATEGORY_FILE,
+ 	[TOMOYO_MAC_FILE_CHOWN]      = TOMOYO_MAC_CATEGORY_FILE,
+ 	[TOMOYO_MAC_FILE_CHGRP]      = TOMOYO_MAC_CATEGORY_FILE,
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+1.7.9.5
