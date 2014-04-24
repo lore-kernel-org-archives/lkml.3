@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581AbaDXH0Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 03:26:24 -0400
-Received: from mail-ee0-f52.google.com ([74.125.83.52]:56462 "EHLO
-	mail-ee0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162AbaDXH0W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 03:26:22 -0400
-Message-ID: <1398324378.6486.5.camel@marge.simpson.net>
-Subject: Re: [ANNOUNCE] 3.14-rt1
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-rt-users <linux-rt-users@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, rostedt@goodmis.org,
-        John Kacur <jkacur@redhat.com>
-Date: Thu, 24 Apr 2014 09:26:18 +0200
-In-Reply-To: <5358B960.7040106@linutronix.de>
-References: <20140411185739.GA6644@linutronix.de>
-	 <1398312391.5415.16.camel@marge.simpson.net>
-	 <5358B960.7040106@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1752362AbaDXHaW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 03:30:22 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39924 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751328AbaDXHaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 03:30:20 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: <dan.j.williams@intel.com>, <vinod.koul@intel.com>, <nsekhar@ti.com>,
+        <joelf@ti.com>
+CC: <dmaengine@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-omap@vger.kernel.org>,
+        <davinci-linux-open-source@linux.davincidsp.com>
+Subject: [RESEND] dmaengine: edma: Add channel number to debug prints
+Date: Thu, 24 Apr 2014 10:29:50 +0300
+Message-ID: <1398324590-31752-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.9.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-24 at 09:12 +0200, Sebastian Andrzej Siewior wrote: 
-> On 04/24/2014 06:06 AM, Mike Galbraith wrote:
-> > Turning lockdep on, it says it's busted.
-> 
-> http://www.spinics.net/lists/linux-rt-users/msg11179.html
+It helps to identify issues if we have some information regarding to the
+channel which the event is associated.
 
-I was heading toward the same conclusion while regression testing.
-Guess I can stop that.
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Joel Fernandes <joelf@ti.com>
+---
+Hi Vinod,
 
--Mike
+rebased on:
+git://git.infradead.org/users/vkoul/slave-dma.git next
+
+On top of:
+406efb1a745c dmaengine: edma: No need save/restore interrupt flags during...
+
+Regards,
+Peter
+
+ drivers/dma/edma.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/dma/edma.c b/drivers/dma/edma.c
+index fa87fd52b0ad..473155d34d7b 100644
+--- a/drivers/dma/edma.c
++++ b/drivers/dma/edma.c
+@@ -183,7 +183,8 @@ static void edma_execute(struct edma_chan *echan)
+ 	}
+ 
+ 	if (edesc->processed <= MAX_NR_SG) {
+-		dev_dbg(dev, "first transfer starting %d\n", echan->ch_num);
++		dev_dbg(dev, "first transfer starting on channel %d\n",
++			echan->ch_num);
+ 		edma_start(echan->ch_num);
+ 	} else {
+ 		dev_dbg(dev, "chan: %d: completed %d elements, resuming\n",
+@@ -197,7 +198,7 @@ static void edma_execute(struct edma_chan *echan)
+ 	 * MAX_NR_SG
+ 	 */
+ 	if (echan->missed) {
+-		dev_dbg(dev, "missed event in execute detected\n");
++		dev_dbg(dev, "missed event on channel %d\n", echan->ch_num);
+ 		edma_clean_channel(echan->ch_num);
+ 		edma_stop(echan->ch_num);
+ 		edma_start(echan->ch_num);
+@@ -779,7 +780,7 @@ static int edma_alloc_chan_resources(struct dma_chan *chan)
+ 	echan->alloced = true;
+ 	echan->slot[0] = echan->ch_num;
+ 
+-	dev_dbg(dev, "allocated channel for %u:%u\n",
++	dev_dbg(dev, "allocated channel %d for %u:%u\n", echan->ch_num,
+ 		EDMA_CTLR(echan->ch_num), EDMA_CHAN_SLOT(echan->ch_num));
+ 
+ 	return 0;
+-- 
+1.9.2
 
