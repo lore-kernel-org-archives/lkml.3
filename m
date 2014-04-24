@@ -1,78 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509AbaDXLyf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:54:35 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46308 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753112AbaDXIwV (ORCPT
+	id S1756720AbaDXLzi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:55:38 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:37314 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753427AbaDXLzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:21 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Florian Vaussard <florian.vaussard@epfl.ch>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 019/182] [media] omap3isp: preview: Fix the crop margins
-Date: Thu, 24 Apr 2014 09:49:04 +0100
-Message-Id: <1398329507-5911-20-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 07:55:21 -0400
+From: Boris BREZILLON <boris.brezillon@free-electrons.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Randy Dunlap <rdunlap@infradead.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
+        kevin@allwinnertech.com, devicetree@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+Subject: [PATCH 0/2] i2c: sunxi: add P2WI controller support
+Date: Thu, 24 Apr 2014 13:55:14 +0200
+Message-Id: <1398340516-29547-1-git-send-email-boris.brezillon@free-electrons.com>
+X-Mailer: git-send-email 1.8.3.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+Hello,
 
-------------------
+This series adds support for the P2WI block used by some Allwinner
+boards to interface with the AXP221 PMIC.
 
-From: Florian Vaussard <florian.vaussard@epfl.ch>
+I'm still not sure on how this bus should be integrated into the I2C
+subsystem:
+There was a discussion about adding new I2C flags: [1], but, I want
+to reuse the existing axp209 driver [2] which in turn uses a regmap,
+and the regmap over I2C driver does not support setting specific flags
+when launching I2C transfer (thought this could be added to the regmap
+code ;-)).
 
-commit 8b57b9669aa884ac75b8d09c251d6b1755533c15 upstream.
+I decided to get rid of these new flags (I2C_PUSHPULL,
+I2C_M_DROP_ADDRESS, ...) in my first proposal, but let me know if
+you think this should be re-introduced.
 
-Commit 3fdfedaaa "[media] omap3isp: preview: Lower the crop margins"
-accidentally changed the previewer's cropping, causing the previewer
-to miss four pixels on each line, thus corrupting the final image.
-Restored the removed setting.
+Moreover, some parts are missing (either because I need some informations
+on the HW blocks or because I don't know how it should be done):
+ - the bus frequency config (the current version hardcode the bus frequency
+   config):
+   I need informations about the clk tree used by APB0 clks in order to
+   properly implement missing clk drivers and define missing DT nodes.
+ - the initialization (or I2C to P2WI mode switch) process:
+   A specific value has to be written in one of the slave device register
+   to switch the device from I2C to P2WI mode.
+   The switch process is handled by the P2WI controller block (using the
+   P2WI_PMCR register).
+   The problem is that I don't know which register should be written and
+   what's the value to switch to the P2WI mode (only the device driver
+   knows it).
+   How about encoding this in the DT, and then parse the child node
+   during probe ?
+ - address consistency check:
+   I don't know when the slave device address should be saved in the p2wi
+   struct (during probe using DT child node informations, at the first
+   transfer, ...)
 
-Signed-off-by: Florian Vaussard <florian.vaussard@epfl.ch>
-Signed-off-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/media/platform/omap3isp/isppreview.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
 
-diff --git a/drivers/media/platform/omap3isp/isppreview.c b/drivers/media/platform/omap3isp/isppreview.c
-index cd8831a..e2e4610 100644
---- a/drivers/media/platform/omap3isp/isppreview.c
-+++ b/drivers/media/platform/omap3isp/isppreview.c
-@@ -1079,6 +1079,7 @@ static void preview_config_input_format(struct isp_prev_device *prev,
-  */
- static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
- {
-+	const struct v4l2_mbus_framefmt *format = &prev->formats[PREV_PAD_SINK];
- 	struct isp_device *isp = to_isp_device(prev);
- 	unsigned int sph = prev->crop.left;
- 	unsigned int eph = prev->crop.left + prev->crop.width - 1;
-@@ -1086,6 +1087,14 @@ static void preview_config_input_size(struct isp_prev_device *prev, u32 active)
- 	unsigned int elv = prev->crop.top + prev->crop.height - 1;
- 	u32 features;
- 
-+	if (format->code != V4L2_MBUS_FMT_Y8_1X8 &&
-+	    format->code != V4L2_MBUS_FMT_Y10_1X10) {
-+		sph -= 2;
-+		eph += 2;
-+		slv -= 2;
-+		elv += 2;
-+	}
-+
- 	features = (prev->params.params[0].features & active)
- 		 | (prev->params.params[1].features & ~active);
- 
+
+Best Regards,
+
+Boris
+
+[1] http://www.spinics.net/lists/linux-i2c/msg15066.html
+[2] http://comments.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/8947
+
+Boris BREZILLON (2):
+  i2c: sunxi: add P2WI DT bindings documentation
+  i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface) controller support
+
+ .../devicetree/bindings/i2c/i2c-sunxi-p2wi.txt     |  27 ++
+ drivers/i2c/busses/Kconfig                         |  12 +
+ drivers/i2c/busses/Makefile                        |   1 +
+ drivers/i2c/busses/i2c-sunxi-p2wi.c                | 317 +++++++++++++++++++++
+ 4 files changed, 357 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
+ create mode 100644 drivers/i2c/busses/i2c-sunxi-p2wi.c
+
 -- 
-1.9.1
+1.8.3.2
 
