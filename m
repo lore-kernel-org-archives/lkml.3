@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220AbaDXI5z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:57:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47193 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932156AbaDXI4n (ORCPT
+	id S1755255AbaDXI66 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:58:58 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:47538 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752590AbaDXI6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:56:43 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 182/182] ath9k: fix ready time of the multicast buffer queue
-Date: Thu, 24 Apr 2014 09:51:47 +0100
-Message-Id: <1398329507-5911-183-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 04:58:53 -0400
+Date: Thu, 24 Apr 2014 10:58:47 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>,
+        "David S. Miller" <davem@davemloft.net>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -tip v9 22/26] kprobes/x86: Use kprobe_blacklist for
+ .kprobes.text and .entry.text
+Message-ID: <20140424085847.GB7768@gmail.com>
+References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
+ <20140417081910.26341.58385.stgit@ltc230.yrl.intra.hitachi.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140417081910.26341.58385.stgit@ltc230.yrl.intra.hitachi.co.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
 
-From: Felix Fietkau <nbd@openwrt.org>
+> Use kprobe_blackpoint for blacklisting .entry.text and .kprobees.text
+> instead of arch_within_kprobe_blacklist. This also makes them visible
+> via (debugfs)/kprobes/blacklist.
 
-commit 3b3e0efb5c72c4fc940af50b33626b8a78a907dc upstream.
+This description references kprobe_blackpoint, which name I don't 
+think exists anymore.
 
-qi->tqi_readyTime is written directly to registers that expect
-microseconds as unit instead of TU.
-When setting the CABQ ready time, cur_conf->beacon_interval is in TU, so
-convert it to microseconds before passing it to ath9k_hw.
+Thanks,
 
-This should hopefully fix some Tx DMA issues with buffered multicast
-frames in AP mode.
-
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
-[ luis: backported to 3.11: adjusted context ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/net/wireless/ath/ath9k/xmit.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
-index f0aaeb2..7542d0f 100644
---- a/drivers/net/wireless/ath/ath9k/xmit.c
-+++ b/drivers/net/wireless/ath/ath9k/xmit.c
-@@ -1576,7 +1576,7 @@ int ath_cabq_update(struct ath_softc *sc)
- 	else if (sc->config.cabqReadytime > ATH9K_READY_TIME_HI_BOUND)
- 		sc->config.cabqReadytime = ATH9K_READY_TIME_HI_BOUND;
- 
--	qi.tqi_readyTime = (cur_conf->beacon_interval *
-+	qi.tqi_readyTime = (TU_TO_USEC(cur_conf->beacon_interval) *
- 			    sc->config.cabqReadytime) / 100;
- 	ath_txq_update(sc, qnum, &qi);
- 
--- 
-1.9.1
-
+	Ingo
