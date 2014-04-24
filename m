@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275AbaDXOIA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:08:00 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:31806 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753344AbaDXOH7 (ORCPT
+	id S1757334AbaDXOJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:09:06 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:55293 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757AbaDXOJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:07:59 -0400
-Date: Thu, 24 Apr 2014 15:08:02 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jason Low <jason.low2@hp.com>, "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "aswin@hp.com" <aswin@hp.com>,
-        "chegu_vinod@hp.com" <chegu_vinod@hp.com>
-Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
- balance if there are runnable tasks
-Message-ID: <20140424140802.GM2500@e103034-lin>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
- <1398303035-18255-4-git-send-email-jason.low2@hp.com>
- <20140424103059.GL2500@e103034-lin>
- <20140424113231.GR11096@twins.programming.kicks-ass.net>
+	Thu, 24 Apr 2014 10:09:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424113231.GR11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAPDyKFr02yyhGNncYX2AgBXTA3Sc0AGQcExjtLvQ5QU0_=YJwg@mail.gmail.com>
+References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
+	<1398334403-26181-4-git-send-email-geert+renesas@glider.be>
+	<CAPDyKFr02yyhGNncYX2AgBXTA3Sc0AGQcExjtLvQ5QU0_=YJwg@mail.gmail.com>
+Date: Thu, 24 Apr 2014 16:09:00 +0200
+X-Google-Sender-Auth: lak9z_qkksoYZTqiWSWaqGreojo
+Message-ID: <CAMuHMdV=g13MnhhUDk9CFT+J5QPEryzO9HRSJFALJMfKi1Dn8w@mail.gmail.com>
+Subject: Re: [PATCH/RFC 3/4] of/clk: Register clocks suitable for Runtime PM
+ with the PM core
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Felipe Balbi <balbi@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux-sh list <linux-sh@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tomasz Figa <tomasz.figa@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 12:32:31PM +0100, Peter Zijlstra wrote:
-> On Thu, Apr 24, 2014 at 11:30:59AM +0100, Morten Rasmussen wrote:
-> > On Thu, Apr 24, 2014 at 02:30:35AM +0100, Jason Low wrote:
-> > > @@ -6704,7 +6703,12 @@ static int idle_balance(struct rq *this_rq)
-> > >  		interval = msecs_to_jiffies(sd->balance_interval);
-> > >  		if (time_after(next_balance, sd->last_balance + interval))
-> > >  			next_balance = sd->last_balance + interval;
-> > > -		if (pulled_task)
-> > > +
-> > > +		/*
-> > > +		 * Stop searching for tasks to pull if there are
-> > > +		 * now runnable tasks on this rq.
-> > > +		 */
-> > > +		if (pulled_task || this_rq->nr_running > 0)
-> > 
-> > Should this be cfs tasks instead?
-> > 
-> > +		if (pulled_task || this_rq->cfs.h_nr_running > 0)
-> > 
-> > 3.15-rc2 commit 35805ff8f4fc535ac85330170d3c56829c87c677 seems to
-> > indicate that using rq->nr_running may lead to trouble.
-> > 
-> > The other two patches look good to me.
-> 
-> No, this really wants to be nr_running, we want to bail the idle
-> balancer when there's anything runnable present.
-> 
-> Note how out: is very careful to return -1 (which results in RETRY_TASK)
-> when rq->nr_running != rq->cfs.h_nr_running.
-> 
-> That same out: test also makes problem that commit fixes impossible
-> again.
+Hi Ulf,
 
-I should have done my homework properly. I may be missing something, but
-don't we risk bailing out of idle balance if there is a throttled rt
-task and go straight to idle?
+On Thu, Apr 24, 2014 at 3:11 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
+>> +static int of_clk_register(struct device *dev, struct clk *clk)
+>> +{
+>> +       int error;
+>> +
+>> +       if (!dev->pm_domain) {
+>> +               error = pm_clk_create(dev);
+>> +               if (error)
+>> +                       return error;
+>> +
+>> +               dev->pm_domain = &of_clk_pm_domain;
+>
+> I am concerned about how this will work in conjunction with the
+> generic power domain.
+>
+> A device can't reside in more than one pm_domain; thus I think it
+> would be better to always use the generic power domain and not have a
+> specific one for clocks. Typically the genpd should invoke
+> pm_clk_resume|suspend from it's runtime PM callbacks.
+
+On shmobile SoCs supporting power domains, the power domain is
+overridden later by calling rmobile_add_devices_to_domains() and friends.
+
+My patch doesn't change that: the code behaved the same in the
+non-multi-platform case before: dev->pm_domain as set from
+drivers/sh/pm_runtime.c was overridden later.
+
+I'll have a deeper look into the power domain code later anyway.
+
+Thanks!
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
