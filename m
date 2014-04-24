@@ -1,180 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaDXHqH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 03:46:07 -0400
-Received: from imx9.toshiba.co.jp ([202.33.96.51]:36554 "EHLO
-	imx9.toshiba.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752162AbaDXHqF (ORCPT
+	id S1752772AbaDXHqp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 03:46:45 -0400
+Received: from mail-ee0-f54.google.com ([74.125.83.54]:49989 "EHLO
+	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752162AbaDXHqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 03:46:05 -0400
-X-Greylist: delayed 863 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Apr 2014 03:46:05 EDT
-Message-Id: <201404240725.s3O7PrUv003720@toshiba.co.jp>
-Date: Thu, 24 Apr 2014 16:25:37 +0900
-From: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 24 Apr 2014 03:46:42 -0400
+Message-ID: <5358C15E.9030200@suse.cz>
+Date: Thu, 24 Apr 2014 09:46:38 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>, tglx@linutronix.de,
-        fweisbec@gmail.com, peterz@infradead.org, mingo@kernel.org,
-        tj@kernel.org, lizefan@huawei.com
-Cc: linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        cgroups@vger.kernel.org
-Subject: Re: [RFC 0/4] Migrate timers away from cpuset on setting cpuset.quiesce
-References: <cover.1395322529.git.viresh.kumar@linaro.org>
-In-Reply-To: <cover.1395322529.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: shuah.kh@samsung.com, linux@roeck-us.net,
+        =?UTF-8?B?SG9sZ2VyIEhvZmZzdA==?= =?UTF-8?B?w6R0dGU=?= 
+	<holger.hoffstaette@googlemail.com>
+CC: stable@vger.kernel.org, satoru.takeuchi@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3.12 00/72] 3.12.18-stable review
+References: <cover.1397812482.git.jslaby@suse.cz> <5351A355.1030607@samsung.com>
+In-Reply-To: <5351A355.1030607@samsung.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Viresh Kumar,
-
-I tried your set of patches for isolating particular CPU cores from unpinned
-timers. On x86_64 they were working fine, however I found out that on ARM
-they would fail under the following test:
-
-# mount -t cpuset none /cpuset
-# cd /cpuset
-# mkdir rt
-# cd rt
-# echo 1 > cpus
-# echo 1 > cpu_exclusive
-# cd
-# taskset 0x2 ./setquiesce.sh  <--- contains "echo 1 > /cpuset/rt/quiesce"
-[   75.622375] ------------[ cut here ]------------
-[   75.627258] WARNING: CPU: 0 PID: 0 at kernel/locking/lockdep.c:2595 __migrate_hrtimers+0x17c/0x1bc()
-[   75.636840] DEBUG_LOCKS_WARN_ON(current->hardirq_context)
-[   75.636840] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.0-rc1-37710-g23c8f02 #1
-[   75.649627] [<c0014d18>] (unwind_backtrace) from [<c00119e8>] (show_stack+0x10/0x14)
-[   75.649627] [<c00119e8>] (show_stack) from [<c065b61c>] (dump_stack+0x78/0x94)
-[   75.662689] [<c065b61c>] (dump_stack) from [<c003e9a4>] (warn_slowpath_common+0x60/0x84)
-[   75.670410] [<c003e9a4>] (warn_slowpath_common) from [<c003ea24>] (warn_slowpath_fmt+0x30/0x40)
-[   75.677673] [<c003ea24>] (warn_slowpath_fmt) from [<c005d7b0>] (__migrate_hrtimers+0x17c/0x1bc)
-[   75.677673] [<c005d7b0>] (__migrate_hrtimers) from [<c009e004>] (generic_smp_call_function_single_interrupt+0x8c/0x104)
-[   75.699645] [<c009e004>] (generic_smp_call_function_single_interrupt) from [<c00134d0>] (handle_IPI+0xa4/0x16c)
-[   75.706970] [<c00134d0>] (handle_IPI) from [<c0008614>] (gic_handle_irq+0x54/0x5c)
-[   75.715087] [<c0008614>] (gic_handle_irq) from [<c0012624>] (__irq_svc+0x44/0x5c)
-[   75.725311] Exception stack(0xc08a3f58 to 0xc08a3fa0)
-....
-
-I also backported your patches to Linux 3.10.y and found the same problem
-both in ARM and x86_64. However, I think I figured out the reason for those
-errors. Please, could you check the patch below (it applies on the top of
-your tree, branch isolate-cpusets) and let me know what you think?
-
-Thanks,
-Daniel
-
--------------------------PATCH STARTS HERE---------------------------------
-cpuset: quiesce: change irq disable/enable by irq save/restore
-
-The function __migrate_timers can be called under interrupt context
-or thread context depending on the core where the system call was
-executed. In case it executes under interrupt context, it
-seems a bad idea to leave interrupts enabled after migrating the
-timers. In fact, this caused kernel errors on the ARM architecture and
-on the x86_64 architecture with the 3.10 kernel (backported version
-of the cpuset-quiesce patch).
-
-Signed-off-by: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
-Signed-off-by: Yoshitake Kobayashi <yoshitake.kobayashi@toshiba.co.jp>
----
- kernel/hrtimer.c | 5 +++--
- kernel/timer.c   | 5 +++--
- 2 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index e8cd1db..abb1707 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -1701,8 +1701,9 @@ static void __migrate_hrtimers(int scpu, bool remove_pinned)
- 	struct hrtimer_clock_base *clock_base;
- 	unsigned int active_bases;
- 	int i;
-+	unsigned long flags;
-
--	local_irq_disable();
-+	local_irq_save(flags);
- 	old_base = &per_cpu(hrtimer_bases, scpu);
- 	new_base = &__get_cpu_var(hrtimer_bases);
- 	/*
-@@ -1722,7 +1723,7 @@ static void __migrate_hrtimers(int scpu, bool remove_pinned)
-
- 	/* Check, if we got expired work to do */
- 	__hrtimer_peek_ahead_timers();
--	local_irq_enable();
-+	local_irq_restore(flags);
- }
- #endif /* CONFIG_HOTPLUG_CPU || CONFIG_CPUSETS */
-
-diff --git a/kernel/timer.c b/kernel/timer.c
-index 4676a07..2715b7d 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -1644,6 +1644,7 @@ static void __migrate_timers(int cpu, bool remove_pinned)
- 	struct tvec_base *old_base;
- 	struct tvec_base *new_base;
- 	int i;
-+	unsigned long flags;
-
- 	old_base = per_cpu(tvec_bases, cpu);
- 	new_base = get_cpu_var(tvec_bases);
-@@ -1651,7 +1652,7 @@ static void __migrate_timers(int cpu, bool remove_pinned)
- 	 * The caller is globally serialized and nobody else
- 	 * takes two locks at once, deadlock is not possible.
- 	 */
--	spin_lock_irq(&new_base->lock);
-+	spin_lock_irqsave(&new_base->lock, flags);
- 	spin_lock_nested(&old_base->lock, SINGLE_DEPTH_NESTING);
-
- 	BUG_ON(old_base->running_timer);
-@@ -1671,7 +1672,7 @@ static void __migrate_timers(int cpu, bool remove_pinned)
- 	}
-
- 	spin_unlock(&old_base->lock);
--	spin_unlock_irq(&new_base->lock);
-+	spin_unlock_irqrestore(&new_base->lock, flags);
- 	put_cpu_var(tvec_bases);
- }
- #endif /* CONFIG_HOTPLUG_CPU || CONFIG_CPUSETS */
--- 
-1.8.1.1
--------------------------PATCH ENDS HERE---------------------------------
-
-On 2014/03/20 22:48, Viresh Kumar wrote:
-> For networking platforms we need to provide one isolated CPU per user space data
-> plane thread. These CPUs should not be interrupted by kernel at all unless
-> userspace has requested for some syscalls. And so must live in isolated mode.
-> Currently, there are background kernel activities that are running on almost
-> every CPU, like: timers/hrtimers/watchdogs/etc, and these are required to be
-> migrated to other CPUs.
+On 04/19/2014 12:12 AM, Shuah Khan wrote:
+> On 04/18/2014 03:21 AM, Jiri Slaby wrote:
+>> This is the start of the stable review cycle for the 3.12.18 release.
+>> There are 72 patches in this series, all will be posted as a response
+>> to this one.  If anyone has any issues with these being applied, please
+>> let me know.
+>>
+>> Responses should be made by Wed Apr 23 09:14:42 2014
+>> Anything received after that time might be too late.
+>>
+>> The whole patch series can be found in one patch at:
+>>     http://kernel.org/pub/linux/kernel/people/jirislaby/stable-review/patch-3.12.18-rc1.xz
+>>
+>> and the diffstat can be found below.
+>>
+>> thanks,
+>> js
+>>
 > 
-> This patchset tries to migrate un-pinned timers away in the first attempt. And
-> support for migrating others like hrtimers/workqueues/etc would be added later.
-> 
-> This has only went through basic testing currently on ARM Samsung Exynos board
-> which only has two CPUs. Separate cpusets were created for these two CPUs and
-> then timers were migrated from one cpuset to other.
-> 
-> This option was earlier suggested by Peter Z. here.
-> 
-> https://lkml.org/lkml/2014/1/15/186
-> 
-> Please provide your inputs on how this can be improved..
-> 
-> Viresh Kumar (4):
->   timer: track pinned timers with TIMER_PINNED flag
->   timer: don't migrate pinned timers
->   timer: create timer_quiesce_cpu() for cpusets.quiesce option
->   cpuset: Add cpusets.quiesce option
-> 
->  include/linux/timer.h | 10 +++---
->  kernel/cpuset.c       | 56 +++++++++++++++++++++++++++++++
->  kernel/timer.c        | 92 +++++++++++++++++++++++++++++++++++++++++----------
->  3 files changed, 136 insertions(+), 22 deletions(-)
-> 
+> Compiled and booted on my system. No regressions in dmesg.
+
+Thank you all for testing!
 
 -- 
-Toshiba Corporate Software Engineering Center
-Daniel SANGORRIN
-E-mail:  daniel.sangorrin@toshiba.co.jp
+js
+suse labs
