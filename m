@@ -1,81 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758293AbaDXQcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:32:13 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:59755 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717AbaDXQcG (ORCPT
+	id S1758435AbaDXQdG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:33:06 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:34268 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758390AbaDXQdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:32:06 -0400
-From: Andy Gross <agross@codeaurora.org>
-To: linux-kernel@vger.kernel.org
-Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+	Thu, 24 Apr 2014 12:33:01 -0400
+Date: Thu, 24 Apr 2014 08:16:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
+        joern@logfs.org, peterz@infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>, cxie@redhat.com,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Andy Gross <agross@codeaurora.org>
-Subject: [Patch v2 1/4] soc: Placeholder files for drivers/soc
-Date: Thu, 24 Apr 2014 11:31:19 -0500
-Message-Id: <1398357082-5102-2-git-send-email-agross@codeaurora.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398357082-5102-1-git-send-email-agross@codeaurora.org>
-References: <1398357082-5102-1-git-send-email-agross@codeaurora.org>
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH RFC] sysrq,rcu: suppress RCU stall warnings while sysrq
+ runs
+Message-ID: <20140424151600.GM4496@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+ <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+ <535833AE.6010505@redhat.com>
+ <alpine.LRH.2.00.1404232349350.1491@twin.jikos.cz>
+ <20140424014648.GK4496@linux.vnet.ibm.com>
+ <20140424090452.3482f95c@annuminas.surriel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140424090452.3482f95c@annuminas.surriel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042416-1344-0000-0000-00000120E65B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add placeholder Kconfig and linkage for driver/soc.
+On Thu, Apr 24, 2014 at 09:04:52AM -0400, Rik van Riel wrote:
+> As suggested by Paul McKenney...
+> 
+> This seems small and simple enough that it should not introduce any
+> extra maintenance work in the future.
+> 
+> ---8<---
+> 
+> Some sysrq handlers can run for a long time, because they dump a lot
+> of data onto a serial console. Having RCU stall warnings pop up in
+> the middle of them only makes the problem worse.
+> 
+> This patch temporarily disables RCU stall warnings while a sysrq
+> request is handled.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Suggested-by: Paul McKenney <paulmck@linux.vnet.ibm.com>
 
-The first patch set that implemented this was authored by Santosh Shilimkar:
-https://lkml.org/lkml/2014/2/28/567
+I guess this means you like the idea.  ;-)
 
-Signed-off-by: Andy Gross <agross@codeaurora.org>
----
- drivers/Kconfig     |    2 ++
- drivers/Makefile    |    4 ++++
- drivers/soc/Kconfig |    4 ++++
- 3 files changed, 10 insertions(+)
- create mode 100644 drivers/soc/Kconfig
+Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index b3138fb..37f955f 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -130,6 +130,8 @@ source "drivers/staging/Kconfig"
- 
- source "drivers/platform/Kconfig"
- 
-+source "drivers/soc/Kconfig"
-+
- source "drivers/clk/Kconfig"
- 
- source "drivers/hwspinlock/Kconfig"
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 8e3b8b0..ba77e7b 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -132,6 +132,10 @@ obj-$(CONFIG_VHOST_RING)	+= vhost/
- obj-$(CONFIG_VLYNQ)		+= vlynq/
- obj-$(CONFIG_STAGING)		+= staging/
- obj-y				+= platform/
-+
-+# soc specific drivers
-+obj-y				+= soc/
-+
- #common clk code
- obj-y				+= clk/
- 
-diff --git a/drivers/soc/Kconfig b/drivers/soc/Kconfig
-new file mode 100644
-index 0000000..58bd962
---- /dev/null
-+++ b/drivers/soc/Kconfig
-@@ -0,0 +1,4 @@
-+menu "SOC specific Drivers"
-+
-+endmenu
-+`
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+> ---
+>  drivers/tty/sysrq.c      |  2 ++
+>  include/linux/rcupdate.h |  2 ++
+>  kernel/rcu/update.c      | 11 +++++++++++
+>  3 files changed, 15 insertions(+)
+> 
+> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+> index 3c61e9b..dd53af9 100644
+> --- a/drivers/tty/sysrq.c
+> +++ b/drivers/tty/sysrq.c
+> @@ -511,6 +511,7 @@ void __handle_sysrq(int key, bool check_mask)
+>  	int orig_log_level;
+>  	int i;
+> 
+> +	rcu_sysrq_start();
+>  	rcu_read_lock();
+>  	/*
+>  	 * Raise the apparent loglevel to maximum so that the sysrq header
+> @@ -554,6 +555,7 @@ void __handle_sysrq(int key, bool check_mask)
+>  		console_loglevel = orig_log_level;
+>  	}
+>  	rcu_read_unlock();
+> +	rcu_sysrq_end();
+>  }
+> 
+>  void handle_sysrq(int key)
+> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+> index 00a7fd6..b9a95f8 100644
+> --- a/include/linux/rcupdate.h
+> +++ b/include/linux/rcupdate.h
+> @@ -227,6 +227,8 @@ void rcu_idle_enter(void);
+>  void rcu_idle_exit(void);
+>  void rcu_irq_enter(void);
+>  void rcu_irq_exit(void);
+> +void rcu_sysrq_start(void);
+> +void rcu_sysrq_end(void);
+> 
+>  #ifdef CONFIG_RCU_USER_QS
+>  void rcu_user_enter(void);
+> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> index 4c0a9b0..2ac3289 100644
+> --- a/kernel/rcu/update.c
+> +++ b/kernel/rcu/update.c
+> @@ -320,6 +320,17 @@ int rcu_jiffies_till_stall_check(void)
+>  	return till_stall_check * HZ + RCU_STALL_DELAY_DELTA;
+>  }
+> 
+> +void rcu_sysrq_start(void)
+> +{
+> +	rcu_cpu_stall_suppress = 2;
+> +}
+> +
+> +void rcu_sysrq_end(void)
+> +{
+> +	if (rcu_cpu_stall_suppress == 2)
+> +		rcu_cpu_stall_suppress = 0;
+> +}
+> +
+>  static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
+>  {
+>  	rcu_cpu_stall_suppress = 1;
+> 
 
