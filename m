@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754340AbaDXVoy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:44:54 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38808 "EHLO comal.ext.ti.com"
+	id S1754725AbaDXVpS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:45:18 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38849 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605AbaDXVos (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:44:48 -0400
+	id S1753499AbaDXVpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:45:09 -0400
 From: Joel Fernandes <joelf@ti.com>
 To: Linux OMAP List <linux-omap@vger.kernel.org>,
         Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 CC: Tony Lindgren <tony@atomide.com>, Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 04/26] ARM: OMAP: dmtimer: Add function to check if timer is running
-Date: Thu, 24 Apr 2014 16:43:47 -0500
-Message-ID: <1398375849-6017-5-git-send-email-joelf@ti.com>
+Subject: [PATCH 09/26] ARM: OMAP: dmtimer: Get rid of check for mem resource error
+Date: Thu, 24 Apr 2014 16:43:52 -0500
+Message-ID: <1398375849-6017-10-git-send-email-joelf@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1398375849-6017-1-git-send-email-joelf@ti.com>
 References: <1398375849-6017-1-git-send-email-joelf@ti.com>
@@ -23,72 +23,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inorder to move non-DM timer specific code that modifies the "idlect"
-mask on OMAP1, from dmtimer code, to OMAP1 specific timer initialization code,
-we introduce a new function that can possibly be reused for other purposes in
-the future. The function just checks if a timer is running based on the timer ID
-which should be same as pdev->id. This allows us to cleanly separate the timer vs
-non-timer bits and keep the timer bits in the dmtimer code.
+The subsequent devm_ioremap_resource will catch it and print an error, let it
+be checked there.
 
 Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- arch/arm/plat-omap/dmtimer.c              |   29 +++++++++++++++++++++++++++++
- arch/arm/plat-omap/include/plat/dmtimer.h |    2 ++
- 2 files changed, 31 insertions(+)
+ arch/arm/plat-omap/dmtimer.c |    4 ----
+ 1 file changed, 4 deletions(-)
 
 diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index 4debb3d..86b2641 100644
+index 7e806f9..1fd30fa 100644
 --- a/arch/arm/plat-omap/dmtimer.c
 +++ b/arch/arm/plat-omap/dmtimer.c
-@@ -187,6 +187,35 @@ int omap_dm_timer_reserve_systimer(int id)
- 	return 0;
- }
+@@ -810,10 +810,6 @@ static int omap_dm_timer_probe(struct platform_device *pdev)
+ 	}
  
-+/*
-+ * Check if a timer is running based on timer_id, used for OMAP1 currently.
-+ */
-+int omap_dm_timer_is_running(int timer_id)
-+{
-+	int i = 1, ret = 0;
-+	struct omap_dm_timer *timer = NULL;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&dm_timer_lock, flags);
-+	list_for_each_entry(timer, &omap_timer_list, node) {
-+		if (i == timer_id) {
-+			u32 l;
-+			l = omap_dm_timer_read_reg(timer, OMAP_TIMER_CTRL_REG);
-+			if (l & OMAP_TIMER_CTRL_ST) {
-+				ret = 1;
-+				goto done;
-+			} else {
-+				goto done;
-+			}
-+		}
-+		i++;
-+	}
-+done:
-+	spin_unlock_irqrestore(&dm_timer_lock, flags);
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(omap_dm_timer_is_running);
-+
- static struct omap_dm_timer *_omap_dm_timer_request(int req_type, void *data)
- {
- 	struct omap_dm_timer *timer = NULL, *t;
-diff --git a/arch/arm/plat-omap/include/plat/dmtimer.h b/arch/arm/plat-omap/include/plat/dmtimer.h
-index 2861b15..41df0a6 100644
---- a/arch/arm/plat-omap/include/plat/dmtimer.h
-+++ b/arch/arm/plat-omap/include/plat/dmtimer.h
-@@ -135,6 +135,8 @@ void omap_dm_timer_disable(struct omap_dm_timer *timer);
+ 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (unlikely(!mem)) {
+-		dev_err(dev, "%s: no memory resource.\n", __func__);
+-		return -ENODEV;
+-	}
  
- int omap_dm_timer_get_irq(struct omap_dm_timer *timer);
- 
-+int omap_dm_timer_is_running(int timer_id);
-+
- u32 omap_dm_timer_modify_idlect_mask(u32 inputmask);
- struct clk *omap_dm_timer_get_fclk(struct omap_dm_timer *timer);
- 
+ 	timer = devm_kzalloc(dev, sizeof(struct omap_dm_timer), GFP_KERNEL);
+ 	if (!timer) {
 -- 
 1.7.9.5
 
