@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857AbaDXWU4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:20:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39700 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753914AbaDXVqN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:13 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.10 16/23] jffs2: remove from wait queue after schedule()
-Date: Thu, 24 Apr 2014 14:48:46 -0700
-Message-Id: <20140424214827.980128152@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
-References: <20140424214825.933835556@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1758268AbaDXWV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:21:29 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60752 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756210AbaDXWVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 18:21:21 -0400
+Date: Fri, 25 Apr 2014 00:21:20 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: David Rientjes <rientjes@google.com>
+cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        =?ISO-8859-15?Q?J=F6rn_Engel?= <joern@logfs.org>,
+        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, akpm@linux-foundation.org, cxie@redhat.com,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] printk: Print cpu number along with time
+In-Reply-To: <alpine.DEB.2.02.1404241518210.24983@chino.kir.corp.google.com>
+Message-ID: <alpine.LNX.2.00.1404250020370.8903@pobox.suse.cz>
+References: <20140423125352.704f9fb2@annuminas.surriel.com> <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz> <20140424005247.GA17713@logfs.org> <20140424194024.GA25446@logfs.org> <20140424195821.GA3092@kroah.com> <alpine.LNX.2.00.1404250005020.8903@pobox.suse.cz>
+ <alpine.DEB.2.02.1404241518210.24983@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+On Thu, 24 Apr 2014, David Rientjes wrote:
 
-------------------
+> > Well, if you have dmesg dump from panic that happens every other year, and 
+> > you have to do post-mortem analysis on it, I am pretty sure you would love 
+> > to be able to figure out how the stack traces would look like without 
+> > inter-CPU interleaving. And I am pretty sure you wouldn't want to 
+> > insert/enable a tracepoint and wait another two years for the bug to 
+> > trigger again.
+> 
+> Sounds like the appropriate fix would be to serialize stack dumping to the 
+> kernel log.
 
-From: Li Zefan <lizefan@huawei.com>
+That's rather difficult, as it can be done both from NMI and non-NMI 
+contexts, and those are very hard to synchronize.
 
-commit 3ead9578443b66ddb3d50ed4f53af8a0c0298ec5 upstream.
-
-@wait is a local variable, so if we don't remove it from the wait queue
-list, later wake_up() may end up accessing invalid memory.
-
-This was spotted by eyes.
-
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- fs/jffs2/nodemgmt.c |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -179,6 +179,7 @@ int jffs2_reserve_space(struct jffs2_sb_
- 					spin_unlock(&c->erase_completion_lock);
- 
- 					schedule();
-+					remove_wait_queue(&c->erase_wait, &wait);
- 				} else
- 					spin_unlock(&c->erase_completion_lock);
- 			} else if (ret)
-
-
+-- 
+Jiri Kosina
+SUSE Labs
