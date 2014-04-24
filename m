@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247AbaDXQdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:33:49 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:35694 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758494AbaDXQdr (ORCPT
+	id S1758235AbaDXQcK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:32:10 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:59747 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753390AbaDXQcF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:33:47 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AnoVAKE7WVNbsls8/2dsb2JhbABZgwaDZKgKmW8CAoEcF3SCUxMcIxiBAiQTiC0DFQHEaRWGZYVaiC4BAU+EQAEDjm+KCQGKbodrgzM7gTU
-Date: Thu, 24 Apr 2014 18:35:46 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: akpm <akpm@linux-foundation.org>, Evgeniy Dushistov <dushistov@mail.ru>
-Subject: [PATCH 1/1] fs/ufs/balloc.c: remove err parameter in
- ufs_add_fragments
-Message-Id: <20140424183546.809162d9334ef9e41486d364@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Apr 2014 12:32:05 -0400
+From: Andy Gross <agross@codeaurora.org>
+To: linux-kernel@vger.kernel.org
+Cc: devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org, Kumar Gala <galak@codeaurora.org>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Andy Gross <agross@codeaurora.org>
+Subject: [Patch v2 0/4] Introduce drivers/soc and add QCOM GSBI driver
+Date: Thu, 24 Apr 2014 11:31:18 -0500
+Message-Id: <1398357082-5102-1-git-send-email-agross@codeaurora.org>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-err is used in ufs_new_fragments (ufs_add_fragments only callsite)
-not in ufs_add_fragments.
+The first patch in this set adds the drivers/soc directory and all the necessary
+plumbing.  These changes were discussed at the kernel summit and also were
+introduced in an earlier patch set from Santosh Shilimkar.
 
-Cc: Evgeniy Dushistov <dushistov@mail.ru>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/ufs/balloc.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Reference the following set of patches:
+https://lkml.org/lkml/2014/2/28/567
 
-diff --git a/fs/ufs/balloc.c b/fs/ufs/balloc.c
-index 0ab1de4..184323c 100644
---- a/fs/ufs/balloc.c
-+++ b/fs/ufs/balloc.c
-@@ -24,7 +24,7 @@
- 
- #define INVBLOCK ((u64)-1L)
- 
--static u64 ufs_add_fragments(struct inode *, u64, unsigned, unsigned, int *);
-+static u64 ufs_add_fragments(struct inode *, u64, unsigned, unsigned);
- static u64 ufs_alloc_fragments(struct inode *, unsigned, u64, unsigned, int *);
- static u64 ufs_alloccg_block(struct inode *, struct ufs_cg_private_info *, u64, int *);
- static u64 ufs_bitmap_search (struct super_block *, struct ufs_cg_private_info *, u64, unsigned);
-@@ -432,7 +432,7 @@ u64 ufs_new_fragments(struct inode *inode, void *p, u64 fragment,
- 	/*
- 	 * resize block
- 	 */
--	result = ufs_add_fragments (inode, tmp, oldcount, newcount, err);
-+	result = ufs_add_fragments(inode, tmp, oldcount, newcount);
- 	if (result) {
- 		*err = 0;
- 		UFS_I(inode)->i_lastfrag = max(UFS_I(inode)->i_lastfrag,
-@@ -491,7 +491,7 @@ u64 ufs_new_fragments(struct inode *inode, void *p, u64 fragment,
- }		
- 
- static u64 ufs_add_fragments(struct inode *inode, u64 fragment,
--			     unsigned oldcount, unsigned newcount, int *err)
-+			     unsigned oldcount, unsigned newcount)
- {
- 	struct super_block * sb;
- 	struct ufs_sb_private_info * uspi;
+The remaining patches add the QCOM GSBI (General Serial Bus Interface) driver,
+device tree binding information for both the GSBI and child node interaction,
+and lastly a patch to fix the current MSM serial driver to work correctly with
+the GSBI changes.
+
+Before this patch series, serial drivers (UART, I2C, and SPI) were all directly
+accessing the overarching mux control settings for the parent GSBI device.  This
+leads to unfortunate interactions when you want a UART and I2C device which
+share the same GSBI interface.  By moving the serial devices to child nodes of
+the GSBI, we can get the right mode setting for the ports and keep the children
+from accessing the GSBI directly.
+
+Changes from v1:
+	- Add dt-bindings file containing definitions for MUX values
+	- Fix code comments
+	- Removed unnecessary code
+
+Andy Gross (4):
+  soc: Placeholder files for drivers/soc
+  soc: qcom: Add device tree binding for GSBI
+  soc: qcom: Add GSBI driver
+  tty: serial: msm: Remove direct access to GSBI
+
+ .../devicetree/bindings/soc/qcom/qcom,gsbi.txt     |   78 ++++++++++++++++++
+ drivers/Kconfig                                    |    2 +
+ drivers/Makefile                                   |    4 +
+ drivers/soc/Kconfig                                |    5 ++
+ drivers/soc/Makefile                               |    5 ++
+ drivers/soc/qcom/Kconfig                           |   11 +++
+ drivers/soc/qcom/Makefile                          |    1 +
+ drivers/soc/qcom/qcom_gsbi.c                       |   84 ++++++++++++++++++++
+ drivers/tty/serial/msm_serial.c                    |   48 +----------
+ drivers/tty/serial/msm_serial.h                    |    5 --
+ include/dt-bindings/soc/qcom,gsbi.h                |   26 ++++++
+ 11 files changed, 218 insertions(+), 51 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/soc/qcom/qcom,gsbi.txt
+ create mode 100644 drivers/soc/Kconfig
+ create mode 100644 drivers/soc/Makefile
+ create mode 100644 drivers/soc/qcom/Kconfig
+ create mode 100644 drivers/soc/qcom/Makefile
+ create mode 100644 drivers/soc/qcom/qcom_gsbi.c
+ create mode 100644 include/dt-bindings/soc/qcom,gsbi.h
+
 -- 
-1.8.4.5
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+hosted by The Linux Foundation
+
