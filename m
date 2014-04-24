@@ -1,84 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069AbaDXWBh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:01:37 -0400
-Received: from si-002-i45.relay.mailchannels.net ([184.154.112.210]:47479 "EHLO
-	relay.mailchannels.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754797AbaDXWBe (ORCPT
+	id S932558AbaDXWAn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:00:43 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39862 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756961AbaDXVxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:01:34 -0400
-X-Greylist: delayed 550 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Apr 2014 18:01:33 EDT
-X-Sender-Id: totalchoicehosting|x-authuser|oren%40scalemp.com
-X-Sender-Id: totalchoicehosting|x-authuser|oren%40scalemp.com
-X-MC-Relay: Neutral
-X-MailChannels-SenderId: totalchoicehosting%7Cx-authuser%7Coren%2540scalemp.com
-X-MailChannels-Auth-Id: totalchoicehosting
-From: Oren Twaig <oren@scalemp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Shai Fultheim <shai@scalemp.com>
-Subject: [PATCH v2] X86: Hook apic vector allocation domain only when interrupt routing are set to ignore
-Date: Fri, 25 Apr 2014 00:52:06 +0300
-Message-Id: <1398376326-3055-1-git-send-email-oren@scalemp.com>
-X-Mailer: git-send-email 1.7.9.5
-X-AuthUser: oren@scalemp.com
+	Thu, 24 Apr 2014 17:53:19 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Claudio Takahasi <claudio.takahasi@openbossa.org>,
+        Johan Hedberg <johan.hedberg@intel.com>
+Subject: [PATCH 3.4 22/27] Bluetooth: Fix removing Long Term Key
+Date: Thu, 24 Apr 2014 14:55:56 -0700
+Message-Id: <20140424215552.635422825@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
+References: <20140424215551.942390050@linuxfoundation.org>
+User-Agent: quilt/0.61-1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-vSMP Foundation provides locality based interrupt routing which needed
-vector_allocation_domain to allow all online cpus can handle all possible
-vectors. 
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Enforcing Interrupt Routing Comply (IRC) mode requires us to unplug this hook as
-otherwise the IOAPIC, MSI and MSIX destination selectors to always select the
-lowest online cpu as the destination. I.e affinity of HW interrupts cannot be
-controled by kernel and/or userspace code.
+------------------
 
-The purpose of the patch is to fix the code to set override vector allocation
-domain only when IRC is set to ignore to allow the kernel and userspace to
-effectively control the destination of the HW interrupts.
+From: Claudio Takahasi <claudio.takahasi@openbossa.org>
 
-Signed-off-by: Oren Twaig <oren@scalemp.com>
-Acked-by: Shai Fultheim <shai@scalemp.com>
+commit 5981a8821b774ada0be512fd9bad7c241e17657e upstream.
+
+This patch fixes authentication failure on LE link re-connection when
+BlueZ acts as slave (peripheral). LTK is removed from the internal list
+after its first use causing PIN or Key missing reply when re-connecting
+the link. The LE Long Term Key Request event indicates that the master
+is attempting to encrypt or re-encrypt the link.
+
+Pre-condition: BlueZ host paired and running as slave.
+How to reproduce(master):
+
+  1) Establish an ACL LE encrypted link
+  2) Disconnect the link
+  3) Try to re-establish the ACL LE encrypted link (fails)
+
+> HCI Event: LE Meta Event (0x3e) plen 19
+      LE Connection Complete (0x01)
+        Status: Success (0x00)
+        Handle: 64
+        Role: Slave (0x01)
+...
+@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
+> HCI Event: LE Meta Event (0x3e) plen 13
+      LE Long Term Key Request (0x05)
+        Handle: 64
+        Random number: 875be18439d9aa37
+        Encryption diversifier: 0x76ed
+< HCI Command: LE Long Term Key Request Reply (0x08|0x001a) plen 18
+        Handle: 64
+        Long term key: 2aa531db2fce9f00a0569c7d23d17409
+> HCI Event: Command Complete (0x0e) plen 6
+      LE Long Term Key Request Reply (0x08|0x001a) ncmd 1
+        Status: Success (0x00)
+        Handle: 64
+> HCI Event: Encryption Change (0x08) plen 4
+        Status: Success (0x00)
+        Handle: 64
+        Encryption: Enabled with AES-CCM (0x01)
+...
+@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 3
+< HCI Command: LE Set Advertise Enable (0x08|0x000a) plen 1
+        Advertising: Enabled (0x01)
+> HCI Event: Command Complete (0x0e) plen 4
+      LE Set Advertise Enable (0x08|0x000a) ncmd 1
+        Status: Success (0x00)
+> HCI Event: LE Meta Event (0x3e) plen 19
+      LE Connection Complete (0x01)
+        Status: Success (0x00)
+        Handle: 64
+        Role: Slave (0x01)
+...
+@ Device Connected: 00:02:72:DC:29:C9 (1) flags 0x0000
+> HCI Event: LE Meta Event (0x3e) plen 13
+      LE Long Term Key Request (0x05)
+        Handle: 64
+        Random number: 875be18439d9aa37
+        Encryption diversifier: 0x76ed
+< HCI Command: LE Long Term Key Request Neg Reply (0x08|0x001b) plen 2
+        Handle: 64
+> HCI Event: Command Complete (0x0e) plen 6
+      LE Long Term Key Request Neg Reply (0x08|0x001b) ncmd 1
+        Status: Success (0x00)
+        Handle: 64
+> HCI Event: Disconnect Complete (0x05) plen 4
+        Status: Success (0x00)
+        Handle: 64
+        Reason: Authentication Failure (0x05)
+@ Device Disconnected: 00:02:72:DC:29:C9 (1) reason 0
+
+Signed-off-by: Claudio Takahasi <claudio.takahasi@openbossa.org>
+Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
 ---
+ net/bluetooth/hci_event.c |    8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
- arch/x86/kernel/vsmp_64.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+--- a/net/bluetooth/hci_event.c
++++ b/net/bluetooth/hci_event.c
+@@ -3383,7 +3383,13 @@ static inline void hci_le_ltk_request_ev
+ 
+ 	hci_send_cmd(hdev, HCI_OP_LE_LTK_REPLY, sizeof(cp), &cp);
+ 
+-	if (ltk->type & HCI_SMP_STK) {
++	/* Ref. Bluetooth Core SPEC pages 1975 and 2004. STK is a
++	 * temporary key used to encrypt a connection following
++	 * pairing. It is used during the Encrypted Session Setup to
++	 * distribute the keys. Later, security can be re-established
++	 * using a distributed LTK.
++	 */
++	if (ltk->type == HCI_SMP_STK_SLAVE) {
+ 		list_del(&ltk->list);
+ 		kfree(ltk);
+ 	}
 
-diff --git a/arch/x86/kernel/vsmp_64.c b/arch/x86/kernel/vsmp_64.c
-index f6584a9..b7f8e5b 100644
---- a/arch/x86/kernel/vsmp_64.c
-+++ b/arch/x86/kernel/vsmp_64.c
-@@ -26,6 +26,8 @@
- 
- #define TOPOLOGY_REGISTER_OFFSET 0x10
- 
-+static int irc = 1;
-+
- #if defined CONFIG_PCI && defined CONFIG_PARAVIRT
- /*
-  * Interrupt control on vSMPowered systems:
-@@ -101,6 +103,10 @@ static void __init set_vsmp_pv_ops(void)
- #ifdef CONFIG_SMP
- 	if (cap & ctl & BIT(8)) {
- 		ctl &= ~BIT(8);
-+
-+		/* Interrupt routing set to ignore */
-+		irc = 0;
-+
- #ifdef CONFIG_PROC_FS
- 		/* Don't let users change irq affinity via procfs */
- 		no_irq_affinity = 1;
-@@ -218,7 +224,9 @@ static void vsmp_apic_post_init(void)
- {
- 	/* need to update phys_pkg_id */
- 	apic->phys_pkg_id = apicid_phys_pkg_id;
--	apic->vector_allocation_domain = fill_vector_allocation_domain;
-+
-+	if (!irc)
-+		apic->vector_allocation_domain = fill_vector_allocation_domain;
- }
- 
- void __init vsmp_init(void)
+
