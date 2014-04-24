@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605AbaDXIzG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:55:06 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46798 "EHLO
+	id S1754780AbaDXJpi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:45:38 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46832 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754422AbaDXIyl (ORCPT
+	with ESMTP id S1754426AbaDXIzD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:54:41 -0400
+	Thu, 24 Apr 2014 04:55:03 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Neil Horman <nhorman@tuxdriver.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
+Cc: Mark Tinguely <tinguely@sgi.com>, Dave Chinner <david@fromorbit.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 109/182] x86: Adjust irq remapping quirk for older revisions of 5500/5520 chipsets
-Date: Thu, 24 Apr 2014 09:50:34 +0100
-Message-Id: <1398329507-5911-110-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 122/182] xfs: fix directory hash ordering bug
+Date: Thu, 24 Apr 2014 09:50:47 +0100
+Message-Id: <1398329507-5911-123-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -29,66 +27,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Horman <nhorman@tuxdriver.com>
+From: Mark Tinguely <tinguely@sgi.com>
 
-commit 6f8a1b335fde143b7407036e2368d3cd6eb55674 upstream.
+commit c88547a8119e3b581318ab65e9b72f27f23e641d upstream.
 
-Commit 03bbcb2e7e2 (iommu/vt-d: add quirk for broken interrupt
-remapping on 55XX chipsets) properly disables irq remapping on the
-5500/5520 chipsets that don't correctly perform that feature.
+Commit f5ea1100 ("xfs: add CRCs to dir2/da node blocks") introduced
+in 3.10 incorrectly converted the btree hash index array pointer in
+xfs_da3_fixhashpath(). It resulted in the the current hash always
+being compared against the first entry in the btree rather than the
+current block index into the btree block's hash entry array. As a
+result, it was comparing the wrong hashes, and so could misorder the
+entries in the btree.
 
-However, when I wrote it, I followed the errata sheet linked in that
-commit too closely, and explicitly tied the activation of the quirk to
-revision 0x13 of the chip, under the assumption that earlier revisions
-were not in the field.  Recently a system was reported to be suffering
-from this remap bug and the quirk hadn't triggered, because the
-revision id register read at a lower value that 0x13, so the quirk
-test failed improperly.  Given this, it seems only prudent to adjust
-this quirk so that any revision less than 0x13 has the quirk asserted.
+For most cases, this doesn't cause any problems as it requires hash
+collisions to expose the ordering problem. However, when there are
+hash collisions within a directory there is a very good probability
+that the entries will be ordered incorrectly and that actually
+matters when duplicate hashes are placed into or removed from the
+btree block hash entry array.
 
-[ tglx: Removed the 0x12 comparison of pci id 3405 as this is covered
-    	by the <= 0x13 check already ]
+This bug results in an on-disk directory corruption and that results
+in directory verifier functions throwing corruption warnings into
+the logs. While no data or directory entries are lost, access to
+them may be compromised, and attempts to remove entries from a
+directory that has suffered from this corruption may result in a
+filesystem shutdown.  xfs_repair will fix the directory hash
+ordering without data loss occuring.
 
-Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Link: http://lkml.kernel.org/r/1394649873-14913-1-git-send-email-nhorman@tuxdriver.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+[dchinner: wrote useful a commit message]
+
+Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Mark Tinguely <tinguely@sgi.com>
+Reviewed-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/x86/kernel/early-quirks.c | 15 ++++++---------
- 1 file changed, 6 insertions(+), 9 deletions(-)
+ fs/xfs/xfs_da_btree.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 63bdb29..4f7c82c 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -202,18 +202,15 @@ static void __init intel_remapping_check(int num, int slot, int func)
- 	revision = read_pci_config_byte(num, slot, func, PCI_REVISION_ID);
- 
- 	/*
-- 	 * Revision 13 of all triggering devices id in this quirk have
--	 * a problem draining interrupts when irq remapping is enabled,
--	 * and should be flagged as broken.  Additionally revisions 0x12
--	 * and 0x22 of device id 0x3405 has this problem.
-+	 * Revision <= 13 of all triggering devices id in this quirk
-+	 * have a problem draining interrupts when irq remapping is
-+	 * enabled, and should be flagged as broken. Additionally
-+	 * revision 0x22 of device id 0x3405 has this problem.
- 	 */
--	if (revision == 0x13)
-+	if (revision <= 0x13)
- 		set_irq_remapping_broken();
--	else if ((device == 0x3405) &&
--	    ((revision == 0x12) ||
--	     (revision == 0x22)))
-+	else if (device == 0x3405 && revision == 0x22)
- 		set_irq_remapping_broken();
--
- }
- 
- #define QFLAG_APPLY_ONCE 	0x1
+diff --git a/fs/xfs/xfs_da_btree.c b/fs/xfs/xfs_da_btree.c
+index eca6f9d..79ddbaf 100644
+--- a/fs/xfs/xfs_da_btree.c
++++ b/fs/xfs/xfs_da_btree.c
+@@ -1334,7 +1334,7 @@ xfs_da3_fixhashpath(
+ 		node = blk->bp->b_addr;
+ 		xfs_da3_node_hdr_from_disk(&nodehdr, node);
+ 		btree = xfs_da3_node_tree_p(node);
+-		if (be32_to_cpu(btree->hashval) == lasthash)
++		if (be32_to_cpu(btree[blk->index].hashval) == lasthash)
+ 			break;
+ 		blk->hashval = lasthash;
+ 		btree[blk->index].hashval = cpu_to_be32(lasthash);
 -- 
 1.9.1
 
