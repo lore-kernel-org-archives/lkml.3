@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753746AbaDXQ35 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:29:57 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56368 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895AbaDXQ34 (ORCPT
+	id S1758169AbaDXQbb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:31:31 -0400
+Received: from mail-we0-f170.google.com ([74.125.82.170]:43708 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539AbaDXQb3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:29:56 -0400
-Date: Thu, 24 Apr 2014 17:29:54 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Fengwei Yin <yfw.kernel@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Fix seq_read dead loop and trigger memory allocation
- failure.
-Message-ID: <20140424162954.GX18016@ZenIV.linux.org.uk>
-References: <1398089562-5925-1-git-send-email-yfw.kernel@gmail.com>
- <20140423215804.GU18016@ZenIV.linux.org.uk>
- <CADUXgx7-5SQg2wVbJ1rp6DRhepcK9MWU67bixVwhXA6rr0skuA@mail.gmail.com>
+	Thu, 24 Apr 2014 12:31:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CADUXgx7-5SQg2wVbJ1rp6DRhepcK9MWU67bixVwhXA6rr0skuA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140424162536.GD22987@atomide.com>
+References: <1397492726-17203-1-git-send-email-nm@ti.com>
+	<1397767775-10965-1-git-send-email-nm@ti.com>
+	<53504041.7090906@ti.com>
+	<5350410B.5010507@ti.com>
+	<5358D16A.9000500@ti.com>
+	<20140424162536.GD22987@atomide.com>
+Date: Thu, 24 Apr 2014 11:31:27 -0500
+X-Google-Sender-Auth: jWtJsMg1-CUfezT-sRcHYadIG48
+Message-ID: <CAGo_u6p8wivmN-S8V2dyk7ZcoDbkkTiEJGJON4+9NYXqYFA2YQ@mail.gmail.com>
+Subject: Re: [PATCH V2 00/19] bus: omap_l3_noc: driver cleanups and support
+ for DRA7/AM4372
+From: Nishanth Menon <nm@ti.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        dt list <devicetree@vger.kernel.org>, Rajendra Nayak <rnayak@ti.com>,
+        Sekhar Nori <nsekhar@ti.com>, lkml <linux-kernel@vger.kernel.org>,
+        Sricharan R <r.sricharan@ti.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 10:26:50PM +0800, Fengwei Yin wrote:
-> On Thu, Apr 24, 2014 at 5:58 AM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Mon, Apr 21, 2014 at 10:12:42PM +0800, Fengwei Yin wrote:
-> >> When dump /proc/xxx/maps, if d_path return error in seq_path, the
-> >> buffer will be exhaust and trigger dead loop in seq_read. Till
-> >> kmalloc fails with -ENOMEM.
-> >
-> > *WHAT* d_path error?  -ENAMETOOLONG, aka. "you've got too little space"?
-> >
-> I could check it and get you back. But I suppose it's not this one
-> because it still  fails even I have buffer with 4M size.
+On Thu, Apr 24, 2014 at 11:25 AM, Tony Lindgren <tony@atomide.com> wrote:
+> * Peter Ujfalusi <peter.ujfalusi@ti.com> [140424 01:55]:
+>> On 04/18/2014 12:00 AM, Nishanth Menon wrote:
+>> > On 04/17/2014 03:57 PM, Santosh Shilimkar wrote:
+>> >> I looked at the series and its looks pretty good. Thanks for fixups, updates.
+>> >> For whole series,
+>> >> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>> >>
+>> >
+>> > Thanks.
+>> >
+>> >>> Patches(including Peter's) is available here:
+>> >>> https://github.com/nmenon/linux-2.6-playground/commits/l3noc/driver-fixes-v2
+>> >>>
+>> >> Can Tony pull this branch for 3.16 then which includes Peter's series as well ?
+>> >
+>> > there is just an empty commit with information about peter's patches
+>> > that i lined up to differentiate the series.. I can drop it if Tony
+>> > would like me to.
+>>
+>> Looking at the branch I see my patches underneath so they are in the branch.
+>> It would be great if Tony pulls this... Will be a great present to my patches
+>> (omap_l3 patches in the branch) for their 1 year anniversary of being out on
+>> the mailing list ;)
+>
+> If you insist :) Maybe we should have some cake or something with it?
+> Seriously, I always thought that's a nice clean-up set, but never thought
+> I'm supposed to merge it. Will merge it as soon as I'm out of the fixes
+> and regressions land as that way I can easier test for any kind of
+> new regressions that might occur related to PM at least.
 
-Please, do.  One thing to watch out for is bogus ->d_dname() return
-value; instances of ->d_dname() are only allowed to return valid pointers or
-ERR_PTR(-ENAMETOOLONG), the latter - only if the buffer really is too short
-(i.e. disappearing on sufficiently large one).  That holds in mainline, but
-that's the most likely vector by which the breakage could be introduced in
-some out-of-tree code.
+Thanks Tony. I will try and post a v3 tomorrow as a clean set of
+patches and a v3.15-rc1 based branch to ease integration.
 
-Here's the braindump on that bunch (basically, everything in fs/dcache.c
-from prepend() to dentry_path()):
-	* their char * arguments are never ERR_PTR(...)
-	* their char ** arguments never point to ERR_PTR(...) - not on entry
-to function and not on return from it, regardless of return value.
-	* prepend(), prepend_name() and prepend_unreachable() always return
-either 0 or -ENAMETOOLONG.
-	* return value of prepend_path() and path_with_deleted() can only be
-0, 1, 2 or -ENAMETOOLONG.
-	* __d_path() returns NULL, a pointer to string or
-ERR_PTR(-ENAMETOOLONG).
-	* d_absolute_path() returns a pointer to string, ERR_PTR(-ENAMETOOLONG)
-or ERR_PTR(-EINVAL), the last one being for the case when its path argument
-points into an unmounted vfsmount.
-	* d_path(), __dentry_path(), dentry_path_raw(), dentry_path() and
-->d_dname() instances return a pointer to string or ERR_PTR(-ENAMETOOLONG).
-	* all in-tree instances of ->d_dname() are either simple_dname() or
-trivial wrappers for dynamic_dname(), so for mainline it's enough to check
-those two helpers; out-of-tree code providing ->d_dname() instances needs
-to be checked, of course.
-	* given sufficiently large buffer ->d_dname() should succeed.
-Persistent ERR_PTR(-ENAMETOOLONG) from it is a bug.  Note that use of
-dynamic_dname() with format that might exceed 64 characters of output
-is wrong; that's the reason why e.g. mm/shmem.c uses simple_dname() instead.
-AFAICS, all remaining callers of dynamic_dname() in mainline are guaranteed
-to stay within its limitations (either <short string>[<unsigned long decimal>]
-or anon_inode:<short string passed to anon_inode_get{file,fd}>).  Out-of-tree
-code needs to be checked, of course.
+This should also give additional time for any further comments as well.
+
+Regards,
+Nishanth Menon
