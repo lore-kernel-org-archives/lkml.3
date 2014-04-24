@@ -1,114 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372AbaDXVBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:01:34 -0400
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:45258 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556AbaDXVBX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:01:23 -0400
+	id S1753288AbaDXVBQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:01:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43516 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752556AbaDXVBO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:01:14 -0400
+Date: Thu, 24 Apr 2014 17:00:15 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying
+ output fields (v4)
+Message-ID: <20140424210015.GJ8488@redhat.com>
+References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
+ <20140422211647.GO8488@redhat.com>
+ <87lhuwr2pk.fsf@sejong.aot.lge.com>
+ <20140423125828.GL5328@redhat.com>
+ <1398346899.1681.18.camel@leonhard>
 MIME-Version: 1.0
-In-Reply-To: <5358BDDF.1010709@ti.com>
-References: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com> <5358BDDF.1010709@ti.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 24 Apr 2014 22:01:02 +0100
-X-Google-Sender-Auth: 2udtDmCpTpCfO7vC6rlFGyK8R8U
-Message-ID: <CACxGe6sJtEeMOx+qMws2BCC4tuHMnWRAZv9NkEPADAtXAvtM4g@mail.gmail.com>
-Subject: Re: [PATCH v2 0/2] drivercore: deferral race condition fix
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398346899.1681.18.camel@leonhard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 8:31 AM, Peter Ujfalusi <peter.ujfalusi@ti.com> wrote:
-> Hi Greg, Grant,
->
-> On 04/09/2014 01:52 PM, Peter Ujfalusi wrote:
->> Hi,
->>
->> Changes since v1:
->> - The deferral race detection and handling has been moved to
->>   driver_deferred_probe_trigger() and driver_deferred_probe_add() functions with
->>   comment section.
->> - driver_deferred_probe_add/del function needed to be moved. Both of them placed
->>   after driver_deferred_probe_trigger() so they remain together.
->> - I have not added the Acked-by from Mark and Grant since the patch itself
->>   changed from v1, but the functionality remained.
->
-> Is this solution sounds good? Do you want me to resend the two patch?
+On Thu, Apr 24, 2014 at 10:41:39PM +0900, Namhyung Kim wrote:
+> Hi Don,
+> 
+> 2014-04-23 (ìˆ˜), 08:58 -0400, Don Zickus:
+> > On Wed, Apr 23, 2014 at 03:15:35PM +0900, Namhyung Kim wrote:
+> > > On Tue, 22 Apr 2014 17:16:47 -0400, Don Zickus wrote:
+> > > > ./perf mem record -a grep -r foo /* > /dev/null
+> > > > ./perf mem report -F overhead,symbol_daddr,pid -s symbol_daddr,pid --stdio 
+> > > >
+> > > > I was thinking I could sort everything based on the symbol_daddr and pid.
+> > > > Then re-sort the output to display the highest 'symbol_daddr,pid' pair.
+> > > > But it didn't seem to work that way.  Instead it seems like I get the
+> > > > original sort just displayed in the -F format.
+> > > 
+> > > Could you please show me the output of your example?
+> > 
+> > 
+> > # To display the perf.data header info, please use --header/--header-only
+> > # options.
+> > #
+> > # Samples: 96K of event 'cpu/mem-loads/pp'
+> > # Total weight : 1102938
+> > # Sort order   : symbol_daddr,pid
+> > #
+> > # Overhead Data Symbol          Command:  Pid
+> > # ........ ......................................................................
+> > #
+> >      0.00%  [k] 0xffff8807a8c1cf80 grep:116437
+> >      0.00%  [k] 0xffff8807a8c8cee0 grep:116437
+> >      0.00%  [k] 0xffff8807a8dceea0 grep:116437
+> >      0.01%  [k] 0xffff8807a9298dc0 grep:116437
+> >      0.01%  [k] 0xffff8807a934be40 grep:116437
+> >      0.00%  [k] 0xffff8807a9416ec0 grep:116437
+> >      0.02%  [k] 0xffff8807a9735700 grep:116437
+> >      0.00%  [k] 0xffff8807a98e9460 grep:116437
+> >      0.02%  [k] 0xffff8807a9afc890 grep:116437
+> >      0.00%  [k] 0xffff8807aa64feb0 grep:116437
+> >      0.02%  [k] 0xffff8807aa6b0030 grep:116437
+> 
+> Hmm.. it seems that it's exactly sorted by the data symbol addresses, so
+> I don't see any problem here.  What did you expect?  If you want to see
+> those symbol_daddr,pid pair to be sorted by overhead, you can use the
+> one of -F or -s option only.
 
-You don't need to resend. I just got back from vacation. I will look
-at it tomorrow.
+Good question.  I guess I was hoping to see things sorted by overhead, but
+as you said removing all the -F options gives me that.  I have been
+distracted with other fires this week, I lost focus at what I was trying
+to accomplish.
 
-g.
+Let me figure that out again and try to come up with a more clear email
+explaining what I was looking for (for myself at least :-) ).
 
->
-> Regards,
-> Péter
->
->> Explanantion of the issue (from patch 2):
->> When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
->> when all modules loaded but some driver still stuck in the deferred list
->> and there is a need for external event to kick the deferred queue to probe
->> these drivers.
->>
->> The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
->> audio support built as modules and using nfsroot for root filesystem.
->>
->> The following log fragment shows such sequence when all audio modules
->> were loaded but the sound card is not present since the machine driver has
->> failed to probe due to missing dependency during it's probe.
->> The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
->> machine driver:
->>
->> ...
->> [   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
->> [   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
->> [   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
->> [   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
->> [   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
->> [   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
->> [   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
->> [   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
->> [   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
->> [   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
->> [   13.346755] davinci_mcasp_driver_init: LEAVE
->> [   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
->> [   13.592527] platform sound.3: really_probe: probe_count = 0
->>
->> In the log the machine driver enters it's probe at 12.719969 (this point it
->> has been removed from the deferred lists). McASP driver already executing
->> it's probing (since 12.615118).
->> The machine driver tries to construct the sound card (12.950839) but did
->> not found one of the components so it fails. After this McASP driver
->> registers all the ASoC components (the machine driver still in it's probe
->> function after it failed to construct the card) and the deferred work is
->> prepared at 13.099026 (note that this time the machine driver is not in the
->> lists so it is not going to be handled when the work is executing).
->> Lastly the machine driver exit from it's probe and the core places it to
->> the deferred list but there will be no other driver going to load and the
->> deferred queue is not going to be kicked again - till we have external event
->> like connecting USB stick, etc.
->>
->> The proposed solution is to try the deferred queue once more when the last
->> driver is asking for deferring and we had drivers loaded while this last
->> driver was probing.
->>
->> This way we can avoid drivers stuck in the deferred queue.
->>
->> Regards,
->> Peter
->> ---
->> Peter Ujfalusi (2):
->>   drivercore: dd: Move driver_deferred_probe_add/del function down in
->>     the code
->>   drivercore: deferral race condition fix
->>
->>  drivers/base/dd.c | 71 +++++++++++++++++++++++++++++++++++++------------------
->>  1 file changed, 48 insertions(+), 23 deletions(-)
->
+Sorry for the distraction.
+
+Cheers,
+Don
