@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946AbaDXJRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:17:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47056 "EHLO
+	id S1755886AbaDXJQz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:16:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47064 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754960AbaDXI4I (ORCPT
+	with ESMTP id S1754978AbaDXI4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:56:08 -0400
+	Thu, 24 Apr 2014 04:56:09 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Alexander Usyskin <alexander.usyskin@intel.com>,
-        Tomas Winkler <tomas.winkler@intel.com>,
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 159/182] mei: ignore client writing state during cb completion
-Date: Thu, 24 Apr 2014 09:51:24 +0100
-Message-Id: <1398329507-5911-160-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 160/182] staging: r8712u: Fix case where ethtype was never obtained and always be checked against 0
+Date: Thu, 24 Apr 2014 09:51:25 +0100
+Message-Id: <1398329507-5911-161-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -29,59 +28,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Alexander Usyskin <alexander.usyskin@intel.com>
+From: Larry Finger <Larry.Finger@lwfinger.net>
 
-commit 34ec43661fe8f1977dd0f05353302ae2ed10aabb upstream.
+commit f764cd68d9036498f08fe8834deb6a367b5c2542 upstream.
 
-Ignore client writing state during cb completion to fix a memory
-leak.
+Zero-initializing ether_type masked that the ether type would never be
+obtained for 8021x packets and the comparison against eapol_type
+would always fail.
 
-When moving cbs to the completion list we should not look at
-writing_state as this state can be already overwritten by next
-write, the fact that a cb is on the write waiting list means
-that it was already written to the HW and we can safely complete it.
-
-Same pays for wait in poll handler, we do not have to check the state
-wake is done after completion list processing.
-
-Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Reported-by: Jes Sorensen <Jes.Sorensen@redhat.com>
+Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/misc/mei/interrupt.c | 3 +--
- drivers/misc/mei/main.c      | 3 +--
- 2 files changed, 2 insertions(+), 4 deletions(-)
+ drivers/staging/rtl8712/rtl871x_recv.c | 13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
-index 4b59cb7..8967b09 100644
---- a/drivers/misc/mei/interrupt.c
-+++ b/drivers/misc/mei/interrupt.c
-@@ -420,8 +420,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
+diff --git a/drivers/staging/rtl8712/rtl871x_recv.c b/drivers/staging/rtl8712/rtl871x_recv.c
+index 23ec684..274c359 100644
+--- a/drivers/staging/rtl8712/rtl871x_recv.c
++++ b/drivers/staging/rtl8712/rtl871x_recv.c
+@@ -254,7 +254,7 @@ union recv_frame *r8712_portctrl(struct _adapter *adapter,
+ 	struct sta_info *psta;
+ 	struct	sta_priv *pstapriv;
+ 	union recv_frame *prtnframe;
+-	u16 ether_type = 0;
++	u16 ether_type;
  
- 		cl->status = 0;
- 		list_del(&cb->list);
--		if (MEI_WRITING == cl->writing_state &&
--		    cb->fop_type == MEI_FOP_WRITE &&
-+		if (cb->fop_type == MEI_FOP_WRITE &&
- 		    cl != &dev->iamthif_cl) {
- 			dev_dbg(&dev->pdev->dev, "MEI WRITE COMPLETE\n");
- 			cl->writing_state = MEI_WRITE_COMPLETE;
-diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
-index e67de23..6ad37d9 100644
---- a/drivers/misc/mei/main.c
-+++ b/drivers/misc/mei/main.c
-@@ -640,8 +640,7 @@ static unsigned int mei_poll(struct file *file, poll_table *wait)
- 	mutex_unlock(&dev->device_lock);
- 	poll_wait(file, &cl->tx_wait, wait);
- 	mutex_lock(&dev->device_lock);
--	if (MEI_WRITE_COMPLETE == cl->writing_state)
--		mask |= (POLLIN | POLLRDNORM);
-+	mask |= (POLLIN | POLLRDNORM);
- 
- out:
- 	mutex_unlock(&dev->device_lock);
+ 	pstapriv = &adapter->stapriv;
+ 	ptr = get_recvframe_data(precv_frame);
+@@ -263,15 +263,14 @@ union recv_frame *r8712_portctrl(struct _adapter *adapter,
+ 	psta = r8712_get_stainfo(pstapriv, psta_addr);
+ 	auth_alg = adapter->securitypriv.AuthAlgrthm;
+ 	if (auth_alg == 2) {
++		/* get ether_type */
++		ptr = ptr + pfhdr->attrib.hdrlen + LLC_HEADER_SIZE;
++		memcpy(&ether_type, ptr, 2);
++		ether_type = ntohs((unsigned short)ether_type);
++
+ 		if ((psta != NULL) && (psta->ieee8021x_blocked)) {
+ 			/* blocked
+ 			 * only accept EAPOL frame */
+-			prtnframe = precv_frame;
+-			/*get ether_type */
+-			ptr = ptr + pfhdr->attrib.hdrlen +
+-			      pfhdr->attrib.iv_len + LLC_HEADER_SIZE;
+-			memcpy(&ether_type, ptr, 2);
+-			ether_type = ntohs((unsigned short)ether_type);
+ 			if (ether_type == 0x888e)
+ 				prtnframe = precv_frame;
+ 			else {
 -- 
 1.9.1
 
