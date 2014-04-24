@@ -1,50 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758101AbaDXWQU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:16:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40028 "EHLO
+	id S1757602AbaDXWO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:14:29 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39834 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655AbaDXWQR (ORCPT
+	with ESMTP id S1756756AbaDXVxM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:16:17 -0400
-Date: Thu, 24 Apr 2014 15:19:10 -0700
+	Thu, 24 Apr 2014 17:53:12 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Rainer Weikusat <rweikusat@mobileactivedefense.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        Eric Dumazet <edumazet@google.com>,
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Xin Long <lucien.xin@gmail.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
         "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 3.4 03/27] net: unix: non blocking recvmsg() should not
- return -EINTR
-Message-ID: <20140424221910.GA4098@kroah.com>
+Subject: [PATCH 3.4 08/27] ipv6: ip6_append_data_mtu do not handle the mtu of the second fragment properly
+Date: Thu, 24 Apr 2014 14:55:42 -0700
+Message-Id: <20140424215552.192344192@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
 References: <20140424215551.942390050@linuxfoundation.org>
- <20140424215552.041408348@linuxfoundation.org>
- <874n1i8jzh.fsf@sable.mobileactivedefense.com>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874n1i8jzh.fsf@sable.mobileactivedefense.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 11:01:54PM +0100, Rainer Weikusat wrote:
-> Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> > 3.4-stable review patch.  If anyone has any objections, please let me
-> > know.
-> 
-> Since this is a machine generated bulk e-mail (as far as I understand
-> this) which is specifically not intended to be sent to me as person, as
-> per Eric Dumazet earlier statements, I object to being on the recipient
-> list without an opportunity to be removed from it as I have repeatedly
-> requested.
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-Yes, you are right, this is an automated email, based on the changelog
-comments in the kernel source tree, sorry about that.
+------------------
 
-> Insofar my understanding of European spam legislation goes, this is
-> illegal.
+From: lucien <lucien.xin@gmail.com>
 
-Glad I don't live in Europe :)
+[ Upstream commit e367c2d03dba4c9bcafad24688fadb79dd95b218 ]
 
-greg k-h
+In ip6_append_data_mtu(), when the xfrm mode is not tunnel(such as
+transport),the ipsec header need to be added in the first fragment, so the mtu
+will decrease to reserve space for it, then the second fragment come, the mtu
+should be turn back, as the commit 0c1833797a5a6ec23ea9261d979aa18078720b74
+said.  however, in the commit a493e60ac4bbe2e977e7129d6d8cbb0dd236be, it use
+*mtu = min(*mtu, ...) to change the mtu, which lead to the new mtu is alway
+equal with the first fragment's. and cannot turn back.
+
+when I test through  ping6 -c1 -s5000 $ip (mtu=1280):
+...frag (0|1232) ESP(spi=0x00002000,seq=0xb), length 1232
+...frag (1232|1216)
+...frag (2448|1216)
+...frag (3664|1216)
+...frag (4880|164)
+
+which should be:
+...frag (0|1232) ESP(spi=0x00001000,seq=0x1), length 1232
+...frag (1232|1232)
+...frag (2464|1232)
+...frag (3696|1232)
+...frag (4928|116)
+
+so delete the min() when change back the mtu.
+
+Signed-off-by: Xin Long <lucien.xin@gmail.com>
+Fixes: 75a493e60ac4bb ("ipv6: ip6_append_data_mtu did not care about pmtudisc and frag_size")
+Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ net/ipv6/ip6_output.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
+
+--- a/net/ipv6/ip6_output.c
++++ b/net/ipv6/ip6_output.c
+@@ -1194,21 +1194,19 @@ static void ip6_append_data_mtu(unsigned
+ 				unsigned int fragheaderlen,
+ 				struct sk_buff *skb,
+ 				struct rt6_info *rt,
+-				bool pmtuprobe)
++				unsigned int orig_mtu)
+ {
+ 	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
+ 		if (skb == NULL) {
+ 			/* first fragment, reserve header_len */
+-			*mtu = *mtu - rt->dst.header_len;
++			*mtu = orig_mtu - rt->dst.header_len;
+ 
+ 		} else {
+ 			/*
+ 			 * this fragment is not first, the headers
+ 			 * space is regarded as data space.
+ 			 */
+-			*mtu = min(*mtu, pmtuprobe ?
+-				   rt->dst.dev->mtu :
+-				   dst_mtu(rt->dst.path));
++			*mtu = orig_mtu;
+ 		}
+ 		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
+ 			      + fragheaderlen - sizeof(struct frag_hdr);
+@@ -1225,7 +1223,7 @@ int ip6_append_data(struct sock *sk, int
+ 	struct ipv6_pinfo *np = inet6_sk(sk);
+ 	struct inet_cork *cork;
+ 	struct sk_buff *skb, *skb_prev = NULL;
+-	unsigned int maxfraglen, fragheaderlen, mtu;
++	unsigned int maxfraglen, fragheaderlen, mtu, orig_mtu;
+ 	int exthdrlen;
+ 	int dst_exthdrlen;
+ 	int hh_len;
+@@ -1310,6 +1308,7 @@ int ip6_append_data(struct sock *sk, int
+ 		dst_exthdrlen = 0;
+ 		mtu = cork->fragsize;
+ 	}
++	orig_mtu = mtu;
+ 
+ 	hh_len = LL_RESERVED_SPACE(rt->dst.dev);
+ 
+@@ -1392,8 +1391,7 @@ alloc_new_skb:
+ 			if (skb == NULL || skb_prev == NULL)
+ 				ip6_append_data_mtu(&mtu, &maxfraglen,
+ 						    fragheaderlen, skb, rt,
+-						    np->pmtudisc ==
+-						    IPV6_PMTUDISC_PROBE);
++						    orig_mtu);
+ 
+ 			skb_prev = skb;
+ 
+
+
