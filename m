@@ -1,78 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769AbaDXKpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:45:52 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46584 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984AbaDXIxj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:39 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 072/182] mfd: max8925: Fix possible NULL pointer dereference on i2c_new_dummy error
-Date: Thu, 24 Apr 2014 09:49:57 +0100
-Message-Id: <1398329507-5911-73-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1755951AbaDXKqQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:46:16 -0400
+Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:40279
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755786AbaDXKqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 06:46:06 -0400
+From: Anders Berg <anders.berg@lsi.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        Anders Berg <anders.berg@lsi.com>
+Subject: [PATCH v2 0/6] Add platform support for LSI AXM55xx
+Date: Thu, 24 Apr 2014 12:44:03 +0200
+Message-ID: <cover.1398335771.git.anders.berg@lsi.com>
+X-Mailer: git-send-email 1.8.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [213.121.150.226]
+X-ClientProxiedBy: BY2PR07CA040.namprd07.prod.outlook.com (10.141.251.15) To
+ CO1PR07MB377.namprd07.prod.outlook.com (10.141.74.156)
+X-Forefront-PRVS: 01917B1794
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019001)(6009001)(428001)(189002)(199002)(80976001)(83322001)(50226001)(53416003)(31966008)(74662001)(19580395003)(99396002)(85852003)(77982001)(89996001)(47776003)(46102001)(83072002)(42186004)(79102001)(76482001)(20776003)(80022001)(66066001)(4396001)(74502001)(86362001)(93916002)(87286001)(88136002)(36756003)(50466002)(33646001)(87976001)(77156001)(50986999)(81542001)(81342001)(62966002)(48376002)(92726001)(92566001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR07MB377;H:swsaberg01.lsi.com;FPR:68D9FCE4.90548CA0.19D31B07.9EC4624B.2027C;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-OriginatorOrg: lsi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+Verion 2 of this series to introduces basic platform support for the LSI
+AXM5516 SoC. When this is in shape, could it be merged into the arm-soc tree?
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Changes:
 
-commit 96cf3dedc491d2f1f66cc26217f2b06b0c7b6797 upstream.
+v2:
+    * Rebased to arm-soc/for-next
+    * Removed redundant HAVE_SMP and ARCH_WANT_OPTIONAL_GPIOLIB from Kconfig
+    * Use CPU_METHOD_OF_DECLARE to register smp_operations
+    * Rework smp operations to avoid holding pen and custom headsmp.S
+    * Clean up board file
+    * Corrected clock properties for arm,sp804 dts node.
+    * Changed machine compatible strings to include full model number.
+    * Break out clk-axxia driver as separate patch
+    * Removed Makefile.boot
 
-During probe the driver allocates dummy I2C devices for RTC and ADC
-with i2c_new_dummy() but it does not check the return value of this
-calls.
+Anders Berg (6):
+  ARM: Add platform support for LSI AXM55xx SoC
+  clk: Add clock driver for AXM55xx SoC
+  ARM: dts: Device tree for AXM55xx.
+  ARM: axxia: Adding defconfig for AXM55xx
+  power: reset: Add Axxia system reset driver
+  ARM: dts: axxia: Add reset controller
 
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by i2c_unregister_device().
+ Documentation/devicetree/bindings/arm/axxia.txt    |  12 +
+ .../devicetree/bindings/clock/clk-axxia.txt        |  88 ++++++
+ .../bindings/power_supply/axxia-reset.txt          |  20 ++
+ arch/arm/Kconfig                                   |   2 +
+ arch/arm/Makefile                                  |   2 +
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/axm5516-amarillo.dts             |  51 ++++
+ arch/arm/boot/dts/axm5516-cpus.dtsi                | 204 ++++++++++++++
+ arch/arm/boot/dts/axm55xx.dtsi                     | 311 +++++++++++++++++++++
+ arch/arm/configs/axm55xx_defconfig                 | 248 ++++++++++++++++
+ arch/arm/mach-axxia/Kconfig                        |  16 ++
+ arch/arm/mach-axxia/Makefile                       |   2 +
+ arch/arm/mach-axxia/axxia.c                        |  28 ++
+ arch/arm/mach-axxia/platsmp.c                      |  89 ++++++
+ drivers/clk/Makefile                               |   1 +
+ drivers/clk/clk-axxia.c                            | 281 +++++++++++++++++++
+ drivers/power/reset/Kconfig                        |   8 +
+ drivers/power/reset/Makefile                       |   1 +
+ drivers/power/reset/axxia-reset.c                  |  97 +++++++
+ 19 files changed, 1462 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/axxia.txt
+ create mode 100644 Documentation/devicetree/bindings/clock/clk-axxia.txt
+ create mode 100644 Documentation/devicetree/bindings/power_supply/axxia-reset.txt
+ create mode 100644 arch/arm/boot/dts/axm5516-amarillo.dts
+ create mode 100644 arch/arm/boot/dts/axm5516-cpus.dtsi
+ create mode 100644 arch/arm/boot/dts/axm55xx.dtsi
+ create mode 100644 arch/arm/configs/axm55xx_defconfig
+ create mode 100644 arch/arm/mach-axxia/Kconfig
+ create mode 100644 arch/arm/mach-axxia/Makefile
+ create mode 100644 arch/arm/mach-axxia/axxia.c
+ create mode 100644 arch/arm/mach-axxia/platsmp.c
+ create mode 100644 drivers/clk/clk-axxia.c
+ create mode 100644 drivers/power/reset/axxia-reset.c
 
-If i2c_new_dummy() fails for RTC or ADC devices, fail also the probe
-for main MFD driver.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/mfd/max8925-i2c.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
-index 8042b32..edc9eac 100644
---- a/drivers/mfd/max8925-i2c.c
-+++ b/drivers/mfd/max8925-i2c.c
-@@ -181,9 +181,18 @@ static int max8925_probe(struct i2c_client *client,
- 	mutex_init(&chip->io_lock);
- 
- 	chip->rtc = i2c_new_dummy(chip->i2c->adapter, RTC_I2C_ADDR);
-+	if (!chip->rtc) {
-+		dev_err(chip->dev, "Failed to allocate I2C device for RTC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(chip->rtc, chip);
- 
- 	chip->adc = i2c_new_dummy(chip->i2c->adapter, ADC_I2C_ADDR);
-+	if (!chip->adc) {
-+		dev_err(chip->dev, "Failed to allocate I2C device for ADC\n");
-+		i2c_unregister_device(chip->rtc);
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(chip->adc, chip);
- 
- 	device_init_wakeup(&client->dev, 1);
 -- 
-1.9.1
+1.8.3.2
 
