@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140AbaDXLOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:14:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46501 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753792AbaDXIxP (ORCPT
+	id S1754705AbaDXLSp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:18:45 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57443 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015AbaDXLSk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:15 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Kees Cook <keescook@chromium.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 056/182] usb: gadget: tcm_usb_gadget: stop format strings
-Date: Thu, 24 Apr 2014 09:49:41 +0100
-Message-Id: <1398329507-5911-57-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 07:18:40 -0400
+Message-ID: <5358F30E.9080402@codeaurora.org>
+Date: Thu, 24 Apr 2014 06:18:38 -0500
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:28.0) Gecko/20100101 Firefox/28.0 SeaMonkey/2.25
+MIME-Version: 1.0
+To: "Westerberg, Mika" <mika.westerberg@intel.com>
+CC: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
+References: <1371555182-12418-2-git-send-email-mathias.nyman@linux.intel.com> <CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com> <534B93BA.6020406@linux.intel.com> <534BFAAF.3070805@codeaurora.org> <534D0370.50108@linux.intel.com> <535005BA.1040405@codeaurora.org> <5357A80B.8030701@linux.intel.com> <5357ACF1.9070206@codeaurora.org> <20140423135915.GY30677@intel.com> <5357D8CC.3080501@codeaurora.org> <20140424063546.GA30677@intel.com>
+In-Reply-To: <20140424063546.GA30677@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+Westerberg, Mika wrote:
+>> >That is, when the kernel parses the ASL, and it seems a command to
+>> >configure pin #3 to function #4, it calls the local pinctrl driver to do
+>> >that?
 
-------------------
+> I'm not aware of ASL code that allows you to do that. Do you have examples?
 
-From: Kees Cook <keescook@chromium.org>
+No, that's my point.  I was expecting the pinmux functions of the 
+pinctrl driver are used by ACPI, but apparently they aren't, and that's 
+why I'm asking.  I'm wondering why a pinctrl driver for an ACPI platform 
+should be defining pinmux function groups.  I haven't gotten a straight 
+answer to that question.
 
-commit aba37fd975f0dd58e025c99c2a79b61b20190831 upstream.
-
-This makes sure that the name coming out of configfs cannot be used
-accidentally as a format string.
-
-Signed-off-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/gadget/tcm_usb_gadget.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/usb/gadget/tcm_usb_gadget.c b/drivers/usb/gadget/tcm_usb_gadget.c
-index 0ff3339..d9e15e8 100644
---- a/drivers/usb/gadget/tcm_usb_gadget.c
-+++ b/drivers/usb/gadget/tcm_usb_gadget.c
-@@ -1613,7 +1613,7 @@ static struct se_wwn *usbg_make_tport(
- 		return ERR_PTR(-ENOMEM);
- 	}
- 	tport->tport_wwpn = wwpn;
--	snprintf(tport->tport_name, sizeof(tport->tport_name), wnn_name);
-+	snprintf(tport->tport_name, sizeof(tport->tport_name), "%s", wnn_name);
- 	return &tport->tport_wwn;
- }
- 
 -- 
-1.9.1
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, hosted by The Linux Foundation.
