@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759224AbaDXWxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:53:42 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:53142 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754102AbaDXVou (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:44:50 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>, Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 03/26] ARM: OMAP: dmtimer: Add note to set parent from DT
-Date: Thu, 24 Apr 2014 16:43:46 -0500
-Message-ID: <1398375849-6017-4-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398375849-6017-1-git-send-email-joelf@ti.com>
-References: <1398375849-6017-1-git-send-email-joelf@ti.com>
+	id S1759207AbaDXWxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:53:39 -0400
+Received: from mail-qa0-f43.google.com ([209.85.216.43]:47704 "EHLO
+	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757886AbaDXWuH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 18:50:07 -0400
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20140424025016.GB2180@darkstar.nay.redhat.com>
+References: <20140424023544.GA2180@darkstar.nay.redhat.com>
+	<CAGXu5j+TP2=iVYj=a6YGiGdOUqznb1MxdLLz5tjL8Hwwcq2K0Q@mail.gmail.com>
+	<20140424025016.GB2180@darkstar.nay.redhat.com>
+Date: Thu, 24 Apr 2014 15:50:06 -0700
+X-Google-Sender-Auth: _6KC_Dapj1Yp5Dv10rXP68YslIE
+Message-ID: <CAGXu5jKaog6X+jw6Zh3iHSHS8KFUbLEHm75=HbVORJ-crpr7Fw@mail.gmail.com>
+Subject: Re: kaslr should avoid setup_data region
+From: Kees Cook <keescook@chromium.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Once clock-parents or default-parent support for DT clocks is available,
-we should use it to set clock parent and turn clk_set_parent into a NOOP.
+Ah, it sounds like boot_params.hdr.setup_data contains a series of
+e820-like entries chained together as a linked list? Which loaders
+currently populate that? Looks like EFI? Seems like
+arch/x86/boot/compressed/eboot.c works on setup_data at least.
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
----
- arch/arm/plat-omap/dmtimer.c |    4 ++++
- 1 file changed, 4 insertions(+)
+I won't be in a position to test EFI booting for a while. If someone
+else took this, that would make it get fixed much faster.
 
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index f5a674c..4debb3d 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -165,6 +165,10 @@ static int omap_dm_timer_prepare(struct omap_dm_timer *timer)
- 	__omap_dm_timer_enable_posted(timer);
- 	omap_dm_timer_disable(timer);
- 
-+	/*
-+	 * FIXME: Once DT clock-parents or set-parents support is upstream,
-+	 * this is to become a NOOP.
-+	 */
- 	return omap_dm_timer_set_source(timer, OMAP_TIMER_SRC_32_KHZ);
- }
- 
+Do you have examples where this is actually causing failures?
+
+-Kees
+
+On Wed, Apr 23, 2014 at 7:50 PM, Dave Young <dyoung@redhat.com> wrote:
+> On 04/23/14 at 07:43pm, Kees Cook wrote:
+>> On Wed, Apr 23, 2014 at 7:35 PM, Dave Young <dyoung@redhat.com> wrote:
+>> > Hello Kees
+>> >
+>> > I'm worrying that setup_data regions could be overwitten by randomize
+>> > kernel base. Would you like to fix it in kaslr code?
+>> >
+>> > One problem is there could be a lot of setup_data regions but current
+>> > mem_avoid is an fixed array.
+>>
+>> Sure, can you give me some examples? Seems like it shouldn't be too
+>> hard to have the mem_avoid logic walk additional areas.
+>
+> Great, To walk through the list just like the function parse_setup_data in
+> arch/x86/kernel/setup.c
+>
+> Thanks
+> Dave
+
+
+
 -- 
-1.7.9.5
-
+Kees Cook
+Chrome OS Security
