@@ -1,41 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757475AbaDXV4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:56:07 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:56931 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753805AbaDXV4B (ORCPT
+	id S1756589AbaDXVzr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:55:47 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39866 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757117AbaDXVxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:56:01 -0400
-Date: Thu, 24 Apr 2014 22:55:58 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: fs: dcookie: freeing active timer
-Message-ID: <20140424215558.GZ18016@ZenIV.linux.org.uk>
-References: <53594244.6070305@oracle.com>
- <20140424172708.GY18016@ZenIV.linux.org.uk>
- <53594B16.4000901@oracle.com>
+	Thu, 24 Apr 2014 17:53:22 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Dave Kleikamp <dave.kleikamp@oracle.com>,
+        Hugh Dickins <hughd@google.com>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH 3.4 18/27] Revert "sparc64: Fix __copy_{to,from}_user_inatomic defines."
+Date: Thu, 24 Apr 2014 14:55:52 -0700
+Message-Id: <20140424215552.516725450@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
+References: <20140424215551.942390050@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53594B16.4000901@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 01:34:14PM -0400, Sasha Levin wrote:
+3.4-stable review patch.  If anyone has any objections, please let me know.
 
-> > Why does that code bother with destroying/creating that sucker dynamically?
-> > Is there any point at all?
-> 
-> I'm not sure about the dynamic allocation part, but I fear that if we just
-> switch to using static allocations it'll hide the underlying issue that
-> triggered this bug instead of fixing it.
+------------------
 
-FWIW, slub.c variant of kmem_cache_destroy() is buggered - struct kobject
-embedded into struct kmem_cache, its ktype is slab_ktype, which has
-NULL ->release()...
+From: Dave Kleikamp <dave.kleikamp@oracle.com>
+
+[ Upstream commit 16932237f2978a2265662f8de4af743b1f55a209 ]
+
+This reverts commit 145e1c0023585e0e8f6df22316308ec61c5066b2.
+
+This commit broke the behavior of __copy_from_user_inatomic when
+it is only partially successful. Instead of returning the number
+of bytes not copied, it now returns 1. This translates to the
+wrong value being returned by iov_iter_copy_from_user_atomic.
+
+xfstests generic/246 and LTP writev01 both fail on btrfs and nfs
+because of this.
+
+Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
+Cc: Hugh Dickins <hughd@google.com>
+Cc: David S. Miller <davem@davemloft.net>
+Cc: sparclinux@vger.kernel.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+---
+ arch/sparc/include/asm/uaccess_64.h |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/arch/sparc/include/asm/uaccess_64.h
++++ b/arch/sparc/include/asm/uaccess_64.h
+@@ -266,8 +266,8 @@ extern long __strnlen_user(const char __
+ 
+ #define strlen_user __strlen_user
+ #define strnlen_user __strnlen_user
+-#define __copy_to_user_inatomic ___copy_to_user
+-#define __copy_from_user_inatomic ___copy_from_user
++#define __copy_to_user_inatomic __copy_to_user
++#define __copy_from_user_inatomic __copy_from_user
+ 
+ #endif  /* __ASSEMBLY__ */
+ 
+
+
