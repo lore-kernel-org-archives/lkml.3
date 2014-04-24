@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755098AbaDXVqF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:46:05 -0400
+	id S1758187AbaDXWdW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:33:22 -0400
 Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754841AbaDXVp4 (ORCPT
+	with ESMTP id S1755048AbaDXVqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:45:56 -0400
+	Thu, 24 Apr 2014 17:46:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Jingoo Han <jg1.han@samsung.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 3.14 05/33] PCI: designware: Fix RC BAR to be single 64-bit non-prefetchable memory BAR
-Date: Thu, 24 Apr 2014 14:48:18 -0700
-Message-Id: <20140424214450.215740091@linuxfoundation.org>
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Mark Tinguely <tinguely@sgi.com>, Ben Myers <bpm@sgi.com>,
+        Dave Chinner <david@fromorbit.com>
+Subject: [PATCH 3.14 20/33] xfs: fix directory hash ordering bug
+Date: Thu, 24 Apr 2014 14:48:33 -0700
+Message-Id: <20140424214452.532461581@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
 References: <20140424214449.423169713@linuxfoundation.org>
@@ -30,40 +30,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Mohit Kumar <mohit.kumar@st.com>
+From: Mark Tinguely <tinguely@sgi.com>
 
-commit dbffdd6862e67d60703f2df66c558bf448f81d6e upstream.
+commit c88547a8119e3b581318ab65e9b72f27f23e641d upstream.
 
-The Synopsys PCIe core provides one pair of 32-bit BARs (BAR 0 and BAR 1).
-The BARs can be configured as follows:
+Commit f5ea1100 ("xfs: add CRCs to dir2/da node blocks") introduced
+in 3.10 incorrectly converted the btree hash index array pointer in
+xfs_da3_fixhashpath(). It resulted in the the current hash always
+being compared against the first entry in the btree rather than the
+current block index into the btree block's hash entry array. As a
+result, it was comparing the wrong hashes, and so could misorder the
+entries in the btree.
 
-  - One 64-bit BAR: BARs 0 and 1 are combined to form a single 64-bit BAR
-  - Two 32-bit BARs: BARs 0 and 1 are two independent 32-bit BARs
+For most cases, this doesn't cause any problems as it requires hash
+collisions to expose the ordering problem. However, when there are
+hash collisions within a directory there is a very good probability
+that the entries will be ordered incorrectly and that actually
+matters when duplicate hashes are placed into or removed from the
+btree block hash entry array.
 
-This patch corrects 64-bit, non-prefetchable memory BAR configuration
-implemented in dw driver.
+This bug results in an on-disk directory corruption and that results
+in directory verifier functions throwing corruption warnings into
+the logs. While no data or directory entries are lost, access to
+them may be compromised, and attempts to remove entries from a
+directory that has suffered from this corruption may result in a
+filesystem shutdown.  xfs_repair will fix the directory hash
+ordering without data loss occuring.
 
-Signed-off-by: Mohit Kumar <mohit.kumar@st.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Pratyush Anand <pratyush.anand@st.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Arnd Bergmann <arnd@arndb.de>
+[dchinner: wrote useful a commit message]
+
+Reported-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
+Signed-off-by: Mark Tinguely <tinguely@sgi.com>
+Reviewed-by: Ben Myers <bpm@sgi.com>
+Signed-off-by: Dave Chinner <david@fromorbit.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/host/pcie-designware.c |    2 +-
+ fs/xfs/xfs_da_btree.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/pci/host/pcie-designware.c
-+++ b/drivers/pci/host/pcie-designware.c
-@@ -800,7 +800,7 @@ void dw_pcie_setup_rc(struct pcie_port *
- 
- 	/* setup RC BARs */
- 	dw_pcie_writel_rc(pp, 0x00000004, PCI_BASE_ADDRESS_0);
--	dw_pcie_writel_rc(pp, 0x00000004, PCI_BASE_ADDRESS_1);
-+	dw_pcie_writel_rc(pp, 0x00000000, PCI_BASE_ADDRESS_1);
- 
- 	/* setup interrupt pins */
- 	dw_pcie_readl_rc(pp, PCI_INTERRUPT_LINE, &val);
+--- a/fs/xfs/xfs_da_btree.c
++++ b/fs/xfs/xfs_da_btree.c
+@@ -1295,7 +1295,7 @@ xfs_da3_fixhashpath(
+ 		node = blk->bp->b_addr;
+ 		dp->d_ops->node_hdr_from_disk(&nodehdr, node);
+ 		btree = dp->d_ops->node_tree_p(node);
+-		if (be32_to_cpu(btree->hashval) == lasthash)
++		if (be32_to_cpu(btree[blk->index].hashval) == lasthash)
+ 			break;
+ 		blk->hashval = lasthash;
+ 		btree[blk->index].hashval = cpu_to_be32(lasthash);
 
 
