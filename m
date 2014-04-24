@@ -1,65 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754454AbaDXXaS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 19:30:18 -0400
-Received: from longford.logfs.org ([213.229.74.203]:43208 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430AbaDXXaQ (ORCPT
+	id S1754686AbaDXXay (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 19:30:54 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:58950 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754535AbaDXXaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 19:30:16 -0400
-Date: Thu, 24 Apr 2014 19:29:16 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: David Rientjes <rientjes@google.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, akpm@linux-foundation.org, cxie@redhat.com,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] printk: Print cpu number along with time
-Message-ID: <20140424232916.GD25446@logfs.org>
-References: <20140423125352.704f9fb2@annuminas.surriel.com>
- <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
- <20140424005247.GA17713@logfs.org>
- <20140424194024.GA25446@logfs.org>
- <20140424195821.GA3092@kroah.com>
- <alpine.LNX.2.00.1404250005020.8903@pobox.suse.cz>
- <alpine.DEB.2.02.1404241518210.24983@chino.kir.corp.google.com>
- <alpine.LNX.2.00.1404250020370.8903@pobox.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LNX.2.00.1404250020370.8903@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 24 Apr 2014 19:30:52 -0400
+Subject: Re: [PATCH 5/5] uprobes/x86: Move default_xol_ops's data into
+ arch_uprobe->def
+From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Denys Vlasenko <dvlasenk@redhat.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Jonathan Lebon <jlebon@redhat.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20140422144753.GA8062@redhat.com>
+References: <20140422144753.GA8062@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Apr 2014 16:30:47 -0700
+Message-ID: <1398382247.4536.12.camel@oc7886638347.ibm.com.usor.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042423-3532-0000-0000-0000014B4178
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 April 2014 00:21:20 +0200, Jiri Kosina wrote:
-> On Thu, 24 Apr 2014, David Rientjes wrote:
+On Tue, 2014-04-22 at 16:47 +0200, Oleg Nesterov wrote:
+> Finally we can move arch_uprobe->fixups/rip_rela_target_address
+> into the new "def" struct and place this struct in the union, they
+> are only used by default_xol_ops paths.
 > 
-> > > Well, if you have dmesg dump from panic that happens every other year, and 
-> > > you have to do post-mortem analysis on it, I am pretty sure you would love 
-> > > to be able to figure out how the stack traces would look like without 
-> > > inter-CPU interleaving. And I am pretty sure you wouldn't want to 
-> > > insert/enable a tracepoint and wait another two years for the bug to 
-> > > trigger again.
-> > 
-> > Sounds like the appropriate fix would be to serialize stack dumping to the 
-> > kernel log.
+> The patch also renames rip_rela_target_address to riprel_target just
+> to make this name shorter.
 > 
-> That's rather difficult, as it can be done both from NMI and non-NMI 
-> contexts, and those are very hard to synchronize.
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-It is also easy to get wrong and cause a panic() that doesn't reboot
-but instead gets stuck somewhere.
+I see a couple of nits in this patch (see below), but the others look
+good.
 
-Plus, you might want similar serialization for other multi-line debug
-messages.  Scsi error messages come to mind, but we have many more
-examples.
+Patches 1-5 of this set:
+Reviewed-by: Jim Keniston <jkenisto@us.ibm.com>
 
-Jörn
+> ---
+>  arch/x86/include/asm/uprobes.h |   12 ++++++----
+>  arch/x86/kernel/uprobes.c      |   41 +++++++++++++++++++--------------------
+>  2 files changed, 27 insertions(+), 26 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
+> index 93bee7b..72caff7 100644
+> --- a/arch/x86/include/asm/uprobes.h
+> +++ b/arch/x86/include/asm/uprobes.h
+> @@ -41,18 +41,20 @@ struct arch_uprobe {
+>  		u8			ixol[MAX_UINSN_BYTES];
+>  	};
+> 
+> -	u16				fixups;
+>  	const struct uprobe_xol_ops	*ops;
+> 
+>  	union {
+> -#ifdef CONFIG_X86_64
+> -		unsigned long			rip_rela_target_address;
+> -#endif
+>  		struct {
+>  			s32	offs;
+>  			u8	ilen;
+>  			u8	opc1;
+> -		}				branch;
+> +		}			branch;
+> +		struct {
+> +#ifdef CONFIG_X86_64
+> +			long	riprel_target;
+> +#endif
+> +			u16	fixups;
+> +		} 			def;
 
---
-Any headline which ends in a question mark can be answered by the word 'no'.
--- Betteridge's Law
+"def" is kind of ambiguous.  How about "dfault" or some such?
+
+>  	};
+>  };
+> 
+> diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
+> index e6314a2..69b2d61 100644
+> --- a/arch/x86/kernel/uprobes.c
+> +++ b/arch/x86/kernel/uprobes.c
+...
+> @@ -636,12 +635,12 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+> 
+>  	/*
+>  	 * Figure out which fixups arch_uprobe_post_xol() will need to perform,
+> -	 * and annotate arch_uprobe->fixups accordingly. To start with, ->fixups
+> -	 * is either zero or it reflects rip-related fixups.
+> +	 * and annotate def->fixups accordingly. To start with, ->fixups is
+> +	 * either zero or it reflects rip-related fixups.
+
+That sentence stopped being true a couple of patch sets ago.
+handle_riprel_insn() is called later in this function now.
+
+>  	 */
+>  	switch (OPCODE1(&insn)) {
+>  	case 0x9d:		/* popf */
+> -		auprobe->fixups |= UPROBE_FIX_SETF;
+> +		auprobe->def.fixups |= UPROBE_FIX_SETF;
+>  		break;
+>  	case 0xc3:		/* ret or lret -- ip is correct */
+>  	case 0xcb:
+> @@ -669,9 +668,9 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+>  	}
+> 
+>  	if (fix_ip)
+> -		auprobe->fixups |= UPROBE_FIX_IP;
+> +		auprobe->def.fixups |= UPROBE_FIX_IP;
+>  	if (fix_call)
+> -		auprobe->fixups |= UPROBE_FIX_CALL;
+> +		auprobe->def.fixups |= UPROBE_FIX_CALL;
+> 
+>  	auprobe->ops = &default_xol_ops;
+>  	return 0;
+
+Jim
+
