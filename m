@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932321AbaDXQeT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:34:19 -0400
-Received: from fieldses.org ([174.143.236.118]:60110 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765AbaDXQeP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:34:15 -0400
-Date: Thu, 24 Apr 2014 12:34:14 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        Devel FS Linux <linux-fsdevel@vger.kernel.org>,
-        Linux Kernel mailing list <linux-kernel@vger.kernel.org>,
-        Layton Jeff <jlayton@redhat.com>
-Subject: Re: nfsd bug fixes for 3.15
-Message-ID: <20140424163414.GA16429@fieldses.org>
-References: <20140424062516.GA8891@fieldses.org>
- <CAHQdGtRfybuqsxiS=Hd4Stkm1ex13f6SeEk5XbQcy35UZStHRA@mail.gmail.com>
- <20140424153116.GA15459@fieldses.org>
+	id S932412AbaDXQgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:36:36 -0400
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:57513 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932125AbaDXQge (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 12:36:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424153116.GA15459@fieldses.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1398354436-25467-1-git-send-email-standby24x7@gmail.com>
+References: <1398354436-25467-1-git-send-email-standby24x7@gmail.com>
+From: Bryan Wu <cooloney@gmail.com>
+Date: Thu, 24 Apr 2014 09:36:12 -0700
+Message-ID: <CAK5ve-KyoLaJxZWDokKTyKvvXK0w6vVWFS7AWM6G-dzDkbKpDA@mail.gmail.com>
+Subject: Re: [PATCH] video/backlight: Fix string type mismatch in s6e63m0.c
+To: Masanari Iida <standby24x7@gmail.com>
+Cc: Jingoo Han <jg1.han@samsung.com>, Lee Jones <lee.jones@linaro.org>,
+        FBDEV list <linux-fbdev@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 11:31:16AM -0400, J. Bruce Fields wrote:
-> On Thu, Apr 24, 2014 at 06:51:03AM -0400, Trond Myklebust wrote:
-> > Hi Bruce,
-> > 
-> > On Thu, Apr 24, 2014 at 2:25 AM, J. Bruce Fields <bfields@fieldses.org> wrote:
-> > > Please pull the following bug fixes for 3.15 from:
-> > >
-> > >   git://linux-nfs.org/~bfields/linux.git for-3.15
-> > >
-> > > Three small nfsd bugfixes (including one locks.c fix for a bug triggered
-> > > only from nfsd).
-> > >
-> > > Jeff's patches are for long-existing problems that became easier to
-> > > trigger since the addition of vfs delegation support.
-> > >
-> > > --b.
-> > >
-> > > ----------------------------------------------------------------
-> > > J. Bruce Fields (1):
-> > >       Revert "nfsd4: fix nfs4err_resource in 4.1 case"
-> > >
-> > 
-> > Wait. Why?
-> 
-> Have you changed your mind since our previous discussion, or just
-> forgotten it?  (Or did I screw up and revert the wrong commit?)  See
-> 
-> 	http://mid.gmane.org/<BAD6904F-A82A-4FBC-807F-16560B2A23E0@primarydata.com>
-> 
-> > NFS4ERR_RESOURCE breaks the Linux client.
-> 
-> This returns us to pre-3.15 behavior so shouldn't introduce any new
-> breakage.
-> 
-> Fundamentally the problem is that we're returning an error in cases that
-> shouldn't succeed, and rather than replacing one incorrect error by
+On Thu, Apr 24, 2014 at 8:47 AM, Masanari Iida <standby24x7@gmail.com> wrote:
+> Fix string type mismatch in s6e63m0_sysfs_show_gamma_table().
+> gamma_table_count is defined as unsigned int.
+>
 
-s/shouldn't/should/, apologies!--b.
+Looks good to me,
+Acked-by: Bryan Wu <cooloney@gmail.com>
 
-> another it seemed better to wait for a proper fix.
-> 
-> --b.
+> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+> ---
+>  drivers/video/backlight/s6e63m0.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
+> index 510a1bc..2d6d481 100644
+> --- a/drivers/video/backlight/s6e63m0.c
+> +++ b/drivers/video/backlight/s6e63m0.c
+> @@ -703,7 +703,7 @@ static ssize_t s6e63m0_sysfs_show_gamma_table(struct device *dev,
+>         struct s6e63m0 *lcd = dev_get_drvdata(dev);
+>         char temp[3];
+>
+> -       sprintf(temp, "%d\n", lcd->gamma_table_count);
+> +       sprintf(temp, "%u\n", lcd->gamma_table_count);
+>         strcpy(buf, temp);
+>
+>         return strlen(buf);
+> --
+> 2.0.0.rc0.26.g779792a
+>
