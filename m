@@ -1,168 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752646AbaDXAQs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 20:16:48 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:50271 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367AbaDXAQq (ORCPT
+	id S1752723AbaDXARR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 20:17:17 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:52649 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaDXARP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 20:16:46 -0400
-Date: Thu, 24 Apr 2014 02:16:42 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+	Wed, 23 Apr 2014 20:17:15 -0400
+Date: Thu, 24 Apr 2014 08:17:05 +0800
+From: Shaohua Li <shli@kernel.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Dan Streetman <ddstreet@ieee.org>, Hugh Dickins <hughd@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 2/3] nohz: Synchronize sleep time stats with memory
- barriers
-Message-ID: <20140424001640.GA27571@localhost.localdomain>
-References: <1398279636-21503-1-git-send-email-dvlasenk@redhat.com>
- <1398279636-21503-2-git-send-email-dvlasenk@redhat.com>
+        Michal Hocko <mhocko@suse.cz>,
+        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
+        Shaohua Li <shli@fusionio.com>, Weijie Yang <weijieut@gmail.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] swap: change swap_info singly-linked list to
+ list_head
+Message-ID: <20140424001705.GA8066@kernel.org>
+References: <alpine.LSU.2.11.1402232344280.1890@eggly.anvils>
+ <1397336454-13855-1-git-send-email-ddstreet@ieee.org>
+ <1397336454-13855-2-git-send-email-ddstreet@ieee.org>
+ <20140423103400.GH23991@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398279636-21503-2-git-send-email-dvlasenk@redhat.com>
+In-Reply-To: <20140423103400.GH23991@suse.de>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 09:00:35PM +0200, Denys Vlasenko wrote:
-> When some call site uses get_cpu_*_time_us() to read a sleeptime
-> stat, it deduces the total sleeptime by adding the pending time
-> to the last sleeptime snapshot if the CPU target is idle.
+On Wed, Apr 23, 2014 at 11:34:00AM +0100, Mel Gorman wrote:
+> > @@ -366,7 +361,7 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
+> >  		}
+> >  		vm_unacct_memory(pages);
+> >  		*unused = pages_to_unuse;
+> > -		*swapid = type;
+> > +		*swapid = si->type;
+> >  		ret = 0;
+> >  		break;
+> >  	}
+> > @@ -413,7 +408,7 @@ void frontswap_shrink(unsigned long target_pages)
+> >  	/*
+> >  	 * we don't want to hold swap_lock while doing a very
+> >  	 * lengthy try_to_unuse, but swap_list may change
+> > -	 * so restart scan from swap_list.head each time
+> > +	 * so restart scan from swap_list_head each time
+> >  	 */
+> >  	spin_lock(&swap_lock);
+> >  	ret = __frontswap_shrink(target_pages, &pages_to_unuse, &type);
+> > diff --git a/mm/swapfile.c b/mm/swapfile.c
+> > index 4a7f7e6..b958645 100644
+> > --- a/mm/swapfile.c
+> > +++ b/mm/swapfile.c
+> > @@ -51,14 +51,14 @@ atomic_long_t nr_swap_pages;
+> >  /* protected with swap_lock. reading in vm_swap_full() doesn't need lock */
+> >  long total_swap_pages;
+> >  static int least_priority;
+> > -static atomic_t highest_priority_index = ATOMIC_INIT(-1);
+> >  
+> >  static const char Bad_file[] = "Bad swap file entry ";
+> >  static const char Unused_file[] = "Unused swap file entry ";
+> >  static const char Bad_offset[] = "Bad swap offset entry ";
+> >  static const char Unused_offset[] = "Unused swap offset entry ";
+> >  
+> > -struct swap_list_t swap_list = {-1, -1};
+> > +/* all active swap_info */
+> > +LIST_HEAD(swap_list_head);
+> >  
+> >  struct swap_info_struct *swap_info[MAX_SWAPFILES];
+> >  
+> > @@ -640,66 +640,50 @@ no_page:
+> >  
+> >  swp_entry_t get_swap_page(void)
+> >  {
+> > -	struct swap_info_struct *si;
+> > +	struct swap_info_struct *si, *next;
+> >  	pgoff_t offset;
+> > -	int type, next;
+> > -	int wrapped = 0;
+> > -	int hp_index;
+> > +	struct list_head *tmp;
+> >  
+> >  	spin_lock(&swap_lock);
+> >  	if (atomic_long_read(&nr_swap_pages) <= 0)
+> >  		goto noswap;
+> >  	atomic_long_dec(&nr_swap_pages);
+> >  
+> > -	for (type = swap_list.next; type >= 0 && wrapped < 2; type = next) {
+> > -		hp_index = atomic_xchg(&highest_priority_index, -1);
+> > -		/*
+> > -		 * highest_priority_index records current highest priority swap
+> > -		 * type which just frees swap entries. If its priority is
+> > -		 * higher than that of swap_list.next swap type, we use it.  It
+> > -		 * isn't protected by swap_lock, so it can be an invalid value
+> > -		 * if the corresponding swap type is swapoff. We double check
+> > -		 * the flags here. It's even possible the swap type is swapoff
+> > -		 * and swapon again and its priority is changed. In such rare
+> > -		 * case, low prority swap type might be used, but eventually
+> > -		 * high priority swap will be used after several rounds of
+> > -		 * swap.
+> > -		 */
+> > -		if (hp_index != -1 && hp_index != type &&
+> > -		    swap_info[type]->prio < swap_info[hp_index]->prio &&
+> > -		    (swap_info[hp_index]->flags & SWP_WRITEOK)) {
+> > -			type = hp_index;
+> > -			swap_list.next = type;
+> > -		}
+> > -
+> > -		si = swap_info[type];
+> > -		next = si->next;
+> > -		if (next < 0 ||
+> > -		    (!wrapped && si->prio != swap_info[next]->prio)) {
+> > -			next = swap_list.head;
+> > -			wrapped++;
+> > -		}
+> > -
+> > +	list_for_each(tmp, &swap_list_head) {
+> > +		si = list_entry(tmp, typeof(*si), list);
+> >  		spin_lock(&si->lock);
+> > -		if (!si->highest_bit) {
+> > -			spin_unlock(&si->lock);
+> > -			continue;
+> > -		}
+> > -		if (!(si->flags & SWP_WRITEOK)) {
+> > +		if (!si->highest_bit || !(si->flags & SWP_WRITEOK)) {
+> >  			spin_unlock(&si->lock);
+> >  			continue;
+> >  		}
+> >  
+> > -		swap_list.next = next;
+> > +		/*
+> > +		 * rotate the current swap_info that we're going to use
+> > +		 * to after any other swap_info that have the same prio,
+> > +		 * so that all equal-priority swap_info get used equally
+> > +		 */
+> > +		next = si;
+> > +		list_for_each_entry_continue(next, &swap_list_head, list) {
+> > +			if (si->prio != next->prio)
+> > +				break;
+> > +			list_rotate_left(&si->list);
+> > +			next = si;
+> > +		}
+> >  
 > 
-> But this only works if idle_sleeptime, idle_entrytime and idle_active are
-> read and updated under some disciplined order.
-> 
-> This patch changes updaters to modify idle_entrytime,
-> {idle,iowait}_sleeptime, and idle_active exactly in this order,
-> with write barriers on SMP to ensure other CPUs see then in this order too.
-> Readers are changed read them in the opposite order, with read barriers.
-> When readers detect a race by seeing cleared idle_entrytime,
-> they retry the reads.
-> 
-> The "iowait-ness" of every idle period is decided at the moment it starts:
-> if this CPU's run-queue had tasks waiting on I/O, then this idle
-> period's duration will be added to iowait_sleeptime.
-> This, along with proper SMP syncronization, fixes the bug where iowait
-> counts could go backwards.
-> 
-> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> Cc: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
-> Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@kernel.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Arjan van de Ven <arjan@linux.intel.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/time/tick-sched.c | 83 ++++++++++++++++++++++++++++++++++++++----------
->  1 file changed, 66 insertions(+), 17 deletions(-)
-> 
-> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-> index 73ced0c4..a99770e 100644
-> --- a/kernel/time/tick-sched.c
-> +++ b/kernel/time/tick-sched.c
-> @@ -409,10 +409,15 @@ static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
->  
->  	/* Updates the per cpu time idle statistics counters */
->  	delta = ktime_sub(now, ts->idle_entrytime);
-> -	if (nr_iowait_cpu(smp_processor_id()) > 0)
-> +	ts->idle_entrytime.tv64 = 0;
-> +	smp_wmb();
-> +
-> +	if (ts->idle_active == 2)
->  		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
->  	else
->  		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
-> +
-> +	smp_wmb();
->  	ts->idle_active = 0;
->  
->  	sched_clock_idle_wakeup_event(0);
-> @@ -423,7 +428,8 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
->  	ktime_t now = ktime_get();
->  
->  	ts->idle_entrytime = now;
-> -	ts->idle_active = 1;
-> +	smp_wmb();
-> +	ts->idle_active = nr_iowait_cpu(smp_processor_id()) ? 2 : 1;
->  	sched_clock_idle_sleep_event();
->  	return now;
->  }
-> @@ -444,25 +450,46 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
->   */
->  u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
->  {
-> -	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
-> -	ktime_t now, idle;
-> +	struct tick_sched *ts;
-> +	ktime_t now, count;
-> +	int active;
->  
->  	if (!tick_nohz_active)
->  		return -1;
->  
-> +	ts = &per_cpu(tick_cpu_sched, cpu);
-> +
->  	now = ktime_get();
->  	if (last_update_time)
->  		*last_update_time = ktime_to_us(now);
->  
-> -	if (ts->idle_active && !nr_iowait_cpu(cpu)) {
-> -		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
-> -		idle = ktime_add(ts->idle_sleeptime, delta);
-> + again:
-> +	active = ACCESS_ONCE(ts->idle_active);
-> +	smp_rmb();
-> +	count = ACCESS_ONCE(ts->idle_sleeptime);
-> +	if (active == 1) {
-> +		ktime_t delta, start;
-> +
-> +		smp_rmb();
-> +		start = ACCESS_ONCE(ts->idle_entrytime);
-> +		if (start.tv64 == 0) {
-> +			/*
-> +			 * Other CPU is updating the count.
-> +			 * We don't know whether fetched count is valid.
-> +			 */
-> +			goto again;
-> +		}
-> +		delta = ktime_sub(now, start);
-> +		count = ktime_add(count, delta);
+> The list manipulations will be a lot of cache writes as the list is shuffled
+> around. On slow storage I do not think this will be noticable but it may
+> be noticable on faster swap devices that are SSD based. I've added Shaohua
+> Li to the cc as he has been concerned with the performance of swap in the
+> past. Shaohua, can you run this patchset through any of your test cases
+> with the addition that multiple swap files are used to see if the cache
+> writes are noticable? You'll need multiple swap files, some of which are
+> at equal priority so the list shuffling logic is triggered.
 
-There is still a possibility that you race with an updater here.
-Lets take these initial values, all of which belong to ts(CPU 1):
+get_swap_page isn't hot so far (and we hold the swap_lock, which isn't
+contended), guess it's because other problems hide it, for example tlb flush
+overhead.
 
-      // idle_sleeptime == 0
-      // idle_entrytime == 0
-      // ktime_get() == 100
-      // idle_active = 1
-
-           CPU 0                                       CPU 1
-
-      count = idle_sleeptime // = 0               
-                                                     tick_nohz_stop_idle();
-                                                     tick_nohz_start_idle();
-                                                     /* now idle_sleeptime == 100
-                                                        and idle_entrytime == 100
-                                                        ktime_get() is still 100
-                                                        and idle_active is still 1
-                                                        as it has toggled two times */
-      delta = now - idle_entrytime; // 100 - 100
-      count += delta // == 0
-
-Then you get the spurious 0 result.
-
-So memory barriers probably aren't enough here. seqcount would solve the issue as it maintains
-update seq tokens.
+Thanks,
+Shaohua
