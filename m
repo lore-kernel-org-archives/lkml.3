@@ -1,195 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757931AbaDXOyW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:54:22 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:16047 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757354AbaDXOyU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:54:20 -0400
-Date: Thu, 24 Apr 2014 10:54:17 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH] ftrace/module: Hardcode ftrace_module_init() call into
- load_module()
-Message-ID: <20140424105417.7407bb72@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	id S1757818AbaDXOzv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:55:51 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50484 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753344AbaDXOzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 10:55:49 -0400
+X-Originating-IP: 50.43.32.211
+Date: Thu, 24 Apr 2014 07:55:35 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Michael Opdenacker <michael.opdenacker@free-electrons.com>
+Cc: akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com, fweisbec@gmail.com,
+        eparis@redhat.com, paul.gortmaker@windriver.com, vapier@gentoo.org,
+        kyungsik.lee@lge.com, jslaby@suse.cz, dwight.engen@oracle.com,
+        pefoley2@pefoley.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/1] init/Kconfig: improve CC_OPTIMIZE_FOR_SIZE
+ documentation
+Message-ID: <20140424145535.GA2969@jtriplet-mobl1>
+References: <1398341254-4626-1-git-send-email-michael.opdenacker@free-electrons.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398341254-4626-1-git-send-email-michael.opdenacker@free-electrons.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[
-  Rusty, you can take this patch, or if you want, you can give me 
-  an Acked-by, and I'll push this through my tree.
-]
+On Thu, Apr 24, 2014 at 02:07:33PM +0200, Michael Opdenacker wrote:
+> This patch proposes to warn users about the negative performance
+> impact of CC_OPTIMIZE_FOR_SIZE (compiling with -Os instead of -O2).
+> For the moment, we are just advising users not to select this option,
+> but extra details would be useful.
+> 
+> I made some experiments with this option. All of them yielded
+> degraded overall boot time. The kernel is smaller and hence is copied
+> and started earlier, but the benefits are quickly offset by the
+> slower kernel code. Even the total boot time is usually worse
+> than with a regular kernel.
+> 
+> Here are my latest results, on Atmel SAMA5D3 Xplained (ARM),
+> Linux 3.10, gzip compressed kernel:
+> 
+> Timestamp		O2		Os		Diff
+> Starting kernel 	4.307 s 	5.593 s 	-94 ms
+> Starting init		4.213 s 	5.549 s 	-44 ms
+> Login prompt		21.085 s	22.900 s 	+1.815 s 
 
+Did you get the times in the upper two rows transposed row/column?  Based
+on the diffs, I'd guess 4.213s goes in Os "Starting kernel", and 5.593s
+goes in O2 "Starting init".
 
->From 3ad4487ccecb8eb799c8e96309f256a1c9296685 Mon Sep 17 00:00:00 2001
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-Date: Thu, 24 Apr 2014 10:40:12 -0400
-Subject: [PATCH] ftrace/module: Hardcode ftrace_module_init() call into
- load_module()
-
-A race exists between module loading and enabling of function tracer.
-
-	CPU 1				CPU 2
-	-----				-----
-  load_module()
-   module->state = MODULE_STATE_COMING
-
-				register_ftrace_function()
-				 mutex_lock(&ftrace_lock);
-				 ftrace_startup()
-				  update_ftrace_function();
-				   ftrace_arch_code_modify_prepare()
-				    set_all_module_text_rw();
-				   <enables-ftrace>
-				    ftrace_arch_code_modify_post_process()
-				     set_all_module_text_ro();
-
-				[ here all module text is set to RO,
-				  including the module that is
-				  loading!! ]
-
-   blocking_notifier_call_chain(MODULE_STATE_COMING);
-    ftrace_init_module()
-
-     [ tries to modify code, but it's RO, and fails!
-       ftrace_bug() is called]
-
-When this race happens, ftrace_bug() will produces a nasty warning and
-all of the function tracing features will be disabled until reboot.
-
-The simple solution is to treate module load the same way the core
-kernel is treated at boot. To hardcode the ftrace function modification
-of converting calls to mcount into nops. This is done in init/main.c
-there's no reason it could not be done in load_module(). This gives
-a better control of the changes and doesn't tie the state of the
-module to its notifiers as much. Ftrace is special, it needs to be
-treated as such.
-
-The reason this would work, is that the ftrace_module_init() would be
-called while the module is in MODULE_STATE_UNFORMED, which is ignored
-by the set_all_module_text_ro() call.
-
-Link: http://lkml.kernel.org/r/1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com
-
-Reported-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-Cc: stable@vger.kernel.org # 2.6.38+
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- include/linux/ftrace.h |  2 ++
- kernel/module.c        |  3 +++
- kernel/trace/ftrace.c  | 27 ++++-----------------------
- 3 files changed, 9 insertions(+), 23 deletions(-)
-
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 9212b01..ae9504b 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -535,6 +535,7 @@ static inline int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_a
- extern int ftrace_arch_read_dyn_info(char *buf, int size);
- 
- extern int skip_trace(unsigned long ip);
-+extern void ftrace_module_init(struct module *mod);
- 
- extern void ftrace_disable_daemon(void);
- extern void ftrace_enable_daemon(void);
-@@ -544,6 +545,7 @@ static inline int ftrace_force_update(void) { return 0; }
- static inline void ftrace_disable_daemon(void) { }
- static inline void ftrace_enable_daemon(void) { }
- static inline void ftrace_release_mod(struct module *mod) {}
-+static inline void ftrace_module_init(struct module *mod) {}
- static inline __init int register_ftrace_command(struct ftrace_func_command *cmd)
- {
- 	return -EINVAL;
-diff --git a/kernel/module.c b/kernel/module.c
-index 1186940..5f14fec 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3271,6 +3271,9 @@ static int load_module(struct load_info *info, const char __user *uargs,
- 
- 	dynamic_debug_setup(info->debug, info->num_debug);
- 
-+	/* Ftrace init must be called in the MODULE_STATE_UNFORMED state */
-+	ftrace_module_init(mod);
-+
- 	/* Finally it's fully formed, ready to start executing. */
- 	err = complete_formation(mod, info);
- 	if (err)
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 1fd4b94..4a54a25 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -4330,16 +4330,11 @@ static void ftrace_init_module(struct module *mod,
- 	ftrace_process_locs(mod, start, end);
- }
- 
--static int ftrace_module_notify_enter(struct notifier_block *self,
--				      unsigned long val, void *data)
-+void ftrace_module_init(struct module *mod)
- {
--	struct module *mod = data;
--
--	if (val == MODULE_STATE_COMING)
--		ftrace_init_module(mod, mod->ftrace_callsites,
--				   mod->ftrace_callsites +
--				   mod->num_ftrace_callsites);
--	return 0;
-+	ftrace_init_module(mod, mod->ftrace_callsites,
-+			   mod->ftrace_callsites +
-+			   mod->num_ftrace_callsites);
- }
- 
- static int ftrace_module_notify_exit(struct notifier_block *self,
-@@ -4353,11 +4348,6 @@ static int ftrace_module_notify_exit(struct notifier_block *self,
- 	return 0;
- }
- #else
--static int ftrace_module_notify_enter(struct notifier_block *self,
--				      unsigned long val, void *data)
--{
--	return 0;
--}
- static int ftrace_module_notify_exit(struct notifier_block *self,
- 				     unsigned long val, void *data)
- {
-@@ -4365,11 +4355,6 @@ static int ftrace_module_notify_exit(struct notifier_block *self,
- }
- #endif /* CONFIG_MODULES */
- 
--struct notifier_block ftrace_module_enter_nb = {
--	.notifier_call = ftrace_module_notify_enter,
--	.priority = INT_MAX,	/* Run before anything that can use kprobes */
--};
--
- struct notifier_block ftrace_module_exit_nb = {
- 	.notifier_call = ftrace_module_notify_exit,
- 	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
-@@ -4403,10 +4388,6 @@ void __init ftrace_init(void)
- 				  __start_mcount_loc,
- 				  __stop_mcount_loc);
- 
--	ret = register_module_notifier(&ftrace_module_enter_nb);
--	if (ret)
--		pr_warning("Failed to register trace ftrace module enter notifier\n");
--
- 	ret = register_module_notifier(&ftrace_module_exit_nb);
- 	if (ret)
- 		pr_warning("Failed to register trace ftrace module exit notifier\n");
--- 
-1.8.1.4
-
+- Josh Triplett
