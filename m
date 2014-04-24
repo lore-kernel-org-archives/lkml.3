@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbaDXIwz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:52:55 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46386 "EHLO
+	id S1753782AbaDXIxI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:53:08 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46426 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753550AbaDXIwn (ORCPT
+	with ESMTP id S1753655AbaDXIwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:43 -0400
+	Thu, 24 Apr 2014 04:52:55 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Herve Codina <Herve.CODINA@celad.com>,
+        Brian Norris <computersforpeace@gmail.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 033/182] rtlwifi: rtl8188ee: Fix too long disable of IRQs
-Date: Thu, 24 Apr 2014 09:49:18 +0100
-Message-Id: <1398329507-5911-34-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 042/182] mtd: atmel_nand: Disable subpage NAND write when using Atmel PMECC
+Date: Thu, 24 Apr 2014 09:49:27 +0100
+Message-Id: <1398329507-5911-43-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,80 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Larry Finger <Larry.Finger@lwfinger.net>
+From: Herve Codina <Herve.CODINA@celad.com>
 
-commit 6b6392715856d563719991e9ce95e773491a8983 upstream.
+commit 90445ff6241e2a13445310803e2efa606c61f276 upstream.
 
-In commit f78bccd79ba3cd9d9664981b501d57bdb81ab8a4 entitled "rtlwifi:
-rtl8192ce: Fix too long disable of IRQs", Olivier Langlois
-<olivier@trillion01.com> fixed a problem caused by an extra long disabling
-of interrupts. This patch makes the same fix for rtl8188ee.
+Crash detected on sam5d35 and its pmecc nand ecc controller.
 
-Signed-off-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+The problem was a call to chip->ecc.hwctl from nand_write_subpage_hwecc
+(nand_base.c) when we write a sub page.
+chip->ecc.hwctl function is not set when we are using PMECC controller.
+As a workaround, set NAND_NO_SUBPAGE_WRITE for PMECC controller in
+order to disable sub page access in nand_write_page.
+
+Signed-off-by: Herve Codina <Herve.CODINA@celad.com>
+Acked-by: Josh Wu <josh.wu@atmel.com>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/rtlwifi/rtl8188ee/hw.c | 20 ++++++++++++++++----
- 1 file changed, 16 insertions(+), 4 deletions(-)
+ drivers/mtd/nand/atmel_nand.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-index e06971b..f923d8c 100644
---- a/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8188ee/hw.c
-@@ -1025,9 +1025,20 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
- 	bool rtstatus = true;
- 	int err = 0;
- 	u8 tmp_u1b, u1byte;
-+	unsigned long flags;
- 
- 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "Rtl8188EE hw init\n");
- 	rtlpriv->rtlhal.being_init_adapter = true;
-+	/* As this function can take a very long time (up to 350 ms)
-+	 * and can be called with irqs disabled, reenable the irqs
-+	 * to let the other devices continue being serviced.
-+	 *
-+	 * It is safe doing so since our own interrupts will only be enabled
-+	 * in a subsequent step.
-+	 */
-+	local_save_flags(flags);
-+	local_irq_enable();
-+
- 	rtlpriv->intf_ops->disable_aspm(hw);
- 
- 	tmp_u1b = rtl_read_byte(rtlpriv, REG_SYS_CLKR+1);
-@@ -1043,7 +1054,7 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
- 	if (rtstatus != true) {
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG, "Init MAC failed\n");
- 		err = 1;
--		return err;
-+		goto exit;
+diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+index 2d23d29..cc69e41 100644
+--- a/drivers/mtd/nand/atmel_nand.c
++++ b/drivers/mtd/nand/atmel_nand.c
+@@ -1096,6 +1096,7 @@ static int __init atmel_pmecc_nand_init_params(struct platform_device *pdev,
+ 		goto err_pmecc_data_alloc;
  	}
  
- 	err = rtl88e_download_fw(hw, false);
-@@ -1051,8 +1062,7 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
- 		RT_TRACE(rtlpriv, COMP_ERR, DBG_WARNING,
- 			 "Failed to download FW. Init HW without FW now..\n");
- 		err = 1;
--		rtlhal->fw_ready = false;
--		return err;
-+		goto exit;
- 	} else {
- 		rtlhal->fw_ready = true;
- 	}
-@@ -1135,10 +1145,12 @@ int rtl88ee_hw_init(struct ieee80211_hw *hw)
- 	}
- 	rtl_write_byte(rtlpriv, REG_NAV_CTRL+2,  ((30000+127)/128));
- 	rtl88e_dm_init(hw);
-+exit:
-+	local_irq_restore(flags);
- 	rtlpriv->rtlhal.being_init_adapter = false;
- 	RT_TRACE(rtlpriv, COMP_INIT, DBG_LOUD, "end of Rtl8188EE hw init %x\n",
- 		 err);
--	return 0;
-+	return err;
- }
++	nand_chip->options |= NAND_NO_SUBPAGE_WRITE;
+ 	nand_chip->ecc.read_page = atmel_nand_pmecc_read_page;
+ 	nand_chip->ecc.write_page = atmel_nand_pmecc_write_page;
  
- static enum version_8188e _rtl88ee_read_chip_version(struct ieee80211_hw *hw)
 -- 
 1.9.1
 
