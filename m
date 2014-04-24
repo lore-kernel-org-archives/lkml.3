@@ -1,138 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814AbaDXJOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:14:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47070 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755005AbaDXI4L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:56:11 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Michele Baldessari <michele@acksyn.org>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 161/182] USB: serial: ftdi_sio: add id for Brainboxes serial cards
-Date: Thu, 24 Apr 2014 09:51:26 +0100
-Message-Id: <1398329507-5911-162-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1755850AbaDXJPH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:15:07 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56028 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755782AbaDXJO7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 05:14:59 -0400
+Message-ID: <5358D5F8.3010401@ti.com>
+Date: Thu, 24 Apr 2014 12:14:32 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Tero Kristo <t-kristo@ti.com>, Mike Turquette <mturquette@linaro.org>
+CC: Benoit Cousson <bcousson@baylibre.com>, Tony Lindgren <tony@atomide.com>,
+        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 0/3] clk: Add clock driver for DRA7 ATL (Audio Tracking
+ Logic)
+References: <1396446907-20383-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1396446907-20383-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+Hi Mike,
 
-------------------
+On 04/02/2014 04:55 PM, Peter Ujfalusi wrote:
+> Hi,
+> 
+> Audio Tracking Logic is designed to be used by HD Radio
+> applications to synchronize the audio output clocks to the
+> baseband clock. ATL can be also used to track errors between
+> two reference clocks (BWS, AWS) and generate a modulated
+> clock output which averages to some desired frequency.
+> 
+> To be able to integrate the ATL provided clocks to the clock tree we need
+> two types of DT binding:
+> - DT clock nodes to represent the ATL clocks towards the CCF
+> - binding for the ATL IP itself which is going to handle the hw
+>   configuration
+> 
+> The reason for this type of setup is that ATL itself is a separate device
+> in the SoC, it has it's own address space and clock domain. Other IPs can
+> use the ATL generated clock as their functional clock (McASPs for example)
+> and external components like audio codecs can also use the very same clock
+> as their MCLK.
+> 
+> With setup pm_runtime can handle the ATL clock on demand of it's use and
+> all the IP which needs ATL clock can be sure that it is enabled for them.
+> 
+> The first patch fixes the name of atl clkin3 node in dtsi file.
 
-From: Michele Baldessari <michele@acksyn.org>
+Can you take a look at this series?
 
-commit efe26e16b1d93ac0085e69178cc18811629e8fc5 upstream.
+Thanks,
+Péter
 
-Custom VID/PIDs for Brainboxes cards as reported in
-https://bugzilla.redhat.com/show_bug.cgi?id=1071914
-
-Signed-off-by: Michele Baldessari <michele@acksyn.org>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/usb/serial/ftdi_sio.c     | 33 +++++++++++++++++++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h | 37 +++++++++++++++++++++++++++++++++++++
- 2 files changed, 70 insertions(+)
-
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index b83da38..2c635bd 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -912,6 +912,39 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_Z3X_PID) },
- 	/* Cressi Devices */
- 	{ USB_DEVICE(FTDI_VID, FTDI_CRESSI_PID) },
-+	/* Brainboxes Devices */
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_001_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_012_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_023_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_VX_034_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_101_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_4_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_5_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_6_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_7_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_160_8_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_257_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_279_4_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_313_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_324_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_346_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_357_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_606_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_701_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_1_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_2_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_3_PID) },
-+	{ USB_DEVICE(BRAINBOXES_VID, BRAINBOXES_US_842_4_PID) },
- 	{ },					/* Optional parameter entry */
- 	{ }					/* Terminating entry */
- };
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index e599fbf..993c93d 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1326,3 +1326,40 @@
-  * Manufacturer: Cressi
-  */
- #define FTDI_CRESSI_PID		0x87d0
-+
-+/*
-+ * Brainboxes devices
-+ */
-+#define BRAINBOXES_VID			0x05d1
-+#define BRAINBOXES_VX_001_PID		0x1001 /* VX-001 ExpressCard 1 Port RS232 */
-+#define BRAINBOXES_VX_012_PID		0x1002 /* VX-012 ExpressCard 2 Port RS232 */
-+#define BRAINBOXES_VX_023_PID		0x1003 /* VX-023 ExpressCard 1 Port RS422/485 */
-+#define BRAINBOXES_VX_034_PID		0x1004 /* VX-034 ExpressCard 2 Port RS422/485 */
-+#define BRAINBOXES_US_101_PID		0x1011 /* US-101 1xRS232 */
-+#define BRAINBOXES_US_324_PID		0x1013 /* US-324 1xRS422/485 1Mbaud */
-+#define BRAINBOXES_US_606_1_PID		0x2001 /* US-606 6 Port RS232 Serial Port 1 and 2 */
-+#define BRAINBOXES_US_606_2_PID		0x2002 /* US-606 6 Port RS232 Serial Port 3 and 4 */
-+#define BRAINBOXES_US_606_3_PID		0x2003 /* US-606 6 Port RS232 Serial Port 4 and 6 */
-+#define BRAINBOXES_US_701_1_PID		0x2011 /* US-701 4xRS232 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_701_2_PID		0x2012 /* US-701 4xRS422 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_279_1_PID		0x2021 /* US-279 8xRS422 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_279_2_PID		0x2022 /* US-279 8xRS422 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_279_3_PID		0x2023 /* US-279 8xRS422 1Mbaud Port 5 and 6 */
-+#define BRAINBOXES_US_279_4_PID		0x2024 /* US-279 8xRS422 1Mbaud Port 7 and 8 */
-+#define BRAINBOXES_US_346_1_PID		0x3011 /* US-346 4xRS422/485 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_346_2_PID		0x3012 /* US-346 4xRS422/485 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_257_PID		0x5001 /* US-257 2xRS232 1Mbaud */
-+#define BRAINBOXES_US_313_PID		0x6001 /* US-313 2xRS422/485 1Mbaud */
-+#define BRAINBOXES_US_357_PID		0x7001 /* US_357 1xRS232/422/485 */
-+#define BRAINBOXES_US_842_1_PID		0x8001 /* US-842 8xRS422/485 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_842_2_PID		0x8002 /* US-842 8xRS422/485 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_842_3_PID		0x8003 /* US-842 8xRS422/485 1Mbaud Port 5 and 6 */
-+#define BRAINBOXES_US_842_4_PID		0x8004 /* US-842 8xRS422/485 1Mbaud Port 7 and 8 */
-+#define BRAINBOXES_US_160_1_PID		0x9001 /* US-160 16xRS232 1Mbaud Port 1 and 2 */
-+#define BRAINBOXES_US_160_2_PID		0x9002 /* US-160 16xRS232 1Mbaud Port 3 and 4 */
-+#define BRAINBOXES_US_160_3_PID		0x9003 /* US-160 16xRS232 1Mbaud Port 5 and 6 */
-+#define BRAINBOXES_US_160_4_PID		0x9004 /* US-160 16xRS232 1Mbaud Port 7 and 8 */
-+#define BRAINBOXES_US_160_5_PID		0x9005 /* US-160 16xRS232 1Mbaud Port 9 and 10 */
-+#define BRAINBOXES_US_160_6_PID		0x9006 /* US-160 16xRS232 1Mbaud Port 11 and 12 */
-+#define BRAINBOXES_US_160_7_PID		0x9007 /* US-160 16xRS232 1Mbaud Port 13 and 14 */
-+#define BRAINBOXES_US_160_8_PID		0x9008 /* US-160 16xRS232 1Mbaud Port 15 and 16 */
--- 
-1.9.1
+> 
+> Regards,
+> Peter
+> ---
+> Peter Ujfalusi (3):
+>   ARM: dts: dra7xx-clocks: Correct name for atl clkin3 clock
+>   clk: Driver for DRA7 ATL (Audio Tracking Logic)
+>   ARM: DTS: dra7/dra7xx-clocks: ATL related changes
+> 
+>  .../devicetree/bindings/clock/ti/dra7-atl.txt      |  97 +++++++
+>  arch/arm/boot/dts/dra7.dtsi                        |  11 +
+>  arch/arm/boot/dts/dra7xx-clocks.dtsi               |  38 +--
+>  drivers/clk/ti/Makefile                            |   3 +-
+>  drivers/clk/ti/clk-7xx.c                           |   2 +-
+>  drivers/clk/ti/clk-dra7-atl.c                      | 313 +++++++++++++++++++++
+>  include/dt-bindings/clk/ti-dra7-atl.h              |  40 +++
+>  7 files changed, 483 insertions(+), 21 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/clock/ti/dra7-atl.txt
+>  create mode 100644 drivers/clk/ti/clk-dra7-atl.c
+>  create mode 100644 include/dt-bindings/clk/ti-dra7-atl.h
+> 
 
