@@ -1,97 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757945AbaDXO6c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:58:32 -0400
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:40791 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757656AbaDXO63 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:58:29 -0400
+	id S1758013AbaDXO7Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:59:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757526AbaDXO7L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 10:59:11 -0400
+Message-ID: <535926B8.7060304@redhat.com>
+Date: Thu, 24 Apr 2014 10:59:04 -0400
+From: Daniel J Walsh <dwalsh@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <20140424144257.GF26661@saruman.home>
-References: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
-	<1398342897-23670-2-git-send-email-cw00.choi@samsung.com>
-	<20140424144257.GF26661@saruman.home>
-Date: Thu, 24 Apr 2014 23:58:29 +0900
-Message-ID: <CAGTfZH0+VCvr=JNbq8kbtC2CDN63k28+oSd__6sb+Qy2tQ4_ng@mail.gmail.com>
-Subject: Re: [PATCHv3 1/9] extcon: Add extcon_dev_allocate/free() to control
- the memory of extcon device
-From: Chanwoo Choi <cwchoi00@gmail.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
-        gg@slimlogic.co.uk, Kishon Vijay Abraham I <kishon@ti.com>,
-        ckeepax@opensource.wolfsonmicro.com, Mark Brown <broonie@kernel.org>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Eric Paris <eparis@parisplace.org>
+CC: Linux Netdev List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Eric Paris <eparis@redhat.com>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        linux-audit@redhat.com, SE-Linux <selinux@tycho.nsa.gov>,
+        jamal@mojatatu.com, Steve Grubb <sgrubb@redhat.com>,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
+References: <20140422.161904.1187535812839850973.davem@davemloft.net> <cover.1398215388.git.rgb@redhat.com> <26389161.vp9iWSVLPX@x2> <1398225475.750.7.camel@localhost> <5357C2D2.5060700@redhat.com> <1398264152.2596.25.camel@flatline.rdu.redhat.com> <5357DE12.7040905@redhat.com> <1398267458.2562.0.camel@flatline.rdu.redhat.com> <5357E1B4.2030705@redhat.com> <CACLa4psQyoaZTE7R0qiog_biMKXyeGtLc1AQUuEPtemMYcDCSQ@mail.gmail.com>
+In-Reply-To: <CACLa4psQyoaZTE7R0qiog_biMKXyeGtLc1AQUuEPtemMYcDCSQ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+I don't disagree.  I would think the real solution to this would be to
+not allow sysadm_t to get to SystemHigh, where all of the logging data
+will be stored.
 
-On Thu, Apr 24, 2014 at 11:42 PM, Felipe Balbi <balbi@ti.com> wrote:
-> On Thu, Apr 24, 2014 at 09:34:49PM +0900, Chanwoo Choi wrote:
->> This patch add APIs to control the extcon device on extcon provider driver.
->> The extcon_dev_allocate() allocates the memory of extcon device and initializes
->> supported cables. And then extcon_dev_free() decrement the reference of the
->> device of extcon device and free the memory of the extcon device. This APIs
->> must need to implement devm_extcon_dev_allocate()/free() APIs.
->>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> ---
->>  drivers/extcon/extcon-class.c | 39 +++++++++++++++++++++++++++++++++++++++
->>  include/linux/extcon.h        | 13 +++++++++++++
->>  2 files changed, 52 insertions(+)
->>
->> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
->> index f6df689..bec66d4 100644
->> --- a/drivers/extcon/extcon-class.c
->> +++ b/drivers/extcon/extcon-class.c
->> @@ -565,6 +565,45 @@ static void dummy_sysfs_dev_release(struct device *dev)
->>  {
->>  }
->>
->> +/*
->> + * extcon_dev_allocate() - Allocate the memory of extcon device.
->> + * @supported_cable: Array of supported cable names ending with NULL.
->> + *                   If supported_cable is NULL, cable name related APIs
->> + *                   are disabled.
->> + *
->> + * This function allocates the memory for extcon device without allocating
->> + * memory in each extcon provider driver and initialize default setting for
->> + * extcon device.
->> + *
->> + * Return the pointer of extcon device if success or ERR_PTR(err) if fail
->> + */
->> +struct extcon_dev *extcon_dev_allocate(const char **supported_cable)
->> +{
->> +     struct extcon_dev *edev;
->> +
->> +     edev = kzalloc(sizeof(*edev), GFP_KERNEL);
->> +     if (!edev) {
->> +             pr_err("Failed to allocate the memory for extcon device\n");
->> +             return ERR_PTR(-ENOMEM);
->> +     }
->> +
->> +     edev->max_supported = 0;
->> +     edev->supported_cable = supported_cable;
->> +
->> +     return edev;
->> +}
->> +
->> +/*
->> + * extcon_dev_free() - Free the memory of extcon device.
->> + * @edev:    the extcon device to free
->> + */
->> +void extcon_dev_free(struct extcon_dev *edev)
->> +{
->> +     if (edev)
->> +             kfree(edev);
+On 04/24/2014 09:22 AM, Eric Paris wrote:
+> They would be equivalent if and only if journald had CAP_AUDIT_READ.
 >
-> kfree(NULL) is safe
+> I suggest you take CAP_AUDIT_READ away from journald on systems which
+> need the secadm/sysadmin split (which is a ridiculously stupid split
+> anyway, but who am I to complain?)
+>
+> On Wed, Apr 23, 2014 at 11:52 AM, Daniel J Walsh <dwalsh@redhat.com> wrote:
+>> Meaning looking at the journal would be equivalent to looking at
+>> /var/log/audit/audit.log.
+>>
+>>
+>> On 04/23/2014 11:37 AM, Eric Paris wrote:
+>>> On Wed, 2014-04-23 at 11:36 -0400, Daniel J Walsh wrote:
+>>>> I guess the problem would be that the sysadm_t would be able to look at
+>>>> the journal which would now contain the audit content.
+>>> right.  so include it in the sysadm_secadm bool
+>>>
+>>>> On 04/23/2014 10:42 AM, Eric Paris wrote:
+>>>>> On Wed, 2014-04-23 at 09:40 -0400, Daniel J Walsh wrote:
+>>>>>> Here are the capabilities we currently give to sysadm_t with
+>>>>>> sysadm_secadm    1.0.0    Disabled
+>>>>>>
+>>>>>>    allow sysadm_t sysadm_t : capability { chown dac_override
+>>>>>> dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable
+>>>>>> net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner
+>>>>>> sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice
+>>>>>> sys_resource sys_time sys_tty_config mknod lease audit_write setfcap } ;
+>>>>>>    allow sysadm_t sysadm_t : capability { setgid setuid sys_chroot }
+>>>>>>
+>>>>>>    allow sysadm_t sysadm_t : capability2 { syslog block_suspend } ;
+>>>>>>
+>>>>>> cap_audit_write might be a problem?
+>>>>> cap_audit_write is fine.
+>>>>>
+>>>>> syslogd_t (aka journal) is going to need the new permission
+>>>>> cap_audit_read.  Also, as steve pointed out, someone may be likely to
+>>>>> want to be able to disable that permission easily.
+>>>>>
+>>>>> -Eric
+>>>>>
+>>> _______________________________________________
+>>> Selinux mailing list
+>>> Selinux@tycho.nsa.gov
+>>> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+>>> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+>>>
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+> _______________________________________________
+> Selinux mailing list
+> Selinux@tycho.nsa.gov
+> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+>
+>
 
-I don't understand about meaning 'kfree(NULL)'.
-Why do I free 'NULL' pointer' instead of 'edev' pointer?
