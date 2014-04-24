@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589AbaDXVzr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:55:47 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39866 "EHLO
+	id S1755648AbaDXVzo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:55:44 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39901 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757117AbaDXVxW (ORCPT
+	with ESMTP id S1756008AbaDXVxX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:53:22 -0400
+	Thu, 24 Apr 2014 17:53:23 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Dave Kleikamp <dave.kleikamp@oracle.com>,
-        Hugh Dickins <hughd@google.com>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: [PATCH 3.4 18/27] Revert "sparc64: Fix __copy_{to,from}_user_inatomic defines."
-Date: Thu, 24 Apr 2014 14:55:52 -0700
-Message-Id: <20140424215552.516725450@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.4 25/27] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
+Date: Thu, 24 Apr 2014 14:55:59 -0700
+Message-Id: <20140424215552.730634010@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
 References: <20140424215551.942390050@linuxfoundation.org>
@@ -30,42 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dave Kleikamp <dave.kleikamp@oracle.com>
+From: Li Zefan <lizefan@huawei.com>
 
-[ Upstream commit 16932237f2978a2265662f8de4af743b1f55a209 ]
+commit 13b546d96207c131eeae15dc7b26c6e7d0f1cad7 upstream.
 
-This reverts commit 145e1c0023585e0e8f6df22316308ec61c5066b2.
+We triggered soft-lockup under stress test on 2.6.34 kernel.
 
-This commit broke the behavior of __copy_from_user_inatomic when
-it is only partially successful. Instead of returning the number
-of bytes not copied, it now returns 1. This translates to the
-wrong value being returned by iov_iter_copy_from_user_atomic.
+BUG: soft lockup - CPU#1 stuck for 60009ms! [lockf2.test:14488]
+...
+[<bf09a4d4>] (jffs2_do_reserve_space+0x420/0x440 [jffs2])
+[<bf09a528>] (jffs2_reserve_space_gc+0x34/0x78 [jffs2])
+[<bf0a1350>] (jffs2_garbage_collect_dnode.isra.3+0x264/0x478 [jffs2])
+[<bf0a2078>] (jffs2_garbage_collect_pass+0x9c0/0xe4c [jffs2])
+[<bf09a670>] (jffs2_reserve_space+0x104/0x2a8 [jffs2])
+[<bf09dc48>] (jffs2_write_inode_range+0x5c/0x4d4 [jffs2])
+[<bf097d8c>] (jffs2_write_end+0x198/0x2c0 [jffs2])
+[<c00e00a4>] (generic_file_buffered_write+0x158/0x200)
+[<c00e14f4>] (__generic_file_aio_write+0x3a4/0x414)
+[<c00e15c0>] (generic_file_aio_write+0x5c/0xbc)
+[<c012334c>] (do_sync_write+0x98/0xd4)
+[<c0123a84>] (vfs_write+0xa8/0x150)
+[<c0123d74>] (sys_write+0x3c/0xc0)]
 
-xfstests generic/246 and LTP writev01 both fail on btrfs and nfs
-because of this.
+Fix this by adding a cond_resched() in the while loop.
 
-Signed-off-by: Dave Kleikamp <dave.kleikamp@oracle.com>
-Cc: Hugh Dickins <hughd@google.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: sparclinux@vger.kernel.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
+[akpm@linux-foundation.org: don't initialize `ret']
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/include/asm/uaccess_64.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/sparc/include/asm/uaccess_64.h
-+++ b/arch/sparc/include/asm/uaccess_64.h
-@@ -266,8 +266,8 @@ extern long __strnlen_user(const char __
+---
+ fs/jffs2/nodemgmt.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
+
+--- a/fs/jffs2/nodemgmt.c
++++ b/fs/jffs2/nodemgmt.c
+@@ -169,20 +169,25 @@ int jffs2_reserve_space(struct jffs2_sb_
+ int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
+ 			   uint32_t *len, uint32_t sumsize)
+ {
+-	int ret = -EAGAIN;
++	int ret;
+ 	minsize = PAD(minsize);
  
- #define strlen_user __strlen_user
- #define strnlen_user __strnlen_user
--#define __copy_to_user_inatomic ___copy_to_user
--#define __copy_from_user_inatomic ___copy_from_user
-+#define __copy_to_user_inatomic __copy_to_user
-+#define __copy_from_user_inatomic __copy_from_user
+ 	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
  
- #endif  /* __ASSEMBLY__ */
+-	spin_lock(&c->erase_completion_lock);
+-	while(ret == -EAGAIN) {
++	while (true) {
++		spin_lock(&c->erase_completion_lock);
+ 		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
+ 		if (ret) {
+ 			jffs2_dbg(1, "%s(): looping, ret is %d\n",
+ 				  __func__, ret);
+ 		}
++		spin_unlock(&c->erase_completion_lock);
++
++		if (ret == -EAGAIN)
++			cond_resched();
++		else
++			break;
+ 	}
+-	spin_unlock(&c->erase_completion_lock);
+ 	if (!ret)
+ 		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
  
 
 
