@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786AbaDXJn0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:43:26 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46854 "EHLO
+	id S1755016AbaDXJoG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:44:06 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46851 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754609AbaDXIzH (ORCPT
+	with ESMTP id S1754422AbaDXIzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:55:07 -0400
+	Thu, 24 Apr 2014 04:55:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Matt Fleming <matt.fleming@intel.com>, Paul Mundt <lethal@linux-sh.org>,
+Cc: Jan Kara <jack@suse.cz>, Derek Basehore <dbasehore@chromium.org>,
+        Jens Axboe <axboe@kernel.dk>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 123/182] sh: fix format string bug in stack tracer
-Date: Thu, 24 Apr 2014 09:50:48 +0100
-Message-Id: <1398329507-5911-124-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 125/182] bdi: avoid oops on device removal
+Date: Thu, 24 Apr 2014 09:50:50 +0100
+Message-Id: <1398329507-5911-126-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -29,42 +30,151 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Matt Fleming <matt.fleming@intel.com>
+From: Jan Kara <jack@suse.cz>
 
-commit a0c32761e73c9999cbf592b702f284221fea8040 upstream.
+commit 5acda9d12dcf1ad0d9a5a2a7c646de3472fa7555 upstream.
 
-Kees reported the following error:
+After commit 839a8e8660b6 ("writeback: replace custom worker pool
+implementation with unbound workqueue") when device is removed while we
+are writing to it we crash in bdi_writeback_workfn() ->
+set_worker_desc() because bdi->dev is NULL.
 
-   arch/sh/kernel/dumpstack.c: In function 'print_trace_address':
-   arch/sh/kernel/dumpstack.c:118:2: error: format not a string literal and no format arguments [-Werror=format-security]
+This can happen because even though bdi_unregister() cancels all pending
+flushing work, nothing really prevents new ones from being queued from
+balance_dirty_pages() or other places.
 
-Use the "%s" format so that it's impossible to interpret 'data' as a
-format string.
+Fix the problem by clearing BDI_registered bit in bdi_unregister() and
+checking it before scheduling of any flushing work.
 
-Signed-off-by: Matt Fleming <matt.fleming@intel.com>
-Reported-by: Kees Cook <keescook@chromium.org>
-Acked-by: Kees Cook <keescook@chromium.org>
-Cc: Paul Mundt <lethal@linux-sh.org>
+Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
+
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Derek Basehore <dbasehore@chromium.org>
+Cc: Jens Axboe <axboe@kernel.dk>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/sh/kernel/dumpstack.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/fs-writeback.c           | 23 ++++++++++++++++++-----
+ include/linux/backing-dev.h |  2 +-
+ mm/backing-dev.c            | 13 +++++++++----
+ 3 files changed, 28 insertions(+), 10 deletions(-)
 
-diff --git a/arch/sh/kernel/dumpstack.c b/arch/sh/kernel/dumpstack.c
-index b959f55..8dfe645 100644
---- a/arch/sh/kernel/dumpstack.c
-+++ b/arch/sh/kernel/dumpstack.c
-@@ -115,7 +115,7 @@ static int print_trace_stack(void *data, char *name)
-  */
- static void print_trace_address(void *data, unsigned long addr, int reliable)
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 160f8e6..cfc6fa6 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -88,16 +88,29 @@ static inline struct inode *wb_inode(struct list_head *head)
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/writeback.h>
+ 
++static void bdi_wakeup_thread(struct backing_dev_info *bdi)
++{
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	spin_unlock_bh(&bdi->wb_lock);
++}
++
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 			   struct wb_writeback_work *work)
  {
--	printk(data);
-+	printk("%s", (char *)data);
- 	printk_address(addr, reliable);
+ 	trace_writeback_queue(bdi, work);
+ 
+ 	spin_lock_bh(&bdi->wb_lock);
++	if (!test_bit(BDI_registered, &bdi->state)) {
++		if (work->done)
++			complete(work->done);
++		goto out_unlock;
++	}
+ 	list_add_tail(&work->list, &bdi->work_list);
+-	spin_unlock_bh(&bdi->wb_lock);
+-
+ 	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++out_unlock:
++	spin_unlock_bh(&bdi->wb_lock);
  }
  
+ static void
+@@ -113,7 +126,7 @@ __bdi_start_writeback(struct backing_dev_info *bdi, long nr_pages,
+ 	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+ 	if (!work) {
+ 		trace_writeback_nowork(bdi);
+-		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++		bdi_wakeup_thread(bdi);
+ 		return;
+ 	}
+ 
+@@ -160,7 +173,7 @@ void bdi_start_background_writeback(struct backing_dev_info *bdi)
+ 	 * writeback as soon as there is no other work to do.
+ 	 */
+ 	trace_writeback_wake_background(bdi);
+-	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	bdi_wakeup_thread(bdi);
+ }
+ 
+ /*
+@@ -1014,7 +1027,7 @@ void bdi_writeback_workfn(struct work_struct *work)
+ 	current->flags |= PF_SWAPWRITE;
+ 
+ 	if (likely(!current_is_workqueue_rescuer() ||
+-		   list_empty(&bdi->bdi_list))) {
++		   !test_bit(BDI_registered, &bdi->state))) {
+ 		/*
+ 		 * The normal path.  Keep writing back @bdi until its
+ 		 * work_list is empty.  Note that this path is also taken
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index c388155..4cfdbf2 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -95,7 +95,7 @@ struct backing_dev_info {
+ 	unsigned int max_ratio, max_prop_frac;
+ 
+ 	struct bdi_writeback wb;  /* default writeback info for this bdi */
+-	spinlock_t wb_lock;	  /* protects work_list */
++	spinlock_t wb_lock;	  /* protects work_list & wb.dwork scheduling */
+ 
+ 	struct list_head work_list;
+ 
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 4f81435e..0f9feb4 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -294,7 +294,10 @@ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+ 	unsigned long timeout;
+ 
+ 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+-	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_unlock_bh(&bdi->wb_lock);
+ }
+ 
+ /*
+@@ -307,9 +310,6 @@ static void bdi_remove_from_list(struct backing_dev_info *bdi)
+ 	spin_unlock_bh(&bdi_lock);
+ 
+ 	synchronize_rcu_expedited();
+-
+-	/* bdi_list is now unused, clear it to mark @bdi dying */
+-	INIT_LIST_HEAD(&bdi->bdi_list);
+ }
+ 
+ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
+@@ -360,6 +360,11 @@ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
+ 	 */
+ 	bdi_remove_from_list(bdi);
+ 
++	/* Make sure nobody queues further work */
++	spin_lock_bh(&bdi->wb_lock);
++	clear_bit(BDI_registered, &bdi->state);
++	spin_unlock_bh(&bdi->wb_lock);
++
+ 	/*
+ 	 * Drain work list and shutdown the delayed_work.  At this point,
+ 	 * @bdi->bdi_list is empty telling bdi_Writeback_workfn() that @bdi
 -- 
 1.9.1
 
