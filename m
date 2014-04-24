@@ -1,78 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288AbaDXPp7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:45:59 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:37031 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758339AbaDXPp4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:45:56 -0400
-Date: Thu, 24 Apr 2014 16:45:19 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Santosh Shilimkar <santosh.shilimkar@ti.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Catalin Marinas <Catalin.Marinas@arm.com>
-Subject: Re: [PATCH v3 7/7] ARM: dma: use phys_addr_t in
- __dma_page_[cpu_to_dev/dev_to_cpu]
-Message-ID: <20140424154519.GE14110@arm.com>
-References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
- <1398353407-2345-8-git-send-email-santosh.shilimkar@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398353407-2345-8-git-send-email-santosh.shilimkar@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1758049AbaDXPkz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:40:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7148 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753406AbaDXPkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:40:53 -0400
+From: Jiri Olsa <jolsa@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
+        Jiri Olsa <jolsa@kernel.org>
+Subject: [PATCH 01/11] perf report: Count number of entries separately
+Date: Thu, 24 Apr 2014 17:40:35 +0200
+Message-Id: <1398354045-16505-2-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1398354045-16505-1-git-send-email-jolsa@kernel.org>
+References: <1398354045-16505-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 04:30:07PM +0100, Santosh Shilimkar wrote:
-> On a 32 bit ARM architecture with LPAE extension physical addresses
-> cannot fit into unsigned long variable.
-> 
-> So fix it by using phys_addr_t instead of unsigned long.
-> 
-> Cc: Nicolas Pitre <nicolas.pitre@linaro.org>
-> Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>
-> Cc: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
-> ---
->  arch/arm/mm/dma-mapping.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+From: Namhyung Kim <namhyung@kernel.org>
 
-Acked-by: Will Deacon <will.deacon@arm.com>
+The hists->nr_entries is counted in multiple places so that they can
+confuse readers of the code.  This is a preparation of later change
+and do not intend any functional difference.
 
-Will
+Note that report__collapse_hists() now changed to return nothing since
+its return value (nr_samples) is only for checking if there's any data
+in the input file and this can be acheived by checking ->nr_entries.
 
-> diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
-> index f62aa06..5260f43 100644
-> --- a/arch/arm/mm/dma-mapping.c
-> +++ b/arch/arm/mm/dma-mapping.c
-> @@ -885,7 +885,7 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
->  static void __dma_page_cpu_to_dev(struct page *page, unsigned long off,
->  	size_t size, enum dma_data_direction dir)
->  {
-> -	unsigned long paddr;
-> +	phys_addr_t paddr;
->  
->  	dma_cache_maint_page(page, off, size, dir, dmac_map_area);
->  
-> @@ -901,7 +901,7 @@ static void __dma_page_cpu_to_dev(struct page *page, unsigned long off,
->  static void __dma_page_dev_to_cpu(struct page *page, unsigned long off,
->  	size_t size, enum dma_data_direction dir)
->  {
-> -	unsigned long paddr = page_to_phys(page) + off;
-> +	phys_addr_t paddr = page_to_phys(page) + off;
->  
->  	/* FIXME: non-speculating: not required */
->  	/* don't bother invalidating if DMA to device */
-> -- 
-> 1.7.9.5
-> 
-> 
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1398327843-31845-2-git-send-email-namhyung@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/builtin-report.c | 42 ++++++++++++++++++++++--------------------
+ 1 file changed, 22 insertions(+), 20 deletions(-)
+
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 76e2bb6..aed5203 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -57,6 +57,7 @@ struct report {
+ 	const char		*cpu_list;
+ 	const char		*symbol_filter_str;
+ 	float			min_percent;
++	u64			nr_entries;
+ 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ };
+ 
+@@ -75,6 +76,17 @@ static int report__config(const char *var, const char *value, void *cb)
+ 	return perf_default_config(var, value, cb);
+ }
+ 
++static void report__inc_stats(struct report *rep, struct hist_entry *he)
++{
++	/*
++	 * The @he is either of a newly created one or an existing one
++	 * merging current sample.  We only want to count a new one so
++	 * checking ->nr_events being 1.
++	 */
++	if (he->stat.nr_events == 1)
++		rep->nr_entries++;
++}
++
+ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
+ 				      struct perf_sample *sample, struct perf_evsel *evsel)
+ {
+@@ -121,6 +133,8 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
+ 			goto out;
+ 	}
+ 
++	report__inc_stats(rep, he);
++
+ 	evsel->hists.stats.total_period += cost;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ 	if (!he->filtered)
+@@ -176,6 +190,8 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
+ 					goto out;
+ 			}
+ 
++			report__inc_stats(rep, he);
++
+ 			evsel->hists.stats.total_period += 1;
+ 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ 			if (!he->filtered)
+@@ -212,6 +228,8 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
+ 	if (ui__has_annotation())
+ 		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ 
++	report__inc_stats(rep, he);
++
+ 	evsel->hists.stats.total_period += sample->period;
+ 	if (!he->filtered)
+ 		evsel->hists.stats.nr_non_filtered_samples++;
+@@ -486,24 +504,12 @@ static int report__browse_hists(struct report *rep)
+ 	return ret;
+ }
+ 
+-static u64 report__collapse_hists(struct report *rep)
++static void report__collapse_hists(struct report *rep)
+ {
+ 	struct ui_progress prog;
+ 	struct perf_evsel *pos;
+-	u64 nr_samples = 0;
+-	/*
+- 	 * Count number of histogram entries to use when showing progress,
+- 	 * reusing nr_samples variable.
+- 	 */
+-	evlist__for_each(rep->session->evlist, pos)
+-		nr_samples += pos->hists.nr_entries;
+ 
+-	ui_progress__init(&prog, nr_samples, "Merging related events...");
+-	/*
+-	 * Count total number of samples, will be used to check if this
+- 	 * session had any.
+- 	 */
+-	nr_samples = 0;
++	ui_progress__init(&prog, rep->nr_entries, "Merging related events...");
+ 
+ 	evlist__for_each(rep->session->evlist, pos) {
+ 		struct hists *hists = &pos->hists;
+@@ -512,7 +518,6 @@ static u64 report__collapse_hists(struct report *rep)
+ 			hists->symbol_filter_str = rep->symbol_filter_str;
+ 
+ 		hists__collapse_resort(hists, &prog);
+-		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
+ 
+ 		/* Non-group events are considered as leader */
+ 		if (symbol_conf.event_group &&
+@@ -525,14 +530,11 @@ static u64 report__collapse_hists(struct report *rep)
+ 	}
+ 
+ 	ui_progress__finish();
+-
+-	return nr_samples;
+ }
+ 
+ static int __cmd_report(struct report *rep)
+ {
+ 	int ret;
+-	u64 nr_samples;
+ 	struct perf_session *session = rep->session;
+ 	struct perf_evsel *pos;
+ 	struct perf_data_file *file = session->file;
+@@ -572,12 +574,12 @@ static int __cmd_report(struct report *rep)
+ 		}
+ 	}
+ 
+-	nr_samples = report__collapse_hists(rep);
++	report__collapse_hists(rep);
+ 
+ 	if (session_done())
+ 		return 0;
+ 
+-	if (nr_samples == 0) {
++	if (rep->nr_entries == 0) {
+ 		ui__error("The %s file has no samples!\n", file->path);
+ 		return 0;
+ 	}
+-- 
+1.8.3.1
+
