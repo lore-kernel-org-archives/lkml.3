@@ -1,50 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbaDXHXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 03:23:05 -0400
-Received: from mail-ee0-f50.google.com ([74.125.83.50]:53959 "EHLO
-	mail-ee0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363AbaDXHW7 (ORCPT
+	id S1752450AbaDXHZu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 03:25:50 -0400
+Received: from www.linutronix.de ([62.245.132.108]:33502 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775AbaDXHZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 03:22:59 -0400
-Date: Thu, 24 Apr 2014 09:22:55 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jason Chen <jason.cj.chen@intel.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 1/1] x86/apic: add apic_irqs bitmap to identify irqs
- from apic
-Message-ID: <20140424072255.GA3483@gmail.com>
-References: <cover.1397838739.git.jason.cj.chen@intel.com>
- <511b8dc7848513496067fb68d979d248f04235ad.1397838739.git.jason.cj.chen@intel.com>
+	Thu, 24 Apr 2014 03:25:49 -0400
+Date: Thu, 24 Apr 2014 09:25:56 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Walleij <linus.walleij@linaro.org>
+cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "Jin, Yao" <yao.jin@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Krogerus, Heikki" <heikki.krogerus@intel.com>
+Subject: Re: [PATCH] pinctrl-baytrail: workaround for irq descriptor conflict
+ on ASUS T100TA
+In-Reply-To: <CACRpkdYztACye5Xht3f4UuaWDA0gB7t2rgRmpTaL330YcxYhfQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1404240918110.4704@ionos.tec.linutronix.de>
+References: <1397443272-31467-1-git-send-email-yao.jin@linux.intel.com> <534B4C6D.5070003@linux.intel.com> <CACRpkdYXD-Fd0tFJtir8ifsTqdBvA0Rznc4Hmzoq_ByBjTahdw@mail.gmail.com> <5357A594.6050404@linux.intel.com>
+ <CACRpkdYztACye5Xht3f4UuaWDA0gB7t2rgRmpTaL330YcxYhfQ@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <511b8dc7848513496067fb68d979d248f04235ad.1397838739.git.jason.cj.chen@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 23 Apr 2014, Linus Walleij wrote:
+> However this is a first time for an embedded irqchip (coupled
+> with GPIO ACPI) creeping into the x86 world, so it needs some
+> attention I think, do we have a direction forward for peaceful
+> coexistence of several irq controllers picking some IRQ
+> numbers/descriptors dynamically as they probe, also on
+> x86 systems?
 
-* Jason Chen <jason.cj.chen@intel.com> wrote:
+The issue on x86 is, that we have basically two classes of interrupts.
 
-> The function irq_force_complete_move() might handle irqs based on
-> the non-apic irq_chip the way apic does, which has the structure
-> irq_cfg as its chip_data.
-> Wrong operations on non-apic irq_chip might make its chip_data changed
-> and bring unexpected issues.
-> Add apic_irqs bitmap to identify irqs from apic, and filter out all other
-> irq_chips by checking this bitmap.
+ - The hardwired ones (in the chipset and we have no way to
+   change that except with MSI)
 
-Please update the changelog to describe the current behavior, and how 
-it affects your platform. (I.e. how do users notice, if at all?)
+ - The dynamic ones, i.e. MSI[X]
 
-Then describe why you think that behavior should be changed. ie: 
-what's the reason for this patch.
+So for allocating the MSI interrupts we use the range above the
+possible hardwired interrupts.
 
-Only then describe the details of the change itself.
+Unfortunaly the information where the reserved/hardwired range ends is
+not available to drivers, but it should be simple to do so.
+
+I'm traveling until friday, so please wait before you commit that
+fugly hack. I'll have a closer look how we can handle that at the core
+level.
 
 Thanks,
 
-	Ingo
+	tglx
+
+
