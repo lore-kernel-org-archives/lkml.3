@@ -1,96 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636AbaDXHnn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 03:43:43 -0400
-Received: from mail-oa0-f54.google.com ([209.85.219.54]:34373 "EHLO
-	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaDXHnk (ORCPT
+	id S1752693AbaDXHo3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 03:44:29 -0400
+Received: from moutng.kundenserver.de ([212.227.17.13]:61349 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752488AbaDXHo1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 03:43:40 -0400
+	Thu, 24 Apr 2014 03:44:27 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ley Foon Tan <lftan@altera.com>,
+        Uwe =?ISO-8859-1?Q?Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
+Subject: Re: [PATCH 07/28] nios2: I/O Mapping
+Date: Thu, 24 Apr 2014 09:43:52 +0200
+Message-ID: <23940551.x13XR6zuRa@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.11.0-18-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAFiDJ5_79UoFS0bbgyd6htRELXpsF4bD091Bg1EVsocXt76NEw@mail.gmail.com>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com> <201404221559.37560.arnd@arndb.de> <CAFiDJ5_79UoFS0bbgyd6htRELXpsF4bD091Bg1EVsocXt76NEw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <201404240725.s3O7PrUv003720@toshiba.co.jp>
-References: <cover.1395322529.git.viresh.kumar@linaro.org>
-	<201404240725.s3O7PrUv003720@toshiba.co.jp>
-Date: Thu, 24 Apr 2014 13:13:40 +0530
-Message-ID: <CAKohpokt-O3BAGMzE_=heVBZQOwp0C7eT8ZA2485DgNi3+Xcqg@mail.gmail.com>
-Subject: Re: [RFC 0/4] Migrate timers away from cpuset on setting cpuset.quiesce
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
-        Tejun Heo <tj@kernel.org>, Li Zefan <lizefan@huawei.com>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Cgroups <cgroups@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
+X-Provags-ID: V02:K0:mtV9ccVPR53TO1heMKRpZJWrovOZfso+kAAQ64GouS5
+ XsM3hKzuTwbGMTs8+0706RnxB7/YrOR1tTRy05wzqnCtlayEwZ
+ rRSpQG6Y4IgcvZYN9837eeN64cs6Jtf+BrqL9nDu9aoW7qD/uA
+ QW6JkY95X/NeW22xXAd/f7vYWaXEBh3EEeiwjvIj0N428KcrXC
+ VKrwwVQe9Q0QLMy1+PWT2/zErFImLFQeuRj1vOsWAxoJ8Wid5f
+ cVqP+3xEVV81dTBegY+TlEFVAyXV1QfJc43+h9jezlDGkMGJuh
+ aS+CBf0EyAR67/lJwlCxs1VOqLzg1BorV9yk6KzIbUT0vmRwQR
+ bJx3pfQN+zKsm26FA9Fs=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 April 2014 12:55, Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp> wrote:
-> I tried your set of patches for isolating particular CPU cores from unpinned
-> timers. On x86_64 they were working fine, however I found out that on ARM
-> they would fail under the following test:
+On Thursday 24 April 2014 14:02:47 Ley Foon Tan wrote:
+> On Tue, Apr 22, 2014 at 9:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> > On Friday 18 April 2014, Ley Foon Tan wrote:
+> >
+> >> +
+> >> +#include <asm/pgtable-bits.h>
+> >> +
+> >> +#define IO_SPACE_LIMIT 0xffffffff
+> >
+> > Please use 0xffff here, this should work for almost any PCI bus.
+> Ah, CONFIG_PCI is not enable in nios2. So, I think IO_SPACE_LIMIT
+> should set to 0.
 
-I am happy that these drew attention from somebody Atleast :)
+Yes, possibly with a comment added regarding PCI.
 
-> # mount -t cpuset none /cpuset
-> # cd /cpuset
-> # mkdir rt
-> # cd rt
-> # echo 1 > cpus
-> # echo 1 > cpu_exclusive
-> # cd
-> # taskset 0x2 ./setquiesce.sh  <--- contains "echo 1 > /cpuset/rt/quiesce"
-> [   75.622375] ------------[ cut here ]------------
-> [   75.627258] WARNING: CPU: 0 PID: 0 at kernel/locking/lockdep.c:2595 __migrate_hrtimers+0x17c/0x1bc()
-> [   75.636840] DEBUG_LOCKS_WARN_ON(current->hardirq_context)
-> [   75.636840] CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.0-rc1-37710-g23c8f02 #1
-> [   75.649627] [<c0014d18>] (unwind_backtrace) from [<c00119e8>] (show_stack+0x10/0x14)
-> [   75.649627] [<c00119e8>] (show_stack) from [<c065b61c>] (dump_stack+0x78/0x94)
-> [   75.662689] [<c065b61c>] (dump_stack) from [<c003e9a4>] (warn_slowpath_common+0x60/0x84)
-> [   75.670410] [<c003e9a4>] (warn_slowpath_common) from [<c003ea24>] (warn_slowpath_fmt+0x30/0x40)
-> [   75.677673] [<c003ea24>] (warn_slowpath_fmt) from [<c005d7b0>] (__migrate_hrtimers+0x17c/0x1bc)
-> [   75.677673] [<c005d7b0>] (__migrate_hrtimers) from [<c009e004>] (generic_smp_call_function_single_interrupt+0x8c/0x104)
-> [   75.699645] [<c009e004>] (generic_smp_call_function_single_interrupt) from [<c00134d0>] (handle_IPI+0xa4/0x16c)
-> [   75.706970] [<c00134d0>] (handle_IPI) from [<c0008614>] (gic_handle_irq+0x54/0x5c)
-> [   75.715087] [<c0008614>] (gic_handle_irq) from [<c0012624>] (__irq_svc+0x44/0x5c)
-> [   75.725311] Exception stack(0xc08a3f58 to 0xc08a3fa0)
+> >> +/*
+> >> + *   make the short names macros so specific devices
+> >> + *   can override them as required
+> >> + */
+> >> +#define inb(addr)            readb(addr)
+> >> +#define inw(addr)            readw(addr)
+> >> +#define inl(addr)            readl(addr)
+> >> +#define outb(x, addr)                ((void) writeb(x, addr))
+> >> +#define outw(x, addr)                ((void) writew(x, addr))
+> >> +#define outl(x, addr)                ((void) writel(x, addr))
+> >
+> > This makes no sense: the legacy PC I/O accessors take a completely
+> > different argument type: I would recommend to make both inline
+> > functions so you can ensure that readl() gets passed an __iomem
+> > pointer, while inl() gets an integer number.
+> >
+> > Please see the asm-generic version for an example. You should also
+> > define a non-NULL PCI_IOBASE to which the PCI I/O space gets mapped.
+> I think these macros can be removed if PCI is not enabled in Nios2.
 
-I couldn't understand why we went via a interrupt here ? Probably CPU1
-was idle and was woken up with a IPI and then this happened. But in
-that case too,
-shouldn't the script run from process context instead ?
+We have a bunch of ISA device drivers that use these interfaces but
+are not built conditionally through a Kconfig dependency. If you
+want 'allyesconfig' to build successfully, you have to provide some
+dummy implementation.
 
-> I also backported your patches to Linux 3.10.y and found the same problem
-> both in ARM and x86_64.
+> >> +#define ioport_map(port, nr) ioremap(port, nr)
+> >> +#define ioport_unmap(port)   iounmap(port)
+> >
+> > Use this one instead:
+> >
+> > #ifdef CONFIG_PCI
+> > static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
+> > {
+> >         return PCI_IOBASE + port;
+> > }
+> >
+> > static inline void __iomem *ioport_unmap(void __iomem *)
+> > {
+> > }
+> > #endif
+> These also can be removed.
 
-There are very few changes in between 3.10 and latest for timers/hrtimers
-and so things are expected to be the same.
+For this, there is a Kconfig symbol. If you don't provide ioport_map,
+you should set CONFIG_NO_IOPORT_MAP. Uwe Kleine-König has recently
+started some work in this area. Ideally we would also have a CONFIG_HAS_IOPORT
+option that is only set by architectures that actually implement inb/outb.
+Getting there still needs work, but any help is appreciated.
 
-> However, I think I figured out the reason for those
-> errors. Please, could you check the patch below (it applies on the top of
-> your tree, branch isolate-cpusets) and let me know what you think?
-
-Okay, just to let you know, I have also found some issues and they are
-now pushed in my tree.. Also it is rebased over 3.15-rc2 now.
-
-> -------------------------PATCH STARTS HERE---------------------------------
-> cpuset: quiesce: change irq disable/enable by irq save/restore
->
-> The function __migrate_timers can be called under interrupt context
-> or thread context depending on the core where the system call was
-> executed. In case it executes under interrupt context, it
-
-How exactly?
-
-> seems a bad idea to leave interrupts enabled after migrating the
-> timers. In fact, this caused kernel errors on the ARM architecture and
-> on the x86_64 architecture with the 3.10 kernel (backported version
-> of the cpuset-quiesce patch).
-
-I can't keep it as a separate patch and so would be required to merge
-it into my original patch..
-
-Thanks for your inputs :)
+	Arnd
