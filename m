@@ -1,109 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579AbaDXNbZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:31:25 -0400
-Received: from mga11.intel.com ([192.55.52.93]:59027 "EHLO mga11.intel.com"
+	id S1757553AbaDXNbX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:31:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44177 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755963AbaDXNbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:31:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,919,1389772800"; 
-   d="scan'208";a="526448391"
-Message-ID: <5359120E.2030007@linux.intel.com>
-Date: Thu, 24 Apr 2014 21:30:54 +0800
-From: "Jin, Yao" <yao.jin@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756848AbaDXNbT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 09:31:19 -0400
+Date: Thu, 24 Apr 2014 15:30:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Roland Dreier <roland@kernel.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Inki Dae <inki.dae@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-rdma@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH] mm: get_user_pages(write,force) refuse to COW in
+	shared areas
+Message-ID: <20140424133055.GA13269@redhat.com>
+References: <alpine.LSU.2.11.1404040120110.6880@eggly.anvils>
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Adam Williamson <awilliam@redhat.com>
-CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
-        mathias.nyman@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
- ASUS T100TA
-References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com> <CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com> <5353A1F6.60602@linux.intel.com> <5353B8A4.1080900@linux.intel.com> <1398007690.2674.0.camel@adam.happyassassin.net> <5354BA59.2000008@linux.intel.com> <53551D0F.40906@linux.intel.com> <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com> <1398230210.2704.8.camel@adam.happyassassin.net> <20140423083430.GV30677@intel.com> <20140423122344.GX30677@intel.com>
-In-Reply-To: <20140423122344.GX30677@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.11.1404040120110.6880@eggly.anvils>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Hugh,
 
+Sorry for late reply. First of all, to avoid the confusion, I think the
+patch is fine.
 
-On 2014/4/23 20:23, Mika Westerberg wrote:
-> On Wed, Apr 23, 2014 at 11:34:30AM +0300, Mika Westerberg wrote:
->> On Tue, Apr 22, 2014 at 10:16:50PM -0700, Adam Williamson wrote:
->>> Well, I can't actually concur. See my results in
->>> https://bugzilla.kernel.org/show_bug.cgi?id=68291#c44 .
->>>
->>> 1. A kernel with neither patch applied (and no hid-rmi driver) results
->>> in a working touchscreen.
->>> 2. A kernel with only v3 of Doug's patch from
->>> https://bugzilla.kernel.org/show_bug.cgi?id=67921 results in a working
->>> touchscreen.
->>> 3. A kernel with both v3 of Doug's patch and this IRQ descriptor
->>> conflict "fix" results in a broken touchscreen.
->>>
->>> Seems to me there really is some kind of problem with this patch...
->>
->> Can you try so that you have both patches applied and then this one? I'm
->> suspecting that the ACPI GPIO operation region support might do something
->> unexpected in this case.
-> 
-> I'm able to reproduce this problem here now and it seems not related to the
-> ACPI GPIO operation regions.
-> 
-> This patch changes call to irq_domain_add_linear() to
-> irq_domain_add_simple() and somehow that changes the behaviour so that I
-> get non-working touchscreen:
-> 
-> ...
-> [   37.434998] i2c_hid i2c-ATML1000:00: failed to reset device.
-> [   37.435009] i2c_hid i2c-ATML1000:00: i2c_hid_set_power
-> [   37.435021] i2c_hid i2c-ATML1000:00: __i2c_hid_command: cmd=fb 00 01 08
-> [   38.439897] i2c_hid i2c-ATML1000:00: can't add hid device: -61
-> [   38.440749] i2c_hid: probe of i2c-ATML1000:00 failed with error -61
-> 
-> It never gets an interrupt when the device reset is ready.
-> 
-> Jin, do you have any idea what is going on?
-> 
+When I saw this patch I decided that uprobes should be updated accordingly,
+but I just realized that I do not understand what should I write in the
+changelog.
 
-Maybe neither the patch (http://dougvj.net/baytrail_gpio_quirk_v3.patch)
-nor my patch breaks the touch screen.
+On 04/04, Hugh Dickins wrote:
+>
+> +		if (gup_flags & FOLL_WRITE) {
+> +			if (!(vm_flags & VM_WRITE)) {
+> +				if (!(gup_flags & FOLL_FORCE))
+> +					goto efault;
+> +				/*
+> +				 * We used to let the write,force case do COW
+> +				 * in a VM_MAYWRITE VM_SHARED !VM_WRITE vma, so
+> +				 * ptrace could set a breakpoint in a read-only
+> +				 * mapping of an executable, without corrupting
+> +				 * the file (yet only when that file had been
+> +				 * opened for writing!).  Anon pages in shared
+> +				 * mappings are surprising: now just reject it.
+> +				 */
+> +				if (!is_cow_mapping(vm_flags)) {
+> +					WARN_ON_ONCE(vm_flags & VM_MAYWRITE);
+> +					goto efault;
+> +				}
 
-I have tried the clean 3.15-rc2 with following patch which just adds
-back the ACPIID "INT33FC", but the touch screen still doesn't work (To
-avoid the i915 crash issue, I use with the boot option "nomodeset" in test).
+OK. But could you please clarify "Anon pages in shared mappings are surprising" ?
+I mean, does this only apply to "VM_MAYWRITE VM_SHARED !VM_WRITE vma" mentioned
+above or this is bad even if a !FMODE_WRITE file was mmaped as MAP_SHARED ?
 
-diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-index 69e29f4..d79c6d7 100644
---- a/drivers/acpi/acpi_lpss.c
-+++ b/drivers/acpi/acpi_lpss.c
-@@ -180,6 +180,7 @@ static const struct acpi_device_id
-acpi_lpss_device_ids[] = {
-        { "80860F14", (unsigned long)&byt_sdio_dev_desc },
-        { "80860F41", (unsigned long)&byt_i2c_dev_desc },
-        { "INT33B2", },
-+       { "INT33FC", },
+Yes, in this case this vma is not VM_SHARED and it is not VM_MAYWRITE, it is only
+VM_MAYSHARE. This is in fact private mapping except mprotect(PROT_WRITE) will not
+work.
 
-        { "INT3430", (unsigned long)&lpt_dev_desc },
-        { "INT3431", (unsigned long)&lpt_dev_desc },
-diff --git a/drivers/pinctrl/pinctrl-baytrail.c
-b/drivers/pinctrl/pinctrl-baytrail.c
-index 6e8301f..447f1dc 100644
---- a/drivers/pinctrl/pinctrl-baytrail.c
-+++ b/drivers/pinctrl/pinctrl-baytrail.c
-@@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
+But with or without this patch gup(FOLL_WRITE | FOLL_FORCE) won't work in this case,
+(although perhaps it could ?), is_cow_mapping() == F because of !VM_MAYWRITE.
 
- static const struct acpi_device_id byt_gpio_acpi_match[] = {
-        { "INT33B2", 0 },
-+       { "INT33FC", 0 },
-        { }
- };
- MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
+However, currently uprobes assumes that a cowed anon page is fine in this case, and
+this differs from gup().
 
-Since the clean 3.15-rc2 doesn't contain "INT33FC", so the baytrail gpio
-doesn't actually go into effect.
+So, what do you think about the patch below? It is probably fine in any case,
+but is there any "strong" reason to follow the gup's behaviour and forbid the
+anon page in VM_MAYSHARE && !VM_MAYWRITE vma?
+
+Oleg.
+
+--- x/kernel/events/uprobes.c
++++ x/kernel/events/uprobes.c
+@@ -127,12 +127,13 @@ struct xol_area {
+  */
+ static bool valid_vma(struct vm_area_struct *vma, bool is_register)
+ {
+-	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC | VM_SHARED;
++	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC;
+ 
+ 	if (is_register)
+ 		flags |= VM_WRITE;
+ 
+-	return vma->vm_file && (vma->vm_flags & flags) == VM_MAYEXEC;
++	return 	vma->vm_file && is_cow_mapping(vma->vm_flags) &&
++		(vma->vm_flags & flags) == VM_MAYEXEC;
+ }
+ 
+ static unsigned long offset_to_vaddr(struct vm_area_struct *vma, loff_t offset)
+
