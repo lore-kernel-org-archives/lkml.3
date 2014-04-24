@@ -1,82 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756838AbaDXM0J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:26:09 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:59513 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753454AbaDXM0C (ORCPT
+	id S1756863AbaDXM1P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:27:15 -0400
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:53202 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756017AbaDXMYb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:26:02 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Subject: Re: [RFC PATCH 2/2] PCI: exynos: Add PCIe support for Samsung GH7 SoC
-Date: Thu, 24 Apr 2014 14:25:30 +0200
-User-Agent: KMail/1.12.2 (Linux/3.8.0-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Kukjin Kim <kgene.kim@samsung.com>, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'linux-pci'" <linux-pci@vger.kernel.org>,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Byungho An'" <bh74.an@samsung.com>,
-        "ilho215.lee@samsung.com" <ilho215.lee@samsung.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-References: <000801cf592e$30b7bff0$92273fd0$%han@samsung.com> <031b01cf5ed5$21d536a0$657fa3e0$@samsung.com> <20140423130012.GL865@e106497-lin.cambridge.arm.com>
-In-Reply-To: <20140423130012.GL865@e106497-lin.cambridge.arm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201404241425.31625.arnd@arndb.de>
-X-Provags-ID: V02:K0:DsrG/oJ4zltZ7T3C/3RgE4rkkO+YJejrxRZ2jx8tE7T
- dPYFDOwLPkn7/DssMnLX9ElHQ2D4xogx8OX5DkfDoqafWHfRqm
- LWds30BnFa8h1rk2VSaB95r4aTm+emD8EIvBYeuJsROmw1au3a
- kAAfHoDAR/GXMsRoMVRqvw+w+k+pI+Om1rxTuQL9e++eMG8Vu3
- mDGTbCeZLlA45vgbhA3gNMWU/5xyBnbPhy16WihSI26bRQ0oYv
- Y4dccFEDoUEkwzsttMWqgjrHcIx57lgJsR434NAnS5xlwOq5mZ
- cCf7/i9Rp3BNqORwiC/WnNNXM1AIpzFpD/hzfi85FzyxndDAV0
- iZeLCJVuJZC7Np+OGdMo=
+	Thu, 24 Apr 2014 08:24:31 -0400
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+To: peterz@infradead.org, mingo@elte.hu
+Cc: linux-kernel@vger.kernel.org, rjw@rjwysocki.net, linux-pm@vger.kernel.org,
+        alex.shi@linaro.org, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com, linaro-kernel@lists.linaro.org
+Subject: [PATCH 3/3] sched: idle: Store the idle state the cpu is
+Date: Thu, 24 Apr 2014 14:24:51 +0200
+Message-Id: <1398342291-16322-4-git-send-email-daniel.lezcano@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 April 2014, Liviu Dudau wrote:
-> On Wed, Apr 23, 2014 at 10:19:30AM +0100, Kukjin Kim wrote:
-> > Arnd Bergmann wrote:
-> > > 
-> > > Can you explain how much the GH7 and Exynos front-ends actually have in
-> > > common? Would it make sense to have a separate driver for gh7?
-> > > 
-> > Basically, ARMv8 based GH7 has same PCIe hardware IP with previous ARMv7
-> > based exynos5440, several features in PCIe are different though. In other
-> > words, basic functionalities for PCIe are same. So I think, would be nice if
-> > we could use one PCIe device driver for both SoCs.
-> > 
-> > However, if we need to support the PCIe with each own device driver because
-> > of difference of 32bit and 64bit, please kindly let us know. Honestly, I'm
-> > not sure about that right now.
-> 
-> Hi Kukjin,
-> 
-> I will let Arnd offer his view as a maintainer of DT enabled platforms for 
-> arch/arm, but in my understanding the goal is to convert individual host
-> bridge drivers to use my patch series directly, as they intentionally don't
-> depend on any arch specific code and then leave the existing bios32 code
-> for the non-DT platforms and the ones that do not see the need to convert
-> to the framework.
->
-> Rob Herring has posted an example on how he can add support for a host
-> bridge running under arm32 that uses my framework, so it is not an impossible
-> task and can be used as an example for future conversions.
+When the cpu enters idle it stores the cpuidle state pointer in the struct
+rq which in turn could be used to take a right decision when balancing
+a task.
 
-Yes, I agree that would be the best approach. I'm not sure if it
-makes sense to convert the various dw-pcie front-ends separately
-or if we have to do them all at once though. Doing them together
-may require some more coordination.
+As soon as the cpu exits the idle state, the structure is filled back with the
+NULL pointer.
 
-Let's also make sure to keep Russell in the loop regarding arm32
-PCI support. He probably has some ideas as well on how we should
-proceed with the existing code.
+There are a couple of situations where the idle state pointer could be changed
+while looking at it:
 
-	Arnd
+1. For x86/acpi with dynamic c-states, when a laptop switches from battery
+   to AC that could result on removing the deeper idle state. The acpi driver
+   triggers:
+	'acpi_processor_cst_has_changed'
+		'cpuidle_pause_and_lock'
+			'cpuidle_uninstall_idle_handler'
+				'kick_all_cpus_sync'.
+
+All cpus will exit their idle state and the pointed object will be set to NULL.
+
+2. The cpuidle driver is unloaded. Logically that could happen but not in
+practice because the drivers are always compiled in and 95% of the drivers are
+not coded to unregister the driver. In any case, the unloading code must call
+'cpuidle_unregister_device', that calls 'cpuidle_pause_and_lock' leading to
+'kick_all_cpus_sync' as mentioned above.
+
+The race can happen if we use the pointer and then one of these two situations
+occurs at the same moment.
+
+In order to be safe, the idle state pointer stored in the rq must be used inside
+a rcu_read_lock section where we are protected with the 'rcu_barrier' in the
+'cpuidle_uninstall_idle_handler' function.
+
+Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+---
+ drivers/cpuidle/cpuidle.c |    6 ++++++
+ kernel/sched/idle.c       |    8 ++++++++
+ kernel/sched/sched.h      |    5 +++++
+ 3 files changed, 19 insertions(+)
+
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 8236746..6a13f40 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -190,6 +190,12 @@ void cpuidle_install_idle_handler(void)
+  */
+ void cpuidle_uninstall_idle_handler(void)
+ {
++	/*
++	 * Wait for the scheduler to finish to use the idle state he
++	 * may pointing to when looking for the cpu idle states
++	 */
++	rcu_barrier();
++
+ 	if (enabled_devices) {
+ 		initialized = 0;
+ 		kick_all_cpus_sync();
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index e877dd4..4c14ec0 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -12,6 +12,8 @@
+ 
+ #include <trace/events/power.h>
+ 
++#include "sched.h"
++
+ static int __read_mostly cpu_idle_force_poll;
+ 
+ void cpu_idle_poll_ctrl(bool enable)
+@@ -66,6 +68,8 @@ void __weak arch_cpu_idle(void)
+ #ifdef CONFIG_CPU_IDLE
+ static int __cpuidle_idle_call(void)
+ {
++	struct rq *rq = this_rq();
++	struct cpuidle_state **idle_state = &rq->idle_state;
+ 	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+ 	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+ 	int next_state, entered_state, ret;
+@@ -114,6 +118,8 @@ static int __cpuidle_idle_call(void)
+ 		if (!ret) {
+ 			trace_cpu_idle_rcuidle(next_state, dev->cpu);
+ 
++			*idle_state = &drv->states[next_state];
++
+ 			/*
+ 			 * Enter the idle state previously returned by
+ 			 * the governor decision. This function will
+@@ -123,6 +129,8 @@ static int __cpuidle_idle_call(void)
+ 			 */
+ 			entered_state = cpuidle_enter(drv, dev, next_state);
+ 
++			*idle_state = NULL;
++
+ 			trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, dev->cpu);
+ 
+ 			if (broadcast)
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 456e492..bace64a 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -14,6 +14,7 @@
+ #include "cpuacct.h"
+ 
+ struct rq;
++struct cpuidle_state;
+ 
+ extern __read_mostly int scheduler_running;
+ 
+@@ -643,6 +644,10 @@ struct rq {
+ #ifdef CONFIG_SMP
+ 	struct llist_head wake_list;
+ #endif
++
++#ifdef CONFIG_CPU_IDLE
++	struct cpuidle_state *idle_state;
++#endif
+ };
+ 
+ static inline int cpu_of(struct rq *rq)
+-- 
+1.7.9.5
+
