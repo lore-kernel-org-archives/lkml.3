@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233AbaDXQSl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:18:41 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:41450 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758507AbaDXQSh (ORCPT
+	id S1758055AbaDXQUn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:20:43 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:37384 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753092AbaDXQUl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:18:37 -0400
-Date: Thu, 24 Apr 2014 13:18:04 -0300
-From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
-To: Ley Foon Tan <lftan@altera.com>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
-Subject: Re: [PATCH 08/28] nios2: MMU Fault handling
-Message-ID: <20140424161804.GG1735@arch.cereza>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
- <1397824031-4892-6-git-send-email-lftan@altera.com>
- <20140422143036.GD15745@arch.cereza>
- <CAFiDJ59KHkh549PBezijr-UektFQtQaZ_5fP5qqRvsVC-e2uxw@mail.gmail.com>
- <20140424152232.GD1735@arch.cereza>
- <CAFiDJ5-r1SW9qbE4Oghg4cTZUA_qu2RfBj0YLafcFVGweBctoQ@mail.gmail.com>
+	Thu, 24 Apr 2014 12:20:41 -0400
+Date: Thu, 24 Apr 2014 18:20:29 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alex Shi <alex.shi@linaro.org>
+Cc: mingo@redhat.com, morten.rasmussen@arm.com, vincent.guittot@linaro.org,
+        daniel.lezcano@linaro.org, efault@gmx.de, wangyun@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org, mgorman@suse.de
+Subject: Re: [RESEND PATCH V5 0/8] remove cpu_load idx
+Message-ID: <20140424162029.GV11096@twins.programming.kicks-ass.net>
+References: <1397616209-27275-1-git-send-email-alex.shi@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAFiDJ5-r1SW9qbE4Oghg4cTZUA_qu2RfBj0YLafcFVGweBctoQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1397616209-27275-1-git-send-email-alex.shi@linaro.org>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 25, Ley Foon Tan wrote:
-> On Thu, Apr 24, 2014 at 11:22 PM, Ezequiel Garcia
-> <ezequiel.garcia@free-electrons.com> wrote:
-> >> > I found that it's useful to add some printing here, just as ARM
-> >> > does. I carry this patch on my kernel:
-> >> >
-> >> > +               printk(KERN_INFO "%s: unhandled page fault (%d) at 0x%08lx, cause %ld\n",
-> >> > +                      current->comm, SIGSEGV, address, cause);
-> >> > +               show_regs(regs);
-> >> >
-> >> > Do you think we could do something like it? Maybe with a compile time option?
-> >> Yes, this is useful debug message. I can add this.
-> >> Prefer not to add new compile time option, I think this shouldn't
-> >> happen frequently.
-> >
-> > No, it shouldn't happen frequently. You can take a look at what ARM does.
-> > They use a DEBUG_USER compile-time option, much more complex than my silly
-> > proposal.
-> For now, we can print it always if this shouldn't happen frequently.
-> Compile time option can be added later if we have more other debug
-> stuff to print later.
-> 
 
-OK, sound sensible.
--- 
-Ezequiel García, Free Electrons
-Embedded Linux, Kernel and Android Engineering
-http://free-electrons.com
+
+OK, this series is a lot saner, with the exception of 3/8 and
+dependents.
+
+I do still worry a bit for loosing the longer term view for the big
+domains though. Sadly I don't have any really big machines.
+
+I think the entire series is equivalent to setting LB_BIAS to false. So
+I suppose we could do that for a while and if nobody reports horrible
+things we could just do this.
+
+Anybody?
