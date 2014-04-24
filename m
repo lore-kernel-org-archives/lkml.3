@@ -1,107 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752935AbaDXUPm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 16:15:42 -0400
-Received: from mail.fireflyinternet.com ([87.106.93.118]:57488 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752866AbaDXUPg (ORCPT
+	id S1752771AbaDXUPd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 16:15:33 -0400
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:62195 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbaDXUP1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 16:15:36 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.73.22;
-Date: Thu, 24 Apr 2014 21:15:21 +0100
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Daniel Vetter <daniel.vetter@ffwll.ch>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jikos@jikos.cz>
-Subject: Re: [bisect result] Re: 3.15-rc2: i915 regression: only top 20% of
- screen works in X
-Message-ID: <20140424201521.GN31221@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Pavel Machek <pavel@ucw.cz>, Daniel Vetter <daniel.vetter@ffwll.ch>,
-	intel-gfx <intel-gfx@lists.freedesktop.org>,
-	"Rafael J. Wysocki" <rjw@rjwysocki.net>,
-	dri-devel <dri-devel@lists.freedesktop.org>,
-	kernel list <linux-kernel@vger.kernel.org>,
-	Jiri Kosina <jikos@jikos.cz>
-References: <20140423202248.GA3621@amd.pavel.ucw.cz>
- <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
- <20140423220952.GA3627@amd.pavel.ucw.cz>
- <20140424055023.GA31221@nuc-i3427.alporthouse.com>
- <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
- <20140424194037.GB30333@amd.pavel.ucw.cz>
+	Thu, 24 Apr 2014 16:15:27 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424194037.GB30333@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20140424194905.GA12809@kroah.com>
+References: <1398169382-12097-1-git-send-email-mathias.nyman@linux.intel.com>
+	<1398169382-12097-2-git-send-email-mathias.nyman@linux.intel.com>
+	<20140424194905.GA12809@kroah.com>
+Date: Thu, 24 Apr 2014 13:15:26 -0700
+X-Google-Sender-Auth: B-Ap6IVKnr99RLXgzPUIGYtAdNc
+Message-ID: <CAODwPW8ryZsOAq_cNVYazxo2jjoQKZwsnGHEJ9kreMc10C9=Zg@mail.gmail.com>
+Subject: Re: [PATCH 1/5] usb: xhci: Prefer endpoint context dequeue pointer
+ over stopped_trb
+From: Julius Werner <jwerner@chromium.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Julius Werner <jwerner@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 09:40:38PM +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > And if you can indeed reliably reproduce this a bisect could be really useful.
-> 
-> And we have a winner here :-)
-> 
-> Ok, it was not as painfull as I feared.
-> 
-> It does not revert cleanly, but doing it by hand was not that bad.
+> You don't actually add the stable@ tag here, why not?
+>
+> You have read Documentation/stable_kernel_rules.txt for how stable
+> kernel trees work, so why not add the label here?
 
-Oh my. That is bizarre, can you check whether you have
+Sorry... I actually didn't know about that file, I just added the
+"should be backported" line because I have seen that in other commits.
+I will adhere to those rules in the future.
 
-commit 9991ae787a0c87fe7c783b4b6f4754c3cdbb6213
-Author: Chris Wilson <chris@chris-wilson.co.uk>
-Date:   Wed Apr 2 16:36:07 2014 +0100
-
-    drm/i915: Move all ring resets before setting the HWS page
-
-in your latest kernel? That just makes
-
-> commit a51435a3137ad8ae75c288c39bd2d8b2696bae8f
-> Author: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
-> Date:   Wed Mar 12 16:39:40 2014 +0530
-> 
->     drm/i915: disable rings before HW status page setup
-
-more consistent wrt g4x.
-
-To confirm, on drm-intel-nightly you used a patch like:
-
-diff --git a/drivers/gpu/drm/i915/intel_ringbuffer.c b/drivers/gpu/drm/i915/intel_ringbuffer.c
-index 36a62af..ce6186a 100644
---- a/drivers/gpu/drm/i915/intel_ringbuffer.c
-+++ b/drivers/gpu/drm/i915/intel_ringbuffer.c
-@@ -494,6 +494,11 @@ static int init_ring_common(struct intel_ring_buffer *ring)
-               I915_READ_TAIL(ring),
-               I915_READ_START(ring));
- 
-+       if (I915_NEED_GFX_HWS(dev))
-+               intel_ring_setup_status_page(ring);
-+       else
-+               ring_setup_phys_status_page(ring);
-+
-        if (!stop_ring(ring)) {
-                /* G45 ring initialization often fails to reset head to zero */
-                DRM_DEBUG_KMS("%s head not reset to zero "
-@@ -517,11 +522,6 @@ static int init_ring_common(struct intel_ring_buffer *ring)
-                }
-        }
- 
--       if (I915_NEED_GFX_HWS(dev))
--               intel_ring_setup_status_page(ring);
--       else
--               ring_setup_phys_status_page(ring);
--
- reset:
-        /* Initialize the ring. This must happen _after_ we've cleared the ring
-         * registers with the above sequence (the readback of the HEAD registers
-
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
+The patch is a little over the line limit (150+ lines with context,
+although most of it are scattered single-line changes). The issue it
+solves is that a USB device may silently stop working until it is
+disconnected, not sure if that's enough to qualify as "oh, that's not
+good". I'll let you decide whether it still should be queued up for
+stable backports or not.
