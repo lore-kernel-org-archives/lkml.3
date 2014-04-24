@@ -1,187 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345AbaDXN1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:27:53 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:53977 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757284AbaDXN1s (ORCPT
+	id S1757412AbaDXN2V (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:28:21 -0400
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:48078 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757294AbaDXN1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Apr 2014 09:27:48 -0400
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>,
-        Irina Tirdea <irina.tirdea@intel.com>
-Subject: [PATCH v3 3/3] perf tools: Get rid of on_exit() feature test
-Date: Thu, 24 Apr 2014 22:27:34 +0900
-Message-Id: <1398346054-3322-3-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.7.9.2
-In-Reply-To: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
-References: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
+From: Xiangliang Yu <yxlraid@gmail.com>
+To: tj@kernel.org, JBottomley@parallels.com
+Cc: dan.j.williams@intel.com, todd.e.brandt@intel.com, lukasz.dorau@intel.com,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Xiangliang Yu <yxlraid@gmail.com>
+Subject: [PATCH 1/3] libsas: modify SATA error handler
+Date: Thu, 24 Apr 2014 21:27:27 +0800
+Message-Id: <1398346047-10276-1-git-send-email-yxlraid@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The on_exit() function was only used in perf record but it's gone in
-previous patch.
+Add support for SATA port softreset and port multiplier error
+handling.
 
-Cc: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
-Cc: Irina Tirdea <irina.tirdea@intel.com>
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Signed-off-by: Xiangliang Yu <yxlraid@gmail.com>
 ---
- tools/perf/builtin-record.c                     |   31 -----------------------
- tools/perf/config/Makefile                      |    8 ------
- tools/perf/config/feature-checks/Makefile       |    4 ---
- tools/perf/config/feature-checks/test-all.c     |    5 ----
- tools/perf/config/feature-checks/test-on-exit.c |   16 ------------
- 5 files changed, 64 deletions(-)
- delete mode 100644 tools/perf/config/feature-checks/test-on-exit.c
+ drivers/scsi/libsas/sas_ata.c |  226 ++++++++++++++++++++++++++++++++++++++++-
+ include/scsi/libsas.h         |    6 +
+ 2 files changed, 231 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index b1523d8a6191..1c127806fcb1 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -30,37 +30,6 @@
- #include <sched.h>
- #include <sys/mman.h>
+diff --git a/drivers/scsi/libsas/sas_ata.c b/drivers/scsi/libsas/sas_ata.c
+index 766098a..29a19fd 100644
+--- a/drivers/scsi/libsas/sas_ata.c
++++ b/drivers/scsi/libsas/sas_ata.c
+@@ -442,6 +442,226 @@ static int sas_ata_hard_reset(struct ata_link *link, unsigned int *class,
+ 	return ret;
+ }
  
--#ifndef HAVE_ON_EXIT_SUPPORT
--#ifndef ATEXIT_MAX
--#define ATEXIT_MAX 32
--#endif
--static int __on_exit_count = 0;
--typedef void (*on_exit_func_t) (int, void *);
--static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
--static void *__on_exit_args[ATEXIT_MAX];
--static int __exitcode = 0;
--static void __handle_on_exit_funcs(void);
--static int on_exit(on_exit_func_t function, void *arg);
--#define exit(x) (exit)(__exitcode = (x))
--
--static int on_exit(on_exit_func_t function, void *arg)
--{
--	if (__on_exit_count == ATEXIT_MAX)
--		return -ENOMEM;
--	else if (__on_exit_count == 0)
--		atexit(__handle_on_exit_funcs);
--	__on_exit_funcs[__on_exit_count] = function;
--	__on_exit_args[__on_exit_count++] = arg;
--	return 0;
--}
--
--static void __handle_on_exit_funcs(void)
--{
--	int i;
--	for (i = 0; i < __on_exit_count; i++)
--		__on_exit_funcs[i] (__exitcode, __on_exit_args[i]);
--}
--#endif
++static void sas_ata_freeze(struct ata_port *ap)
++{
++	struct domain_device *dev = ap->private_data;
++	struct sas_ha_struct *sas_ha = dev->port->ha;
++	struct Scsi_Host *host = sas_ha->core.shost;
++	struct sas_internal *i = to_sas_internal(host->transportt);
++
++	if (i->dft->lldd_dev_freeze)
++		i->dft->lldd_dev_freeze(dev);
++}
++
++static void sas_ata_thaw(struct ata_port *ap)
++{
++	struct domain_device *dev = ap->private_data;
++	struct sas_ha_struct *sas_ha = dev->port->ha;
++	struct Scsi_Host *host = sas_ha->core.shost;
++	struct sas_internal *i = to_sas_internal(host->transportt);
++
++	if (i->dft->lldd_dev_thaw)
++		i->dft->lldd_dev_thaw(dev);
++}
++
++static int sas_ata_wait_task_done(struct sas_task *task, unsigned long timeout,
++		int (*check_done)(struct sas_task *task))
++{
++	struct ata_port *ap = task->uldd_task;
++	unsigned long deadline;
++	int done;
++
++	if (!check_done) {
++		SAS_DPRINTK("check function is null.\n");
++		return -1;
++	}
++
++	deadline = ata_deadline(jiffies, timeout);
++	done = check_done(task);
++
++	while (done && time_before(jiffies, deadline)) {
++		ata_msleep(ap, 1);
++
++		done = check_done(task);
++	}
++
++	return done;
++}
++
++static int sas_ata_exec_polled_cmd(struct ata_port *ap, struct ata_taskfile *tf,
++		int pmp, unsigned long timeout)
++{
++	struct domain_device *dev = ap->private_data;
++	struct sas_ha_struct *sas_ha = dev->port->ha;
++	struct Scsi_Host *host = sas_ha->core.shost;
++	struct sas_internal *i = to_sas_internal(host->transportt);
++	struct sas_task *task = NULL;
++	int ret = -1;
++
++	if (!i->dft->lldd_execute_task) {
++		SAS_DPRINTK("execute function is null.\n");
++		return ret;
++	}
++
++	task = sas_alloc_task(GFP_ATOMIC);
++	if (!task) {
++		SAS_DPRINTK("failed to alloc sas task.\n");
++		goto fail;
++	}
++
++	task->dev = dev;
++	task->task_proto = SAS_PROTOCOL_SATA;
++	task->uldd_task = ap;
++
++	ata_tf_to_fis(tf, pmp, 0, (u8 *)&task->ata_task.fis);
++	task->ata_task.retry_count = 1;
++	task->task_state_flags = SAS_TASK_STATE_PENDING;
++	task->task_state_flags |= SAS_TASK_NEED_DEV_RESET;
++
++	ret = i->dft->lldd_execute_task(task, 1, GFP_ATOMIC);
++	if (ret) {
++		SAS_DPRINTK("failed to send internal task.\n");
++		goto fail;
++	}
++
++	if (timeout) {
++		ret = sas_ata_wait_task_done(task, timeout,
++				i->dft->lldd_wait_task_done);
++		if (ret) {
++			SAS_DPRINTK("get wrong status.\n");
++			goto fail;
++		}
++	}
++	list_del_init(&task->list);
++	sas_free_task(task);
++
++	return 0;
++fail:
++	if (task) {
++		list_del_init(&task->list);
++		sas_free_task(task);
++	}
++
++	return ret;
++}
++
++static int sas_ata_soft_reset(struct ata_link *link, unsigned int *class,
++			      unsigned long deadline)
++{
++	struct ata_taskfile tf;
++	struct ata_port *ap = link->ap;
++	struct domain_device *dev = ap->private_data;
++	struct sas_ha_struct *sas_ha = dev->port->ha;
++	struct Scsi_Host *host = sas_ha->core.shost;
++	struct sas_internal *i = to_sas_internal(host->transportt);
++	struct sas_phy *phy;
++	unsigned long now, msecs;
++	unsigned int pmp;
++	int ret = -1;
++	int (*check_ready)(struct ata_link *link);
++
++	phy = sas_get_local_phy(dev);
++	if (scsi_is_sas_phy_local(phy))
++		check_ready = local_ata_check_ready;
++	else
++		check_ready = smp_ata_check_ready;
++	sas_put_local_phy(phy);
++
++	pmp = sata_srst_pmp(link);
++
++	msecs = 0;
++	now = jiffies;
++	if (time_after(deadline, now))
++		msecs = jiffies_to_msecs(deadline - now);
++
++	memset(&tf, 0, sizeof(struct ata_taskfile));
++	tf.ctl = ATA_SRST;
++	tf.device = ATA_DEVICE_OBS;
++
++	if (sas_ata_exec_polled_cmd(ap, &tf, pmp, msecs)) {
++		ret = -EIO;
++		goto fail;
++	}
++
++	tf.ctl &= ~ATA_SRST;
++	sas_ata_exec_polled_cmd(ap, &tf, pmp, msecs);
++
++	ret = ata_wait_after_reset(link, deadline, check_ready);
++	if (ret) {
++		SAS_DPRINTK("device is not ready.\n");
++		ret = -EIO;
++		goto fail;
++	} else {
++		if (i->dft->lldd_dev_classify)
++			*class = i->dft->lldd_dev_classify(dev);
++	}
++
++	return 0;
++
++fail:
++	SAS_DPRINTK("failed to reset.\n");
++	return ret;
++}
++
++/* According sata 3.0 spec 13.15.4.2, enable the device port */
++static int sas_ata_pmp_hard_reset(struct ata_link *link, unsigned int *class,
++			      unsigned long deadline)
++{
++	struct ata_port *ap = link->ap;
++	struct domain_device *dev = ap->private_data;
++	struct sas_ha_struct *sas_ha = dev->port->ha;
++	struct Scsi_Host *host = sas_ha->core.shost;
++	struct sas_internal *i = to_sas_internal(host->transportt);
++	int ret = -1;
++	u32 scontrol = 0;
++
++	set_bit(SAS_DEV_RESET, &dev->state);
++
++	ret = sata_scr_read(link, SCR_CONTROL, &scontrol);
++	if (ret)
++		goto error;
++
++	/* enable device port */
++	scontrol = 0x1;
++	ret = sata_scr_write(link, SCR_CONTROL, scontrol);
++	if (ret)
++		goto error;
++
++	ata_msleep(ap, 1);
++
++	scontrol = 0x0;
++	ret = sata_scr_write(link, SCR_CONTROL, scontrol);
++	if (ret)
++		goto error;
++
++	ata_msleep(ap, 10);
++
++	/* check device link status */
++	if (ata_link_offline(link)) {
++		SAS_DPRINTK("link is offline.\n");
++		goto error;
++	}
++
++	/* clear X bit */
++	scontrol = 0xFFFFFFFF;
++	ret = sata_scr_write(link, SCR_ERROR, scontrol);
++	if (ret)
++		goto error;
++
++	/* may be need to wait for device sig */
++	ata_msleep(ap, 3);
++
++	/* check device class */
++	if (i->dft->lldd_dev_classify)
++		*class = i->dft->lldd_dev_classify(dev);
++
++	return 0;
++
++error:
++	SAS_DPRINTK("failed to hard reset.\n");
++	return ret;
++}
++
+ /*
+  * notify the lldd to forget the sas_task for this internal ata command
+  * that bypasses scsi-eh
+@@ -551,8 +771,12 @@ void sas_ata_end_eh(struct ata_port *ap)
+ static struct ata_port_operations sas_sata_ops = {
+ 	.prereset		= ata_std_prereset,
+ 	.hardreset		= sas_ata_hard_reset,
++	.softreset		= sas_ata_soft_reset,
++	.pmp_hardreset		= sas_ata_pmp_hard_reset,
++	.freeze			= sas_ata_freeze,
++	.thaw			= sas_ata_thaw,
+ 	.postreset		= ata_std_postreset,
+-	.error_handler		= ata_std_error_handler,
++	.error_handler		= sata_pmp_error_handler,
+ 	.post_internal_cmd	= sas_ata_post_internal,
+ 	.qc_defer               = ata_std_qc_defer,
+ 	.qc_prep		= ata_noop_qc_prep,
+diff --git a/include/scsi/libsas.h b/include/scsi/libsas.h
+index ef7872c..a26466a 100644
+--- a/include/scsi/libsas.h
++++ b/include/scsi/libsas.h
+@@ -689,6 +689,12 @@ struct sas_domain_function_template {
+ 	/* GPIO support */
+ 	int (*lldd_write_gpio)(struct sas_ha_struct *, u8 reg_type,
+ 			       u8 reg_index, u8 reg_count, u8 *write_data);
++
++	/* ATA EH functions */
++	void (*lldd_dev_freeze)(struct domain_device *);
++	void (*lldd_dev_thaw)(struct domain_device *);
++	int (*lldd_wait_task_done)(struct sas_task *);
++	int (*lldd_dev_classify)(struct domain_device *);
+ };
  
- struct record {
- 	struct perf_tool	tool;
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index ee21fa95ebcf..7b7003d11983 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -156,7 +156,6 @@ CORE_FEATURE_TESTS =			\
- 	libpython-version		\
- 	libslang			\
- 	libunwind			\
--	on-exit				\
- 	stackprotector-all		\
- 	timerfd				\
- 	libdw-dwarf-unwind
-@@ -182,7 +181,6 @@ VF_FEATURE_TESTS =			\
- 	libelf-getphdrnum		\
- 	libelf-mmap			\
- 	libpython-version		\
--	on-exit				\
- 	stackprotector-all		\
- 	timerfd				\
- 	libunwind-debug-frame		\
-@@ -541,12 +539,6 @@ ifneq ($(filter -lbfd,$(EXTLIBS)),)
-   CFLAGS += -DHAVE_LIBBFD_SUPPORT
- endif
- 
--ifndef NO_ON_EXIT
--  ifeq ($(feature-on-exit), 1)
--    CFLAGS += -DHAVE_ON_EXIT_SUPPORT
--  endif
--endif
--
- ifndef NO_BACKTRACE
-   ifeq ($(feature-backtrace), 1)
-     CFLAGS += -DHAVE_BACKTRACE_SUPPORT
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 2da103c53f89..64c84e5f0514 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -24,7 +24,6 @@ FILES=					\
- 	test-libslang.bin		\
- 	test-libunwind.bin		\
- 	test-libunwind-debug-frame.bin	\
--	test-on-exit.bin		\
- 	test-stackprotector-all.bin	\
- 	test-timerfd.bin		\
- 	test-libdw-dwarf-unwind.bin
-@@ -133,9 +132,6 @@ test-liberty-z.bin:
- test-cplus-demangle.bin:
- 	$(BUILD) -liberty
- 
--test-on-exit.bin:
--	$(BUILD)
--
- test-backtrace.bin:
- 	$(BUILD)
- 
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index fc37eb3ca17b..fe5c1e5c952f 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -69,10 +69,6 @@
- # include "test-libbfd.c"
- #undef main
- 
--#define main main_test_on_exit
--# include "test-on-exit.c"
--#undef main
--
- #define main main_test_backtrace
- # include "test-backtrace.c"
- #undef main
-@@ -110,7 +106,6 @@ int main(int argc, char *argv[])
- 	main_test_gtk2(argc, argv);
- 	main_test_gtk2_infobar(argc, argv);
- 	main_test_libbfd();
--	main_test_on_exit();
- 	main_test_backtrace();
- 	main_test_libnuma();
- 	main_test_timerfd();
-diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
-deleted file mode 100644
-index 8e88b16e6ded..000000000000
---- a/tools/perf/config/feature-checks/test-on-exit.c
-+++ /dev/null
-@@ -1,16 +0,0 @@
--#include <stdio.h>
--#include <stdlib.h>
--
--static void exit_fn(int status, void *__data)
--{
--	printf("exit status: %d, data: %d\n", status, *(int *)__data);
--}
--
--static int data = 123;
--
--int main(void)
--{
--	on_exit(exit_fn, &data);
--
--	return 321;
--}
+ extern int sas_register_ha(struct sas_ha_struct *);
 -- 
-1.7.9.2
+1.7.1
 
