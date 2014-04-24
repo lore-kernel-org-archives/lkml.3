@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758860AbaDXWW4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:22:56 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39682 "EHLO
+	id S932357AbaDXWYA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:24:00 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39666 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755291AbaDXVqL (ORCPT
+	with ESMTP id S1755282AbaDXVqK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:11 -0400
+	Thu, 24 Apr 2014 17:46:10 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
-        Werner Fink <werner@suse.de>, Hannes Reinecke <hare@suse.de>,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH 3.10 05/23] tty: Set correct tty name in active sysfs attribute
-Date: Thu, 24 Apr 2014 14:48:35 -0700
-Message-Id: <20140424214826.582392207@linuxfoundation.org>
+        Jiri Slaby <jslaby@suse.cz>, Tomas Cech <tcech@suse.cz>,
+        Corey Minyard <minyard@acm.org>,
+        openipmi-developer@lists.sourceforge.net,
+        Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 02/23] Char: ipmi_bt_sm, fix infinite loop
+Date: Thu, 24 Apr 2014 14:48:32 -0700
+Message-Id: <20140424214826.212502499@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
 References: <20140424214825.933835556@linuxfoundation.org>
@@ -31,75 +32,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit 723abd87f6e536f1353c8f64f621520bc29523a3 upstream.
+commit a94cdd1f4d30f12904ab528152731fb13a812a16 upstream.
 
-The 'active' sysfs attribute should refer to the currently active tty
-devices the console is running on, not the currently active console. The
-console structure doesn't refer to any device in sysfs, only the tty the
-console is running on has. So we need to print out the tty names in
-'active', not the console names.
+In read_all_bytes, we do
 
-There is one special-case, which is tty0. If the console is directed to
-it, we want 'tty0' to show up in the file, so user-space knows that the
-messages get forwarded to the active VT. The ->device() callback would
-resolve tty0, though. Hence, treat it special and don't call into the VT
-layer to resolve it (plymouth is known to depend on it).
+  unsigned char i;
+  ...
+  bt->read_data[0] = BMC2HOST;
+  bt->read_count = bt->read_data[0];
+  ...
+  for (i = 1; i <= bt->read_count; i++)
+    bt->read_data[i] = BMC2HOST;
 
-Cc: Lennart Poettering <lennart@poettering.net>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Werner Fink <werner@suse.de>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+If bt->read_data[0] == bt->read_count == 255, we loop infinitely in the
+'for' loop.  Make 'i' an 'int' instead of 'char' to get rid of the
+overflow and finish the loop after 255 iterations every time.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-and-debugged-by: Rui Hui Dian <rhdian@novell.com>
+Cc: Tomas Cech <tcech@suse.cz>
+Cc: Corey Minyard <minyard@acm.org>
+Cc: <openipmi-developer@lists.sourceforge.net>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_io.c |   23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+ drivers/char/ipmi/ipmi_bt_sm.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1267,12 +1267,13 @@ static void pty_line_name(struct tty_dri
-  *
-  *	Locking: None
-  */
--static void tty_line_name(struct tty_driver *driver, int index, char *p)
-+static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -352,7 +352,7 @@ static inline void write_all_bytes(struc
+ 
+ static inline int read_all_bytes(struct si_sm_data *bt)
  {
- 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
--		strcpy(p, driver->name);
-+		return sprintf(p, "%s", driver->name);
- 	else
--		sprintf(p, "%s%d", driver->name, index + driver->name_base);
-+		return sprintf(p, "%s%d", driver->name,
-+			       index + driver->name_base);
- }
+-	unsigned char i;
++	unsigned int i;
  
- /**
-@@ -3538,9 +3539,19 @@ static ssize_t show_cons_active(struct d
- 		if (i >= ARRAY_SIZE(cs))
- 			break;
- 	}
--	while (i--)
--		count += sprintf(buf + count, "%s%d%c",
--				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
-+	while (i--) {
-+		int index = cs[i]->index;
-+		struct tty_driver *drv = cs[i]->device(cs[i], &index);
-+
-+		/* don't resolve tty0 as some programs depend on it */
-+		if (drv && (cs[i]->index > 0 || drv->major != TTY_MAJOR))
-+			count += tty_line_name(drv, index, buf + count);
-+		else
-+			count += sprintf(buf + count, "%s%d",
-+					 cs[i]->name, cs[i]->index);
-+
-+		count += sprintf(buf + count, "%c", i ? ' ':'\n');
-+	}
- 	console_unlock();
- 
- 	return count;
+ 	/*
+ 	 * length is "framing info", minimum = 4: NetFn, Seq, Cmd, cCode.
 
 
