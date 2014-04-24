@@ -1,481 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755445AbaDXXJJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 19:09:09 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40277 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751718AbaDXXJG (ORCPT
+	id S1754240AbaDXXQP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 19:16:15 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:35003 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754095AbaDXXQL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 19:09:06 -0400
-Date: Thu, 24 Apr 2014 16:11:58 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        Stephen Warren <swarren@nvidia.com>, Alan <gnomes@lxorguk.ukuu.org.uk>,
-        Jingoo Han <jg1.han@samsung.com>, linux-kernel@vger.kernel.org,
-        Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>,
-        linux-serial@vger.kernel.org, yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Aaron Sierra <asierra@xes-inc.com>, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH V6] serial/uart/8250: Add tunable RX interrupt trigger
- I/F of FIFO buffers
-Message-ID: <20140424231158.GA32250@kroah.com>
-References: <20140417060644.27329.31663.stgit@yunodevel>
+	Thu, 24 Apr 2014 19:16:11 -0400
+Date: Thu, 24 Apr 2014 16:14:56 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@eggly.anvils
+To: Oleg Nesterov <oleg@redhat.com>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        Roland Dreier <roland@kernel.org>,
+        Konstantin Khlebnikov <koct9i@gmail.com>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
+        Omar Ramirez Luna <omar.ramirez@copitl.com>,
+        Inki Dae <inki.dae@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-rdma@vger.kernel.org,
+        linux-media@vger.kernel.org
+Subject: Re: [PATCH] mm: get_user_pages(write,force) refuse to COW in shared
+ areas
+In-Reply-To: <20140424133055.GA13269@redhat.com>
+Message-ID: <alpine.LSU.2.11.1404241518510.4454@eggly.anvils>
+References: <alpine.LSU.2.11.1404040120110.6880@eggly.anvils> <20140424133055.GA13269@redhat.com>
+User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140417060644.27329.31663.stgit@yunodevel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 17, 2014 at 03:06:44PM +0900, Yoshihiro YUNOMAE wrote:
-> Add tunable RX interrupt trigger I/F of FIFO buffers.
-> Serial devices are used as not only message communication devices but control
-> or sending communication devices. For the latter uses, normally small data
-> will be exchanged, so user applications want to receive data unit as soon as
-> possible for real-time tendency. If we have a sensor which sends a 1 byte data
-> each time and must control a device based on the sensor feedback, the RX
-> interrupt should be triggered for each data.
+On Thu, 24 Apr 2014, Oleg Nesterov wrote:
+
+> Hi Hugh,
 > 
-> According to HW specification of serial UART devices, RX interrupt trigger
-> can be changed, but the trigger is hard-coded. For example, RX interrupt trigger
-> in 16550A can be set to 1, 4, 8, or 14 bytes for HW, but current driver sets
-> the trigger to only 8bytes.
+> Sorry for late reply. First of all, to avoid the confusion, I think the
+> patch is fine.
 > 
-> This patch makes some devices change RX interrupt trigger from userland.
+> When I saw this patch I decided that uprobes should be updated accordingly,
+> but I just realized that I do not understand what should I write in the
+> changelog.
+
+Thanks a lot for considering similar issues in uprobes, Oleg: I merely
+checked that its uses of get_user_pages() would not be problematic,
+and didn't look around to rediscover the worrying mm business that
+goes on down there in kernel/events.
+
 > 
-> <How to use>
-> - Read current setting
->  # cat /sys/dev/char/4\:64/rx_int_trig
->  8
+> On 04/04, Hugh Dickins wrote:
+> >
+> > +		if (gup_flags & FOLL_WRITE) {
+> > +			if (!(vm_flags & VM_WRITE)) {
+> > +				if (!(gup_flags & FOLL_FORCE))
+> > +					goto efault;
+> > +				/*
+> > +				 * We used to let the write,force case do COW
+> > +				 * in a VM_MAYWRITE VM_SHARED !VM_WRITE vma, so
+> > +				 * ptrace could set a breakpoint in a read-only
+> > +				 * mapping of an executable, without corrupting
+> > +				 * the file (yet only when that file had been
+> > +				 * opened for writing!).  Anon pages in shared
+> > +				 * mappings are surprising: now just reject it.
+> > +				 */
+> > +				if (!is_cow_mapping(vm_flags)) {
+> > +					WARN_ON_ONCE(vm_flags & VM_MAYWRITE);
+> > +					goto efault;
+> > +				}
 > 
-> - Write user setting
->  # echo 1 > /sys/dev/char/4\:64/rx_int_trig
->  # cat /sys/dev/char/4\:64/rx_int_trig
->  1
+> OK. But could you please clarify "Anon pages in shared mappings are surprising" ?
+> I mean, does this only apply to "VM_MAYWRITE VM_SHARED !VM_WRITE vma" mentioned
+> above or this is bad even if a !FMODE_WRITE file was mmaped as MAP_SHARED ?
+
+Good question. I simply didn't consider that - and (as you have realized)
+didn't need to consider it, because I was just stopping the problematic
+behaviour in gup(), and didn't need to consider whether other behaviour
+prohibited by gup() was actually unproblematic.
+
 > 
-> <Support uart devices>
-> - 16550A and Tegra (1, 4, 8, or 14 bytes)
-> - 16650V2 (8, 16, 24, or 28 bytes)
-> - 16654 (8, 16, 56, or 60 bytes)
-> - 16750 (1, 16, 32, or 56 bytes)
+> Yes, in this case this vma is not VM_SHARED and it is not VM_MAYWRITE, it is only
+> VM_MAYSHARE. This is in fact private mapping except mprotect(PROT_WRITE) will not
+> work.
 > 
-> Changed in V2:
->  - Use _IOW for TIOCSFIFORTRIG definition
->  - Pass the interrupt trigger value itself
+> But with or without this patch gup(FOLL_WRITE | FOLL_FORCE) won't work in this case,
+                     "this" meaning my patch rather than yours below
+> (although perhaps it could ?), is_cow_mapping() == F because of !VM_MAYWRITE.
 > 
-> Changes in V3:
->  - Change I/F from ioctl(2) to sysfs(rx_int_trig)
+> However, currently uprobes assumes that a cowed anon page is fine in this case, and
+> this differs from gup().
 > 
-> Changes in V4:
->  - Introduce fifo_bug flag in uart_8250_port structure
->    This is enabled only when parity is enabled and UART_BUG_PARITY is enabled
->    for up->bugs. If this flag is enabled, user cannot set RX trigger.
->  - Return -EOPNOTSUPP when it does not support device at convert_fcr2val() and
->    at convert_val2rxtrig()
->  - Set the nearest lower RX trigger when users input a meaningless value at
->    convert_val2rxtrig()
->  - Check whether p->fcr is existing at serial8250_clear_and_reinit_fifos()
->  - Set fcr = up->fcr in the begging of serial8250_do_set_termios()
+> So, what do you think about the patch below? It is probably fine in any case,
+> but is there any "strong" reason to follow the gup's behaviour and forbid the
+> anon page in VM_MAYSHARE && !VM_MAYWRITE vma?
+
+I don't think there is a "strong" reason to forbid it.
+
+The strongest reason is simply that it's much safer if uprobes follows
+the same conventions as mm, and get_user_pages() happens to have
+forbidden that all along.
+
+The philosophical reason to forbid it is that the user mmapped with
+MAP_SHARED, and it's merely a kernel-internal detail that we flip off
+VM_SHARED and treat these read-only shared mappings very much like
+private mappings.  The user asked for MAP_SHARED, and we prefer to
+respect that by not letting private COWs creep in.
+
+We could treat those mappings even more like private mappings, and
+allow the COWs; but better to be strict about it, so long as doing
+so doesn't give you regressions.
+
 > 
-> Changes in V5:
->  - Support Tegra, 16650V2, 16654, and 16750
->  - Store default FCR value to up->fcr when the port is first created
->  - Add rx_trig_byte[] in uart_config[] for each device and use rx_trig_byte[]
->    in convert_fcr2val() and convert_val2rxtrig()
+> Oleg.
 > 
-> Changes in V5.1:
->  - Fix FCR_RX_TRIG_MAX_STATE definition
-> 
-> Changes in V6:
->  - Move FCR_RX_TRIG_* definition in 8250.h to include/uapi/linux/serial_reg.h,
->    rename those to UART_FCR_R_TRIG_*, and use UART_FCR_TRIGGER_MASK to
->    UART_FCR_R_TRIG_BITS()
->  - Change following function names:
->     convert_fcr2val() => fcr_get_rxtrig_bytes()
->     convert_val2rxtrig() => bytes_to_fcr_rxtrig()
->  - Fix typo in serial8250_do_set_termios()
->  - Delete the verbose error message pr_info() in bytes_to_fcr_rxtrig()
->  - Rename *rx_int_trig/rx_trig* to *rxtrig* for several functions or variables
->    (but UI remains rx_int_trig)
->  - Change the meaningless variable name 'val' to 'bytes' following functions:
->     fcr_get_rxtrig_bytes(), bytes_to_fcr_rxtrig(), do_set_rxtrig(),
->     do_serial8250_set_rxtrig(), and serial8250_set_attr_rxtrig()
->  - Use up->fcr in order to get rxtrig_bytes instead of rx_trig_raw in
->    fcr_get_rxtrig_bytes()
->  - Use conf_type->rxtrig_bytes[0] instead of switch statement for support check
->    in register_dev_spec_attr_grp()
->  - Delete the checking whether a user changed FCR or not when minimum buffer
->    is needed in serial8250_do_set_termios()
-> 
-> Signed-off-by: Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> Cc: Jingoo Han <jg1.han@samsung.com>
-> Cc: Aaron Sierra <asierra@xes-inc.com>
-> Reviewed-by: Stephen Warren <swarren@nvidia.com>
-> ---
->  drivers/tty/serial/8250/8250.h      |    2 
->  drivers/tty/serial/8250/8250_core.c |  173 ++++++++++++++++++++++++++++++++---
->  drivers/tty/serial/serial_core.c    |   18 ++--
->  include/linux/serial_8250.h         |    2 
->  include/linux/serial_core.h         |    4 +
->  include/uapi/linux/serial_reg.h     |    5 +
->  6 files changed, 182 insertions(+), 22 deletions(-)
-> 
-> diff --git a/drivers/tty/serial/8250/8250.h b/drivers/tty/serial/8250/8250.h
-> index 1ebf853..1b08c91 100644
-> --- a/drivers/tty/serial/8250/8250.h
-> +++ b/drivers/tty/serial/8250/8250.h
-> @@ -12,6 +12,7 @@
+> --- x/kernel/events/uprobes.c
+> +++ x/kernel/events/uprobes.c
+> @@ -127,12 +127,13 @@ struct xol_area {
 >   */
->  
->  #include <linux/serial_8250.h>
-> +#include <linux/serial_reg.h>
->  #include <linux/dmaengine.h>
->  
->  struct uart_8250_dma {
-> @@ -60,6 +61,7 @@ struct serial8250_config {
->  	unsigned short	fifo_size;
->  	unsigned short	tx_loadsz;
->  	unsigned char	fcr;
-> +	unsigned char	rxtrig_bytes[UART_FCR_R_TRIG_MAX_STATE];
->  	unsigned int	flags;
->  };
->  
-> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
-> index 81f909c..fd1b3ec 100644
-> --- a/drivers/tty/serial/8250/8250_core.c
-> +++ b/drivers/tty/serial/8250/8250_core.c
-> @@ -31,7 +31,6 @@
->  #include <linux/tty.h>
->  #include <linux/ratelimit.h>
->  #include <linux/tty_flip.h>
-> -#include <linux/serial_reg.h>
->  #include <linux/serial_core.h>
->  #include <linux/serial.h>
->  #include <linux/serial_8250.h>
-> @@ -161,6 +160,7 @@ static const struct serial8250_config uart_config[] = {
->  		.fifo_size	= 16,
->  		.tx_loadsz	= 16,
->  		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-> +		.rxtrig_bytes	= {1, 4, 8, 14},
->  		.flags		= UART_CAP_FIFO,
->  	},
->  	[PORT_CIRRUS] = {
-> @@ -180,6 +180,7 @@ static const struct serial8250_config uart_config[] = {
->  		.tx_loadsz	= 16,
->  		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_01 |
->  				  UART_FCR_T_TRIG_00,
-> +		.rxtrig_bytes	= {8, 16, 24, 28},
->  		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
->  	},
->  	[PORT_16750] = {
-> @@ -188,6 +189,7 @@ static const struct serial8250_config uart_config[] = {
->  		.tx_loadsz	= 64,
->  		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10 |
->  				  UART_FCR7_64BYTE,
-> +		.rxtrig_bytes	= {1, 16, 32, 56},
->  		.flags		= UART_CAP_FIFO | UART_CAP_SLEEP | UART_CAP_AFE,
->  	},
->  	[PORT_STARTECH] = {
-> @@ -209,6 +211,7 @@ static const struct serial8250_config uart_config[] = {
->  		.tx_loadsz	= 32,
->  		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_01 |
->  				  UART_FCR_T_TRIG_10,
-> +		.rxtrig_bytes	= {8, 16, 56, 60},
->  		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
->  	},
->  	[PORT_16850] = {
-> @@ -266,6 +269,7 @@ static const struct serial8250_config uart_config[] = {
->  		.tx_loadsz	= 8,
->  		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_01 |
->  				  UART_FCR_T_TRIG_01,
-> +		.rxtrig_bytes	= {1, 4, 8, 14},
->  		.flags		= UART_CAP_FIFO | UART_CAP_RTOIE,
->  	},
->  	[PORT_XR17D15X] = {
-> @@ -531,11 +535,8 @@ static void serial8250_clear_fifos(struct uart_8250_port *p)
->  
->  void serial8250_clear_and_reinit_fifos(struct uart_8250_port *p)
+>  static bool valid_vma(struct vm_area_struct *vma, bool is_register)
 >  {
-> -	unsigned char fcr;
-> -
->  	serial8250_clear_fifos(p);
-> -	fcr = uart_config[p->port.type].fcr;
-> -	serial_out(p, UART_FCR, fcr);
-> +	serial_out(p, UART_FCR, p->fcr);
->  }
->  EXPORT_SYMBOL_GPL(serial8250_clear_and_reinit_fifos);
+> -	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC | VM_SHARED;
+> +	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC;
+
+I think a one-line patch changing VM_SHARED to VM_MAYSHARE would do it,
+wouldn't it?  And save you from having to export is_cow_mapping()
+from mm/memory.c.  (I used is_cow_mapping() because I had to make the
+test more complex anyway, just to exclude the case which had been
+oddly handled before.)
+
+Hugh
+
 >  
-> @@ -2275,10 +2276,9 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
->  {
->  	struct uart_8250_port *up =
->  		container_of(port, struct uart_8250_port, port);
-> -	unsigned char cval, fcr = 0;
-> +	unsigned char cval;
->  	unsigned long flags;
->  	unsigned int baud, quot;
-> -	int fifo_bug = 0;
+>  	if (is_register)
+>  		flags |= VM_WRITE;
 >  
->  	switch (termios->c_cflag & CSIZE) {
->  	case CS5:
-> @@ -2301,7 +2301,7 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
->  	if (termios->c_cflag & PARENB) {
->  		cval |= UART_LCR_PARITY;
->  		if (up->bugs & UART_BUG_PARITY)
-> -			fifo_bug = 1;
-> +			up->fifo_bug = true;
->  	}
->  	if (!(termios->c_cflag & PARODD))
->  		cval |= UART_LCR_EPAR;
-> @@ -2325,10 +2325,10 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
->  		quot++;
->  
->  	if (up->capabilities & UART_CAP_FIFO && port->fifosize > 1) {
-> -		fcr = uart_config[port->type].fcr;
-> -		if ((baud < 2400 && !up->dma) || fifo_bug) {
-> -			fcr &= ~UART_FCR_TRIGGER_MASK;
-> -			fcr |= UART_FCR_TRIGGER_1;
-> +		/* NOTE: If fifo_bug is not set, a user can set RX_trigger. */
-> +		if ((baud < 2400 && !up->dma) || up->fifo_bug) {
-> +			up->fcr &= ~UART_FCR_TRIGGER_MASK;
-> +			up->fcr |= UART_FCR_TRIGGER_1;
->  		}
->  	}
->  
-> @@ -2459,15 +2459,15 @@ serial8250_do_set_termios(struct uart_port *port, struct ktermios *termios,
->  	 * is written without DLAB set, this mode will be disabled.
->  	 */
->  	if (port->type == PORT_16750)
-> -		serial_port_out(port, UART_FCR, fcr);
-> +		serial_port_out(port, UART_FCR, up->fcr);
->  
->  	serial_port_out(port, UART_LCR, cval);		/* reset DLAB */
->  	up->lcr = cval;					/* Save LCR */
->  	if (port->type != PORT_16750) {
->  		/* emulated UARTs (Lucent Venus 167x) need two steps */
-> -		if (fcr & UART_FCR_ENABLE_FIFO)
-> +		if (up->fcr & UART_FCR_ENABLE_FIFO)
->  			serial_port_out(port, UART_FCR, UART_FCR_ENABLE_FIFO);
-> -		serial_port_out(port, UART_FCR, fcr);		/* set fcr */
-> +		serial_port_out(port, UART_FCR, up->fcr);	/* set fcr */
->  	}
->  	serial8250_set_mctrl(port, port->mctrl);
->  	spin_unlock_irqrestore(&port->lock, flags);
-> @@ -2660,6 +2660,146 @@ static int serial8250_request_port(struct uart_port *port)
->  	return ret;
+> -	return vma->vm_file && (vma->vm_flags & flags) == VM_MAYEXEC;
+> +	return 	vma->vm_file && is_cow_mapping(vma->vm_flags) &&
+> +		(vma->vm_flags & flags) == VM_MAYEXEC;
 >  }
 >  
-> +static int fcr_get_rxtrig_bytes(struct uart_8250_port *up)
-> +{
-> +	const struct serial8250_config *conf_type = &uart_config[up->port.type];
-> +	unsigned char bytes;
-> +
-> +	bytes = conf_type->rxtrig_bytes[UART_FCR_R_TRIG_BITS(up->fcr)];
-> +
-> +	return bytes ? bytes : -EOPNOTSUPP;
-> +}
-> +
-> +static int bytes_to_fcr_rxtrig(struct uart_8250_port *up, unsigned char bytes)
-> +{
-> +	const struct serial8250_config *conf_type = &uart_config[up->port.type];
-> +	int i;
-> +
-> +	if (!conf_type->rxtrig_bytes[UART_FCR_R_TRIG_BITS(UART_FCR_R_TRIG_00)])
-> +		return -EOPNOTSUPP;
-> +
-> +	for (i = 1; i < UART_FCR_R_TRIG_MAX_STATE; i++) {
-> +		if (bytes < conf_type->rxtrig_bytes[i])
-> +			/* Use the nearest lower value */
-> +			return (--i) << UART_FCR_R_TRIG_SHIFT;
-> +	}
-> +
-> +	return UART_FCR_R_TRIG_11;
-> +}
-> +
-> +static int do_get_rxtrig(struct tty_port *port)
-> +{
-> +	struct uart_state *state = container_of(port, struct uart_state, port);
-> +	struct uart_port *uport = state->uart_port;
-> +	struct uart_8250_port *up =
-> +		container_of(uport, struct uart_8250_port, port);
-> +
-> +	if (!(up->capabilities & UART_CAP_FIFO) || uport->fifosize <= 1)
-> +		return -EINVAL;
-> +
-> +	return fcr_get_rxtrig_bytes(up);
-> +}
-> +
-> +static int do_serial8250_get_rxtrig(struct tty_port *port)
-> +{
-> +	int rxtrig_bytes;
-> +
-> +	mutex_lock(&port->mutex);
-> +	rxtrig_bytes = do_get_rxtrig(port);
-> +	mutex_unlock(&port->mutex);
-> +
-> +	return rxtrig_bytes;
-> +}
-> +
-> +static ssize_t serial8250_get_attr_rx_int_trig(struct device *dev,
-> +	struct device_attribute *attr, char *buf)
-> +{
-> +	struct tty_port *port = dev_get_drvdata(dev);
-> +	int rxtrig_bytes;
-> +
-> +	rxtrig_bytes = do_serial8250_get_rxtrig(port);
-> +	if (rxtrig_bytes < 0)
-> +		return rxtrig_bytes;
-> +
-> +	return snprintf(buf, PAGE_SIZE, "%d\n", rxtrig_bytes);
-> +}
-> +
-> +static int do_set_rxtrig(struct tty_port *port, unsigned char bytes)
-> +{
-> +	struct uart_state *state = container_of(port, struct uart_state, port);
-> +	struct uart_port *uport = state->uart_port;
-> +	struct uart_8250_port *up =
-> +		container_of(uport, struct uart_8250_port, port);
-> +	int rxtrig;
-> +
-> +	if (!(up->capabilities & UART_CAP_FIFO) || uport->fifosize <= 1 ||
-> +	    up->fifo_bug)
-> +		return -EINVAL;
-> +
-> +	rxtrig = bytes_to_fcr_rxtrig(up, bytes);
-> +	if (rxtrig < 0)
-> +		return rxtrig;
-> +
-> +	serial8250_clear_fifos(up);
-> +	up->fcr &= ~UART_FCR_TRIGGER_MASK;
-> +	up->fcr |= (unsigned char)rxtrig;
-> +	serial_out(up, UART_FCR, up->fcr);
-> +	return 0;
-> +}
-> +
-> +static int do_serial8250_set_rxtrig(struct tty_port *port, unsigned char bytes)
-> +{
-> +	int ret;
-> +
-> +	mutex_lock(&port->mutex);
-> +	ret = do_set_rxtrig(port, bytes);
-> +	mutex_unlock(&port->mutex);
-> +
-> +	return ret;
-> +}
-> +
-> +static ssize_t serial8250_set_attr_rx_int_trig(struct device *dev,
-> +	struct device_attribute *attr, const char *buf, size_t count)
-> +{
-> +	struct tty_port *port = dev_get_drvdata(dev);
-> +	unsigned char bytes;
-> +	int ret;
-> +
-> +	if (!count)
-> +		return -EINVAL;
-> +
-> +	ret = kstrtou8(buf, 10, &bytes);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	ret = do_serial8250_set_rxtrig(port, bytes);
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return count;
-> +}
-> +
-> +static DEVICE_ATTR(rx_int_trig, S_IRUSR | S_IWUSR | S_IRGRP,
-> +		   serial8250_get_attr_rx_int_trig,
-> +		   serial8250_set_attr_rx_int_trig);
-> +
-
-As you are adding a new sysfs attribute, you have to add a
-Documentation/ABI/ entry as well.
-
-> +static struct attribute *serial8250_dev_attrs[] = {
-> +	&dev_attr_rx_int_trig.attr,
-> +	NULL,
-> +	};
-> +
-> +static struct attribute_group serial8250_dev_attr_group = {
-> +	.attrs = serial8250_dev_attrs,
-> +	};
-
-What's wrong with the macro to create a group?
-
-> +
-> +static void register_dev_spec_attr_grp(struct uart_8250_port *up)
-> +{
-> +	const struct serial8250_config *conf_type = &uart_config[up->port.type];
-> +
-> +	if (conf_type->rxtrig_bytes[0])
-> +		up->port.dev_spec_attr_group = &serial8250_dev_attr_group;
-> +}
-> +
->  static void serial8250_config_port(struct uart_port *port, int flags)
->  {
->  	struct uart_8250_port *up =
-> @@ -2708,6 +2848,9 @@ static void serial8250_config_port(struct uart_port *port, int flags)
->  	if ((port->type == PORT_XR17V35X) ||
->  	   (port->type == PORT_XR17D15X))
->  		port->handle_irq = exar_handle_irq;
-> +
-> +	register_dev_spec_attr_grp(up);
-> +	up->fcr = uart_config[up->port.type].fcr;
->  }
->  
->  static int
-> diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-> index 2cf5649..41ac44b 100644
-> --- a/drivers/tty/serial/serial_core.c
-> +++ b/drivers/tty/serial/serial_core.c
-> @@ -2548,15 +2548,16 @@ static struct attribute *tty_dev_attrs[] = {
->  	NULL,
->  	};
->  
-> -static const struct attribute_group tty_dev_attr_group = {
-> +static struct attribute_group tty_dev_attr_group = {
->  	.attrs = tty_dev_attrs,
->  	};
->  
-> -static const struct attribute_group *tty_dev_attr_groups[] = {
-> -	&tty_dev_attr_group,
-> -	NULL
-> -	};
-> -
-> +static void make_uport_attr_grps(struct uart_port *uport)
-> +{
-> +	uport->attr_grps[0] = &tty_dev_attr_group;
-> +	if (uport->dev_spec_attr_group)
-> +		uport->attr_grps[1] = uport->dev_spec_attr_group;
-> +}
->  
->  /**
->   *	uart_add_one_port - attach a driver-defined port structure
-> @@ -2607,12 +2608,15 @@ int uart_add_one_port(struct uart_driver *drv, struct uart_port *uport)
->  
->  	uart_configure_port(drv, state, uport);
->  
-> +	make_uport_attr_grps(uport);
-> +
->  	/*
->  	 * Register the port whether it's detected or not.  This allows
->  	 * setserial to be used to alter this port's parameters.
->  	 */
->  	tty_dev = tty_port_register_device_attr(port, drv->tty_driver,
-> -			uport->line, uport->dev, port, tty_dev_attr_groups);
-> +			uport->line, uport->dev, port,
-> +			(const struct attribute_group **)uport->attr_grps);
-
-If you have to cast that hard, something is wrong here, why are you
-doing that?
-
-
-thanks,
-
-greg k-h
+>  static unsigned long offset_to_vaddr(struct vm_area_struct *vma, loff_t offset)
