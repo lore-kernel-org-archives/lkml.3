@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241AbaDXT2L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 15:28:11 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34447 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaDXT2J (ORCPT
+	id S1752740AbaDXTfA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 15:35:00 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:45238 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752072AbaDXTe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 15:28:09 -0400
-Date: Thu, 24 Apr 2014 21:28:07 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jikos@jikos.cz>
-Subject: [partial bisect] Re: 3.15-rc2: i915 regression: only top 20% of
- screen works in X
-Message-ID: <20140424192807.GA30333@amd.pavel.ucw.cz>
-References: <20140423202248.GA3621@amd.pavel.ucw.cz>
- <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
- <20140423220952.GA3627@amd.pavel.ucw.cz>
- <20140424055023.GA31221@nuc-i3427.alporthouse.com>
- <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
+	Thu, 24 Apr 2014 15:34:58 -0400
+X-Sasl-enc: 0s8a0DGEj6fXZOEeKaM26RF7iCfWO4RnZNZh528Vwc/T 1398368097
+Date: Thu, 24 Apr 2014 12:37:50 -0700
+From: Greg KH <greg@kroah.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Vince Weaver <vincent.weaver@maine.edu>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: rb tree hrtimer lockup bug (found by perf_fuzzer)
+Message-ID: <20140424193750.GB26081@kroah.com>
+References: <alpine.DEB.2.10.1403251702110.19541@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.02.1403252220110.4094@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1403261731390.26530@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.02.1403262248170.31401@ionos.tec.linutronix.de>
+ <alpine.DEB.2.10.1403270940250.27563@vincent-weaver-1.um.maine.edu>
+ <alpine.DEB.2.02.1403311201520.14882@ionos.tec.linutronix.de>
+ <20140406034750.GA7674@kroah.com>
+ <alpine.DEB.2.02.1404170056140.22697@ionos.tec.linutronix.de>
+ <20140417023818.GB6448@kroah.com>
+ <alpine.DEB.2.02.1404170951080.22697@ionos.tec.linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.DEB.2.02.1404170951080.22697@ionos.tec.linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Thu, Apr 17, 2014 at 09:59:01AM +0200, Thomas Gleixner wrote:
+> On Wed, 16 Apr 2014, Greg KH wrote:
+> > On Thu, Apr 17, 2014 at 01:00:53AM +0200, Thomas Gleixner wrote:
+> > > And cdevs is an array of  struct cdev:
+> > > 
+> > > struct cdev {
+> > > 	struct kobject kobj;
+> > 
+> > Those are not "real" kobjects, and are never registered with the kobject
+> > core.
+> > 
+> > I really need to go rename those one of these days, and just make them a
+> > separate object, as they have nothing to do with a "normal" kobject
+> > other than the reference count and the use of the kobject map stuff.
+> > 
+> > So if this is showing up as a problem, something else is going on here,
+> > as this should not be an issue at all.
+> 
+> As far as I decoded it from Vince traces the issue is only with
+> DEBUG_KOBJECT_RELEASE=y. That deferres the release to a workqueue.
+> 
+> Now the cdevs in tty are allocated ahead and not freed on
+> release. They stay in the cdevs[] array of the tty drivers.
+> 
+> Now if a cdev is released the kobject debug stuff schedules the
+> delayed work, but the tty core can reuse the cdev.before the delayed
+> work has been executed and first thing it does is calling cdev_init()
+> which does a
+> 
+>      memset(cdev, 0, sizeof *cdev);
+> 
+> which of course includes the enqueued timer and the scheduled work. Go
+> figure how well that goes.
 
-> And if you can indeed reliably reproduce this a bisect could be
->  really useful
+Ugh, the kobject isn't "real", but it seems like it has changed over
+time to be more real than I imagined.
 
-It seems reliable, yes. So far I got:
-								Pavel
+I'll work to rip the kobject code out of the cdev soon, which should
+resolve this issue, thanks.
 
-git bisect start
-# good: [455c6fdbd219161bd09b1165f11699d6d73de11c] Linux 3.14
-git bisect good 455c6fdbd219161bd09b1165f11699d6d73de11c
-# bad: [c39b06951f1dc2e384650288676c5b7dcc0ec92c] DRM: armada: fix corruption while loading cursors
-git bisect bad c39b06951f1dc2e384650288676c5b7dcc0ec92c
-# good: [5fb6b953bb7aa86a9c8ea760934982cedc45c52b] include/linux/syscalls.h: add sys_renameat2() prototype
-git bisect good 5fb6b953bb7aa86a9c8ea760934982cedc45c52b
-# good: [8ad2bc9796994ecba9f4ba2fc9abca27ee9d193d] Merge branch 'drm-intel-next' of git://git.freedesktop.org/git/drm-intel into drm-next
-git bisect good 8ad2bc9796994ecba9f4ba2fc9abca27ee9d193d
-# good: [1287aa903f1b9248f34fb215e3b875d2ae243425] drm: Remove the prefix argument of drm_ut_debug_printk()
-git bisect good 1287aa903f1b9248f34fb215e3b875d2ae243425
-# bad: [c8431fda9f9f3c3b7490cb44bd5720b494a2421e] drm/i915: don't get/put runtime PM at the debugfs forcewake file
-git bisect bad c8431fda9f9f3c3b7490cb44bd5720b494a2421e
-# bad: [db8384f2e07bfa8cc607914dfa0b3cee81f59839] drm/i915: don't get/put PC8 reference on freeze/thaw
-git bisect bad db8384f2e07bfa8cc607914dfa0b3cee81f59839
-# bad: [b2040f6fed736ccd2319768bc59833abe74148b8] drm/i915: Remove erronous WARN in the vlv pipe crc code
-git bisect bad b2040f6fed736ccd2319768bc59833abe74148b8
-# good: [301ea74a57851c19e1438ceeaffab663f402f79f] drm/i915: Allow HDMI+VGA cloning
-git bisect good 301ea74a57851c19e1438ceeaffab663f402f79f
-# bad: [02f6a1e750df8201561171c47472435557a65864] drm/i915: warn if ring is active before sync flush
-git bisect bad 02f6a1e750df8201561171c47472435557a65864
-# good: [8407bb9129da95fc4099b84cdbbc23e6d4f66aee] drm/i915/bdw: Use scratch page table for GEN8 PPGTT
-git bisect good 8407bb9129da95fc4099b84cdbbc23e6d4f66aee
-
-
-
-
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+greg k-h
