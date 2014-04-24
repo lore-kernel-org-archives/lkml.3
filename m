@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769AbaDXVCt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:02:49 -0400
-Received: from mail-qc0-f173.google.com ([209.85.216.173]:44230 "EHLO
-	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753609AbaDXVCc (ORCPT
+	id S1753931AbaDXVDb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:03:31 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:53211 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753550AbaDXVC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:02:32 -0400
+	Thu, 24 Apr 2014 17:02:28 -0400
 From: Tejun Heo <tj@kernel.org>
 To: lizefan@huawei.com
 Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
         mhocko@suse.cz, nasa4836@gmail.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/6] cgroup, memcg: implement css->id and convert css_from_id() to use it
-Date: Thu, 24 Apr 2014 17:02:13 -0400
-Message-Id: <1398373333-1521-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 4/6] cgroup: use RCU free in create_css() failure path
+Date: Thu, 24 Apr 2014 17:02:11 -0400
+Message-Id: <1398373333-1521-5-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <1398373333-1521-1-git-send-email-tj@kernel.org>
 References: <1398373333-1521-1-git-send-email-tj@kernel.org>
@@ -21,224 +21,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Until now, cgroup->id has been used to identify all the associated
-csses and css_from_id() takes cgroup ID and returns the matching css
-by looking up the cgroup and then dereferencing the css associated
-with it; however, now that the lifetimes of cgroup and css are
-separate, this is incorrect and breaks on the unified hierarchy when a
-controller is disabled and enabled back again before the previous
-instance is released.
+Currently, when create_css() fails in the middle, the half-initialized
+css is freed by invoking cgroup_subsys->css_free() directly.  This
+patch updates the function so that it invokes RCU free path instead.
+As the RCU free path puts the parent css and owning cgroup, their
+references are now acquired right after a new css is successfully
+allocated.
 
-This patch adds css->id which is a subsystem-unique ID and converts
-css_from_id() to look up by the new css->id instead.  memcg is the
-only user of css_from_id() and also converted to use css->id instead.
-
-For traditional hierarchies, this shouldn't make any functional
-difference.
+This doesn't make any visible difference now but is to enable
+implementing css->id and RCU protected lookup by such IDs.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Jianyu Zhan <nasa4836@gmail.com>
 ---
- include/linux/cgroup.h |  9 ++++++++
- kernel/cgroup.c        | 59 ++++++++++++++++++++++++++++++++------------------
- mm/memcontrol.c        |  4 ++--
- 3 files changed, 49 insertions(+), 23 deletions(-)
+ kernel/cgroup.c | 11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
-index 793f70a..2dfabb3 100644
---- a/include/linux/cgroup.h
-+++ b/include/linux/cgroup.h
-@@ -62,6 +62,12 @@ struct cgroup_subsys_state {
- 	/* the parent css */
- 	struct cgroup_subsys_state *parent;
- 
-+	/*
-+	 * Subsys-unique ID.  0 is unused and root is always 1.  The
-+	 * matching css can be looked up using css_from_id().
-+	 */
-+	int id;
-+
- 	unsigned int flags;
- 
- 	/* percpu_ref killing and RCU release */
-@@ -655,6 +661,9 @@ struct cgroup_subsys {
- 	/* link to parent, protected by cgroup_lock() */
- 	struct cgroup_root *root;
- 
-+	/* idr for css->id */
-+	struct idr css_idr;
-+
- 	/*
- 	 * List of cftypes.  Each entry is the first entry of an array
- 	 * terminated by zero length name.
 diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index f1c98c5..a1a20e8 100644
+index 7cb9c08..0e2c401 100644
 --- a/kernel/cgroup.c
 +++ b/kernel/cgroup.c
-@@ -100,8 +100,8 @@ static DECLARE_RWSEM(css_set_rwsem);
- #endif
+@@ -4185,12 +4185,14 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	if (IS_ERR(css))
+ 		return PTR_ERR(css);
  
- /*
-- * Protects cgroup_idr so that IDs can be released without grabbing
-- * cgroup_mutex.
-+ * Protects cgroup_idr and css_idr so that IDs can be released without
-+ * grabbing cgroup_mutex.
-  */
- static DEFINE_SPINLOCK(cgroup_idr_lock);
- 
-@@ -1089,12 +1089,6 @@ static void cgroup_put(struct cgroup *cgrp)
- 	if (WARN_ON_ONCE(cgrp->parent && !cgroup_is_dead(cgrp)))
- 		return;
- 
--	/*
--	 * XXX: cgrp->id is only used to look up css's.  As cgroup and
--	 * css's lifetimes will be decoupled, it should be made
--	 * per-subsystem and moved to css->id so that lookups are
--	 * successful until the target css is released.
--	 */
- 	cgroup_idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
- 	cgrp->id = -1;
- 
-@@ -4104,8 +4098,11 @@ static void css_release(struct percpu_ref *ref)
- {
- 	struct cgroup_subsys_state *css =
- 		container_of(ref, struct cgroup_subsys_state, refcnt);
-+	struct cgroup_subsys *ss = css->ss;
++	init_css(css, ss, cgrp);
++	cgroup_get(cgrp);
++	css_get(css->parent);
 +
-+	RCU_INIT_POINTER(css->cgroup->subsys[ss->id], NULL);
-+	cgroup_idr_remove(&ss->css_idr, css->id);
- 
--	RCU_INIT_POINTER(css->cgroup->subsys[css->ss->id], NULL);
- 	call_rcu(&css->rcu_head, css_free_rcu_fn);
- }
- 
-@@ -4195,9 +4192,17 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 	err = percpu_ref_init(&css->refcnt, css_release);
  	if (err)
  		goto err_free_css;
  
-+	err = cgroup_idr_alloc(&ss->css_idr, NULL, 2, 0, GFP_NOWAIT);
-+	if (err < 0)
-+		goto err_free_percpu_ref;
-+	css->id = err;
-+
+-	init_css(css, ss, cgrp);
+-
  	err = cgroup_populate_dir(cgrp, 1 << ss->id);
  	if (err)
--		goto err_free_percpu_ref;
-+		goto err_free_id;
-+
-+	/* @css is ready to be brought online now, make it visible */
-+	cgroup_idr_replace(&ss->css_idr, css, css->id);
- 
- 	err = online_css(css);
+ 		goto err_free_percpu_ref;
+@@ -4199,9 +4201,6 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
  	if (err)
-@@ -4216,6 +4221,8 @@ static int create_css(struct cgroup *cgrp, struct cgroup_subsys *ss)
+ 		goto err_clear_dir;
  
- err_clear_dir:
- 	cgroup_clear_dir(css->cgroup, 1 << css->ss->id);
-+err_free_id:
-+	cgroup_idr_remove(&ss->css_idr, css->id);
+-	cgroup_get(cgrp);
+-	css_get(css->parent);
+-
+ 	if (ss->broken_hierarchy && !ss->warned_broken_hierarchy &&
+ 	    parent->parent) {
+ 		pr_warn("%s (%d) created nested cgroup for controller \"%s\" which has incomplete hierarchy support. Nested cgroups may change behavior in the future.\n",
+@@ -4218,7 +4217,7 @@ err_clear_dir:
  err_free_percpu_ref:
  	percpu_ref_cancel_init(&css->refcnt);
  err_free_css:
-@@ -4642,7 +4649,7 @@ static struct kernfs_syscall_ops cgroup_kf_syscall_ops = {
- 	.rename			= cgroup_rename,
- };
- 
--static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
-+static void __init cgroup_init_subsys(struct cgroup_subsys *ss, bool early)
- {
- 	struct cgroup_subsys_state *css;
- 
-@@ -4651,6 +4658,7 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
- 	mutex_lock(&cgroup_tree_mutex);
- 	mutex_lock(&cgroup_mutex);
- 
-+	idr_init(&ss->css_idr);
- 	INIT_LIST_HEAD(&ss->cfts);
- 
- 	/* Create the root cgroup state for this subsystem */
-@@ -4659,6 +4667,13 @@ static void __init cgroup_init_subsys(struct cgroup_subsys *ss)
- 	/* We don't handle early failures gracefully */
- 	BUG_ON(IS_ERR(css));
- 	init_and_link_css(css, ss, &cgrp_dfl_root.cgrp);
-+	if (early) {
-+		/* idr_alloc() can't be called safely during early init */
-+		css->id = 1;
-+	} else {
-+		css->id = cgroup_idr_alloc(&ss->css_idr, css, 1, 2, GFP_KERNEL);
-+		BUG_ON(css->id < 0);
-+	}
- 
- 	/* Update the init_css_set to contain a subsys
- 	 * pointer to this state - since the subsystem is
-@@ -4709,7 +4724,7 @@ int __init cgroup_init_early(void)
- 		ss->name = cgroup_subsys_name[i];
- 
- 		if (ss->early_init)
--			cgroup_init_subsys(ss);
-+			cgroup_init_subsys(ss, true);
- 	}
- 	return 0;
- }
-@@ -4741,8 +4756,16 @@ int __init cgroup_init(void)
- 	mutex_unlock(&cgroup_tree_mutex);
- 
- 	for_each_subsys(ss, ssid) {
--		if (!ss->early_init)
--			cgroup_init_subsys(ss);
-+		if (ss->early_init) {
-+			struct cgroup_subsys_state *css =
-+				init_css_set.subsys[ss->id];
-+
-+			css->id = cgroup_idr_alloc(&ss->css_idr, css, 1, 2,
-+						   GFP_KERNEL);
-+			BUG_ON(css->id < 0);
-+		} else {
-+			cgroup_init_subsys(ss, false);
-+		}
- 
- 		list_add_tail(&init_css_set.e_cset_node[ssid],
- 			      &cgrp_dfl_root.cgrp.e_csets[ssid]);
-@@ -5196,14 +5219,8 @@ struct cgroup_subsys_state *css_tryget_from_dir(struct dentry *dentry,
-  */
- struct cgroup_subsys_state *css_from_id(int id, struct cgroup_subsys *ss)
- {
--	struct cgroup *cgrp;
--
- 	WARN_ON_ONCE(!rcu_read_lock_held());
--
--	cgrp = idr_find(&ss->root->cgroup_idr, id);
--	if (cgrp)
--		return cgroup_css(cgrp, ss);
--	return NULL;
-+	return idr_find(&ss->css_idr, id);
+-	ss->css_free(css);
++	call_rcu(&css->rcu_head, css_free_rcu_fn);
+ 	return err;
  }
  
- #ifdef CONFIG_CGROUP_DEBUG
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 1d0b297..c3f82f6 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -527,7 +527,7 @@ static inline bool mem_cgroup_is_root(struct mem_cgroup *memcg)
- 
- static inline unsigned short mem_cgroup_id(struct mem_cgroup *memcg)
- {
--	return memcg->css.cgroup->id;
-+	return memcg->css.id;
- }
- 
- static inline struct mem_cgroup *mem_cgroup_from_id(unsigned short id)
-@@ -6401,7 +6401,7 @@ mem_cgroup_css_online(struct cgroup_subsys_state *css)
- 	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
- 	struct mem_cgroup *parent = mem_cgroup_from_css(css_parent(css));
- 
--	if (css->cgroup->id > MEM_CGROUP_ID_MAX)
-+	if (css->id > MEM_CGROUP_ID_MAX)
- 		return -ENOSPC;
- 
- 	if (!parent)
 -- 
 1.9.0
 
