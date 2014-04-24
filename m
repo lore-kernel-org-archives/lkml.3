@@ -1,84 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbaDXI3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:29:30 -0400
-Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:53240 "EHLO
-	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752737AbaDXI30 (ORCPT
+	id S1753291AbaDXI3C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:29:02 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:38540 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752412AbaDXIYH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:29:26 -0400
-Message-ID: <1398328155.2805.100.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [PATCH] USB: serial: fix sysfs-attribute removal deadlock
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com
-Date: Thu, 24 Apr 2014 16:29:15 +0800
-In-Reply-To: <20140423141908.GA4781@htj.dyndns.org>
-References: <1398245539-1618-1-git-send-email-jhovold@gmail.com>
-	 <20140423141908.GA4781@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042408-1948-0000-0000-00000890B668
+	Thu, 24 Apr 2014 04:24:07 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 06/11] perf tools: Account entry stats when it's added to the output tree
+Date: Thu, 24 Apr 2014 17:23:58 +0900
+Message-Id: <1398327843-31845-7-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
+References: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-23 at 10:19 -0400, Tejun Heo wrote:
-> cc'ing Li Zhong who's working on a simliar issue in the following
-> thread and quoting whole body.
-> 
->   http://thread.gmane.org/gmane.linux.kernel/1680706
-> 
-> Li, this is another variation of the same problem.  Maybe this can be
-> covered by your work too?
+Currently, accounting each sample is done in multiple places - once
+when adding them to the input tree, other when adding them to the
+output tree.  It's not only confusing but also can cause a subtle
+problem since concurrent processing like in perf top might see the
+updated stats before adding entries into the output tree - like seeing
+more (blank) lines at the end and/or slight inaccurate percentage.
 
-It seems to me that it is about write something to driver attribute, and
-driver unloading. If so, maybe it's not easy to reuse the help functions
-created for device attribute, and device removing.
+To fix this, only account the entries when it's moved into the output
+tree so that they cannot be seen prematurely.  There're some
+exceptional cases here and there - they should be addressed separately
+with comments.
 
-But I guess the idea to break the active protection could still be
-applied here:
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-annotate.c |  3 +--
+ tools/perf/builtin-diff.c     | 13 +++++++++----
+ tools/perf/builtin-report.c   | 24 ++++++++++--------------
+ tools/perf/util/hist.c        |  1 -
+ 4 files changed, 20 insertions(+), 21 deletions(-)
 
-Maybe we could try_module_get() here (like the other option suggested by
-Johan?), and break active protection if we could get the module,
-something like below? 
-
-================
-diff --git a/drivers/base/bus.c b/drivers/base/bus.c
-index 83e910a..6ce27e0 100644
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -69,9 +69,24 @@ static ssize_t drv_attr_store(struct kobject *kobj, struct attribute *attr,
- 	struct driver_attribute *drv_attr = to_drv_attr(attr);
- 	struct driver_private *drv_priv = to_driver(kobj);
- 	ssize_t ret = -EIO;
-+	struct kernfs_node *kn;
-+
-+	if (!try_module_get(drv_priv->driver->owner))
-+		return ret;
-+
-+	kn = kernfs_find_and_get(kobj->sd, attr->name);
-+	if (WARN_ON_ONCE(!kn))
-+		return ret;
-+
-+	kernfs_break_active_protection(kn);
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 0da603b79b61..d30d2c2e2a7a 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -46,7 +46,7 @@ struct perf_annotate {
+ };
  
- 	if (drv_attr->store)
- 		ret = drv_attr->store(drv_priv->driver, buf, count);
-+
-+	kernfs_unbreak_active_protection(kn);
-+	kernfs_put(kn);
-+
-+	module_put(drv_priv->driver->owner);
+ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+-				  struct perf_sample *sample,
++				  struct perf_sample *sample __maybe_unused,
+ 				  struct addr_location *al,
+ 				  struct perf_annotate *ann)
+ {
+@@ -70,7 +70,6 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+ 		return -ENOMEM;
+ 
+ 	ret = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+-	evsel->hists.stats.total_period += sample->period;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
  	return ret;
  }
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 52d91ac4e6c8..f3b10dcf6838 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -341,11 +341,16 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
+ 		return -1;
+ 	}
  
-
+-	if (al.filtered == 0) {
+-		evsel->hists.stats.total_non_filtered_period += sample->period;
+-		evsel->hists.nr_non_filtered_entries++;
+-	}
++	/*
++	 * The total_period is updated here before going to the output
++	 * tree since normally only the baseline hists will call
++	 * hists__output_resort() and precompute needs the total
++	 * period in order to sort entries by percentage delta.
++	 */
+ 	evsel->hists.stats.total_period += sample->period;
++	if (!al.filtered)
++		evsel->hists.stats.total_non_filtered_period += sample->period;
++
+ 	return 0;
+ }
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index aed52036468d..89c95289fd51 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -85,6 +85,16 @@ static void report__inc_stats(struct report *rep, struct hist_entry *he)
+ 	 */
+ 	if (he->stat.nr_events == 1)
+ 		rep->nr_entries++;
++
++	/*
++	 * Only counts number of samples at this stage as it's more
++	 * natural to do it here and non-sample events are also
++	 * counted in perf_session_deliver_event().  The dump_trace
++	 * requires this info is ready before going to the output tree.
++	 */
++	hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
++	if (!he->filtered)
++		he->hists->stats.nr_non_filtered_samples++;
+ }
+ 
+ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
+@@ -135,10 +145,6 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
+ 
+ 	report__inc_stats(rep, he);
+ 
+-	evsel->hists.stats.total_period += cost;
+-	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+-	if (!he->filtered)
+-		evsel->hists.stats.nr_non_filtered_samples++;
+ 	err = hist_entry__append_callchain(he, sample);
+ out:
+ 	return err;
+@@ -189,13 +195,7 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
+ 				if (err)
+ 					goto out;
+ 			}
+-
+ 			report__inc_stats(rep, he);
+-
+-			evsel->hists.stats.total_period += 1;
+-			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+-			if (!he->filtered)
+-				evsel->hists.stats.nr_non_filtered_samples++;
+ 		} else
+ 			goto out;
+ 	}
+@@ -230,10 +230,6 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
+ 
+ 	report__inc_stats(rep, he);
+ 
+-	evsel->hists.stats.total_period += sample->period;
+-	if (!he->filtered)
+-		evsel->hists.stats.nr_non_filtered_samples++;
+-	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ out:
+ 	return err;
+ }
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 8d5cfcc3bc63..6d0d2d75db68 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -382,7 +382,6 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	if (!he)
+ 		return NULL;
+ 
+-	hists->nr_entries++;
+ 	rb_link_node(&he->rb_node_in, parent, p);
+ 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+ out:
+-- 
+1.9.2
 
