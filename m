@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758448AbaDXQjc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:39:32 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:40760 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753592AbaDXQjb (ORCPT
+	id S1758514AbaDXQkt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:40:49 -0400
+Received: from mail-ob0-f175.google.com ([209.85.214.175]:54889 "EHLO
+	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758462AbaDXQkr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:39:31 -0400
-Message-ID: <1398357472.3509.2.camel@j-VirtualBox>
-Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
- balance if there are runnable tasks
-From: Jason Low <jason.low2@hp.com>
-To: Mike Galbraith <umgwanakikbuti@gmail.com>
-Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        daniel.lezcano@linaro.org, alex.shi@linaro.org,
-        preeti@linux.vnet.ibm.com, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
-Date: Thu, 24 Apr 2014 09:37:52 -0700
-In-Reply-To: <1398307888.26653.18.camel@marge.simpson.net>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
-	 <1398303035-18255-4-git-send-email-jason.low2@hp.com>
-	 <1398307888.26653.18.camel@marge.simpson.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 24 Apr 2014 12:40:47 -0400
+MIME-Version: 1.0
+X-Originating-IP: [217.156.156.35]
+In-Reply-To: <1397805849-4913-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1397805849-4913-1-git-send-email-iamjoonsoo.kim@lge.com>
+Date: Thu, 24 Apr 2014 17:40:46 +0100
+X-Google-Sender-Auth: m4qhbBCKfRHuqhDll7pVXqrL1A0
+Message-ID: <CAAG0J9-8WbO48jXpUfOq6CmHinL9dMg5Ee9-J9qndBEtZgWYJg@mail.gmail.com>
+Subject: Re: [PATCH] slab: fix the type of the index on freelist index accessor
+From: James Hogan <james.hogan@imgtec.com>
+To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Pekka Enberg <penberg@kernel.org>, Christoph Lameter <cl@linux.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        David Rientjes <rientjes@google.com>, Steven King <sfking@fdwdc.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-24 at 04:51 +0200, Mike Galbraith wrote:
-> On Wed, 2014-04-23 at 18:30 -0700, Jason Low wrote: 
-> > It was found that when running some workloads (such as AIM7) on large systems
-> > with many cores, CPUs do not remain idle for long. Thus, tasks can
-> > wake/get enqueued while doing idle balancing.
-> > 
-> > In this patch, while traversing the domains in idle balance, in addition to
-> > checking for pulled_task, we add an extra check for this_rq->nr_running for
-> > determining if we should stop searching for tasks to pull. If there are
-> > runnable tasks on this rq, then we will stop traversing the domains. This
-> > reduces the chance that idle balance delays a task from running.
-> > 
-> > This patch resulted in approximately a 6% performance improvement when
-> > running a Java Server workload on an 8 socket machine.
-> 
-> Checking rq->lock for contention before ever going to idle balancing as
-> well should give you a bit more.  No need to run around looking for work
-> that's trying to arrive.  By not going there, perhaps stacking tasks,
-> you may head off a future bounce as well.
+On 18 April 2014 08:24, Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
+> commit 8dcc774 (slab: introduce byte sized index for the freelist of
+> a slab) changes the size of freelist index and also changes prototype
+> of accessor function to freelist index. And there was a mistake.
+>
+> The mistake is that although it changes the size of freelist index
+> correctly, it changes the size of the index of freelist index incorrectly.
+> With patch, freelist index can be 1 byte or 2 bytes, that means that
+> num of object on on a slab can be more than 255. So we need more than 1
+> byte for the index to find the index of free object on freelist. But,
+> above patch makes this index type 1 byte, so slab which have more than
+> 255 objects cannot work properly and in consequence of it, the system
+> cannot boot.
+>
+> This issue was reported by Steven King on m68knommu which would use
+> 2 bytes freelist index. Please refer following link.
+>
+> https://lkml.org/lkml/2014/4/16/433
+>
+> To fix it is so easy. To change the type of the index of freelist index
+> on accessor functions is enough to fix this bug. Although 2 bytes is
+> enough, I use 4 bytes since it have no bad effect and make things
+> more easier. This fix was suggested and tested by Steven in his
+> original report.
+>
+> Reported-by: Steven King <sfking@fdwdc.com>
+> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 
-Are you thinking of something along the lines of this:
+I also hit this problem on MIPS with v3.15-rc2 and 16K pages. With
+this patch it boots fine.
 
-@@ -6658,7 +6658,8 @@ static int idle_balance(struct rq *this_rq)
-         */
-        this_rq->idle_stamp = rq_clock(this_rq);
- 
--       if (this_rq->avg_idle < sysctl_sched_migration_cost)
-+       if (this_rq->avg_idle < sysctl_sched_migration_cost ||
-+           spin_is_contended(&this_rq->lock))
-                goto out;
+Tested-by: James Hogan <james.hogan@imgtec.com>
 
+Thanks
+James
+
+> ---
+> Hello, Pekka.
+>
+> Could you send this for v3.15-rc2?
+> Without this patch, many architecture using 2 bytes freelist index cannot
+> work properly, I guess.
+>
+> This patch is based on v3.15-rc1.
+>
+> Thanks.
+>
+> diff --git a/mm/slab.c b/mm/slab.c
+> index 388cb1a..d7f9f44 100644
+> --- a/mm/slab.c
+> +++ b/mm/slab.c
+> @@ -2572,13 +2572,13 @@ static void *alloc_slabmgmt(struct kmem_cache *cachep,
+>         return freelist;
+>  }
+>
+> -static inline freelist_idx_t get_free_obj(struct page *page, unsigned char idx)
+> +static inline freelist_idx_t get_free_obj(struct page *page, unsigned int idx)
+>  {
+>         return ((freelist_idx_t *)page->freelist)[idx];
+>  }
+>
+>  static inline void set_free_obj(struct page *page,
+> -                                       unsigned char idx, freelist_idx_t val)
+> +                                       unsigned int idx, freelist_idx_t val)
+>  {
+>         ((freelist_idx_t *)(page->freelist))[idx] = val;
+>  }
+> --
+> 1.7.9.5
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
