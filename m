@@ -1,88 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720AbaDXLzi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:55:38 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:37314 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753427AbaDXLzV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 07:55:21 -0400
-From: Boris BREZILLON <boris.brezillon@free-electrons.com>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Randy Dunlap <rdunlap@infradead.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>
-Subject: [PATCH 0/2] i2c: sunxi: add P2WI controller support
-Date: Thu, 24 Apr 2014 13:55:14 +0200
-Message-Id: <1398340516-29547-1-git-send-email-boris.brezillon@free-electrons.com>
-X-Mailer: git-send-email 1.8.3.2
+	id S1756740AbaDXLzn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:55:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7357 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753427AbaDXLzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 07:55:39 -0400
+Date: Thu, 24 Apr 2014 13:55:19 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2 1/2] uprobes/tracing: Make uprobe_perf_close() visible
+	to uprobe_perf_open()
+Message-ID: <20140424115519.GB8882@redhat.com>
+References: <20140423165808.GA29485@redhat.com> <20140423165830.GA29493@redhat.com> <20140423231728.1b95e37c@gandalf.local.home> <20140424115458.GA8882@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140424115458.GA8882@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Preparation. Move uprobe_perf_close() up before uprobe_perf_open() to
+avoid the forward declaration in the next patch and make it readable.
 
-This series adds support for the P2WI block used by some Allwinner
-boards to interface with the AXP221 PMIC.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+Acked-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+---
+ kernel/trace/trace_uprobe.c |   36 ++++++++++++++++++------------------
+ 1 files changed, 18 insertions(+), 18 deletions(-)
 
-I'm still not sure on how this bus should be integrated into the I2C
-subsystem:
-There was a discussion about adding new I2C flags: [1], but, I want
-to reuse the existing axp209 driver [2] which in turn uses a regmap,
-and the regmap over I2C driver does not support setting specific flags
-when launching I2C transfer (thought this could be added to the regmap
-code ;-)).
-
-I decided to get rid of these new flags (I2C_PUSHPULL,
-I2C_M_DROP_ADDRESS, ...) in my first proposal, but let me know if
-you think this should be re-introduced.
-
-Moreover, some parts are missing (either because I need some informations
-on the HW blocks or because I don't know how it should be done):
- - the bus frequency config (the current version hardcode the bus frequency
-   config):
-   I need informations about the clk tree used by APB0 clks in order to
-   properly implement missing clk drivers and define missing DT nodes.
- - the initialization (or I2C to P2WI mode switch) process:
-   A specific value has to be written in one of the slave device register
-   to switch the device from I2C to P2WI mode.
-   The switch process is handled by the P2WI controller block (using the
-   P2WI_PMCR register).
-   The problem is that I don't know which register should be written and
-   what's the value to switch to the P2WI mode (only the device driver
-   knows it).
-   How about encoding this in the DT, and then parse the child node
-   during probe ?
- - address consistency check:
-   I don't know when the slave device address should be saved in the p2wi
-   struct (during probe using DT child node informations, at the first
-   transfer, ...)
-
-
-
-Best Regards,
-
-Boris
-
-[1] http://www.spinics.net/lists/linux-i2c/msg15066.html
-[2] http://comments.gmane.org/gmane.comp.hardware.netbook.arm.sunxi/8947
-
-Boris BREZILLON (2):
-  i2c: sunxi: add P2WI DT bindings documentation
-  i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface) controller support
-
- .../devicetree/bindings/i2c/i2c-sunxi-p2wi.txt     |  27 ++
- drivers/i2c/busses/Kconfig                         |  12 +
- drivers/i2c/busses/Makefile                        |   1 +
- drivers/i2c/busses/i2c-sunxi-p2wi.c                | 317 +++++++++++++++++++++
- 4 files changed, 357 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/i2c/i2c-sunxi-p2wi.txt
- create mode 100644 drivers/i2c/busses/i2c-sunxi-p2wi.c
-
+diff --git a/kernel/trace/trace_uprobe.c b/kernel/trace/trace_uprobe.c
+index 930e514..1ed0030 100644
+--- a/kernel/trace/trace_uprobe.c
++++ b/kernel/trace/trace_uprobe.c
+@@ -1003,54 +1003,54 @@ uprobe_filter_event(struct trace_uprobe *tu, struct perf_event *event)
+ 	return __uprobe_perf_filter(&tu->filter, event->hw.tp_target->mm);
+ }
+ 
+-static int uprobe_perf_open(struct trace_uprobe *tu, struct perf_event *event)
++static int uprobe_perf_close(struct trace_uprobe *tu, struct perf_event *event)
+ {
+ 	bool done;
+ 
+ 	write_lock(&tu->filter.rwlock);
+ 	if (event->hw.tp_target) {
+-		/*
+-		 * event->parent != NULL means copy_process(), we can avoid
+-		 * uprobe_apply(). current->mm must be probed and we can rely
+-		 * on dup_mmap() which preserves the already installed bp's.
+-		 *
+-		 * attr.enable_on_exec means that exec/mmap will install the
+-		 * breakpoints we need.
+-		 */
++		list_del(&event->hw.tp_list);
+ 		done = tu->filter.nr_systemwide ||
+-			event->parent || event->attr.enable_on_exec ||
++			(event->hw.tp_target->flags & PF_EXITING) ||
+ 			uprobe_filter_event(tu, event);
+-		list_add(&event->hw.tp_list, &tu->filter.perf_events);
+ 	} else {
++		tu->filter.nr_systemwide--;
+ 		done = tu->filter.nr_systemwide;
+-		tu->filter.nr_systemwide++;
+ 	}
+ 	write_unlock(&tu->filter.rwlock);
+ 
+ 	if (!done)
+-		uprobe_apply(tu->inode, tu->offset, &tu->consumer, true);
++		uprobe_apply(tu->inode, tu->offset, &tu->consumer, false);
+ 
+ 	return 0;
+ }
+ 
+-static int uprobe_perf_close(struct trace_uprobe *tu, struct perf_event *event)
++static int uprobe_perf_open(struct trace_uprobe *tu, struct perf_event *event)
+ {
+ 	bool done;
+ 
+ 	write_lock(&tu->filter.rwlock);
+ 	if (event->hw.tp_target) {
+-		list_del(&event->hw.tp_list);
++		/*
++		 * event->parent != NULL means copy_process(), we can avoid
++		 * uprobe_apply(). current->mm must be probed and we can rely
++		 * on dup_mmap() which preserves the already installed bp's.
++		 *
++		 * attr.enable_on_exec means that exec/mmap will install the
++		 * breakpoints we need.
++		 */
+ 		done = tu->filter.nr_systemwide ||
+-			(event->hw.tp_target->flags & PF_EXITING) ||
++			event->parent || event->attr.enable_on_exec ||
+ 			uprobe_filter_event(tu, event);
++		list_add(&event->hw.tp_list, &tu->filter.perf_events);
+ 	} else {
+-		tu->filter.nr_systemwide--;
+ 		done = tu->filter.nr_systemwide;
++		tu->filter.nr_systemwide++;
+ 	}
+ 	write_unlock(&tu->filter.rwlock);
+ 
+ 	if (!done)
+-		uprobe_apply(tu->inode, tu->offset, &tu->consumer, false);
++		uprobe_apply(tu->inode, tu->offset, &tu->consumer, true);
+ 
+ 	return 0;
+ }
 -- 
-1.8.3.2
+1.5.5.1
+
 
