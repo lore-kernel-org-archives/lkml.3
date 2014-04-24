@@ -1,91 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765AbaDXBv0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 21:51:26 -0400
-Received: from ozlabs.org ([103.22.144.67]:53019 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751376AbaDXBvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 21:51:22 -0400
-Date: Thu, 24 Apr 2014 11:51:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chema Gonzalez <chema@google.com>,
-        Alexei Starovoitov <ast@plumgrid.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20140424115116.340b7da0bc0bba781dc6cc1f@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Apr_2014_11_51_16_+1000_1mQoBjeUuOBysgmb"
+	id S1751656AbaDXByb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 21:54:31 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56757 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaDXBy3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 21:54:29 -0400
+Date: Wed, 23 Apr 2014 18:46:49 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        joern@logfs.org, peterz@infradead.org,
+        Andrew Morton <akpm@linux-foundation.org>, cxie@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH RFC] sysrq: rcu-ify __handle_sysrq
+Message-ID: <20140424014648.GK4496@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+ <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+ <535833AE.6010505@redhat.com>
+ <alpine.LRH.2.00.1404232349350.1491@twin.jikos.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1404232349350.1491@twin.jikos.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042401-1344-0000-0000-0000011C6A91
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Apr_2014_11_51_16_+1000_1mQoBjeUuOBysgmb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 23, 2014 at 11:51:55PM +0200, Jiri Kosina wrote:
+> On Wed, 23 Apr 2014, Rik van Riel wrote:
+> 
+> > >> Echoing values into /proc/sysrq-trigger seems to be a popular way to
+> > >> get information out of the kernel. However, dumping information about
+> > >> thousands of processes, or hundreds of CPUs to serial console can
+> > >> result in IRQs being blocked for minutes, resulting in various kinds
+> > >> of cascade failures.
+> > >>
+> > >> The most common failure is due to interrupts being blocked for a very
+> > >> long time. This can lead to things like failed IO requests, and other
+> > >> things the system cannot easily recover from.
+> > >>
+> > >> This problem is easily fixable by making __handle_sysrq use RCU
+> > >> instead of spin_lock_irqsave.
+> > >>
+> > >> This leaves the warning that RCU grace periods have not elapsed for a
+> > >> long time, but the system will come back from that automatically.
+> > > 
+> > > This, however, will make RCU stall detector to send NMI to all online CPUs 
+> > > so that they can dump their stacks.
 
-Hi all,
+Hey, if dumping the stacks once is a good idea, dumping them twice
+must be twice as good, right?  ;-)
 
-Today's linux-next merge of the net-next tree got a conflict in
-net/core/filter.c between commit 83d5b7ef99c9 ("net: filter: initialize A
-and X registers") from the net tree and commit 4cd3675ebf74 ("filter:
-added BPF random opcode") from the net-next tree.
+> > It already does that, since several of the longer-running
+> > sysrq handlers already grab rcu_read_lock(), for example
+> > show_state().
+> > 
+> > > IOW, this might actually make the whole sysrq dump last for much longer, 
+> > > and have the log polluted with all-CPU dumps for no good reason.
+> > > 
+> > > I wonder whether explicitly setting rcu_cpu_stall_suppress during sysrq 
+> > > handling might be a viable workaround for this.
+> > 
+> > I suppose that would do the trick.
+> 
+> I can imagine Paul opposing this though ... this variable is supposed to 
+> be changed only by cmdline/modparam, not really flipped during runtime as 
+> a bandaid ... let's add Paul to CC.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+Well, we already crowbar it to 1 when panic starts, see rcu_panic().
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+How about something like the following?
 
-diff --cc net/core/filter.c
-index 9d79ca0a6e8e,78a636e60a0b..000000000000
---- a/net/core/filter.c
-+++ b/net/core/filter.c
-@@@ -652,6 -643,19 +652,12 @@@ static u64 __get_raw_cpu_id(u64 ctx, u6
-  	return raw_smp_processor_id();
-  }
- =20
-+ /* note that this only generates 32-bit random numbers */
-+ static u64 __get_random_u32(u64 ctx, u64 A, u64 X, u64 r4, u64 r5)
-+ {
-+ 	return (u64)prandom_u32();
-+ }
-+=20
- -/* Register mappings for user programs. */
- -#define A_REG		0
- -#define X_REG		7
- -#define TMP_REG		8
- -#define ARG2_REG	2
- -#define ARG3_REG	3
- -
-  static bool convert_bpf_extensions(struct sock_filter *fp,
-  				   struct sock_filter_int **insnp)
-  {
+	void rcu_sysrq_start(void)
+	{
+		rcu_cpu_stall_suppress = 2;
+	}
 
---Signature=_Thu__24_Apr_2014_11_51_16_+1000_1mQoBjeUuOBysgmb
-Content-Type: application/pgp-signature
+	void rcu_sysrq_end(void)
+	{
+		if (rcu_cpu_stall_suppress == 2)
+			rcu_cpu_stall_suppress = 0;
+	}
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+If there get to be too many more different reasons for temporarily
+suppressing RCU CPU stall warnings, I can then swap out to a better
+implementation, for some definition or another of "better".
 
-iQIcBAEBCAAGBQJTWG4YAAoJEMDTa8Ir7ZwVfHkQAIngJyA+COCzHt7ryJtH9jF0
-jxo52CCKb6MXSajGVf3Zeo43V2yxe53Fuichc/FFa5BPU+QVnWtytFW/7YXKPWaA
-iIDWV5ozAAzP78QJDLxqGA/h/9TuVZIGA+k9iz+L/HBrJXdAARTsmrxcZRcbjPd2
-mZ2wavAh6kilo2Z0YIY1rH6swMUhM6zqPDEIB+9EHdc1dEdIK7IkHqwcVLVr44YA
-JAEU1eZlwO5q0hbFa8nE7ZYQeVhQuRwUjHGKstVQsoDp3CJbsBi2VOh+N5AxfpB4
-1GKUsg0+KCT5nx86cYsTz3xgaS48PyUOhWdiZPTcTcZ+eZyd480L9HYWo8LPbe15
-eRzc6U9QfsG+3B5eIwdL2m7eiEtNlSUcValtCJ8r3ms5BJ0Lw3/liZIpfwY55fnc
-J2J2/LTpzvFrDQ+AD07HgL5YofweFxuQKWBUrtQTjyEN7t8KwPwA/w7bc0bxxR2C
-zf1PnLv9cdldjGwsiyaVruWwpbl9MO14e9+FfsL7Npn7igEBbXuFaQ/65VyFnRMf
-0r32j/w3h2JRThGvjZR6u54/BXizKpFJPYhBkgs6i4uiLb9KJj9lvp9pWDUuAqR6
-UEl5PAXAeG1JHmt9jn9vQF9EwkfwnYOEMAGp97woeimXgUAkdohSOQ1ZRQjKq0pW
-C3EoWE0U72qYy7ab09hE
-=SUoj
------END PGP SIGNATURE-----
+							Thanx, Paul
 
---Signature=_Thu__24_Apr_2014_11_51_16_+1000_1mQoBjeUuOBysgmb--
