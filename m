@@ -1,158 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272AbaDXIwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:52:11 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46255 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865AbaDXIwG (ORCPT
+	id S1756342AbaDXMDq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:03:46 -0400
+Received: from mail-yh0-f44.google.com ([209.85.213.44]:38078 "EHLO
+	mail-yh0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753388AbaDXMDj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:06 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 009/182] tgafb: fix mode setting with fbset
-Date: Thu, 24 Apr 2014 09:48:54 +0100
-Message-Id: <1398329507-5911-10-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 08:03:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140424110321.GN26756@n2100.arm.linux.org.uk>
+References: <1397648803-15961-1-git-send-email-steve.capper@linaro.org>
+	<20140424102229.GA28014@linaro.org>
+	<20140424103639.GC19564@arm.com>
+	<20140424104232.GK26756@n2100.arm.linux.org.uk>
+	<CAPvkgC3P8iZp5nECiGHdeGzRwmdh=ouiAREqKwk1tYzZxHTWvg@mail.gmail.com>
+	<20140424110321.GN26756@n2100.arm.linux.org.uk>
+Date: Thu, 24 Apr 2014 13:03:38 +0100
+Message-ID: <CAPvkgC36fLVJJtZumFO=f4eMEQvh_SjN7QDRpxT=ThfnGa1rog@mail.gmail.com>
+Subject: Re: [PATCH V2 0/5] Huge pages for short descriptors on ARM
+From: Steve Capper <steve.capper@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Will Deacon <will.deacon@arm.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "gerald.schaefer@de.ibm.com" <gerald.schaefer@de.ibm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+On 24 April 2014 12:03, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> On Thu, Apr 24, 2014 at 11:55:56AM +0100, Steve Capper wrote:
+>> On 24 April 2014 11:42, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+>> > On Thu, Apr 24, 2014 at 11:36:39AM +0100, Will Deacon wrote:
+>> >> I guess I'm after some commitment that this is (a) useful to somebody and
+>> >> (b) going to be tested regularly, otherwise it will go the way of things
+>> >> like big-endian, where we end up carrying around code which is broken more
+>> >> often than not (although big-endian is more self-contained).
+>> >
+>> > It may be something worth considering adding to my nightly builder/boot
+>> > testing, but I suspect that's impractical as it probably requires a BE
+>> > userspace, which would then mean that the platform can't boot LE.
+>> >
+>> > I suspect that we will just have to rely on BE users staying around and
+>> > reporting problems when they occur.
+>>
+>> The huge page support is for standard LE, I think Will was saying that
+>> this will be like BE if no-one uses it.
+>
+> We're not saying that.
+>
 
-------------------
+Apologies, I was talking at cross-purposes.
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+> What we're asking is this: *Who* is using hugepages today?
 
-commit 624966589041deb32a2626ee2e176e8274581101 upstream.
+I've asked the people who have been in touch with me to jump in to
+this discussion.
+People working on phones and servers have expressed an interest.
 
-Mode setting in the TGA driver is broken for these reasons:
+>
+> What we're then doing is comparing it to the situation we have today with
+> BE, where BE support is *always* getting broken because no one in the main
+> community tests it - not even a build test, nor a boot test which would
+> be required to find the problems that (for example) cropped up in the
+> last merge window.
 
-- info->fix.line_length is set just once in tgafb_init_fix function. If
-  we change videomode, info->fix.line_length is not recalculated - so
-  the video mode is changed but the screen is corrupted because of wrong
-  info->fix.line_length.
+I can appreciate that concern.
 
-- info->fix.smem_len is set in tgafb_init_fix to the size of the default
-  video mode (640x480). If we set a higher resolution,
-  info->fix.smem_len is smaller than the current screen size, preventing
-  the userspace program from mapping the framebuffer.
+>
+>> It's somewhat unfair to compare huge pages on short descriptors with
+>> BE. For a start, the userspace that works with LPAE will work on the
+>> short-descriptor kernel too.
+>
+> That sounds good, but the question is how does this get tested by
+> facilities such as my build/boot system, or Olof/Kevin's system?
+> Without that, it will find itself in exactly the same situation that
+> BE is in, where problems aren't found until after updates are merged
+> into Linus' tree.
+>
 
-This patch fixes it:
+For minimal build/boot testing, I would recommend enabling:
+CONFIG_HUGETLBFS=y
+CONFIG_TRANSPARENT_HUGEPAGE=y
+CONFIG_TRANSPARENT_HUGEPAGE_MADVISE=y
 
-- info->fix.line_length initialization is moved to tgafb_set_par so that
-  it is recalculated with each mode change.
+That should not have any significant effect on the running system (one
+has to opt-in to use HugeTLB or THP in this case), so could be put in
+a defconfig.
 
-- info->fix.smem_len is set to a fixed value representing the real
-  amount of video ram (the values are taken from xfree86 driver).
+For actual usage testing, typically one would use the upstream
+libhugelbfs test suite as it is very good at finding problems, is kept
+up to date, and is easy to automate and interpret the results. For
+THP, I usually run a kernel build repeatedly with
+/sys/kernel/mm/transparent_hugepage/enabled set to always along with
+LTP's mm tests.
 
-- add a check to tgafb_check_var to prevent us from setting a videomode
-  that doesn't fit into videoram.
+We also run continuous integration tests within Linaro against Linaro
+kernels, and the libhugetlbfs test suite is one of our tests. If it
+helps things, I can set up automated huge page tests within Linaro and
+pull in another branch?
 
-- in tgafb_register, tgafb_init_fix is moved upwards, to be called
-  before fb_find_mode (because fb_find_mode already needs the videoram
-  size set in tgafb_init_fix).
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/video/tgafb.c | 18 ++++++++++++++----
- 1 file changed, 14 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/video/tgafb.c b/drivers/video/tgafb.c
-index ef894b3..d5ef3c0 100644
---- a/drivers/video/tgafb.c
-+++ b/drivers/video/tgafb.c
-@@ -188,6 +188,8 @@ tgafb_check_var(struct fb_var_screeninfo *var, struct fb_info *info)
- 
- 	if (var->xres_virtual != var->xres || var->yres_virtual != var->yres)
- 		return -EINVAL;
-+	if (var->xres * var->yres * (var->bits_per_pixel >> 3) > info->fix.smem_len)
-+		return -EINVAL;
- 	if (var->nonstd)
- 		return -EINVAL;
- 	if (1000000000 / var->pixclock > TGA_PLL_MAX_FREQ)
-@@ -268,6 +270,7 @@ tgafb_set_par(struct fb_info *info)
- 	par->yres = info->var.yres;
- 	par->pll_freq = pll_freq = 1000000000 / info->var.pixclock;
- 	par->bits_per_pixel = info->var.bits_per_pixel;
-+	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
- 
- 	tga_type = par->tga_type;
- 
-@@ -1476,6 +1479,7 @@ tgafb_init_fix(struct fb_info *info)
- 	int tga_bus_tc = TGA_BUS_TC(par->dev);
- 	u8 tga_type = par->tga_type;
- 	const char *tga_type_name = NULL;
-+	unsigned memory_size;
- 
- 	switch (tga_type) {
- 	case TGA_TYPE_8PLANE:
-@@ -1483,22 +1487,27 @@ tgafb_init_fix(struct fb_info *info)
- 			tga_type_name = "Digital ZLXp-E1";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E1";
-+		memory_size = 2097152;
- 		break;
- 	case TGA_TYPE_24PLANE:
- 		if (tga_bus_pci)
- 			tga_type_name = "Digital ZLXp-E2";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E2";
-+		memory_size = 8388608;
- 		break;
- 	case TGA_TYPE_24PLUSZ:
- 		if (tga_bus_pci)
- 			tga_type_name = "Digital ZLXp-E3";
- 		if (tga_bus_tc)
- 			tga_type_name = "Digital ZLX-E3";
-+		memory_size = 16777216;
- 		break;
- 	}
--	if (!tga_type_name)
-+	if (!tga_type_name) {
- 		tga_type_name = "Unknown";
-+		memory_size = 16777216;
-+	}
- 
- 	strlcpy(info->fix.id, tga_type_name, sizeof(info->fix.id));
- 
-@@ -1508,9 +1517,8 @@ tgafb_init_fix(struct fb_info *info)
- 			    ? FB_VISUAL_PSEUDOCOLOR
- 			    : FB_VISUAL_DIRECTCOLOR);
- 
--	info->fix.line_length = par->xres * (par->bits_per_pixel >> 3);
- 	info->fix.smem_start = (size_t) par->tga_fb_base;
--	info->fix.smem_len = info->fix.line_length * par->yres;
-+	info->fix.smem_len = memory_size;
- 	info->fix.mmio_start = (size_t) par->tga_regs_base;
- 	info->fix.mmio_len = 512;
- 
-@@ -1634,6 +1642,9 @@ static int tgafb_register(struct device *dev)
- 		modedb_tga = &modedb_tc;
- 		modedbsize_tga = 1;
- 	}
-+
-+	tgafb_init_fix(info);
-+
- 	ret = fb_find_mode(&info->var, info,
- 			   mode_option ? mode_option : mode_option_tga,
- 			   modedb_tga, modedbsize_tga, NULL,
-@@ -1651,7 +1662,6 @@ static int tgafb_register(struct device *dev)
- 	}
- 
- 	tgafb_set_par(info);
--	tgafb_init_fix(info);
- 
- 	if (register_framebuffer(info) < 0) {
- 		printk(KERN_ERR "tgafb: Could not register framebuffer\n");
--- 
-1.9.1
-
+Cheers,
+--
+Steve
