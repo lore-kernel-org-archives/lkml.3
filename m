@@ -1,123 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751817AbaDXBnq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 21:43:46 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:34788 "EHLO comal.ext.ti.com"
+	id S1751793AbaDXBrf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 21:47:35 -0400
+Received: from ozlabs.org ([103.22.144.67]:44577 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750734AbaDXBnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 21:43:43 -0400
-Date: Wed, 23 Apr 2014 20:43:34 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: NeilBrown <neilb@suse.de>
-CC: <balbi@ti.com>, Nishanth Menon <nm@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>, <marcel@holtmann.org>,
-        <gustavo@padovan.org>, <johan.hedberg@gmail.com>, <jslaby@suse.cz>,
-        <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 10/13] tty: serial: omap: remove some dead code
-Message-ID: <20140424014334.GD13374@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1398265117-11793-1-git-send-email-balbi@ti.com>
- <1398265117-11793-10-git-send-email-balbi@ti.com>
- <5357DDA8.4040206@ti.com>
- <20140424084305.20c7f301@notabene.brown>
- <20140423230121.GC10924@saruman.home>
- <20140424101329.02e6a62f@notabene.brown>
- <20140424012100.GB13374@saruman.home>
- <20140424114115.51ab3f98@notabene.brown>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="osDK9TLjxFScVI/L"
-Content-Disposition: inline
-In-Reply-To: <20140424114115.51ab3f98@notabene.brown>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751047AbaDXBrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 21:47:33 -0400
+Date: Thu, 24 Apr 2014 11:47:26 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Kicinski <kubakici@wp.pl>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-Id: <20140424114726.07876050b5b805463a085191@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__24_Apr_2014_11_47_26_+1000_Fv4_xzF7KW41M1Jh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---osDK9TLjxFScVI/L
-Content-Type: text/plain; charset=us-ascii
+--Signature=_Thu__24_Apr_2014_11_47_26_+1000_Fv4_xzF7KW41M1Jh
+Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-Hi,
+Hi all,
 
-On Thu, Apr 24, 2014 at 11:41:15AM +1000, NeilBrown wrote:
-> On Wed, 23 Apr 2014 20:21:00 -0500 Felipe Balbi <balbi@ti.com> wrote:
->=20
-> > I have no problem either way, just that unused code doesn't have to be
-> > sitting in the tree and I'm not entirely sure this GPIO should be
-> > handled by omap-serial.c, perhaps something more generic inside
-> > serial-core so other UART drivers can benefit from it.
->=20
-> Perhaps.  But there there are more people I need to convince :-)
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/ethernet/intel/igb/e1000_mac.c between commit c5ffe7e1f745
+("e1000e/igb/ixgbe/i40e: fix message terminations") from the net tree and
+commit c75c4edfc38d ("igb: Cleanups for messaging") from the net-next
+tree.
 
-heh, Greg is in Cc, that'd be a good start.
-
-> > > On the other hand, if you can point out to me what I'm missing, and h=
-ow I can
-> > > solve my problem with any virtual GPIOs, I'm all ears.
-> > >=20
-> > > To make my problem simple and explicit:  I have a device attached to =
-a UART
-> > > which has a separate regulator.  The regulator should be powered on i=
-f and
-> >=20
-> > So you're using DTR to power the GPIO and hoping that the regulator
-> > stabilizes quickly enough so that by the time your open() finishes you
-> > don't have to add nonsensical msleep() calls before writing to the
-> > device. Sounds a bit fragile to me.
->=20
-> The gpio_set call is synchronous, and the gpio-regulator driver could add=
- a
-
-sure, but it's synchronous towards toggling the GPIO, pulling it high.
-It doesn't guarantee that the far-end regulator's output will be fully
-changed.
-
-> delay (I think).
-
-yeah, that'd be part of the regulator-gpio with the startup-delay-ns
-property (IIRC)
-
-> > > only if the /dev/ttyXX interface to the UART is open.  The device is a
-> > > bluetooth transceiver.
-> >=20
-> > considering this is a BTUART device, why didn't you do this at the ldisc
-> > level ? hci_uart_open() sounds like a good choice from a quick thinking.
-> >=20
->=20
-> I'll have a look into that, thanks.
-
-so, Ack for $subject or not ?
+I fixed it up (the former was a superset of the latter) and can carry the
+fix as necessary (no action is required).
 
 --=20
-balbi
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
---osDK9TLjxFScVI/L
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--Signature=_Thu__24_Apr_2014_11_47_26_+1000_Fv4_xzF7KW41M1Jh
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIcBAEBAgAGBQJTWGxGAAoJEIaOsuA1yqRE7RoP/i0oa49Wd196SBwSHZOd1z0b
-rXV/AotJ3XLxC45gs66aqvPB1CeDWHzPrgQrrqLTzaB6uAXmdQaGz91SAXmmijrS
-4bOnmahVUmEiOXNUfKRi4cjS4BL003swKkAWmq732cY9ByHj1c7YMqZHwFUuUZC/
-XyMozsf6MaZ7MswqfM54+AE9iR1uYUdhoEMxqus89A9+A1Py5Cuwg9iEoTx1EtoK
-6VhmQBzrKLT0j/OBZSxYJ1SBZHnb3IJg/Kie+RJ4iiAuVduoOXGbAeG4pSueBGLV
-HTezLOV247aYYAOy2eZsmIev/f1dVVsok+qb1YgYl9nJy+0L2dU2qpx3f8lco7Jj
-wVbEsWfLKn81m3Mbop4Q5NVlupNNkgvjj6aug9QTl87wEDSV3zFGNVniHNmVgTbi
-fOz9XI1/e0A2l8sB4Y3sE2fh+ZuUQV7/uNm2mlhqjAod4nqudT1+C3juypahzHi+
-TM8hFgAWEPMgr4UzVrSt4uYk3C/RBfspUfj1HPdj3RPucxvXMZ7Jk3lxDGeu9/a3
-5Pg/140DgrL/qQeO3QEQVLMSqhOevi2jG7BDb88eRBD5r036uQjvPiR98cQzUbi5
-n5MFhW/Isp9k6nuN6cwd4TXHx9+5AEaokE3Hz2DQgqOqVFFG0TtgVpUwmqERVQ6g
-ExojUxOktA9Ba5URSoNV
-=z7lG
+iQIcBAEBCAAGBQJTWG0zAAoJEMDTa8Ir7ZwVvLkP/1Ry/p/p9Gcy+juyMgEyQNIZ
+5Y3TcJiuDrxqHki09tnGsPiMtxjKOU3cUWe8FGF0O/vk30/Du+n1up8rjpMrPGvS
+dhXrxw4dp9YocNCO5Y1DlnfkcdY0NtYplWNU6XKh+VGMOH3YpKUl4zKPSyQXslt5
+eU20ajz73KdLqdd/++Aj7qXcNVb1imr0Bg3pUrLE8sLMQlsGxYZhrL6pqx1+VrW1
+Br1g1L+lTrMbDz6tvJBjDJ7iFujZLlB9kv7tS66XqesAHxDCqSXpeYO79YYZOoaI
+8Jw6gSk1DVRkxKwG6dm4VrMbihJcsYyYgX6lG1BAhqrBy0PaML2A4okt6+tSdbPE
+6uQSU+HgaABOmSVvqyoBdE76CkQ9C/Is6jw2/ZlgQVGmJmkDwLkC2k26VSQP7lBh
+Te1q8lvQXpvC5cASYMdJr5APwhAU72ztlEyY7ps/c8PGyiha+zbaGgWnrtOmkjEm
+geO2RJG5YJDxpcNBgRInNV7BU8F0e9X3H+8sViu49PE9TunIcFX5IBdRA6Q40yx+
+e4hC7o1z3HOmQSH1YRAnUr5kkiVJ0W6C5sFkfPYvUjg02WUlrPyC4gPsbBI5/nN5
+MiiW3Vv4wL4AnFqfNkZiiseFiqe8X+dPMH5Ew6adm2MXzc7XOWrhQ9MUKKGdPpZn
+nOWk+ODLOFUPJV3MJps0
+=ygbA
 -----END PGP SIGNATURE-----
 
---osDK9TLjxFScVI/L--
+--Signature=_Thu__24_Apr_2014_11_47_26_+1000_Fv4_xzF7KW41M1Jh--
