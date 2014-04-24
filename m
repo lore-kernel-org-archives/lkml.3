@@ -1,371 +1,453 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531AbaDXNaL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:30:11 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:38325 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754348AbaDXNaE (ORCPT
+	id S1757476AbaDXN3h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:29:37 -0400
+Received: from mail-pb0-f46.google.com ([209.85.160.46]:52249 "EHLO
+	mail-pb0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754236AbaDXN3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:30:04 -0400
-Date: Thu, 24 Apr 2014 15:29:12 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Boris BREZILLON <boris.brezillon@free-electrons.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>, Randy Dunlap <rdunlap@infradead.org>,
-        Hans de Goede <hdegoede@redhat.com>, Shuge <shuge@allwinnertech.com>,
-        kevin@allwinnertech.com, devicetree@vger.kernel.org,
-        linux-doc@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] i2c: sunxi: add P2WI (Push/Pull 2 Wire Interface)
- controller support
-Message-ID: <20140424132912.GA24905@lukather>
-References: <1398340516-29547-1-git-send-email-boris.brezillon@free-electrons.com>
- <1398340516-29547-3-git-send-email-boris.brezillon@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="5cXpu7evJfjLw2dJ"
-Content-Disposition: inline
-In-Reply-To: <1398340516-29547-3-git-send-email-boris.brezillon@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Apr 2014 09:29:13 -0400
+From: Xiangliang Yu <yxlraid@gmail.com>
+To: tj@kernel.org, JBottomley@parallels.com
+Cc: dan.j.williams@intel.com, todd.e.brandt@intel.com, lukasz.dorau@intel.com,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, Xiangliang Yu <yxlraid@gmail.com>
+Subject: [PATCH 3/3] mvsas: implement port mulitplier functional interface
+Date: Thu, 24 Apr 2014 21:28:57 +0800
+Message-Id: <1398346137-10402-1-git-send-email-yxlraid@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Implement PM interface of libsas to prepare for SATA PM support.
 
---5cXpu7evJfjLw2dJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Xiangliang Yu <yxlraid@gmail.com>
+---
+ drivers/scsi/mvsas/mv_64xx.c |    2 +
+ drivers/scsi/mvsas/mv_94xx.c |   19 ++++
+ drivers/scsi/mvsas/mv_defs.h |    1 +
+ drivers/scsi/mvsas/mv_init.c |    7 ++
+ drivers/scsi/mvsas/mv_sas.c  |  246 +++++++++++++++++++++++++++++++++++++++++-
+ drivers/scsi/mvsas/mv_sas.h  |    9 ++
+ 6 files changed, 281 insertions(+), 3 deletions(-)
 
-On Thu, Apr 24, 2014 at 01:55:16PM +0200, Boris BREZILLON wrote:
-> The P2WI looks like an SMBus controller which only supports byte data
-> transfers. But, it differs from standard SMBus protocol on several
-> aspects:
-> - it supports only one slave device, and thus drop the address field
-> - it adds a parity bit every 8bits of data
-> - only one read access is required to read a byte (instead of a read
->   followed by a write access in standard SMBus protocol)
-> - there's no Ack bit after each byte transfer
->=20
-> This means this bus cannot be used to interface with standard SMBus
-> devices (the only known device to support this interface is the AXP221
-> PMIC).
->=20
-> Signed-off-by: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> ---
->  drivers/i2c/busses/Kconfig          |  12 ++
->  drivers/i2c/busses/Makefile         |   1 +
->  drivers/i2c/busses/i2c-sunxi-p2wi.c | 317 ++++++++++++++++++++++++++++++=
-++++++
->  3 files changed, 330 insertions(+)
->  create mode 100644 drivers/i2c/busses/i2c-sunxi-p2wi.c
->=20
-> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-> index c94db1c..37e53d6 100644
-> --- a/drivers/i2c/busses/Kconfig
-> +++ b/drivers/i2c/busses/Kconfig
-> @@ -771,6 +771,18 @@ config I2C_STU300
->  	  This driver can also be built as a module. If so, the module
->  	  will be called i2c-stu300.
-> =20
-> +config I2C_SUNXI_P2WI
-> +	tristate "Allwinner sunxi internal P2WI controller"
+diff --git a/drivers/scsi/mvsas/mv_64xx.c b/drivers/scsi/mvsas/mv_64xx.c
+index 8bb0699..bb257cb 100644
+--- a/drivers/scsi/mvsas/mv_64xx.c
++++ b/drivers/scsi/mvsas/mv_64xx.c
+@@ -780,6 +780,8 @@ const struct mvs_dispatch mvs_64xx_dispatch = {
+ 	mvs_64xx_iounmap,
+ 	mvs_64xx_isr,
+ 	mvs_64xx_isr_status,
++	NULL,
++	NULL,
+ 	mvs_64xx_interrupt_enable,
+ 	mvs_64xx_interrupt_disable,
+ 	mvs_read_phy_ctl,
+diff --git a/drivers/scsi/mvsas/mv_94xx.c b/drivers/scsi/mvsas/mv_94xx.c
+index 1e4479f..9d547a7 100644
+--- a/drivers/scsi/mvsas/mv_94xx.c
++++ b/drivers/scsi/mvsas/mv_94xx.c
+@@ -602,6 +602,23 @@ static u32 mvs_94xx_isr_status(struct mvs_info *mvi, int irq)
+ 	return stat;
+ }
+ 
++static u32 mvs_94xx_read_isr_stat(struct mvs_info *mvi)
++{
++	void __iomem *regs = mvi->regs;
++	u32 stat = 0;
++
++	stat = mr32(MVS_INT_STAT);
++
++	return stat;
++}
++
++static void mvs_94xx_write_isr_stat(struct mvs_info *mvi, u32 stat)
++{
++	void __iomem *regs = mvi->regs;
++
++	mw32(MVS_INT_STAT, stat);
++}
++
+ static irqreturn_t mvs_94xx_isr(struct mvs_info *mvi, int irq, u32 stat)
+ {
+ 	void __iomem *regs = mvi->regs;
+@@ -1013,6 +1030,8 @@ const struct mvs_dispatch mvs_94xx_dispatch = {
+ 	mvs_94xx_iounmap,
+ 	mvs_94xx_isr,
+ 	mvs_94xx_isr_status,
++	mvs_94xx_read_isr_stat,
++	mvs_94xx_write_isr_stat,
+ 	mvs_94xx_interrupt_enable,
+ 	mvs_94xx_interrupt_disable,
+ 	mvs_read_phy_ctl,
+diff --git a/drivers/scsi/mvsas/mv_defs.h b/drivers/scsi/mvsas/mv_defs.h
+index f545194..4a25bb6 100644
+--- a/drivers/scsi/mvsas/mv_defs.h
++++ b/drivers/scsi/mvsas/mv_defs.h
+@@ -401,6 +401,7 @@ enum mvs_event_flags {
+ 	PHY_PLUG_IN		= (1U << 0),	/* phy plug in */
+ 	PHY_PLUG_OUT		= (1U << 1),	/* phy plug out */
+ 	EXP_BRCT_CHG		= (1U << 2),	/* broadcast change */
++	PHY_SNTF_RCVD		= (1U << 3),	/* pm sntf received */
+ };
+ 
+ enum mvs_port_type {
+diff --git a/drivers/scsi/mvsas/mv_init.c b/drivers/scsi/mvsas/mv_init.c
+index 5ff978b..779f853 100644
+--- a/drivers/scsi/mvsas/mv_init.c
++++ b/drivers/scsi/mvsas/mv_init.c
+@@ -94,6 +94,12 @@ static struct sas_domain_function_template mvs_transport_ops = {
+ 	.lldd_port_formed	= mvs_port_formed,
+ 	.lldd_port_deformed     = mvs_port_deformed,
+ 
++	.lldd_dev_freeze        = mvs_dev_freeze,
++	.lldd_dev_thaw          = mvs_dev_thaw,
++	.lldd_wait_task_done    = mvs_wait_task_done,
++	.lldd_ata_check_ready   = mvs_check_ready,
++	.lldd_dev_classify      = mvs_dev_classify,
++	.lldd_dev_set           = mvs_dev_set,
+ };
+ 
+ static void mvs_phy_init(struct mvs_info *mvi, int phy_id)
+@@ -251,6 +257,7 @@ static int mvs_alloc(struct mvs_info *mvi, struct Scsi_Host *shost)
+ 		mvi->port[i].wide_port_phymap = 0;
+ 		mvi->port[i].port_attached = 0;
+ 		INIT_LIST_HEAD(&mvi->port[i].list);
++		mvi->port[i].sig = 0xFFFFFFFF;
+ 	}
+ 	for (i = 0; i < MVS_MAX_DEVICES; i++) {
+ 		mvi->devices[i].taskfileset = MVS_ID_NOT_MAPPED;
+diff --git a/drivers/scsi/mvsas/mv_sas.c b/drivers/scsi/mvsas/mv_sas.c
+index 6c1f223..537c7d6 100644
+--- a/drivers/scsi/mvsas/mv_sas.c
++++ b/drivers/scsi/mvsas/mv_sas.c
+@@ -443,13 +443,15 @@ static int mvs_task_prep_ata(struct mvs_info *mvi,
+ {
+ 	struct sas_ha_struct *sha = mvi->sas;
+ 	struct sas_task *task = tei->task;
+-	struct domain_device *dev = task->dev;
++	struct domain_device *dev = task->dev, *parent = NULL;
+ 	struct mvs_device *mvi_dev = dev->lldd_dev;
+ 	struct mvs_cmd_hdr *hdr = tei->hdr;
+ 	struct asd_sas_port *sas_port = dev->port;
+-	struct sas_phy *sphy = dev->phy;
+-	struct asd_sas_phy *sas_phy = sha->sas_phy[sphy->number];
++	struct sas_phy *sphy = NULL;
++	struct asd_sas_phy *sas_phy = NULL;
+ 	struct mvs_slot_info *slot;
++	struct host_to_dev_fis *fis;
++	struct ata_queued_cmd *qc = NULL;
+ 	void *buf_prd;
+ 	u32 tag = tei->tag, hdr_tag;
+ 	u32 flags, del_q;
+@@ -464,6 +466,13 @@ static int mvs_task_prep_ata(struct mvs_info *mvi,
+ 			mvi_dev->device_id);
+ 		return -EBUSY;
+ 	}
++	if (dev->parent) {
++		parent = dev->parent;
++		sphy = parent->phy;
++	} else
++		sphy = dev->phy;
++	sas_phy = sha->sas_phy[sphy->number];
++
+ 	slot = &mvi->slot_info[tag];
+ 	slot->tx = mvi->tx_prod;
+ 	del_q = TXQ_MODE_I | tag |
+@@ -484,6 +493,19 @@ static int mvs_task_prep_ata(struct mvs_info *mvi,
+ 			flags |= MCH_ATAPI;
+ 	}
+ 
++	if (task->task_state_flags & SAS_TASK_NEED_DEV_RESET)
++		flags |= MCH_RESET;
++
++	if (!(task->task_state_flags & SAS_TASK_NEED_DEV_RESET)) {
++		qc = task->uldd_task;
++		fis = &task->ata_task.fis;
++		if ((qc->tf.command == ATA_CMD_PMP_READ) ||
++		       (qc->tf.command == ATA_CMD_PMP_WRITE))
++			flags |= 0xF;    /* pm control port */
++		else
++			flags |= fis->flags & 0xF;
++	}
++
+ 	hdr->flags = cpu_to_le32(flags);
+ 
+ 	if (task->ata_task.use_ncq && mvs_get_ncq_tag(task, &hdr_tag))
+@@ -491,6 +513,13 @@ static int mvs_task_prep_ata(struct mvs_info *mvi,
+ 	else
+ 		hdr_tag = tag;
+ 
++	if (!(task->task_state_flags & SAS_TASK_NEED_DEV_RESET)) {
++		qc = task->uldd_task;
++		if ((qc->tf.command == ATA_CMD_PMP_READ) ||
++		       (qc->tf.command == ATA_CMD_PMP_WRITE))
++			hdr_tag = 0;
++	}
++
+ 	hdr->tags = cpu_to_le32(hdr_tag);
+ 
+ 	hdr->data_len = cpu_to_le32(task->total_xfer_len);
+@@ -1369,6 +1398,215 @@ void mvs_dev_gone(struct domain_device *dev)
+ 	mvs_dev_gone_notify(dev);
+ }
+ 
++void mvs_dev_freeze(struct domain_device *dev)
++{
++	struct mvs_device *mvi_dev = dev->lldd_dev;
++	struct mvs_info *mvi = mvi_dev->mvi_info;
++
++	if (!mvi) {
++		mv_dprintk("mvi is null.\n");
++		return;
++	}
++
++	MVS_CHIP_DISP->interrupt_disable(mvi);
++}
++
++void mvs_dev_thaw(struct domain_device *dev)
++{
++	struct mvs_device *mvi_dev = dev->lldd_dev;
++	struct mvs_info *mvi = mvi_dev->mvi_info;
++
++	if (!mvi) {
++		mv_dprintk("mvi is null.\n");
++		return;
++	}
++
++	MVS_CHIP_DISP->interrupt_enable(mvi);
++}
++
++int mvs_wait_task_done(struct sas_task *task)
++{
++	struct domain_device *dev = task->dev;
++	struct mvs_device *mdev = dev->lldd_dev;
++	struct mvs_slot_info *slot = (struct mvs_slot_info *)task->lldd_task;
++	u32 slot_idx = slot->slot_tag;
++	struct mvs_info *mvi = mdev->mvi_info;
++	unsigned int rx_prod_idx, rx_desc;
++	int ret = -1;
++	u32 reg;
++
++	reg = MVS_CHIP_DISP->read_isr_status(mvi);
++
++	rx_prod_idx = mvi->rx_cons;
++
++	mvi->rx_cons = le32_to_cpu(mvi->rx[0]);
++	if (mvi->rx_cons == 0xFFF)
++		return ret;
++
++	if (unlikely(mvi->rx_cons == rx_prod_idx))
++		mvi->rx_cons = MVS_CHIP_DISP->rx_update(mvi) & RX_RING_SZ_MASK;
++
++	if (reg & 0x1) {
++		/* free slot resource */
++
++		task->task_state_flags = SAS_TASK_STATE_DONE;
++		if (mdev && mdev->running_req)
++			mdev->running_req--;
++		if (sas_protocol_ata(task->task_proto))
++			mvs_free_reg_set(mvi, mdev);
++
++		mvs_slot_task_free(mvi, task, slot, slot_idx);
++
++		/* clear int register */
++		MVS_CHIP_DISP->write_isr_status(mvi, reg & 0x1);
++		reg = MVS_CHIP_DISP->read_isr_status(mvi);
++
++		rx_desc = le32_to_cpu(mvi->rx[mvi->rx_cons + 1]);
++
++		return 0;
++	}
++
++	if (mvi->rx_cons == rx_prod_idx)
++		return ret;
++
++	rx_desc = le32_to_cpu(mvi->rx[mvi->rx_cons + 1]);
++	if (rx_desc & RXQ_DONE)
++		ret = 0;
++
++	ret = MVS_CHIP_DISP->read_isr_status(mvi);
++	if (reg & 0x1)
++		MVS_CHIP_DISP->write_isr_status(mvi, reg & 0x1);
++
++	return ret;
++}
++
++int mvs_check_ready(struct domain_device *dev)
++{
++	struct mvs_device *mdev = dev->lldd_dev;
++	struct mvs_info *mvi = mdev->mvi_info;
++	struct asd_sas_port *sas_port = dev->port;
++	struct mvs_port *port = sas_port->lldd_port;
++	int i = 0;
++	u32 reg, status = 0;
++
++	while (&(mvi->port[i]) != port)
++		i++;
++
++	BUG_ON(!mvi);
++
++	reg = MVS_CHIP_DISP->read_port_irq_stat(mvi, i);
++	if (reg == 0 && test_bit(SAS_DEV_RESET, &dev->state)) {
++		clear_bit(SAS_DEV_RESET, &dev->state);
++		return 1;
++	}
++	status = mvs_is_phy_ready(mvi, i);
++	if (!status) {
++		mv_dprintk("phy is not ready.\n");
++		return 1;
++	}
++
++	if (reg & PHYEV_UNASSOC_FIS) {
++		reg = readl(UNASSOC_D2H_FIS(i));
++
++	} else if (reg & PHYEV_SIG_FIS) {
++		MVS_CHIP_DISP->write_port_cfg_addr(mvi, i, PHYR_SATA_SIG0);
++		reg = cpu_to_le32(MVS_CHIP_DISP->read_port_cfg_data(mvi, i));
++	}
++
++	status = (reg >> 16) & 0xFF;
++
++	if (status & 0x80)
++		return 0;
++
++	return 1;
++}
++
++static u32 mvs_get_dev_sig(struct mvs_info *mvi, int phy, u32 reg)
++{
++	u32 sig = 0, val;
++
++	if (reg & PHYEV_UNASSOC_FIS) {
++
++		val = readl(UNASSOC_D2H_FIS(phy) + 0xC);
++		val = val & 0xFF;
++		sig |= val;
++		val = readl(UNASSOC_D2H_FIS(phy) + 0x4);
++		val = val & 0xFFFFFF;
++		sig |= (val << 8);
++
++		memset(UNASSOC_D2H_FIS(phy), 0, 4);
++		memset(UNASSOC_D2H_FIS(phy) + 0x4, 0, 4);
++		memset(UNASSOC_D2H_FIS(phy) + 0x8, 0, 4);
++		memset(UNASSOC_D2H_FIS(phy) + 0xC, 0, 4);
++
++	} else if (reg & PHYEV_SIG_FIS) {
++		MVS_CHIP_DISP->write_port_cfg_addr(mvi, phy, PHYR_SATA_SIG3);
++		val = cpu_to_le32(MVS_CHIP_DISP->read_port_cfg_data(mvi, phy));
++		val = val & 0xFF;
++		sig |= val;
++		MVS_CHIP_DISP->write_port_cfg_addr(mvi, phy, PHYR_SATA_SIG1);
++		val = cpu_to_le32(MVS_CHIP_DISP->read_port_cfg_data(mvi, phy));
++		val = val & 0xFFFFFF;
++		sig |= (val << 8);
++	}
++
++	return sig;
++}
++
++int mvs_dev_classify(struct domain_device *dev)
++{
++	struct mvs_device *mdev = dev->lldd_dev;
++	struct mvs_info *mvi = mdev->mvi_info;
++	struct asd_sas_port *sas_port = dev->port;
++	struct mvs_port *port = sas_port->lldd_port;
++	int i = 0;
++	u32 reg, sig;
++
++	if (test_and_clear_bit(SAS_DEV_RESET, &dev->state)) {
++		sig = port->sig;
++		port->sig = 0xFFFFFFFF;
++
++		goto out;
++	}
++
++	while (&mvi->port[i] != port)
++		i++;
++
++	reg = MVS_CHIP_DISP->read_port_irq_stat(mvi, i);
++
++	port->sig = mvs_get_dev_sig(mvi, i, reg);
++	sig = port->sig;
++	port->sig = 0xFFFFFFFF;
++
++	reg = MVS_CHIP_DISP->read_port_irq_stat(mvi, i);
++	MVS_CHIP_DISP->write_port_irq_stat(mvi, i, reg);
++	reg = MVS_CHIP_DISP->read_port_irq_stat(mvi, i);
++out:
++
++	if (sig == 0x96690101)
++		return ATA_DEV_PMP;
++	else if (sig == 0x101)
++		return ATA_DEV_ATA;
++	else
++		return ATA_DEV_UNKNOWN;
++}
++
++void mvs_dev_set(struct domain_device *dev)
++{
++	struct ata_port *ap;
++
++	if (dev->parent &&
++		(dev->parent->dev_type == SAS_SATA_PM))
++		return;
++
++	ap = dev->sata_dev.ap;
++
++	/* add support PM and AN */
++	ap->flags |= (ATA_FLAG_PMP | ATA_FLAG_AN);
++
++	return;
++}
++
+ static void mvs_task_done(struct sas_task *task)
+ {
+ 	if (!del_timer(&task->slow_task->timer))
+@@ -1519,6 +1757,8 @@ int mvs_I_T_nexus_reset(struct domain_device *dev)
+     struct mvs_device * mvi_dev = (struct mvs_device *)dev->lldd_dev;
+ 	struct mvs_info *mvi = mvi_dev->mvi_info;
+ 
++	set_bit(SAS_DEV_RESET, &dev->state);
++
+ 	if (mvi_dev->dev_status != MVS_DEV_EH)
+ 		return TMF_RESP_FUNC_COMPLETE;
+ 	else
+diff --git a/drivers/scsi/mvsas/mv_sas.h b/drivers/scsi/mvsas/mv_sas.h
+index d6b19dc..090c074 100644
+--- a/drivers/scsi/mvsas/mv_sas.h
++++ b/drivers/scsi/mvsas/mv_sas.h
+@@ -113,6 +113,8 @@ struct mvs_dispatch {
+ 	void (*chip_iounmap)(struct mvs_info *mvi);
+ 	irqreturn_t (*isr)(struct mvs_info *mvi, int irq, u32 stat);
+ 	u32 (*isr_status)(struct mvs_info *mvi, int irq);
++	u32 (*read_isr_status)(struct mvs_info *mvi);
++	void (*write_isr_status)(struct mvs_info *mvi, u32 stat);
+ 	void (*interrupt_enable)(struct mvs_info *mvi);
+ 	void (*interrupt_disable)(struct mvs_info *mvi);
+ 
+@@ -214,6 +216,7 @@ struct mvs_port {
+ 	u8			port_attached;
+ 	u8			wide_port_phymap;
+ 	struct list_head	list;
++	u32			sig;
+ };
+ 
+ struct mvs_phy {
+@@ -484,5 +487,11 @@ void mvs_int_port(struct mvs_info *mvi, int phy_no, u32 events);
+ void mvs_update_phyinfo(struct mvs_info *mvi, int i, int get_st);
+ int mvs_int_rx(struct mvs_info *mvi, bool self_clear);
+ struct mvs_device *mvs_find_dev_by_reg_set(struct mvs_info *mvi, u8 reg_set);
++void mvs_dev_freeze(struct domain_device *dev);
++void mvs_dev_thaw(struct domain_device *dev);
++int mvs_wait_task_done(struct sas_task *task);
++int mvs_check_ready(struct domain_device *dev);
++int mvs_dev_classify(struct domain_device *dev);
++void mvs_dev_set(struct domain_device *dev);
+ #endif
+ 
+-- 
+1.7.1
 
-Since the A31 is the only SoC that uses it, maybe you can drop the
-sunxi and use either sun6i or A31 here?
-
-> +	depends on ARCH_SUNXI
-> +	help
-> +	  If you say yes to this option, support will be included for the
-> +	  P2WI (Push/Pull 2 Wire Interface) controller embedded in some sunxi
-> +	  SOCs.
-> +	  The P2WI looks like an SMBus controller (which supports only byte
-> +	  accesses), except that it only supports one slave device.
-> +	  This interface is used to connect to specific PMIC devices (like the
-> +	  AXP221).
-> +
->  config I2C_TEGRA
->  	tristate "NVIDIA Tegra internal I2C controller"
->  	depends on ARCH_TEGRA
-> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-> index 18d18ff..c63d2ec 100644
-> --- a/drivers/i2c/busses/Makefile
-> +++ b/drivers/i2c/busses/Makefile
-> @@ -75,6 +75,7 @@ obj-$(CONFIG_I2C_SIMTEC)	+=3D i2c-simtec.o
->  obj-$(CONFIG_I2C_SIRF)		+=3D i2c-sirf.o
->  obj-$(CONFIG_I2C_ST)		+=3D i2c-st.o
->  obj-$(CONFIG_I2C_STU300)	+=3D i2c-stu300.o
-> +obj-$(CONFIG_I2C_SUNXI_P2WI)	+=3D i2c-sunxi-p2wi.o
->  obj-$(CONFIG_I2C_TEGRA)		+=3D i2c-tegra.o
->  obj-$(CONFIG_I2C_VERSATILE)	+=3D i2c-versatile.o
->  obj-$(CONFIG_I2C_WMT)		+=3D i2c-wmt.o
-> diff --git a/drivers/i2c/busses/i2c-sunxi-p2wi.c b/drivers/i2c/busses/i2c=
--sunxi-p2wi.c
-> new file mode 100644
-> index 0000000..e3fdd76
-> --- /dev/null
-> +++ b/drivers/i2c/busses/i2c-sunxi-p2wi.c
-> @@ -0,0 +1,317 @@
-> +/*
-> + * P2WI (Push-Pull Two Wire Interface) bus driver.
-> + *
-> + * Author: Boris BREZILLON <boris.brezillon@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public Licen=
-se
-> + * version 2.  This program is licensed "as is" without any warranty of =
-any
-> + * kind, whether express or implied.
-> + */
-> +#include <linux/kernel.h>
-> +#include <linux/slab.h>
-> +#include <linux/module.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/i2c.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/io.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/clk.h>
-> +#include <linux/err.h>
-> +#include <linux/delay.h>
-> +#include <linux/clk.h>
-> +#include <linux/reset.h>
-> +
-> +
-> +/* P2WI registers */
-> +#define P2WI_CTRL		0x0
-> +#define P2WI_CCR		0x4
-> +#define P2WI_INTE		0x8
-> +#define P2WI_INTS		0xc
-> +#define P2WI_DADDR0		0x10
-> +#define P2WI_DADDR1		0x14
-> +#define P2WI_DLEN		0x18
-> +#define P2WI_DATA0		0x1c
-> +#define P2WI_DATA1		0x20
-> +#define P2WI_LCR		0x24
-> +#define P2WI_PMCR		0x28
-> +
-> +/* CTRL fields */
-> +#define P2WI_START_TRANS	(1 << 7)
-> +#define P2WI_ABORT_TRANS	(1 << 6)
-> +#define P2WI_GLOBAL_INT_ENB	(1 << 1)
-> +#define P2WI_SOFT_RST		(1 << 0)
-
-BIT() ?
-
-> +/* CLK CTRL fields */
-> +#define P2WI_SDA_OUT_DELAY(v)	(((v) & 0x7) << 8)
-> +#define P2WI_CLK_DIV(v)		((v) & 0xff)
-> +
-> +/* STATUS fields */
-> +#define P2WI_TRANS_ERR_ID(v)	(((v) >> 8) & 0xff)
-> +#define P2WI_LOAD_BSY		(1 << 2)
-> +#define P2WI_TRANS_ERR		(1 << 1)
-> +#define P2WI_TRANS_OVER		(1 << 0)
-> +
-> +/* DATA LENGTH fields*/
-> +#define P2WI_READ		(1 << 4)
-> +#define P2WI_DATA_LENGTH(v)	((v - 1) & 0x7)
-> +
-> +/* LINE CTRL fields*/
-> +#define P2WI_SCL_STATE		(1 << 5)
-> +#define P2WI_SDA_STATE		(1 << 4)
-> +#define P2WI_SCL_CTL		(1 << 3)
-> +#define P2WI_SCL_CTL_EN		(1 << 2)
-> +#define P2WI_SDA_CTL		(1 << 1)
-> +#define P2WI_SDA_CTL_EN		(1 << 0)
-> +
-> +/* PMU MODE CTRL fields */
-> +#define P2WI_PMU_INIT_SEND	(1 << 31)
-> +#define P2WI_PMU_INIT_DATA(v)	(((v) & 0xff) << 16)
-> +#define P2WI_PMU_MODE_REG(v)	(((v) & 0xff) << 8)
-> +#define P2WI_PMU_DEV_ADDR(v)	((v) & 0xff)
-
-I'd very much prefer if your bits were prefixed by the register
-name. That way, you directly know in which register that bit belong,
-without having to scroll across the whole driver.
-
-> +
-> +struct p2wi {
-> +	struct i2c_adapter adapter;
-> +	struct completion complete;
-> +	unsigned int irq;
-> +	unsigned int status;
-> +	void __iomem *regs;
-> +	struct clk *clk;
-> +	struct reset_control *rstc;
-> +};
-> +
-> +static irqreturn_t p2wi_interrupt(int irq, void *dev_id)
-> +{
-> +	struct p2wi *p2wi =3D dev_id;
-> +	unsigned long status;
-> +
-> +	status =3D readl(p2wi->regs + P2WI_INTS);
-> +	p2wi->status =3D status;
-> +
-> +	/* Clear interrupts */
-> +	status &=3D (P2WI_LOAD_BSY | P2WI_TRANS_ERR | P2WI_TRANS_OVER);
-> +	writel(status, p2wi->regs + P2WI_INTS);
-> +
-> +	complete(&p2wi->complete);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static u32 p2wi_functionality(struct i2c_adapter *adap)
-> +{
-> +	return I2C_FUNC_SMBUS_BYTE_DATA;
-> +}
-> +
-> +static int p2wi_smbus_xfer(struct i2c_adapter *adap, u16 addr,
-> +			   unsigned short flags, char read_write,
-> +			   u8 command, int size, union i2c_smbus_data *data)
-> +{
-> +	struct p2wi *p2wi =3D i2c_get_adapdata(adap);
-> +	unsigned long dlen =3D P2WI_DATA_LENGTH(1);
-> +
-> +	/*
-> +	 * TODO: check address consistency.
-> +	 * The P2WI bus only support one slave. As a result it does not use
-> +	 * the I2C address except when you're switching the slave device from
-> +	 * I2C to P2WI mode.
-> +	 * We should at least verify that the addr argument is consistent with
-> +	 * the slave device address.
-> +	 */
-> +
-> +	if (addr > 0xff) {
-> +		dev_err(&adap->dev, "invalid P2WI address\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	/*
-> +	 * TODO: handle switch to P2WI mode.
-> +	 * At the moment, we're considering the slave device as already
-> +	 * switchedto P2WI (which means the bootloader has to switch the slave
-
-                   ^ you need a space here
-
-> +	 * device from I2C to P2WI mode).
-> +	 * We need at least 3 informations to launch the switch process:
-> +	 * - the slave device address (addr argument)
-> +	 * - the mode register
-> +	 * - the P2WI mode value (to write in the mode register)
-> +	 */
-> +
-> +	if (!data)
-> +		return -EINVAL;
-> +
-> +	writel(command, p2wi->regs + P2WI_DADDR0);
-> +
-> +	if (read_write =3D=3D I2C_SMBUS_READ)
-> +		dlen |=3D P2WI_READ;
-> +	else
-> +		writel(data->byte, p2wi->regs + P2WI_DATA0);
-> +
-> +	writel(dlen, p2wi->regs + P2WI_DLEN);
-> +
-> +	if (readl(p2wi->regs + P2WI_CTRL) & P2WI_START_TRANS) {
-> +		dev_err(&adap->dev, "P2WI bus busy\n");
-> +		return -EBUSY;
-> +	}
-> +
-> +	reinit_completion(&p2wi->complete);
-> +
-> +	writel(P2WI_LOAD_BSY | P2WI_TRANS_ERR | P2WI_TRANS_OVER,
-> +	       p2wi->regs + P2WI_INTE);
-> +
-> +	writel(P2WI_START_TRANS | P2WI_GLOBAL_INT_ENB, p2wi->regs + P2WI_CTRL);
-> +
-> +	wait_for_completion(&p2wi->complete);
-> +
-> +	if (p2wi->status & P2WI_LOAD_BSY) {
-> +		dev_err(&adap->dev, "P2WI bus busy\n");
-> +		return -EBUSY;
-> +	}
-> +
-> +
-
-You can drop the extra line here.
-
-> +	if (p2wi->status & P2WI_TRANS_ERR) {
-> +		dev_err(&adap->dev, "P2WI bus xfer error\n");
-> +		return -ENXIO;
-> +	}
-> +
-> +	if (read_write =3D=3D I2C_SMBUS_READ)
-> +		data->byte =3D readl(p2wi->regs + P2WI_DATA0);
-> +
-> +	return 0;
-> +}
-> +
-> +static const struct i2c_algorithm p2wi_algo =3D {
-> +	.smbus_xfer =3D p2wi_smbus_xfer,
-> +	.functionality =3D p2wi_functionality,
-> +};
-> +
-> +static const struct of_device_id p2wi_of_match_table[] =3D {
-> +	{ .compatible =3D "allwinner,sun6i-a31-p2wi" },
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(of, p2wi_of_match_table);
-> +
-> +static int p2wi_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev =3D &pdev->dev;
-> +	struct resource *r;
-> +	struct p2wi *p2wi;
-> +	int ret;
-> +
-> +	p2wi =3D devm_kzalloc(dev, sizeof(struct p2wi), GFP_KERNEL);
-> +	if (!p2wi) {
-> +		dev_err(dev, "failed to allocate p2wi struct\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	r =3D platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	p2wi->regs =3D devm_request_and_ioremap(dev, r);
-> +	if (IS_ERR(p2wi->regs)) {
-> +		ret =3D PTR_ERR(p2wi->regs);
-> +		dev_err(dev, "failed to retrieve iomem resource: %d\n",
-> +			ret);
-> +		return ret;
-> +	}
-
-I don't see how it can work, since, when it fails,
-devm_request_and_ioremap returns NULL. You probably meant
-devm_ioremap_resource.
-
-Thanks!
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---5cXpu7evJfjLw2dJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.14 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTWRGnAAoJEBx+YmzsjxAgkY4P/jW51RMQJ3lS9zCZOTFkWC2o
-WH6SFHxMY+dbXrihh5Cber9p3agHf+BYsbJgrabPxV0+oOx2HUsctxQ+Tm8EHGVt
-j38vFqr6Z2cV8velqkIpr7MqMr3a6VNTz4aBDFQ9FanbpkTPwBt0YVG10kBEN8ni
-xQ/VDnFYMs03MGYstpJJZCuBP2TDDR/oHITQvzH10WI62AsyrWbhsJ98OrhVfeDN
-XKEsZeT4Rag2CzE6HbfFGTjWKFb5VP7BiCjifsCZJ1SymMwCW3PmNGsKpzytmcGn
-SeaIqxMpGkjhr7yfR6c/8rrSUOnijEP28bP+QHj94n1sbITe2FWfjPcne/WH7UUl
-Ind+3RDvLdwnwfYYhx+xR9IOjK6FDslCZBz8PnK8vTFhEMeYOvOTXLLu60xVrup+
-LrmKRUAQe5aYYow0tBYSb3ivsmkOvvHp1cteKY2wFmKOzfwkbi3znLa0XWwce10L
-j+hGGw35T0/yQGbMWMXIMHwPC+EShYdR095b8tm0XkU1DNxoF8ksPxcYMlq95Ygy
-dXYELBZTW74ZBXizCMi3MjHOqr+fMEfFiHZR96p49NaQB5CNP16Eyth0nVxrPqEX
-wwW+n7SzG5C26RVbgB6mmrw3ItDIa0TU/Da/2oLUj1Alu6ko/BNZrRAyvN7PAAol
-9swwaLs7LefGhreZdAd1
-=WjbA
------END PGP SIGNATURE-----
-
---5cXpu7evJfjLw2dJ--
