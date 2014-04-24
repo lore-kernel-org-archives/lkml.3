@@ -1,156 +1,853 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420AbaDXVGt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:06:49 -0400
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:37445 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753488AbaDXVC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:02:26 -0400
-From: Tejun Heo <tj@kernel.org>
-To: lizefan@huawei.com
-Cc: cgroups@vger.kernel.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
-        mhocko@suse.cz, nasa4836@gmail.com, Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/6] cgroup: protect cgroup_root->cgroup_idr with a spinlock
-Date: Thu, 24 Apr 2014 17:02:10 -0400
-Message-Id: <1398373333-1521-4-git-send-email-tj@kernel.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1398373333-1521-1-git-send-email-tj@kernel.org>
-References: <1398373333-1521-1-git-send-email-tj@kernel.org>
+	id S1753725AbaDXVJv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:09:51 -0400
+Received: from smtp.newterm.pl ([79.187.237.18]:43950 "EHLO apollo.newterm.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753525AbaDXVJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:09:48 -0400
+X-Greylist: delayed 1400 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Apr 2014 17:09:47 EDT
+Date: Thu, 24 Apr 2014 22:46:15 +0200
+From: Darek Marcinkiewicz <reksio@newterm.pl>
+To: netdev@vger.kernel.org, davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/1] Driver for Beckhoff CX5020 EtherCAT master module.
+Message-ID: <20140424204615.GA14757@newterm.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, cgroup_root->cgroup_idr is protected by cgroup_mutex, which
-ends up requiring cgroup_put() to be invoked under sleepable context.
-This is okay for now but is an unusual requirement and we'll soon add
-css->id which will have the same problem but won't be able to simply
-grab cgroup_mutex as removal will have to happen from css_release()
-which can't sleep.
+This simple driver adds support for EtherCAT master module located on CCAT
+FPGA found on Beckhoff CX series industrail PCs. The driver exposes
+EtherCAT master as a network interface.
 
-Introduce cgroup_idr_lock and idr_alloc/replace/remove() wrappers
-which protects the idr operations with the lock and use them for
-cgroup_root->cgroup_idr.  cgroup_put() no longer needs to grab
-cgroup_mutex and css_from_id() is updated to always require RCU read
-lock instead of either RCU read lock or cgroup_mutex, which doesn't
-affect the existing users.
+EtherCAT is a filedbus protocol defined on top of ethernet and Beckhoff
+CX5020 PCs come with built-in EtherCAT master located on a FPGA which
+is connected to a PCI bus.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Dariusz Marcinkiewicz <reksio@newterm.pl>
 ---
- kernel/cgroup.c | 51 +++++++++++++++++++++++++++++++++++++++++++--------
- 1 file changed, 43 insertions(+), 8 deletions(-)
+ drivers/net/ethernet/Kconfig  |   11 +
+ drivers/net/ethernet/Makefile |    1 +
+ drivers/net/ethernet/ec_bh.c  |  769 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 781 insertions(+)
+ create mode 100644 drivers/net/ethernet/ec_bh.c
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 3fa0463..7cb9c08 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -100,6 +100,12 @@ static DECLARE_RWSEM(css_set_rwsem);
- #endif
- 
- /*
-+ * Protects cgroup_idr so that IDs can be released without grabbing
-+ * cgroup_mutex.
-+ */
-+static DEFINE_SPINLOCK(cgroup_idr_lock);
+diff --git a/drivers/net/ethernet/Kconfig b/drivers/net/ethernet/Kconfig
+index 39b26fe..a81611d 100644
+--- a/drivers/net/ethernet/Kconfig
++++ b/drivers/net/ethernet/Kconfig
+@@ -35,6 +35,17 @@ source "drivers/net/ethernet/calxeda/Kconfig"
+ source "drivers/net/ethernet/chelsio/Kconfig"
+ source "drivers/net/ethernet/cirrus/Kconfig"
+ source "drivers/net/ethernet/cisco/Kconfig"
 +
++config CX_ECAT
++	tristate "Beckhoff CX5020 EtherCAT master support"
++	---help---
++	  Driver for EtherCAT master module located on CCAT FPGA
++	  that can be found on Beckhoff CX5020, and possibly other of CX
++	  Beckhoff CX series industrial PCs.
++
++	  To compile this driver as a module, choose M here. The module
++	  will be called ec_bh.
++
+ source "drivers/net/ethernet/davicom/Kconfig"
+ 
+ config DNET
+diff --git a/drivers/net/ethernet/Makefile b/drivers/net/ethernet/Makefile
+index 545d0b3..1712c87 100644
+--- a/drivers/net/ethernet/Makefile
++++ b/drivers/net/ethernet/Makefile
+@@ -21,6 +21,7 @@ obj-$(CONFIG_NET_CALXEDA_XGMAC) += calxeda/
+ obj-$(CONFIG_NET_VENDOR_CHELSIO) += chelsio/
+ obj-$(CONFIG_NET_VENDOR_CIRRUS) += cirrus/
+ obj-$(CONFIG_NET_VENDOR_CISCO) += cisco/
++obj-$(CONFIG_CX_ECAT) += ec_bh.o
+ obj-$(CONFIG_DM9000) += davicom/
+ obj-$(CONFIG_DNET) += dnet.o
+ obj-$(CONFIG_NET_VENDOR_DEC) += dec/
+diff --git a/drivers/net/ethernet/ec_bh.c b/drivers/net/ethernet/ec_bh.c
+new file mode 100644
+index 0000000..51892bf
+--- /dev/null
++++ b/drivers/net/ethernet/ec_bh.c
+@@ -0,0 +1,769 @@
 +/*
-  * Protects cgroup_subsys->release_agent_path.  Modifying it also requires
-  * cgroup_mutex.  Reading requires either cgroup_mutex or this spinlock.
-  */
-@@ -190,6 +196,37 @@ static int cgroup_addrm_files(struct cgroup *cgrp, struct cftype cfts[],
- 			      bool is_add);
- static void cgroup_pidlist_destroy_all(struct cgroup *cgrp);
- 
-+/* IDR wrappers which synchronize using cgroup_idr_lock */
-+static int cgroup_idr_alloc(struct idr *idr, void *ptr, int start, int end,
-+			    gfp_t gfp_mask)
-+{
-+	int ret;
++ * drivers/net/ethernet/beckhoff/ec_bh.c
++ *
++ * Copyright (C) 2014 Darek Marcinkiewicz <reksio@newterm.pl>
++ *
++ * This software is licensed under the terms of the GNU General Public
++ * License version 2, as published by the Free Software Foundation, and
++ * may be copied, distributed, and modified under those terms.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
 +
-+	idr_preload(gfp_mask);
-+	spin_lock(&cgroup_idr_lock);
-+	ret = idr_alloc(idr, ptr, start, end, gfp_mask);
-+	spin_unlock(&cgroup_idr_lock);
-+	idr_preload_end();
-+	return ret;
++/* This is a driver for EtherCAT master module present on CCAT FPGA.
++ * Those can be found on Bechhoff CX50xx industrial PCs.
++ */
++
++#if 0
++#define DEBUG
++#endif
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/pci.h>
++#include <linux/init.h>
++
++#include <linux/netdevice.h>
++#include <linux/etherdevice.h>
++#include <linux/ip.h>
++#include <linux/skbuff.h>
++#include <linux/hrtimer.h>
++#include <linux/interrupt.h>
++#include <linux/stat.h>
++
++#define TIMER_INTERVAL_NSEC	20000
++
++#define INFO_BLOCK_SIZE		0x10
++#define INFO_BLOCK_TYPE		0x0
++#define INFO_BLOCK_REV		0x2
++#define INFO_BLOCK_BLK_CNT	0x4
++#define INFO_BLOCK_TX_CHAN	0x4
++#define INFO_BLOCK_RX_CHAN	0x5
++#define INFO_BLOCK_OFFSET	0x8
++
++#define EC_MII_OFFSET		0x4
++#define EC_FIFO_OFFSET		0x8
++#define EC_MAC_OFFSET		0xc
++
++#define MAC_FRAME_ERR_CNT	0x0
++#define MAC_RX_ERR_CNT		0x1
++#define MAC_CRC_ERR_CNT		0x2
++#define MAC_LNK_LST_ERR_CNT	0x3
++#define MAC_TX_FRAME_CNT	0x10
++#define MAC_RX_FRAME_CNT	0x14
++#define MAC_TX_FIFO_LVL		0x20
++#define MAC_DROPPED_FRMS	0x28
++#define MAC_CONNECTED_CCAT_FLAG	0x78
++
++#define MII_MAC_ADDR		0x8
++#define MII_MAC_FILT_FLAG	0xe
++#define MII_LINK_STATUS		0xf
++
++#define FIFO_TX_REG		0x0
++#define FIFO_TX_RESET		0x8
++#define FIFO_RX_REG		0x10
++#define FIFO_RX_RESET		0x18
++
++#define DMA_CHAN_OFFSET		0x1000
++#define DMA_CHAN_SIZE		0x8
++
++static struct pci_device_id ids[] = {
++	{ PCI_DEVICE(0x15ec, 0x5000), },
++	{ 0, }
++};
++MODULE_DEVICE_TABLE(pci, ids);
++
++struct desc_header {
++	u32 next:24;
++	u32 reserved1:7;
++	u32 next_valid:1;
++	u32 recv:1;
++	u32 reserved2:31;
++	u16 len:12;
++	u16 reserved3:4;
++	u16 port;
++	u32 reserved4;
++	u64 timestamp;
++};
++
++struct rx_desc {
++	struct desc_header header;
++#define RX_PAYLOAD_SIZE		0x7e8
++	u8 data[RX_PAYLOAD_SIZE];
++};
++
++struct tx_header {
++	u16 length;
++	u8 port0:1;
++	u8 port1:1;
++	u8 reserved1:6;
++	u8 ts_enable:1;
++	u8 reserved2:7;
++	u32 sent:1;
++	u32 reserved3:31;
++	u64 timestamp;
++};
++
++#define TX_HEADER_SIZE		(sizeof(struct tx_header))
++#define MAX_TX_BODY_SIZE	1518
++#define MAX_TX_PKT_SIZE		(MAX_TX_BODY_SIZE + TX_HEADER_SIZE)
++
++#define RX_TX_LEN		(10 * 1024)
++
++static long polling_frequency = TIMER_INTERVAL_NSEC;
++
++struct bh_priv {
++	struct net_device *net_dev;
++
++	struct pci_dev *dev;
++
++	void * __iomem io;
++	void * __iomem dma_io;
++
++	struct hrtimer hrtimer;
++
++	u32 offset;
++	int tx_dma_chan;
++	int rx_dma_chan;
++	void * __iomem ec_io;
++	void * __iomem fifo_io;
++	void * __iomem mii_io;
++	void * __iomem mac_io;
++
++	u8 *rx;
++	struct rx_desc *rx_desc;
++	u8 *rx_buf;
++	dma_addr_t rx_phys;
++	dma_addr_t rx_buf_phys;
++	size_t rx_len;
++
++	u8 *tx;
++	u8 *tx_buf;
++	dma_addr_t tx_phys;
++	dma_addr_t tx_buf_phys;
++	size_t tx_len;
++
++	u8 *tx_put;
++	u8 *tx_get;
++	int tx_in_flight;
++
++	atomic_t shutting_down;
++
++	spinlock_t lock;
++};
++
++#define PRIV_TO_DEV(priv) (&(priv)->dev->dev)
++
++#define ETHERCAT_MASTER_ID	0x14
++
++static void ec_bh_print_status(struct bh_priv *priv)
++{
++	dev_info(PRIV_TO_DEV(priv),
++		 "Frame error counter:%d\n",
++		 ioread8(priv->mac_io + MAC_FRAME_ERR_CNT));
++	dev_info(PRIV_TO_DEV(priv),
++		 "RX error counter:%d\n",
++		 ioread8(priv->mac_io + MAC_RX_ERR_CNT));
++	dev_info(PRIV_TO_DEV(priv),
++		 "CRC error counter:%d\n",
++		 ioread8(priv->mac_io + MAC_CRC_ERR_CNT));
++	dev_info(PRIV_TO_DEV(priv),
++		 "TX frame counter:%d\n",
++		 ioread32(priv->mac_io + MAC_TX_FRAME_CNT));
++	dev_info(PRIV_TO_DEV(priv),
++		 "RX frame counter:%d\n",
++		 ioread32(priv->mac_io + MAC_RX_FRAME_CNT));
++	dev_info(PRIV_TO_DEV(priv),
++		 "TX fifo level:%d\n",
++		 ioread8(priv->mac_io + MAC_TX_FIFO_LVL));
++	dev_info(PRIV_TO_DEV(priv),
++		 "Dropped frames:%d\n",
++		 ioread8(priv->mac_io + MAC_DROPPED_FRMS));
++	dev_info(PRIV_TO_DEV(priv),
++		 "Connected with CCAT slot:%d\n",
++		 ioread8(priv->mac_io + MAC_CONNECTED_CCAT_FLAG));
++	dev_info(PRIV_TO_DEV(priv),
++		 "Link status:%d\n",
++		 ioread8(priv->mii_io + MII_LINK_STATUS));
 +}
 +
-+static void *cgroup_idr_replace(struct idr *idr, void *ptr, int id)
++static void ec_bh_reset(struct bh_priv *priv)
 +{
-+	void *ret;
++	iowrite8(0, priv->mac_io + MAC_FRAME_ERR_CNT);
++	iowrite8(0, priv->mac_io + MAC_RX_ERR_CNT);
++	iowrite8(0, priv->mac_io + MAC_CRC_ERR_CNT);
++	iowrite8(0, priv->mac_io + MAC_LNK_LST_ERR_CNT);
++	iowrite32(0, priv->mac_io + MAC_TX_FRAME_CNT);
++	iowrite32(0, priv->mac_io + MAC_RX_FRAME_CNT);
++	iowrite8(0, priv->mac_io + MAC_DROPPED_FRMS);
 +
-+	spin_lock(&cgroup_idr_lock);
-+	ret = idr_replace(idr, ptr, id);
-+	spin_unlock(&cgroup_idr_lock);
-+	return ret;
++	iowrite8(0, priv->fifo_io + FIFO_TX_RESET);
++	iowrite8(0, priv->fifo_io + FIFO_RX_RESET);
++
++	iowrite8(0, priv->mac_io + MAC_TX_FIFO_LVL);
 +}
 +
-+static void cgroup_idr_remove(struct idr *idr, int id)
++static void ec_bh_send_packet(struct bh_priv *priv)
 +{
-+	spin_lock(&cgroup_idr_lock);
-+	idr_remove(idr, id);
-+	spin_unlock(&cgroup_idr_lock);
++	struct tx_header *header = (struct tx_header *)priv->tx_get;
++	u32 addr = priv->tx_get - priv->tx;
++	u32 len = header->length + sizeof(*header);
++
++	iowrite32((((len + 8) / 8) << 24) | addr,
++			priv->fifo_io + FIFO_TX_REG);
++
++	dev_dbg(PRIV_TO_DEV(priv), "Done sending packet\n");
 +}
 +
- /**
-  * cgroup_css - obtain a cgroup's css for the specified subsystem
-  * @cgrp: the cgroup of interest
-@@ -1058,9 +1095,7 @@ static void cgroup_put(struct cgroup *cgrp)
- 	 * per-subsystem and moved to css->id so that lookups are
- 	 * successful until the target css is released.
- 	 */
--	mutex_lock(&cgroup_mutex);
--	idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
--	mutex_unlock(&cgroup_mutex);
-+	cgroup_idr_remove(&cgrp->root->cgroup_idr, cgrp->id);
- 	cgrp->id = -1;
- 
- 	call_rcu(&cgrp->rcu_head, cgroup_free_rcu);
-@@ -1531,7 +1566,7 @@ static int cgroup_setup_root(struct cgroup_root *root, unsigned int ss_mask)
- 	lockdep_assert_held(&cgroup_tree_mutex);
- 	lockdep_assert_held(&cgroup_mutex);
- 
--	ret = idr_alloc(&root->cgroup_idr, root_cgrp, 1, 2, GFP_KERNEL);
-+	ret = cgroup_idr_alloc(&root->cgroup_idr, root_cgrp, 1, 2, GFP_NOWAIT);
- 	if (ret < 0)
- 		goto out;
- 	root_cgrp->id = ret;
-@@ -4225,7 +4260,7 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	 * Temporarily set the pointer to NULL, so idr_find() won't return
- 	 * a half-baked cgroup.
- 	 */
--	cgrp->id = idr_alloc(&root->cgroup_idr, NULL, 2, 0, GFP_KERNEL);
-+	cgrp->id = cgroup_idr_alloc(&root->cgroup_idr, NULL, 2, 0, GFP_NOWAIT);
- 	if (cgrp->id < 0) {
- 		err = -ENOMEM;
- 		goto err_unlock;
-@@ -4268,7 +4303,7 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	 * @cgrp is now fully operational.  If something fails after this
- 	 * point, it'll be released via the normal destruction path.
- 	 */
--	idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
-+	cgroup_idr_replace(&root->cgroup_idr, cgrp, cgrp->id);
- 
- 	err = cgroup_kn_set_ugid(kn);
- 	if (err)
-@@ -4302,7 +4337,7 @@ static long cgroup_create(struct cgroup *parent, const char *name,
- 	return 0;
- 
- err_free_id:
--	idr_remove(&root->cgroup_idr, cgrp->id);
-+	cgroup_idr_remove(&root->cgroup_idr, cgrp->id);
- err_unlock:
- 	mutex_unlock(&cgroup_mutex);
- err_unlock_tree:
-@@ -5162,7 +5197,7 @@ struct cgroup_subsys_state *css_from_id(int id, struct cgroup_subsys *ss)
- {
- 	struct cgroup *cgrp;
- 
--	cgroup_assert_mutexes_or_rcu_locked();
-+	WARN_ON_ONCE(!rcu_read_lock_held());
- 
- 	cgrp = idr_find(&ss->root->cgroup_idr, id);
- 	if (cgrp)
++static void ec_bh_process_tx(struct bh_priv *priv)
++{
++	int sent;
++	struct tx_header *header;
++	u8 *pkt_end, *next_pkt;
++
++	if (!priv->tx_in_flight)
++		return;
++
++	header = (struct tx_header *)priv->tx_get;
++	sent = header->sent;
++	if (!sent)
++		return;
++
++	pkt_end = priv->tx_get;
++	pkt_end += (sizeof(struct tx_header) + header->length + 7) / 8 * 8;
++
++	if (pkt_end + MAX_TX_PKT_SIZE > priv->tx + priv->tx_len)
++		next_pkt = priv->tx;
++	else
++		next_pkt = pkt_end;
++	priv->tx_get = next_pkt;
++
++	if (next_pkt != priv->tx_put)
++		ec_bh_send_packet(priv);
++	else
++		priv->tx_in_flight = 0;
++
++	if (netif_queue_stopped(priv->net_dev) &&
++		(priv->tx_put > priv->tx_get
++			|| priv->tx_put + MAX_TX_PKT_SIZE < priv->tx_get)) {
++		dev_info(PRIV_TO_DEV(priv), "Waking netif queue\n");
++		netif_wake_queue(priv->net_dev);
++	}
++}
++
++static void ec_bh_process_rx(struct bh_priv *priv)
++{
++	int recv = 0;
++
++	while (priv->rx_desc->header.recv) {
++		int pkt_size = priv->rx_desc->header.len
++				- sizeof(struct desc_header)
++				- 4;
++		struct sk_buff *skb;
++		u8 *data = priv->rx_desc->data;
++
++		skb = netdev_alloc_skb_ip_align(priv->net_dev, pkt_size);
++		dev_dbg(PRIV_TO_DEV(priv),
++			"Received packet, size:%d\n",
++			pkt_size);
++
++		if (skb) {
++			memcpy(skb_put(skb, pkt_size), data, pkt_size);
++			skb->protocol = eth_type_trans(skb, priv->net_dev);
++			dev_dbg(PRIV_TO_DEV(priv),
++				"Protocol type: %x\n",
++				skb->protocol);
++
++			netif_rx(skb);
++		} else {
++			if (printk_ratelimit())
++				dev_err(PRIV_TO_DEV(priv),
++					"Couldn't allocate a skb_buff "
++					"for a packet of size %u\n",
++					pkt_size);
++		}
++
++		priv->net_dev->stats.rx_packets++;
++		priv->net_dev->stats.rx_bytes += pkt_size;
++
++		priv->rx_desc->header.recv = 0;
++		priv->rx_desc += 1;
++		if (priv->rx + priv->rx_len <=
++				(u8 *) priv->rx_desc + sizeof(*priv->rx_desc))
++			priv->rx_desc = (struct rx_desc *)priv->rx;
++
++		recv = 1;
++	}
++
++	if (recv) {
++		mmiowb();
++		iowrite32((1 << 31) | ((u8 *)(priv->rx_desc) - priv->rx),
++			  priv->fifo_io + FIFO_RX_REG);
++	}
++
++}
++
++static enum hrtimer_restart ec_bh_timer_fun(struct hrtimer *timer)
++{
++	struct bh_priv *priv = container_of(timer,
++					struct bh_priv,
++					hrtimer);
++	unsigned long flags;
++
++	spin_lock_irqsave(&priv->lock, flags);
++
++	ec_bh_process_rx(priv);
++	ec_bh_process_tx(priv);
++
++	spin_unlock_irqrestore(&priv->lock, flags);
++
++	if (atomic_read(&priv->shutting_down))
++		return HRTIMER_NORESTART;
++
++	hrtimer_forward_now(timer, ktime_set(0, polling_frequency));
++	return HRTIMER_RESTART;
++}
++
++static int ec_bh_setup_offsets(struct bh_priv *priv)
++{
++	unsigned block_count, i;
++	void * __iomem ec_info;
++
++	dev_info(PRIV_TO_DEV(priv),
++		"Info block:\n");
++	dev_info(PRIV_TO_DEV(priv),
++		"Type of function:%x\n",
++		(unsigned)ioread16(priv->io));
++	dev_info(PRIV_TO_DEV(priv),
++		"Revision of function:%x\n",
++		(unsigned)ioread16(priv->io + INFO_BLOCK_REV));
++
++	block_count = ioread8(priv->io + INFO_BLOCK_BLK_CNT);
++	dev_info(PRIV_TO_DEV(priv),
++		"Number of function blocks:%x\n",
++		block_count);
++
++	for (i = 0; i < block_count; i++) {
++		u16 type = ioread16(priv->io
++				    + i * INFO_BLOCK_SIZE
++				    + INFO_BLOCK_TYPE);
++		if (type == ETHERCAT_MASTER_ID)
++			break;
++	}
++	if (i == block_count) {
++		dev_err(PRIV_TO_DEV(priv),
++			"EtherCAT master with DMA block not found\n");
++		return -ENODEV;
++	}
++	dev_info(PRIV_TO_DEV(priv),
++		"EtherCAT master with DMA block found at pos:%d\n",
++		 i);
++
++	ec_info = priv->io + i * INFO_BLOCK_SIZE;
++	dev_info(PRIV_TO_DEV(priv),
++		 "EtherCAT master revision:%d\n",
++		 ioread16(ec_info + INFO_BLOCK_REV));
++
++	priv->tx_dma_chan = ioread8(ec_info + INFO_BLOCK_TX_CHAN);
++	dev_info(PRIV_TO_DEV(priv),
++		 "EtherCAT master tx dma channel:%d\n",
++		 priv->tx_dma_chan);
++
++	priv->rx_dma_chan = ioread8(ec_info + INFO_BLOCK_RX_CHAN);
++	dev_info(PRIV_TO_DEV(priv),
++		 "EtherCAT master rx dma channel:%d\n",
++		 priv->rx_dma_chan);
++
++	priv->ec_io = priv->io + ioread32(ec_info + INFO_BLOCK_OFFSET);
++	priv->mii_io = priv->ec_io + ioread32(priv->ec_io + EC_MII_OFFSET);
++	priv->fifo_io = priv->ec_io + ioread32(priv->ec_io + EC_FIFO_OFFSET);
++	priv->mac_io = priv->ec_io + ioread32(priv->ec_io + EC_MAC_OFFSET);
++
++	dev_info(PRIV_TO_DEV(priv),
++		"EtherCAT block addres: %p, "
++		"fifo address %p,"
++		"mii address:%p,"
++		"mac address:%p",
++		priv->ec_io,
++		priv->fifo_io,
++		priv->mii_io,
++		priv->mac_io);
++
++	return 0;
++}
++
++static netdev_tx_t ec_bh_start_xmit(struct sk_buff *skb,
++				    struct net_device *net_dev)
++{
++	unsigned long flags;
++	unsigned len;
++	struct bh_priv *priv = netdev_priv(net_dev);
++	struct tx_header *header = (struct tx_header *)priv->tx_put;
++	u8 *tx = priv->tx_put + sizeof(struct tx_header);
++
++	spin_lock_irqsave(&priv->lock, flags);
++
++	dev_dbg(PRIV_TO_DEV(priv), "Starting xmit\n");
++
++	/*
++	 * Drop packets that are too large or have no chance
++	 * to be a ethercat packets (cause they are too small)
++	 */
++	if (unlikely(skb->len > priv->tx_len
++			|| skb->len < 13)) {
++		net_dev->stats.tx_dropped++;
++		dev_info(PRIV_TO_DEV(priv), "Dropping packet\n");
++		goto out_unlock;
++	}
++
++	skb_copy_and_csum_dev(skb, tx);
++	len = skb->len;
++
++	memset(header, 0, sizeof(*header));
++	header->length = len;
++	header->port0 = 1;
++	header->port1 = 0;
++	header->sent = 0;
++	mmiowb();
++
++	if (!priv->tx_in_flight) {
++		ec_bh_send_packet(priv);
++		priv->tx_in_flight = 1;
++	}
++
++	priv->tx_put += (TX_HEADER_SIZE + len + 7) / 8 * 8;
++	if (priv->tx_put + MAX_TX_PKT_SIZE > priv->tx + priv->tx_len)
++		priv->tx_put = priv->tx;
++
++	if (priv->tx_put <= priv->tx_get
++			&& priv->tx_put + MAX_TX_PKT_SIZE > priv->tx_get) {
++		dev_info(PRIV_TO_DEV(priv), "Stopping netif queue\n");
++		ec_bh_print_status(priv);
++		netif_stop_queue(net_dev);
++	}
++
++	priv->net_dev->stats.tx_bytes += len;
++	priv->net_dev->stats.tx_packets++;
++out_unlock:
++	spin_unlock_irqrestore(&priv->lock, flags);
++
++	dev_kfree_skb(skb);
++
++	return NETDEV_TX_OK;
++}
++
++void *ec_bh_alloc_dma_mem(struct bh_priv *priv,
++			     int channel,
++			     u8 **buf,
++			     dma_addr_t *phys,
++			     dma_addr_t *phys_buf,
++			     size_t *len) {
++	u32 mask;
++	int offset = channel * DMA_CHAN_SIZE + DMA_CHAN_OFFSET;
++
++	iowrite32(0xffffffff, priv->dma_io + offset);
++
++	mask = ioread32(priv->dma_io + offset);
++	mask &= 0xfffffffc;
++	dev_info(PRIV_TO_DEV(priv),
++		 "Read mask %x for channel %d\n",
++		 mask, channel);
++	*len = ~mask + 1;
++
++	dev_info(PRIV_TO_DEV(priv),
++		 "Allocating %d bytes for channel %d",
++		 (int)*len, channel);
++	*buf = pci_alloc_consistent(priv->dev,
++				    *len * 2,
++				    phys_buf);
++	if (*buf == NULL) {
++		dev_info(PRIV_TO_DEV(priv),
++			"Failed to allocate buffer\n");
++		return NULL;
++	}
++
++	*phys = (*phys_buf + *len) & mask;
++
++	iowrite32(0, priv->dma_io + offset + 4);
++	iowrite32(*phys, priv->dma_io + offset);
++	dev_dbg(PRIV_TO_DEV(priv),
++		"Buffer %x and read from dev:%x",
++		(unsigned)*phys, ioread32(priv->dma_io + offset));
++
++	return *buf + *phys - *phys_buf;
++}
++
++static int ec_bh_open(struct net_device *net_dev)
++{
++	int err = 0, dcount, i;
++	unsigned long flags;
++	struct rx_desc *desc;
++	struct bh_priv *priv = netdev_priv(net_dev);
++
++	dev_info(PRIV_TO_DEV(priv), "Opening device\n");
++
++	spin_lock_irqsave(&priv->lock, flags);
++
++	ec_bh_reset(priv);
++
++	priv->rx = ec_bh_alloc_dma_mem(priv, priv->rx_dma_chan,
++				       &priv->rx_buf, &priv->rx_phys,
++				       &priv->rx_buf_phys, &priv->rx_len);
++	if (!priv->rx) {
++		dev_err(PRIV_TO_DEV(priv),
++			"Failed to allocate rx buffer");
++		err = -ENOMEM;
++		goto out;
++	}
++	priv->rx_desc = (struct rx_desc *)priv->rx;
++
++	dev_info(PRIV_TO_DEV(priv),
++		 "RX buffer allocated, address: %x\n",
++		 (unsigned)priv->rx_phys);
++
++	priv->tx = ec_bh_alloc_dma_mem(priv, priv->tx_dma_chan,
++				       &priv->tx_buf, &priv->tx_phys,
++				       &priv->tx_buf_phys, &priv->tx_len);
++	if (!priv->tx) {
++		dev_err(PRIV_TO_DEV(priv),
++			"Failed to allocate tx buffer");
++		err = -ENOMEM;
++		goto error_rx_free;
++	}
++	priv->tx_get = priv->tx_put = priv->tx;
++
++	dev_info(PRIV_TO_DEV(priv),
++		"TX buffer allocated, addres:%x\n",
++		 (unsigned)priv->tx_phys);
++
++	priv->tx_in_flight = 0;
++	atomic_set(&priv->shutting_down, 0);
++
++	memset(priv->rx_buf, 0, priv->rx_len * 2);
++	memset(priv->tx_buf, 0, priv->tx_len * 2);
++
++	dcount = priv->rx_len / (sizeof(struct rx_desc));
++	desc = (struct rx_desc *)(priv->rx);
++	for (i = 0; i < dcount; i++) {
++		if (i != dcount - 1)
++			desc->header.next = (u8 *)(desc + 1) - priv->rx;
++		else
++			desc->header.next = 0;
++		desc->header.next_valid = 1;
++		desc->header.recv = 0;
++		desc += 1;
++	}
++
++	iowrite8(0, priv->mii_io + MII_MAC_FILT_FLAG);
++	iowrite32(1 << 31, priv->fifo_io + FIFO_RX_REG);
++
++	netif_start_queue(net_dev);
++
++	hrtimer_init(&priv->hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	priv->hrtimer.function = ec_bh_timer_fun;
++	hrtimer_start(&priv->hrtimer,
++		      ktime_set(0, TIMER_INTERVAL_NSEC),
++		      HRTIMER_MODE_REL);
++
++	dev_info(PRIV_TO_DEV(priv), "Device open\n");
++
++	ec_bh_print_status(priv);
++
++	spin_unlock_irqrestore(&priv->lock, flags);
++
++	return 0;
++
++error_rx_free:
++	pci_free_consistent(priv->dev, 2 * priv->rx_len,
++			    priv->rx_buf, priv->rx_buf_phys);
++out:
++	spin_unlock_irqrestore(&priv->lock, flags);
++	return err;
++}
++
++static int ec_bh_stop(struct net_device *dev)
++{
++	struct bh_priv *priv = netdev_priv(dev);
++
++	atomic_set(&priv->shutting_down,  1);
++
++	hrtimer_cancel(&priv->hrtimer);
++
++	ec_bh_reset(priv);
++
++	netif_tx_disable(dev);
++
++	pci_free_consistent(priv->dev, 2 * priv->tx_len,
++			    priv->tx_buf, priv->tx_buf_phys);
++	pci_free_consistent(priv->dev, 2 * priv->rx_len,
++			    priv->rx_buf, priv->rx_buf_phys);
++
++	return 0;
++}
++
++static const struct net_device_ops ec_bh_netdev_ops = {
++	.ndo_start_xmit		= ec_bh_start_xmit,
++	.ndo_open		= ec_bh_open,
++	.ndo_stop		= ec_bh_stop,
++	.ndo_change_mtu		= eth_change_mtu,
++	.ndo_validate_addr	= eth_validate_addr,
++	.ndo_set_mac_address	= eth_mac_addr
++};
++
++static int ec_bh_probe(struct pci_dev *dev, const struct pci_device_id *id)
++{
++	int err = 0;
++	void * __iomem io;
++	void * __iomem dma_io;
++	struct net_device *net_dev;
++	struct bh_priv *priv;
++
++	err = pci_enable_device(dev);
++	if (err)
++		return err;
++
++	pci_set_master(dev);
++
++	err = pci_set_dma_mask(dev, DMA_BIT_MASK(32));
++	if (err) {
++		dev_err(&dev->dev,
++			"Required dma mask not supported, "
++			"failed to initialize device\n");
++		err = -EIO;
++		goto err_disable_dev;
++	}
++
++	err = pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(32));
++	if (err) {
++		dev_err(&dev->dev,
++			"Required dma mask not supported, "
++			"failed to initialize device\n");
++		goto err_disable_dev;
++	}
++
++	err = pci_request_regions(dev, "ec_bh");
++	if (err) {
++		dev_err(&dev->dev,
++			"Failed to request pci memory regions\n");
++		goto err_disable_dev;
++	}
++
++	io = pci_iomap(dev, 0, 0);
++	if (!io) {
++		dev_err(&dev->dev, "Failed to map pci card memory bar 0");
++		err = -EIO;
++		goto err_release_regions;
++	}
++
++	dma_io = pci_iomap(dev, 2, 0);
++	if (!dma_io) {
++		dev_err(&dev->dev, "Failed to map pci card memory bar 2");
++		err = -EIO;
++		goto err_unmap;
++	}
++
++	net_dev = alloc_etherdev(sizeof(struct bh_priv));
++	if (net_dev == 0) {
++		err = -ENOMEM;
++		goto err_unmap_dma_io;
++	}
++
++	pci_set_drvdata(dev, net_dev);
++	SET_NETDEV_DEV(net_dev, &dev->dev);
++
++	net_dev->mem_start = pci_resource_start(dev, 0);
++	net_dev->mem_end = pci_resource_end(dev, 0);
++	net_dev->irq = dev->irq;
++
++	net_dev->features = 0;
++	net_dev->flags |= IFF_NOARP;
++
++	net_dev->netdev_ops = &ec_bh_netdev_ops;
++
++	priv = netdev_priv(net_dev);
++	priv->net_dev = net_dev;
++	priv->io = io;
++	priv->dma_io = dma_io;
++	priv->dev = dev;
++
++	spin_lock_init(&priv->lock);
++
++	if (ec_bh_setup_offsets(priv)) {
++		err = -ENODEV;
++		goto err_free_net_dev;
++	}
++
++	memcpy_fromio(net_dev->dev_addr, priv->mii_io + MII_MAC_ADDR, 6);
++
++	dev_info(PRIV_TO_DEV(priv),
++		 "CX5000 Ethercat master address: %pM\n",
++		 net_dev->dev_addr);
++
++	err = register_netdev(net_dev);
++	if (err < 0)
++		goto err_free_net_dev;
++
++	return 0;
++
++err_free_net_dev:
++	free_netdev(net_dev);
++err_unmap_dma_io:
++	pci_iounmap(dev, dma_io);
++err_unmap:
++	pci_iounmap(dev, io);
++err_release_regions:
++	pci_release_regions(dev);
++err_disable_dev:
++	pci_clear_master(dev);
++	pci_disable_device(dev);
++
++	return err;
++}
++
++static void ec_bh_remove(struct pci_dev *dev)
++{
++	struct net_device *net_dev = pci_get_drvdata(dev);
++	struct bh_priv *priv = netdev_priv(net_dev);
++	void * __iomem io = priv->io;
++	void * __iomem dma_io = priv->dma_io;
++
++	unregister_netdev(net_dev);
++	free_netdev(net_dev);
++
++	pci_iounmap(dev, dma_io);
++	pci_iounmap(dev, io);
++	pci_release_regions(dev);
++	pci_clear_master(dev);
++	pci_disable_device(dev);
++}
++
++static struct pci_driver pci_driver = {
++	.name = "ec_bh",
++	.id_table = ids,
++	.probe = ec_bh_probe,
++	.remove = ec_bh_remove,
++};
++
++static int __init ec_bh_init(void)
++{
++	return pci_register_driver(&pci_driver);
++}
++
++static void __exit ec_bh_exit(void)
++{
++	pci_unregister_driver(&pci_driver);
++}
++
++module_init(ec_bh_init);
++module_exit(ec_bh_exit);
++
++module_param(polling_frequency, long, S_IRUGO);
++MODULE_PARM_DESC(polling_frequency, "Polling timer frequency in ns");
++
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Dariusz Marcinkiewicz <reksio@newterm.pl>");
++
 -- 
-1.9.0
+1.7.10.4
+
+
 
