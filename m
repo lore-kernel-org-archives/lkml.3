@@ -1,56 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756761AbaDXL71 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:59:27 -0400
-Received: from mout.gmx.net ([212.227.17.21]:55874 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753411AbaDXL7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 07:59:19 -0400
-Date: Thu, 24 Apr 2014 13:59:10 +0200
-From: Marc Dietrich <marvin24@gmx.de>
-To: jaegeuk.kim@samsung.com
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: f2fs causes system stall
-Message-Id: <20140424135910.f095d63eafdf136cc8851114@gmx.de>
-In-Reply-To: <1398297270.4283.19.camel@kjgkr>
-References: <2601952.jk1l5iHOJT@ax5200p>
-	<1398297270.4283.19.camel@kjgkr>
-X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; arm-unknown-linux-gnueabihf)
-Mime-Version: 1.0
+	id S1756784AbaDXMAA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:00:00 -0400
+Received: from mail-oa0-f54.google.com ([209.85.219.54]:48738 "EHLO
+	mail-oa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753648AbaDXL75 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 07:59:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <1396425778-4379-2-git-send-email-pankaj.dubey@samsung.com>
+References: <1396425778-4379-1-git-send-email-pankaj.dubey@samsung.com>
+	<1396425778-4379-2-git-send-email-pankaj.dubey@samsung.com>
+Date: Thu, 24 Apr 2014 17:29:57 +0530
+Message-ID: <CAGm_ybjfxprtLUX6Vs8QVvXoMOaHez4-Og8a9n3UevibvmzbZA@mail.gmail.com>
+Subject: Re: [PATCH 1/3] ARM: dts: Add PMU reg node to exynos4210
+From: Vikas Sajjan <sajjan.linux@gmail.com>
+To: Pankaj Dubey <pankaj.dubey@samsung.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        devicetree@vger.kernel.org, mark.rutland@arm.com,
+        Kukjin Kim <kgene.kim@samsung.com>, linux@arm.linux.org.uk,
+        pawel.moll@arm.com, ijc+devicetree@hellion.org.uk,
+        Rob Herring <robh+dt@kernel.org>, galak@codeaurora.org,
+        chow.kim@samsung.com, Tomasz Figa <t.figa@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, sunil joshi <joshi@samsung.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Provags-ID: V03:K0:xcI3iKY8U4Mx6VrgawiH4AAQ8SiOtgEVLkCPsJ111Vf8B1zRsd4
- JLtNDFNvjXYznwUa5qaM8kGW7R0F0ya/jHw5YWKTD42Bh0E3q6G0/dMTzsBd0WAAjqS6eT5
- xp9n5ltHv+2/2CVdM+2PB2Efk+S3Qx1l30SJI3LLiaaXhP6CUEwjOQTuip+b9SqTi81+ViO
- uZ8nAPiHcUi5oHtcZvBXA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
++Tomasz
 
-On Thu, 24 Apr 2014 08:54:30 +0900
-Jaegeuk Kim <jaegeuk.kim@samsung.com> wrote:
-> Thank you for the report.
-> When I veiwed the patch at a glance, it seems that reverting is not a
-> good way.
-> 
-> Instead, could you share the f2fs commit point that you're using?
-> Then, since I have a suspect for this issue, I'd like to write a patch
-> to test.
 
-patch against linus master is ok for me. I'm happy to test your patch.
+On Wed, Apr 2, 2014 at 1:32 PM, Pankaj Dubey <pankaj.dubey@samsung.com> wrote:
+> This patch adds pmu regnode to exynos4210 dtsi to handle
+> PMU register access via DT.
+>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> ---
+>  arch/arm/boot/dts/exynos4210.dtsi |    5 +++++
+>  1 file changed, 5 insertions(+)
+>
+> diff --git a/arch/arm/boot/dts/exynos4210.dtsi b/arch/arm/boot/dts/exynos4210.dtsi
+> index cacf614..0a2c0fe 100644
+> --- a/arch/arm/boot/dts/exynos4210.dtsi
+> +++ b/arch/arm/boot/dts/exynos4210.dtsi
+> @@ -81,6 +81,11 @@
+>                 interrupts = <2 2>, <3 2>;
+>         };
+>
+> +       pmu_system_controller: system-controller@10020000 {
+> +               compatible = "samsung,exynos4210-pmu", "syscon";
+> +               reg = <0x10020000 0x5000>;
 
-> 2014-04-24 (목), 00:00 +0200, Marc Dietrich:
-> > Hi,
-> > 
-> > it took me a while to bisect a problem which causes my ARM (tegra2) netbook to 
-> > frequently stall for 5-10 seconds when I enable EXA acceleration (opentegra 
-> > experimental ddx). I can only guess that the offending commit 8618b88 "f2fs: 
-> > fix not to write data pages on the page reclaiming path" somehow causes high 
-> > kernel latencies which may interrupt/disturb the command stream to the gpu in 
-> > this particular case. Reverting this commit fixes the problem. Any hints?
+Can we have 2 strings as "compatible" and these 2 strings are used by
+2 different driver?
 
-Regards,
+Because once syscon driver gets probed, exynos-pmu.c [1] driver will
+never be probed.
 
-Marc
+The new PMU driver [1] completely relies on this. With just
+exynos_defconfig, you will not notice this issue, since syscon is NOT
+enabled by exynos_defconfig. When I enabled "System Controller
+Register R/W Based on Regmap" in menuconfig, I could see PMU driver
+[1] is NEVER probed.
+
+Let me know, if I am missing something.
+
+ [1] http://www.spinics.net/lists/arm-kernel/msg319750.html
+
+
+> +       };
+> +
+>         pinctrl_0: pinctrl@11400000 {
+>                 compatible = "samsung,exynos4210-pinctrl";
+>                 reg = <0x11400000 0x1000>;
+> --
+> 1.7.10.4
+>
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
