@@ -1,71 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444AbaDXVzs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:55:48 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39862 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757100AbaDXVxW (ORCPT
+	id S1757475AbaDXV4H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:56:07 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:56931 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753805AbaDXV4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:53:22 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Kjetil Oftedal <oftedal@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 17/27] sparc: PCI: Fix incorrect address calculation of PCI Bridge windows on Simba-bridges
-Date: Thu, 24 Apr 2014 14:55:51 -0700
-Message-Id: <20140424215552.488981860@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
-References: <20140424215551.942390050@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 24 Apr 2014 17:56:01 -0400
+Date: Thu, 24 Apr 2014 22:55:58 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: fs: dcookie: freeing active timer
+Message-ID: <20140424215558.GZ18016@ZenIV.linux.org.uk>
+References: <53594244.6070305@oracle.com>
+ <20140424172708.GY18016@ZenIV.linux.org.uk>
+ <53594B16.4000901@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <53594B16.4000901@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Thu, Apr 24, 2014 at 01:34:14PM -0400, Sasha Levin wrote:
 
-------------------
+> > Why does that code bother with destroying/creating that sucker dynamically?
+> > Is there any point at all?
+> 
+> I'm not sure about the dynamic allocation part, but I fear that if we just
+> switch to using static allocations it'll hide the underlying issue that
+> triggered this bug instead of fixing it.
 
-From: oftedal <oftedal@gmail.com>
-
-[ Upstream commit 557fc5873ef178c4b3e1e36a42db547ecdc43f9b ]
-
-The SIMBA APB Bridges lacks the 'ranges' of-property describing the
-PCI I/O and memory areas located beneath the bridge. Faking this
-information has been performed by reading range registers in the
-APB bridge, and calculating the corresponding areas.
-
-In commit 01f94c4a6ced476ce69b895426fc29bfc48c69bd
-("Fix sabre pci controllers with new probing scheme.") a bug was
-introduced into this calculation, causing the PCI memory areas
-to be calculated incorrectly: The shift size was set to be
-identical for I/O and MEM ranges, which is incorrect.
-
-This patch set the shift size of the MEM range back to the
-value used before 01f94c4a6ced476ce69b895426fc29bfc48c69bd.
-
-Signed-off-by: Kjetil Oftedal <oftedal@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- arch/sparc/kernel/pci.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/arch/sparc/kernel/pci.c
-+++ b/arch/sparc/kernel/pci.c
-@@ -486,8 +486,8 @@ static void __devinit apb_fake_ranges(st
- 	apb_calc_first_last(map, &first, &last);
- 	res = bus->resource[1];
- 	res->flags = IORESOURCE_MEM;
--	region.start = (first << 21);
--	region.end = (last << 21) + ((1 << 21) - 1);
-+	region.start = (first << 29);
-+	region.end = (last << 29) + ((1 << 29) - 1);
- 	pcibios_bus_to_resource(dev, res, &region);
- }
- 
-
-
+FWIW, slub.c variant of kmem_cache_destroy() is buggered - struct kobject
+embedded into struct kmem_cache, its ktype is slab_ktype, which has
+NULL ->release()...
