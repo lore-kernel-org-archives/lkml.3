@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953AbaDXWjl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:39:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39527 "EHLO
+	id S1758932AbaDXWjk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:39:40 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39546 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754893AbaDXVp7 (ORCPT
+	with ESMTP id S1754914AbaDXVp7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Apr 2014 17:45:59 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
-        Werner Fink <werner@suse.de>, Hannes Reinecke <hare@suse.de>,
-        David Herrmann <dh.herrmann@gmail.com>
-Subject: [PATCH 3.14 12/33] tty: Set correct tty name in active sysfs attribute
-Date: Thu, 24 Apr 2014 14:48:25 -0700
-Message-Id: <20140424214451.315741525@linuxfoundation.org>
+        Beat Bolli <bbolli@ewanet.ch>, Pavel Roskin <proski@gnu.org>,
+        David Sterba <dsterba@suse.cz>,
+        Grant Edwards <grant.b.edwards@gmail.com>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Cox <alan@linux.intel.com>
+Subject: [PATCH 3.14 13/33] tty: Fix low_latency BUG
+Date: Thu, 24 Apr 2014 14:48:26 -0700
+Message-Id: <20140424214451.485776143@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
 References: <20140424214449.423169713@linuxfoundation.org>
@@ -31,75 +34,155 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hannes Reinecke <hare@suse.de>
+From: Peter Hurley <peter@hurleysoftware.com>
 
-commit 723abd87f6e536f1353c8f64f621520bc29523a3 upstream.
+commit a9c3f68f3cd8d55f809fbdb0c138ed061ea1bd25 upstream.
 
-The 'active' sysfs attribute should refer to the currently active tty
-devices the console is running on, not the currently active console. The
-console structure doesn't refer to any device in sysfs, only the tty the
-console is running on has. So we need to print out the tty names in
-'active', not the console names.
+The user-settable knob, low_latency, has been the source of
+several BUG reports which stem from flush_to_ldisc() running
+in interrupt context. Since 3.12, which added several sleeping
+locks (termios_rwsem and buf->lock) to the input processing path,
+the frequency of these BUG reports has increased.
 
-There is one special-case, which is tty0. If the console is directed to
-it, we want 'tty0' to show up in the file, so user-space knows that the
-messages get forwarded to the active VT. The ->device() callback would
-resolve tty0, though. Hence, treat it special and don't call into the VT
-layer to resolve it (plymouth is known to depend on it).
+Note that changes in 3.12 did not introduce this regression;
+sleeping locks were first added to the input processing path
+with the removal of the BKL from N_TTY in commit
+a88a69c91256418c5907c2f1f8a0ec0a36f9e6cc,
+'n_tty: Fix loss of echoed characters and remove bkl from n_tty'
+and later in commit 38db89799bdf11625a831c5af33938dcb11908b6,
+'tty: throttling race fix'. Since those changes, executing
+flush_to_ldisc() in interrupt_context (ie, low_latency set), is unsafe.
 
-Cc: Lennart Poettering <lennart@poettering.net>
-Cc: Kay Sievers <kay@vrfy.org>
-Cc: Jiri Slaby <jslaby@suse.cz>
-Signed-off-by: Werner Fink <werner@suse.de>
-Signed-off-by: Hannes Reinecke <hare@suse.de>
-Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+However, since most devices do not validate if the low_latency
+setting is appropriate for the context (process or interrupt) in
+which they receive data, some reports are due to misconfiguration.
+Further, serial dma devices for which dma fails, resort to
+interrupt receiving as a backup without resetting low_latency.
+
+Historically, low_latency was used to force wake-up the reading
+process rather than wait for the next scheduler tick. The
+effect was to trim multiple milliseconds of latency from
+when the process would receive new data.
+
+Recent tests [1] have shown that the reading process now receives
+data with only 10's of microseconds latency without low_latency set.
+
+Remove the low_latency rx steering from tty_flip_buffer_push();
+however, leave the knob as an optional hint to drivers that can
+tune their rx fifos and such like. Cleanup stale code comments
+regarding low_latency.
+
+[1] https://lkml.org/lkml/2014/2/20/434
+
+"Yay.. thats an annoying historical pain in the butt gone."
+	-- Alan Cox
+
+Reported-by: Beat Bolli <bbolli@ewanet.ch>
+Reported-by: Pavel Roskin <proski@gnu.org>
+Acked-by: David Sterba <dsterba@suse.cz>
+Cc: Grant Edwards <grant.b.edwards@gmail.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/tty_io.c |   23 +++++++++++++++++------
- 1 file changed, 17 insertions(+), 6 deletions(-)
+ drivers/tty/ipwireless/tty.c  |    3 ---
+ drivers/tty/tty_buffer.c      |   20 ++++----------------
+ drivers/usb/gadget/u_serial.c |    4 ++--
+ include/linux/tty.h           |    2 +-
+ 4 files changed, 7 insertions(+), 22 deletions(-)
 
---- a/drivers/tty/tty_io.c
-+++ b/drivers/tty/tty_io.c
-@@ -1271,12 +1271,13 @@ static void pty_line_name(struct tty_dri
-  *
-  *	Locking: None
+--- a/drivers/tty/ipwireless/tty.c
++++ b/drivers/tty/ipwireless/tty.c
+@@ -176,9 +176,6 @@ void ipwireless_tty_received(struct ipw_
+ 				": %d chars not inserted to flip buffer!\n",
+ 				length - work);
+ 
+-	/*
+-	 * This may sleep if ->low_latency is set
+-	 */
+ 	if (work)
+ 		tty_flip_buffer_push(&tty->port);
+ }
+--- a/drivers/tty/tty_buffer.c
++++ b/drivers/tty/tty_buffer.c
+@@ -351,14 +351,11 @@ EXPORT_SYMBOL(tty_insert_flip_string_fla
+  *	Takes any pending buffers and transfers their ownership to the
+  *	ldisc side of the queue. It then schedules those characters for
+  *	processing by the line discipline.
+- *	Note that this function can only be used when the low_latency flag
+- *	is unset. Otherwise the workqueue won't be flushed.
   */
--static void tty_line_name(struct tty_driver *driver, int index, char *p)
-+static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+ 
+ void tty_schedule_flip(struct tty_port *port)
  {
- 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
--		strcpy(p, driver->name);
-+		return sprintf(p, "%s", driver->name);
- 	else
--		sprintf(p, "%s%d", driver->name, index + driver->name_base);
-+		return sprintf(p, "%s%d", driver->name,
-+			       index + driver->name_base);
+ 	struct tty_bufhead *buf = &port->buf;
+-	WARN_ON(port->low_latency);
+ 
+ 	buf->tail->commit = buf->tail->used;
+ 	schedule_work(&buf->work);
+@@ -482,17 +479,15 @@ static void flush_to_ldisc(struct work_s
+  */
+ void tty_flush_to_ldisc(struct tty_struct *tty)
+ {
+-	if (!tty->port->low_latency)
+-		flush_work(&tty->port->buf.work);
++	flush_work(&tty->port->buf.work);
  }
  
  /**
-@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct d
- 		if (i >= ARRAY_SIZE(cs))
- 			break;
- 	}
--	while (i--)
--		count += sprintf(buf + count, "%s%d%c",
--				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
-+	while (i--) {
-+		int index = cs[i]->index;
-+		struct tty_driver *drv = cs[i]->device(cs[i], &index);
-+
-+		/* don't resolve tty0 as some programs depend on it */
-+		if (drv && (cs[i]->index > 0 || drv->major != TTY_MAJOR))
-+			count += tty_line_name(drv, index, buf + count);
-+		else
-+			count += sprintf(buf + count, "%s%d",
-+					 cs[i]->name, cs[i]->index);
-+
-+		count += sprintf(buf + count, "%c", i ? ' ':'\n');
-+	}
- 	console_unlock();
+  *	tty_flip_buffer_push	-	terminal
+  *	@port: tty port to push
+  *
+- *	Queue a push of the terminal flip buffers to the line discipline. This
+- *	function must not be called from IRQ context if port->low_latency is
+- *	set.
++ *	Queue a push of the terminal flip buffers to the line discipline.
++ *	Can be called from IRQ/atomic context.
+  *
+  *	In the event of the queue being busy for flipping the work will be
+  *	held off and retried later.
+@@ -500,14 +495,7 @@ void tty_flush_to_ldisc(struct tty_struc
  
- 	return count;
+ void tty_flip_buffer_push(struct tty_port *port)
+ {
+-	struct tty_bufhead *buf = &port->buf;
+-
+-	buf->tail->commit = buf->tail->used;
+-
+-	if (port->low_latency)
+-		flush_to_ldisc(&buf->work);
+-	else
+-		schedule_work(&buf->work);
++	tty_schedule_flip(port);
+ }
+ EXPORT_SYMBOL(tty_flip_buffer_push);
+ 
+--- a/drivers/usb/gadget/u_serial.c
++++ b/drivers/usb/gadget/u_serial.c
+@@ -549,8 +549,8 @@ static void gs_rx_push(unsigned long _po
+ 		port->read_started--;
+ 	}
+ 
+-	/* Push from tty to ldisc; without low_latency set this is handled by
+-	 * a workqueue, so we won't get callbacks and can hold port_lock
++	/* Push from tty to ldisc; this is handled by a workqueue,
++	 * so we won't get callbacks and can hold port_lock
+ 	 */
+ 	if (do_push)
+ 		tty_flip_buffer_push(&port->port);
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -208,7 +208,7 @@ struct tty_port {
+ 	wait_queue_head_t	delta_msr_wait;	/* Modem status change */
+ 	unsigned long		flags;		/* TTY flags ASY_*/
+ 	unsigned char		console:1,	/* port is a console */
+-				low_latency:1;	/* direct buffer flush */
++				low_latency:1;	/* optional: tune for latency */
+ 	struct mutex		mutex;		/* Locking */
+ 	struct mutex		buf_mutex;	/* Buffer alloc lock */
+ 	unsigned char		*xmit_buf;	/* Optional buffer */
 
 
