@@ -1,70 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755665AbaDXKnE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:43:04 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46594 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024AbaDXIxm (ORCPT
+	id S1755711AbaDXKna (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:43:30 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47770 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754111AbaDXKnZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:42 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 074/182] mfd: 88pm860x: Fix possible NULL pointer dereference on i2c_new_dummy error
-Date: Thu, 24 Apr 2014 09:49:59 +0100
-Message-Id: <1398329507-5911-75-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 06:43:25 -0400
+Date: Thu, 24 Apr 2014 11:42:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Steve Capper <steve.capper@linaro.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "robherring2@gmail.com" <robherring2@gmail.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "gerald.schaefer@de.ibm.com" <gerald.schaefer@de.ibm.com>
+Subject: Re: [PATCH V2 0/5] Huge pages for short descriptors on ARM
+Message-ID: <20140424104232.GK26756@n2100.arm.linux.org.uk>
+References: <1397648803-15961-1-git-send-email-steve.capper@linaro.org> <20140424102229.GA28014@linaro.org> <20140424103639.GC19564@arm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140424103639.GC19564@arm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Apr 24, 2014 at 11:36:39AM +0100, Will Deacon wrote:
+> I guess I'm after some commitment that this is (a) useful to somebody and
+> (b) going to be tested regularly, otherwise it will go the way of things
+> like big-endian, where we end up carrying around code which is broken more
+> often than not (although big-endian is more self-contained).
 
-------------------
+It may be something worth considering adding to my nightly builder/boot
+testing, but I suspect that's impractical as it probably requires a BE
+userspace, which would then mean that the platform can't boot LE.
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+I suspect that we will just have to rely on BE users staying around and
+reporting problems when they occur.
 
-commit 159ce52a6b777fc82fa0b51c7440e25f9e4c6feb upstream.
-
-During probe the driver allocates dummy I2C device for companion chip
-with i2c_new_dummy() but it does not check the return value of this call.
-
-In case of error (i2c_new_device(): memory allocation failure or I2C
-address cannot be used) this function returns NULL which is later used
-by regmap_init_i2c().
-
-If i2c_new_dummy() fails for companion device, fail also the probe for
-main MFD driver.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/mfd/88pm860x-core.c | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-index ec94081..df63945 100644
---- a/drivers/mfd/88pm860x-core.c
-+++ b/drivers/mfd/88pm860x-core.c
-@@ -1179,6 +1179,11 @@ static int pm860x_probe(struct i2c_client *client,
- 		chip->companion_addr = pdata->companion_addr;
- 		chip->companion = i2c_new_dummy(chip->client->adapter,
- 						chip->companion_addr);
-+		if (!chip->companion) {
-+			dev_err(&client->dev,
-+				"Failed to allocate I2C companion device\n");
-+			return -ENODEV;
-+		}
- 		chip->regmap_companion = regmap_init_i2c(chip->companion,
- 							&pm860x_regmap_config);
- 		if (IS_ERR(chip->regmap_companion)) {
 -- 
-1.9.1
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
