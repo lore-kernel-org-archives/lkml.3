@@ -1,96 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048AbaDXNTY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:19:24 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55008 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753228AbaDXNTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:19:21 -0400
-Message-ID: <53590F33.6070508@ti.com>
-Date: Thu, 24 Apr 2014 09:18:43 -0400
-From: Santosh Shilimkar <santosh.shilimkar@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1754589AbaDXNWb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:22:31 -0400
+Received: from mail-la0-f48.google.com ([209.85.215.48]:43475 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753240AbaDXNW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 09:22:29 -0400
 MIME-Version: 1.0
-To: <balbi@ti.com>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <devicetree@vger.kernel.org>, Sandeep Nair <sandeep_n@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kumar Gala <galak@codeaurora.org>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>
-Subject: Re: [PATCH v2 4/6] soc: ti: add Keystone Navigator QMSS driver
-References: <1398296783-1176-1-git-send-email-santosh.shilimkar@ti.com> <1398296783-1176-5-git-send-email-santosh.shilimkar@ti.com> <20140424013053.GC13374@saruman.home>
-In-Reply-To: <20140424013053.GC13374@saruman.home>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <5357E1B4.2030705@redhat.com>
+References: <20140422.161904.1187535812839850973.davem@davemloft.net>
+	<cover.1398215388.git.rgb@redhat.com>
+	<26389161.vp9iWSVLPX@x2>
+	<1398225475.750.7.camel@localhost>
+	<5357C2D2.5060700@redhat.com>
+	<1398264152.2596.25.camel@flatline.rdu.redhat.com>
+	<5357DE12.7040905@redhat.com>
+	<1398267458.2562.0.camel@flatline.rdu.redhat.com>
+	<5357E1B4.2030705@redhat.com>
+Date: Thu, 24 Apr 2014 09:22:27 -0400
+Message-ID: <CACLa4psQyoaZTE7R0qiog_biMKXyeGtLc1AQUuEPtemMYcDCSQ@mail.gmail.com>
+Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
+From: Eric Paris <eparis@parisplace.org>
+To: Daniel J Walsh <dwalsh@redhat.com>
+Cc: Eric Paris <eparis@redhat.com>, Linux Netdev List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        linux-audit@redhat.com, SE-Linux <selinux@tycho.nsa.gov>,
+        jamal@mojatatu.com, Steve Grubb <sgrubb@redhat.com>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 23 April 2014 09:30 PM, Felipe Balbi wrote:
-> Hi,
-> 
-> On Wed, Apr 23, 2014 at 07:46:20PM -0400, Santosh Shilimkar wrote:
->> From: Sandeep Nair <sandeep_n@ti.com>
+They would be equivalent if and only if journald had CAP_AUDIT_READ.
+
+I suggest you take CAP_AUDIT_READ away from journald on systems which
+need the secadm/sysadmin split (which is a ridiculously stupid split
+anyway, but who am I to complain?)
+
+On Wed, Apr 23, 2014 at 11:52 AM, Daniel J Walsh <dwalsh@redhat.com> wrote:
+> Meaning looking at the journal would be equivalent to looking at
+> /var/log/audit/audit.log.
+>
+>
+> On 04/23/2014 11:37 AM, Eric Paris wrote:
+>> On Wed, 2014-04-23 at 11:36 -0400, Daniel J Walsh wrote:
+>>> I guess the problem would be that the sysadm_t would be able to look at
+>>> the journal which would now contain the audit content.
+>> right.  so include it in the sysadm_secadm bool
 >>
->> The QMSS (Queue Manager Sub System) found on Keystone SOCs is one of
->> the main hardware sub system which forms the backbone of the Keystone
->> Multi-core Navigator. QMSS consist of queue managers, packed-data structure
->> processors(PDSP), linking RAM, descriptor pools and infrastructure
->> Packet DMA.
+>>> On 04/23/2014 10:42 AM, Eric Paris wrote:
+>>>> On Wed, 2014-04-23 at 09:40 -0400, Daniel J Walsh wrote:
+>>>>> Here are the capabilities we currently give to sysadm_t with
+>>>>> sysadm_secadm    1.0.0    Disabled
+>>>>>
+>>>>>    allow sysadm_t sysadm_t : capability { chown dac_override
+>>>>> dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable
+>>>>> net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner
+>>>>> sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice
+>>>>> sys_resource sys_time sys_tty_config mknod lease audit_write setfcap } ;
+>>>>>    allow sysadm_t sysadm_t : capability { setgid setuid sys_chroot }
+>>>>>
+>>>>>    allow sysadm_t sysadm_t : capability2 { syslog block_suspend } ;
+>>>>>
+>>>>> cap_audit_write might be a problem?
+>>>> cap_audit_write is fine.
+>>>>
+>>>> syslogd_t (aka journal) is going to need the new permission
+>>>> cap_audit_read.  Also, as steve pointed out, someone may be likely to
+>>>> want to be able to disable that permission easily.
+>>>>
+>>>> -Eric
+>>>>
 >>
->> The Queue Manager is a hardware module that is responsible for accelerating
->> management of the packet queues. Packets are queued/de-queued by writing or
->> reading descriptor address to a particular memory mapped location. The PDSPs
->> perform QMSS related functions like accumulation, QoS, or event management.
->> Linking RAM registers are used to link the descriptors which are stored in
->> descriptor RAM. Descriptor RAM is configurable as internal or external memory.
+>> _______________________________________________
+>> Selinux mailing list
+>> Selinux@tycho.nsa.gov
+>> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+>> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
 >>
->> The QMSS driver manages the PDSP setups, linking RAM regions,
->> queue pool management (allocation, push, pop and notify) and descriptor
->> pool management. The specifics on the device tree bindings for
->> QMSS can be found in:
->> 	Documentation/devicetree/bindings/soc/keystone-navigator-qmss.txt
 >>
->> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
->> Cc: Kumar Gala <galak@codeaurora.org>
->> Cc: Olof Johansson <olof@lixom.net>
->> Cc: Arnd Bergmann <arnd@arndb.de>
->> Cc: Grant Likely <grant.likely@linaro.org>
->> Cc: Rob Herring <robh+dt@kernel.org>
->> Cc: Mark Rutland <mark.rutland@arm.com>
->> Signed-off-by: Sandeep Nair <sandeep_n@ti.com>
->> Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
->> ---
->>  drivers/Kconfig                  |    2 +
->>  drivers/soc/Kconfig              |    2 +
->>  drivers/soc/Makefile             |    5 +
->>  drivers/soc/ti/Kconfig           |   21 +
->>  drivers/soc/ti/Makefile          |    4 +
->>  drivers/soc/ti/knav_qmss.h       |  386 ++++++++
->>  drivers/soc/ti/knav_qmss_acc.c   |  591 +++++++++++++
->>  drivers/soc/ti/knav_qmss_queue.c | 1814 ++++++++++++++++++++++++++++++++++++++
->>  include/linux/soc/ti/knav_qmss.h |   90 ++
->>  9 files changed, 2915 insertions(+)
->>  create mode 100644 drivers/soc/Makefile
->>  create mode 100644 drivers/soc/ti/Kconfig
->>  create mode 100644 drivers/soc/ti/Makefile
->>  create mode 100644 drivers/soc/ti/knav_qmss.h
->>  create mode 100644 drivers/soc/ti/knav_qmss_acc.c
->>  create mode 100644 drivers/soc/ti/knav_qmss_queue.c
->>  create mode 100644 include/linux/soc/ti/knav_qmss.h
->>
->> diff --git a/drivers/Kconfig b/drivers/Kconfig
->> index 0e87a34..8993913 100644
->> --- a/drivers/Kconfig
->> +++ b/drivers/Kconfig
->> @@ -148,6 +148,8 @@ source "drivers/remoteproc/Kconfig"
->>  
->>  source "drivers/rpmsg/Kconfig"
->>  
->> +source "drivers/soc/Kconfig"
-> 
-> This hunk was already in patch one but in a different offset in this
-> file.
-> 
-right.. I will drop this one... Thanks for spotting it
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
