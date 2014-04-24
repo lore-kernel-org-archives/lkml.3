@@ -1,174 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757168AbaDXMfw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:35:52 -0400
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.109]:25039 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754075AbaDXMfr (ORCPT
+	id S1757184AbaDXMg0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:36:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:38661 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756017AbaDXMgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:35:47 -0400
-X-Env-Sender: Johannes.Thumshirn@men.de
-X-Msg-Ref: server-6.tower-193.messagelabs.com!1398342931!17921088!1
-X-Originating-IP: [80.255.6.145]
-X-StarScan-Received: 
-X-StarScan-Version: 6.11.1; banners=-,-,-
-X-VirusChecked: Checked
-X-PGP-Universal: processed;
-	by keys.men.de on Thu, 24 Apr 2014 14:35:32 +0200
-From: Johannes Thumshirn <johannes.thumshirn@men.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <linux-kernel@vger.kernel.org>,
-        Johannes Thumshirn <johannes.thumshirn@men.de>
-Subject: [PATCH RESEND] mcb: Add support for shared PCI IRQs
-Date: Thu, 24 Apr 2014 14:35:25 +0200
-Message-ID: <1398342925-1120-1-git-send-email-johannes.thumshirn@men.de>
-X-Mailer: git-send-email 1.9.2
+	Thu, 24 Apr 2014 08:36:24 -0400
+Message-ID: <53590546.9060909@ti.com>
+Date: Thu, 24 Apr 2014 18:06:22 +0530
+From: Kishon Vijay Abraham I <kishon@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.1.1.31]
+To: <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL 0/4] phy: fixes for 3.15 -rc2
+References: <1397877704-2755-1-git-send-email-kishon@ti.com>
+In-Reply-To: <1397877704-2755-1-git-send-email-kishon@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for shared PCI IRQs to mcb and mcb-pci.
+Hi Greg,
 
-Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
----
- drivers/mcb/mcb-core.c | 20 +++++++++++++++-----
- drivers/mcb/mcb-pci.c  | 17 ++++++++++++++++-
- include/linux/mcb.h    |  6 +++++-
- 3 files changed, 36 insertions(+), 7 deletions(-)
+On Saturday 19 April 2014 08:51 AM, Kishon Vijay Abraham I wrote:
+> Hi Greg,
+> 
+> Here's the PULL requeust for PHY subsystem for this -rc cycle. It consissts of
+> a bunch of critical fixes in PHY.
+> 
+> Let me know if I have to change anything.
+> 
+> Thanks
+> Kishon
+> 
+> The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
+> 
+>   Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/kishon/linux-phy.git tags/for-3.15-rc2
 
-diff --git a/drivers/mcb/mcb-core.c b/drivers/mcb/mcb-core.c
-index bbe1293..9018ab8 100644
---- a/drivers/mcb/mcb-core.c
-+++ b/drivers/mcb/mcb-core.c
-@@ -183,14 +183,14 @@ EXPORT_SYMBOL_GPL(mcb_device_register);
-  *
-  * Allocate a new @mcb_bus.
-  */
--struct mcb_bus *mcb_alloc_bus(void)
-+struct mcb_bus *mcb_alloc_bus(struct device *carrier)
- {
- 	struct mcb_bus *bus;
- 	int bus_nr;
+Can you pick this up for -rc3?
 
- 	bus = kzalloc(sizeof(struct mcb_bus), GFP_KERNEL);
- 	if (!bus)
--		return NULL;
-+		return ERR_PTR(-ENOMEM);
-
- 	bus_nr = ida_simple_get(&mcb_ida, 0, 0, GFP_KERNEL);
- 	if (bus_nr < 0) {
-@@ -200,7 +200,7 @@ struct mcb_bus *mcb_alloc_bus(void)
-
- 	INIT_LIST_HEAD(&bus->children);
- 	bus->bus_nr = bus_nr;
--
-+	bus->carrier = carrier;
- 	return bus;
- }
- EXPORT_SYMBOL_GPL(mcb_alloc_bus);
-@@ -378,6 +378,13 @@ void mcb_release_mem(struct resource *mem)
- }
- EXPORT_SYMBOL_GPL(mcb_release_mem);
-
-+static int __mcb_get_irq(struct mcb_device *dev)
-+{
-+	struct resource *irq = &dev->irq;
-+
-+	return irq->start;
-+}
-+
- /**
-  * mcb_get_irq() - Get device's IRQ number
-  * @dev: The @mcb_device the IRQ is for
-@@ -386,9 +393,12 @@ EXPORT_SYMBOL_GPL(mcb_release_mem);
-  */
- int mcb_get_irq(struct mcb_device *dev)
- {
--	struct resource *irq = &dev->irq;
-+	struct mcb_bus *bus = dev->bus;
-
--	return irq->start;
-+	if (bus->get_irq)
-+		return bus->get_irq(dev);
-+
-+	return __mcb_get_irq(dev);
- }
- EXPORT_SYMBOL_GPL(mcb_get_irq);
-
-diff --git a/drivers/mcb/mcb-pci.c b/drivers/mcb/mcb-pci.c
-index 99c742c..b591819 100644
---- a/drivers/mcb/mcb-pci.c
-+++ b/drivers/mcb/mcb-pci.c
-@@ -20,6 +20,15 @@ struct priv {
- 	void __iomem *base;
- };
-
-+static int mcb_pci_get_irq(struct mcb_device *mdev)
-+{
-+	struct mcb_bus *mbus = mdev->bus;
-+	struct device *dev = mbus->carrier;
-+	struct pci_dev *pdev = to_pci_dev(dev);
-+
-+	return pdev->irq;
-+}
-+
- static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- {
- 	struct priv *priv;
-@@ -67,7 +76,13 @@ static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
-
- 	pci_set_drvdata(pdev, priv);
-
--	priv->bus = mcb_alloc_bus();
-+	priv->bus = mcb_alloc_bus(&pdev->dev);
-+	if (IS_ERR(priv->bus)) {
-+		ret = PTR_ERR(priv->bus);
-+		goto err_drvdata;
-+	}
-+
-+	priv->bus->get_irq = mcb_pci_get_irq;
-
- 	ret = chameleon_parse_cells(priv->bus, mapbase, priv->base);
- 	if (ret < 0)
-diff --git a/include/linux/mcb.h b/include/linux/mcb.h
-index 2db284d..ed06e15 100644
---- a/include/linux/mcb.h
-+++ b/include/linux/mcb.h
-@@ -16,6 +16,7 @@
- #include <linux/irqreturn.h>
-
- struct mcb_driver;
-+struct mcb_device;
-
- /**
-  * struct mcb_bus - MEN Chameleon Bus
-@@ -23,11 +24,14 @@ struct mcb_driver;
-  * @dev: pointer to carrier device
-  * @children: the child busses
-  * @bus_nr: mcb bus number
-+ * @get_irq: callback to get IRQ number
-  */
- struct mcb_bus {
- 	struct list_head children;
- 	struct device dev;
-+	struct device *carrier;
- 	int bus_nr;
-+	int (*get_irq)(struct mcb_device *dev);
- };
- #define to_mcb_bus(b) container_of((b), struct mcb_bus, dev)
-
-@@ -105,7 +109,7 @@ extern void mcb_unregister_driver(struct mcb_driver *driver);
- 	module_driver(__mcb_driver, mcb_register_driver, mcb_unregister_driver);
- extern void mcb_bus_add_devices(const struct mcb_bus *bus);
- extern int mcb_device_register(struct mcb_bus *bus, struct mcb_device *dev);
--extern struct mcb_bus *mcb_alloc_bus(void);
-+extern struct mcb_bus *mcb_alloc_bus(struct device *carrier);
- extern struct mcb_bus *mcb_bus_get(struct mcb_bus *bus);
- extern void mcb_bus_put(struct mcb_bus *bus);
- extern struct mcb_device *mcb_alloc_dev(struct mcb_bus *bus);
---
-1.9.2
-
+Thanks
+Kishon
