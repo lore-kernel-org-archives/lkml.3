@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758129AbaDXW17 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:27:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
+	id S1758200AbaDXW2l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:28:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39546 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755241AbaDXVqJ (ORCPT
+	with ESMTP id S1755228AbaDXVqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:09 -0400
+	Thu, 24 Apr 2014 17:46:08 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 23/33] Btrfs: check for an extent_op on the locked ref
-Date: Thu, 24 Apr 2014 14:48:36 -0700
-Message-Id: <20140424214452.985741037@linuxfoundation.org>
+        Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Brian Norris <computersforpeace@gmail.com>
+Subject: [PATCH 3.14 31/33] jffs2: remove from wait queue after schedule()
+Date: Thu, 24 Apr 2014 14:48:44 -0700
+Message-Id: <20140424214454.098786745@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
 References: <20140424214449.423169713@linuxfoundation.org>
@@ -28,33 +31,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Josef Bacik <jbacik@fb.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 573a075567f0174551e2fad2a3164afd2af788f2 upstream.
+commit 3ead9578443b66ddb3d50ed4f53af8a0c0298ec5 upstream.
 
-We could have possibly added an extent_op to the locked_ref while we dropped
-locked_ref->lock, so check for this case as well and loop around.  Otherwise we
-could lose flag updates which would lead to extent tree corruption.  Thanks,
+@wait is a local variable, so if we don't remove it from the wait queue
+list, later wake_up() may end up accessing invalid memory.
 
-Signed-off-by: Josef Bacik <jbacik@fb.com>
-Signed-off-by: Chris Mason <clm@fb.com>
+This was spotted by eyes.
+
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/extent-tree.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ fs/jffs2/nodemgmt.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/fs/btrfs/extent-tree.c
-+++ b/fs/btrfs/extent-tree.c
-@@ -2444,7 +2444,8 @@ static noinline int __btrfs_run_delayed_
- 			spin_unlock(&locked_ref->lock);
- 			spin_lock(&delayed_refs->lock);
- 			spin_lock(&locked_ref->lock);
--			if (rb_first(&locked_ref->ref_root)) {
-+			if (rb_first(&locked_ref->ref_root) ||
-+			    locked_ref->extent_op) {
- 				spin_unlock(&locked_ref->lock);
- 				spin_unlock(&delayed_refs->lock);
- 				continue;
+--- a/fs/jffs2/nodemgmt.c
++++ b/fs/jffs2/nodemgmt.c
+@@ -179,6 +179,7 @@ int jffs2_reserve_space(struct jffs2_sb_
+ 					spin_unlock(&c->erase_completion_lock);
+ 
+ 					schedule();
++					remove_wait_queue(&c->erase_wait, &wait);
+ 				} else
+ 					spin_unlock(&c->erase_completion_lock);
+ 			} else if (ret)
 
 
