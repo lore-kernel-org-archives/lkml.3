@@ -1,163 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723AbaDXARR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 20:17:17 -0400
-Received: from mail-pd0-f171.google.com ([209.85.192.171]:52649 "EHLO
-	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751367AbaDXARP (ORCPT
+	id S1752767AbaDXASK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 20:18:10 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:47336 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaDXASG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 20:17:15 -0400
-Date: Thu, 24 Apr 2014 08:17:05 +0800
-From: Shaohua Li <shli@kernel.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Dan Streetman <ddstreet@ieee.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Shaohua Li <shli@fusionio.com>, Weijie Yang <weijieut@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] swap: change swap_info singly-linked list to
- list_head
-Message-ID: <20140424001705.GA8066@kernel.org>
-References: <alpine.LSU.2.11.1402232344280.1890@eggly.anvils>
- <1397336454-13855-1-git-send-email-ddstreet@ieee.org>
- <1397336454-13855-2-git-send-email-ddstreet@ieee.org>
- <20140423103400.GH23991@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140423103400.GH23991@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 23 Apr 2014 20:18:06 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-cc-5358583a7aef
+From: Anton Tikhomirov <av.tikhomirov@samsung.com>
+To: "'Vivek Gautam'" <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, gregkh@linuxfoundation.org,
+        stern@rowland.harvard.edu, balbi@ti.com, kgene.kim@samsung.com,
+        "'Jingoo Han'" <jg1.han@samsung.com>
+References: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
+In-reply-to: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
+Subject: RE: [PATCH 1/3] usb: ohci-exynos: Make provision for vdd regulators
+Date: Thu, 24 Apr 2014 09:18:02 +0900
+Message-id: <002b01cf5f52$a7bc0d70$f7342850$%tikhomirov@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ks_c_5601-1987
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-index: Ac9dW7xThSfjkrSrQe+CdXtZr3k56gB9L0nA
+Content-language: en-us
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBIsWRmVeSWpSXmKPExsVy+t8zA12riIhgg03LFS0O3q+3aLtykN2i
+	efF6NovLCy+xWvQuuMpmsenxNVaLy7vmsFnMXtLPYjHj/D4mi0XLWpktJvy+wObA7bF/7hp2
+	j81L6j1m3/3B6NG3ZRWjx/Eb25k8Pm+SC2CL4rJJSc3JLEst0rdL4Mo42jeNpWCzYsXjD0fZ
+	GxgnSXcxcnJICJhILFt3hwXCFpO4cG89WxcjF4eQwDJGie2T5rLCFPX0trJDJBYxShxYt4kF
+	wvnHKLHg/wSwdjYBI4mXBzcyg9giArkSs96uZAYpYhZ4wShxcu8pRpCEkIC7xLnFM5hAbE4B
+	D4kjp5aArRAW8JH4PHsVWDOLgKrEz3+bwWxeAReJr1c+M0LYghI/Jt8DW8YsYCDxflYfK4Qt
+	L7F5zVugeg6gU9UlHv3VBTFFgO6ZvDQPokJcYtKDh+wQz0zkkDj+ThNik4DEt8mHWCA6ZSU2
+	HWCGKJGUOLjiBssERolZSPbOQrJ3FpK9s5BsWMDIsopRNLUguaA4Kb3IRK84Mbe4NC9dLzk/
+	dxMjJNYn7GC8d8D6EGMy0PqJzFKiyfnAVJFXEm9obGZkYWpiamxkbmlGmrCSOK/ao6QgIYH0
+	xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYwhAlZBGmpiBazhFjO63jw/ZTL93OeArbGmL2ZIM/HP
+	nROm93jKjAeaOz/f33P+deF+Pe+n4rK/0zQ7X/rZiTuenNnjm+E5P8Zc9Hu62fLC82+Wqi1f
+	5zb9keUO9ufXfvpXcjon83yO6/vJeShqgsSUObnMtxOnXvE5VNXzLOrIXOl+detPh5OUWIoz
+	Eg21mIuKEwFFSoJNCwMAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGKsWRmVeSWpSXmKPExsVy+t9jAV2riIhggx0XpS0O3q+3aLtykN2i
+	efF6NovLCy+xWvQuuMpmsenxNVaLy7vmsFnMXtLPYjHj/D4mi0XLWpktJvy+wObA7bF/7hp2
+	j81L6j1m3/3B6NG3ZRWjx/Eb25k8Pm+SC2CLamC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1
+	MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAE6T0mhLDGnFCgUkFhcrKRvh2lCaIibrgVMY4Sub0gQ
+	XI+RARpIWMeYcbRvGkvBZsWKxx+OsjcwTpLuYuTkkBAwkejpbWWHsMUkLtxbz9bFyMUhJLCI
+	UeLAuk0sEM4/RokF/yewgFSxCRhJvDy4kRnEFhHIlZj1diUzSBGzwAtGiZN7TzGCJIQE3CXO
+	LZ7BBGJzCnhIHDm1hBXEFhbwkfg8exVYM4uAqsTPf5vBbF4BF4mvVz4zQtiCEj8m3wNbxixg
+	IPF+Vh8rhC0vsXnNW6B6DqBT1SUe/dUFMUWA7pm8NA+iQlxi0oOH7BMYhWYhGTQLyaBZSAbN
+	QtKygJFlFaNoakFyQXFSeq6hXnFibnFpXrpecn7uJkZwKnkmtYNxZYPFIUYBDkYlHt4DF8KD
+	hVgTy4orcw8xSnAwK4nw5nlEBAvxpiRWVqUW5ccXleakFh9iTAb6cyKzlGhyPjDN5ZXEGxqb
+	mBlZGplZGJmYm5MmrCTOe6DVOlBIID2xJDU7NbUgtQhmCxMHp1QD4+pLC59X2Slm3ovnf/p6
+	S1fRz5fH/j8T5MpQ7+eIipOyectVFLPiWPJ9xlhTn+yTBi6lMz5yOsStFWXk/yc0d8VHpU+S
+	5g8bTh+4niqzr2yl7torhz11fQRcJv2Y0979/7ZXURi/01V1tvwJElPLNyT4Bs87mbdM/MBd
+	zzv+P29sOj3VbKKCqhJLcUaioRZzUXEiAJOWh/ppAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 11:34:00AM +0100, Mel Gorman wrote:
-> > @@ -366,7 +361,7 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
-> >  		}
-> >  		vm_unacct_memory(pages);
-> >  		*unused = pages_to_unuse;
-> > -		*swapid = type;
-> > +		*swapid = si->type;
-> >  		ret = 0;
-> >  		break;
-> >  	}
-> > @@ -413,7 +408,7 @@ void frontswap_shrink(unsigned long target_pages)
-> >  	/*
-> >  	 * we don't want to hold swap_lock while doing a very
-> >  	 * lengthy try_to_unuse, but swap_list may change
-> > -	 * so restart scan from swap_list.head each time
-> > +	 * so restart scan from swap_list_head each time
-> >  	 */
-> >  	spin_lock(&swap_lock);
-> >  	ret = __frontswap_shrink(target_pages, &pages_to_unuse, &type);
-> > diff --git a/mm/swapfile.c b/mm/swapfile.c
-> > index 4a7f7e6..b958645 100644
-> > --- a/mm/swapfile.c
-> > +++ b/mm/swapfile.c
-> > @@ -51,14 +51,14 @@ atomic_long_t nr_swap_pages;
-> >  /* protected with swap_lock. reading in vm_swap_full() doesn't need lock */
-> >  long total_swap_pages;
-> >  static int least_priority;
-> > -static atomic_t highest_priority_index = ATOMIC_INIT(-1);
-> >  
-> >  static const char Bad_file[] = "Bad swap file entry ";
-> >  static const char Unused_file[] = "Unused swap file entry ";
-> >  static const char Bad_offset[] = "Bad swap offset entry ";
-> >  static const char Unused_offset[] = "Unused swap offset entry ";
-> >  
-> > -struct swap_list_t swap_list = {-1, -1};
-> > +/* all active swap_info */
-> > +LIST_HEAD(swap_list_head);
-> >  
-> >  struct swap_info_struct *swap_info[MAX_SWAPFILES];
-> >  
-> > @@ -640,66 +640,50 @@ no_page:
-> >  
-> >  swp_entry_t get_swap_page(void)
-> >  {
-> > -	struct swap_info_struct *si;
-> > +	struct swap_info_struct *si, *next;
-> >  	pgoff_t offset;
-> > -	int type, next;
-> > -	int wrapped = 0;
-> > -	int hp_index;
-> > +	struct list_head *tmp;
-> >  
-> >  	spin_lock(&swap_lock);
-> >  	if (atomic_long_read(&nr_swap_pages) <= 0)
-> >  		goto noswap;
-> >  	atomic_long_dec(&nr_swap_pages);
-> >  
-> > -	for (type = swap_list.next; type >= 0 && wrapped < 2; type = next) {
-> > -		hp_index = atomic_xchg(&highest_priority_index, -1);
-> > -		/*
-> > -		 * highest_priority_index records current highest priority swap
-> > -		 * type which just frees swap entries. If its priority is
-> > -		 * higher than that of swap_list.next swap type, we use it.  It
-> > -		 * isn't protected by swap_lock, so it can be an invalid value
-> > -		 * if the corresponding swap type is swapoff. We double check
-> > -		 * the flags here. It's even possible the swap type is swapoff
-> > -		 * and swapon again and its priority is changed. In such rare
-> > -		 * case, low prority swap type might be used, but eventually
-> > -		 * high priority swap will be used after several rounds of
-> > -		 * swap.
-> > -		 */
-> > -		if (hp_index != -1 && hp_index != type &&
-> > -		    swap_info[type]->prio < swap_info[hp_index]->prio &&
-> > -		    (swap_info[hp_index]->flags & SWP_WRITEOK)) {
-> > -			type = hp_index;
-> > -			swap_list.next = type;
-> > -		}
-> > -
-> > -		si = swap_info[type];
-> > -		next = si->next;
-> > -		if (next < 0 ||
-> > -		    (!wrapped && si->prio != swap_info[next]->prio)) {
-> > -			next = swap_list.head;
-> > -			wrapped++;
-> > -		}
-> > -
-> > +	list_for_each(tmp, &swap_list_head) {
-> > +		si = list_entry(tmp, typeof(*si), list);
-> >  		spin_lock(&si->lock);
-> > -		if (!si->highest_bit) {
-> > -			spin_unlock(&si->lock);
-> > -			continue;
-> > -		}
-> > -		if (!(si->flags & SWP_WRITEOK)) {
-> > +		if (!si->highest_bit || !(si->flags & SWP_WRITEOK)) {
-> >  			spin_unlock(&si->lock);
-> >  			continue;
-> >  		}
-> >  
-> > -		swap_list.next = next;
-> > +		/*
-> > +		 * rotate the current swap_info that we're going to use
-> > +		 * to after any other swap_info that have the same prio,
-> > +		 * so that all equal-priority swap_info get used equally
-> > +		 */
-> > +		next = si;
-> > +		list_for_each_entry_continue(next, &swap_list_head, list) {
-> > +			if (si->prio != next->prio)
-> > +				break;
-> > +			list_rotate_left(&si->list);
-> > +			next = si;
-> > +		}
-> >  
+Hi,
+
+> -----Original Message-----
+> From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-
+> owner@vger.kernel.org] On Behalf Of Vivek Gautam
+> Sent: Monday, April 21, 2014 9:17 PM
 > 
-> The list manipulations will be a lot of cache writes as the list is shuffled
-> around. On slow storage I do not think this will be noticable but it may
-> be noticable on faster swap devices that are SSD based. I've added Shaohua
-> Li to the cc as he has been concerned with the performance of swap in the
-> past. Shaohua, can you run this patchset through any of your test cases
-> with the addition that multiple swap files are used to see if the cache
-> writes are noticable? You'll need multiple swap files, some of which are
-> at equal priority so the list shuffling logic is triggered.
+> Facilitate getting required 3.3V and 1.0V VDD supply for
+> OHCI controller on Exynos.
+> 
+> With patches for regulators' nodes merged in 3.15:
+> c8c253f ARM: dts: Add regulator entries to smdk5420
+> 275dcd2 ARM: dts: add max77686 pmic node for smdk5250,
+> 
+> certain perripherals will now need to ensure that,
+> they request VDD regulators in their drivers, and enable
+> them so as to make them working.
+> 
+> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
+> ---
+> 
+> Based on 'usb-next' branch of Greg's usb tree.
+> 
+>  drivers/usb/host/ohci-exynos.c |   47
+> ++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 47 insertions(+)
+> 
+> diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-
+> exynos.c
+> index 68588d8..e2e72a8 100644
+> --- a/drivers/usb/host/ohci-exynos.c
+> +++ b/drivers/usb/host/ohci-exynos.c
+> @@ -18,6 +18,7 @@
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/regulator/consumer.h>
+>  #include <linux/usb/phy.h>
+>  #include <linux/usb/samsung_usb_phy.h>
+>  #include <linux/usb.h>
+> @@ -37,6 +38,8 @@ struct exynos_ohci_hcd {
+>  	struct clk *clk;
+>  	struct usb_phy *phy;
+>  	struct usb_otg *otg;
+> +	struct regulator *vdd33;
+> +	struct regulator *vdd10;
+>  };
+> 
+>  static void exynos_ohci_phy_enable(struct platform_device *pdev)
+> @@ -98,6 +101,28 @@ static int exynos_ohci_probe(struct platform_device
+> *pdev)
+>  		exynos_ohci->otg = phy->otg;
+>  	}
+> 
+> +	exynos_ohci->vdd33 = devm_regulator_get(&pdev->dev, "vdd33");
+> +	if (IS_ERR(exynos_ohci->vdd33)) {
+> +		err = PTR_ERR(exynos_ohci->vdd33);
+> +		goto fail_regulator1;
+> +	}
+> +	err = regulator_enable(exynos_ohci->vdd33);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "Failed to enable VDD33 supply\n");
+> +		goto fail_regulator1;
+> +	}
+> +
+> +	exynos_ohci->vdd10 = devm_regulator_get(&pdev->dev, "vdd10");
+> +	if (IS_ERR(exynos_ohci->vdd10)) {
+> +		err = PTR_ERR(exynos_ohci->vdd10);
+> +		goto fail_regulator2;
+> +	}
+> +	err = regulator_enable(exynos_ohci->vdd10);
+> +	if (err) {
+> +		dev_err(&pdev->dev, "Failed to enable VDD10 supply\n");
+> +		goto fail_regulator2;
+> +	}
+> +
 
-get_swap_page isn't hot so far (and we hold the swap_lock, which isn't
-contended), guess it's because other problems hide it, for example tlb flush
-overhead.
+Do we need to skip regulator settings together with PHY configuration
+in case of exynos5440?
 
-Thanks,
-Shaohua
+>  skip_phy:
+>  	exynos_ohci->clk = devm_clk_get(&pdev->dev, "usbhost");
+> 
+> @@ -154,6 +179,10 @@ fail_add_hcd:
+>  fail_io:
+>  	clk_disable_unprepare(exynos_ohci->clk);
+>  fail_clk:
+> +	regulator_disable(exynos_ohci->vdd10);
+> +fail_regulator2:
+> +	regulator_disable(exynos_ohci->vdd33);
+> +fail_regulator1:
+>  	usb_put_hcd(hcd);
+>  	return err;
+>  }
+> @@ -172,6 +201,9 @@ static int exynos_ohci_remove(struct
+> platform_device *pdev)
+> 
+>  	clk_disable_unprepare(exynos_ohci->clk);
+> 
+> +	regulator_disable(exynos_ohci->vdd10);
+> +	regulator_disable(exynos_ohci->vdd33);
+> +
+>  	usb_put_hcd(hcd);
+> 
+>  	return 0;
+> @@ -208,6 +240,9 @@ static int exynos_ohci_suspend(struct device *dev)
+> 
+>  	clk_disable_unprepare(exynos_ohci->clk);
+> 
+> +	regulator_disable(exynos_ohci->vdd10);
+> +	regulator_disable(exynos_ohci->vdd33);
+> +
+>  	spin_unlock_irqrestore(&ohci->lock, flags);
+> 
+>  	return 0;
+> @@ -218,6 +253,18 @@ static int exynos_ohci_resume(struct device *dev)
+>  	struct usb_hcd *hcd			= dev_get_drvdata(dev);
+>  	struct exynos_ohci_hcd *exynos_ohci	= to_exynos_ohci(hcd);
+>  	struct platform_device *pdev		= to_platform_device(dev);
+> +	int ret;
+> +
+> +	ret = regulator_enable(exynos_ohci->vdd33);
+> +	if (ret) {
+> +		dev_err(dev, "Failed to enable VDD33 supply\n");
+> +		return ret;
+
+Not sure, but shall we continue resuming and do everything
+we can in case of error? At least it will avoid
+WARN_ON(clk->enable_count == 0) on next system suspend.
+
+> +	}
+> +	ret = regulator_enable(exynos_ohci->vdd10);
+> +	if (ret) {
+> +		dev_err(dev, "Failed to enable VDD10 supply\n");
+> +		return ret;
+> +	}
+> 
+>  	clk_prepare_enable(exynos_ohci->clk);
+> 
+> --
+
+Thanks
+
