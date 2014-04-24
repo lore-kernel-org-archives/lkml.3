@@ -1,169 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaDXIa2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:30:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46719 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752162AbaDXIaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:30:24 -0400
-Date: Thu, 24 Apr 2014 09:30:18 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Shaohua Li <shli@kernel.org>
-Cc: Dan Streetman <ddstreet@ieee.org>, Hugh Dickins <hughd@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Shaohua Li <shli@fusionio.com>, Weijie Yang <weijieut@gmail.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] swap: change swap_info singly-linked list to
- list_head
-Message-ID: <20140424083018.GO23991@suse.de>
-References: <alpine.LSU.2.11.1402232344280.1890@eggly.anvils>
- <1397336454-13855-1-git-send-email-ddstreet@ieee.org>
- <1397336454-13855-2-git-send-email-ddstreet@ieee.org>
- <20140423103400.GH23991@suse.de>
- <20140424001705.GA8066@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20140424001705.GA8066@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753266AbaDXI3B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:29:01 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:38524 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752290AbaDXIYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 04:24:07 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@kernel.org
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
+        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
+        Namhyung Kim <namhyung@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: [PATCH 01/11] perf report: Count number of entries separately
+Date: Thu, 24 Apr 2014 17:23:53 +0900
+Message-Id: <1398327843-31845-2-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.9.2
+In-Reply-To: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
+References: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 08:17:05AM +0800, Shaohua Li wrote:
-> On Wed, Apr 23, 2014 at 11:34:00AM +0100, Mel Gorman wrote:
-> > > @@ -366,7 +361,7 @@ static int __frontswap_unuse_pages(unsigned long total, unsigned long *unused,
-> > >  		}
-> > >  		vm_unacct_memory(pages);
-> > >  		*unused = pages_to_unuse;
-> > > -		*swapid = type;
-> > > +		*swapid = si->type;
-> > >  		ret = 0;
-> > >  		break;
-> > >  	}
-> > > @@ -413,7 +408,7 @@ void frontswap_shrink(unsigned long target_pages)
-> > >  	/*
-> > >  	 * we don't want to hold swap_lock while doing a very
-> > >  	 * lengthy try_to_unuse, but swap_list may change
-> > > -	 * so restart scan from swap_list.head each time
-> > > +	 * so restart scan from swap_list_head each time
-> > >  	 */
-> > >  	spin_lock(&swap_lock);
-> > >  	ret = __frontswap_shrink(target_pages, &pages_to_unuse, &type);
-> > > diff --git a/mm/swapfile.c b/mm/swapfile.c
-> > > index 4a7f7e6..b958645 100644
-> > > --- a/mm/swapfile.c
-> > > +++ b/mm/swapfile.c
-> > > @@ -51,14 +51,14 @@ atomic_long_t nr_swap_pages;
-> > >  /* protected with swap_lock. reading in vm_swap_full() doesn't need lock */
-> > >  long total_swap_pages;
-> > >  static int least_priority;
-> > > -static atomic_t highest_priority_index = ATOMIC_INIT(-1);
-> > >  
-> > >  static const char Bad_file[] = "Bad swap file entry ";
-> > >  static const char Unused_file[] = "Unused swap file entry ";
-> > >  static const char Bad_offset[] = "Bad swap offset entry ";
-> > >  static const char Unused_offset[] = "Unused swap offset entry ";
-> > >  
-> > > -struct swap_list_t swap_list = {-1, -1};
-> > > +/* all active swap_info */
-> > > +LIST_HEAD(swap_list_head);
-> > >  
-> > >  struct swap_info_struct *swap_info[MAX_SWAPFILES];
-> > >  
-> > > @@ -640,66 +640,50 @@ no_page:
-> > >  
-> > >  swp_entry_t get_swap_page(void)
-> > >  {
-> > > -	struct swap_info_struct *si;
-> > > +	struct swap_info_struct *si, *next;
-> > >  	pgoff_t offset;
-> > > -	int type, next;
-> > > -	int wrapped = 0;
-> > > -	int hp_index;
-> > > +	struct list_head *tmp;
-> > >  
-> > >  	spin_lock(&swap_lock);
-> > >  	if (atomic_long_read(&nr_swap_pages) <= 0)
-> > >  		goto noswap;
-> > >  	atomic_long_dec(&nr_swap_pages);
-> > >  
-> > > -	for (type = swap_list.next; type >= 0 && wrapped < 2; type = next) {
-> > > -		hp_index = atomic_xchg(&highest_priority_index, -1);
-> > > -		/*
-> > > -		 * highest_priority_index records current highest priority swap
-> > > -		 * type which just frees swap entries. If its priority is
-> > > -		 * higher than that of swap_list.next swap type, we use it.  It
-> > > -		 * isn't protected by swap_lock, so it can be an invalid value
-> > > -		 * if the corresponding swap type is swapoff. We double check
-> > > -		 * the flags here. It's even possible the swap type is swapoff
-> > > -		 * and swapon again and its priority is changed. In such rare
-> > > -		 * case, low prority swap type might be used, but eventually
-> > > -		 * high priority swap will be used after several rounds of
-> > > -		 * swap.
-> > > -		 */
-> > > -		if (hp_index != -1 && hp_index != type &&
-> > > -		    swap_info[type]->prio < swap_info[hp_index]->prio &&
-> > > -		    (swap_info[hp_index]->flags & SWP_WRITEOK)) {
-> > > -			type = hp_index;
-> > > -			swap_list.next = type;
-> > > -		}
-> > > -
-> > > -		si = swap_info[type];
-> > > -		next = si->next;
-> > > -		if (next < 0 ||
-> > > -		    (!wrapped && si->prio != swap_info[next]->prio)) {
-> > > -			next = swap_list.head;
-> > > -			wrapped++;
-> > > -		}
-> > > -
-> > > +	list_for_each(tmp, &swap_list_head) {
-> > > +		si = list_entry(tmp, typeof(*si), list);
-> > >  		spin_lock(&si->lock);
-> > > -		if (!si->highest_bit) {
-> > > -			spin_unlock(&si->lock);
-> > > -			continue;
-> > > -		}
-> > > -		if (!(si->flags & SWP_WRITEOK)) {
-> > > +		if (!si->highest_bit || !(si->flags & SWP_WRITEOK)) {
-> > >  			spin_unlock(&si->lock);
-> > >  			continue;
-> > >  		}
-> > >  
-> > > -		swap_list.next = next;
-> > > +		/*
-> > > +		 * rotate the current swap_info that we're going to use
-> > > +		 * to after any other swap_info that have the same prio,
-> > > +		 * so that all equal-priority swap_info get used equally
-> > > +		 */
-> > > +		next = si;
-> > > +		list_for_each_entry_continue(next, &swap_list_head, list) {
-> > > +			if (si->prio != next->prio)
-> > > +				break;
-> > > +			list_rotate_left(&si->list);
-> > > +			next = si;
-> > > +		}
-> > >  
-> > 
-> > The list manipulations will be a lot of cache writes as the list is shuffled
-> > around. On slow storage I do not think this will be noticable but it may
-> > be noticable on faster swap devices that are SSD based. I've added Shaohua
-> > Li to the cc as he has been concerned with the performance of swap in the
-> > past. Shaohua, can you run this patchset through any of your test cases
-> > with the addition that multiple swap files are used to see if the cache
-> > writes are noticable? You'll need multiple swap files, some of which are
-> > at equal priority so the list shuffling logic is triggered.
-> 
-> get_swap_page isn't hot so far (and we hold the swap_lock, which isn't
-> contended), guess it's because other problems hide it, for example tlb flush
-> overhead.
-> 
+The hists->nr_entries is counted in multiple places so that they can
+confuse readers of the code.  This is a preparation of later change
+and do not intend any functional difference.
 
-The old method was not free either but I wanted to be sure you were
-aware of the series just in case. Thanks.
+Note that report__collapse_hists() now changed to return nothing since
+its return value (nr_samples) is only for checking if there's any data
+in the input file and this can be acheived by checking ->nr_entries.
 
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/builtin-report.c | 42 ++++++++++++++++++++++--------------------
+ 1 file changed, 22 insertions(+), 20 deletions(-)
+
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 76e2bb6cf571..aed52036468d 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -57,6 +57,7 @@ struct report {
+ 	const char		*cpu_list;
+ 	const char		*symbol_filter_str;
+ 	float			min_percent;
++	u64			nr_entries;
+ 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ };
+ 
+@@ -75,6 +76,17 @@ static int report__config(const char *var, const char *value, void *cb)
+ 	return perf_default_config(var, value, cb);
+ }
+ 
++static void report__inc_stats(struct report *rep, struct hist_entry *he)
++{
++	/*
++	 * The @he is either of a newly created one or an existing one
++	 * merging current sample.  We only want to count a new one so
++	 * checking ->nr_events being 1.
++	 */
++	if (he->stat.nr_events == 1)
++		rep->nr_entries++;
++}
++
+ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
+ 				      struct perf_sample *sample, struct perf_evsel *evsel)
+ {
+@@ -121,6 +133,8 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
+ 			goto out;
+ 	}
+ 
++	report__inc_stats(rep, he);
++
+ 	evsel->hists.stats.total_period += cost;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ 	if (!he->filtered)
+@@ -176,6 +190,8 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
+ 					goto out;
+ 			}
+ 
++			report__inc_stats(rep, he);
++
+ 			evsel->hists.stats.total_period += 1;
+ 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ 			if (!he->filtered)
+@@ -212,6 +228,8 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
+ 	if (ui__has_annotation())
+ 		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+ 
++	report__inc_stats(rep, he);
++
+ 	evsel->hists.stats.total_period += sample->period;
+ 	if (!he->filtered)
+ 		evsel->hists.stats.nr_non_filtered_samples++;
+@@ -486,24 +504,12 @@ static int report__browse_hists(struct report *rep)
+ 	return ret;
+ }
+ 
+-static u64 report__collapse_hists(struct report *rep)
++static void report__collapse_hists(struct report *rep)
+ {
+ 	struct ui_progress prog;
+ 	struct perf_evsel *pos;
+-	u64 nr_samples = 0;
+-	/*
+- 	 * Count number of histogram entries to use when showing progress,
+- 	 * reusing nr_samples variable.
+- 	 */
+-	evlist__for_each(rep->session->evlist, pos)
+-		nr_samples += pos->hists.nr_entries;
+ 
+-	ui_progress__init(&prog, nr_samples, "Merging related events...");
+-	/*
+-	 * Count total number of samples, will be used to check if this
+- 	 * session had any.
+- 	 */
+-	nr_samples = 0;
++	ui_progress__init(&prog, rep->nr_entries, "Merging related events...");
+ 
+ 	evlist__for_each(rep->session->evlist, pos) {
+ 		struct hists *hists = &pos->hists;
+@@ -512,7 +518,6 @@ static u64 report__collapse_hists(struct report *rep)
+ 			hists->symbol_filter_str = rep->symbol_filter_str;
+ 
+ 		hists__collapse_resort(hists, &prog);
+-		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
+ 
+ 		/* Non-group events are considered as leader */
+ 		if (symbol_conf.event_group &&
+@@ -525,14 +530,11 @@ static u64 report__collapse_hists(struct report *rep)
+ 	}
+ 
+ 	ui_progress__finish();
+-
+-	return nr_samples;
+ }
+ 
+ static int __cmd_report(struct report *rep)
+ {
+ 	int ret;
+-	u64 nr_samples;
+ 	struct perf_session *session = rep->session;
+ 	struct perf_evsel *pos;
+ 	struct perf_data_file *file = session->file;
+@@ -572,12 +574,12 @@ static int __cmd_report(struct report *rep)
+ 		}
+ 	}
+ 
+-	nr_samples = report__collapse_hists(rep);
++	report__collapse_hists(rep);
+ 
+ 	if (session_done())
+ 		return 0;
+ 
+-	if (nr_samples == 0) {
++	if (rep->nr_entries == 0) {
+ 		ui__error("The %s file has no samples!\n", file->path);
+ 		return 0;
+ 	}
 -- 
-Mel Gorman
-SUSE Labs
+1.9.2
+
