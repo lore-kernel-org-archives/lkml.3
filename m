@@ -1,89 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152AbaDXMfb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:35:31 -0400
-Received: from mail-we0-f179.google.com ([74.125.82.179]:36101 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815AbaDXMf1 (ORCPT
+	id S1757168AbaDXMfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:35:52 -0400
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.109]:25039 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754075AbaDXMfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:35:27 -0400
-From: Peter Griffin <peter.griffin@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: linaro-kernel@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
-        Peter Griffin <peter.griffin@linaro.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
-        Raphael Assenat <raph@8d.com>, Mike Rapoport <mike@compulab.co.il>
-Subject: [PATCH 05/13] video/mbx: fix building debugfs support
-Date: Thu, 24 Apr 2014 13:28:21 +0100
-Message-Id: <1398342509-10243-6-git-send-email-peter.griffin@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
-References: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
+	Thu, 24 Apr 2014 08:35:47 -0400
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-6.tower-193.messagelabs.com!1398342931!17921088!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.11.1; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 24 Apr 2014 14:35:32 +0200
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: <linux-kernel@vger.kernel.org>,
+        Johannes Thumshirn <johannes.thumshirn@men.de>
+Subject: [PATCH RESEND] mcb: Add support for shared PCI IRQs
+Date: Thu, 24 Apr 2014 14:35:25 +0200
+Message-ID: <1398342925-1120-1-git-send-email-johannes.thumshirn@men.de>
+X-Mailer: git-send-email 1.9.2
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnd Bergmann <arnd@arndb.de>
+Add support for shared PCI IRQs to mcb and mcb-pci.
 
-The mbx framebuffer debugfs support apparently hasn't been able
-to build for a long time, at least since 2006 when the u.generic_ip
-field in the inode was removed. This fixes the obvious bug, and
-also makes it possible to build the driver as a module when
-debugfs support is enabled, by simply including the C file.
-It's ugly, but it won't make the driver any worse than it
-already is, and doesn't require a more invasive change that
-might break it further.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
-Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Cc: linux-fbdev@vger.kernel.org
-Cc: Raphael Assenat <raph@8d.com>
-Cc: Mike Rapoport <mike@compulab.co.il>
+Signed-off-by: Johannes Thumshirn <johannes.thumshirn@men.de>
 ---
- drivers/video/fbdev/mbx/Makefile     |    3 +--
- drivers/video/fbdev/mbx/mbxdebugfs.c |    2 +-
- drivers/video/fbdev/mbx/mbxfb.c      |    2 ++
- 3 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/mcb/mcb-core.c | 20 +++++++++++++++-----
+ drivers/mcb/mcb-pci.c  | 17 ++++++++++++++++-
+ include/linux/mcb.h    |  6 +++++-
+ 3 files changed, 36 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/video/fbdev/mbx/Makefile b/drivers/video/fbdev/mbx/Makefile
-index 16c1165..d7ae5a9 100644
---- a/drivers/video/fbdev/mbx/Makefile
-+++ b/drivers/video/fbdev/mbx/Makefile
-@@ -1,4 +1,3 @@
- # Makefile for the 2700G controller driver.
- 
--obj-$(CONFIG_FB_MBX)	   += mbxfb.o
--obj-$(CONFIG_FB_MBX_DEBUG) += mbxfbdebugfs.o
-+obj-y 			+= mbxfb.o
-diff --git a/drivers/video/fbdev/mbx/mbxdebugfs.c b/drivers/video/fbdev/mbx/mbxdebugfs.c
-index 4449f24..e3bc00a 100644
---- a/drivers/video/fbdev/mbx/mbxdebugfs.c
-+++ b/drivers/video/fbdev/mbx/mbxdebugfs.c
-@@ -17,7 +17,7 @@ struct mbxfb_debugfs_data {
- 
- static int open_file_generic(struct inode *inode, struct file *file)
+diff --git a/drivers/mcb/mcb-core.c b/drivers/mcb/mcb-core.c
+index bbe1293..9018ab8 100644
+--- a/drivers/mcb/mcb-core.c
++++ b/drivers/mcb/mcb-core.c
+@@ -183,14 +183,14 @@ EXPORT_SYMBOL_GPL(mcb_device_register);
+  *
+  * Allocate a new @mcb_bus.
+  */
+-struct mcb_bus *mcb_alloc_bus(void)
++struct mcb_bus *mcb_alloc_bus(struct device *carrier)
  {
--	file->private_data = inode->u.generic_ip;
-+	file->private_data = inode->i_private;
- 	return 0;
+ 	struct mcb_bus *bus;
+ 	int bus_nr;
+
+ 	bus = kzalloc(sizeof(struct mcb_bus), GFP_KERNEL);
+ 	if (!bus)
+-		return NULL;
++		return ERR_PTR(-ENOMEM);
+
+ 	bus_nr = ida_simple_get(&mcb_ida, 0, 0, GFP_KERNEL);
+ 	if (bus_nr < 0) {
+@@ -200,7 +200,7 @@ struct mcb_bus *mcb_alloc_bus(void)
+
+ 	INIT_LIST_HEAD(&bus->children);
+ 	bus->bus_nr = bus_nr;
+-
++	bus->carrier = carrier;
+ 	return bus;
  }
- 
-diff --git a/drivers/video/fbdev/mbx/mbxfb.c b/drivers/video/fbdev/mbx/mbxfb.c
-index f0a5392..2bd52ed 100644
---- a/drivers/video/fbdev/mbx/mbxfb.c
-+++ b/drivers/video/fbdev/mbx/mbxfb.c
-@@ -877,6 +877,8 @@ static int mbxfb_resume(struct platform_device *dev)
- #ifndef CONFIG_FB_MBX_DEBUG
- #define mbxfb_debugfs_init(x)	do {} while(0)
- #define mbxfb_debugfs_remove(x)	do {} while(0)
-+#else
-+#include "mbxdebugfs.c"
- #endif
- 
- #define res_size(_r) (((_r)->end - (_r)->start) + 1)
--- 
-1.7.9.5
+ EXPORT_SYMBOL_GPL(mcb_alloc_bus);
+@@ -378,6 +378,13 @@ void mcb_release_mem(struct resource *mem)
+ }
+ EXPORT_SYMBOL_GPL(mcb_release_mem);
+
++static int __mcb_get_irq(struct mcb_device *dev)
++{
++	struct resource *irq = &dev->irq;
++
++	return irq->start;
++}
++
+ /**
+  * mcb_get_irq() - Get device's IRQ number
+  * @dev: The @mcb_device the IRQ is for
+@@ -386,9 +393,12 @@ EXPORT_SYMBOL_GPL(mcb_release_mem);
+  */
+ int mcb_get_irq(struct mcb_device *dev)
+ {
+-	struct resource *irq = &dev->irq;
++	struct mcb_bus *bus = dev->bus;
+
+-	return irq->start;
++	if (bus->get_irq)
++		return bus->get_irq(dev);
++
++	return __mcb_get_irq(dev);
+ }
+ EXPORT_SYMBOL_GPL(mcb_get_irq);
+
+diff --git a/drivers/mcb/mcb-pci.c b/drivers/mcb/mcb-pci.c
+index 99c742c..b591819 100644
+--- a/drivers/mcb/mcb-pci.c
++++ b/drivers/mcb/mcb-pci.c
+@@ -20,6 +20,15 @@ struct priv {
+ 	void __iomem *base;
+ };
+
++static int mcb_pci_get_irq(struct mcb_device *mdev)
++{
++	struct mcb_bus *mbus = mdev->bus;
++	struct device *dev = mbus->carrier;
++	struct pci_dev *pdev = to_pci_dev(dev);
++
++	return pdev->irq;
++}
++
+ static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ {
+ 	struct priv *priv;
+@@ -67,7 +76,13 @@ static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+
+ 	pci_set_drvdata(pdev, priv);
+
+-	priv->bus = mcb_alloc_bus();
++	priv->bus = mcb_alloc_bus(&pdev->dev);
++	if (IS_ERR(priv->bus)) {
++		ret = PTR_ERR(priv->bus);
++		goto err_drvdata;
++	}
++
++	priv->bus->get_irq = mcb_pci_get_irq;
+
+ 	ret = chameleon_parse_cells(priv->bus, mapbase, priv->base);
+ 	if (ret < 0)
+diff --git a/include/linux/mcb.h b/include/linux/mcb.h
+index 2db284d..ed06e15 100644
+--- a/include/linux/mcb.h
++++ b/include/linux/mcb.h
+@@ -16,6 +16,7 @@
+ #include <linux/irqreturn.h>
+
+ struct mcb_driver;
++struct mcb_device;
+
+ /**
+  * struct mcb_bus - MEN Chameleon Bus
+@@ -23,11 +24,14 @@ struct mcb_driver;
+  * @dev: pointer to carrier device
+  * @children: the child busses
+  * @bus_nr: mcb bus number
++ * @get_irq: callback to get IRQ number
+  */
+ struct mcb_bus {
+ 	struct list_head children;
+ 	struct device dev;
++	struct device *carrier;
+ 	int bus_nr;
++	int (*get_irq)(struct mcb_device *dev);
+ };
+ #define to_mcb_bus(b) container_of((b), struct mcb_bus, dev)
+
+@@ -105,7 +109,7 @@ extern void mcb_unregister_driver(struct mcb_driver *driver);
+ 	module_driver(__mcb_driver, mcb_register_driver, mcb_unregister_driver);
+ extern void mcb_bus_add_devices(const struct mcb_bus *bus);
+ extern int mcb_device_register(struct mcb_bus *bus, struct mcb_device *dev);
+-extern struct mcb_bus *mcb_alloc_bus(void);
++extern struct mcb_bus *mcb_alloc_bus(struct device *carrier);
+ extern struct mcb_bus *mcb_bus_get(struct mcb_bus *bus);
+ extern void mcb_bus_put(struct mcb_bus *bus);
+ extern struct mcb_device *mcb_alloc_dev(struct mcb_bus *bus);
+--
+1.9.2
 
