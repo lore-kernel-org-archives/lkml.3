@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755259AbaDXJ7i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:59:38 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46708 "EHLO
+	id S1755271AbaDXKAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:00:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46704 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290AbaDXIyQ (ORCPT
+	with ESMTP id S1754281AbaDXIyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:54:16 -0400
+	Thu, 24 Apr 2014 04:54:15 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 098/182] dm: take care to copy the space map roots before locking the superblock
-Date: Thu, 24 Apr 2014 09:50:23 +0100
-Message-Id: <1398329507-5911-99-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 097/182] dm transaction manager: fix corruption due to non-atomic transaction commit
+Date: Thu, 24 Apr 2014 09:50:22 +0100
+Message-Id: <1398329507-5911-98-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -29,292 +29,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joe Thornber <ejt@redhat.com>
 
-commit 5a32083d03fb543f63489b2946c4948398579ba0 upstream.
+commit a9d45396f5956d0b615c7ae3b936afd888351a47 upstream.
 
-In theory copying the space map root can fail, but in practice it never
-does because we're careful to check what size buffer is needed.
+The persistent-data library used by dm-thin, dm-cache, etc is
+transactional.  If anything goes wrong, such as an io error when writing
+new metadata or a power failure, then we roll back to the last
+transaction.
 
-But make certain we're able to copy the space map roots before
-locking the superblock.
+Atomicity when committing a transaction is achieved by:
+
+a) Never overwriting data from the previous transaction.
+b) Writing the superblock last, after all other metadata has hit the
+   disk.
+
+This commit and the following commit ("dm: take care to copy the space
+map roots before locking the superblock") fix a bug associated with (b).
+When committing it was possible for the superblock to still be written
+in spite of an io error occurring during the preceeding metadata flush.
+With these commits we're careful not to take the write lock out on the
+superblock until after the metadata flush has completed.
+
+Change the transaction manager's semantics for dm_tm_commit() to assume
+all data has been flushed _before_ the single superblock that is passed
+in.
+
+As a prerequisite, split the block manager's block unlocking and
+flushing by simplifying dm_bm_flush_and_unlock() to dm_bm_flush().  Now
+the unlocking must be done separately.
+
+This issue was discovered by forcing io errors at the crucial time
+using dm-flakey.
 
 Signed-off-by: Joe Thornber <ejt@redhat.com>
 Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-[ luis: backported to 3.11:
-  - dropped changes to drivers/md/dm-era-target.c ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/dm-cache-metadata.c | 60 +++++++++++++++++++------------
- drivers/md/dm-thin-metadata.c  | 80 +++++++++++++++++++++++++-----------------
- 2 files changed, 85 insertions(+), 55 deletions(-)
+ drivers/md/dm-cache-metadata.c                      |  3 ++-
+ drivers/md/persistent-data/dm-block-manager.c       | 15 ++-------------
+ drivers/md/persistent-data/dm-block-manager.h       |  3 +--
+ drivers/md/persistent-data/dm-transaction-manager.c |  5 +++--
+ drivers/md/persistent-data/dm-transaction-manager.h | 17 ++++++++---------
+ 5 files changed, 16 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/md/dm-cache-metadata.c b/drivers/md/dm-cache-metadata.c
-index a33e07f..1d38019 100644
+index 1af7255..a33e07f 100644
 --- a/drivers/md/dm-cache-metadata.c
 +++ b/drivers/md/dm-cache-metadata.c
-@@ -114,6 +114,12 @@ struct dm_cache_metadata {
- 	unsigned policy_version[CACHE_POLICY_VERSION_SIZE];
- 	size_t policy_hint_size;
- 	struct dm_cache_statistics stats;
-+
-+	/*
-+	 * Reading the space map root can fail, so we read it into this
-+	 * buffer before the superblock is locked and updated.
-+	 */
-+	__u8 metadata_space_map_root[SPACE_MAP_ROOT_SIZE];
- };
+@@ -511,8 +511,9 @@ static int __begin_transaction_flags(struct dm_cache_metadata *cmd,
+ 	disk_super = dm_block_data(sblock);
+ 	update_flags(disk_super, mutator);
+ 	read_superblock_fields(cmd, disk_super);
++	dm_bm_unlock(sblock);
  
- /*-------------------------------------------------------------------
-@@ -242,11 +248,31 @@ static void __setup_mapping_info(struct dm_cache_metadata *cmd)
- 	}
+-	return dm_bm_flush_and_unlock(cmd->bm, sblock);
++	return dm_bm_flush(cmd->bm);
  }
  
-+static int __save_sm_root(struct dm_cache_metadata *cmd)
-+{
-+	int r;
-+	size_t metadata_len;
-+
-+	r = dm_sm_root_size(cmd->metadata_sm, &metadata_len);
-+	if (r < 0)
-+		return r;
-+
-+	return dm_sm_copy_root(cmd->metadata_sm, &cmd->metadata_space_map_root,
-+			       metadata_len);
-+}
-+
-+static void __copy_sm_root(struct dm_cache_metadata *cmd,
-+			   struct cache_disk_superblock *disk_super)
-+{
-+	memcpy(&disk_super->metadata_space_map_root,
-+	       &cmd->metadata_space_map_root,
-+	       sizeof(cmd->metadata_space_map_root));
-+}
-+
- static int __write_initial_superblock(struct dm_cache_metadata *cmd)
- {
- 	int r;
- 	struct dm_block *sblock;
--	size_t metadata_len;
- 	struct cache_disk_superblock *disk_super;
- 	sector_t bdev_size = i_size_read(cmd->bdev->bd_inode) >> SECTOR_SHIFT;
- 
-@@ -254,12 +280,16 @@ static int __write_initial_superblock(struct dm_cache_metadata *cmd)
- 	if (bdev_size > DM_CACHE_METADATA_MAX_SECTORS)
- 		bdev_size = DM_CACHE_METADATA_MAX_SECTORS;
- 
--	r = dm_sm_root_size(cmd->metadata_sm, &metadata_len);
-+	r = dm_tm_pre_commit(cmd->tm);
- 	if (r < 0)
- 		return r;
- 
--	r = dm_tm_pre_commit(cmd->tm);
--	if (r < 0)
-+	/*
-+	 * dm_sm_copy_root() can fail.  So we need to do it before we start
-+	 * updating the superblock.
-+	 */
-+	r = __save_sm_root(cmd);
-+	if (r)
- 		return r;
- 
- 	r = superblock_lock_zero(cmd, &sblock);
-@@ -275,10 +305,7 @@ static int __write_initial_superblock(struct dm_cache_metadata *cmd)
- 	memset(disk_super->policy_version, 0, sizeof(disk_super->policy_version));
- 	disk_super->policy_hint_size = 0;
- 
--	r = dm_sm_copy_root(cmd->metadata_sm, &disk_super->metadata_space_map_root,
--			    metadata_len);
--	if (r < 0)
--		goto bad_locked;
-+	__copy_sm_root(cmd, disk_super);
- 
- 	disk_super->mapping_root = cpu_to_le64(cmd->root);
- 	disk_super->hint_root = cpu_to_le64(cmd->hint_root);
-@@ -295,10 +322,6 @@ static int __write_initial_superblock(struct dm_cache_metadata *cmd)
- 	disk_super->write_misses = cpu_to_le32(0);
- 
- 	return dm_tm_commit(cmd->tm, sblock);
--
--bad_locked:
--	dm_bm_unlock(sblock);
--	return r;
+ static int __begin_transaction(struct dm_cache_metadata *cmd)
+diff --git a/drivers/md/persistent-data/dm-block-manager.c b/drivers/md/persistent-data/dm-block-manager.c
+index 44bcc76..81f8428 100644
+--- a/drivers/md/persistent-data/dm-block-manager.c
++++ b/drivers/md/persistent-data/dm-block-manager.c
+@@ -595,25 +595,14 @@ int dm_bm_unlock(struct dm_block *b)
  }
+ EXPORT_SYMBOL_GPL(dm_bm_unlock);
  
- static int __format_metadata(struct dm_cache_metadata *cmd)
-@@ -541,7 +564,6 @@ static int __commit_transaction(struct dm_cache_metadata *cmd,
- 				flags_mutator mutator)
+-int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
+-			   struct dm_block *superblock)
++int dm_bm_flush(struct dm_block_manager *bm)
  {
- 	int r;
--	size_t metadata_len;
- 	struct cache_disk_superblock *disk_super;
- 	struct dm_block *sblock;
- 
-@@ -559,8 +581,8 @@ static int __commit_transaction(struct dm_cache_metadata *cmd,
- 	if (r < 0)
- 		return r;
- 
--	r = dm_sm_root_size(cmd->metadata_sm, &metadata_len);
--	if (r < 0)
-+	r = __save_sm_root(cmd);
-+	if (r)
- 		return r;
- 
- 	r = superblock_lock(cmd, &sblock);
-@@ -587,13 +609,7 @@ static int __commit_transaction(struct dm_cache_metadata *cmd,
- 	disk_super->read_misses = cpu_to_le32(cmd->stats.read_misses);
- 	disk_super->write_hits = cpu_to_le32(cmd->stats.write_hits);
- 	disk_super->write_misses = cpu_to_le32(cmd->stats.write_misses);
+-	int r;
 -
--	r = dm_sm_copy_root(cmd->metadata_sm, &disk_super->metadata_space_map_root,
--			    metadata_len);
--	if (r < 0) {
--		dm_bm_unlock(sblock);
+ 	if (bm->read_only)
+ 		return -EPERM;
+ 
+-	r = dm_bufio_write_dirty_buffers(bm->bufio);
+-	if (unlikely(r)) {
+-		dm_bm_unlock(superblock);
 -		return r;
 -	}
-+	__copy_sm_root(cmd, disk_super);
- 
- 	return dm_tm_commit(cmd->tm, sblock);
+-
+-	dm_bm_unlock(superblock);
+-
+ 	return dm_bufio_write_dirty_buffers(bm->bufio);
  }
-diff --git a/drivers/md/dm-thin-metadata.c b/drivers/md/dm-thin-metadata.c
-index 3bb4506..07a6ea3 100644
---- a/drivers/md/dm-thin-metadata.c
-+++ b/drivers/md/dm-thin-metadata.c
-@@ -192,6 +192,13 @@ struct dm_pool_metadata {
- 	 * operation possible in this state is the closing of the device.
- 	 */
- 	bool fail_io:1;
-+
-+	/*
-+	 * Reading the space map roots can fail, so we read it into these
-+	 * buffers before the superblock is locked and updated.
-+	 */
-+	__u8 data_space_map_root[SPACE_MAP_ROOT_SIZE];
-+	__u8 metadata_space_map_root[SPACE_MAP_ROOT_SIZE];
- };
+-EXPORT_SYMBOL_GPL(dm_bm_flush_and_unlock);
++EXPORT_SYMBOL_GPL(dm_bm_flush);
  
- struct dm_thin_device {
-@@ -431,26 +438,53 @@ static void __setup_btree_details(struct dm_pool_metadata *pmd)
- 	pmd->details_info.value_type.equal = NULL;
- }
- 
-+static int save_sm_roots(struct dm_pool_metadata *pmd)
-+{
-+	int r;
-+	size_t len;
-+
-+	r = dm_sm_root_size(pmd->metadata_sm, &len);
-+	if (r < 0)
-+		return r;
-+
-+	r = dm_sm_copy_root(pmd->metadata_sm, &pmd->metadata_space_map_root, len);
-+	if (r < 0)
-+		return r;
-+
-+	r = dm_sm_root_size(pmd->data_sm, &len);
-+	if (r < 0)
-+		return r;
-+
-+	return dm_sm_copy_root(pmd->data_sm, &pmd->data_space_map_root, len);
-+}
-+
-+static void copy_sm_roots(struct dm_pool_metadata *pmd,
-+			  struct thin_disk_superblock *disk)
-+{
-+	memcpy(&disk->metadata_space_map_root,
-+	       &pmd->metadata_space_map_root,
-+	       sizeof(pmd->metadata_space_map_root));
-+
-+	memcpy(&disk->data_space_map_root,
-+	       &pmd->data_space_map_root,
-+	       sizeof(pmd->data_space_map_root));
-+}
-+
- static int __write_initial_superblock(struct dm_pool_metadata *pmd)
+ void dm_bm_set_read_only(struct dm_block_manager *bm)
  {
- 	int r;
- 	struct dm_block *sblock;
--	size_t metadata_len, data_len;
- 	struct thin_disk_superblock *disk_super;
- 	sector_t bdev_size = i_size_read(pmd->bdev->bd_inode) >> SECTOR_SHIFT;
+diff --git a/drivers/md/persistent-data/dm-block-manager.h b/drivers/md/persistent-data/dm-block-manager.h
+index 84dbab5..16529e9 100644
+--- a/drivers/md/persistent-data/dm-block-manager.h
++++ b/drivers/md/persistent-data/dm-block-manager.h
+@@ -105,8 +105,7 @@ int dm_bm_unlock(struct dm_block *b);
+  *
+  * This method always blocks.
+  */
+-int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
+-			   struct dm_block *superblock);
++int dm_bm_flush(struct dm_block_manager *bm);
  
- 	if (bdev_size > THIN_METADATA_MAX_SECTORS)
- 		bdev_size = THIN_METADATA_MAX_SECTORS;
- 
--	r = dm_sm_root_size(pmd->metadata_sm, &metadata_len);
--	if (r < 0)
--		return r;
--
--	r = dm_sm_root_size(pmd->data_sm, &data_len);
-+	r = dm_sm_commit(pmd->data_sm);
+ /*
+  * Switches the bm to a read only mode.  Once read-only mode
+diff --git a/drivers/md/persistent-data/dm-transaction-manager.c b/drivers/md/persistent-data/dm-transaction-manager.c
+index 81da1a2..3bc30a0 100644
+--- a/drivers/md/persistent-data/dm-transaction-manager.c
++++ b/drivers/md/persistent-data/dm-transaction-manager.c
+@@ -154,7 +154,7 @@ int dm_tm_pre_commit(struct dm_transaction_manager *tm)
  	if (r < 0)
  		return r;
  
--	r = dm_sm_commit(pmd->data_sm);
-+	r = save_sm_roots(pmd);
- 	if (r < 0)
- 		return r;
- 
-@@ -471,15 +505,7 @@ static int __write_initial_superblock(struct dm_pool_metadata *pmd)
- 	disk_super->trans_id = 0;
- 	disk_super->held_root = 0;
- 
--	r = dm_sm_copy_root(pmd->metadata_sm, &disk_super->metadata_space_map_root,
--			    metadata_len);
--	if (r < 0)
--		goto bad_locked;
--
--	r = dm_sm_copy_root(pmd->data_sm, &disk_super->data_space_map_root,
--			    data_len);
--	if (r < 0)
--		goto bad_locked;
-+	copy_sm_roots(pmd, disk_super);
- 
- 	disk_super->data_mapping_root = cpu_to_le64(pmd->root);
- 	disk_super->device_details_root = cpu_to_le64(pmd->details_root);
-@@ -488,10 +514,6 @@ static int __write_initial_superblock(struct dm_pool_metadata *pmd)
- 	disk_super->data_block_size = cpu_to_le32(pmd->data_block_size);
- 
- 	return dm_tm_commit(pmd->tm, sblock);
--
--bad_locked:
--	dm_bm_unlock(sblock);
--	return r;
+-	return 0;
++	return dm_bm_flush(tm->bm);
  }
+ EXPORT_SYMBOL_GPL(dm_tm_pre_commit);
  
- static int __format_metadata(struct dm_pool_metadata *pmd)
-@@ -769,6 +791,10 @@ static int __commit_transaction(struct dm_pool_metadata *pmd)
- 	if (r < 0)
- 		return r;
+@@ -164,8 +164,9 @@ int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *root)
+ 		return -EWOULDBLOCK;
  
-+	r = save_sm_roots(pmd);
-+	if (r < 0)
-+		return r;
-+
- 	r = superblock_lock(pmd, &sblock);
- 	if (r)
- 		return r;
-@@ -780,21 +806,9 @@ static int __commit_transaction(struct dm_pool_metadata *pmd)
- 	disk_super->trans_id = cpu_to_le64(pmd->trans_id);
- 	disk_super->flags = cpu_to_le32(pmd->flags);
+ 	wipe_shadow_table(tm);
++	dm_bm_unlock(root);
  
--	r = dm_sm_copy_root(pmd->metadata_sm, &disk_super->metadata_space_map_root,
--			    metadata_len);
--	if (r < 0)
--		goto out_locked;
--
--	r = dm_sm_copy_root(pmd->data_sm, &disk_super->data_space_map_root,
--			    data_len);
--	if (r < 0)
--		goto out_locked;
-+	copy_sm_roots(pmd, disk_super);
- 
- 	return dm_tm_commit(pmd->tm, sblock);
--
--out_locked:
--	dm_bm_unlock(sblock);
--	return r;
+-	return dm_bm_flush_and_unlock(tm->bm, root);
++	return dm_bm_flush(tm->bm);
  }
+ EXPORT_SYMBOL_GPL(dm_tm_commit);
  
- struct dm_pool_metadata *dm_pool_metadata_open(struct block_device *bdev,
+diff --git a/drivers/md/persistent-data/dm-transaction-manager.h b/drivers/md/persistent-data/dm-transaction-manager.h
+index b5b1390..2772ed2 100644
+--- a/drivers/md/persistent-data/dm-transaction-manager.h
++++ b/drivers/md/persistent-data/dm-transaction-manager.h
+@@ -38,18 +38,17 @@ struct dm_transaction_manager *dm_tm_create_non_blocking_clone(struct dm_transac
+ /*
+  * We use a 2-phase commit here.
+  *
+- * i) In the first phase the block manager is told to start flushing, and
+- * the changes to the space map are written to disk.  You should interrogate
+- * your particular space map to get detail of its root node etc. to be
+- * included in your superblock.
++ * i) Make all changes for the transaction *except* for the superblock.
++ * Then call dm_tm_pre_commit() to flush them to disk.
+  *
+- * ii) @root will be committed last.  You shouldn't use more than the
+- * first 512 bytes of @root if you wish the transaction to survive a power
+- * failure.  You *must* have a write lock held on @root for both stage (i)
+- * and (ii).  The commit will drop the write lock.
++ * ii) Lock your superblock.  Update.  Then call dm_tm_commit() which will
++ * unlock the superblock and flush it.  No other blocks should be updated
++ * during this period.  Care should be taken to never unlock a partially
++ * updated superblock; perform any operations that could fail *before* you
++ * take the superblock lock.
+  */
+ int dm_tm_pre_commit(struct dm_transaction_manager *tm);
+-int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *root);
++int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *superblock);
+ 
+ /*
+  * These methods are the only way to get hold of a writeable block.
 -- 
 1.9.1
 
