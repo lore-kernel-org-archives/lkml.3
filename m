@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbaDXITU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:19:20 -0400
+	id S1752699AbaDXITS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:19:18 -0400
 Received: from mga03.intel.com ([143.182.124.21]:6922 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752604AbaDXITR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:19:17 -0400
+	id S1752166AbaDXITP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 04:19:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,917,1389772800"; 
-   d="scan'208";a="423030763"
+   d="scan'208";a="423030745"
 From: Feng Tang <feng.tang@intel.com>
 To: Ingo Molnar <mingo@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
 Cc: Clemens Ladisch <clemens@ladisch.de>, John Stultz <john.stultz@linaro.org>,
         Feng Tang <feng.tang@intel.com>
-Subject: [PATCH 2/2] x86: Add quirk to disable HPET for baytrail platform
-Date: Thu, 24 Apr 2014 16:18:18 +0800
-Message-Id: <1398327498-13163-2-git-send-email-feng.tang@intel.com>
+Subject: [PATCH 1/2] x86, hpet: Make boot_hpet_disable extern
+Date: Thu, 24 Apr 2014 16:18:17 +0800
+Message-Id: <1398327498-13163-1-git-send-email-feng.tang@intel.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398327498-13163-1-git-send-email-feng.tang@intel.com>
-References: <1398327498-13163-1-git-send-email-feng.tang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HPET on current Baytrail platform has accuracy problem to be used as
-reliable clocksource/clockevent, so add a early quirk to disable it.
+HPET on some platform has accuracy problem. Making
+"boot_hpet_disable" extern so that we can runtime disable
+the HPET timer by using quirk to check the platform.
 
 Signed-off-by: Feng Tang <feng.tang@intel.com>
 ---
- arch/x86/kernel/early-quirks.c |   16 ++++++++++++++++
- 1 file changed, 16 insertions(+)
+ arch/x86/include/asm/hpet.h |    1 +
+ arch/x86/kernel/hpet.c      |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index 6e2537c..67c33fd 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -17,6 +17,7 @@
- #include <asm/dma.h>
- #include <asm/io_apic.h>
- #include <asm/apic.h>
-+#include <asm/hpet.h>
- #include <asm/iommu.h>
- #include <asm/gart.h>
- #include <asm/irq_remapping.h>
-@@ -530,6 +531,15 @@ static void __init intel_graphics_stolen(int num, int slot, int func)
- 	}
- }
- 
-+static void __init force_disable_hpet(int num, int slot, int func)
-+{
-+#ifdef CONFIG_HPET_TIMER
-+	boot_hpet_disable = 1;
-+	pr_info("Will Disable HPET for this platform\n");
-+#endif
-+}
-+
-+
- #define QFLAG_APPLY_ONCE 	0x1
- #define QFLAG_APPLIED		0x2
- #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
-@@ -567,6 +577,12 @@ static struct chipset early_qrk[] __initdata = {
- 	  PCI_BASE_CLASS_BRIDGE, 0, intel_remapping_check },
- 	{ PCI_VENDOR_ID_INTEL, PCI_ANY_ID, PCI_CLASS_DISPLAY_VGA, PCI_ANY_ID,
- 	  QFLAG_APPLY_ONCE, intel_graphics_stolen },
-+	/*
-+	 * HPET on current version of Baytrail platform has accuracy
-+	 * problem, disable it for now
-+	 */
-+	{ PCI_VENDOR_ID_INTEL, 0x0f00,
-+		PCI_CLASS_BRIDGE_HOST, PCI_ANY_ID, 0, force_disable_hpet},
- 	{}
- };
+diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
+index b18df57..36f7125 100644
+--- a/arch/x86/include/asm/hpet.h
++++ b/arch/x86/include/asm/hpet.h
+@@ -63,6 +63,7 @@
+ /* hpet memory map physical address */
+ extern unsigned long hpet_address;
+ extern unsigned long force_hpet_address;
++extern int boot_hpet_disable;
+ extern u8 hpet_blockid;
+ extern int hpet_force_user;
+ extern u8 hpet_msi_disable;
+diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
+index 8d80ae0..4177bfb 100644
+--- a/arch/x86/kernel/hpet.c
++++ b/arch/x86/kernel/hpet.c
+@@ -88,7 +88,7 @@ static inline void hpet_clear_mapping(void)
+ /*
+  * HPET command line enable / disable
+  */
+-static int boot_hpet_disable;
++int boot_hpet_disable;
+ int hpet_force_user;
+ static int hpet_verbose;
  
 -- 
 1.7.9.5
