@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751997AbaDXDAF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 23:00:05 -0400
-Received: from mga11.intel.com ([192.55.52.93]:36082 "EHLO mga11.intel.com"
+	id S1752226AbaDXDBf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 23:01:35 -0400
+Received: from ozlabs.org ([103.22.144.67]:47177 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751404AbaDXDAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 23:00:03 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,916,1389772800"; 
-   d="scan'208";a="526083809"
-Message-ID: <53587E21.5070507@linux.intel.com>
-Date: Thu, 24 Apr 2014 10:59:45 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: "Luck, Tony" <tony.luck@intel.com>, Peter Zijlstra <peterz@infradead.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Bugfix] sched: fix possible invalid memory access caused by
- CPU hot-addition
-References: <1398144435-26271-1-git-send-email-jiang.liu@linux.intel.com> <20140422081515.GF11182@twins.programming.kicks-ass.net> <53572939.7020509@linux.intel.com> <20140423053213.GV26782@laptop.programming.kicks-ass.net> <20140423055107.GB1429@laptop.programming.kicks-ass.net> <3908561D78D1C84285E8C5FCA982C28F327EB605@ORSMSX114.amr.corp.intel.com>
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F327EB605@ORSMSX114.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751761AbaDXDBd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 23:01:33 -0400
+Date: Thu, 24 Apr 2014 13:01:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Stratos Karafotis <stratosk@semaphore.gr>
+Subject: linux-next: build failure after merge of the mfd-lj tree
+Message-Id: <20140424130125.ab69302dfcfe73dc51a89809@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__24_Apr_2014_13_01_25_+1000_WqIGc2=I5SieD4tf"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014/4/24 1:46, Luck, Tony wrote:
->>>> 1) Handle CPU hot-addition event
->>>> 1.a) gather platform specific information
->>>> 1.b) associate hot-added CPU with a node
->>>> 1.c) create CPU device
->>>> 2) User online hot-added CPUs through sysfs:
->>>> 2.a)	cpu_up()
->>>> 2.b)		->try_online_node()
->>>> 2.c)			->hotadd_new_pgdat()
->>>> 2.d)			->node_set_online()
->>>>
->>>> So between 1.b and 2.c, kmalloc_node(nid) may cause invalid
->>>> memory access without the node_online(nid) check.
->>>
->>> Any why was all this not in the Changelog?
->>
->> Also, do explain what kind of hardware you needed to trigger this. This
->> code has been like this for a good while.
-> 
-> With your proposed fix in place the allocations will succeed - but they
-> will be done from other nodes ... and this cpu will have to do a remote
-> NUMA access for the rest of time.
-> 
-> It would be better to switch the order above - add the memory first,
-> then add the cpus.  Is that possible?
-Hi Tony,
-	The BIOS always sends CPU hot-addition events before memory
-hot-addition events, so it's hard to change the order.
-	And we couldn't completely solve this performance penalty because the
-affected code tries to allocate memory for all possible
-CPUs instead of onlined CPUs.
+--Signature=_Thu__24_Apr_2014_13_01_25_+1000_WqIGc2=I5SieD4tf
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Best Regards!
-Gerry
+Hi Lee,
+
+After merging the mfd-lj tree, today's linux-next build (arm
+multi_v7_defconfig) failed like this:
+
+drivers/mfd/db8500-prcmu.c: In function 'round_armss_rate':
+drivers/mfd/db8500-prcmu.c:1744:2: error: implicit declaration of function =
+'cpufreq_for_each_entry' [-Werror=3Dimplicit-function-declaration]
+drivers/mfd/db8500-prcmu.c:1744:52: error: expected ';' before '{' token
+drivers/mfd/db8500-prcmu.c:1738:7: warning: unused variable 'freq' [-Wunuse=
+d-variable]
+drivers/mfd/db8500-prcmu.c:1752:1: warning: no return statement in function=
+ returning non-void [-Wreturn-type]
+drivers/mfd/db8500-prcmu.c: In function 'set_armss_rate':
+drivers/mfd/db8500-prcmu.c:1895:3: error: expected ';' before 'if'
+
+Caused by commit 2eb3cfd03d60 ("mfd: db8500-prcmu: Use
+cpufreq_for_each_entry macro for iteration").
+
+I have used the mfd-lj tree from next-20140423 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__24_Apr_2014_13_01_25_+1000_WqIGc2=I5SieD4tf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTWH6KAAoJEMDTa8Ir7ZwV7OIP/3rO6ouSbAjgQuJpJksB/8zP
+QtN2qVipJVVJ4OUD0arpU8WFdOFh1CDVv1Sz9+GedfdnzDPPgf6t8ywWCYZvEsBV
+xP5XicW4WlJKS6Tjd4P0Unx/LIQUKyQ6gNUR/TLh+LxeLCCS1sV/HX2Pc2Whlxcy
+EuBEr3HjFLlc8Pk2nftQAV/NpdcqUT4Nvsc2Lb8qUHMeV0hOCRQB/InUWDg+Ah4t
+0EThPmgRtLcpmdNuh6GRnx40Awj2ikhMZvf9OMUYDRLb6Slw8k8mv9xFHonjhTle
+j1eLcEzhltKR3/vbkHLqZwqTlXpdidMZNrGcVUU6Iu+NxmYgL0APAhgEi00cTMO1
+nLc+Q6gYsdONv+2nAcuhLEgmbZvoKWgfnMEyeiGBRfwv33crb/XUUG7swDcA/yAH
++lI7euN0u+5l0ez1417RoJQykIwcG5PckWv1PAXtxMXKZmEK+gtLSs//rsnGZpf3
+qoqt/F8dY5fBTlq4jD2mENjxf52J6ix5gJ4BwviJnk6rkuLjb1IQV3rjVChowKGL
+wFaY653QcdCeVeNULI12mtKVO5drzIP0BlXGFD/L2ikbPljED5y5wgUA2/0hKX5O
+aO+BepwOXEfGrH3gQ9jZTQmfYPBQAd5cOuHO0xNqIJHubjYHMZLp+jnHA2JmIlIl
+dYAPTN6QIek/kVIq2hgK
+=tws5
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__24_Apr_2014_13_01_25_+1000_WqIGc2=I5SieD4tf--
