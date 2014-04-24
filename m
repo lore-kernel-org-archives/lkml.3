@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751246AbaDXEKp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 00:10:45 -0400
-Received: from out4-smtp.messagingengine.com ([66.111.4.28]:48718 "EHLO
-	out4-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750703AbaDXEKm (ORCPT
+	id S1751292AbaDXENm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 00:13:42 -0400
+Received: from mail-oa0-f45.google.com ([209.85.219.45]:32833 "EHLO
+	mail-oa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719AbaDXENk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 00:10:42 -0400
-X-Sasl-enc: DTQigDx2w+FkNVfrps7pjoW30f7ALzrrtpVppCGkTqGS 1398312641
-Message-ID: <1398312638.2818.4.camel@perseus.fritz.box>
-Subject: Re: [PATCH] autofs - fix lockref lookup
-From: Ian Kent <raven@themaw.net>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: autofs mailing list <autofs@vger.kernel.org>,
-        Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Thu, 24 Apr 2014 12:10:38 +0800
-In-Reply-To: <20140423144624.716f325d454f9debd97bef15@linux-foundation.org>
-References: <20140423052035.5999.69412.stgit@perseus.fritz.box>
-	 <20140423144624.716f325d454f9debd97bef15@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Thu, 24 Apr 2014 00:13:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398120472-6190-1-git-send-email-hpa@linux.intel.com>
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com>
+From: comex <comexk@gmail.com>
+Date: Thu, 24 Apr 2014 00:13:18 -0400
+Message-ID: <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Andy Lutomirski <amluto@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-23 at 14:46 -0700, Andrew Morton wrote:
-> On Wed, 23 Apr 2014 13:20:36 +0800 Ian Kent <raven@themaw.net> wrote:
-> 
-> > autofs needs to be able to see private data dentry flags for
-> > its dentrys that are being created but not yet hashed and for
-> > its dentys that have been rmdir()ed but not yet freed. It
-> > needs to do this so it can block processes in these states
-> > until a status has been returned to indicate the given
-> > operation is complete.
-> > 
-> > It does this by keeping two lists, active and expring, of
-> > dentrys in this state and uses ->d_release() to keep them
-> > stable while it checks the reference count to determine
-> > if they should be used.
-> > 
-> > But with the recent lockref changes dentrys being freed
-> > sometimes don't transition to a reference count of 0 before
-> > being freed so autofs can occassionally use a dentry that
-> > is invalid which can lead to a panic.
-> 
-> What's the value of "recent"?  I assume 3.14 is OK?
+On Mon, Apr 21, 2014 at 6:47 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> This is a prototype of espfix for the 64-bit kernel.  espfix is a
+> workaround for the architectural definition of IRET, which fails to
+> restore bits [31:16] of %esp when returning to a 16-bit stack
+> segment.  We have a workaround for the 32-bit kernel, but that
+> implementation doesn't work for 64 bits.
 
-I'll need to look again but from memory it's broken from 3.12 onward.
+Hi,
 
-The breakage happened when lockref_mark_dead() was introduced because it
-sets lockref->count = -128 instead of reducing count by one as was done
-previously.
+A comment: The main purpose of espfix is to prevent attackers from
+learning sensitive addresses, right?  But as far as I can tell, this
+mini-stack becomes itself somewhat sensitive:
 
-Ian
-  
+- The user can put arbitrary data in registers before returning to the
+LDT in order to get it saved at a known address accessible from the
+kernel.  With SMAP and KASLR this might otherwise be difficult.
+- If the iret faults, kernel addresses will get stored there (and not
+cleared).  If a vulnerability could return data from an arbitrary
+specified address to the user, this would be harmful.
 
+I guess with the current KASLR implementation you could get the same
+effects via brute force anyway, by filling up and browsing memory,
+respectively, but ideally there wouldn't be any virtual addresses
+guaranteed not to fault.
 
+- If a vulnerability allowed overwriting data at an arbitrary
+specified address, the exception frame could get overwritten at
+exactly the right moment between the copy and iret (or right after the
+iret to mess up fixup_exception)?  You probably know better than I
+whether or not caches prevent this from actually being possible.
+
+Just raising the issue.
