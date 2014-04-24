@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754498AbaDXIyy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:54:54 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46784 "EHLO
+	id S1754462AbaDXIys (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:54:48 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46778 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751787AbaDXIyi (ORCPT
+	with ESMTP id S1754417AbaDXIyh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:54:38 -0400
+	Thu, 24 Apr 2014 04:54:37 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Whitney <enwlinux@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Yann Droneaud <ydroneaud@opteya.com>,
+        Roland Dreier <roland@purestorage.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 113/182] ext4: fix premature freeing of partial clusters split across leaf blocks
-Date: Thu, 24 Apr 2014 09:50:38 +0100
-Message-Id: <1398329507-5911-114-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 112/182] IB/ehca: Returns an error on ib_copy_to_udata() failure
+Date: Thu, 24 Apr 2014 09:50:37 +0100
+Message-Id: <1398329507-5911-113-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,60 +28,40 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Whitney <enwlinux@gmail.com>
+From: Yann Droneaud <ydroneaud@opteya.com>
 
-commit ad6599ab3ac98a4474544086e048ce86ec15a4d1 upstream.
+commit 5bdb0f02add5994b0bc17494f4726925ca5d6ba1 upstream.
 
-Xfstests generic/311 and shared/298 fail when run on a bigalloc file
-system.  Kernel error messages produced during the tests report that
-blocks to be freed are already on the to-be-freed list.  When e2fsck
-is run at the end of the tests, it typically reports bad i_blocks and
-bad free blocks counts.
+In case of error when writing to userspace, function ehca_create_cq()
+does not set an error code before following its error path.
 
-The bug that causes these failures is located in ext4_ext_rm_leaf().
-Code at the end of the function frees a partial cluster if it's not
-shared with an extent remaining in the leaf.  However, if all the
-extents in the leaf have been removed, the code dereferences an
-invalid extent pointer (off the front of the leaf) when the check for
-sharing is made.  This generally has the effect of unconditionally
-freeing the partial cluster, which leads to the observed failures
-when the partial cluster is shared with the last extent in the next
-leaf.
+This patch sets the error code to -EFAULT when ib_copy_to_udata()
+fails.
 
-Fix this by attempting to free the cluster only if extents remain in
-the leaf.  Any remaining partial cluster will be freed if possible
-when the next leaf is processed or when leaf removal is complete.
+This was caught when using spatch (aka. coccinelle)
+to rewrite call to ib_copy_{from,to}_udata().
 
-Signed-off-by: Eric Whitney <enwlinux@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
+Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
+Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/extents.c | 11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+ drivers/infiniband/hw/ehca/ehca_cq.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 3960bba..8a5cee9 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2673,10 +2673,15 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
- 		err = ext4_ext_correct_indexes(handle, inode, path);
- 
- 	/*
--	 * Free the partial cluster only if the current extent does not
--	 * reference it. Otherwise we might free used cluster.
-+	 * If there's a partial cluster and at least one extent remains in
-+	 * the leaf, free the partial cluster if it isn't shared with the
-+	 * current extent.  If there's a partial cluster and no extents
-+	 * remain in the leaf, it can't be freed here.  It can only be
-+	 * freed when it's possible to determine if it's not shared with
-+	 * any other extent - when the next leaf is processed or when space
-+	 * removal is complete.
- 	 */
--	if (*partial_cluster > 0 &&
-+	if (*partial_cluster > 0 && eh->eh_entries &&
- 	    (EXT4_B2C(sbi, ext4_ext_pblock(ex) + ex_ee_len - 1) !=
- 	     *partial_cluster)) {
- 		int flags = get_default_free_blocks_flags(inode);
+diff --git a/drivers/infiniband/hw/ehca/ehca_cq.c b/drivers/infiniband/hw/ehca/ehca_cq.c
+index 212150c..8cc8375 100644
+--- a/drivers/infiniband/hw/ehca/ehca_cq.c
++++ b/drivers/infiniband/hw/ehca/ehca_cq.c
+@@ -283,6 +283,7 @@ struct ib_cq *ehca_create_cq(struct ib_device *device, int cqe, int comp_vector,
+ 			(my_cq->galpas.user.fw_handle & (PAGE_SIZE - 1));
+ 		if (ib_copy_to_udata(udata, &resp, sizeof(resp))) {
+ 			ehca_err(device, "Copy to udata failed.");
++			cq = ERR_PTR(-EFAULT);
+ 			goto create_cq_exit4;
+ 		}
+ 	}
 -- 
 1.9.1
 
