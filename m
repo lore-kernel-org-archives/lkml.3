@@ -1,57 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570AbaDXWTA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:19:00 -0400
-Received: from mail-pa0-f52.google.com ([209.85.220.52]:37851 "EHLO
-	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758050AbaDXWSy (ORCPT
+	id S1758050AbaDXWTc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:19:32 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39716 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755384AbaDXVqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:18:54 -0400
-Date: Thu, 24 Apr 2014 15:18:52 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Jiri Kosina <jkosina@suse.cz>
-cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        =?UTF-8?Q?J=C3=B6rn_Engel?= <joern@logfs.org>,
-        Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, akpm@linux-foundation.org, cxie@redhat.com,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] printk: Print cpu number along with time
-In-Reply-To: <alpine.LNX.2.00.1404250005020.8903@pobox.suse.cz>
-Message-ID: <alpine.DEB.2.02.1404241518210.24983@chino.kir.corp.google.com>
-References: <20140423125352.704f9fb2@annuminas.surriel.com> <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz> <20140424005247.GA17713@logfs.org> <20140424194024.GA25446@logfs.org> <20140424195821.GA3092@kroah.com>
- <alpine.LNX.2.00.1404250005020.8903@pobox.suse.cz>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	Thu, 24 Apr 2014 17:46:14 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Derek Basehore <dbasehore@chromium.org>, Jan Kara <jack@suse.cz>,
+        Alexander Viro <viro@zento.linux.org.uk>, Tejun Heo <tj@kernel.org>,
+        "Darrick J. Wong" <darrick.wong@oracle.com>,
+        Kees Cook <keescook@chromium.org>, Benson Leung <bleung@chromium.org>,
+        Sonny Rao <sonnyrao@chromium.org>,
+        Luigi Semenzato <semenzato@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+        Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 08/23] backing_dev: fix hung task on sync
+Date: Thu, 24 Apr 2014 14:48:38 -0700
+Message-Id: <20140424214826.969640909@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
+References: <20140424214825.933835556@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Apr 2014, Jiri Kosina wrote:
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
-> > > +#ifdef CONFIG_PRINTK_CPU
-> > > +	if (!buf)
-> > > +		return snprintf(NULL, 0, "[%5lu.000000,%02x] ",
-> > 
-> > %02x for a cpu?  What happens on machines with 8k cpus?
-> 
-> Ummm ... what issue do you see here, Greg? It'll print 0x1f40, no?
-> 
+------------------
 
-I think he's referring to the alignment with %02x.
+From: Derek Basehore <dbasehore@chromium.org>
 
-> > And is this really an issue?  Debugging by using printk is fun, but not 
-> > really something that people need to add a cpu number to.  Why not just 
-> > use a tracepoint in your code to get the needed information instead?
-> 
-> Well, if you have dmesg dump from panic that happens every other year, and 
-> you have to do post-mortem analysis on it, I am pretty sure you would love 
-> to be able to figure out how the stack traces would look like without 
-> inter-CPU interleaving. And I am pretty sure you wouldn't want to 
-> insert/enable a tracepoint and wait another two years for the bug to 
-> trigger again.
-> 
+commit 6ca738d60c563d5c6cf6253ee4b8e76fa77b2b9e upstream.
 
-Sounds like the appropriate fix would be to serialize stack dumping to the 
-kernel log.
+bdi_wakeup_thread_delayed() used the mod_delayed_work() function to
+schedule work to writeback dirty inodes.  The problem with this is that
+it can delay work that is scheduled for immediate execution, such as the
+work from sync_inodes_sb().  This can happen since mod_delayed_work()
+can now steal work from a work_queue.  This fixes the problem by using
+queue_delayed_work() instead.  This is a regression caused by commit
+839a8e8660b6 ("writeback: replace custom worker pool implementation with
+unbound workqueue").
+
+The reason that this causes a problem is that laptop-mode will change
+the delay, dirty_writeback_centisecs, to 60000 (10 minutes) by default.
+In the case that bdi_wakeup_thread_delayed() races with
+sync_inodes_sb(), sync will be stopped for 10 minutes and trigger a hung
+task.  Even if dirty_writeback_centisecs is not long enough to cause a
+hung task, we still don't want to delay sync for that long.
+
+We fix the problem by using queue_delayed_work() when we want to
+schedule writeback sometime in future.  This function doesn't change the
+timer if it is already armed.
+
+For the same reason, we also change bdi_writeback_workfn() to
+immediately queue the work again in the case that the work_list is not
+empty.  The same problem can happen if the sync work is run on the
+rescue worker.
+
+[jack@suse.cz: update changelog, add comment, use bdi_wakeup_thread_delayed()]
+Signed-off-by: Derek Basehore <dbasehore@chromium.org>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Cc: Alexander Viro <viro@zento.linux.org.uk>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: Derek Basehore <dbasehore@chromium.org>
+Cc: Kees Cook <keescook@chromium.org>
+Cc: Benson Leung <bleung@chromium.org>
+Cc: Sonny Rao <sonnyrao@chromium.org>
+Cc: Luigi Semenzato <semenzato@chromium.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ fs/fs-writeback.c |    8 ++++----
+ mm/backing-dev.c  |    5 ++++-
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -1038,10 +1038,10 @@ void bdi_writeback_workfn(struct work_st
+ 		trace_writeback_pages_written(pages_written);
+ 	}
+ 
+-	if (!list_empty(&bdi->work_list) ||
+-	    (wb_has_dirty_io(wb) && dirty_writeback_interval))
+-		queue_delayed_work(bdi_wq, &wb->dwork,
+-			msecs_to_jiffies(dirty_writeback_interval * 10));
++	if (!list_empty(&bdi->work_list))
++		mod_delayed_work(bdi_wq, &wb->dwork, 0);
++	else if (wb_has_dirty_io(wb) && dirty_writeback_interval)
++		bdi_wakeup_thread_delayed(bdi);
+ 
+ 	current->flags &= ~PF_SWAPWRITE;
+ }
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -287,13 +287,16 @@ int bdi_has_dirty_io(struct backing_dev_
+  * Note, we wouldn't bother setting up the timer, but this function is on the
+  * fast-path (used by '__mark_inode_dirty()'), so we save few context switches
+  * by delaying the wake-up.
++ *
++ * We have to be careful not to postpone flush work if it is scheduled for
++ * earlier. Thus we use queue_delayed_work().
+  */
+ void bdi_wakeup_thread_delayed(struct backing_dev_info *bdi)
+ {
+ 	unsigned long timeout;
+ 
+ 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+-	mod_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
+ }
+ 
+ /*
+
+
