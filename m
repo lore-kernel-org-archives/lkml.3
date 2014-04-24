@@ -1,128 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571AbaDXKBW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:01:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48430 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753032AbaDXKBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:01:19 -0400
-Date: Thu, 24 Apr 2014 12:01:15 +0200
-From: Jan Kara <jack@suse.cz>
-To: Heinrich Schuchardt <xypron.glpk@gmx.de>
-Cc: Jan Kara <jack@suse.cz>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Eric Paris <eparis@redhat.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] fanotify: check permissions when creating file
- descriptor
-Message-ID: <20140424100115.GK17824@quack.suse.cz>
-References: <1397940833-6386-1-git-send-email-xypron.glpk@gmx.de>
- <20140422134044.GE366@quack.suse.cz>
- <CAKgNAkh=Shj6UO6x_KieQEYUoY+guokNute0iwUfiSYFJbeTfQ@mail.gmail.com>
- <20140422140747.GF366@quack.suse.cz>
- <5356D66E.4040504@gmx.de>
+	id S1755369AbaDXKBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:01:48 -0400
+Received: from mail-qg0-f45.google.com ([209.85.192.45]:53699 "EHLO
+	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134AbaDXKBo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 06:01:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5356D66E.4040504@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFLxGvyPCwo-d92QK9qAR5=gmRS4p24tYs9PiOApBGfrKdxJ5Q@mail.gmail.com>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<1397824031-4892-14-git-send-email-lftan@altera.com>
+	<CAFLxGvyPCwo-d92QK9qAR5=gmRS4p24tYs9PiOApBGfrKdxJ5Q@mail.gmail.com>
+Date: Thu, 24 Apr 2014 18:01:43 +0800
+X-Google-Sender-Auth: qmctBbPTAhl_-tIn34wn56Fko3I
+Message-ID: <CAFiDJ5-q5hzR+1BDCmCzwqbuVZOUdjX_-omR4u3rnC8xqdQZLA@mail.gmail.com>
+Subject: Re: [PATCH 17/28] nios2: Signal handling support
+From: Ley Foon Tan <lftan@altera.com>
+To: Richard Weinberger <richard.weinberger@gmail.com>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 22-04-14 22:51:58, Heinrich Schuchardt wrote:
-> On 22.04.2014 16:07, Jan Kara wrote:
-> >>>On Sat 19-04-14 22:53:53, Heinrich Schuchardt wrote:
-> >>>>When monitoring a directory or a mount with the fanotify API
-> >>>>the call to fanotify_init checks,
-> >>>>  * the process has cap_sys_admin capability
-> >>>>
-> >>>>The call to fanotify_mark checks,
-> >>>>  * the process has read authorization for directory or mount
-> >>>>
-> >>>>A directory or mount may contain files for which the process
-> >>>>has no read or write authorization.
-> >>>>Yet when reading from the fanotify file descriptor, structures
-> >>>>fanotify_event_metadata are returned, which contain a file
-> >>>>descriptor for these files, and will allow to read or write.
-> >>>>
-> >>>>The patch adds an authorization check for read and write
-> >>>>permission. In case of missing permission, reading from the
-> >>>>fanotify file descriptor returns EACCES.
-> >>>   OK, am I right you are concerned about a situation where fanotify group
-> >>>descriptor is passed to an unpriviledged process which handles all the
-> >>>incoming events? I'm asking because the permission checking can be
-> >>>relatively expensive (think of acls) so we better do it for a reason.
-> >>>I'd prefer to hear from Eric what the original intention regarding
-> >>>permissions was...
-> >
-> >Reviewed-by: Jan Kara <jack@suse.cz>
-> >
-> 
-> before applying the patch I think another problem has to be solved.
-> 
-> fanotify_read can have one of the following outcomes:
-> 
-> 1) Everything works fine one or multiple struct fanotify_event_metadata
-> are returned. fanotify_event_metadata->fd references the concerned
-> files.
-> 2) An overflow occured. fanotify_event_metadata->fd is set to FAN_NOFD.
-> 3) An error occured. fanotify_read returns no
-> struct fanotify_event_metadata but fails with an error code.
-> 
-> This means any error in create_fd (called by fanotify read) may lead to
-> lost events, if the error does not occur in the first event handled by
-> fanotify_read.
-> And not only events are lost, but also references to file descriptors
-> are lost.
-> 
-> Of cause create_fd can already fail with EMFILE, if no more file
-> descriptors are available. (Not a good situation to lose references
-> to file descriptors?)
-> 
-> If we add the patch to check permissions errors in create_fd will
-> be much more of an issue. A malware might force such errors to
-> occur by writing to a file with chmod 200.
-  Yeah, so as I wrote in another email I don't think permission checking in
-create_fd() is needed after all but still the problem you raised is valid.
+On Sun, Apr 20, 2014 at 3:29 AM, Richard Weinberger
+<richard.weinberger@gmail.com> wrote:
 
-> Hence we have to rethink how errors are to be handled.
-> 
-> Instead of having fanotify_read returning an error code it could
-> set the concerned fanotify_event_metadata->fd to the
-> negative value of the error code, and return this
-> fanotify_event_metadata as the last event.
-> 
-> Unfortunately this might break existing code, if this code only
-> checks fanotify_event_metadata->fd against FAN_NOFD.
-> 
-> Another solution would be to simply set
-> fanotify_event_metadata->fd = FAN_NOFD
-> and errno to the error code.
-> 
-> This would not break any existing code, because such code already
-> has to be able to handle FAN_NOFD. And the error relating to
-> FANO_NOFD can be recovered from errno.
-> 
-> What is your idea how fanotify_read should gracefully handle a
-> situation were the last of many returned events has a problem?
-  I think the best behavior would be the following:
-If we are filling out the first event, return the error which happened. If
-we are filling out second or further event, leave the problematic event in
-the queue and only return events succesfully copied.
+>> +
+>> +       /* Default to using normal stack.  */
+>> +       usp = regs->sp;
+>> +
+>> +       /* This is the X/Open sanctioned signal stack switching.  */
+>> +       if ((ka->sa.sa_flags & SA_ONSTACK) && (current->sas_ss_sp != 0)) {
+>> +               if (!on_sig_stack(usp))
+>> +                       usp = current->sas_ss_sp + current->sas_ss_size;
+>> +       }
+>
+> You can use sigsp() here.
+Okay.
 
-The implementation isn't trivial but should be doable - you can peek at the
-head of the event queue, try to open a file, and only if that succeeded remove
-the event from the queue. To avoid races with other readers removing event
-from the head of the queue, you have to hold group->notification_mutex
-while doing this. A more lightweight alternative is to just peek at the
-head of the queue, take reference to 'path', drop notification_mutex, open
-the file described by path. Then you take notification_mutex again and
-recheck whether the head event has the same path you opened - if yes, you
-proceed with what you have, if no, you close the file and try again.
 
-Do you want to look into this or should I cook up some patch for it?
+>> +
+>> +       push_cache((unsigned long) &frame->retcode);
+>> +
+>> +       /* Set up registers for signal handler */
+>> +       regs->sp = (unsigned long) frame;
+>> +       regs->r4 = (unsigned long) (current_thread_info()->exec_domain
+>> +                       && current_thread_info()->exec_domain->signal_invmap
+>> +                       && sig < 32
+>> +                       ? current_thread_info()->exec_domain->signal_invmap[sig]
+>> +                       : sig);
+>
+> Does nios2 really need signal translation and supports execution domains?
+Nios2 have one default "default_exec_domain" only. So, we can change
+this to "regs->r4 = sig;".
+BTW, most of the architectures have similar code.
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+
+
+>> +
+>> +/*
+>> + * Note that 'init' is a special process: it doesn't get signals it doesn't
+>> + * want to handle. Thus you cannot kill init even with a SIGKILL even by
+>> + * mistake.
+>> + */
+Will remove this.
+
+
+>> +
+>> +asmlinkage void do_notify_resume(struct pt_regs *regs, sigset_t *oldset,
+>> +                               int in_syscall)
+>> +{
+>> +       pr_debug("--> ENTERING %s\n", __func__);
+>
+> Please remove such printk()s.
+> If you need to know which functions get called, use ftrace.
+Okay, will remove this.
+
+
+Regards
+Ley Foon
