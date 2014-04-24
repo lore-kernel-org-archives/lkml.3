@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758356AbaDXPzA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:55:00 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:48693 "EHLO comal.ext.ti.com"
+	id S1758343AbaDXPxL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:53:11 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:51291 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757920AbaDXPy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:54:57 -0400
-Date: Thu, 24 Apr 2014 10:54:04 -0500
-From: Darren Etheridge <detheridge@ti.com>
-To: Nishanth Menon <nm@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, <devicetree@vger.kernel.org>,
-        Rajendra Nayak <rnayak@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        <linux-kernel@vger.kernel.org>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V2 00/19] bus: omap_l3_noc: driver cleanups and support
- for DRA7/AM4372
-Message-ID: <20140424155403.GA29229@ti.com>
-References: <1397492726-17203-1-git-send-email-nm@ti.com>
- <1397767775-10965-1-git-send-email-nm@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1397767775-10965-1-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758314AbaDXPtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:49:15 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Tim Bird <tbird20d@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
+Subject: [PATCH v7 17/20] usb: phy: msm: Select secondary PHY via TCSR
+Date: Thu, 24 Apr 2014 18:48:12 +0300
+Message-Id: <1398354495-20782-18-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
+References: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nishanth,
+From: Tim Bird <tbird20d@gmail.com>
 
-Nishanth Menon <nm@ti.com> wrote on Thu [2014-Apr-17 15:49:16 -0500]:
-> 
-> V2 introduces the following changes:
-> 	- Additional bug fix detected during additional testing (all tests complete now). patch #12
-> 	- reordering of patches to order logical changes and reduce code churn.
-> 	- interrupt handler split up and additional information now provided in log to aid debug when error occur
-> 	- patches are marked where new (12,14,15,16).
-> 	- DRA7 updated from master document for all DRA7 variants.
-> 
-> This series cleansup omap_l3_noc driver and adds data to support DRA7
-> and AM437x SoCs.
-> 
-This L3 noc driver patch series is working great for me and has already
-flagged a very difficult to detect problem in a driver I am working on
-with a DMA access to an invalid memory address on DRA7.
+Select the secondary PHY using the TCSR register, if phy-num=1
+in the DTS (or phy_number is set in the platform data).  The
+SOC has 2 PHYs which can be used with the OTG port, and this
+code allows configuring the correct one.
 
-Tested-by: Darren Etheridge <detheridge@ti.com>
+Note: This resolves the problem I was seeing where I couldn't
+get the USB driver working at all on a dragonboard, from cold
+boot.  This patch depends on patch 5/14 from Ivan's msm USB
+patch set.  It does not use DT for the register address, as
+there's no evidence that this address changes between SoC
+versions.
 
+Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+---
+ drivers/usb/phy/phy-msm-usb.c    | 14 ++++++++++++++
+ include/linux/usb/msm_hsusb_hw.h |  3 +++
+ 2 files changed, 17 insertions(+)
 
-Darren
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index 06d79c1..1554f69 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -1488,6 +1488,7 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 	struct resource *res;
+ 	struct msm_otg *motg;
+ 	struct usb_phy *phy;
++	void __iomem *phy_select;
+
+ 	motg = devm_kzalloc(&pdev->dev, sizeof(struct msm_otg), GFP_KERNEL);
+ 	if (!motg) {
+@@ -1552,6 +1553,19 @@ static int msm_otg_probe(struct platform_device *pdev)
+ 	if (IS_ERR(motg->regs))
+ 		return PTR_ERR(motg->regs);
+
++	/*
++	 * NOTE: The PHYs can be multiplexed between the chipidea controller
++	 * and the dwc3 controller, using a single bit. It is important that
++	 * the dwc3 driver does not set this bit in an incompatible way.
++	 */
++	if (motg->phy_number) {
++		phy_select = devm_ioremap_nocache(&pdev->dev, USB2_PHY_SEL, 4);
++		if (IS_ERR(phy_select))
++			return PTR_ERR(phy_select);
++		/* Enable second PHY with the OTG port */
++		writel_relaxed(0x1, phy_select);
++	}
++
+ 	dev_info(&pdev->dev, "OTG regs = %p\n", motg->regs);
+
+ 	motg->irq = platform_get_irq(pdev, 0);
+diff --git a/include/linux/usb/msm_hsusb_hw.h b/include/linux/usb/msm_hsusb_hw.h
+index 98d3dd8..a29f603 100644
+--- a/include/linux/usb/msm_hsusb_hw.h
++++ b/include/linux/usb/msm_hsusb_hw.h
+@@ -16,6 +16,9 @@
+ #ifndef __LINUX_USB_GADGET_MSM72K_UDC_H__
+ #define __LINUX_USB_GADGET_MSM72K_UDC_H__
+
++/* USB phy selector - in TCSR address range */
++#define USB2_PHY_SEL         0xfd4ab000
++
+ #define USB_AHBBURST         (MSM_USB_BASE + 0x0090)
+ #define USB_AHBMODE          (MSM_USB_BASE + 0x0098)
+ #define USB_CAPLENGTH        (MSM_USB_BASE + 0x0100) /* 8 bit */
+--
+1.8.3.2
+
