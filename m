@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339AbaDXKmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:42:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46604 "EHLO
+	id S1754034AbaDXIxm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:53:42 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46578 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754048AbaDXIxp (ORCPT
+	with ESMTP id S1753785AbaDXIxi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:45 -0400
+	Thu, 24 Apr 2014 04:53:38 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
         Lee Jones <lee.jones@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 076/182] mfd: 88pm800: Fix I2C device resource leak if probe fails
-Date: Thu, 24 Apr 2014 09:50:01 +0100
-Message-Id: <1398329507-5911-77-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 071/182] mfd: max8998: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Thu, 24 Apr 2014 09:49:56 +0100
+Message-Id: <1398329507-5911-72-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -30,44 +30,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit 141050cf3d84fc303df58796d68dc1376b0e8f67 upstream.
+commit ed26f87b9f71693a1d1ee85f5e6209601505080f upstream.
 
-During probe the driver allocates two dummy I2C devices for subchips in
-function pm800_pages_init(). Additionally this function allocates
-regmaps for these subchips. If any of these steps fail then these dummy
-I2C devices are not freed and resources leak.
+During probe the driver allocates dummy I2C device for RTC with i2c_new_dummy() but it does not check the return value of this call.
 
-On pm800_pages_init() fail the driver must call pm800_pages_exit() to
-unregister dummy I2C devices.
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
+
+If i2c_new_dummy() fails for RTC device, fail also the probe for
+main MFD driver.
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mfd/88pm800.c | 3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/mfd/max8998.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/mfd/88pm800.c b/drivers/mfd/88pm800.c
-index 6c95483..af3c608 100644
---- a/drivers/mfd/88pm800.c
-+++ b/drivers/mfd/88pm800.c
-@@ -569,7 +569,7 @@ static int pm800_probe(struct i2c_client *client,
- 	ret = pm800_pages_init(chip);
- 	if (ret) {
- 		dev_err(&client->dev, "pm800_pages_init failed!\n");
--		goto err_page_init;
-+		goto err_device_init;
- 	}
+diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
+index 21af51a..7c169e6 100644
+--- a/drivers/mfd/max8998.c
++++ b/drivers/mfd/max8998.c
+@@ -214,6 +214,10 @@ static int max8998_i2c_probe(struct i2c_client *i2c,
+ 	mutex_init(&max8998->iolock);
  
- 	ret = device_800_init(chip, pdata);
-@@ -585,7 +585,6 @@ static int pm800_probe(struct i2c_client *client,
+ 	max8998->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
++	if (!max8998->rtc) {
++		dev_err(&i2c->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max8998->rtc, max8998);
  
- err_device_init:
- 	pm800_pages_exit(chip);
--err_page_init:
- err_subchip_alloc:
- 	pm80x_deinit();
- out_init:
+ 	max8998_irq_init(max8998);
 -- 
 1.9.1
 
