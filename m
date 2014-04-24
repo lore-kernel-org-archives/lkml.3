@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbaDXIyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:54:12 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46680 "EHLO
+	id S1755450AbaDXKET (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:04:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46696 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754212AbaDXIyG (ORCPT
+	with ESMTP id S1754250AbaDXIyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:54:06 -0400
+	Thu, 24 Apr 2014 04:54:11 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Benny Halevy <bhalevy@primarydata.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 091/182] nfsd4: buffer-length check for SUPPATTR_EXCLCREAT
-Date: Thu, 24 Apr 2014 09:50:16 +0100
-Message-Id: <1398329507-5911-92-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 095/182] nfsd: notify_change needs elevated write count
+Date: Thu, 24 Apr 2014 09:50:20 +0100
+Message-Id: <1398329507-5911-96-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -30,31 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "J. Bruce Fields" <bfields@redhat.com>
 
-commit de3997a7eeb9ea286b15879fdf8a95aae065b4f7 upstream.
+commit 9f67f189939eccaa54f3d2c9cf10788abaf2d584 upstream.
 
-This was an omission from 8c18f2052e756e7d5dea712fc6e7ed70c00e8a39
-"nfsd41: SUPPATTR_EXCLCREAT attribute".
+Looks like this bug has been here since these write counts were
+introduced, not sure why it was just noticed now.
 
-Cc: Benny Halevy <bhalevy@primarydata.com>
+Thanks also to Jan Kara for pointing out the problem.
+
+Reported-by: Matthew Rahtz <mrahtz@rapitasystems.com>
 Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/nfsd/nfs4xdr.c | 2 ++
- 1 file changed, 2 insertions(+)
+ fs/nfsd/vfs.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
-diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
-index c6c727a13..7b87337 100644
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -2500,6 +2500,8 @@ out_acl:
- 			goto out;
- 	}
- 	if (bmval2 & FATTR4_WORD2_SUPPATTR_EXCLCREAT) {
-+		if ((buflen -= 16) < 0)
-+			goto out_resource;
- 		WRITE32(3);
- 		WRITE32(NFSD_SUPPATTR_EXCLCREAT_WORD0);
- 		WRITE32(NFSD_SUPPATTR_EXCLCREAT_WORD1);
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index 72cb28e..e9a80e4 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -407,6 +407,7 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
+ 	umode_t		ftype = 0;
+ 	__be32		err;
+ 	int		host_err;
++	bool		get_write_count;
+ 	int		size_change = 0;
+ 
+ 	if (iap->ia_valid & (ATTR_ATIME | ATTR_MTIME | ATTR_SIZE))
+@@ -414,10 +415,18 @@ nfsd_setattr(struct svc_rqst *rqstp, struct svc_fh *fhp, struct iattr *iap,
+ 	if (iap->ia_valid & ATTR_SIZE)
+ 		ftype = S_IFREG;
+ 
++	/* Callers that do fh_verify should do the fh_want_write: */
++	get_write_count = !fhp->fh_dentry;
++
+ 	/* Get inode */
+ 	err = fh_verify(rqstp, fhp, ftype, accmode);
+ 	if (err)
+ 		goto out;
++	if (get_write_count) {
++		host_err = fh_want_write(fhp);
++		if (host_err)
++			return nfserrno(host_err);
++	}
+ 
+ 	dentry = fhp->fh_dentry;
+ 	inode = dentry->d_inode;
 -- 
 1.9.1
 
