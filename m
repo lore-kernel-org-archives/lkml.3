@@ -1,87 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345AbaDXLTs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:19:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46465 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753741AbaDXIxF (ORCPT
+	id S1756361AbaDXLUI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:20:08 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:57583 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812AbaDXLUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:05 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Stefan=20S=C3=B8rensen?= 
-	<stefan.sorensen@spectralink.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 048/182] ARM: OMAP2+: INTC: Acknowledge stuck active interrupts
-Date: Thu, 24 Apr 2014 09:49:33 +0100
-Message-Id: <1398329507-5911-49-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+	Thu, 24 Apr 2014 07:20:03 -0400
+Message-ID: <5358F362.6080006@codeaurora.org>
+Date: Thu, 24 Apr 2014 06:20:02 -0500
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:28.0) Gecko/20100101 Firefox/28.0 SeaMonkey/2.25
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Extended-Stable: 3.11
+To: "Westerberg, Mika" <mika.westerberg@intel.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+CC: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
+References: <CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com> <534B93BA.6020406@linux.intel.com> <534BFAAF.3070805@codeaurora.org> <534D0370.50108@linux.intel.com> <535005BA.1040405@codeaurora.org> <5357A80B.8030701@linux.intel.com> <5357ACF1.9070206@codeaurora.org> <20140423135915.GY30677@intel.com> <5357D8CC.3080501@codeaurora.org> <CACRpkdbk8okbzaZgD=BqeMSOvbEvYNViqamd9i=NAaAWW=T9sQ@mail.gmail.com> <20140424062719.GZ30677@intel.com>
+In-Reply-To: <20140424062719.GZ30677@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+Westerberg, Mika wrote:
+> Typically this is done by the boot firmware (BIOS in this case). So the OS
+> doesn't need to deal with that.
+>
+> AFAICT ACPI doesn't know anything about pin muxing.
 
-------------------
+In that case, would it be correct to say that a Linux pinctrl driver for 
+an ACPI-only platform should not define pinmux function groups, because 
+they'll never be used?
 
-From: =?UTF-8?q?Stefan=20S=C3=B8rensen?= <stefan.sorensen@spectralink.com>
-
-commit 698b48532539484b012fb7c4176b959d32a17d00 upstream.
-
-When an interrupt has become active on the INTC it will stay active
-until it is acked, even if masked or de-asserted. The
-INTC_PENDING_IRQn registers are however updated and since these are
-used by omap_intc_handle_irq to determine which interrupt to handle,
-it will never see the active interrupt. This will result in a storm of
-useless interrupts that is only stopped when another higher priority
-interrupt is asserted.
-
-Fix by sending the INTC an acknowledge if we find no interrupts to
-handle.
-
-Signed-off-by: Stefan Sørensen <stefan.sorensen@spectralink.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/arm/mach-omap2/irq.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/arch/arm/mach-omap2/irq.c b/arch/arm/mach-omap2/irq.c
-index e022a86..6037a9a 100644
---- a/arch/arm/mach-omap2/irq.c
-+++ b/arch/arm/mach-omap2/irq.c
-@@ -222,6 +222,7 @@ void __init ti81xx_init_irq(void)
- static inline void omap_intc_handle_irq(void __iomem *base_addr, struct pt_regs *regs)
- {
- 	u32 irqnr;
-+	int handled_irq = 0;
- 
- 	do {
- 		irqnr = readl_relaxed(base_addr + 0x98);
-@@ -249,8 +250,15 @@ out:
- 		if (irqnr) {
- 			irqnr = irq_find_mapping(domain, irqnr);
- 			handle_IRQ(irqnr, regs);
-+			handled_irq = 1;
- 		}
- 	} while (irqnr);
-+
-+	/* If an irq is masked or deasserted while active, we will
-+	 * keep ending up here with no irq handled. So remove it from
-+	 * the INTC with an ack.*/
-+	if (!handled_irq)
-+		omap_ack_irq(NULL);
- }
- 
- asmlinkage void __exception_irq_entry omap2_intc_handle_irq(struct pt_regs *regs)
 -- 
-1.9.1
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, hosted by The Linux Foundation.
