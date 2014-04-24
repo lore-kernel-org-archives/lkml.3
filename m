@@ -1,61 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758417AbaDXQ4z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:56:55 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:28567 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757710AbaDXQ4w (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:56:52 -0400
-Message-ID: <53594244.6070305@oracle.com>
-Date: Thu, 24 Apr 2014 12:56:36 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
+	id S1758564AbaDXQ6P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:58:15 -0400
+Received: from www.sr71.net ([198.145.64.142]:52759 "EHLO blackbird.sr71.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758310AbaDXQ6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 12:58:13 -0400
+Message-ID: <535942A3.3020800@sr71.net>
+Date: Thu, 24 Apr 2014 09:58:11 -0700
+From: Dave Hansen <dave@sr71.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: linux-fsdevel <linux-fsdevel@vger.kernel.org>
-CC: Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: fs: dcookie: freeing active timer
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mel Gorman <mgorman@suse.de>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
+        ak@linux.intel.com, riel@redhat.com, alex.shi@linaro.org,
+        dave.hansen@linux.intel.com
+Subject: Re: [PATCH 2/6] x86: mm: rip out complicated, out-of-date, buggy
+ TLB flushing
+References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182421.DFAAD16A@viggo.jf.intel.com> <20140424084552.GQ23991@suse.de>
+In-Reply-To: <20140424084552.GQ23991@suse.de>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 04/24/2014 01:45 AM, Mel Gorman wrote:
+>> +/*
+>> + * See Documentation/x86/tlb.txt for details.  We choose 33
+>> + * because it is large enough to cover the vast majority (at
+>> + * least 95%) of allocations, and is small enough that we are
+>> + * confident it will not cause too much overhead.  Each single
+>> + * flush is about 100 cycles, so this caps the maximum overhead
+>> + * at _about_ 3,000 cycles.
+>> + */
+>> +/* in units of pages */
+>> +unsigned long tlb_single_page_flush_ceiling = 1;
+>> +
+> 
+> This comment is premature. The documentation file does not exist yet and
+> 33 means nothing yet. Out of curiousity though, how confident are you
+> that a TLB flush is generally 100 cycles across different generations
+> and manufacturers of CPUs? I'm not suggesting you change it or auto-tune
+> it, am just curious.
 
-While fuzzing with trinity inside a KVM tools guest running the latest -next
-kernel I've stumbled on the following:
+Yeah, the comment belongs in the later patch where I set it to 33.
 
-[  191.835040] WARNING: CPU: 12 PID: 9725 at lib/debugobjects.c:260 debug_print_object+0x8c/0xb0()
-[  191.838129] ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x20
-[  191.840545] Modules linked in:
-[  191.841297] CPU: 12 PID: 9725 Comm: trinity-c141 Not tainted 3.15.0-rc2-next-20140423-sasha-00018-gc4ff6c4 #408
-[  191.842479]  0000000000000009 ffff88000a8ebc38 ffffffff975271f2 0000000000000001
-[  191.842479]  ffff88000a8ebc88 ffff88000a8ebc78 ffffffff9415afcc ffff88000a8a3d98
-[  191.842479]  ffff8801b3ad5140 ffffffff98e76200 ffffffff988dc502 ffffffff9b70c870
-[  191.842479] Call Trace:
-[  191.842479] dump_stack (lib/dump_stack.c:52)
-[  191.842479] warn_slowpath_common (kernel/panic.c:430)
-[  191.842479] warn_slowpath_fmt (kernel/panic.c:445)
-[  191.842479] debug_print_object (lib/debugobjects.c:262)
-[  191.842479] ? __queue_work (kernel/workqueue.c:1452)
-[  191.842479] __debug_check_no_obj_freed (lib/debugobjects.c:697)
-[  191.842479] debug_check_no_obj_freed (lib/debugobjects.c:726)
-[  191.842479] kmem_cache_free (mm/slub.c:2689 mm/slub.c:2717)
-[  191.871535] ? kmem_cache_destroy (mm/slab_common.c:363)
-[  191.871535] kmem_cache_destroy (mm/slab_common.c:363)
-[  191.871535] dcookie_unregister (fs/dcookies.c:302 fs/dcookies.c:343)
-[  191.871535] event_buffer_release (arch/x86/oprofile/../../../drivers/oprofile/event_buffer.c:153)
-[  191.871535] __fput (fs/file_table.c:217)
-[  191.871535] ____fput (fs/file_table.c:253)
-[  191.871535] task_work_run (kernel/task_work.c:125 (discriminator 1))
-[  191.871535] do_notify_resume (include/linux/tracehook.h:196 arch/x86/kernel/signal.c:751)
-[  191.871535] int_signal (arch/x86/kernel/entry_64.S:807)
+I looked at this on the last few generations of Intel CPUs.  "100
+cycles" was a very general statement, and not precise at all.  My laptop
+averages out to 113 cycles overall, but the flushes of 25 pages averaged
+96 cycles/page while the flushes of 2 averaged 219/page.
 
+Those cycles include some costs of from the instrumentation as well.
 
-Thanks,
-Sasha
+I did not test on other CPU manufacturers, but this should be pretty
+easy to reproduce.  I'm happy to help folks re-run it on other hardware.
+
+I also believe with the modalias stuff we've got in sysfs for the CPU
+objects we can do this in the future with udev rules instead of
+hard-coding it in the kernel.
+
+>> -	/* In modern CPU, last level tlb used for both data/ins */
+>> -	if (vmflag & VM_EXEC)
+>> -		tlb_entries = tlb_lli_4k[ENTRIES];
+>> -	else
+>> -		tlb_entries = tlb_lld_4k[ENTRIES];
+>> -
+>> -	/* Assume all of TLB entries was occupied by this task */
+>> -	act_entries = tlb_entries >> tlb_flushall_shift;
+>> -	act_entries = mm->total_vm > act_entries ? act_entries : mm->total_vm;
+>> -	nr_base_pages = (end - start) >> PAGE_SHIFT;
+>> -
+>> -	/* tlb_flushall_shift is on balance point, details in commit log */
+>> -	if (nr_base_pages > act_entries) {
+>> +	if ((end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
+>>  		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+>>  		local_flush_tlb();
+>>  	} else {
+> 
+> We lose the different tuning based on whether the flush is for instructions
+> or data. However, I cannot think of a good reason for keeping it as I
+> expect that flushes of instructions is relatively rare. The benefit, if
+> any, will be marginal. Still, if you do another revision it would be
+> nice to call this out in the changelog.
+
+Will do.
+
