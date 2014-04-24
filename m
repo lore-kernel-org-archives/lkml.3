@@ -1,93 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329AbaDXJBp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:01:45 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:36792 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752536AbaDXJBj (ORCPT
+	id S1755353AbaDXJCn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:02:43 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47166 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070AbaDXI4f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 05:01:39 -0400
-Date: Thu, 24 Apr 2014 11:01:34 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
-        mingo@redhat.com, systemtap@sourceware.org,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH -tip v9 25/26] kprobes: Introduce kprobe cache to reduce
- cache misshits
-Message-ID: <20140424090134.GC7768@gmail.com>
-References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
- <20140417081931.26341.47154.stgit@ltc230.yrl.intra.hitachi.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140417081931.26341.47154.stgit@ltc230.yrl.intra.hitachi.co.jp>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Apr 2014 04:56:35 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Thierry Reding <treding@nvidia.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 178/182] drm/tegra: Remove gratuitous pad field
+Date: Thu, 24 Apr 2014 09:51:43 +0100
+Message-Id: <1398329507-5911-179-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+------------------
 
-> Introduce kprobe cache to reduce cache misshits for
-> massive multiple kprobes.
-> For stress testing kprobes, we need to activate kprobes
-> as many as possible. This situation causes cache miss
-> hit storm on kprobe hash-list. kprobe hashlist is already
-> enlarged to 4k entries and this is still small for 40k
-> kprobes.
-> 
-> For example, when registering 40k probes on the hlist and
-> enabling 20k probes, perf tools shows still a lot of
-> cache-misses are on the get_kprobe.
->   ----
->   Samples: 633  of event 'cache-misses', Event count (approx.): 3414776
->   +  68.13%  [k] get_kprobe
->   +   4.38%  [k] ftrace_lookup_ip
->   +   2.54%  [k] kprobe_ftrace_handler
->   ----
-> 
-> Also, I found that the most of the kprobes are not hit.
-> In that case, to reduce cache-misses, we can reduce the
-> random memory access by introducing a per-cpu cache which
-> caches the address of frequently used kprobe data structure
-> and its probe address.
-> 
-> With kpcache enabled, the get_kprobe_cached goes down to
-> around 4-5% of cache-misses with 20k probes.
->   ----
->   Samples: 729  of event 'cache-misses', Event count (approx.): 690125
->   +  14.49%  [k] ftrace_lookup_ip
->   +   5.61%  [k] kprobe_trace_func
->   +   5.17%  [k] kprobe_ftrace_handler
->   +   4.62%  [k] get_kprobe_cached
->   ----
-> 
-> Of course this reduces the enabling time too.
-> 
-> Without this fix (just enlarge hash table):
-> (2934 sec, 1 min intervals for each 2000 probes enabled)
-> 
->   ----
->   Enabling trace events: start at 1393921862
->   0 1393921864 a2mp_chan_alloc_skb_cb_38581
->   ...
->   19999 1393924928 nfs4_open_confirm_done_11785
->   ----
-> 
-> With this fix:
-> (2025 sec, 1 min intervals for each 2000 probes enabled)
+From: Thierry Reding <treding@nvidia.com>
 
-That's a nice speedup.
+commit cbfbbabb89b37f6bad05f478d906a385149f288d upstream.
 
-So I don't think this should be a Kconfig entry, just enable it 
-unconditionally. That will further simplify the code.
+The version of the drm_tegra_submit structure that was merged all the
+way back in 3.10 contains a pad field that was originally intended to
+properly pad the following __u64 field. Unfortunately it seems like a
+different field was dropped during review that caused this padding to
+become unnecessary, but the pad field wasn't removed at that time.
 
-Thanks,
+One possible side-effect of this is that since the __u64 following the
+pad is now no longer properly aligned, the compiler may (or may not)
+introduce padding itself, which results in no predictable ABI.
 
-	Ingo
+Rectify this by removing the pad field so that all fields are again
+naturally aligned. Technically this is breaking existing userspace ABI,
+but given that there aren't any (released) userspace drivers that make
+use of this yet, the fallout should be minimal.
+
+Fixes: d43f81cbaf43 ("drm/tegra: Add gr2d device")
+Signed-off-by: Thierry Reding <treding@nvidia.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ include/uapi/drm/tegra_drm.h | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/include/uapi/drm/tegra_drm.h b/include/uapi/drm/tegra_drm.h
+index 73bde4e..da10687 100644
+--- a/include/uapi/drm/tegra_drm.h
++++ b/include/uapi/drm/tegra_drm.h
+@@ -105,7 +105,6 @@ struct drm_tegra_submit {
+ 	__u32 num_waitchks;
+ 	__u32 waitchk_mask;
+ 	__u32 timeout;
+-	__u32 pad;
+ 	__u64 syncpts;
+ 	__u64 cmdbufs;
+ 	__u64 relocs;
+-- 
+1.9.1
+
