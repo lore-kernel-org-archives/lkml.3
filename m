@@ -1,78 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166AbaDXTy6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 15:54:58 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42716 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751399AbaDXTy5 (ORCPT
+	id S1752441AbaDXTza (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 15:55:30 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:38955 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751246AbaDXTz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 15:54:57 -0400
-Date: Thu, 24 Apr 2014 15:54:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Sasha Levin <sasha.levin@oracle.com>
-cc: Greg KH <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: usb: mon: freeing active timer
-In-Reply-To: <5359677F.6000005@oracle.com>
-Message-ID: <Pine.LNX.4.44L0.1404241551260.880-100000@iolanthe.rowland.org>
+	Thu, 24 Apr 2014 15:55:28 -0400
+Date: Thu, 24 Apr 2014 12:58:21 -0700
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, peterz@infradead.org,
+        akpm@linux-foundation.org, cxie@redhat.com,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] printk: Print cpu number along with time
+Message-ID: <20140424195821.GA3092@kroah.com>
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+ <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+ <20140424005247.GA17713@logfs.org>
+ <20140424194024.GA25446@logfs.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140424194024.GA25446@logfs.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Apr 2014, Sasha Levin wrote:
-
-> On 04/24/2014 03:24 PM, Greg KH wrote:
-> > On Thu, Apr 24, 2014 at 01:40:14PM -0400, Sasha Levin wrote:
-> >> > Hi all,
-> >> > 
-> >> > While fuzzing with trinity inside a KVM tools guest running the latest -next
-> >> > kernel I've stumbled on the following:
-> >> > 
-> >> > [ 1361.390880] WARNING: CPU: 10 PID: 24274 at lib/debugobjects.c:260 debug_print_object+0x8c/0xb0()
-> >> > [ 1361.391203] ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x20
-> >> > [ 1361.391203] Modules linked in:
-> >> > [ 1361.391203] CPU: 10 PID: 24274 Comm: trinity-c83 Not tainted 3.15.0-rc2-next-20140423-sasha-00018-gc4ff6c4 #408
-> >> > [ 1361.391203]  0000000000000009 ffff8801de341c78 ffffffffb85271f2 0000000000000001
-> >> > [ 1361.391203]  ffff8801de341cc8 ffff8801de341cb8 ffffffffb515afcc ffff8801eb3ebd98
-> >> > [ 1361.391203]  ffff8801eb751870 ffffffffb9e76200 ffffffffb98dc502 ffffffffbc702550
-> >> > [ 1361.391203] Call Trace:
-> >> > [ 1361.391203] dump_stack (lib/dump_stack.c:52)
-> >> > [ 1361.391203] warn_slowpath_common (kernel/panic.c:430)
-> >> > [ 1361.391203] warn_slowpath_fmt (kernel/panic.c:445)
-> >> > [ 1361.391203] debug_print_object (lib/debugobjects.c:262)
-> >> > [ 1361.391203] ? __queue_work (kernel/workqueue.c:1452)
-> >> > [ 1361.391203] __debug_check_no_obj_freed (lib/debugobjects.c:697)
-> >> > [ 1361.391203] debug_check_no_obj_freed (lib/debugobjects.c:726)
-> >> > [ 1361.391203] kmem_cache_free (mm/slub.c:2689 mm/slub.c:2717)
-> >> > [ 1361.391203] ? kmem_cache_destroy (mm/slab_common.c:363)
-> >> > [ 1361.391203] kmem_cache_destroy (mm/slab_common.c:363)
-> >> > [ 1361.391203] mon_text_release (drivers/usb/mon/mon_text.c:643)
-> >> > [ 1361.391203] __fput (fs/file_table.c:217)
-> >> > [ 1361.391203] ____fput (fs/file_table.c:253)
-> >> > [ 1361.391203] task_work_run (kernel/task_work.c:125 (discriminator 1))
-> >> > [ 1361.391203] do_notify_resume (include/linux/tracehook.h:196 arch/x86/kernel/signal.c:751)
-> >> > [ 1361.391203] int_signal (arch/x86/kernel/entry_64.S:807)
-> > So you were running usbmon at the time?  Were you actually monitoring a
-> > specific USB device/bus, or something else?
+On Thu, Apr 24, 2014 at 03:40:24PM -0400, Jörn Engel wrote:
+> On Wed, 23 April 2014 20:52:47 -0400, Jörn Engel wrote:
+> > 
+> > I use the patch below for some time now.  While it doesn't avoid the
+> > log pollution in the first place, it lessens the impact somewhat.
 > 
-> This was inside a vm with no actual physical USB devices:
+> Added a config option and ported it to current -linus.  Andrew, would
+> you take this patch?
 > 
-> # lsusb -t
-> lsusb: cannot open "/var/lib/usbutils/usb.ids", No such file or directory
-> /:  Bus 02.Port 1: Dev 1, Class=root_hub, Driver=ozwpan/8p, 12M
-> /:  Bus 01.Port 1: Dev 1, Class=root_hub, Driver=dummy_hcd/1p, 480M
->     |__ Port 1: Dev 2, If 0, Class=comm., Driver=cdc_eem, 480M
+> ---
 > 
-> Since it happened while I was fuzzing, I'm not sure what exactly was getting
-> monitored at that point.
+> Sometimes the printk log is heavily interleaving between different cpus.
+> This is particularly bad when you have two backtraces at the same time,
+> but can be annoying in other cases as well.  With an explicit cpu
+> number, a simple grep can disentangle the mess for you.
+> 
+> Signed-off-by: Joern Engel <joern@logfs.org>
+> ---
+>  kernel/printk/printk.c | 19 ++++++++++++++++---
+>  lib/Kconfig.debug      |  9 +++++++++
+>  2 files changed, 25 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+> index a45b50962295..b9e464924825 100644
+> --- a/kernel/printk/printk.c
+> +++ b/kernel/printk/printk.c
+> @@ -200,6 +200,7 @@ struct printk_log {
+>  	u16 len;		/* length of entire record */
+>  	u16 text_len;		/* length of text buffer */
+>  	u16 dict_len;		/* length of dictionary buffer */
+> +	u16 cpu;		/* cpu the message was generated on */
+>  	u8 facility;		/* syslog facility */
+>  	u8 flags:5;		/* internal record flags */
+>  	u8 level:3;		/* syslog level */
+> @@ -346,6 +347,7 @@ static void log_store(int facility, int level,
+>  	msg->facility = facility;
+>  	msg->level = level & 7;
+>  	msg->flags = flags & 0x1f;
+> +	msg->cpu = smp_processor_id();
+>  	if (ts_nsec > 0)
+>  		msg->ts_nsec = ts_nsec;
+>  	else
+> @@ -859,7 +861,7 @@ static bool printk_time;
+>  #endif
+>  module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
+>  
+> -static size_t print_time(u64 ts, char *buf)
+> +static size_t print_time(u64 ts, u16 cpu, char *buf)
+>  {
+>  	unsigned long rem_nsec;
+>  
+> @@ -868,11 +870,20 @@ static size_t print_time(u64 ts, char *buf)
+>  
+>  	rem_nsec = do_div(ts, 1000000000);
+>  
+> +#ifdef CONFIG_PRINTK_CPU
+> +	if (!buf)
+> +		return snprintf(NULL, 0, "[%5lu.000000,%02x] ",
 
-This is odd because the warning message indicates the something 
-containing an active timer (a delayed_work structure?) was deallocated.  
-But usbmon doesn't use either timers or work queues, and as far as I 
-can see, neither does anything involved in kmem_cache management.
+%02x for a cpu?  What happens on machines with 8k cpus?
 
-Alan Stern
+And is this really an issue?  Debugging by using printk is fun, but not
+really something that people need to add a cpu number to.  Why not just
+use a tracepoint in your code to get the needed information instead?
 
+thanks,
+
+greg k-h
