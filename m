@@ -1,89 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758564AbaDXQ6P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:58:15 -0400
-Received: from www.sr71.net ([198.145.64.142]:52759 "EHLO blackbird.sr71.net"
+	id S1758248AbaDXRDU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:03:20 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56618 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758310AbaDXQ6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:58:13 -0400
-Message-ID: <535942A3.3020800@sr71.net>
-Date: Thu, 24 Apr 2014 09:58:11 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1757354AbaDXRDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 13:03:14 -0400
+Date: Thu, 24 Apr 2014 19:03:11 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Or Gerlitz <ogerlitz@mellanox.com>
+cc: Roland Dreier <roland@kernel.org>, Sagi Grimberg <sagig@mellanox.com>,
+        Amir Vadai <amirv@mellanox.com>, Eli Cohen <eli@dev.mellanox.co.il>,
+        Eugenia Emantayev <eugenia@mellanox.com>,
+        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Saeed Mahameed <saeedm@mellanox.com>,
+        Shlomo Pongratz <shlomop@mellanox.com>
+Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
+ creating the QP
+In-Reply-To: <531F1550.3080401@mellanox.com>
+Message-ID: <alpine.LNX.2.00.1404241900020.3265@pobox.suse.cz>
+References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com> <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz> <CAG4TOxMw4siOqtjXrgUDaw8yWqYgSG4d8PqGuJ62AZBrC2O2AA@mail.gmail.com>
+ <531F1550.3080401@mellanox.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        ak@linux.intel.com, riel@redhat.com, alex.shi@linaro.org,
-        dave.hansen@linux.intel.com
-Subject: Re: [PATCH 2/6] x86: mm: rip out complicated, out-of-date, buggy
- TLB flushing
-References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182421.DFAAD16A@viggo.jf.intel.com> <20140424084552.GQ23991@suse.de>
-In-Reply-To: <20140424084552.GQ23991@suse.de>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 01:45 AM, Mel Gorman wrote:
->> +/*
->> + * See Documentation/x86/tlb.txt for details.  We choose 33
->> + * because it is large enough to cover the vast majority (at
->> + * least 95%) of allocations, and is small enough that we are
->> + * confident it will not cause too much overhead.  Each single
->> + * flush is about 100 cycles, so this caps the maximum overhead
->> + * at _about_ 3,000 cycles.
->> + */
->> +/* in units of pages */
->> +unsigned long tlb_single_page_flush_ceiling = 1;
->> +
+On Tue, 11 Mar 2014, Or Gerlitz wrote:
+
+> > mode on any IB device.  In connected mode, a packet send can trigger
+> > establishing a new connection, which will allocate a new QP, which in
+> > particular will allocate memory for the QP in the low-level IB device
+> > driver.  Currently I'm positive that every driver will do GFP_KERNEL
+> > allocations when allocating a QP (ehca does both a GFP_KERNEL
+> > kmem_cache allocation and vmalloc in internal_create_qp(), mlx5 and
+> > mthca are similar to mlx4 and qib does vmalloc() in qib_create_qp()).
+> > So this patch needs to be extended to the other 4 IB device drivers in
+> > the tree.
+> > 
+> > Also, I don't think GFP_NOFS is enough -- it seems we need GFP_NOIO,
+> > since we could be swapping to a block device over iSCSI over IPoIB-CM,
+> > so even non-FS stuff could deadlock.
+> > 
+> > I don't think it makes any sense to have a "do_not_deadlock" module
+> > parameter, especially one that defaults to "false."  If this is the
+> > right thing to do, then we should just unconditionally do it.
+> > 
+> > It does seem that only using GFP_NOIO when we really need to would be
+> > a very difficult problem--how can we carry information about whether a
+> > particular packet is involved in freeing memory through all the layers
+> > of, say, NFS, TCP, IPSEC, bonding, &c?
 > 
-> This comment is premature. The documentation file does not exist yet and
-> 33 means nothing yet. Out of curiousity though, how confident are you
-> that a TLB flush is generally 100 cycles across different generations
-> and manufacturers of CPUs? I'm not suggesting you change it or auto-tune
-> it, am just curious.
-
-Yeah, the comment belongs in the later patch where I set it to 33.
-
-I looked at this on the last few generations of Intel CPUs.  "100
-cycles" was a very general statement, and not precise at all.  My laptop
-averages out to 113 cycles overall, but the flushes of 25 pages averaged
-96 cycles/page while the flushes of 2 averaged 219/page.
-
-Those cycles include some costs of from the instrumentation as well.
-
-I did not test on other CPU manufacturers, but this should be pretty
-easy to reproduce.  I'm happy to help folks re-run it on other hardware.
-
-I also believe with the modalias stuff we've got in sysfs for the CPU
-objects we can do this in the future with udev rules instead of
-hard-coding it in the kernel.
-
->> -	/* In modern CPU, last level tlb used for both data/ins */
->> -	if (vmflag & VM_EXEC)
->> -		tlb_entries = tlb_lli_4k[ENTRIES];
->> -	else
->> -		tlb_entries = tlb_lld_4k[ENTRIES];
->> -
->> -	/* Assume all of TLB entries was occupied by this task */
->> -	act_entries = tlb_entries >> tlb_flushall_shift;
->> -	act_entries = mm->total_vm > act_entries ? act_entries : mm->total_vm;
->> -	nr_base_pages = (end - start) >> PAGE_SHIFT;
->> -
->> -	/* tlb_flushall_shift is on balance point, details in commit log */
->> -	if (nr_base_pages > act_entries) {
->> +	if ((end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
->>  		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
->>  		local_flush_tlb();
->>  	} else {
+> Agree with all the above... next,
 > 
-> We lose the different tuning based on whether the flush is for instructions
-> or data. However, I cannot think of a good reason for keeping it as I
-> expect that flushes of instructions is relatively rare. The benefit, if
-> any, will be marginal. Still, if you do another revision it would be
-> nice to call this out in the changelog.
+> If we don't have away to nicely overcome the layer violations here, let's
+> change IPoIB so they always ask the
+> IB driver to allocate QPs used for Connected Mode in a GFP_NOIO manner, to be
+> practical I suggest the following:
+> 
+> 1. Add new QP creation flag IB_QP_CREATE_USE_GFP to the existing creation
+> flags of struct ib_qp_init_attr
+> and a new "gfp_t gfp" field to that structure too
+> 
+> 2. in the IPoIB CM code, do the vzalloc allocation for new connection in
+> GFP_NOIO manner and issue
+> the call to create QP with setting the IB_QP_CREATE_USE_GFP flag and GFO_NOIO
+> to the gfp field
+> 
+> 3. If the QP creation fails, with -EINVAL, issue a warning and retry the QP
+> creation attempt without the GFP setting
+> 
+> 4. implement in the mlx4 driver the support for GFP directives on QP creation
+> 
+> 5. for the rest of the IB drivers, return -EINVAL if IB_QP_CREATE_USE_GFP is
+> set
+> 
+> This will allow to provide working solution for mlx4 users and gradually add
+> support for the rest of the IB drivers.
+> 
+> as for proper patch planning
+> 
+> patch #1 / items 1 and 5
+> patch #2 / item 4
+> patch #3 / item 3
+> 
+> Re item 5 -- I made a check and the ehca, ipath and mthca driver already
+> return -EINVAL if provided with any creation flag, so you only need to patch
+> the qib driver in qib_create_qp() to do that as well which is trivial.
+> 
+> As for the rest of the code, you practically have it all by now, just need to
+> port the mlx4 changes you did to the suggested framework, remove the module
+> param (which you don't like either) and add the new gfp_t field to
+> ib_qp_init_attr
+> 
+> So sounds like a plan that makes sense?
 
-Will do.
+Hi everybody,
 
+seems like this fell through cracks, probably because it wasn't clearly 
+stated *who* will be preparing patch(es) that'd be implementing the ideas 
+above.
+
+My understanding was that it'd be Mellanox, given that they basically own 
+the driver, have the best testing coverage compared to very very limited 
+testing coverage I can do, and will be pushing it upstream anyway. 
+
+I believe all the above can be easily created on top of the original patch 
+I sent.
+
+So ... was there a misunderstanding on who is going to do it? :)
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs
