@@ -1,71 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751327AbaDXTTQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 15:19:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:35779 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751061AbaDXTTO (ORCPT
+	id S1751655AbaDXTVR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 15:21:17 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:54699 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750955AbaDXTVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 15:19:14 -0400
-Date: Thu, 24 Apr 2014 21:18:56 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>,
-        Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 4/4] nohz: Fix iowait overcounting if iowait task migrates
-Message-ID: <20140424191856.GD26782@laptop.programming.kicks-ass.net>
-References: <1398365158-12568-1-git-send-email-dvlasenk@redhat.com>
- <1398365158-12568-4-git-send-email-dvlasenk@redhat.com>
+	Thu, 24 Apr 2014 15:21:15 -0400
+X-Sasl-enc: qDQ8/7SaHuHM2SPBoxSm0fuHmFxx/beShSi/yDzMei5w 1398367274
+Date: Thu, 24 Apr 2014 12:24:06 -0700
+From: Greg KH <greg@kroah.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: linux-usb@vger.kernel.org, Dave Jones <davej@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: usb: mon: freeing active timer
+Message-ID: <20140424192406.GA6054@kroah.com>
+References: <53594C7E.1080407@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398365158-12568-4-git-send-email-dvlasenk@redhat.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <53594C7E.1080407@oracle.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 08:45:58PM +0200, Denys Vlasenko wrote:
-> diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-> index 268a45e..ffea757 100644
-> --- a/kernel/sched/core.c
-> +++ b/kernel/sched/core.c
-> @@ -4218,7 +4218,14 @@ void __sched io_schedule(void)
->  	current->in_iowait = 1;
->  	schedule();
->  	current->in_iowait = 0;
-> +#ifdef CONFIG_NO_HZ_COMMON
-> +	if (atomic_dec_and_test(&rq->nr_iowait)) {
-> +		if (raw_smp_processor_id() != cpu_of(rq))
-> +			tick_nohz_iowait_to_idle(cpu_of(rq));
-> +	}
-> +#else
->  	atomic_dec(&rq->nr_iowait);
-> +#endif
->  	delayacct_blkio_end();
->  }
+On Thu, Apr 24, 2014 at 01:40:14PM -0400, Sasha Levin wrote:
+> Hi all,
+> 
+> While fuzzing with trinity inside a KVM tools guest running the latest -next
+> kernel I've stumbled on the following:
+> 
+> [ 1361.390880] WARNING: CPU: 10 PID: 24274 at lib/debugobjects.c:260 debug_print_object+0x8c/0xb0()
+> [ 1361.391203] ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x20
+> [ 1361.391203] Modules linked in:
+> [ 1361.391203] CPU: 10 PID: 24274 Comm: trinity-c83 Not tainted 3.15.0-rc2-next-20140423-sasha-00018-gc4ff6c4 #408
+> [ 1361.391203]  0000000000000009 ffff8801de341c78 ffffffffb85271f2 0000000000000001
+> [ 1361.391203]  ffff8801de341cc8 ffff8801de341cb8 ffffffffb515afcc ffff8801eb3ebd98
+> [ 1361.391203]  ffff8801eb751870 ffffffffb9e76200 ffffffffb98dc502 ffffffffbc702550
+> [ 1361.391203] Call Trace:
+> [ 1361.391203] dump_stack (lib/dump_stack.c:52)
+> [ 1361.391203] warn_slowpath_common (kernel/panic.c:430)
+> [ 1361.391203] warn_slowpath_fmt (kernel/panic.c:445)
+> [ 1361.391203] debug_print_object (lib/debugobjects.c:262)
+> [ 1361.391203] ? __queue_work (kernel/workqueue.c:1452)
+> [ 1361.391203] __debug_check_no_obj_freed (lib/debugobjects.c:697)
+> [ 1361.391203] debug_check_no_obj_freed (lib/debugobjects.c:726)
+> [ 1361.391203] kmem_cache_free (mm/slub.c:2689 mm/slub.c:2717)
+> [ 1361.391203] ? kmem_cache_destroy (mm/slab_common.c:363)
+> [ 1361.391203] kmem_cache_destroy (mm/slab_common.c:363)
+> [ 1361.391203] mon_text_release (drivers/usb/mon/mon_text.c:643)
+> [ 1361.391203] __fput (fs/file_table.c:217)
+> [ 1361.391203] ____fput (fs/file_table.c:253)
+> [ 1361.391203] task_work_run (kernel/task_work.c:125 (discriminator 1))
+> [ 1361.391203] do_notify_resume (include/linux/tracehook.h:196 arch/x86/kernel/signal.c:751)
+> [ 1361.391203] int_signal (arch/x86/kernel/entry_64.S:807)
 
-You're really refusing to collapse that stuff eh? Maybe I should just
-redirect this entire iowait fest to /dev/null :/
+So you were running usbmon at the time?  Were you actually monitoring a
+specific USB device/bus, or something else?
 
-> +void tick_nohz_iowait_to_idle(int cpu)
-> +{
-> +	struct tick_sched *ts = tick_get_tick_sched(cpu);
-> +	ktime_t now = ktime_get();
-> +
-> +	write_seqcount_begin(&ts->idle_sleeptime_seq);
-> +	ts->iowait_exittime = now;
-> +	write_seqcount_end(&ts->idle_sleeptime_seq);
-> +}
+thanks,
 
-
-So what again was wrong with this one?
-
-  http://marc.info/?l=linux-kernel&m=139772917211023
-
+greg k-h
