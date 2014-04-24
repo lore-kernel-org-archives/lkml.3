@@ -1,121 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758248AbaDXRDU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:03:20 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56618 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757354AbaDXRDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:03:14 -0400
-Date: Thu, 24 Apr 2014 19:03:11 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Or Gerlitz <ogerlitz@mellanox.com>
-cc: Roland Dreier <roland@kernel.org>, Sagi Grimberg <sagig@mellanox.com>,
-        Amir Vadai <amirv@mellanox.com>, Eli Cohen <eli@dev.mellanox.co.il>,
-        Eugenia Emantayev <eugenia@mellanox.com>,
-        "David S. Miller" <davem@davemloft.net>, Mel Gorman <mgorman@suse.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Saeed Mahameed <saeedm@mellanox.com>,
-        Shlomo Pongratz <shlomop@mellanox.com>
-Subject: Re: [PATCH] mlx4: Use GFP_NOFS calls during the ipoib TX path when
- creating the QP
-In-Reply-To: <531F1550.3080401@mellanox.com>
-Message-ID: <alpine.LNX.2.00.1404241900020.3265@pobox.suse.cz>
-References: <CAJZOPZKLcFC5Wqv7VS7AyovaeHw3PYSWEz9t9sZ4AMhG+dS1+A@mail.gmail.com> <alpine.LNX.2.00.1402271042240.21399@pobox.suse.cz> <530F0C4F.9030200@mellanox.com> <alpine.LNX.2.00.1402271123410.21399@pobox.suse.cz> <CAG4TOxMw4siOqtjXrgUDaw8yWqYgSG4d8PqGuJ62AZBrC2O2AA@mail.gmail.com>
- <531F1550.3080401@mellanox.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1758565AbaDXRDx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:03:53 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:41243 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758397AbaDXRDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 13:03:49 -0400
+Message-ID: <535942D7.7020106@traphandler.com>
+Date: Thu, 24 Apr 2014 18:59:03 +0200
+From: Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Reply-To: jjhiblot@traphandler.com
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Tim Niemeyer <tim.niemeyer@corscience.de>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: Robert Nelson <robertcnelson@gmail.com>, nicolas.ferre@atmel.com,
+        linux-arm-kernel@lists.infradead.org, dri-devel@lists.freedesktop.org,
+        airlied@linux.ie, robdclark@gmail.com, plagnioj@jcrosoft.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC 0/3] DRM driver for the ATMEL High end LCD controller
+References: <1397814309-32160-1-git-send-email-jjhiblot@traphandler.com>	 <1398267396.4295.59.camel@herbert.er.corscience.de>	 <5359000C.50005@free-electrons.com> <1398343612.4295.66.camel@herbert.er.corscience.de>
+In-Reply-To: <1398343612.4295.66.camel@herbert.er.corscience.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 11 Mar 2014, Or Gerlitz wrote:
+Hi Tim,
 
-> > mode on any IB device.  In connected mode, a packet send can trigger
-> > establishing a new connection, which will allocate a new QP, which in
-> > particular will allocate memory for the QP in the low-level IB device
-> > driver.  Currently I'm positive that every driver will do GFP_KERNEL
-> > allocations when allocating a QP (ehca does both a GFP_KERNEL
-> > kmem_cache allocation and vmalloc in internal_create_qp(), mlx5 and
-> > mthca are similar to mlx4 and qib does vmalloc() in qib_create_qp()).
-> > So this patch needs to be extended to the other 4 IB device drivers in
-> > the tree.
-> > 
-> > Also, I don't think GFP_NOFS is enough -- it seems we need GFP_NOIO,
-> > since we could be swapping to a block device over iSCSI over IPoIB-CM,
-> > so even non-FS stuff could deadlock.
-> > 
-> > I don't think it makes any sense to have a "do_not_deadlock" module
-> > parameter, especially one that defaults to "false."  If this is the
-> > right thing to do, then we should just unconditionally do it.
-> > 
-> > It does seem that only using GFP_NOIO when we really need to would be
-> > a very difficult problem--how can we carry information about whether a
-> > particular packet is involved in freeing memory through all the layers
-> > of, say, NFS, TCP, IPSEC, bonding, &c?
-> 
-> Agree with all the above... next,
-> 
-> If we don't have away to nicely overcome the layer violations here, let's
-> change IPoIB so they always ask the
-> IB driver to allocate QPs used for Connected Mode in a GFP_NOIO manner, to be
-> practical I suggest the following:
-> 
-> 1. Add new QP creation flag IB_QP_CREATE_USE_GFP to the existing creation
-> flags of struct ib_qp_init_attr
-> and a new "gfp_t gfp" field to that structure too
-> 
-> 2. in the IPoIB CM code, do the vzalloc allocation for new connection in
-> GFP_NOIO manner and issue
-> the call to create QP with setting the IB_QP_CREATE_USE_GFP flag and GFO_NOIO
-> to the gfp field
-> 
-> 3. If the QP creation fails, with -EINVAL, issue a warning and retry the QP
-> creation attempt without the GFP setting
-> 
-> 4. implement in the mlx4 driver the support for GFP directives on QP creation
-> 
-> 5. for the rest of the IB drivers, return -EINVAL if IB_QP_CREATE_USE_GFP is
-> set
-> 
-> This will allow to provide working solution for mlx4 users and gradually add
-> support for the rest of the IB drivers.
-> 
-> as for proper patch planning
-> 
-> patch #1 / items 1 and 5
-> patch #2 / item 4
-> patch #3 / item 3
-> 
-> Re item 5 -- I made a check and the ehca, ipath and mthca driver already
-> return -EINVAL if provided with any creation flag, so you only need to patch
-> the qib driver in qib_create_qp() to do that as well which is trivial.
-> 
-> As for the rest of the code, you practically have it all by now, just need to
-> port the mlx4 changes you did to the suggested framework, remove the module
-> param (which you don't like either) and add the new gfp_t field to
-> ib_qp_init_attr
-> 
-> So sounds like a plan that makes sense?
+I'll look a this issue soon. It looks like the scanout is not started in
+your test case.
+Thanks for reporting this.
 
-Hi everybody,
+JJ
 
-seems like this fell through cracks, probably because it wasn't clearly 
-stated *who* will be preparing patch(es) that'd be implementing the ideas 
-above.
-
-My understanding was that it'd be Mellanox, given that they basically own 
-the driver, have the best testing coverage compared to very very limited 
-testing coverage I can do, and will be pushing it upstream anyway. 
-
-I believe all the above can be easily created on top of the original patch 
-I sent.
-
-So ... was there a misunderstanding on who is going to do it? :)
-
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+On 04/24/2014 02:46 PM, Tim Niemeyer wrote:
+> 
+> Hi Boris
+> 
+> Am Donnerstag, den 24.04.2014, 14:14 +0200 schrieb Boris BREZILLON:
+>> Hi Tim,
+>>
+>> On 23/04/2014 17:36, Tim Niemeyer wrote:
+>>> Hi Jean-Jacques,
+>>>
+>>> Am Freitag, den 18.04.2014, 11:45 +0200 schrieb Jean-Jacques Hiblot:
+>>>> Hi,
+>>>>
+>>>> this patch serie implements a simple DRM driver for the ATMEL High end LCD
+>>>> controller found in the SAMA5 familly. It's based on the tilcdc driver.
+>>>> It uses the cma_helper for memory and fbdev stuff.
+>>>> Your comments are welcome !
+>>> I applied your and Robert's patches on a 3.15-rc2 kernel and tried the
+>>> framebuffer device on the sama5d31-ek. Seems to work.
+>>>
+>>>> Supported features:
+>>>> * the base layer (the main framebuffer)
+>>> Tested to show a little tux png, but it's appearing only after 
+>>> 'echo 0 > /sys/devices/ahb.1/apb.2/f0030000.hlcdc/graphics/fb0/rotate'
+>>> is there missing some initializing?
+>>
+>> Could you try to apply this http://code.bulix.org/f01kvh-86117 ?
+> I can't see any difference with that.
+> 
+> I used fbv to display the tux. With CONFIG_FRAMEBUFFER_CONSOLE=n the
+> display stays with a small atmel logo and u-Boot version information. If
+> i set CONFIG_FRAMEBUFFER_CONSOLE=y, the display is black after kernel
+> start and fbv just works as expected.
+> 
+> Best Regards,
+> Tim
+> 
+>> Best Regards,
+>>
+>> Boris
+>>
+>>>
+>>>> * a simple panel
+>>>> * a backlight driver
+>>> Tested to set brightness to 0, 20 and 255. Works.
+>>>
+>>> Thanks for your work.
+>>>
+>>> Best Regards
+>>> Tim
+>>>
+>>>> * structure to 'easily' add other connectors (it comes from the tilcdc)
+>>>>
+>>>> On the todo list:
+>>>> * support overlays as drm_planes
+>>>> * support for the hardware cursor
+>>>> * support for the SiI9022 HDMI connector (present on sama5d36ek)
+>>>>
+>>>>
+>>>> Jean-Jacques Hiblot (3):
+>>>>   atmel: drm: added drm driver for the atmel hlcd controller
+>>>>   atmel: drm: dt: Added DT entry for the atmel hlcdc found in the sama5
+>>>>   atmel: dt: Add supports for the lcdc support on the sama5d36ek
+>>>>
+>>>>  arch/arm/boot/dts/sama5d36ek.dts                   |  27 +-
+>>>>  arch/arm/boot/dts/sama5d3_lcd.dtsi                 |  11 +
+>>>>  drivers/gpu/drm/Kconfig                            |   2 +
+>>>>  drivers/gpu/drm/Makefile                           |   1 +
+>>>>  drivers/gpu/drm/atmel_hlcdc/Kconfig                |  13 +
+>>>>  drivers/gpu/drm/atmel_hlcdc/Makefile               |  12 +
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc.h          | 771 +++++++++++++++++++++
+>>>>  .../gpu/drm/atmel_hlcdc/atmel_hlcdc_backlight.c    |  92 +++
+>>>>  .../gpu/drm/atmel_hlcdc/atmel_hlcdc_backlight.h    |  25 +
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_crtc.c     | 702 +++++++++++++++++++
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_drv.c      | 586 ++++++++++++++++
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_drv.h      | 124 ++++
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_ovl.h      | 190 +++++
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_panel.c    | 459 ++++++++++++
+>>>>  drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_panel.h    |  28 +
+>>>>  15 files changed, 3042 insertions(+), 1 deletion(-)
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/Kconfig
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/Makefile
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc.h
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_backlight.c
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_backlight.h
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_crtc.c
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_drv.c
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_drv.h
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_ovl.h
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_panel.c
+>>>>  create mode 100644 drivers/gpu/drm/atmel_hlcdc/atmel_hlcdc_panel.h
+>>>>
+>>>> --
+>>>> 1.9.1
+>>>>
+>>>>
+>>>> _______________________________________________
+>>>> linux-arm-kernel mailing list
+>>>> linux-arm-kernel@lists.infradead.org
+>>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>>
+>>
+> 
+> 
