@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755711AbaDXKna (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:43:30 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47770 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754111AbaDXKnZ (ORCPT
+	id S1755466AbaDXKm7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:42:59 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47253 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753503AbaDXKmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:43:25 -0400
-Date: Thu, 24 Apr 2014 11:42:32 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Steve Capper <steve.capper@linaro.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "robherring2@gmail.com" <robherring2@gmail.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "gerald.schaefer@de.ibm.com" <gerald.schaefer@de.ibm.com>
-Subject: Re: [PATCH V2 0/5] Huge pages for short descriptors on ARM
-Message-ID: <20140424104232.GK26756@n2100.arm.linux.org.uk>
-References: <1397648803-15961-1-git-send-email-steve.capper@linaro.org> <20140424102229.GA28014@linaro.org> <20140424103639.GC19564@arm.com>
+	Thu, 24 Apr 2014 06:42:54 -0400
+Date: Thu, 24 Apr 2014 12:42:52 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jikos@jikos.cz>
+Subject: Re: 3.15-rc2: i915 regression: only top 20% of screen works in X
+Message-ID: <20140424104252.GA6743@amd.pavel.ucw.cz>
+References: <20140423202248.GA3621@amd.pavel.ucw.cz>
+ <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
+ <20140423220952.GA3627@amd.pavel.ucw.cz>
+ <20140424055023.GA31221@nuc-i3427.alporthouse.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140424103639.GC19564@arm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20140424055023.GA31221@nuc-i3427.alporthouse.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 11:36:39AM +0100, Will Deacon wrote:
-> I guess I'm after some commitment that this is (a) useful to somebody and
-> (b) going to be tested regularly, otherwise it will go the way of things
-> like big-endian, where we end up carrying around code which is broken more
-> often than not (although big-endian is more self-contained).
+Hi!
 
-It may be something worth considering adding to my nightly builder/boot
-testing, but I suspect that's impractical as it probably requires a BE
-userspace, which would then mean that the platform can't boot LE.
+> > > > After update to 3.15-rc2, only top 20% of screen works on X.
+> > > >
+> > > > 00:02.0 VGA compatible controller: Intel Corporation 4 Series Chipset
+> > > > Integrated Graphics Controller (rev 03)
+> > > >
+> > > > 00:02.1 Display controller: Intel Corporation 4 Series Chipset
+> > > > Integrated Graphics Controller (rev 03)
+> > > >            Subsystem: Intel Corporation Device d614
+> > > >            Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop-
+> > > >            ParErr- Stepping- SERR- FastB2B- DisINTx-
+> > > >            Status: Cap+ 66MHz- UDF- FastB2B+ ParErr- DEVSEL=fast
+> > > >            >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+> > > >            Latency: 0
+> > > >            Region 0: Memory at d0400000 (64-bit, non-prefetchable)
+> > > >            [size=1M]
+> > > >            Capabilities: <access denied>
+> > > >
+> > > > This worked before. I believe it worked in 3.14. It definitely works
+> > > > in 3.11-rc2.
+> > > 
+> > > Screenshot or more detailed description of what "only top 20% of
+> > > screen works in X" means?
+> > > Anything in dmesg?
+> > 
+> > Actually yes, dmesg suggests it is quite
+> > sick. drivers/gpu/drm/drm_mm.c:767 warning triggered
+> > repeatedly. Also.. initial framebuffer does not work ; I don't seem to
+> > see anything before X start up. (This is Debian 6.0.9)
+> 
+> That says that i915.ko failed to initialise the GPU (or rather the GPU
+> wasn't responding) and bailed during module load. The key line here is
 
-I suspect that we will just have to rely on BE users staying around and
-reporting problems when they occur.
+> [drm:init_ring_common] *ERROR* render ring initialization failed ctl
+> 0001f001 head 00002034 tail 00000000 start 0012f000
 
+Actually, I'm not using modules -- everything is build-in. Can you try
+that config? Perhaps you can then reproduce the failure.
+
+> Jiri has been seeing a similar issue creep in during resume, but it is
+> not reliable enough to bisect. Is your boot failure reliable enough to
+> bisect? Also drm-intel-nightly should mitigate this failure and allow
+> i915.ko to continue to load and run X, which would be worth testing to
+> make sure that works as intended.
+
+So far it failed 100% of time, but this is my main machine, so
+bringing it down for extended periods is no-no.
+
+Greetings to Prague :-). Jiri, do you have  i915 a module or build-in?
+
+Best regards,
+									Pavel
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
