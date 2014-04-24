@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700AbaDXIxA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:53:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46437 "EHLO
+	id S1756516AbaDXLeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:34:12 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46449 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660AbaDXIw5 (ORCPT
+	with ESMTP id S1753681AbaDXIw7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:57 -0400
+	Thu, 24 Apr 2014 04:52:59 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Brian Norris <computersforpeace@gmail.com>,
+Cc: Hans Verkuil <hans.verkuil@cisco.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 039/182] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
-Date: Thu, 24 Apr 2014 09:49:24 +0100
-Message-Id: <1398329507-5911-40-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 044/182] [media] v4l2-compat-ioctl32: fix wrong VIDIOC_SUBDEV_G/S_EDID32 support
+Date: Thu, 24 Apr 2014 09:49:29 +0100
+Message-Id: <1398329507-5911-45-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -30,75 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Hans Verkuil <hans.verkuil@cisco.com>
 
-commit 13b546d96207c131eeae15dc7b26c6e7d0f1cad7 upstream.
+commit bc826d6e39fe5f09cbadf8723e9183e6331b586f upstream.
 
-We triggered soft-lockup under stress test on 2.6.34 kernel.
+The wrong ioctl numbers were used due to a copy-and-paste error.
 
-BUG: soft lockup - CPU#1 stuck for 60009ms! [lockf2.test:14488]
-...
-[<bf09a4d4>] (jffs2_do_reserve_space+0x420/0x440 [jffs2])
-[<bf09a528>] (jffs2_reserve_space_gc+0x34/0x78 [jffs2])
-[<bf0a1350>] (jffs2_garbage_collect_dnode.isra.3+0x264/0x478 [jffs2])
-[<bf0a2078>] (jffs2_garbage_collect_pass+0x9c0/0xe4c [jffs2])
-[<bf09a670>] (jffs2_reserve_space+0x104/0x2a8 [jffs2])
-[<bf09dc48>] (jffs2_write_inode_range+0x5c/0x4d4 [jffs2])
-[<bf097d8c>] (jffs2_write_end+0x198/0x2c0 [jffs2])
-[<c00e00a4>] (generic_file_buffered_write+0x158/0x200)
-[<c00e14f4>] (__generic_file_aio_write+0x3a4/0x414)
-[<c00e15c0>] (generic_file_aio_write+0x5c/0xbc)
-[<c012334c>] (do_sync_write+0x98/0xd4)
-[<c0123a84>] (vfs_write+0xa8/0x150)
-[<c0123d74>] (sys_write+0x3c/0xc0)]
-
-Fix this by adding a cond_resched() in the while loop.
-
-[akpm@linux-foundation.org: don't initialize `ret']
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/jffs2/nodemgmt.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/media/v4l2-core/v4l2-compat-ioctl32.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/fs/jffs2/nodemgmt.c b/fs/jffs2/nodemgmt.c
-index bbae5b1..b6bd4af 100644
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -212,20 +212,25 @@ out:
- int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
- 			   uint32_t *len, uint32_t sumsize)
- {
--	int ret = -EAGAIN;
-+	int ret;
- 	minsize = PAD(minsize);
- 
- 	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
- 
--	spin_lock(&c->erase_completion_lock);
--	while(ret == -EAGAIN) {
-+	while (true) {
-+		spin_lock(&c->erase_completion_lock);
- 		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
- 		if (ret) {
- 			jffs2_dbg(1, "%s(): looping, ret is %d\n",
- 				  __func__, ret);
- 		}
-+		spin_unlock(&c->erase_completion_lock);
-+
-+		if (ret == -EAGAIN)
-+			cond_resched();
-+		else
-+			break;
- 	}
--	spin_unlock(&c->erase_completion_lock);
- 	if (!ret)
- 		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
- 
+diff --git a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
+index 8f7a6a4..b63a5e5 100644
+--- a/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
++++ b/drivers/media/v4l2-core/v4l2-compat-ioctl32.c
+@@ -787,8 +787,8 @@ static int put_v4l2_subdev_edid32(struct v4l2_subdev_edid *kp, struct v4l2_subde
+ #define VIDIOC_DQBUF32		_IOWR('V', 17, struct v4l2_buffer32)
+ #define VIDIOC_ENUMSTD32	_IOWR('V', 25, struct v4l2_standard32)
+ #define VIDIOC_ENUMINPUT32	_IOWR('V', 26, struct v4l2_input32)
+-#define VIDIOC_SUBDEV_G_EDID32	_IOWR('V', 63, struct v4l2_subdev_edid32)
+-#define VIDIOC_SUBDEV_S_EDID32	_IOWR('V', 64, struct v4l2_subdev_edid32)
++#define VIDIOC_SUBDEV_G_EDID32	_IOWR('V', 40, struct v4l2_subdev_edid32)
++#define VIDIOC_SUBDEV_S_EDID32	_IOWR('V', 41, struct v4l2_subdev_edid32)
+ #define VIDIOC_TRY_FMT32      	_IOWR('V', 64, struct v4l2_format32)
+ #define VIDIOC_G_EXT_CTRLS32    _IOWR('V', 71, struct v4l2_ext_controls32)
+ #define VIDIOC_S_EXT_CTRLS32    _IOWR('V', 72, struct v4l2_ext_controls32)
 -- 
 1.9.1
 
