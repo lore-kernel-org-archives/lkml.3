@@ -1,75 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932480AbaDXRIl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:08:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17309 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932410AbaDXRIh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:08:37 -0400
-From: Denys Vlasenko <dvlasenk@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH] uprobes/x86: Refuse to attach uprobe to "word-sized" branch insns
-Date: Thu, 24 Apr 2014 19:08:24 +0200
-Message-Id: <1398359304-26472-1-git-send-email-dvlasenk@redhat.com>
+	id S1758717AbaDXRJP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:09:15 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:46330 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754688AbaDXRJI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 13:09:08 -0400
+Date: Thu, 24 Apr 2014 11:09:03 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alexander Gordeev <agordeev@redhat.com>,
+        James Bottomley <jbottomley@parallels.com>
+Cc: linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
+        intel-linux-scu@intel.com, support@lsi.com, DL-MPTFusionLinux@lsi.com,
+        qla2xxx-upstream@qlogic.com, iscsi-driver@qlogic.com,
+        pv-drivers@vmware.com, linux-scsi@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND 00/23] scsi: Use pci_enable_msix_range()
+ instead of pci_enable_msix()
+Message-ID: <20140424170903.GA29593@google.com>
+References: <cover.1397461652.git.agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1397461652.git.agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All branch insns on x86 can be prefixed with the operand-size
-override prefix, 0x66. It was only ever useful for performing
-jumps to 32-bit offsets in 16-bit code segments.
+On Mon, Apr 14, 2014 at 10:05:24AM +0200, Alexander Gordeev wrote:
+> Hello,
+> 
+> This series is against 3.15-rc1.
+> 
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
 
-In 32-bit code, such instructions are useless since
-they cause IP truncation to 16 bits, and in case of call insns,
-they save only 16 bits of return address and misalign
-the stack pointer as a "bonus".
+Hi James,
 
-In 64-bit code, such instructions are treated differently by Intel
-and AMD CPUs: Intel ignores the prefix altogether,
-AMD treats them the same as in 32-bit mode.
+These depend on f7fc32c, which appeared in v3.15-rc1.  I had intended
+to merge these scsi updates at the same time, but I failed.  Would you
+like to take them now that f7fc32c is upstream?
 
-Before this patch, the emulation code would execute
-the instructions as if they have no 0x66 prefix.
+If not, I'd still be glad to do it, but it might avoid some conflicts
+if you took them.
 
-With this patch, we refuse to attach uprobes to such insns.
+Bjorn
 
-Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/uprobes.c | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index ace2291..29b152d 100644
---- a/arch/x86/kernel/uprobes.c
-+++ b/arch/x86/kernel/uprobes.c
-@@ -582,6 +582,7 @@ static struct uprobe_xol_ops branch_xol_ops = {
- /* Returns -ENOSYS if branch_xol_ops doesn't handle this insn */
- static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- {
-+	int i;
- 	u8 opc1 = OPCODE1(insn);
- 
- 	/* has the side-effect of processing the entire instruction */
-@@ -612,6 +613,17 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- 			return -ENOSYS;
- 	}
- 
-+	/*
-+	 * 16-bit overrides such as CALLW (66 e8 nn nn) are not supported.
-+	 * Intel and AMD behavior differ in 64-bit mode: Intel ignores 66 prefix.
-+	 * No one uses these insns.
-+	 * Reject any branch insns with such prefix.
-+	 */
-+	for (i = 0; i < insn->prefixes.nbytes; i++) {
-+		if (insn->prefixes.bytes[i] == 0x66)
-+			return -ENOTSUPP;
-+	}
-+
- 	auprobe->branch.opc1 = opc1;
- 	auprobe->branch.ilen = insn->length;
- 	auprobe->branch.offs = insn->immediate.value;
--- 
-1.8.1.4
-
+> There are no major changes in this series since I posted
+> it last time.
+> 
+> Thanks!
+> 
+> Cc: iss_storagedev@hp.com
+> Cc: intel-linux-scu@intel.com
+> Cc: support@lsi.com
+> Cc: DL-MPTFusionLinux@lsi.com
+> Cc: qla2xxx-upstream@qlogic.com
+> Cc: iscsi-driver@qlogic.com
+> Cc: pv-drivers@vmware.com
+> Cc: linux-scsi@vger.kernel.org
+> Cc: linux-pci@vger.kernel.org
+> 
+> 
+> Alexander Gordeev (23):
+>   be2iscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   bfa: Do not call pci_enable_msix() after it failed once
+>   bfa: Cleanup bfad_setup_intr() function
+>   bfa: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   csiostor: Remove superfluous call to pci_disable_msix()
+>   csiostor: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   fnic: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   isci: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   hpsa: Fallback to MSI rather than to INTx if MSI-X failed
+>   hpsa: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   lpfc: Remove superfluous call to pci_disable_msix()
+>   lpfc: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   megaraid: Fail resume if MSI-X re-initialization failed
+>   megaraid: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   mpt2sas: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   mpt3sas: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   pm8001: Fix invalid return when request_irq() failed
+>   pm8001: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   pmcraid: Get rid of a redundant assignment
+>   pmcraid: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   qla2xxx: Use pci_enable_msix_range() instead of pci_enable_msix()
+>   qla4xxx: Use pci_enable_msix_exact() instead of pci_enable_msix()
+>   vmw_pvscsi: Use pci_enable_msix_exact() instead of pci_enable_msix()
+> 
+>  drivers/scsi/be2iscsi/be_main.c           |    6 +--
+>  drivers/scsi/bfa/bfad.c                   |   62 ++++++++++++-----------------
+>  drivers/scsi/csiostor/csio_hw.h           |    2 +-
+>  drivers/scsi/csiostor/csio_isr.c          |   24 ++++-------
+>  drivers/scsi/fnic/fnic_isr.c              |    4 +-
+>  drivers/scsi/hpsa.c                       |   30 ++++++--------
+>  drivers/scsi/isci/init.c                  |    2 +-
+>  drivers/scsi/lpfc/lpfc_init.c             |   47 +++++++++++-----------
+>  drivers/scsi/megaraid/megaraid_sas_base.c |   24 +++++------
+>  drivers/scsi/mpt2sas/mpt2sas_base.c       |    6 +-
+>  drivers/scsi/mpt3sas/mpt3sas_base.c       |    4 +-
+>  drivers/scsi/pm8001/pm8001_init.c         |   44 +++++++++++----------
+>  drivers/scsi/pmcraid.c                    |   14 +------
+>  drivers/scsi/qla2xxx/qla_isr.c            |   27 +++++-------
+>  drivers/scsi/qla4xxx/ql4_nx.c             |    2 +-
+>  drivers/scsi/vmw_pvscsi.c                 |    2 +-
+>  16 files changed, 129 insertions(+), 171 deletions(-)
+> 
+> -- 
+> 1.7.7.6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
