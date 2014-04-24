@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758536AbaDXQBd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:01:33 -0400
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:42805 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758502AbaDXQB3 (ORCPT
+	id S1758594AbaDXQCd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:02:33 -0400
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:48544 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758032AbaDXQC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:01:29 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: [RESEND PATCH v5 5/5] arm: Fix DEBUG_LL for multi-platform kernels (without PL01X)
-Date: Thu, 24 Apr 2014 17:00:46 +0100
-Message-Id: <1398355246-29571-6-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org>
-References: <1396886056-18132-1-git-send-email-daniel.thompson@linaro.org>
- <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org>
+	Thu, 24 Apr 2014 12:02:27 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140424152232.GD1735@arch.cereza>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<1397824031-4892-6-git-send-email-lftan@altera.com>
+	<20140422143036.GD15745@arch.cereza>
+	<CAFiDJ59KHkh549PBezijr-UektFQtQaZ_5fP5qqRvsVC-e2uxw@mail.gmail.com>
+	<20140424152232.GD1735@arch.cereza>
+Date: Fri, 25 Apr 2014 00:02:13 +0800
+X-Google-Sender-Auth: FLXvQ2CQXkiN2LtESflEKaaV63M
+Message-ID: <CAFiDJ5-r1SW9qbE4Oghg4cTZUA_qu2RfBj0YLafcFVGweBctoQ@mail.gmail.com>
+Subject: Re: [PATCH 08/28] nios2: MMU Fault handling
+From: Ley Foon Tan <lftan@altera.com>
+To: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When building a multi_v7_defconfig kernel it is not possible to configure
-DEBUG_LL to use any serial device except a ARM Primecell PL01X, or more
-accurately and worse, it is possible to configure a different serial
-device but KConfig does not honour this request. In fact this also
-overrides the user selection for some of the single platform kernels, for
-example I don't think DEBUG_LL can be targetted at ICE or semihosted
-supervisor for ARCH_VERSATILE.
+On Thu, Apr 24, 2014 at 11:22 PM, Ezequiel Garcia
+<ezequiel.garcia@free-electrons.com> wrote:
+>> > I found that it's useful to add some printing here, just as ARM
+>> > does. I carry this patch on my kernel:
+>> >
+>> > +               printk(KERN_INFO "%s: unhandled page fault (%d) at 0x%08lx, cause %ld\n",
+>> > +                      current->comm, SIGSEGV, address, cause);
+>> > +               show_regs(regs);
+>> >
+>> > Do you think we could do something like it? Maybe with a compile time option?
+>> Yes, this is useful debug message. I can add this.
+>> Prefer not to add new compile time option, I think this shouldn't
+>> happen frequently.
+>
+> No, it shouldn't happen frequently. You can take a look at what ARM does.
+> They use a DEBUG_USER compile-time option, much more complex than my silly
+> proposal.
+For now, we can print it always if this shouldn't happen frequently.
+Compile time option can be added later if we have more other debug
+stuff to print later.
 
-This happens because DEBUG_UART_PL01X is automatically enabled by
-some architectures and this means user decisions made regarding
-the DEBUG_LL backend will be overriden. Problem is fixed by removing the
-automatic enabling of this option.
+Thanks.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- arch/arm/Kconfig.debug | 7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
-
-diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-index 2612dd0..ca9a01c 100644
---- a/arch/arm/Kconfig.debug
-+++ b/arch/arm/Kconfig.debug
-@@ -996,12 +996,7 @@ config DEBUG_LL_INCLUDE
- 
- # Compatibility options for PL01x
- config DEBUG_UART_PL01X
--	def_bool ARCH_EP93XX || \
--		ARCH_INTEGRATOR || \
--		ARCH_SPEAR3XX || \
--		ARCH_SPEAR6XX || \
--		ARCH_SPEAR13XX || \
--		ARCH_VERSATILE
-+	bool
- 
- # Compatibility options for 8250
- config DEBUG_UART_8250
--- 
-1.9.0
-
+Regard,
+Ley Foon
