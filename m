@@ -1,140 +1,428 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751340AbaDXEyU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 00:54:20 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:32689 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbaDXEx4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 00:53:56 -0400
-X-AuditID: cbfee690-b7fcd6d0000026e0-c3-535898e1b8cb
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: "'Arnd Bergmann'" <arnd@arndb.de>, "'Liviu Dudau'" <Liviu.Dudau@arm.com>
-Cc: linaro-kernel@lists.linaro.org, "'Jingoo Han'" <jg1.han@samsung.com>,
-        "'Byungho An'" <bh74.an@samsung.com>,
-        "'linux-pci'" <linux-pci@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, ilho215.lee@samsung.com,
-        "'Bjorn Helgaas'" <bhelgaas@google.com>,
-        linux-arm-kernel@lists.infradead.org
-References: <000801cf592e$30b7bff0$92273fd0$%han@samsung.com>
- <4565008.ZECF3eWqge@wuerfel>
- <20140423142315.GO865@e106497-lin.cambridge.arm.com>
- <14215032.8jhN17iHj5@wuerfel>
-In-reply-to: <14215032.8jhN17iHj5@wuerfel>
-Subject: RE: [RFC PATCH 2/2] PCI: exynos: Add PCIe support for Samsung GH7 SoC
-Date: Thu, 24 Apr 2014 13:53:47 +0900
-Message-id: <01ff01cf5f79$30f926b0$92eb7410$@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQE7j5vEO2bPBvFlE8X5JkO9YLQfLwIWEmlZAa3ehnABfFxYRZwdyDFw
-Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrFIsWRmVeSWpSXmKPExsVy+t8zQ92HMyKCDaa91LP4O+kYu8XVc8cY
-	LZY0ZVgc/beQ0eLywkusFu8PPWO22PT4GqvF5V1z2CzOzjvOZnFgaTuLA5fHmnlrGD1+/5rE
-	6LFgU6nH5iX1Hrf/PWb26NuyitHj8ya5APYoLpuU1JzMstQifbsEroxZO8+yFrRJVUx7MY+x
-	gXGRSBcjJ4eEgInEyo8PGCFsMYkL99azdTFycQgJLGOU2PxxGxtM0e1jd5ggEtMZJU7sesoK
-	4fxllPjavZMFpIpNQEPi8Ptn7CC2iICHxI8Hy9lBipgF5jJJrNu7ngkkISSwmVFiTVs6iM0p
-	oCWx5/FXsLiwgJ/EkgUnwdaxCKhK/N73FyzOK2ApsfjXG0YIW1Dix+R7YMuYgXrX7zzOBGHL
-	S2xe85YZ4lQFiR1nXzNCHOEmsfHSTWaIGhGJfS/eMYIcJCHQyyHxafIFJohlAhLfJh8CGsoB
-	lJCV2HQAao6kxMEVN1gmMErMQrJ6FpLVs5CsnoVkxQJGllWMoqkFyQXFSelFJnrFibnFpXnp
-	esn5uZsYIfE+YQfjvQPWhxiTgdZPZJYSTc4Hpou8knhDYzMjC1MTU2Mjc0sz0oSVxHnVHiUF
-	CQmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamCU4Eo5HikqYnUsW11sj7ce44bDLc8CmTbeEi/I
-	c6s5m8rz1sVsxvNTLmISBUuevvzTujdlWXGN6mEPlS97xHSrLxzPaSj0YXRM2Fsk+GN5z5QT
-	XDcfL/R5tmv+N/FP2vrJBwuy7nofe72lUv6CfqV82mbBSxYrP7rPSE7d+XRz5+GQ2ckfD6xQ
-	YinOSDTUYi4qTgQAmt/0vA0DAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOKsWRmVeSWpSXmKPExsVy+t9jQd2HMyKCDVbu07T4O+kYu8XVc8cY
-	LZY0ZVgc/beQ0eLywkusFu8PPWO22PT4GqvF5V1z2CzOzjvOZnFgaTuLA5fHmnlrGD1+/5rE
-	6LFgU6nH5iX1Hrf/PWb26NuyitHj8ya5APaoBkabjNTElNQihdS85PyUzLx0WyXv4HjneFMz
-	A0NdQ0sLcyWFvMTcVFslF58AXbfMHKDrlBTKEnNKgUIBicXFSvp2mCaEhrjpWsA0Ruj6hgTB
-	9RgZoIGEdYwZs3aeZS1ok6qY9mIeYwPjIpEuRk4OCQETidvH7jBB2GISF+6tZ+ti5OIQEpjO
-	KHFi11NWCOcvo8TX7p0sIFVsAhoSh98/YwexRQQ8JH48WM4OUsQsMJdJYt3e9WCjhAQ2M0qs
-	aUsHsTkFtCT2PP4KFhcW8JNYsuAkG4jNIqAq8XvfX7A4r4ClxOJfbxghbEGJH5PvgS1jBupd
-	v/M4E4QtL7F5zVtmiFMVJHacfc0IcYSbxMZLN5khakQk9r14xziBUWgWklGzkIyahWTULCQt
-	CxhZVjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEJ5NnUjsYVzZYHGIU4GBU4uE9cCE8WIg1
-	say4MvcQowQHs5II78GaiGAh3pTEyqrUovz4otKc1OJDjMlAn05klhJNzgcmurySeENjEzMj
-	SyMzCyMTc3PShJXEeQ+0WgcKCaQnlqRmp6YWpBbBbGHi4JRqYNyx/oyrXdhEL+uTRfp/js2N
-	VLh6teetovg9cTuhzU5ctp9N1Y8tKfpq+9isZ9XbQqNd+smPH8bM14/UuWCQaRZ2927S0y2y
-	G7iXyCqs+O7dcPznxDTR2vwoKdf+BT98k7cG7wxg1n+zYiZLgs3pxm0PLJlaSuIexP7+6Lp6
-	ofPrntMM95pyWJVYijMSDbWYi4oTAQEjX1NqAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1751171AbaDXFEF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 01:04:05 -0400
+Received: from mail-bl2lp0204.outbound.protection.outlook.com ([207.46.163.204]:56207
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750778AbaDXFEC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 01:04:02 -0400
+From: Robin Gong <b38343@freescale.com>
+To: <vinod.koul@intel.com>, <dan.j.williams@intel.com>,
+        <dmaengine@vger.kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v2] dma: imx-sdma: add support for sdma memory copy
+Date: Thu, 24 Apr 2014 13:09:44 +0800
+Message-ID: <1398316184-16824-1-git-send-email-b38343@freescale.com>
+X-Mailer: git-send-email 1.7.5.4
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(6806004)(80976001)(83072002)(85852003)(36756003)(92566001)(19580405001)(92726001)(2201001)(83322001)(79102001)(19580395003)(76482001)(20776003)(77982001)(47776003)(44976005)(80022001)(88136002)(89996001)(87286001)(87936001)(77156001)(33646001)(81342001)(77096999)(62966002)(50986999)(31966008)(93916002)(46102001)(48376002)(81542001)(74662001)(74502001)(4396001)(99396002)(50226001)(50466002)(42262001)(2101003);DIR:OUT;SFP:1101;SCL:1;SRVR:SN2PR03MB029;H:az84smr01.freescale.net;FPR:EE1FF34B.AC2615C4.79EA5743.1CDFDA03.2058A;MLV:sfv;PTR:gate-az5.freescale.com;A:1;MX:1;LANG:en;
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Forefront-PRVS: 01917B1794
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann wrote:
-> 
-> On Wednesday 23 April 2014 15:23:16 Liviu Dudau wrote:
-> > > Unfortunately we are in a tricky situation on arm64 because we have
-> > > to support both server-type SoCs and embedded-type SoCs. In an
-> > > embedded system, you can't trust the boot loader to do a proper
-> > > setup of all the hardware, so the kernel needs full control over
-> > > all the initialization. In a server, the initialization is the
-> > > responsibility of the firmware, and we don't want the kernel to
-> > > even know about those registers.
+add "device_prep_dma_memcpy" and "device_prep_dma_sg" for memory copy by sdma.
 
-BTW, actually we can trust boot-loader to do required things in mobile also ;-)
+Signed-off-by: Robin Gong <b38343@freescale.com>
 
-> > >
-> > > My hope is that all server chips use an SBSA compliant PCIe
-> > > implementation, but we already have X-Gene, which is doing server
-> > > workloads with a nonstandard PCIe, and it's possible that there
-> > > will also be server-like systems with a DesignWare PCIe block
-> > > instead of an SBSA compliant one. We can still support those, but
-> > > I don't want to see more than one implementation of dw-pcie
-> > > on servers. Just like we have the generic PCIe support that Will
-> > > is doing for virtual machines and SBSA compliant systems, we
-> > > would do one dw-pcie variant for all systems that come with a
-> > > host firmware and rely on it being set up already.
+---
+change:
+--v2:
+  1. correct some printk format, such as %pad for dma_addr_t
+  2. split duplicated code in prep_dma_memcpy and prep_dma_sg to make code clean.
+---
+ drivers/dma/imx-sdma.c |  253 ++++++++++++++++++++++++++++++++++++-----------
+ 1 files changed, 194 insertions(+), 59 deletions(-)
 
-OK and I think, just one device driver would be nice for whatever embedded or
-server.
-
-> >
-> > There is nothing in the SBSA that mandates firmware setup. All it requires
-
-Yeah, I couldn't look at that in the SBSA...
-
-> > is that hardware is setup in a way that is not specific to a board
-> > or a particular OEM. Surely if the setup being done for GH7 is always
-> > the same it should fit the bill?
-> 
-But Arnd's comments are about firmware based on each SoC not board?...
-
-> GH7 is already not SBSA compliant because it uses a nonstandard config
-> space access method, and it uses its own MSI controller rather than GIC.
-> This means it violates at least two out of the four clauses in SBSA
-> describing PCIe.
-> 
-OK, I see. Honestly, we just focused on how to support PCI on both exynos5440
-and GH7 SoCs.
-
-> Regardless of this, the level of detail describing config space and
-> MSI handling in SBSA can only make sense if the purpose is to handle
-> all compliant implementations without platform specific code. If you
-> require platform specific setup code in the OS, this underlying assumption
-> no longer holds true and there is no point in having a spec in the
-> first place.
-> 
-OK, your assumption makes sense to us.
-
-> I think we should treat DW-PCIe in the same way if anyone attempts
-> to use that in a server, e.g. in SBSA level 0. As you can see here,
-
-Agreed. BTW, how about GICv2m for level 1? It can be supported with the same
-way in one DW-PCIe driver?
-
-> even when reusing hardware between Exynos and GH7, you can't just
-> use the same init code, so it has to be in firmware to be any good.
-> On a real server platform, you can't require a kernel upgrade every
-> time a new SoC comes out, any basic functionality like PCI just has to
-> work with existing OS images.
-> 
-OK, when Will's driver is ready, we will test it on GH7 with the setup for PCIe
-included in firmware. Anyway I hope we can use the driver in 3.16 :-)
-
-Thanks,
-Kukjin
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index 4e79183..eb62ebc 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -229,6 +229,7 @@ struct sdma_context_data {
+ } __attribute__ ((packed));
+ 
+ #define NUM_BD (int)(PAGE_SIZE / sizeof(struct sdma_buffer_descriptor))
++#define SDMA_BD_MAX_CNT	(0xfffc) /* align with 4 bytes */
+ 
+ struct sdma_engine;
+ 
+@@ -260,6 +261,7 @@ struct sdma_channel {
+ 	unsigned int			pc_from_device, pc_to_device;
+ 	unsigned long			flags;
+ 	dma_addr_t			per_address;
++	unsigned int                    pc_to_pc;
+ 	unsigned long			event_mask[2];
+ 	unsigned long			watermark_level;
+ 	u32				shp_addr, per_addr;
+@@ -694,6 +696,7 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
+ 
+ 	sdmac->pc_from_device = 0;
+ 	sdmac->pc_to_device = 0;
++	sdmac->pc_to_pc = 0;
+ 
+ 	switch (peripheral_type) {
+ 	case IMX_DMATYPE_MEMORY:
+@@ -763,6 +766,7 @@ static void sdma_get_pc(struct sdma_channel *sdmac,
+ 
+ 	sdmac->pc_from_device = per_2_emi;
+ 	sdmac->pc_to_device = emi_2_per;
++	sdmac->pc_to_pc = emi_2_emi;
+ }
+ 
+ static int sdma_load_context(struct sdma_channel *sdmac)
+@@ -775,11 +779,12 @@ static int sdma_load_context(struct sdma_channel *sdmac)
+ 	int ret;
+ 	unsigned long flags;
+ 
+-	if (sdmac->direction == DMA_DEV_TO_MEM) {
++	if (sdmac->direction == DMA_DEV_TO_MEM)
+ 		load_address = sdmac->pc_from_device;
+-	} else {
++	else if (sdmac->direction == DMA_MEM_TO_MEM)
++		load_address = sdmac->pc_to_pc;
++	else
+ 		load_address = sdmac->pc_to_device;
+-	}
+ 
+ 	if (load_address < 0)
+ 		return load_address;
+@@ -1010,99 +1015,206 @@ static void sdma_free_chan_resources(struct dma_chan *chan)
+ 	clk_disable(sdma->clk_ahb);
+ }
+ 
+-static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
+-		struct dma_chan *chan, struct scatterlist *sgl,
+-		unsigned int sg_len, enum dma_transfer_direction direction,
+-		unsigned long flags, void *context)
++static int sdma_transfer_init(struct sdma_channel *sdmac,
++			      enum dma_transfer_direction direction)
++{
++	int ret = 0;
++
++	sdmac->status = DMA_IN_PROGRESS;
++	sdmac->buf_tail = 0;
++	sdmac->flags = 0;
++	sdmac->direction = direction;
++
++	ret = sdma_load_context(sdmac);
++	if (ret)
++		return ret;
++
++	sdmac->chn_count = 0;
++
++	return ret;
++}
++
++static int check_bd_buswidth(struct sdma_buffer_descriptor *bd,
++			     struct sdma_channel *sdmac, int count,
++			     dma_addr_t dma_dst, dma_addr_t dma_src)
++{
++	int ret = 0;
++
++	if (sdmac->word_size > DMA_SLAVE_BUSWIDTH_4_BYTES)
++		ret =  -EINVAL;
++
++	switch (sdmac->word_size) {
++	case DMA_SLAVE_BUSWIDTH_4_BYTES:
++		bd->mode.command = 0;
++		if ((count | dma_dst | dma_src) & 3)
++			ret = -EINVAL;
++		break;
++	case DMA_SLAVE_BUSWIDTH_2_BYTES:
++		bd->mode.command = 2;
++		if ((count | dma_dst | dma_src) & 1)
++			ret = -EINVAL;
++		break;
++	case DMA_SLAVE_BUSWIDTH_1_BYTE:
++		bd->mode.command = 1;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return ret;
++}
++
++static struct dma_async_tx_descriptor *sdma_prep_memcpy(
++		struct dma_chan *chan, dma_addr_t dma_dst,
++		dma_addr_t dma_src, size_t len, unsigned long flags)
+ {
+ 	struct sdma_channel *sdmac = to_sdma_chan(chan);
+ 	struct sdma_engine *sdma = sdmac->sdma;
+-	int ret, i, count;
+ 	int channel = sdmac->channel;
+-	struct scatterlist *sg;
++	size_t count;
++	int i = 0, param;
++	struct sdma_buffer_descriptor *bd;
+ 
+-	if (sdmac->status == DMA_IN_PROGRESS)
++	if (!chan || !len || sdmac->status == DMA_IN_PROGRESS)
+ 		return NULL;
+-	sdmac->status = DMA_IN_PROGRESS;
+ 
+-	sdmac->flags = 0;
+-
+-	sdmac->buf_tail = 0;
++	if (len >= NUM_BD * SDMA_BD_MAX_CNT) {
++		dev_err(sdma->dev, "channel%d: maximum bytes exceeded:%zu > %d\n"
++			, channel, len, NUM_BD * SDMA_BD_MAX_CNT);
++		goto err_out;
++	}
+ 
+-	dev_dbg(sdma->dev, "setting up %d entries for channel %d.\n",
+-			sg_len, channel);
++	dev_dbg(sdma->dev, "memcpy: %pad->%pad, len=%zu, channel=%d.\n",
++		&dma_src, &dma_dst, len, channel);
+ 
+-	sdmac->direction = direction;
+-	ret = sdma_load_context(sdmac);
+-	if (ret)
++	if (sdma_transfer_init(sdmac, DMA_MEM_TO_MEM))
+ 		goto err_out;
+ 
+-	if (sg_len > NUM_BD) {
++	do {
++		count = min_t(size_t, len, SDMA_BD_MAX_CNT);
++		bd = &sdmac->bd[i];
++		bd->buffer_addr = dma_src;
++		bd->ext_buffer_addr = dma_dst;
++		bd->mode.count = count;
++
++		if (check_bd_buswidth(bd, sdmac, count, dma_dst, dma_src))
++			goto err_out;
++
++		dma_src += count;
++		dma_dst += count;
++		len -= count;
++		i++;
++
++		param = BD_DONE | BD_EXTD | BD_CONT;
++		/* last bd */
++		if (!len) {
++			param |= BD_INTR;
++			param |= BD_LAST;
++			param &= ~BD_CONT;
++		}
++
++		dev_dbg(sdma->dev, "entry %d: count: %d dma: 0x%u %s%s\n",
++				i, count, bd->buffer_addr,
++				param & BD_WRAP ? "wrap" : "",
++				param & BD_INTR ? " intr" : "");
++
++		bd->mode.status = param;
++		sdmac->chn_count += count;
++	} while (len);
++
++	sdmac->num_bd = i;
++	sdma->channel_control[channel].current_bd_ptr = sdmac->bd_phys;
++
++	return &sdmac->desc;
++err_out:
++	sdmac->status = DMA_ERROR;
++	return NULL;
++}
++
++/*
++ * Please ensure dst_nents no smaller than src_nents , also every sg_len of
++ * dst_sg node no smaller than src_sg. To simply things, please use the same
++ * size of dst_sg as src_sg.
++ */
++static struct dma_async_tx_descriptor *sdma_prep_sg(
++		struct dma_chan *chan,
++		struct scatterlist *dst_sg, unsigned int dst_nents,
++		struct scatterlist *src_sg, unsigned int src_nents,
++		enum dma_transfer_direction direction)
++{
++	struct sdma_channel *sdmac = to_sdma_chan(chan);
++	struct sdma_engine *sdma = sdmac->sdma;
++	int ret, i, count;
++	int channel = sdmac->channel;
++	struct scatterlist *sg_src = src_sg, *sg_dst = dst_sg;
++
++	if (sdmac->status == DMA_IN_PROGRESS)
++		return NULL;
++
++	dev_dbg(sdma->dev, "setting up %d entries for channel %d.\n",
++			src_nents, channel);
++
++	if (src_nents > NUM_BD) {
+ 		dev_err(sdma->dev, "SDMA channel %d: maximum number of sg exceeded: %d > %d\n",
+-				channel, sg_len, NUM_BD);
+-		ret = -EINVAL;
++				channel, src_nents, NUM_BD);
+ 		goto err_out;
+ 	}
+ 
+-	sdmac->chn_count = 0;
+-	for_each_sg(sgl, sg, sg_len, i) {
++	if (sdma_transfer_init(sdmac, direction))
++		goto err_out;
++
++	for_each_sg(src_sg, sg_src, src_nents, i) {
+ 		struct sdma_buffer_descriptor *bd = &sdmac->bd[i];
+ 		int param;
+ 
+-		bd->buffer_addr = sg->dma_address;
++		bd->buffer_addr = sg_src->dma_address;
++
++		if (direction == DMA_MEM_TO_MEM) {
++			BUG_ON(!sg_dst);
++			bd->ext_buffer_addr = sg_dst->dma_address;
++		}
+ 
+-		count = sg_dma_len(sg);
++		count = sg_dma_len(sg_src);
+ 
+-		if (count > 0xffff) {
++		if (count > SDMA_BD_MAX_CNT) {
+ 			dev_err(sdma->dev, "SDMA channel %d: maximum bytes for sg entry exceeded: %d > %d\n",
+-					channel, count, 0xffff);
+-			ret = -EINVAL;
++					channel, count, SDMA_BD_MAX_CNT);
+ 			goto err_out;
+ 		}
+ 
+ 		bd->mode.count = count;
+ 		sdmac->chn_count += count;
+ 
+-		if (sdmac->word_size > DMA_SLAVE_BUSWIDTH_4_BYTES) {
+-			ret =  -EINVAL;
+-			goto err_out;
+-		}
++		if (direction == DMA_MEM_TO_MEM)
++			ret = check_bd_buswidth(bd, sdmac, count,
++						sg_dst->dma_address,
++						sg_src->dma_address);
++		else
++			ret = check_bd_buswidth(bd, sdmac, count, 0,
++						sg_src->dma_address);
+ 
+-		switch (sdmac->word_size) {
+-		case DMA_SLAVE_BUSWIDTH_4_BYTES:
+-			bd->mode.command = 0;
+-			if (count & 3 || sg->dma_address & 3)
+-				return NULL;
+-			break;
+-		case DMA_SLAVE_BUSWIDTH_2_BYTES:
+-			bd->mode.command = 2;
+-			if (count & 1 || sg->dma_address & 1)
+-				return NULL;
+-			break;
+-		case DMA_SLAVE_BUSWIDTH_1_BYTE:
+-			bd->mode.command = 1;
+-			break;
+-		default:
+-			return NULL;
+-		}
++		if (ret)
++			goto err_out;
+ 
+ 		param = BD_DONE | BD_EXTD | BD_CONT;
+ 
+-		if (i + 1 == sg_len) {
++		if (i + 1 == src_nents) {
+ 			param |= BD_INTR;
+ 			param |= BD_LAST;
+ 			param &= ~BD_CONT;
+ 		}
+ 
+-		dev_dbg(sdma->dev, "entry %d: count: %d dma: %#llx %s%s\n",
+-				i, count, (u64)sg->dma_address,
++		dev_dbg(sdma->dev, "entry %d: count: %d dma: %pad %s%s\n",
++				i, count, &sg_src->dma_address,
+ 				param & BD_WRAP ? "wrap" : "",
+ 				param & BD_INTR ? " intr" : "");
+ 
+ 		bd->mode.status = param;
++		if (direction == DMA_MEM_TO_MEM)
++			sg_dst = sg_next(sg_dst);
+ 	}
+ 
+-	sdmac->num_bd = sg_len;
++	sdmac->num_bd = src_nents;
+ 	sdma->channel_control[channel].current_bd_ptr = sdmac->bd_phys;
+ 
+ 	return &sdmac->desc;
+@@ -1111,6 +1223,24 @@ err_out:
+ 	return NULL;
+ }
+ 
++static struct dma_async_tx_descriptor *sdma_prep_memcpy_sg(
++		struct dma_chan *chan,
++		struct scatterlist *dst_sg, unsigned int dst_nents,
++		struct scatterlist *src_sg, unsigned int src_nents,
++		unsigned long flags)
++{
++	return sdma_prep_sg(chan, dst_sg, dst_nents, src_sg, src_nents,
++			   DMA_MEM_TO_MEM);
++}
++
++static struct dma_async_tx_descriptor *sdma_prep_slave_sg(
++		struct dma_chan *chan, struct scatterlist *sgl,
++		unsigned int sg_len, enum dma_transfer_direction direction,
++		unsigned long flags, void *context)
++{
++	return sdma_prep_sg(chan, NULL, 0, sgl, sg_len, direction);
++}
++
+ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
+ 		struct dma_chan *chan, dma_addr_t dma_addr, size_t buf_len,
+ 		size_t period_len, enum dma_transfer_direction direction,
+@@ -1143,9 +1273,9 @@ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
+ 		goto err_out;
+ 	}
+ 
+-	if (period_len > 0xffff) {
+-		dev_err(sdma->dev, "SDMA channel %d: maximum period size exceeded: %d > %d\n",
+-				channel, period_len, 0xffff);
++	if (period_len > SDMA_BD_MAX_CNT) {
++		dev_err(sdma->dev, "SDMA channel %d: maximum period size exceeded: %zu > %d\n",
++				channel, period_len, SDMA_BD_MAX_CNT);
+ 		goto err_out;
+ 	}
+ 
+@@ -1168,8 +1298,8 @@ static struct dma_async_tx_descriptor *sdma_prep_dma_cyclic(
+ 		if (i + 1 == num_periods)
+ 			param |= BD_WRAP;
+ 
+-		dev_dbg(sdma->dev, "entry %d: count: %d dma: %#llx %s%s\n",
+-				i, period_len, (u64)dma_addr,
++		dev_dbg(sdma->dev, "entry %d: count: %d dma: %pad %s%s\n",
++				i, period_len, &dma_addr,
+ 				param & BD_WRAP ? "wrap" : "",
+ 				param & BD_INTR ? " intr" : "");
+ 
+@@ -1206,6 +1336,8 @@ static int sdma_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 			sdmac->watermark_level = dmaengine_cfg->src_maxburst *
+ 						dmaengine_cfg->src_addr_width;
+ 			sdmac->word_size = dmaengine_cfg->src_addr_width;
++		} else if (dmaengine_cfg->direction == DMA_MEM_TO_MEM) {
++			sdmac->word_size = dmaengine_cfg->dst_addr_width;
+ 		} else {
+ 			sdmac->per_address = dmaengine_cfg->dst_addr;
+ 			sdmac->watermark_level = dmaengine_cfg->dst_maxburst *
+@@ -1516,6 +1648,7 @@ static int __init sdma_probe(struct platform_device *pdev)
+ 
+ 	dma_cap_set(DMA_SLAVE, sdma->dma_device.cap_mask);
+ 	dma_cap_set(DMA_CYCLIC, sdma->dma_device.cap_mask);
++	dma_cap_set(DMA_MEMCPY, sdma->dma_device.cap_mask);
+ 
+ 	INIT_LIST_HEAD(&sdma->dma_device.channels);
+ 	/* Initialize channel parameters */
+@@ -1578,6 +1711,8 @@ static int __init sdma_probe(struct platform_device *pdev)
+ 	sdma->dma_device.device_tx_status = sdma_tx_status;
+ 	sdma->dma_device.device_prep_slave_sg = sdma_prep_slave_sg;
+ 	sdma->dma_device.device_prep_dma_cyclic = sdma_prep_dma_cyclic;
++	sdma->dma_device.device_prep_dma_memcpy = sdma_prep_memcpy;
++	sdma->dma_device.device_prep_dma_sg = sdma_prep_memcpy_sg;
+ 	sdma->dma_device.device_control = sdma_control;
+ 	sdma->dma_device.device_issue_pending = sdma_issue_pending;
+ 	sdma->dma_device.dev->dma_parms = &sdma->dma_parms;
+-- 
+1.7.5.4
 
