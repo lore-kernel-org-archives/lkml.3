@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751959AbaDXGSj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 02:18:39 -0400
-Received: from mail-yh0-f50.google.com ([209.85.213.50]:51536 "EHLO
-	mail-yh0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750787AbaDXGSh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 02:18:37 -0400
+	id S1752052AbaDXGUQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 02:20:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:64462 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751363AbaDXGUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 02:20:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,917,1389772800"; 
+   d="scan'208";a="526179540"
+Date: Thu, 24 Apr 2014 09:27:19 +0300
+From: "Westerberg, Mika" <mika.westerberg@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Timur Tabi <timur@codeaurora.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
+Message-ID: <20140424062719.GZ30677@intel.com>
+References: <CAOZdJXU2hN+9TE=XN55TZF_W-0hxHZmK5330i6hwrhOERKFetw@mail.gmail.com>
+ <534B93BA.6020406@linux.intel.com>
+ <534BFAAF.3070805@codeaurora.org>
+ <534D0370.50108@linux.intel.com>
+ <535005BA.1040405@codeaurora.org>
+ <5357A80B.8030701@linux.intel.com>
+ <5357ACF1.9070206@codeaurora.org>
+ <20140423135915.GY30677@intel.com>
+ <5357D8CC.3080501@codeaurora.org>
+ <CACRpkdbk8okbzaZgD=BqeMSOvbEvYNViqamd9i=NAaAWW=T9sQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1397453895-6688-1-git-send-email-tushar.behera@linaro.org>
-References: <1397453895-6688-1-git-send-email-tushar.behera@linaro.org>
-Date: Thu, 24 Apr 2014 11:48:36 +0530
-Message-ID: <CADGdYn719UzdPd3fVWrPi=mTnKvKy3O5bPHZcn8xCFjrAWp7yA@mail.gmail.com>
-Subject: Re: [PATCH] thermal: samsung: Only update available threshold limits
-From: Amit Kachhap <amit.kachhap@gmail.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdbk8okbzaZgD=BqeMSOvbEvYNViqamd9i=NAaAWW=T9sQ@mail.gmail.com>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/14/14, Tushar Behera <tushar.behera@linaro.org> wrote:
-> Currently the threshold limits are updated in 2 stages, once for all
-> software trigger levels and again for hardware trip point.
-I guess the first stage is bootloader as could not find this in this file.
-Anyways the changes looks fine to me.
+On Thu, Apr 24, 2014 at 12:20:12AM +0200, Linus Walleij wrote:
+> On Wed, Apr 23, 2014 at 5:14 PM, Timur Tabi <timur@codeaurora.org> wrote:
+> 
+> > How are the pin muxes normally configured in ACPI?
+> 
+> VERY good question.
 
-Acked-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
+Typically this is done by the boot firmware (BIOS in this case). So the OS
+doesn't need to deal with that.
 
->
-> While updating the software trigger levels, it overwrites the threshold
-> limit for hardware trip point thereby forcing the Exynos core to issue
-> an emergency shutdown.
->
-> Updating only the required fields in threshold register fixes this issue.
->
-> Signed-off-by: Tushar Behera <tushar.behera@linaro.org>
-> ---
-> Based on v3.15-rc1.
->
->  drivers/thermal/samsung/exynos_tmu.c |    4 ++++
->  1 file changed, 4 insertions(+)
->
-> diff --git a/drivers/thermal/samsung/exynos_tmu.c
-> b/drivers/thermal/samsung/exynos_tmu.c
-> index 0d96a51..ffccc89 100644
-> --- a/drivers/thermal/samsung/exynos_tmu.c
-> +++ b/drivers/thermal/samsung/exynos_tmu.c
-> @@ -225,6 +225,8 @@ skip_calib_data:
->  			trigger_levs++;
->  	}
->
-> +	rising_threshold = readl(data->base + reg->threshold_th0);
-> +
->  	if (data->soc == SOC_ARCH_EXYNOS4210) {
->  		/* Write temperature code for threshold */
->  		threshold_code = temp_to_code(data, pdata->threshold);
-> @@ -249,6 +251,7 @@ skip_calib_data:
->  				ret = threshold_code;
->  				goto out;
->  			}
-> +			rising_threshold &= ~(0xff << 8 * i);
->  			rising_threshold |= threshold_code << 8 * i;
->  			if (pdata->threshold_falling) {
->  				threshold_code = temp_to_code(data,
-> @@ -281,6 +284,7 @@ skip_calib_data:
->  			}
->  			if (i == EXYNOS_MAX_TRIGGER_PER_REG - 1) {
->  				/* 1-4 level to be assigned in th0 reg */
-> +				rising_threshold &= ~(0xff << 8 * i);
->  				rising_threshold |= threshold_code << 8 * i;
->  				writel(rising_threshold,
->  					data->base + reg->threshold_th0);
-> --
-> 1.7.9.5
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-samsung-soc"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+AFAICT ACPI doesn't know anything about pin muxing.
