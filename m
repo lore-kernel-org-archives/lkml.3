@@ -1,100 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681AbaDXNXg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:23:36 -0400
-Received: from mail-ee0-f44.google.com ([74.125.83.44]:57221 "EHLO
-	mail-ee0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755560AbaDXNXe (ORCPT
+	id S1756888AbaDXNYR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:24:17 -0400
+Received: from mail-ob0-f171.google.com ([209.85.214.171]:36828 "EHLO
+	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753483AbaDXNYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:23:34 -0400
-Message-ID: <53591051.9030804@gmail.com>
-Date: Thu, 24 Apr 2014 15:23:29 +0200
-From: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        =?UTF-8?B?QW50b2luZSBUw6luYQ==?= =?UTF-8?B?cnQ=?= 
-	<antoine.tenart@free-electrons.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-CC: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        zhiming Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
+	Thu, 24 Apr 2014 09:24:15 -0400
+MIME-Version: 1.0
+In-Reply-To: <2386bd1367aa44741979461358a72dec89608597.1398335771.git.anders.berg@lsi.com>
+References: <cover.1398335771.git.anders.berg@lsi.com>
+	<2386bd1367aa44741979461358a72dec89608597.1398335771.git.anders.berg@lsi.com>
+Date: Thu, 24 Apr 2014 15:24:14 +0200
+Message-ID: <CACRpkdbU6UashxCuPMDjEB_nbB=mXicGpjJy=HGC6r3qfxCtVQ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/6] ARM: dts: Device tree for AXM55xx.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Anders Berg <anders.berg@lsi.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/7] ARM: berlin: add pinctrl support
-References: <1398268276-9696-1-git-send-email-antoine.tenart@free-electrons.com> <CACRpkdbT94HqVroM_0gSJJ8Q2+YaKXLwjFGMn+4SCa_PYiF19Q@mail.gmail.com>
-In-Reply-To: <CACRpkdbT94HqVroM_0gSJJ8Q2+YaKXLwjFGMn+4SCa_PYiF19Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 02:52 PM, Linus Walleij wrote:
-> On Wed, Apr 23, 2014 at 5:51 PM, Antoine Ténart
-> <antoine.tenart@free-electrons.com> wrote:
+On Thu, Apr 24, 2014 at 12:44 PM, Anders Berg <anders.berg@lsi.com> wrote:
+
+> Add device tree for the Amarillo validation board with an AXM5516 SoC.
 >
->> This series adds support for the Marvell Berlin pin-controller, allowing
->> to configure the pin muxing from the device tree.
->>
->> The Berlin pin-controller support is divided into 3 drivers, each
->> driving one Berlin SoC. These drivers use a Berlin common part.
->>
->> This series applies on top of patches introducing the Marvell Berlin
->> BG2Q you can find on Sebastian's berlin/for-next branch[1] and the patch
->> allowing not to define the get_group_pins() function[2].
->>
->> Tested on the Berlin BG2Q.
->
-> So now I need some advice from the mvebu pinctrl maintainers
-> (Thomas, Sebastian etc):
->
-> - Is this a totally different pin controller so that drivers/pinctrl/mvebu
->   can not be used?
+> Signed-off-by: Anders Berg <anders.berg@lsi.com>
+(...)
 
-Unfortunately, yes. Well actually, it _can_ be seen as a subset of
-the mvebu pinctrl:
+> +                       timer0: timer@2010091000 {
+> +                               compatible = "arm,sp804", "arm,primecell";
+> +                               reg = <0x20 0x10091000 0 0x1000>;
+> +                               interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 47 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 48 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 49 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 51 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 52 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 53 IRQ_TYPE_LEVEL_HIGH>;
+> +                               clocks = <&clk_per>;
+> +                               clock-names = "apb_pclk";
+> +                               status = "okay";
+> +                       };
+> +
+> +                       gpio0: gpio@2010092000 {
+> +                               #gpio-cells = <2>;
+> +                               compatible = "arm,pl061", "arm,primecell";
+> +                               gpio-controller;
+> +                               reg = <0x20 0x10092000 0x00 0x1000>;
+> +                               interrupts = <GIC_SPI 10 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 11 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 12 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 13 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 14 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>,
+> +                                            <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
+> +                               clocks = <&clk_per>;
+> +                               clock-names = "apb_pclk";
+> +                               status = "disabled";
+> +                       };
 
-- mvebu (usually) uses 4bit per mux function with 8 functions/register
-- berlin uses 1-4bit per mux function with as many functions/register
-   as there fit in 32b.
+One interrupt per CPU core?
 
-This great feature saves _at least_ one additional address decoding!
-It doesn't save registers, because they will never be synthesized, but
-at least each SoC has a very different pinmux layout. *sigh*
+The drivers for these blocks will really just grab the first IRQ and
+then I guess they
+will only be able to execute on CPU0.
 
-> - Really?
+It's definately correct to list all the IRQs here, but how do you envision
+the drivers making use of them in the long run?
 
-Yep.
-
-> - OK can you help me review this thing?
-
-Sure thing!
-
-> - Should the base folder really be named "berlin" or is this going to
->    be part of a bigger family of pin controllers so a more neutral name
->    should be sought?
-
-Well, Marvell basically has two groups of SoCs, MVEBU and PXA/MMP. Don't
-ask me why but sometimes they share IP, sometimes they don't.
-
-Berlin names Marvell SoCs prefixed 88DExxxx, I *think* it may be derived 
-from the PXA/MMP line of SoCs. To make it more confuse,
-it also got the marketing name "Armada".
-
-> - Why do hardware engineers seek to reinvent wheels like pin
->    controllers, GPIO and DMA engines all the time :-/
-
-I guess it is: "Look what we found in our IP archives".
-
-Honestly, I can think of making pinctrl/mvebu and pinctrl/berlin
-compatible but I don't know if it is worth the pain :P
-
-We have "custom" set/get_function() callbacks in pinctrl/mvebu
-so that should fit. Each "group" of pins has a name and a bunch
-of "functions", that fits too.
-
-I need some time to think about it, but if you insist on it, I
-can possibly make it work.
-
-Sebastian
-
+Yours,
+Linus Walleij
