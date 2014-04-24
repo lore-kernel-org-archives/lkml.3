@@ -1,164 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758091AbaDXQQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:16:33 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:51289 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758221AbaDXPtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:49:14 -0400
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Felipe Balbi <balbi@ti.com>
-Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org
-Subject: [PATCH v7 07/20] usb: phy: msm: Fix checkpatch.pl warnings
-Date: Thu, 24 Apr 2014 18:48:02 +0300
-Message-Id: <1398354495-20782-8-git-send-email-iivanov@mm-sol.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
-References: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
+	id S1758317AbaDXQRF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:17:05 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753250AbaDXQRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 12:17:02 -0400
+Message-ID: <535938F8.3070300@nod.at>
+Date: Thu, 24 Apr 2014 18:16:56 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+MIME-Version: 1.0
+To: Ley Foon Tan <lftan@altera.com>
+CC: Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
+Subject: Re: [PATCH 17/28] nios2: Signal handling support
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>	<1397824031-4892-14-git-send-email-lftan@altera.com>	<CAFLxGvyPCwo-d92QK9qAR5=gmRS4p24tYs9PiOApBGfrKdxJ5Q@mail.gmail.com>	<CAFiDJ5-q5hzR+1BDCmCzwqbuVZOUdjX_-omR4u3rnC8xqdQZLA@mail.gmail.com>	<CAFiDJ59g0E+hoREriydqk2uBsDvchPMSQi6NCgnwOd64OGLJ0w@mail.gmail.com>	<5358E4B9.1050308@nod.at>	<CAFiDJ5_pbcQo7VPj6J9UVhxGQtGn7hX19vkybL3DvM73v8Dc-w@mail.gmail.com>	<5358E9EB.8080307@nod.at> <CAFiDJ59hHikNKcY8hCu9M=hOQoL9STED82hEhAggubq3jqt3ig@mail.gmail.com>
+In-Reply-To: <CAFiDJ59hHikNKcY8hCu9M=hOQoL9STED82hEhAggubq3jqt3ig@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Am 24.04.2014 12:46, schrieb Ley Foon Tan:
+> On Thu, Apr 24, 2014 at 6:39 PM, Richard Weinberger <richard@nod.at> wrote:
+>> Am 24.04.2014 12:29, schrieb Ley Foon Tan:
+>>> On Thu, Apr 24, 2014 at 6:17 PM, Richard Weinberger <richard@nod.at> wrote:
+>>>
+>>>>>> Okay.
+>>>>>>
+>>>>> I just noticed that sigsp() have struct ksignal argument. We can use
+>>>>> sigsp() for nios2 because it doesn't have struct ksignal.
+>>>>>
+>>>>> unsigned long sigsp(unsigned long sp, struct ksignal *ksig);
+>>>>
+>>>> Did you at look at the struct ksignal definition and the clean series I've
+>>>> pointed you to?
+>>>>
+>>>
+>>> Not yet, this is the full set of patches? I only see partial..
+>>> https://lkml.org/lkml/2014/3/2/198
+>>
+>> Maybe lkml.org misses a few but this does not matter.
+>> All you need to know is that using ksignal is easy.
+>> e.g. https://lkml.org/lkml/2014/3/2/162
+>>
+> Thanks. I am looking at your git tree
+> https://git.kernel.org/cgit/linux/kernel/git/rw/misc.git/log/?h=signal_v2
+> Are these patches already available in v3.15 rc?
 
-This fixes following:
+Nope, I have to rebase them again.
+But some archs have picked up the changes already.
 
-WARNING: quoted string split across lines
-WARNING: Prefer seq_puts to seq_printf
+> I can update nios2 to use new implementation.
 
-Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
----
- drivers/usb/phy/phy-msm-usb.c | 39 ++++++++++++++-------------------------
- 1 file changed, 14 insertions(+), 25 deletions(-)
+Would be great. :)
 
-diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 4045301..3855217 100644
---- a/drivers/usb/phy/phy-msm-usb.c
-+++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -67,8 +67,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
- 				USB_PHY_VDD_DIG_VOL_MIN,
- 				USB_PHY_VDD_DIG_VOL_MAX);
- 		if (ret) {
--			dev_err(motg->phy.dev, "unable to set the voltage "
--					"for hsusb vddcx\n");
-+			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
- 			return ret;
- 		}
-
-@@ -79,8 +78,7 @@ static int msm_hsusb_init_vddcx(struct msm_otg *motg, int init)
- 		ret = regulator_set_voltage(motg->vddcx, 0,
- 			USB_PHY_VDD_DIG_VOL_MAX);
- 		if (ret)
--			dev_err(motg->phy.dev, "unable to set the voltage "
--					"for hsusb vddcx\n");
-+			dev_err(motg->phy.dev, "Cannot set vddcx voltage\n");
- 		ret = regulator_disable(motg->vddcx);
- 		if (ret)
- 			dev_err(motg->phy.dev, "unable to disable hsusb vddcx\n");
-@@ -97,8 +95,7 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
- 		rc = regulator_set_voltage(motg->v3p3, USB_PHY_3P3_VOL_MIN,
- 				USB_PHY_3P3_VOL_MAX);
- 		if (rc) {
--			dev_err(motg->phy.dev, "unable to set voltage level "
--					"for hsusb 3p3\n");
-+			dev_err(motg->phy.dev, "Cannot set v3p3 voltage\n");
- 			goto exit;
- 		}
- 		rc = regulator_enable(motg->v3p3);
-@@ -109,8 +106,7 @@ static int msm_hsusb_ldo_init(struct msm_otg *motg, int init)
- 		rc = regulator_set_voltage(motg->v1p8, USB_PHY_1P8_VOL_MIN,
- 				USB_PHY_1P8_VOL_MAX);
- 		if (rc) {
--			dev_err(motg->phy.dev, "unable to set voltage level "
--					"for hsusb 1p8\n");
-+			dev_err(motg->phy.dev, "Cannot set v1p8 voltage\n");
- 			goto disable_3p3;
- 		}
- 		rc = regulator_enable(motg->v1p8);
-@@ -137,15 +133,13 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
- 		ret = regulator_set_optimum_mode(motg->v1p8,
- 				USB_PHY_1P8_HPM_LOAD);
- 		if (ret < 0) {
--			pr_err("%s: Unable to set HPM of the regulator "
--				"HSUSB_1p8\n", __func__);
-+			pr_err("Could not set HPM for v1p8\n");
- 			return ret;
- 		}
- 		ret = regulator_set_optimum_mode(motg->v3p3,
- 				USB_PHY_3P3_HPM_LOAD);
- 		if (ret < 0) {
--			pr_err("%s: Unable to set HPM of the regulator "
--				"HSUSB_3p3\n", __func__);
-+			pr_err("Could not set HPM for v3p3\n");
- 			regulator_set_optimum_mode(motg->v1p8,
- 				USB_PHY_1P8_LPM_LOAD);
- 			return ret;
-@@ -154,13 +148,11 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
- 		ret = regulator_set_optimum_mode(motg->v1p8,
- 				USB_PHY_1P8_LPM_LOAD);
- 		if (ret < 0)
--			pr_err("%s: Unable to set LPM of the regulator "
--				"HSUSB_1p8\n", __func__);
-+			pr_err("Could not set LPM for v1p8\n");
- 		ret = regulator_set_optimum_mode(motg->v3p3,
- 				USB_PHY_3P3_LPM_LOAD);
- 		if (ret < 0)
--			pr_err("%s: Unable to set LPM of the regulator "
--				"HSUSB_3p3\n", __func__);
-+			pr_err("Could not set LPM for v3p3\n");
- 	}
-
- 	pr_debug("reg (%s)\n", on ? "HPM" : "LPM");
-@@ -390,8 +382,7 @@ static int msm_hsusb_config_vddcx(struct msm_otg *motg, int high)
-
- 	ret = regulator_set_voltage(motg->vddcx, min_vol, max_vol);
- 	if (ret) {
--		pr_err("%s: unable to set the voltage for regulator "
--			"HSUSB_VDDCX\n", __func__);
-+		pr_err("Cannot set vddcx voltage\n");
- 		return ret;
- 	}
-
-@@ -546,8 +537,7 @@ static int msm_otg_resume(struct msm_otg *motg)
- 		 * PHY. USB state can not be restored. Re-insertion
- 		 * of USB cable is the only way to get USB working.
- 		 */
--		dev_err(phy->dev, "Unable to resume USB."
--				"Re-plugin the cable\n");
-+		dev_err(phy->dev, "Unable to resume USB. Re-plugin the cable\n");
- 		msm_otg_reset(phy);
- 	}
-
-@@ -1242,13 +1232,13 @@ static int msm_otg_mode_show(struct seq_file *s, void *unused)
-
- 	switch (otg->phy->state) {
- 	case OTG_STATE_A_HOST:
--		seq_printf(s, "host\n");
-+		seq_puts(s, "host\n");
- 		break;
- 	case OTG_STATE_B_PERIPHERAL:
--		seq_printf(s, "peripheral\n");
-+		seq_puts(s, "peripheral\n");
- 		break;
- 	default:
--		seq_printf(s, "none\n");
-+		seq_puts(s, "none\n");
- 		break;
- 	}
-
-@@ -1530,8 +1520,7 @@ static int msm_otg_probe(struct platform_device *pdev)
- 			motg->pdata->otg_control == OTG_USER_CONTROL) {
- 		ret = msm_otg_debugfs_init(motg);
- 		if (ret)
--			dev_dbg(&pdev->dev, "mode debugfs file is"
--					"not available\n");
-+			dev_dbg(&pdev->dev, "Can not create mode change file\n");
- 	}
-
- 	pm_runtime_set_active(&pdev->dev);
---
-1.8.3.2
-
+Thanks,
+//richard
