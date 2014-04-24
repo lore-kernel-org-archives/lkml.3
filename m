@@ -1,116 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217AbaDXI1o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:27:44 -0400
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:38718 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863AbaDXIYQ (ORCPT
+	id S1753245AbaDXI23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:28:29 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:53783 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228AbaDXI2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:24:16 -0400
-X-Original-SENDERIP: 10.177.220.181
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Namhyung Kim <namhyung.kim@lge.com>,
-        Namhyung Kim <namhyung@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 09/11] perf ui/tui: Rename hist_browser__update_nr_entries()
-Date: Thu, 24 Apr 2014 17:24:01 +0900
-Message-Id: <1398327843-31845-10-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
-References: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
+	Thu, 24 Apr 2014 04:28:24 -0400
+Message-ID: <1398328099.6486.29.camel@marge.simpson.net>
+Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
+ balance if there are runnable tasks
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: Jason Low <jason.low2@hp.com>
+Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
+        daniel.lezcano@linaro.org, alex.shi@linaro.org,
+        preeti@linux.vnet.ibm.com, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
+Date: Thu, 24 Apr 2014 10:28:19 +0200
+In-Reply-To: <1398307888.26653.18.camel@marge.simpson.net>
+References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
+	 <1398303035-18255-4-git-send-email-jason.low2@hp.com>
+	 <1398307888.26653.18.camel@marge.simpson.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename ->nr_pcnt_entries and hist_browser__update_pcnt_entries() to
-->nr_non_filtered_entries and hist_browser__update_nr_entries() since
-it's now used for filtering as well.
+On Thu, 2014-04-24 at 04:51 +0200, Mike Galbraith wrote:
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 17 ++++++++---------
- 1 file changed, 8 insertions(+), 9 deletions(-)
+> Checking rq->lock for contention before ever going to idle balancing as
+> well should give you a bit more.  No need to run around looking for work
+> that's trying to arrive.  By not going there, perhaps stacking tasks,
+> you may head off a future bounce as well.
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 311226edae12..769295bf2c10 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -26,13 +26,14 @@ struct hist_browser {
- 	int		     print_seq;
- 	bool		     show_dso;
- 	float		     min_pcnt;
--	u64		     nr_pcnt_entries;
-+	u64		     nr_non_filtered_entries;
- };
- 
- extern void hist_browser__init_hpp(void);
- 
- static int hists__browser_title(struct hists *hists, char *bf, size_t size,
- 				const char *ev_name);
-+static void hist_browser__update_nr_entries(struct hist_browser *hb);
- 
- static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- {
-@@ -310,8 +311,6 @@ static void ui_browser__warn_lost_events(struct ui_browser *browser)
- 		"Or reduce the sampling frequency.");
- }
- 
--static void hist_browser__update_pcnt_entries(struct hist_browser *hb);
--
- static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 			     struct hist_browser_timer *hbt)
- {
-@@ -322,7 +321,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 	browser->b.entries = &browser->hists->entries;
- 	browser->b.nr_entries = browser->hists->nr_entries;
- 	if (browser->min_pcnt)
--		browser->b.nr_entries = browser->nr_pcnt_entries;
-+		browser->b.nr_entries = browser->nr_non_filtered_entries;
- 
- 	hist_browser__refresh_dimensions(browser);
- 	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
-@@ -340,8 +339,8 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 			hbt->timer(hbt->arg);
- 
- 			if (browser->min_pcnt) {
--				hist_browser__update_pcnt_entries(browser);
--				nr_entries = browser->nr_pcnt_entries;
-+				hist_browser__update_nr_entries(browser);
-+				nr_entries = browser->nr_non_filtered_entries;
- 			} else {
- 				nr_entries = browser->hists->nr_entries;
- 			}
-@@ -1343,7 +1342,7 @@ close_file_and_continue:
- 	return ret;
- }
- 
--static void hist_browser__update_pcnt_entries(struct hist_browser *hb)
-+static void hist_browser__update_nr_entries(struct hist_browser *hb)
- {
- 	u64 nr_entries = 0;
- 	struct rb_node *nd = rb_first(&hb->hists->entries);
-@@ -1354,7 +1353,7 @@ static void hist_browser__update_pcnt_entries(struct hist_browser *hb)
- 		nd = rb_next(nd);
- 	}
- 
--	hb->nr_pcnt_entries = nr_entries;
-+	hb->nr_non_filtered_entries = nr_entries;
- }
- 
- static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
-@@ -1411,7 +1410,7 @@ static int perf_evsel__hists_browse(struct perf_evsel *evsel, int nr_events,
- 
- 	if (min_pcnt) {
- 		browser->min_pcnt = min_pcnt;
--		hist_browser__update_pcnt_entries(browser);
-+		hist_browser__update_nr_entries(browser);
- 	}
- 
- 	fstack = pstack__new(2);
--- 
-1.9.2
+Zzt.  Bailing without drop/retake to let work land would be a bad plan.
+
+-Mike
 
