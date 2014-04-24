@@ -1,27 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914AbaDXI4A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:56:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46965 "EHLO
+	id S1755531AbaDXJY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:24:28 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47021 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754809AbaDXIzo (ORCPT
+	with ESMTP id S1754895AbaDXIz7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:55:44 -0400
+	Thu, 24 Apr 2014 04:55:59 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
+Cc: Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 143/182] b43: Fix machine check error due to improper access of B43_MMIO_PSM_PHY_HDR
-Date: Thu, 24 Apr 2014 09:51:08 +0100
-Message-Id: <1398329507-5911-144-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 153/182] ALSA: hda/realtek - Add support of ALC288 codec
+Date: Thu, 24 Apr 2014 09:51:18 +0100
+Message-Id: <1398329507-5911-154-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,64 +27,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
+From: Kailang Yang <kailang@realtek.com>
 
-commit 12cd43c6ed6da7bf7c5afbd74da6959cda6d056b upstream.
+commit 7c66593286bcd153e4868383e675673a27071bd5 upstream.
 
-Register B43_MMIO_PSM_PHY_HDR is 16 bit one, so accessing it with 32b
-functions isn't safe. On my machine it causes delayed (!) CPU exception:
-
-Disabling lock debugging due to kernel taint
-mce: [Hardware Error]: CPU 0: Machine Check Exception: 4 Bank 4: b200000000070f0f
-mce: [Hardware Error]: TSC 164083803dc
-mce: [Hardware Error]: PROCESSOR 2:20fc2 TIME 1396650505 SOCKET 0 APIC 0 microcode 0
-mce: [Hardware Error]: Run the above through 'mcelog --ascii'
-mce: [Hardware Error]: Machine check: Processor context corrupt
-Kernel panic - not syncing: Fatal machine check on current CPU
-Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
-
-Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
-Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Kailang Yang <kailang@realtek.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/wireless/b43/phy_n.c | 14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
+ sound/pci/hda/patch_realtek.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/net/wireless/b43/phy_n.c b/drivers/net/wireless/b43/phy_n.c
-index 7c970d3..80ecca3 100644
---- a/drivers/net/wireless/b43/phy_n.c
-+++ b/drivers/net/wireless/b43/phy_n.c
-@@ -5175,22 +5175,22 @@ static void b43_nphy_channel_setup(struct b43_wldev *dev,
- 	int ch = new_channel->hw_value;
- 
- 	u16 old_band_5ghz;
--	u32 tmp32;
-+	u16 tmp16;
- 
- 	old_band_5ghz =
- 		b43_phy_read(dev, B43_NPHY_BANDCTL) & B43_NPHY_BANDCTL_5GHZ;
- 	if (new_channel->band == IEEE80211_BAND_5GHZ && !old_band_5ghz) {
--		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
-+		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
- 		b43_phy_set(dev, B43_PHY_B_BBCFG, 0xC000);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
- 		b43_phy_set(dev, B43_NPHY_BANDCTL, B43_NPHY_BANDCTL_5GHZ);
- 	} else if (new_channel->band == IEEE80211_BAND_2GHZ && old_band_5ghz) {
- 		b43_phy_mask(dev, B43_NPHY_BANDCTL, ~B43_NPHY_BANDCTL_5GHZ);
--		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
-+		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
- 		b43_phy_mask(dev, B43_PHY_B_BBCFG, 0x3FFF);
--		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
-+		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
- 	}
- 
- 	b43_chantab_phy_upload(dev, e);
+diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
+index 9716e68..78a42ab 100644
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -4078,6 +4078,7 @@ static int patch_alc269(struct hda_codec *codec)
+ 		spec->codec_variant = ALC269_TYPE_ALC284;
+ 		break;
+ 	case 0x10ec0286:
++	case 0x10ec0288:
+ 		spec->codec_variant = ALC269_TYPE_ALC286;
+ 		break;
+ 	case 0x10ec0255:
+@@ -4830,6 +4831,7 @@ static const struct hda_codec_preset snd_hda_preset_realtek[] = {
+ 	{ .id = 0x10ec0283, .name = "ALC283", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0284, .name = "ALC284", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0286, .name = "ALC286", .patch = patch_alc269 },
++	{ .id = 0x10ec0288, .name = "ALC288", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
 -- 
 1.9.1
 
