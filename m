@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751376AbaDXCEj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 22:04:39 -0400
-Received: from mail-bl2lp0209.outbound.protection.outlook.com ([207.46.163.209]:42215
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750897AbaDXCEh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 22:04:37 -0400
-Date: Thu, 24 Apr 2014 08:38:57 +0800
-From: Peter Chen <peter.chen@freescale.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>
-Subject: Re: [PATCH v4 0/3] usb: chipidea: msm: Clean and fix glue layer
- driver
-Message-ID: <20140424003854.GA25407@shlinux1.ap.freescale.net>
-References: <1398256084-6815-1-git-send-email-iivanov@mm-sol.com>
+	id S1751592AbaDXCFr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 22:05:47 -0400
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:46361 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751460AbaDXCFW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 22:05:22 -0400
+X-Original-SENDERIP: 10.177.220.169
+X-Original-MAILFROM: minchan@kernel.org
+Date: Thu, 24 Apr 2014 11:06:32 +0900
+From: Minchan Kim <minchan@kernel.org>
+To: Weijie Yang <weijie.yang@samsung.com>
+Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Nitin Gupta'" <ngupta@vflare.org>, iamjoonsoo.kim@lge.com,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Bob Liu'" <bob.liu@oracle.com>, weijie.yang.kh@gmail.com,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] zram: correct offset usage in zram_bio_discard
+Message-ID: <20140424020632.GA863@bbox>
+References: <000001cf5ecf$f4f4f850$dedee8f0$%yang@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398256084-6815-1-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(51704005)(24454002)(199002)(189002)(19580395003)(83072002)(50466002)(87936001)(79102001)(99396002)(44976005)(19580405001)(80976001)(83322001)(31966008)(6806004)(74502001)(77982001)(74662001)(85852003)(15975445006)(81542001)(4396001)(46102001)(81342001)(46406003)(50986999)(47776003)(20776003)(97756001)(92566001)(83506001)(23726002)(77096999)(92726001)(33656001)(80022001)(76176999)(76482001)(54356999)(86362001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB028;H:az84smr01.freescale.net;FPR:F6D7F891.8C12DF13.B3613BE8.50E48252.20237;MLV:sfv;PTR:gate-az5.freescale.com;A:1;MX:1;LANG:en;
-X-Forefront-PRVS: 01917B1794
-X-OriginatorOrg: freescale.com
+In-Reply-To: <000001cf5ecf$f4f4f850$dedee8f0$%yang@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 03:28:01PM +0300, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> This series intend to fix driver, which was broken for a while.
-> It is used to create peripheral role device, which in coordination
-> with phy-usb-msm driver could provide USB2.0 gadget support for
-> Qualcomm targets.
-> 
-> Changes since version 3.
-> 
->  - Fix typo in devicetree description file.
-> 
-> Previews version can be found here:
+Hello,
 
-Since in your phy's patchset, you also access portsc which is in
-chipidea register region, it is not a standard way.
-In case, you will change something at chipidea driver in future
-when you re-work your next revision phy's patchset, I do not
-send this patchset to Greg right now.
+On Wed, Apr 23, 2014 at 04:41:15PM +0800, Weijie Yang wrote:
+> We want to skip the physical block(PAGE_SIZE) which is partially
+> covered by the discard bio, so we check the remaining size and
+> subtract it if there is a need to goto the next physical block.
+> 
+> The current offset usage in zram_bio_discard is incorrect, it will
+> cause its upper filesystem breakdown.
+> Consider the following scenario:
+> on some architecture or config, PAGE_SIZE is 64K for example,
+> filesystem is set up on zram disk without PAGE_SIZE aligned,
+> a discard bio leads to a offset = 4K and size=72K,
+> normally, it should not really discard any physical block as it
+> partially cover two physical blocks.
+> However, with the current offset usage, it will discard the second
+> physical block and free its memory, which will cause filesystem breakdown.
+> 
+> This patch corrects the offset usage in zram_bio_discard.
 
-Once your phy's patchset has accepted, notify me. I will send
-this patchset to Greg.
+Nice catch.
+Surely we need fix but I'd like to go further. Let's think.
+How do you find that? Real problem or code review?
+I'd like to know how much that happens in real practice because if it's
+a lot, it means discard support is just an overhead without any benefit.
 
-Peter
+If you just found it with code review(ie, don't have any data),
+would you mind adding some stat like 'num_discard/failed_discard' so
+we can keep an eye on that. Although it's for rare case, I think it's worth.
+Because someone would do swapon zram with --discard,
+it could make same problem due to early page freeing of zram-swap to
+avoid duplicating VM-owned memory and ZRAM-owned memory.
+
+We can guide to zram-swap user not to use swapon with --discard but
+I don't want it because swap_slot_free_notify is really mess which
+violates layering so I hope replace it with discard finally so such
+statistics really help us to drive that way more quickly.
 
 > 
-> https://lkml.org/lkml/2014/4/22/195
+> Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> ---
+>  drivers/block/zram/zram_drv.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> Ivan T. Ivanov (3):
->   usb: chipidea: msm: Add device tree binding information
->   usb: chipidea: msm: Add device tree support
->   usb: chipidea: msm: Initialize offset of the capability registers
+> diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> index 9849b52..48eccb3 100644
+> --- a/drivers/block/zram/zram_drv.c
+> +++ b/drivers/block/zram/zram_drv.c
+> @@ -572,10 +572,10 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+>  	 * skipping this logical block is appropriate here.
+>  	 */
+>  	if (offset) {
+> -		if (n < offset)
+> +		if (n <= (PAGE_SIZE - offset))
+>  			return;
+>  
+> -		n -= offset;
+> +		n -= (PAGE_SIZE - offset);
+>  		index++;
+>  	}
+>  
+> -- 
+> 1.7.10.4
 > 
->  .../devicetree/bindings/usb/ci-hdrc-qcom.txt       | 17 +++++++++++++++
->  drivers/usb/chipidea/ci_hdrc_msm.c                 | 24 +++++++++++++++++++++-
->  2 files changed, 40 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/devicetree/bindings/usb/ci-hdrc-qcom.txt
 > 
 > --
-> 1.8.3.2
-> 
-> 
-> 
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 -- 
-
-Best Regards,
-Peter Chen
+Kind regards,
+Minchan Kim
