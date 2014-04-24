@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935AbaDXM2r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:28:47 -0400
-Received: from mail-we0-f173.google.com ([74.125.82.173]:61102 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210AbaDXM2o (ORCPT
+	id S1756974AbaDXM2v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:28:51 -0400
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:35949 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756944AbaDXM2s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:28:44 -0400
+	Thu, 24 Apr 2014 08:28:48 -0400
 From: Peter Griffin <peter.griffin@linaro.org>
 To: linux-kernel@vger.kernel.org
-Cc: linaro-kernel@lists.linaro.org, Peter Griffin <peter.griffin@linaro.org>
-Subject: [PATCH 00/13] video: Arnds randconfig fixes for video
-Date: Thu, 24 Apr 2014 13:28:16 +0100
-Message-Id: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
+Cc: linaro-kernel@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Simon Horman <horms+renesas@verge.net.au>,
+        Magnus Damm <magnus.damm@gmail.com>, linux-sh@vger.kernel.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+Subject: [PATCH 01/13] video: sh_mobile_lcdcfb depends on meram
+Date: Thu, 24 Apr 2014 13:28:17 +0100
+Message-Id: <1398342509-10243-2-git-send-email-peter.griffin@linaro.org>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
+References: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset series addresses various bugs found and fixed by Arnd Bergmann 
-whilst doing randconfig builds.
+From: Arnd Bergmann <arnd@arndb.de>
 
-My involvement has been to review, add/check the maintainers are correct
-and submit upstream to try and reduce the backlog.
+The sh_mobile_lcdcfb driver calls interfaces provided
+by the corresponding "meram" helper. This fails if meram
+is a module but lcdcfb is built-in.
 
-Regards,
+To work around it, this uses special Kconfig magic to
+only allow lcdcfb to be built if
+a) both are modules,
+b) meram is built-in, or
+c) meram is disabled and the helpers stubbed out
 
-Peter.
+Changing meram from 'y' to 'm' now forces clcd to
+be a module as well, which seems to be the desired
+behavior.
 
-Arnd Bergmann (11):
-  video: sh_mobile_lcdcfb depends on meram
-  video: omap2dss: fix LPAE warnings
-  video: clarify I2C dependencies
-  video/omap: fix modular build
-  video/mbx: fix building debugfs support
-  video: export fb_prepare_logo
-  video: atmel needs FB_BACKLIGHT
-  video/pxa: LCD_CORGI needs BACKLIGHT_CLASS_DEVICE
-  video/nuc900: allow modular build
-  video/backlight: LP855X needs PWM
-  video: omap: allow building on !MMU
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+Cc: Simon Horman <horms+renesas@verge.net.au>
+Cc: Magnus Damm <magnus.damm@gmail.com>
+Cc: linux-sh@vger.kernel.org
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org
+---
+ drivers/video/fbdev/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
-Peter Griffin (2):
-  video/backlight: LM3630A needs PWM
-  video/backlight: LP8788 needs PWM
-
- drivers/video/backlight/Kconfig        |    8 ++++----
- drivers/video/fbdev/Kconfig            |    6 +++++-
- drivers/video/fbdev/core/fbmem.c       |    1 +
- drivers/video/fbdev/mbx/Makefile       |    3 +--
- drivers/video/fbdev/mbx/mbxdebugfs.c   |    2 +-
- drivers/video/fbdev/mbx/mbxfb.c        |    2 ++
- drivers/video/fbdev/omap/Kconfig       |    9 +++++++++
- drivers/video/fbdev/omap/Makefile      |   23 ++++++++++++-----------
- drivers/video/fbdev/omap/lcdc.c        |   28 +++++-----------------------
- drivers/video/fbdev/omap/omapfb_main.c |    1 +
- drivers/video/fbdev/omap2/dss/dispc.c  |    6 +++---
- include/linux/omap-dma.h               |    2 +-
- include/video/omapdss.h                |    4 ++--
- 13 files changed, 47 insertions(+), 48 deletions(-)
-
+diff --git a/drivers/video/fbdev/Kconfig b/drivers/video/fbdev/Kconfig
+index e1f4727..a4116bf 100644
+--- a/drivers/video/fbdev/Kconfig
++++ b/drivers/video/fbdev/Kconfig
+@@ -1971,6 +1971,7 @@ config FB_W100
+ config FB_SH_MOBILE_LCDC
+ 	tristate "SuperH Mobile LCDC framebuffer support"
+ 	depends on FB && (SUPERH || ARCH_SHMOBILE) && HAVE_CLK
++	depends on FB_SH_MOBILE_MERAM || !FB_SH_MOBILE_MERAM
+ 	select FB_SYS_FILLRECT
+ 	select FB_SYS_COPYAREA
+ 	select FB_SYS_IMAGEBLIT
 -- 
 1.7.9.5
 
