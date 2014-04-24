@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050AbaDXCkj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 22:40:39 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:37428 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751269AbaDXCki (ORCPT
+	id S1752088AbaDXCnS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 22:43:18 -0400
+Received: from mail-ob0-f174.google.com ([209.85.214.174]:63219 "EHLO
+	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751302AbaDXCnQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 22:40:38 -0400
-Date: Wed, 23 Apr 2014 22:40:35 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net
-Cc: Mark Brown <broonie@kernel.org>, linux-spi@vger.kernel.org
-Subject: [PATCH] spi-bfin: Add missing gpio.h include
-Message-ID: <20140423224035.1de64093@gandalf.local.home>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Wed, 23 Apr 2014 22:43:16 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.130:25
-X-Cloudmark-Score: 0
+In-Reply-To: <20140424023544.GA2180@darkstar.nay.redhat.com>
+References: <20140424023544.GA2180@darkstar.nay.redhat.com>
+Date: Wed, 23 Apr 2014 19:43:15 -0700
+X-Google-Sender-Auth: 2wWIHZzcEB5sbg_hEakY0qBONeM
+Message-ID: <CAGXu5j+TP2=iVYj=a6YGiGdOUqznb1MxdLLz5tjL8Hwwcq2K0Q@mail.gmail.com>
+Subject: Re: kaslr should avoid setup_data region
+From: Kees Cook <keescook@chromium.org>
+To: Dave Young <dyoung@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Running my ktest.pl tests on all the archs, I stumbled over this for
-3.15-rc2:
+On Wed, Apr 23, 2014 at 7:35 PM, Dave Young <dyoung@redhat.com> wrote:
+> Hello Kees
+>
+> I'm worrying that setup_data regions could be overwitten by randomize
+> kernel base. Would you like to fix it in kaslr code?
+>
+> One problem is there could be a lot of setup_data regions but current
+> mem_avoid is an fixed array.
 
-drivers/spi/spi-bfin5xx.c: In function 'bfin_spi_cs_active':
-drivers/spi/spi-bfin5xx.c:169:3: error: implicit declaration of function 'gpio_set_value' [-Werror=implicit-function-declaration]
-drivers/spi/spi-bfin5xx.c: In function 'bfin_spi_setup':
-drivers/spi/spi-bfin5xx.c:1097:4: error: implicit declaration of function 'gpio_request' [-Werror=implicit-function-declaration]
-drivers/spi/spi-bfin5xx.c:1102:4: error: implicit declaration of function 'gpio_direction_output' [-Werror=implicit-function-declaration]
-drivers/spi/spi-bfin5xx.c:1130:3: error: implicit declaration of function 'gpio_free' [-Werror=implicit-function-declaration]
+Sure, can you give me some examples? Seems like it shouldn't be too
+hard to have the mem_avoid logic walk additional areas.
 
-The problem is that the spi-bfin5xx driver is missing an include for
-the gpio.h file.
+-Kees
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
-diff --git a/drivers/spi/spi-bfin5xx.c b/drivers/spi/spi-bfin5xx.c
-index 55e57c3..da8baa5 100644
---- a/drivers/spi/spi-bfin5xx.c
-+++ b/drivers/spi/spi-bfin5xx.c
-@@ -15,6 +15,7 @@
- #include <linux/slab.h>
- #include <linux/io.h>
- #include <linux/ioport.h>
-+#include <linux/gpio.h>
- #include <linux/irq.h>
- #include <linux/errno.h>
- #include <linux/interrupt.h>
+-- 
+Kees Cook
+Chrome OS Security
