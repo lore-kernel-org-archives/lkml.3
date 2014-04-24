@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758533AbaDXS1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 14:27:18 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:53601 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753171AbaDXS1R (ORCPT
+	id S1758829AbaDXScj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 14:32:39 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44149 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754533AbaDXSch (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 14:27:17 -0400
-X-Greylist: delayed 661 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Apr 2014 14:27:17 EDT
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: LKML <linux-kernel@vger.kernel.org>, mingo@redhat.com,
-        peterz@infradead.org, tkhai@yandex.ru
-Subject: Real-time scheduling policies and hyper-threading
+	Thu, 24 Apr 2014 14:32:37 -0400
+Date: Thu, 24 Apr 2014 19:32:18 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Zi Shen Lim <zlim@broadcom.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Message-ID: <20140424183218.GH12304@sirena.org.uk>
+References: <1398217214-12204-1-git-send-email-zlim@broadcom.com>
+ <1398217214-12204-2-git-send-email-zlim@broadcom.com>
 MIME-Version: 1.0
-Message-Id: <36851398363372@webcorp2g.yandex-team.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Thu, 24 Apr 2014 22:16:12 +0400
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="pqw+uiQfrV1nNtFa"
+Content-Disposition: inline
+In-Reply-To: <1398217214-12204-2-git-send-email-zlim@broadcom.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] arm64, sched: Remove unused mc_capable() and
+ smt_capable()
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
 
+--pqw+uiQfrV1nNtFa
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I spend some time investigating why switching runtime* tasks to real-time scheduling policies increases
-response time dispersion, while the opposite is expected.
+On Tue, Apr 22, 2014 at 06:40:13PM -0700, Zi Shen Lim wrote:
+> Remove unused and deprecated mc_capable() and smt_capable().
+>=20
+> Both were added recently by f6e763b93a6c ("arm64: topology:
+> Implement basic CPU topology support"). Uses of both were removed
+> by 8e7fbcbc22c1 ("sched: Remove stale power aware scheduling
+> remnants and dysfunctional knobs").
 
-The main reason is hyper-threading. rt-scheduler tries only to load all logical CPUs, selecting topologically
-closest when the current is busy. If hyper-threading is enabled, this strategy is counter-productive:
-tasks are suffering on busy HT-threads when there is a plenty of idle physical cores.
+Reviewed-by: Mark Brown <broonie@linaro.org>
 
-Also, rt-scheduler doesn't try to balance rt load between physical CPUs. It's significant because of
-turbo-boost and frequency scaling technologies: per-core performance depends on the number of
-idle cores in the same physical cpu.
+--pqw+uiQfrV1nNtFa
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-Are there any known solutions of this problem except disabling hyper-threading and frequency scaling at all?
+iQIcBAEBAgAGBQJTWVivAAoJELSic+t+oim9uUEP/jwVZuKcnD9zbfGwtawHm9RR
+xsj3l4cPRmjsvCh35sDNJL1kldWcZsAHX5z/gv9qux4MbifmEPzSVema1cwdOoLr
+4RpygC9xkvnZAYwTnBs15DH3zVDTEMxSSzYAvNQCRrLCBNpfCA6FAvcuiUUyvLZ7
+B0rMZGJ/Du9sxWSoRm49A+sa4qSMpW53fmz13zMdVAUMY4Ac45H5X/EUgT7ZtswQ
+zO5PYNycTv9PGOCOb21HubQVECWoq1qF8XCFexNHH2X9ylGwCe0dcEJnBg62k61T
+Ib0yJD2H8ZWBDNQCxwauwXbD7XTNgBYRTxu0fnNWLmhlglEvSLZP+b72mK42PSLL
+odeGqhT5WlDts/D8k/ed0MM4ZJxh8SLyK3Qo503Iza0DT05st4qqoSPANxeE0DVV
+mBKSxsEWOs7Gc1XPmdn1pwdZA9DXCBlBE6QLiufM06a3nUwUz4soWptIiIl5aWnm
+bIwVf7EYJn3YoHGRTDQGd6wHYgSvQF4xj6bVkGlEJdG17uXadeuYvD23YHLstpgr
+Vk66lbpqqVwYMkMXGbT3C2k7bNEfkC4LWLNouvAwIdq1iQWlS69ERVLuNrKMEhIj
+ZwwRetonWpl6sKMJjerYUk5a3cy74THzqe/+O03YtVrk3KWz0GyrITVMY6AJ0i7B
+YMAR7+Z68eueOnaarqvG
+=/fn0
+-----END PGP SIGNATURE-----
 
-Are there any common plans to enhance the load balancing algorithm in the rt-scheduler?
-
-Does anyone use rt-scheduler for runtime-like cpu-bound tasks?
-
-
-Why just don't use CFS? :-)
-Rt-scheduler with modified load balancing shows much better results.
-I have a prototype (still incomplete and with many dirty hacks), that shows 10-15% 
-performance increase in our production.
-
-
-(*) A simplified model can be described as following:
-there is one process per machine, with one thread, that receives request from network and puts them into queue;
-n (n ~ NCPU + 1) worker threads, that get requests from the queue and handle them.
-Load is cpu-bound, tens of milliseconds per request. Typical CPU load is between 40% and 70%.
-A typical system has two physical x86-64 cpus with 8-16 physical cores each (x2 with hyper-threading).
-
-
-Thanks,
-Roman
+--pqw+uiQfrV1nNtFa--
