@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751793AbaDXBrf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 21:47:35 -0400
-Received: from ozlabs.org ([103.22.144.67]:44577 "EHLO ozlabs.org"
+	id S1751969AbaDXBsj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 21:48:39 -0400
+Received: from Barcelona.uem.br ([186.233.154.14]:39717 "EHLO barcelona.uem.br"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047AbaDXBrd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 21:47:33 -0400
-Date: Thu, 24 Apr 2014 11:47:26 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jakub Kicinski <kubakici@wp.pl>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Carolyn Wyborny <carolyn.wyborny@intel.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-Id: <20140424114726.07876050b5b805463a085191@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Apr_2014_11_47_26_+1000_Fv4_xzF7KW41M1Jh"
+	id S1751326AbaDXBsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 21:48:37 -0400
+X-Spam-Flag: NO
+X-Spam-Score: 0.103
+Date: Wed, 23 Apr 2014 22:47:42 -0300 (BRT)
+From: Webmail Account Messaging Center <cikedo@uem.br>
+Reply-To: "freelotto05@qq.com" <notice@domain.org>
+Message-ID: <28507257.3374911398304062488.JavaMail.root@Sakhir.uem.br>
+Subject: Microsoft webmail users system alert: Attention !!!
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [109.228.20.84]
+X-Mailer: Zimbra 5.0.10_GA_2638.RHEL4 (ZimbraWebClient - FF3.0 (Win)/5.0.10_GA_2638.RHEL4)
+To: undisclosed-recipients:;
+X-UEM-MailScanner-Information: Please contact the ISP for more information
+X-UEM-MailScanner-ID: 5E8C6E1F9D.A38CF
+X-UEM-MailScanner: Found to be clean
+X-UEM-MailScanner-From: cikedo@uem.br
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Apr_2014_11_47_26_+1000_Fv4_xzF7KW41M1Jh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/ethernet/intel/igb/e1000_mac.c between commit c5ffe7e1f745
-("e1000e/igb/ixgbe/i40e: fix message terminations") from the net tree and
-commit c75c4edfc38d ("igb: Cleanups for messaging") from the net-next
-tree.
+Dear Subscriber
 
-I fixed it up (the former was a superset of the latter) and can carry the
-fix as necessary (no action is required).
+Webmail account is currently conducting a process-maintenance of all accounts email.to validate your account against spy-ware and spam e-mails to complete this, Click  Here: http://webmailaccountupgrad04.webs.com/ and login to activate your webmail account.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+http://webmailaccountupgrad04.webs.com/
 
---Signature=_Thu__24_Apr_2014_11_47_26_+1000_Fv4_xzF7KW41M1Jh
-Content-Type: application/pgp-signature
+This process will help us to fight against Spam Mails. Failure to
+update your account in the link above, will make your email address
+active in our database.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+We are sincerely sorry for any inconvenience
 
-iQIcBAEBCAAGBQJTWG0zAAoJEMDTa8Ir7ZwVvLkP/1Ry/p/p9Gcy+juyMgEyQNIZ
-5Y3TcJiuDrxqHki09tnGsPiMtxjKOU3cUWe8FGF0O/vk30/Du+n1up8rjpMrPGvS
-dhXrxw4dp9YocNCO5Y1DlnfkcdY0NtYplWNU6XKh+VGMOH3YpKUl4zKPSyQXslt5
-eU20ajz73KdLqdd/++Aj7qXcNVb1imr0Bg3pUrLE8sLMQlsGxYZhrL6pqx1+VrW1
-Br1g1L+lTrMbDz6tvJBjDJ7iFujZLlB9kv7tS66XqesAHxDCqSXpeYO79YYZOoaI
-8Jw6gSk1DVRkxKwG6dm4VrMbihJcsYyYgX6lG1BAhqrBy0PaML2A4okt6+tSdbPE
-6uQSU+HgaABOmSVvqyoBdE76CkQ9C/Is6jw2/ZlgQVGmJmkDwLkC2k26VSQP7lBh
-Te1q8lvQXpvC5cASYMdJr5APwhAU72ztlEyY7ps/c8PGyiha+zbaGgWnrtOmkjEm
-geO2RJG5YJDxpcNBgRInNV7BU8F0e9X3H+8sViu49PE9TunIcFX5IBdRA6Q40yx+
-e4hC7o1z3HOmQSH1YRAnUr5kkiVJ0W6C5sFkfPYvUjg02WUlrPyC4gPsbBI5/nN5
-MiiW3Vv4wL4AnFqfNkZiiseFiqe8X+dPMH5Ew6adm2MXzc7XOWrhQ9MUKKGdPpZn
-nOWk+ODLOFUPJV3MJps0
-=ygbA
------END PGP SIGNATURE-----
+Kind Regards,
+Webmail Account Messaging Center
+Webmaster copyright @ 2014 openwebmail  all rights reserved.
 
---Signature=_Thu__24_Apr_2014_11_47_26_+1000_Fv4_xzF7KW41M1Jh--
+-- 
+Esta mensagem foi verificada pelo sistema de antivirus e
+ acredita-se estar livre de perigo.
+
