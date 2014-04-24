@@ -1,76 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895AbaDXWjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:39:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33201 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757639AbaDXWjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:39:09 -0400
-Message-ID: <53599225.7010407@zytor.com>
-Date: Thu, 24 Apr 2014 15:37:25 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1758953AbaDXWjl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:39:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39527 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754893AbaDXVp7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:45:59 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        Werner Fink <werner@suse.de>, Hannes Reinecke <hare@suse.de>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH 3.14 12/33] tty: Set correct tty name in active sysfs attribute
+Date: Thu, 24 Apr 2014 14:48:25 -0700
+Message-Id: <20140424214451.315741525@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
+References: <20140424214449.423169713@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-To: Andrew Lutomirski <amluto@gmail.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-CC: comex <comexk@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Alexander van Heukelum <heukelum@fastmail.fm>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Arjan van de Ven <arjan.van.de.ven@intel.com>,
-        Brian Gerst <brgerst@gmail.com>,
-        Alexandre Julliard <julliard@winehq.com>,
-        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
-References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com> <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com> <53598F2F.1030306@linux.intel.com> <CAObL_7H0omGZTW2jRa+cZdaKM1y8z2Uh5mPZqW4AX4Qgea8Ydw@mail.gmail.com>
-In-Reply-To: <CAObL_7H0omGZTW2jRa+cZdaKM1y8z2Uh5mPZqW4AX4Qgea8Ydw@mail.gmail.com>
-X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 03:31 PM, Andrew Lutomirski wrote:
-> 
-> I was imagining just randomizing a couple of high bits so the whole
-> espfix area moves as a unit.
-> 
->> We could XOR with a random constant with no penalty at all.  Only
->> problem is that this happens early, so the entropy system is not yet
->> available.  Fine if we have RDRAND, but...
-> 
-> How many people have SMAP and not RDRAND?  I think this is a complete
-> nonissue for non-SMAP systems.
-> 
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-Most likely none, unless some "clever" virtualizer turns off RDRAND out
-of spite.
+------------------
 
->>> Peter, is this idea completely nuts?  The only exceptions that can
->>> happen there are NMI, MCE, #DB, #SS, and #GP.  The first four use IST,
->>> so they won't double-fault.
->>
->> It is completely nuts, but sometimes completely nuts is actually useful.
->>  It is more complexity, to be sure, but it doesn't seem completely out
->> of the realm of reason, and avoids having to unwind the ministack except
->> in the normally-fatal #DF handler.  #DFs are documented as not
->> recoverable, but we might be able to do something here.
->>
->> The only real disadvantage I see is the need for more bookkeeping
->> metadata.  Basically the bitmask in espfix_64.c now needs to turn into
->> an array, plus we need a second percpu variable.  Given that if
->> CONFIG_NR_CPUS=8192 the array has 128 entries I think we can survive that.
-> 
-> Doing something in #DF needs percpu data?  What am I missing?
+From: Hannes Reinecke <hare@suse.de>
 
-You need the second percpu variable in the espfix setup code so you have
-both the write address and the target rsp (read address).
+commit 723abd87f6e536f1353c8f64f621520bc29523a3 upstream.
 
-	-hpa
+The 'active' sysfs attribute should refer to the currently active tty
+devices the console is running on, not the currently active console. The
+console structure doesn't refer to any device in sysfs, only the tty the
+console is running on has. So we need to print out the tty names in
+'active', not the console names.
+
+There is one special-case, which is tty0. If the console is directed to
+it, we want 'tty0' to show up in the file, so user-space knows that the
+messages get forwarded to the active VT. The ->device() callback would
+resolve tty0, though. Hence, treat it special and don't call into the VT
+layer to resolve it (plymouth is known to depend on it).
+
+Cc: Lennart Poettering <lennart@poettering.net>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Werner Fink <werner@suse.de>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/tty/tty_io.c |   23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
+
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1271,12 +1271,13 @@ static void pty_line_name(struct tty_dri
+  *
+  *	Locking: None
+  */
+-static void tty_line_name(struct tty_driver *driver, int index, char *p)
++static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
+ {
+ 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
+-		strcpy(p, driver->name);
++		return sprintf(p, "%s", driver->name);
+ 	else
+-		sprintf(p, "%s%d", driver->name, index + driver->name_base);
++		return sprintf(p, "%s%d", driver->name,
++			       index + driver->name_base);
+ }
+ 
+ /**
+@@ -3545,9 +3546,19 @@ static ssize_t show_cons_active(struct d
+ 		if (i >= ARRAY_SIZE(cs))
+ 			break;
+ 	}
+-	while (i--)
+-		count += sprintf(buf + count, "%s%d%c",
+-				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
++	while (i--) {
++		int index = cs[i]->index;
++		struct tty_driver *drv = cs[i]->device(cs[i], &index);
++
++		/* don't resolve tty0 as some programs depend on it */
++		if (drv && (cs[i]->index > 0 || drv->major != TTY_MAJOR))
++			count += tty_line_name(drv, index, buf + count);
++		else
++			count += sprintf(buf + count, "%s%d",
++					 cs[i]->name, cs[i]->index);
++
++		count += sprintf(buf + count, "%c", i ? ' ':'\n');
++	}
+ 	console_unlock();
+ 
+ 	return count;
 
 
