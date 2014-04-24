@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792AbaDXFif (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 01:38:35 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:52946 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaDXFib (ORCPT
+	id S1751525AbaDXFuh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 01:50:37 -0400
+Received: from leo.clearchain.com ([199.73.29.74]:37865 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751157AbaDXFug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 01:38:31 -0400
-Message-ID: <53589E8E.1040000@gmail.com>
-Date: Thu, 24 Apr 2014 07:18:06 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 24 Apr 2014 01:50:36 -0400
+X-Greylist: delayed 771 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Apr 2014 01:50:36 EDT
+Date: Thu, 24 Apr 2014 15:37:38 +1000
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, David Herrmann <dh.herrmann@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: evdev - get rid of old workaround for EVIOCGBIT
+Message-ID: <20140424053738.GA1839@yabbi.redhat.com>
+References: <20140424052719.GA29764@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Davidlohr Bueso <davidlohr@hp.com>
-CC: mtk.manpages@gmail.com, Manfred Spraul <manfred@colorfullife.com>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, gthelen@google.com,
-        aswin@hp.com, linux-mm@kvack.org
-Subject: Re: [PATCH 5/4] ipc,shm: minor cleanups
-References: <1398090397-2397-1-git-send-email-manfred@colorfullife.com>	 <1398221636.6345.9.camel@buesod1.americas.hpqcorp.net>	 <53574AA5.1060205@gmail.com> <1398230745.27667.2.camel@buesod1.americas.hpqcorp.net>
-In-Reply-To: <1398230745.27667.2.camel@buesod1.americas.hpqcorp.net>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140424052719.GA29764@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Greylist: Sender passed SPF test, not delayed by milter-greylist-4.2.7 (mail.clearchain.com [127.0.0.1]); Thu, 24 Apr 2014 15:07:44 +0930 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 07:25 AM, Davidlohr Bueso wrote:
-> On Wed, 2014-04-23 at 07:07 +0200, Michael Kerrisk (man-pages) wrote:
->> On 04/23/2014 04:53 AM, Davidlohr Bueso wrote:
->>> -  Breakup long function names/args.
->>> -  Cleaup variable declaration.
->>> -  s/current->mm/mm
->>>
->>> Signed-off-by: Davidlohr Bueso <davidlohr@hp.com>
->>> ---
->>>  ipc/shm.c | 40 +++++++++++++++++-----------------------
->>>  1 file changed, 17 insertions(+), 23 deletions(-)
->>>
->>> diff --git a/ipc/shm.c b/ipc/shm.c
->>> index f000696..584d02e 100644
->>> --- a/ipc/shm.c
->>> +++ b/ipc/shm.c
->>> @@ -480,15 +480,13 @@ static const struct vm_operations_struct shm_vm_ops = {
->>>  static int newseg(struct ipc_namespace *ns, struct ipc_params *params)
->>>  {
->>>  	key_t key = params->key;
->>> -	int shmflg = params->flg;
->>> +	int id, error, shmflg = params->flg;
->>
->> It's largely a matter of taste (and I may be in a minority), and I know
->> there's certainly precedent in the kernel code, but I don't much like the 
->> style of mixing variable declarations that have initializers, with other
->> unrelated declarations (e.g., variables without initializers). What is 
->> the gain? One less line of text? That's (IMO) more than offset by the 
->> small loss of readability.
+On Wed, Apr 23, 2014 at 10:27:20PM -0700, Dmitry Torokhov wrote:
+> We put this workaround in 2008 and the offending userspace has been fixed
+> up long time ago; the link in the message is no longer valid either, so it
+> is time to retire it.
 > 
-> Yes, it's taste. And yes, your in the minority, at least in many core
-> kernel components and ipc.
+> Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 
-Davidlohr,
-
-So, noting that the minority is less small than we thought, I'll just
-add this: I'd have appreciated it if your reply had been less 
-dismissive, and you'd actually responded to my concrete point about 
-loss of readability.
+works for me, Reviewed-by: Peter Hutterer <peter.hutterer@who-t.net>
 
 Cheers,
+   Peter
 
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+> ---
+>  drivers/input/evdev.c | 18 ------------------
+>  1 file changed, 18 deletions(-)
+> 
+> diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+> index ce953d8..fd325ec 100644
+> --- a/drivers/input/evdev.c
+> +++ b/drivers/input/evdev.c
+> @@ -629,12 +629,10 @@ static int str_to_user(const char *str, unsigned int maxlen, void __user *p)
+>  	return copy_to_user(p, str, len) ? -EFAULT : len;
+>  }
+>  
+> -#define OLD_KEY_MAX	0x1ff
+>  static int handle_eviocgbit(struct input_dev *dev,
+>  			    unsigned int type, unsigned int size,
+>  			    void __user *p, int compat_mode)
+>  {
+> -	static unsigned long keymax_warn_time;
+>  	unsigned long *bits;
+>  	int len;
+>  
+> @@ -652,24 +650,8 @@ static int handle_eviocgbit(struct input_dev *dev,
+>  	default: return -EINVAL;
+>  	}
+>  
+> -	/*
+> -	 * Work around bugs in userspace programs that like to do
+> -	 * EVIOCGBIT(EV_KEY, KEY_MAX) and not realize that 'len'
+> -	 * should be in bytes, not in bits.
+> -	 */
+> -	if (type == EV_KEY && size == OLD_KEY_MAX) {
+> -		len = OLD_KEY_MAX;
+> -		if (printk_timed_ratelimit(&keymax_warn_time, 10 * 1000))
+> -			pr_warning("(EVIOCGBIT): Suspicious buffer size %u, "
+> -				   "limiting output to %zu bytes. See "
+> -				   "http://userweb.kernel.org/~dtor/eviocgbit-bug.html\n",
+> -				   OLD_KEY_MAX,
+> -				   BITS_TO_LONGS(OLD_KEY_MAX) * sizeof(long));
+> -	}
+> -
+>  	return bits_to_user(bits, len, size, p, compat_mode);
+>  }
+> -#undef OLD_KEY_MAX
+>  
+>  static int evdev_handle_get_keycode(struct input_dev *dev, void __user *p)
+>  {
+> -- 
+> 1.9.0
+> 
+> 
+> -- 
+> Dmitry
