@@ -1,84 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757001AbaDXNfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:35:08 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43914 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753955AbaDXNfE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:35:04 -0400
-Date: Thu, 24 Apr 2014 14:34:51 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Nishanth Menon <nm@ti.com>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Saravana Kannan <skannan@codeaurora.org>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Markus Pargmann <mpa@pengutronix.de>
-Message-ID: <20140424133451.GZ12304@sirena.org.uk>
-References: <1398294650-24821-1-git-send-email-nm@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="oEJOO7UOs/0+8V5e"
-Content-Disposition: inline
-In-Reply-To: <1398294650-24821-1-git-send-email-nm@ti.com>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RESEND PATCH] regulator: core: Disable unused regulators after
- deferred probing is done
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1757294AbaDXNgq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:36:46 -0400
+Received: from plane.gmane.org ([80.91.229.3]:50285 "EHLO plane.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753890AbaDXNgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 09:36:44 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: =?ISO-8859-1?Q?Rapha=EBl_Bauduin?= <rblists@gmail.com>
+Subject: LSI Fusion mpt driver queue full message really harmless?
+Date: Thu, 24 Apr 2014 15:36:30 +0200
+Message-ID: <ljb40v$gq8$1@ger.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Complaints-To: usenet@ger.gmane.org
+X-Gmane-NNTP-Posting-Host: 217.64.254.218.mactelecom.net
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---oEJOO7UOs/0+8V5e
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I'm sending this mail here as a last resort [1], hoping someone can help me, as on recent kernels (tested 3.2, 3.11, 3.12, 3.13, 3.14), I get 
+this message from the LSI Fusion mpt driver for the disk containing the root partition of the server:
+  strange observation, the queue depth is (64) meanwhile fw queue depth (65)
 
-On Wed, Apr 23, 2014 at 06:10:50PM -0500, Nishanth Menon wrote:
-> From: Saravana Kannan <skannan@codeaurora.org>
->=20
-> regulator_init_complete does a scan of regulators which dont have
-> always-on or consumers are automatically disabled as being unused.
-> However, with deferred probing, late_initcall() is too soon to
-> declare a regulator as unused as the regulator itself might not
-> have registered due to defferal - Example: A regulator deffered due
-> to i2bus not available which in turn is deffered due to pinctrl
-> availability.
->=20
-> Since deferred probing is done in late_initcall(), do the cleanup of
-> unused regulators by regulator_init_complete in late_initcall_sync
-> instead of late_initcall.
+Seems that handling the queue full event (http://lxr.oss.org.cn/source/drivers/message/fusion/mptsas.c#L4091 ) was added in 2.6.31, but running 
+2.6.32.61 I do not have this message.
 
-I'll apply this however since as we discussed on IRC last night it's
-going to make the issues with unconfigured regulators getting powered
-off more severe before I do so I'll change things so that regulators
-with no configuration at all don't get touched by the core.
+I've seen one discussion on the web of this problem (but related to the 2.6.32 kernel) where it was said that this message is harmless, but I'd 
+like a confirmation of this. Can I be sure there won't be any data loss related to this message?
 
---oEJOO7UOs/0+8V5e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+System information are available in the ticket I opened at https://bugzilla.kernel.org/show_bug.cgi?id=74011
+This is happening for 2 similar servers, one of which seeing very low load.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+Thanks in advance for your help!
 
-iQIcBAEBAgAGBQJTWRL4AAoJELSic+t+oim9Q5cP/3W9p38GZcjKUznTkZYWx8qx
-7NFVlOfpGN/59FIBVWNTHRp2j7dmdK1/vOCXlVI7PBZuumQRXTM68q1yaeyzMRbh
-RiDDSlaE9yJ5a2hGbCFp+Cs/c19i8Nx9le4UjcQvDmiPtw+THYOAp5LTVQVfWguS
-C8+bShinYWxgPTEZyOZyvPR6PdBzI4gxTcselPLqinfHSRrcZQ+Yqo84J1EVTj+8
-2azCctf3D7n6vSt5TzWIvy/Vqx/+kOMdpnkaWc2BJrclCOEk1U+ZLGtLccVBILGS
-S1qYTH5NluRzDFsFuAQFWZIIR7TGMN05Cuu+NuN4Lk+EqIYUeXGXWdScpjl9KeWd
-CgvwYZblUyTiE28EHfNwa8mSL7+KlvDIVngyTh9Nr/Z9l8m8jTFnqLvvwuhhao2m
-+e8OCJA3vhlhGGIeXwf057PTDhhshL4JKa6N/hccGbIMfM9vwuN6YWL28l/5VHYA
-d1gOfukovOYKlgMKqkOLaU0eEaZ4zV0mHMeursAwcQhYhL7phAhRy4P0ixQaY3Pj
-NcPyvNr3nwOM9Nzrl8ei03TjpxgDta7zga+RGUmJu8K2qDtCqUOfJdT1H8MdVwLv
-ILFKMupq39o1MJ66XG/3YaU0gvVB+8WIf3th20lN81kl8Y37nUK0Oofl+paDh7eT
-tPGZZtWb3CxbIroTRKqJ
-=fV9r
------END PGP SIGNATURE-----
+Raphaël
 
---oEJOO7UOs/0+8V5e--
+[1] having contacted the linux-scsi ml, the LSI driver devs, opened a bug report and contacted one individual LSI dev before, but getting no 
+response.
+
