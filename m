@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231AbaDXW3V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:29:21 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39532 "EHLO
+	id S1757208AbaDXW3P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:29:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192AbaDXVqH (ORCPT
+	with ESMTP id S1754842AbaDXVqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Apr 2014 17:46:07 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>,
-        Kamlakant Patel <kamlakant.patel@broadcom.com>,
+        Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.14 29/33] jffs2: Fix crash due to truncation of csize
-Date: Thu, 24 Apr 2014 14:48:42 -0700
-Message-Id: <20140424214453.845759380@linuxfoundation.org>
+Subject: [PATCH 3.14 30/33] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
+Date: Thu, 24 Apr 2014 14:48:43 -0700
+Message-Id: <20140424214453.955785905@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
 References: <20140424214449.423169713@linuxfoundation.org>
@@ -30,81 +31,73 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
+From: Li Zefan <lizefan@huawei.com>
 
-commit 41bf1a24c1001f4d0d41a78e1ac575d2f14789d7 upstream.
+commit 13b546d96207c131eeae15dc7b26c6e7d0f1cad7 upstream.
 
-mounting JFFS2 partition sometimes crashes with this call trace:
+We triggered soft-lockup under stress test on 2.6.34 kernel.
 
-[ 1322.240000] Kernel bug detected[#1]:
-[ 1322.244000] Cpu 2
-[ 1322.244000] $ 0   : 0000000000000000 0000000000000018 000000003ff00070 0000000000000001
-[ 1322.252000] $ 4   : 0000000000000000 c0000000f3980150 0000000000000000 0000000000010000
-[ 1322.260000] $ 8   : ffffffffc09cd5f8 0000000000000001 0000000000000088 c0000000ed300de8
-[ 1322.268000] $12   : e5e19d9c5f613a45 ffffffffc046d464 0000000000000000 66227ba5ea67b74e
-[ 1322.276000] $16   : c0000000f1769c00 c0000000ed1e0200 c0000000f3980150 0000000000000000
-[ 1322.284000] $20   : c0000000f3a80000 00000000fffffffc c0000000ed2cfbd8 c0000000f39818f0
-[ 1322.292000] $24   : 0000000000000004 0000000000000000
-[ 1322.300000] $28   : c0000000ed2c0000 c0000000ed2cfab8 0000000000010000 ffffffffc039c0b0
-[ 1322.308000] Hi    : 000000000000023c
-[ 1322.312000] Lo    : 000000000003f802
-[ 1322.316000] epc   : ffffffffc039a9f8 check_tn_node+0x88/0x3b0
-[ 1322.320000]     Not tainted
-[ 1322.324000] ra    : ffffffffc039c0b0 jffs2_do_read_inode_internal+0x1250/0x1e48
-[ 1322.332000] Status: 5400f8e3    KX SX UX KERNEL EXL IE
-[ 1322.336000] Cause : 00800034
-[ 1322.340000] PrId  : 000c1004 (Netlogic XLP)
-[ 1322.344000] Modules linked in:
-[ 1322.348000] Process jffs2_gcd_mtd7 (pid: 264, threadinfo=c0000000ed2c0000, task=c0000000f0e68dd8, tls=0000000000000000)
-[ 1322.356000] Stack : c0000000f1769e30 c0000000ed010780 c0000000ed010780 c0000000ed300000
-        c0000000f1769c00 c0000000f3980150 c0000000f3a80000 00000000fffffffc
-        c0000000ed2cfbd8 ffffffffc039c0b0 ffffffffc09c6340 0000000000001000
-        0000000000000dec ffffffffc016c9d8 c0000000f39805a0 c0000000f3980180
-        0000008600000000 0000000000000000 0000000000000000 0000000000000000
-        0001000000000dec c0000000f1769d98 c0000000ed2cfb18 0000000000010000
-        0000000000010000 0000000000000044 c0000000f3a80000 c0000000f1769c00
-        c0000000f3d207a8 c0000000f1769d98 c0000000f1769de0 ffffffffc076f9c0
-        0000000000000009 0000000000000000 0000000000000000 ffffffffc039cf90
-        0000000000000017 ffffffffc013fbdc 0000000000000001 000000010003e61c
-        ...
-[ 1322.424000] Call Trace:
-[ 1322.428000] [<ffffffffc039a9f8>] check_tn_node+0x88/0x3b0
-[ 1322.432000] [<ffffffffc039c0b0>] jffs2_do_read_inode_internal+0x1250/0x1e48
-[ 1322.440000] [<ffffffffc039cf90>] jffs2_do_crccheck_inode+0x70/0xd0
-[ 1322.448000] [<ffffffffc03a1b80>] jffs2_garbage_collect_pass+0x160/0x870
-[ 1322.452000] [<ffffffffc03a392c>] jffs2_garbage_collect_thread+0xdc/0x1f0
-[ 1322.460000] [<ffffffffc01541c8>] kthread+0xb8/0xc0
-[ 1322.464000] [<ffffffffc0106d18>] kernel_thread_helper+0x10/0x18
-[ 1322.472000]
-[ 1322.472000]
-Code: 67bd0050  94a4002c  2c830001 <00038036> de050218  2403fffc  0080a82d  00431824  24630044
-[ 1322.480000] ---[ end trace b052bb90e97dfbf5 ]---
+BUG: soft lockup - CPU#1 stuck for 60009ms! [lockf2.test:14488]
+...
+[<bf09a4d4>] (jffs2_do_reserve_space+0x420/0x440 [jffs2])
+[<bf09a528>] (jffs2_reserve_space_gc+0x34/0x78 [jffs2])
+[<bf0a1350>] (jffs2_garbage_collect_dnode.isra.3+0x264/0x478 [jffs2])
+[<bf0a2078>] (jffs2_garbage_collect_pass+0x9c0/0xe4c [jffs2])
+[<bf09a670>] (jffs2_reserve_space+0x104/0x2a8 [jffs2])
+[<bf09dc48>] (jffs2_write_inode_range+0x5c/0x4d4 [jffs2])
+[<bf097d8c>] (jffs2_write_end+0x198/0x2c0 [jffs2])
+[<c00e00a4>] (generic_file_buffered_write+0x158/0x200)
+[<c00e14f4>] (__generic_file_aio_write+0x3a4/0x414)
+[<c00e15c0>] (generic_file_aio_write+0x5c/0xbc)
+[<c012334c>] (do_sync_write+0x98/0xd4)
+[<c0123a84>] (vfs_write+0xa8/0x150)
+[<c0123d74>] (sys_write+0x3c/0xc0)]
 
-The variable csize in structure jffs2_tmp_dnode_info is of type uint16_t, but it
-is used to hold the compressed data length(csize) which is declared as uint32_t.
-So, when the value of csize exceeds 16bits, it gets truncated when assigned to
-tn->csize. This is causing a kernel BUG.
-Changing the definition of csize in jffs2_tmp_dnode_info to uint32_t fixes the issue.
+Fix this by adding a cond_resched() in the while loop.
 
-Signed-off-by: Ajesh Kunhipurayil Vijayan <ajesh@broadcom.com>
-Signed-off-by: Kamlakant Patel <kamlakant.patel@broadcom.com>
+[akpm@linux-foundation.org: don't initialize `ret']
+Signed-off-by: Li Zefan <lizefan@huawei.com>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Brian Norris <computersforpeace@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/nodelist.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ fs/jffs2/nodemgmt.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
---- a/fs/jffs2/nodelist.h
-+++ b/fs/jffs2/nodelist.h
-@@ -231,7 +231,7 @@ struct jffs2_tmp_dnode_info
- 	uint32_t version;
- 	uint32_t data_crc;
- 	uint32_t partial_crc;
--	uint16_t csize;
-+	uint32_t csize;
- 	uint16_t overlapped;
- };
+--- a/fs/jffs2/nodemgmt.c
++++ b/fs/jffs2/nodemgmt.c
+@@ -211,20 +211,25 @@ out:
+ int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
+ 			   uint32_t *len, uint32_t sumsize)
+ {
+-	int ret = -EAGAIN;
++	int ret;
+ 	minsize = PAD(minsize);
+ 
+ 	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
+ 
+-	spin_lock(&c->erase_completion_lock);
+-	while(ret == -EAGAIN) {
++	while (true) {
++		spin_lock(&c->erase_completion_lock);
+ 		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
+ 		if (ret) {
+ 			jffs2_dbg(1, "%s(): looping, ret is %d\n",
+ 				  __func__, ret);
+ 		}
++		spin_unlock(&c->erase_completion_lock);
++
++		if (ret == -EAGAIN)
++			cond_resched();
++		else
++			break;
+ 	}
+-	spin_unlock(&c->erase_completion_lock);
+ 	if (!ret)
+ 		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
  
 
 
