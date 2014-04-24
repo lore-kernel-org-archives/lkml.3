@@ -1,129 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231AbaDXKZg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:25:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46626 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037AbaDXIxv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:51 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 081/182] mac80211: fix suspend vs. authentication race
-Date: Thu, 24 Apr 2014 09:50:06 +0100
-Message-Id: <1398329507-5911-82-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1754459AbaDXKZv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:25:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15578 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754283AbaDXKZp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 06:25:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,918,1389772800"; 
+   d="scan'208";a="498798155"
+Message-ID: <5358E6A2.3020505@intel.com>
+Date: Thu, 24 Apr 2014 18:25:38 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>, Stephane Eranian <eranian@google.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
+References: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com> <20140418105354.GA29167@gmail.com> <53548008.3040504@intel.com> <20140422113545.GA14950@gmail.com> <CABPqkBTHv3U6L4fKOvsFcaWR8HcOEaqGGxRMRn-+O68a0BLCuA@mail.gmail.com> <20140424081408.GA7709@gmail.com>
+In-Reply-To: <20140424081408.GA7709@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+On 04/24/2014 04:14 PM, Ingo Molnar wrote:
+> 
+> * Stephane Eranian <eranian@google.com> wrote:
+> 
+>>>> Most of the codes without comments are hardware specific codes. 
+>>>> The corresponding contents in Intel uncore documents are big 
+>>>> tables/lists, nothing tricky/interesting. I really don't know how 
+>>>> to comment these code.
+>>>
+>>> Have a look at other PMU drivers, such as
+>>> arch/x86/kernel/cpu/perf_event_intel_rapl.c, which begin with a
+>>> general explanation attached below.
+>>
+>> I think a more useful modularization would be to split that huge 
+>> file (perf_event_intel_uncore.c) into smaller files like we do for 
+>> the core PMU. There is just too much stuff in this file for my own 
+>> taste. Hard to navigate and I spend quite some time looking at it 
+>> and modifying it!
+>>
+>> You could follow the model of the core PMU support files.
+>> You'd have a "core" file with the common routines, and then
+>> a file perf processor:
+>>     - perf_event_intel_uncore.c
+>>     - perf_event_intel_snbep_uncore.c
+>>     - perf_event_intel_nhmex_uncore.c
+>>     - perf_event_intel_ivt_uncore.c
+>>     - ...
+>>
+>> Each processor specific module, would be a kernel module. The core 
+>> could be one too. Note that this would not alleviate the need for 
+>> some basic descriptions at the beginning of each file outlining the 
+>> PMU boxes exported to a minimum.
 
-------------------
+Most of hardware specific codes in the Intel uncore driver are for SandyBridge/IvyBridge/Haswell. Uncore subsystem in these CPUs are similar. One module per CPU type means we have to duplicate lots of code. I don't think it's a good idea.
 
-From: Johannes Berg <johannes.berg@intel.com>
+Regards
+Yan, Zheng
 
-commit 1a1cb744de160ee70086a77afff605bbc275d291 upstream.
-
-Since Stanislaw's patch removing the quiescing code, mac80211 had
-a race regarding suspend vs. authentication: as cfg80211 doesn't
-track authentication attempts, it can't abort them. Therefore the
-attempts may be kept running while suspending, which can lead to
-all kinds of issues, in at least some cases causing an error in
-iwlmvm firmware.
-
-Fix this by aborting the authentication attempt when suspending.
-
-Fixes: 12e7f517029d ("mac80211: cleanup generic suspend/resume procedures")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- net/mac80211/ieee80211_i.h |  1 +
- net/mac80211/mlme.c        | 26 ++++++++++++++++++++++++++
- net/mac80211/pm.c          | 14 +++++++++++---
- 3 files changed, 38 insertions(+), 3 deletions(-)
-
-diff --git a/net/mac80211/ieee80211_i.h b/net/mac80211/ieee80211_i.h
-index 8c0f8e6..735349b 100644
---- a/net/mac80211/ieee80211_i.h
-+++ b/net/mac80211/ieee80211_i.h
-@@ -1286,6 +1286,7 @@ void ieee80211_sta_reset_conn_monitor(struct ieee80211_sub_if_data *sdata);
- void ieee80211_mgd_stop(struct ieee80211_sub_if_data *sdata);
- void ieee80211_mgd_conn_tx_status(struct ieee80211_sub_if_data *sdata,
- 				  __le16 fc, bool acked);
-+void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata);
- void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata);
- 
- /* IBSS code */
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index 06f71fb..aa7823f 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -3674,6 +3674,32 @@ static void ieee80211_restart_sta_timer(struct ieee80211_sub_if_data *sdata)
- }
- 
- #ifdef CONFIG_PM
-+void ieee80211_mgd_quiesce(struct ieee80211_sub_if_data *sdata)
-+{
-+	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
-+	u8 frame_buf[IEEE80211_DEAUTH_FRAME_LEN];
-+
-+	sdata_lock(sdata);
-+
-+	if (ifmgd->auth_data) {
-+		/*
-+		 * If we are trying to authenticate while suspending, cfg80211
-+		 * won't know and won't actually abort those attempts, thus we
-+		 * need to do that ourselves.
-+		 */
-+		ieee80211_send_deauth_disassoc(sdata,
-+					       ifmgd->auth_data->bss->bssid,
-+					       IEEE80211_STYPE_DEAUTH,
-+					       WLAN_REASON_DEAUTH_LEAVING,
-+					       false, frame_buf);
-+		ieee80211_destroy_auth_data(sdata, false);
-+		cfg80211_tx_mlme_mgmt(sdata->dev, frame_buf,
-+				      IEEE80211_DEAUTH_FRAME_LEN);
-+	}
-+
-+	sdata_unlock(sdata);
-+}
-+
- void ieee80211_sta_restart(struct ieee80211_sub_if_data *sdata)
- {
- 	struct ieee80211_if_managed *ifmgd = &sdata->u.mgd;
-diff --git a/net/mac80211/pm.c b/net/mac80211/pm.c
-index 3401262..efb510e 100644
---- a/net/mac80211/pm.c
-+++ b/net/mac80211/pm.c
-@@ -101,10 +101,18 @@ int __ieee80211_suspend(struct ieee80211_hw *hw, struct cfg80211_wowlan *wowlan)
- 
- 	/* remove all interfaces that were created in the driver */
- 	list_for_each_entry(sdata, &local->interfaces, list) {
--		if (!ieee80211_sdata_running(sdata) ||
--		    sdata->vif.type == NL80211_IFTYPE_AP_VLAN ||
--		    sdata->vif.type == NL80211_IFTYPE_MONITOR)
-+		if (!ieee80211_sdata_running(sdata))
- 			continue;
-+		switch (sdata->vif.type) {
-+		case NL80211_IFTYPE_AP_VLAN:
-+		case NL80211_IFTYPE_MONITOR:
-+			continue;
-+		case NL80211_IFTYPE_STATION:
-+			ieee80211_mgd_quiesce(sdata);
-+			break;
-+		default:
-+			break;
-+		}
- 
- 		drv_remove_interface(local, sdata);
- 	}
--- 
-1.9.1
+> 
+> This structure you outline sounds like a good first step, I like it.
+> 
+> To simplify this restructuring, initially we could even keep the core 
+> uncore bits in the core (ha!), to not have module-on-module 
+> dependencies.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
 
