@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753972AbaDXIxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:53:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46554 "EHLO
+	id S1755416AbaDXKzF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:55:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46567 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785AbaDXIxa (ORCPT
+	with ESMTP id S1753953AbaDXIxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:30 -0400
+	Thu, 24 Apr 2014 04:53:35 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Brian Austin <brian.austin@cirrus.com>, Mark Brown <broonie@linaro.org>,
+Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Lee Jones <lee.jones@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 066/182] ASoC: cs42l52: Fix mask bits for SOC_VALUE_ENUM_SINGLE
-Date: Thu, 24 Apr 2014 09:49:51 +0100
-Message-Id: <1398329507-5911-67-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 069/182] mfd: max8997: Fix possible NULL pointer dereference on i2c_new_dummy error
+Date: Thu, 24 Apr 2014 09:49:54 +0100
+Message-Id: <1398329507-5911-70-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,60 +28,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Brian Austin <brian.austin@cirrus.com>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit d31a33dd7792c7d6c11fda226a3b9e4fb7f86f95 upstream.
+commit 97dc4ed3fa377ec91bb60ba98b70d645c2099384 upstream.
 
-The mask bits values were wrong for the SOC_VALUE_ENUM_SINGLE for the PCM/ADC Swap controls
+During probe the driver allocates dummy I2C devices for RTC, haptic and
+MUIC with i2c_new_dummy() but it does not check the return value of this
+calls.
 
-Reported-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Brian Austin <brian.austin@cirrus.com>
-Signed-off-by: Mark Brown <broonie@linaro.org>
+In case of error (i2c_new_device(): memory allocation failure or I2C
+address cannot be used) this function returns NULL which is later used
+by i2c_unregister_device().
+
+If i2c_new_dummy() fails for RTC, haptic or MUIC devices, fail also the
+probe for main MFD driver.
+
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/soc/codecs/cs42l52.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ drivers/mfd/max8997.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
-diff --git a/sound/soc/codecs/cs42l52.c b/sound/soc/codecs/cs42l52.c
-index be2ba1b..ab3ac7b 100644
---- a/sound/soc/codecs/cs42l52.c
-+++ b/sound/soc/codecs/cs42l52.c
-@@ -352,7 +352,7 @@ static const char * const right_swap_text[] = {
- static const unsigned int swap_values[] = { 0, 1, 3 };
+diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
+index 1471405..ea1defbc 100644
+--- a/drivers/mfd/max8997.c
++++ b/drivers/mfd/max8997.c
+@@ -218,10 +218,26 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 	mutex_init(&max8997->iolock);
  
- static const struct soc_enum adca_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 2, 3,
- 			      ARRAY_SIZE(left_swap_text),
- 			      left_swap_text,
- 			      swap_values);
-@@ -361,7 +361,7 @@ static const struct snd_kcontrol_new adca_mixer =
- 	SOC_DAPM_ENUM("Route", adca_swap_enum);
+ 	max8997->rtc = i2c_new_dummy(i2c->adapter, I2C_ADDR_RTC);
++	if (!max8997->rtc) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for RTC\n");
++		return -ENODEV;
++	}
+ 	i2c_set_clientdata(max8997->rtc, max8997);
++
+ 	max8997->haptic = i2c_new_dummy(i2c->adapter, I2C_ADDR_HAPTIC);
++	if (!max8997->haptic) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for Haptic\n");
++		ret = -ENODEV;
++		goto err_i2c_haptic;
++	}
+ 	i2c_set_clientdata(max8997->haptic, max8997);
++
+ 	max8997->muic = i2c_new_dummy(i2c->adapter, I2C_ADDR_MUIC);
++	if (!max8997->muic) {
++		dev_err(max8997->dev, "Failed to allocate I2C device for MUIC\n");
++		ret = -ENODEV;
++		goto err_i2c_muic;
++	}
+ 	i2c_set_clientdata(max8997->muic, max8997);
  
- static const struct soc_enum pcma_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 6, 3,
- 			      ARRAY_SIZE(left_swap_text),
- 			      left_swap_text,
- 			      swap_values);
-@@ -370,7 +370,7 @@ static const struct snd_kcontrol_new pcma_mixer =
- 	SOC_DAPM_ENUM("Route", pcma_swap_enum);
- 
- static const struct soc_enum adcb_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 0, 3,
- 			      ARRAY_SIZE(right_swap_text),
- 			      right_swap_text,
- 			      swap_values);
-@@ -379,7 +379,7 @@ static const struct snd_kcontrol_new adcb_mixer =
- 	SOC_DAPM_ENUM("Route", adcb_swap_enum);
- 
- static const struct soc_enum pcmb_swap_enum =
--	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 1,
-+	SOC_VALUE_ENUM_SINGLE(CS42L52_ADC_PCM_MIXER, 4, 3,
- 			      ARRAY_SIZE(right_swap_text),
- 			      right_swap_text,
- 			      swap_values);
+ 	pm_runtime_set_active(max8997->dev);
+@@ -248,7 +264,9 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ err_mfd:
+ 	mfd_remove_devices(max8997->dev);
+ 	i2c_unregister_device(max8997->muic);
++err_i2c_muic:
+ 	i2c_unregister_device(max8997->haptic);
++err_i2c_haptic:
+ 	i2c_unregister_device(max8997->rtc);
+ err:
+ 	kfree(max8997);
 -- 
 1.9.1
 
