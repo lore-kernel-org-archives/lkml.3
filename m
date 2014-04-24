@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420AbaDXLxg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:53:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46317 "EHLO
+	id S1756661AbaDXLyg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:54:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46302 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306AbaDXIwX (ORCPT
+	with ESMTP id S1753369AbaDXIwU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:23 -0400
+	Thu, 24 Apr 2014 04:52:20 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Lv Zheng <lv.zheng@intel.com>, Bob Moore <robert.moore@intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+Cc: Andrew Lunn <andrew@lunn.ch>, Jason Cooper <jason@lakedaemon.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 021/182] ACPICA: Restore code that repairs NULL package elements in return values.
-Date: Thu, 24 Apr 2014 09:49:06 +0100
-Message-Id: <1398329507-5911-22-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 018/182] ARM: Fix default CPU selection for ARCH_MULTI_V5
+Date: Thu, 24 Apr 2014 09:49:03 +0100
+Message-Id: <1398329507-5911-19-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,73 +27,36 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Lv Zheng <lv.zheng@intel.com>
+From: Andrew Lunn <andrew@lunn.ch>
 
-commit 61db45ca21630f5ab7f678d54c5d969c21647854 upstream.
+commit 12567bbdee7ea553237085a2bbc0ffa5240f5248 upstream.
 
-The original code was lost accidently, it was not generated along with the
-following commit of mechanism improvements and thus not get merged:
+CPU_ARM926T should be selected if no other CPU is. Put the ! in the
+right place so this works.
 
-  Commit: d5a36100f62fa6db5541344e08b361b34e9114c5
-  Subject: ACPICA: Add mechanism for early object repairs on a per-name basis
-
-  Adds the framework to allow object repairs very early in the
-  return object analysis. Enables repairs like string->unicode,
-  etc.
-
-This patch restores the implementation of the NULL element repair code for
-ACPI_RTYPE_NONE.  In the original design, ACPI_RTYPE_NONE is defined to
-collect simple NULL object repairs.
-Lv Zheng.
-
-Buglink: https://bugzilla.kernel.org/show_bug.cgi?id=67901
-Signed-off-by: Lv Zheng <lv.zheng@intel.com>
-Signed-off-by: Bob Moore <robert.moore@intel.com>
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Andrew Lunn <andrew@lunn.ch>
+Acked-by: Arnd Bergmann <arnd@arndb.de>
+Tested-by: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+Fixes: 24e860fbfdb1c ("ARM: multiplatform: always pick one CPU type")
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/acpi/acpica/nsrepair.c | 25 +++++++++++++++++++++----
- 1 file changed, 21 insertions(+), 4 deletions(-)
+ arch/arm/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/acpi/acpica/nsrepair.c b/drivers/acpi/acpica/nsrepair.c
-index f8e71ea..b2d2473 100644
---- a/drivers/acpi/acpica/nsrepair.c
-+++ b/drivers/acpi/acpica/nsrepair.c
-@@ -207,13 +207,30 @@ acpi_ns_simple_repair(struct acpi_evaluate_info *info,
- 	 * this predefined name. Either one return value is expected, or none,
- 	 * for both methods and other objects.
- 	 *
--	 * Exit now if there is no return object. Warning if one was expected.
-+	 * Try to fix if there was no return object. Warning if failed to fix.
- 	 */
- 	if (!return_object) {
- 		if (expected_btypes && (!(expected_btypes & ACPI_RTYPE_NONE))) {
--			ACPI_WARN_PREDEFINED((AE_INFO, info->full_pathname,
--					      ACPI_WARN_ALWAYS,
--					      "Missing expected return value"));
-+			if (package_index != ACPI_NOT_PACKAGE_ELEMENT) {
-+				ACPI_WARN_PREDEFINED((AE_INFO,
-+						      info->full_pathname,
-+						      ACPI_WARN_ALWAYS,
-+						      "Found unexpected NULL package element"));
-+
-+				status =
-+				    acpi_ns_repair_null_element(info,
-+								expected_btypes,
-+								package_index,
-+								return_object_ptr);
-+				if (ACPI_SUCCESS(status)) {
-+					return (AE_OK);	/* Repair was successful */
-+				}
-+			} else {
-+				ACPI_WARN_PREDEFINED((AE_INFO,
-+						      info->full_pathname,
-+						      ACPI_WARN_ALWAYS,
-+						      "Missing expected return value"));
-+			}
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 170ac09..5efba28 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -890,7 +890,7 @@ config ARCH_MULTI_V5
+ 	bool "ARMv5 based platforms (ARM926T, XSCALE, PJ1, ...)"
+ 	depends on !ARCH_MULTI_V6_V7
+ 	select ARCH_MULTI_V4_V5
+-	select CPU_ARM926T if (!CPU_ARM946E || CPU_ARM1020 || \
++	select CPU_ARM926T if !(CPU_ARM946E || CPU_ARM1020 || \
+ 		CPU_ARM1020E || CPU_ARM1022 || CPU_ARM1026 || \
+ 		CPU_XSCALE || CPU_XSC3 || CPU_MOHAWK || CPU_FEROCEON)
  
- 			return (AE_AML_NO_RETURN_VALUE);
- 		}
 -- 
 1.9.1
 
