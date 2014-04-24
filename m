@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230AbaDXRZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:25:56 -0400
-Received: from www.sr71.net ([198.145.64.142]:53014 "EHLO blackbird.sr71.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753419AbaDXRZy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:25:54 -0400
-Message-ID: <53594920.8030203@sr71.net>
-Date: Thu, 24 Apr 2014 10:25:52 -0700
-From: Dave Hansen <dave@sr71.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S932208AbaDXR0Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:26:24 -0400
+Received: from mail-la0-f50.google.com ([209.85.215.50]:53622 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757933AbaDXR0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 13:26:20 -0400
 MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        ak@linux.intel.com, riel@redhat.com, alex.shi@linaro.org,
-        dave.hansen@linux.intel.com, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 5/6] x86: mm: new tunable for single vs full TLB flush
-References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182426.D6DD1E8F@viggo.jf.intel.com> <20140424103727.GT23991@suse.de>
-In-Reply-To: <20140424103727.GT23991@suse.de>
+In-Reply-To: <20140424164445.GA4675@omega>
+References: <1398193438-23805-1-git-send-email-mcgrof@do-not-panic.com> <20140424164445.GA4675@omega>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 24 Apr 2014 10:25:58 -0700
+X-Google-Sender-Auth: z320ahSTzOf3hW_jvmSBgSJZquw
+Message-ID: <CAB=NE6XS9-Zu9sb5geO2WTnnvv6KqyT+QnL5bRf1fiRx3=ocrg@mail.gmail.com>
+Subject: Re: [Linux-zigbee-devel] [PATCH] 6lowpan: nuke net_ieee802154_lowpan()
+ accessor when 6lowpan is disabled
+To: Alexander Aring <alex.aring@gmail.com>
+Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-zigbee-devel@lists.sourceforge.net,
+        David Miller <davem@davemloft.net>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 03:37 AM, Mel Gorman wrote:
-> On Mon, Apr 21, 2014 at 11:24:26AM -0700, Dave Hansen wrote:
->> +This will cause us to do the global flush for more cases.
->> +Lowering it to 0 will disable the use of the individual flushes.
->> +Setting it to 1 is a very conservative setting and it should
->> +never need to be 0 under normal circumstances.
->> +
->> +Despite the fact that a single individual flush on x86 is
->> +guaranteed to flush a full 2MB, hugetlbfs always uses the full
->> +flushes.  THP is treated exactly the same as normal memory.
->> +
-> 
-> You are the second person that told me this and I felt the manual was
-> unclear on this subject. I was told that it might be a documentation bug
-> but because this discussion was in a bar I completely failed to follow up
-> on it. Specifically this part in 4.10.2.3 caused me problems when I last
-> looked at the area.
-<snip>
+On Thu, Apr 24, 2014 at 9:44 AM, Alexander Aring <alex.aring@gmail.com> wrote:
+> Hi,
+>
+> On Tue, Apr 22, 2014 at 12:03:58PM -0700, Luis R. Rodriguez wrote:
+>> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>>
+>> Johannes noted this is not needed, all of the fragment
+>> accessors don't need CONFIG_NET_NS. This goes test compiled with
+>> CONFIG_BT_6LOWPAN=y and a disabled CONFIG_NET_NS.
+>>
+>
+> a little note about this here. There exists two 6LoWPAN standard. One
+> for bluetooth low energy and one for IEEE 802.15.4.
+>
+> The actual namespace is only for IEEE 802.15.4, because we need
+> fragmentation there. 6LoWPAN fragmentation for bluetooth low energy is
+> already handled by the MAC-Layer. So this has nothing to do with
+> CONFIG_BT_6LOWPAN.
 
-My understanding comes from "4.10.4.2 Recommended Invalidation":
+Thanks for the clarification, I actually did mean
+CONFIG_IEEE802154_6LOWPAN however, I goofed that on the commit log.
 
-	• If software modifies a paging-structure entry that identifies
-	the final page frame for a page number (either a PTE or a
-	paging-structure entry in which the PS flag is 1), it should
-	execute INVLPG for any linear address with a page number whose
-	translation uses that PTE. 2
-
-and especially the footnote:
-
-	2. One execution of INVLPG is sufficient even for a page with
-	size greater than 4 KBytes.
-
-I do agree that it's ambiguous at best.  I'll go see if anybody cares to
-update that bit.
-
+  Luis
