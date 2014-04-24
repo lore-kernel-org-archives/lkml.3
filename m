@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282AbaDXPll (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:41:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45063 "EHLO mx1.redhat.com"
+	id S932197AbaDXPlF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:41:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49261 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932206AbaDXPlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:41:08 -0400
+	id S1753406AbaDXPlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:41:02 -0400
 From: Jiri Olsa <jolsa@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
         Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 11/11] perf hists/tui: Count callchain rows separately
-Date: Thu, 24 Apr 2014 17:40:45 +0200
-Message-Id: <1398354045-16505-12-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 07/11] perf hists: Add missing update on filtered stats in hists__decay_entries()
+Date: Thu, 24 Apr 2014 17:40:41 +0200
+Message-Id: <1398354045-16505-8-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1398354045-16505-1-git-send-email-jolsa@kernel.org>
 References: <1398354045-16505-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,158 +21,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Namhyung Kim <namhyung@kernel.org>
 
-When TUI hist browser expands/collapses callchains it accounted number
-of callchain nodes into total entries to show.  However this code
-ignores filtering so that it can make the cursor go to out of screen.
-
-Thanks to Jiri Olsa for pointing out a bug (and a fix) in the code.
+When a filter is used for perf top, its hists->nr_non_filtered_entries
+was not updated after it removed an entry in hists__decay_entries().
+Also hists->stats.total_non_filtered_period was missed too.
 
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1398327843-31845-12-git-send-email-namhyung@kernel.org
+Link: http://lkml.kernel.org/r/1398327843-31845-8-git-send-email-namhyung@kernel.org
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/ui/browsers/hists.c | 63 ++++++++++++++++++++++++++++--------------
- 1 file changed, 43 insertions(+), 20 deletions(-)
+ tools/perf/util/hist.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 886eee0..b0861e3 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -27,6 +27,7 @@ struct hist_browser {
- 	bool		     show_dso;
- 	float		     min_pcnt;
- 	u64		     nr_non_filtered_entries;
-+	u64		     nr_callchain_rows;
- };
- 
- extern void hist_browser__init_hpp(void);
-@@ -35,11 +36,27 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
- 				const char *ev_name);
- static void hist_browser__update_nr_entries(struct hist_browser *hb);
- 
-+static struct rb_node *hists__filter_entries(struct rb_node *nd,
-+					     struct hists *hists,
-+					     float min_pcnt);
-+
- static bool hist_browser__has_filter(struct hist_browser *hb)
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 6d0d2d7..7f0236c 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -225,14 +225,18 @@ static void he_stat__decay(struct he_stat *he_stat)
+ static bool hists__decay_entry(struct hists *hists, struct hist_entry *he)
  {
- 	return hists__has_filter(hb->hists) || hb->min_pcnt;
- }
+ 	u64 prev_period = he->stat.period;
++	u64 diff;
  
-+static u32 hist_browser__nr_entries(struct hist_browser *hb)
-+{
-+	u32 nr_entries;
-+
-+	if (hist_browser__has_filter(hb))
-+		nr_entries = hb->nr_non_filtered_entries;
-+	else
-+		nr_entries = hb->hists->nr_entries;
-+
-+	return nr_entries + hb->nr_callchain_rows;
-+}
-+
- static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- {
- 	/* 3 == +/- toggle symbol before actual hist_entry rendering */
-@@ -49,8 +66,14 @@ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- 
- static void hist_browser__reset(struct hist_browser *browser)
- {
-+	/*
-+	 * The hists__remove_entry_filter() already folds non-filtered
-+	 * entries so we can assume it has 0 callchain rows.
-+	 */
-+	browser->nr_callchain_rows = 0;
-+
- 	hist_browser__update_nr_entries(browser);
--	browser->b.nr_entries = browser->nr_non_filtered_entries;
-+	browser->b.nr_entries = hist_browser__nr_entries(browser);
- 	hist_browser__refresh_dimensions(browser);
- 	ui_browser__reset_index(&browser->b);
- }
-@@ -205,14 +228,16 @@ static bool hist_browser__toggle_fold(struct hist_browser *browser)
- 		struct hist_entry *he = browser->he_selection;
- 
- 		hist_entry__init_have_children(he);
--		browser->hists->nr_entries -= he->nr_rows;
-+		browser->b.nr_entries -= he->nr_rows;
-+		browser->nr_callchain_rows -= he->nr_rows;
- 
- 		if (he->ms.unfolded)
- 			he->nr_rows = callchain__count_rows(&he->sorted_chain);
- 		else
- 			he->nr_rows = 0;
--		browser->hists->nr_entries += he->nr_rows;
--		browser->b.nr_entries = browser->hists->nr_entries;
-+
-+		browser->b.nr_entries += he->nr_rows;
-+		browser->nr_callchain_rows += he->nr_rows;
- 
+ 	if (prev_period == 0)
  		return true;
- 	}
-@@ -287,23 +312,27 @@ static void hist_entry__set_folding(struct hist_entry *he, bool unfold)
- 		he->nr_rows = 0;
- }
  
--static void hists__set_folding(struct hists *hists, bool unfold)
-+static void
-+__hist_browser__set_folding(struct hist_browser *browser, bool unfold)
- {
- 	struct rb_node *nd;
-+	struct hists *hists = browser->hists;
+ 	he_stat__decay(&he->stat);
  
--	hists->nr_entries = 0;
--
--	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
-+	for (nd = rb_first(&hists->entries);
-+	     (nd = hists__filter_entries(nd, hists, browser->min_pcnt)) != NULL;
-+	     nd = rb_next(nd)) {
- 		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
- 		hist_entry__set_folding(he, unfold);
--		hists->nr_entries += 1 + he->nr_rows;
-+		browser->nr_callchain_rows += he->nr_rows;
- 	}
- }
- 
- static void hist_browser__set_folding(struct hist_browser *browser, bool unfold)
- {
--	hists__set_folding(browser->hists, unfold);
--	browser->b.nr_entries = browser->hists->nr_entries;
-+	browser->nr_callchain_rows = 0;
-+	__hist_browser__set_folding(browser, unfold);
++	diff = prev_period - he->stat.period;
 +
-+	browser->b.nr_entries = hist_browser__nr_entries(browser);
- 	/* Go to the start, we may be way after valid entries after a collapse */
- 	ui_browser__reset_index(&browser->b);
++	hists->stats.total_period -= diff;
+ 	if (!he->filtered)
+-		hists->stats.total_period -= prev_period - he->stat.period;
++		hists->stats.total_non_filtered_period -= diff;
+ 
+ 	return he->stat.period == 0;
  }
-@@ -325,10 +354,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 	int delay_secs = hbt ? hbt->refresh : 0;
+@@ -259,8 +263,11 @@ void hists__decay_entries(struct hists *hists, bool zap_user, bool zap_kernel)
+ 			if (sort__need_collapse)
+ 				rb_erase(&n->rb_node_in, &hists->entries_collapsed);
  
- 	browser->b.entries = &browser->hists->entries;
--	if (hist_browser__has_filter(browser))
--		browser->b.nr_entries = browser->nr_non_filtered_entries;
--	else
--		browser->b.nr_entries = browser->hists->nr_entries;
-+	browser->b.nr_entries = hist_browser__nr_entries(browser);
- 
- 	hist_browser__refresh_dimensions(browser);
- 	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
-@@ -345,13 +371,10 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 			u64 nr_entries;
- 			hbt->timer(hbt->arg);
- 
--			if (hist_browser__has_filter(browser)) {
-+			if (hist_browser__has_filter(browser))
- 				hist_browser__update_nr_entries(browser);
--				nr_entries = browser->nr_non_filtered_entries;
--			} else {
--				nr_entries = browser->hists->nr_entries;
--			}
- 
-+			nr_entries = hist_browser__nr_entries(browser);
- 			ui_browser__update_nr_entries(&browser->b, nr_entries);
- 
- 			if (browser->hists->stats.nr_lost_warned !=
+-			hist_entry__free(n);
+ 			--hists->nr_entries;
++			if (!n->filtered)
++				--hists->nr_non_filtered_entries;
++
++			hist_entry__free(n);
+ 		}
+ 	}
+ }
 -- 
 1.8.3.1
 
