@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758582AbaDXWb2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:31:28 -0400
-Received: from userp1040.oracle.com ([156.151.31.81]:30877 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755353AbaDXWbY (ORCPT
+	id S1755098AbaDXVqF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:46:05 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754841AbaDXVp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:31:24 -0400
-Date: Fri, 25 Apr 2014 01:30:59 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Andev <debiandev@gmail.com>, "olaf@aepfle.de" <olaf@aepfle.de>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [PATCH V1 net-next 1/1] hyperv: Enable sendbuf mechanism on the
- send path
-Message-ID: <20140424223059.GE26890@mwanda>
-References: <1398288285-16268-1-git-send-email-kys@microsoft.com>
- <CAJUuVQ7V+Se0auKdaiqPZr8i2WcNqWhHUwz8r85DKKCjnjtrvQ@mail.gmail.com>
- <cdb70820bcd0467586ce6893753c7065@BY2PR03MB299.namprd03.prod.outlook.com>
+	Thu, 24 Apr 2014 17:45:56 -0400
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Mohit Kumar <mohit.kumar@st.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Jingoo Han <jg1.han@samsung.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 3.14 05/33] PCI: designware: Fix RC BAR to be single 64-bit non-prefetchable memory BAR
+Date: Thu, 24 Apr 2014 14:48:18 -0700
+Message-Id: <20140424214450.215740091@linuxfoundation.org>
+X-Mailer: git-send-email 1.9.0
+In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
+References: <20140424214449.423169713@linuxfoundation.org>
+User-Agent: quilt/0.61-1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cdb70820bcd0467586ce6893753c7065@BY2PR03MB299.namprd03.prod.outlook.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 10:06:24PM +0000, KY Srinivasan wrote:
-> > From: Andev [mailto:debiandev@gmail.com]
-> > Your use of goto exit/cleanup in some functions and returning directly on
-> > errors in others could use a cleanup. Please consider doing that while you are
-> > touching those files.
-> 
-> Will do. The most recent changes I made to netvsc.c, I think was
-> consistent with the existing code; going forward we will certainly
-> move towards a more consistent coding style.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
-It scares me when you talk about being consistent with the existing
-code...  Just do it the correct way.
+------------------
 
-1) Don't do the "return ret;" if you know ret is zero.
+From: Mohit Kumar <mohit.kumar@st.com>
 
-2) Replace:
-	ret = vmbus_sendpacket(...);
+commit dbffdd6862e67d60703f2df66c558bf448f81d6e upstream.
 
-	return ret;
-   with
-  	return vmbus_sendpacket(...);
+The Synopsys PCIe core provides one pair of 32-bit BARs (BAR 0 and BAR 1).
+The BARs can be configured as follows:
 
-3) Don't do "goto cleanup;" when "return ret;" will suffice.  The
-   do-nothing goto is misleading because you assume it will cleanup
-   somthing.  Some people used to misread CodingStyle to think that all
-   functions should only have one return but I have updated it so it is
-   more clear.
+  - One 64-bit BAR: BARs 0 and 1 are combined to form a single 64-bit BAR
+  - Two 32-bit BARs: BARs 0 and 1 are two independent 32-bit BARs
 
-regards,
-dan carpenter
+This patch corrects 64-bit, non-prefetchable memory BAR configuration
+implemented in dw driver.
+
+Signed-off-by: Mohit Kumar <mohit.kumar@st.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Pratyush Anand <pratyush.anand@st.com>
+Cc: Jingoo Han <jg1.han@samsung.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+
+---
+ drivers/pci/host/pcie-designware.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -800,7 +800,7 @@ void dw_pcie_setup_rc(struct pcie_port *
+ 
+ 	/* setup RC BARs */
+ 	dw_pcie_writel_rc(pp, 0x00000004, PCI_BASE_ADDRESS_0);
+-	dw_pcie_writel_rc(pp, 0x00000004, PCI_BASE_ADDRESS_1);
++	dw_pcie_writel_rc(pp, 0x00000000, PCI_BASE_ADDRESS_1);
+ 
+ 	/* setup interrupt pins */
+ 	dw_pcie_readl_rc(pp, PCI_INTERRUPT_LINE, &val);
+
 
