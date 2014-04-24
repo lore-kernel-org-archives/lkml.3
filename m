@@ -1,72 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753455AbaDXVSi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:18:38 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37543 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605AbaDXVSf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:18:35 -0400
-Date: Thu, 24 Apr 2014 16:18:04 -0500
-From: Darren Etheridge <detheridge@ti.com>
-To: Rob Clark <robdclark@gmail.com>
-CC: Felipe Balbi <balbi@ti.com>, David Airlie <airlied@linux.ie>,
-        "airlied@redhat.com" <airlied@redhat.com>,
-        Benoit Parrot <bparrot@ti.com>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drm/tilcdc increase allowable supported resolution
-Message-ID: <20140424211804.GA4101@ti.com>
-References: <1393873738-27327-1-git-send-email-balbi@ti.com>
- <CAF6AEGuE2MvN9SrO-R2_DnWtHtxwuFLwH6kUe4vrwcREsG5XDQ@mail.gmail.com>
+	id S1753480AbaDXVYJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:24:09 -0400
+Received: from longford.logfs.org ([213.229.74.203]:43198 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753126AbaDXVYH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:24:07 -0400
+Date: Thu, 24 Apr 2014 17:23:13 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jiri Kosina <jkosina@suse.cz>, Rik van Riel <riel@redhat.com>,
+        linux-kernel@vger.kernel.org, peterz@infradead.org,
+        akpm@linux-foundation.org, cxie@redhat.com,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] printk: Print cpu number along with time
+Message-ID: <20140424212313.GB25446@logfs.org>
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+ <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+ <20140424005247.GA17713@logfs.org>
+ <20140424194024.GA25446@logfs.org>
+ <20140424195821.GA3092@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAF6AEGuE2MvN9SrO-R2_DnWtHtxwuFLwH6kUe4vrwcREsG5XDQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140424195821.GA3092@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rob Clark <robdclark@gmail.com> wrote on Thu [2014-Apr-24 16:51:04 -0400]:
-> On Mon, Mar 3, 2014 at 2:08 PM, Felipe Balbi <balbi@ti.com> wrote:
-> > From: Darren Etheridge <detheridge@ti.com>
-> >
-> > 1680x1050 appears to also be within the bandwidth capabilities
-> > of the device and memory infrastructure.
+On Thu, 24 April 2014 12:58:21 -0700, Greg Kroah-Hartman wrote:
+> > @@ -868,11 +870,20 @@ static size_t print_time(u64 ts, char *buf)
+> >  
+> >  	rem_nsec = do_div(ts, 1000000000);
+> >  
+> > +#ifdef CONFIG_PRINTK_CPU
+> > +	if (!buf)
+> > +		return snprintf(NULL, 0, "[%5lu.000000,%02x] ",
 > 
-> For this one, is 1680x1050 possible on all devices w/ tilcdc (like 1st
-> gen beaglebone (white), etc)?  If not, maybe better to keep the
-> default conservative and override the default in devicetree..
-> 
-Fair point Rob, I didn't test BeagleBone White at that resolution, only
-BeagleBone Black.  I'll redo this patch as a BBB specific dts change
-given we already have a max-bandwidth DT binding in place for tilcdc.
+> %02x for a cpu?  What happens on machines with 8k cpus?
 
-Thanks for reviewing it.
+You should get something like:
+Apr 23 10:34:03 [  228.950926,1a] Call Trace:
+Apr 23 10:34:03 [  228.950926,201] Call Trace:
+Apr 23 10:34:03 [  228.950928,1a]  [<ffffffff815e0f29>] schedule+0x29/0x70
+...
 
-Darren
+That said, I don't have access to hardware with >256 cpus and haven't
+actually tested this.
 
-> BR,
-> -R
-> 
-> > Signed-off-by: Darren Etheridge <detheridge@ti.com>
-> > ---
-> >  drivers/gpu/drm/tilcdc/tilcdc_drv.h | 2 +-
-> >  1 file changed, 1 insertion(+), 1 deletion(-)
-> >
-> > diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.h b/drivers/gpu/drm/tilcdc/tilcdc_drv.h
-> > index 5bb64e3..b47ec24 100644
-> > --- a/drivers/gpu/drm/tilcdc/tilcdc_drv.h
-> > +++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.h
-> > @@ -43,7 +43,7 @@
-> >   * with optimized DDR & EMIF settings tweaked 1920x1080@24 appears to
-> >   * be supportable
-> >   */
-> > -#define TILCDC_DEFAULT_MAX_BANDWIDTH  (1280*1024*60)
-> > +#define TILCDC_DEFAULT_MAX_BANDWIDTH  (1680*1050*60)
-> >
-> >
-> >  struct tilcdc_drm_private {
-> > --
-> > 1.9.0
-> >
+> And is this really an issue?  Debugging by using printk is fun, but not
+> really something that people need to add a cpu number to.  Why not just
+> use a tracepoint in your code to get the needed information instead?
+
+Yes, this is an issue.  There have been several instances in my life
+when I would have had to guess which function belonged to which
+backtrace without this patch.  Good guesses take a long time, bad
+guesses are nearly useless and giving up means you cannot debug the
+issue.
+
+I don't have a good example at hand, but here is something from a
+quick grep for illustration.
+Feb 22 19:04:46 [   11.642470,2e] Call Trace:
+Feb 22 19:04:46 [   11.642472,16] Call Trace:
+Feb 22 19:04:46 [   11.642476,29]  [<ffffffff81115bf8>] pcpu_alloc+0x988/0xa20
+Feb 22 19:04:46 [   11.642481,01]  [<ffffffff810992ad>] ?  find_symbol+0x3d/0xb0
+Feb 22 19:04:46 [   11.642489,05]  [<ffffffff81115bf8>] pcpu_alloc+0x988/0xa20
+Feb 22 19:04:46 [   11.642493,12]  [<ffffffff81115bf8>] pcpu_alloc+0x988/0xa20
+Feb 22 19:04:46 [   11.642498,08]  [<ffffffff81115bf8>] pcpu_alloc+0x988/0xa20
+Feb 22 19:04:46 [   11.642504,21]  [<ffffffff810992ad>] ?  find_symbol+0x3d/0xb0
+
+And are you seriously suggesting I use a tracepoint for kernel panics? ;)
+
+Jörn
+
+--
+There's nothing better for promoting creativity in a medium than
+making an audience feel "Hmm ­ I could do better than that!"
+-- Douglas Adams in a slashdot interview
