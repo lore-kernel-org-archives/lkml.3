@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274AbaDXVqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:46:10 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39527 "EHLO
+	id S1757853AbaDXW10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:27:26 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39546 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827AbaDXVp4 (ORCPT
+	with ESMTP id S1755264AbaDXVqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:45:56 -0400
+	Thu, 24 Apr 2014 17:46:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "K. Y. Srinivasan" <kys@microsoft.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Jason Wang <jasowang@redhat.com>,
-        "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [PATCH 3.14 03/33] x86, hyperv: Bypass the timer_irq_works() check
-Date: Thu, 24 Apr 2014 14:48:16 -0700
-Message-Id: <20140424214449.922525807@linuxfoundation.org>
+        Mikulas Patocka <mpatocka@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 01/23] user namespace: fix incorrect memory barriers
+Date: Thu, 24 Apr 2014 14:48:31 -0700
+Message-Id: <20140424214826.099070750@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
-References: <20140424214449.423169713@linuxfoundation.org>
+In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
+References: <20140424214825.933835556@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -27,58 +25,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jason Wang <jasowang@redhat.com>
+From: Mikulas Patocka <mpatocka@redhat.com>
 
-commit ca3ba2a2f4a49a308e7d78c784d51b2332064f15 upstream.
+commit e79323bd87808fdfbc68ce6c5371bd224d9672ee upstream.
 
-This patch bypass the timer_irq_works() check for hyperv guest since:
+smp_read_barrier_depends() can be used if there is data dependency between
+the readers - i.e. if the read operation after the barrier uses address
+that was obtained from the read operation before the barrier.
 
-- It was guaranteed to work.
-- timer_irq_works() may fail sometime due to the lpj calibration were inaccurate
-  in a hyperv guest or a buggy host.
+In this file, there is only control dependency, no data dependecy, so the
+use of smp_read_barrier_depends() is incorrect. The code could fail in the
+following way:
+* the cpu predicts that idx < entries is true and starts executing the
+  body of the for loop
+* the cpu fetches map->extent[0].first and map->extent[0].count
+* the cpu fetches map->nr_extents
+* the cpu verifies that idx < extents is true, so it commits the
+  instructions in the body of the for loop
 
-In the future, we should get the tsc frequency from hypervisor and use preset
-lpj instead.
+The problem is that in this scenario, the cpu read map->extent[0].first
+and map->nr_extents in the wrong order. We need a full read memory barrier
+to prevent it.
 
-[ hpa: I would prefer to not defer things to "the future" in the future... ]
-
-Cc: K. Y. Srinivasan <kys@microsoft.com>
-Cc: Haiyang Zhang <haiyangz@microsoft.com>
-Acked-by: K. Y. Srinivasan <kys@microsoft.com>
-Signed-off-by: Jason Wang <jasowang@redhat.com>
-Link: http://lkml.kernel.org/r/1393558229-14755-1-git-send-email-jasowang@redhat.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/kernel/cpu/mshyperv.c |    6 ++++++
- 1 file changed, 6 insertions(+)
+ kernel/user_namespace.c |   11 +++++------
+ 1 file changed, 5 insertions(+), 6 deletions(-)
 
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -26,6 +26,7 @@
- #include <asm/irq_regs.h>
- #include <asm/i8259.h>
- #include <asm/apic.h>
-+#include <asm/timer.h>
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -148,7 +148,7 @@ static u32 map_id_range_down(struct uid_
  
- struct ms_hyperv_info ms_hyperv;
- EXPORT_SYMBOL_GPL(ms_hyperv);
-@@ -105,6 +106,11 @@ static void __init ms_hyperv_init_platfo
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -172,7 +172,7 @@ static u32 map_id_down(struct uid_gid_ma
  
- 	if (ms_hyperv.features & HV_X64_MSR_TIME_REF_COUNT_AVAILABLE)
- 		clocksource_register_hz(&hyperv_cs, NSEC_PER_SEC/100);
-+
-+#ifdef CONFIG_X86_IO_APIC
-+	no_timer_check = 1;
-+#endif
-+
- }
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -195,7 +195,7 @@ static u32 map_id_up(struct uid_gid_map
  
- const __refconst struct hypervisor_x86 x86_hyper_ms_hyperv = {
+ 	/* Find the matching extent */
+ 	extents = map->nr_extents;
+-	smp_read_barrier_depends();
++	smp_rmb();
+ 	for (idx = 0; idx < extents; idx++) {
+ 		first = map->extent[idx].lower_first;
+ 		last = first + map->extent[idx].count - 1;
+@@ -611,9 +611,8 @@ static ssize_t map_write(struct file *fi
+ 	 * were written before the count of the extents.
+ 	 *
+ 	 * To achieve this smp_wmb() is used on guarantee the write
+-	 * order and smp_read_barrier_depends() is guaranteed that we
+-	 * don't have crazy architectures returning stale data.
+-	 *
++	 * order and smp_rmb() is guaranteed that we don't have crazy
++	 * architectures returning stale data.
+ 	 */
+ 	mutex_lock(&id_map_mutex);
+ 
 
 
