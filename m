@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751504AbaDXFZM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 01:25:12 -0400
-Received: from 1wt.eu ([62.212.114.60]:32922 "EHLO 1wt.eu"
+	id S1751565AbaDXFZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 01:25:28 -0400
+Received: from ozlabs.org ([103.22.144.67]:41671 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751244AbaDXFZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 01:25:10 -0400
-Date: Thu, 24 Apr 2014 07:24:47 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: zhuyj <zyjzyj2000@gmail.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        joe@perches.com, julia.lawall@lip6.fr, dingtianhong@huawei.com,
-        linux-kernel@vger.kernel.org, jasowang@redhat.com, mst@redhat.com,
-        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
-        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
-        "Tao, Yue" <Yue.Tao@windriver.com>
-Subject: Re: in kernel 2.6.x, tun/tap nic supports vlan packets
-Message-ID: <20140424052447.GC17409@1wt.eu>
-References: <534F4C1E.1000006@gmail.com> <20140417050228.GC8243@1wt.eu> <1398189237.7767.77.camel@deadeye.wl.decadent.org.uk> <53577036.2040307@gmail.com> <1398253309.7767.136.camel@deadeye.wl.decadent.org.uk> <53587280.4020101@gmail.com>
+	id S1750721AbaDXFZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 01:25:22 -0400
+Date: Thu, 24 Apr 2014 15:25:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <linux@arm.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Mark Salter <msalter@redhat.com>, Liu Hua <sdu.liu@huawei.com>
+Subject: linux-next: manual merge of the akpm-current tree with the arm tree
+Message-Id: <20140424152516.47a704ec9b749f98b9a93048@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <53587280.4020101@gmail.com>
-User-Agent: Mutt/1.4.2.3i
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__24_Apr_2014_15_25_16_+1000_.w5EEXYkmSBrqh9p"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 10:10:08AM +0800, zhuyj wrote:
-> On 04/23/2014 07:41 PM, Ben Hutchings wrote:
-> >On Wed, 2014-04-23 at 15:48 +0800, zhuyj wrote:
-> >>On 04/23/2014 01:53 AM, Ben Hutchings wrote:
-> >[...]
-> >>>For what it's worth, I would recommend against applying this.  I don't
-> >>>think even Red Hat has backported the VLAN changes, and they have been
-> >>>quite aggressive about backporting features to RHEL 6.
-> >>If we do not merge these patches, maybe RHEL 6 can not make tap driver
-> >>support vlan well.
-> >RHEL 6 isn't based on 2.6.32.y, they do all their own backporting.
-> Hi, Ben
-> 
-> It is well known that extraction vlan tag is not implemented in kernel 
-> 2.6.32.y.  Kernel 2.6.32.y depends on nic hardware to extract vlan tag.
-> So if the patches are not applied, tap driver can not support vlan well.
+--Signature=_Thu__24_Apr_2014_15_25_16_+1000_.w5EEXYkmSBrqh9p
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What Ben is saying is that RHEL doesn't use 2.6.32.y, but did their own
-fork of 2.6.32 so even if we merged your patch, they wouldn't pick it
-from this tree anyway. However they could possibly take your patch if
-some customers requested the feature even if it's not in 2.6.32.y.
+Hi Andrew,
 
-Clearly, the fact that nobody complained about this in 4.5 years of
-2.6.32 means that there's no particular reason any user would suddenly
-miss it now. 2.6.32.y is mostly used to update existing deployments but
-rarely for new deployments. That's why the usefulness of your backport
-in this kernel for its users is likely limited, and at the same time
-the risk of causing a regression is far from being null for existing
-users (eg: if some worked around the issue a different way, their
-workaround would likely not work anymore).
+Today's linux-next merge of the akpm-current tree got a conflict in
+arch/arm/include/asm/fixmap.h between commits 4221e2e6b316 ("ARM: 8031/1:
+fixmap: remove FIX_KMAP_BEGIN and FIX_KMAP_END") and a05e54c103b0 ("ARM:
+8031/2: change fixmap mapping region to support 32 CPUs") from the arm
+tree and commit a665f864487d ("arm: use generic fixmap.h") from the
+akpm-current tree.
 
-Best regards,
-Willy
+I fixed it up (I have just dropped the akpm-current tree patch for now)
+and can carry the fix as necessary (no action is required).
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__24_Apr_2014_15_25_16_+1000_.w5EEXYkmSBrqh9p
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTWKBAAAoJEMDTa8Ir7ZwV66gQAIiSgQqTB/C/AqdE+9D5kE+w
+aOEBoDhytroYq4QxMMRNWpHkFhhyK4cG8wb6mt5/eFq0YPcDx8nfs9x8UT1Fr4AO
+yw8HlMc2xCe1uB0ssJQBYpCTIYk8Wdqeep8cJ7CfB/SGhwU7rRO6PLUIb7SbbLFT
+dw8LZBigG9FEu0uCokk2agxKANr79VMfl5GnN0latUVy0FCTGopNHT8r28nTGbHs
+Mo5ub7IM0RkrOMc0FqH0OHkyj6ZkQf4ryKKmVBD45noV2QLJp7ubXHsLCQajOhEc
+pM1p4IRDHLMHqaEuv+7sSYmhgj2ARmZaOUIb8nFaEsMD8e9rtYCujSIlNUAlfIU3
+n3xyL3WXydiP6k6ySsM/X12ddApIM34WGGe2o1R2Qfjo7cQnpbsJFOqfi12mtkFg
+AHO4KVzdHnasvwDmig+Pns570sXOYjVvCG7Xe+IVXYycqWMvlVOG7iyjsWlZacV6
+M0fCqNluyIg79798Wfcq1/iSW8dJTkyjs1hFcLRmaOdh9Y/QmvtpXRFXQXRAGxCf
+M/mx5SIIDMFvG2ZmvvJ2/nzrP5o+AZeREaJR6uZhFu/YWWpf0OTzSlDl+6a7UHrT
+YWyGik8SgltEOPDGUfx76T6gCsHYeq+DF4/lmF9VB9dJCU2lH6n3amQIVT+7x69X
+lb2CTBg6uhxKbyoKJumn
+=A7Vh
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__24_Apr_2014_15_25_16_+1000_.w5EEXYkmSBrqh9p--
