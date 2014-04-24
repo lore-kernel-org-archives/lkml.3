@@ -1,88 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758025AbaDXO7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:59:36 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:57051 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757361AbaDXO7d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:59:33 -0400
-Date: Thu, 24 Apr 2014 16:59:25 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Morten Rasmussen <morten.rasmussen@arm.com>
-Cc: Jason Low <jason.low2@hp.com>, "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "aswin@hp.com" <aswin@hp.com>,
-        "chegu_vinod@hp.com" <chegu_vinod@hp.com>
-Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
- balance if there are runnable tasks
-Message-ID: <20140424145925.GA27561@twins.programming.kicks-ass.net>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
- <1398303035-18255-4-git-send-email-jason.low2@hp.com>
- <20140424103059.GL2500@e103034-lin>
- <20140424113231.GR11096@twins.programming.kicks-ass.net>
- <20140424140802.GM2500@e103034-lin>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424140802.GM2500@e103034-lin>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1757801AbaDXPDJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:03:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:31556 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756799AbaDXPDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:03:06 -0400
+Message-ID: <1398351780.750.10.camel@localhost>
+Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
+From: Eric Paris <eparis@redhat.com>
+To: Daniel J Walsh <dwalsh@redhat.com>
+Cc: Linux Netdev List <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        LSM List <linux-security-module@vger.kernel.org>,
+        linux-audit@redhat.com, SE-Linux <selinux@tycho.nsa.gov>,
+        jamal@mojatatu.com, Steve Grubb <sgrubb@redhat.com>,
+        David Miller <davem@davemloft.net>
+Date: Thu, 24 Apr 2014 11:03:00 -0400
+In-Reply-To: <535926B8.7060304@redhat.com>
+References: <20140422.161904.1187535812839850973.davem@davemloft.net>
+	 <cover.1398215388.git.rgb@redhat.com> <26389161.vp9iWSVLPX@x2>
+	 <1398225475.750.7.camel@localhost> <5357C2D2.5060700@redhat.com>
+	 <1398264152.2596.25.camel@flatline.rdu.redhat.com>
+	 <5357DE12.7040905@redhat.com>
+	 <1398267458.2562.0.camel@flatline.rdu.redhat.com>
+	 <5357E1B4.2030705@redhat.com>
+	 <CACLa4psQyoaZTE7R0qiog_biMKXyeGtLc1AQUuEPtemMYcDCSQ@mail.gmail.com>
+	 <535926B8.7060304@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 03:08:02PM +0100, Morten Rasmussen wrote:
-> On Thu, Apr 24, 2014 at 12:32:31PM +0100, Peter Zijlstra wrote:
-> > On Thu, Apr 24, 2014 at 11:30:59AM +0100, Morten Rasmussen wrote:
-> > > On Thu, Apr 24, 2014 at 02:30:35AM +0100, Jason Low wrote:
-> > > > @@ -6704,7 +6703,12 @@ static int idle_balance(struct rq *this_rq)
-> > > >  		interval = msecs_to_jiffies(sd->balance_interval);
-> > > >  		if (time_after(next_balance, sd->last_balance + interval))
-> > > >  			next_balance = sd->last_balance + interval;
-> > > > -		if (pulled_task)
-> > > > +
-> > > > +		/*
-> > > > +		 * Stop searching for tasks to pull if there are
-> > > > +		 * now runnable tasks on this rq.
-> > > > +		 */
-> > > > +		if (pulled_task || this_rq->nr_running > 0)
-> > > 
-> > > Should this be cfs tasks instead?
-> > > 
-> > > +		if (pulled_task || this_rq->cfs.h_nr_running > 0)
-> > > 
-> > > 3.15-rc2 commit 35805ff8f4fc535ac85330170d3c56829c87c677 seems to
-> > > indicate that using rq->nr_running may lead to trouble.
-> > > 
-> > > The other two patches look good to me.
-> > 
-> > No, this really wants to be nr_running, we want to bail the idle
-> > balancer when there's anything runnable present.
-> > 
-> > Note how out: is very careful to return -1 (which results in RETRY_TASK)
-> > when rq->nr_running != rq->cfs.h_nr_running.
-> > 
-> > That same out: test also makes problem that commit fixes impossible
-> > again.
+On Thu, 2014-04-24 at 10:59 -0400, Daniel J Walsh wrote:
+> I don't disagree.  I would think the real solution to this would be to
+> not allow sysadm_t to get to SystemHigh, where all of the logging data
+> will be stored.
+
+make journalctl a userspace object manager and do selinux checks on if
+it can see individual records?  so secadm_t running journalctl would see
+them and sysadm running journalctl wouldn't see them?
+
+Sounds elegant.  Who is going to code it?  *NOT IT!*
+
 > 
-> I should have done my homework properly. I may be missing something, but
-> don't we risk bailing out of idle balance if there is a throttled rt
-> task and go straight to idle?
+> On 04/24/2014 09:22 AM, Eric Paris wrote:
+> > They would be equivalent if and only if journald had CAP_AUDIT_READ.
+> >
+> > I suggest you take CAP_AUDIT_READ away from journald on systems which
+> > need the secadm/sysadmin split (which is a ridiculously stupid split
+> > anyway, but who am I to complain?)
+> >
+> > On Wed, Apr 23, 2014 at 11:52 AM, Daniel J Walsh <dwalsh@redhat.com> wrote:
+> >> Meaning looking at the journal would be equivalent to looking at
+> >> /var/log/audit/audit.log.
+> >>
+> >>
+> >> On 04/23/2014 11:37 AM, Eric Paris wrote:
+> >>> On Wed, 2014-04-23 at 11:36 -0400, Daniel J Walsh wrote:
+> >>>> I guess the problem would be that the sysadm_t would be able to look at
+> >>>> the journal which would now contain the audit content.
+> >>> right.  so include it in the sysadm_secadm bool
+> >>>
+> >>>> On 04/23/2014 10:42 AM, Eric Paris wrote:
+> >>>>> On Wed, 2014-04-23 at 09:40 -0400, Daniel J Walsh wrote:
+> >>>>>> Here are the capabilities we currently give to sysadm_t with
+> >>>>>> sysadm_secadm    1.0.0    Disabled
+> >>>>>>
+> >>>>>>    allow sysadm_t sysadm_t : capability { chown dac_override
+> >>>>>> dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable
+> >>>>>> net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner
+> >>>>>> sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice
+> >>>>>> sys_resource sys_time sys_tty_config mknod lease audit_write setfcap } ;
+> >>>>>>    allow sysadm_t sysadm_t : capability { setgid setuid sys_chroot }
+> >>>>>>
+> >>>>>>    allow sysadm_t sysadm_t : capability2 { syslog block_suspend } ;
+> >>>>>>
+> >>>>>> cap_audit_write might be a problem?
+> >>>>> cap_audit_write is fine.
+> >>>>>
+> >>>>> syslogd_t (aka journal) is going to need the new permission
+> >>>>> cap_audit_read.  Also, as steve pointed out, someone may be likely to
+> >>>>> want to be able to disable that permission easily.
+> >>>>>
+> >>>>> -Eric
+> >>>>>
+> >>> _______________________________________________
+> >>> Selinux mailing list
+> >>> Selinux@tycho.nsa.gov
+> >>> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+> >>> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+> >>>
+> >>>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >> Please read the FAQ at  http://www.tux.org/lkml/
+> > _______________________________________________
+> > Selinux mailing list
+> > Selinux@tycho.nsa.gov
+> > To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
+> > To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
+> >
+> >
+> 
 
-Good point, depends, in tip/sched/core Kirill fixed that. For -linus
-this is indeed a problem.
 
-See patches:
-
-46383648b3c7 sched: Revert commit 4c6c4e38c4e9 ("sched/core: Fix endless loop in pick_next_task()")
-f4ebcbc0d7e0 sched/rt: Substract number of tasks of throttled queues from rq->nr_running
-653d07a6989a sched/rt: Add accessors rq_of_rt_se()
-22abdef37ceb sched/rt: Sum number of all children tasks in hierarhy at ->rt_nr_running
-
-So for sched/core everything should be fine. This does mean I have to
-queue this patch for /core and not /urgent (/me quickly moves).
