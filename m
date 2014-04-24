@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757757AbaDXWdU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:33:20 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39527 "EHLO
+	id S1758624AbaDXWeP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:34:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39532 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755093AbaDXVqE (ORCPT
+	with ESMTP id S1755023AbaDXVqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Apr 2014 17:46:04 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Whitney <enwlinux@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.14 24/33] ext4: fix error return from ext4_ext_handle_uninitialized_extents()
-Date: Thu, 24 Apr 2014 14:48:37 -0700
-Message-Id: <20140424214453.132453702@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        Derek Basehore <dbasehore@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 19/33] bdi: avoid oops on device removal
+Date: Thu, 24 Apr 2014 14:48:32 -0700
+Message-Id: <20140424214452.408422813@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
 References: <20140424214449.423169713@linuxfoundation.org>
@@ -28,49 +31,145 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Whitney <enwlinux@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-commit ce37c42919608e96ade3748fe23c3062a0a966c5 upstream.
+commit 5acda9d12dcf1ad0d9a5a2a7c646de3472fa7555 upstream.
 
-Commit 3779473246 breaks the return of error codes from
-ext4_ext_handle_uninitialized_extents() in ext4_ext_map_blocks().  A
-portion of the patch assigns that function's signed integer return
-value to an unsigned int.  Consequently, negatively valued error codes
-are lost and can be treated as a bogus allocated block count.
+After commit 839a8e8660b6 ("writeback: replace custom worker pool
+implementation with unbound workqueue") when device is removed while we
+are writing to it we crash in bdi_writeback_workfn() ->
+set_worker_desc() because bdi->dev is NULL.
 
-Signed-off-by: Eric Whitney <enwlinux@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+This can happen because even though bdi_unregister() cancels all pending
+flushing work, nothing really prevents new ones from being queued from
+balance_dirty_pages() or other places.
+
+Fix the problem by clearing BDI_registered bit in bdi_unregister() and
+checking it before scheduling of any flushing work.
+
+Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
+
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Derek Basehore <dbasehore@chromium.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |    8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+ fs/fs-writeback.c           |   23 ++++++++++++++++++-----
+ include/linux/backing-dev.h |    2 +-
+ mm/backing-dev.c            |   13 +++++++++----
+ 3 files changed, 28 insertions(+), 10 deletions(-)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -4128,7 +4128,7 @@ int ext4_ext_map_blocks(handle_t *handle
- 	struct ext4_extent newex, *ex, *ex2;
- 	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
- 	ext4_fsblk_t newblock = 0;
--	int free_on_err = 0, err = 0, depth;
-+	int free_on_err = 0, err = 0, depth, ret;
- 	unsigned int allocated = 0, offset = 0;
- 	unsigned int allocated_clusters = 0;
- 	struct ext4_allocation_request ar;
-@@ -4189,9 +4189,13 @@ int ext4_ext_map_blocks(handle_t *handle
- 			if (!ext4_ext_is_uninitialized(ex))
- 				goto out;
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -89,16 +89,29 @@ static inline struct inode *wb_inode(str
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/writeback.h>
  
--			allocated = ext4_ext_handle_uninitialized_extents(
-+			ret = ext4_ext_handle_uninitialized_extents(
- 				handle, inode, map, path, flags,
- 				allocated, newblock);
-+			if (ret < 0)
-+				err = ret;
-+			else
-+				allocated = ret;
- 			goto out3;
- 		}
++static void bdi_wakeup_thread(struct backing_dev_info *bdi)
++{
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	spin_unlock_bh(&bdi->wb_lock);
++}
++
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 			   struct wb_writeback_work *work)
+ {
+ 	trace_writeback_queue(bdi, work);
+ 
+ 	spin_lock_bh(&bdi->wb_lock);
++	if (!test_bit(BDI_registered, &bdi->state)) {
++		if (work->done)
++			complete(work->done);
++		goto out_unlock;
++	}
+ 	list_add_tail(&work->list, &bdi->work_list);
+-	spin_unlock_bh(&bdi->wb_lock);
+-
+ 	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++out_unlock:
++	spin_unlock_bh(&bdi->wb_lock);
+ }
+ 
+ static void
+@@ -114,7 +127,7 @@ __bdi_start_writeback(struct backing_dev
+ 	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+ 	if (!work) {
+ 		trace_writeback_nowork(bdi);
+-		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++		bdi_wakeup_thread(bdi);
+ 		return;
  	}
+ 
+@@ -161,7 +174,7 @@ void bdi_start_background_writeback(stru
+ 	 * writeback as soon as there is no other work to do.
+ 	 */
+ 	trace_writeback_wake_background(bdi);
+-	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	bdi_wakeup_thread(bdi);
+ }
+ 
+ /*
+@@ -1017,7 +1030,7 @@ void bdi_writeback_workfn(struct work_st
+ 	current->flags |= PF_SWAPWRITE;
+ 
+ 	if (likely(!current_is_workqueue_rescuer() ||
+-		   list_empty(&bdi->bdi_list))) {
++		   !test_bit(BDI_registered, &bdi->state))) {
+ 		/*
+ 		 * The normal path.  Keep writing back @bdi until its
+ 		 * work_list is empty.  Note that this path is also taken
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -95,7 +95,7 @@ struct backing_dev_info {
+ 	unsigned int max_ratio, max_prop_frac;
+ 
+ 	struct bdi_writeback wb;  /* default writeback info for this bdi */
+-	spinlock_t wb_lock;	  /* protects work_list */
++	spinlock_t wb_lock;	  /* protects work_list & wb.dwork scheduling */
+ 
+ 	struct list_head work_list;
+ 
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -297,7 +297,10 @@ void bdi_wakeup_thread_delayed(struct ba
+ 	unsigned long timeout;
+ 
+ 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+-	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_unlock_bh(&bdi->wb_lock);
+ }
+ 
+ /*
+@@ -310,9 +313,6 @@ static void bdi_remove_from_list(struct
+ 	spin_unlock_bh(&bdi_lock);
+ 
+ 	synchronize_rcu_expedited();
+-
+-	/* bdi_list is now unused, clear it to mark @bdi dying */
+-	INIT_LIST_HEAD(&bdi->bdi_list);
+ }
+ 
+ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
+@@ -363,6 +363,11 @@ static void bdi_wb_shutdown(struct backi
+ 	 */
+ 	bdi_remove_from_list(bdi);
+ 
++	/* Make sure nobody queues further work */
++	spin_lock_bh(&bdi->wb_lock);
++	clear_bit(BDI_registered, &bdi->state);
++	spin_unlock_bh(&bdi->wb_lock);
++
+ 	/*
+ 	 * Drain work list and shutdown the delayed_work.  At this point,
+ 	 * @bdi->bdi_list is empty telling bdi_Writeback_workfn() that @bdi
 
 
