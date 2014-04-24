@@ -1,204 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757552AbaDXPVA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:21:00 -0400
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:52741 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753208AbaDXPU6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:20:58 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AssVADMrWVNbsls8/2dsb2JhbABZgwaDZKgKmWoCAoEZF3SCUxMcIxiBAiQTiEUBy2WOWIRAAQOObIoIAZJWgzM7
-Date: Thu, 24 Apr 2014 17:22:56 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Joe Perches <joe@perches.com>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>, akpm <akpm@linux-foundation.org>
-Subject: [PATCH RESEND] FS/PSTORE: Logging clean-up
-Message-Id: <20140424172256.88a3be836dabbca0d370c446@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757803AbaDXPVT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:21:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27293 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757262AbaDXPVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:21:16 -0400
+Date: Thu, 24 Apr 2014 11:21:04 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: return of perf task_ctx_sched_out bug.
+Message-ID: <20140424152104.GA13144@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--Define pr_fmt in plateform.c and ram_core.c for global prefix.
--Coalesce format fragments.
--Separate format/arguments on lines > 80 characters.
+I haven't seen this in a while.
 
-Note: Some pr_foo() were initially declared without prefix and
-therefore this could break existing log analyzer.
+WARNING: CPU: 0 PID: 25574 at kernel/events/core.c:2384 task_ctx_sched_out+0x6b/0x80()
+Modules linked in: 8021q garp dccp_ipv4 dccp bridge stp snd_seq_dummy sctp fuse hidp bnep tun rfcomm llc2 af_key nfnetlink scsi_transport_iscsi ipt_ULOG can_bcm can_raw nfc caif_socket caif af_802154 ieee802154 phonet af_rxrpc can pppoe pppox ppp_generic slhc irda crc_ccitt rds rose x25 atm netrom appletalk ipx p8023 psnap p8022 llc ax25 cfg80211 coretemp hwmon x86_pkg_temp_thermal kvm_intel kvm snd_hda_codec_hdmi snd_hda_codec_realtek snd_hda_codec_generic snd_hda_intel snd_hda_controller xfs snd_hda_codec snd_hwdep e1000e libcrc32c crct10dif_pclmul snd_seq snd_seq_device crc32c_intel snd_pcm btusb bluetooth ghash_clmulni_intel snd_timer snd ptp pcspkr pps_core serio_raw microcode shpchp 6lowpan_iphc usb_debug rfkill soundcore
+CPU: 0 PID: 25574 Comm: trinity-c76 Not tainted 3.15.0-rc2+ #197
+ 0000000000000009 000000006f572b93 ffff8802389b3df0 ffffffff8b74671d
+ 0000000000000000 ffff8802389b3e28 ffffffff8b06d45d ffff8802441d7ad8
+ ffff880111e6adf0 0000000000000286 ffff88023fb8b5c0 ffff880111e6adf0
+Call Trace:
+ [<ffffffff8b74671d>] dump_stack+0x4e/0x7a
+ [<ffffffff8b06d45d>] warn_slowpath_common+0x7d/0xa0
+ [<ffffffff8b06d58a>] warn_slowpath_null+0x1a/0x20
+ [<ffffffff8b14f6eb>] task_ctx_sched_out+0x6b/0x80
+ [<ffffffff8b152988>] perf_event_comm+0x108/0x260
+ [<ffffffff8b152880>] ? perf_event_fork+0x20/0x20
+ [<ffffffff8b0bf746>] ? lock_release_holdtime.part.24+0xe6/0x160
+ [<ffffffff8b0a3ccd>] ? get_parent_ip+0xd/0x50
+ [<ffffffff8b1ce63f>] set_task_comm+0x4f/0xc0
+ [<ffffffff8b086829>] SyS_prctl+0x1d9/0x480
+ [<ffffffff8b75aa64>] tracesys+0xdd/0xe2
 
-Cc: Joe Perches <joe@perches.com>
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/pstore/platform.c | 16 ++++++++--------
- fs/pstore/ram_core.c | 36 +++++++++++++++++-------------------
- 2 files changed, 25 insertions(+), 27 deletions(-)
 
-diff --git a/fs/pstore/platform.c b/fs/pstore/platform.c
-index 46d269e..ed72f96 100644
---- a/fs/pstore/platform.c
-+++ b/fs/pstore/platform.c
-@@ -18,6 +18,8 @@
-  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-  */
- 
-+#define pr_fmt(fmt) "pstore: " fmt
-+
- #include <linux/atomic.h>
- #include <linux/types.h>
- #include <linux/errno.h>
-@@ -224,14 +226,12 @@ static void allocate_buf_for_compression(void)
- 			zlib_inflate_workspacesize());
- 		stream.workspace = kmalloc(size, GFP_KERNEL);
- 		if (!stream.workspace) {
--			pr_err("pstore: No memory for compression workspace; "
--				"skipping compression\n");
-+			pr_err("No memory for compression workspace; skipping compression\n");
- 			kfree(big_oops_buf);
- 			big_oops_buf = NULL;
- 		}
- 	} else {
--		pr_err("No memory for uncompressed data; "
--			"skipping compression\n");
-+		pr_err("No memory for uncompressed data; skipping compression\n");
- 		stream.workspace = NULL;
- 	}
- 
-@@ -502,8 +502,8 @@ void pstore_get_records(int quiet)
- 				size = unzipped_len;
- 				compressed = false;
- 			} else {
--				pr_err("pstore: decompression failed;"
--					"returned %d\n", unzipped_len);
-+				pr_err("pstore: decompression failed;returned %d\n",
-+				       unzipped_len);
- 				compressed = true;
- 			}
- 		}
-@@ -524,8 +524,8 @@ out:
- 	mutex_unlock(&psi->read_mutex);
- 
- 	if (failed)
--		printk(KERN_WARNING "pstore: failed to load %d record(s) from '%s'\n",
--		       failed, psi->name);
-+		pr_warn("failed to load %d record(s) from '%s'\n",
-+			failed, psi->name);
- }
- 
- static void pstore_dowork(struct work_struct *work)
-diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
-index ff7e3d4..34a1e5a 100644
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -12,6 +12,8 @@
-  *
-  */
- 
-+#define pr_fmt(fmt) "persistent_ram: " fmt
-+
- #include <linux/device.h>
- #include <linux/err.h>
- #include <linux/errno.h>
-@@ -205,12 +207,10 @@ static void persistent_ram_ecc_old(struct persistent_ram_zone *prz)
- 			size = buffer->data + prz->buffer_size - block;
- 		numerr = persistent_ram_decode_rs8(prz, block, size, par);
- 		if (numerr > 0) {
--			pr_devel("persistent_ram: error in block %p, %d\n",
--			       block, numerr);
-+			pr_devel("error in block %p, %d\n", block, numerr);
- 			prz->corrected_bytes += numerr;
- 		} else if (numerr < 0) {
--			pr_devel("persistent_ram: uncorrectable error in block %p\n",
--				block);
-+			pr_devel("uncorrectable error in block %p\n", block);
- 			prz->bad_blocks++;
- 		}
- 		block += prz->ecc_info.block_size;
-@@ -257,7 +257,7 @@ static int persistent_ram_init_ecc(struct persistent_ram_zone *prz,
- 	prz->rs_decoder = init_rs(prz->ecc_info.symsize, prz->ecc_info.poly,
- 				  0, 1, prz->ecc_info.ecc_size);
- 	if (prz->rs_decoder == NULL) {
--		pr_info("persistent_ram: init_rs failed\n");
-+		pr_info("init_rs failed\n");
- 		return -EINVAL;
- 	}
- 
-@@ -267,10 +267,10 @@ static int persistent_ram_init_ecc(struct persistent_ram_zone *prz,
- 	numerr = persistent_ram_decode_rs8(prz, buffer, sizeof(*buffer),
- 					   prz->par_header);
- 	if (numerr > 0) {
--		pr_info("persistent_ram: error in header, %d\n", numerr);
-+		pr_info("error in header, %d\n", numerr);
- 		prz->corrected_bytes += numerr;
- 	} else if (numerr < 0) {
--		pr_info("persistent_ram: uncorrectable error in header\n");
-+		pr_info("uncorrectable error in header\n");
- 		prz->bad_blocks++;
- 	}
- 
-@@ -317,7 +317,7 @@ void persistent_ram_save_old(struct persistent_ram_zone *prz)
- 		prz->old_log = kmalloc(size, GFP_KERNEL);
- 	}
- 	if (!prz->old_log) {
--		pr_err("persistent_ram: failed to allocate buffer\n");
-+		pr_err("failed to allocate buffer\n");
- 		return;
- 	}
- 
-@@ -396,8 +396,8 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
- 
- 	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
- 	if (!pages) {
--		pr_err("%s: Failed to allocate array for %u pages\n", __func__,
--			page_count);
-+		pr_err("%s: Failed to allocate array for %u pages\n",
-+		       __func__, page_count);
- 		return NULL;
- 	}
- 
-@@ -462,19 +462,17 @@ static int persistent_ram_post_init(struct persistent_ram_zone *prz, u32 sig,
- 	if (prz->buffer->sig == sig) {
- 		if (buffer_size(prz) > prz->buffer_size ||
- 		    buffer_start(prz) > buffer_size(prz))
--			pr_info("persistent_ram: found existing invalid buffer,"
--				" size %zu, start %zu\n",
--			       buffer_size(prz), buffer_start(prz));
-+			pr_info("found existing invalid buffer, size %zu, start %zu\n",
-+				buffer_size(prz), buffer_start(prz));
- 		else {
--			pr_debug("persistent_ram: found existing buffer,"
--				" size %zu, start %zu\n",
--			       buffer_size(prz), buffer_start(prz));
-+			pr_debug("found existing buffer, size %zu, start %zu\n",
-+				 buffer_size(prz), buffer_start(prz));
- 			persistent_ram_save_old(prz);
- 			return 0;
- 		}
- 	} else {
--		pr_debug("persistent_ram: no valid data in buffer"
--			" (sig = 0x%08x)\n", prz->buffer->sig);
-+		pr_debug("no valid data in buffer (sig = 0x%08x)\n",
-+			 prz->buffer->sig);
- 	}
- 
- 	prz->buffer->sig = sig;
-@@ -509,7 +507,7 @@ struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
- 
- 	prz = kzalloc(sizeof(struct persistent_ram_zone), GFP_KERNEL);
- 	if (!prz) {
--		pr_err("persistent_ram: failed to allocate persistent ram zone\n");
-+		pr_err("failed to allocate persistent ram zone\n");
- 		goto err;
- 	}
- 
--- 
-1.8.4.5
+Last time you looked into this, you had me run some debug patches,
+which caused a bunch of spew:
+http://permalink.gmane.org/gmane.linux.kernel/1648614
+
+I've not been running with that patch since then, but if it's going to
+be useful I can try and resurrect it.
+
+	Dave
 
