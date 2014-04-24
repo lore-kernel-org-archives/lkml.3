@@ -1,163 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758049AbaDXPkz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:40:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7148 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406AbaDXPkx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:40:53 -0400
-From: Jiri Olsa <jolsa@kernel.org>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Namhyung Kim <namhyung@kernel.org>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: [PATCH 01/11] perf report: Count number of entries separately
-Date: Thu, 24 Apr 2014 17:40:35 +0200
-Message-Id: <1398354045-16505-2-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1398354045-16505-1-git-send-email-jolsa@kernel.org>
-References: <1398354045-16505-1-git-send-email-jolsa@kernel.org>
+	id S1758348AbaDXPr2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:47:28 -0400
+Received: from mail-pb0-f49.google.com ([209.85.160.49]:34121 "EHLO
+	mail-pb0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758170AbaDXPrZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:47:25 -0400
+From: Masanari Iida <standby24x7@gmail.com>
+To: jg1.han@samsung.com, cooloney@gmail.com, lee.jones@linaro.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Masanari Iida <standby24x7@gmail.com>
+Subject: [PATCH] video/backlight: Fix string type mismatch in s6e63m0.c
+Date: Fri, 25 Apr 2014 00:47:16 +0900
+Message-Id: <1398354436-25467-1-git-send-email-standby24x7@gmail.com>
+X-Mailer: git-send-email 2.0.0.rc0.26.g779792a
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Namhyung Kim <namhyung@kernel.org>
+Fix string type mismatch in s6e63m0_sysfs_show_gamma_table().
+gamma_table_count is defined as unsigned int.
 
-The hists->nr_entries is counted in multiple places so that they can
-confuse readers of the code.  This is a preparation of later change
-and do not intend any functional difference.
-
-Note that report__collapse_hists() now changed to return nothing since
-its return value (nr_samples) is only for checking if there's any data
-in the input file and this can be acheived by checking ->nr_entries.
-
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1398327843-31845-2-git-send-email-namhyung@kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
 ---
- tools/perf/builtin-report.c | 42 ++++++++++++++++++++++--------------------
- 1 file changed, 22 insertions(+), 20 deletions(-)
+ drivers/video/backlight/s6e63m0.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 76e2bb6..aed5203 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -57,6 +57,7 @@ struct report {
- 	const char		*cpu_list;
- 	const char		*symbol_filter_str;
- 	float			min_percent;
-+	u64			nr_entries;
- 	DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
- };
+diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
+index 510a1bc..2d6d481 100644
+--- a/drivers/video/backlight/s6e63m0.c
++++ b/drivers/video/backlight/s6e63m0.c
+@@ -703,7 +703,7 @@ static ssize_t s6e63m0_sysfs_show_gamma_table(struct device *dev,
+ 	struct s6e63m0 *lcd = dev_get_drvdata(dev);
+ 	char temp[3];
  
-@@ -75,6 +76,17 @@ static int report__config(const char *var, const char *value, void *cb)
- 	return perf_default_config(var, value, cb);
- }
+-	sprintf(temp, "%d\n", lcd->gamma_table_count);
++	sprintf(temp, "%u\n", lcd->gamma_table_count);
+ 	strcpy(buf, temp);
  
-+static void report__inc_stats(struct report *rep, struct hist_entry *he)
-+{
-+	/*
-+	 * The @he is either of a newly created one or an existing one
-+	 * merging current sample.  We only want to count a new one so
-+	 * checking ->nr_events being 1.
-+	 */
-+	if (he->stat.nr_events == 1)
-+		rep->nr_entries++;
-+}
-+
- static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
- 				      struct perf_sample *sample, struct perf_evsel *evsel)
- {
-@@ -121,6 +133,8 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
- 			goto out;
- 	}
- 
-+	report__inc_stats(rep, he);
-+
- 	evsel->hists.stats.total_period += cost;
- 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- 	if (!he->filtered)
-@@ -176,6 +190,8 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
- 					goto out;
- 			}
- 
-+			report__inc_stats(rep, he);
-+
- 			evsel->hists.stats.total_period += 1;
- 			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
- 			if (!he->filtered)
-@@ -212,6 +228,8 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
- 	if (ui__has_annotation())
- 		err = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
- 
-+	report__inc_stats(rep, he);
-+
- 	evsel->hists.stats.total_period += sample->period;
- 	if (!he->filtered)
- 		evsel->hists.stats.nr_non_filtered_samples++;
-@@ -486,24 +504,12 @@ static int report__browse_hists(struct report *rep)
- 	return ret;
- }
- 
--static u64 report__collapse_hists(struct report *rep)
-+static void report__collapse_hists(struct report *rep)
- {
- 	struct ui_progress prog;
- 	struct perf_evsel *pos;
--	u64 nr_samples = 0;
--	/*
-- 	 * Count number of histogram entries to use when showing progress,
-- 	 * reusing nr_samples variable.
-- 	 */
--	evlist__for_each(rep->session->evlist, pos)
--		nr_samples += pos->hists.nr_entries;
- 
--	ui_progress__init(&prog, nr_samples, "Merging related events...");
--	/*
--	 * Count total number of samples, will be used to check if this
-- 	 * session had any.
-- 	 */
--	nr_samples = 0;
-+	ui_progress__init(&prog, rep->nr_entries, "Merging related events...");
- 
- 	evlist__for_each(rep->session->evlist, pos) {
- 		struct hists *hists = &pos->hists;
-@@ -512,7 +518,6 @@ static u64 report__collapse_hists(struct report *rep)
- 			hists->symbol_filter_str = rep->symbol_filter_str;
- 
- 		hists__collapse_resort(hists, &prog);
--		nr_samples += hists->stats.nr_events[PERF_RECORD_SAMPLE];
- 
- 		/* Non-group events are considered as leader */
- 		if (symbol_conf.event_group &&
-@@ -525,14 +530,11 @@ static u64 report__collapse_hists(struct report *rep)
- 	}
- 
- 	ui_progress__finish();
--
--	return nr_samples;
- }
- 
- static int __cmd_report(struct report *rep)
- {
- 	int ret;
--	u64 nr_samples;
- 	struct perf_session *session = rep->session;
- 	struct perf_evsel *pos;
- 	struct perf_data_file *file = session->file;
-@@ -572,12 +574,12 @@ static int __cmd_report(struct report *rep)
- 		}
- 	}
- 
--	nr_samples = report__collapse_hists(rep);
-+	report__collapse_hists(rep);
- 
- 	if (session_done())
- 		return 0;
- 
--	if (nr_samples == 0) {
-+	if (rep->nr_entries == 0) {
- 		ui__error("The %s file has no samples!\n", file->path);
- 		return 0;
- 	}
+ 	return strlen(buf);
 -- 
-1.8.3.1
+2.0.0.rc0.26.g779792a
 
