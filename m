@@ -1,176 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756550AbaDXL7O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:59:14 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46300 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753360AbaDXIwU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:20 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 017/182] s390/cio: fix driver callback initialization for ccw consoles
-Date: Thu, 24 Apr 2014 09:49:02 +0100
-Message-Id: <1398329507-5911-18-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1756761AbaDXL71 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:59:27 -0400
+Received: from mout.gmx.net ([212.227.17.21]:55874 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753411AbaDXL7T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 07:59:19 -0400
+Date: Thu, 24 Apr 2014 13:59:10 +0200
+From: Marc Dietrich <marvin24@gmx.de>
+To: jaegeuk.kim@samsung.com
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: f2fs causes system stall
+Message-Id: <20140424135910.f095d63eafdf136cc8851114@gmx.de>
+In-Reply-To: <1398297270.4283.19.camel@kjgkr>
+References: <2601952.jk1l5iHOJT@ax5200p>
+	<1398297270.4283.19.camel@kjgkr>
+X-Mailer: Sylpheed 3.4.0beta7 (GTK+ 2.24.23; arm-unknown-linux-gnueabihf)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Provags-ID: V03:K0:xcI3iKY8U4Mx6VrgawiH4AAQ8SiOtgEVLkCPsJ111Vf8B1zRsd4
+ JLtNDFNvjXYznwUa5qaM8kGW7R0F0ya/jHw5YWKTD42Bh0E3q6G0/dMTzsBd0WAAjqS6eT5
+ xp9n5ltHv+2/2CVdM+2PB2Efk+S3Qx1l30SJI3LLiaaXhP6CUEwjOQTuip+b9SqTi81+ViO
+ uZ8nAPiHcUi5oHtcZvBXA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+Hi,
 
-------------------
+On Thu, 24 Apr 2014 08:54:30 +0900
+Jaegeuk Kim <jaegeuk.kim@samsung.com> wrote:
+> Thank you for the report.
+> When I veiwed the patch at a glance, it seems that reverting is not a
+> good way.
+> 
+> Instead, could you share the f2fs commit point that you're using?
+> Then, since I have a suspect for this issue, I'd like to write a patch
+> to test.
 
-From: Sebastian Ott <sebott@linux.vnet.ibm.com>
+patch against linus master is ok for me. I'm happy to test your patch.
 
-commit 2253e8d79237c69086ded391e6767afe16972527 upstream.
+> 2014-04-24 (목), 00:00 +0200, Marc Dietrich:
+> > Hi,
+> > 
+> > it took me a while to bisect a problem which causes my ARM (tegra2) netbook to 
+> > frequently stall for 5-10 seconds when I enable EXA acceleration (opentegra 
+> > experimental ddx). I can only guess that the offending commit 8618b88 "f2fs: 
+> > fix not to write data pages on the page reclaiming path" somehow causes high 
+> > kernel latencies which may interrupt/disturb the command stream to the gpu in 
+> > this particular case. Reverting this commit fixes the problem. Any hints?
 
-ccw consoles are in use before they can be properly registered with
-the driver core. For devices which are in use by a device driver we
-rely on the ccw_device's pointer to the driver callbacks to be valid.
-For ccw consoles this pointer is NULL until they are registered later
-during boot and we dereferenced this pointer. This worked by
-chance on 64 bit builds (cdev->drv was NULL but the optional callback
-cdev->drv->path_event was also NULL by coincidence) and was unnoticed
-until we received reports about boot failures on 31 bit systems.
-Fix it by initializing the driver pointer for ccw consoles.
+Regards,
 
-Reported-by: Mike Frysinger <vapier@gentoo.org>
-Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Reviewed-by: Peter Oberparleiter <oberpar@linux.vnet.ibm.com>
-Signed-off-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/s390/include/asm/ccwdev.h |  2 +-
- drivers/s390/char/con3215.c    |  2 +-
- drivers/s390/char/con3270.c    |  6 +-----
- drivers/s390/char/raw3270.c    | 10 +++++++++-
- drivers/s390/char/raw3270.h    |  2 +-
- drivers/s390/cio/device.c      |  3 ++-
- 6 files changed, 15 insertions(+), 10 deletions(-)
-
-diff --git a/arch/s390/include/asm/ccwdev.h b/arch/s390/include/asm/ccwdev.h
-index f201af8..31b5ca8 100644
---- a/arch/s390/include/asm/ccwdev.h
-+++ b/arch/s390/include/asm/ccwdev.h
-@@ -219,7 +219,7 @@ extern void ccw_device_get_id(struct ccw_device *, struct ccw_dev_id *);
- #define to_ccwdev(n) container_of(n, struct ccw_device, dev)
- #define to_ccwdrv(n) container_of(n, struct ccw_driver, driver)
- 
--extern struct ccw_device *ccw_device_probe_console(void);
-+extern struct ccw_device *ccw_device_probe_console(struct ccw_driver *);
- extern void ccw_device_wait_idle(struct ccw_device *);
- extern int ccw_device_force_console(struct ccw_device *);
- 
-diff --git a/drivers/s390/char/con3215.c b/drivers/s390/char/con3215.c
-index eb5d227..bb86494 100644
---- a/drivers/s390/char/con3215.c
-+++ b/drivers/s390/char/con3215.c
-@@ -922,7 +922,7 @@ static int __init con3215_init(void)
- 		raw3215_freelist = req;
- 	}
- 
--	cdev = ccw_device_probe_console();
-+	cdev = ccw_device_probe_console(&raw3215_ccw_driver);
- 	if (IS_ERR(cdev))
- 		return -ENODEV;
- 
-diff --git a/drivers/s390/char/con3270.c b/drivers/s390/char/con3270.c
-index 699fd3e..bb6b0df 100644
---- a/drivers/s390/char/con3270.c
-+++ b/drivers/s390/char/con3270.c
-@@ -576,7 +576,6 @@ static struct console con3270 = {
- static int __init
- con3270_init(void)
- {
--	struct ccw_device *cdev;
- 	struct raw3270 *rp;
- 	void *cbuf;
- 	int i;
-@@ -591,10 +590,7 @@ con3270_init(void)
- 		cpcmd("TERM AUTOCR OFF", NULL, 0, NULL);
- 	}
- 
--	cdev = ccw_device_probe_console();
--	if (IS_ERR(cdev))
--		return -ENODEV;
--	rp = raw3270_setup_console(cdev);
-+	rp = raw3270_setup_console();
- 	if (IS_ERR(rp))
- 		return PTR_ERR(rp);
- 
-diff --git a/drivers/s390/char/raw3270.c b/drivers/s390/char/raw3270.c
-index 24a08e8..651d1f5 100644
---- a/drivers/s390/char/raw3270.c
-+++ b/drivers/s390/char/raw3270.c
-@@ -776,16 +776,24 @@ raw3270_setup_device(struct ccw_device *cdev, struct raw3270 *rp, char *ascebc)
- }
- 
- #ifdef CONFIG_TN3270_CONSOLE
-+/* Tentative definition - see below for actual definition. */
-+static struct ccw_driver raw3270_ccw_driver;
-+
- /*
-  * Setup 3270 device configured as console.
-  */
--struct raw3270 __init *raw3270_setup_console(struct ccw_device *cdev)
-+struct raw3270 __init *raw3270_setup_console(void)
- {
-+	struct ccw_device *cdev;
- 	unsigned long flags;
- 	struct raw3270 *rp;
- 	char *ascebc;
- 	int rc;
- 
-+	cdev = ccw_device_probe_console(&raw3270_ccw_driver);
-+	if (IS_ERR(cdev))
-+		return ERR_CAST(cdev);
-+
- 	rp = kzalloc(sizeof(struct raw3270), GFP_KERNEL | GFP_DMA);
- 	ascebc = kzalloc(256, GFP_KERNEL);
- 	rc = raw3270_setup_device(cdev, rp, ascebc);
-diff --git a/drivers/s390/char/raw3270.h b/drivers/s390/char/raw3270.h
-index 7b73ff8..359276a 100644
---- a/drivers/s390/char/raw3270.h
-+++ b/drivers/s390/char/raw3270.h
-@@ -190,7 +190,7 @@ raw3270_put_view(struct raw3270_view *view)
- 		wake_up(&raw3270_wait_queue);
- }
- 
--struct raw3270 *raw3270_setup_console(struct ccw_device *cdev);
-+struct raw3270 *raw3270_setup_console(void);
- void raw3270_wait_cons_dev(struct raw3270 *);
- 
- /* Notifier for device addition/removal */
-diff --git a/drivers/s390/cio/device.c b/drivers/s390/cio/device.c
-index 1ab5f6c..8d04a9a 100644
---- a/drivers/s390/cio/device.c
-+++ b/drivers/s390/cio/device.c
-@@ -1610,7 +1610,7 @@ out_unlock:
- 	return rc;
- }
- 
--struct ccw_device *ccw_device_probe_console(void)
-+struct ccw_device *ccw_device_probe_console(struct ccw_driver *drv)
- {
- 	struct io_subchannel_private *io_priv;
- 	struct ccw_device *cdev;
-@@ -1632,6 +1632,7 @@ struct ccw_device *ccw_device_probe_console(void)
- 		kfree(io_priv);
- 		return cdev;
- 	}
-+	cdev->drv = drv;
- 	set_io_private(sch, io_priv);
- 	ret = ccw_device_console_enable(cdev, sch);
- 	if (ret) {
--- 
-1.9.1
-
+Marc
