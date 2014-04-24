@@ -1,182 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832AbaDXK0a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:26:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21072 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754548AbaDXK0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:26:25 -0400
-Date: Thu, 24 Apr 2014 12:26:23 +0200
-From: Karel Zak <kzak@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        util-linux@vger.kernel.org
-Subject: [ANNOUNCE] util-linux v2.24.2
-Message-ID: <20140424102623.GF2405@x2.net.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S1755735AbaDXK0v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:26:51 -0400
+Received: from xavier.telenet-ops.be ([195.130.132.52]:49005 "EHLO
+	xavier.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975AbaDXK0s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 06:26:48 -0400
+From: Geert Uytterhoeven <geert+renesas@glider.be>
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
+        linux-sh@vger.kernel.org, devicetree@vger.kernel.org,
+        Geert Uytterhoeven <geert+renesas@glider.be>
+Subject: [PATCH 5/6] drivers: sh: Use generic runtime and clock helpers
+Date: Thu, 24 Apr 2014 12:26:37 +0200
+Message-Id: <1398335198-26555-6-git-send-email-geert+renesas@glider.be>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398335198-26555-1-git-send-email-geert+renesas@glider.be>
+References: <1398335198-26555-1-git-send-email-geert+renesas@glider.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
+---
+This depends on "drivers: sh: pm_runtime does not need idle callback" and
+"drivers: sh: pm_runtime implementation needs to suspend and resume devices"
+---
+ drivers/sh/pm_runtime.c |   38 ++------------------------------------
+ 1 file changed, 2 insertions(+), 36 deletions(-)
 
- The util-linux stable bugfix release v2.23.2 is available at
-
-   ftp://ftp.kernel.org/pub/linux/utils/util-linux/v2.24
-
- Feedback and bug reports, as always, are welcomed.
-
-  Karel
-
-
-Util-linux 2.24.2 Release Notes
-===============================
-
-addpart:
-   - minor man page improvements  [Ondrej Oprala]
-blockdev:
-   - Some minor corrections to the manual  [Bjarni Ingi Gislason]
-build-sys:
-   - don't connect _DEPENDENCIES and _LIBADD  [Karel Zak]
-   - fix .h.in usage in libblkid and libmount  [Karel Zak]
-   - libmount/python/__init__.py is always a dist file  [Ruediger Meier]
-chcpu:
-   - cleanup return codes  [Karel Zak]
-   - cleanup stdout/stderr usage  [Karel Zak]
-delpart:
-   - minor man page improvements  [Ondrej Oprala]
-dmesg:
-   - -w output not line-buffered  [Karel Zak]
-   - don't report EPIPE  [Karel Zak]
-docs:
-   - update AUTHORS file  [Karel Zak]
-fallocate:
-   - Clarify that space can also be deallocated  [Rodrigo Campos]
-fdformat:
-   - Some minor change to the manual  [Bjarni Ingi Gislason]
-fdisk:
-   - don't colorize "foo " prefixes  [Karel Zak]
-flock:
-   - use nfs4 fallback on EBADF too  [Karel Zak]
-fsck:
-   - Some typographical corrections to the manual  [Bjarni Ingi Gislason]
-fsck.minix:
-   - A few typographical corrections to the manual  [Bjarni Ingi Gislason]
-fstrim:
-   - add hint to man page  [Karel Zak]
-getopt:
-   - getopt.1 The usual doc dir is /usr/share/doc, not .../docs  [Ville Skyttä]
-hwclock:
-   - fix possible hang and other set_hardware_clock_exact() issues  [Chris MacGregor]
-include/closestream:
-   - don't wipe errno on EPIPE  [Karel Zak]
-ipcs:
-   - cleanup jumplabel stlyes  [Ruediger Meier]
-   - fix ipc_msg_get_info fallback case  [Ruediger Meier]
-   - fix ipc_sem_get_info fallback case  [Ruediger Meier]
-   - fix ipc_shm_get_info fallback case  [Ruediger Meier]
-   - fix memleak in ipc_*_get_info functions  [Ruediger Meier]
-isosize:
-   - A few typographical changes to the manual  [Bjarni Ingi Gislason]
-last:
-   - fix minor typos in the man page  [Ondrej Oprala]
-lib/sysfs:
-   - make dirent d_type usage more robust  [Karel Zak]
-libblkid:
-   - add extra checks to XFS prober  [Karel Zak]
-libfdisk:
-   - fix logical partition reorder command  [Karel Zak]
-   - make qsort_r() optional  [Karel Zak]
-   - properly implement read-only mode  [Karel Zak]
-libmount:
-   - FS id and parent ID could be zero  [Karel Zak]
-   - accept (deleted) path suffix in mountinfo file  [Karel Zak]
-   - initialize *root to NULL in mnt_table_get_root_fs  [Thomas Bächler]
-login:
-   - fix minor typos in the man page  [Ondrej Oprala]
-losetup:
-   - wait for udev  [Karel Zak]
-lscpu:
-   - cleanup, use _PATH_SYS_CPU/NODE  [Ruediger Meier]
-   - don't abort if cache size is unknown  [Ruediger Meier]
-   - don't assume filesystem supports d_type when searching for NUMA nodes  [Stewart Smith]
-   - read_hypervisor_dmi  only fallback to memory scan on x86/x86_64  [Stewart Smith]
-mkfs:
-   - Some typographical changes to the manual  [Bjarni Ingi Gislason]
-mkfs.bfs:
-   - One typographical correction to the manual  [Bjarni Ingi Gislason]
-mkfs.cramfs:
-   - Some typographical corrections to the manual  [Bjarni Ingi Gislason]
-mkfs.minix:
-   - Some typographical changes in the manual  [Bjarni Ingi Gislason]
-mkswap:
-   - Some minor typographical corrections to the manual  [Bjarni Ingi Gislason]
-more:
-   - improve formatting and wording of man page and help text  [Benno Schulenberg]
-mount:
-   - apply "nofail" to MNT_ERR_NOSOURCE libmount error  [Karel Zak]
-   - fix --all and nofail return code  [Karel Zak]
-   - mount.8 Some typographical and prefix corrections to the manual  [Bjarni Ingi Gislason]
-   - remove obsolete and confusing statement from mount.8  [Phillip Susi]
-   - update mount.8 about barrier mount options defaults  [Ruediger Meier]
-nologin:
-   - minor man page improvements  [Ondrej Oprala]
-nsenter:
-   - fix set{gid,uid} order,drop supplementary groups  [Karel Zak]
-partx:
-   - Improve the typesetting of the manual  [Bjarni Ingi Gislason]
-   - make dirent d_type usage more robust  [Karel Zak]
-po:
-   - merge changes  [Karel Zak]
-   - update cs.po (from translationproject.org)  [Petr Písař]
-   - update da.po (from translationproject.org)  [Joe Hansen]
-   - update de.po (from translationproject.org)  [Mario Blättermann]
-raw:
-   - Improve the typesetting of the manual  [Bjarni Ingi Gislason]
-renice:
-   - correct max priority in renice man page  [Phillip Susi]
-runuser:
-   - fix minor typos in the man page  [Ondrej Oprala]
-script:
-   - Also flush writes to timing file.  [Jesper Dahl Nyerup]
-   - time from end of read() call partially fixes #58  [Wolfgang Richter]
-scriptreplay:
-   - no need to skip first time value or last bytes fixes #58  [Wolfgang Richter]
-setarch:
-   - Fix ppc64le architectures  [Anton Blanchard]
-setpriv:
-   - Fix --apparmor-profile  [Andy Lutomirski]
-su:
-   - don't use kill(0, ...) when propagate signal  [Karel Zak]
-   - fix minor typos in the man page  [Ondrej Oprala]
-sulogin:
-   - minor man page improvements  [Ondrej Oprala]
-swaplabel:
-   - Improve the typesetting of the manual  [Bjarni Ingi Gislason]
-   - wrong version number in check  [Sami Kerola]
-switch_root:
-   - make dirent d_type usage more robust  [Karel Zak]
-   - verify initramfs by f_type, not devno  [Dave Reisner]
-tests:
-   - add fdisk 'f' command MBR test  [Karel Zak]
-   - add lscpu dump for ppc cpu with no cache size  [Ruediger Meier]
-   - clean up backport  [Karel Zak]
-   - cleanup, remove unused lscpu output  [Ruediger Meier]
-   - update Py parse mountinfo test  [Karel Zak]
-   - update libmount tabdiff tests  [Karel Zak]
-   - use old output format  [Karel Zak]
-umount:
-   - fix typo in usage  [Jonathan Liu]
-   - more robust success message for --all  [Karel Zak]
-unshare:
-   - include libmount.h to provide missing MS_* defines  [Ruediger Meier]
-utmpdump:
-   - minor man page improvements  [Ondrej Oprala]
-vipw:
-   - minor man page improvements  [Ondrej Oprala]
-
+diff --git a/drivers/sh/pm_runtime.c b/drivers/sh/pm_runtime.c
+index f0c4a384d49f..05b719637dd4 100644
+--- a/drivers/sh/pm_runtime.c
++++ b/drivers/sh/pm_runtime.c
+@@ -11,7 +11,6 @@
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+ #include <linux/io.h>
+-#include <linux/pm_runtime.h>
+ #include <linux/pm_domain.h>
+ #include <linux/pm_clock.h>
+ #include <linux/platform_device.h>
+@@ -21,43 +20,10 @@
+ #include <linux/slab.h>
+ 
+ #ifdef CONFIG_PM_RUNTIME
+-static int sh_pm_runtime_suspend(struct device *dev)
+-{
+-	int ret;
+-
+-	ret = pm_generic_runtime_suspend(dev);
+-	if (ret) {
+-		dev_err(dev, "failed to suspend device\n");
+-		return ret;
+-	}
+-
+-	ret = pm_clk_suspend(dev);
+-	if (ret) {
+-		dev_err(dev, "failed to suspend clock\n");
+-		pm_generic_runtime_resume(dev);
+-		return ret;
+-	}
+-
+-	return 0;
+-}
+-
+-static int sh_pm_runtime_resume(struct device *dev)
+-{
+-	int ret;
+-
+-	ret = pm_clk_resume(dev);
+-	if (ret) {
+-		dev_err(dev, "failed to resume clock\n");
+-		return ret;
+-	}
+-
+-	return pm_generic_runtime_resume(dev);
+-}
+-
+ static struct dev_pm_domain default_pm_domain = {
+ 	.ops = {
+-		.runtime_suspend = sh_pm_runtime_suspend,
+-		.runtime_resume = sh_pm_runtime_resume,
++		.runtime_suspend = pm_generic_runtime_clk_suspend,
++		.runtime_resume = pm_generic_clk_runtime_resume,
+ 		USE_PLATFORM_PM_SLEEP_OPS
+ 	},
+ };
 -- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+1.7.9.5
+
