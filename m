@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630AbaDXVwE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:52:04 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39736 "EHLO
+	id S1755454AbaDXVqP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:46:15 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39546 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755466AbaDXVqQ (ORCPT
+	with ESMTP id S1754852AbaDXVp6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:16 -0400
+	Thu, 24 Apr 2014 17:45:58 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Eric Whitney <enwlinux@gmail.com>, "Theodore Tso" <tytso@mit.edu>
-Subject: [PATCH 3.10 12/23] ext4: fix partial cluster handling for bigalloc file systems
-Date: Thu, 24 Apr 2014 14:48:42 -0700
-Message-Id: <20140424214827.412404496@linuxfoundation.org>
+        Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.14 07/33] ACPI / button: Add ACPI Button event via netlink routine
+Date: Thu, 24 Apr 2014 14:48:20 -0700
+Message-Id: <20140424214450.532547836@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
-References: <20140424214825.933835556@linuxfoundation.org>
+In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
+References: <20140424214449.423169713@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -24,68 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Eric Whitney <enwlinux@gmail.com>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit c06344939422bbd032ac967223a7863de57496b5 upstream.
+commit 0bf6368ee8f25826d0645c0f7a4f17c8845356a4 upstream.
 
-Commit 9cb00419fa, which enables hole punching for bigalloc file
-systems, exposed a bug introduced by commit 6ae06ff51e in an earlier
-release.  When run on a bigalloc file system, xfstests generic/013, 068,
-075, 083, 091, 100, 112, 127, 263, 269, and 270 fail with e2fsck errors
-or cause kernel error messages indicating that previously freed blocks
-are being freed again.
+Commit 1696d9d (ACPI: Remove the old /proc/acpi/event interface)
+removed ACPI Button event which originally was sent to userspace via
+/proc/acpi/event. This caused ACPI shutdown regression on gentoo
+in VirtualBox. Now ACPI events are sent to userspace via netlink,
+so add ACPI Button event back via netlink routine.
 
-The latter commit optimizes the selection of the starting extent in
-ext4_ext_rm_leaf() when hole punching by beginning with the extent
-supplied in the path argument rather than with the last extent in the
-leaf node (as is still done when truncating).  However, the code in
-rm_leaf that initially sets partial_cluster to track cluster sharing on
-extent boundaries is only guaranteed to run if rm_leaf starts with the
-last node in the leaf.  Consequently, partial_cluster is not correctly
-initialized when hole punching, and a cluster on the boundary of a
-punched region that should be retained may instead be deallocated.
-
-Signed-off-by: Eric Whitney <enwlinux@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=71721
+Reported-and-tested-by: Richard Musil <richard.musil@gmail.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ext4/extents.c |   21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ drivers/acpi/button.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2511,6 +2511,27 @@ ext4_ext_rm_leaf(handle_t *handle, struc
- 	ex_ee_block = le32_to_cpu(ex->ee_block);
- 	ex_ee_len = ext4_ext_get_actual_len(ex);
+--- a/drivers/acpi/button.c
++++ b/drivers/acpi/button.c
+@@ -302,6 +302,10 @@ static void acpi_button_notify(struct ac
+ 			input_sync(input);
  
-+	/*
-+	 * If we're starting with an extent other than the last one in the
-+	 * node, we need to see if it shares a cluster with the extent to
-+	 * the right (towards the end of the file). If its leftmost cluster
-+	 * is this extent's rightmost cluster and it is not cluster aligned,
-+	 * we'll mark it as a partial that is not to be deallocated.
-+	 */
-+
-+	if (ex != EXT_LAST_EXTENT(eh)) {
-+		ext4_fsblk_t current_pblk, right_pblk;
-+		long long current_cluster, right_cluster;
-+
-+		current_pblk = ext4_ext_pblock(ex) + ex_ee_len - 1;
-+		current_cluster = (long long)EXT4_B2C(sbi, current_pblk);
-+		right_pblk = ext4_ext_pblock(ex + 1);
-+		right_cluster = (long long)EXT4_B2C(sbi, right_pblk);
-+		if (current_cluster == right_cluster &&
-+			EXT4_PBLK_COFF(sbi, right_pblk))
-+			*partial_cluster = -right_cluster;
-+	}
-+
- 	trace_ext4_ext_rm_leaf(inode, start, ex, *partial_cluster);
- 
- 	while (ex >= EXT_FIRST_EXTENT(eh) &&
+ 			pm_wakeup_event(&device->dev, 0);
++			acpi_bus_generate_netlink_event(
++					device->pnp.device_class,
++					dev_name(&device->dev),
++					event, ++button->pushed);
+ 		}
+ 		break;
+ 	default:
 
 
