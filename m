@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541AbaDXKaz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:30:55 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:44896 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752988AbaDXKav (ORCPT
+	id S1755729AbaDXKcn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:32:43 -0400
+Received: from prifuk.cz ([31.31.77.140]:49703 "EHLO smtp.devoid-pointer.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753550AbaDXKcf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:30:51 -0400
-Date: Thu, 24 Apr 2014 11:30:59 +0100
-From: Morten Rasmussen <morten.rasmussen@arm.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: "mingo@kernel.org" <mingo@kernel.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "daniel.lezcano@linaro.org" <daniel.lezcano@linaro.org>,
-        "alex.shi@linaro.org" <alex.shi@linaro.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "efault@gmx.de" <efault@gmx.de>,
-        "vincent.guittot@linaro.org" <vincent.guittot@linaro.org>,
-        "aswin@hp.com" <aswin@hp.com>,
-        "chegu_vinod@hp.com" <chegu_vinod@hp.com>
-Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
- balance if there are runnable tasks
-Message-ID: <20140424103059.GL2500@e103034-lin>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
- <1398303035-18255-4-git-send-email-jason.low2@hp.com>
+	Thu, 24 Apr 2014 06:32:35 -0400
+From: Michal =?ISO-8859-1?Q?Mal=FD?= <madcatxster@devoid-pointer.net>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        dmitry.torokhov@gmail.com, jkosina@suse.cz, elias.vds@gmail.com,
+        anssi.hannula@iki.fi, simon@mungewell.org
+Subject: Re: [PATCH v2 09/24] input: Port hid-dr to ff-memless-next
+Date: Thu, 24 Apr 2014 12:32:28 +0200
+Message-ID: <2156054.MZkXeC543k@sigyn>
+User-Agent: KMail/4.13 (Linux/3.14.1-1-my-rd; KDE/4.13.0; x86_64; ; )
+In-Reply-To: <1398260463.32091.5.camel@linux-fkkt.site>
+References: <1398175209-9565-1-git-send-email-madcatxster@devoid-pointer.net> <1398175209-9565-10-git-send-email-madcatxster@devoid-pointer.net> <1398260463.32091.5.camel@linux-fkkt.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398303035-18255-4-git-send-email-jason.low2@hp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 02:30:35AM +0100, Jason Low wrote:
-> @@ -6704,7 +6703,12 @@ static int idle_balance(struct rq *this_rq)
->  		interval = msecs_to_jiffies(sd->balance_interval);
->  		if (time_after(next_balance, sd->last_balance + interval))
->  			next_balance = sd->last_balance + interval;
-> -		if (pulled_task)
-> +
-> +		/*
-> +		 * Stop searching for tasks to pull if there are
-> +		 * now runnable tasks on this rq.
-> +		 */
-> +		if (pulled_task || this_rq->nr_running > 0)
+On Wednesday 23 of April 2014 15:41:03 Oliver Neukum wrote:
+> On Tue, 2014-04-22 at 15:59 +0200, Michal Malý wrote:
+> >  static int drff_play(struct input_dev *dev, void *data,
+> > 
+> > -                                struct ff_effect *effect)
+> > +                       const struct mlnx_effect_command *command)
+> > 
+> >  {
+> >  
+> >         struct hid_device *hid = input_get_drvdata(dev);
+> >         struct drff_device *drff = data;
+> > 
+> > +       const struct mlnx_rumble_force *rumble_force =
+> > &command->u.rumble_force;
+> > 
+> >         int strong, weak;
+> > 
+> > -       strong = effect->u.rumble.strong_magnitude;
+> > -       weak = effect->u.rumble.weak_magnitude;
+> > +       strong = rumble_force->strong;
+> > +       weak = rumble_force->weak;
+> > 
+> >         dbg_hid("called with 0x%04x 0x%04x", strong, weak);
+> > 
+> > -       if (strong || weak) {
+> > -               strong = strong * 0xff / 0xffff;
+> > -               weak = weak * 0xff / 0xffff;
+> > -
+> > -               /* While reverse engineering this device, I found that
+> > when
+> > -                  this value is set, it causes the strong rumble to
+> > function
+> > -                  at a near maximum speed, so we'll bypass it. */
+> > -               if (weak == 0x0a)
+> > -                       weak = 0x0b;
+> > -
+> > -               drff->report->field[0]->value[0] = 0x51;
+> > -               drff->report->field[0]->value[1] = 0x00;
+> > -               drff->report->field[0]->value[2] = weak;
+> > -               drff->report->field[0]->value[4] = strong;
+> > -               hid_hw_request(hid, drff->report, HID_REQ_SET_REPORT);
+> > -
+> > -               drff->report->field[0]->value[0] = 0xfa;
+> > -               drff->report->field[0]->value[1] = 0xfe;
+> > -       } else {
+> > +       switch (command->cmd) {
+> > +       case MLNX_START_RUMBLE:
+> > +               if (strong || weak) {
+> > +                       strong = strong * 0xff / 0xffff;
+> > +                       weak = weak * 0xff / 0xffff;
+> > +
+> > +                       /* While reverse engineering this device, I
+> > found that when
+> > +                       this value is set, it causes the strong rumble
+> > to function
+> > +                       at a near maximum speed, so we'll bypass it.
+> > */
+> > +                       if (weak == 0x0a)
+> > +                               weak = 0x0b;
+> > +
+> > +                       drff->report->field[0]->value[0] = 0x51;
+> > +                       drff->report->field[0]->value[1] = 0x00;
+> > +                       drff->report->field[0]->value[2] = weak;
+> > +                       drff->report->field[0]->value[4] = strong;
+> 
+> This looks like an endianness bug.
 
-Should this be cfs tasks instead?
+I don't have a big endian machine to check but why would this be an endianness 
+issue? We're dealing with values all the time here, not addresses so I'd 
+expect the 'weak' and 'strong' values to be truncated if they won't fit into 
+byte. Division done beforehand makes sure that the values are within <0; 255> 
+range. As far as I can see this is quite common in the HID and Input code. Am 
+I missing something here?
 
-+		if (pulled_task || this_rq->cfs.h_nr_running > 0)
-
-3.15-rc2 commit 35805ff8f4fc535ac85330170d3c56829c87c677 seems to
-indicate that using rq->nr_running may lead to trouble.
-
-The other two patches look good to me.
-
-Morten
+Thanks,
+Michal
