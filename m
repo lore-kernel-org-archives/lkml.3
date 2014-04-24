@@ -1,125 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751612AbaDXGCv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 02:02:51 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:36616 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751168AbaDXGCs (ORCPT
+	id S1751810AbaDXGDh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 02:03:37 -0400
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:55689 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751724AbaDXGDE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 02:02:48 -0400
+	Thu, 24 Apr 2014 02:03:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <201404221559.37560.arnd@arndb.de>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
-	<1397845149-3141-1-git-send-email-lftan@altera.com>
-	<1397845149-3141-3-git-send-email-lftan@altera.com>
-	<201404221559.37560.arnd@arndb.de>
-Date: Thu, 24 Apr 2014 14:02:47 +0800
-X-Google-Sender-Auth: JkQpXomdDK2dwdKyHvhWqTe-F20
-Message-ID: <CAFiDJ5_79UoFS0bbgyd6htRELXpsF4bD091Bg1EVsocXt76NEw@mail.gmail.com>
-Subject: Re: [PATCH 07/28] nios2: I/O Mapping
-From: Ley Foon Tan <lftan@altera.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
+X-Originating-IP: [84.73.67.144]
+In-Reply-To: <20140424055023.GA31221@nuc-i3427.alporthouse.com>
+References: <20140423202248.GA3621@amd.pavel.ucw.cz>
+	<CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
+	<20140423220952.GA3627@amd.pavel.ucw.cz>
+	<20140424055023.GA31221@nuc-i3427.alporthouse.com>
+Date: Thu, 24 Apr 2014 08:03:04 +0200
+Message-ID: <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
+Subject: Re: 3.15-rc2: i915 regression: only top 20% of screen works in X
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+To: Chris Wilson <chris@chris-wilson.co.uk>, Pavel Machek <pavel@ucw.cz>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jikos@jikos.cz>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 9:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Friday 18 April 2014, Ley Foon Tan wrote:
+On Thu, Apr 24, 2014 at 7:50 AM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> That says that i915.ko failed to initialise the GPU (or rather the GPU
+> wasn't responding) and bailed during module load. The key line here is
 >
->> +
->> +#include <asm/pgtable-bits.h>
->> +
->> +#define IO_SPACE_LIMIT 0xffffffff
+> [drm:init_ring_common] *ERROR* render ring initialization failed ctl
+> 0001f001 head 00002034 tail 00000000 start 0012f000
 >
-> Please use 0xffff here, this should work for almost any PCI bus.
-Ah, CONFIG_PCI is not enable in nios2. So, I think IO_SPACE_LIMIT
-should set to 0.
+> Jiri has been seeing a similar issue creep in during resume, but it is
+> not reliable enough to bisect. Is your boot failure reliable enough to
+> bisect? Also drm-intel-nightly should mitigate this failure and allow
+> i915.ko to continue to load and run X, which would be worth testing to
+> make sure that works as intended.
 
+Oh right, g4x going beserk :( Apparently something changed in 3.15
+somewhere which made this much more likely, but like Chris said in
+Jiri's case it's too unreliable to reproduce for a bisect. We've had
+this come&go pretty much ever since kms support was merged and never
+tracked it down.
 
->> +
->> +/* Use "Duff's Device" to unroll the loops. */
->> +#define __IO_OUT_LOOP(a, b, l)                               \
->> +     do {                                            \
->> +             if (l > 0) {                            \
->> +                     int _n = (l + 7) / 8;           \
->> +                     switch (l % 8) {                \
->> +                     case 0:                         \
->> +                             do {                    \
->> +                                     *a = *b++;      \
->
-> I would recommend just doing all of this in out-of-line implementations
-> rather than macros and inline functions.
-Okay. Will move the macros to out-of-line function.
+The bug is https://bugs.freedesktop.org/show_bug.cgi?id=76554
 
+Like Chris said please test latest drm-intel-nighlty from
+http://cgit.freedesktop.org/drm-intel to make sure that the recently
+merged mitigation measures work properly. But those won't get your gpu
+back, only the display and it's only for 3.16. We're still hunting a
+proper fix for 3.15.
 
->
->> +
->> +/*
->> + *   make the short names macros so specific devices
->> + *   can override them as required
->> + */
->> +#define inb(addr)            readb(addr)
->> +#define inw(addr)            readw(addr)
->> +#define inl(addr)            readl(addr)
->> +#define outb(x, addr)                ((void) writeb(x, addr))
->> +#define outw(x, addr)                ((void) writew(x, addr))
->> +#define outl(x, addr)                ((void) writel(x, addr))
->
-> This makes no sense: the legacy PC I/O accessors take a completely
-> different argument type: I would recommend to make both inline
-> functions so you can ensure that readl() gets passed an __iomem
-> pointer, while inl() gets an integer number.
->
-> Please see the asm-generic version for an example. You should also
-> define a non-NULL PCI_IOBASE to which the PCI I/O space gets mapped.
-I think these macros can be removed if PCI is not enabled in Nios2.
-
->
->> +#define virt_to_bus virt_to_phys
->> +#define bus_to_virt phys_to_virt
->
-> Please drop these, and the CONFIG_VIRT_TO_BUS Kconfig option,
-> and fix all drivers that rely on it.
-Okay. Will remove these.
-
->
->> +#define ioport_map(port, nr) ioremap(port, nr)
->> +#define ioport_unmap(port)   iounmap(port)
->
-> Use this one instead:
->
-> #ifdef CONFIG_PCI
-> static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
-> {
->         return PCI_IOBASE + port;
-> }
->
-> static inline void __iomem *ioport_unmap(void __iomem *)
-> {
-> }
-> #endif
-These also can be removed.
-
->
->> +/* Macros used for smc91x.c driver */
->> +#define readsb(p, d, l)              insb(p, d, l)
->> +#define readsw(p, d, l)              insw(p, d, l)
->> +#define readsl(p, d, l)              insl(p, d, l)
->> +#define writesb(p, d, l)     outsb(p, d, l)
->> +#define writesw(p, d, l)     outsw(p, d, l)
->> +#define writesl(p, d, l)     outsl(p, d, l)
->
-> These should of course not fall back to the PCI I/O space functions.
-> You can do it the other way round.
-Okay, these will change to something like:
-#define readsb(p, d, l)              io_insb(p, d, l)
-#define readsw(p, d, l)              io_insw(p, d, l)
-(etc)
-
-Regards
-Ley Foon
+And if you can indeed reliably reproduce this a bisect could be really useful.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
