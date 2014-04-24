@@ -1,26 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755920AbaDXJQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:16:58 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47063 "EHLO
+	id S1755429AbaDXJSu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:18:50 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47046 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754975AbaDXI4J (ORCPT
+	with ESMTP id S1754943AbaDXI4F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:56:09 -0400
+	Thu, 24 Apr 2014 04:56:05 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Hurley <peter@hurleysoftware.com>,
-        Sree Harsha Totakura <sreeharsha@totakura.in>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Jeff Dike <jdike@addtoit.com>, Ingo Molnar <mingo@elte.hu>,
-        Andrey Vagin <avagin@openvz.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Chris Mason <clm@fb.com>, "David S. Miller" <davem@davemloft.net>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 136/182] exit: call disassociate_ctty() before exit_task_namespaces()
-Date: Thu, 24 Apr 2014 09:51:01 +0100
-Message-Id: <1398329507-5911-137-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 157/182] mlx4_en: don't use napi_synchronize inside mlx4_en_netpoll
+Date: Thu, 24 Apr 2014 09:51:22 +0100
+Message-Id: <1398329507-5911-158-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -33,76 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
+From: Chris Mason <clm@fb.com>
 
-commit c39df5fa37b0623589508c95515b4aa1531c524e upstream.
+commit c98235cb8584a72e95786e17d695a8e5fafcd766 upstream.
 
-Commit 8aac62706ada ("move exit_task_namespaces() outside of
-exit_notify()") breaks pppd and the exiting service crashes the kernel:
+The mlx4 driver is triggering schedules while atomic inside
+mlx4_en_netpoll:
 
-    BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-    IP: ppp_register_channel+0x13/0x20 [ppp_generic]
-    Call Trace:
-      ppp_asynctty_open+0x12b/0x170 [ppp_async]
-      tty_ldisc_open.isra.2+0x27/0x60
-      tty_ldisc_hangup+0x1e3/0x220
-      __tty_hangup+0x2c4/0x440
-      disassociate_ctty+0x61/0x270
-      do_exit+0x7f2/0xa50
+	spin_lock_irqsave(&cq->lock, flags);
+	napi_synchronize(&cq->napi);
+		^^^^^ msleep here
+	mlx4_en_process_rx_cq(dev, cq, 0);
+	spin_unlock_irqrestore(&cq->lock, flags);
 
-ppp_register_channel() needs ->net_ns and current->nsproxy == NULL.
+This was part of a patch by Alexander Guller from Mellanox in 2011,
+but it still isn't upstream.
 
-Move disassociate_ctty() before exit_task_namespaces(), it doesn't make
-sense to delay it after perf_event_exit_task() or cgroup_exit().
-
-This also allows to use task_work_add() inside the (nontrivial) code
-paths in disassociate_ctty().
-
-Investigated by Peter Hurley.
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Sree Harsha Totakura <sreeharsha@totakura.in>
-Cc: Peter Hurley <peter@hurleysoftware.com>
-Cc: Sree Harsha Totakura <sreeharsha@totakura.in>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Jeff Dike <jdike@addtoit.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Andrey Vagin <avagin@openvz.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Chris Mason <clm@fb.com>
+Acked-By: Amir Vadai <amirv@mellanox.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- kernel/exit.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/net/ethernet/mellanox/mlx4/en_cq.c     | 1 -
+ drivers/net/ethernet/mellanox/mlx4/en_netdev.c | 6 +-----
+ drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   | 1 -
+ 3 files changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/kernel/exit.c b/kernel/exit.c
-index a949819..b79d882 100644
---- a/kernel/exit.c
-+++ b/kernel/exit.c
-@@ -783,6 +783,8 @@ void do_exit(long code)
- 	exit_shm(tsk);
- 	exit_files(tsk);
- 	exit_fs(tsk);
-+	if (group_dead)
-+		disassociate_ctty(1);
- 	exit_task_namespaces(tsk);
- 	exit_task_work(tsk);
- 	check_stack_usage();
-@@ -798,13 +800,9 @@ void do_exit(long code)
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_cq.c b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
+index 3e2d504..d9303d8 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_cq.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
+@@ -55,7 +55,6 @@ int mlx4_en_create_cq(struct mlx4_en_priv *priv,
  
- 	cgroup_exit(tsk, 1);
+ 	cq->ring = ring;
+ 	cq->is_tx = mode;
+-	spin_lock_init(&cq->lock);
  
--	if (group_dead)
--		disassociate_ctty(1);
--
- 	module_put(task_thread_info(tsk)->exec_domain->module);
+ 	err = mlx4_alloc_hwq_res(mdev->dev, &cq->wqres,
+ 				cq->buf_size, 2 * PAGE_SIZE);
+diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+index fa37b7a..35d3821 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
++++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
+@@ -1219,15 +1219,11 @@ static void mlx4_en_netpoll(struct net_device *dev)
+ {
+ 	struct mlx4_en_priv *priv = netdev_priv(dev);
+ 	struct mlx4_en_cq *cq;
+-	unsigned long flags;
+ 	int i;
  
- 	proc_exit_connector(tsk);
--
- 	/*
- 	 * FIXME: do that only when needed, using sched_exit tracepoint
- 	 */
+ 	for (i = 0; i < priv->rx_ring_num; i++) {
+ 		cq = &priv->rx_cq[i];
+-		spin_lock_irqsave(&cq->lock, flags);
+-		napi_synchronize(&cq->napi);
+-		mlx4_en_process_rx_cq(dev, cq, 0);
+-		spin_unlock_irqrestore(&cq->lock, flags);
++		napi_schedule(&cq->napi);
+ 	}
+ }
+ #endif
+diff --git a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+index bf06e36..a47455f 100644
+--- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
++++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
+@@ -306,7 +306,6 @@ struct mlx4_en_cq {
+ 	struct mlx4_cq          mcq;
+ 	struct mlx4_hwq_resources wqres;
+ 	int                     ring;
+-	spinlock_t              lock;
+ 	struct net_device      *dev;
+ 	struct napi_struct	napi;
+ 	int size;
 -- 
 1.9.1
 
