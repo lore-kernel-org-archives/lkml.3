@@ -1,371 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744AbaDXMEj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:04:39 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46260 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753239AbaDXIwI (ORCPT
+	id S1756610AbaDXMFe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:05:34 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:41898 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753473AbaDXMEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:08 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 010/182] tgafb: fix data copying
-Date: Thu, 24 Apr 2014 09:48:55 +0100
-Message-Id: <1398329507-5911-11-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 08:04:38 -0400
+Date: Thu, 24 Apr 2014 14:04:15 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Jason Low <jason.low2@hp.com>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
+        alex.shi@linaro.org, efault@gmx.de, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
+ whenever newidle balance is attempted
+Message-ID: <20140424120415.GS11096@twins.programming.kicks-ass.net>
+References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
+ <1398303035-18255-2-git-send-email-jason.low2@hp.com>
+ <5358E417.8090503@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5358E417.8090503@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+On Thu, Apr 24, 2014 at 03:44:47PM +0530, Preeti U Murthy wrote:
+> What about the update of next_balance field? See the code snippet below.
+> This will also be skipped as a consequence of the commit e5fc6611 right?
+> 
+> 	   if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
+>                  /*
+>                   * We are going idle. next_balance may be set based on
+>                   * a busy processor. So reset next_balance.
+>                   */
+>                  this_rq->next_balance = next_balance;
+>          }
+> 
+> Also the comment in the above snippet does not look right to me.
+> It says "we are going idle" but the condition checks for pulled_task.
 
-------------------
+Yeah, that's odd indeed. Ingo did that back in dd41f596cda0d, I suspect
+its an error, but..
 
-From: Mikulas Patocka <mpatocka@redhat.com>
-
-commit 6b0df6827bb6fcacb158dff29ad0a62d6418b534 upstream.
-
-The functions for data copying copyarea_foreward_8bpp and
-copyarea_backward_8bpp are buggy, they produce screen corruption.
-
-This patch fixes the functions and moves the logic to one function
-"copyarea_8bpp". For simplicity, the function only handles copying that
-is aligned on 8 pixes. If we copy an unaligned area, generic function
-cfb_copyarea is used.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/video/tgafb.c | 264 ++++++++++----------------------------------------
- 1 file changed, 51 insertions(+), 213 deletions(-)
-
-diff --git a/drivers/video/tgafb.c b/drivers/video/tgafb.c
-index d5ef3c0..d70fb71 100644
---- a/drivers/video/tgafb.c
-+++ b/drivers/video/tgafb.c
-@@ -1145,222 +1145,57 @@ copyarea_line_32bpp(struct fb_info *info, u32 dy, u32 sy,
- 	__raw_writel(TGA_MODE_SBM_24BPP|TGA_MODE_SIMPLE, tga_regs+TGA_MODE_REG);
- }
- 
--/* The general case of forward copy in 8bpp mode.  */
-+/* The (almost) general case of backward copy in 8bpp mode.  */
- static inline void
--copyarea_foreward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
--		       u32 height, u32 width, u32 line_length)
-+copyarea_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
-+	      u32 height, u32 width, u32 line_length,
-+	      const struct fb_copyarea *area)
- {
- 	struct tga_par *par = (struct tga_par *) info->par;
--	unsigned long i, copied, left;
--	unsigned long dpos, spos, dalign, salign, yincr;
--	u32 smask_first, dmask_first, dmask_last;
--	int pixel_shift, need_prime, need_second;
--	unsigned long n64, n32, xincr_first;
-+	unsigned i, yincr;
-+	int depos, sepos, backward, last_step, step;
-+	u32 mask_last;
-+	unsigned n32;
- 	void __iomem *tga_regs;
- 	void __iomem *tga_fb;
- 
--	yincr = line_length;
--	if (dy > sy) {
--		dy += height - 1;
--		sy += height - 1;
--		yincr = -yincr;
--	}
--
--	/* Compute the offsets and alignments in the frame buffer.
--	   More than anything else, these control how we do copies.  */
--	dpos = dy * line_length + dx;
--	spos = sy * line_length + sx;
--	dalign = dpos & 7;
--	salign = spos & 7;
--	dpos &= -8;
--	spos &= -8;
--
--	/* Compute the value for the PIXELSHIFT register.  This controls
--	   both non-co-aligned source and destination and copy direction.  */
--	if (dalign >= salign)
--		pixel_shift = dalign - salign;
--	else
--		pixel_shift = 8 - (salign - dalign);
--
--	/* Figure out if we need an additional priming step for the
--	   residue register.  */
--	need_prime = (salign > dalign);
--	if (need_prime)
--		dpos -= 8;
--
--	/* Begin by copying the leading unaligned destination.  Copy enough
--	   to make the next destination address 32-byte aligned.  */
--	copied = 32 - (dalign + (dpos & 31));
--	if (copied == 32)
--		copied = 0;
--	xincr_first = (copied + 7) & -8;
--	smask_first = dmask_first = (1ul << copied) - 1;
--	smask_first <<= salign;
--	dmask_first <<= dalign + need_prime*8;
--	if (need_prime && copied > 24)
--		copied -= 8;
--	left = width - copied;
--
--	/* Care for small copies.  */
--	if (copied > width) {
--		u32 t;
--		t = (1ul << width) - 1;
--		t <<= dalign + need_prime*8;
--		dmask_first &= t;
--		left = 0;
--	}
--
--	/* Attempt to use 64-byte copies.  This is only possible if the
--	   source and destination are co-aligned at 64 bytes.  */
--	n64 = need_second = 0;
--	if ((dpos & 63) == (spos & 63)
--	    && (height == 1 || line_length % 64 == 0)) {
--		/* We may need a 32-byte copy to ensure 64 byte alignment.  */
--		need_second = (dpos + xincr_first) & 63;
--		if ((need_second & 32) != need_second)
--			printk(KERN_ERR "tgafb: need_second wrong\n");
--		if (left >= need_second + 64) {
--			left -= need_second;
--			n64 = left / 64;
--			left %= 64;
--		} else
--			need_second = 0;
--	}
--
--	/* Copy trailing full 32-byte sections.  This will be the main
--	   loop if the 64 byte loop can't be used.  */
--	n32 = left / 32;
--	left %= 32;
--
--	/* Copy the trailing unaligned destination.  */
--	dmask_last = (1ul << left) - 1;
--
--	tga_regs = par->tga_regs_base;
--	tga_fb = par->tga_fb_base;
--
--	/* Set up the MODE and PIXELSHIFT registers.  */
--	__raw_writel(TGA_MODE_SBM_8BPP|TGA_MODE_COPY, tga_regs+TGA_MODE_REG);
--	__raw_writel(pixel_shift, tga_regs+TGA_PIXELSHIFT_REG);
--	wmb();
--
--	for (i = 0; i < height; ++i) {
--		unsigned long j;
--		void __iomem *sfb;
--		void __iomem *dfb;
--
--		sfb = tga_fb + spos;
--		dfb = tga_fb + dpos;
--		if (dmask_first) {
--			__raw_writel(smask_first, sfb);
--			wmb();
--			__raw_writel(dmask_first, dfb);
--			wmb();
--			sfb += xincr_first;
--			dfb += xincr_first;
--		}
--
--		if (need_second) {
--			__raw_writel(0xffffffff, sfb);
--			wmb();
--			__raw_writel(0xffffffff, dfb);
--			wmb();
--			sfb += 32;
--			dfb += 32;
--		}
--
--		if (n64 && (((unsigned long)sfb | (unsigned long)dfb) & 63))
--			printk(KERN_ERR
--			       "tgafb: misaligned copy64 (s:%p, d:%p)\n",
--			       sfb, dfb);
--
--		for (j = 0; j < n64; ++j) {
--			__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
--			wmb();
--			__raw_writel(dfb - tga_fb, tga_regs+TGA_COPY64_DST);
--			wmb();
--			sfb += 64;
--			dfb += 64;
--		}
--
--		for (j = 0; j < n32; ++j) {
--			__raw_writel(0xffffffff, sfb);
--			wmb();
--			__raw_writel(0xffffffff, dfb);
--			wmb();
--			sfb += 32;
--			dfb += 32;
--		}
--
--		if (dmask_last) {
--			__raw_writel(0xffffffff, sfb);
--			wmb();
--			__raw_writel(dmask_last, dfb);
--			wmb();
--		}
--
--		spos += yincr;
--		dpos += yincr;
-+	/* Do acceleration only if we are aligned on 8 pixels */
-+	if ((dx | sx | width) & 7) {
-+		cfb_copyarea(info, area);
-+		return;
- 	}
- 
--	/* Reset the MODE register to normal.  */
--	__raw_writel(TGA_MODE_SBM_8BPP|TGA_MODE_SIMPLE, tga_regs+TGA_MODE_REG);
--}
--
--/* The (almost) general case of backward copy in 8bpp mode.  */
--static inline void
--copyarea_backward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
--		       u32 height, u32 width, u32 line_length,
--		       const struct fb_copyarea *area)
--{
--	struct tga_par *par = (struct tga_par *) info->par;
--	unsigned long i, left, yincr;
--	unsigned long depos, sepos, dealign, sealign;
--	u32 mask_first, mask_last;
--	unsigned long n32;
--	void __iomem *tga_regs;
--	void __iomem *tga_fb;
--
- 	yincr = line_length;
- 	if (dy > sy) {
- 		dy += height - 1;
- 		sy += height - 1;
- 		yincr = -yincr;
- 	}
-+	backward = dy == sy && dx > sx && dx < sx + width;
- 
- 	/* Compute the offsets and alignments in the frame buffer.
- 	   More than anything else, these control how we do copies.  */
--	depos = dy * line_length + dx + width;
--	sepos = sy * line_length + sx + width;
--	dealign = depos & 7;
--	sealign = sepos & 7;
--
--	/* ??? The documentation appears to be incorrect (or very
--	   misleading) wrt how pixel shifting works in backward copy
--	   mode, i.e. when PIXELSHIFT is negative.  I give up for now.
--	   Do handle the common case of co-aligned backward copies,
--	   but frob everything else back on generic code.  */
--	if (dealign != sealign) {
--		cfb_copyarea(info, area);
--		return;
--	}
--
--	/* We begin the copy with the trailing pixels of the
--	   unaligned destination.  */
--	mask_first = (1ul << dealign) - 1;
--	left = width - dealign;
--
--	/* Care for small copies.  */
--	if (dealign > width) {
--		mask_first ^= (1ul << (dealign - width)) - 1;
--		left = 0;
--	}
-+	depos = dy * line_length + dx;
-+	sepos = sy * line_length + sx;
-+	if (backward)
-+		depos += width, sepos += width;
- 
- 	/* Next copy full words at a time.  */
--	n32 = left / 32;
--	left %= 32;
-+	n32 = width / 32;
-+	last_step = width % 32;
- 
- 	/* Finally copy the unaligned head of the span.  */
--	mask_last = -1 << (32 - left);
-+	mask_last = (1ul << last_step) - 1;
-+
-+	if (!backward) {
-+		step = 32;
-+		last_step = 32;
-+	} else {
-+		step = -32;
-+		last_step = -last_step;
-+		sepos -= 32;
-+		depos -= 32;
-+	}
- 
- 	tga_regs = par->tga_regs_base;
- 	tga_fb = par->tga_fb_base;
-@@ -1377,25 +1212,33 @@ copyarea_backward_8bpp(struct fb_info *info, u32 dx, u32 dy, u32 sx, u32 sy,
- 
- 		sfb = tga_fb + sepos;
- 		dfb = tga_fb + depos;
--		if (mask_first) {
--			__raw_writel(mask_first, sfb);
--			wmb();
--			__raw_writel(mask_first, dfb);
--			wmb();
--		}
- 
--		for (j = 0; j < n32; ++j) {
--			sfb -= 32;
--			dfb -= 32;
-+		for (j = 0; j < n32; j++) {
-+			if (j < 2 && j + 1 < n32 && !backward &&
-+			    !(((unsigned long)sfb | (unsigned long)dfb) & 63)) {
-+				do {
-+					__raw_writel(sfb - tga_fb, tga_regs+TGA_COPY64_SRC);
-+					wmb();
-+					__raw_writel(dfb - tga_fb, tga_regs+TGA_COPY64_DST);
-+					wmb();
-+					sfb += 64;
-+					dfb += 64;
-+					j += 2;
-+				} while (j + 1 < n32);
-+				j--;
-+				continue;
-+			}
- 			__raw_writel(0xffffffff, sfb);
- 			wmb();
- 			__raw_writel(0xffffffff, dfb);
- 			wmb();
-+			sfb += step;
-+			dfb += step;
- 		}
- 
- 		if (mask_last) {
--			sfb -= 32;
--			dfb -= 32;
-+			sfb += last_step - step;
-+			dfb += last_step - step;
- 			__raw_writel(mask_last, sfb);
- 			wmb();
- 			__raw_writel(mask_last, dfb);
-@@ -1456,14 +1299,9 @@ tgafb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
- 	else if (bpp == 32)
- 		cfb_copyarea(info, area);
- 
--	/* Detect overlapping source and destination that requires
--	   a backward copy.  */
--	else if (dy == sy && dx > sx && dx < sx + width)
--		copyarea_backward_8bpp(info, dx, dy, sx, sy, height,
--				       width, line_length, area);
- 	else
--		copyarea_foreward_8bpp(info, dx, dy, sx, sy, height,
--				       width, line_length);
-+		copyarea_8bpp(info, dx, dy, sx, sy, height,
-+			      width, line_length, area);
- }
- 
- 
--- 
-1.9.1
-
+So I think that should become !pulled_task || time_after().
