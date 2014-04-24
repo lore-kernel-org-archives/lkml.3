@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480AbaDXCYX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 22:24:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44062 "EHLO mx2.suse.de"
+	id S1751797AbaDXCZU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 22:25:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:17742 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047AbaDXCYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 22:24:21 -0400
-Date: Thu, 24 Apr 2014 12:24:07 +1000
-From: NeilBrown <neilb@suse.de>
-To: <balbi@ti.com>
-Cc: Nishanth Menon <nm@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        <marcel@holtmann.org>, <gustavo@padovan.org>,
-        <johan.hedberg@gmail.com>, <jslaby@suse.cz>, <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 10/13] tty: serial: omap: remove some dead code
-Message-ID: <20140424122407.106384bc@notabene.brown>
-In-Reply-To: <20140424014334.GD13374@saruman.home>
-References: <1398265117-11793-1-git-send-email-balbi@ti.com>
-	<1398265117-11793-10-git-send-email-balbi@ti.com>
-	<5357DDA8.4040206@ti.com>
-	<20140424084305.20c7f301@notabene.brown>
-	<20140423230121.GC10924@saruman.home>
-	<20140424101329.02e6a62f@notabene.brown>
-	<20140424012100.GB13374@saruman.home>
-	<20140424114115.51ab3f98@notabene.brown>
-	<20140424014334.GD13374@saruman.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
+	id S1751644AbaDXCYk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 22:24:40 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,915,1389772800"; 
+   d="asc'?scan'208";a="422868685"
+Message-ID: <1398306278.29638.42.camel@jtkirshe-mobl>
+Subject: Re: linux-next: manual merge of the net-next tree with the net tree
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jakub Kicinski <kubakici@wp.pl>,
+        Carolyn Wyborny <carolyn.wyborny@intel.com>
+Date: Wed, 23 Apr 2014 19:24:38 -0700
+In-Reply-To: <20140424114726.07876050b5b805463a085191@canb.auug.org.au>
+References: <20140424114726.07876050b5b805463a085191@canb.auug.org.au>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-WS67KpToDaxuXvbutGr2"
+X-Mailer: Evolution 3.10.4 (3.10.4-2.fc20) 
 Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/X34t7Wbc9mHYz7pv8U.Qbv."; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/X34t7Wbc9mHYz7pv8U.Qbv.
-Content-Type: text/plain; charset=US-ASCII
+
+--=-WS67KpToDaxuXvbutGr2
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: quoted-printable
 
-On Wed, 23 Apr 2014 20:43:34 -0500 Felipe Balbi <balbi@ti.com> wrote:
-
-> so, Ack for $subject or not ?
+On Thu, 2014-04-24 at 11:47 +1000, Stephen Rothwell wrote:
+> Hi all,
 >=20
+> Today's linux-next merge of the net-next tree got a conflict in
+> drivers/net/ethernet/intel/igb/e1000_mac.c between commit c5ffe7e1f745
+> ("e1000e/igb/ixgbe/i40e: fix message terminations") from the net tree
+> and
+> commit c75c4edfc38d ("igb: Cleanups for messaging") from the net-next
+> tree.
+>=20
+> I fixed it up (the former was a superset of the latter) and can carry
+> the
+> fix as necessary (no action is required).
 
-Just at the moment I'm finding it hard to care.
-So
- Acked-by: NeilBrown <neilb@suse.de>
+Huh, I thought the commit c75c4edfc38d ("igb: Cleanups for messaging")
+in Dave's net-next already took into account the changes in net.  I will
+take a look at your fix Stephen, thanks for letting us know.
 
-Whatever....
-
-NeilBrown
-
---Sig_/X34t7Wbc9mHYz7pv8U.Qbv.
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
+--=-WS67KpToDaxuXvbutGr2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2.0.22 (GNU/Linux)
 
-iQIVAwUBU1h1yDnsnt1WYoG5AQK/fBAAju+nejoMEvj1BptVeWVrZdHGPFUk/VGb
-9qVki2U5fkBC9kcPd1/5OzPnB7Kyztgh+XmDWwwBLCIhoAW8kdmi/sLWkxxppBf3
-3L5tkqPIfrxqTFbpGiog/lcmjwZ0lnpP5Ew9fpI3XqpMfQFiEtZEgiqV5wdiEpO9
-t1FIenW48PtiJnj3F3qh+p7Ghp/0xwHvdRDQkGGFkgKE40tMEgPKwBlFvRpeXawE
-IIcrHY9Mmmo6VOa+pV/STD8Eeuor+V8i8ZcVwLVksP5YY9cxCmXRjUCUkw0BI/4P
-jit7eDGDVW+9g5KdZK1PRIGg69JVBXRHUqn03Gd3JwP2becXv37KV7Sn4tQPk7ls
-JzkCVEqqDvFyAaVDGKv1ylz3HAIfGZsQ+HN+BSQfySDyOohuapJfBkpLESGkqUmZ
-/aCnWRa6BckaZcn6n//UiY91evvu5YGHb2+NchNg/WLftEf/nBuvoH2CO06gSp6j
-FdqWfMpALDekPitbHMkj9zvAiwPhArce7bswmXKWBa9r8XKvmHdSOKuV23ajV3y3
-qNcZKWzLold7etMiCNSTJllQF99n8SUJ6tjWUel0MKavau8FzBJzkcNWUMtGdEuy
-WCPoG17b0A2ex3awDeWybnPcETE7e+rsHhFtnIrD2C7TMRoXASGfJx9YX/UTbpfX
-xZbIlCrSkss=
-=tmpn
+iQIcBAABCgAGBQJTWHXmAAoJEOVv75VaS+3OOesP/2phQ9lMZIO9AJRv14E92Q2w
+mD3xlGl0Q3vvQBYMgp5y2j9WovzuS0bxvFwrDxDnVShHIgtZik/M9J5sVvFCNLzq
+EOYU54f6fAxbXewykmkIOmvKMB8JllMop3RYZC9cQsmkKNWNxLTz3wTqEElbA8G/
+gJE+jjkqerly9wWjqnzC0K5oMzdzje1Cn6+dOoib7FOG1DXcZsH5kBEhYgcidz1f
+eBQo0ojqOukZsZJAo1f0Y0zjjC6RELBdHEqDD8j8RXzA7dhWU5lTBO6jTqklvJys
+4POppOjPqiIQa6e91cl1MMRkJKmJefazvWpzBlVP3gpxfOD2I0Use0BqrdkJ+vp1
+2KIlI/BhiSRfVCRrWLoUJdeWIZdh1/vSiZSR7vmFliR2Xkh53HUalfmfXmX9+y/5
+GYUquTFOBiLa5otU0VCs9BLbweCuujUSth4Sba5b7bvZOF6MjHH4gMpoRsuwIOpj
+ZzoYdwopp7IkMq6VatxNCD1c02RN4/KcrxV2MZwVQypyvO1lxW7lpssPbTJLd0Uq
+X3Nfry0Zn2qst8Dz7jJRTnu4UZGZsaIxDiFa20rSTL7aBJPCIJhAqtoE+GinUWdW
+xw4V3cELvBbgQw/cg2B6s0snBryCA4eg3vCqASx3Hzx6ZmNWDbszXG/LhxwZp2QV
+fgL3PYFE2+JyUlSsIa6R
+=AxYl
 -----END PGP SIGNATURE-----
 
---Sig_/X34t7Wbc9mHYz7pv8U.Qbv.--
+--=-WS67KpToDaxuXvbutGr2--
+
