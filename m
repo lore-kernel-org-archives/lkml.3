@@ -1,122 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418AbaDXSmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 14:42:23 -0400
-Received: from mail-bn1blp0184.outbound.protection.outlook.com ([207.46.163.184]:33229
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932206AbaDXSmV convert rfc822-to-8bit (ORCPT
+	id S1758864AbaDXSnd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 14:43:33 -0400
+Received: from mail-ee0-f51.google.com ([74.125.83.51]:35241 "EHLO
+	mail-ee0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758672AbaDXSnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 14:42:21 -0400
-From: "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>
-To: Chung-Lin Tang <cltang@codesourcery.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>,
-        "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>,
-        Ley Foon Tan <lftan@altera.com>, "Arnd Bergmann" <arnd@arndb.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Andrew Pinski <apinski@cavium.com>,
-        "Tang, Chung-Lin" <ChungLin_Tang@mentor.com>
-Subject: Re: [PATCH 00/28] nios2 Linux kernel port
-Thread-Topic: [PATCH 00/28] nios2 Linux kernel port
-Thread-Index: AQHPXx3VtXWNi/pT6kai6tyZi4xMSJsfgc3vgADMOQCAACmbgIAAbcaAgAA0z4CAAAFjXA==
-Date: Thu, 24 Apr 2014 18:42:16 +0000
-Message-ID: <3AD1421B-E5FC-41F3-AE33-29655052DA4B@caviumnetworks.com>
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>
- <5354AD36.5090809@zytor.com>
- <CAFiDJ5861HE4AXtio-8uNJppWE2oaPt9_OKyGV=Myb_3vPrOVA@mail.gmail.com>
- <16597012.pEkDc99HDN@wuerfel>
- <CAFiDJ5_dUpVTSeC36AfNKVN7BOa9GQ5vwSEWricm=8Sam9mR2A@mail.gmail.com>
- <5357FF8E.9010809@codesourcery.com>
- <E780DB23-B6A3-427B-8F33-71378088A3F5@caviumnetworks.com>
- <5358AE96.9010006@codesourcery.com> <5358D17D.1040609@codesourcery.com>
- <20140424152819.GI8521@arm.com>,<535959DF.6050009@codesourcery.com>
-In-Reply-To: <535959DF.6050009@codesourcery.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [64.2.3.195]
-x-forefront-prvs: 01917B1794
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019001)(6009001)(164054003)(377454003)(24454002)(479174003)(51704005)(199002)(189002)(76176999)(4396001)(86362001)(46102001)(80976001)(99286001)(2656002)(81542001)(19580395003)(87936001)(20776003)(99396002)(76482001)(83322001)(50986999)(19580405001)(54356999)(77982001)(82746002)(85852003)(36756003)(92726001)(79102001)(92566001)(81342001)(33656001)(83072002)(83716003)(74502001)(31966008)(74662001)(66066001)(80022001)(100906001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR07MB126;H:CO1PR07MB127.namprd07.prod.outlook.com;FPR:B274F0DE.AE229B05.7DFBB37A.49E6C5D3.203C5;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Thu, 24 Apr 2014 14:43:31 -0400
+Date: Thu, 24 Apr 2014 20:42:08 +0200
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Russell King <linux@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Rob Herring <robh@kernel.org>
+Subject: Re: [PATCH 2/2] of/irq: do irq resolution in platform_get_irq
+Message-ID: <20140424184207.GC27443@ulmo>
+References: <1398293861-7682-1-git-send-email-robherring2@gmail.com>
+ <1398293861-7682-3-git-send-email-robherring2@gmail.com>
 MIME-Version: 1.0
-X-OriginatorOrg: caviumnetworks.com
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="hOcCNbCCxyk/YU74"
+Content-Disposition: inline
+In-Reply-To: <1398293861-7682-3-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--hOcCNbCCxyk/YU74
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Apr 24, 2014, at 11:37 AM, "Chung-Lin Tang" <cltang@codesourcery.com> wrote:
-> 
->> On 2014/4/24 11:28 PM, Catalin Marinas wrote:
->>> On Thu, Apr 24, 2014 at 09:55:25AM +0100, Chung-Lin Tang wrote:
->>>> On 2014/4/24 02:26 PM, Chung-Lin Tang wrote:
->>>>> On 2014/4/24 上午 02:15, Pinski, Andrew wrote:
->>>>> 
->>>>>>> On Apr 23, 2014, at 10:59 AM, "Chung-Lin Tang" <cltang@codesourcery.com> wrote:
->>>>>>> 
->>>>>>>>> On 2014/4/22 07:20 PM, Ley Foon Tan wrote:
->>>>>>>>> On Tue, Apr 22, 2014 at 6:56 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>>>>>>>>>>>> On Tuesday 22 April 2014 18:37:11 Ley Foon Tan wrote:
->>>>>>>>>>>>>>>>> Hi Arnd and Peter Anvin,
->>>>>>>>>>>>>>>>> 
->>>>>>>>>>>>>>>>> Other than 64-bit time_t, clock_t and suseconds_t, can you confirm
->>>>>>>>>>>>>>>>> that we don't need to have 64 bit off_t? See detail in link below.
->>>>>>>>>>>>>>>>> I can submit the patches for 64-bit time changes
->>>>>>>>>>>>>>>>> (include/asm-generic/posix_types.h and other archs) if everyone is
->>>>>>>>>>>>>>>>> agreed on this.
->>>>>>>>>>>>> 
->>>>>>>>>>>>> Yes.
->>>>>>>>> Okay, will doing that.
->>>>>>> 
->>>>>>> I believe that arm64 ILP32 will also be affected. What is the status of
->>>>>>> this configuration? Has the glibc/kernel ABI been finalized?
->>>>> Not yet.  I am still working out the signal handling part. But we
->>>>> already agreed on 64bit time_t, clock_t, and suseconds_t.  And we
->>>>> agreed to a 64bit offset_t too. 
->>>>> 
->>>>> On a related note suseconds in the timespec in posix is defined to
->>>>> be long. So it would nice if the kernel ignores the upper 32bits so
->>>>> we (glibc developers) can fix this for new targets including x32
->>>>> and arm64/ilp32.
->>>> 
->>>> Hmm, but that means for purely 32-bit architectures like nios2, which
->>>> unlike x86_64 or arm64, never has a 64-bit mode, suseconds_t as a 64-bit
->>>> type in the kernel is simply wasted.
->>> 
->>> The more I think of this, the more I feel that suseconds_t should jsut
->>> be 'long', not strictly 64-bitified. An ILP32 sub-mode in a 64-bit
->>> kernel should be using compat_* code paths, something like a
->>> COMPAT_USE_32BIT_SUSECONDS case.
->> 
->> ILP32 mode should use LP64 syscalls as much as possible and that's the
->> aim with arm64 as well (of course, we still have a few that wouldn't be
->> possible and we route them via compat).
->> 
->> But here if time_t is 64-bit while susecconds_t is 32-bit, the compat
->> code wouldn't help.
-> 
-> Why not? You can define the arm64 'struct compat_timeval' with
-> suseconds_t as s32, and add the 32<-->64 case in the
-> compat_get/put_timeval path, triggered when the process is ILP32 (test
-> wrapped in the above hypothetical COMPAT_USE_32BIT_SUSECONDS macro).
-> Similar to how x32 does COMPAT_USE_64BIT_TIME.
+On Wed, Apr 23, 2014 at 05:57:41PM -0500, Rob Herring wrote:
+> From: Rob Herring <robh@kernel.org>
+>=20
+> Currently we get the following kind of errors if we try to use interrupt
+> phandles to irqchips that have not yet initialized:
+>=20
+> irq: no irq domain found for /ocp/pinmux@48002030 !
+> ------------[ cut here ]------------
+> WARNING: CPU: 0 PID: 1 at drivers/of/platform.c:171 of_device_alloc+0x144=
+/0x184()
+> Modules linked in:
+> CPU: 0 PID: 1 Comm: swapper/0 Not tainted 3.12.0-00038-g42a9708 #1012
+> (show_stack+0x14/0x1c)
+> (dump_stack+0x6c/0xa0)
+> (warn_slowpath_common+0x64/0x84)
+> (warn_slowpath_null+0x1c/0x24)
+> (of_device_alloc+0x144/0x184)
+> (of_platform_device_create_pdata+0x44/0x9c)
+> (of_platform_bus_create+0xd0/0x170)
+> (of_platform_bus_create+0x12c/0x170)
+> (of_platform_populate+0x60/0x98)
+>=20
+> This is because we're wrongly trying to populate resources that are not
+> yet available. It's perfectly valid to create irqchips dynamically, so
+> let's fix up the issue by resolving the interrupt resources when
+> platform_get_irq is called.
+>=20
+> And then we also need to accept the fact that some irqdomains do not
+> exist that early on, and only get initialized later on. So we can
+> make the current WARN_ON into just into a pr_debug().
+>=20
+> We still attempt to populate irq resources when we create the devices.
+> This allows current drivers which don't use platform_get_irq to continue
+> to function. Once all drivers are fixed, this code can be removed.
+>=20
+> Suggested-by: Russell King <linux@arm.linux.org.uk>
+> Signed-off-by: Rob Herring <robh@kernel.org>
+> Signed-off-by: Tony Lindgren <tony@atomide.com>
+> ---
+>  drivers/base/platform.c |  7 ++++++-
+>  drivers/of/irq.c        | 26 ++++++++++++++++++++++++++
+>  drivers/of/platform.c   |  4 +++-
+>  include/linux/of_irq.h  |  7 ++++++-
+>  4 files changed, 41 insertions(+), 3 deletions(-)
 
-We would three timeval then. One for aarch32, one for lp64 and one for ilp32. We really don't want three. Two is already one too many in my mind after developing the ilp32 syscall abi. 
+Hehe... that's largely what we already had back in January[0]. Glad to
+see that people could finally agree on what to do about this.
 
-Thanks,
-Andrew
+Thierry
 
+[0]: https://lkml.org/lkml/2014/1/8/240
 
-> 
-> Chung-Lin
-> 
-> 
-> 
-> 
-> 
+--hOcCNbCCxyk/YU74
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTWVr/AAoJEN0jrNd/PrOhJtEP+wZj+Ee+vrblMdwiN2ok6fRy
+nBcAZQrFEKykF+NDQU/GmSDAuDdaBMpMN0dzdbxPOj+glWbTMprVlaxfDFKVdjuU
+onvbkrY/om3uLEWt++16l1q1vnpTznIBcSzSuZf8WgTzeMIt+oNivNlh1mnkFugW
+WuKRYQ11kfcIcUImnCN1vpy99+hSrkmDazvYsn6s1SAF18dUBgIe+R2zl4wbb7lo
+6RvJXj9d/FBJH1WJbCY7J3NwvfYz8zh3KY0kgTH5lRn+YoBKdGhTuP/4jAxainum
+cLguksgtBhVlSNocEYxK8OasQO2iCfc52fq2/k4So18CLflw8HlGLAzC24eTfqta
+uG6Vn1jhnFKSGhDzT5MAlsKZSBHuasEXMnzgHUdZskDj55swrFBlMIZY92nVpYFV
+il8lW5NaWjO2G7BpdSNqN4SNDZazsgkeHhtBMtHRu4ieS61g6x2BvQfDdC0yukvB
+6vsB/4SHACOLK8iaMTireksn8EKSjsFMVlrEwWuti5F3RRHt9Q9fwglxSGzNrkyl
+KSjCT8wWv87amAVenHaa99ClbNCKUkZAOjkEbFhUZ7MCjC1q0niUtsDr+4il6QYy
+nLVtfoC/IGpB8WCOSH6v4x9uCDBfC0bYntG2Zzq+XdAucRqsqElHgP3P+MqZwYAs
+ayF/FEjG0ulvhWUr1ZVZ
+=bXg4
+-----END PGP SIGNATURE-----
+
+--hOcCNbCCxyk/YU74--
