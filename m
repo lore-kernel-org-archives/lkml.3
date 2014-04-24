@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020AbaDXLaQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:30:16 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46457 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753723AbaDXIxC (ORCPT
+	id S1756308AbaDXLao (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:30:44 -0400
+Received: from mail-pa0-f53.google.com ([209.85.220.53]:49194 "EHLO
+	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756150AbaDXLad (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:02 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 047/182] arm64: Do not synchronise I and D caches for special ptes
-Date: Thu, 24 Apr 2014 09:49:32 +0100
-Message-Id: <1398329507-5911-48-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 07:30:33 -0400
+Message-ID: <5358F5D4.1010506@linaro.org>
+Date: Thu, 24 Apr 2014 17:00:28 +0530
+From: Tushar Behera <tushar.behera@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com
+Subject: Re: [PATCH] thermal: samsung: Only update available threshold limits
+References: <1397453895-6688-1-git-send-email-tushar.behera@linaro.org> <1705902.4858U1S3Zd@amdc1032>
+In-Reply-To: <1705902.4858U1S3Zd@amdc1032>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+On 04/24/2014 04:18 PM, Bartlomiej Zolnierkiewicz wrote:
+> 
+> Hi,
+> 
+> On Monday, April 14, 2014 11:08:15 AM Tushar Behera wrote:
+>> Currently the threshold limits are updated in 2 stages, once for all
+>> software trigger levels and again for hardware trip point.
+>>
+>> While updating the software trigger levels, it overwrites the threshold
+>> limit for hardware trip point thereby forcing the Exynos core to issue
+>> an emergency shutdown.
+> 
+> On what SoC type have you encountered this problem?  It doesn't seem to
+> happen on older SoCs (at least Exynos4210 and Exynos4x12 ones).
+> 
 
-------------------
+I found this issue while testing on Exynos5420 with these patches [1].
 
-From: Catalin Marinas <catalin.marinas@arm.com>
+[1] https://lkml.org/lkml/2013/8/1/38
 
-commit 71fdb6bf61bf0692f004f9daf5650392c0cfe300 upstream.
+>> Updating only the required fields in threshold register fixes this issue.
+> 
+> With the current code there is indeed a time window during which threshold
+> limit for hardware trip point is set to zero so the fix is correct.
+> 
 
-Special pte mappings are not intended to be executable and do not even
-have an associated struct page. This patch ensures that we do not call
-__sync_icache_dcache() on such ptes.
 
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Reported-by: Steve Capper <Steve.Capper@arm.com>
-Tested-by: Laura Abbott <lauraa@codeaurora.org>
-Tested-by: Bharat Bhushan <Bharat.Bhushan@freescale.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- arch/arm64/include/asm/pgtable.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm64/include/asm/pgtable.h b/arch/arm64/include/asm/pgtable.h
-index 5dee621..b2d597b 100644
---- a/arch/arm64/include/asm/pgtable.h
-+++ b/arch/arm64/include/asm/pgtable.h
-@@ -168,7 +168,7 @@ static inline void set_pte_at(struct mm_struct *mm, unsigned long addr,
- 			      pte_t *ptep, pte_t pte)
- {
- 	if (pte_valid_user(pte)) {
--		if (pte_exec(pte))
-+		if (!pte_special(pte) && pte_exec(pte))
- 			__sync_icache_dcache(pte, addr);
- 		if (!pte_dirty(pte))
- 			pte = pte_wrprotect(pte);
 -- 
-1.9.1
-
+Tushar Behera
