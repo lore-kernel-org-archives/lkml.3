@@ -1,72 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759006AbaDXTHH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 15:07:07 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:45193 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758992AbaDXTHE (ORCPT
+	id S1758915AbaDXTJL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 15:09:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38831 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229AbaDXTJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 15:07:04 -0400
-Message-ID: <1398366420.5324.13.camel@marge.simpson.net>
-Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
- balance if there are runnable tasks
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: Jason Low <jason.low2@hp.com>
-Cc: mingo@kernel.org, peterz@infradead.org, linux-kernel@vger.kernel.org,
-        daniel.lezcano@linaro.org, alex.shi@linaro.org,
-        preeti@linux.vnet.ibm.com, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
-Date: Thu, 24 Apr 2014 21:07:00 +0200
-In-Reply-To: <1398357472.3509.2.camel@j-VirtualBox>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
-	 <1398303035-18255-4-git-send-email-jason.low2@hp.com>
-	 <1398307888.26653.18.camel@marge.simpson.net>
-	 <1398357472.3509.2.camel@j-VirtualBox>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Thu, 24 Apr 2014 15:09:08 -0400
+Date: Thu, 24 Apr 2014 21:09:03 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [Bugfix] sched: fix possible invalid memory access caused by CPU
+ hot-addition
+Message-ID: <20140424190903.GC26782@laptop.programming.kicks-ass.net>
+References: <1398144435-26271-1-git-send-email-jiang.liu@linux.intel.com>
+ <20140422081515.GF11182@twins.programming.kicks-ass.net>
+ <53572939.7020509@linux.intel.com>
+ <20140423053213.GV26782@laptop.programming.kicks-ass.net>
+ <20140423055107.GB1429@laptop.programming.kicks-ass.net>
+ <3908561D78D1C84285E8C5FCA982C28F327EB605@ORSMSX114.amr.corp.intel.com>
+ <53587E21.5070507@linux.intel.com>
+ <20140424074741.GA26782@laptop.programming.kicks-ass.net>
+ <3908561D78D1C84285E8C5FCA982C28F327EC694@ORSMSX114.amr.corp.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F327EC694@ORSMSX114.amr.corp.intel.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-24 at 09:37 -0700, Jason Low wrote: 
-> On Thu, 2014-04-24 at 04:51 +0200, Mike Galbraith wrote:
-> > On Wed, 2014-04-23 at 18:30 -0700, Jason Low wrote: 
-> > > It was found that when running some workloads (such as AIM7) on large systems
-> > > with many cores, CPUs do not remain idle for long. Thus, tasks can
-> > > wake/get enqueued while doing idle balancing.
-> > > 
-> > > In this patch, while traversing the domains in idle balance, in addition to
-> > > checking for pulled_task, we add an extra check for this_rq->nr_running for
-> > > determining if we should stop searching for tasks to pull. If there are
-> > > runnable tasks on this rq, then we will stop traversing the domains. This
-> > > reduces the chance that idle balance delays a task from running.
-> > > 
-> > > This patch resulted in approximately a 6% performance improvement when
-> > > running a Java Server workload on an 8 socket machine.
-> > 
-> > Checking rq->lock for contention before ever going to idle balancing as
-> > well should give you a bit more.  No need to run around looking for work
-> > that's trying to arrive.  By not going there, perhaps stacking tasks,
-> > you may head off a future bounce as well.
+On Thu, Apr 24, 2014 at 05:41:20PM +0000, Luck, Tony wrote:
+> >> 	The BIOS always sends CPU hot-addition events before memory
+> >> hot-addition events, so it's hard to change the order.
+> >> 	And we couldn't completely solve this performance penalty because the
+> >> affected code tries to allocate memory for all possible
+> >> CPUs instead of onlined CPUs.
+> >
+> > So the BIOS is fucked, news at 11, one would have hoped Intel would have
+> > _some_ say in it, but alas. So how about instead you force memory online
+> > when you online the first CPU, screw whatever the BIOS does or does not?
 > 
-> Are you thinking of something along the lines of this:
+> Certainly an interesting implementation choice by the BIOS. The only logical
+> order to use to bring components of a modern cpu online is:
 > 
-> @@ -6658,7 +6658,8 @@ static int idle_balance(struct rq *this_rq)
->          */
->         this_rq->idle_stamp = rq_clock(this_rq);
->  
-> -       if (this_rq->avg_idle < sysctl_sched_migration_cost)
-> +       if (this_rq->avg_idle < sysctl_sched_migration_cost ||
-> +           spin_is_contended(&this_rq->lock))
->                 goto out;
+> 1) Memory - so we have a place to allocate structure needed for following steps
+> 2) Cores - so we have a place to direct interrupts from next step
+> 3) I/O
 > 
+> We should log a bug against the BIOS ... but systems are already shipping so we will
+> have to deal with this.
 
-More or less, yes, that's what I was thinking, because the wakeup you
-are watching for, and encountering in reality could very well be that
-very one.  But as noted, my reaction to that wakeup couldn't possibly
-have been further off the mark.
+Someone want to clue me in what systems these are so I can try and stay
+the hell away from them?
 
--Mike
+> Either we use your existing patch - and systems with silly BIOS will work, but with a
+> small NUMA penalty for objects allocated remotely
 
+Depending on how this all is constructed, I can imagine the worst case
+where we bring up a medium to large system (8+ nodes, non fully
+connected etc) and we only have memory for the first node online from
+booting. The cpu bringup could be concurrent/fast-enough to not have any
+other memory online.
+
+This would result in all cpus having their memory on the first node
+(including per-cpu chunks I would imagine), that's entirely retarded.
+
+We should really refuse to bring up CPUs and boot in reduced capacity
+for such demented systems.
+
+> or ... we implement some crazy queuing scheme ... where we delay bringing cores
+> online for a while to see whether more things like memory and I/O start showing
+> up too.  We can't wait forever - people sometimes do configure systems with
+> memory-less nodes.
+
+Is there no distinction between the cases? I've really no idea how the
+BIOS communicates this (and honestly no real desire to know), but it
+would be best if we can kludge around this in the arch code and keep it
+out of core code.
+
+Did I already say that memory-less nodes are stupid? ;-)
+
+> I think your existing solution is the better choice ... the penalties probably aren't
+> all that big ... so extensive workarounds for BIOS bugs seem like the wrong direction.
+
+Why can't we have the architecture code generate a memory add event on
+the first cpu up of which there is no memory yet?
