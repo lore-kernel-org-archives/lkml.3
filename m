@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758119AbaDXPWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:22:52 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55219 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757919AbaDXPVf (ORCPT
+	id S1758149AbaDXPXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:23:12 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:39770 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758125AbaDXPXI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:21:35 -0400
-Date: Thu, 24 Apr 2014 17:21:33 +0200
-From: Pavel Machek <pavel@denx.de>
-To: dinguyen@altera.com
-Cc: dinh.linux@gmail.com, mturquette@linaro.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clk: socfpga: fix clock driver for 3.15
-Message-ID: <20140424152133.GA23032@amd.pavel.ucw.cz>
-References: <1397481336-5592-1-git-send-email-dinguyen@altera.com>
+	Thu, 24 Apr 2014 11:23:08 -0400
+Date: Thu, 24 Apr 2014 12:22:32 -0300
+From: Ezequiel Garcia <ezequiel.garcia@free-electrons.com>
+To: Ley Foon Tan <lftan@altera.com>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
+Subject: Re: [PATCH 08/28] nios2: MMU Fault handling
+Message-ID: <20140424152232.GD1735@arch.cereza>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+ <1397824031-4892-6-git-send-email-lftan@altera.com>
+ <20140422143036.GD15745@arch.cereza>
+ <CAFiDJ59KHkh549PBezijr-UektFQtQaZ_5fP5qqRvsVC-e2uxw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1397481336-5592-1-git-send-email-dinguyen@altera.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAFiDJ59KHkh549PBezijr-UektFQtQaZ_5fP5qqRvsVC-e2uxw@mail.gmail.com>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Apr 24, Ley Foon Tan wrote:
+> On Tue, Apr 22, 2014 at 10:30 PM, Ezequiel Garcia
+> <ezequiel.garcia@free-electrons.com> wrote:
+> > Hello Ley Foon,
+> >
+> > On Apr 18, Ley Foon Tan wrote:
+> >> +
+> >> +bad_area_nosemaphore:
+> >> +     /* User mode accesses just cause a SIGSEGV */
+> >> +     if (user_mode(regs)) {
+> >
+> > I found that it's useful to add some printing here, just as ARM
+> > does. I carry this patch on my kernel:
+> >
+> > +               printk(KERN_INFO "%s: unhandled page fault (%d) at 0x%08lx, cause %ld\n",
+> > +                      current->comm, SIGSEGV, address, cause);
+> > +               show_regs(regs);
+> >
+> > Do you think we could do something like it? Maybe with a compile time option?
+> Yes, this is useful debug message. I can add this.
+> Prefer not to add new compile time option, I think this shouldn't
+> happen frequently.
 
-> commit [1771b10d6 clk: respect the clock dependencies in of_clk_init]
-> exposed a flaw in the socfpga clock driver and prevents the platform
-> from booting on 3.15-rc1.
-> 
-> Because the "altr,clk-mgr" is not really a clock, it should not be using
-> CLK_OF_DECLARE, instead we should be mapping the clk-mgr's base address
-> one of the functional clock init function. Use the socfpga_pll_init function
-> to map the clk_mgr_base_addr as this clock should always be initialized first.
-> 
-> Signed-off-by: Dinh Nguyen <dinguyen@altera.com>
-
-Works for me, thanks!
-									Pavel
-
-Tested-by: Pavel Machek <pavel@denx.de>
-
+No, it shouldn't happen frequently. You can take a look at what ARM does.
+They use a DEBUG_USER compile-time option, much more complex than my silly
+proposal.
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Ezequiel García, Free Electrons
+Embedded Linux, Kernel and Android Engineering
+http://free-electrons.com
