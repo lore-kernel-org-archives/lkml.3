@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429AbaDXJSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:18:50 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47046 "EHLO
+	id S1755263AbaDXJSt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:18:49 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47051 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754943AbaDXI4F (ORCPT
+	with ESMTP id S1754948AbaDXI4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:56:05 -0400
+	Thu, 24 Apr 2014 04:56:06 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Chris Mason <clm@fb.com>, "David S. Miller" <davem@davemloft.net>,
+Cc: Tomas Winkler <tomas.winkler@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 157/182] mlx4_en: don't use napi_synchronize inside mlx4_en_netpoll
-Date: Thu, 24 Apr 2014 09:51:22 +0100
-Message-Id: <1398329507-5911-158-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 158/182] mei: me: do not load the driver if the FW doesn't support MEI interface
+Date: Thu, 24 Apr 2014 09:51:23 +0100
+Message-Id: <1398329507-5911-159-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,78 +28,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-commit c98235cb8584a72e95786e17d695a8e5fafcd766 upstream.
+commit 5e6533a6f52f1a8283b2f818f5828be99a417dd6 upstream.
 
-The mlx4 driver is triggering schedules while atomic inside
-mlx4_en_netpoll:
+NM and SPS  FW types that may run on ME device on server platforms
+do not have valid MEI/HECI interface and driver should not
+be bound to it as this might lead to system hung.
+In practice not all BIOSes effectively hide such devices from the
+OS and in some cases it is not possible.
 
-	spin_lock_irqsave(&cq->lock, flags);
-	napi_synchronize(&cq->napi);
-		^^^^^ msleep here
-	mlx4_en_process_rx_cq(dev, cq, 0);
-	spin_unlock_irqrestore(&cq->lock, flags);
+We determine FW type by examining Host FW status registers in order to
+unbind the driver.
+In this patch we are adding check for ME on Cougar Point, Lynx Point
+Devices
 
-This was part of a patch by Alexander Guller from Mellanox in 2011,
-but it still isn't upstream.
-
-Signed-off-by: Chris Mason <clm@fb.com>
-Acked-By: Amir Vadai <amirv@mellanox.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Tested-by: Nikola Ciprich <nikola.ciprich@linuxbox.cz>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/net/ethernet/mellanox/mlx4/en_cq.c     | 1 -
- drivers/net/ethernet/mellanox/mlx4/en_netdev.c | 6 +-----
- drivers/net/ethernet/mellanox/mlx4/mlx4_en.h   | 1 -
- 3 files changed, 1 insertion(+), 7 deletions(-)
+ drivers/misc/mei/hw-me-regs.h |  5 +++++
+ drivers/misc/mei/pci-me.c     | 30 +++++++++++++++++++++++-------
+ 2 files changed, 28 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_cq.c b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
-index 3e2d504..d9303d8 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_cq.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_cq.c
-@@ -55,7 +55,6 @@ int mlx4_en_create_cq(struct mlx4_en_priv *priv,
+diff --git a/drivers/misc/mei/hw-me-regs.h b/drivers/misc/mei/hw-me-regs.h
+index 66f411a..cabc043 100644
+--- a/drivers/misc/mei/hw-me-regs.h
++++ b/drivers/misc/mei/hw-me-regs.h
+@@ -115,6 +115,11 @@
+ #define MEI_DEV_ID_LPT_HR     0x8CBA  /* Lynx Point H Refresh */
  
- 	cq->ring = ring;
- 	cq->is_tx = mode;
--	spin_lock_init(&cq->lock);
- 
- 	err = mlx4_alloc_hwq_res(mdev->dev, &cq->wqres,
- 				cq->buf_size, 2 * PAGE_SIZE);
-diff --git a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-index fa37b7a..35d3821 100644
---- a/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-+++ b/drivers/net/ethernet/mellanox/mlx4/en_netdev.c
-@@ -1219,15 +1219,11 @@ static void mlx4_en_netpoll(struct net_device *dev)
+ #define MEI_DEV_ID_WPT_LP     0x9CBA  /* Wildcat Point LP */
++
++/* Host Firmware Status Registers in PCI Config Space */
++#define PCI_CFG_HFS_1         0x40
++#define PCI_CFG_HFS_2         0x48
++
+ /*
+  * MEI HW Section
+  */
+diff --git a/drivers/misc/mei/pci-me.c b/drivers/misc/mei/pci-me.c
+index e637318..20fb058 100644
+--- a/drivers/misc/mei/pci-me.c
++++ b/drivers/misc/mei/pci-me.c
+@@ -100,15 +100,31 @@ static bool mei_me_quirk_probe(struct pci_dev *pdev,
+ 				const struct pci_device_id *ent)
  {
- 	struct mlx4_en_priv *priv = netdev_priv(dev);
- 	struct mlx4_en_cq *cq;
--	unsigned long flags;
- 	int i;
- 
- 	for (i = 0; i < priv->rx_ring_num; i++) {
- 		cq = &priv->rx_cq[i];
--		spin_lock_irqsave(&cq->lock, flags);
--		napi_synchronize(&cq->napi);
--		mlx4_en_process_rx_cq(dev, cq, 0);
--		spin_unlock_irqrestore(&cq->lock, flags);
-+		napi_schedule(&cq->napi);
+ 	u32 reg;
+-	if (ent->device == MEI_DEV_ID_PBG_1) {
+-		pci_read_config_dword(pdev, 0x48, &reg);
+-		/* make sure that bit 9 is up and bit 10 is down */
+-		if ((reg & 0x600) == 0x200) {
+-			dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
+-			return false;
+-		}
++	/* Cougar Point || Patsburg */
++	if (ent->device == MEI_DEV_ID_CPT_1 ||
++	    ent->device == MEI_DEV_ID_PBG_1) {
++		pci_read_config_dword(pdev, PCI_CFG_HFS_2, &reg);
++		/* make sure that bit 9 (NM) is up and bit 10 (DM) is down */
++		if ((reg & 0x600) == 0x200)
++			goto no_mei;
  	}
++
++	/* Lynx Point */
++	if (ent->device == MEI_DEV_ID_LPT_H  ||
++	    ent->device == MEI_DEV_ID_LPT_W  ||
++	    ent->device == MEI_DEV_ID_LPT_HR) {
++		/* Read ME FW Status check for SPS Firmware */
++		pci_read_config_dword(pdev, PCI_CFG_HFS_1, &reg);
++		/* if bits [19:16] = 15, running SPS Firmware */
++		if ((reg & 0xf0000) == 0xf0000)
++			goto no_mei;
++	}
++
+ 	return true;
++
++no_mei:
++	dev_info(&pdev->dev, "Device doesn't have valid ME Interface\n");
++	return false;
  }
- #endif
-diff --git a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-index bf06e36..a47455f 100644
---- a/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-+++ b/drivers/net/ethernet/mellanox/mlx4/mlx4_en.h
-@@ -306,7 +306,6 @@ struct mlx4_en_cq {
- 	struct mlx4_cq          mcq;
- 	struct mlx4_hwq_resources wqres;
- 	int                     ring;
--	spinlock_t              lock;
- 	struct net_device      *dev;
- 	struct napi_struct	napi;
- 	int size;
+ /**
+  * mei_probe - Device Initialization Routine
 -- 
 1.9.1
 
