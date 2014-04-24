@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754250AbaDXMs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:48:28 -0400
-Received: from service87.mimecast.com ([91.220.42.44]:33764 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753532AbaDXMsZ convert rfc822-to-8bit (ORCPT
+	id S1756307AbaDXMst (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:48:49 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43865 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753663AbaDXMs1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:48:25 -0400
-Message-ID: <53590835.9090803@arm.com>
-Date: Thu, 24 Apr 2014 13:48:53 +0100
-From: Dietmar Eggemann <dietmar.eggemann@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Thu, 24 Apr 2014 08:48:27 -0400
+Date: Thu, 24 Apr 2014 13:48:03 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Tomasz Figa <t.figa@samsung.com>, Anton Vorontsov <anton@enomsg.org>
+Message-ID: <20140424124803.GW12304@sirena.org.uk>
+References: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
+ <1398264640-12122-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Vincent Guittot <vincent.guittot@linaro.org>
-CC: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v4 5/5] sched: ARM: create a dedicated scheduler topology
- table
-References: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org> <1397209481-28542-6-git-send-email-vincent.guittot@linaro.org> <5357A802.1030804@arm.com> <CAKfTPtDnw-OZZekdE3oNGS11m6dfpS4veMNZ_Bezs-Lm7zn6QQ@mail.gmail.com> <5357DBA5.1010106@arm.com> <CAKfTPtAOZqnP=sWeJuqFAqrGT8vLQZKj+tpqiwOTG37paXoGjg@mail.gmail.com>
-In-Reply-To: <CAKfTPtAOZqnP=sWeJuqFAqrGT8vLQZKj+tpqiwOTG37paXoGjg@mail.gmail.com>
-X-OriginalArrivalTime: 24 Apr 2014 12:48:34.0840 (UTC) FILETIME=[8136A980:01CF5FBB]
-X-MC-Unique: 114042413482208301
-Content-Type: text/plain; charset=WINDOWS-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="BWRtCqNGKifRcW6m"
+Content-Disposition: inline
+In-Reply-To: <1398264640-12122-3-git-send-email-k.kozlowski@samsung.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH part2 2/6] regulator/mfd: max14577: Export symbols for
+ calculating charger current
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24/04/14 08:30, Vincent Guittot wrote:
-> On 23 April 2014 17:26, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->> On 23/04/14 15:46, Vincent Guittot wrote:
->>> On 23 April 2014 13:46, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->>>> Hi,
 
-[...]
+--BWRtCqNGKifRcW6m
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> 
-> More than the flag that is used for the example, it's about the
-> cpumask which are inconsistent across CPUs for the same level and the
-> build_sched_domain sequence rely on this consistency to build
-> sched_group
+On Wed, Apr 23, 2014 at 04:50:36PM +0200, Krzysztof Kozlowski wrote:
+> This patch prepares for changing the max14577 charger driver to allow
+> configuring battery-dependent settings from DTS.
 
-Now I'm lost here. I thought so far that by specifying different cpu
-masks per CPU in an sd level, we get the sd level folding functionality
-in sd degenerate?
+Acked-by: Mark Brown <broonie@linaro.org>
 
-We discussed this here for an example on TC2 for the GMC level:
-https://lkml.org/lkml/2014/3/21/126
+--BWRtCqNGKifRcW6m
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Back than I had
-  CPU0: cpu_corepower_mask=0-1
-  CPU2: cpu_corepower_mask=2
-so for GMC level the cpumasks are inconsistent across CPUs and it worked.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
-The header of '[PATCH v4 1/5] sched: rework of sched_domain topology
-definition' mentions only the requirement "Then, each level must be a
-subset on the next one" and this one I haven't broken w/ my
-GMC/MC/GDIE/DIE set-up.
+iQIcBAEBAgAGBQJTWQgAAAoJELSic+t+oim9Nf8P/03cQSnYiQCnK2neDp46eN3D
+9TUydYILnUTskue/9mZuyAM9hhhoe9zkTBsYLLMDs42+ECNUkqTqCXJUdd6Gz5b3
+EbYTHTt/OCrkjHH0hUSlKawVXw2w0dgEkCYnpiCU9v3bcZKPiwAZ7NvK/AOv6+T2
+odTGpOh4GmVLBwHVYxVPXwzRpNe20PWrZ6QI0ofaMKDDOXkuiyW4/sskPoklcRmt
+E6Ew7oVGVjs+1djyJPUdi8qwHf9E/xU8yDImzkcWms+xexvsIIFVhW5rb2kNbddR
+wVGWBnGzoqMYZ16FgaO6usvCYUhMswdjYSwuEDCk/P5bYE+ntYAxIR/oAysDlf1n
+jyPqAN5ND6CmymyGuHNzXxExFagJjtQC6W7BujQ11DJUAdrh7R6wbU3f4sH4p3Uz
+X2DTqc/HHMZzBPSF5t7GuewKYJYlwSbNTp19aHrHyPsmpGtN5JfDZkFY+I0SXDAk
+jQKubjF3Me1rX//R2e367eImDdHrS3aOrJ98gVz4XKhUg0vYAN+EBkrFee0RP/1s
+WHSyfvzsAUxpXVqh8qclEhwk/CqyUYNUi4kRVf95qaZKoDwJ1+XjEe1Bn/+YZ04e
+MsqHM6FYM2g4dV5q2bGL/SbOWzm6bgMrIYpEkr6AIvtBq63rtRCcIgb2J4qw5xbY
+Ktmfci8zUhTTDUpqHtR2
+=2Lcs
+-----END PGP SIGNATURE-----
 
-Do I miss something else here?
-
-> 
->> Essentially what I want to do is bind an SD_SHARE_*FOO* flag to the GDIE
->> related sd's of CPU2/3/4 and not to the DIE related sd's of CPU0/1.
->>
->> I thought so far that I can achieve that by getting rid of GDIE sd level
->> for CPU0/1 simply by choosing the cpu_foo_mask() function in such a way
->> that it returns the same cpu mask as its child sd level (MC) and of DIE
->> sd level for CPU2/3/4 because it returns the same cpu mask as its child
->> sd level (GDIE) related cpu mask function. This will let sd degenerate
->> do it's job of folding sd levels which it does. The only problem I have
->> is that the groups are not created correctly any more.
->>
->> I don't see right now how the flag SD_SHARE_FOO affects the code in
->> get_group()/build_sched_groups().
->>
->> Think of SD_SHARE_FOO of something I would like to have for all sd's of
->> CPU's of cluster 1 (CPU2/3/4) and not on cluster 0 (CPU0/1) in the sd
->> level where each CPU sees two groups (group0 containing CPU0/1 and
->> group1 containing CPU2/3/4 or vice versa) (GDIE/DIE) .
-> 
-> I'm not sure that's it's feasible because it's not possible from a
-> topology pov to have different flags if the span include all cpus.
-> Could you give us more details about what you want to achieve with
-> this flag ?
-
-IMHO, the flag is not important for this discussion.  OTHA, information
-like you can't use sd degenerate functionality to fold adjacent sd
-levels (GFOO/FOO) on sd level which span all CPUs would be.  I want to
-make sure we understand what are the limitations to use folding of
-adjacent sd levels based on per-cpu differences in the return value of
-cpu_mask functions.
-
--- Dietmar
-
-[...]
-
+--BWRtCqNGKifRcW6m--
