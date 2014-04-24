@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753846AbaDXIxW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:53:22 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46477 "EHLO
+	id S1755996AbaDXLMg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:12:36 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46516 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778AbaDXIxI (ORCPT
+	with ESMTP id S1753824AbaDXIxV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:08 -0400
+	Thu, 24 Apr 2014 04:53:21 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Eric Whitney <enwlinux@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+Cc: Dennis Dalessandro <dennis.dalessandro@intel.com>,
+        Roland Dreier <roland@purestorage.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 051/182] ext4: fix partial cluster handling for bigalloc file systems
-Date: Thu, 24 Apr 2014 09:49:36 +0100
-Message-Id: <1398329507-5911-52-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 059/182] IB/ipath: Fix potential buffer overrun in sending diag packet routine
+Date: Thu, 24 Apr 2014 09:49:44 +0100
+Message-Id: <1398329507-5911-60-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,66 +28,144 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Eric Whitney <enwlinux@gmail.com>
+From: Dennis Dalessandro <dennis.dalessandro@intel.com>
 
-commit c06344939422bbd032ac967223a7863de57496b5 upstream.
+commit a2cb0eb8a64adb29a99fd864013de957028f36ae upstream.
 
-Commit 9cb00419fa, which enables hole punching for bigalloc file
-systems, exposed a bug introduced by commit 6ae06ff51e in an earlier
-release.  When run on a bigalloc file system, xfstests generic/013, 068,
-075, 083, 091, 100, 112, 127, 263, 269, and 270 fail with e2fsck errors
-or cause kernel error messages indicating that previously freed blocks
-are being freed again.
+Guard against a potential buffer overrun.  The size to read from the
+user is passed in, and due to the padding that needs to be taken into
+account, as well as the place holder for the ICRC it is possible to
+overflow the 32bit value which would cause more data to be copied from
+user space than is allocated in the buffer.
 
-The latter commit optimizes the selection of the starting extent in
-ext4_ext_rm_leaf() when hole punching by beginning with the extent
-supplied in the path argument rather than with the last extent in the
-leaf node (as is still done when truncating).  However, the code in
-rm_leaf that initially sets partial_cluster to track cluster sharing on
-extent boundaries is only guaranteed to run if rm_leaf starts with the
-last node in the leaf.  Consequently, partial_cluster is not correctly
-initialized when hole punching, and a cluster on the boundary of a
-punched region that should be retained may instead be deallocated.
-
-Signed-off-by: Eric Whitney <enwlinux@gmail.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Reported-by: Nico Golde <nico@ngolde.de>
+Reported-by: Fabian Yamaguchi <fabs@goesec.de>
+Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
+Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
+Signed-off-by: Roland Dreier <roland@purestorage.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- fs/ext4/extents.c | 21 +++++++++++++++++++++
- 1 file changed, 21 insertions(+)
+ drivers/infiniband/hw/ipath/ipath_diag.c | 66 ++++++++++++--------------------
+ 1 file changed, 25 insertions(+), 41 deletions(-)
 
-diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 79ace91..3960bba 100644
---- a/fs/ext4/extents.c
-+++ b/fs/ext4/extents.c
-@@ -2527,6 +2527,27 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
- 	ex_ee_block = le32_to_cpu(ex->ee_block);
- 	ex_ee_len = ext4_ext_get_actual_len(ex);
+diff --git a/drivers/infiniband/hw/ipath/ipath_diag.c b/drivers/infiniband/hw/ipath/ipath_diag.c
+index 714293b..e2f9a51 100644
+--- a/drivers/infiniband/hw/ipath/ipath_diag.c
++++ b/drivers/infiniband/hw/ipath/ipath_diag.c
+@@ -326,7 +326,7 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 				   size_t count, loff_t *off)
+ {
+ 	u32 __iomem *piobuf;
+-	u32 plen, clen, pbufn;
++	u32 plen, pbufn, maxlen_reserve;
+ 	struct ipath_diag_pkt odp;
+ 	struct ipath_diag_xpkt dp;
+ 	u32 *tmpbuf = NULL;
+@@ -335,51 +335,29 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 	u64 val;
+ 	u32 l_state, lt_state; /* LinkState, LinkTrainingState */
  
+-	if (count < sizeof(odp)) {
+-		ret = -EINVAL;
+-		goto bail;
+-	}
+ 
+ 	if (count == sizeof(dp)) {
+ 		if (copy_from_user(&dp, data, sizeof(dp))) {
+ 			ret = -EFAULT;
+ 			goto bail;
+ 		}
+-	} else if (copy_from_user(&odp, data, sizeof(odp))) {
+-		ret = -EFAULT;
++	} else if (count == sizeof(odp)) {
++		if (copy_from_user(&odp, data, sizeof(odp))) {
++			ret = -EFAULT;
++			goto bail;
++		}
++	} else {
++		ret = -EINVAL;
+ 		goto bail;
+ 	}
+ 
+-	/*
+-	 * Due to padding/alignment issues (lessened with new struct)
+-	 * the old and new structs are the same length. We need to
+-	 * disambiguate them, which we can do because odp.len has never
+-	 * been less than the total of LRH+BTH+DETH so far, while
+-	 * dp.unit (same offset) unit is unlikely to get that high.
+-	 * Similarly, dp.data, the pointer to user at the same offset
+-	 * as odp.unit, is almost certainly at least one (512byte)page
+-	 * "above" NULL. The if-block below can be omitted if compatibility
+-	 * between a new driver and older diagnostic code is unimportant.
+-	 * compatibility the other direction (new diags, old driver) is
+-	 * handled in the diagnostic code, with a warning.
+-	 */
+-	if (dp.unit >= 20 && dp.data < 512) {
+-		/* very probable version mismatch. Fix it up */
+-		memcpy(&odp, &dp, sizeof(odp));
+-		/* We got a legacy dp, copy elements to dp */
+-		dp.unit = odp.unit;
+-		dp.data = odp.data;
+-		dp.len = odp.len;
+-		dp.pbc_wd = 0; /* Indicate we need to compute PBC wd */
+-	}
+-
+ 	/* send count must be an exact number of dwords */
+ 	if (dp.len & 3) {
+ 		ret = -EINVAL;
+ 		goto bail;
+ 	}
+ 
+-	clen = dp.len >> 2;
++	plen = dp.len >> 2;
+ 
+ 	dd = ipath_lookup(dp.unit);
+ 	if (!dd || !(dd->ipath_flags & IPATH_PRESENT) ||
+@@ -422,16 +400,22 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 		goto bail;
+ 	}
+ 
+-	/* need total length before first word written */
+-	/* +1 word is for the qword padding */
+-	plen = sizeof(u32) + dp.len;
+-
+-	if ((plen + 4) > dd->ipath_ibmaxlen) {
 +	/*
-+	 * If we're starting with an extent other than the last one in the
-+	 * node, we need to see if it shares a cluster with the extent to
-+	 * the right (towards the end of the file). If its leftmost cluster
-+	 * is this extent's rightmost cluster and it is not cluster aligned,
-+	 * we'll mark it as a partial that is not to be deallocated.
++	 * need total length before first word written, plus 2 Dwords. One Dword
++	 * is for padding so we get the full user data when not aligned on
++	 * a word boundary. The other Dword is to make sure we have room for the
++	 * ICRC which gets tacked on later.
 +	 */
++	maxlen_reserve = 2 * sizeof(u32);
++	if (dp.len > dd->ipath_ibmaxlen - maxlen_reserve) {
+ 		ipath_dbg("Pkt len 0x%x > ibmaxlen %x\n",
+-			  plen - 4, dd->ipath_ibmaxlen);
++			  dp.len, dd->ipath_ibmaxlen);
+ 		ret = -EINVAL;
+-		goto bail;	/* before writing pbc */
++		goto bail;
+ 	}
 +
-+	if (ex != EXT_LAST_EXTENT(eh)) {
-+		ext4_fsblk_t current_pblk, right_pblk;
-+		long long current_cluster, right_cluster;
++	plen = sizeof(u32) + dp.len;
 +
-+		current_pblk = ext4_ext_pblock(ex) + ex_ee_len - 1;
-+		current_cluster = (long long)EXT4_B2C(sbi, current_pblk);
-+		right_pblk = ext4_ext_pblock(ex + 1);
-+		right_cluster = (long long)EXT4_B2C(sbi, right_pblk);
-+		if (current_cluster == right_cluster &&
-+			EXT4_PBLK_COFF(sbi, right_pblk))
-+			*partial_cluster = -right_cluster;
-+	}
-+
- 	trace_ext4_ext_rm_leaf(inode, start, ex, *partial_cluster);
+ 	tmpbuf = vmalloc(plen);
+ 	if (!tmpbuf) {
+ 		dev_info(&dd->pcidev->dev, "Unable to allocate tmp buffer, "
+@@ -473,11 +457,11 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
+ 	 */
+ 	if (dd->ipath_flags & IPATH_PIO_FLUSH_WC) {
+ 		ipath_flush_wc();
+-		__iowrite32_copy(piobuf + 2, tmpbuf, clen - 1);
++		__iowrite32_copy(piobuf + 2, tmpbuf, plen - 1);
+ 		ipath_flush_wc();
+-		__raw_writel(tmpbuf[clen - 1], piobuf + clen + 1);
++		__raw_writel(tmpbuf[plen - 1], piobuf + plen + 1);
+ 	} else
+-		__iowrite32_copy(piobuf + 2, tmpbuf, clen);
++		__iowrite32_copy(piobuf + 2, tmpbuf, plen);
  
- 	while (ex >= EXT_FIRST_EXTENT(eh) &&
+ 	ipath_flush_wc();
+ 
 -- 
 1.9.1
 
