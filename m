@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226AbaDXN1Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:27:24 -0400
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:60328 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757124AbaDXN1S (ORCPT
+	id S1757264AbaDXN1o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:27:44 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:45906 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756017AbaDXN1l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:27:18 -0400
-From: Xiangliang Yu <yxlraid@gmail.com>
-To: tj@kernel.org, JBottomley@parallels.com
-Cc: dan.j.williams@intel.com, todd.e.brandt@intel.com, lukasz.dorau@intel.com,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org
-Subject: [PATCH 0/3] libsas: add support for port multiplier
-Date: Thu, 24 Apr 2014 21:27:03 +0800
-Message-Id: <1398346023-10225-1-git-send-email-yxlraid@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 24 Apr 2014 09:27:41 -0400
+From: Namhyung Kim <namhyung@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>
+Subject: [PATCH v3 1/3] perf tools: Handle EINTR error for readn/writen
+Date: Thu, 24 Apr 2014 22:27:32 +0900
+Message-Id: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
+X-Mailer: git-send-email 1.7.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set will support SATA port multiplier(PM) in LIBSAS. 
+Those readn/writen functions are to ensure read/write does I/O for
+a given size exactly.  But ion() - its implementation - does not
+handle in case it returns prematurely due to a signal.  As it's not
+an error itself so just retry the operation.
 
-LIBSAS is need to implement several key handling to support SATA PM:
-First,low level driver notify libsas that SATA PM is attached to HBA port.
-Then, LIBSAS will need to schedule SATA PMP error handler to scan SATA device
-that is attached to PM, so we must implemet port softreset and PMP reset 
-handling.
-If find SATA devices, we should add the devices into SAS transport layer.
-In order to find SAS domain device we must implemet device type transformation
-: scsi device -> (port number) -> ata device -> domain device. Then, we can
-execute IO operation.
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/util/util.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
-In these patches, patch 1 is change SATA error handler.
-And patch 2 will add SATA device into SAS layer and implement device type
-transformation. Patch 3 implement SATA functional interface in mvsas.
+diff --git a/tools/perf/util/util.c b/tools/perf/util/util.c
+index 9f66549562bd..7fff6be07f07 100644
+--- a/tools/perf/util/util.c
++++ b/tools/perf/util/util.c
+@@ -166,6 +166,8 @@ static ssize_t ion(bool is_read, int fd, void *buf, size_t n)
+ 		ssize_t ret = is_read ? read(fd, buf, left) :
+ 					write(fd, buf, left);
+ 
++		if (ret < 0 && errno == EINTR)
++			continue;
+ 		if (ret <= 0)
+ 			return ret;
+ 
+-- 
+1.7.9.2
 
- drivers/ata/libata-scsi.c           |   48 +++-
- drivers/scsi/libsas/sas_ata.c       |  584 ++++++++++++++++++++++++++++++++++-
- drivers/scsi/libsas/sas_discover.c  |   25 ++-
- drivers/scsi/libsas/sas_internal.h  |    7 +
- drivers/scsi/libsas/sas_phy.c       |    1 +
- drivers/scsi/libsas/sas_port.c      |   12 +
- drivers/scsi/libsas/sas_scsi_host.c |   12 +-
- drivers/scsi/mvsas/mv_64xx.c        |    2 +
- drivers/scsi/mvsas/mv_94xx.c        |   19 ++
- drivers/scsi/mvsas/mv_defs.h        |    1 +
- drivers/scsi/mvsas/mv_init.c        |    7 +
- drivers/scsi/mvsas/mv_sas.c         |  246 +++++++++++++++-
- drivers/scsi/mvsas/mv_sas.h         |    9 +
- include/scsi/libsas.h               |   19 +-
- include/scsi/sas_ata.h              |    5 +
- 15 files changed, 970 insertions(+), 27 deletions(-)
