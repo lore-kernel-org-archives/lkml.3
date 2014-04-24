@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121AbaDXIxx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:53:53 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46622 "EHLO
+	id S1755496AbaDXKMX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:12:23 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46643 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088AbaDXIxu (ORCPT
+	with ESMTP id S1752731AbaDXIx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:50 -0400
+	Thu, 24 Apr 2014 04:53:56 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Johannes Berg <johannes.berg@intel.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 080/182] mac80211: fix potential use-after-free
-Date: Thu, 24 Apr 2014 09:50:05 +0100
-Message-Id: <1398329507-5911-81-git-send-email-luis.henriques@canonical.com>
+Cc: James Hogan <james.hogan@imgtec.com>, Ralf Baechle <ralf@linux-mips.org>,
+        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>,
+        Sanjay Lal <sanjayl@kymasys.com>, linux-mips@linux-mips.org,
+        kvm@vger.kernel.org, Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 078/182] MIPS: KVM: Pass reserved instruction exceptions to guest
+Date: Thu, 24 Apr 2014 09:50:03 +0100
+Message-Id: <1398329507-5911-79-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,34 +29,74 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: James Hogan <james.hogan@imgtec.com>
 
-commit d2722f8b87fb172ff2f31d3a2816b31d58678d40 upstream.
+commit 15505679362270d02c449626385cb74af8905514 upstream.
 
-The bss struct might be freed in ieee80211_rx_bss_put(),
-so we shouldn't use it afterwards.
+Previously a reserved instruction exception while in guest code would
+cause a KVM internal error if kvm_mips_handle_ri() didn't recognise the
+instruction (including a RDHWR from an unrecognised hardware register).
 
-Fixes: 817cee7675237 ("mac80211: track AP's beacon rate and give it to the driver")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+However the guest OS should really have the opportunity to catch the
+exception so that it can take the appropriate actions such as sending a
+SIGILL to the guest user process or emulating the instruction itself.
+
+Therefore in these cases emulate a guest RI exception and only return
+EMULATE_FAIL if that fails, being careful to revert the PC first in case
+the exception occurred in a branch delay slot in which case the PC will
+already point to the branch target.
+
+Also turn the printk messages relating to these cases into kvm_debug
+messages so that they aren't usually visible.
+
+This allows crashme to run in the guest without killing the entire VM.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: Gleb Natapov <gleb@kernel.org>
+Cc: Paolo Bonzini <pbonzini@redhat.com>
+Cc: Sanjay Lal <sanjayl@kymasys.com>
+Cc: linux-mips@linux-mips.org
+Cc: kvm@vger.kernel.org
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/mlme.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/mips/kvm/kvm_mips_emul.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
-index a83d76a..06f71fb 100644
---- a/net/mac80211/mlme.c
-+++ b/net/mac80211/mlme.c
-@@ -2871,8 +2871,8 @@ static void ieee80211_rx_bss_info(struct ieee80211_sub_if_data *sdata,
- 	bss = ieee80211_bss_info_update(local, rx_status, mgmt, len, elems,
- 					channel);
- 	if (bss) {
--		ieee80211_rx_bss_put(local, bss);
- 		sdata->vif.bss_conf.beacon_rate = bss->beacon_rate;
-+		ieee80211_rx_bss_put(local, bss);
- 	}
- }
+diff --git a/arch/mips/kvm/kvm_mips_emul.c b/arch/mips/kvm/kvm_mips_emul.c
+index 4b6274b..e75ef82 100644
+--- a/arch/mips/kvm/kvm_mips_emul.c
++++ b/arch/mips/kvm/kvm_mips_emul.c
+@@ -1571,17 +1571,17 @@ kvm_mips_handle_ri(unsigned long cause, uint32_t *opc,
+ 			arch->gprs[rt] = kvm_read_c0_guest_userlocal(cop0);
+ #else
+ 			/* UserLocal not implemented */
+-			er = kvm_mips_emulate_ri_exc(cause, opc, run, vcpu);
++			er = EMULATE_FAIL;
+ #endif
+ 			break;
  
+ 		default:
+-			printk("RDHWR not supported\n");
++			kvm_debug("RDHWR %#x not supported @ %p\n", rd, opc);
+ 			er = EMULATE_FAIL;
+ 			break;
+ 		}
+ 	} else {
+-		printk("Emulate RI not supported @ %p: %#x\n", opc, inst);
++		kvm_debug("Emulate RI not supported @ %p: %#x\n", opc, inst);
+ 		er = EMULATE_FAIL;
+ 	}
+ 
+@@ -1590,6 +1590,7 @@ kvm_mips_handle_ri(unsigned long cause, uint32_t *opc,
+ 	 */
+ 	if (er == EMULATE_FAIL) {
+ 		vcpu->arch.pc = curr_pc;
++		er = kvm_mips_emulate_ri_exc(cause, opc, run, vcpu);
+ 	}
+ 	return er;
+ }
 -- 
 1.9.1
 
