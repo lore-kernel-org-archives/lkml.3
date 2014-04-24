@@ -1,98 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756272AbaDXMqD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:46:03 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:45064 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756734AbaDXMe5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:34:57 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-c1-535904ef1f56
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: linux-kernel@vger.kernel.org
-Cc: myungjoo.ham@samsung.com, balbi@ti.com, gg@slimlogic.co.uk, kishon@ti.com,
-        ckeepax@opensource.wolfsonmicro.com, broonie@kernel.org,
-        k.kozlowski@samsung.com, kyungmin.park@samsung.com,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: [PATCHv3 4/9] extcon: max77693: Use devm_extcon_dev_allocate for
- extcon_dev
-Date: Thu, 24 Apr 2014 21:34:52 +0900
-Message-id: <1398342897-23670-5-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.0
-In-reply-to: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
-References: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpnkeLIzCtJLcpLzFFi42JZI2JSpPueJTLY4HynhcXB+/UWUx8+YbP4
-	N+UGu8X1L89ZLfq3uFi8fmFoceFpD5vF2aY37BaXd81hs7jduILNgctj06pONo+XE3+zefRt
-	WcXoMXXKX0aP4ze2M3l83iQXwBbFZZOSmpNZllqkb5fAldHQOpup4CB3xdOLKxkbGI9zdjFy
-	ckgImEj09axhh7DFJC7cW8/WxcjFISSwlFHi1P9VTF2MHGBF79exQ8SnM0qca/gB5TQxSezb
-	9J8VpJtNQEti/4sbbCC2iICCxObeZ6wgRcwCzxglTlw9wQySEBYIk9iwYSkjyFQWAVWJrw9S
-	QcK8Aq4S/yZ3sUBcISfxYc8jsIs4Bdwkzl64CjZTCKhmZcM/sJkSAvvYJb5e/88IkmAREJD4
-	NvkQC8SlshKbDjBDzJGUOLjiBssERuEFjAyrGEVTC5ILipPSiwz1ihNzi0vz0vWS83M3MQIj
-	4fS/Z707GG8fsD7EmAw0biKzlGhyPjCS8kriDY3NjCxMTUyNjcwtzUgTVhLnTXqYFCQkkJ5Y
-	kpqdmlqQWhRfVJqTWnyIkYmDU6qBscL6blUzW8iMeRPzvbdd/fTuYubPtXP9dH/N9PnJd2VX
-	ZfKsc1cWMj8Ut4uzss61nJc/T8fmyW+flfHMx4WvznTNdzzrZ6Yp8Z076dLr2eyBTTP2XUj4
-	dM+Te3tRk77Cgbcq/T9SNN9cCtijqHDscNj0nEN/uh7e5w2Y77ZhlUjf7pXfXP/3iSuxFGck
-	GmoxFxUnAgC3gxqgmgIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCIsWRmVeSWpSXmKPExsVy+t9jQd33LJHBBvcmGFgcvF9vMfXhEzaL
-	f1NusFtc//Kc1aJ/i4vF6xeGFhee9rBZnG16w25xedccNovbjSvYHLg8Nq3qZPN4OfE3m0ff
-	llWMHlOn/GX0OH5jO5PH501yAWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW
-	5koKeYm5qbZKLj4Bum6ZOUCHKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ
-	axgzGlpnMxUc5K54enElYwPjcc4uRg4OCQETiffr2LsYOYFMMYkL99azdTFycQgJTGeUONfw
-	gx3CaWKS2LfpPytIFZuAlsT+FzfYQGwRAQWJzb3PWEGKmAWeMUqcuHqCGSQhLBAmsWHDUkaQ
-	DSwCqhJfH6SChHkFXCX+Te5igdgmJ/FhzyOwzZwCbhJnL1wFmykEVLOy4R/rBEbeBYwMqxhF
-	UwuSC4qT0nON9IoTc4tL89L1kvNzNzGC4+yZ9A7GVQ0WhxgFOBiVeHgVboUHC7EmlhVX5h5i
-	lOBgVhLhnf0vIliINyWxsiq1KD++qDQntfgQYzLQUROZpUST84EpIK8k3tDYxMzI0sjc0MLI
-	2Jw0YSVx3oOt1oFCAumJJanZqakFqUUwW5g4OKUaGD3CFb7s6Nr583Ph/iUrZQtnbxbRUVpZ
-	/k93qclUze7Jrd/3H/WpPcdZn2pndXxRx6QDgk+fniyYenjNenNxiRC1bcvfaN/y4jggdv1a
-	0cQbK/OmthVtbe1il+qatlTx+/sd9y5aJk96Ye/H5ZB/qvXPoQApoY8X255e2iNVfvHJW/9H
-	xq/ZmFSUWIozEg21mIuKEwHpXNUS9wIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1756858AbaDXMqZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:46:25 -0400
+Received: from mx12.netapp.com ([216.240.18.77]:10788 "EHLO mx12.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753734AbaDXMqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 08:46:22 -0400
+X-IronPort-AV: E=Sophos;i="4.97,918,1389772800"; 
+   d="scan'208";a="160152539"
+Message-ID: <53590798.80309@netapp.com>
+Date: Thu, 24 Apr 2014 08:46:16 -0400
+From: Anna Schumaker <Anna.Schumaker@netapp.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: NeilBrown <neilb@suse.de>
+CC: Jan Kara <jack@suse.cz>, Jeff Layton <jlayton@redhat.com>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Dave Chinner <david@fromorbit.com>,
+        "J. Bruce Fields" <bfields@fieldses.org>,
+        Mel Gorman <mgorman@suse.com>,
+        "Andrew Morton" <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
+        <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/5] SUNRPC: track when a client connection is routed
+ to the local host.
+References: <20140423022441.4725.89693.stgit@notabene.brown>	<20140423024058.4725.7703.stgit@notabene.brown>	<5357C3AC.9090203@netapp.com> <20140424091419.0ba0cfd3@notabene.brown>
+In-Reply-To: <20140424091419.0ba0cfd3@notabene.brown>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch use devm_extcon_dev_allocate() to simplify the memory control
-of extcon device.
+On 04/23/2014 07:14 PM, NeilBrown wrote:
+> On Wed, 23 Apr 2014 09:44:12 -0400 Anna Schumaker <Anna.Schumaker@netapp.com>
+> wrote:
+> 
+>> On 04/22/2014 10:40 PM, NeilBrown wrote:
+>>> If requests are being sent to the local host, then NFS will
+>>> need to take care to avoid deadlocks.
+>>>
+>>> So keep track when accepting a connection or sending a UDP request
+>>> and set a flag in the svc_xprt when the peer connected to is local.
+>>>
+>>> The interface rpc_is_foreign() is provided to check is a given client
+>>> is connected to a foreign server.  When it returns zero it is either
+>>> not connected or connected to a local server and in either case
+>>> greater care is needed.
+>>>
+>>> Signed-off-by: NeilBrown <neilb@suse.de>
+>>> ---
+>>>  include/linux/sunrpc/clnt.h |    1 +
+>>>  include/linux/sunrpc/xprt.h |    1 +
+>>>  net/sunrpc/clnt.c           |   25 +++++++++++++++++++++++++
+>>>  net/sunrpc/xprtsock.c       |   17 +++++++++++++++++
+>>>  4 files changed, 44 insertions(+)
+>>>
+>>> diff --git a/include/linux/sunrpc/clnt.h b/include/linux/sunrpc/clnt.h
+>>> index 8af2804bab16..5d626cc5ab01 100644
+>>> --- a/include/linux/sunrpc/clnt.h
+>>> +++ b/include/linux/sunrpc/clnt.h
+>>> @@ -173,6 +173,7 @@ void		rpc_force_rebind(struct rpc_clnt *);
+>>>  size_t		rpc_peeraddr(struct rpc_clnt *, struct sockaddr *, size_t);
+>>>  const char	*rpc_peeraddr2str(struct rpc_clnt *, enum rpc_display_format_t);
+>>>  int		rpc_localaddr(struct rpc_clnt *, struct sockaddr *, size_t);
+>>> +int		rpc_is_foreign(struct rpc_clnt *);
+>>>  
+>>>  #endif /* __KERNEL__ */
+>>>  #endif /* _LINUX_SUNRPC_CLNT_H */
+>>> diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
+>>> index 8097b9df6773..318ee37bc358 100644
+>>> --- a/include/linux/sunrpc/xprt.h
+>>> +++ b/include/linux/sunrpc/xprt.h
+>>> @@ -340,6 +340,7 @@ int			xs_swapper(struct rpc_xprt *xprt, int enable);
+>>>  #define XPRT_CONNECTION_ABORT	(7)
+>>>  #define XPRT_CONNECTION_CLOSE	(8)
+>>>  #define XPRT_CONGESTED		(9)
+>>> +#define XPRT_LOCAL		(10)
+>>>  
+>>>  static inline void xprt_set_connected(struct rpc_xprt *xprt)
+>>>  {
+>>> diff --git a/net/sunrpc/clnt.c b/net/sunrpc/clnt.c
+>>> index 0edada973434..454cea69b373 100644
+>>> --- a/net/sunrpc/clnt.c
+>>> +++ b/net/sunrpc/clnt.c
+>>> @@ -1109,6 +1109,31 @@ const char *rpc_peeraddr2str(struct rpc_clnt *clnt,
+>>>  }
+>>>  EXPORT_SYMBOL_GPL(rpc_peeraddr2str);
+>>>  
+>>> +/**
+>>> + * rpc_is_foreign - report is rpc client was recently connected to
+>>> + *                  remote host
+>>> + * @clnt: RPC client structure
+>>> + *
+>>> + * If the client is not connected, or connected to the local host
+>>> + * (any IP address), then return 0.  Only return non-zero if the
+>>> + * most recent state was a connection to a remote host.
+>>> + * For UDP the client always appears to be connected, and the
+>>> + * remoteness of the host is of the destination of the last transmission.
+>>> + */
+>>> +int rpc_is_foreign(struct rpc_clnt *clnt)
+>>> +{
+>>> +	struct rpc_xprt *xprt;
+>>> +	int conn_foreign;
+>>> +
+>>> +	rcu_read_lock();
+>>> +	xprt = rcu_dereference(clnt->cl_xprt);
+>>> +	conn_foreign = (xprt && xprt_connected(xprt)
+>>> +			&& !test_bit(XPRT_LOCAL, &xprt->state));
+>>> +	rcu_read_unlock();
+>>> +	return conn_foreign;
+>>> +}
+>>> +EXPORT_SYMBOL_GPL(rpc_is_foreign);
+>>> +
+>>>  static const struct sockaddr_in rpc_inaddr_loopback = {
+>>>  	.sin_family		= AF_INET,
+>>>  	.sin_addr.s_addr	= htonl(INADDR_ANY),
+>>> diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+>>> index 0addefca8e77..74796cf37d5b 100644
+>>> --- a/net/sunrpc/xprtsock.c
+>>> +++ b/net/sunrpc/xprtsock.c
+>>> @@ -642,6 +642,15 @@ static int xs_udp_send_request(struct rpc_task *task)
+>>>  			xdr->len - req->rq_bytes_sent, status);
+>>>  
+>>>  	if (status >= 0) {
+>>> +		struct dst_entry *dst;
+>>> +		rcu_read_lock();
+>>> +		dst = rcu_dereference(transport->sock->sk->sk_dst_cache);
+>>> +		if (dst && dst->dev && (dst->dev->features & NETIF_F_LOOPBACK))
+>>> +			set_bit(XPRT_LOCAL, &xprt->state);
+>>> +		else
+>>> +			clear_bit(XPRT_LOCAL, &xprt->state);
+>>> +		rcu_read_unlock();
+>>> +
+>> You repeat this block of code a bit later.  Can you please make it an inline helper function?
+> 
+> Thanks for the suggestion.
+> I've put
+> 
+> static inline int sock_is_loopback(struct sock *sk)
+> {
+> 	struct dst_entry *dst;
+> 	int loopback = 0;
+> 	rcu_read_lock();
+> 	dst = rcu_dereference(sk->sk_dst_cache);
+> 	if (dst && dst->dev &&
+> 	    (dst->dev->features & NETIF_F_LOOPBACK))
+> 		loopback = 1;
+> 	rcu_read_unlock();
+> 	return loopback;
+> }
+> 
+> 
+> in sunrpc.h, and used it for both the server-side and the client side.
 
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- drivers/extcon/extcon-max77693.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+Awesome, thanks!
 
-diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
-index f0f18e2..2e15a24 100644
---- a/drivers/extcon/extcon-max77693.c
-+++ b/drivers/extcon/extcon-max77693.c
-@@ -1175,8 +1175,8 @@ static int max77693_muic_probe(struct platform_device *pdev)
- 	}
- 
- 	/* Initialize extcon device */
--	info->edev = devm_kzalloc(&pdev->dev, sizeof(struct extcon_dev),
--				  GFP_KERNEL);
-+	info->edev = devm_extcon_dev_allocate(&pdev->dev,
-+					      max77693_extcon_cable);
- 	if (!info->edev) {
- 		dev_err(&pdev->dev, "failed to allocate memory for extcon\n");
- 		ret = -ENOMEM;
-@@ -1184,14 +1184,13 @@ static int max77693_muic_probe(struct platform_device *pdev)
- 	}
- 	info->edev->name = DEV_NAME;
- 	info->edev->dev.parent = &pdev->dev;
--	info->edev->supported_cable = max77693_extcon_cable;
-+
- 	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
- 	if (ret) {
- 		dev_err(&pdev->dev, "failed to register extcon device\n");
- 		goto err_irq;
- 	}
- 
--
- 	/* Initialize MUIC register by using platform data or default data */
- 	if (pdata && pdata->muic_data) {
- 		init_data = pdata->muic_data->init_data;
--- 
-1.8.0
+Anna
+> 
+> NeilBrown
+> 
 
