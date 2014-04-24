@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173AbaDXIyA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:54:00 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46642 "EHLO
+	id S1754147AbaDXIx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:53:59 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46633 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754088AbaDXIx4 (ORCPT
+	with ESMTP id S1754117AbaDXIxx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:56 -0400
+	Thu, 24 Apr 2014 04:53:53 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Richard Guy Briggs <rgb@redhat.com>,
+Cc: Michael Braun <michael-dev@fami-braun.de>,
+        Johannes Berg <johannes.berg@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 083/182] pid: get pid_t ppid of task in init_pid_ns
-Date: Thu, 24 Apr 2014 09:50:08 +0100
-Message-Id: <1398329507-5911-84-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 082/182] mac80211: fix WPA with VLAN on AP side with ps-sta again
+Date: Thu, 24 Apr 2014 09:50:07 +0100
+Message-Id: <1398329507-5911-83-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,62 +28,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Guy Briggs <rgb@redhat.com>
+From: Michael Braun <michael-dev@fami-braun.de>
 
-commit ad36d28293936b03d6b7996e9d6aadfd73c0eb08 upstream.
+commit 112c44b2df0984121a52fbda89425843b8e1a457 upstream.
 
-Added the functions task_ppid_nr_ns() and task_ppid_nr() to abstract the lookup
-of the PPID (real_parent's pid_t) of a process, including rcu locking, in the
-arbitrary and init_pid_ns.
-This provides an alternative to sys_getppid(), which is relative to the child
-process' pid namespace.
+commit de74a1d9032f4d37ea453ad2a647e1aff4cd2591
+  "mac80211: fix WPA with VLAN on AP side with ps-sta"
+fixed an issue where queued multicast packets would
+be sent out encrypted with the key of an other bss.
 
-(informed by ebiederman's 6c621b7e)
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+commit "7cbf9d017dbb5e3276de7d527925d42d4c11e732"
+  "mac80211: fix oops on mesh PS broadcast forwarding"
+essentially reverted it, because vif.type cannot be AP_VLAN
+due to the check to vif.type in ieee80211_get_buffered_bc before.
+
+As the later commit intended to fix the MESH case, fix it
+by checking for IFTYPE_AP instead of IFTYPE_AP_VLAN.
+
+Fixes: 7cbf9d017dbb ("mac80211: fix oops on mesh PS broadcast forwarding")
+Signed-off-by: Michael Braun <michael-dev@fami-braun.de>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- include/linux/sched.h | 20 +++++++++++++++++++-
- 1 file changed, 19 insertions(+), 1 deletion(-)
+ net/mac80211/tx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index e057ea0..f184046 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1500,6 +1500,24 @@ static inline pid_t task_tgid_vnr(struct task_struct *tsk)
- }
+diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
+index 5d0beec..5fd26c6 100644
+--- a/net/mac80211/tx.c
++++ b/net/mac80211/tx.c
+@@ -2706,7 +2706,7 @@ ieee80211_get_buffered_bc(struct ieee80211_hw *hw,
+ 				cpu_to_le16(IEEE80211_FCTL_MOREDATA);
+ 		}
  
- 
-+static int pid_alive(const struct task_struct *p);
-+static inline pid_t task_ppid_nr_ns(const struct task_struct *tsk, struct pid_namespace *ns)
-+{
-+	pid_t pid = 0;
-+
-+	rcu_read_lock();
-+	if (pid_alive(tsk))
-+		pid = task_tgid_nr_ns(rcu_dereference(tsk->real_parent), ns);
-+	rcu_read_unlock();
-+
-+	return pid;
-+}
-+
-+static inline pid_t task_ppid_nr(const struct task_struct *tsk)
-+{
-+	return task_ppid_nr_ns(tsk, &init_pid_ns);
-+}
-+
- static inline pid_t task_pgrp_nr_ns(struct task_struct *tsk,
- 					struct pid_namespace *ns)
- {
-@@ -1539,7 +1557,7 @@ static inline pid_t task_pgrp_nr(struct task_struct *tsk)
-  *
-  * Return: 1 if the process is alive. 0 otherwise.
-  */
--static inline int pid_alive(struct task_struct *p)
-+static inline int pid_alive(const struct task_struct *p)
- {
- 	return p->pids[PIDTYPE_PID].pid != NULL;
- }
+-		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
++		if (sdata->vif.type == NL80211_IFTYPE_AP)
+ 			sdata = IEEE80211_DEV_TO_SUB_IF(skb->dev);
+ 		if (!ieee80211_tx_prepare(sdata, &tx, skb))
+ 			break;
 -- 
 1.9.1
 
