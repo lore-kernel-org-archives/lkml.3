@@ -1,188 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785AbaDXRwX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:52:23 -0400
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:59741 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757450AbaDXRwW (ORCPT
+	id S1758809AbaDXRwa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:52:30 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:34478 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757450AbaDXRw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:52:22 -0400
+	Thu, 24 Apr 2014 13:52:26 -0400
+Date: Thu, 24 Apr 2014 13:52:23 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>,
+        Carsten Emde <C.Emde@osadl.org>,
+        Mike Galbraith <umgwanakikbuti@gmail.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Clark Williams <williams@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC PATCH RT V4] rwsem: The return of multi-reader PI rwsems
+Message-ID: <20140424135223.5fb6b21e@gandalf.local.home>
+In-Reply-To: <20140418081926.GC14560@gmail.com>
+References: <20140409151922.5fa5d999@gandalf.local.home>
+	<20140410134217.38cd6db7@gandalf.local.home>
+	<20140410223508.6d0fc135@gandalf.local.home>
+	<5347E475.4020009@osadl.org>
+	<20140411092524.1f242e25@gandalf.local.home>
+	<20140417192603.6e379157@gandalf.local.home>
+	<20140418081926.GC14560@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <20140423131404.GI23991@suse.de>
-References: <alpine.LSU.2.11.1402232344280.1890@eggly.anvils>
- <1397336454-13855-1-git-send-email-ddstreet@ieee.org> <1397336454-13855-3-git-send-email-ddstreet@ieee.org>
- <20140423131404.GI23991@suse.de>
-From: Dan Streetman <ddstreet@ieee.org>
-Date: Thu, 24 Apr 2014 13:52:00 -0400
-X-Google-Sender-Auth: XYYD0-Cyh0rLYxMU7UZNum6cXZY
-Message-ID: <CALZtONCpnrFTzZkoKx75Ev-NutACD2SAnTA0xBf6JAdoeFx9jQ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] swap: use separate priority list for available swap_infos
-To: Mel Gorman <mgorman@suse.de>
-Cc: Hugh Dickins <hughd@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Hocko <mhocko@suse.cz>,
-        Christian Ehrhardt <ehrhardt@linux.vnet.ibm.com>,
-        Weijie Yang <weijieut@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 9:14 AM, Mel Gorman <mgorman@suse.de> wrote:
-> On Sat, Apr 12, 2014 at 05:00:54PM -0400, Dan Streetman wrote:
->> Originally get_swap_page() started iterating through the singly-linked
->> list of swap_info_structs using swap_list.next or highest_priority_index,
->> which both were intended to point to the highest priority active swap
->> target that was not full.  The previous patch in this series changed the
->> singly-linked list to a doubly-linked list, and removed the logic to start
->> at the highest priority non-full entry; it starts scanning at the highest
->> priority entry each time, even if the entry is full.
->>
->> Add a new list, also priority ordered, to track only swap_info_structs
->> that are available, i.e. active and not full.  Use a new spinlock so that
->> entries can be added/removed outside of get_swap_page; that wasn't possible
->> previously because the main list is protected by swap_lock, which can't be
->> taken when holding a swap_info_struct->lock because of locking order.
->> The get_swap_page() logic now does not need to hold the swap_lock, and it
->> iterates only through swap_info_structs that are available.
->>
->> Signed-off-by: Dan Streetman <ddstreet@ieee.org>
->> ---
->>  include/linux/swap.h |   1 +
->>  mm/swapfile.c        | 128 ++++++++++++++++++++++++++++++++++-----------------
->>  2 files changed, 87 insertions(+), 42 deletions(-)
->>
->> diff --git a/include/linux/swap.h b/include/linux/swap.h
->> index 96662d8..d9263db 100644
->> --- a/include/linux/swap.h
->> +++ b/include/linux/swap.h
->> @@ -214,6 +214,7 @@ struct percpu_cluster {
->>  struct swap_info_struct {
->>       unsigned long   flags;          /* SWP_USED etc: see above */
->>       signed short    prio;           /* swap priority of this type */
->> +     struct list_head prio_list;     /* entry in priority list */
->>       struct list_head list;          /* entry in swap list */
->>       signed char     type;           /* strange name for an index */
->>       unsigned int    max;            /* extent of the swap_map */
->> diff --git a/mm/swapfile.c b/mm/swapfile.c
->> index b958645..3c38461 100644
->> --- a/mm/swapfile.c
->> +++ b/mm/swapfile.c
->> @@ -57,9 +57,13 @@ static const char Unused_file[] = "Unused swap file entry ";
->>  static const char Bad_offset[] = "Bad swap offset entry ";
->>  static const char Unused_offset[] = "Unused swap offset entry ";
->>
->> -/* all active swap_info */
->> +/* all active swap_info; protected with swap_lock */
->>  LIST_HEAD(swap_list_head);
->>
->> +/* all available (active, not full) swap_info, priority ordered */
->> +static LIST_HEAD(prio_head);
->> +static DEFINE_SPINLOCK(prio_lock);
->> +
->
-> I get why you maintain two lists with separate locking but it's code that
-> is specific to swap and in many respects, it's very similar to a plist. Is
-> there a reason why plist was not used at least for prio_head? They're used
-> for futex's so presumably the performance is reasonable. It might reduce
-> the size of swapfile.c further.
->
-> It is the case that plist does not have the equivalent of rotate which
-> you need to recycle the entries of equal priority but you could add a
-> plist_shuffle helper that "rotates the list left if the next entry is of
-> equal priority".
+On Fri, 18 Apr 2014 10:19:26 +0200
+Ingo Molnar <mingo@kernel.org> wrote:
 
-I did look at plist, but as you said there's no plist_rotate_left() so
-that would either need to be implemented in plist or a helper specific
-to swap added.
+> 
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > Changes since v3:
+> > 
+> > Clark reported that he was seeing a large latency when he added this
+> > patch. I tested it out on a 8 logical CPU box, and sure enough I was
+> > seeing it too. After spending the day debugging why, I found that I had
+> > a bug in rt_mutex_getprio(), where I could do:
+> > 
+> >   min(task_top_pi_waiter(task)->pi_list_entry.prio, prio)
+> > 
+> > when there was no "top_pi_waiter", which would give garbage as a
+> > result. This would let some tasks have higher priority than they
+> > should, and cause other tasks that should have high priority not run.
+> 
+> Would a sanity check like the one below have helped? (untested and 
+> such)
 
-The plist sort order is also reverse from swap sort order; plist
-orders low->high while swap orders high->low.  So either the prio
-would need to be negated when storing in the plist to correct the
-order, or plist_for_each_entry_reverse() would need to be added (or
-another helper specific for swap).
+Actually, if I had run this with CONFIG_DEBUG_PI_LIST then this would
+have triggered:
 
-I think the main (only?) benefit of plist is during adds; insertion
-for lists is O(N) while insertion for plists is O(K) where K is the
-number of different priorities.  And for swap, the add only happens in
-two places: on swapon (or if swapoff fails and reinserts it) and in
-swap_entry_free() when the swap_info_struct changes from full to
-not-full.  The swapon and swapoff failure cases don't matter, and a
-swap_info_struct changing from full to not-full is (probably?) going
-to be a relatively rare occurrence.  And even then, unless there are a
-significant number of not-full same-priority swap_info_structs that
-are higher prio than the one being added, there should (?) be no
-difference between plist and normal list add speed.
+#ifdef CONFIG_DEBUG_PI_LIST
+# define plist_first_entry(head, type, member)	\
+({ \
+	WARN_ON(plist_head_empty(head)); \
+	container_of(plist_first(head), type, member); \
+})
+#else
+# define plist_first_entry(head, type, member)	\
+	container_of(plist_first(head), type, member)
+#endif
 
-Finally, using a plist further increases the size of each swap_info_struct.
+-- Steve
 
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+> ==========>
+>  kernel/locking/rtmutex_common.h | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/kernel/locking/rtmutex_common.h b/kernel/locking/rtmutex_common.h
+> index 7431a9c..36b1ce8 100644
+> --- a/kernel/locking/rtmutex_common.h
+> +++ b/kernel/locking/rtmutex_common.h
+> @@ -85,6 +85,7 @@ static inline int task_has_pi_waiters(struct task_struct *p)
+>  static inline struct rt_mutex_waiter *
+>  task_top_pi_waiter(struct task_struct *p)
+>  {
+> +	WARN_ON_ONCE(!p->pi_waiters_leftmost);
+>  	return rb_entry(p->pi_waiters_leftmost, struct rt_mutex_waiter,
+>  			pi_tree_entry);
+>  }
 
-So to me, it seemed list plists were best used in situations where
-list entries were constantly being added/removed, and the add speed
-needed to be as fast as possible.  That isn't typically the case with
-the swap_info_struct priority list, where adding/removing is a
-relatively rare occurrence.  However, in the case where there are
-multiple groups of many same-priority swap devices/files, using plists
-may reduce the add insertion time when one of the lower-priority
-swap_info_struct changes from full to not-full after some of the
-higher prio ones also have changed from full to not-full.  If you
-think it would be good to change to using a plist, I can update the
-patch.
-
-Otherwise, I can update the patch to add more code comments about why
-a plist wasn't used, and/or update the commit log.
-
-> I was going to suggest that you could then get rid of swap_list_head but
-> it's a relatively big change. swapoff wouldn't care but frontswap would
-> suffer if it had to walk all of swap_info[] to find all active swap
-> files.
->
->>  struct swap_info_struct *swap_info[MAX_SWAPFILES];
->>
->>  static DEFINE_MUTEX(swapon_mutex);
->> @@ -73,6 +77,27 @@ static inline unsigned char swap_count(unsigned char ent)
->>       return ent & ~SWAP_HAS_CACHE;   /* may include SWAP_HAS_CONT flag */
->>  }
->>
->> +/*
->> + * add, in priority order, swap_info (p)->(le) list_head to list (lh)
->> + * this list-generic function is needed because both swap_list_head
->> + * and prio_head need to be priority ordered:
->> + * swap_list_head in swapoff to adjust lower negative prio swap_infos
->> + * prio_list in get_swap_page to scan highest prio swap_info first
->> + */
->> +#define swap_info_list_add(p, lh, le) do {                   \
->> +     struct swap_info_struct *_si;                           \
->> +     BUG_ON(!list_empty(&(p)->le));                          \
->> +     list_for_each_entry(_si, (lh), le) {                    \
->> +             if ((p)->prio >= _si->prio) {                   \
->> +                     list_add_tail(&(p)->le, &_si->le);      \
->> +                     break;                                  \
->> +             }                                               \
->> +     }                                                       \
->> +     /* lh empty, or p lowest prio */                        \
->> +     if (list_empty(&(p)->le))                               \
->> +             list_add_tail(&(p)->le, (lh));                  \
->> +} while (0)
->> +
->
-> Why is this a #define instead of a static uninlined function?
->
-> That aside, it's again very similar to what a plist does with some
-> minor structure modifications.
-
-It's a #define because the ->member is different; for the
-swap_list_head the entry member name is list while for the prio_head
-the entry name is prio_list.
-
-If the patch was accepted, I also planned to follow up with a patch to
-add list_add_ordered(new, head, bool compare(a, b)) that would replace
-this swap-specific #define.  I do agree having an ordered list is
-similar to what plist provides, but I don't think plist is a perfect
-fit for what swap needs in this case.
-
-
->
-> --
-> Mel Gorman
-> SUSE Labs
