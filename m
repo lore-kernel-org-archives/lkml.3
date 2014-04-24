@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564AbaDXLfK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:35:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35104 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754811AbaDXLfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 07:35:06 -0400
-Date: Thu, 24 Apr 2014 13:34:38 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Namhyung Kim <namhyung.kim@lge.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCHSET 00/11] perf tools: Fixup for the --percentage change
- (v3)
-Message-ID: <20140424113438.GB1110@krava.brq.redhat.com>
-References: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398327843-31845-1-git-send-email-namhyung@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755994AbaDXLgU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:36:20 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46447 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670AbaDXIw7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 04:52:59 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 045/182] virtio_balloon: don't softlockup on huge balloon changes.
+Date: Thu, 24 Apr 2014 09:49:30 +0100
+Message-Id: <1398329507-5911-46-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 05:23:52PM +0900, Namhyung Kim wrote:
+3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-SNIP
+------------------
 
-> 
-> So yes, it has a same problem of inaccurate number of samples, but its
-> impact should be smaller than other stats - seeing increasing sample
-> count (could be slightly inaccurate) without new entries in the browser.
-> 
->  * changes in v3)
->   - split patch 2/7 into parts  (Jiri)
->   - fix a segfault when filtering with unfolded entry  (Jiri)
+From: Rusty Russell <rusty@rustcorp.com.au>
 
-other than my comment for patch 4 it seems ok to me
+commit 1f74ef0f2d7d692fcd615621e0e734c3e7771413 upstream.
 
-thanks,
-jirka
+When adding or removing 100G from a balloon:
+
+    BUG: soft lockup - CPU#0 stuck for 22s! [vballoon:367]
+
+We have a wait_event_interruptible(), but the condition is always true
+(more ballooning to do) so we don't ever sleep.  We also have a
+wait_event() for the host to ack, but that is also always true as QEMU
+is synchronous for balloon operations.
+
+Reported-by: Gopesh Kumar Chaudhary <gopchaud@in.ibm.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/virtio/virtio_balloon.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+index 1f572c0..cfda0a6 100644
+--- a/drivers/virtio/virtio_balloon.c
++++ b/drivers/virtio/virtio_balloon.c
+@@ -312,6 +312,12 @@ static int balloon(void *_vballoon)
+ 		else if (diff < 0)
+ 			leak_balloon(vb, -diff);
+ 		update_balloon_size(vb);
++
++		/*
++		 * For large balloon changes, we could spend a lot of time
++		 * and always have work to do.  Be nice if preempt disabled.
++		 */
++		cond_resched();
+ 	}
+ 	return 0;
+ }
+-- 
+1.9.1
+
