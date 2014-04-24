@@ -1,83 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758801AbaDXRl2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:41:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:20470 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758492AbaDXRlY convert rfc822-to-8bit (ORCPT
+	id S1758819AbaDXRll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:41:41 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:50394 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758492AbaDXRli (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:41:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,920,1389772800"; 
-   d="scan'208";a="527606846"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [Bugfix] sched: fix possible invalid memory access caused by
- CPU hot-addition
-Thread-Topic: [Bugfix] sched: fix possible invalid memory access caused by
- CPU hot-addition
-Thread-Index: AQHPXes1Qjl1X5tgj0C+YUEy+BJBwpsdv3yAgAE2H4CAAC6pgIAABUiAgABRbRCAAREHgIAAUHKAgAAiapA=
-Date: Thu, 24 Apr 2014 17:41:20 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F327EC694@ORSMSX114.amr.corp.intel.com>
-References: <1398144435-26271-1-git-send-email-jiang.liu@linux.intel.com>
- <20140422081515.GF11182@twins.programming.kicks-ass.net>
- <53572939.7020509@linux.intel.com>
- <20140423053213.GV26782@laptop.programming.kicks-ass.net>
- <20140423055107.GB1429@laptop.programming.kicks-ass.net>
- <3908561D78D1C84285E8C5FCA982C28F327EB605@ORSMSX114.amr.corp.intel.com>
- <53587E21.5070507@linux.intel.com>
- <20140424074741.GA26782@laptop.programming.kicks-ass.net>
-In-Reply-To: <20140424074741.GA26782@laptop.programming.kicks-ass.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.139]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 24 Apr 2014 13:41:38 -0400
+Date: Thu, 24 Apr 2014 13:41:35 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiaxing Wang <wangjiaxing@insigma.com.cn>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@redhat.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] tracing:Do not profile dumpstack utilities to fix stack
+ trace output
+Message-ID: <20140424134135.71314489@gandalf.local.home>
+In-Reply-To: <1397893546-7465-1-git-send-email-wangjiaxing@insigma.com.cn>
+References: <1397893546-7465-1-git-send-email-wangjiaxing@insigma.com.cn>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> 	The BIOS always sends CPU hot-addition events before memory
->> hot-addition events, so it's hard to change the order.
->> 	And we couldn't completely solve this performance penalty because the
->> affected code tries to allocate memory for all possible
->> CPUs instead of onlined CPUs.
->
-> So the BIOS is fucked, news at 11, one would have hoped Intel would have
-> _some_ say in it, but alas. So how about instead you force memory online
-> when you online the first CPU, screw whatever the BIOS does or does not?
+Peter, this is actually an ftrace/x86 fix (not a tracing one), do you
+want to take it. You can add my Acked-by as well.
 
-Certainly an interesting implementation choice by the BIOS. The only logical
-order to use to bring components of a modern cpu online is:
+-- Steve
 
-1) Memory - so we have a place to allocate structure needed for following steps
-2) Cores - so we have a place to direct interrupts from next step
-3) I/O
 
-We should log a bug against the BIOS ... but systems are already shipping so we will
-have to deal with this.
+On Sat, 19 Apr 2014 15:45:46 +0800
+Jiaxing Wang <wangjiaxing@insigma.com.cn> wrote:
 
-Either we use your existing patch - and systems with silly BIOS will work, but with a
-small NUMA penalty for objects allocated remotely
+> When function_graph tracer is enabled, we get stack trace like this:
+> 
+>          Depth    Size   Location    (88 entries)
+>          -----    ----   --------
+>    0)     3232       0   update_curr+0xe/0x1e0
+>    1)     3232       0   dump_trace+0xb5/0x1b0
+>    2)     3232       0   ftrace_ops_list_func+0xe6/0x100
+>    3)     3232      68   ftrace_call+0x5/0xb
+>    4)     3164      92   enqueue_entity+0x38/0xe20
+>    5)     3072       0   return_to_handler+0x0/0xf
+>    6)     3072      80   save_stack_trace+0x30/0x50
+>    7)     2992       0   return_to_handler+0x0/0xf
+>    8)     2992      28   stack_trace_call+0x119/0x340
+>    9)     2964       0   return_to_handler+0x0/0xf
+>   10)     2964      12   enqueue_task_fair+0x47/0x7e0
+>   11)     2952       0   return_to_handler+0x0/0xf
+>   12)     2952      16   enqueue_task+0x45/0x70
+>   ... ...
+> 
+> The 'save_stack_trace+0x30/0x50' and 'stack_trace_call+0x119/0x340'
+> entries are misplaced below the ftrace_ops_list_func and ftrace_call entries,
+> which looks very confusing.
+> 
+> And dump_stack() is also affected when function_graph tracer is enabled:
+> 
+>   [  425.353391] Call Trace:
+>   [  425.353449]  [<c16531c1>] ftrace_graph_caller+0x19/0x19
+>   [  425.353496]  [<c1012546>] print_context_stack+0xc6/0xd0
+>   [  425.353547]  [<c108ab84>] enqueue_entity+0x894/0xe60
+>   [  425.353597]  [<c107b4c5>] ? enqueue_task+0x45/0x70
+>   [  425.353649]  [<c108b159>] ? enqueue_task_fair+0x9/0x7e0
+>   [  425.353694]  [<c107b4c5>] ? enqueue_task+0x45/0x70
+>   [  425.353743]  [<c1041037>] ? prepare_ftrace_return+0x77/0xa0
+>   [  425.353791]  [<c108b159>] ? enqueue_task_fair+0x9/0x7e0
+>   [  425.353856]  [<c16531c1>] ftrace_graph_caller+0x19/0x19
+>   [  425.353901]  [<c10116b5>] dump_trace+0xb5/0x1b0
+>   [  425.353958]  [<c107b4dd>] ? enqueue_task+0x5d/0x70
+>   [  425.354002]  [<c107b436>] ? update_rq_clock.part.80+0x6/0x50
+>   [  425.354074]  [<c16531c1>] ftrace_graph_caller+0x19/0x19
+>   [  425.354120]  [<c1012666>] show_trace_log_lvl+0x46/0x50
+>   [  425.354178]  [<c16531c1>] ftrace_graph_caller+0x19/0x19
+>   [  425.354222]  [<c1011802>] show_stack_log_lvl+0x52/0xe0
+>   [  425.354272]  [<c16531c1>] ftrace_graph_caller+0x19/0x19
+>   [  425.354317]  [<c10126c6>] show_stack+0x26/0x50
+>   [  425.354369]  [<c16531c1>] ftrace_graph_caller+0x19/0x19
+>   [  425.354415]  [<c1643be1>] dump_stack+0x41/0x52
+>   [  425.354483]  [<c16531c1>] ftrace_graph_caller+0x19/0x19
+>   [  425.354527]  [<c108b197>] enqueue_task_fair+0x47/0x7e0
+>   [  425.354576]  [<c16531c1>] ftrace_graph_caller+0x19/0x19
+>   [  425.354621]  [<c107b4c5>] enqueue_task+0x45/0x70
+>   ... ...
+> 
+> This happens because the functions in the route of stack_trace and
+> dump_stack() get function_graph traced, their return addresses on stack are
+> replaced by 'return_to_handler' and their real return addresses are
+> saved in current->ret_stack[].(Specifically, these functons include
+> save_stack_trace,dump_trace,print_context_stack,print_ftrace_graph_addr
+> in the case of stack_trace and show_stack,show_stack_log_lvl,show_trace_log_lvl
+> ,dump_trace,print_context_stack,print_ftrace_graph_addr in the case of
+> dump_stack()).
+> 
+> When dumping the stack, their 'return_to_handler' on stack are skipped
+> but not their corresponding current->ret_stack entries which then are matched
+> with other function's 'return_to_handler' on the stack and resulting the
+> wrong output above.
+> 
+> To fix this, we can disable the profiling of dumpstack utilities.
+> 
+> Signed-off-by: Jiaxing Wang <wangjiaxing@insigma.com.cn>
+> ---
+>  arch/x86/kernel/Makefile | 3 +++
+>  1 file changed, 3 insertions(+)
+> 
+> diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+> index f4d9600..9dd8ce4 100644
+> --- a/arch/x86/kernel/Makefile
+> +++ b/arch/x86/kernel/Makefile
+> @@ -14,6 +14,9 @@ CFLAGS_REMOVE_pvclock.o = -pg
+>  CFLAGS_REMOVE_kvmclock.o = -pg
+>  CFLAGS_REMOVE_ftrace.o = -pg
+>  CFLAGS_REMOVE_early_printk.o = -pg
+> +CFLAGS_REMOVE_dumpstack.o = -pg
+> +CFLAGS_REMOVE_dumpstack_32.o = -pg
+> +CFLAGS_REMOVE_stacktrace.o = -pg
+>  endif
+>  
+>  CFLAGS_irq.o := -I$(src)/../include/asm/trace
 
-or ... we implement some crazy queuing scheme ... where we delay bringing cores
-online for a while to see whether more things like memory and I/O start showing
-up too.  We can't wait forever - people sometimes do configure systems with
-memory-less nodes.
-
-I think your existing solution is the better choice ... the penalties probably aren't
-all that big ... so extensive workarounds for BIOS bugs seem like the wrong direction.
-
-Maybe a one-time printk() so the user knows they have a buggy BIOS might help
-provide back pressure to BIOS teams to do this right in the future? But it isn't
-a bug for the memory-less node case.
-
--Tony
