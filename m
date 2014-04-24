@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951AbaDXKqQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:46:16 -0400
-Received: from mail-bn1blp0181.outbound.protection.outlook.com ([207.46.163.181]:40279
+	id S1756027AbaDXKq2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:46:28 -0400
+Received: from mail-bn1blp0185.outbound.protection.outlook.com ([207.46.163.185]:36520
 	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755786AbaDXKqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:46:06 -0400
+	id S1754621AbaDXKqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 06:46:21 -0400
 From: Anders Berg <anders.berg@lsi.com>
 To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
         Mike Turquette <mturquette@linaro.org>,
@@ -17,82 +17,286 @@ CC: Linus Walleij <linus.walleij@linaro.org>,
         Russell King <linux@arm.linux.org.uk>,
         <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         Anders Berg <anders.berg@lsi.com>
-Subject: [PATCH v2 0/6] Add platform support for LSI AXM55xx
-Date: Thu, 24 Apr 2014 12:44:03 +0200
-Message-ID: <cover.1398335771.git.anders.berg@lsi.com>
+Subject: [PATCH v2 4/6] ARM: axxia: Adding defconfig for AXM55xx
+Date: Thu, 24 Apr 2014 12:44:07 +0200
+Message-ID: <ccff67d7e833a8f0fe69be3a69fc08b7033701e6.1398335771.git.anders.berg@lsi.com>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <cover.1398335771.git.anders.berg@lsi.com>
+References: <cover.1398335771.git.anders.berg@lsi.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [213.121.150.226]
 X-ClientProxiedBy: BY2PR07CA040.namprd07.prod.outlook.com (10.141.251.15) To
  CO1PR07MB377.namprd07.prod.outlook.com (10.141.74.156)
 X-Forefront-PRVS: 01917B1794
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019001)(6009001)(428001)(189002)(199002)(80976001)(83322001)(50226001)(53416003)(31966008)(74662001)(19580395003)(99396002)(85852003)(77982001)(89996001)(47776003)(46102001)(83072002)(42186004)(79102001)(76482001)(20776003)(80022001)(66066001)(4396001)(74502001)(86362001)(93916002)(87286001)(88136002)(36756003)(50466002)(33646001)(87976001)(77156001)(50986999)(81542001)(81342001)(62966002)(48376002)(92726001)(92566001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR07MB377;H:swsaberg01.lsi.com;FPR:68D9FCE4.90548CA0.19D31B07.9EC4624B.2027C;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019001)(6009001)(428001)(189002)(199002)(80976001)(83322001)(19580405001)(50226001)(53416003)(31966008)(74662001)(19580395003)(99396002)(85852003)(77982001)(89996001)(47776003)(46102001)(83072002)(42186004)(79102001)(76482001)(20776003)(80022001)(66066001)(4396001)(74502001)(86362001)(93916002)(87286001)(88136002)(36756003)(50466002)(33646001)(87976001)(76176999)(77156001)(50986999)(81542001)(81342001)(62966002)(48376002)(92726001)(92566001);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR07MB377;H:swsaberg01.lsi.com;FPR:1A3C778F.CFE959D.3EFAF1CA.72B67480.205E3;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:;
 X-OriginatorOrg: lsi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Add a defconfig file for the LSI Axxia family of devices (CONFIG_ARCH_AXXIA).
 
-Verion 2 of this series to introduces basic platform support for the LSI
-AXM5516 SoC. When this is in shape, could it be merged into the arm-soc tree?
-
-Changes:
-
-v2:
-    * Rebased to arm-soc/for-next
-    * Removed redundant HAVE_SMP and ARCH_WANT_OPTIONAL_GPIOLIB from Kconfig
-    * Use CPU_METHOD_OF_DECLARE to register smp_operations
-    * Rework smp operations to avoid holding pen and custom headsmp.S
-    * Clean up board file
-    * Corrected clock properties for arm,sp804 dts node.
-    * Changed machine compatible strings to include full model number.
-    * Break out clk-axxia driver as separate patch
-    * Removed Makefile.boot
-
-Anders Berg (6):
-  ARM: Add platform support for LSI AXM55xx SoC
-  clk: Add clock driver for AXM55xx SoC
-  ARM: dts: Device tree for AXM55xx.
-  ARM: axxia: Adding defconfig for AXM55xx
-  power: reset: Add Axxia system reset driver
-  ARM: dts: axxia: Add reset controller
-
- Documentation/devicetree/bindings/arm/axxia.txt    |  12 +
- .../devicetree/bindings/clock/clk-axxia.txt        |  88 ++++++
- .../bindings/power_supply/axxia-reset.txt          |  20 ++
- arch/arm/Kconfig                                   |   2 +
- arch/arm/Makefile                                  |   2 +
- arch/arm/boot/dts/Makefile                         |   1 +
- arch/arm/boot/dts/axm5516-amarillo.dts             |  51 ++++
- arch/arm/boot/dts/axm5516-cpus.dtsi                | 204 ++++++++++++++
- arch/arm/boot/dts/axm55xx.dtsi                     | 311 +++++++++++++++++++++
- arch/arm/configs/axm55xx_defconfig                 | 248 ++++++++++++++++
- arch/arm/mach-axxia/Kconfig                        |  16 ++
- arch/arm/mach-axxia/Makefile                       |   2 +
- arch/arm/mach-axxia/axxia.c                        |  28 ++
- arch/arm/mach-axxia/platsmp.c                      |  89 ++++++
- drivers/clk/Makefile                               |   1 +
- drivers/clk/clk-axxia.c                            | 281 +++++++++++++++++++
- drivers/power/reset/Kconfig                        |   8 +
- drivers/power/reset/Makefile                       |   1 +
- drivers/power/reset/axxia-reset.c                  |  97 +++++++
- 19 files changed, 1462 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/axxia.txt
- create mode 100644 Documentation/devicetree/bindings/clock/clk-axxia.txt
- create mode 100644 Documentation/devicetree/bindings/power_supply/axxia-reset.txt
- create mode 100644 arch/arm/boot/dts/axm5516-amarillo.dts
- create mode 100644 arch/arm/boot/dts/axm5516-cpus.dtsi
- create mode 100644 arch/arm/boot/dts/axm55xx.dtsi
+Signed-off-by: Anders Berg <anders.berg@lsi.com>
+---
+ arch/arm/configs/axm55xx_defconfig | 248 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 248 insertions(+)
  create mode 100644 arch/arm/configs/axm55xx_defconfig
- create mode 100644 arch/arm/mach-axxia/Kconfig
- create mode 100644 arch/arm/mach-axxia/Makefile
- create mode 100644 arch/arm/mach-axxia/axxia.c
- create mode 100644 arch/arm/mach-axxia/platsmp.c
- create mode 100644 drivers/clk/clk-axxia.c
- create mode 100644 drivers/power/reset/axxia-reset.c
 
+diff --git a/arch/arm/configs/axm55xx_defconfig b/arch/arm/configs/axm55xx_defconfig
+new file mode 100644
+index 0000000..d3260d7
+--- /dev/null
++++ b/arch/arm/configs/axm55xx_defconfig
+@@ -0,0 +1,248 @@
++CONFIG_SYSVIPC=y
++CONFIG_POSIX_MQUEUE=y
++CONFIG_FHANDLE=y
++CONFIG_AUDIT=y
++CONFIG_HIGH_RES_TIMERS=y
++CONFIG_BSD_PROCESS_ACCT=y
++CONFIG_BSD_PROCESS_ACCT_V3=y
++CONFIG_TASKSTATS=y
++CONFIG_TASK_DELAY_ACCT=y
++CONFIG_TASK_XACCT=y
++CONFIG_TASK_IO_ACCOUNTING=y
++CONFIG_IKCONFIG=y
++CONFIG_IKCONFIG_PROC=y
++CONFIG_LOG_BUF_SHIFT=16
++CONFIG_NAMESPACES=y
++# CONFIG_UTS_NS is not set
++# CONFIG_IPC_NS is not set
++# CONFIG_PID_NS is not set
++# CONFIG_NET_NS is not set
++CONFIG_SCHED_AUTOGROUP=y
++CONFIG_RELAY=y
++CONFIG_BLK_DEV_INITRD=y
++CONFIG_SYSCTL_SYSCALL=y
++CONFIG_EMBEDDED=y
++# CONFIG_COMPAT_BRK is not set
++CONFIG_PROFILING=y
++CONFIG_MODULES=y
++CONFIG_MODULE_UNLOAD=y
++# CONFIG_IOSCHED_DEADLINE is not set
++CONFIG_ARCH_AXXIA=y
++CONFIG_GPIO_PCA953X=y
++CONFIG_ARM_LPAE=y
++CONFIG_ARM_THUMBEE=y
++CONFIG_ARM_ERRATA_430973=y
++CONFIG_ARM_ERRATA_643719=y
++CONFIG_ARM_ERRATA_720789=y
++CONFIG_ARM_ERRATA_754322=y
++CONFIG_ARM_ERRATA_754327=y
++CONFIG_ARM_ERRATA_764369=y
++CONFIG_ARM_ERRATA_775420=y
++CONFIG_ARM_ERRATA_798181=y
++CONFIG_PCI=y
++CONFIG_PCI_MSI=y
++CONFIG_PCIE_AXXIA=y
++CONFIG_SMP=y
++CONFIG_NR_CPUS=16
++CONFIG_HOTPLUG_CPU=y
++CONFIG_PREEMPT=y
++CONFIG_AEABI=y
++CONFIG_OABI_COMPAT=y
++CONFIG_HIGHMEM=y
++CONFIG_KSM=y
++CONFIG_ZBOOT_ROM_TEXT=0x0
++CONFIG_ZBOOT_ROM_BSS=0x0
++CONFIG_ARM_APPENDED_DTB=y
++CONFIG_ARM_ATAG_DTB_COMPAT=y
++CONFIG_VFP=y
++CONFIG_NEON=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++CONFIG_BINFMT_MISC=y
++# CONFIG_SUSPEND is not set
++CONFIG_NET=y
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++CONFIG_XFRM_USER=y
++CONFIG_XFRM_SUB_POLICY=y
++CONFIG_XFRM_MIGRATE=y
++CONFIG_XFRM_STATISTICS=y
++CONFIG_NET_KEY=y
++CONFIG_INET=y
++CONFIG_IP_PNP=y
++CONFIG_IP_PNP_DHCP=y
++CONFIG_IP_PNP_BOOTP=y
++CONFIG_INET_AH=y
++CONFIG_INET_ESP=y
++CONFIG_INET_IPCOMP=y
++# CONFIG_INET_LRO is not set
++# CONFIG_IPV6 is not set
++CONFIG_NETWORK_PHY_TIMESTAMPING=y
++CONFIG_BRIDGE=y
++# CONFIG_WIRELESS is not set
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++CONFIG_DEVTMPFS=y
++CONFIG_DEVTMPFS_MOUNT=y
++CONFIG_MTD=y
++CONFIG_MTD_CMDLINE_PARTS=y
++CONFIG_MTD_AFS_PARTS=y
++CONFIG_MTD_BLOCK=y
++CONFIG_MTD_CFI=y
++CONFIG_MTD_CFI_INTELEXT=y
++CONFIG_MTD_CFI_AMDSTD=y
++CONFIG_MTD_CFI_STAA=y
++CONFIG_MTD_PHYSMAP=y
++CONFIG_MTD_PHYSMAP_OF=y
++CONFIG_MTD_M25P80=y
++CONFIG_PROC_DEVICETREE=y
++CONFIG_BLK_DEV_LOOP=y
++CONFIG_BLK_DEV_RAM=y
++CONFIG_EEPROM_AT24=y
++CONFIG_EEPROM_AT25=y
++CONFIG_BLK_DEV_SD=y
++CONFIG_CHR_DEV_SG=y
++CONFIG_ATA=y
++CONFIG_PATA_PLATFORM=y
++CONFIG_PATA_OF_PLATFORM=y
++CONFIG_MD=y
++CONFIG_BLK_DEV_DM=y
++CONFIG_DM_UEVENT=y
++CONFIG_NETDEVICES=y
++CONFIG_TUN=y
++CONFIG_VETH=y
++CONFIG_VIRTIO_NET=y
++# CONFIG_NET_CADENCE is not set
++# CONFIG_NET_VENDOR_BROADCOM is not set
++# CONFIG_NET_VENDOR_CIRRUS is not set
++# CONFIG_NET_VENDOR_FARADAY is not set
++# CONFIG_NET_VENDOR_INTEL is not set
++# CONFIG_NET_VENDOR_MARVELL is not set
++# CONFIG_NET_VENDOR_MICREL is not set
++# CONFIG_NET_VENDOR_NATSEMI is not set
++# CONFIG_NET_VENDOR_SEEQ is not set
++# CONFIG_NET_VENDOR_SMSC is not set
++# CONFIG_NET_VENDOR_STMICRO is not set
++# CONFIG_NET_VENDOR_VIA is not set
++# CONFIG_NET_VENDOR_WIZNET is not set
++CONFIG_BROADCOM_PHY=y
++# CONFIG_WLAN is not set
++# CONFIG_MOUSE_PS2_ALPS is not set
++# CONFIG_MOUSE_PS2_LOGIPS2PP is not set
++# CONFIG_MOUSE_PS2_SYNAPTICS is not set
++# CONFIG_MOUSE_PS2_TRACKPOINT is not set
++# CONFIG_SERIO_SERPORT is not set
++CONFIG_SERIO_AMBAKMI=y
++CONFIG_LEGACY_PTY_COUNT=16
++CONFIG_SERIAL_AMBA_PL011=y
++CONFIG_SERIAL_AMBA_PL011_CONSOLE=y
++CONFIG_VIRTIO_CONSOLE=y
++# CONFIG_HW_RANDOM is not set
++CONFIG_I2C=y
++CONFIG_I2C_CHARDEV=y
++CONFIG_I2C_MUX=y
++CONFIG_I2C_AXXIA=y
++CONFIG_SPI=y
++CONFIG_SPI_PL022=y
++CONFIG_DP83640_PHY=y
++CONFIG_GPIOLIB=y
++CONFIG_GPIO_SYSFS=y
++CONFIG_GPIO_PL061=y
++CONFIG_POWER_SUPPLY=y
++CONFIG_POWER_RESET=y
++CONFIG_POWER_RESET_AXXIA=y
++CONFIG_SENSORS_ADT7475=y
++CONFIG_SENSORS_JC42=y
++CONFIG_SENSORS_LM75=y
++CONFIG_PMBUS=y
++CONFIG_SENSORS_LTC2978=y
++CONFIG_WATCHDOG=y
++CONFIG_ARM_SP805_WATCHDOG=y
++CONFIG_FB=y
++CONFIG_FB_ARMCLCD=y
++CONFIG_FRAMEBUFFER_CONSOLE=y
++CONFIG_LOGO=y
++# CONFIG_LOGO_LINUX_MONO is not set
++# CONFIG_LOGO_LINUX_VGA16 is not set
++CONFIG_HID_A4TECH=y
++CONFIG_HID_APPLE=y
++CONFIG_HID_BELKIN=y
++CONFIG_HID_CHERRY=y
++CONFIG_HID_CHICONY=y
++CONFIG_HID_CYPRESS=y
++CONFIG_HID_DRAGONRISE=y
++CONFIG_HID_EZKEY=y
++CONFIG_HID_KYE=y
++CONFIG_HID_GYRATION=y
++CONFIG_HID_TWINHAN=y
++CONFIG_HID_KENSINGTON=y
++CONFIG_HID_LOGITECH=y
++CONFIG_HID_MICROSOFT=y
++CONFIG_HID_MONTEREY=y
++CONFIG_HID_NTRIG=y
++CONFIG_HID_ORTEK=y
++CONFIG_HID_PANTHERLORD=y
++CONFIG_HID_PETALYNX=y
++CONFIG_HID_SAMSUNG=y
++CONFIG_HID_SUNPLUS=y
++CONFIG_HID_GREENASIA=y
++CONFIG_HID_SMARTJOYPLUS=y
++CONFIG_HID_TOPSEED=y
++CONFIG_HID_THRUSTMASTER=y
++CONFIG_HID_ZEROPLUS=y
++CONFIG_USB=y
++CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
++CONFIG_USB_EHCI_HCD=y
++# CONFIG_USB_EHCI_TT_NEWSCHED is not set
++CONFIG_USB_EHCI_HCD_AXXIA=y
++CONFIG_USB_STORAGE=y
++CONFIG_MMC=y
++CONFIG_MMC_ARMMMCI=y
++CONFIG_DMADEVICES=y
++CONFIG_PL330_DMA=y
++CONFIG_VIRT_DRIVERS=y
++CONFIG_VIRTIO_MMIO=y
++CONFIG_MAILBOX=y
++CONFIG_PL320_MBOX=y
++# CONFIG_IOMMU_SUPPORT is not set
++CONFIG_EXT2_FS=y
++CONFIG_EXT3_FS=y
++# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
++CONFIG_EXT4_FS=y
++CONFIG_AUTOFS4_FS=y
++CONFIG_FUSE_FS=y
++CONFIG_CUSE=y
++CONFIG_FSCACHE=y
++CONFIG_FSCACHE_STATS=y
++CONFIG_FSCACHE_HISTOGRAM=y
++CONFIG_FSCACHE_DEBUG=y
++CONFIG_FSCACHE_OBJECT_LIST=y
++CONFIG_CACHEFILES=y
++CONFIG_CACHEFILES_HISTOGRAM=y
++CONFIG_ISO9660_FS=y
++CONFIG_UDF_FS=y
++CONFIG_MSDOS_FS=y
++CONFIG_VFAT_FS=y
++CONFIG_NTFS_FS=y
++CONFIG_TMPFS=y
++CONFIG_JFFS2_FS=y
++CONFIG_CRAMFS=y
++CONFIG_NFS_FS=y
++CONFIG_NFS_V4=y
++CONFIG_ROOT_NFS=y
++CONFIG_NFS_FSCACHE=y
++CONFIG_SUNRPC_DEBUG=y
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_PRINTK_TIME=y
++CONFIG_DEBUG_INFO=y
++CONFIG_DEBUG_FS=y
++CONFIG_MAGIC_SYSRQ=y
++# CONFIG_SCHED_DEBUG is not set
++CONFIG_RCU_CPU_STALL_TIMEOUT=60
++# CONFIG_FTRACE is not set
++CONFIG_DEBUG_USER=y
++CONFIG_CRYPTO_GCM=y
++CONFIG_CRYPTO_XCBC=y
++CONFIG_CRYPTO_SHA256=y
++# CONFIG_CRYPTO_ANSI_CPRNG is not set
++CONFIG_VIRTUALIZATION=y
++CONFIG_KVM=y
 -- 
 1.8.3.2
 
