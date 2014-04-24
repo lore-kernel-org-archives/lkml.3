@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757337AbaDXMhT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:37:19 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43843 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757251AbaDXMhI (ORCPT
+	id S1756694AbaDXMh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:37:58 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:63655 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753282AbaDXMhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:37:08 -0400
-Date: Thu, 24 Apr 2014 13:36:50 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Steven Miao <realmz6@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net, linux-spi@vger.kernel.org
-Message-ID: <20140424123650.GV12304@sirena.org.uk>
-References: <20140423224035.1de64093@gandalf.local.home>
- <20140424103329.GL12304@sirena.org.uk>
- <20140424113346.GM12304@sirena.org.uk>
- <20140424083432.70c80f64@gandalf.local.home>
+	Thu, 24 Apr 2014 08:37:55 -0400
+Date: Thu, 24 Apr 2014 08:37:53 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anton Arapov <aarapov@redhat.com>, David Long <dave.long@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] uprobes/tracing:
+ uprobe_perf_open()->uprobe_apply() fix
+Message-ID: <20140424083753.427bd54b@gandalf.local.home>
+In-Reply-To: <20140424115458.GA8882@redhat.com>
+References: <20140423165808.GA29485@redhat.com>
+	<20140423165830.GA29493@redhat.com>
+	<20140423231728.1b95e37c@gandalf.local.home>
+	<20140424115458.GA8882@redhat.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="z5xxnjJtmRtsM6EM"
-Content-Disposition: inline
-In-Reply-To: <20140424083432.70c80f64@gandalf.local.home>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] spi-bfin: Add missing gpio.h include
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.142:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 24 Apr 2014 13:54:58 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
---z5xxnjJtmRtsM6EM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> On 04/23, Steven Rostedt wrote:
+> >
+> > Egad, this confused the heck out of me. I didn't notice the swap in
+> > functions and was wondering what you were doing. I didn't realize this
+> > is what you meant by moving the uprobe_perf_close() up. I was thinking
+> > you moved the call up or something, not the function itself physically
+> > in the file.
+> ...
+> >
+> > You can add by Acked-by, but next time, please make this into two
+> > patches. One to do the move, the other to do the change.
+> 
+> OK...
+> 
+> I tried to lessen the number of patches I have ;) But I agree, this simple
+> fix looks too complicated without preparation which only moves the code.
 
-On Thu, Apr 24, 2014 at 08:34:32AM -0400, Steven Rostedt wrote:
+Yeah, sometimes a simple fix just seems wrong to break into two. But if
+it helps in code review, it's definitely worth it.
 
-> It's just annoying when my tests break on something that I'm not
-> testing ;-)
 
-With something like this clearly you are testing it, even if you didn't
-mean to!
+> 
+> Let me split it then. Result is the same do I preserved the acks, this is
+> what I am going to add to my tree.
 
---z5xxnjJtmRtsM6EM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+They look good (and much easier to review).
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIbBAEBAgAGBQJTWQVeAAoJELSic+t+oim9jgQP+JmKG2RwMl13u1IThaWgXoNB
-OGQCPOGosVSLzU6svyzmQMKs8gnybVyfuH9tFnnX4rvJb7rOI8fgLTT+5TnwIxHE
-ePJeOVWynGgoejoq6OU2qNe7TA9wDi4SxpJF4IMPW10XAlRXMT8ZZLpzYYVA1pAs
-MkENlcK34tzXlFaXer1aaxEzXMKqEY0wsiJ5iqm/BzlWWbOXA4bMukVwG3X+YMUm
-CdHonA/zDIDrndYXBf8s1iVZrdcBh/yAqaL1M6vQj+PvbJm6LUxGfHcGpvuchkHW
-YFwEdUl13Py0xcOE2m2+jY7VoYUzR9zHgX2JDAJHyMM4+QSIycXu/z77lk2fSxV0
-tHk7aTNJmLigOYH/s+E+h2MWToMm3mxVR2y7vvympabJ2KJFE+xw2qJCoAFNIsz1
-LKou5gI9UmgOuqUw0ysfA6zMrA5woFcT6AAvwqt9rPK/JN7zUuSKlFS8blhVPwRB
-g5rxaoM6doHXO+mjs7nDA9SqQpcZQAwYRsz2u/PVgqXLkw7LVW8v/JcX1+5vaEYR
-30dGqn3z+r8WBHLAPgKSC8Vjz/oe90a2KG9aZTxS+mvhg5WflnK+SW9NP6BpCT3S
-hEsMMiW/rR2q18xHhFKzRDZ7Zx0jacTijTQIEGLmPDVUIIMHrwPpMd0iRbI8OClm
-q/lSGjqvdsUVAqYOroA=
-=tcdd
------END PGP SIGNATURE-----
-
---z5xxnjJtmRtsM6EM--
+-- Steve
