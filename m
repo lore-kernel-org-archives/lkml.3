@@ -1,105 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241AbaDXBNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 21:13:14 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:35518 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751636AbaDXBNM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 21:13:12 -0400
-Message-ID: <1398301982.2805.57.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [RFC PATCH v5 2/2] Use kernfs_break_active_protection() for
- device online store callbacks
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, rafael.j.wysocki@intel.com,
-        toshi.kani@hp.com
-Date: Thu, 24 Apr 2014 09:13:02 +0800
-In-Reply-To: <7083319.XfqyEgH4Mt@vostro.rjw.lan>
-References: <1397461649.12943.1.camel@ThinkPad-T5421.cn.ibm.com>
-	 <24546121.zVbmBfcmRG@vostro.rjw.lan>
-	 <1398217832.2805.33.camel@ThinkPad-T5421.cn.ibm.com>
-	 <7083319.XfqyEgH4Mt@vostro.rjw.lan>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1751896AbaDXBSJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 21:18:09 -0400
+Received: from ozlabs.org ([103.22.144.67]:50007 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815AbaDXBSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 21:18:07 -0400
+Date: Thu, 24 Apr 2014 11:17:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kefeng Wang <kefeng.wang@linaro.org>,
+        Hans de Goede <hdegoede@redhat.com>
+Subject: linux-next: build failure after merge of the libata tree
+Message-Id: <20140424111754.45e9672e06c362945d111b6e@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042401-0342-0000-0000-00000889761A
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__24_Apr_2014_11_17_54_+1000_JmDUxZv/5R8zACYz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-23 at 12:54 +0200, Rafael J. Wysocki wrote:
-> On Wednesday, April 23, 2014 09:50:32 AM Li Zhong wrote:
-> > On Tue, 2014-04-22 at 12:11 +0200, Rafael J. Wysocki wrote:
-> > > On Tuesday, April 22, 2014 11:34:39 AM Li Zhong wrote:
-> > > > On Mon, 2014-04-21 at 18:46 -0400, Tejun Heo wrote:
-> > > > > Hello,
-> > > > > 
-> > > > > On Mon, Apr 21, 2014 at 05:23:50PM +0800, Li Zhong wrote:
-> > > > > 
-> > > > > Proper /** function comment would be nice.
-> > > > 
-> > > > Ok, will try to write some in next version.
-> > > > 
-> > > > > 
-> > > > > > +struct kernfs_node *lock_device_hotplug_sysfs(struct device *dev,
-> > > > > > +					       struct device_attribute *attr)
-> > > > > 
-> > > > > I can see why you did this but let's please not require the user of
-> > > > > this function to see how the thing is working internally.  Let's
-> > > > > return int and keep track of (or look up again) the kernfs_node
-> > > > > internally.
-> > > > 
-> > > > Ok, it also makes the prototype of lock and unlock look more consistent
-> > > > and comfortable. 
-> > > > 
-> > > > > 
-> > > > > >  {
-> > > > > ...
-> > > > > > +	/*
-> > > > > > +	 * We assume device_hotplug_lock must be acquired before removing
-> > > > > 
-> > > > > Is this assumption true?  If so, can we add lockdep assertions in
-> > > > > places to verify and enforce this?  If not, aren't we just feeling
-> > > > > good when the reality is broken?
-> > > > 
-> > > > It seems not true ... I think there are devices that don't have the
-> > > > online/offline concept, we just need to add it, remove it, like ethernet
-> > > > cards. 
-> > > 
-> > > Well, I haven't been following this closely (I was travelling, sorry), but
-> > > there certainly are devices without online/offline.  That currently is only
-> > > present for CPUs, memory blocks and ACPI containers (if I remember correctly).
-> > > 
-> > > > 
-> > > > Maybe we could change the comments above, like:
-> > > > 	/* We assume device_hotplug_lock must be acquired before 
-> > > > 	 * removing devices, which have online/offline sysfs knob, 
-> > > > 	 * and some locks are needed to serialize the online/offline
-> > > > 	 * callbacks and device removing. ...
-> > > > ? 
-> > > 
-> > > Lockdep assertions would be better than this in my opinion.
-> > 
-> > This is talking about the lock required in the other process, the device
-> > removing process, e.g. that in remove_memory() below. So I guess no
-> > lockdep assertions needed here. Or I misunderstand your point? 
-> 
-> I mean if you assume certain lock to be held somewhere, it is better to use
-> lockdep annotations to express that assumption, because that will cause users
-> to *see* the problem when it happens.
+--Signature=_Thu__24_Apr_2014_11_17_54_+1000_JmDUxZv/5R8zACYz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, I see, I think you were suggesting the same thing as Tejun, just I
-misunderstood it. 
+Hi Tejun,
 
-Thanks, Zhong
+After merging the libata tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
-> 
-> Thanks!
-> 
+drivers/ata/libahci_platform.c: In function 'ahci_platform_init_host':
+drivers/ata/libahci_platform.c:317:20: warning: cast to pointer from intege=
+r of different size [-Wint-to-pointer-cast]
+  pi.private_data =3D (void *)host_flags
+                    ^
+drivers/ata/libahci_platform.c:318:2: error: expected ';' before 'hpriv'
+  hpriv->flags |=3D host_flags;
+  ^
 
+Please test build this stuff ...
 
+Caused by commit ac795a7ec2d2 ("libahci_platform: add host_flags parameter
+in ahci_platform_init_host()").
+
+I have used the libata tree from next-20140423 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Signature=_Thu__24_Apr_2014_11_17_54_+1000_JmDUxZv/5R8zACYz
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBCAAGBQJTWGZNAAoJEMDTa8Ir7ZwVkY8P/jO2v1f6OcHqCcEMgdHuNa80
+J52bQhns1gf95omr84+c8Z89KlL0Qpy6jPk7zzPYLXT18+I5TKad9QC84mQ7wg7b
+pfbhHe1f9UAOIF+dr3GTYXE723E/REixf5iEjcgNo3k10fVFeXhG9RjX7upZnQLa
+z1WgPzBkFe/tlT8qGe1MawEI4Pnymi9FxAreKa57jrzPwk+kxlrwRtEY9PvczekV
+gKt0lDG4K+Bbybxr2E7v9Aj+wpjpxPtROsDb7Io5j62Mz/E1L1Hag7hKNtwKNy2p
+wkSGV6YdZtJ3uxf5hq3rCfjHlObNYNpUPsv7LveBH5Man3RjXaSRNb+tHqZCqsvu
+iZRJaUbdg8WVQB7xW9l1PHnZ5Na1O8fh/hjiUiCWb8CqWPZwlvtG0+qSciwUGvFr
+nCdhXv0qB3fL6INq4TQQB2hWwI2FAKh71zalRsxNDPfVMHdKWVR/a0QA4rxi896u
+18pEX1YXdTQ6zmMZss8LaR/NaX66Em+buYXeP1lgCxofONk0zAKaGcNomo/QrZGP
+OgIvnLlK10wt5/2QnXIhRMLcO9LDcbMLZ3k0eWCMKzzxz+cMcsfh7DCh4mmGsWTY
+o4Hqcg2fKUAzVucxyj/cpQl35NbpOPawnEX1uRjf1lA9xV7EL9ZunkOpZSFOZ+zR
+a5hTjP/sdDHB+2UTKkhQ
+=Od2p
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__24_Apr_2014_11_17_54_+1000_JmDUxZv/5R8zACYz--
