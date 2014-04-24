@@ -1,203 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183AbaDXVFA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:05:00 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:35530 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208AbaDXVEz (ORCPT
+	id S1754343AbaDXVF2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:05:28 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:42351 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272AbaDXVFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:04:55 -0400
-Message-ID: <1398373439.3395.82.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 15/20] ima: path based policy loading interface
+	Thu, 24 Apr 2014 17:05:22 -0400
+Message-ID: <1398373468.3395.83.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [PATCH 12/20] ima: provide buffer hash calculation function
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: Dmitry Kasatkin <d.kasatkin@samsung.com>
 Cc: dhowells@redhat.com, jmorris@namei.org, roberto.sassu@polito.it,
         linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 24 Apr 2014 17:03:59 -0400
-In-Reply-To: <0f525fc369d224f149dec6606467109c9cd7e735.1398259638.git.d.kasatkin@samsung.com>
+Date: Thu, 24 Apr 2014 17:04:28 -0400
+In-Reply-To: <1b9253e91b214bb67d4fdd9297f9734d7c4cb6cc.1398259638.git.d.kasatkin@samsung.com>
 References: <cover.1398259638.git.d.kasatkin@samsung.com>
-	 <0f525fc369d224f149dec6606467109c9cd7e735.1398259638.git.d.kasatkin@samsung.com>
+	 <1b9253e91b214bb67d4fdd9297f9734d7c4cb6cc.1398259638.git.d.kasatkin@samsung.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
 Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042421-8236-0000-0000-000001C92D02
+x-cbid: 14042421-3532-0000-0000-0000014AAAE1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 2014-04-23 at 16:30 +0300, Dmitry Kasatkin wrote: 
-> Currently policy is loaded by writing policy content to
-> '<securityfs>/ima/policy' file.
+> This patch provides convenient buffer hash calculation function.
 > 
-> This patch extends policy loading meachanism with possibility
-> to load signed policy using a path to the policy.
-> Policy signature must be available in the <policy>.sig file.
+> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 
-Assuming (big assumption) you're permitted to open the policy file from
-the kernel, why are you verifying the signature inline based on a .sig?
-Shouldn't this be a new integrity/security hook?
-
-thanks,
+Where/how is it being used?  We normally don't upstream a new function
+without it being used.  Is the usage in another patch?
 
 Mimi
 
-> 
-> Policy can be loaded like:
-> echo /etc/ima/ima_policy > /sys/kernel/security/ima/policy
-> 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
 > ---
->  security/integrity/ima/Kconfig      | 13 +++++++
->  security/integrity/ima/ima.h        |  9 +++++
->  security/integrity/ima/ima_fs.c     |  2 +-
->  security/integrity/ima/ima_policy.c | 74 +++++++++++++++++++++++++++++++++++++
->  4 files changed, 97 insertions(+), 1 deletion(-)
+>  security/integrity/ima/ima.h        |  1 +
+>  security/integrity/ima/ima_crypto.c | 11 +++++++++--
+>  2 files changed, 10 insertions(+), 2 deletions(-)
 > 
-> diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-> index 5474c47..465cef4 100644
-> --- a/security/integrity/ima/Kconfig
-> +++ b/security/integrity/ima/Kconfig
-> @@ -140,3 +140,16 @@ config IMA_LOAD_X509
->  	help
->  	   This option enables X509 certificate loading from the kernel
->  	   to the '_ima' trusted keyring.
-> +
-> +config IMA_POLICY_LOADER
-> +	bool "Path based policy loading interface"
-> +	depends on IMA_TRUSTED_KEYRING
-> +	default n
-> +	help
-> +	  This option enables path based signed policy loading interface.
-> +	  Policy signature must be provided in the <policy>.sig file
-> +	  along with the policy. When this option is enabled, kernel
-> +	  tries to load default policy from /etc/ima_policy.
-> +
-> +	  Loading policy is like:
-> +	  echo /etc/ima/ima_policy > /sys/kernel/security/ima/policy
 > diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-> index 3b90b60..f2722bb 100644
+> index f4c1e8dd..a5d5ccb 100644
 > --- a/security/integrity/ima/ima.h
 > +++ b/security/integrity/ima/ima.h
-> @@ -170,6 +170,15 @@ bool ima_default_policy(void);
->  ssize_t ima_parse_add_rule(char *);
->  void ima_delete_rules(void);
+> @@ -98,6 +98,7 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
+>  			   const char *op, struct inode *inode,
+>  			   const unsigned char *filename);
+>  int ima_calc_file_hash(struct file *file, struct ima_digest_data *hash);
+> +int ima_calc_buffer_hash(const void *buf, int len, struct ima_digest_data *hash);
+>  int ima_calc_field_array_hash(struct ima_field_data *field_data,
+>  			      struct ima_template_desc *desc, int num_fields,
+>  			      struct ima_digest_data *hash);
+> diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
+> index 139e7f7..50c78c0 100644
+> --- a/security/integrity/ima/ima_crypto.c
+> +++ b/security/integrity/ima/ima_crypto.c
+> @@ -434,13 +434,13 @@ static int ima_calc_field_array_hash_tfm(struct ima_field_data *field_data,
+>  		u8 *data_to_hash = field_data[i].data;
+>  		u32 datalen = field_data[i].len;
 > 
-> +#ifdef CONFIG_IMA_POLICY_LOADER
-> +ssize_t ima_read_policy(char *path);
-> +#else
-> +static inline ssize_t ima_read_policy(char *data)
-> +{
-> +	return ima_parse_add_rule(data);
-> +}
-> +#endif
-> +
->  /* Appraise integrity measurements */
->  #define IMA_APPRAISE_ENFORCE	0x01
->  #define IMA_APPRAISE_FIX	0x02
-> diff --git a/security/integrity/ima/ima_fs.c b/security/integrity/ima/ima_fs.c
-> index 34ae5f2..bde7a0e 100644
-> --- a/security/integrity/ima/ima_fs.c
-> +++ b/security/integrity/ima/ima_fs.c
-> @@ -273,7 +273,7 @@ static ssize_t ima_write_policy(struct file *file, const char __user *buf,
->  	if (copy_from_user(data, buf, datalen))
->  		goto out;
-> 
-> -	result = ima_parse_add_rule(data);
-> +	result = ima_read_policy(data);
->  out:
->  	if (result < 0)
->  		valid_policy = 0;
-> diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-> index b24e7d1..c6da801 100644
-> --- a/security/integrity/ima/ima_policy.c
-> +++ b/security/integrity/ima/ima_policy.c
-> @@ -17,6 +17,9 @@
->  #include <linux/parser.h>
->  #include <linux/slab.h>
->  #include <linux/genhd.h>
-> +#ifdef CONFIG_IMA_POLICY_LOADER
-> +#include <linux/file.h>
-> +#endif
-> 
->  #include "ima.h"
-> 
-> @@ -747,3 +750,74 @@ void ima_delete_rules(void)
->  	}
->  	mutex_unlock(&ima_rules_mutex);
+> -		if (strcmp(td->name, IMA_TEMPLATE_IMA_NAME) != 0) {
+> +		if (td && strcmp(td->name, IMA_TEMPLATE_IMA_NAME) != 0) {
+>  			rc = crypto_shash_update(&desc.shash,
+>  						(const u8 *) &field_data[i].len,
+>  						sizeof(field_data[i].len));
+>  			if (rc)
+>  				break;
+> -		} else if (strcmp(td->fields[i]->field_id, "n") == 0) {
+> +		} else if (td && strcmp(td->fields[i]->field_id, "n") == 0) {
+>  			memcpy(buffer, data_to_hash, datalen);
+>  			data_to_hash = buffer;
+>  			datalen = IMA_EVENT_NAME_LEN_MAX + 1;
+> @@ -475,6 +475,13 @@ int ima_calc_field_array_hash(struct ima_field_data *field_data,
+>  	return rc;
 >  }
-> +
-> +#ifdef CONFIG_IMA_POLICY_LOADER
-> +
-> +ssize_t ima_read_policy(char *path)
+> 
+> +int ima_calc_buffer_hash(const void *buf, int len, struct ima_digest_data *hash)
 > +{
-> +	char *data, *datap, *sig;
-> +	int rc, psize, pathlen = strlen(path);
-> +	char *p, *sigpath;
-> +	struct {
-> +		struct ima_digest_data hdr;
-> +		char digest[IMA_MAX_DIGEST_SIZE];
-> +	} hash;
+> +	struct ima_field_data fd = { .data = (u8 *)buf, .len = len };
 > +
-> +	if (path[0] != '/')
-> +		return ima_parse_add_rule(path);
-> +
-> +	/* remove \n */
-> +	datap = path;
-> +	strsep(&datap, "\n");
-> +
-> +	/* we always want signature? */
-> +	sigpath = __getname();
-> +	if (!sigpath)
-> +		return -ENOMEM;
-> +
-> +	rc = integrity_read_file(path, &data);
-> +	if (rc < 0)
-> +		goto free_path;
-> +
-> +	psize = rc;
-> +	datap = data;
-> +
-> +	sprintf(sigpath, "%s.sig", path);
-> +	/* we always want signature? */
-> +	rc = integrity_read_file(sigpath, &sig);
-> +	if (rc < 0)
-> +		goto free_data;
-> +
-> +	hash.hdr.algo = ima_hash_algo;
-> +	ima_get_hash_algo((void *)sig, rc, &hash.hdr);
-> +	ima_calc_buffer_hash(data, psize, &hash.hdr);
-> +	rc = integrity_digsig_verify(INTEGRITY_KEYRING_IMA,
-> +				     (const char *)sig, rc,
-> +				     hash.hdr.digest, hash.hdr.length);
-> +	if (rc) {
-> +		pr_err("integrity_digsig_verify() = %d\n", rc);
-> +		goto free_sig;
-> +	}
-> +
-> +	while (psize > 0 && (p = strsep(&datap, "\n"))) {
-> +		pr_debug("rule: %s\n", p);
-> +		rc = ima_parse_add_rule(p);
-> +		if (rc < 0)
-> +			break;
-> +		psize -= rc;
-> +	}
-> +free_sig:
-> +	kfree(sig);
-> +free_data:
-> +	kfree(data);
-> +free_path:
-> +	__putname(sigpath);
-> +	if (rc < 0)
-> +		return rc;
-> +	else if (psize)
-> +		return -EINVAL;
-> +	else
-> +		return pathlen;
+> +	return ima_calc_field_array_hash(&fd, NULL, 1, hash);
 > +}
 > +
-> +#endif
+>  static void __init ima_pcrread(int idx, u8 *pcr)
+>  {
+>  	if (!ima_used_chip)
 
 
