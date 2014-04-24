@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910AbaDXJGs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:06:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47149 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755113AbaDXI4c (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:56:32 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Michal Hocko <mhocko@suse.cz>,
-        Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 173/182] mm/hugetlb.c: add cond_resched_lock() in return_unused_surplus_pages()
-Date: Thu, 24 Apr 2014 09:51:38 +0100
-Message-Id: <1398329507-5911-174-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1755513AbaDXJHs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:07:48 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55094 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752903AbaDXJHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 05:07:42 -0400
+Message-ID: <5358D43D.20600@ti.com>
+Date: Thu, 24 Apr 2014 12:07:09 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: <joelf@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Vinod Koul <vinod.koul@intel.com>
+CC: <davinci-linux-open-source@linux.davincidsp.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, <linux-kernel@vger.kernel.org>,
+        <mporter@linaro.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Takashi Iwai <tiwai@suse.de>, <dmaengine@vger.kernel.org>,
+        <dan.j.williams@intel.com>, <linux-omap@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v2 05/14] arm: common: edma: Select event queue 1 as default
+ when booted with DT
+References: <1396357575-30585-1-git-send-email-peter.ujfalusi@ti.com> <1396357575-30585-6-git-send-email-peter.ujfalusi@ti.com> <5347A4FD.1030803@ti.com> <5347ACDE.7040407@ti.com> <5347AE49.5020109@ti.com> <5347B7F8.2000508@ti.com> <20140411094217.GA32284@intel.com> <5347D2CC.4030407@ti.com> <20140411113154.GB32284@intel.com> <5347DEDA.2060008@ti.com> <20140411124641.GC32284@intel.com> <534BCCD3.9060805@ti.com> <534BD0B5.5000004@ti.com> <534BD788.3050406@ti.com> <534BF181.6060503@ti.com> <534E7EB0.9000601@ti.com> <534EAA49.7030702@ti.com>
+In-Reply-To: <534EAA49.7030702@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+On 04/16/2014 07:05 PM, Joel Fernandes wrote:
+> On 04/16/2014 07:59 AM, Peter Ujfalusi wrote:
+> [..]
+>>>>>> If the dma-priority is missing we should assume lowest priority (0).
+>>>>>> The highest priority depends on the platform. For eDMA3 in AM335x it is three
+>>>>>> level. For designware controller you might have the range 0-8 as valid.
+>>>>>>
+>>>>>> The question is how to get this information into use?
+>>>>>> We can take the priority number in the core when the dma channel is requested
+>>>>>> and add field to "struct dma_chan" in order to store it and the DMA drivers
+>>>>>> could have access to it.
+>>>
+>>> How about Vinod's idea of extending dma_slave_config? Priority is
+>>> similar to rest of the runtime setup dmaengine_slave_config() is meant
+>>> to do.
+>>
+>> The dma_slave_config is prepared by the client drivers, so they would need to
+>> be updated to handle the priority for the DMA. This would lead to duplicated
+>> code - unless we have a small function in dmaengine core to fetch this
+>> information, but still all dmaengine clients would need to call that.
+>> IMHO it would be better to let the dmaengine core to take the priority for the
+>> channel when it has been asked so client drivers does not need to know about it.
+>>
+> 
+> I still feel it is much cleaner to keep this out of DT and have audio
+> driver configure the channel manually for higher priority. Because,
+> AFAIK audio is the only device that uses slave DMA and needs higher
+> priority. I'd imagine everyone else who needs high priority, have their
+> own dedicated DMAC, so from that sense I don't see the priority
+> mechanism being used a lot anywhere else but audio, so atleast we can
+> rule out things like code duplication in other drivers. Priority can be
+> set to a default of low for those drivers that don't configure the
+> channel for priority. I'm also OK with EDMA driver configuring channel
+> for higher priority manually for the Cyclic case like you did initially.
 
-------------------
+So how should we go about this?
+I'm fine to select higher priority in the eDMA driver for now when a cyclic
+channel is configured and later when we have (if we ever have) generic way to
+handle DMA channel/transaction priority we can switch eDMA as well to use it.
 
-From: "Mizuma, Masayoshi" <m.mizuma@jp.fujitsu.com>
-
-commit 7848a4bf51b34f41fcc9bd77e837126d99ae84e3 upstream.
-
-soft lockup in freeing gigantic hugepage fixed in commit 55f67141a892 "mm:
-hugetlb: fix softlockup when a large number of hugepages are freed." can
-happen in return_unused_surplus_pages(), so let's fix it.
-
-Signed-off-by: Masayoshi Mizuma <m.mizuma@jp.fujitsu.com>
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Michal Hocko <mhocko@suse.cz>
-Cc: Aneesh Kumar <aneesh.kumar@linux.vnet.ibm.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- mm/hugetlb.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/mm/hugetlb.c b/mm/hugetlb.c
-index b9f86f8..f8e292a 100644
---- a/mm/hugetlb.c
-+++ b/mm/hugetlb.c
-@@ -1093,6 +1093,7 @@ static void return_unused_surplus_pages(struct hstate *h,
- 	while (nr_pages--) {
- 		if (!free_pool_huge_page(h, &node_states[N_MEMORY], 1))
- 			break;
-+		cond_resched_lock(&hugetlb_lock);
- 	}
- }
- 
 -- 
-1.9.1
-
+Péter
