@@ -1,192 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271AbaDXKAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:00:19 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46704 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754281AbaDXIyP (ORCPT
+	id S1755313AbaDXKAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:00:55 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:47926 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753975AbaDXKAv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:54:15 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Joe Thornber <ejt@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 097/182] dm transaction manager: fix corruption due to non-atomic transaction commit
-Date: Thu, 24 Apr 2014 09:50:22 +0100
-Message-Id: <1398329507-5911-98-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 06:00:51 -0400
+Date: Thu, 24 Apr 2014 12:00:47 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH] sched: Skip double execution of pick_next_task_fair
+Message-ID: <20140424100047.GP11096@twins.programming.kicks-ass.net>
+References: <1398292317.2970.63.camel@schen9-DESK>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398292317.2970.63.camel@schen9-DESK>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+On Wed, Apr 23, 2014 at 03:31:57PM -0700, Tim Chen wrote:
+> The current code will call pick_next_task_fair a second time
+> in the slow path if we did not pull any task in our first try.
+> This is really unnecessary as we already know no task can
+> be pulled and it doubles the delay for the cpu to enter idle.
+> 
+> We instrumented some network workloads and that saw that
+> pick_next_task_fair is frequently called twice before a cpu enters idle.
+> The call to pick_next_task_fair can add
+> non trivial latency as it calls load_balance which runs find_busiest_group
+> on an hierarchy of sched domains spanning the cpus for a large system.  For
+> some 4 socket systems, we saw almost 0.25 msec spent per call
+> of pick_next_task_fair before a cpu can be idled.
+> 
+> This patch skips pick_next_task_fair in the slow path if it
+> has already been invoked.
 
-------------------
+How about something like so?
 
-From: Joe Thornber <ejt@redhat.com>
+Its a little more contained.
 
-commit a9d45396f5956d0b615c7ae3b936afd888351a47 upstream.
-
-The persistent-data library used by dm-thin, dm-cache, etc is
-transactional.  If anything goes wrong, such as an io error when writing
-new metadata or a power failure, then we roll back to the last
-transaction.
-
-Atomicity when committing a transaction is achieved by:
-
-a) Never overwriting data from the previous transaction.
-b) Writing the superblock last, after all other metadata has hit the
-   disk.
-
-This commit and the following commit ("dm: take care to copy the space
-map roots before locking the superblock") fix a bug associated with (b).
-When committing it was possible for the superblock to still be written
-in spite of an io error occurring during the preceeding metadata flush.
-With these commits we're careful not to take the write lock out on the
-superblock until after the metadata flush has completed.
-
-Change the transaction manager's semantics for dm_tm_commit() to assume
-all data has been flushed _before_ the single superblock that is passed
-in.
-
-As a prerequisite, split the block manager's block unlocking and
-flushing by simplifying dm_bm_flush_and_unlock() to dm_bm_flush().  Now
-the unlocking must be done separately.
-
-This issue was discovered by forcing io errors at the crucial time
-using dm-flakey.
-
-Signed-off-by: Joe Thornber <ejt@redhat.com>
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/md/dm-cache-metadata.c                      |  3 ++-
- drivers/md/persistent-data/dm-block-manager.c       | 15 ++-------------
- drivers/md/persistent-data/dm-block-manager.h       |  3 +--
- drivers/md/persistent-data/dm-transaction-manager.c |  5 +++--
- drivers/md/persistent-data/dm-transaction-manager.h | 17 ++++++++---------
- 5 files changed, 16 insertions(+), 27 deletions(-)
-
-diff --git a/drivers/md/dm-cache-metadata.c b/drivers/md/dm-cache-metadata.c
-index 1af7255..a33e07f 100644
---- a/drivers/md/dm-cache-metadata.c
-+++ b/drivers/md/dm-cache-metadata.c
-@@ -511,8 +511,9 @@ static int __begin_transaction_flags(struct dm_cache_metadata *cmd,
- 	disk_super = dm_block_data(sblock);
- 	update_flags(disk_super, mutator);
- 	read_superblock_fields(cmd, disk_super);
-+	dm_bm_unlock(sblock);
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -2636,8 +2636,14 @@ pick_next_task(struct rq *rq, struct tas
+ 	if (likely(prev->sched_class == class &&
+ 		   rq->nr_running == rq->cfs.h_nr_running)) {
+ 		p = fair_sched_class.pick_next_task(rq, prev);
+-		if (likely(p && p != RETRY_TASK))
+-			return p;
++		if (unlikely(p == RETRY_TASK))
++			goto again;
++
++		/* assumes fair_sched_class->next == idle_sched_class */
++		if (unlikely(!p))
++			p = pick_next_task_idle(rq, prev);
++
++		return p;
+ 	}
  
--	return dm_bm_flush_and_unlock(cmd->bm, sblock);
-+	return dm_bm_flush(cmd->bm);
- }
- 
- static int __begin_transaction(struct dm_cache_metadata *cmd)
-diff --git a/drivers/md/persistent-data/dm-block-manager.c b/drivers/md/persistent-data/dm-block-manager.c
-index 44bcc76..81f8428 100644
---- a/drivers/md/persistent-data/dm-block-manager.c
-+++ b/drivers/md/persistent-data/dm-block-manager.c
-@@ -595,25 +595,14 @@ int dm_bm_unlock(struct dm_block *b)
- }
- EXPORT_SYMBOL_GPL(dm_bm_unlock);
- 
--int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
--			   struct dm_block *superblock)
-+int dm_bm_flush(struct dm_block_manager *bm)
- {
--	int r;
--
- 	if (bm->read_only)
- 		return -EPERM;
- 
--	r = dm_bufio_write_dirty_buffers(bm->bufio);
--	if (unlikely(r)) {
--		dm_bm_unlock(superblock);
--		return r;
--	}
--
--	dm_bm_unlock(superblock);
--
- 	return dm_bufio_write_dirty_buffers(bm->bufio);
- }
--EXPORT_SYMBOL_GPL(dm_bm_flush_and_unlock);
-+EXPORT_SYMBOL_GPL(dm_bm_flush);
- 
- void dm_bm_set_read_only(struct dm_block_manager *bm)
- {
-diff --git a/drivers/md/persistent-data/dm-block-manager.h b/drivers/md/persistent-data/dm-block-manager.h
-index 84dbab5..16529e9 100644
---- a/drivers/md/persistent-data/dm-block-manager.h
-+++ b/drivers/md/persistent-data/dm-block-manager.h
-@@ -105,8 +105,7 @@ int dm_bm_unlock(struct dm_block *b);
-  *
-  * This method always blocks.
-  */
--int dm_bm_flush_and_unlock(struct dm_block_manager *bm,
--			   struct dm_block *superblock);
-+int dm_bm_flush(struct dm_block_manager *bm);
- 
- /*
-  * Switches the bm to a read only mode.  Once read-only mode
-diff --git a/drivers/md/persistent-data/dm-transaction-manager.c b/drivers/md/persistent-data/dm-transaction-manager.c
-index 81da1a2..3bc30a0 100644
---- a/drivers/md/persistent-data/dm-transaction-manager.c
-+++ b/drivers/md/persistent-data/dm-transaction-manager.c
-@@ -154,7 +154,7 @@ int dm_tm_pre_commit(struct dm_transaction_manager *tm)
- 	if (r < 0)
- 		return r;
- 
--	return 0;
-+	return dm_bm_flush(tm->bm);
- }
- EXPORT_SYMBOL_GPL(dm_tm_pre_commit);
- 
-@@ -164,8 +164,9 @@ int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *root)
- 		return -EWOULDBLOCK;
- 
- 	wipe_shadow_table(tm);
-+	dm_bm_unlock(root);
- 
--	return dm_bm_flush_and_unlock(tm->bm, root);
-+	return dm_bm_flush(tm->bm);
- }
- EXPORT_SYMBOL_GPL(dm_tm_commit);
- 
-diff --git a/drivers/md/persistent-data/dm-transaction-manager.h b/drivers/md/persistent-data/dm-transaction-manager.h
-index b5b1390..2772ed2 100644
---- a/drivers/md/persistent-data/dm-transaction-manager.h
-+++ b/drivers/md/persistent-data/dm-transaction-manager.h
-@@ -38,18 +38,17 @@ struct dm_transaction_manager *dm_tm_create_non_blocking_clone(struct dm_transac
- /*
-  * We use a 2-phase commit here.
-  *
-- * i) In the first phase the block manager is told to start flushing, and
-- * the changes to the space map are written to disk.  You should interrogate
-- * your particular space map to get detail of its root node etc. to be
-- * included in your superblock.
-+ * i) Make all changes for the transaction *except* for the superblock.
-+ * Then call dm_tm_pre_commit() to flush them to disk.
-  *
-- * ii) @root will be committed last.  You shouldn't use more than the
-- * first 512 bytes of @root if you wish the transaction to survive a power
-- * failure.  You *must* have a write lock held on @root for both stage (i)
-- * and (ii).  The commit will drop the write lock.
-+ * ii) Lock your superblock.  Update.  Then call dm_tm_commit() which will
-+ * unlock the superblock and flush it.  No other blocks should be updated
-+ * during this period.  Care should be taken to never unlock a partially
-+ * updated superblock; perform any operations that could fail *before* you
-+ * take the superblock lock.
-  */
- int dm_tm_pre_commit(struct dm_transaction_manager *tm);
--int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *root);
-+int dm_tm_commit(struct dm_transaction_manager *tm, struct dm_block *superblock);
- 
- /*
-  * These methods are the only way to get hold of a writeable block.
--- 
-1.9.1
-
+ again:
