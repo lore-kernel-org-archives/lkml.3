@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752122AbaDXGWX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 02:22:23 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:60488 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606AbaDXGWV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 02:22:21 -0400
-Date: Thu, 24 Apr 2014 08:22:17 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Oren Twaig <oren@scalemp.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        "Shai Fultheim (Shai@ScaleMP.com)" <Shai@scalemp.com>
-Subject: Re: [PATCH] X86: Hook apic vector allocation domain only when
- interrupt routing are set to ignore
-Message-ID: <20140424062217.GA1104@gmail.com>
-References: <5357D07C.5080407@scalemp.com>
+	id S1752144AbaDXGZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 02:25:19 -0400
+Received: from fieldses.org ([174.143.236.118]:51580 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751474AbaDXGZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 02:25:17 -0400
+Date: Thu, 24 Apr 2014 02:25:16 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jlayton@redhat.com
+Subject: nfsd bug fixes for 3.15
+Message-ID: <20140424062516.GA8891@fieldses.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5357D07C.5080407@scalemp.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Please pull the following bug fixes for 3.15 from:
 
-* Oren Twaig <oren@scalemp.com> wrote:
+  git://linux-nfs.org/~bfields/linux.git for-3.15
 
-> Set all inclusive vector allocation domain only if interrupt routing
-> is set to ignore. When in comply mode, vector allocation behavior
-> isn't changed.
+Three small nfsd bugfixes (including one locks.c fix for a bug triggered
+only from nfsd).
 
-This changelog is too terse:
+Jeff's patches are for long-existing problems that became easier to
+trigger since the addition of vfs delegation support.
 
-Please update the changelog to describe the current behavior, and how 
-it affects your platform. (I.e. how do users notice, if at all?)
+--b.
 
-Then describe why you think that behavior should be changed. ie: 
-what's the reason for this patch.
+----------------------------------------------------------------
+J. Bruce Fields (1):
+      Revert "nfsd4: fix nfs4err_resource in 4.1 case"
 
-Only then describe the details of the change itself.
+Jeff Layton (2):
+      locks: allow __break_lease to sleep even when break_time is 0
+      nfsd: set timeparms.to_maxval in setup_callback_client
 
-> -    apic->vector_allocation_domain = fill_vector_allocation_domain;
-> +
-> +    if (!irc)
-> +        apic->vector_allocation_domain = fill_vector_allocation_domain;
-
-Please also run scripts/checkpatch.pl over your patch which will 
-report trivial coding style problems like the one here.
-
-Thanks,
-
-	Ingo
+ fs/locks.c             | 7 +++----
+ fs/nfsd/nfs4callback.c | 4 +++-
+ fs/nfsd/nfs4xdr.c      | 8 --------
+ 3 files changed, 6 insertions(+), 13 deletions(-)
