@@ -1,78 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510AbaDXLYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:24:24 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:25182 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755404AbaDXLYV (ORCPT
+	id S1756480AbaDXLYT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:24:19 -0400
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:52409 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755404AbaDXLYQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 07:24:21 -0400
-X-Nat-Received: from [202.181.97.72]:45582 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1398338657.13287
-To: linux-security-module@vger.kernel.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        miklos@szeredi.hu
-Subject: [PATCH (for 3.15) 3/5] AppArmor: Handle the rename flags.
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20140117144126.GG24171@tucsk.piliscsaba.szeredi.hu>
-	<53523D16.9020101@gmail.com>
-	<201404192108.JGJ78110.MFOFFHJOOVtLQS@I-love.SAKURA.ne.jp>
-	<CAJfpeguus=9GuvEKua4U-VF=nonzLgU5VFHqt8xRTTYU7RL-zQ@mail.gmail.com>
-	<201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>
-In-Reply-To: <201404242020.FJD18726.LOOJtOQMFVFFSH@I-love.SAKURA.ne.jp>
-Message-Id: <201404242024.EEI28166.MVOHFtJFFSOLQO@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 24 Apr 2014 20:24:11 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.45.2/RELEASE, bases: 24042014 #7805673, status: clean
+	Thu, 24 Apr 2014 07:24:16 -0400
+Message-ID: <5358F458.1030300@hitachi.com>
+Date: Thu, 24 Apr 2014 20:24:08 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, Rob Landley <rob@landley.net>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "David S. Miller" <davem@davemloft.net>, systemtap@sourceware.org
+Subject: Re: [PATCH -tip v9 20/26] kprobes: Support blacklist functions in
+ module
+References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140417081856.26341.53535.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140424085601.GA7768@gmail.com>
+In-Reply-To: <20140424085601.GA7768@gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 3bce55d24ef7a55613d748182aac1f3986c144da Mon Sep 17 00:00:00 2001
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Thu, 24 Apr 2014 20:07:58 +0900
-Subject: [PATCH (for 3.15) 3/5] AppArmor: Handle the rename flags.
+(2014/04/24 17:56), Ingo Molnar wrote:
+>> diff --git a/include/linux/module.h b/include/linux/module.h
+>> index f520a76..2fdb673 100644
+>> --- a/include/linux/module.h
+>> +++ b/include/linux/module.h
+>> @@ -16,6 +16,7 @@
+>>  #include <linux/kobject.h>
+>>  #include <linux/moduleparam.h>
+>>  #include <linux/jump_label.h>
+>> +#include <linux/kprobes.h>
+> 
+> This include breaks the x86 build:
+> 
+>   CC      arch/x86/kernel/jump_label.o
+>   In file included from arch/x86/kernel/jump_label.c:14:0:
+>   /fast/mingo/tip/arch/x86/include/asm/kprobes.h:35:12: error: conflicting types for ‘kprobe_opcode_t' typedef u8 kprobe_opcode_t;
+>   [...]
 
-For AppArmor, the RENAME_EXCHANGE flag means "check permissions with
-reversed arguments". Future patches will stop re-calculating pathnames.
+Hmm, this error seems very odd... and I don't see
 
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- security/apparmor/lsm.c |   12 ++++++++++++
- 1 file changed, 12 insertions(+)
+> 
+> But the #include kprobes.h is unnecessary to begin with, as no kprobe 
+> specific types are used.
 
-diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
-index c0b4366..b04218a 100644
---- a/security/apparmor/lsm.c
-+++ b/security/apparmor/lsm.c
-@@ -332,6 +332,7 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
- 					  old_dentry->d_inode->i_mode
- 		};
- 
-+retry:
- 		error = aa_path_perm(OP_RENAME_SRC, profile, &old_path, 0,
- 				     MAY_READ | AA_MAY_META_READ | MAY_WRITE |
- 				     AA_MAY_META_WRITE | AA_MAY_DELETE,
-@@ -340,6 +341,17 @@ static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
- 			error = aa_path_perm(OP_RENAME_DEST, profile, &new_path,
- 					     0, MAY_WRITE | AA_MAY_META_WRITE |
- 					     AA_MAY_CREATE, &cond);
-+		if (!error && (flags & RENAME_EXCHANGE)) {
-+			/* Cross rename requires both inodes to exist. */
-+			old_path.mnt = new_dir->mnt;
-+			old_path.dentry = new_dentry;
-+			new_path.mnt = old_dir->mnt;
-+			new_path.dentry = old_dentry;
-+			cond.uid = new_dentry->d_inode->i_uid;
-+			cond.mode = new_dentry->d_inode->i_mode;
-+			flags = 0;
-+			goto retry;
-+		}
- 
- 	}
- 	return error;
+OK, anyway I'll remove that.
+
+> 
+>>  #include <linux/export.h>
+>>  
+>>  #include <linux/percpu.h>
+>> @@ -357,6 +358,10 @@ struct module {
+>>  	unsigned int num_ftrace_callsites;
+>>  	unsigned long *ftrace_callsites;
+>>  #endif
+>> +#ifdef CONFIG_KPROBES
+>> +	unsigned int num_kprobe_blacklist;
+>> +	unsigned long  *kprobe_blacklist;
+>> +#endif
+> 
+> There's a small coding style problem here.
+> 
+> More importantly, I think more should be done to make sure that module 
+> symbols are marked properly: since the module is going to register the 
+> kprobes handler, that would be a perfect place to emit a warning, 
+> right?
+> 
+> In fact, why don't kprobe handlers get added to the exclusion list 
+> explicitly, when the handler gets registered? With such an approach 
+> handlers are automatically nokprobe and don't need any annotation - 
+> which is a far more robust usage model.
+
+Ah, I see. That is because there are some local functions called only
+from the kprobe handlers. It is easy to blacklist the kprobe handlers
+itself, but not for the functions which are only called from them. :(
+
+So, I can add a patch which automatically add handler functions to
+blacklist. But that is another story. I think this patch is also
+required.
+
+Thank you,
+
+> 
+> So I'm skipping this patch and the next one that makes use of it.
+> 
+> Thanks,
+> 
+> 	Ingo
+> 
+
+
 -- 
-1.7.9.5
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
