@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbaDXUsu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 16:48:50 -0400
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:52120 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605AbaDXUss (ORCPT
+	id S1753417AbaDXUvH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 16:51:07 -0400
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:62833 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751937AbaDXUvF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 16:48:48 -0400
+	Thu, 24 Apr 2014 16:51:05 -0400
 MIME-Version: 1.0
-In-Reply-To: <1393873736-26867-1-git-send-email-balbi@ti.com>
-References: <1393873736-26867-1-git-send-email-balbi@ti.com>
-Date: Thu, 24 Apr 2014 16:48:48 -0400
-Message-ID: <CAF6AEGvBt=KVk5q2DNhOrkZ=ZiG=V9SdEDDsDj69Z0phAa30+Q@mail.gmail.com>
-Subject: Re: [PATCH] drm/tilcdc: restore correct display mode and contents on
- pm resume
+In-Reply-To: <1393873738-27327-1-git-send-email-balbi@ti.com>
+References: <1393873738-27327-1-git-send-email-balbi@ti.com>
+Date: Thu, 24 Apr 2014 16:51:04 -0400
+Message-ID: <CAF6AEGuE2MvN9SrO-R2_DnWtHtxwuFLwH6kUe4vrwcREsG5XDQ@mail.gmail.com>
+Subject: Re: [PATCH] drm/tilcdc increase allowable supported resolution
 From: Rob Clark <robdclark@gmail.com>
 To: Felipe Balbi <balbi@ti.com>
 Cc: David Airlie <airlied@linux.ie>, "airlied@redhat.com" <airlied@redhat.com>,
@@ -29,36 +28,34 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On Mon, Mar 3, 2014 at 2:08 PM, Felipe Balbi <balbi@ti.com> wrote:
 > From: Darren Etheridge <detheridge@ti.com>
 >
-> On resume the screen contents were not being restored properly.  Looking at
-> other DRM drivers it seems a call to drm_helper_resume_force_mode() is needed
-> in the resume handler to force restoration of the mode and framebuffer data.
->
+> 1680x1050 appears to also be within the bandwidth capabilities
+> of the device and memory infrastructure.
+
+For this one, is 1680x1050 possible on all devices w/ tilcdc (like 1st
+gen beaglebone (white), etc)?  If not, maybe better to keep the
+default conservative and override the default in devicetree..
+
+BR,
+-R
+
 > Signed-off-by: Darren Etheridge <detheridge@ti.com>
-
-Reviewed-by: Rob Clark <robdclark@gmail.com>
-
 > ---
->  drivers/gpu/drm/tilcdc/tilcdc_drv.c | 7 +++++++
->  1 file changed, 7 insertions(+)
+>  drivers/gpu/drm/tilcdc/tilcdc_drv.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 >
-> diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.c b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-> index 171a820..1a5ddfa 100644
-> --- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-> +++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
-> @@ -563,6 +563,13 @@ static int tilcdc_pm_resume(struct device *dev)
->                 if (registers[i].save && (priv->rev >= registers[i].rev))
->                         tilcdc_write(ddev, registers[i].reg, priv->saved_register[n++]);
+> diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.h b/drivers/gpu/drm/tilcdc/tilcdc_drv.h
+> index 5bb64e3..b47ec24 100644
+> --- a/drivers/gpu/drm/tilcdc/tilcdc_drv.h
+> +++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.h
+> @@ -43,7 +43,7 @@
+>   * with optimized DDR & EMIF settings tweaked 1920x1080@24 appears to
+>   * be supportable
+>   */
+> -#define TILCDC_DEFAULT_MAX_BANDWIDTH  (1280*1024*60)
+> +#define TILCDC_DEFAULT_MAX_BANDWIDTH  (1680*1050*60)
 >
-> +       /*
-> +        * if this call isn't here, the display is blank on return from
-> +        * suspend.  With this call here the contents of the framebuffer
-> +        * during suspend are restored correctly.
-> +        */
-> +       drm_helper_resume_force_mode(ddev);
-> +
->         drm_kms_helper_poll_enable(ddev);
 >
->         return 0;
+>  struct tilcdc_drm_private {
 > --
 > 1.9.0
 >
