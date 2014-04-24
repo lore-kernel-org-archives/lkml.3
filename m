@@ -1,68 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296AbaDXLPp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:15:45 -0400
-Received: from mail-ob0-f175.google.com ([209.85.214.175]:48969 "EHLO
-	mail-ob0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753882AbaDXLPl (ORCPT
+	id S1756181AbaDXLOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:14:55 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46496 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787AbaDXIxO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 07:15:41 -0400
-MIME-Version: 1.0
-In-Reply-To: <87zjjbdz2l.fsf@rustcorp.com.au>
-References: <87zjjbdz2l.fsf@rustcorp.com.au>
-From: Lucas De Marchi <lucas.de.marchi@gmail.com>
-Date: Thu, 24 Apr 2014 08:15:20 -0300
-Message-ID: <CAKi4VALZ9or4yqTt1LgZgzv4aK+pqf6o+opw0peERFi27esteg@mail.gmail.com>
-Subject: Re: [PATCH] module: remove warning about waiting module removal.
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Valerio Vanni <valerio.vanni@inwind.it>, Elliott@ozlabs.org,
-        Robert <Elliott@hp.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 24 Apr 2014 04:53:14 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Tomas Winkler <tomas.winkler@intel.com>,
+        Alexander Usyskin <alexander.usyskin@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 055/182] mei: fix memory leak of pending write cb objects
+Date: Thu, 24 Apr 2014 09:49:40 +0100
+Message-Id: <1398329507-5911-56-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rusty,
+3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-On Thu, Apr 24, 2014 at 3:24 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> We remove the waiting module removal in commit 3f2b9c9cdf38 (September
-> 2013), but it turns out that modprobe in kmod (< version 16) was
-> asking for waiting module removal.  Noone noticed since modprobe would
-> check for 0 usage immediately before trying to remove the module, and
-> the race is unlikely.
->
-> However, it means that anyone running old (but not ancient) kmod
-> versions is hitting the printk designed to see if anyone was running
-> "rmmod -w".  All reports so far have been false positives, so remove
-> the warning.
->
-> Fixes: 3f2b9c9cdf389e303b2273679af08aab5f153517
-> Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
-> Cc: Elliott, Robert (Server Storage) <Elliott@hp.com>
-> Cc: stable@kernel.org
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 11869408f79b..ae7821898bf2 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -815,9 +815,6 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
->                 return -EFAULT;
->         name[MODULE_NAME_LEN-1] = '\0';
->
-> -       if (!(flags & O_NONBLOCK))
-> -               pr_warn("waiting module removal not supported: please upgrade\n");
-> -
->         if (mutex_lock_interruptible(&module_mutex) != 0)
->                 return -EINTR;
->
+------------------
 
-Ack.
+From: Tomas Winkler <tomas.winkler@intel.com>
 
-If you are going to apply this, do you think it'd be still good to
-patch kmod on distros, so at least modprobe -r uses O_NONBLOCK? Or
-having this patch in kernel is sufficient?
+commit cc99ecfdac01215594c73907726b12f251c21e20 upstream.
 
+Write callbacks are released on the write completed path but
+when file handler is closed before the writes are
+completed those are left dangling on write and write_waiting queues.
+
+We add mei_io_list_free function to perform this task
+
+Also move static functions to client.c form client.h
+
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.11: adjusted context ]
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/misc/mei/client.c | 76 ++++++++++++++++++++++++++++++++++-------------
+ drivers/misc/mei/client.h | 17 -----------
+ 2 files changed, 55 insertions(+), 38 deletions(-)
+
+diff --git a/drivers/misc/mei/client.c b/drivers/misc/mei/client.c
+index b254132..12513e2 100644
+--- a/drivers/misc/mei/client.c
++++ b/drivers/misc/mei/client.c
+@@ -74,23 +74,69 @@ int mei_me_cl_by_id(struct mei_device *dev, u8 client_id)
+ 
+ 
+ /**
+- * mei_io_list_flush - removes list entry belonging to cl.
++ * mei_cl_cmp_id - tells if the clients are the same
+  *
+- * @list:  An instance of our list structure
+- * @cl: host client
++ * @cl1: host client 1
++ * @cl2: host client 2
++ *
++ * returns true  - if the clients has same host and me ids
++ *         false - otherwise
++ */
++static inline bool mei_cl_cmp_id(const struct mei_cl *cl1,
++				const struct mei_cl *cl2)
++{
++	return cl1 && cl2 &&
++		(cl1->host_client_id == cl2->host_client_id) &&
++		(cl1->me_client_id == cl2->me_client_id);
++}
++
++/**
++ * mei_io_list_flush - removes cbs belonging to cl.
++ *
++ * @list:  an instance of our list structure
++ * @cl:    host client, can be NULL for flushing the whole list
++ * @free:  whether to free the cbs
+  */
+-void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl)
++static void __mei_io_list_flush(struct mei_cl_cb *list,
++				struct mei_cl *cl, bool free)
+ {
+ 	struct mei_cl_cb *cb;
+ 	struct mei_cl_cb *next;
+ 
++	/* enable removing everything if no cl is specified */
+ 	list_for_each_entry_safe(cb, next, &list->list, list) {
+-		if (cb->cl && mei_cl_cmp_id(cl, cb->cl))
++		if (!cl || (cb->cl && mei_cl_cmp_id(cl, cb->cl))) {
+ 			list_del(&cb->list);
++			if (free)
++				mei_io_cb_free(cb);
++		}
+ 	}
+ }
+ 
+ /**
++ * mei_io_list_flush - removes list entry belonging to cl.
++ *
++ * @list:  An instance of our list structure
++ * @cl: host client
++ */
++static inline void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl)
++{
++	__mei_io_list_flush(list, cl, false);
++}
++
++
++/**
++ * mei_io_list_free - removes cb belonging to cl and free them
++ *
++ * @list:  An instance of our list structure
++ * @cl: host client
++ */
++static inline void mei_io_list_free(struct mei_cl_cb *list, struct mei_cl *cl)
++{
++	__mei_io_list_flush(list, cl, true);
++}
++
++/**
+  * mei_io_cb_free - free mei_cb_private related memory
+  *
+  * @cb: mei callback struct
+@@ -192,8 +238,8 @@ int mei_cl_flush_queues(struct mei_cl *cl)
+ 
+ 	dev_dbg(&cl->dev->pdev->dev, "remove list entry belonging to cl\n");
+ 	mei_io_list_flush(&cl->dev->read_list, cl);
+-	mei_io_list_flush(&cl->dev->write_list, cl);
+-	mei_io_list_flush(&cl->dev->write_waiting_list, cl);
++	mei_io_list_free(&cl->dev->write_list, cl);
++	mei_io_list_free(&cl->dev->write_waiting_list, cl);
+ 	mei_io_list_flush(&cl->dev->ctrl_wr_list, cl);
+ 	mei_io_list_flush(&cl->dev->ctrl_rd_list, cl);
+ 	mei_io_list_flush(&cl->dev->amthif_cmd_list, cl);
+@@ -915,20 +961,8 @@ void mei_cl_all_read_wakeup(struct mei_device *dev)
+  */
+ void mei_cl_all_write_clear(struct mei_device *dev)
+ {
+-	struct mei_cl_cb *cb, *next;
+-	struct list_head *list;
+-
+-	list = &dev->write_list.list;
+-	list_for_each_entry_safe(cb, next, list, list) {
+-		list_del(&cb->list);
+-		mei_io_cb_free(cb);
+-	}
+-
+-	list = &dev->write_waiting_list.list;
+-	list_for_each_entry_safe(cb, next, list, list) {
+-		list_del(&cb->list);
+-		mei_io_cb_free(cb);
+-	}
++	mei_io_list_free(&dev->write_list, NULL);
++	mei_io_list_free(&dev->write_waiting_list, NULL);
+ }
+ 
+ 
+diff --git a/drivers/misc/mei/client.h b/drivers/misc/mei/client.h
+index b1717bb..78df8f0 100644
+--- a/drivers/misc/mei/client.h
++++ b/drivers/misc/mei/client.h
+@@ -45,8 +45,6 @@ static inline void mei_io_list_init(struct mei_cl_cb *list)
+ {
+ 	INIT_LIST_HEAD(&list->list);
+ }
+-void mei_io_list_flush(struct mei_cl_cb *list, struct mei_cl *cl);
+-
+ /*
+  * MEI Host Client Functions
+  */
+@@ -61,21 +59,6 @@ int mei_cl_unlink(struct mei_cl *cl);
+ int mei_cl_flush_queues(struct mei_cl *cl);
+ struct mei_cl_cb *mei_cl_find_read_cb(struct mei_cl *cl);
+ 
+-/**
+- * mei_cl_cmp_id - tells if file private data have same id
+- *
+- * @fe1: private data of 1. file object
+- * @fe2: private data of 2. file object
+- *
+- * returns true  - if ids are the same and not NULL
+- */
+-static inline bool mei_cl_cmp_id(const struct mei_cl *cl1,
+-				const struct mei_cl *cl2)
+-{
+-	return cl1 && cl2 &&
+-		(cl1->host_client_id == cl2->host_client_id) &&
+-		(cl1->me_client_id == cl2->me_client_id);
+-}
+ static inline bool mei_cl_is_transitioning(struct mei_cl *cl)
+ {
+ 	return (MEI_FILE_INITIALIZING == cl->state ||
 -- 
-Lucas De Marchi
+1.9.1
+
