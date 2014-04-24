@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbaDXMTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:19:30 -0400
-Received: from zene.cmpxchg.org ([85.214.230.12]:59592 "EHLO zene.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752865AbaDXMT1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:19:27 -0400
-Date: Thu, 24 Apr 2014 08:19:17 -0400
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-mm@kvack.org, cgroups@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: remove hierarchy restrictions for
- swappiness and oom_control
-Message-ID: <20140424121917.GB4107@cmpxchg.org>
-References: <1397682798-22906-1-git-send-email-hannes@cmpxchg.org>
- <20140418113611.GA7568@dhcp22.suse.cz>
+	id S1753415AbaDXMWN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:22:13 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:57683 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175AbaDXMWL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 08:22:11 -0400
+X-IronPort-AV: E=Sophos;i="4.97,918,1389744000"; 
+   d="scan'208";a="123077875"
+Message-ID: <535901F0.3010908@citrix.com>
+Date: Thu, 24 Apr 2014 13:22:08 +0100
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20121215 Iceowl/1.0b1 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140418113611.GA7568@dhcp22.suse.cz>
+To: Julien Grall <julien.grall@linaro.org>
+CC: <stefano.stabellini@eu.citrix.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <xen-devel@lists.xenproject.org>,
+        <ian.campbell@citrix.com>, <konrad.wilk@oracle.com>
+Subject: Re: [PATCH] arm/xen: Remove definiition of virt_to_pfn in asm/xen/page.h
+References: <1397836474-10478-1-git-send-email-julien.grall@linaro.org>
+In-Reply-To: <1397836474-10478-1-git-send-email-julien.grall@linaro.org>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.80.2.76]
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 18, 2014 at 01:36:11PM +0200, Michal Hocko wrote:
-> On Wed 16-04-14 17:13:18, Johannes Weiner wrote:
-> > Per-memcg swappiness and oom killing can currently not be tweaked on a
-> > memcg that is part of a hierarchy, but not the root of that hierarchy.
-> > Users have complained that they can't configure this when they turned
-> > on hierarchy mode.  In fact, with hierarchy mode becoming the default,
-> > this restriction disables the tunables entirely.
+On 18/04/14 16:54, Julien Grall wrote:
+> virt_to_pfn has been defined in asm/memory.h by the commit e26a9e0 "ARM: Better
+> virt_to_page() handling"
 > 
-> Except when we would handle the first level under root differently,
-> which is ugly.
+> This will result of a compilation warning when CONFIG_XEN is enabled.
 > 
-> > But there is no good reason for this restriction. 
+> arch/arm/include/asm/xen/page.h:80:0: warning: "virt_to_pfn" redefined [enabled by default]
+>  #define virt_to_pfn(v)          (PFN_DOWN(__pa(v)))
+>  ^
+> In file included from arch/arm/include/asm/page.h:163:0,
+>                  from arch/arm/include/asm/xen/page.h:4,
+>                  from include/xen/page.h:4,
+>                  from arch/arm/xen/grant-table.c:33:
 > 
-> I had a patch for this somewhere on the think_more pile. I wasn't
-> particularly happy about the semantic so I haven't posted it.
-> 
-> > The settings for
-> > swappiness and OOM killing are taken from whatever memcg whose limit
-> > triggered reclaim and OOM invocation, regardless of its position in
-> > the hierarchy tree.
-> 
-> This is OK for the OOM knob because the memory pressure cannot be
-> handled at that level in hierarchy and that is where the OOM happens.
-> 
-> I am not so sure about the swappiness though. The swappiness tells us
-> how to proportionally scan anon vs. file LRUs and those are per-memcg,
-> not per-hierarchy (unlike the charge) so it makes sense to use it
-> per-memcg IMO.
-> 
-> Besides that using the reclaim target value might be quite confusing.
-> Say, somebody wants to prevent from swapping in a certain group and
-> yet the pages find their way to swap depending on where the reclaim is
-> triggered from.
-> Another thing would be that setting swappiness on an unlimited group has
-> no effect although I would argue it makes some sense in configuration
-> when parent is controlled by somebody else. I would like to tell how
-> to reclaim me when I cannot say how much memory I can have. 
-> 
-> It is true that we have a different behavior for the global reclaim
-> already but I am not entirely happy about that. Having a different
-> behavior for the global vs. limit reclaims just calls for troubles and
-> should be avoided as much as possible.
-> 
-> So let's think what is the best semantic before we merge this. I would
-> be more inclined for using per-memcg swappiness all the time (root using
-> the global knob) for all reclaims.
+> The definition in memory.h is nearly the same (it directly expand PFN_DOWN),
+> so we can safely drop virt_to_pfn in xen include.
 
-Yeah, we've always used the triggering group's swappiness value but at
-the same time forced the whole hierarchy to have the same setting as
-the root.
 
-I don't really feel strongly about this.  If you prefer the per-memcg
-swappiness I can send a followup patch - or you can.
+This breaks the arm build for me.
 
-> > Allow setting swappiness on any group.  The knob on the root memcg
-> > already reads the global VM swappiness, make it writable as well.
-> 
-> I am OK with the change but I think we should discuss the semantic
-> first.
+/local/davidvr/work/k.org/tip/drivers/block/xen-blkfront.c: In function
+‘setup_blkring’:
+/local/davidvr/work/k.org/tip/drivers/block/xen-blkfront.c:1236:2:
+error: implicit declaration of function ‘virt_to_pfn’
+[-Werror=implicit-function-declaration]
+  err = xenbus_grant_ring(dev, virt_to_mfn(info->ring.sring));
+  ^
 
-Thanks.
+David
