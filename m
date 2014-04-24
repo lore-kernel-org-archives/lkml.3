@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968AbaDXI4I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:56:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46958 "EHLO
+	id S1755946AbaDXJRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:17:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47056 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754803AbaDXIzm (ORCPT
+	with ESMTP id S1754960AbaDXI4I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:55:42 -0400
+	Thu, 24 Apr 2014 04:56:08 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jens Axboe <axboe@fb.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: Alexander Usyskin <alexander.usyskin@intel.com>,
+        Tomas Winkler <tomas.winkler@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 140/182] lib/percpu_counter.c: fix bad percpu counter state during suspend
-Date: Thu, 24 Apr 2014 09:51:05 +0100
-Message-Id: <1398329507-5911-141-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 159/182] mei: ignore client writing state during cb completion
+Date: Thu, 24 Apr 2014 09:51:24 +0100
+Message-Id: <1398329507-5911-160-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,61 +29,59 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jens Axboe <axboe@fb.com>
+From: Alexander Usyskin <alexander.usyskin@intel.com>
 
-commit e39435ce68bb4685288f78b1a7e24311f7ef939f upstream.
+commit 34ec43661fe8f1977dd0f05353302ae2ed10aabb upstream.
 
-I got a bug report yesterday from Laszlo Ersek in which he states that
-his kvm instance fails to suspend.  Laszlo bisected it down to this
-commit 1cf7e9c68fe8 ("virtio_blk: blk-mq support") where virtio-blk is
-converted to use the blk-mq infrastructure.
+Ignore client writing state during cb completion to fix a memory
+leak.
 
-After digging a bit, it became clear that the issue was with the queue
-drain.  blk-mq tracks queue usage in a percpu counter, which is
-incremented on request alloc and decremented when the request is freed.
-The initial hunt was for an inconsistency in blk-mq, but everything
-seemed fine.  In fact, the counter only returned crazy values when
-suspend was in progress.
+When moving cbs to the completion list we should not look at
+writing_state as this state can be already overwritten by next
+write, the fact that a cb is on the write waiting list means
+that it was already written to the HW and we can safely complete it.
 
-When a CPU is unplugged, the percpu counters merges that CPU state with
-the general state.  blk-mq takes care to register a hotcpu notifier with
-the appropriate priority, so we know it runs after the percpu counter
-notifier.  However, the percpu counter notifier only merges the state
-when the CPU is fully gone.  This leaves a state transition where the
-CPU going away is no longer in the online mask, yet it still holds
-private values.  This means that in this state, percpu_counter_sum()
-returns invalid results, and the suspend then hangs waiting for
-abs(dead-cpu-value) requests to complete which of course will never
-happen.
+Same pays for wait in poll handler, we do not have to check the state
+wake is done after completion list processing.
 
-Fix this by clearing the state earlier, so we never have a case where
-the CPU isn't in online mask but still holds private state.  This bug
-has been there since forever, I guess we don't have a lot of users where
-percpu counters needs to be reliable during the suspend cycle.
-
-Signed-off-by: Jens Axboe <axboe@fb.com>
-Reported-by: Laszlo Ersek <lersek@redhat.com>
-Tested-by: Laszlo Ersek <lersek@redhat.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Alexander Usyskin <alexander.usyskin@intel.com>
+Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- lib/percpu_counter.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/misc/mei/interrupt.c | 3 +--
+ drivers/misc/mei/main.c      | 3 +--
+ 2 files changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/lib/percpu_counter.c b/lib/percpu_counter.c
-index 93c5d5e..741a426 100644
---- a/lib/percpu_counter.c
-+++ b/lib/percpu_counter.c
-@@ -166,7 +166,7 @@ static int percpu_counter_hotcpu_callback(struct notifier_block *nb,
- 	struct percpu_counter *fbc;
+diff --git a/drivers/misc/mei/interrupt.c b/drivers/misc/mei/interrupt.c
+index 4b59cb7..8967b09 100644
+--- a/drivers/misc/mei/interrupt.c
++++ b/drivers/misc/mei/interrupt.c
+@@ -420,8 +420,7 @@ int mei_irq_write_handler(struct mei_device *dev, struct mei_cl_cb *cmpl_list)
  
- 	compute_batch_value();
--	if (action != CPU_DEAD)
-+	if (action != CPU_DEAD && action != CPU_DEAD_FROZEN)
- 		return NOTIFY_OK;
+ 		cl->status = 0;
+ 		list_del(&cb->list);
+-		if (MEI_WRITING == cl->writing_state &&
+-		    cb->fop_type == MEI_FOP_WRITE &&
++		if (cb->fop_type == MEI_FOP_WRITE &&
+ 		    cl != &dev->iamthif_cl) {
+ 			dev_dbg(&dev->pdev->dev, "MEI WRITE COMPLETE\n");
+ 			cl->writing_state = MEI_WRITE_COMPLETE;
+diff --git a/drivers/misc/mei/main.c b/drivers/misc/mei/main.c
+index e67de23..6ad37d9 100644
+--- a/drivers/misc/mei/main.c
++++ b/drivers/misc/mei/main.c
+@@ -640,8 +640,7 @@ static unsigned int mei_poll(struct file *file, poll_table *wait)
+ 	mutex_unlock(&dev->device_lock);
+ 	poll_wait(file, &cl->tx_wait, wait);
+ 	mutex_lock(&dev->device_lock);
+-	if (MEI_WRITE_COMPLETE == cl->writing_state)
+-		mask |= (POLLIN | POLLRDNORM);
++	mask |= (POLLIN | POLLRDNORM);
  
- 	cpu = (unsigned long)hcpu;
+ out:
+ 	mutex_unlock(&dev->device_lock);
 -- 
 1.9.1
 
