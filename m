@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757965AbaDXOus (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:50:48 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:10651 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757502AbaDXOun (ORCPT
+	id S1757622AbaDXOwh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:52:37 -0400
+Received: from mail-la0-f42.google.com ([209.85.215.42]:32982 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757148AbaDXOwf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:50:43 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-58-535924c1bd86
-From: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
-To: linux-i2c@vger.kernel.org
-Cc: naveenkrishna.ch@gmail.com, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, sjg@chromium.org,
-        grundler@chromium.org, linux-kernel@vger.kernel.org, wsa@the-dreams.de,
-        cpgs@samsung.com, broonie@kernel.org
-Subject: [PATCH] i2c: exynos5: Initialise Samsung High Speed I2C controller
- early
-Date: Thu, 24 Apr 2014 20:18:36 +0530
-Message-id: <1398350916-885-1-git-send-email-ch.naveen@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrELMWRmVeSWpSXmKPExsWyRsSkWvegSmSwwZv1NhZTHz5hs3h5SNPi
-	1ZEfTBabHl9jtej4+4XR4vKuOWwWM87vY7JYtO0/s8W3LdsYLVaemMXswOUxu+Eii8fOWXfZ
-	PTat6mTz2Lyk3qNvyypGj5OnnrB4fN4kF8AexWWTkpqTWZZapG+XwJUx+VQXa8FM7or5T9ax
-	NjDe4exi5OSQEDCROPjsChuELSZx4d56IJuLQ0hgKaPE5NXdLF2MHGBFqzsYQWqEBBYxSlw9
-	nQBR088kcar7ARNIgk3ATOLgotXsILaIgKxE64M1zCBFzAJvGSXOT1nMBDJIWCBYYtn3TJAa
-	FgFViTmXd7OA2LwCzhKPPu9ihNilIDFnkg3EPavYJXb8z4AoF5D4NvkQ1DmyEpsOMEOUSEoc
-	XHGDZQKj4AJGhlWMoqkFyQXFSelFpnrFibnFpXnpesn5uZsYgeF9+t+ziTsY7x+wPsSYDDRu
-	IrOUaHI+MD7ySuINjc2MLExNTI2NzC3NSBNWEudNf5QUJCSQnliSmp2aWpBaFF9UmpNafIiR
-	iYNTqoHRYtEjnqnbts98FaDwdKbR+95bOs4RfO8UMhgK3t3R2cbMrDBBpTN7yQRm7Xj2PxPN
-	73v5zyyot2QvuO/b/PvG4wsqv9Yu8GlOjW/Y8armWvhpfkM27tm6i49mtW+yMmx1X/1yjrPh
-	okNmLw+ZxtaUOq0oYYw2uJx9T+7YZlXvlRZeKd/0JJqUWIozEg21mIuKEwHdbhtmhQIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrAIsWRmVeSWpSXmKPExsVy+t9jAd2DKpHBBmvmGFtMffiEzeLlIU2L
-	V0d+MFlsenyN1aLj7xdGi8u75rBZzDi/j8li0bb/zBbftmxjtFh5YhazA5fH7IaLLB47Z91l
-	99i0qpPNY/OSeo++LasYPU6eesLi8XmTXAB7VAOjTUZqYkpqkUJqXnJ+SmZeuq2Sd3C8c7yp
-	mYGhrqGlhbmSQl5ibqqtkotPgK5bZg7QeUoKZYk5pUChgMTiYiV9O0wTQkPcdC1gGiN0fUOC
-	4HqMDNBAwhrGjMmnulgLZnJXzH+yjrWB8Q5nFyMHh4SAicTqDsYuRk4gU0ziwr31bCC2kMAi
-	RomrpxO6GLmA7H4miVPdD5hAEmwCZhIHF61mB7FFBGQlWh+sYQYpYhZ4yyhxfspiJpChwgLB
-	Esu+Z4LUsAioSsy5vJsFxOYVcJZ49HkXI8ReBYk5k2wmMHIvYGRYxSiaWpBcUJyUnmukV5yY
-	W1yal66XnJ+7iREcP8+kdzCuarA4xCjAwajEwztBNjJYiDWxrLgy9xCjBAezkgivrzxQiDcl
-	sbIqtSg/vqg0J7X4EGMy0PKJzFKiyfnA2M4riTc0NjE3NTa1NLEwMbMkTVhJnPdgq3WgkEB6
-	YklqdmpqQWoRzBYmDk6pBkaluUtm/C0yWqPJtetfW9LsqburQrz9npmstF0/42hPh38o63x7
-	xcw7LIZvjn2Wm3276VkD60Rjv8roGMnbyhflbFbUflj9WTq24hZXLWf0+j3+yWffmb7S0W+3
-	mfc0+e77aTsNN3P97TYOYGFPvsZ/UqLOuvDN3Uki2xz16n9v1tlwfRFXX68SS3FGoqEWc1Fx
-	IgCYN5Ha4wIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Thu, 24 Apr 2014 10:52:35 -0400
+Date: Thu, 24 Apr 2014 16:52:06 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Li Zhong <zhong@linux.vnet.ibm.com>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com
+Subject: Re: [PATCH] USB: serial: fix sysfs-attribute removal deadlock
+Message-ID: <20140424145206.GB2206@localhost>
+References: <1398245539-1618-1-git-send-email-jhovold@gmail.com>
+ <20140423141908.GA4781@htj.dyndns.org>
+ <1398328155.2805.100.camel@ThinkPad-T5421.cn.ibm.com>
+ <20140424143517.GC14460@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140424143517.GC14460@htj.dyndns.org>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch moves initialization code to subsys_initcall() to ensure
-that the i2c bus is available early so the regulators can be quickly
-probed and available for other devices on their probe() call.
+On Thu, Apr 24, 2014 at 10:35:17AM -0400, Tejun Heo wrote:
+> On Thu, Apr 24, 2014 at 04:29:15PM +0800, Li Zhong wrote:
+> > On Wed, 2014-04-23 at 10:19 -0400, Tejun Heo wrote:
+> > > cc'ing Li Zhong who's working on a simliar issue in the following
+> > > thread and quoting whole body.
+> > > 
+> > >   http://thread.gmane.org/gmane.linux.kernel/1680706
+> > > 
+> > > Li, this is another variation of the same problem.  Maybe this can be
+> > > covered by your work too?
+> > 
+> > It seems to me that it is about write something to driver attribute, and
+> > driver unloading. If so, maybe it's not easy to reuse the help functions
+> > created for device attribute, and device removing.
+> > 
+> > But I guess the idea to break the active protection could still be
+> > applied here:
+> > 
+> > Maybe we could try_module_get() here (like the other option suggested by
+> > Johan?), and break active protection if we could get the module,
+> > something like below? 
+> 
+> I don't get why try_module_get() matters here.  We can't call into
+> ->store if the object at hand is already destroyed and the underlying
+> module can't go away if the target device is still alive.
+> try_module_get() doesn't actually protect the object.  Why does that
+> matter?  This is self removal, right?  Can you please take a look at
+> kernfs_remove_self()?
 
-Such solution has been proposed by Mark Brown to fix the problem of
-the regulators not beeing available on the peripheral device probe():
-http://lists.infradead.org/pipermail/linux-arm-kernel/2010-March/011971.html
+No, this isn't self removal. The driver-attribute (not device-attribute)
+store operation simply grabs a lock that is also held while the driver
+is being deregistered at module unload. Taking a reference to the module
+in this case will prevent deregistration while store is running.
 
-Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
----
- drivers/i2c/busses/i2c-exynos5.c |   12 +++++++++++-
- 1 file changed, 11 insertions(+), 1 deletion(-)
+But it seems like this can be solved for usb-serial by simply not
+holding the lock while deregistering.
 
-diff --git a/drivers/i2c/busses/i2c-exynos5.c b/drivers/i2c/busses/i2c-exynos5.c
-index 00af0a0..20e3077 100644
---- a/drivers/i2c/busses/i2c-exynos5.c
-+++ b/drivers/i2c/busses/i2c-exynos5.c
-@@ -762,8 +762,18 @@ static struct platform_driver exynos5_i2c_driver = {
- 	},
- };
- 
--module_platform_driver(exynos5_i2c_driver);
-+static int __init i2c_adap_exynos5_init(void)
-+{
-+	return platform_driver_register(&exynos5_i2c_driver);
-+}
-+subsys_initcall(i2c_adap_exynos5_init);
-+
-+static void __exit i2c_adap_exynos5_exit(void)
-+{
-+	platform_driver_unregister(&exynos5_i2c_driver);
-+}
- 
-+module_exit(i2c_adap_exynos5_exit);
- MODULE_DESCRIPTION("Exynos5 HS-I2C Bus driver");
- MODULE_AUTHOR("Naveen Krishna Chatradhi, <ch.naveen@samsung.com>");
- MODULE_AUTHOR("Taekgyun Ko, <taeggyun.ko@samsung.com>");
--- 
-1.7.9.5
-
+Johan
