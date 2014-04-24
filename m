@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853AbaDXW10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:27:26 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39546 "EHLO
+	id S1758129AbaDXW17 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:27:59 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755264AbaDXVqJ (ORCPT
+	with ESMTP id S1755241AbaDXVqJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Apr 2014 17:46:09 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mikulas Patocka <mpatocka@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 01/23] user namespace: fix incorrect memory barriers
-Date: Thu, 24 Apr 2014 14:48:31 -0700
-Message-Id: <20140424214826.099070750@linuxfoundation.org>
+        Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 23/33] Btrfs: check for an extent_op on the locked ref
+Date: Thu, 24 Apr 2014 14:48:36 -0700
+Message-Id: <20140424214452.985741037@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
-References: <20140424214825.933835556@linuxfoundation.org>
+In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
+References: <20140424214449.423169713@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -25,80 +24,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit e79323bd87808fdfbc68ce6c5371bd224d9672ee upstream.
+commit 573a075567f0174551e2fad2a3164afd2af788f2 upstream.
 
-smp_read_barrier_depends() can be used if there is data dependency between
-the readers - i.e. if the read operation after the barrier uses address
-that was obtained from the read operation before the barrier.
+We could have possibly added an extent_op to the locked_ref while we dropped
+locked_ref->lock, so check for this case as well and loop around.  Otherwise we
+could lose flag updates which would lead to extent tree corruption.  Thanks,
 
-In this file, there is only control dependency, no data dependecy, so the
-use of smp_read_barrier_depends() is incorrect. The code could fail in the
-following way:
-* the cpu predicts that idx < entries is true and starts executing the
-  body of the for loop
-* the cpu fetches map->extent[0].first and map->extent[0].count
-* the cpu fetches map->nr_extents
-* the cpu verifies that idx < extents is true, so it commits the
-  instructions in the body of the for loop
-
-The problem is that in this scenario, the cpu read map->extent[0].first
-and map->nr_extents in the wrong order. We need a full read memory barrier
-to prevent it.
-
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/user_namespace.c |   11 +++++------
- 1 file changed, 5 insertions(+), 6 deletions(-)
+ fs/btrfs/extent-tree.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -148,7 +148,7 @@ static u32 map_id_range_down(struct uid_
- 
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].first;
- 		last = first + map->extent[idx].count - 1;
-@@ -172,7 +172,7 @@ static u32 map_id_down(struct uid_gid_ma
- 
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].first;
- 		last = first + map->extent[idx].count - 1;
-@@ -195,7 +195,7 @@ static u32 map_id_up(struct uid_gid_map
- 
- 	/* Find the matching extent */
- 	extents = map->nr_extents;
--	smp_read_barrier_depends();
-+	smp_rmb();
- 	for (idx = 0; idx < extents; idx++) {
- 		first = map->extent[idx].lower_first;
- 		last = first + map->extent[idx].count - 1;
-@@ -611,9 +611,8 @@ static ssize_t map_write(struct file *fi
- 	 * were written before the count of the extents.
- 	 *
- 	 * To achieve this smp_wmb() is used on guarantee the write
--	 * order and smp_read_barrier_depends() is guaranteed that we
--	 * don't have crazy architectures returning stale data.
--	 *
-+	 * order and smp_rmb() is guaranteed that we don't have crazy
-+	 * architectures returning stale data.
- 	 */
- 	mutex_lock(&id_map_mutex);
- 
+--- a/fs/btrfs/extent-tree.c
++++ b/fs/btrfs/extent-tree.c
+@@ -2444,7 +2444,8 @@ static noinline int __btrfs_run_delayed_
+ 			spin_unlock(&locked_ref->lock);
+ 			spin_lock(&delayed_refs->lock);
+ 			spin_lock(&locked_ref->lock);
+-			if (rb_first(&locked_ref->ref_root)) {
++			if (rb_first(&locked_ref->ref_root) ||
++			    locked_ref->extent_op) {
+ 				spin_unlock(&locked_ref->lock);
+ 				spin_unlock(&delayed_refs->lock);
+ 				continue;
 
 
