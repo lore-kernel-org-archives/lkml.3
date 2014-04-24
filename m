@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754979AbaDXJF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:05:27 -0400
-Received: from mail-ae0-f52.auone-net.jp ([106.187.230.52]:33270 "EHLO
-	dmta01.auone-net.jp" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753170AbaDXJFW (ORCPT
+	id S1755441AbaDXJFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:05:45 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:47306 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755112AbaDXJFj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 05:05:22 -0400
-X-Greylist: delayed 553 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Apr 2014 05:05:22 EDT
-Date: Thu, 24 Apr 2014 17:56:06 +0900
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] veth: Allow a peer to be up at creation time
+	Thu, 24 Apr 2014 05:05:39 -0400
+Date: Thu, 24 Apr 2014 10:04:44 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Anders Berg <anders.berg@lsi.com>
+Cc: arnd@arndb.de, olof@lixom.net, mturquette@linaro.org, mark.rutland@arm.com,
+        dbaryshkov@gmail.com, linus.walleij@linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] ARM: Add platform support for LSI AXM55xx SoC
+Message-ID: <20140424090444.GF26756@n2100.arm.linux.org.uk>
+References: <cover.1397552154.git.anders.berg@lsi.com> <80a2523d3e266ed12d5b70ac5518e963e47b27f4.1397552154.git.anders.berg@lsi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
-Message-Id: <5358d1a70002df7a00005df100005bf3a00002a40d3b@amlmta037.auone-net.jp>
-X-MXM-DELIVERY-TYPE: 3
+In-Reply-To: <80a2523d3e266ed12d5b70ac5518e963e47b27f4.1397552154.git.anders.berg@lsi.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, a veth peer cannot be up at creation time.
+On Tue, Apr 15, 2014 at 02:06:10PM +0200, Anders Berg wrote:
+> +	adr	r4, 2f
+> +	ldmia	r4, {r5, r6}
+> +	sub	r4, r4, r5
+> +	add	r6, r6, r4
+> +1:	ldr	r7, [r6]
+> +	cmp	r7, r0
+> +	wfene
+> +	bne	1b
+...
+> +2:	.long	.
+> +	.long	pen_release
+> diff --git a/arch/arm/mach-axxia/platsmp.c b/arch/arm/mach-axxia/platsmp.c
+...
+> +/*
+> + * Write pen_release in a way that is guaranteed to be visible to all
+> + * observers, irrespective of whether they're taking part in coherency
+> + * or not.  This is necessary for the hotplug code to work reliably.
+> + */
+> +static void write_pen_release(int val)
+> +{
+> +	pen_release = val;
+> +	/* Make sure this store is visible to other CPUs */
+> +	smp_wmb();
+> +	__cpuc_flush_dcache_area((void *)&pen_release, sizeof(pen_release));
+> +}
 
-# ip link add type veth peer up
-RTNETLINK answers: Transport endpoint is not connected
+Do you /really/ need to do this pen_release thing on your platform?
 
-Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
----
- drivers/net/veth.c | 13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+> +static void __init axxia_smp_prepare_cpus(unsigned int max_cpus)
+> +{
+...
+> +		/*
+> +		 * Release all physical cpus when not in hyp mode since we
+> +		 * might want to bring them online later.
+> +		 *
+> +		 * Also we need to get the execution into kernel code (it's
+> +		 * currently executing in u-boot).  u-boot releases the cores
+> +		 * from reset in hyp mode.
+> +		 */
+> +		if (!is_hyp_mode_available()) {
+> +			if (cpu != 0) {
+> +				u32 tmp = readl(syscon + 0x1010);
+> +				writel(0xab, syscon + 0x1000);
+> +				tmp &= ~(1 << cpu);
+> +				writel(tmp, syscon + 0x1010);
+> +			}
 
-diff --git a/drivers/net/veth.c b/drivers/net/veth.c
-index b4a10bc..aa87afc 100644
---- a/drivers/net/veth.c
-+++ b/drivers/net/veth.c
-@@ -373,10 +373,6 @@ static int veth_newlink(struct net *src_net, struct net_device *dev,
- 
- 	netif_carrier_off(peer);
- 
--	err = rtnl_configure_link(peer, ifmp);
--	if (err < 0)
--		goto err_configure_peer;
--
- 	/*
- 	 * register dev last
- 	 *
-@@ -407,11 +403,16 @@ static int veth_newlink(struct net *src_net, struct net_device *dev,
- 
- 	priv = netdev_priv(peer);
- 	rcu_assign_pointer(priv->peer, dev);
-+
-+	err = rtnl_configure_link(peer, ifmp);
-+	if (err < 0)
-+		goto err_configure_peer;
-+
- 	return 0;
- 
--err_register_dev:
--	/* nothing to do */
- err_configure_peer:
-+	unregister_netdevice(dev);
-+err_register_dev:
- 	unregister_netdevice(peer);
- 	return err;
- 
+As this implies that you can control the release of each CPU from u-boot
+individually.
+
 -- 
-2.0.0.rc0
-
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
