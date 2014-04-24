@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305AbaDXJBY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:01:24 -0400
-Received: from cyclops.biessmann.org ([134.0.25.77]:43298 "EHLO
-	cyclops.biessmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719AbaDXJBV (ORCPT
+	id S1755329AbaDXJBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:01:45 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:36792 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752536AbaDXJBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 05:01:21 -0400
-Date: Thu, 24 Apr 2014 11:01:07 +0200
-From: Andreas =?iso-8859-1?Q?Bie=DFmann?= <andreas@biessmann.de>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Greg KH <gregkh@linuxfoundation.org>, marcel@holtmann.org,
-        gustavo@padovan.org, johan.hedberg@gmail.com, jslaby@suse.cz,
-        grant.likely@linaro.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-bluetooth@vger.kernel.org, linux-serial@vger.kernel.org,
-        devicetree@vger.kernel.org,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 02/13] bluetooth: hci_ldisc: fix deadlock condition
-Message-ID: <20140424090107.GB8095@punisher.2og.er.corscience.de>
-References: <1398265117-11793-1-git-send-email-balbi@ti.com>
- <1398265117-11793-2-git-send-email-balbi@ti.com>
+	Thu, 24 Apr 2014 05:01:39 -0400
+Date: Thu, 24 Apr 2014 11:01:34 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -tip v9 25/26] kprobes: Introduce kprobe cache to reduce
+ cache misshits
+Message-ID: <20140424090134.GC7768@gmail.com>
+References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
+ <20140417081931.26341.47154.stgit@ltc230.yrl.intra.hitachi.co.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1398265117-11793-2-git-send-email-balbi@ti.com>
+In-Reply-To: <20140417081931.26341.47154.stgit@ltc230.yrl.intra.hitachi.co.jp>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Felipe Balbi,
 
-On Wed, Apr 23, 2014 at 09:58:26AM -0500, Felipe Balbi wrote:
-> LDISCs shouldn't call tty->ops->write() from within
-> ->write_wakeup().
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+> Introduce kprobe cache to reduce cache misshits for
+> massive multiple kprobes.
+> For stress testing kprobes, we need to activate kprobes
+> as many as possible. This situation causes cache miss
+> hit storm on kprobe hash-list. kprobe hashlist is already
+> enlarged to 4k entries and this is still small for 40k
+> kprobes.
 > 
-> ->write_wakeup() is called with port lock taken and
-> IRQs disabled, tty->ops->write() will try to acquire
-> the same port lock and we will deadlock.
+> For example, when registering 40k probes on the hlist and
+> enabling 20k probes, perf tools shows still a lot of
+> cache-misses are on the get_kprobe.
+>   ----
+>   Samples: 633  of event 'cache-misses', Event count (approx.): 3414776
+>   +  68.13%  [k] get_kprobe
+>   +   4.38%  [k] ftrace_lookup_ip
+>   +   2.54%  [k] kprobe_ftrace_handler
+>   ----
 > 
-> Acked-by: Marcel Holtmann <marcel@holtmann.org>
-> Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
-> Reported-by: Huang Shijie <b32955@freescale.com>
-> Signed-off-by: Felipe Balbi <balbi@ti.com>
+> Also, I found that the most of the kprobes are not hit.
+> In that case, to reduce cache-misses, we can reduce the
+> random memory access by introducing a per-cpu cache which
+> caches the address of frequently used kprobe data structure
+> and its probe address.
+> 
+> With kpcache enabled, the get_kprobe_cached goes down to
+> around 4-5% of cache-misses with 20k probes.
+>   ----
+>   Samples: 729  of event 'cache-misses', Event count (approx.): 690125
+>   +  14.49%  [k] ftrace_lookup_ip
+>   +   5.61%  [k] kprobe_trace_func
+>   +   5.17%  [k] kprobe_ftrace_handler
+>   +   4.62%  [k] get_kprobe_cached
+>   ----
+> 
+> Of course this reduces the enabling time too.
+> 
+> Without this fix (just enlarge hash table):
+> (2934 sec, 1 min intervals for each 2000 probes enabled)
+> 
+>   ----
+>   Enabling trace events: start at 1393921862
+>   0 1393921864 a2mp_chan_alloc_skb_cb_38581
+>   ...
+>   19999 1393924928 nfs4_open_confirm_done_11785
+>   ----
+> 
+> With this fix:
+> (2025 sec, 1 min intervals for each 2000 probes enabled)
 
-Tested-by: Andreas Bieﬂmann <andreas@biessmann.de>
+That's a nice speedup.
 
-on custom TI AM37xx board with 3.4.87. Therefore I vote for adding this to
-stable branches (at least 3.4). It applies with a slight line shifting
-(init_work is not available there).
+So I don't think this should be a Kconfig entry, just enable it 
+unconditionally. That will further simplify the code.
 
-I wonder if you have seen my approach [1] to fix this deadlock.  This stuff is
-quiet new to me. As I understood the work_queue has a bit more overhead than a
-tasklet. Therefore I implemented my fix with a tasklet. Would be great if one
-could shed some light on that.
+Thanks,
 
-Best regards
-
-Andreas Bieﬂmann
-
-[1] https://lkml.org/lkml/2014/4/16/425
-
-> ---
->  drivers/bluetooth/hci_ldisc.c | 24 +++++++++++++++++++-----
->  drivers/bluetooth/hci_uart.h  |  1 +
->  2 files changed, 20 insertions(+), 5 deletions(-)
+	Ingo
