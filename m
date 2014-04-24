@@ -1,158 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbaDXGdB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 02:33:01 -0400
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:43176 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaDXGc6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 02:32:58 -0400
+	id S1752070AbaDXGfy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 02:35:54 -0400
+Received: from ozlabs.org ([103.22.144.67]:56157 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860AbaDXGfw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 02:35:52 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: <linux-kernel@vger.kernel.org>
+Cc: Valerio Vanni <valerio.vanni@inwind.it>
+Cc: Elliott@ozlabs.org, Robert (Server Storage) <Elliott@hp.com>
+Cc: "Lucas De Marchi" <lucas.de.marchi@gmail.com>
+Subject: [PATCH] module: remove warning about waiting module removal.
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Thu, 24 Apr 2014 15:54:50 +0930
+Message-ID: <87zjjbdz2l.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <002e01cf5f55$74aff060$5e0fd120$%tikhomirov@samsung.com>
-References: <1398082604-3013-1-git-send-email-gautam.vivek@samsung.com>
-	<002b01cf5f52$a7bc0d70$f7342850$%tikhomirov@samsung.com>
-	<002e01cf5f55$74aff060$5e0fd120$%tikhomirov@samsung.com>
-Date: Thu, 24 Apr 2014 12:02:57 +0530
-X-Google-Sender-Auth: Rj-ekDI9bLO_WSDrwm749uLYgWc
-Message-ID: <CAFp+6iFTVKHcF8zyfmFcrALHDaRHwXOC3Wbd7rv_X5LvjznPgg@mail.gmail.com>
-Subject: Re: [PATCH 1/3] usb: ohci-exynos: Make provision for vdd regulators
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Anton Tikhomirov <av.tikhomirov@samsung.com>
-Cc: Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Felipe Balbi <balbi@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+We remove the waiting module removal in commit 3f2b9c9cdf38 (September
+2013), but it turns out that modprobe in kmod (< version 16) was
+asking for waiting module removal.  Noone noticed since modprobe would
+check for 0 usage immediately before trying to remove the module, and
+the race is unlikely.
 
+However, it means that anyone running old (but not ancient) kmod
+versions is hitting the printk designed to see if anyone was running
+"rmmod -w".  All reports so far have been false positives, so remove
+the warning.
 
-On Thu, Apr 24, 2014 at 6:08 AM, Anton Tikhomirov
-<av.tikhomirov@samsung.com> wrote:
-> Hi,
->
->> Hi,
->>
->> > -----Original Message-----
->> > From: linux-usb-owner@vger.kernel.org [mailto:linux-usb-
->> > owner@vger.kernel.org] On Behalf Of Vivek Gautam
->> > Sent: Monday, April 21, 2014 9:17 PM
->> >
->> > Facilitate getting required 3.3V and 1.0V VDD supply for
->> > OHCI controller on Exynos.
->> >
->> > With patches for regulators' nodes merged in 3.15:
->> > c8c253f ARM: dts: Add regulator entries to smdk5420
->> > 275dcd2 ARM: dts: add max77686 pmic node for smdk5250,
->> >
->> > certain perripherals will now need to ensure that,
->> > they request VDD regulators in their drivers, and enable
->> > them so as to make them working.
->> >
->> > Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
->> > Cc: Jingoo Han <jg1.han@samsung.com>
->> > ---
->> >
->> > Based on 'usb-next' branch of Greg's usb tree.
->> >
->> >  drivers/usb/host/ohci-exynos.c |   47
->> > ++++++++++++++++++++++++++++++++++++++++
->> >  1 file changed, 47 insertions(+)
->> >
->> > diff --git a/drivers/usb/host/ohci-exynos.c b/drivers/usb/host/ohci-
->> > exynos.c
->> > index 68588d8..e2e72a8 100644
->> > --- a/drivers/usb/host/ohci-exynos.c
->> > +++ b/drivers/usb/host/ohci-exynos.c
+Fixes: 3f2b9c9cdf389e303b2273679af08aab5f153517
+Reported-by: Valerio Vanni <valerio.vanni@inwind.it>
+Cc: Elliott, Robert (Server Storage) <Elliott@hp.com>
+Cc: stable@kernel.org
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-[snip]
-
->> >  static void exynos_ohci_phy_enable(struct platform_device *pdev)
->> > @@ -98,6 +101,28 @@ static int exynos_ohci_probe(struct
->> platform_device
->> > *pdev)
->> >             exynos_ohci->otg = phy->otg;
->> >     }
->> >
->> > +   exynos_ohci->vdd33 = devm_regulator_get(&pdev->dev, "vdd33");
->> > +   if (IS_ERR(exynos_ohci->vdd33)) {
->> > +           err = PTR_ERR(exynos_ohci->vdd33);
->> > +           goto fail_regulator1;
->> > +   }
->> > +   err = regulator_enable(exynos_ohci->vdd33);
->> > +   if (err) {
->> > +           dev_err(&pdev->dev, "Failed to enable VDD33 supply\n");
->> > +           goto fail_regulator1;
->> > +   }
->> > +
->> > +   exynos_ohci->vdd10 = devm_regulator_get(&pdev->dev, "vdd10");
->> > +   if (IS_ERR(exynos_ohci->vdd10)) {
->> > +           err = PTR_ERR(exynos_ohci->vdd10);
->> > +           goto fail_regulator2;
->> > +   }
->> > +   err = regulator_enable(exynos_ohci->vdd10);
->> > +   if (err) {
->> > +           dev_err(&pdev->dev, "Failed to enable VDD10 supply\n");
->> > +           goto fail_regulator2;
->> > +   }
->> > +
->>
->> Do we need to skip regulator settings together with PHY configuration
->> in case of exynos5440?
->>
->> >  skip_phy:
->> >     exynos_ohci->clk = devm_clk_get(&pdev->dev, "usbhost");
->> >
-
-[snip]
-
->> > @@ -218,6 +253,18 @@ static int exynos_ohci_resume(struct device *dev)
->> >     struct usb_hcd *hcd                     = dev_get_drvdata(dev);
->> >     struct exynos_ohci_hcd *exynos_ohci     = to_exynos_ohci(hcd);
->> >     struct platform_device *pdev            = to_platform_device(dev);
->> > +   int ret;
->> > +
->> > +   ret = regulator_enable(exynos_ohci->vdd33);
->> > +   if (ret) {
->> > +           dev_err(dev, "Failed to enable VDD33 supply\n");
->> > +           return ret;
->>
->> Not sure, but shall we continue resuming and do everything
->> we can in case of error? At least it will avoid
->> WARN_ON(clk->enable_count == 0) on next system suspend.
-
-True, i will modify it.
->
-> On the other hand, if power is not applied to the controller,
-> register access in ohci_resume() may lead to undefined behavior.
-> What's your opinion?
-
-AFA i think, it is obvious that the regulators would not work without
-a VDD supply.
-So the question is, do we have VDD LDOs available on all Exynos
-systems for usb ?
->From the schemata of Exynos5250 and Exynos5420 boards, i can see the
-required VDD LDOs
-for USB. Unfortunately at present i don't have a Exynos4* schemata.
-
-If regulator is not a mandatory, then we can make it option similar to
-what Jingoo has also suggested
-in subsequent mail.
-
-[snip]
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
+diff --git a/kernel/module.c b/kernel/module.c
+index 11869408f79b..ae7821898bf2 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -815,9 +815,6 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
+ 		return -EFAULT;
+ 	name[MODULE_NAME_LEN-1] = '\0';
+ 
+-	if (!(flags & O_NONBLOCK))
+-		pr_warn("waiting module removal not supported: please upgrade\n");
+-
+ 	if (mutex_lock_interruptible(&module_mutex) != 0)
+ 		return -EINTR;
+ 
