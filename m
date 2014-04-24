@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758769AbaDXWey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:34:54 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39527 "EHLO
+	id S1758690AbaDXWew (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:34:52 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39546 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755011AbaDXVqD (ORCPT
+	with ESMTP id S1755018AbaDXVqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Apr 2014 17:46:03 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Josef Bacik <jbacik@fb.com>
-Subject: [PATCH 3.14 21/33] Btrfs: skip submitting barrier for missing device
-Date: Thu, 24 Apr 2014 14:48:34 -0700
-Message-Id: <20140424214452.688973553@linuxfoundation.org>
+        Zach Brown <zab@redhat.com>, Josef Bacik <jbacik@fb.com>,
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.14 22/33] Btrfs: fix deadlock with nested trans handles
+Date: Thu, 24 Apr 2014 14:48:35 -0700
+Message-Id: <20140424214452.855791095@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
 References: <20140424214449.423169713@linuxfoundation.org>
@@ -29,53 +29,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit f88ba6a2a44ee98e8d59654463dc157bb6d13c43 upstream.
+commit 3bbb24b20a8800158c33eca8564f432dd14d0bf3 upstream.
 
-I got an error on v3.13:
- BTRFS error (device sdf1) in write_all_supers:3378: errno=-5 IO failure (errors while submitting device barriers.)
+Zach found this deadlock that would happen like this
 
-how to reproduce:
-  > mkfs.btrfs -f -d raid1 /dev/sdf1 /dev/sdf2
-  > wipefs -a /dev/sdf2
-  > mount -o degraded /dev/sdf1 /mnt
-  > btrfs balance start -f -sconvert=single -mconvert=single -dconvert=single /mnt
+btrfs_end_transaction <- reduce trans->use_count to 0
+  btrfs_run_delayed_refs
+    btrfs_cow_block
+      find_free_extent
+	btrfs_start_transaction <- increase trans->use_count to 1
+          allocate chunk
+	btrfs_end_transaction <- decrease trans->use_count to 0
+	  btrfs_run_delayed_refs
+	    lock tree block we are cowing above ^^
 
-The reason of the error is that barrier_all_devices() failed to submit
-barrier to the missing device.  However it is clear that we cannot do
-anything on missing device, and also it is not necessary to care chunks
-on the missing device.
+We need to only decrease trans->use_count if it is above 1, otherwise leave it
+alone.  This will make nested trans be the only ones who decrease their added
+ref, and will let us get rid of the trans->use_count++ hack if we have to commit
+the transaction.  Thanks,
 
-This patch stops sending/waiting barrier if device is missing.
-
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Reported-by: Zach Brown <zab@redhat.com>
 Signed-off-by: Josef Bacik <jbacik@fb.com>
+Tested-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/disk-io.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ fs/btrfs/transaction.c |   14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
---- a/fs/btrfs/disk-io.c
-+++ b/fs/btrfs/disk-io.c
-@@ -3244,6 +3244,8 @@ static int barrier_all_devices(struct bt
- 	/* send down all the barriers */
- 	head = &info->fs_devices->devices;
- 	list_for_each_entry_rcu(dev, head, dev_list) {
-+		if (dev->missing)
-+			continue;
- 		if (!dev->bdev) {
- 			errors_send++;
- 			continue;
-@@ -3258,6 +3260,8 @@ static int barrier_all_devices(struct bt
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -683,7 +683,8 @@ static int __btrfs_end_transaction(struc
+ 	int lock = (trans->type != TRANS_JOIN_NOLOCK);
+ 	int err = 0;
  
- 	/* wait for all the barriers */
- 	list_for_each_entry_rcu(dev, head, dev_list) {
-+		if (dev->missing)
-+			continue;
- 		if (!dev->bdev) {
- 			errors_wait++;
- 			continue;
+-	if (--trans->use_count) {
++	if (trans->use_count > 1) {
++		trans->use_count--;
+ 		trans->block_rsv = trans->orig_rsv;
+ 		return 0;
+ 	}
+@@ -731,17 +732,10 @@ static int __btrfs_end_transaction(struc
+ 	}
+ 
+ 	if (lock && ACCESS_ONCE(cur_trans->state) == TRANS_STATE_BLOCKED) {
+-		if (throttle) {
+-			/*
+-			 * We may race with somebody else here so end up having
+-			 * to call end_transaction on ourselves again, so inc
+-			 * our use_count.
+-			 */
+-			trans->use_count++;
++		if (throttle)
+ 			return btrfs_commit_transaction(trans, root);
+-		} else {
++		else
+ 			wake_up_process(info->transaction_kthread);
+-		}
+ 	}
+ 
+ 	if (trans->type & __TRANS_FREEZABLE)
 
 
