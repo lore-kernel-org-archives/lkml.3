@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758343AbaDXPxL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:53:11 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:51291 "EHLO extserv.mm-sol.com"
+	id S932373AbaDXP4n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:56:43 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:51298 "EHLO extserv.mm-sol.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758314AbaDXPtP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:49:15 -0400
+	id S1758287AbaDXPtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:49:14 -0400
 From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 To: Felipe Balbi <balbi@ti.com>
-Cc: Tim Bird <tbird20d@gmail.com>,
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, Tim Bird <tim.bird@sonymobile.com>
-Subject: [PATCH v7 17/20] usb: phy: msm: Select secondary PHY via TCSR
-Date: Thu, 24 Apr 2014 18:48:12 +0300
-Message-Id: <1398354495-20782-18-git-send-email-iivanov@mm-sol.com>
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH v7 11/20] usb: phy: msm: Properly check result from platform_get_irq()
+Date: Thu, 24 Apr 2014 18:48:06 +0300
+Message-Id: <1398354495-20782-12-git-send-email-iivanov@mm-sol.com>
 X-Mailer: git-send-email 1.8.3.2
 In-Reply-To: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
 References: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
@@ -22,72 +22,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tim Bird <tbird20d@gmail.com>
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Select the secondary PHY using the TCSR register, if phy-num=1
-in the DTS (or phy_number is set in the platform data).  The
-SOC has 2 PHYs which can be used with the OTG port, and this
-code allows configuring the correct one.
+Function return negative code on error.
 
-Note: This resolves the problem I was seeing where I couldn't
-get the USB driver working at all on a dragonboard, from cold
-boot.  This patch depends on patch 5/14 from Ivan's msm USB
-patch set.  It does not use DT for the register address, as
-there's no evidence that this address changes between SoC
-versions.
-
-Signed-off-by: Tim Bird <tim.bird@sonymobile.com>
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
 ---
- drivers/usb/phy/phy-msm-usb.c    | 14 ++++++++++++++
- include/linux/usb/msm_hsusb_hw.h |  3 +++
- 2 files changed, 17 insertions(+)
+ drivers/usb/phy/phy-msm-usb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
-index 06d79c1..1554f69 100644
+index 5d64038..8a7a324 100644
 --- a/drivers/usb/phy/phy-msm-usb.c
 +++ b/drivers/usb/phy/phy-msm-usb.c
-@@ -1488,6 +1488,7 @@ static int msm_otg_probe(struct platform_device *pdev)
- 	struct resource *res;
- 	struct msm_otg *motg;
- 	struct usb_phy *phy;
-+	void __iomem *phy_select;
-
- 	motg = devm_kzalloc(&pdev->dev, sizeof(struct msm_otg), GFP_KERNEL);
- 	if (!motg) {
-@@ -1552,6 +1553,19 @@ static int msm_otg_probe(struct platform_device *pdev)
- 	if (IS_ERR(motg->regs))
- 		return PTR_ERR(motg->regs);
-
-+	/*
-+	 * NOTE: The PHYs can be multiplexed between the chipidea controller
-+	 * and the dwc3 controller, using a single bit. It is important that
-+	 * the dwc3 driver does not set this bit in an incompatible way.
-+	 */
-+	if (motg->phy_number) {
-+		phy_select = devm_ioremap_nocache(&pdev->dev, USB2_PHY_SEL, 4);
-+		if (IS_ERR(phy_select))
-+			return PTR_ERR(phy_select);
-+		/* Enable second PHY with the OTG port */
-+		writel_relaxed(0x1, phy_select);
-+	}
-+
+@@ -1412,7 +1412,7 @@ static int msm_otg_probe(struct platform_device *pdev)
  	dev_info(&pdev->dev, "OTG regs = %p\n", motg->regs);
 
  	motg->irq = platform_get_irq(pdev, 0);
-diff --git a/include/linux/usb/msm_hsusb_hw.h b/include/linux/usb/msm_hsusb_hw.h
-index 98d3dd8..a29f603 100644
---- a/include/linux/usb/msm_hsusb_hw.h
-+++ b/include/linux/usb/msm_hsusb_hw.h
-@@ -16,6 +16,9 @@
- #ifndef __LINUX_USB_GADGET_MSM72K_UDC_H__
- #define __LINUX_USB_GADGET_MSM72K_UDC_H__
-
-+/* USB phy selector - in TCSR address range */
-+#define USB2_PHY_SEL         0xfd4ab000
-+
- #define USB_AHBBURST         (MSM_USB_BASE + 0x0090)
- #define USB_AHBMODE          (MSM_USB_BASE + 0x0098)
- #define USB_CAPLENGTH        (MSM_USB_BASE + 0x0100) /* 8 bit */
+-	if (!motg->irq) {
++	if (motg->irq < 0) {
+ 		dev_err(&pdev->dev, "platform_get_irq failed\n");
+ 		return motg->irq;
+ 	}
 --
 1.8.3.2
 
