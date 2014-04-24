@@ -1,143 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754240AbaDXXQP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 19:16:15 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:35003 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095AbaDXXQL (ORCPT
+	id S1754403AbaDXXSL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 19:18:11 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40330 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203AbaDXXSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 19:16:11 -0400
-Date: Thu, 24 Apr 2014 16:14:56 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@eggly.anvils
-To: Oleg Nesterov <oleg@redhat.com>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        Roland Dreier <roland@kernel.org>,
-        Konstantin Khlebnikov <koct9i@gmail.com>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Omar Ramirez Luna <omar.ramirez@copitl.com>,
-        Inki Dae <inki.dae@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-rdma@vger.kernel.org,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH] mm: get_user_pages(write,force) refuse to COW in shared
- areas
-In-Reply-To: <20140424133055.GA13269@redhat.com>
-Message-ID: <alpine.LSU.2.11.1404241518510.4454@eggly.anvils>
-References: <alpine.LSU.2.11.1404040120110.6880@eggly.anvils> <20140424133055.GA13269@redhat.com>
-User-Agent: Alpine 2.11 (LSU 23 2013-08-11)
+	Thu, 24 Apr 2014 19:18:07 -0400
+Date: Thu, 24 Apr 2014 16:21:00 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: jon@ringle.org
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shc_work@mail.ru, Jon Ringle <jringle@gridpoint.com>
+Subject: Re: [PATCH v6 1/2] serial: sc16is7xx
+Message-ID: <20140424232100.GA32660@kroah.com>
+References: <1397612393-31855-1-git-send-email-jon@ringle.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1397612393-31855-1-git-send-email-jon@ringle.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Apr 2014, Oleg Nesterov wrote:
-
-> Hi Hugh,
+On Tue, Apr 15, 2014 at 09:39:52PM -0400, jon@ringle.org wrote:
+> From: Jon Ringle <jringle@gridpoint.com>
 > 
-> Sorry for late reply. First of all, to avoid the confusion, I think the
-> patch is fine.
+> The SC16IS7xx is a slave I2C-bus/SPI interface to a single-channel
+> high performance UART. The SC16IS7xx's internal register set is
+> backward-compatible with the widely used and widely popular 16C450.
 > 
-> When I saw this patch I decided that uprobes should be updated accordingly,
-> but I just realized that I do not understand what should I write in the
-> changelog.
-
-Thanks a lot for considering similar issues in uprobes, Oleg: I merely
-checked that its uses of get_user_pages() would not be problematic,
-and didn't look around to rediscover the worrying mm business that
-goes on down there in kernel/events.
-
+> The SC16IS7xx also provides additional advanced features such as
+> auto hardware and software flow control, automatic RS-485 support, and
+> software reset.
 > 
-> On 04/04, Hugh Dickins wrote:
-> >
-> > +		if (gup_flags & FOLL_WRITE) {
-> > +			if (!(vm_flags & VM_WRITE)) {
-> > +				if (!(gup_flags & FOLL_FORCE))
-> > +					goto efault;
-> > +				/*
-> > +				 * We used to let the write,force case do COW
-> > +				 * in a VM_MAYWRITE VM_SHARED !VM_WRITE vma, so
-> > +				 * ptrace could set a breakpoint in a read-only
-> > +				 * mapping of an executable, without corrupting
-> > +				 * the file (yet only when that file had been
-> > +				 * opened for writing!).  Anon pages in shared
-> > +				 * mappings are surprising: now just reject it.
-> > +				 */
-> > +				if (!is_cow_mapping(vm_flags)) {
-> > +					WARN_ON_ONCE(vm_flags & VM_MAYWRITE);
-> > +					goto efault;
-> > +				}
-> 
-> OK. But could you please clarify "Anon pages in shared mappings are surprising" ?
-> I mean, does this only apply to "VM_MAYWRITE VM_SHARED !VM_WRITE vma" mentioned
-> above or this is bad even if a !FMODE_WRITE file was mmaped as MAP_SHARED ?
+> Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+> ---
+>  drivers/tty/serial/Kconfig       |    9 +
+>  drivers/tty/serial/Makefile      |    1 +
+>  drivers/tty/serial/sc16is7xx.c   | 1279 ++++++++++++++++++++++++++++++++++++++
+>  include/uapi/linux/serial_core.h |    3 +
+>  4 files changed, 1292 insertions(+)
+>  create mode 100644 drivers/tty/serial/sc16is7xx.c
 
-Good question. I simply didn't consider that - and (as you have realized)
-didn't need to consider it, because I was just stopping the problematic
-behaviour in gup(), and didn't need to consider whether other behaviour
-prohibited by gup() was actually unproblematic.
+Due to other patches, this doesn't apply to my tree anymore.  Can you
+refresh it against the tty-next branch on the tty.git tree from
+git.kernel.org?
 
-> 
-> Yes, in this case this vma is not VM_SHARED and it is not VM_MAYWRITE, it is only
-> VM_MAYSHARE. This is in fact private mapping except mprotect(PROT_WRITE) will not
-> work.
-> 
-> But with or without this patch gup(FOLL_WRITE | FOLL_FORCE) won't work in this case,
-                     "this" meaning my patch rather than yours below
-> (although perhaps it could ?), is_cow_mapping() == F because of !VM_MAYWRITE.
-> 
-> However, currently uprobes assumes that a cowed anon page is fine in this case, and
-> this differs from gup().
-> 
-> So, what do you think about the patch below? It is probably fine in any case,
-> but is there any "strong" reason to follow the gup's behaviour and forbid the
-> anon page in VM_MAYSHARE && !VM_MAYWRITE vma?
+thanks,
 
-I don't think there is a "strong" reason to forbid it.
-
-The strongest reason is simply that it's much safer if uprobes follows
-the same conventions as mm, and get_user_pages() happens to have
-forbidden that all along.
-
-The philosophical reason to forbid it is that the user mmapped with
-MAP_SHARED, and it's merely a kernel-internal detail that we flip off
-VM_SHARED and treat these read-only shared mappings very much like
-private mappings.  The user asked for MAP_SHARED, and we prefer to
-respect that by not letting private COWs creep in.
-
-We could treat those mappings even more like private mappings, and
-allow the COWs; but better to be strict about it, so long as doing
-so doesn't give you regressions.
-
-> 
-> Oleg.
-> 
-> --- x/kernel/events/uprobes.c
-> +++ x/kernel/events/uprobes.c
-> @@ -127,12 +127,13 @@ struct xol_area {
->   */
->  static bool valid_vma(struct vm_area_struct *vma, bool is_register)
->  {
-> -	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC | VM_SHARED;
-> +	vm_flags_t flags = VM_HUGETLB | VM_MAYEXEC;
-
-I think a one-line patch changing VM_SHARED to VM_MAYSHARE would do it,
-wouldn't it?  And save you from having to export is_cow_mapping()
-from mm/memory.c.  (I used is_cow_mapping() because I had to make the
-test more complex anyway, just to exclude the case which had been
-oddly handled before.)
-
-Hugh
-
->  
->  	if (is_register)
->  		flags |= VM_WRITE;
->  
-> -	return vma->vm_file && (vma->vm_flags & flags) == VM_MAYEXEC;
-> +	return 	vma->vm_file && is_cow_mapping(vma->vm_flags) &&
-> +		(vma->vm_flags & flags) == VM_MAYEXEC;
->  }
->  
->  static unsigned long offset_to_vaddr(struct vm_area_struct *vma, loff_t offset)
+greg k-h
