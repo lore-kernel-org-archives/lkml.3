@@ -1,50 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758776AbaDXRec (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:34:32 -0400
-Received: from aserp1040.oracle.com ([141.146.126.69]:49429 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753900AbaDXRe3 (ORCPT
+	id S1758791AbaDXRfX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:35:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55334 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753900AbaDXRfS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:34:29 -0400
-Message-ID: <53594B16.4000901@oracle.com>
-Date: Thu, 24 Apr 2014 13:34:14 -0400
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: linux-fsdevel <linux-fsdevel@vger.kernel.org>, Jan Kara <jack@suse.cz>,
-        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: fs: dcookie: freeing active timer
-References: <53594244.6070305@oracle.com> <20140424172708.GY18016@ZenIV.linux.org.uk>
-In-Reply-To: <20140424172708.GY18016@ZenIV.linux.org.uk>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+	Thu, 24 Apr 2014 13:35:18 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: lee.jones@linaro.org
+Cc: sameo@linux.intel.com, broonie@kernel.org, carlo@caione.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: [PATCH] mfd: core: Don't use devres functions before device is added
+Date: Thu, 24 Apr 2014 18:27:25 +0100
+Message-Id: <1398360445-27107-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 01:27 PM, Al Viro wrote:
-> On Thu, Apr 24, 2014 at 12:56:36PM -0400, Sasha Levin wrote:
->> > Hi all,
->> > 
->> > While fuzzing with trinity inside a KVM tools guest running the latest -next
->> > kernel I've stumbled on the following:
->> > [  191.871535] kmem_cache_destroy (mm/slab_common.c:363)
->> > [  191.871535] dcookie_unregister (fs/dcookies.c:302 fs/dcookies.c:343)
-> So it's dcookie_exit() doing kmem_cache_destroy(dcookie_cache) while
-> some timer is active?
-> 
-> Why does that code bother with destroying/creating that sucker dynamically?
-> Is there any point at all?
+The supply aliases for the MFD devices were being added using devres but
+the device hasn't been added at this point and as such we can't use
+devres.
 
-I'm not sure about the dynamic allocation part, but I fear that if we just
-switch to using static allocations it'll hide the underlying issue that
-triggered this bug instead of fixing it.
+The MFD already has a function that removes devices this patch uses the
+non-devres versions of the supply alias functions and adds an unregister
+in mfd_remove_devices_fn.
 
+Reported-by: Carlo Caione <carlo@caione.org>
+Reported-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/mfd-core.c |   11 +++++++----
+ 1 files changed, 7 insertions(+), 4 deletions(-)
 
-Thanks,
-Sasha
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index 2676492..892d343 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -102,7 +102,7 @@ static int mfd_add_device(struct device *parent, int id,
+ 	pdev->dev.dma_mask = parent->dma_mask;
+ 	pdev->dev.dma_parms = parent->dma_parms;
+ 
+-	ret = devm_regulator_bulk_register_supply_alias(
++	ret = regulator_bulk_register_supply_alias(
+ 			&pdev->dev, cell->parent_supplies,
+ 			parent, cell->parent_supplies,
+ 			cell->num_parent_supplies);
+@@ -182,9 +182,9 @@ static int mfd_add_device(struct device *parent, int id,
+ 	return 0;
+ 
+ fail_alias:
+-	devm_regulator_bulk_unregister_supply_alias(&pdev->dev,
+-						    cell->parent_supplies,
+-						    cell->num_parent_supplies);
++	regulator_bulk_unregister_supply_alias(&pdev->dev,
++					       cell->parent_supplies,
++					       cell->num_parent_supplies);
+ fail_res:
+ 	kfree(res);
+ fail_device:
+@@ -238,6 +238,9 @@ static int mfd_remove_devices_fn(struct device *dev, void *c)
+ 	pdev = to_platform_device(dev);
+ 	cell = mfd_get_cell(pdev);
+ 
++	regulator_bulk_unregister_supply_alias(dev, cell->parent_supplies,
++					       cell->num_parent_supplies);
++
+ 	/* find the base address of usage_count pointers (for freeing) */
+ 	if (!*usage_count || (cell->usage_count < *usage_count))
+ 		*usage_count = cell->usage_count;
+-- 
+1.7.2.5
+
