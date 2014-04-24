@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758307AbaDXWOg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:14:36 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39817 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756311AbaDXVxL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:53:11 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 04/27] ipv6: dont set DST_NOCOUNT for remotely added routes
-Date: Thu, 24 Apr 2014 14:55:38 -0700
-Message-Id: <20140424215552.069029994@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
-References: <20140424215551.942390050@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S932409AbaDXWPR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:15:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60675 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755531AbaDXWPN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 18:15:13 -0400
+Date: Fri, 25 Apr 2014 00:15:08 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+X-X-Sender: jikos@twin.jikos.cz
+To: Pavel Machek <pavel@ucw.cz>
+cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [bisect result] Re: 3.15-rc2: i915 regression: only top 20% of
+ screen works in X
+In-Reply-To: <20140424220638.GA29385@atrey.karlin.mff.cuni.cz>
+Message-ID: <alpine.LRH.2.00.1404250013550.30970@twin.jikos.cz>
+References: <20140423202248.GA3621@amd.pavel.ucw.cz> <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com> <20140423220952.GA3627@amd.pavel.ucw.cz> <20140424055023.GA31221@nuc-i3427.alporthouse.com> <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
+ <20140424194037.GB30333@amd.pavel.ucw.cz> <20140424201521.GN31221@nuc-i3427.alporthouse.com> <20140424220638.GA29385@atrey.karlin.mff.cuni.cz>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+On Fri, 25 Apr 2014, Pavel Machek wrote:
 
-------------------
+> > > And we have a winner here :-)
+> > > 
+> > > Ok, it was not as painfull as I feared.
+> > > 
+> > > It does not revert cleanly, but doing it by hand was not that bad.
+> > 
+> > Oh my. That is bizarre, can you check whether you have
+> > 
+> > commit 9991ae787a0c87fe7c783b4b6f4754c3cdbb6213
+> 
+> Yes, with that commit, graphics is back to working state. Please push
+> it to mainline soon -- it fixes a regression. Feel free  to add
 
-From: Sabrina Dubroca <sd@queasysnail.net>
+Alright, most of my testing has been done with that commit present 
+(obviously, as I've been using Chris' branch that has this incorporated), 
+so I have a different ring initialization problem than Pavel had.
 
-[ Upstream commit c88507fbad8055297c1d1e21e599f46960cbee39 ]
-
-DST_NOCOUNT should only be used if an authorized user adds routes
-locally. In case of routes which are added on behalf of router
-advertisments this flag must not get used as it allows an unlimited
-number of routes getting added remotely.
-
-Signed-off-by: Sabrina Dubroca <sd@queasysnail.net>
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/route.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- a/net/ipv6/route.c
-+++ b/net/ipv6/route.c
-@@ -1302,7 +1302,7 @@ int ip6_route_add(struct fib6_config *cf
- 	if (!table)
- 		goto out;
- 
--	rt = ip6_dst_alloc(&net->ipv6.ip6_dst_ops, NULL, DST_NOCOUNT);
-+	rt = ip6_dst_alloc(&net->ipv6.ip6_dst_ops, NULL, (cfg->fc_flags & RTF_ADDRCONF) ? 0 : DST_NOCOUNT);
- 
- 	if (!rt) {
- 		err = -ENOMEM;
-
+-- 
+Jiri Kosina
+SUSE Labs
 
