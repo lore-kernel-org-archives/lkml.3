@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754147AbaDXIx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:53:59 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46633 "EHLO
+	id S1754487AbaDXKKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:10:22 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46651 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117AbaDXIxx (ORCPT
+	with ESMTP id S1754128AbaDXIx6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:53 -0400
+	Thu, 24 Apr 2014 04:53:58 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Michael Braun <michael-dev@fami-braun.de>,
-        Johannes Berg <johannes.berg@intel.com>,
+Cc: Guenter Roeck <linux@roeck-us.net>, Lee Jones <lee.jones@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 082/182] mac80211: fix WPA with VLAN on AP side with ps-sta again
-Date: Thu, 24 Apr 2014 09:50:07 +0100
-Message-Id: <1398329507-5911-83-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 085/182] mfd: kempld-core: Fix potential hang-up during boot
+Date: Thu, 24 Apr 2014 09:50:10 +0100
+Message-Id: <1398329507-5911-86-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,44 +27,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Michael Braun <michael-dev@fami-braun.de>
+From: Guenter Roeck <linux@roeck-us.net>
 
-commit 112c44b2df0984121a52fbda89425843b8e1a457 upstream.
+commit 204747c970c0d568721c76ab8a57dde0e5dcf0d5 upstream.
 
-commit de74a1d9032f4d37ea453ad2a647e1aff4cd2591
-  "mac80211: fix WPA with VLAN on AP side with ps-sta"
-fixed an issue where queued multicast packets would
-be sent out encrypted with the key of an other bss.
+On PXT and COMe-cPC2 boards it is observed that the hardware
+mutex is acquired but not being released during initialization.
+This can result in a hang-up during boot if the driver is built
+into the kernel.
 
-commit "7cbf9d017dbb5e3276de7d527925d42d4c11e732"
-  "mac80211: fix oops on mesh PS broadcast forwarding"
-essentially reverted it, because vif.type cannot be AP_VLAN
-due to the check to vif.type in ieee80211_get_buffered_bc before.
+Releasing the mutex twice if it was acquired fixes the problem.
+Subsequent request/release cycles work as expected, so the fix is
+only needed during initialization.
 
-As the later commit intended to fix the MESH case, fix it
-by checking for IFTYPE_AP instead of IFTYPE_AP_VLAN.
-
-Fixes: 7cbf9d017dbb ("mac80211: fix oops on mesh PS broadcast forwarding")
-Signed-off-by: Michael Braun <michael-dev@fami-braun.de>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Reviewed-by: Michael Brunner <michael.brunner@kontron.com>
+Tested-by: Michael Brunner <michael.brunner@kontron.com>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Lee Jones <lee.jones@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- net/mac80211/tx.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/mfd/kempld-core.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/net/mac80211/tx.c b/net/mac80211/tx.c
-index 5d0beec..5fd26c6 100644
---- a/net/mac80211/tx.c
-+++ b/net/mac80211/tx.c
-@@ -2706,7 +2706,7 @@ ieee80211_get_buffered_bc(struct ieee80211_hw *hw,
- 				cpu_to_le16(IEEE80211_FCTL_MOREDATA);
- 		}
+diff --git a/drivers/mfd/kempld-core.c b/drivers/mfd/kempld-core.c
+index 686a456..1b1b462 100644
+--- a/drivers/mfd/kempld-core.c
++++ b/drivers/mfd/kempld-core.c
+@@ -322,9 +322,12 @@ static int kempld_detect_device(struct kempld_device_data *pld)
+ 		return -ENODEV;
+ 	}
  
--		if (sdata->vif.type == NL80211_IFTYPE_AP_VLAN)
-+		if (sdata->vif.type == NL80211_IFTYPE_AP)
- 			sdata = IEEE80211_DEV_TO_SUB_IF(skb->dev);
- 		if (!ieee80211_tx_prepare(sdata, &tx, skb))
- 			break;
+-	/* Release hardware mutex if aquired */
+-	if (!(index_reg & KEMPLD_MUTEX_KEY))
++	/* Release hardware mutex if acquired */
++	if (!(index_reg & KEMPLD_MUTEX_KEY)) {
+ 		iowrite8(KEMPLD_MUTEX_KEY, pld->io_index);
++		/* PXT and COMe-cPC2 boards may require a second release */
++		iowrite8(KEMPLD_MUTEX_KEY, pld->io_index);
++	}
+ 
+ 	mutex_unlock(&pld->lock);
+ 
 -- 
 1.9.1
 
