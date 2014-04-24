@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754745AbaDXJyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:54:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46757 "EHLO
+	id S1754899AbaDXJzl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:55:41 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46740 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752908AbaDXIyb (ORCPT
+	with ESMTP id S1754335AbaDXIy0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:54:31 -0400
+	Thu, 24 Apr 2014 04:54:26 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: "W. Trevor King" <wking@tremily.us>, Takashi Iwai <tiwai@suse.de>,
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 108/182] ALSA: hda - Enable beep for ASUS 1015E
-Date: Thu, 24 Apr 2014 09:50:33 +0100
-Message-Id: <1398329507-5911-109-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 105/182] NFSv4: Fix a use-after-free problem in open()
+Date: Thu, 24 Apr 2014 09:50:30 +0100
+Message-Id: <1398329507-5911-106-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,36 +27,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "W. Trevor King" <wking@tremily.us>
+From: Trond Myklebust <trond.myklebust@primarydata.com>
 
-commit a4b7f21d7b42b33609df3f86992a8deff80abfaf upstream.
+commit e911b8158ee1def8153849b1641b736026b036e0 upstream.
 
-The `lspci -nnvv` output contains (wrapped for line length):
+If we interrupt the nfs4_wait_for_completion_rpc_task() call in
+nfs4_run_open_task(), then we don't prevent the RPC call from
+completing. So freeing up the opendata->f_attr.mdsthreshold
+in the error path in _nfs4_do_open() leads to a use-after-free
+when the XDR decoder tries to decode the mdsthreshold information
+from the server.
 
-  00:1b.0 Audio device [0403]:
-    Intel Corporation 7 Series/C210 Series Chipset Family
-    High Definition Audio Controller [8086:1e20] (rev 04)
-        Subsystem: ASUSTeK Computer Inc. Device [1043:115d]
-
-Signed-off-by: W. Trevor King <wking@tremily.us>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Fixes: 82be417aa37c0 (NFSv4.1 cache mdsthreshold values on OPEN)
+Tested-by: Steve Dickson <SteveD@redhat.com>
+Signed-off-by: Trond Myklebust <trond.myklebust@primarydata.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- sound/pci/hda/patch_realtek.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/nfs/nfs4proc.c | 19 ++++++++++---------
+ 1 file changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index add9f3d..740902f1 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -941,6 +941,7 @@ static int alc_codec_rename_from_preset(struct hda_codec *codec)
+diff --git a/fs/nfs/nfs4proc.c b/fs/nfs/nfs4proc.c
+index 7690917..9317b38 100644
+--- a/fs/nfs/nfs4proc.c
++++ b/fs/nfs/nfs4proc.c
+@@ -976,6 +976,7 @@ static void nfs4_opendata_free(struct kref *kref)
+ 	dput(p->dentry);
+ 	nfs_sb_deactive(sb);
+ 	nfs_fattr_free_names(&p->f_attr);
++	kfree(p->f_attr.mdsthreshold);
+ 	kfree(p);
+ }
  
- static const struct snd_pci_quirk beep_white_list[] = {
- 	SND_PCI_QUIRK(0x1043, 0x103c, "ASUS", 1),
-+	SND_PCI_QUIRK(0x1043, 0x115d, "ASUS", 1),
- 	SND_PCI_QUIRK(0x1043, 0x829f, "ASUS", 1),
- 	SND_PCI_QUIRK(0x1043, 0x8376, "EeePC", 1),
- 	SND_PCI_QUIRK(0x1043, 0x83ce, "EeePC", 1),
+@@ -2126,10 +2127,12 @@ static int _nfs4_do_open(struct inode *dir,
+ 		}
+ 	}
+ 
+-	if (ctx_th && server->attr_bitmask[2] & FATTR4_WORD2_MDSTHRESHOLD) {
+-		opendata->f_attr.mdsthreshold = pnfs_mdsthreshold_alloc();
+-		if (!opendata->f_attr.mdsthreshold)
+-			goto err_free_label;
++	if (server->attr_bitmask[2] & FATTR4_WORD2_MDSTHRESHOLD) {
++		if (!opendata->f_attr.mdsthreshold) {
++			opendata->f_attr.mdsthreshold = pnfs_mdsthreshold_alloc();
++			if (!opendata->f_attr.mdsthreshold)
++				goto err_free_label;
++		}
+ 		opendata->o_arg.open_bitmap = &nfs4_pnfs_open_bitmap[0];
+ 	}
+ 	if (dentry->d_inode != NULL)
+@@ -2155,11 +2158,10 @@ static int _nfs4_do_open(struct inode *dir,
+ 		}
+ 	}
+ 
+-	if (pnfs_use_threshold(ctx_th, opendata->f_attr.mdsthreshold, server))
++	if (pnfs_use_threshold(ctx_th, opendata->f_attr.mdsthreshold, server)) {
+ 		*ctx_th = opendata->f_attr.mdsthreshold;
+-	else
+-		kfree(opendata->f_attr.mdsthreshold);
+-	opendata->f_attr.mdsthreshold = NULL;
++		opendata->f_attr.mdsthreshold = NULL;
++	}
+ 
+ 	nfs4_label_free(olabel);
+ 
+@@ -2169,7 +2171,6 @@ static int _nfs4_do_open(struct inode *dir,
+ err_free_label:
+ 	nfs4_label_free(olabel);
+ err_opendata_put:
+-	kfree(opendata->f_attr.mdsthreshold);
+ 	nfs4_opendata_put(opendata);
+ err_put_state_owner:
+ 	nfs4_put_state_owner(sp);
 -- 
 1.9.1
 
