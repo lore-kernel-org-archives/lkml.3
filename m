@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932217AbaDXPbo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:31:44 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:49535 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754569AbaDXPbj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:31:39 -0400
+	id S1758242AbaDXPc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:32:58 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45674 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932074AbaDXPbn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:31:43 -0400
 From: Santosh Shilimkar <santosh.shilimkar@ti.com>
 To: <linux-kernel@vger.kernel.org>
 CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Grygorii Strashko <grygorii.strashko@ti.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
         Olof Johansson <olof@lixom.net>,
@@ -18,10 +17,10 @@ CC: <linux-arm-kernel@lists.infradead.org>, <devicetree@vger.kernel.org>,
         Rob Herring <robh+dt@kernel.org>,
         Catalin Marinas <catalin.marinas@arm.com>,
         Linus Walleij <linus.walleij@linaro.org>,
-        Grygorii Strashko <grygorii.strashko@ti.com>
-Subject: [PATCH v3 3/7] of: introduce of_dma_is_coherent() helper
-Date: Thu, 24 Apr 2014 11:30:03 -0400
-Message-ID: <1398353407-2345-4-git-send-email-santosh.shilimkar@ti.com>
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+Subject: [PATCH v3 5/7] ARM: dma: Use dma_pfn_offset for dma address translation
+Date: Thu, 24 Apr 2014 11:30:05 -0400
+Message-ID: <1398353407-2345-6-git-send-email-santosh.shilimkar@ti.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
 References: <1398353407-2345-1-git-send-email-santosh.shilimkar@ti.com>
@@ -31,12 +30,16 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The of_dma_is_coherent() helper parses the given DT device
-node to see if the "dma-coherent" property is supported and
-returns true or false accordingly.
+From: Grygorii Strashko <grygorii.strashko@ti.com>
 
-If the arch is always coherent or always noncoherent, then the default
-DMA ops has to be specified accordingly.
+In most of cases DMA addresses can be performed using offset value of
+ Bus address space relatively to physical address space as following:
+
+PFN->DMA:
+ __pfn_to_phys(pfn + [-]dma_pfn_offset)
+
+DMA->PFN:
+ __phys_to_pfn(dma_addr) + [-]dma_pfn_offset
 
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Russell King <linux@arm.linux.org.uk>
@@ -46,69 +49,56 @@ Cc: Grant Likely <grant.likely@linaro.org>
 Cc: Rob Herring <robh+dt@kernel.org>
 Cc: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 Signed-off-by: Grygorii Strashko <grygorii.strashko@ti.com>
+Signed-off-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
 ---
- drivers/of/platform.c       |   23 +++++++++++++++++++++++
- include/linux/of_platform.h |    6 ++++++
- 2 files changed, 29 insertions(+)
+ arch/arm/include/asm/dma-mapping.h |   21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 404d1da..48de98f 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -485,4 +485,27 @@ int of_platform_populate(struct device_node *root,
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(of_platform_populate);
-+
-+/**
-+ * of_dma_is_coherent - Check if device is coherent
-+ * @np:	device node
-+ *
-+ * It returns true if "dma-coherent" property was found
-+ * for this device in DT.
-+ */
-+bool of_dma_is_coherent(struct device_node *np)
-+{
-+	struct device_node *node = of_node_get(np);
-+
-+	while (node) {
-+		if (of_property_read_bool(node, "dma-coherent")) {
-+			of_node_put(node);
-+			return true;
-+		}
-+		node = of_get_next_parent(node);
-+	}
-+	of_node_put(node);
-+	return false;
-+}
-+EXPORT_SYMBOL_GPL(of_dma_is_coherent);
- #endif /* CONFIG_OF_ADDRESS */
-diff --git a/include/linux/of_platform.h b/include/linux/of_platform.h
-index 05cb4a9..b9a3cb2 100644
---- a/include/linux/of_platform.h
-+++ b/include/linux/of_platform.h
-@@ -72,6 +72,7 @@ extern int of_platform_populate(struct device_node *root,
- 				const struct of_device_id *matches,
- 				const struct of_dev_auxdata *lookup,
- 				struct device *parent);
-+extern bool of_dma_is_coherent(struct device_node *np);
- #else
- static inline int of_platform_populate(struct device_node *root,
- 					const struct of_device_id *matches,
-@@ -80,6 +81,11 @@ static inline int of_platform_populate(struct device_node *root,
+diff --git a/arch/arm/include/asm/dma-mapping.h b/arch/arm/include/asm/dma-mapping.h
+index e701a4d..424fda9 100644
+--- a/arch/arm/include/asm/dma-mapping.h
++++ b/arch/arm/include/asm/dma-mapping.h
+@@ -58,22 +58,35 @@ static inline int dma_set_mask(struct device *dev, u64 mask)
+ #ifndef __arch_pfn_to_dma
+ static inline dma_addr_t pfn_to_dma(struct device *dev, unsigned long pfn)
  {
- 	return -ENODEV;
+-	return (dma_addr_t)__pfn_to_bus(pfn);
++	if (!dev)
++		return (dma_addr_t)__pfn_to_bus(pfn);
++	else
++		return (dma_addr_t)__pfn_to_bus(pfn - dev->dma_pfn_offset);
  }
-+
-+static inline bool of_dma_is_coherent(struct device_node *np)
-+{
-+	return false;
-+}
- #endif
  
- #endif	/* _LINUX_OF_PLATFORM_H */
+ static inline unsigned long dma_to_pfn(struct device *dev, dma_addr_t addr)
+ {
+-	return __bus_to_pfn(addr);
++	if (!dev)
++		return __bus_to_pfn(addr);
++	else
++		return __bus_to_pfn(addr) + dev->dma_pfn_offset;
+ }
+ 
+ static inline void *dma_to_virt(struct device *dev, dma_addr_t addr)
+ {
+-	return (void *)__bus_to_virt((unsigned long)addr);
++	if (!dev)
++		return (void *)__bus_to_virt((unsigned long)addr);
++	else
++		return (void *)__bus_to_virt(__pfn_to_bus(dma_to_pfn(dev, addr)));
+ }
+ 
+ static inline dma_addr_t virt_to_dma(struct device *dev, void *addr)
+ {
+-	return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
++	if (!dev)
++		return (dma_addr_t)__virt_to_bus((unsigned long)(addr));
++	else
++		return pfn_to_dma(dev,
++				__bus_to_pfn(__virt_to_bus((unsigned long)(addr))));
+ }
+ 
+ #else
 -- 
 1.7.9.5
 
