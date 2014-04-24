@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757664AbaDXOfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:35:23 -0400
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:37147 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132AbaDXOfV (ORCPT
+	id S1757573AbaDXOhp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:37:45 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:47278 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756018AbaDXOhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:35:21 -0400
-Date: Thu, 24 Apr 2014 10:35:17 -0400
-From: Tejun Heo <tj@kernel.org>
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-Cc: Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com
-Subject: Re: [PATCH] USB: serial: fix sysfs-attribute removal deadlock
-Message-ID: <20140424143517.GC14460@htj.dyndns.org>
-References: <1398245539-1618-1-git-send-email-jhovold@gmail.com>
- <20140423141908.GA4781@htj.dyndns.org>
- <1398328155.2805.100.camel@ThinkPad-T5421.cn.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398328155.2805.100.camel@ThinkPad-T5421.cn.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 24 Apr 2014 10:37:43 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Mike Galbraith <bitbucket@online.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [RFC PATCH 0/4] workqueue: Introduce low-level unbound wq sysfs cpumask
+Date: Thu, 24 Apr 2014 16:37:32 +0200
+Message-Id: <1398350256-7834-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.8.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 04:29:15PM +0800, Li Zhong wrote:
-> On Wed, 2014-04-23 at 10:19 -0400, Tejun Heo wrote:
-> > cc'ing Li Zhong who's working on a simliar issue in the following
-> > thread and quoting whole body.
-> > 
-> >   http://thread.gmane.org/gmane.linux.kernel/1680706
-> > 
-> > Li, this is another variation of the same problem.  Maybe this can be
-> > covered by your work too?
-> 
-> It seems to me that it is about write something to driver attribute, and
-> driver unloading. If so, maybe it's not easy to reuse the help functions
-> created for device attribute, and device removing.
-> 
-> But I guess the idea to break the active protection could still be
-> applied here:
-> 
-> Maybe we could try_module_get() here (like the other option suggested by
-> Johan?), and break active protection if we could get the module,
-> something like below? 
+Hi,
 
-I don't get why try_module_get() matters here.  We can't call into
-->store if the object at hand is already destroyed and the underlying
-module can't go away if the target device is still alive.
-try_module_get() doesn't actually protect the object.  Why does that
-matter?  This is self removal, right?  Can you please take a look at
-kernfs_remove_self()?
+So this new version takes another direction suggested by Tejun.
+Now we have a cpumask at the root of the workqueue directory
+to bound the affinity of all unbound workqueues.
 
-Thanks.
+It's an early release as more plumbing is required. Most notably:
 
--- 
-tejun
+* Drop last patch and integrate Lai's instead to support
+apply_workqueue_attrs() on ordered workqueues: https://lkml.org/lkml/2014/4/15/181
+
+* Handle cpumask value expansion (in fact the per wq cpumask must be
+stored seperately than the effective cpumask to handle that correctly).
+I should take care of that in the next version.
+
+But I prefer to post the current state now in case I'm wandering off.
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynticks.git
+	core/workqueue-v3
+
+Thanks,
+	Frederic
+---
+
+Frederic Weisbecker (4):
+      workqueue: Create low-level unbound workqueues cpumask
+      workqueue: Split apply attrs code from its locking
+      workqueue: Allow modifying low level unbound workqueue cpumask
+      workqueue: Handle ordered workqueues on cpumask_unbounds change
+
+
+ kernel/workqueue.c | 219 ++++++++++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 185 insertions(+), 34 deletions(-)
