@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914AbaDXIx3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:53:29 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46539 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753785AbaDXIx0 (ORCPT
+	id S1755898AbaDXK6Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:58:25 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52778 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755687AbaDXK6V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:26 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 063/182] mfd: sec-core: Fix possible NULL pointer dereference when i2c_new_dummy error
-Date: Thu, 24 Apr 2014 09:49:48 +0100
-Message-Id: <1398329507-5911-64-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 06:58:21 -0400
+Date: Thu, 24 Apr 2014 03:57:47 -0700
+From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
+Message-ID: <tip-6a5022a56ac37da7bffece043331a101ed0040b1@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jkosina@suse.cz, masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        jlebon@redhat.com, tglx@linutronix.de
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jkosina@suse.cz, masami.hiramatsu.pt@hitachi.com, rostedt@goodmis.org,
+        jlebon@redhat.com, tglx@linutronix.de
+In-Reply-To: <20140417081651.26341.10593.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140417081651.26341.10593.stgit@ltc230.yrl.intra.hitachi.co.jp>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/kprobes] kprobes/x86:
+  Allow to handle reentered kprobe on single-stepping
+Git-Commit-ID: 6a5022a56ac37da7bffece043331a101ed0040b1
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+Commit-ID:  6a5022a56ac37da7bffece043331a101ed0040b1
+Gitweb:     http://git.kernel.org/tip/6a5022a56ac37da7bffece043331a101ed0040b1
+Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+AuthorDate: Thu, 17 Apr 2014 17:16:51 +0900
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 24 Apr 2014 10:02:55 +0200
 
-------------------
+kprobes/x86: Allow to handle reentered kprobe on single-stepping
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Since the NMI handlers(e.g. perf) can interrupt in the
+single stepping (or preparing the single stepping, do_debug
+etc.), we should consider a kprobe is hit in the NMI
+handler. Even in that case, the kprobe is allowed to be
+reentered as same as the kprobes hit in kprobe handlers
+(KPROBE_HIT_ACTIVE or KPROBE_HIT_SSDONE).
 
-commit 65aba1e04916d72b30c028730a1e31860c225412 upstream.
+The real issue will happen when a kprobe hit while another
+reentered kprobe is processing (KPROBE_REENTER), because
+we already consumed a saved-area for the previous kprobe.
 
-During probe the sec-core driver allocates dummy I2C device for RTC with
-i2c_new_dummy() but return value is not checked. In case of error
-(i2c_new_device(): memory allocation failure or I2C address cannot be
-used) this function returns NULL which is later used by
-devm_regmap_init_i2c() or i2c_unregister_device().
-
-If i2c_new_dummy() fails for RTC device, fail also the probe for main
-MFD driver.
-
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jiri Kosina <jkosina@suse.cz>
+Cc: Jonathan Lebon <jlebon@redhat.com>
+Link: http://lkml.kernel.org/r/20140417081651.26341.10593.stgit@ltc230.yrl.intra.hitachi.co.jp
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/mfd/sec-core.c | 4 ++++
- 1 file changed, 4 insertions(+)
+ arch/x86/kernel/kprobes/core.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/mfd/sec-core.c b/drivers/mfd/sec-core.c
-index 7976768..ab8858d 100644
---- a/drivers/mfd/sec-core.c
-+++ b/drivers/mfd/sec-core.c
-@@ -238,6 +238,10 @@ static int sec_pmic_probe(struct i2c_client *i2c,
- 	}
- 
- 	sec_pmic->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
-+	if (!sec_pmic->rtc) {
-+		dev_err(&i2c->dev, "Failed to allocate I2C for RTC\n");
-+		return -ENODEV;
-+	}
- 	i2c_set_clientdata(sec_pmic->rtc, sec_pmic);
- 
- 	if (pdata && pdata->cfg_pmic_irq)
--- 
-1.9.1
-
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 61b17dc..da7bdaa 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -531,10 +531,11 @@ reenter_kprobe(struct kprobe *p, struct pt_regs *regs, struct kprobe_ctlblk *kcb
+ 	switch (kcb->kprobe_status) {
+ 	case KPROBE_HIT_SSDONE:
+ 	case KPROBE_HIT_ACTIVE:
++	case KPROBE_HIT_SS:
+ 		kprobes_inc_nmissed_count(p);
+ 		setup_singlestep(p, regs, kcb, 1);
+ 		break;
+-	case KPROBE_HIT_SS:
++	case KPROBE_REENTER:
+ 		/* A probe has been hit in the codepath leading up to, or just
+ 		 * after, single-stepping of a probed instruction. This entire
+ 		 * codepath should strictly reside in .kprobes.text section.
