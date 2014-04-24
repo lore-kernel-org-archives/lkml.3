@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996AbaDXLMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:12:36 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46516 "EHLO
+	id S1756090AbaDXLNZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:13:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46511 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824AbaDXIxV (ORCPT
+	with ESMTP id S1753819AbaDXIxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:21 -0400
+	Thu, 24 Apr 2014 04:53:19 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Dennis Dalessandro <dennis.dalessandro@intel.com>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 059/182] IB/ipath: Fix potential buffer overrun in sending diag packet routine
-Date: Thu, 24 Apr 2014 09:49:44 +0100
-Message-Id: <1398329507-5911-60-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 058/182] USB: unbind all interfaces before rebinding any
+Date: Thu, 24 Apr 2014 09:49:43 +0100
+Message-Id: <1398329507-5911-59-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,144 +28,239 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dennis Dalessandro <dennis.dalessandro@intel.com>
+From: Alan Stern <stern@rowland.harvard.edu>
 
-commit a2cb0eb8a64adb29a99fd864013de957028f36ae upstream.
+commit 6aec044cc2f5670cf3b143c151c8be846499bd15 upstream.
 
-Guard against a potential buffer overrun.  The size to read from the
-user is passed in, and due to the padding that needs to be taken into
-account, as well as the place holder for the ICRC it is possible to
-overflow the 32bit value which would cause more data to be copied from
-user space than is allocated in the buffer.
+When a driver doesn't have pre_reset, post_reset, or reset_resume
+methods, the USB core unbinds that driver when its device undergoes a
+reset or a reset-resume, and then rebinds it afterward.
 
-Reported-by: Nico Golde <nico@ngolde.de>
-Reported-by: Fabian Yamaguchi <fabs@goesec.de>
-Reviewed-by: Mike Marciniszyn <mike.marciniszyn@intel.com>
-Signed-off-by: Dennis Dalessandro <dennis.dalessandro@intel.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+The existing straightforward implementation can lead to problems,
+because each interface gets unbound and rebound before the next
+interface is handled.  If a driver claims additional interfaces, the
+claim may fail because the old binding instance may still own the
+additional interface when the new instance tries to claim it.
+
+This patch fixes the problem by first unbinding all the interfaces
+that are marked (i.e., their needs_binding flag is set) and then
+rebinding all of them.
+
+The patch also makes the helper functions in driver.c a little more
+uniform and adjusts some out-of-date comments.
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Reported-and-tested-by: "Poulain, Loic" <loic.poulain@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/hw/ipath/ipath_diag.c | 66 ++++++++++++--------------------
- 1 file changed, 25 insertions(+), 41 deletions(-)
+ drivers/usb/core/driver.c | 94 ++++++++++++++++++++++++++++-------------------
+ drivers/usb/core/hub.c    |  5 ++-
+ drivers/usb/core/usb.h    |  2 +-
+ 3 files changed, 60 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/infiniband/hw/ipath/ipath_diag.c b/drivers/infiniband/hw/ipath/ipath_diag.c
-index 714293b..e2f9a51 100644
---- a/drivers/infiniband/hw/ipath/ipath_diag.c
-+++ b/drivers/infiniband/hw/ipath/ipath_diag.c
-@@ -326,7 +326,7 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
- 				   size_t count, loff_t *off)
+diff --git a/drivers/usb/core/driver.c b/drivers/usb/core/driver.c
+index 5435e97..5c592c0 100644
+--- a/drivers/usb/core/driver.c
++++ b/drivers/usb/core/driver.c
+@@ -953,8 +953,7 @@ EXPORT_SYMBOL_GPL(usb_deregister);
+  * it doesn't support pre_reset/post_reset/reset_resume or
+  * because it doesn't support suspend/resume.
+  *
+- * The caller must hold @intf's device's lock, but not its pm_mutex
+- * and not @intf->dev.sem.
++ * The caller must hold @intf's device's lock, but not @intf's lock.
+  */
+ void usb_forced_unbind_intf(struct usb_interface *intf)
  {
- 	u32 __iomem *piobuf;
--	u32 plen, clen, pbufn;
-+	u32 plen, pbufn, maxlen_reserve;
- 	struct ipath_diag_pkt odp;
- 	struct ipath_diag_xpkt dp;
- 	u32 *tmpbuf = NULL;
-@@ -335,51 +335,29 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
- 	u64 val;
- 	u32 l_state, lt_state; /* LinkState, LinkTrainingState */
+@@ -967,16 +966,37 @@ void usb_forced_unbind_intf(struct usb_interface *intf)
+ 	intf->needs_binding = 1;
+ }
  
--	if (count < sizeof(odp)) {
--		ret = -EINVAL;
--		goto bail;
--	}
- 
- 	if (count == sizeof(dp)) {
- 		if (copy_from_user(&dp, data, sizeof(dp))) {
- 			ret = -EFAULT;
- 			goto bail;
- 		}
--	} else if (copy_from_user(&odp, data, sizeof(odp))) {
--		ret = -EFAULT;
-+	} else if (count == sizeof(odp)) {
-+		if (copy_from_user(&odp, data, sizeof(odp))) {
-+			ret = -EFAULT;
-+			goto bail;
++/*
++ * Unbind drivers for @udev's marked interfaces.  These interfaces have
++ * the needs_binding flag set, for example by usb_resume_interface().
++ *
++ * The caller must hold @udev's device lock.
++ */
++static void unbind_marked_interfaces(struct usb_device *udev)
++{
++	struct usb_host_config	*config;
++	int			i;
++	struct usb_interface	*intf;
++
++	config = udev->actconfig;
++	if (config) {
++		for (i = 0; i < config->desc.bNumInterfaces; ++i) {
++			intf = config->interface[i];
++			if (intf->dev.driver && intf->needs_binding)
++				usb_forced_unbind_intf(intf);
 +		}
-+	} else {
-+		ret = -EINVAL;
- 		goto bail;
- 	}
++	}
++}
++
+ /* Delayed forced unbinding of a USB interface driver and scan
+  * for rebinding.
+  *
+- * The caller must hold @intf's device's lock, but not its pm_mutex
+- * and not @intf->dev.sem.
++ * The caller must hold @intf's device's lock, but not @intf's lock.
+  *
+  * Note: Rebinds will be skipped if a system sleep transition is in
+  * progress and the PM "complete" callback hasn't occurred yet.
+  */
+-void usb_rebind_intf(struct usb_interface *intf)
++static void usb_rebind_intf(struct usb_interface *intf)
+ {
+ 	int rc;
  
--	/*
--	 * Due to padding/alignment issues (lessened with new struct)
--	 * the old and new structs are the same length. We need to
--	 * disambiguate them, which we can do because odp.len has never
--	 * been less than the total of LRH+BTH+DETH so far, while
--	 * dp.unit (same offset) unit is unlikely to get that high.
--	 * Similarly, dp.data, the pointer to user at the same offset
--	 * as odp.unit, is almost certainly at least one (512byte)page
--	 * "above" NULL. The if-block below can be omitted if compatibility
--	 * between a new driver and older diagnostic code is unimportant.
--	 * compatibility the other direction (new diags, old driver) is
--	 * handled in the diagnostic code, with a warning.
--	 */
--	if (dp.unit >= 20 && dp.data < 512) {
--		/* very probable version mismatch. Fix it up */
--		memcpy(&odp, &dp, sizeof(odp));
--		/* We got a legacy dp, copy elements to dp */
--		dp.unit = odp.unit;
--		dp.data = odp.data;
--		dp.len = odp.len;
--		dp.pbc_wd = 0; /* Indicate we need to compute PBC wd */
+@@ -993,68 +1013,66 @@ void usb_rebind_intf(struct usb_interface *intf)
+ 	}
+ }
+ 
+-#ifdef CONFIG_PM
+-
+-/* Unbind drivers for @udev's interfaces that don't support suspend/resume
+- * There is no check for reset_resume here because it can be determined
+- * only during resume whether reset_resume is needed.
++/*
++ * Rebind drivers to @udev's marked interfaces.  These interfaces have
++ * the needs_binding flag set.
+  *
+  * The caller must hold @udev's device lock.
+  */
+-static void unbind_no_pm_drivers_interfaces(struct usb_device *udev)
++static void rebind_marked_interfaces(struct usb_device *udev)
+ {
+ 	struct usb_host_config	*config;
+ 	int			i;
+ 	struct usb_interface	*intf;
+-	struct usb_driver	*drv;
+ 
+ 	config = udev->actconfig;
+ 	if (config) {
+ 		for (i = 0; i < config->desc.bNumInterfaces; ++i) {
+ 			intf = config->interface[i];
+-
+-			if (intf->dev.driver) {
+-				drv = to_usb_driver(intf->dev.driver);
+-				if (!drv->suspend || !drv->resume)
+-					usb_forced_unbind_intf(intf);
+-			}
++			if (intf->needs_binding)
++				usb_rebind_intf(intf);
+ 		}
+ 	}
+ }
+ 
+-/* Unbind drivers for @udev's interfaces that failed to support reset-resume.
+- * These interfaces have the needs_binding flag set by usb_resume_interface().
++/*
++ * Unbind all of @udev's marked interfaces and then rebind all of them.
++ * This ordering is necessary because some drivers claim several interfaces
++ * when they are first probed.
+  *
+  * The caller must hold @udev's device lock.
+  */
+-static void unbind_no_reset_resume_drivers_interfaces(struct usb_device *udev)
++void usb_unbind_and_rebind_marked_interfaces(struct usb_device *udev)
+ {
+-	struct usb_host_config	*config;
+-	int			i;
+-	struct usb_interface	*intf;
+-
+-	config = udev->actconfig;
+-	if (config) {
+-		for (i = 0; i < config->desc.bNumInterfaces; ++i) {
+-			intf = config->interface[i];
+-			if (intf->dev.driver && intf->needs_binding)
+-				usb_forced_unbind_intf(intf);
+-		}
 -	}
--
- 	/* send count must be an exact number of dwords */
- 	if (dp.len & 3) {
- 		ret = -EINVAL;
- 		goto bail;
- 	}
++	unbind_marked_interfaces(udev);
++	rebind_marked_interfaces(udev);
+ }
  
--	clen = dp.len >> 2;
-+	plen = dp.len >> 2;
- 
- 	dd = ipath_lookup(dp.unit);
- 	if (!dd || !(dd->ipath_flags & IPATH_PRESENT) ||
-@@ -422,16 +400,22 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
- 		goto bail;
- 	}
- 
--	/* need total length before first word written */
--	/* +1 word is for the qword padding */
--	plen = sizeof(u32) + dp.len;
--
--	if ((plen + 4) > dd->ipath_ibmaxlen) {
-+	/*
-+	 * need total length before first word written, plus 2 Dwords. One Dword
-+	 * is for padding so we get the full user data when not aligned on
-+	 * a word boundary. The other Dword is to make sure we have room for the
-+	 * ICRC which gets tacked on later.
-+	 */
-+	maxlen_reserve = 2 * sizeof(u32);
-+	if (dp.len > dd->ipath_ibmaxlen - maxlen_reserve) {
- 		ipath_dbg("Pkt len 0x%x > ibmaxlen %x\n",
--			  plen - 4, dd->ipath_ibmaxlen);
-+			  dp.len, dd->ipath_ibmaxlen);
- 		ret = -EINVAL;
--		goto bail;	/* before writing pbc */
-+		goto bail;
- 	}
+-static void do_rebind_interfaces(struct usb_device *udev)
++#ifdef CONFIG_PM
 +
-+	plen = sizeof(u32) + dp.len;
++/* Unbind drivers for @udev's interfaces that don't support suspend/resume
++ * There is no check for reset_resume here because it can be determined
++ * only during resume whether reset_resume is needed.
++ *
++ * The caller must hold @udev's device lock.
++ */
++static void unbind_no_pm_drivers_interfaces(struct usb_device *udev)
+ {
+ 	struct usb_host_config	*config;
+ 	int			i;
+ 	struct usb_interface	*intf;
++	struct usb_driver	*drv;
+ 
+ 	config = udev->actconfig;
+ 	if (config) {
+ 		for (i = 0; i < config->desc.bNumInterfaces; ++i) {
+ 			intf = config->interface[i];
+-			if (intf->needs_binding)
+-				usb_rebind_intf(intf);
 +
- 	tmpbuf = vmalloc(plen);
- 	if (!tmpbuf) {
- 		dev_info(&dd->pcidev->dev, "Unable to allocate tmp buffer, "
-@@ -473,11 +457,11 @@ static ssize_t ipath_diagpkt_write(struct file *fp,
++			if (intf->dev.driver) {
++				drv = to_usb_driver(intf->dev.driver);
++				if (!drv->suspend || !drv->resume)
++					usb_forced_unbind_intf(intf);
++			}
+ 		}
+ 	}
+ }
+@@ -1379,7 +1397,7 @@ int usb_resume_complete(struct device *dev)
+ 	 * whose needs_binding flag is set
  	 */
- 	if (dd->ipath_flags & IPATH_PIO_FLUSH_WC) {
- 		ipath_flush_wc();
--		__iowrite32_copy(piobuf + 2, tmpbuf, clen - 1);
-+		__iowrite32_copy(piobuf + 2, tmpbuf, plen - 1);
- 		ipath_flush_wc();
--		__raw_writel(tmpbuf[clen - 1], piobuf + clen + 1);
-+		__raw_writel(tmpbuf[plen - 1], piobuf + plen + 1);
- 	} else
--		__iowrite32_copy(piobuf + 2, tmpbuf, clen);
-+		__iowrite32_copy(piobuf + 2, tmpbuf, plen);
+ 	if (udev->state != USB_STATE_NOTATTACHED)
+-		do_rebind_interfaces(udev);
++		rebind_marked_interfaces(udev);
+ 	return 0;
+ }
  
- 	ipath_flush_wc();
+@@ -1401,7 +1419,7 @@ int usb_resume(struct device *dev, pm_message_t msg)
+ 		pm_runtime_disable(dev);
+ 		pm_runtime_set_active(dev);
+ 		pm_runtime_enable(dev);
+-		unbind_no_reset_resume_drivers_interfaces(udev);
++		unbind_marked_interfaces(udev);
+ 	}
  
+ 	/* Avoid PM error messages for devices disconnected while suspended
+diff --git a/drivers/usb/core/hub.c b/drivers/usb/core/hub.c
+index 821ad4e..5c75492 100644
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ -5288,10 +5288,11 @@ int usb_reset_device(struct usb_device *udev)
+ 				else if (cintf->condition ==
+ 						USB_INTERFACE_BOUND)
+ 					rebind = 1;
++				if (rebind)
++					cintf->needs_binding = 1;
+ 			}
+-			if (ret == 0 && rebind)
+-				usb_rebind_intf(cintf);
+ 		}
++		usb_unbind_and_rebind_marked_interfaces(udev);
+ 	}
+ 
+ 	usb_autosuspend_device(udev);
+diff --git a/drivers/usb/core/usb.h b/drivers/usb/core/usb.h
+index 8238577..0923add7 100644
+--- a/drivers/usb/core/usb.h
++++ b/drivers/usb/core/usb.h
+@@ -55,7 +55,7 @@ extern int usb_match_one_id_intf(struct usb_device *dev,
+ extern int usb_match_device(struct usb_device *dev,
+ 			    const struct usb_device_id *id);
+ extern void usb_forced_unbind_intf(struct usb_interface *intf);
+-extern void usb_rebind_intf(struct usb_interface *intf);
++extern void usb_unbind_and_rebind_marked_interfaces(struct usb_device *udev);
+ 
+ extern int usb_hub_claim_port(struct usb_device *hdev, unsigned port,
+ 		struct dev_state *owner);
 -- 
 1.9.1
 
