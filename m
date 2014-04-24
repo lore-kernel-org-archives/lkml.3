@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758317AbaDXQRF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:17:05 -0400
-Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753250AbaDXQRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:17:02 -0400
-Message-ID: <535938F8.3070300@nod.at>
-Date: Thu, 24 Apr 2014 18:16:56 +0200
-From: Richard Weinberger <richard@nod.at>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
-MIME-Version: 1.0
-To: Ley Foon Tan <lftan@altera.com>
-CC: Linux-Arch <linux-arch@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        cltang@codesourcery.com
-Subject: Re: [PATCH 17/28] nios2: Signal handling support
-References: <1397824031-4892-1-git-send-email-lftan@altera.com>	<1397824031-4892-14-git-send-email-lftan@altera.com>	<CAFLxGvyPCwo-d92QK9qAR5=gmRS4p24tYs9PiOApBGfrKdxJ5Q@mail.gmail.com>	<CAFiDJ5-q5hzR+1BDCmCzwqbuVZOUdjX_-omR4u3rnC8xqdQZLA@mail.gmail.com>	<CAFiDJ59g0E+hoREriydqk2uBsDvchPMSQi6NCgnwOd64OGLJ0w@mail.gmail.com>	<5358E4B9.1050308@nod.at>	<CAFiDJ5_pbcQo7VPj6J9UVhxGQtGn7hX19vkybL3DvM73v8Dc-w@mail.gmail.com>	<5358E9EB.8080307@nod.at> <CAFiDJ59hHikNKcY8hCu9M=hOQoL9STED82hEhAggubq3jqt3ig@mail.gmail.com>
-In-Reply-To: <CAFiDJ59hHikNKcY8hCu9M=hOQoL9STED82hEhAggubq3jqt3ig@mail.gmail.com>
-X-Enigmail-Version: 1.6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1758476AbaDXQSI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:18:08 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:51284 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758220AbaDXPtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:49:13 -0400
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org
+Subject: [PATCH v7 06/20] usb: phy: msm: Remove unnecessarily check for valid regulators.
+Date: Thu, 24 Apr 2014 18:48:01 +0300
+Message-Id: <1398354495-20782-7-git-send-email-iivanov@mm-sol.com>
+X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
+References: <1398354495-20782-1-git-send-email-iivanov@mm-sol.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 24.04.2014 12:46, schrieb Ley Foon Tan:
-> On Thu, Apr 24, 2014 at 6:39 PM, Richard Weinberger <richard@nod.at> wrote:
->> Am 24.04.2014 12:29, schrieb Ley Foon Tan:
->>> On Thu, Apr 24, 2014 at 6:17 PM, Richard Weinberger <richard@nod.at> wrote:
->>>
->>>>>> Okay.
->>>>>>
->>>>> I just noticed that sigsp() have struct ksignal argument. We can use
->>>>> sigsp() for nios2 because it doesn't have struct ksignal.
->>>>>
->>>>> unsigned long sigsp(unsigned long sp, struct ksignal *ksig);
->>>>
->>>> Did you at look at the struct ksignal definition and the clean series I've
->>>> pointed you to?
->>>>
->>>
->>> Not yet, this is the full set of patches? I only see partial..
->>> https://lkml.org/lkml/2014/3/2/198
->>
->> Maybe lkml.org misses a few but this does not matter.
->> All you need to know is that using ksignal is easy.
->> e.g. https://lkml.org/lkml/2014/3/2/162
->>
-> Thanks. I am looking at your git tree
-> https://git.kernel.org/cgit/linux/kernel/git/rw/misc.git/log/?h=signal_v2
-> Are these patches already available in v3.15 rc?
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
 
-Nope, I have to rebase them again.
-But some archs have picked up the changes already.
+Whether regulators are available or not is checked at driver
+probe. If they are not available driver will refuse to load,
+so no need to check them again.
 
-> I can update nios2 to use new implementation.
+Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+---
+ drivers/usb/phy/phy-msm-usb.c | 10 ----------
+ 1 file changed, 10 deletions(-)
 
-Would be great. :)
+diff --git a/drivers/usb/phy/phy-msm-usb.c b/drivers/usb/phy/phy-msm-usb.c
+index 67cac96..4045301 100644
+--- a/drivers/usb/phy/phy-msm-usb.c
++++ b/drivers/usb/phy/phy-msm-usb.c
+@@ -133,16 +133,6 @@ static int msm_hsusb_ldo_set_mode(struct msm_otg *motg, int on)
+ {
+ 	int ret = 0;
 
-Thanks,
-//richard
+-	if (!motg->v1p8 || IS_ERR(motg->v1p8)) {
+-		pr_err("%s: HSUSB_1p8 is not initialized\n", __func__);
+-		return -ENODEV;
+-	}
+-
+-	if (!motg->v3p3 || IS_ERR(motg->v3p3)) {
+-		pr_err("%s: HSUSB_3p3 is not initialized\n", __func__);
+-		return -ENODEV;
+-	}
+-
+ 	if (on) {
+ 		ret = regulator_set_optimum_mode(motg->v1p8,
+ 				USB_PHY_1P8_HPM_LOAD);
+--
+1.8.3.2
+
