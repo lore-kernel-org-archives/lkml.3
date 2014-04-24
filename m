@@ -1,88 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755949AbaDXKiC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:38:02 -0400
-Received: from mga09.intel.com ([134.134.136.24]:40390 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754234AbaDXKh5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:37:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,918,1389772800"; 
-   d="scan'208";a="498805096"
-Message-ID: <5358E982.4030106@intel.com>
-Date: Thu, 24 Apr 2014 18:37:54 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754423AbaDXKi3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:38:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:36721 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753036AbaDXKiZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 06:38:25 -0400
+Date: Thu, 24 Apr 2014 12:26:39 +0200
+From: Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "alexandre.belloni@free-electrons.com" 
+	<alexandre.belloni@free-electrons.com>,
+        Jimmy Xu <zmxu@marvell.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/6] ata: ahci: add AHCI support for Berlin SoCs
+Message-ID: <20140424102639.GA31101@kwain>
+References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
+ <1398181105-19714-2-git-send-email-antoine.tenart@free-electrons.com>
+ <20140424175041.0bade2d6@xhacker>
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
-References: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com>	<20140418105354.GA29167@gmail.com>	<53548008.3040504@intel.com>	<20140422113545.GA14950@gmail.com>	<CABPqkBTHv3U6L4fKOvsFcaWR8HcOEaqGGxRMRn-+O68a0BLCuA@mail.gmail.com>	<20140424081408.GA7709@gmail.com>	<5358E6A2.3020505@intel.com> <CABPqkBRihMr=+X_Gb5dSYfForTpGA6XZGfTHOA3PZNAHTJDPkg@mail.gmail.com>
-In-Reply-To: <CABPqkBRihMr=+X_Gb5dSYfForTpGA6XZGfTHOA3PZNAHTJDPkg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140424175041.0bade2d6@xhacker>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 06:36 PM, Stephane Eranian wrote:
-> On Thu, Apr 24, 2014 at 12:25 PM, Yan, Zheng <zheng.z.yan@intel.com> wrote:
->> On 04/24/2014 04:14 PM, Ingo Molnar wrote:
->>>
->>> * Stephane Eranian <eranian@google.com> wrote:
->>>
->>>>>> Most of the codes without comments are hardware specific codes.
->>>>>> The corresponding contents in Intel uncore documents are big
->>>>>> tables/lists, nothing tricky/interesting. I really don't know how
->>>>>> to comment these code.
->>>>>
->>>>> Have a look at other PMU drivers, such as
->>>>> arch/x86/kernel/cpu/perf_event_intel_rapl.c, which begin with a
->>>>> general explanation attached below.
->>>>
->>>> I think a more useful modularization would be to split that huge
->>>> file (perf_event_intel_uncore.c) into smaller files like we do for
->>>> the core PMU. There is just too much stuff in this file for my own
->>>> taste. Hard to navigate and I spend quite some time looking at it
->>>> and modifying it!
->>>>
->>>> You could follow the model of the core PMU support files.
->>>> You'd have a "core" file with the common routines, and then
->>>> a file perf processor:
->>>>     - perf_event_intel_uncore.c
->>>>     - perf_event_intel_snbep_uncore.c
->>>>     - perf_event_intel_nhmex_uncore.c
->>>>     - perf_event_intel_ivt_uncore.c
->>>>     - ...
->>>>
->>>> Each processor specific module, would be a kernel module. The core
->>>> could be one too. Note that this would not alleviate the need for
->>>> some basic descriptions at the beginning of each file outlining the
->>>> PMU boxes exported to a minimum.
->>
->> Most of hardware specific codes in the Intel uncore driver are for SandyBridge/IvyBridge/Haswell. Uncore subsystem in these CPUs are similar. One module per CPU type means we have to duplicate lots of code. I don't think it's a good idea.
->>
-> Then, at least split nhm_ex from the rest. It is very big.
+Hi Jisheng,
 
-Ok, will do.
+On Thu, Apr 24, 2014 at 05:50:41PM +0800, Jisheng Zhang wrote:
+> Hi Antoine,
+> 
+> On Tue, 22 Apr 2014 08:38:20 -0700
+> Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+> 
+> > +		/* CT timing fix */
+> > +		ahci_berlin_reg_set(ctrl_reg + PORT_VSR_ADDR, BIT(6) |
+> > BIT(1));
+> > +		ahci_berlin_reg_set(ctrl_reg + PORT_VSR_ADDR,
+> > +				    BIT(15) | BIT(13) | BIT(12) | BIT(11) |
+> > +				    BIT(10) | BIT(2) | BIT(1));
+> 
+> Could you please remove these code? They are not used for BG2Q, I'm sorry there's
+> such mistake in the code I provided to you ;)
 
-Regards
-Yan, Zheng
+OK, thanks for the update!
 
->>
->>>
->>> This structure you outline sounds like a good first step, I like it.
->>>
->>> To simplify this restructuring, initially we could even keep the core
->>> uncore bits in the core (ha!), to not have module-on-module
->>> dependencies.
->>>
->>> Thanks,
->>>
->>>       Ingo
->>>
->>
+Antoine
 
+-- 
+Antoine Ténart, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
