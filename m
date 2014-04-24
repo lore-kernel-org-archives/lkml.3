@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595AbaDXJXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:23:15 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:51528 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029AbaDXJXH (ORCPT
+	id S1754914AbaDXI4A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:56:00 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46965 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754809AbaDXIzo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 05:23:07 -0400
-Date: Thu, 24 Apr 2014 10:26:42 +0100
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Grant Likely <grant.likely@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "patches@linaro.org" <patches@linaro.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Rob Herring <robherring2@gmail.com>, Lee Jones <lee.jones@linaro.org>
-Subject: Re: [PATCH 3/3] of: Handle memory@0 node on PPC32 only
-Message-ID: <20140424092642.GQ5904@bivouac.eciton.net>
-References: <1397756521-29387-1-git-send-email-leif.lindholm@linaro.org>
- <1397756521-29387-4-git-send-email-leif.lindholm@linaro.org>
- <CAMuHMdXBNWum7UJ95uT2hwTd1b5C8ebF2LQ4T-A+RS80p7MH=A@mail.gmail.com>
- <20140418125924.GF5904@bivouac.eciton.net>
- <20140422133515.E7A0BC40754@trevor.secretlab.ca>
- <20140423104528.GD30036@e106331-lin.cambridge.arm.com>
- <20140423131058.D94B6C408D2@trevor.secretlab.ca>
+	Thu, 24 Apr 2014 04:55:44 -0400
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Luis Henriques <luis.henriques@canonical.com>
+Subject: [PATCH 3.11 143/182] b43: Fix machine check error due to improper access of B43_MMIO_PSM_PHY_HDR
+Date: Thu, 24 Apr 2014 09:51:08 +0100
+Message-Id: <1398329507-5911-144-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
+References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140423131058.D94B6C408D2@trevor.secretlab.ca>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Extended-Stable: 3.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 02:10:58PM +0100, Grant Likely wrote:
-> > Does anyone have a LongTrail DT to hand, and if so does the root have a
-> > compatible string? From grepping through the kernel I could only find a
-> > model string ("IBM,LongTrail").
-> 
-> Actually, on LongTrail this can be removed from the common code
-> entirely. It has real open firmware and PowerPC already has the
-> infrastructure for fixing up the device tree.
-> 
-> Here's a draft patch that I've compile tested, but nothing else.
+3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-I would certainly be happy with that.
+------------------
 
-Consider my 3/3 withdrawn.
+From: =?UTF-8?q?Rafa=C5=82=20Mi=C5=82ecki?= <zajec5@gmail.com>
 
-And if the kernel proper will stop honoring nodes with no type,
-there is no need for the stub to treat those specially either.
+commit 12cd43c6ed6da7bf7c5afbd74da6959cda6d056b upstream.
 
-/
-    Leif
+Register B43_MMIO_PSM_PHY_HDR is 16 bit one, so accessing it with 32b
+functions isn't safe. On my machine it causes delayed (!) CPU exception:
 
-> g.
-> 
-> ---
-> 
-> diff --git a/arch/powerpc/kernel/prom_init.c b/arch/powerpc/kernel/prom_init.c
-> index 078145acf7fb..18b2c3fee98f 100644
-> --- a/arch/powerpc/kernel/prom_init.c
-> +++ b/arch/powerpc/kernel/prom_init.c
-> @@ -2587,9 +2587,18 @@ static void __init fixup_device_tree_chrp(void)
->  	phandle ph;
->  	u32 prop[6];
->  	u32 rloc = 0x01006000; /* IO space; PCI device = 12 */
-> -	char *name;
-> +	char *name, strprop[16];
->  	int rc;
->  
-> +	/* Deal with missing device_type in LongTrail memory node */
-> +	name = "/memory@0";
-> +	ph = call_prom("finddevice", 1, 1, ADDR(name));
-> +	rc = prom_getprop(ph, "device_type", strprop, sizeof(strprop));
-> +	if (rc == PROM_ERROR || strcmp(strprop, "memory") != 0) {
-> +		prom_printf("Fixing up missing device_type on /memory@0 node...\n");
-> +		prom_setprop(ph, name, "device_type", "memory", sizeof("memory"));
-> +	}
-> +
->  	name = "/pci@80000000/isa@c";
->  	ph = call_prom("finddevice", 1, 1, ADDR(name));
->  	if (!PHANDLE_VALID(ph)) {
-> diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
-> index 7a2ef7bb8022..7cda0d279cbe 100644
-> --- a/drivers/of/fdt.c
-> +++ b/drivers/of/fdt.c
-> @@ -886,14 +886,7 @@ int __init early_init_dt_scan_memory(unsigned long node, const char *uname,
->  	unsigned long l;
->  
->  	/* We are scanning "memory" nodes only */
-> -	if (type == NULL) {
-> -		/*
-> -		 * The longtrail doesn't have a device_type on the
-> -		 * /memory node, so look for the node called /memory@0.
-> -		 */
-> -		if (depth != 1 || strcmp(uname, "memory@0") != 0)
-> -			return 0;
-> -	} else if (strcmp(type, "memory") != 0)
-> +	if (!type || strcmp(type, "memory") != 0)
->  		return 0;
->  
->  	reg = of_get_flat_dt_prop(node, "linux,usable-memory", &l);
-> 
+Disabling lock debugging due to kernel taint
+mce: [Hardware Error]: CPU 0: Machine Check Exception: 4 Bank 4: b200000000070f0f
+mce: [Hardware Error]: TSC 164083803dc
+mce: [Hardware Error]: PROCESSOR 2:20fc2 TIME 1396650505 SOCKET 0 APIC 0 microcode 0
+mce: [Hardware Error]: Run the above through 'mcelog --ascii'
+mce: [Hardware Error]: Machine check: Processor context corrupt
+Kernel panic - not syncing: Fatal machine check on current CPU
+Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+
+Signed-off-by: Rafał Miłecki <zajec5@gmail.com>
+Acked-by: Larry Finger <Larry.Finger@lwfinger.net>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/wireless/b43/phy_n.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/wireless/b43/phy_n.c b/drivers/net/wireless/b43/phy_n.c
+index 7c970d3..80ecca3 100644
+--- a/drivers/net/wireless/b43/phy_n.c
++++ b/drivers/net/wireless/b43/phy_n.c
+@@ -5175,22 +5175,22 @@ static void b43_nphy_channel_setup(struct b43_wldev *dev,
+ 	int ch = new_channel->hw_value;
+ 
+ 	u16 old_band_5ghz;
+-	u32 tmp32;
++	u16 tmp16;
+ 
+ 	old_band_5ghz =
+ 		b43_phy_read(dev, B43_NPHY_BANDCTL) & B43_NPHY_BANDCTL_5GHZ;
+ 	if (new_channel->band == IEEE80211_BAND_5GHZ && !old_band_5ghz) {
+-		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
++		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
+ 		b43_phy_set(dev, B43_PHY_B_BBCFG, 0xC000);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
+ 		b43_phy_set(dev, B43_NPHY_BANDCTL, B43_NPHY_BANDCTL_5GHZ);
+ 	} else if (new_channel->band == IEEE80211_BAND_2GHZ && old_band_5ghz) {
+ 		b43_phy_mask(dev, B43_NPHY_BANDCTL, ~B43_NPHY_BANDCTL_5GHZ);
+-		tmp32 = b43_read32(dev, B43_MMIO_PSM_PHY_HDR);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32 | 4);
++		tmp16 = b43_read16(dev, B43_MMIO_PSM_PHY_HDR);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16 | 4);
+ 		b43_phy_mask(dev, B43_PHY_B_BBCFG, 0x3FFF);
+-		b43_write32(dev, B43_MMIO_PSM_PHY_HDR, tmp32);
++		b43_write16(dev, B43_MMIO_PSM_PHY_HDR, tmp16);
+ 	}
+ 
+ 	b43_chantab_phy_upload(dev, e);
+-- 
+1.9.1
+
