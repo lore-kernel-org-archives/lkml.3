@@ -1,136 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752593AbaDXHac (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 03:30:32 -0400
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:46973 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439AbaDXHa2 (ORCPT
+	id S1752579AbaDXHbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 03:31:40 -0400
+Received: from mail-ee0-f41.google.com ([74.125.83.41]:36771 "EHLO
+	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751775AbaDXHbj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 03:30:28 -0400
+	Thu, 24 Apr 2014 03:31:39 -0400
+Date: Thu, 24 Apr 2014 10:31:31 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Minchan Kim <minchan@kernel.org>
+Cc: Weijie Yang <weijie.yang@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'Nitin Gupta'" <ngupta@vflare.org>, iamjoonsoo.kim@lge.com,
+        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
+        "'Bob Liu'" <bob.liu@oracle.com>, weijie.yang.kh@gmail.com,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RESEND] zram: correct offset usage in zram_bio_discard
+Message-ID: <20140424073131.GA1098@swordfish>
+References: <000001cf5ecf$f4f4f850$dedee8f0$%yang@samsung.com>
+ <20140424020632.GA863@bbox>
 MIME-Version: 1.0
-In-Reply-To: <5357DBA5.1010106@arm.com>
-References: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
- <1397209481-28542-6-git-send-email-vincent.guittot@linaro.org>
- <5357A802.1030804@arm.com> <CAKfTPtDnw-OZZekdE3oNGS11m6dfpS4veMNZ_Bezs-Lm7zn6QQ@mail.gmail.com>
- <5357DBA5.1010106@arm.com>
-From: Vincent Guittot <vincent.guittot@linaro.org>
-Date: Thu, 24 Apr 2014 09:30:07 +0200
-Message-ID: <CAKfTPtAOZqnP=sWeJuqFAqrGT8vLQZKj+tpqiwOTG37paXoGjg@mail.gmail.com>
-Subject: Re: [PATCH v4 5/5] sched: ARM: create a dedicated scheduler topology table
-To: Dietmar Eggemann <dietmar.eggemann@arm.com>
-Cc: "peterz@infradead.org" <peterz@infradead.org>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140424020632.GA863@bbox>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23 April 2014 17:26, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
-> On 23/04/14 15:46, Vincent Guittot wrote:
->> On 23 April 2014 13:46, Dietmar Eggemann <dietmar.eggemann@arm.com> wrote:
->>> Hi,
->>>
+Hello Minchan,
 
-[snip]
+On (04/24/14 11:06), Minchan Kim wrote:
+> Hello,
+> 
+> On Wed, Apr 23, 2014 at 04:41:15PM +0800, Weijie Yang wrote:
+> > We want to skip the physical block(PAGE_SIZE) which is partially
+> > covered by the discard bio, so we check the remaining size and
+> > subtract it if there is a need to goto the next physical block.
+> > 
+> > The current offset usage in zram_bio_discard is incorrect, it will
+> > cause its upper filesystem breakdown.
+> > Consider the following scenario:
+> > on some architecture or config, PAGE_SIZE is 64K for example,
+> > filesystem is set up on zram disk without PAGE_SIZE aligned,
+> > a discard bio leads to a offset = 4K and size=72K,
+> > normally, it should not really discard any physical block as it
+> > partially cover two physical blocks.
+> > However, with the current offset usage, it will discard the second
+> > physical block and free its memory, which will cause filesystem breakdown.
+> > 
+> > This patch corrects the offset usage in zram_bio_discard.
+> 
+> Nice catch.
+> Surely we need fix but I'd like to go further. Let's think.
+> How do you find that? Real problem or code review?
+> I'd like to know how much that happens in real practice because if it's
+> a lot, it means discard support is just an overhead without any benefit.
+> 
+> If you just found it with code review(ie, don't have any data),
+> would you mind adding some stat like 'num_discard/failed_discard' so
+> we can keep an eye on that. Although it's for rare case, I think it's worth.
+> Because someone would do swapon zram with --discard,
+> it could make same problem due to early page freeing of zram-swap to
+> avoid duplicating VM-owned memory and ZRAM-owned memory.
+> 
+> We can guide to zram-swap user not to use swapon with --discard but
+> I don't want it because swap_slot_free_notify is really mess which
+> violates layering so I hope replace it with discard finally so such
+> statistics really help us to drive that way more quickly.
+> 
 
->> You  have an inconsistency in your topology description:
->
-> That's true functional-wise but I think that this is not the reason why
-> the code in get_group()/build_sched_groups() isn't working correctly any
-> more with this set-up.
->
-> Like I said above the cpu_cpupower_flags() is just bogus and I only
-> added it to illustrate the issue (Shouldn't have used
-> SD_SHARE_POWERDOMAIN in the first place).
+I second this. if we could drop swap_slot_free_notify that'd be nice.
 
-More than the flag that is used for the example, it's about the
-cpumask which are inconsistent across CPUs for the same level and the
-build_sched_domain sequence rely on this consistency to build
-sched_group
+	-ss
 
-> Essentially what I want to do is bind an SD_SHARE_*FOO* flag to the GDIE
-> related sd's of CPU2/3/4 and not to the DIE related sd's of CPU0/1.
->
-> I thought so far that I can achieve that by getting rid of GDIE sd level
-> for CPU0/1 simply by choosing the cpu_foo_mask() function in such a way
-> that it returns the same cpu mask as its child sd level (MC) and of DIE
-> sd level for CPU2/3/4 because it returns the same cpu mask as its child
-> sd level (GDIE) related cpu mask function. This will let sd degenerate
-> do it's job of folding sd levels which it does. The only problem I have
-> is that the groups are not created correctly any more.
->
-> I don't see right now how the flag SD_SHARE_FOO affects the code in
-> get_group()/build_sched_groups().
->
-> Think of SD_SHARE_FOO of something I would like to have for all sd's of
-> CPU's of cluster 1 (CPU2/3/4) and not on cluster 0 (CPU0/1) in the sd
-> level where each CPU sees two groups (group0 containing CPU0/1 and
-> group1 containing CPU2/3/4 or vice versa) (GDIE/DIE) .
-
-I'm not sure that's it's feasible because it's not possible from a
-topology pov to have different flags if the span include all cpus.
-Could you give us more details about what you want to achieve with
-this flag ?
-
-Vincent
-
->
-> -- Dietmar
->
->>
->> At GDIE level:
->> CPU1 cpu_cpupower_mask=0-1
->> but
->> CPU2 cpu_cpupower_mask=0-4
->>
->> so CPU2 says that it shares power domain with CPU0 but CPU1 says the opposite
->>
->> Regards
->> Vincent
->>
->>>
->>> Firstly, I had to get rid of the cpumask_equal(cpu_map,
->>> sched_domain_span(sd)) condition in build_sched_domains() to allow that
->>> I can have two sd levels which span CPU 0-4 (for CPU2/3/4).
->>>
->>> But it still doesn't work correctly:
->>>
->>> dmesg snippet 2:
->>>
->>> CPU0 attaching sched-domain:
->>>  domain 0: span 0-1 level MC
->>>   groups: 0 1
->>>   domain 1: span 0-4 level DIE     <-- error (there's only one group)
->>>    groups: 0-4 (cpu_power = 2048)
->>> ...
->>> CPU2 attaching sched-domain:
->>>  domain 0: span 2-4 level MC
->>>   groups: 2 3 4
->>>   domain 1: span 0-4 level GDIE
->>> ERROR: domain->groups does not contain CPU2
->>>    groups:
->>> ERROR: domain->cpu_power not set
->>>
->>> ERROR: groups don't span domain->span
->>> ...
->>>
-
-[snip]
-
->>>>
->>>
->>>
->>
->
->
+> > 
+> > Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
+> > Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> > ---
+> >  drivers/block/zram/zram_drv.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+> > index 9849b52..48eccb3 100644
+> > --- a/drivers/block/zram/zram_drv.c
+> > +++ b/drivers/block/zram/zram_drv.c
+> > @@ -572,10 +572,10 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+> >  	 * skipping this logical block is appropriate here.
+> >  	 */
+> >  	if (offset) {
+> > -		if (n < offset)
+> > +		if (n <= (PAGE_SIZE - offset))
+> >  			return;
+> >  
+> > -		n -= offset;
+> > +		n -= (PAGE_SIZE - offset);
+> >  		index++;
+> >  	}
+> >  
+> > -- 
+> > 1.7.10.4
+> > 
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> Kind regards,
+> Minchan Kim
+> 
