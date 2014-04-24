@@ -1,170 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556AbaDXANq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 23 Apr 2014 20:13:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43420 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751194AbaDXANo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 23 Apr 2014 20:13:44 -0400
-Date: Thu, 24 Apr 2014 10:13:29 +1000
-From: NeilBrown <neilb@suse.de>
-To: <balbi@ti.com>
-Cc: Nishanth Menon <nm@ti.com>, Greg KH <gregkh@linuxfoundation.org>,
-        <marcel@holtmann.org>, <gustavo@padovan.org>,
-        <johan.hedberg@gmail.com>, <jslaby@suse.cz>, <grant.likely@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        <linux-bluetooth@vger.kernel.org>, <linux-serial@vger.kernel.org>,
-        <devicetree@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Tony Lindgren <tony@atomide.com>
-Subject: Re: [PATCH 10/13] tty: serial: omap: remove some dead code
-Message-ID: <20140424101329.02e6a62f@notabene.brown>
-In-Reply-To: <20140423230121.GC10924@saruman.home>
-References: <1398265117-11793-1-git-send-email-balbi@ti.com>
-	<1398265117-11793-10-git-send-email-balbi@ti.com>
-	<5357DDA8.4040206@ti.com>
-	<20140424084305.20c7f301@notabene.brown>
-	<20140423230121.GC10924@saruman.home>
-X-Mailer: Claws Mail 3.9.2 (GTK+ 2.24.22; x86_64-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1;
- boundary="Sig_/3o3JF0SUzTrvuVU1E.zWyqc"; protocol="application/pgp-signature"
+	id S1752646AbaDXAQs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 23 Apr 2014 20:16:48 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:50271 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751367AbaDXAQq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 23 Apr 2014 20:16:46 -0400
+Date: Thu, 24 Apr 2014 02:16:42 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Denys Vlasenko <dvlasenk@redhat.com>
+Cc: linux-kernel@vger.kernel.org,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 2/3] nohz: Synchronize sleep time stats with memory
+ barriers
+Message-ID: <20140424001640.GA27571@localhost.localdomain>
+References: <1398279636-21503-1-git-send-email-dvlasenk@redhat.com>
+ <1398279636-21503-2-git-send-email-dvlasenk@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398279636-21503-2-git-send-email-dvlasenk@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/3o3JF0SUzTrvuVU1E.zWyqc
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Apr 23, 2014 at 09:00:35PM +0200, Denys Vlasenko wrote:
+> When some call site uses get_cpu_*_time_us() to read a sleeptime
+> stat, it deduces the total sleeptime by adding the pending time
+> to the last sleeptime snapshot if the CPU target is idle.
+> 
+> But this only works if idle_sleeptime, idle_entrytime and idle_active are
+> read and updated under some disciplined order.
+> 
+> This patch changes updaters to modify idle_entrytime,
+> {idle,iowait}_sleeptime, and idle_active exactly in this order,
+> with write barriers on SMP to ensure other CPUs see then in this order too.
+> Readers are changed read them in the opposite order, with read barriers.
+> When readers detect a race by seeing cleared idle_entrytime,
+> they retry the reads.
+> 
+> The "iowait-ness" of every idle period is decided at the moment it starts:
+> if this CPU's run-queue had tasks waiting on I/O, then this idle
+> period's duration will be added to iowait_sleeptime.
+> This, along with proper SMP syncronization, fixes the bug where iowait
+> counts could go backwards.
+> 
+> Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> Cc: Fernando Luis Vazquez Cao <fernando_b1@lab.ntt.co.jp>
+> Cc: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Ingo Molnar <mingo@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Arjan van de Ven <arjan@linux.intel.com>
+> Cc: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  kernel/time/tick-sched.c | 83 ++++++++++++++++++++++++++++++++++++++----------
+>  1 file changed, 66 insertions(+), 17 deletions(-)
+> 
+> diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+> index 73ced0c4..a99770e 100644
+> --- a/kernel/time/tick-sched.c
+> +++ b/kernel/time/tick-sched.c
+> @@ -409,10 +409,15 @@ static void tick_nohz_stop_idle(struct tick_sched *ts, ktime_t now)
+>  
+>  	/* Updates the per cpu time idle statistics counters */
+>  	delta = ktime_sub(now, ts->idle_entrytime);
+> -	if (nr_iowait_cpu(smp_processor_id()) > 0)
+> +	ts->idle_entrytime.tv64 = 0;
+> +	smp_wmb();
+> +
+> +	if (ts->idle_active == 2)
+>  		ts->iowait_sleeptime = ktime_add(ts->iowait_sleeptime, delta);
+>  	else
+>  		ts->idle_sleeptime = ktime_add(ts->idle_sleeptime, delta);
+> +
+> +	smp_wmb();
+>  	ts->idle_active = 0;
+>  
+>  	sched_clock_idle_wakeup_event(0);
+> @@ -423,7 +428,8 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
+>  	ktime_t now = ktime_get();
+>  
+>  	ts->idle_entrytime = now;
+> -	ts->idle_active = 1;
+> +	smp_wmb();
+> +	ts->idle_active = nr_iowait_cpu(smp_processor_id()) ? 2 : 1;
+>  	sched_clock_idle_sleep_event();
+>  	return now;
+>  }
+> @@ -444,25 +450,46 @@ static ktime_t tick_nohz_start_idle(struct tick_sched *ts)
+>   */
+>  u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time)
+>  {
+> -	struct tick_sched *ts = &per_cpu(tick_cpu_sched, cpu);
+> -	ktime_t now, idle;
+> +	struct tick_sched *ts;
+> +	ktime_t now, count;
+> +	int active;
+>  
+>  	if (!tick_nohz_active)
+>  		return -1;
+>  
+> +	ts = &per_cpu(tick_cpu_sched, cpu);
+> +
+>  	now = ktime_get();
+>  	if (last_update_time)
+>  		*last_update_time = ktime_to_us(now);
+>  
+> -	if (ts->idle_active && !nr_iowait_cpu(cpu)) {
+> -		ktime_t delta = ktime_sub(now, ts->idle_entrytime);
+> -		idle = ktime_add(ts->idle_sleeptime, delta);
+> + again:
+> +	active = ACCESS_ONCE(ts->idle_active);
+> +	smp_rmb();
+> +	count = ACCESS_ONCE(ts->idle_sleeptime);
+> +	if (active == 1) {
+> +		ktime_t delta, start;
+> +
+> +		smp_rmb();
+> +		start = ACCESS_ONCE(ts->idle_entrytime);
+> +		if (start.tv64 == 0) {
+> +			/*
+> +			 * Other CPU is updating the count.
+> +			 * We don't know whether fetched count is valid.
+> +			 */
+> +			goto again;
+> +		}
+> +		delta = ktime_sub(now, start);
+> +		count = ktime_add(count, delta);
 
-On Wed, 23 Apr 2014 18:01:21 -0500 Felipe Balbi <balbi@ti.com> wrote:
+There is still a possibility that you race with an updater here.
+Lets take these initial values, all of which belong to ts(CPU 1):
 
-> Hi,
->=20
-> On Thu, Apr 24, 2014 at 08:43:05AM +1000, NeilBrown wrote:
-> > On Wed, 23 Apr 2014 10:35:04 -0500 Nishanth Menon <nm@ti.com> wrote:
-> >=20
-> > > On 04/23/2014 09:58 AM, Felipe Balbi wrote:
-> > > > nobody passes a DTR_gpio to this driver, so
-> > > > this code is not necessary.
-> > > >=20
-> > > > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > > > ---
-> > >=20
-> > > Niel,
-> > > this seems to revert the functionality introduced in
-> > > commit 9574f36fb801035f6ab0fbb1b53ce2c12c17d100
-> > > (OMAP/serial: Add support for driving a GPIO as DTR.)
-> > >=20
-> > > would you like to Ack this change?
-> >=20
-> > I have a couple of out-of-tree drivers that use this support.
-> >=20
-> > I hope to get back to working on that code one day and even get those d=
-rivers
-> > upstream.  So I would really prefer this code to remain if it isn't cau=
-sing
-> > any actual problems.
->=20
-> it causes problem with DT (not really). That suport is only available on
-> legacy platform_data-based boot, it's not available on DT. I hear Tony
-> is pretty close to turning OMAP3 DT-only.
->=20
-> > Of course, I can always re-submit it when I need it again, but that it =
-just
-> > extra work all around.
->=20
-> I wonder how you will pass those attributes through DT considering they
-> are *really* SW configuration. Why can't you use the real DTR pin, btw ?
->=20
+      // idle_sleeptime == 0
+      // idle_entrytime == 0
+      // ktime_get() == 100
+      // idle_active = 1
 
-This myth that DT is only about hardware is probably one of the reasons tha=
-t I
-haven't got these out-of-tree drivers upstream yet.
+           CPU 0                                       CPU 1
 
-There is no "real" DTR pin.
+      count = idle_sleeptime // = 0               
+                                                     tick_nohz_stop_idle();
+                                                     tick_nohz_start_idle();
+                                                     /* now idle_sleeptime == 100
+                                                        and idle_entrytime == 100
+                                                        ktime_get() is still 100
+                                                        and idle_active is still 1
+                                                        as it has toggled two times */
+      delta = now - idle_entrytime; // 100 - 100
+      count += delta // == 0
 
-When I open /dev/ttyWHATEVER, I need the driver for the device that is
-permanently connected to that serial port to be told that the serial-device
-has been opened so that it can "power on" or "wake up" the device.
+Then you get the spurious 0 result.
 
-I don't much care how that happens, or how I tell DT that it has to happen.
-I just need it to happen.
-
-In discrete hardware devices, the DTR line is what you would use.  The RS232
-port would raise (or lower or whatever) DTR when /dev/ttyWHATEVER was open,
-and  the device that was plugged in would detect the level change and do
-stuff.
-
-But I don't have discrete hardware.  I have a bunch of stuff soldered onto a
-board with ad-hoc connections chosen to make the life of the hardware build=
-er
-easy rather than chosen to make the life of the software developer easy
-(which I think is the correct choice).
-
-So I need to tell DT "This device is plugged into this UART, and there is no
-DTR line, but when the UARTs DTR line would be asserted (if it had one), th=
-en
-I need that regulator of there turned on". or maybe "I need to toggle this
-GPIO  with exactly this pattern, while watching that GPIO to see if it is
-working".
-
-So I thought:
-
- 1/ give the UART a "virtual" DTR so it could drive any GPIO
- 2/ create a "gpio-to-regulator" driver which presented as a (virtual) gpio
-    and responded to state changes on that GPIO by turning on or off the
-    regulator
- 3/ create a dedicated driver which knows how to toggle the magic GPIO while
-    watching the other GPIO to convince the silly device to wakeup, or go to
-    sleep, as required, and have this appear as a (virtual) GPIO.
-
-Then I can just tell DT that these (virtual) GPIOs are connected together,
-and it will all just work.  And it does.
-
-But given the whole "no no, DT is for describing hardware, and you are
-describing software" attitude,  it seems that I lost motivation for a while
-(that wasn't the only reason, but it didn't help).
-
-I have a patch which converts the OMAP serial driver to use DT to configure
-these virtual DTR lines.  I'm very happy to submit that if there is some
-chance it might be accepted and will keep the current DTR code in place.
-
-On the other hand, if you can point out to me what I'm missing, and how I c=
-an
-solve my problem with any virtual GPIOs, I'm all ears.
-
-To make my problem simple and explicit:  I have a device attached to a UART
-which has a separate regulator.  The regulator should be powered on if and
-only if the /dev/ttyXX interface to the UART is open.  The device is a
-bluetooth transceiver.
-(I have another device which is a GPS receiver which has similar
-but more complicated requirements)
-
-Thanks,
-NeilBrown
-
-
---Sig_/3o3JF0SUzTrvuVU1E.zWyqc
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIVAwUBU1hXKTnsnt1WYoG5AQKbQBAAqIJymgkITkPEb42Wdl/WAc5Tupcga6dW
-v4WP3SGhNOZJBtB+EctQlhX9Tq1lLRqr2N+ZOrLP2BeClESyBldwljsxPh50uKrm
-kNytSB1OKTxaVWTCR3IpKHuCXau76UnRgEtTV8lB3eOVx2hjjjcufddqfAjBWd4L
-7ANcOxYieQyhIOJjkdBTQI5lH8WP7hEJ/gYH6S8HiDt8HvDlRKFDmWu2pxrAF22v
-YssPN/n/B3WZh96D9X2XKNWIrzSfaGHMNYJrjBXQCHyRlAUuFjRtNIP0MDa0lmpS
-7uqB+wzW3HQ/LcNBbmaM1vdmvvnbPVslFQQuNZZott+18OmpMsTOMv+eJSv0SGkt
-/m0YDZoMCIG4/fDhYEJMJOKYSWWBY0d4tYQBXOM++T2gC4zpxPlHsBEP5GtxMqre
-aNFNhIZzU6PuEZjPBEwQz/R8iwDVP5et+DxB7GT5kpXi07m89jh3m8txLfuNr9Np
-qDL8jxge6r7+QSWkfsKjt9KT+MBlaq7ag9TRyQ3ZjO73XR/yzP3Hbf65sf+jwE+P
-clIvFMo/FomQp5PyMzgVMPdl0Fjrp+BeeaMHR20d6yHzS3vwJNnC8tBSs92jFvo2
-hccNg2iunqHNlqXkPc4P5PMaLsZU3/HW1vSO00qAqAndmC7ILwrVcdaZxsenxf+u
-yXkavL4drUw=
-=E12t
------END PGP SIGNATURE-----
-
---Sig_/3o3JF0SUzTrvuVU1E.zWyqc--
+So memory barriers probably aren't enough here. seqcount would solve the issue as it maintains
+update seq tokens.
