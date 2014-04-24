@@ -1,429 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756719AbaDXMJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:09:49 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46238 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753171AbaDXIwB (ORCPT
+	id S1756764AbaDXMKo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:10:44 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:43780 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753332AbaDXMKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:01 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 005/182] framebuffer: fix cfb_copyarea
-Date: Thu, 24 Apr 2014 09:48:50 +0100
-Message-Id: <1398329507-5911-6-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	Thu, 24 Apr 2014 08:10:36 -0400
+Date: Thu, 24 Apr 2014 13:10:21 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lgirdwood@intel.com>
+Message-ID: <20140424121021.GP12304@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Wx4fROwh6iTAolpo"
+Content-Disposition: inline
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: [GIT PULL] regulator updates for v3.15
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
 
-------------------
+--Wx4fROwh6iTAolpo
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-From: Mikulas Patocka <mpatocka@redhat.com>
+The following changes since commit a798c10faf62a505d24e5f6213fbaf904a39623f:
 
-commit 00a9d699bc85052d2d3ed56251cd928024ce06a3 upstream.
+  Linux 3.15-rc2 (2014-04-20 11:08:50 -0700)
 
-The function cfb_copyarea is buggy when the copy operation is not aligned on
-long boundary (4 bytes on 32-bit machines, 8 bytes on 64-bit machines).
+are available in the git repository at:
 
-How to reproduce:
-- use x86-64 machine
-- use a framebuffer driver without acceleration (for example uvesafb)
-- set the framebuffer to 8-bit depth
-	(for example fbset -a 1024x768-60 -depth 8)
-- load a font with character width that is not a multiple of 8 pixels
-	note: the console-tools package cannot load a font that has
-	width different from 8 pixels. You need to install the packages
-	"kbd" and "console-terminus" and use the program "setfont" to
-	set font width (for example: setfont Uni2-Terminus20x10)
-- move some text left and right on the bash command line and you get a
-	screen corruption
+  git://git.kernel.org/pub/scm/linux/kernel/git/broonie/regulator.git tags/regulator-v3.15-rc2
 
-To expose more bugs, put this line to the end of uvesafb_init_info:
-info->flags |= FBINFO_HWACCEL_COPYAREA | FBINFO_READS_FAST;
-- Now framebuffer console will use cfb_copyarea for console scrolling.
-You get a screen corruption when console is scrolled.
+for you to fetch changes up to 38962571375149626cd282ef9d8e87e8faf21155:
 
-This patch is a rewrite of cfb_copyarea. It fixes the bugs, with this
-patch, console scrolling in 8-bit depth with a font width that is not a
-multiple of 8 pixels works fine.
+  Merge remote-tracking branch 'regulator/fix/pbias' into regulator-linus (2014-04-23 13:50:12 +0100)
 
-The cfb_copyarea code was very buggy and it looks like it was written
-and never tried with non-8-pixel font.
+----------------------------------------------------------------
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- drivers/video/cfbcopyarea.c | 153 ++++++++++++++++++++++----------------------
- 1 file changed, 78 insertions(+), 75 deletions(-)
+regulator: Fixes for v3.15
 
-diff --git a/drivers/video/cfbcopyarea.c b/drivers/video/cfbcopyarea.c
-index bb5a96b..bcb5723 100644
---- a/drivers/video/cfbcopyarea.c
-+++ b/drivers/video/cfbcopyarea.c
-@@ -43,13 +43,22 @@
-      */
- 
- static void
--bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
--		const unsigned long __iomem *src, int src_idx, int bits,
-+bitcpy(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
-+		const unsigned long __iomem *src, unsigned src_idx, int bits,
- 		unsigned n, u32 bswapmask)
- {
- 	unsigned long first, last;
- 	int const shift = dst_idx-src_idx;
--	int left, right;
-+
-+#if 0
-+	/*
-+	 * If you suspect bug in this function, compare it with this simple
-+	 * memmove implementation.
-+	 */
-+	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
-+		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
-+	return;
-+#endif
- 
- 	first = fb_shifted_pixels_mask_long(p, dst_idx, bswapmask);
- 	last = ~fb_shifted_pixels_mask_long(p, (dst_idx+n) % bits, bswapmask);
-@@ -98,9 +107,8 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 		unsigned long d0, d1;
- 		int m;
- 
--		right = shift & (bits - 1);
--		left = -shift & (bits - 1);
--		bswapmask &= shift;
-+		int const left = shift & (bits - 1);
-+		int const right = -shift & (bits - 1);
- 
- 		if (dst_idx+n <= bits) {
- 			// Single destination word
-@@ -110,15 +118,15 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 			if (shift > 0) {
- 				// Single source word
--				d0 >>= right;
-+				d0 <<= left;
- 			} else if (src_idx+n <= bits) {
- 				// Single source word
--				d0 <<= left;
-+				d0 >>= right;
- 			} else {
- 				// 2 source words
- 				d1 = FB_READL(src + 1);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
--				d0 = d0<<left | d1>>right;
-+				d0 = d0 >> right | d1 << left;
- 			}
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
-@@ -135,60 +143,59 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 			if (shift > 0) {
- 				// Single source word
- 				d1 = d0;
--				d0 >>= right;
--				dst++;
-+				d0 <<= left;
- 				n -= bits - dst_idx;
- 			} else {
- 				// 2 source words
- 				d1 = FB_READL(src++);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
- 
--				d0 = d0<<left | d1>>right;
--				dst++;
-+				d0 = d0 >> right | d1 << left;
- 				n -= bits - dst_idx;
- 			}
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
- 			d0 = d1;
-+			dst++;
- 
- 			// Main chunk
- 			m = n % bits;
- 			n /= bits;
- 			while ((n >= 4) && !bswapmask) {
- 				d1 = FB_READL(src++);
--				FB_WRITEL(d0 << left | d1 >> right, dst++);
-+				FB_WRITEL(d0 >> right | d1 << left, dst++);
- 				d0 = d1;
- 				d1 = FB_READL(src++);
--				FB_WRITEL(d0 << left | d1 >> right, dst++);
-+				FB_WRITEL(d0 >> right | d1 << left, dst++);
- 				d0 = d1;
- 				d1 = FB_READL(src++);
--				FB_WRITEL(d0 << left | d1 >> right, dst++);
-+				FB_WRITEL(d0 >> right | d1 << left, dst++);
- 				d0 = d1;
- 				d1 = FB_READL(src++);
--				FB_WRITEL(d0 << left | d1 >> right, dst++);
-+				FB_WRITEL(d0 >> right | d1 << left, dst++);
- 				d0 = d1;
- 				n -= 4;
- 			}
- 			while (n--) {
- 				d1 = FB_READL(src++);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
--				d0 = d0 << left | d1 >> right;
-+				d0 = d0 >> right | d1 << left;
- 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 				FB_WRITEL(d0, dst++);
- 				d0 = d1;
- 			}
- 
- 			// Trailing bits
--			if (last) {
--				if (m <= right) {
-+			if (m) {
-+				if (m <= bits - right) {
- 					// Single source word
--					d0 <<= left;
-+					d0 >>= right;
- 				} else {
- 					// 2 source words
- 					d1 = FB_READL(src);
- 					d1 = fb_rev_pixels_in_long(d1,
- 								bswapmask);
--					d0 = d0<<left | d1>>right;
-+					d0 = d0 >> right | d1 << left;
- 				}
- 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 				FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
-@@ -202,43 +209,46 @@ bitcpy(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
-      */
- 
- static void
--bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
--		const unsigned long __iomem *src, int src_idx, int bits,
-+bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, unsigned dst_idx,
-+		const unsigned long __iomem *src, unsigned src_idx, int bits,
- 		unsigned n, u32 bswapmask)
- {
- 	unsigned long first, last;
- 	int shift;
- 
--	dst += (n-1)/bits;
--	src += (n-1)/bits;
--	if ((n-1) % bits) {
--		dst_idx += (n-1) % bits;
--		dst += dst_idx >> (ffs(bits) - 1);
--		dst_idx &= bits - 1;
--		src_idx += (n-1) % bits;
--		src += src_idx >> (ffs(bits) - 1);
--		src_idx &= bits - 1;
--	}
-+#if 0
-+	/*
-+	 * If you suspect bug in this function, compare it with this simple
-+	 * memmove implementation.
-+	 */
-+	fb_memmove((char *)dst + ((dst_idx & (bits - 1))) / 8,
-+		   (char *)src + ((src_idx & (bits - 1))) / 8, n / 8);
-+	return;
-+#endif
-+
-+	dst += (dst_idx + n - 1) / bits;
-+	src += (src_idx + n - 1) / bits;
-+	dst_idx = (dst_idx + n - 1) % bits;
-+	src_idx = (src_idx + n - 1) % bits;
- 
- 	shift = dst_idx-src_idx;
- 
--	first = fb_shifted_pixels_mask_long(p, bits - 1 - dst_idx, bswapmask);
--	last = ~fb_shifted_pixels_mask_long(p, bits - 1 - ((dst_idx-n) % bits),
--					    bswapmask);
-+	first = ~fb_shifted_pixels_mask_long(p, (dst_idx + 1) % bits, bswapmask);
-+	last = fb_shifted_pixels_mask_long(p, (bits + dst_idx + 1 - n) % bits, bswapmask);
- 
- 	if (!shift) {
- 		// Same alignment for source and dest
- 
- 		if ((unsigned long)dst_idx+1 >= n) {
- 			// Single word
--			if (last)
--				first &= last;
--			FB_WRITEL( comp( FB_READL(src), FB_READL(dst), first), dst);
-+			if (first)
-+				last &= first;
-+			FB_WRITEL( comp( FB_READL(src), FB_READL(dst), last), dst);
- 		} else {
- 			// Multiple destination words
- 
- 			// Leading bits
--			if (first != ~0UL) {
-+			if (first) {
- 				FB_WRITEL( comp( FB_READL(src), FB_READL(dst), first), dst);
- 				dst--;
- 				src--;
-@@ -262,7 +272,7 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 				FB_WRITEL(FB_READL(src--), dst--);
- 
- 			// Trailing bits
--			if (last)
-+			if (last != -1UL)
- 				FB_WRITEL( comp( FB_READL(src), FB_READL(dst), last), dst);
- 		}
- 	} else {
-@@ -270,29 +280,28 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 		unsigned long d0, d1;
- 		int m;
- 
--		int const left = -shift & (bits-1);
--		int const right = shift & (bits-1);
--		bswapmask &= shift;
-+		int const left = shift & (bits-1);
-+		int const right = -shift & (bits-1);
- 
- 		if ((unsigned long)dst_idx+1 >= n) {
- 			// Single destination word
--			if (last)
--				first &= last;
-+			if (first)
-+				last &= first;
- 			d0 = FB_READL(src);
- 			if (shift < 0) {
- 				// Single source word
--				d0 <<= left;
-+				d0 >>= right;
- 			} else if (1+(unsigned long)src_idx >= n) {
- 				// Single source word
--				d0 >>= right;
-+				d0 <<= left;
- 			} else {
- 				// 2 source words
- 				d1 = FB_READL(src - 1);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
--				d0 = d0>>right | d1<<left;
-+				d0 = d0 << left | d1 >> right;
- 			}
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
--			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
-+			FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
- 		} else {
- 			// Multiple destination words
- 			/** We must always remember the last value read, because in case
-@@ -307,12 +316,12 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 			if (shift < 0) {
- 				// Single source word
- 				d1 = d0;
--				d0 <<= left;
-+				d0 >>= right;
- 			} else {
- 				// 2 source words
- 				d1 = FB_READL(src--);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
--				d0 = d0>>right | d1<<left;
-+				d0 = d0 << left | d1 >> right;
- 			}
- 			d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 			FB_WRITEL(comp(d0, FB_READL(dst), first), dst);
-@@ -325,39 +334,39 @@ bitcpy_rev(struct fb_info *p, unsigned long __iomem *dst, int dst_idx,
- 			n /= bits;
- 			while ((n >= 4) && !bswapmask) {
- 				d1 = FB_READL(src--);
--				FB_WRITEL(d0 >> right | d1 << left, dst--);
-+				FB_WRITEL(d0 << left | d1 >> right, dst--);
- 				d0 = d1;
- 				d1 = FB_READL(src--);
--				FB_WRITEL(d0 >> right | d1 << left, dst--);
-+				FB_WRITEL(d0 << left | d1 >> right, dst--);
- 				d0 = d1;
- 				d1 = FB_READL(src--);
--				FB_WRITEL(d0 >> right | d1 << left, dst--);
-+				FB_WRITEL(d0 << left | d1 >> right, dst--);
- 				d0 = d1;
- 				d1 = FB_READL(src--);
--				FB_WRITEL(d0 >> right | d1 << left, dst--);
-+				FB_WRITEL(d0 << left | d1 >> right, dst--);
- 				d0 = d1;
- 				n -= 4;
- 			}
- 			while (n--) {
- 				d1 = FB_READL(src--);
- 				d1 = fb_rev_pixels_in_long(d1, bswapmask);
--				d0 = d0 >> right | d1 << left;
-+				d0 = d0 << left | d1 >> right;
- 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 				FB_WRITEL(d0, dst--);
- 				d0 = d1;
- 			}
- 
- 			// Trailing bits
--			if (last) {
--				if (m <= left) {
-+			if (m) {
-+				if (m <= bits - left) {
- 					// Single source word
--					d0 >>= right;
-+					d0 <<= left;
- 				} else {
- 					// 2 source words
- 					d1 = FB_READL(src);
- 					d1 = fb_rev_pixels_in_long(d1,
- 								bswapmask);
--					d0 = d0>>right | d1<<left;
-+					d0 = d0 << left | d1 >> right;
- 				}
- 				d0 = fb_rev_pixels_in_long(d0, bswapmask);
- 				FB_WRITEL(comp(d0, FB_READL(dst), last), dst);
-@@ -371,9 +380,9 @@ void cfb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
- 	u32 dx = area->dx, dy = area->dy, sx = area->sx, sy = area->sy;
- 	u32 height = area->height, width = area->width;
- 	unsigned long const bits_per_line = p->fix.line_length*8u;
--	unsigned long __iomem *dst = NULL, *src = NULL;
-+	unsigned long __iomem *base = NULL;
- 	int bits = BITS_PER_LONG, bytes = bits >> 3;
--	int dst_idx = 0, src_idx = 0, rev_copy = 0;
-+	unsigned dst_idx = 0, src_idx = 0, rev_copy = 0;
- 	u32 bswapmask = fb_compute_bswapmask(p);
- 
- 	if (p->state != FBINFO_STATE_RUNNING)
-@@ -389,7 +398,7 @@ void cfb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
- 
- 	// split the base of the framebuffer into a long-aligned address and the
- 	// index of the first bit
--	dst = src = (unsigned long __iomem *)((unsigned long)p->screen_base & ~(bytes-1));
-+	base = (unsigned long __iomem *)((unsigned long)p->screen_base & ~(bytes-1));
- 	dst_idx = src_idx = 8*((unsigned long)p->screen_base & (bytes-1));
- 	// add offset of source and target area
- 	dst_idx += dy*bits_per_line + dx*p->var.bits_per_pixel;
-@@ -402,20 +411,14 @@ void cfb_copyarea(struct fb_info *p, const struct fb_copyarea *area)
- 		while (height--) {
- 			dst_idx -= bits_per_line;
- 			src_idx -= bits_per_line;
--			dst += dst_idx >> (ffs(bits) - 1);
--			dst_idx &= (bytes - 1);
--			src += src_idx >> (ffs(bits) - 1);
--			src_idx &= (bytes - 1);
--			bitcpy_rev(p, dst, dst_idx, src, src_idx, bits,
-+			bitcpy_rev(p, base + (dst_idx / bits), dst_idx % bits,
-+				base + (src_idx / bits), src_idx % bits, bits,
- 				width*p->var.bits_per_pixel, bswapmask);
- 		}
- 	} else {
- 		while (height--) {
--			dst += dst_idx >> (ffs(bits) - 1);
--			dst_idx &= (bytes - 1);
--			src += src_idx >> (ffs(bits) - 1);
--			src_idx &= (bytes - 1);
--			bitcpy(p, dst, dst_idx, src, src_idx, bits,
-+			bitcpy(p, base + (dst_idx / bits), dst_idx % bits,
-+				base + (src_idx / bits), src_idx % bits, bits,
- 				width*p->var.bits_per_pixel, bswapmask);
- 			dst_idx += bits_per_line;
- 			src_idx += bits_per_line;
--- 
-1.9.1
+A couple of things here:
 
+ - Fixes for pbias that didn't make it in during the merge window due to
+   the driver coming in via MMC.  The conversion to use helpers is a
+   fix as it implements list_voltage() which the main user (MMC) relies
+   on for correct functioning.
+ - Change the !REGULATOR stub for optional regulators to return an
+   error rather than a dummy; this is more in keeping with the intended
+   use of optional regulators and fixes some issues seen MMC where it
+   got confused by a dummy being provided.
+
+----------------------------------------------------------------
+Axel Lin (2):
+      regulator: pbias: Fix is_enabled callback implementation
+      regulator: pbias: Convert to use regmap helper functions
+
+Mark Brown (2):
+      Merge remote-tracking branch 'regulator/fix/core' into regulator-linus
+      Merge remote-tracking branch 'regulator/fix/pbias' into regulator-linus
+
+Tim Kryger (1):
+      regulator: core: Return error in get optional stub
+
+ drivers/regulator/pbias-regulator.c | 76 ++++++++++---------------------------
+ include/linux/regulator/consumer.h  |  4 +-
+ 2 files changed, 22 insertions(+), 58 deletions(-)
+
+--Wx4fROwh6iTAolpo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTWP8qAAoJELSic+t+oim9Rc0P/3JaDuKvQFELrN7wE4efREPm
+F7u+obHfTEPr+4z+lYLS7rjZf32I3xKuh+GoXEOJHRo8o3CdLQymd2ML5lNnBwlz
+nwqLPh1Nhr1NtxEer3xQsUO3NnXduWWpTS+gpv51kNnW5Rm42E0B3TFdNyEsZFps
+OzW6N7Tm5WTqPkfyPuSk6UMUbqGGtnbfzCy2/My+QiybDNdmovxQjUlpSHQpbru7
+13RLJld6khZ8YtBsgeJzuH8JXq1ArtktlVvKK0+QOxGpjly4B8cGOCJEb1oH00Cw
+nJUHS3ExqWMUghG7kkdU/X2W7dJRiz8qHWJUCHY2TO2RrgBkuSFGeJaidt9dt3pv
+/82PVHpYqAc9w04IiHT5ziLXZEBLsUinjZRdPOez4V/3fvVW/GbCB/cRJgOCD+/1
+3JuHjPiXgp1yck9VJBeON23u4BWdrsJ94k7PSX2ZkURx1vt5T+2UnGs7hnckjnxI
+hLV+iHmPo4AXu78EWOTdygMXNnLpbvoqy3hetFA1hdDGIzNm7aDoj1IVxwnoLjVX
+BdO9bARFBQGaU020evPO/+HY2mpJqxZ0wV2c7TNb2bD+YaiNxcMRgCvxEKiPnVkI
+Wh6eo7a5mnYZE/TIdssjEbI9B6GJqFBhbSOIvJncr1zaUbGbqljRL/0/h62oUU/N
+ltqT8Ft1ZGwluRUcjVgo
+=kK/5
+-----END PGP SIGNATURE-----
+
+--Wx4fROwh6iTAolpo--
