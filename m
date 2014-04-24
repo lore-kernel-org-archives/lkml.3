@@ -1,194 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759095AbaDXWta (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:49:30 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:40986 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171AbaDXVov (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:44:51 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>, Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 19/26] ARM: OMAP: dmtimer: Remove API __omap_dm_timer_load_start
-Date: Thu, 24 Apr 2014 16:44:02 -0500
-Message-ID: <1398375849-6017-20-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398375849-6017-1-git-send-email-joelf@ti.com>
-References: <1398375849-6017-1-git-send-email-joelf@ti.com>
+	id S1759165AbaDXWu3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:50:29 -0400
+Received: from mail-bl2on0125.outbound.protection.outlook.com ([65.55.169.125]:10478
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754121AbaDXWuX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 18:50:23 -0400
+Message-ID: <1398379669.14881.2.camel@linux-builds1>
+Subject: Re: [PATCH] clk: socfpga: fix clock driver for 3.15
+From: Dinh Nguyen <dinguyen@altera.com>
+To: ZY - pavel <pavel@denx.de>, <mturquette@linaro.org>
+CC: <dinh.linux@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Date: Thu, 24 Apr 2014 17:47:49 -0500
+In-Reply-To: <20140424152133.GA23032@amd.pavel.ucw.cz>
+References: <1397481336-5592-1-git-send-email-dinguyen@altera.com>
+	 <20140424152133.GA23032@amd.pavel.ucw.cz>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 MIME-Version: 1.0
-Content-Type: text/plain
+X-EOPAttributedMessage: 0
+X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(189002)(377424004)(51704005)(199002)(24454002)(164054003)(41574002)(74662001)(31966008)(44976005)(6806004)(74502001)(46102001)(4396001)(80022001)(23676002)(81542001)(50226001)(81342001)(62966002)(93916002)(80976001)(92566001)(77156001)(92726001)(77982001)(89996001)(88136002)(33646001)(47776003)(20776003)(79102001)(76482001)(87286001)(33716001)(87936001)(76176999)(83072002)(85852003)(50986999)(2009001)(86362001)(19580395003)(83322001)(19580405001)(97736001)(84676001)(50466002)(99396002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1AFFO11HUB029;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:EE82F365.9ED29D01.31793D07.CEEECCA0.2018E;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
+X-OriginatorOrg: altera.onmicrosoft.com
+X-Forefront-PRVS: 01917B1794
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fold back functionality of __omap_dm_timer_load_start from the header into the
-public dmtimer.c omap_dmtimer_set_load_start API, and convert all dependencies
-to use it. All users should use the existing omap_dmtimer_set_load_start
-function for such uses.  This is in the direction of making the system timer
-code independent of the private functions which we're trying to eliminate so
-that they can just use the public ones which we want to expose.
+Hi Mike,
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
----
- arch/arm/mach-omap2/timer.c                  |   17 +++++--------
- arch/arm/plat-omap/dmtimer.c                 |   34 +++++++++++++++-----------
- arch/arm/plat-omap/include/plat/dmtimer.h    |   12 ++-------
- drivers/staging/tidspbridge/core/dsp-clock.c |    2 +-
- 4 files changed, 29 insertions(+), 36 deletions(-)
+On Thu, 2014-04-24 at 17:21 +0200, ZY - pavel wrote:
+> Hi!
+> 
+> > commit [1771b10d6 clk: respect the clock dependencies in of_clk_init]
+> > exposed a flaw in the socfpga clock driver and prevents the platform
+> > from booting on 3.15-rc1.
+> > 
+> > Because the "altr,clk-mgr" is not really a clock, it should not be using
+> > CLK_OF_DECLARE, instead we should be mapping the clk-mgr's base address
+> > one of the functional clock init function. Use the socfpga_pll_init function
+> > to map the clk_mgr_base_addr as this clock should always be initialized first.
+> > 
+> > Signed-off-by: Dinh Nguyen <dinguyen@altera.com>
+> 
+> Works for me, thanks!
+> 									Pavel
+> 
+> Tested-by: Pavel Machek <pavel@denx.de>
+> 
 
-diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-index 81a29b1..6735e2f 100644
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -95,8 +95,7 @@ static struct irqaction omap2_gp_timer_irq = {
- static int omap2_gp_timer_set_next_event(unsigned long cycles,
- 					 struct clock_event_device *evt)
- {
--	__omap_dm_timer_load_start(&clkev, 0,
--				   0xffffffff - cycles, OMAP_TIMER_POSTED);
-+	omap_dm_timer_set_load_start(&clkev, 0xffffffff - cycles, 0, 0);
- 
- 	return 0;
- }
-@@ -112,12 +111,7 @@ static void omap2_gp_timer_set_mode(enum clock_event_mode mode,
- 	case CLOCK_EVT_MODE_PERIODIC:
- 		period = clkev.rate / HZ;
- 		period -= 1;
--		/* Looks like we need to first set the load value separately */
--		__omap_dm_timer_write(&clkev, OMAP_TIMER_LOAD_REG,
--				      0xffffffff - period, OMAP_TIMER_POSTED);
--		__omap_dm_timer_load_start(&clkev,
--					OMAP_TIMER_CTRL_AR,
--					0xffffffff - period, OMAP_TIMER_POSTED);
-+		omap_dm_timer_set_load_start(&clkev, 0xffffffff - period, 1, 0);
- 		break;
- 	case CLOCK_EVT_MODE_ONESHOT:
- 		break;
-@@ -259,6 +253,8 @@ static int legacy_hwmod_clkget(struct omap_dm_timer *timer, const char *oh_name)
- 	timer->fclk = clk_get(NULL, omap_hwmod_get_main_clk(oh));
- 	if (IS_ERR(timer->fclk))
- 		return PTR_ERR(timer->fclk);
-+
-+	return 0;
- }
- 
- static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
-@@ -528,9 +524,8 @@ static void __init omap2_gptimer_clocksource_init(int gptimer_id,
- 
- 	clocksource_gpt.name = "timer_clksrc";
- 
--	__omap_dm_timer_load_start(&clksrc,
--				   OMAP_TIMER_CTRL_AR, 0,
--				   OMAP_TIMER_NONPOSTED);
-+	omap_dm_timer_set_load_start(&clksrc, 0, 1, 0);
-+
- 	sched_clock_register(dmtimer_read_sched_clock, 32, clksrc.rate);
- 
- 	if (clocksource_register_hz(&clocksource_gpt, clksrc.rate))
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index b52d34d..dee70be 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -571,33 +571,39 @@ int omap_dm_timer_set_load(struct omap_dm_timer *timer, int autoreload,
- EXPORT_SYMBOL_GPL(omap_dm_timer_set_load);
- 
- /* Optimized set_load which removes costly spin wait in timer_start */
--int omap_dm_timer_set_load_start(struct omap_dm_timer *timer, int autoreload,
--                            unsigned int load)
-+int omap_dm_timer_set_load_start(struct omap_dm_timer *timer, unsigned int load,
-+				 int autoreload, int pm)
- {
--	u32 l;
- 	int rc;
-+	u32 mask = ~0, val = 0;
- 
- 	if (unlikely(!timer))
- 		return -EINVAL;
- 
--	rc = omap_dm_timer_enable(timer);
--	if (rc)
--		return rc;
-+	if (pm) {
-+		rc = omap_dm_timer_enable(timer);
-+		if (rc)
-+			return rc;
-+	}
- 
--	l = omap_dm_timer_read_reg(timer, OMAP_TIMER_CTRL_REG);
- 	if (autoreload) {
--		l |= OMAP_TIMER_CTRL_AR;
-+		val |= OMAP_TIMER_CTRL_AR;
- 		omap_dm_timer_write_reg(timer, OMAP_TIMER_LOAD_REG, load);
- 	} else {
--		l &= ~OMAP_TIMER_CTRL_AR;
-+		mask &= ~OMAP_TIMER_CTRL_AR;
- 	}
- 
--	__omap_dm_timer_load_start(timer, l, load, timer->posted);
-+	val |= OMAP_TIMER_CTRL_ST;
- 
--	/* Save the context */
--	timer->context.tclr = l;
--	timer->context.tldr = load;
--	timer->context.tcrr = load;
-+	omap_dm_timer_write_reg(timer, OMAP_TIMER_COUNTER_REG, load);
-+	val = omap_dm_timer_write_ctrl(timer, mask, val);
-+
-+	if (pm) {
-+		/* Save the context */
-+		timer->context.tclr = val;
-+		timer->context.tldr = load;
-+		timer->context.tcrr = load;
-+	}
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(omap_dm_timer_set_load_start);
-diff --git a/arch/arm/plat-omap/include/plat/dmtimer.h b/arch/arm/plat-omap/include/plat/dmtimer.h
-index 6b6fbd2..7432bf3 100644
---- a/arch/arm/plat-omap/include/plat/dmtimer.h
-+++ b/arch/arm/plat-omap/include/plat/dmtimer.h
-@@ -145,7 +145,8 @@ int omap_dm_timer_stop(struct omap_dm_timer *timer);
- 
- int omap_dm_timer_set_source(struct omap_dm_timer *timer, int source);
- int omap_dm_timer_set_load(struct omap_dm_timer *timer, int autoreload, unsigned int value);
--int omap_dm_timer_set_load_start(struct omap_dm_timer *timer, int autoreload, unsigned int value);
-+int omap_dm_timer_set_load_start(struct omap_dm_timer *timer, unsigned int load,
-+				 int autoreload, int pm);
- int omap_dm_timer_set_match(struct omap_dm_timer *timer, int enable, unsigned int match);
- int omap_dm_timer_set_pwm(struct omap_dm_timer *timer, int def_on, int toggle, int trigger);
- int omap_dm_timer_set_prescaler(struct omap_dm_timer *timer, int prescaler);
-@@ -389,15 +390,6 @@ static inline void __omap_dm_timer_stop(struct omap_dm_timer *timer,
- 	__raw_writel(OMAP_TIMER_INT_OVERFLOW, timer->irq_stat);
- }
- 
--static inline void __omap_dm_timer_load_start(struct omap_dm_timer *timer,
--						u32 ctrl, unsigned int load,
--						int posted)
--{
--	ctrl |= OMAP_TIMER_CTRL_ST;
--	__omap_dm_timer_write(timer, OMAP_TIMER_COUNTER_REG, load, posted);
--	__omap_dm_timer_write(timer, OMAP_TIMER_CTRL_REG, ctrl, posted);
--}
--
- static inline void __omap_dm_timer_int_enable(struct omap_dm_timer *timer,
- 						unsigned int value)
- {
-diff --git a/drivers/staging/tidspbridge/core/dsp-clock.c b/drivers/staging/tidspbridge/core/dsp-clock.c
-index 2f084e18..2788158 100644
---- a/drivers/staging/tidspbridge/core/dsp-clock.c
-+++ b/drivers/staging/tidspbridge/core/dsp-clock.c
-@@ -189,7 +189,7 @@ void dsp_gpt_wait_overflow(short int clk_id, unsigned int load)
- 	 * Set counter value to overflow counter after
- 	 * one tick and start timer.
- 	 */
--	omap_dm_timer_set_load_start(gpt, 0, load);
-+	omap_dm_timer_set_load_start(gpt, load, 0, 1);
- 
- 	/* Wait 80us for timer to overflow */
- 	udelay(80);
--- 
-1.7.9.5
+I'm hoping you can queued this up for one of the 3.15-rc.
+
+Thanks,
+Dinh
+
 
