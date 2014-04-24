@@ -1,188 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758932AbaDXWjk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:39:40 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39546 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754914AbaDXVp7 (ORCPT
+	id S1757911AbaDXWkl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:40:41 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41384 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143AbaDXWkg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:45:59 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Beat Bolli <bbolli@ewanet.ch>, Pavel Roskin <proski@gnu.org>,
-        David Sterba <dsterba@suse.cz>,
-        Grant Edwards <grant.b.edwards@gmail.com>,
-        Stanislaw Gruszka <sgruszka@redhat.com>,
-        Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 3.14 13/33] tty: Fix low_latency BUG
-Date: Thu, 24 Apr 2014 14:48:26 -0700
-Message-Id: <20140424214451.485776143@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
-References: <20140424214449.423169713@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 24 Apr 2014 18:40:36 -0400
+Message-ID: <535992DD.3060808@infradead.org>
+Date: Thu, 24 Apr 2014 15:40:29 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+To: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>, linux-next@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: mmotm 2014-04-24-13-07 uploaded
+References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>
+In-Reply-To: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On 04/24/14 13:08, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2014-04-24-13-07 has been uploaded to
+> 
+>    http://www.ozlabs.org/~akpm/mmotm/
+> 
+> mmotm-readme.txt says
+> 
+> README for mm-of-the-moment:
+> 
+> http://www.ozlabs.org/~akpm/mmotm/
+> 
+> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
+> more than once a week.
+> 
+> You will need quilt to apply these patches to the latest Linus release (3.x
+> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
+> http://ozlabs.org/~akpm/mmotm/series
+> 
 
-------------------
+uml on x86_64 defconfig:
 
-From: Peter Hurley <peter@hurleysoftware.com>
-
-commit a9c3f68f3cd8d55f809fbdb0c138ed061ea1bd25 upstream.
-
-The user-settable knob, low_latency, has been the source of
-several BUG reports which stem from flush_to_ldisc() running
-in interrupt context. Since 3.12, which added several sleeping
-locks (termios_rwsem and buf->lock) to the input processing path,
-the frequency of these BUG reports has increased.
-
-Note that changes in 3.12 did not introduce this regression;
-sleeping locks were first added to the input processing path
-with the removal of the BKL from N_TTY in commit
-a88a69c91256418c5907c2f1f8a0ec0a36f9e6cc,
-'n_tty: Fix loss of echoed characters and remove bkl from n_tty'
-and later in commit 38db89799bdf11625a831c5af33938dcb11908b6,
-'tty: throttling race fix'. Since those changes, executing
-flush_to_ldisc() in interrupt_context (ie, low_latency set), is unsafe.
-
-However, since most devices do not validate if the low_latency
-setting is appropriate for the context (process or interrupt) in
-which they receive data, some reports are due to misconfiguration.
-Further, serial dma devices for which dma fails, resort to
-interrupt receiving as a backup without resetting low_latency.
-
-Historically, low_latency was used to force wake-up the reading
-process rather than wait for the next scheduler tick. The
-effect was to trim multiple milliseconds of latency from
-when the process would receive new data.
-
-Recent tests [1] have shown that the reading process now receives
-data with only 10's of microseconds latency without low_latency set.
-
-Remove the low_latency rx steering from tty_flip_buffer_push();
-however, leave the knob as an optional hint to drivers that can
-tune their rx fifos and such like. Cleanup stale code comments
-regarding low_latency.
-
-[1] https://lkml.org/lkml/2014/2/20/434
-
-"Yay.. thats an annoying historical pain in the butt gone."
-	-- Alan Cox
-
-Reported-by: Beat Bolli <bbolli@ewanet.ch>
-Reported-by: Pavel Roskin <proski@gnu.org>
-Acked-by: David Sterba <dsterba@suse.cz>
-Cc: Grant Edwards <grant.b.edwards@gmail.com>
-Cc: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: Hal Murray <murray+fedora@ip-64-139-1-69.sjc.megapath.net>
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/tty/ipwireless/tty.c  |    3 ---
- drivers/tty/tty_buffer.c      |   20 ++++----------------
- drivers/usb/gadget/u_serial.c |    4 ++--
- include/linux/tty.h           |    2 +-
- 4 files changed, 7 insertions(+), 22 deletions(-)
-
---- a/drivers/tty/ipwireless/tty.c
-+++ b/drivers/tty/ipwireless/tty.c
-@@ -176,9 +176,6 @@ void ipwireless_tty_received(struct ipw_
- 				": %d chars not inserted to flip buffer!\n",
- 				length - work);
- 
--	/*
--	 * This may sleep if ->low_latency is set
--	 */
- 	if (work)
- 		tty_flip_buffer_push(&tty->port);
- }
---- a/drivers/tty/tty_buffer.c
-+++ b/drivers/tty/tty_buffer.c
-@@ -351,14 +351,11 @@ EXPORT_SYMBOL(tty_insert_flip_string_fla
-  *	Takes any pending buffers and transfers their ownership to the
-  *	ldisc side of the queue. It then schedules those characters for
-  *	processing by the line discipline.
-- *	Note that this function can only be used when the low_latency flag
-- *	is unset. Otherwise the workqueue won't be flushed.
-  */
- 
- void tty_schedule_flip(struct tty_port *port)
- {
- 	struct tty_bufhead *buf = &port->buf;
--	WARN_ON(port->low_latency);
- 
- 	buf->tail->commit = buf->tail->used;
- 	schedule_work(&buf->work);
-@@ -482,17 +479,15 @@ static void flush_to_ldisc(struct work_s
-  */
- void tty_flush_to_ldisc(struct tty_struct *tty)
- {
--	if (!tty->port->low_latency)
--		flush_work(&tty->port->buf.work);
-+	flush_work(&tty->port->buf.work);
- }
- 
- /**
-  *	tty_flip_buffer_push	-	terminal
-  *	@port: tty port to push
-  *
-- *	Queue a push of the terminal flip buffers to the line discipline. This
-- *	function must not be called from IRQ context if port->low_latency is
-- *	set.
-+ *	Queue a push of the terminal flip buffers to the line discipline.
-+ *	Can be called from IRQ/atomic context.
-  *
-  *	In the event of the queue being busy for flipping the work will be
-  *	held off and retried later.
-@@ -500,14 +495,7 @@ void tty_flush_to_ldisc(struct tty_struc
- 
- void tty_flip_buffer_push(struct tty_port *port)
- {
--	struct tty_bufhead *buf = &port->buf;
--
--	buf->tail->commit = buf->tail->used;
--
--	if (port->low_latency)
--		flush_to_ldisc(&buf->work);
--	else
--		schedule_work(&buf->work);
-+	tty_schedule_flip(port);
- }
- EXPORT_SYMBOL(tty_flip_buffer_push);
- 
---- a/drivers/usb/gadget/u_serial.c
-+++ b/drivers/usb/gadget/u_serial.c
-@@ -549,8 +549,8 @@ static void gs_rx_push(unsigned long _po
- 		port->read_started--;
- 	}
- 
--	/* Push from tty to ldisc; without low_latency set this is handled by
--	 * a workqueue, so we won't get callbacks and can hold port_lock
-+	/* Push from tty to ldisc; this is handled by a workqueue,
-+	 * so we won't get callbacks and can hold port_lock
- 	 */
- 	if (do_push)
- 		tty_flip_buffer_push(&port->port);
---- a/include/linux/tty.h
-+++ b/include/linux/tty.h
-@@ -208,7 +208,7 @@ struct tty_port {
- 	wait_queue_head_t	delta_msr_wait;	/* Modem status change */
- 	unsigned long		flags;		/* TTY flags ASY_*/
- 	unsigned char		console:1,	/* port is a console */
--				low_latency:1;	/* direct buffer flush */
-+				low_latency:1;	/* optional: tune for latency */
- 	struct mutex		mutex;		/* Locking */
- 	struct mutex		buf_mutex;	/* Buffer alloc lock */
- 	unsigned char		*xmit_buf;	/* Optional buffer */
+drivers/built-in.o: In function `__handle_sysrq':
+drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
+drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
 
 
+-- 
+~Randy
