@@ -1,152 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757932AbaDXOkZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:40:25 -0400
-Received: from www.linutronix.de ([62.245.132.108]:37822 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757578AbaDXOkS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:40:18 -0400
-Date: Thu, 24 Apr 2014 16:40:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Walleij <linus.walleij@linaro.org>
-cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "Jin, Yao" <yao.jin@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Krogerus, Heikki" <heikki.krogerus@intel.com>
-Subject: Re: [PATCH] pinctrl-baytrail: workaround for irq descriptor conflict
- on ASUS T100TA
-In-Reply-To: <CACRpkdaHP4sp8fomE_7-2KaHAmBmTYv-cMSA=As04V54OZMo-g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1404241617360.28206@ionos.tec.linutronix.de>
-References: <1397443272-31467-1-git-send-email-yao.jin@linux.intel.com> <534B4C6D.5070003@linux.intel.com> <CACRpkdYXD-Fd0tFJtir8ifsTqdBvA0Rznc4Hmzoq_ByBjTahdw@mail.gmail.com> <5357A594.6050404@linux.intel.com> <CACRpkdYztACye5Xht3f4UuaWDA0gB7t2rgRmpTaL330YcxYhfQ@mail.gmail.com>
- <alpine.DEB.2.02.1404240918110.4704@ionos.tec.linutronix.de> <CACRpkdaHP4sp8fomE_7-2KaHAmBmTYv-cMSA=As04V54OZMo-g@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1757692AbaDXOnT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:43:19 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:59907 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753344AbaDXOnS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 10:43:18 -0400
+Date: Thu, 24 Apr 2014 09:42:57 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: <linux-kernel@vger.kernel.org>, <myungjoo.ham@samsung.com>, <balbi@ti.com>,
+        <gg@slimlogic.co.uk>, <kishon@ti.com>,
+        <ckeepax@opensource.wolfsonmicro.com>, <broonie@kernel.org>,
+        <k.kozlowski@samsung.com>, <kyungmin.park@samsung.com>
+Subject: Re: [PATCHv3 1/9] extcon: Add extcon_dev_allocate/free() to control
+ the memory of extcon device
+Message-ID: <20140424144257.GF26661@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
+ <1398342897-23670-2-git-send-email-cw00.choi@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="DO5DiztRLs659m5i"
+Content-Disposition: inline
+In-Reply-To: <1398342897-23670-2-git-send-email-cw00.choi@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Apr 2014, Linus Walleij wrote:
-> On Thu, Apr 24, 2014 at 9:25 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > I'm traveling until friday, so please wait before you commit that
-> > fugly hack. I'll have a closer look how we can handle that at the core
-> > level.
-> 
-> Thanks a *lot* Thomas, I'll stand by for action.
+--DO5DiztRLs659m5i
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Find an untested patch below. It should cure the issue.
+On Thu, Apr 24, 2014 at 09:34:49PM +0900, Chanwoo Choi wrote:
+> This patch add APIs to control the extcon device on extcon provider drive=
+r.
+> The extcon_dev_allocate() allocates the memory of extcon device and initi=
+alizes
+> supported cables. And then extcon_dev_free() decrement the reference of t=
+he
+> device of extcon device and free the memory of the extcon device. This AP=
+Is
+> must need to implement devm_extcon_dev_allocate()/free() APIs.
+>=20
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+>  drivers/extcon/extcon-class.c | 39 +++++++++++++++++++++++++++++++++++++=
+++
+>  include/linux/extcon.h        | 13 +++++++++++++
+>  2 files changed, 52 insertions(+)
+>=20
+> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+> index f6df689..bec66d4 100644
+> --- a/drivers/extcon/extcon-class.c
+> +++ b/drivers/extcon/extcon-class.c
+> @@ -565,6 +565,45 @@ static void dummy_sysfs_dev_release(struct device *d=
+ev)
+>  {
+>  }
+> =20
+> +/*
+> + * extcon_dev_allocate() - Allocate the memory of extcon device.
+> + * @supported_cable:	Array of supported cable names ending with NULL.
+> + *			If supported_cable is NULL, cable name related APIs
+> + *			are disabled.
+> + *
+> + * This function allocates the memory for extcon device without allocati=
+ng
+> + * memory in each extcon provider driver and initialize default setting =
+for
+> + * extcon device.
+> + *
+> + * Return the pointer of extcon device if success or ERR_PTR(err) if fail
+> + */
+> +struct extcon_dev *extcon_dev_allocate(const char **supported_cable)
+> +{
+> +	struct extcon_dev *edev;
+> +
+> +	edev =3D kzalloc(sizeof(*edev), GFP_KERNEL);
+> +	if (!edev) {
+> +		pr_err("Failed to allocate the memory for extcon device\n");
+> +		return ERR_PTR(-ENOMEM);
+> +	}
+> +
+> +	edev->max_supported =3D 0;
+> +	edev->supported_cable =3D supported_cable;
+> +
+> +	return edev;
+> +}
+> +
+> +/*
+> + * extcon_dev_free() - Free the memory of extcon device.
+> + * @edev:	the extcon device to free
+> + */
+> +void extcon_dev_free(struct extcon_dev *edev)
+> +{
+> +	if (edev)
+> +		kfree(edev);
 
-I went through all code which can be affected by this and except for
-some other places, which might erroneously allocate inside the
-hardwired space, I can't see any possible fallout.
+kfree(NULL) is safe
 
-Thanks,
+--=20
+balbi
 
-	tglx
+--DO5DiztRLs659m5i
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
--------------------->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Subject: genirq: x86: Ensure that dynamic irq allocation does not conflict
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 24 Apr 2014 09:50:53 +0200
+iQIcBAEBAgAGBQJTWSLxAAoJEIaOsuA1yqREnQsP/R6j6dc4wjmhdYJqDY1adXjE
+/SItcf9ja2KWQVcA4pPffIqtTAVVROUSKS0l9O9DaMZyPZcCZclZFwZ4zbvUgR0U
+zXFEqNe5iSq21Vak4WyTMreD3dmna4djjhHNXepCujHbbH3PJfDBfhCU/9Eru5vz
+Nqz+aHk/nE5X0J+8eLBRGebuuyHHV5W+v9223VWKzzMDw0JcEQZ5dzI816ilJ48f
+qEixf43zx+0i55J6puybWb06ntgp1nBW5Y8URUgg2YL7Bsv6kdyyWbvs2CTKbD/5
+I1PLSqErqxLtVHbkXr60eHuHDX0K+8PMW5MpokYXwgM+DMs+I8hO5E75hCGYItI9
+W7/q2eRNk3etZqyX7NBinPLhVDT+CbrbFCOtk5NDJU3G7+I9cxKuFcLay9x/FNXX
+RK0GxboCXX8iY7VWXiYl/MpXnQDhlGkf6voN+uDA6RjUmakAENC8c8QZCFP93aDS
+HWvbDN9xpknbqvGeM/mjWR1jc93cSrfzQ+dhPHlAnn2C4uQ8oA9YIv+Z+aC1PsC2
+CtyJzxKUpMZuWt42M/2TrcKMxj2rIsds4WnbFjw/DCU1bfIKS82sY4SepkZ/i/z7
+MgQgH5IDhwvNDpex78KrCYpOEW3913BKAqO/Amy90V3db8m/cuR/8jXSLZ+tK3m4
+vQByfUKkgRoHWPB8UkRb
+=IpQG
+-----END PGP SIGNATURE-----
 
-On x86 the allocation of irq descriptors may allocate interrupts which
-are in the range of the GSI interrupts. That's wrong as those
-interrupts are hardwired and we don't have the irq domain translation
-like PPC. So one of these interrupts can be hooked up later to one of
-the devices which are hard wired to it and the io_apic init code for
-that particular interrupt line happily reuses that descriptor with a
-completely different configuration so hell breaks lose.
-
-Inside x86 we allocate dynamic interrupts from above nr_gsi_irqs,
-except for a few usage sites which have not yet blown up in our face
-for whatever reason. But for drivers which need an irq range, like the
-GPIO drivers, we have no limit in place and we don't want to expose
-such a detail to a driver.
-
-To cure this introduce a function which an architecture can implement
-to impose a lower bound on the dynamic interrupt allocations.
-
-Implement it for x86 and set the lower bound to nr_gsi_irqs, which is
-the end of the hardwired interrupt space, so all dynamic allocations
-happen above.
-
-That not only allows the GPIO driver to work sanely, it also protects
-the bogus callsites of create_irq_nr() in hpet, uv, irq_remapping and
-htirq code. They need to be cleaned up as well, but that's a separate
-issue.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/apic/io_apic.c |    5 +++++
- include/linux/irq.h            |    2 ++
- kernel/irq/irqdesc.c           |    2 ++
- kernel/softirq.c               |    5 +++++
- 4 files changed, 14 insertions(+)
-
-Index: linux-2.6/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6/arch/x86/kernel/apic/io_apic.c
-@@ -3425,6 +3425,11 @@ int get_nr_irqs_gsi(void)
- 	return nr_irqs_gsi;
- }
- 
-+unsigned int arch_dynirq_lower_bound(unsigned int from)
-+{
-+	return from < nr_irqs_gsi ? nr_irqs_gsi : from;
-+}
-+
- int __init arch_probe_nr_irqs(void)
- {
- 	int nr;
-Index: linux-2.6/include/linux/irq.h
-===================================================================
---- linux-2.6.orig/include/linux/irq.h
-+++ linux-2.6/include/linux/irq.h
-@@ -602,6 +602,8 @@ static inline u32 irq_get_trigger_type(u
- 	return d ? irqd_get_trigger_type(d) : 0;
- }
- 
-+unsigned int arch_dynirq_lower_bound(unsigned int from);
-+
- int __irq_alloc_descs(int irq, unsigned int from, unsigned int cnt, int node,
- 		struct module *owner);
- 
-Index: linux-2.6/kernel/irq/irqdesc.c
-===================================================================
---- linux-2.6.orig/kernel/irq/irqdesc.c
-+++ linux-2.6/kernel/irq/irqdesc.c
-@@ -363,6 +363,8 @@ __irq_alloc_descs(int irq, unsigned int
- 		if (from > irq)
- 			return -EINVAL;
- 		from = irq;
-+	} else {
-+		from = arch_dynirq_lower_bound(from);
- 	}
- 
- 	mutex_lock(&sparse_irq_lock);
-Index: linux-2.6/kernel/softirq.c
-===================================================================
---- linux-2.6.orig/kernel/softirq.c
-+++ linux-2.6/kernel/softirq.c
-@@ -779,3 +779,8 @@ int __init __weak arch_early_irq_init(vo
- {
- 	return 0;
- }
-+
-+unsigned int __weak arch_dynirq_lower_bound(unsigned int from)
-+{
-+	return from;
-+}
+--DO5DiztRLs659m5i--
