@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484AbaDXIwa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:52:30 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46333 "EHLO
+	id S1756541AbaDXLua (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:50:30 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46336 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461AbaDXIw2 (ORCPT
+	with ESMTP id S1753462AbaDXIw3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:28 -0400
+	Thu, 24 Apr 2014 04:52:29 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
@@ -14,9 +14,9 @@ Cc: Malcolm Priestley <tvboxspy@gmail.com>,
         Michael Krufky <mkrufky@linuxtv.org>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 023/182] [media] m88rs2000: add caps FE_CAN_INVERSION_AUTO
-Date: Thu, 24 Apr 2014 09:49:08 +0100
-Message-Id: <1398329507-5911-24-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 024/182] [media] m88rs2000: prevent frontend crash on continuous transponder scans
+Date: Thu, 24 Apr 2014 09:49:09 +0100
+Message-Id: <1398329507-5911-25-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -31,31 +31,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Malcolm Priestley <tvboxspy@gmail.com>
 
-commit 3c8023a782964c72574ad8268ba0ea4e2d9772fc upstream.
+commit 8272d0a0c0d374a01721e579df6e8add5577132b upstream.
 
-The m88rs2000 frontend is always auto inversion.
+Add m88rs2000_get_tune_settings, min delay of 2000 ms on symbol
+rate more than 3000000 and delay of 3000ms less than this.
+
+Adding min delay prevents crashing the frontend on continuous
+transponder scans. Other dvb_frontend_tune_settings remain as default.
+
+This makes very little time difference to good channel scans, but slows down
+the set frontend where lock can never be achieved i.e. DVB-S2.
 
 Signed-off-by: Malcolm Priestley <tvboxspy@gmail.com>
 Signed-off-by: Michael Krufky <mkrufky@linuxtv.org>
 Signed-off-by: Mauro Carvalho Chehab <m.chehab@samsung.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/media/dvb-frontends/m88rs2000.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/dvb-frontends/m88rs2000.c | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
 diff --git a/drivers/media/dvb-frontends/m88rs2000.c b/drivers/media/dvb-frontends/m88rs2000.c
-index 02699c1..5b3b1d3 100644
+index 5b3b1d3..c7a1c8e 100644
 --- a/drivers/media/dvb-frontends/m88rs2000.c
 +++ b/drivers/media/dvb-frontends/m88rs2000.c
-@@ -743,7 +743,7 @@ static struct dvb_frontend_ops m88rs2000_ops = {
- 		.symbol_rate_tolerance	= 500,	/* ppm */
- 		.caps = FE_CAN_FEC_1_2 | FE_CAN_FEC_2_3 | FE_CAN_FEC_3_4 |
- 		      FE_CAN_FEC_5_6 | FE_CAN_FEC_7_8 |
--		      FE_CAN_QPSK |
-+		      FE_CAN_QPSK | FE_CAN_INVERSION_AUTO |
- 		      FE_CAN_FEC_AUTO
- 	},
+@@ -712,6 +712,22 @@ static int m88rs2000_get_frontend(struct dvb_frontend *fe)
+ 	return 0;
+ }
  
++static int m88rs2000_get_tune_settings(struct dvb_frontend *fe,
++	struct dvb_frontend_tune_settings *tune)
++{
++	struct dtv_frontend_properties *c = &fe->dtv_property_cache;
++
++	if (c->symbol_rate > 3000000)
++		tune->min_delay_ms = 2000;
++	else
++		tune->min_delay_ms = 3000;
++
++	tune->step_size = c->symbol_rate / 16000;
++	tune->max_drift = c->symbol_rate / 2000;
++
++	return 0;
++}
++
+ static int m88rs2000_i2c_gate_ctrl(struct dvb_frontend *fe, int enable)
+ {
+ 	struct m88rs2000_state *state = fe->demodulator_priv;
+@@ -763,6 +779,7 @@ static struct dvb_frontend_ops m88rs2000_ops = {
+ 
+ 	.set_frontend = m88rs2000_set_frontend,
+ 	.get_frontend = m88rs2000_get_frontend,
++	.get_tune_settings = m88rs2000_get_tune_settings,
+ };
+ 
+ struct dvb_frontend *m88rs2000_attach(const struct m88rs2000_config *config,
 -- 
 1.9.1
 
