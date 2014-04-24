@@ -1,82 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615AbaDXFia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 01:38:30 -0400
-Received: from mail-ee0-f46.google.com ([74.125.83.46]:39580 "EHLO
-	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750860AbaDXFi3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 01:38:29 -0400
-Message-ID: <53589C8E.5000505@gmail.com>
-Date: Thu, 24 Apr 2014 07:09:34 +0200
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Heinrich Schuchardt <xypron.glpk@gmx.de>, Eric Paris <eparis@redhat.com>
-CC: mtk.manpages@gmail.com, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: Re: [PATCH 1/1] fanotify: for FAN_MARK_FLUSH check flags
-References: <1398290151-6502-1-git-send-email-xypron.glpk@gmx.de>
-In-Reply-To: <1398290151-6502-1-git-send-email-xypron.glpk@gmx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1751878AbaDXFig (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 01:38:36 -0400
+Received: from ozlabs.org ([103.22.144.67]:45950 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751265AbaDXFib (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 01:38:31 -0400
+Date: Thu, 24 Apr 2014 15:38:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: linux-next: manual merge of the akpm-current tree with Linus' tree
+Message-Id: <20140424153824.c65cc3202124674aad968113@canb.auug.org.au>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA256";
+ boundary="Signature=_Thu__24_Apr_2014_15_38_24_+1000_X=eBrcYh/.jcGWQZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 11:55 PM, Heinrich Schuchardt wrote:
-> If fanotify_mark is called with illegal value of arguments flags and marks
-> it usually returns EINVAL.
-> 
-> When fanotify_mark is called with FAN_MARK_FLUSH the argument flags is not
-> checked for irrelevant flags like FAN_MARK_IGNORED_MASK.
-> 
-> The patch removes this inconsistency.
-> 
-> If an irrelevant flag is set error EINVAL is returned.
->
-> Signed-off-by: Heinrich Schuchardt <xypron.glpk@gmx.de>
+--Signature=_Thu__24_Apr_2014_15_38_24_+1000_X=eBrcYh/.jcGWQZ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Andrew,
 
-So, a small heads up that this change may of course break existing code. 
-(Heinrich, see https://lwn.net/Articles/588444/ ). However, 
-there is some precedent for such changes (examples in 
-https://lwn.net/Articles/588444/), and
+Today's linux-next merge of the akpm-current tree got a conflict in
+mm/memory.c between commit 1b17844b29ae ("mm: make fixup_user_fault()
+check the vma access rights too") from Linus' tree and commit
+0d84be787c23 ("mm: move get_user_pages()-related code to separate file")
+from the akpm-current tree.
 
-* The number of applications out there using fanotify is probably very low
-* The number that are using FAN_MARK_FLUSH and misusing the flags will be even lower
+I fixed it up (I applied Linus' patch to the new file) and can carry the
+fix as necessary (no action is required).
 
-So the risk of breakage is likely vanishingly small. So, a qualified
-
-Acked-by: Michael Kerrisk <mtk.manpages@gmail.com>
-
+--=20
 Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Michael
+--Signature=_Thu__24_Apr_2014_15_38_24_+1000_X=eBrcYh/.jcGWQZ
+Content-Type: application/pgp-signature
 
-> ---
->  fs/notify/fanotify/fanotify_user.c | 3 +++
->  1 file changed, 3 insertions(+)
-> 
-> diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
-> index 287a22c..8bba549 100644
-> --- a/fs/notify/fanotify/fanotify_user.c
-> +++ b/fs/notify/fanotify/fanotify_user.c
-> @@ -819,7 +819,10 @@ SYSCALL_DEFINE5(fanotify_mark, int, fanotify_fd, unsigned int, flags,
->  	case FAN_MARK_REMOVE:
->  		if (!mask)
->  			return -EINVAL;
-> +		break;
->  	case FAN_MARK_FLUSH:
-> +		if (flags & ~(FAN_MARK_MOUNT | FAN_MARK_FLUSH))
-> +			return -EINVAL;
->  		break;
->  	default:
->  		return -EINVAL;
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
 
+iQIcBAEBCAAGBQJTWKNVAAoJEMDTa8Ir7ZwVOg0QAIj1Wam/puhb6TMo2rFoVsPy
+fSnBmGq/dUkjknrijH0+8bYXpOcfbAvHH0EIPIYUlW6pdqfgDYPLgi1QNtyDin6S
+zTtlWyIjA+KBcdzOWpis9/+x/sCtLeu/dCstVhJ417VVvNzfOECfbTMnYj1s5EeL
+nCPP7Kv1AUKYf2r8UW/3lXEhBOlIux6BiPOUEDoFWtNkG+VVSWFuaQka65/oNx2Q
+1T7ZG5MyESnJkV1qHK+5DioFyvqcvpK2amMvx2Xvz9au757kjZ2DH9eu1JggQ4FU
+ZIMWEaEbXW/ct03Ad3aOdfkeEmS6ExW8LzLrmJevuIAC1qFlO3EAMcGZDt+IaEvF
+Z7WGdO3JgJOuWYuOv8cnk/AHQ8FAnxtZ0hrhzriJF8lB1uEp+RVPKFR5VgblAsNz
+WDG4KTl/L++XHM6ITVEkj/a16pgO2i0qC0wqcONfBiEzTVLzQrrz7MkZeU8wVYyI
+a6xnVJSLgjtqwp5IqWqlJ55T5/W7a4IH79b6P1cm4MuU1nrGPkFV4gEhL/VerJlh
+eZblDI0APQH0FGM4lDX4MORhv17oJ65U7YFbn4S/00BVuc5ejC7hbVMC3A7DGQpS
+GWPlLnNa2mkyZAT0sbTG2AOU6S9hvrQGq+RTJAW+GQ3AIydznI+qBv5QcR8jxvjv
+FVTFaAuZ1I4QK3DSWd1E
+=ar3d
+-----END PGP SIGNATURE-----
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+--Signature=_Thu__24_Apr_2014_15_38_24_+1000_X=eBrcYh/.jcGWQZ--
