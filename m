@@ -1,93 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343AbaDXVF2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:05:28 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:42351 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272AbaDXVFW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754276AbaDXVFW (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 24 Apr 2014 17:05:22 -0400
-Message-ID: <1398373468.3395.83.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 12/20] ima: provide buffer hash calculation function
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: dhowells@redhat.com, jmorris@namei.org, roberto.sassu@polito.it,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 24 Apr 2014 17:04:28 -0400
-In-Reply-To: <1b9253e91b214bb67d4fdd9297f9734d7c4cb6cc.1398259638.git.d.kasatkin@samsung.com>
-References: <cover.1398259638.git.d.kasatkin@samsung.com>
-	 <1b9253e91b214bb67d4fdd9297f9734d7c4cb6cc.1398259638.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+Received: from comal.ext.ti.com ([198.47.26.152]:36920 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753208AbaDXVFP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:05:15 -0400
+Message-ID: <53597C70.1040501@ti.com>
+Date: Thu, 24 Apr 2014 17:04:48 -0400
+From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "Nair, Sandeep" <sandeep_n@ti.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>
+Subject: Re: [PATCH 2/2] net: Add Keystone NetCP ethernet driver
+References: <1398201675-17379-1-git-send-email-santosh.shilimkar@ti.com>	<1398201675-17379-3-git-send-email-santosh.shilimkar@ti.com> <20140424.124744.1296959126932595844.davem@davemloft.net>
+In-Reply-To: <20140424.124744.1296959126932595844.davem@davemloft.net>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042421-3532-0000-0000-0000014AAAE1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-23 at 16:30 +0300, Dmitry Kasatkin wrote: 
-> This patch provides convenient buffer hash calculation function.
+On Thursday 24 April 2014 12:47 PM, David Miller wrote:
+> From: Santosh Shilimkar <santosh.shilimkar@ti.com>
+> Date: Tue, 22 Apr 2014 17:21:15 -0400
 > 
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-
-Where/how is it being used?  We normally don't upstream a new function
-without it being used.  Is the usage in another patch?
-
-Mimi
-
-> ---
->  security/integrity/ima/ima.h        |  1 +
->  security/integrity/ima/ima_crypto.c | 11 +++++++++--
->  2 files changed, 10 insertions(+), 2 deletions(-)
+>> +struct netcp_tx_pipe {
+>> +	struct netcp_device	*netcp_device;
+>> +	void	*dma_queue;
 > 
-> diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
-> index f4c1e8dd..a5d5ccb 100644
-> --- a/security/integrity/ima/ima.h
-> +++ b/security/integrity/ima/ima.h
-> @@ -98,6 +98,7 @@ int ima_add_template_entry(struct ima_template_entry *entry, int violation,
->  			   const char *op, struct inode *inode,
->  			   const unsigned char *filename);
->  int ima_calc_file_hash(struct file *file, struct ima_digest_data *hash);
-> +int ima_calc_buffer_hash(const void *buf, int len, struct ima_digest_data *hash);
->  int ima_calc_field_array_hash(struct ima_field_data *field_data,
->  			      struct ima_template_desc *desc, int num_fields,
->  			      struct ima_digest_data *hash);
-> diff --git a/security/integrity/ima/ima_crypto.c b/security/integrity/ima/ima_crypto.c
-> index 139e7f7..50c78c0 100644
-> --- a/security/integrity/ima/ima_crypto.c
-> +++ b/security/integrity/ima/ima_crypto.c
-> @@ -434,13 +434,13 @@ static int ima_calc_field_array_hash_tfm(struct ima_field_data *field_data,
->  		u8 *data_to_hash = field_data[i].data;
->  		u32 datalen = field_data[i].len;
+> Indent *dma_queue the same as the other struct members.
+>
+sure 
+>> +	unsigned		dma_queue_id;
 > 
-> -		if (strcmp(td->name, IMA_TEMPLATE_IMA_NAME) != 0) {
-> +		if (td && strcmp(td->name, IMA_TEMPLATE_IMA_NAME) != 0) {
->  			rc = crypto_shash_update(&desc.shash,
->  						(const u8 *) &field_data[i].len,
->  						sizeof(field_data[i].len));
->  			if (rc)
->  				break;
-> -		} else if (strcmp(td->fields[i]->field_id, "n") == 0) {
-> +		} else if (td && strcmp(td->fields[i]->field_id, "n") == 0) {
->  			memcpy(buffer, data_to_hash, datalen);
->  			data_to_hash = buffer;
->  			datalen = IMA_EVENT_NAME_LEN_MAX + 1;
-> @@ -475,6 +475,13 @@ int ima_calc_field_array_hash(struct ima_field_data *field_data,
->  	return rc;
->  }
+> Use explicit "unsigned int".
 > 
-> +int ima_calc_buffer_hash(const void *buf, int len, struct ima_digest_data *hash)
-> +{
-> +	struct ima_field_data fd = { .data = (u8 *)buf, .len = len };
-> +
-> +	return ima_calc_field_array_hash(&fd, NULL, 1, hash);
-> +}
-> +
->  static void __init ima_pcrread(int idx, u8 *pcr)
->  {
->  	if (!ima_used_chip)
+>> +	unsigned		dma_chan_id;
+> 
+> Likewise.
+>
+ok
+ 
+>> +struct netcp_addr {
+>> +	struct netcp_intf	*netcp;
+>> +	unsigned char		addr[MAX_ADDR_LEN];
+> 
+> If this is just an ethernet driver, ETH_ALEN is more appropriate here.
+> 
+Yep. Will use ETH_ALEN
 
+>> +	unsigned		tx_compl_qid;
+> 
+> Explicit "unsigned int" please.  I'm not going to point out all of the other
+> instances, audit your entire submission for this problem please.
+>
+Thats true... Will fix all instances of those. 
 
+ 
+>> +static inline u32 *netcp_push_psdata(struct netcp_packet *p_info,
+>> +				     unsigned bytes)
+>> +{
+>> +	u32		*buf;
+>> +	unsigned	 words;
+> 
+> Do not use tabs between the type and the variable name in local variable
+> declarations.
+> 
+ok
+
+> Please audit for and fix this in your entire submission.
+>
+Will Do.
+ 
+>> +static inline u32 hwval_to_host(bool big_endian, u32 hwval)
+>> +{
+>> +	if (big_endian)
+>> +		return be32_to_cpu(hwval);
+>> +	else
+>> +		return le32_to_cpu(hwval);
+>> +}
+> 
+> You're much better off having a set of methods, one for big endian and
+> one for little endian, that just straight line codes the appropriate endian
+> accesses.
+>
+good idea.
+ 
+> These conditionals peppered all over the place are just ugly.
+> 
+Agree. Will try to fit into some logical functions.
+
+Thanks for the review David !!
+
+regards,
+Santosh
