@@ -1,61 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932284AbaDXQHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:07:01 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:47560 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758704AbaDXQG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:06:57 -0400
-Message-ID: <53593689.3060801@ti.com>
-Date: Thu, 24 Apr 2014 11:06:33 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1758591AbaDXQHu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:07:50 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:34376 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758615AbaDXQD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 12:03:26 -0400
+Message-Id: <20140424160320.288843353@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 24 Apr 2014 12:02:36 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@kernel.org>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [for-next][PATCH 4/8] tracing: Allow wakeup tracers to be used by instances
+References: <20140424160232.271454710@goodmis.org>
 MIME-Version: 1.0
-To: Darren Etheridge <detheridge@ti.com>
-CC: Tony Lindgren <tony@atomide.com>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Sricharan R <r.sricharan@ti.com>, <devicetree@vger.kernel.org>,
-        Rajendra Nayak <rnayak@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        <linux-kernel@vger.kernel.org>, Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V2 00/19] bus: omap_l3_noc: driver cleanups and support
- for DRA7/AM4372
-References: <1397492726-17203-1-git-send-email-nm@ti.com> <1397767775-10965-1-git-send-email-nm@ti.com> <20140424155403.GA29229@ti.com>
-In-Reply-To: <20140424155403.GA29229@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline; filename=0004-tracing-Allow-wakeup-tracers-to-be-used-by-instances.patch
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 10:54 AM, Darren Etheridge wrote:
-> Nishanth,
-> 
-> Nishanth Menon <nm@ti.com> wrote on Thu [2014-Apr-17 15:49:16 -0500]:
->>
->> V2 introduces the following changes:
->> 	- Additional bug fix detected during additional testing (all tests complete now). patch #12
->> 	- reordering of patches to order logical changes and reduce code churn.
->> 	- interrupt handler split up and additional information now provided in log to aid debug when error occur
->> 	- patches are marked where new (12,14,15,16).
->> 	- DRA7 updated from master document for all DRA7 variants.
->>
->> This series cleansup omap_l3_noc driver and adds data to support DRA7
->> and AM437x SoCs.
->>
-> This L3 noc driver patch series is working great for me and has already
-> flagged a very difficult to detect problem in a driver I am working on
-> with a DMA access to an invalid memory address on DRA7.
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Glad it was of use. All the more reason why this should be in upstream
-kernel and not just in "evil vendor" kernel.
+The wakeup and wakeup_rt tracers can now be used by instances.
+But they may only be used by one instance at a time (including the
+top level directory). This allows multiple tracers to run while
+the wakeup tracer is running simultaneously.
 
-> 
-> Tested-by: Darren Etheridge <detheridge@ti.com>
-> 
-Thanks. will pick this up for v3 post.
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace_sched_wakeup.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-
+diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
+index 41e0b8a..1573c03 100644
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -601,6 +601,8 @@ static void stop_wakeup_tracer(struct trace_array *tr)
+ 	unregister_trace_sched_migrate_task(probe_wakeup_migrate_task, NULL);
+ }
+ 
++static bool wakeup_busy;
++
+ static int __wakeup_tracer_init(struct trace_array *tr)
+ {
+ 	save_flags = trace_flags;
+@@ -613,11 +615,16 @@ static int __wakeup_tracer_init(struct trace_array *tr)
+ 	wakeup_trace = tr;
+ 	ftrace_init_array_ops(tr, wakeup_tracer_call);
+ 	start_wakeup_tracer(tr);
++
++	wakeup_busy = true;
+ 	return 0;
+ }
+ 
+ static int wakeup_tracer_init(struct trace_array *tr)
+ {
++	if (wakeup_busy)
++		return -EBUSY;
++
+ 	wakeup_dl = 0;
+ 	wakeup_rt = 0;
+ 	return __wakeup_tracer_init(tr);
+@@ -625,6 +632,9 @@ static int wakeup_tracer_init(struct trace_array *tr)
+ 
+ static int wakeup_rt_tracer_init(struct trace_array *tr)
+ {
++	if (wakeup_busy)
++		return -EBUSY;
++
+ 	wakeup_dl = 0;
+ 	wakeup_rt = 1;
+ 	return __wakeup_tracer_init(tr);
+@@ -632,6 +642,9 @@ static int wakeup_rt_tracer_init(struct trace_array *tr)
+ 
+ static int wakeup_dl_tracer_init(struct trace_array *tr)
+ {
++	if (wakeup_busy)
++		return -EBUSY;
++
+ 	wakeup_dl = 1;
+ 	wakeup_rt = 0;
+ 	return __wakeup_tracer_init(tr);
+@@ -649,6 +662,7 @@ static void wakeup_tracer_reset(struct trace_array *tr)
+ 	set_tracer_flag(tr, TRACE_ITER_LATENCY_FMT, lat_flag);
+ 	set_tracer_flag(tr, TRACE_ITER_OVERWRITE, overwrite_flag);
+ 	ftrace_reset_array_ops(tr);
++	wakeup_busy = false;
+ }
+ 
+ static void wakeup_tracer_start(struct trace_array *tr)
+@@ -680,6 +694,7 @@ static struct tracer wakeup_tracer __read_mostly =
+ #endif
+ 	.open		= wakeup_trace_open,
+ 	.close		= wakeup_trace_close,
++	.allow_instances = true,
+ 	.use_max_tr	= true,
+ };
+ 
+@@ -702,6 +717,7 @@ static struct tracer wakeup_rt_tracer __read_mostly =
+ #endif
+ 	.open		= wakeup_trace_open,
+ 	.close		= wakeup_trace_close,
++	.allow_instances = true,
+ 	.use_max_tr	= true,
+ };
+ 
 -- 
-Regards,
-Nishanth Menon
+1.8.5.3
+
+
