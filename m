@@ -1,111 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757801AbaDXPDJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:03:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31556 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756799AbaDXPDG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:03:06 -0400
-Message-ID: <1398351780.750.10.camel@localhost>
-Subject: Re: [PATCH 0/6][v2] audit: implement multicast socket for journald
-From: Eric Paris <eparis@redhat.com>
-To: Daniel J Walsh <dwalsh@redhat.com>
-Cc: Linux Netdev List <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        LSM List <linux-security-module@vger.kernel.org>,
-        linux-audit@redhat.com, SE-Linux <selinux@tycho.nsa.gov>,
-        jamal@mojatatu.com, Steve Grubb <sgrubb@redhat.com>,
-        David Miller <davem@davemloft.net>
-Date: Thu, 24 Apr 2014 11:03:00 -0400
-In-Reply-To: <535926B8.7060304@redhat.com>
-References: <20140422.161904.1187535812839850973.davem@davemloft.net>
-	 <cover.1398215388.git.rgb@redhat.com> <26389161.vp9iWSVLPX@x2>
-	 <1398225475.750.7.camel@localhost> <5357C2D2.5060700@redhat.com>
-	 <1398264152.2596.25.camel@flatline.rdu.redhat.com>
-	 <5357DE12.7040905@redhat.com>
-	 <1398267458.2562.0.camel@flatline.rdu.redhat.com>
-	 <5357E1B4.2030705@redhat.com>
-	 <CACLa4psQyoaZTE7R0qiog_biMKXyeGtLc1AQUuEPtemMYcDCSQ@mail.gmail.com>
-	 <535926B8.7060304@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758041AbaDXPDf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:03:35 -0400
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:41998 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757903AbaDXPDc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:03:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <20140424144458.GG26661@saruman.home>
+References: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
+	<1398342897-23670-3-git-send-email-cw00.choi@samsung.com>
+	<20140424144458.GG26661@saruman.home>
+Date: Fri, 25 Apr 2014 00:03:31 +0900
+Message-ID: <CAGTfZH3bZk1_Yrhig_uWDtF5+6u+ePfuqJa9rDCWBJ1GH+AmkQ@mail.gmail.com>
+Subject: Re: [PATCHv3 2/9] extcon: Add devm_extcon_dev_allocate/free to manage
+ the resource of extcon device
+From: Chanwoo Choi <cwchoi00@gmail.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Chanwoo Choi <cw00.choi@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        gg@slimlogic.co.uk, Kishon Vijay Abraham I <kishon@ti.com>,
+        ckeepax@opensource.wolfsonmicro.com, Mark Brown <broonie@kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-24 at 10:59 -0400, Daniel J Walsh wrote:
-> I don't disagree.  I would think the real solution to this would be to
-> not allow sysadm_t to get to SystemHigh, where all of the logging data
-> will be stored.
+Hi,
 
-make journalctl a userspace object manager and do selinux checks on if
-it can see individual records?  so secadm_t running journalctl would see
-them and sysadm running journalctl wouldn't see them?
+On Thu, Apr 24, 2014 at 11:44 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Thu, Apr 24, 2014 at 09:34:50PM +0900, Chanwoo Choi wrote:
+>> This patch add device managed devm_extcon_dev_{allocate,free} to automatically
+>> free the memory of extcon_dev structure without handling free operation.
+>>
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> ---
+>>  drivers/extcon/extcon-class.c | 70 +++++++++++++++++++++++++++++++++++--------
+>>  include/linux/extcon.h        | 11 +++++++
+>>  2 files changed, 69 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
+>> index bec66d4..f369168 100644
+>> --- a/drivers/extcon/extcon-class.c
+>> +++ b/drivers/extcon/extcon-class.c
+>> @@ -604,6 +604,64 @@ void extcon_dev_free(struct extcon_dev *edev)
+>>  }
+>>  EXPORT_SYMBOL_GPL(extcon_dev_free);
+>>
+>> +static int devm_extcon_dev_match(struct device *dev, void *res, void *data)
+>> +{
+>> +     struct extcon_dev **r = res;
+>> +
+>> +     if (!r || !*r) {
+>> +             WARN_ON(!r || !*r);
+>> +             return 0;
+>> +     }
+>> +
+>> +     return *r == data;
+>> +}
+>> +
+>> +static void devm_extcon_dev_release(struct device *dev, void *res)
+>> +{
+>> +     extcon_dev_free(*(struct extcon_dev **)res);
+>> +}
+>> +
+>> +/**
+>> + * devm_extcon_dev_allocate - Allocate managed extcon device
+>> + * @dev:             device owning the extcon device being created
+>> + * @supported_cable: Array of supported cable names ending with NULL.
+>> + *                   If supported_cable is NULL, cable name related APIs
+>> + *                   are disabled.
+>> + *
+>> + * This function manages automatically the memory of extcon device using device
+>> + * resource management and simplify the control of freeing the memory of extcon
+>> + * device.
+>> + *
+>> + * Returns the pointer memory of allocated extcon_dev if success or NULL if fail
+>> + */
+>> +struct extcon_dev *devm_extcon_dev_allocate(struct device *dev,
+>> +                                         const char **supported_cable)
+>> +{
+>> +     struct extcon_dev **ptr, *edev;
+>> +
+>> +     ptr = devres_alloc(devm_extcon_dev_release, sizeof(*ptr), GFP_KERNEL);
+>> +     if (!ptr)
+>> +             return NULL;
+>
+> if this fails you return NULL;
+>
+>> +
+>> +     edev = extcon_dev_allocate(supported_cable);
+>
+> if this fails, you return -ENOMEM. Not very nice, if you ask me.
 
-Sounds elegant.  Who is going to code it?  *NOT IT!*
+I'll fix it as following:
 
-> 
-> On 04/24/2014 09:22 AM, Eric Paris wrote:
-> > They would be equivalent if and only if journald had CAP_AUDIT_READ.
-> >
-> > I suggest you take CAP_AUDIT_READ away from journald on systems which
-> > need the secadm/sysadmin split (which is a ridiculously stupid split
-> > anyway, but who am I to complain?)
-> >
-> > On Wed, Apr 23, 2014 at 11:52 AM, Daniel J Walsh <dwalsh@redhat.com> wrote:
-> >> Meaning looking at the journal would be equivalent to looking at
-> >> /var/log/audit/audit.log.
-> >>
-> >>
-> >> On 04/23/2014 11:37 AM, Eric Paris wrote:
-> >>> On Wed, 2014-04-23 at 11:36 -0400, Daniel J Walsh wrote:
-> >>>> I guess the problem would be that the sysadm_t would be able to look at
-> >>>> the journal which would now contain the audit content.
-> >>> right.  so include it in the sysadm_secadm bool
-> >>>
-> >>>> On 04/23/2014 10:42 AM, Eric Paris wrote:
-> >>>>> On Wed, 2014-04-23 at 09:40 -0400, Daniel J Walsh wrote:
-> >>>>>> Here are the capabilities we currently give to sysadm_t with
-> >>>>>> sysadm_secadm    1.0.0    Disabled
-> >>>>>>
-> >>>>>>    allow sysadm_t sysadm_t : capability { chown dac_override
-> >>>>>> dac_read_search fowner fsetid kill setgid setuid setpcap linux_immutable
-> >>>>>> net_bind_service net_broadcast net_admin net_raw ipc_lock ipc_owner
-> >>>>>> sys_rawio sys_chroot sys_ptrace sys_pacct sys_admin sys_boot sys_nice
-> >>>>>> sys_resource sys_time sys_tty_config mknod lease audit_write setfcap } ;
-> >>>>>>    allow sysadm_t sysadm_t : capability { setgid setuid sys_chroot }
-> >>>>>>
-> >>>>>>    allow sysadm_t sysadm_t : capability2 { syslog block_suspend } ;
-> >>>>>>
-> >>>>>> cap_audit_write might be a problem?
-> >>>>> cap_audit_write is fine.
-> >>>>>
-> >>>>> syslogd_t (aka journal) is going to need the new permission
-> >>>>> cap_audit_read.  Also, as steve pointed out, someone may be likely to
-> >>>>> want to be able to disable that permission easily.
-> >>>>>
-> >>>>> -Eric
-> >>>>>
-> >>> _______________________________________________
-> >>> Selinux mailing list
-> >>> Selinux@tycho.nsa.gov
-> >>> To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
-> >>> To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
-> >>>
-> >>>
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >> Please read the FAQ at  http://www.tux.org/lkml/
-> > _______________________________________________
-> > Selinux mailing list
-> > Selinux@tycho.nsa.gov
-> > To unsubscribe, send email to Selinux-leave@tycho.nsa.gov.
-> > To get help, send an email containing "help" to Selinux-request@tycho.nsa.gov.
-> >
-> >
-> 
+If  both extcon_dev_allocate() and devm_excon_dev_allocate() failed to
+allocate memory,
+two functions would return NULL pointer instead of  ERR_PTR(-ENOMEM).
 
-
+Thanks,
+Chanwoo Choi
