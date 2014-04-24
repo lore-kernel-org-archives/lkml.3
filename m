@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651AbaDXJMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:12:33 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47086 "EHLO
+	id S1755025AbaDXI4N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:56:13 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46951 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755044AbaDXI4P (ORCPT
+	with ESMTP id S1754767AbaDXIzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:56:15 -0400
+	Thu, 24 Apr 2014 04:55:41 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Tristan Bruns <tristan@tristanbruns.de>, Johan Hovold <jhovold@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+Cc: Kent Overstreet <koverstreet@google.com>, NeilBrown <neilb@suse.de>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 164/182] USB: cp210x: Add 8281 (Nanotec Plug & Drive)
-Date: Thu, 24 Apr 2014 09:51:29 +0100
-Message-Id: <1398329507-5911-165-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 141/182] md/raid1: r1buf_pool_alloc: free allocate pages when subsequent allocation fails.
+Date: Thu, 24 Apr 2014 09:51:06 +0100
+Message-Id: <1398329507-5911-142-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,30 +27,78 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tristan Bruns <tristan@tristanbruns.de>
+From: NeilBrown <neilb@suse.de>
 
-commit 72b3007951010ce1bbf950e23b19d9839fa905a5 upstream.
+commit da1aab3dca9aa88ae34ca392470b8943159e25fe upstream.
 
-Signed-off-by: Tristan Bruns <tristan@tristanbruns.de>
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+When performing a user-request check/repair (MD_RECOVERY_REQUEST is set)
+on a raid1, we allocate multiple bios each with their own set of pages.
+
+If the page allocations for one bio fails, we currently do *not* free
+the pages allocated for the previous bios, nor do we free the bio itself.
+
+This patch frees all the already-allocate pages, and makes sure that
+all the bios are freed as well.
+
+This bug can cause a memory leak which can ultimately OOM a machine.
+It was introduced in 3.10-rc1.
+
+Fixes: a07876064a0b73ab5ef1ebcf14b1cf0231c07858
+Cc: Kent Overstreet <koverstreet@google.com>
+Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/usb/serial/cp210x.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/md/raid1.c | 17 +++++++++++++----
+ 1 file changed, 13 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index 0eae4ba..a26b8c7 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -104,6 +104,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x10C4, 0x8218) }, /* Lipowsky Industrie Elektronik GmbH, HARP-1 */
- 	{ USB_DEVICE(0x10C4, 0x822B) }, /* Modem EDGE(GSM) Comander 2 */
- 	{ USB_DEVICE(0x10C4, 0x826B) }, /* Cygnal Integrated Products, Inc., Fasttrax GPS demonstration module */
-+	{ USB_DEVICE(0x10C4, 0x8281) }, /* Nanotec Plug & Drive */
- 	{ USB_DEVICE(0x10C4, 0x8293) }, /* Telegesis ETRX2USB */
- 	{ USB_DEVICE(0x10C4, 0x82F9) }, /* Procyon AVS */
- 	{ USB_DEVICE(0x10C4, 0x8341) }, /* Siemens MC35PU GPRS Modem */
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 6edc2db..66c4aee 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -94,6 +94,7 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
+ 	struct pool_info *pi = data;
+ 	struct r1bio *r1_bio;
+ 	struct bio *bio;
++	int need_pages;
+ 	int i, j;
+ 
+ 	r1_bio = r1bio_pool_alloc(gfp_flags, pi);
+@@ -116,15 +117,15 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
+ 	 * RESYNC_PAGES for each bio.
+ 	 */
+ 	if (test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery))
+-		j = pi->raid_disks;
++		need_pages = pi->raid_disks;
+ 	else
+-		j = 1;
+-	while(j--) {
++		need_pages = 1;
++	for (j = 0; j < need_pages; j++) {
+ 		bio = r1_bio->bios[j];
+ 		bio->bi_vcnt = RESYNC_PAGES;
+ 
+ 		if (bio_alloc_pages(bio, gfp_flags))
+-			goto out_free_bio;
++			goto out_free_pages;
+ 	}
+ 	/* If not user-requests, copy the page pointers to all bios */
+ 	if (!test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery)) {
+@@ -138,6 +139,14 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
+ 
+ 	return r1_bio;
+ 
++out_free_pages:
++	while (--j >= 0) {
++		struct bio_vec *bv;
++
++		bio_for_each_segment_all(bv, r1_bio->bios[j], i)
++			__free_page(bv->bv_page);
++	}
++
+ out_free_bio:
+ 	while (++j < pi->raid_disks)
+ 		bio_put(r1_bio->bios[j]);
 -- 
 1.9.1
 
