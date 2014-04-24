@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757216AbaDXMhD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 08:37:03 -0400
-Received: from ozlabs.org ([103.22.144.67]:36304 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757189AbaDXMg7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 08:36:59 -0400
-Date: Thu, 24 Apr 2014 22:36:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: no release on April 25
-Message-Id: <20140424223651.95d5ff6567fdc0a775224ec0@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Apr_2014_22_36_51_+1000_d5UMruFo3kBj+Sk2"
+	id S1756893AbaDXMmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 08:42:22 -0400
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:51073 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757193AbaDXMhB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 08:37:01 -0400
+From: Peter Griffin <peter.griffin@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: linaro-kernel@lists.linaro.org, Arnd Bergmann <arnd@arndb.de>,
+        Peter Griffin <peter.griffin@linaro.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+Subject: [PATCH 06/13] video: export fb_prepare_logo
+Date: Thu, 24 Apr 2014 13:28:22 +0100
+Message-Id: <1398342509-10243-7-git-send-email-peter.griffin@linaro.org>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
+References: <1398342509-10243-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Apr_2014_22_36_51_+1000_d5UMruFo3kBj+Sk2
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Arnd Bergmann <arnd@arndb.de>
 
-Hi all,
+Some drivers that may be loadable modules use the fb_prepare_logo
+function, so we have to export it. Found during randconfig
+builds with mmpfb.
 
-The next linux-next release will be next Monday.
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Cc: linux-fbdev@vger.kernel.org
+---
+ drivers/video/fbdev/core/fbmem.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+diff --git a/drivers/video/fbdev/core/fbmem.c b/drivers/video/fbdev/core/fbmem.c
+index b6d5008..479fe2a 100644
+--- a/drivers/video/fbdev/core/fbmem.c
++++ b/drivers/video/fbdev/core/fbmem.c
+@@ -674,6 +674,7 @@ int fb_show_logo(struct fb_info *info, int rotate)
+ int fb_prepare_logo(struct fb_info *info, int rotate) { return 0; }
+ int fb_show_logo(struct fb_info *info, int rotate) { return 0; }
+ #endif /* CONFIG_LOGO */
++EXPORT_SYMBOL(fb_prepare_logo);
+ EXPORT_SYMBOL(fb_show_logo);
+ 
+ static void *fb_seq_start(struct seq_file *m, loff_t *pos)
+-- 
+1.7.9.5
 
---Signature=_Thu__24_Apr_2014_22_36_51_+1000_d5UMruFo3kBj+Sk2
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBCAAGBQJTWQVpAAoJEMDTa8Ir7ZwV2yUP/2c2dAU/bmho6kbVngx5hESN
-Pa3Y/3aBl+FsYLb4y0wci52MYPn6OxhAyWRc/vW7AlPIUrYmBggxCliX/8tLGlP+
-hap6VuPlUSTKuxgdc05u2pEyZ++EjreU/dWxfF7Rs4fy6a5gqz1A5aQdAyth3euF
-kefofOAQYEXinPJmh5hmfEMK23AY/tKoeMz1fN9F8ujcshQeIOsFTRlUXyI5cS9e
-fuQglgm4aGGG1Tpj6U064t/umo9OBnsNjZicxC8EcfrLxharnE+Mt2CRINslzAwl
-U0h8JWg9pQI6fhj1uST5Fw+H/IdpW/3Rm/NGvDTBS9QnXf6fKsnihpKVQz+uF9Dl
-K8xcNa/bF8mAAgzfwWGGrReECCvoy2ZfEPZq2i4i819ooOwHV3P3jXefMAOdiC2X
-jvjdZZVn2XnR/YSG3vl7CZWF3+l+38it0Uv7NoJrPeAHvxhVWAcCenTVOqJf7H67
-CZc598gaE9Jc2GtxfcstPEG286OWDhDd9WmjmonNMuMTNSIyDNNCn74ObO002iT/
-D06KkEr2eb8SHRAyxor4vW9bfTAYjXFcCQpFQ2enO/g7CvfdCIhl6pIWaBzMoesM
-tSisqfW//KF0xFFgHdk4J49v01D2tI+Ch5K6Wr3WBHuZGmWDUnRj4AX/lTU+OVG+
-8AqwHCLYRxD/CathjGEr
-=4w3l
------END PGP SIGNATURE-----
-
---Signature=_Thu__24_Apr_2014_22_36_51_+1000_d5UMruFo3kBj+Sk2--
