@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758892AbaDXWW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:22:59 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39680 "EHLO
+	id S1758860AbaDXWW4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:22:56 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39682 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827AbaDXVqL (ORCPT
+	with ESMTP id S1755291AbaDXVqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 24 Apr 2014 17:46:11 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH 3.10 04/23] staging: comedi: 8255_pci: initialize MITE data window
-Date: Thu, 24 Apr 2014 14:48:34 -0700
-Message-Id: <20140424214826.466992548@linuxfoundation.org>
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay@vrfy.org>, Jiri Slaby <jslaby@suse.cz>,
+        Werner Fink <werner@suse.de>, Hannes Reinecke <hare@suse.de>,
+        David Herrmann <dh.herrmann@gmail.com>
+Subject: [PATCH 3.10 05/23] tty: Set correct tty name in active sysfs attribute
+Date: Thu, 24 Apr 2014 14:48:35 -0700
+Message-Id: <20140424214826.582392207@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
 References: <20140424214825.933835556@linuxfoundation.org>
@@ -28,127 +31,75 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Hannes Reinecke <hare@suse.de>
 
-commit 268d1e799663b795cba15c64f5d29407786a9dd4 upstream.
+commit 723abd87f6e536f1353c8f64f621520bc29523a3 upstream.
 
-According to National Instruments' PCI-DIO-96/PXI-6508/PCI-6503 User
-Manual, the physical address in PCI BAR1 needs to be OR'ed with 0x80 and
-written to register offset 0xC0 in the "MITE" registers (BAR0).  Do so
-during initialization of the National Instruments boards handled by the
-"8255_pci" driver.  The boards were previously handled by the
-"ni_pcidio" driver, where the initialization was done by `mite_setup()`
-in the "mite" module.  The "mite" module comes with too much extra
-baggage for the "8255_pci" driver to deal with so use a local, simpler
-initialization function.
+The 'active' sysfs attribute should refer to the currently active tty
+devices the console is running on, not the currently active console. The
+console structure doesn't refer to any device in sysfs, only the tty the
+console is running on has. So we need to print out the tty names in
+'active', not the console names.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+There is one special-case, which is tty0. If the console is directed to
+it, we want 'tty0' to show up in the file, so user-space knows that the
+messages get forwarded to the active VT. The ->device() callback would
+resolve tty0, though. Hence, treat it special and don't call into the VT
+layer to resolve it (plymouth is known to depend on it).
+
+Cc: Lennart Poettering <lennart@poettering.net>
+Cc: Kay Sievers <kay@vrfy.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Werner Fink <werner@suse.de>
+Signed-off-by: Hannes Reinecke <hare@suse.de>
+Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/staging/comedi/drivers/8255_pci.c |   34 ++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ drivers/tty/tty_io.c |   23 +++++++++++++++++------
+ 1 file changed, 17 insertions(+), 6 deletions(-)
 
---- a/drivers/staging/comedi/drivers/8255_pci.c
-+++ b/drivers/staging/comedi/drivers/8255_pci.c
-@@ -59,6 +59,7 @@ Configuration Options: not applicable, u
- #include "../comedidev.h"
- 
- #include "8255.h"
-+#include "mite.h"
- 
- enum pci_8255_boardid {
- 	BOARD_ADLINK_PCI7224,
-@@ -82,6 +83,7 @@ struct pci_8255_boardinfo {
- 	const char *name;
- 	int dio_badr;
- 	int n_8255;
-+	unsigned int has_mite:1;
- };
- 
- static const struct pci_8255_boardinfo pci_8255_boards[] = {
-@@ -129,36 +131,43 @@ static const struct pci_8255_boardinfo p
- 		.name		= "ni_pci-dio-96",
- 		.dio_badr	= 1,
- 		.n_8255		= 4,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PCIDIO96B] = {
- 		.name		= "ni_pci-dio-96b",
- 		.dio_badr	= 1,
- 		.n_8255		= 4,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PXI6508] = {
- 		.name		= "ni_pxi-6508",
- 		.dio_badr	= 1,
- 		.n_8255		= 4,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PCI6503] = {
- 		.name		= "ni_pci-6503",
- 		.dio_badr	= 1,
- 		.n_8255		= 1,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PCI6503B] = {
- 		.name		= "ni_pci-6503b",
- 		.dio_badr	= 1,
- 		.n_8255		= 1,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PCI6503X] = {
- 		.name		= "ni_pci-6503x",
- 		.dio_badr	= 1,
- 		.n_8255		= 1,
-+		.has_mite	= 1,
- 	},
- 	[BOARD_NI_PXI_6503] = {
- 		.name		= "ni_pxi-6503",
- 		.dio_badr	= 1,
- 		.n_8255		= 1,
-+		.has_mite	= 1,
- 	},
- };
- 
-@@ -166,6 +175,25 @@ struct pci_8255_private {
- 	void __iomem *mmio_base;
- };
- 
-+static int pci_8255_mite_init(struct pci_dev *pcidev)
-+{
-+	void __iomem *mite_base;
-+	u32 main_phys_addr;
-+
-+	/* ioremap the MITE registers (BAR 0) temporarily */
-+	mite_base = pci_ioremap_bar(pcidev, 0);
-+	if (!mite_base)
-+		return -ENOMEM;
-+
-+	/* set data window to main registers (BAR 1) */
-+	main_phys_addr = pci_resource_start(pcidev, 1);
-+	writel(main_phys_addr | WENAB, mite_base + MITE_IODWBSR);
-+
-+	/* finished with MITE registers */
-+	iounmap(mite_base);
-+	return 0;
-+}
-+
- static int pci_8255_mmio(int dir, int port, int data, unsigned long iobase)
+--- a/drivers/tty/tty_io.c
++++ b/drivers/tty/tty_io.c
+@@ -1267,12 +1267,13 @@ static void pty_line_name(struct tty_dri
+  *
+  *	Locking: None
+  */
+-static void tty_line_name(struct tty_driver *driver, int index, char *p)
++static ssize_t tty_line_name(struct tty_driver *driver, int index, char *p)
  {
- 	void __iomem *mmio_base = (void __iomem *)iobase;
-@@ -205,6 +233,12 @@ static int pci_8255_auto_attach(struct c
- 	if (ret)
- 		return ret;
+ 	if (driver->flags & TTY_DRIVER_UNNUMBERED_NODE)
+-		strcpy(p, driver->name);
++		return sprintf(p, "%s", driver->name);
+ 	else
+-		sprintf(p, "%s%d", driver->name, index + driver->name_base);
++		return sprintf(p, "%s%d", driver->name,
++			       index + driver->name_base);
+ }
  
-+	if (board->has_mite) {
-+		ret = pci_8255_mite_init(pcidev);
-+		if (ret)
-+			return ret;
-+	}
+ /**
+@@ -3538,9 +3539,19 @@ static ssize_t show_cons_active(struct d
+ 		if (i >= ARRAY_SIZE(cs))
+ 			break;
+ 	}
+-	while (i--)
+-		count += sprintf(buf + count, "%s%d%c",
+-				 cs[i]->name, cs[i]->index, i ? ' ':'\n');
++	while (i--) {
++		int index = cs[i]->index;
++		struct tty_driver *drv = cs[i]->device(cs[i], &index);
 +
- 	is_mmio = (pci_resource_flags(pcidev, board->dio_badr) &
- 		   IORESOURCE_MEM) != 0;
- 	if (is_mmio) {
++		/* don't resolve tty0 as some programs depend on it */
++		if (drv && (cs[i]->index > 0 || drv->major != TTY_MAJOR))
++			count += tty_line_name(drv, index, buf + count);
++		else
++			count += sprintf(buf + count, "%s%d",
++					 cs[i]->name, cs[i]->index);
++
++		count += sprintf(buf + count, "%c", i ? ' ':'\n');
++	}
+ 	console_unlock();
+ 
+ 	return count;
 
 
