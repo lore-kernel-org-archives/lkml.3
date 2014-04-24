@@ -1,180 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932611AbaDXWYQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:24:16 -0400
-Received: from v094114.home.net.pl ([79.96.170.134]:63514 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932465AbaDXWYG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 18:24:06 -0400
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Linux PM list <linux-pm@vger.kernel.org>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        Aaron Lu <aaron.lu@intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [RFC][PATCH 1/3] PM / sleep: Flags to speed up suspend-resume of runtime-suspended devices
-Date: Fri, 25 Apr 2014 00:37:41 +0200
-Message-ID: <2381177.mrXhZ4Wotn@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.14.0-rc7+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <5039115.7hOuWtlQhG@vostro.rjw.lan>
-References: <Pine.LNX.4.44L0.1402271001190.1150-100000@iolanthe.rowland.org> <5039115.7hOuWtlQhG@vostro.rjw.lan>
+	id S1757612AbaDXWYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:24:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3849 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751774AbaDXWYs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 18:24:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,922,1389772800"; 
+   d="scan'208";a="526899244"
+Message-ID: <53598F2F.1030306@linux.intel.com>
+Date: Thu, 24 Apr 2014 15:24:47 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+To: Andrew Lutomirski <amluto@gmail.com>, comex <comexk@gmail.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com> <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com>
+In-Reply-To: <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+On 04/23/2014 09:53 PM, Andrew Lutomirski wrote:
+>>
+>> - The user can put arbitrary data in registers before returning to the
+>> LDT in order to get it saved at a known address accessible from the
+>> kernel.  With SMAP and KASLR this might otherwise be difficult.
+> 
+> For one thing, this only matters on Haswell.  Otherwise the user can
+> put arbitrary data in userspace.
+> 
+> On Haswell, the HPET fixmap is currently a much simpler vector that
+> can do much the same thing, as long as you're willing to wait for the
+> HPET counter to contain some particular value.  I have patches that
+> will fix that as a side effect.
+> 
+> Would it pay to randomize the location of the espfix area?  Another
+> somewhat silly idea is to add some random offset to the CPU number mod
+> NR_CPUS so that at attacker won't know which ministack is which.
 
-Currently, some subsystems (e.g. PCI and the ACPI PM domain) have to
-resume all runtime-suspended devices during system suspend, mostly
-because those devices may need to be reprogrammed due to different
-wakeup settings for system sleep and for runtime PM.  However, at
-least in some cases, that isn't really necessary, because the wakeup
-settings may not be really different.
+Since we store the espfix stack location explicitly, as long as the
+scrambling happens in the initialization code that's fine.  However, we
+don't want to reduce locality lest we massively blow up the memory
+requirements.
 
-The idea here is that subsystems should know whether or not it is
-necessary to reprogram a given device during system suspend and they
-should be able to tell the PM core about that.  For that reason, add
-two new device PM flags, power.resume_not_needed and
-power.use_runtime_resume, such that:
+We could XOR with a random constant with no penalty at all.  Only
+problem is that this happens early, so the entropy system is not yet
+available.  Fine if we have RDRAND, but...
 
- (1) If power.resume_not_needed is set for the given device and for
-     all of its children and the device is runtime-suspended during
-     device_suspend(), the remaining device's system suspend/resume
-     callbacks need not be executed.
+>> - If the iret faults, kernel addresses will get stored there (and not
+>> cleared).  If a vulnerability could return data from an arbitrary
+>> specified address to the user, this would be harmful.
+> 
+> Can this be fixed by clearing the ministack in bad_iret?  There will
+> still be a window in which the kernel address is in there, but it'll
+> be short.
 
- (2) If power.use_runtime_resume is set for the given device and the
-     device is runtime-suspended in device_suspend_late(), its late/early
-     and noirq system suspend/resume callbacks should be skipped and
-     it should be resumed through pm_runtime_resume() in device_resume().
+We could, if anyone thinks this is actually beneficial.
 
-Those flags are cleared by the PM core in dpm_prepare() for all
-devices.  Next, subsystems (or drivers) are supposed to set
-power.resume_not_needed in their ->prepare() callbacks for devices
-whose remaining system suspend/resume callbacks are generally safe to
-be skipped if they are runtime-suspended already.  Finally, for each
-runtime-suspended device with power.resume_not_needed set during
-device_suspend(), its subsystem (or driver) may set the device's
-power.use_runtime_resume in its ->suspend() callback without changing
-the device's state, in which case the PM core will skip all of the
-subsequent system suspend/resume callbacks for it and will resume it
-in device_resume() using pm_runtime_resume().
+I'm trying to dig into some of the deeper semantics of IRET to figure
+out another issue (a much bigger potential problem), this would affect
+that as well.  My current belief is that we don't actually have a
+problem here.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
- drivers/base/power/main.c |   41 ++++++++++++++++++++++++++++++++++-------
- include/linux/pm.h        |    2 ++
- 2 files changed, 36 insertions(+), 7 deletions(-)
+>> - If a vulnerability allowed overwriting data at an arbitrary
+>> specified address, the exception frame could get overwritten at
+>> exactly the right moment between the copy and iret (or right after the
+>> iret to mess up fixup_exception)?  You probably know better than I
+>> whether or not caches prevent this from actually being possible.
+> 
+> To attack this, you'd change the saved CS value.  I don't think caches
+> would make a difference.
+> 
+> This particular vector hurts: you can safely keep trying until it works.
+> 
+> This just gave me an evil idea: what if we make the whole espfix area
+> read-only?  This has some weird effects.  To switch to the espfix
+> stack, you have to write to an alias.  That's a little strange but
+> harmless and barely complicates the implementation.  If the iret
+> faults, though, I think the result will be a #DF.  This may actually
+> be a good thing: if the #DF handler detects that the cause was a bad
+> espfix iret, it could just return directly to bad_iret or send the
+> signal itself the same way that do_stack_segment does.  This could
+> even be written in C :)
+>
+> Peter, is this idea completely nuts?  The only exceptions that can
+> happen there are NMI, MCE, #DB, #SS, and #GP.  The first four use IST,
+> so they won't double-fault.
 
-Index: linux-pm/include/linux/pm.h
-===================================================================
---- linux-pm.orig/include/linux/pm.h
-+++ linux-pm/include/linux/pm.h
-@@ -546,6 +546,8 @@ struct dev_pm_info {
- 	bool			is_late_suspended:1;
- 	bool			ignore_children:1;
- 	bool			early_init:1;	/* Owned by the PM core */
-+	bool			resume_not_needed:1;
-+	bool			use_runtime_resume:1;
- 	spinlock_t		lock;
- #ifdef CONFIG_PM_SLEEP
- 	struct list_head	entry;
-Index: linux-pm/drivers/base/power/main.c
-===================================================================
---- linux-pm.orig/drivers/base/power/main.c
-+++ linux-pm/drivers/base/power/main.c
-@@ -479,7 +479,7 @@ static int device_resume_noirq(struct de
- 	TRACE_DEVICE(dev);
- 	TRACE_RESUME(0);
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.use_runtime_resume)
- 		goto Out;
- 
- 	if (!dev->power.is_noirq_suspended)
-@@ -605,7 +605,7 @@ static int device_resume_early(struct de
- 	TRACE_DEVICE(dev);
- 	TRACE_RESUME(0);
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.use_runtime_resume)
- 		goto Out;
- 
- 	if (!dev->power.is_late_suspended)
-@@ -735,6 +735,11 @@ static int device_resume(struct device *
- 	if (dev->power.syscore)
- 		goto Complete;
- 
-+	if (dev->power.use_runtime_resume) {
-+		pm_runtime_resume(dev);
-+		goto Complete;
-+	}
-+
- 	dpm_wait(dev->parent, async);
- 	dpm_watchdog_set(&wd, dev);
- 	device_lock(dev);
-@@ -1007,7 +1012,7 @@ static int __device_suspend_noirq(struct
- 		goto Complete;
- 	}
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.use_runtime_resume)
- 		goto Complete;
- 
- 	dpm_wait_for_children(dev, async);
-@@ -1146,7 +1151,7 @@ static int __device_suspend_late(struct
- 		goto Complete;
- 	}
- 
--	if (dev->power.syscore)
-+	if (dev->power.syscore || dev->power.use_runtime_resume)
- 		goto Complete;
- 
- 	dpm_wait_for_children(dev, async);
-@@ -1383,9 +1388,29 @@ static int __device_suspend(struct devic
-  End:
- 	if (!error) {
- 		dev->power.is_suspended = true;
--		if (dev->power.wakeup_path
--		    && dev->parent && !dev->parent->power.ignore_children)
--			dev->parent->power.wakeup_path = true;
-+		if (dev->parent) {
-+			spin_lock_irq(&dev->parent->power.lock);
-+
-+			if (dev->power.wakeup_path
-+			    && !dev->parent->power.ignore_children)
-+				dev->parent->power.wakeup_path = true;
-+
-+			/*
-+			 * Subsystems are supposed to set resume_not_needed in
-+			 * their ->prepare() callbacks for devices whose
-+			 * remaining system suspend and resume callbacks are
-+			 * generally safe to be skipped if the devices are
-+			 * runtime-suspended.
-+			 *
-+			 * If the device's resume_not_needed is not set at this
-+			 * point, it has to be cleared for its parent too (even
-+			 * if the subsystem has set that flag for it).
-+			 */
-+			if (!dev->power.resume_not_needed)
-+				dev->parent->power.resume_not_needed = false;
-+
-+			spin_unlock_irq(&dev->parent->power.lock);
-+		}
- 	}
- 
- 	device_unlock(dev);
-@@ -1553,6 +1578,8 @@ int dpm_prepare(pm_message_t state)
- 		struct device *dev = to_device(dpm_list.next);
- 
- 		get_device(dev);
-+		dev->power.use_runtime_resume = false;
-+		dev->power.resume_not_needed = false;
- 		mutex_unlock(&dpm_list_mtx);
- 
- 		error = device_prepare(dev, state);
+It is completely nuts, but sometimes completely nuts is actually useful.
+ It is more complexity, to be sure, but it doesn't seem completely out
+of the realm of reason, and avoids having to unwind the ministack except
+in the normally-fatal #DF handler.  #DFs are documented as not
+recoverable, but we might be able to do something here.
+
+The only real disadvantage I see is the need for more bookkeeping
+metadata.  Basically the bitmask in espfix_64.c now needs to turn into
+an array, plus we need a second percpu variable.  Given that if
+CONFIG_NR_CPUS=8192 the array has 128 entries I think we can survive that.
+
+	-hpa
 
