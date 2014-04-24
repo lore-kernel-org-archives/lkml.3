@@ -1,35 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756961AbaDXNRb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 09:17:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52248 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753211AbaDXNR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 09:17:29 -0400
-Message-ID: <53590EE7.9070108@suse.cz>
-Date: Thu, 24 Apr 2014 15:17:27 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1756226AbaDXNTV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 09:19:21 -0400
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:54438 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753228AbaDXNTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 09:19:19 -0400
 MIME-Version: 1.0
-To: Konstantin Khlebnikov <koct9i@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-CC: Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@kernel.org>
-Subject: Re: [PATCH] scripts/tags.sh: ignore code of user space tools
-References: <20140421080308.14562.30914.stgit@zurg>
-In-Reply-To: <20140421080308.14562.30914.stgit@zurg>
+In-Reply-To: <alpine.DEB.2.02.1404240918110.4704@ionos.tec.linutronix.de>
+References: <1397443272-31467-1-git-send-email-yao.jin@linux.intel.com>
+	<534B4C6D.5070003@linux.intel.com>
+	<CACRpkdYXD-Fd0tFJtir8ifsTqdBvA0Rznc4Hmzoq_ByBjTahdw@mail.gmail.com>
+	<5357A594.6050404@linux.intel.com>
+	<CACRpkdYztACye5Xht3f4UuaWDA0gB7t2rgRmpTaL330YcxYhfQ@mail.gmail.com>
+	<alpine.DEB.2.02.1404240918110.4704@ionos.tec.linutronix.de>
+Date: Thu, 24 Apr 2014 15:19:18 +0200
+Message-ID: <CACRpkdaHP4sp8fomE_7-2KaHAmBmTYv-cMSA=As04V54OZMo-g@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl-baytrail: workaround for irq descriptor conflict
+ on ASUS T100TA
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "Jin, Yao" <yao.jin@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Krogerus, Heikki" <heikki.krogerus@intel.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2014-04-21 10:03, Konstantin Khlebnikov wrote:
-> User space code in tools/ often reuses names of kernel constructions,
-> this confuses navigation in the normal kernel code. Let's fix this mess.
-> 
-> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+On Thu, Apr 24, 2014 at 9:25 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
 
-Applied to kbuild.git#misc, thanks.
+> I'm traveling until friday, so please wait before you commit that
+> fugly hack. I'll have a closer look how we can handle that at the core
+> level.
 
-Michal
+Thanks a *lot* Thomas, I'll stand by for action.
 
+Yours,
+Linus Walleij
