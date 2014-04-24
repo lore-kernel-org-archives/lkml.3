@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025AbaDXI4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:56:13 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46951 "EHLO
+	id S1755755AbaDXJOR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:14:17 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47075 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754767AbaDXIzl (ORCPT
+	with ESMTP id S1752970AbaDXI4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:55:41 -0400
+	Thu, 24 Apr 2014 04:56:12 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Kent Overstreet <koverstreet@google.com>, NeilBrown <neilb@suse.de>,
+Cc: Richard Farina <sidhayn@gmail.com>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 141/182] md/raid1: r1buf_pool_alloc: free allocate pages when subsequent allocation fails.
-Date: Thu, 24 Apr 2014 09:51:06 +0100
-Message-Id: <1398329507-5911-142-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 162/182] Revert "USB: serial: add usbid for dell wwan card to sierra.c"
+Date: Thu, 24 Apr 2014 09:51:27 +0100
+Message-Id: <1398329507-5911-163-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,78 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: NeilBrown <neilb@suse.de>
+From: Johan Hovold <jhovold@gmail.com>
 
-commit da1aab3dca9aa88ae34ca392470b8943159e25fe upstream.
+commit 2e01280d2801c72878cf3a7119eac30077b463d5 upstream.
 
-When performing a user-request check/repair (MD_RECOVERY_REQUEST is set)
-on a raid1, we allocate multiple bios each with their own set of pages.
+This reverts commit 1ebca9dad5abe8b2ed4dbd186cd657fb47c1f321.
 
-If the page allocations for one bio fails, we currently do *not* free
-the pages allocated for the previous bios, nor do we free the bio itself.
+This device was erroneously added to the sierra driver even though it's
+not a Sierra device and was already handled by the option driver.
 
-This patch frees all the already-allocate pages, and makes sure that
-all the bios are freed as well.
-
-This bug can cause a memory leak which can ultimately OOM a machine.
-It was introduced in 3.10-rc1.
-
-Fixes: a07876064a0b73ab5ef1ebcf14b1cf0231c07858
-Cc: Kent Overstreet <koverstreet@google.com>
-Reported-by: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Signed-off-by: NeilBrown <neilb@suse.de>
+Cc: Richard Farina <sidhayn@gmail.com>
+Signed-off-by: Johan Hovold <jhovold@gmail.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/md/raid1.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ drivers/usb/serial/sierra.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 6edc2db..66c4aee 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -94,6 +94,7 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
- 	struct pool_info *pi = data;
- 	struct r1bio *r1_bio;
- 	struct bio *bio;
-+	int need_pages;
- 	int i, j;
+diff --git a/drivers/usb/serial/sierra.c b/drivers/usb/serial/sierra.c
+index de958c5..b6910b7 100644
+--- a/drivers/usb/serial/sierra.c
++++ b/drivers/usb/serial/sierra.c
+@@ -291,7 +291,6 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(0x0f3d, 0x68A3), 	/* Airprime/Sierra Wireless Direct IP modems */
+ 	  .driver_info = (kernel_ulong_t)&direct_ip_interface_blacklist
+ 	},
+-       { USB_DEVICE(0x413C, 0x08133) }, /* Dell Computer Corp. Wireless 5720 VZW Mobile Broadband (EVDO Rev-A) Minicard GPS Port */
  
- 	r1_bio = r1bio_pool_alloc(gfp_flags, pi);
-@@ -116,15 +117,15 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
- 	 * RESYNC_PAGES for each bio.
- 	 */
- 	if (test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery))
--		j = pi->raid_disks;
-+		need_pages = pi->raid_disks;
- 	else
--		j = 1;
--	while(j--) {
-+		need_pages = 1;
-+	for (j = 0; j < need_pages; j++) {
- 		bio = r1_bio->bios[j];
- 		bio->bi_vcnt = RESYNC_PAGES;
- 
- 		if (bio_alloc_pages(bio, gfp_flags))
--			goto out_free_bio;
-+			goto out_free_pages;
- 	}
- 	/* If not user-requests, copy the page pointers to all bios */
- 	if (!test_bit(MD_RECOVERY_REQUESTED, &pi->mddev->recovery)) {
-@@ -138,6 +139,14 @@ static void * r1buf_pool_alloc(gfp_t gfp_flags, void *data)
- 
- 	return r1_bio;
- 
-+out_free_pages:
-+	while (--j >= 0) {
-+		struct bio_vec *bv;
-+
-+		bio_for_each_segment_all(bv, r1_bio->bios[j], i)
-+			__free_page(bv->bv_page);
-+	}
-+
- out_free_bio:
- 	while (++j < pi->raid_disks)
- 		bio_put(r1_bio->bios[j]);
+ 	{ }
+ };
 -- 
 1.9.1
 
