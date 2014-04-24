@@ -1,202 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758987AbaDXWoG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:44:06 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:38828 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522AbaDXVpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:45:03 -0400
-From: Joel Fernandes <joelf@ti.com>
-To: Linux OMAP List <linux-omap@vger.kernel.org>,
-        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Tony Lindgren <tony@atomide.com>, Joel Fernandes <joelf@ti.com>
-Subject: [PATCH 20/26] ARM: OMAP: dmtimer: Fold back private stop function
-Date: Thu, 24 Apr 2014 16:44:03 -0500
-Message-ID: <1398375849-6017-21-git-send-email-joelf@ti.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1398375849-6017-1-git-send-email-joelf@ti.com>
-References: <1398375849-6017-1-git-send-email-joelf@ti.com>
+	id S1758741AbaDXWqA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:46:00 -0400
+Received: from mail-pb0-f44.google.com ([209.85.160.44]:37139 "EHLO
+	mail-pb0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754581AbaDXWp5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 18:45:57 -0400
+Date: Thu, 24 Apr 2014 16:45:55 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Bandan Das <bsd@redhat.com>
+Cc: Alex Williamson <alex.williamson@redhat.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] PCI: rework new_id interface for known vendor/device
+ values
+Message-ID: <20140424224555.GK29593@google.com>
+References: <jpgbnwkplbo.fsf@nelium.bos.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <jpgbnwkplbo.fsf@nelium.bos.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In this patch, we fold back the functionality of the __omap_dm_timer_stop
-function into omap_dm_timer_stop. This reduces code size as we don't need any
-hacks or parameter passing. All public users are converted to use the
-omap_dm_timer_stop function.  The clk rate is setup into the dmtimer structure
-either by the early boot code for the specific platforms, or by calling a
-clk_get_rate once the timer is requested and prepared.
+On Tue, Apr 01, 2014 at 09:32:59PM -0400, Bandan Das wrote:
+> 
+> While using the new_id interface, the user can unintentionally feed
+> incorrect values if the driver static table has a matching entry.
+> This is possible since only the device and vendor fields are
+> mandatory and the rest are optional. As a result, store_new_id
+> will fill in default values that are then passed on to the driver
+> and can have unintended consequences.
+> 
+> As an example, consider the ixgbe driver and the 82599EB network card :
+> echo "8086 10fb" > /sys/bus/pci/drivers/ixgbe/new_id
+> 
+> This will pass a driver_data value of 0 to the driver whereas
+> the index 0 in ixgbe actually points to a different set of card
+> operations.
+> 
+> This change returns an error if the user attempts to add a dynid for
+> a vendor/device combination for which a static entry already exists.
+> However, if the user intentionally wants a different set of values,
+> she must provide all the 7 fields and that will be accepted.
+> 
+> In KVM/device assignment scenario, the user might want 
+> to bind a device back to the host driver by writing to new_id
+> and trip on a possible null pointer dereference.
 
-We're also using omap_dm_timer_{read,write}_reg functions instead of underscore
-prefixed ones so that avoids passing of posted flags.
+I don't understand this last KVM comment.  If this patch fixes a null
+pointer dereference, it must be because we return -EEXIST instead of
+calling the driver's probe method.
 
-Signed-off-by: Joel Fernandes <joelf@ti.com>
----
- arch/arm/mach-omap2/timer.c                  |    2 +-
- arch/arm/plat-omap/dmtimer.c                 |   45 ++++++++++++++++++--------
- arch/arm/plat-omap/include/plat/dmtimer.h    |   26 +--------------
- drivers/media/rc/ir-rx51.c                   |    4 +--
- drivers/staging/tidspbridge/core/dsp-clock.c |    2 +-
- 5 files changed, 36 insertions(+), 43 deletions(-)
+Can you outline the sequence of events and the drivers involved?  Did we
+start with a device that was claimed by vfio, and now we're trying to get
+ixgbe to claim it by writing to /sys/bus/pci/drivers/ixgbe/new_id?  If so,
+does that mean the user has to know what driver_data value to supply?
 
-diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
-index 6735e2f..2d8ea96 100644
---- a/arch/arm/mach-omap2/timer.c
-+++ b/arch/arm/mach-omap2/timer.c
-@@ -105,7 +105,7 @@ static void omap2_gp_timer_set_mode(enum clock_event_mode mode,
- {
- 	u32 period;
- 
--	__omap_dm_timer_stop(&clkev, OMAP_TIMER_POSTED, clkev.rate);
-+	omap_dm_timer_stop(&clkev, 0);
- 
- 	switch (mode) {
- 	case CLOCK_EVT_MODE_PERIODIC:
-diff --git a/arch/arm/plat-omap/dmtimer.c b/arch/arm/plat-omap/dmtimer.c
-index dee70be..8602586 100644
---- a/arch/arm/plat-omap/dmtimer.c
-+++ b/arch/arm/plat-omap/dmtimer.c
-@@ -310,6 +310,12 @@ found:
- 
- 	if (!timer)
- 		pr_debug("%s: timer request failed!\n", __func__);
-+	/*
-+	 * The prepare stage would've setup the parent clock or we wouldn't
-+	 * get so far. Set the rate of the timer now.
-+	 */
-+	if (!(timer->capability & OMAP_TIMER_NEEDS_RESET))
-+		timer->rate = clk_get_rate(timer->fclk);
- 
- 	return timer;
- }
-@@ -461,27 +467,38 @@ int omap_dm_timer_start(struct omap_dm_timer *timer)
- }
- EXPORT_SYMBOL_GPL(omap_dm_timer_start);
- 
--int omap_dm_timer_stop(struct omap_dm_timer *timer)
-+int omap_dm_timer_stop(struct omap_dm_timer *timer, int pm)
- {
--	unsigned long rate = 0;
-+	u32 l;
-+	unsigned long rate;
- 
- 	if (unlikely(!timer))
- 		return -EINVAL;
- 
--	/* OMAP1 is not converted to clk framework so avoid clk_get_rate here */
--	if (!(timer->capability & OMAP_TIMER_NEEDS_RESET))
--		rate = clk_get_rate(timer->fclk);
-+	rate = timer->rate;
-+
-+	l = omap_dm_timer_read_reg(timer, OMAP_TIMER_CTRL_REG);
-+	if (l & OMAP_TIMER_CTRL_ST) {
-+		l &= ~0x1;
-+		omap_dm_timer_write_reg(timer, OMAP_TIMER_CTRL_REG, l);
-+#ifdef CONFIG_ARCH_OMAP2PLUS
-+		/* Readback to make sure write has completed */
-+		omap_dm_timer_read_reg(timer, OMAP_TIMER_CTRL_REG);
-+		/*
-+		 * Wait for functional clock period x 3.5 to make sure that
-+		 * timer is stopped
-+		 */
-+		udelay(3500000 / rate + 1);
-+#endif
-+	}
- 
--	__omap_dm_timer_stop(timer, timer->posted, rate);
-+	/* Ack possibly pending interrupt */
-+	__raw_writel(OMAP_TIMER_INT_OVERFLOW, timer->irq_stat);
- 
--	/*
--	 * Since the register values are computed and written within
--	 * __omap_dm_timer_stop, we need to use read to retrieve the
--	 * context.
--	 */
--	timer->context.tclr =
--			omap_dm_timer_read_reg(timer, OMAP_TIMER_CTRL_REG);
--	omap_dm_timer_disable(timer);
-+	if (pm) {
-+		timer->context.tclr = l;
-+		omap_dm_timer_disable(timer);
-+	}
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(omap_dm_timer_stop);
-diff --git a/arch/arm/plat-omap/include/plat/dmtimer.h b/arch/arm/plat-omap/include/plat/dmtimer.h
-index 7432bf3..1d3d9bb 100644
---- a/arch/arm/plat-omap/include/plat/dmtimer.h
-+++ b/arch/arm/plat-omap/include/plat/dmtimer.h
-@@ -141,7 +141,7 @@ struct clk *omap_dm_timer_get_fclk(struct omap_dm_timer *timer);
- 
- int omap_dm_timer_trigger(struct omap_dm_timer *timer);
- int omap_dm_timer_start(struct omap_dm_timer *timer);
--int omap_dm_timer_stop(struct omap_dm_timer *timer);
-+int omap_dm_timer_stop(struct omap_dm_timer *timer, int pm);
- 
- int omap_dm_timer_set_source(struct omap_dm_timer *timer, int source);
- int omap_dm_timer_set_load(struct omap_dm_timer *timer, int autoreload, unsigned int value);
-@@ -366,30 +366,6 @@ static inline void __omap_dm_timer_override_errata(struct omap_dm_timer *timer,
- 	timer->errata &= ~errata;
- }
- 
--static inline void __omap_dm_timer_stop(struct omap_dm_timer *timer,
--					int posted, unsigned long rate)
--{
--	u32 l;
--
--	l = __omap_dm_timer_read(timer, OMAP_TIMER_CTRL_REG, posted);
--	if (l & OMAP_TIMER_CTRL_ST) {
--		l &= ~0x1;
--		__omap_dm_timer_write(timer, OMAP_TIMER_CTRL_REG, l, posted);
--#ifdef CONFIG_ARCH_OMAP2PLUS
--		/* Readback to make sure write has completed */
--		__omap_dm_timer_read(timer, OMAP_TIMER_CTRL_REG, posted);
--		/*
--		 * Wait for functional clock period x 3.5 to make sure that
--		 * timer is stopped
--		 */
--		udelay(3500000 / rate + 1);
--#endif
--	}
--
--	/* Ack possibly pending interrupt */
--	__raw_writel(OMAP_TIMER_INT_OVERFLOW, timer->irq_stat);
--}
--
- static inline void __omap_dm_timer_int_enable(struct omap_dm_timer *timer,
- 						unsigned int value)
- {
-diff --git a/drivers/media/rc/ir-rx51.c b/drivers/media/rc/ir-rx51.c
-index b1e19a2..3dc736d 100644
---- a/drivers/media/rc/ir-rx51.c
-+++ b/drivers/media/rc/ir-rx51.c
-@@ -165,8 +165,8 @@ end:
- 	/* Stop TX here */
- 	lirc_rx51_off(lirc_rx51);
- 	lirc_rx51->wbuf_index = -1;
--	omap_dm_timer_stop(lirc_rx51->pwm_timer);
--	omap_dm_timer_stop(lirc_rx51->pulse_timer);
-+	omap_dm_timer_stop(lirc_rx51->pwm_timer, 1);
-+	omap_dm_timer_stop(lirc_rx51->pulse_timer, 1);
- 	omap_dm_timer_set_int_enable(lirc_rx51->pulse_timer, 0);
- 	wake_up_interruptible(&lirc_rx51->wqueue);
- 
-diff --git a/drivers/staging/tidspbridge/core/dsp-clock.c b/drivers/staging/tidspbridge/core/dsp-clock.c
-index 2788158..6ac36d1 100644
---- a/drivers/staging/tidspbridge/core/dsp-clock.c
-+++ b/drivers/staging/tidspbridge/core/dsp-clock.c
-@@ -300,7 +300,7 @@ int dsp_clk_disable(enum dsp_clk_id clk_id)
- 		clk_disable(iva2_clk);
- 		break;
- 	case GPT_CLK:
--		status = omap_dm_timer_stop(timer[clk_id - 1]);
-+		status = omap_dm_timer_stop(timer[clk_id - 1], 1);
- 		break;
- #ifdef CONFIG_OMAP_MCBSP
- 	case MCBSP_CLK:
--- 
-1.7.9.5
+I know you didn't add the new_id mechanism, and this patch makes it safer
+than it was before, but I'm uneasy about it in general.  Most drivers do
+not validate the driver_data value.  They assume it came out of the
+id_table supplied by the driver and is therefore trustworthy.  But new_id
+is a loophole that allows a user (hopefully only root) to pass arbitrary
+junk to the driver.
 
+I wonder if the device assignment machinery should be more integrated into
+the PCI core instead of trying to be "just another driver."  It seems like
+we're doing a lot of work to try to get the driver binding mechanism to do
+what we need for device assignment.
+
+Bjorn
+
+> Signed-off-by: Bandan Das <bsd@redhat.com>
+> ---
+> v3:
+> relocate pdev decl
+> v2:
+> 1. Return error if there is a matching static entry
+> and change commit message to reflect this behavior
+> 3. Fill in a pdev and call pci_match_id instead of creating
+> a new matching function
+> 4. Change commit message to reflect that libvirt does not
+> depend on this behavior
+> 
+>  drivers/pci/pci-driver.c | 22 +++++++++++++++++++++-
+>  1 file changed, 21 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/pci-driver.c b/drivers/pci/pci-driver.c
+> index 25f0bc6..a65a014 100644
+> --- a/drivers/pci/pci-driver.c
+> +++ b/drivers/pci/pci-driver.c
+> @@ -107,7 +107,7 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
+>  		subdevice=PCI_ANY_ID, class=0, class_mask=0;
+>  	unsigned long driver_data=0;
+>  	int fields=0;
+> -	int retval;
+> +	int retval = 0;
+>  
+>  	fields = sscanf(buf, "%x %x %x %x %x %x %lx",
+>  			&vendor, &device, &subvendor, &subdevice,
+> @@ -115,6 +115,26 @@ store_new_id(struct device_driver *driver, const char *buf, size_t count)
+>  	if (fields < 2)
+>  		return -EINVAL;
+>  
+> +	if (fields != 7) {
+> +		struct pci_dev *pdev = kzalloc(sizeof(*pdev), GFP_KERNEL);
+> +		if (!pdev)
+> +			return -ENOMEM;
+> +
+> +		pdev->vendor = vendor;
+> +		pdev->device = device;
+> +		pdev->subsystem_vendor = subvendor;
+> +		pdev->subsystem_device = subdevice;
+> +		pdev->class = class;
+> +
+> +		if (pci_match_id(pdrv->id_table, pdev))
+> +			retval = -EEXIST;
+> +
+> +		kfree(pdev);
+> +
+> +		if (retval)
+> +			return retval;
+> +	}
+> +
+>  	/* Only accept driver_data values that match an existing id_table
+>  	   entry */
+>  	if (ids) {
+> -- 
+> 1.8.3.1
+> 
