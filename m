@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755112AbaDXLJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:09:21 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46533 "EHLO
+	id S1754505AbaDXLJT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:09:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46544 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863AbaDXIxZ (ORCPT
+	with ESMTP id S1753882AbaDXIx1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:25 -0400
+	Thu, 24 Apr 2014 04:53:27 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@linaro.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 062/182] IB/nes: Return an error on ib_copy_from_udata() failure instead of NULL
-Date: Thu, 24 Apr 2014 09:49:47 +0100
-Message-Id: <1398329507-5911-63-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 064/182] regulator: arizona-ldo1: Correct default regulator init_data
+Date: Thu, 24 Apr 2014 09:49:49 +0100
+Message-Id: <1398329507-5911-65-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,49 +28,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
 
-commit 9d194d1025f463392feafa26ff8c2d8247f71be1 upstream.
+commit a35ff2861690eaf9dbb38fa744a8a9e6f4ebfd61 upstream.
 
-In case of error while accessing to userspace memory, function
-nes_create_qp() returns NULL instead of an error code wrapped through
-ERR_PTR().  But NULL is not expected by ib_uverbs_create_qp(), as it
-check for error with IS_ERR().
+Both 5102 and 8997 have the regulator capable of supplying 1.8V, and the
+voltage step from the 5110 regulator is different from what is specified
+in the default description. This patch updates the default regulator
+description to match 5110 and selects the 1.8V capable description for
+8997.
 
-As page 0 is likely not mapped, it is going to trigger an Oops when
-the kernel will try to dereference NULL pointer to access to struct
-ib_qp's fields.
-
-In some rare cases, page 0 could be mapped by userspace, which could
-turn this bug to a vulnerability that could be exploited: the function
-pointers in struct ib_device will be under userspace total control.
-
-This was caught when using spatch (aka. coccinelle)
-to rewrite calls to ib_copy_{from,to}_udata().
-
-Link: https://www.gitorious.org/opteya/ib-hw-nes-create-qp-null
-Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
-Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Signed-off-by: Mark Brown <broonie@linaro.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/hw/nes/nes_verbs.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/regulator/arizona-ldo1.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/infiniband/hw/nes/nes_verbs.c b/drivers/infiniband/hw/nes/nes_verbs.c
-index 5b53ca5..09999cd 100644
---- a/drivers/infiniband/hw/nes/nes_verbs.c
-+++ b/drivers/infiniband/hw/nes/nes_verbs.c
-@@ -1186,7 +1186,7 @@ static struct ib_qp *nes_create_qp(struct ib_pd *ibpd,
- 					nes_free_resource(nesadapter, nesadapter->allocated_qps, qp_num);
- 					kfree(nesqp->allocated_buffer);
- 					nes_debug(NES_DBG_QP, "ib_copy_from_udata() Failed \n");
--					return NULL;
-+					return ERR_PTR(-EFAULT);
- 				}
- 				if (req.user_wqe_buffers) {
- 					virt_wqs = 1;
+diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+index 81d8681..7917bb2 100644
+--- a/drivers/regulator/arizona-ldo1.c
++++ b/drivers/regulator/arizona-ldo1.c
+@@ -153,11 +153,9 @@ static const struct regulator_desc arizona_ldo1 = {
+ 
+ 	.vsel_reg = ARIZONA_LDO1_CONTROL_1,
+ 	.vsel_mask = ARIZONA_LDO1_VSEL_MASK,
+-	.bypass_reg = ARIZONA_LDO1_CONTROL_1,
+-	.bypass_mask = ARIZONA_LDO1_BYPASS,
+ 	.min_uV = 900000,
+-	.uV_step = 50000,
+-	.n_voltages = 7,
++	.uV_step = 25000,
++	.n_voltages = 13,
+ 	.enable_time = 500,
+ 
+ 	.owner = THIS_MODULE,
+@@ -203,6 +201,7 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 	 */
+ 	switch (arizona->type) {
+ 	case WM5102:
++	case WM8997:
+ 		desc = &arizona_ldo1_hc;
+ 		ldo1->init_data = arizona_ldo1_dvfs;
+ 		break;
 -- 
 1.9.1
 
