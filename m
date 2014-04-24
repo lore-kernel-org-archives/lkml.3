@@ -1,31 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756117AbaDXK7r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:59:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52877 "EHLO
+	id S1756143AbaDXK77 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:59:59 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:52884 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753960AbaDXK7m (ORCPT
+	with ESMTP id S1753960AbaDXK7v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:59:42 -0400
-Date: Thu, 24 Apr 2014 03:59:20 -0700
+	Thu, 24 Apr 2014 06:59:51 -0400
+Date: Thu, 24 Apr 2014 03:59:35 -0700
 From: tip-bot for Masami Hiramatsu <tipbot@zytor.com>
-Message-ID: <tip-ecd50f714c421c759354632dd00f70c718c95b10@git.kernel.org>
+Message-ID: <tip-7ec8a97a990da8e3ba87175a757731e17f74072e@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rusty@rustcorp.com.au, seiji.aguchi@hds.com, jkosina@suse.cz,
-        keescook@chromium.org, masami.hiramatsu.pt@hitachi.com,
-        rostedt@goodmis.org, akpm@linux-foundation.org, tglx@linutronix.de,
-        bp@suse.de
+        masami.hiramatsu.pt@hitachi.com, jlebon@redhat.com, jkosina@suse.cz,
+        tglx@linutronix.de
 Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rusty@rustcorp.com.au, seiji.aguchi@hds.com, jkosina@suse.cz,
-        keescook@chromium.org, masami.hiramatsu.pt@hitachi.com,
-        akpm@linux-foundation.org, rostedt@goodmis.org, tglx@linutronix.de,
-        bp@suse.de
-In-Reply-To: <20140417081740.26341.10894.stgit@ltc230.yrl.intra.hitachi.co.jp>
-References: <20140417081740.26341.10894.stgit@ltc230.yrl.intra.hitachi.co.jp>
+        masami.hiramatsu.pt@hitachi.com, jlebon@redhat.com, tglx@linutronix.de,
+        jkosina@suse.cz
+In-Reply-To: <20140417081747.26341.36065.stgit@ltc230.yrl.intra.hitachi.co.jp>
+References: <20140417081747.26341.36065.stgit@ltc230.yrl.intra.hitachi.co.jp>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/kprobes] kprobes, x86:
-  Call exception_enter after kprobes handled
-Git-Commit-ID: ecd50f714c421c759354632dd00f70c718c95b10
+Subject: [tip:perf/kprobes] kprobes/x86:
+  Allow probe on some kprobe preparation functions
+Git-Commit-ID: 7ec8a97a990da8e3ba87175a757731e17f74072e
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -38,69 +34,262 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ecd50f714c421c759354632dd00f70c718c95b10
-Gitweb:     http://git.kernel.org/tip/ecd50f714c421c759354632dd00f70c718c95b10
+Commit-ID:  7ec8a97a990da8e3ba87175a757731e17f74072e
+Gitweb:     http://git.kernel.org/tip/7ec8a97a990da8e3ba87175a757731e17f74072e
 Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Thu, 17 Apr 2014 17:17:40 +0900
+AuthorDate: Thu, 17 Apr 2014 17:17:47 +0900
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Thu, 24 Apr 2014 10:03:00 +0200
+CommitDate: Thu, 24 Apr 2014 10:03:01 +0200
 
-kprobes, x86: Call exception_enter after kprobes handled
+kprobes/x86: Allow probe on some kprobe preparation functions
 
-Move exception_enter() call after kprobes handler
-is done. Since the exception_enter() involves
-many other functions (like printk), it can cause
-recursive int3/break loop when kprobes probe such
-functions.
+There is no need to prohibit probing on the functions
+used in preparation phase. Those are safely probed because
+those are not invoked from breakpoint/fault/debug handlers,
+there is no chance to cause recursive exceptions.
+
+Following functions are now removed from the kprobes blacklist:
+
+	can_boost
+	can_probe
+	can_optimize
+	is_IF_modifier
+	__copy_instruction
+	copy_optimized_instructions
+	arch_copy_kprobe
+	arch_prepare_kprobe
+	arch_arm_kprobe
+	arch_disarm_kprobe
+	arch_remove_kprobe
+	arch_trampoline_kprobe
+	arch_prepare_kprobe_ftrace
+	arch_prepare_optimized_kprobe
+	arch_check_optimized_kprobe
+	arch_within_optimized_kprobe
+	__arch_remove_optimized_kprobe
+	arch_remove_optimized_kprobe
+	arch_optimize_kprobes
+	arch_unoptimize_kprobe
+
+I tested those functions by putting kprobes on all
+instructions in the functions with the bash script
+I sent to LKML. See:
+
+  https://lkml.org/lkml/2014/3/27/33
 
 Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Reviewed-by: Steven Rostedt <rostedt@goodmis.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Borislav Petkov <bp@suse.de>
 Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Kees Cook <keescook@chromium.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Seiji Aguchi <seiji.aguchi@hds.com>
-Link: http://lkml.kernel.org/r/20140417081740.26341.10894.stgit@ltc230.yrl.intra.hitachi.co.jp
+Cc: Jonathan Lebon <jlebon@redhat.com>
+Link: http://lkml.kernel.org/r/20140417081747.26341.36065.stgit@ltc230.yrl.intra.hitachi.co.jp
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- arch/x86/kernel/traps.c | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ arch/x86/kernel/kprobes/core.c   | 20 ++++++++++----------
+ arch/x86/kernel/kprobes/ftrace.c |  2 +-
+ arch/x86/kernel/kprobes/opt.c    | 24 ++++++++++++------------
+ 3 files changed, 23 insertions(+), 23 deletions(-)
 
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index e5d4a70..ba9abe9 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -327,7 +327,6 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 	if (poke_int3_handler(regs))
- 		return;
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index 9b80aec..bd71713 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -159,7 +159,7 @@ static kprobe_opcode_t *__kprobes skip_prefixes(kprobe_opcode_t *insn)
+  * Returns non-zero if opcode is boostable.
+  * RIP relative instructions are adjusted at copying time in 64 bits mode
+  */
+-int __kprobes can_boost(kprobe_opcode_t *opcodes)
++int can_boost(kprobe_opcode_t *opcodes)
+ {
+ 	kprobe_opcode_t opcode;
+ 	kprobe_opcode_t *orig_opcodes = opcodes;
+@@ -260,7 +260,7 @@ unsigned long recover_probed_instruction(kprobe_opcode_t *buf, unsigned long add
+ }
  
--	prev_state = exception_enter();
- #ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
- 	if (kgdb_ll_trap(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 				SIGTRAP) == NOTIFY_STOP)
-@@ -338,6 +337,7 @@ dotraplinkage void __kprobes notrace do_int3(struct pt_regs *regs, long error_co
- 	if (kprobe_int3_handler(regs))
- 		return;
- #endif
-+	prev_state = exception_enter();
+ /* Check if paddr is at an instruction boundary */
+-static int __kprobes can_probe(unsigned long paddr)
++static int can_probe(unsigned long paddr)
+ {
+ 	unsigned long addr, __addr, offset = 0;
+ 	struct insn insn;
+@@ -299,7 +299,7 @@ static int __kprobes can_probe(unsigned long paddr)
+ /*
+  * Returns non-zero if opcode modifies the interrupt flag.
+  */
+-static int __kprobes is_IF_modifier(kprobe_opcode_t *insn)
++static int is_IF_modifier(kprobe_opcode_t *insn)
+ {
+ 	/* Skip prefixes */
+ 	insn = skip_prefixes(insn);
+@@ -322,7 +322,7 @@ static int __kprobes is_IF_modifier(kprobe_opcode_t *insn)
+  * If not, return null.
+  * Only applicable to 64-bit x86.
+  */
+-int __kprobes __copy_instruction(u8 *dest, u8 *src)
++int __copy_instruction(u8 *dest, u8 *src)
+ {
+ 	struct insn insn;
+ 	kprobe_opcode_t buf[MAX_INSN_SIZE];
+@@ -365,7 +365,7 @@ int __kprobes __copy_instruction(u8 *dest, u8 *src)
+ 	return insn.length;
+ }
  
- 	if (notify_die(DIE_INT3, "int3", regs, error_code, X86_TRAP_BP,
- 			SIGTRAP) == NOTIFY_STOP)
-@@ -415,8 +415,6 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	unsigned long dr6;
- 	int si_code;
+-static int __kprobes arch_copy_kprobe(struct kprobe *p)
++static int arch_copy_kprobe(struct kprobe *p)
+ {
+ 	int ret;
  
--	prev_state = exception_enter();
--
- 	get_debugreg(dr6, 6);
+@@ -392,7 +392,7 @@ static int __kprobes arch_copy_kprobe(struct kprobe *p)
+ 	return 0;
+ }
  
- 	/* Filter out all the reserved bits which are preset to 1 */
-@@ -449,6 +447,7 @@ dotraplinkage void __kprobes do_debug(struct pt_regs *regs, long error_code)
- 	if (kprobe_debug_handler(regs))
- 		goto exit;
- #endif
-+	prev_state = exception_enter();
+-int __kprobes arch_prepare_kprobe(struct kprobe *p)
++int arch_prepare_kprobe(struct kprobe *p)
+ {
+ 	if (alternatives_text_reserved(p->addr, p->addr))
+ 		return -EINVAL;
+@@ -407,17 +407,17 @@ int __kprobes arch_prepare_kprobe(struct kprobe *p)
+ 	return arch_copy_kprobe(p);
+ }
  
- 	if (notify_die(DIE_DEBUG, "debug", regs, (long)&dr6, error_code,
- 							SIGTRAP) == NOTIFY_STOP)
+-void __kprobes arch_arm_kprobe(struct kprobe *p)
++void arch_arm_kprobe(struct kprobe *p)
+ {
+ 	text_poke(p->addr, ((unsigned char []){BREAKPOINT_INSTRUCTION}), 1);
+ }
+ 
+-void __kprobes arch_disarm_kprobe(struct kprobe *p)
++void arch_disarm_kprobe(struct kprobe *p)
+ {
+ 	text_poke(p->addr, &p->opcode, 1);
+ }
+ 
+-void __kprobes arch_remove_kprobe(struct kprobe *p)
++void arch_remove_kprobe(struct kprobe *p)
+ {
+ 	if (p->ainsn.insn) {
+ 		free_insn_slot(p->ainsn.insn, (p->ainsn.boostable == 1));
+@@ -1060,7 +1060,7 @@ int __init arch_init_kprobes(void)
+ 	return 0;
+ }
+ 
+-int __kprobes arch_trampoline_kprobe(struct kprobe *p)
++int arch_trampoline_kprobe(struct kprobe *p)
+ {
+ 	return 0;
+ }
+diff --git a/arch/x86/kernel/kprobes/ftrace.c b/arch/x86/kernel/kprobes/ftrace.c
+index 23ef5c5..dcaa131 100644
+--- a/arch/x86/kernel/kprobes/ftrace.c
++++ b/arch/x86/kernel/kprobes/ftrace.c
+@@ -85,7 +85,7 @@ end:
+ 	local_irq_restore(flags);
+ }
+ 
+-int __kprobes arch_prepare_kprobe_ftrace(struct kprobe *p)
++int arch_prepare_kprobe_ftrace(struct kprobe *p)
+ {
+ 	p->ainsn.insn = NULL;
+ 	p->ainsn.boostable = -1;
+diff --git a/arch/x86/kernel/kprobes/opt.c b/arch/x86/kernel/kprobes/opt.c
+index 898160b..fba7fb0 100644
+--- a/arch/x86/kernel/kprobes/opt.c
++++ b/arch/x86/kernel/kprobes/opt.c
+@@ -77,7 +77,7 @@ found:
+ }
+ 
+ /* Insert a move instruction which sets a pointer to eax/rdi (1st arg). */
+-static void __kprobes synthesize_set_arg1(kprobe_opcode_t *addr, unsigned long val)
++static void synthesize_set_arg1(kprobe_opcode_t *addr, unsigned long val)
+ {
+ #ifdef CONFIG_X86_64
+ 	*addr++ = 0x48;
+@@ -169,7 +169,7 @@ static void __kprobes optimized_callback(struct optimized_kprobe *op, struct pt_
+ 	local_irq_restore(flags);
+ }
+ 
+-static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
++static int copy_optimized_instructions(u8 *dest, u8 *src)
+ {
+ 	int len = 0, ret;
+ 
+@@ -189,7 +189,7 @@ static int __kprobes copy_optimized_instructions(u8 *dest, u8 *src)
+ }
+ 
+ /* Check whether insn is indirect jump */
+-static int __kprobes insn_is_indirect_jump(struct insn *insn)
++static int insn_is_indirect_jump(struct insn *insn)
+ {
+ 	return ((insn->opcode.bytes[0] == 0xff &&
+ 		(X86_MODRM_REG(insn->modrm.value) & 6) == 4) || /* Jump */
+@@ -224,7 +224,7 @@ static int insn_jump_into_range(struct insn *insn, unsigned long start, int len)
+ }
+ 
+ /* Decode whole function to ensure any instructions don't jump into target */
+-static int __kprobes can_optimize(unsigned long paddr)
++static int can_optimize(unsigned long paddr)
+ {
+ 	unsigned long addr, size = 0, offset = 0;
+ 	struct insn insn;
+@@ -275,7 +275,7 @@ static int __kprobes can_optimize(unsigned long paddr)
+ }
+ 
+ /* Check optimized_kprobe can actually be optimized. */
+-int __kprobes arch_check_optimized_kprobe(struct optimized_kprobe *op)
++int arch_check_optimized_kprobe(struct optimized_kprobe *op)
+ {
+ 	int i;
+ 	struct kprobe *p;
+@@ -290,15 +290,15 @@ int __kprobes arch_check_optimized_kprobe(struct optimized_kprobe *op)
+ }
+ 
+ /* Check the addr is within the optimized instructions. */
+-int __kprobes
+-arch_within_optimized_kprobe(struct optimized_kprobe *op, unsigned long addr)
++int arch_within_optimized_kprobe(struct optimized_kprobe *op,
++				 unsigned long addr)
+ {
+ 	return ((unsigned long)op->kp.addr <= addr &&
+ 		(unsigned long)op->kp.addr + op->optinsn.size > addr);
+ }
+ 
+ /* Free optimized instruction slot */
+-static __kprobes
++static
+ void __arch_remove_optimized_kprobe(struct optimized_kprobe *op, int dirty)
+ {
+ 	if (op->optinsn.insn) {
+@@ -308,7 +308,7 @@ void __arch_remove_optimized_kprobe(struct optimized_kprobe *op, int dirty)
+ 	}
+ }
+ 
+-void __kprobes arch_remove_optimized_kprobe(struct optimized_kprobe *op)
++void arch_remove_optimized_kprobe(struct optimized_kprobe *op)
+ {
+ 	__arch_remove_optimized_kprobe(op, 1);
+ }
+@@ -318,7 +318,7 @@ void __kprobes arch_remove_optimized_kprobe(struct optimized_kprobe *op)
+  * Target instructions MUST be relocatable (checked inside)
+  * This is called when new aggr(opt)probe is allocated or reused.
+  */
+-int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
++int arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+ {
+ 	u8 *buf;
+ 	int ret;
+@@ -372,7 +372,7 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
+  * Replace breakpoints (int3) with relative jumps.
+  * Caller must call with locking kprobe_mutex and text_mutex.
+  */
+-void __kprobes arch_optimize_kprobes(struct list_head *oplist)
++void arch_optimize_kprobes(struct list_head *oplist)
+ {
+ 	struct optimized_kprobe *op, *tmp;
+ 	u8 insn_buf[RELATIVEJUMP_SIZE];
+@@ -398,7 +398,7 @@ void __kprobes arch_optimize_kprobes(struct list_head *oplist)
+ }
+ 
+ /* Replace a relative jump with a breakpoint (int3).  */
+-void __kprobes arch_unoptimize_kprobe(struct optimized_kprobe *op)
++void arch_unoptimize_kprobe(struct optimized_kprobe *op)
+ {
+ 	u8 insn_buf[RELATIVEJUMP_SIZE];
+ 
