@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757786AbaDXO2Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:28:24 -0400
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:43783 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757450AbaDXO14 (ORCPT
+	id S1757840AbaDXO3O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:29:14 -0400
+Received: from mail-pb0-f43.google.com ([209.85.160.43]:47467 "EHLO
+	mail-pb0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757417AbaDXO3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:27:56 -0400
-Message-ID: <53591F65.9010001@de.ibm.com>
-Date: Thu, 24 Apr 2014 16:27:49 +0200
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>, Avi Kivity <avi.kivity@gmail.com>,
-        Gleb Natapov <gleb@kernel.org>, Paolo Bonzini <pbonzini@redhat.com>
-CC: Dominik Dingel <dingel@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] KVM: async_pf: use_mm/mm_users fixes
-References: <20140421132543.GA13594@redhat.com>
-In-Reply-To: <20140421132543.GA13594@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042414-0542-0000-0000-000008C36A5F
+	Thu, 24 Apr 2014 10:29:10 -0400
+Subject: Re: [PATCH 5/5] perf tests: Add map groups sharing with thread
+ object test
+From: Namhyung Kim <namhyung@kernel.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Don Zickus <dzickus@redhat.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+In-Reply-To: <1397490723-1992-6-git-send-email-jolsa@redhat.com>
+References: <1397490723-1992-1-git-send-email-jolsa@redhat.com>
+	 <1397490723-1992-6-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 24 Apr 2014 23:29:04 +0900
+Message-ID: <1398349744.1681.26.camel@leonhard>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/04/14 15:25, Oleg Nesterov wrote:
-> Hello.
-> 
-> Completely untested and I know nothing about kvm ;) Please review.
-> 
-> But use_mm() really looks misleading, and the usage of mm_users looks
-> "obviously wrong". I already sent this change while we were discussing
-> vmacache, but it was ignored. Since then kvm_async_page_present_sync()
-> was added into async_pf_execute() into async_pf_execute(), but it seems
-> to me that use_mm() is still unnecessary.
-> 
-> Oleg.
-> 
->  virt/kvm/async_pf.c |   10 ++++------
->  1 files changed, 4 insertions(+), 6 deletions(-)
-> 
+2014-04-14 (월), 17:52 +0200, Jiri Olsa:
+> +	/*
+> +	 * Cannot call machine__delete_threads(machine) now,
+> +	 * because we've already realased all the threads.
 
-I gave both patches some testing on s390, seems fine. I think patch2 really
-does fix a bug. So if Paolo, Marcelo, Gleb agree (maybe do a test on x86 for
-async_pf) both patches are good to go. Given that somebody tests this on x86:
+s/realased/released/
 
-Acked-by: Christian Borntraeger <borntraeger@de.ibm.com>
+Other than that, this series looks good to me.
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
+
+
+> +	 */
+> +
+> +	machines__exit(&machines);
+> +	return 0;
+> +}
+
+
 
