@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758641AbaDXRNH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:13:07 -0400
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:58926 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758057AbaDXRND (ORCPT
+	id S1758751AbaDXROV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:14:21 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:46916 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758203AbaDXROT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:13:03 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Cc: Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
-        Devicetree List <devicetree@vger.kernel.org>,
-        Linux USB List <linux-usb@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] dt: bindings: dwc2: fix required value for the phy-names property
-Date: Thu, 24 Apr 2014 13:12:56 -0400
-Message-Id: <1398359576-14668-1-git-send-email-mporter@linaro.org>
-X-Mailer: git-send-email 1.8.4
+	Thu, 24 Apr 2014 13:14:19 -0400
+Date: Thu, 24 Apr 2014 11:14:15 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Alexander Gordeev <agordeev@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: Re: [PATCH v2 RESEND] portdrv: Use pci_enable_msix_exact() instead
+ of pci_enable_msix()
+Message-ID: <20140424171415.GB29593@google.com>
+References: <1398092766-30078-1-git-send-email-agordeev@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398092766-30078-1-git-send-email-agordeev@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"7408484 usb: gadget: s3c-hsotg: enable generic phy support" introduces
-generic phy support to the dwc2.txt binding and the s3c-hsotg driver
-which implements support for the binding. The binding documentation
-incorrectly states that the phy-names property will be "device". The
-binding example, driver, and one dts user all implement the phy-names
-property as requiring "usb2-phy".
+On Mon, Apr 21, 2014 at 05:06:06PM +0200, Alexander Gordeev wrote:
+> As result of deprecation of MSI-X/MSI enablement functions
+> pci_enable_msix() and pci_enable_msi_block() all drivers
+> using these two interfaces need to be updated to use the
+> new pci_enable_msi_range()  or pci_enable_msi_exact()
+> and pci_enable_msix_range() or pci_enable_msix_exact()
+> interfaces.
+> 
+> Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+> Cc: Bjorn Helgaas <bhelgaas@google.com>
+> Cc: linux-pci@vger.kernel.org
 
-Fix the dwc2.txt binding documentation to correctly specify "usb2-phy"
-as the appropriate value for phy-names.
+Applied to pci/msi for v3.16, thanks!
 
-Reported-by: Tomasz Figa <t.figa@samsung.com>
-Signed-off-by: Matt Porter <mporter@linaro.org>
----
- Documentation/devicetree/bindings/usb/dwc2.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/Documentation/devicetree/bindings/usb/dwc2.txt b/Documentation/devicetree/bindings/usb/dwc2.txt
-index b8b6871..467ddd1 100644
---- a/Documentation/devicetree/bindings/usb/dwc2.txt
-+++ b/Documentation/devicetree/bindings/usb/dwc2.txt
-@@ -13,7 +13,7 @@ Refer to clk/clock-bindings.txt for generic clock consumer properties
- 
- Optional properties:
- - phys: phy provider specifier
--- phy-names: shall be "device"
-+- phy-names: shall be "usb2-phy"
- Refer to phy/phy-bindings.txt for generic phy consumer properties
- 
- Example:
--- 
-1.8.4
-
+> ---
+>  drivers/pci/pcie/portdrv_core.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
+> index 986f8ea..0b1efb2 100644
+> --- a/drivers/pci/pcie/portdrv_core.c
+> +++ b/drivers/pci/pcie/portdrv_core.c
+> @@ -99,7 +99,7 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
+>  	for (i = 0; i < nr_entries; i++)
+>  		msix_entries[i].entry = i;
+>  
+> -	status = pci_enable_msix(dev, msix_entries, nr_entries);
+> +	status = pci_enable_msix_exact(dev, msix_entries, nr_entries);
+>  	if (status)
+>  		goto Exit;
+>  
+> @@ -171,7 +171,7 @@ static int pcie_port_enable_msix(struct pci_dev *dev, int *vectors, int mask)
+>  		pci_disable_msix(dev);
+>  
+>  		/* Now allocate the MSI-X vectors for real */
+> -		status = pci_enable_msix(dev, msix_entries, nvec);
+> +		status = pci_enable_msix_exact(dev, msix_entries, nvec);
+>  		if (status)
+>  			goto Exit;
+>  	}
+> -- 
+> 1.7.7.6
+> 
