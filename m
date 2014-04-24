@@ -1,107 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754541AbaDXXEu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 19:04:50 -0400
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:39646 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752714AbaDXXEr (ORCPT
+	id S1755085AbaDXXFq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 19:05:46 -0400
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:44333 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525AbaDXXEt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 19:04:47 -0400
+	Thu, 24 Apr 2014 19:04:49 -0400
 From: John Stultz <john.stultz@linaro.org>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <john.stultz@linaro.org>,
         Miroslav Lichvar <mlichvar@redhat.com>,
         Richard Cochran <richardcochran@gmail.com>,
         Prarit Bhargava <prarit@redhat.com>
-Subject: [PATCH 0/3] timekeeping: Improved NOHZ frequency steering
-Date: Thu, 24 Apr 2014 16:04:34 -0700
-Message-Id: <1398380677-8684-1-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 2/3] [RFC] timekeeping: Use cached ntp_tick_length when accumulating error
+Date: Thu, 24 Apr 2014 16:04:36 -0700
+Message-Id: <1398380677-8684-3-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.8.3.2
+In-Reply-To: <1398380677-8684-1-git-send-email-john.stultz@linaro.org>
+References: <1398380677-8684-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Continuing the sporadic work on improving the timekeeping
-frequency steering logic when NOHZ is enabled, I've made a number
-of changes to my re-implementation of Miroslav's patch (most
-recently posted here: https://lkml.org/lkml/2014/2/12/401 ),
-and I'm getting much closer results in the simulator.
+By caching the ntp_tick_length() when we correct the frequency error,
+and then using that cached value to accumulate error, we avoid large
+initial errors when the tick length is changed.
 
-Compared with Miroslav's patch, this avoids doing any extra
-divisions, and instead approximates the correction
-logarithmically. In addition to trying to lower overhead, this
-allows the other accounting bits to be managed in much the
-same way we have been doing for awhile.
+This makes convergence happen much faster in the simulator, since the
+initial error doesn't have to be slowly whittled away.
 
-This patch set contains one portion from Miroslav's patch
-(ntp_tick caching) split out into a separate logical patch.
+This initially seems like an accounting error, but Miroslav pointed out
+that ntp_tick_length() can change mid-tick, so when we apply it in the
+error accumulation, we are applying any recent change to the entire tick.
 
-Below are some of the simulator results (BTW Miroslav, w/ 3.15-rc,
-you'll need to revert b399fe355b30d01 to get the simulator building)
-comparing this patchset to Miroslav's patch to show we're getting in
-the right order of magnitude.
+This approach chooses to apply changes in the ntp_tick_length() only to
+the next tick, which allows us to calculate the freq correction before
+using the new tick length, which avoids accummulating error.
 
-
-Miroslav's patch:
------------------
-$ ./tk_test -t 500 -n 4000
-samples: 1-500 reg: 1-500 slope: 1.00 dev: 115.5 max: 300.1 freq: -100.00004
-samples: 501-1000 reg: 501-1000 slope: 1.00 dev: 73.7 max: 289.6 freq: -100.00003
-samples: 1001-1500 reg: 1001-1500 slope: 1.00 dev: 59.7 max: 283.9 freq: -100.00001
-samples: 1501-2000 reg: 1501-2000 slope: 1.00 dev: 50.6 max: 291.6 freq: -100.00000
-samples: 2001-2500 reg: 2001-2500 slope: 1.00 dev: 48.6 max: 285.7 freq: -100.00002
-samples: 2501-3000 reg: 2501-3000 slope: 1.00 dev: 44.8 max: 293.5 freq: -99.99993
-samples: 3001-3500 reg: 3001-3500 slope: 1.00 dev: 40.5 max: 303.8 freq: -99.99996
-samples: 3501-4000 reg: 3501-4000 slope: 1.00 dev: 37.6 max: 288.5 freq: -99.99997
-
-$ ./test1.sh 
-		freq10          freq100         dev             max
-nohz on		0.00601         0.00028         74.0            279.4
-nohz off	0.05867         0.00204         0.2             0.6
-
-
-This patchset:
---------------
-$ ./tk_test -t 500 -n 4000
-samples: 1-500 reg: 1-500 slope: 1.00 dev: 104.8 max: 278.4 freq: -100.00000
-samples: 501-1000 reg: 501-1000 slope: 1.00 dev: 75.9 max: 295.5 freq: -100.00000
-samples: 1001-1500 reg: 1001-1500 slope: 1.00 dev: 59.5 max: 284.5 freq: -100.00001
-samples: 1501-2000 reg: 1501-2000 slope: 1.00 dev: 52.5 max: 287.3 freq: -99.99998
-samples: 2001-2500 reg: 2001-2500 slope: 1.00 dev: 46.2 max: 292.2 freq: -100.00003
-samples: 2501-3000 reg: 2501-3000 slope: 1.00 dev: 43.4 max: 294.8 freq: -100.00005
-samples: 3001-3500 reg: 3001-3500 slope: 1.00 dev: 39.2 max: 279.5 freq: -99.99999
-samples: 3501-4000 reg: 3501-4000 slope: 1.00 dev: 37.6 max: 285.2 freq: -99.99999
-
-
-$ ./test1.sh 
-		freq10          freq100         dev             max
-nohz on		0.00748         0.00076         110.8           476.4
-nohz off	0.07173         0.03590         0.6             2.1
-
-
-Again, many many thanks to Miroslav for pointing out this issue, providing
-the simulator and initial patches, as well as helping to point out problems
-with my rework of his change.
-
-Comments, feedback and testing would be greatly appreciated!
-
-thanks
--john
+Credit to Miroslav for pointing this out and providing the original patch
+this functionality has been pulled out from, along with the rational.
 
 Cc: Miroslav Lichvar <mlichvar@redhat.com>
 Cc: Richard Cochran <richardcochran@gmail.com>
 Cc: Prarit Bhargava <prarit@redhat.com>
+Reported-by: Miroslav Lichvar <mlichvar@redhat.com>
+Signed-off-by: John Stultz <john.stultz@linaro.org>
+---
+ include/linux/timekeeper_internal.h | 7 +++++++
+ kernel/time/timekeeping.c           | 4 +++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
 
-John Stultz (3):
-  [RFC] timekeeping: Rework frequency adjustments to work better w/ nohz
-  [RFC] timekeeping: Use cached ntp_tick_length when accumulating error
-  [RFC] timekeeping: Loop in the freqadjust logic to speed up
-    convergence
-
- include/linux/timekeeper_internal.h |   7 ++
- kernel/time/timekeeping.c           | 201 ++++++++++++++++--------------------
- 2 files changed, 98 insertions(+), 110 deletions(-)
-
+diff --git a/include/linux/timekeeper_internal.h b/include/linux/timekeeper_internal.h
+index c1825eb..83fd40f 100644
+--- a/include/linux/timekeeper_internal.h
++++ b/include/linux/timekeeper_internal.h
+@@ -34,6 +34,13 @@ struct timekeeper {
+ 	/* Clock shifted nano seconds */
+ 	u64			xtime_nsec;
+ 
++	/* The ntp_tick_length() value currently being used.
++	 * This cached copy ensures we consistently apply the tick
++	 * length for an entire tick, as ntp_tick_length may change
++	 * mid-tick, and we don't want to apply that new value to
++	 * the tick in progress.
++	 */
++	u64			ntp_tick;
+ 	/* Difference between accumulated time and NTP time in ntp
+ 	 * shifted nano seconds. */
+ 	s64			ntp_error;
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 9aa8ccf..a130d00 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -148,6 +148,7 @@ static void tk_setup_internals(struct timekeeper *tk, struct clocksource *clock)
+ 	 * to counteract clock drifting.
+ 	 */
+ 	tk->mult = clock->mult;
++	tk->ntp_tick = ntpinterval << tk->ntp_error_shift;
+ }
+ 
+ /* Timekeeper helper functions. */
+@@ -1138,6 +1139,7 @@ static __always_inline void timekeeping_freqadjust(struct timekeeper *tk,
+ 	bool negative;
+ 	u32 adj;
+ 
++	tk->ntp_tick = ntp_tick_length();
+ 	/* Calculate current error per tick */
+ 	tick_error = ntp_tick_length() >> tk->ntp_error_shift;
+ 	tick_error -= (tk->xtime_interval + tk->xtime_remainder);
+@@ -1292,7 +1294,7 @@ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
+ 	tk->raw_time.tv_nsec = raw_nsecs;
+ 
+ 	/* Accumulate error between NTP and clock interval */
+-	tk->ntp_error += ntp_tick_length() << shift;
++	tk->ntp_error += tk->ntp_tick << shift;
+ 	tk->ntp_error -= (tk->xtime_interval + tk->xtime_remainder) <<
+ 						(tk->ntp_error_shift + shift);
+ 
 -- 
 1.8.3.2
 
