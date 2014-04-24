@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754423AbaDXKi3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:38:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:36721 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753036AbaDXKiZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 06:38:25 -0400
-Date: Thu, 24 Apr 2014 12:26:39 +0200
-From: Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>
-To: Jisheng Zhang <jszhang@marvell.com>
-Cc: "sebastian.hesselbarth@gmail.com" <sebastian.hesselbarth@gmail.com>,
-        "tj@kernel.org" <tj@kernel.org>,
-        "alexandre.belloni@free-electrons.com" 
-	<alexandre.belloni@free-electrons.com>,
-        Jimmy Xu <zmxu@marvell.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/6] ata: ahci: add AHCI support for Berlin SoCs
-Message-ID: <20140424102639.GA31101@kwain>
-References: <1398181105-19714-1-git-send-email-antoine.tenart@free-electrons.com>
- <1398181105-19714-2-git-send-email-antoine.tenart@free-electrons.com>
- <20140424175041.0bade2d6@xhacker>
+	id S1754552AbaDXKjr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:39:47 -0400
+Received: from b.ns.miles-group.at ([95.130.255.144]:1661 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753141AbaDXKjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 06:39:43 -0400
+Message-ID: <5358E9EB.8080307@nod.at>
+Date: Thu, 24 Apr 2014 12:39:39 +0200
+From: Richard Weinberger <richard@nod.at>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140424175041.0bade2d6@xhacker>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ley Foon Tan <lftan@altera.com>
+CC: Linux-Arch <linux-arch@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
+Subject: Re: [PATCH 17/28] nios2: Signal handling support
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>	<1397824031-4892-14-git-send-email-lftan@altera.com>	<CAFLxGvyPCwo-d92QK9qAR5=gmRS4p24tYs9PiOApBGfrKdxJ5Q@mail.gmail.com>	<CAFiDJ5-q5hzR+1BDCmCzwqbuVZOUdjX_-omR4u3rnC8xqdQZLA@mail.gmail.com>	<CAFiDJ59g0E+hoREriydqk2uBsDvchPMSQi6NCgnwOd64OGLJ0w@mail.gmail.com>	<5358E4B9.1050308@nod.at> <CAFiDJ5_pbcQo7VPj6J9UVhxGQtGn7hX19vkybL3DvM73v8Dc-w@mail.gmail.com>
+In-Reply-To: <CAFiDJ5_pbcQo7VPj6J9UVhxGQtGn7hX19vkybL3DvM73v8Dc-w@mail.gmail.com>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jisheng,
-
-On Thu, Apr 24, 2014 at 05:50:41PM +0800, Jisheng Zhang wrote:
-> Hi Antoine,
+Am 24.04.2014 12:29, schrieb Ley Foon Tan:
+> On Thu, Apr 24, 2014 at 6:17 PM, Richard Weinberger <richard@nod.at> wrote:
 > 
-> On Tue, 22 Apr 2014 08:38:20 -0700
-> Antoine Ténart <antoine.tenart@free-electrons.com> wrote:
+>>>> Okay.
+>>>>
+>>> I just noticed that sigsp() have struct ksignal argument. We can use
+>>> sigsp() for nios2 because it doesn't have struct ksignal.
+>>>
+>>> unsigned long sigsp(unsigned long sp, struct ksignal *ksig);
+>>
+>> Did you at look at the struct ksignal definition and the clean series I've
+>> pointed you to?
+>>
 > 
-> > +		/* CT timing fix */
-> > +		ahci_berlin_reg_set(ctrl_reg + PORT_VSR_ADDR, BIT(6) |
-> > BIT(1));
-> > +		ahci_berlin_reg_set(ctrl_reg + PORT_VSR_ADDR,
-> > +				    BIT(15) | BIT(13) | BIT(12) | BIT(11) |
-> > +				    BIT(10) | BIT(2) | BIT(1));
-> 
-> Could you please remove these code? They are not used for BG2Q, I'm sorry there's
-> such mistake in the code I provided to you ;)
+> Not yet, this is the full set of patches? I only see partial..
+> https://lkml.org/lkml/2014/3/2/198
 
-OK, thanks for the update!
+Maybe lkml.org misses a few but this does not matter.
+All you need to know is that using ksignal is easy.
+e.g. https://lkml.org/lkml/2014/3/2/162
 
-Antoine
-
--- 
-Antoine Ténart, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Thanks,
+//richard
