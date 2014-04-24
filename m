@@ -1,201 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779AbaDXV3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:29:08 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:33951 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098AbaDXV3F (ORCPT
+	id S1753521AbaDXVbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:31:11 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:37730 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752568AbaDXVbJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:29:05 -0400
-From: Rabin Vincent <rabin@rab.in>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, Kees Cook <keescook@chromium.org>,
-        Laura Abbott <lauraa@codeaurora.org>, Jon Medhurst <tixy@linaro.org>,
-        Doug Anderson <dianders@google.com>, Rabin Vincent <rabin@rab.in>
-Subject: [PATCHv2 2/2] arm: use fixmap for text patching when text is RO
-Date: Thu, 24 Apr 2014 23:28:57 +0200
-Message-Id: <1398374937-18868-1-git-send-email-rabin@rab.in>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <1396646870-29695-2-git-send-email-rabin@rab.in>
-References: <1396646870-29695-2-git-send-email-rabin@rab.in>
+	Thu, 24 Apr 2014 17:31:09 -0400
+Date: Thu, 24 Apr 2014 15:31:06 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Rajat Jain <rajatxjain@gmail.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
+Subject: Re: [PATCH] pci/pciehp: Allow polling/irq mode to be decided on a
+ per-port basis
+Message-ID: <20140424213106.GI29593@google.com>
+References: <5339FF99.2050200@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5339FF99.2050200@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use fixmaps for text patching when the kernel text is read-only,
-inspired by x86.  This makes jump labels and kprobes work with the
-currently available CONFIG_DEBUG_SET_MODULE_RONX and the upcoming
-CONFIG_DEBUG_RODATA options.
+On Mon, Mar 31, 2014 at 04:51:53PM -0700, Rajat Jain wrote:
+> Today, there is a global pciehp_poll_mode module parameter using which
+> either _all_ the hot-pluggable ports are to use polling, or _all_ the
+> ports are to use interrupts.
+> 
+> In a system where a certain port has IRQ issues, today the only option
+> is to use the parameter that converts ALL the ports to use polling mode.
+> This is not good, and hence this patch intruduces a bit field that can
+> be set using a PCI quirk that indicates that polling should always be
+> used for this particular PCIe port. The remaining ports can still
+> hoose to continue to operate in whatever mode they wish to.
+> 
+> Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
+> Signed-off-by: Rajat Jain <rajatjain@juniper.net>
+> Signed-off-by: Guenter Roeck <groeck@juniper.net>
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
----
-v2: flush the fixmap if necessary, with flush_kernel_vmap_range()
+I'm willing to merge this, but I'd prefer to merge it along with a quirk
+that actually sets dev->hotplug_polling.  Otherwise it's dead code and I'll
+have no way to tell whether we need to keep it.
 
- arch/arm/include/asm/fixmap.h |  3 ++
- arch/arm/kernel/jump_label.c  |  2 +-
- arch/arm/kernel/patch.c       | 71 ++++++++++++++++++++++++++++++++++++++-----
- arch/arm/kernel/patch.h       | 12 +++++++-
- 4 files changed, 79 insertions(+), 9 deletions(-)
+Bjorn
 
-diff --git a/arch/arm/include/asm/fixmap.h b/arch/arm/include/asm/fixmap.h
-index 55ed076..79c1719 100644
---- a/arch/arm/include/asm/fixmap.h
-+++ b/arch/arm/include/asm/fixmap.h
-@@ -18,6 +18,9 @@
- #define FIXADDR_TOP		(FIXADDR_END - PAGE_SIZE)
- 
- enum fixed_addresses {
-+	FIX_TEXT_POKE0,
-+	FIX_TEXT_POKE1,
-+
- 	FIX_KMAP_BEGIN,
- 	FIX_KMAP_END = (FIXADDR_TOP - FIXADDR_START) >> PAGE_SHIFT,
- 	__end_of_fixed_addresses
-diff --git a/arch/arm/kernel/jump_label.c b/arch/arm/kernel/jump_label.c
-index 4ce4f78..afeeb9e 100644
---- a/arch/arm/kernel/jump_label.c
-+++ b/arch/arm/kernel/jump_label.c
-@@ -19,7 +19,7 @@ static void __arch_jump_label_transform(struct jump_entry *entry,
- 		insn = arm_gen_nop();
- 
- 	if (is_static)
--		__patch_text(addr, insn);
-+		__patch_text_early(addr, insn);
- 	else
- 		patch_text(addr, insn);
- }
-diff --git a/arch/arm/kernel/patch.c b/arch/arm/kernel/patch.c
-index 07314af..3515b8d 100644
---- a/arch/arm/kernel/patch.c
-+++ b/arch/arm/kernel/patch.c
-@@ -1,8 +1,11 @@
- #include <linux/kernel.h>
-+#include <linux/spinlock.h>
- #include <linux/kprobes.h>
-+#include <linux/mm.h>
- #include <linux/stop_machine.h>
- 
- #include <asm/cacheflush.h>
-+#include <asm/fixmap.h>
- #include <asm/smp_plat.h>
- #include <asm/opcodes.h>
- 
-@@ -13,21 +16,70 @@ struct patch {
- 	unsigned int insn;
- };
- 
--void __kprobes __patch_text(void *addr, unsigned int insn)
-+static DEFINE_SPINLOCK(patch_lock);
-+
-+static void __kprobes *patch_map(void *addr, int fixmap, unsigned long *flags)
-+{
-+	unsigned int uintaddr = (uintptr_t) addr;
-+	bool module = !core_kernel_text(uintaddr);
-+	struct page *page;
-+
-+	if (module && IS_ENABLED(CONFIG_DEBUG_SET_MODULE_RONX)) {
-+		page = vmalloc_to_page(addr);
-+	} else if (!module && IS_ENABLED(CONFIG_ARM_KERNMEM_PERMS)) {
-+		page = virt_to_page(addr);
-+	} else {
-+		return addr;
-+	}
-+
-+	if (flags)
-+		spin_lock_irqsave(&patch_lock, *flags);
-+
-+	set_fixmap(fixmap, page_to_phys(page));
-+
-+	return (void *) (__fix_to_virt(fixmap) + (uintaddr & ~PAGE_MASK));
-+}
-+
-+static void __kprobes patch_unmap(int fixmap, unsigned long *flags)
-+{
-+	clear_fixmap(fixmap);
-+
-+	if (flags)
-+		spin_unlock_irqrestore(&patch_lock, *flags);
-+}
-+
-+void __kprobes __patch_text_real(void *addr, unsigned int insn, bool remap)
- {
- 	bool thumb2 = IS_ENABLED(CONFIG_THUMB2_KERNEL);
-+	unsigned int uintaddr = (uintptr_t) addr;
-+	bool twopage = false;
-+	unsigned long flags;
-+	void *waddr = addr;
- 	int size;
- 
-+	if (remap)
-+		waddr = patch_map(addr, FIX_TEXT_POKE0, &flags);
-+
- 	if (thumb2 && __opcode_is_thumb16(insn)) {
--		*(u16 *)addr = __opcode_to_mem_thumb16(insn);
-+		*(u16 *)waddr = __opcode_to_mem_thumb16(insn);
- 		size = sizeof(u16);
--	} else if (thumb2 && ((uintptr_t)addr & 2)) {
-+	} else if (thumb2 && (uintaddr & 2)) {
- 		u16 first = __opcode_thumb32_first(insn);
- 		u16 second = __opcode_thumb32_second(insn);
--		u16 *addrh = addr;
-+		u16 *addrh0 = waddr;
-+		u16 *addrh1 = waddr + 2;
- 
--		addrh[0] = __opcode_to_mem_thumb16(first);
--		addrh[1] = __opcode_to_mem_thumb16(second);
-+		twopage = (uintaddr & ~PAGE_MASK) == PAGE_SIZE - 2;
-+		if (twopage && remap)
-+			addrh1 = patch_map(addr + 2, FIX_TEXT_POKE1, NULL);
-+
-+		*addrh0 = __opcode_to_mem_thumb16(first);
-+		*addrh1 = __opcode_to_mem_thumb16(second);
-+
-+		if (twopage && addrh1 != addr + 2) {
-+			flush_kernel_vmap_range(addrh1, 2);
-+			patch_unmap(FIX_TEXT_POKE1, NULL);
-+		}
- 
- 		size = sizeof(u32);
- 	} else {
-@@ -36,10 +88,15 @@ void __kprobes __patch_text(void *addr, unsigned int insn)
- 		else
- 			insn = __opcode_to_mem_arm(insn);
- 
--		*(u32 *)addr = insn;
-+		*(u32 *)waddr = insn;
- 		size = sizeof(u32);
- 	}
- 
-+	if (waddr != addr) {
-+		flush_kernel_vmap_range(waddr, twopage ? size / 2 : size);
-+		patch_unmap(FIX_TEXT_POKE0, &flags);
-+	}
-+
- 	flush_icache_range((uintptr_t)(addr),
- 			   (uintptr_t)(addr) + size);
- }
-diff --git a/arch/arm/kernel/patch.h b/arch/arm/kernel/patch.h
-index b4731f2..77e054c 100644
---- a/arch/arm/kernel/patch.h
-+++ b/arch/arm/kernel/patch.h
-@@ -2,6 +2,16 @@
- #define _ARM_KERNEL_PATCH_H
- 
- void patch_text(void *addr, unsigned int insn);
--void __patch_text(void *addr, unsigned int insn);
-+void __patch_text_real(void *addr, unsigned int insn, bool remap);
-+
-+static inline void __patch_text(void *addr, unsigned int insn)
-+{
-+	__patch_text_real(addr, insn, true);
-+}
-+
-+static inline void __patch_text_early(void *addr, unsigned int insn)
-+{
-+	__patch_text_real(addr, insn, false);
-+}
- 
- #endif
--- 
-1.9.2
-
+> ---
+>  drivers/pci/hotplug/pciehp.h     |    1 +
+>  drivers/pci/hotplug/pciehp_hpc.c |   16 ++++++++++------
+>  include/linux/pci.h              |    1 +
+>  3 files changed, 12 insertions(+), 6 deletions(-)
+> 
+> diff --git a/drivers/pci/hotplug/pciehp.h b/drivers/pci/hotplug/pciehp.h
+> index d208791..753a3b4 100644
+> --- a/drivers/pci/hotplug/pciehp.h
+> +++ b/drivers/pci/hotplug/pciehp.h
+> @@ -98,6 +98,7 @@ struct controller {
+>  	unsigned int no_cmd_complete:1;
+>  	unsigned int link_active_reporting:1;
+>  	unsigned int notification_enabled:1;
+> +	unsigned int use_polling:1;	/* Always uses polling for this slot */
+>  	unsigned int power_fault_detected;
+>  };
+>  
+> diff --git a/drivers/pci/hotplug/pciehp_hpc.c b/drivers/pci/hotplug/pciehp_hpc.c
+> index d7d058f..d210d23 100644
+> --- a/drivers/pci/hotplug/pciehp_hpc.c
+> +++ b/drivers/pci/hotplug/pciehp_hpc.c
+> @@ -82,7 +82,7 @@ static inline int pciehp_request_irq(struct controller *ctrl)
+>  	int retval, irq = ctrl->pcie->irq;
+>  
+>  	/* Install interrupt polling timer. Start with 10 sec delay */
+> -	if (pciehp_poll_mode) {
+> +	if (ctrl->use_polling) {
+>  		init_timer(&ctrl->poll_timer);
+>  		start_int_poll_timer(ctrl, 10);
+>  		return 0;
+> @@ -98,7 +98,7 @@ static inline int pciehp_request_irq(struct controller *ctrl)
+>  
+>  static inline void pciehp_free_irq(struct controller *ctrl)
+>  {
+> -	if (pciehp_poll_mode)
+> +	if (ctrl->use_polling)
+>  		del_timer_sync(&ctrl->poll_timer);
+>  	else
+>  		free_irq(ctrl->pcie->irq, ctrl);
+> @@ -131,7 +131,7 @@ static int pcie_poll_cmd(struct controller *ctrl)
+>  
+>  static void pcie_wait_cmd(struct controller *ctrl, int poll)
+>  {
+> -	unsigned int msecs = pciehp_poll_mode ? 2500 : 1000;
+> +	unsigned int msecs = ctrl->use_polling ? 2500 : 1000;
+>  	unsigned long timeout = msecs_to_jiffies(msecs);
+>  	int rc;
+>  
+> @@ -595,7 +595,7 @@ void pcie_enable_notification(struct controller *ctrl)
+>  		cmd |= PCI_EXP_SLTCTL_PDCE;
+>  	if (MRL_SENS(ctrl))
+>  		cmd |= PCI_EXP_SLTCTL_MRLSCE;
+> -	if (!pciehp_poll_mode)
+> +	if (!ctrl->use_polling)
+>  		cmd |= PCI_EXP_SLTCTL_HPIE | PCI_EXP_SLTCTL_CCIE;
+>  
+>  	mask = (PCI_EXP_SLTCTL_PDCE | PCI_EXP_SLTCTL_ABPE |
+> @@ -642,14 +642,14 @@ int pciehp_reset_slot(struct slot *slot, int probe)
+>  	stat_mask |= PCI_EXP_SLTSTA_DLLSC;
+>  
+>  	pcie_write_cmd(ctrl, 0, ctrl_mask);
+> -	if (pciehp_poll_mode)
+> +	if (ctrl->use_polling)
+>  		del_timer_sync(&ctrl->poll_timer);
+>  
+>  	pci_reset_bridge_secondary_bus(ctrl->pcie->port);
+>  
+>  	pcie_capability_write_word(pdev, PCI_EXP_SLTSTA, stat_mask);
+>  	pcie_write_cmd(ctrl, ctrl_mask, ctrl_mask);
+> -	if (pciehp_poll_mode)
+> +	if (ctrl->use_polling)
+>  		int_poll_timeout(ctrl->poll_timer.data);
+>  
+>  	return 0;
+> @@ -789,6 +789,10 @@ struct controller *pcie_init(struct pcie_device *dev)
+>                  ctrl_dbg(ctrl, "Link Active Reporting supported\n");
+>                  ctrl->link_active_reporting = 1;
+>          }
+> +	if (pciehp_poll_mode || dev->port->hotplug_polling) {
+> +		ctrl_info(ctrl, "will use polling\n");
+> +		ctrl->use_polling = 1;
+> +	}
+>  
+>  	/* Clear all remaining event bits in Slot Status register */
+>  	pcie_capability_write_word(pdev, PCI_EXP_SLTSTA,
+> diff --git a/include/linux/pci.h b/include/linux/pci.h
+> index a13d682..b2ec72e 100644
+> --- a/include/linux/pci.h
+> +++ b/include/linux/pci.h
+> @@ -336,6 +336,7 @@ struct pci_dev {
+>  	unsigned int	is_virtfn:1;
+>  	unsigned int	reset_fn:1;
+>  	unsigned int    is_hotplug_bridge:1;
+> +	unsigned int    hotplug_polling:1; /* Port uses polling for hotplug */
+>  	unsigned int    __aer_firmware_first_valid:1;
+>  	unsigned int	__aer_firmware_first:1;
+>  	unsigned int	broken_intx_masking:1;
+> -- 
+> 1.7.9.5
+> 
