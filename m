@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758383AbaDXQOp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:14:45 -0400
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:50990 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758415AbaDXQBX (ORCPT
+	id S1758438AbaDXQPN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:15:13 -0400
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:46059 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756478AbaDXQPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:01:23 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        spear-devel@list.st.com, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>
-Subject: [RESEND PATCH v5 2/5] ARM: ep93xx: Enable DEBUG_LL_UART_PL01X
-Date: Thu, 24 Apr 2014 17:00:43 +0100
-Message-Id: <1398355246-29571-3-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org>
-References: <1396886056-18132-1-git-send-email-daniel.thompson@linaro.org>
- <1398355246-29571-1-git-send-email-daniel.thompson@linaro.org>
+	Thu, 24 Apr 2014 12:15:09 -0400
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20140424160529.GD13573@quack.suse.cz>
+References: <1397940833-6386-1-git-send-email-xypron.glpk@gmx.de>
+ <20140422134044.GE366@quack.suse.cz> <CAKgNAkh=Shj6UO6x_KieQEYUoY+guokNute0iwUfiSYFJbeTfQ@mail.gmail.com>
+ <20140422140747.GF366@quack.suse.cz> <20140424090441.GA6723@quack.suse.cz>
+ <5359177E.1070907@gmx.de> <20140424160529.GD13573@quack.suse.cz>
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Date: Thu, 24 Apr 2014 18:14:48 +0200
+Message-ID: <CAKgNAki+0VTA53ibaZy0e-Qt6STpUBsbQKMAUHr1ePd3hJPg7Q@mail.gmail.com>
+Subject: Re: [PATCH 1/1] fanotify: check permissions when creating file descriptor
+To: Jan Kara <jack@suse.cz>
+Cc: Heinrich Schuchardt <xypron.glpk@gmx.de>, Eric Paris <eparis@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This defconfig already enables DEBUG_LL and by default DEBUG_LL_UART_NONE
-will be selected (but due to some back compability magic I'd like to
-remove is not actually honoured). DEBUG_LL_UART_PL01X is a much saner
-default.
+>> This means a listener may have read authorization for /home and mark
+>> this mount.
+>> Afterwards, while you sign a git tag, it will receive a FAN_OPEN event
+>> and use the file descriptor supplied in the event to overwrite your
+>> /home/jankara/.gnupg/secring.pgp
+>> though the file is chmod 600 and the listener is neither root nor you.
+>   Ah, right. Thanks for explaining this to me. I'm not really too excited
+> about this as a security issue because once the process has CAP_SYS_ADMIN
+> it basically owns the machine (it is sadly one of those capabilities which
+> is too broad)
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- arch/arm/configs/ep93xx_defconfig | 1 +
- 1 file changed, 1 insertion(+)
+Yup. https://lwn.net/Articles/486306/
 
-diff --git a/arch/arm/configs/ep93xx_defconfig b/arch/arm/configs/ep93xx_defconfig
-index 6ac5ea7..ff70784 100644
---- a/arch/arm/configs/ep93xx_defconfig
-+++ b/arch/arm/configs/ep93xx_defconfig
-@@ -108,5 +108,6 @@ CONFIG_DEBUG_SPINLOCK=y
- CONFIG_DEBUG_MUTEXES=y
- CONFIG_DEBUG_USER=y
- CONFIG_DEBUG_LL=y
-+CONFIG_DEBUG_LL_UART_PL01X=y
- # CONFIG_CRYPTO_ANSI_CPRNG is not set
- CONFIG_LIBCRC32C=y
+> but I agree checking permissions when creating the fd is
+> reasonable.
+>
+>                                                                 Honza
+> --
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
+
+
+
 -- 
-1.9.0
-
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
