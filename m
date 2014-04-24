@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756019AbaDXLRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:17:01 -0400
-Received: from mail-la0-f49.google.com ([209.85.215.49]:46706 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868AbaDXLQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 07:16:53 -0400
-Message-ID: <5358F2A1.40106@cogentembedded.com>
-Date: Thu, 24 Apr 2014 15:16:49 +0400
-From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1756199AbaDXLRg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:17:36 -0400
+Received: from smtp1.it.da.ut.ee ([193.40.5.66]:48203 "EHLO smtp1.it.da.ut.ee"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753853AbaDXLRd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 07:17:33 -0400
+Date: Thu, 24 Apr 2014 14:17:29 +0300 (EEST)
+From: Meelis Roos <mroos@linux.ee>
+To: Viresh Kumar <viresh.kumar@linaro.org>
+cc: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: 3.15-rc2: longhaul cpufreq stalls tasks for 120s+
+In-Reply-To: <CAKohpo=Lzzj5eki3644-ESB+P39+Q-ARFqN-S+_HM5UB802W3g@mail.gmail.com>
+Message-ID: <alpine.SOC.1.00.1404241417120.13595@math.ut.ee>
+References: <alpine.SOC.1.00.1404241249480.13595@math.ut.ee> <CAKohpoktwh=SgHTfEgT7vYRVWHssXw7==+a9qAdtmJXepjT2Tw@mail.gmail.com> <alpine.SOC.1.00.1404241316290.13595@math.ut.ee> <CAKohpo=Lzzj5eki3644-ESB+P39+Q-ARFqN-S+_HM5UB802W3g@mail.gmail.com>
+User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert+renesas@glider.be>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: Ben Dooks <ben.dooks@codethink.co.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH 1/6] PM / clock_ops: Add helpers combining generic runtime
- and generic clock PM
-References: <1398335198-26555-1-git-send-email-geert+renesas@glider.be> <1398335198-26555-2-git-send-email-geert+renesas@glider.be>
-In-Reply-To: <1398335198-26555-2-git-send-email-geert+renesas@glider.be>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+> On 24 April 2014 15:46, Meelis Roos <mroos@linux.ee> wrote:
+> > I can add debug to where needed and try it.
+> 
+> I am quite sure below wouldn't fix it, but just wanted to check
+> for the corner case :(
+> 
+> Can you please try attached patch (mail's content would be
+> broken):
 
-On 24-04-2014 14:26, Geert Uytterhoeven wrote:
+Did not help. Will try lock debugging now.
 
-> Add helpers pm_generic_runtime_clk_suspend() and
-> pm_generic_clk_runtime_resume(), combining generic runtime PM and generic
-> clock PM.
+> 
+> diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+> index abda660..7198e23 100644
+> --- a/drivers/cpufreq/cpufreq.c
+> +++ b/drivers/cpufreq/cpufreq.c
+> @@ -355,10 +355,12 @@ void cpufreq_freq_transition_begin(struct
+> cpufreq_policy *policy,
+>                 struct cpufreq_freqs *freqs)
+>  {
+>  wait:
+> +       smp_mb();
+>         wait_event(policy->transition_wait, !policy->transition_ongoing);
+> 
+>         spin_lock(&policy->transition_lock);
+> 
+> +       smp_mb();
+>         if (unlikely(policy->transition_ongoing)) {
+>                 spin_unlock(&policy->transition_lock);
+>                 goto wait;
+> @@ -380,8 +382,11 @@ void cpufreq_freq_transition_end(struct
+> cpufreq_policy *policy,
+> 
+>         cpufreq_notify_post_transition(policy, freqs, transition_failed);
+> 
+> +       smp_mb();
+> +
+>         policy->transition_ongoing = false;
+> 
+> +       smp_mb();
+>         wake_up(&policy->transition_wait);
+>  }
+>  EXPORT_SYMBOL_GPL(cpufreq_freq_transition_end);
+> 
 
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-
-[...]
-
-> diff --git a/include/linux/pm_clock.h b/include/linux/pm_clock.h
-> index 6981aa288c45..bf1e4d09a0ca 100644
-> --- a/include/linux/pm_clock.h
-> +++ b/include/linux/pm_clock.h
-> @@ -35,6 +35,8 @@ extern int pm_clk_add_clk(struct device *dev, struct clk *clk);
->   extern void pm_clk_remove(struct device *dev, const char *con_id);
->   extern int pm_clk_suspend(struct device *dev);
->   extern int pm_clk_resume(struct device *dev);
-> +extern int pm_generic_runtime_clk_suspend(struct device *dev);
-> +extern int pm_generic_clk_runtime_resume(struct device *dev);
-
-    Shouldn't these function names be symmetric? I think '_clk' and '_runtime' 
-need swapping in one case.
-
-WBR, Sergei
-
+-- 
+Meelis Roos (mroos@linux.ee)
