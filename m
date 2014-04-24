@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754462AbaDXIys (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:54:48 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46778 "EHLO
+	id S1754734AbaDXJwZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:52:25 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46771 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417AbaDXIyh (ORCPT
+	with ESMTP id S1754395AbaDXIyf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:54:37 -0400
+	Thu, 24 Apr 2014 04:54:35 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Yann Droneaud <ydroneaud@opteya.com>,
-        Roland Dreier <roland@purestorage.com>,
+Cc: Stanislav Kinsbursky <skinsbursky@parallels.com>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 112/182] IB/ehca: Returns an error on ib_copy_to_udata() failure
-Date: Thu, 24 Apr 2014 09:50:37 +0100
-Message-Id: <1398329507-5911-113-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 110/182] nfsd: check passed socket's net matches NFSd superblock's one
+Date: Thu, 24 Apr 2014 09:50:35 +0100
+Message-Id: <1398329507-5911-111-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,40 +28,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Yann Droneaud <ydroneaud@opteya.com>
+From: Stanislav Kinsbursky <skinsbursky@parallels.com>
 
-commit 5bdb0f02add5994b0bc17494f4726925ca5d6ba1 upstream.
+commit 3064639423c48d6e0eb9ecc27c512a58e38c6c57 upstream.
 
-In case of error when writing to userspace, function ehca_create_cq()
-does not set an error code before following its error path.
+There could be a case, when NFSd file system is mounted in network, different
+to socket's one, like below:
 
-This patch sets the error code to -EFAULT when ib_copy_to_udata()
-fails.
+"ip netns exec" creates new network and mount namespace, which duplicates NFSd
+mount point, created in init_net context. And thus NFS server stop in nested
+network context leads to RPCBIND client destruction in init_net.
+Then, on NFSd start in nested network context, rpc.nfsd process creates socket
+in nested net and passes it into "write_ports", which leads to RPCBIND sockets
+creation in init_net context because of the same reason (NFSd monut point was
+created in init_net context). An attempt to register passed socket in nested
+net leads to panic, because no RPCBIND client present in nexted network
+namespace.
 
-This was caught when using spatch (aka. coccinelle)
-to rewrite call to ib_copy_{from,to}_udata().
+This patch add check that passed socket's net matches NFSd superblock's one.
+And returns -EINVAL error to user psace otherwise.
 
-Link: https://www.gitorious.org/opteya/coccib/source/75ebf2c1033c64c1d81df13e4ae44ee99c989eba:ib_copy_udata.cocci
-Link: http://marc.info/?i=cover.1394485254.git.ydroneaud@opteya.com
-Signed-off-by: Yann Droneaud <ydroneaud@opteya.com>
-Signed-off-by: Roland Dreier <roland@purestorage.com>
+v2: Put socket on exit.
+
+Reported-by: Weng Meiling <wengmeiling.weng@huawei.com>
+Signed-off-by: Stanislav Kinsbursky <skinsbursky@parallels.com>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/infiniband/hw/ehca/ehca_cq.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/nfsd/nfsctl.c               |  5 +++++
+ include/linux/sunrpc/svcsock.h |  1 +
+ net/sunrpc/svcsock.c           | 16 ++++++++++++++++
+ 3 files changed, 22 insertions(+)
 
-diff --git a/drivers/infiniband/hw/ehca/ehca_cq.c b/drivers/infiniband/hw/ehca/ehca_cq.c
-index 212150c..8cc8375 100644
---- a/drivers/infiniband/hw/ehca/ehca_cq.c
-+++ b/drivers/infiniband/hw/ehca/ehca_cq.c
-@@ -283,6 +283,7 @@ struct ib_cq *ehca_create_cq(struct ib_device *device, int cqe, int comp_vector,
- 			(my_cq->galpas.user.fw_handle & (PAGE_SIZE - 1));
- 		if (ib_copy_to_udata(udata, &resp, sizeof(resp))) {
- 			ehca_err(device, "Copy to udata failed.");
-+			cq = ERR_PTR(-EFAULT);
- 			goto create_cq_exit4;
- 		}
- 	}
+diff --git a/fs/nfsd/nfsctl.c b/fs/nfsd/nfsctl.c
+index 7f55517..f34d9de 100644
+--- a/fs/nfsd/nfsctl.c
++++ b/fs/nfsd/nfsctl.c
+@@ -699,6 +699,11 @@ static ssize_t __write_ports_addfd(char *buf, struct net *net)
+ 	if (err != 0 || fd < 0)
+ 		return -EINVAL;
+ 
++	if (svc_alien_sock(net, fd)) {
++		printk(KERN_ERR "%s: socket net is different to NFSd's one\n", __func__);
++		return -EINVAL;
++	}
++
+ 	err = nfsd_create_serv(net);
+ 	if (err != 0)
+ 		return err;
+diff --git a/include/linux/sunrpc/svcsock.h b/include/linux/sunrpc/svcsock.h
+index 62fd1b7..947009e 100644
+--- a/include/linux/sunrpc/svcsock.h
++++ b/include/linux/sunrpc/svcsock.h
+@@ -56,6 +56,7 @@ int		svc_recv(struct svc_rqst *, long);
+ int		svc_send(struct svc_rqst *);
+ void		svc_drop(struct svc_rqst *);
+ void		svc_sock_update_bufs(struct svc_serv *serv);
++bool		svc_alien_sock(struct net *net, int fd);
+ int		svc_addsock(struct svc_serv *serv, const int fd,
+ 					char *name_return, const size_t len);
+ void		svc_init_xprt_sock(void);
+diff --git a/net/sunrpc/svcsock.c b/net/sunrpc/svcsock.c
+index 7762b9f..ee580c0 100644
+--- a/net/sunrpc/svcsock.c
++++ b/net/sunrpc/svcsock.c
+@@ -1395,6 +1395,22 @@ static struct svc_sock *svc_setup_socket(struct svc_serv *serv,
+ 	return svsk;
+ }
+ 
++bool svc_alien_sock(struct net *net, int fd)
++{
++	int err;
++	struct socket *sock = sockfd_lookup(fd, &err);
++	bool ret = false;
++
++	if (!sock)
++		goto out;
++	if (sock_net(sock->sk) != net)
++		ret = true;
++	sockfd_put(sock);
++out:
++	return ret;
++}
++EXPORT_SYMBOL_GPL(svc_alien_sock);
++
+ /**
+  * svc_addsock - add a listener socket to an RPC service
+  * @serv: pointer to RPC service to which to add a new listener
 -- 
 1.9.1
 
