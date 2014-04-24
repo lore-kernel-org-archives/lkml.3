@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308AbaDXLao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 07:30:44 -0400
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:49194 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756150AbaDXLad (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 07:30:33 -0400
-Message-ID: <5358F5D4.1010506@linaro.org>
-Date: Thu, 24 Apr 2014 17:00:28 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	id S1756353AbaDXLbL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 07:31:11 -0400
+Received: from mga02.intel.com ([134.134.136.20]:35882 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756123AbaDXLbH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 07:31:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,918,1389772800"; 
+   d="scan'208";a="518778872"
+Date: Thu, 24 Apr 2014 14:38:22 +0300
+From: "Westerberg, Mika" <mika.westerberg@intel.com>
+To: Timur Tabi <timur@codeaurora.org>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
+Message-ID: <20140424113822.GF30677@intel.com>
+References: <534BFAAF.3070805@codeaurora.org>
+ <534D0370.50108@linux.intel.com>
+ <535005BA.1040405@codeaurora.org>
+ <5357A80B.8030701@linux.intel.com>
+ <5357ACF1.9070206@codeaurora.org>
+ <20140423135915.GY30677@intel.com>
+ <5357D8CC.3080501@codeaurora.org>
+ <CACRpkdbk8okbzaZgD=BqeMSOvbEvYNViqamd9i=NAaAWW=T9sQ@mail.gmail.com>
+ <20140424062719.GZ30677@intel.com>
+ <5358F362.6080006@codeaurora.org>
 MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-CC: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-pm@vger.kernel.org, rui.zhang@intel.com, eduardo.valentin@ti.com
-Subject: Re: [PATCH] thermal: samsung: Only update available threshold limits
-References: <1397453895-6688-1-git-send-email-tushar.behera@linaro.org> <1705902.4858U1S3Zd@amdc1032>
-In-Reply-To: <1705902.4858U1S3Zd@amdc1032>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5358F362.6080006@codeaurora.org>
+Organization: Intel Finland Oy - BIC 0357606-4 - Westendinkatu 7, 02160 Espoo
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 04:18 PM, Bartlomiej Zolnierkiewicz wrote:
+On Thu, Apr 24, 2014 at 06:20:02AM -0500, Timur Tabi wrote:
+> Westerberg, Mika wrote:
+> >Typically this is done by the boot firmware (BIOS in this case). So the OS
+> >doesn't need to deal with that.
+> >
+> >AFAICT ACPI doesn't know anything about pin muxing.
 > 
-> Hi,
-> 
-> On Monday, April 14, 2014 11:08:15 AM Tushar Behera wrote:
->> Currently the threshold limits are updated in 2 stages, once for all
->> software trigger levels and again for hardware trip point.
->>
->> While updating the software trigger levels, it overwrites the threshold
->> limit for hardware trip point thereby forcing the Exynos core to issue
->> an emergency shutdown.
-> 
-> On what SoC type have you encountered this problem?  It doesn't seem to
-> happen on older SoCs (at least Exynos4210 and Exynos4x12 ones).
-> 
+> In that case, would it be correct to say that a Linux pinctrl driver
+> for an ACPI-only platform should not define pinmux function groups,
+> because they'll never be used?
 
-I found this issue while testing on Exynos5420 with these patches [1].
-
-[1] https://lkml.org/lkml/2013/8/1/38
-
->> Updating only the required fields in threshold register fixes this issue.
-> 
-> With the current code there is indeed a time window during which threshold
-> limit for hardware trip point is set to zero so the fix is correct.
-> 
-
-
--- 
-Tushar Behera
+No because you can have a GPIO controller on ACPI machine that allows you
+to do some sort of pin muxing. What I'm saying is that ACPI itself doesn't
+have such knowledge and hence we don't support such things in
+gpiolib-acpi.c.
