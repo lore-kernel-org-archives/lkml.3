@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962AbaDXVLQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:11:16 -0400
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:40452 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752556AbaDXVLO (ORCPT
+	id S1754172AbaDXVMA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:12:00 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:34753 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343AbaDXVL6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:11:14 -0400
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Thu, 24 Apr 2014 17:14:40 -0400 (EDT)
-From: Vince Weaver <vincent.weaver@maine.edu>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [perf] yet another 32/64-bit range check failure
-In-Reply-To: <20140423102254.GL11096@twins.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1404241712310.9220@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.10.1404222329590.28273@vincent-weaver-1.um.maine.edu> <20140423102254.GL11096@twins.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 24 Apr 2014 17:11:58 -0400
+Date: Thu, 24 Apr 2014 17:11:55 -0400 (EDT)
+Message-Id: <20140424.171155.806959282091051918.davem@davemloft.net>
+To: vgoyal@redhat.com
+Cc: luto@amacapital.net, tj@kernel.org, dwalsh@redhat.com,
+        linux-kernel@vger.kernel.org, lpoetter@redhat.com, ssorce@redhat.com,
+        cgroups@vger.kernel.org, kay@redhat.com, netdev@vger.kernel.org
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20140424210429.GD19091@redhat.com>
+References: <20140424203427.GC19091@redhat.com>
+	<20140424.164820.1543648508330465096.davem@davemloft.net>
+	<20140424210429.GD19091@redhat.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 24 Apr 2014 14:11:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 23 Apr 2014, Peter Zijlstra wrote:
-> 
-> Something like so should do I suppose.
-> 
-> ---
-> Subject: perf: Fix perf_event_open(.flags) test
-> 
-> Vince noticed that we test the (unsigned long) flags field against an
-> (unsigned int) constant. This would allow setting the high bits on 64bit
-> platforms and not get an error.
-> 
-> There is nothing that uses the high bits, so it should be entirely
-> harmless, but we don't want userspace to accidentally set them anyway,
-> so fix the constants.
-> 
-> Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+From: Vivek Goyal <vgoyal@redhat.com>
+Date: Thu, 24 Apr 2014 17:04:29 -0400
 
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
+> Does it really matter.
 
-Your patch fixes the problem, or at least the test I wrote to check the 
-issue now fails properly.
+Good question, if it doesn't matter, you might as well log garbage.
 
-Oddly, with this patch applied, it's made it a lot harder (but not 
-impossible) to trigger the memory corruption bug, although that might just 
-be coincidence.
+There are a lot of logical holes in this discussion.
 
-Vince
+Real UIDs are always reported at sendmsg() time, not effective ones
+(the UID "at sendmsg() time").
+
+Therefore if we were to add CGROUP passing at sendmsg() time it should
+report the "real cgroup", the one the task has at the time the file
+descriptor / socket was "created".
