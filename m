@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755571AbaDXK4r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 06:56:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46562 "EHLO
+	id S1755639AbaDXK5o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 06:57:44 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46558 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbaDXIxd (ORCPT
+	with ESMTP id S1753921AbaDXIxb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:53:33 -0400
+	Thu, 24 Apr 2014 04:53:31 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Linus Walleij <linus.walleij@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+Cc: Lan Tianyu <tianyu.lan@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 068/182] mfd: Include all drivers in subsystem menu
-Date: Thu, 24 Apr 2014 09:49:53 +0100
-Message-Id: <1398329507-5911-69-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 067/182] ACPI / button: Add ACPI Button event via netlink routine
+Date: Thu, 24 Apr 2014 09:49:52 +0100
+Message-Id: <1398329507-5911-68-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,44 +28,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Linus Walleij <linus.walleij@linaro.org>
+From: Lan Tianyu <tianyu.lan@intel.com>
 
-commit a6e6e660baa5c583022e3e48c85316bace027825 upstream.
+commit 0bf6368ee8f25826d0645c0f7a4f17c8845356a4 upstream.
 
-It is currently not possible to select the SA1100 or Vexpress
-drivers in the MFD subsystem, because the menu for the entire
-subsystem ends before these options are presented.
+Commit 1696d9d (ACPI: Remove the old /proc/acpi/event interface)
+removed ACPI Button event which originally was sent to userspace via
+/proc/acpi/event. This caused ACPI shutdown regression on gentoo
+in VirtualBox. Now ACPI events are sent to userspace via netlink,
+so add ACPI Button event back via netlink routine.
 
-Move the main menu closing and the endif for HAS_IOMEM to the
-end of the file so these are selectable again.
-
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-Signed-off-by: Lee Jones <lee.jones@linaro.org>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=71721
+Reported-and-tested-by: Richard Musil <richard.musil@gmail.com>
+Signed-off-by: Lan Tianyu <tianyu.lan@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+[ luis: backported to 3.11: adjusted context ]
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mfd/Kconfig | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ drivers/acpi/button.c | 4 ++++
+ 1 file changed, 4 insertions(+)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index aecd6dd..3ebc6c1 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -1145,8 +1145,6 @@ config MFD_WM8994
- 	  core support for the WM8994, in order to use the actual
- 	  functionaltiy of the device other drivers must be enabled.
+diff --git a/drivers/acpi/button.c b/drivers/acpi/button.c
+index d2e617b..a495adb 100644
+--- a/drivers/acpi/button.c
++++ b/drivers/acpi/button.c
+@@ -302,6 +302,10 @@ static void acpi_button_notify(struct acpi_device *device, u32 event)
+ 			input_sync(input);
  
--endmenu
--endif
+ 			pm_wakeup_event(&device->dev, 0);
++			acpi_bus_generate_netlink_event(
++					device->pnp.device_class,
++					dev_name(&device->dev),
++					event, ++button->pushed);
+ 		}
  
- menu "Multimedia Capabilities Port drivers"
- 	depends on ARCH_SA1100
-@@ -1178,3 +1176,6 @@ config VEXPRESS_CONFIG
- 	help
- 	  Platform configuration infrastructure for the ARM Ltd.
- 	  Versatile Express.
-+
-+endmenu
-+endif
+ 		acpi_bus_generate_proc_event(device, event, ++button->pushed);
 -- 
 1.9.1
 
