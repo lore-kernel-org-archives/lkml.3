@@ -1,110 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755456AbaDXJbm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:31:42 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46933 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754764AbaDXIzg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:55:36 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Liu Hua <sdu.liu@huawei.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 138/182] hung_task: check the value of "sysctl_hung_task_timeout_sec"
-Date: Thu, 24 Apr 2014 09:51:03 +0100
-Message-Id: <1398329507-5911-139-git-send-email-luis.henriques@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-X-Extended-Stable: 3.11
+	id S1755384AbaDXJbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:31:40 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:54858 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754766AbaDXIzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 04:55:37 -0400
+Message-ID: <5358D16A.9000500@ti.com>
+Date: Thu, 24 Apr 2014 11:55:06 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Nishanth Menon <nm@ti.com>, Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Sricharan R <r.sricharan@ti.com>
+CC: Sekhar Nori <nsekhar@ti.com>, Rajendra Nayak <rnayak@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH V2 00/19] bus: omap_l3_noc: driver cleanups and support
+ for DRA7/AM4372
+References: <1397492726-17203-1-git-send-email-nm@ti.com> <1397767775-10965-1-git-send-email-nm@ti.com> <53504041.7090906@ti.com> <5350410B.5010507@ti.com>
+In-Reply-To: <5350410B.5010507@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.11.10.9 -stable review patch.  If anyone has any objections, please let me know.
+On 04/18/2014 12:00 AM, Nishanth Menon wrote:
+> On 04/17/2014 03:57 PM, Santosh Shilimkar wrote:
+>> I looked at the series and its looks pretty good. Thanks for fixups, updates.
+>> For whole series,
+>> Acked-by: Santosh Shilimkar <santosh.shilimkar@ti.com>
+>>
+> 
+> Thanks.
+> 
+>>> Patches(including Peter's) is available here:
+>>> https://github.com/nmenon/linux-2.6-playground/commits/l3noc/driver-fixes-v2
+>>>
+>> Can Tony pull this branch for 3.16 then which includes Peter's series as well ?
+> 
+> there is just an empty commit with information about peter's patches
+> that i lined up to differentiate the series.. I can drop it if Tony
+> would like me to.
 
-------------------
+Looking at the branch I see my patches underneath so they are in the branch.
+It would be great if Tony pulls this... Will be a great present to my patches
+(omap_l3 patches in the branch) for their 1 year anniversary of being out on
+the mailing list ;)
 
-From: Liu Hua <sdu.liu@huawei.com>
-
-commit 80df28476505ed4e6701c3448c63c9229a50c655 upstream.
-
-As sysctl_hung_task_timeout_sec is unsigned long, when this value is
-larger then LONG_MAX/HZ, the function schedule_timeout_interruptible in
-watchdog will return immediately without sleep and with print :
-
-  schedule_timeout: wrong timeout value ffffffffffffff83
-
-and then the funtion watchdog will call schedule_timeout_interruptible
-again and again.  The screen will be filled with
-
-	"schedule_timeout: wrong timeout value ffffffffffffff83"
-
-This patch does some check and correction in sysctl, to let the function
-schedule_timeout_interruptible allways get the valid parameter.
-
-Signed-off-by: Liu Hua <sdu.liu@huawei.com>
-Tested-by: Satoru Takeuchi <satoru.takeuchi@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-[ luis: backported to 3.11:
-  - pick hung_task_timeout_secs documentation from commit 270750d
-    ("hung_task: Display every hung task warning") ]
-Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
----
- Documentation/sysctl/kernel.txt | 11 +++++++++++
- kernel/sysctl.c                 |  6 ++++++
- 2 files changed, 17 insertions(+)
-
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 7ea3a96..1bf2a24 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -286,6 +286,17 @@ Default value is "/sbin/hotplug".
- 
- ==============================================================
- 
-+hung_task_timeout_secs:
-+
-+Check interval. When a task in D state did not get scheduled
-+for more than this value report a warning.
-+This file shows up if CONFIG_DETECT_HUNG_TASK is enabled.
-+
-+0: means infinite timeout - no checking done.
-+Possible values to set are in range {0..LONG_MAX/HZ}.
-+
-+==============================================================
-+
- kptr_restrict:
- 
- This toggle indicates whether restrictions are placed on
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index f252045..8515e5f 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -143,6 +143,11 @@ static int min_percpu_pagelist_fract = 8;
- static int ngroups_max = NGROUPS_MAX;
- static const int cap_last_cap = CAP_LAST_CAP;
- 
-+/*this is needed for proc_doulongvec_minmax of sysctl_hung_task_timeout_secs */
-+#ifdef CONFIG_DETECT_HUNG_TASK
-+static unsigned long hung_task_timeout_max = (LONG_MAX/HZ);
-+#endif
-+
- #ifdef CONFIG_INOTIFY_USER
- #include <linux/inotify.h>
- #endif
-@@ -972,6 +977,7 @@ static struct ctl_table kern_table[] = {
- 		.maxlen		= sizeof(unsigned long),
- 		.mode		= 0644,
- 		.proc_handler	= proc_dohung_task_timeout_secs,
-+		.extra2		= &hung_task_timeout_max,
- 	},
- 	{
- 		.procname	= "hung_task_warnings",
 -- 
-1.9.1
-
+Péter
