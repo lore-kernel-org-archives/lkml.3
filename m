@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274AbaDXJ0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 05:26:47 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:47010 "EHLO
+	id S1755670AbaDXJ1T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 05:27:19 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:47000 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754849AbaDXIzz (ORCPT
+	with ESMTP id S1754842AbaDXIzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:55:55 -0400
+	Thu, 24 Apr 2014 04:55:54 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Helge Deller <deller@gmx.de>,
+Cc: Jiri Slaby <jslaby@suse.cz>, Tomas Cech <tcech@suse.cz>,
+        Corey Minyard <minyard@acm.org>,
+        <openipmi-developer@lists.sourceforge.net>,
+        Corey Minyard <cminyard@mvista.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 151/182] parisc: fix epoll_pwait syscall on compat kernel
-Date: Thu, 24 Apr 2014 09:51:16 +0100
-Message-Id: <1398329507-5911-152-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 148/182] Char: ipmi_bt_sm, fix infinite loop
+Date: Thu, 24 Apr 2014 09:51:13 +0100
+Message-Id: <1398329507-5911-149-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -27,32 +31,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Helge Deller <deller@gmx.de>
+From: Jiri Slaby <jslaby@suse.cz>
 
-commit ab3e55b119c9653b19ea4edffb86f04db867ac98 upstream.
+commit a94cdd1f4d30f12904ab528152731fb13a812a16 upstream.
 
-This bug was detected with the libio-epoll-perl debian package where the
-test case IO-Ppoll-compat.t failed.
+In read_all_bytes, we do
 
-Signed-off-by: Helge Deller <deller@gmx.de>
+  unsigned char i;
+  ...
+  bt->read_data[0] = BMC2HOST;
+  bt->read_count = bt->read_data[0];
+  ...
+  for (i = 1; i <= bt->read_count; i++)
+    bt->read_data[i] = BMC2HOST;
+
+If bt->read_data[0] == bt->read_count == 255, we loop infinitely in the
+'for' loop.  Make 'i' an 'int' instead of 'char' to get rid of the
+overflow and finish the loop after 255 iterations every time.
+
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Reported-and-debugged-by: Rui Hui Dian <rhdian@novell.com>
+Cc: Tomas Cech <tcech@suse.cz>
+Cc: Corey Minyard <minyard@acm.org>
+Cc: <openipmi-developer@lists.sourceforge.net>
+Signed-off-by: Corey Minyard <cminyard@mvista.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- arch/parisc/kernel/syscall_table.S | 2 +-
+ drivers/char/ipmi/ipmi_bt_sm.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/parisc/kernel/syscall_table.S b/arch/parisc/kernel/syscall_table.S
-index 0c91072..10a0c2a 100644
---- a/arch/parisc/kernel/syscall_table.S
-+++ b/arch/parisc/kernel/syscall_table.S
-@@ -392,7 +392,7 @@
- 	ENTRY_COMP(vmsplice)
- 	ENTRY_COMP(move_pages)		/* 295 */
- 	ENTRY_SAME(getcpu)
--	ENTRY_SAME(epoll_pwait)
-+	ENTRY_COMP(epoll_pwait)
- 	ENTRY_COMP(statfs64)
- 	ENTRY_COMP(fstatfs64)
- 	ENTRY_COMP(kexec_load)		/* 300 */
+diff --git a/drivers/char/ipmi/ipmi_bt_sm.c b/drivers/char/ipmi/ipmi_bt_sm.c
+index a22a7a5..8156caf 100644
+--- a/drivers/char/ipmi/ipmi_bt_sm.c
++++ b/drivers/char/ipmi/ipmi_bt_sm.c
+@@ -352,7 +352,7 @@ static inline void write_all_bytes(struct si_sm_data *bt)
+ 
+ static inline int read_all_bytes(struct si_sm_data *bt)
+ {
+-	unsigned char i;
++	unsigned int i;
+ 
+ 	/*
+ 	 * length is "framing info", minimum = 4: NetFn, Seq, Cmd, cCode.
 -- 
 1.9.1
 
