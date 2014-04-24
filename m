@@ -1,132 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757751AbaDXOpT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:45:19 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:43002 "EHLO arroyo.ext.ti.com"
+	id S1757959AbaDXOp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:45:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29290 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756570AbaDXOpR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:45:17 -0400
-Date: Thu, 24 Apr 2014 09:44:58 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: <linux-kernel@vger.kernel.org>, <myungjoo.ham@samsung.com>, <balbi@ti.com>,
-        <gg@slimlogic.co.uk>, <kishon@ti.com>,
-        <ckeepax@opensource.wolfsonmicro.com>, <broonie@kernel.org>,
-        <k.kozlowski@samsung.com>, <kyungmin.park@samsung.com>
-Subject: Re: [PATCHv3 2/9] extcon: Add devm_extcon_dev_allocate/free to
- manage the resource of extcon device
-Message-ID: <20140424144458.GG26661@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
- <1398342897-23670-3-git-send-email-cw00.choi@samsung.com>
+	id S1757768AbaDXOpX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 10:45:23 -0400
+Date: Thu, 24 Apr 2014 09:50:05 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org, davem@davemloft.net,
+        sparclinux@vger.kernel.org, mguzik@redhat.com,
+        Aaron Tomlin <atomlin@redhat.com>
+Subject: Re: [PATCH 2/2 v4] watchdog: Printing traces for all cpus on lockup
+ detection
+Message-ID: <20140424135005.GP5328@redhat.com>
+References: <1398285605-147082-1-git-send-email-dzickus@redhat.com>
+ <1398285605-147082-3-git-send-email-dzickus@redhat.com>
+ <20140423141407.6c38ee453d4c88c36fdfb062@linux-foundation.org>
+ <20140424134804.GE8488@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="j2AXaZ4YhVcLc+PQ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398342897-23670-3-git-send-email-cw00.choi@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140424134804.GE8488@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---j2AXaZ4YhVcLc+PQ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Apr 24, 2014 at 09:48:04AM -0400, Don Zickus wrote:
+> On Wed, Apr 23, 2014 at 02:14:07PM -0700, Andrew Morton wrote:
+> > On Wed, 23 Apr 2014 16:40:05 -0400 Don Zickus <dzickus@redhat.com> wrote:
+> > 
+> > > From: Aaron Tomlin <atomlin@redhat.com>
+> > > 
+> > > A 'softlockup' is defined as a bug that causes the kernel to
+> > > loop in kernel mode for more than a predefined period to
+> > > time, without giving other tasks a chance to run.
+> > > 
+> > > Currently, upon detection of this condition by the per-cpu
+> > > watchdog task, debug information (including a stack trace)
+> > > is sent to the system log.
+> > > 
+> > > On some occasions, we have observed that the "victim" rather
+> > > than the actual "culprit" (i.e. the owner/holder of the
+> > > contended resource) is reported to the user.
+> > > Often this information has proven to be insufficient to
+> > > assist debugging efforts.
+> > > 
+> > > To avoid loss of useful debug information, for architectures
+> > > which support NMI, this patch makes it possible to improve
+> > > soft lockup reporting. This is accomplished by issuing an
+> > > NMI to each cpu to obtain a stack trace.
+> > > 
+> > > If NMI is not supported we just revert back to the old method.
+> > > A sysctl and boot-time parameter is available to toggle this
+> > > feature.
+> > > 
+> > > --- a/include/linux/nmi.h
+> > > +++ b/include/linux/nmi.h
+> > > @@ -57,6 +57,9 @@ int hw_nmi_is_cpu_stuck(struct pt_regs *);
+> > >  u64 hw_nmi_get_sample_period(int watchdog_thresh);
+> > >  extern int watchdog_user_enabled;
+> > >  extern int watchdog_thresh;
+> > > +#ifdef CONFIG_SMP
+> > > +extern int sysctl_softlockup_all_cpu_backtrace;
+> > > +#endif
+> > 
+> > The ifdefs aren't really needed here.  If we omit them then error
+> > reporting happens at link time rather than at compile time, but that's
+> > a small price to pay for cleaning up the code.
+> > 
+> > > +		if (softlockup_all_cpu_backtrace) {
+> > > +			/* Prevent multiple soft-lockup reports if one cpu is already
+> > > +			 * engaged in dumping cpu back traces
+> > > +			 */
+> > > +			if (test_and_set_bit(0, &soft_lockup_nmi_warn)) {
+> > > +				/* Someone else will report us. Let's give up */
+> > > +				__this_cpu_write(soft_watchdog_warn, true);
+> > > +				return HRTIMER_RESTART;
+> > > +			}
+> > > +		}
+> > 
+> > You missed my suggestion here.
+> > 
+> >    text    data     bss     dec     hex filename
+> >    1519     524      24    2067     813 kernel/watchdog.o-before
+> >    1471     520      16    2007     7d7 kernel/watchdog.o-after
+> > 
+> > 
+> > --- a/include/linux/nmi.h~watchdog-printing-traces-for-all-cpus-on-lockup-detection-fix
+> > +++ a/include/linux/nmi.h
+> > @@ -57,9 +57,7 @@ int hw_nmi_is_cpu_stuck(struct pt_regs *
+> >  u64 hw_nmi_get_sample_period(int watchdog_thresh);
+> >  extern int watchdog_user_enabled;
+> >  extern int watchdog_thresh;
+> > -#ifdef CONFIG_SMP
+> >  extern int sysctl_softlockup_all_cpu_backtrace;
+> > -#endif
+> >  struct ctl_table;
+> >  extern int proc_dowatchdog(struct ctl_table *, int ,
+> >  			   void __user *, size_t *, loff_t *);
+> > --- a/kernel/watchdog.c~watchdog-printing-traces-for-all-cpus-on-lockup-detection-fix
+> > +++ a/kernel/watchdog.c
+> > @@ -31,7 +31,12 @@
+> >  
+> >  int watchdog_user_enabled = 1;
+> >  int __read_mostly watchdog_thresh = 10;
+> > +#ifdef CONFIG_SMP
+> >  int __read_mostly sysctl_softlockup_all_cpu_backtrace;
+> > +#else
+> > +#define sysctl_softlockup_all_cpu_backtrace 0
+> > +#endif
+> > +
+> >  static int __read_mostly watchdog_running;
+> >  static u64 __read_mostly sample_period;
+> >  
+> > _
+> 
+> Ah ok.  I will respin the patch with that cleanup.  Thanks!
 
-On Thu, Apr 24, 2014 at 09:34:50PM +0900, Chanwoo Choi wrote:
-> This patch add device managed devm_extcon_dev_{allocate,free} to automati=
-cally
-> free the memory of extcon_dev structure without handling free operation.
->=20
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-> ---
->  drivers/extcon/extcon-class.c | 70 +++++++++++++++++++++++++++++++++++--=
-------
->  include/linux/extcon.h        | 11 +++++++
->  2 files changed, 69 insertions(+), 12 deletions(-)
->=20
-> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
-> index bec66d4..f369168 100644
-> --- a/drivers/extcon/extcon-class.c
-> +++ b/drivers/extcon/extcon-class.c
-> @@ -604,6 +604,64 @@ void extcon_dev_free(struct extcon_dev *edev)
->  }
->  EXPORT_SYMBOL_GPL(extcon_dev_free);
-> =20
-> +static int devm_extcon_dev_match(struct device *dev, void *res, void *da=
-ta)
-> +{
-> +	struct extcon_dev **r =3D res;
-> +
-> +	if (!r || !*r) {
-> +		WARN_ON(!r || !*r);
-> +		return 0;
-> +	}
-> +
-> +	return *r =3D=3D data;
-> +}
-> +
-> +static void devm_extcon_dev_release(struct device *dev, void *res)
-> +{
-> +	extcon_dev_free(*(struct extcon_dev **)res);
-> +}
-> +
-> +/**
-> + * devm_extcon_dev_allocate - Allocate managed extcon device
-> + * @dev:		device owning the extcon device being created
-> + * @supported_cable:	Array of supported cable names ending with NULL.
-> + *			If supported_cable is NULL, cable name related APIs
-> + *			are disabled.
-> + *
-> + * This function manages automatically the memory of extcon device using=
- device
-> + * resource management and simplify the control of freeing the memory of=
- extcon
-> + * device.
-> + *
-> + * Returns the pointer memory of allocated extcon_dev if success or NULL=
- if fail
-> + */
-> +struct extcon_dev *devm_extcon_dev_allocate(struct device *dev,
-> +					    const char **supported_cable)
-> +{
-> +	struct extcon_dev **ptr, *edev;
-> +
-> +	ptr =3D devres_alloc(devm_extcon_dev_release, sizeof(*ptr), GFP_KERNEL);
-> +	if (!ptr)
-> +		return NULL;
+Or I can just be happy you took care of that for me.  :-)
 
-if this fails you return NULL;
+/me should read all his email first...
 
-> +
-> +	edev =3D extcon_dev_allocate(supported_cable);
-
-if this fails, you return -ENOMEM. Not very nice, if you ask me.
-
---=20
-balbi
-
---j2AXaZ4YhVcLc+PQ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTWSNqAAoJEIaOsuA1yqRERcUP/AtKMGf6wvRLiUTIOXr35Aod
-1f/s0Gs/SjqmqckbymXC+OWorxl0lGfP7skqZF0NhWyPOEhmfJjGFb5b225071xK
-ARpftRHw+3QvjB7/Q3ZUxUbg0GzpP+Dh8vLby7qjRC5BJcQGvP5phC8NFSfbKG7v
-BwZxaUU76W7OAWzxb9J/yXJw601TIDo7EZ+n5MLqXRUmFppaGiYYr2NzncwWlvuf
-h3ATxEANph4UJ85hEjjbrSDEWIsTJACnG8TkHQHNwkjto4+HoiO9ypJpU05W9T0I
-aRCTVPpVRWoP3X+O2808ywBGtEpxcNKWd+Qf7Ry62t3ABm+DszB80vMsfLRvt1th
-Xk0Mf3pMTJps4NZCyJq1M2a8sUSyrEtIQf+sFWmjEG2K847wk6lL3sN3kETT+ZQK
-Y8yEtNSwoYHkTcwN2oZRSOWeN0RVACzWOlOZxJIx89+dKrIB9p5PFae8XlbE5bEh
-Ijjf7GNruEOceZ1GiCAUYtXutgyhGt1jOa1hBFn2BStdY8S5zHWTCayYzf9oIZmb
-S++Fz2TLy1vG0B05aVzUkvWf02cguhjJeqiIORtvyKXHuoN/1oOeSyeH2OTmYsgq
-rGim/HVE15CFUqaKyCpbbvrRvr4i9MKpIlPS1prg19SwBk4WhSH+rL5USUV5ISEx
-puyNLbjot9ecT33059+a
-=56T4
------END PGP SIGNATURE-----
-
---j2AXaZ4YhVcLc+PQ--
+Thanks,
+Don
