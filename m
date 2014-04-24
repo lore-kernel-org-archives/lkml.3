@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758496AbaDXWiq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:38:46 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39532 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754934AbaDXVqA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:46:00 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Sven Neumann <s.neumann@raumfeld.com>, Daniel Mack <zonque@gmail.com>,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: [PATCH 3.14 14/33] SCSI: sd: dont fail if the device doesnt recognize SYNCHRONIZE CACHE
-Date: Thu, 24 Apr 2014 14:48:27 -0700
-Message-Id: <20140424214451.642465826@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
-References: <20140424214449.423169713@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1758895AbaDXWjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:39:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33201 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757639AbaDXWjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 18:39:09 -0400
+Message-ID: <53599225.7010407@zytor.com>
+Date: Thu, 24 Apr 2014 15:37:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
+To: Andrew Lutomirski <amluto@gmail.com>,
+        "H. Peter Anvin" <hpa@linux.intel.com>
+CC: comex <comexk@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Alexander van Heukelum <heukelum@fastmail.fm>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Arjan van de Ven <arjan.van.de.ven@intel.com>,
+        Brian Gerst <brgerst@gmail.com>,
+        Alexandre Julliard <julliard@winehq.com>,
+        Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] x86-64: espfix for 64-bit mode *PROTOTYPE*
+References: <tip-kicdm89kzw9lldryb1br9od0@git.kernel.org> <1398120472-6190-1-git-send-email-hpa@linux.intel.com> <CAPM5UJ1DYxhGASFVTg_2eUDpg1-whe-26mJ9BD+PB=4FM+540g@mail.gmail.com> <CAObL_7G06PYn=8LGQT69-qhvyWFm_mJYMkbsuwem0PeiLRe0HQ@mail.gmail.com> <53598F2F.1030306@linux.intel.com> <CAObL_7H0omGZTW2jRa+cZdaKM1y8z2Uh5mPZqW4AX4Qgea8Ydw@mail.gmail.com>
+In-Reply-To: <CAObL_7H0omGZTW2jRa+cZdaKM1y8z2Uh5mPZqW4AX4Qgea8Ydw@mail.gmail.com>
+X-Enigmail-Version: 1.6
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+On 04/24/2014 03:31 PM, Andrew Lutomirski wrote:
+> 
+> I was imagining just randomizing a couple of high bits so the whole
+> espfix area moves as a unit.
+> 
+>> We could XOR with a random constant with no penalty at all.  Only
+>> problem is that this happens early, so the entropy system is not yet
+>> available.  Fine if we have RDRAND, but...
+> 
+> How many people have SMAP and not RDRAND?  I think this is a complete
+> nonissue for non-SMAP systems.
+> 
 
-------------------
+Most likely none, unless some "clever" virtualizer turns off RDRAND out
+of spite.
 
-From: Alan Stern <stern@rowland.harvard.edu>
+>>> Peter, is this idea completely nuts?  The only exceptions that can
+>>> happen there are NMI, MCE, #DB, #SS, and #GP.  The first four use IST,
+>>> so they won't double-fault.
+>>
+>> It is completely nuts, but sometimes completely nuts is actually useful.
+>>  It is more complexity, to be sure, but it doesn't seem completely out
+>> of the realm of reason, and avoids having to unwind the ministack except
+>> in the normally-fatal #DF handler.  #DFs are documented as not
+>> recoverable, but we might be able to do something here.
+>>
+>> The only real disadvantage I see is the need for more bookkeeping
+>> metadata.  Basically the bitmask in espfix_64.c now needs to turn into
+>> an array, plus we need a second percpu variable.  Given that if
+>> CONFIG_NR_CPUS=8192 the array has 128 entries I think we can survive that.
+> 
+> Doing something in #DF needs percpu data?  What am I missing?
 
-commit 7aae51347b21eb738dc1981df1365b57a6c5ee4e upstream.
+You need the second percpu variable in the espfix setup code so you have
+both the write address and the target rsp (read address).
 
-Evidently some wacky USB-ATA bridges don't recognize the SYNCHRONIZE
-CACHE command, as shown in this email thread:
-
-	http://marc.info/?t=138978356200002&r=1&w=2
-
-The fact that we can't tell them to drain their caches shouldn't
-prevent the system from going into suspend.  Therefore sd_sync_cache()
-shouldn't return an error if the device replies with an Invalid
-Command ASC.
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Reported-by: Sven Neumann <s.neumann@raumfeld.com>
-Tested-by: Daniel Mack <zonque@gmail.com>
-Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
----
- drivers/scsi/sd.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -1463,8 +1463,8 @@ static int sd_sync_cache(struct scsi_dis
- 			sd_print_sense_hdr(sdkp, &sshdr);
- 		/* we need to evaluate the error return  */
- 		if (scsi_sense_valid(&sshdr) &&
--			/* 0x3a is medium not present */
--			sshdr.asc == 0x3a)
-+			(sshdr.asc == 0x3a ||	/* medium not present */
-+			 sshdr.asc == 0x20))	/* invalid command */
- 				/* this is no error here */
- 				return 0;
- 
+	-hpa
 
 
