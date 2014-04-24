@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331AbaDXUs0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 16:48:26 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:34389 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752605AbaDXUsX (ORCPT
+	id S1753396AbaDXUsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 16:48:50 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:52120 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605AbaDXUss (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 16:48:23 -0400
-Date: Thu, 24 Apr 2014 16:48:20 -0400 (EDT)
-Message-Id: <20140424.164820.1543648508330465096.davem@davemloft.net>
-To: vgoyal@redhat.com
-Cc: luto@amacapital.net, tj@kernel.org, dwalsh@redhat.com,
-        linux-kernel@vger.kernel.org, lpoetter@redhat.com, ssorce@redhat.com,
-        cgroups@vger.kernel.org, kay@redhat.com, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20140424203427.GC19091@redhat.com>
-References: <20140423164537.GD24651@redhat.com>
-	<20140423.132955.671992126955940387.davem@davemloft.net>
-	<20140424203427.GC19091@redhat.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 24 Apr 2014 13:48:22 -0700 (PDT)
+	Thu, 24 Apr 2014 16:48:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <1393873736-26867-1-git-send-email-balbi@ti.com>
+References: <1393873736-26867-1-git-send-email-balbi@ti.com>
+Date: Thu, 24 Apr 2014 16:48:48 -0400
+Message-ID: <CAF6AEGvBt=KVk5q2DNhOrkZ=ZiG=V9SdEDDsDj69Z0phAa30+Q@mail.gmail.com>
+Subject: Re: [PATCH] drm/tilcdc: restore correct display mode and contents on
+ pm resume
+From: Rob Clark <robdclark@gmail.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: David Airlie <airlied@linux.ie>, "airlied@redhat.com" <airlied@redhat.com>,
+        Benoit Parrot <bparrot@ti.com>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Darren Etheridge <detheridge@ti.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vivek Goyal <vgoyal@redhat.com>
-Date: Thu, 24 Apr 2014 16:34:27 -0400
+On Mon, Mar 3, 2014 at 2:08 PM, Felipe Balbi <balbi@ti.com> wrote:
+> From: Darren Etheridge <detheridge@ti.com>
+>
+> On resume the screen contents were not being restored properly.  Looking at
+> other DRM drivers it seems a call to drm_helper_resume_force_mode() is needed
+> in the resume handler to force restoration of the mode and framebuffer data.
+>
+> Signed-off-by: Darren Etheridge <detheridge@ti.com>
 
-> By open() time you mean at socket() time or at connect() time?
+Reviewed-by: Rob Clark <robdclark@gmail.com>
 
-I mean at all of the places at which init_peercred() occurs.
-
-> You also mentioned that you want SO_PEERCGROUP and SO_PASSCGROUP as
-> pairs like SO_PEERCRED and SO_PASSCRED.  But to me, SO_PEERCRED and
-> SO_PASSCRED are not *exact* pairs and are little different in their
-> semantics.  SO_PEERCRED gives us client creds at connect() time
-> while SO_PASSCRED client's real creds at sendmsg() time. SO_PASSCRED
-> does not store client's credential's at connect() time for datagram
-> sockets.
-
-Then you haven't been following the discussion.
-
-The client's credentials at sendmsg()/write() time are "DO NOT CARE".
-
-You cannot even guarentee the semantics in the logging example if
-you ask for these "client identity at sendmsg() time" semantics.
-
-What if the event occured when the client was in cgroup1, and the
-log message goes out after it has been moved into cgroup2?
-
-That is just proof that this whole idea is fundamentally flawed.
-
-You guys need to come up with something else to achieve your goals,
-this isn't it.
+> ---
+>  drivers/gpu/drm/tilcdc/tilcdc_drv.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+>
+> diff --git a/drivers/gpu/drm/tilcdc/tilcdc_drv.c b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
+> index 171a820..1a5ddfa 100644
+> --- a/drivers/gpu/drm/tilcdc/tilcdc_drv.c
+> +++ b/drivers/gpu/drm/tilcdc/tilcdc_drv.c
+> @@ -563,6 +563,13 @@ static int tilcdc_pm_resume(struct device *dev)
+>                 if (registers[i].save && (priv->rev >= registers[i].rev))
+>                         tilcdc_write(ddev, registers[i].reg, priv->saved_register[n++]);
+>
+> +       /*
+> +        * if this call isn't here, the display is blank on return from
+> +        * suspend.  With this call here the contents of the framebuffer
+> +        * during suspend are restored correctly.
+> +        */
+> +       drm_helper_resume_force_mode(ddev);
+> +
+>         drm_kms_helper_poll_enable(ddev);
+>
+>         return 0;
+> --
+> 1.9.0
+>
