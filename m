@@ -1,124 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758435AbaDXQdG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:33:06 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:34268 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758390AbaDXQdB (ORCPT
+	id S932247AbaDXQdt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:33:49 -0400
+Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:35694 "EHLO
+	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758494AbaDXQdr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:33:01 -0400
-Date: Thu, 24 Apr 2014 08:16:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org,
-        joern@logfs.org, peterz@infradead.org,
-        Andrew Morton <akpm@linux-foundation.org>, cxie@redhat.com,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH RFC] sysrq,rcu: suppress RCU stall warnings while sysrq
- runs
-Message-ID: <20140424151600.GM4496@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20140423125352.704f9fb2@annuminas.surriel.com>
- <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
- <535833AE.6010505@redhat.com>
- <alpine.LRH.2.00.1404232349350.1491@twin.jikos.cz>
- <20140424014648.GK4496@linux.vnet.ibm.com>
- <20140424090452.3482f95c@annuminas.surriel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424090452.3482f95c@annuminas.surriel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042416-1344-0000-0000-00000120E65B
+	Thu, 24 Apr 2014 12:33:47 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnoVAKE7WVNbsls8/2dsb2JhbABZgwaDZKgKmW8CAoEcF3SCUxMcIxiBAiQTiC0DFQHEaRWGZYVaiC4BAU+EQAEDjm+KCQGKbodrgzM7gTU
+Date: Thu, 24 Apr 2014 18:35:46 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: akpm <akpm@linux-foundation.org>, Evgeniy Dushistov <dushistov@mail.ru>
+Subject: [PATCH 1/1] fs/ufs/balloc.c: remove err parameter in
+ ufs_add_fragments
+Message-Id: <20140424183546.809162d9334ef9e41486d364@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 09:04:52AM -0400, Rik van Riel wrote:
-> As suggested by Paul McKenney...
-> 
-> This seems small and simple enough that it should not introduce any
-> extra maintenance work in the future.
-> 
-> ---8<---
-> 
-> Some sysrq handlers can run for a long time, because they dump a lot
-> of data onto a serial console. Having RCU stall warnings pop up in
-> the middle of them only makes the problem worse.
-> 
-> This patch temporarily disables RCU stall warnings while a sysrq
-> request is handled.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Suggested-by: Paul McKenney <paulmck@linux.vnet.ibm.com>
+err is used in ufs_new_fragments (ufs_add_fragments only callsite)
+not in ufs_add_fragments.
 
-I guess this means you like the idea.  ;-)
+Cc: Evgeniy Dushistov <dushistov@mail.ru>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ufs/balloc.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-> ---
->  drivers/tty/sysrq.c      |  2 ++
->  include/linux/rcupdate.h |  2 ++
->  kernel/rcu/update.c      | 11 +++++++++++
->  3 files changed, 15 insertions(+)
-> 
-> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-> index 3c61e9b..dd53af9 100644
-> --- a/drivers/tty/sysrq.c
-> +++ b/drivers/tty/sysrq.c
-> @@ -511,6 +511,7 @@ void __handle_sysrq(int key, bool check_mask)
->  	int orig_log_level;
->  	int i;
-> 
-> +	rcu_sysrq_start();
->  	rcu_read_lock();
->  	/*
->  	 * Raise the apparent loglevel to maximum so that the sysrq header
-> @@ -554,6 +555,7 @@ void __handle_sysrq(int key, bool check_mask)
->  		console_loglevel = orig_log_level;
->  	}
->  	rcu_read_unlock();
-> +	rcu_sysrq_end();
->  }
-> 
->  void handle_sysrq(int key)
-> diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-> index 00a7fd6..b9a95f8 100644
-> --- a/include/linux/rcupdate.h
-> +++ b/include/linux/rcupdate.h
-> @@ -227,6 +227,8 @@ void rcu_idle_enter(void);
->  void rcu_idle_exit(void);
->  void rcu_irq_enter(void);
->  void rcu_irq_exit(void);
-> +void rcu_sysrq_start(void);
-> +void rcu_sysrq_end(void);
-> 
->  #ifdef CONFIG_RCU_USER_QS
->  void rcu_user_enter(void);
-> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-> index 4c0a9b0..2ac3289 100644
-> --- a/kernel/rcu/update.c
-> +++ b/kernel/rcu/update.c
-> @@ -320,6 +320,17 @@ int rcu_jiffies_till_stall_check(void)
->  	return till_stall_check * HZ + RCU_STALL_DELAY_DELTA;
->  }
-> 
-> +void rcu_sysrq_start(void)
-> +{
-> +	rcu_cpu_stall_suppress = 2;
-> +}
-> +
-> +void rcu_sysrq_end(void)
-> +{
-> +	if (rcu_cpu_stall_suppress == 2)
-> +		rcu_cpu_stall_suppress = 0;
-> +}
-> +
->  static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
->  {
->  	rcu_cpu_stall_suppress = 1;
-> 
-
+diff --git a/fs/ufs/balloc.c b/fs/ufs/balloc.c
+index 0ab1de4..184323c 100644
+--- a/fs/ufs/balloc.c
++++ b/fs/ufs/balloc.c
+@@ -24,7 +24,7 @@
+ 
+ #define INVBLOCK ((u64)-1L)
+ 
+-static u64 ufs_add_fragments(struct inode *, u64, unsigned, unsigned, int *);
++static u64 ufs_add_fragments(struct inode *, u64, unsigned, unsigned);
+ static u64 ufs_alloc_fragments(struct inode *, unsigned, u64, unsigned, int *);
+ static u64 ufs_alloccg_block(struct inode *, struct ufs_cg_private_info *, u64, int *);
+ static u64 ufs_bitmap_search (struct super_block *, struct ufs_cg_private_info *, u64, unsigned);
+@@ -432,7 +432,7 @@ u64 ufs_new_fragments(struct inode *inode, void *p, u64 fragment,
+ 	/*
+ 	 * resize block
+ 	 */
+-	result = ufs_add_fragments (inode, tmp, oldcount, newcount, err);
++	result = ufs_add_fragments(inode, tmp, oldcount, newcount);
+ 	if (result) {
+ 		*err = 0;
+ 		UFS_I(inode)->i_lastfrag = max(UFS_I(inode)->i_lastfrag,
+@@ -491,7 +491,7 @@ u64 ufs_new_fragments(struct inode *inode, void *p, u64 fragment,
+ }		
+ 
+ static u64 ufs_add_fragments(struct inode *inode, u64 fragment,
+-			     unsigned oldcount, unsigned newcount, int *err)
++			     unsigned oldcount, unsigned newcount)
+ {
+ 	struct super_block * sb;
+ 	struct ufs_sb_private_info * uspi;
+-- 
+1.8.4.5
