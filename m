@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084AbaDXPEF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:04:05 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45722 "EHLO comal.ext.ti.com"
+	id S1758095AbaDXPEb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:04:31 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45727 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757906AbaDXPEB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:04:01 -0400
-Message-ID: <535927DF.90404@ti.com>
-Date: Thu, 24 Apr 2014 18:03:59 +0300
-From: Tero Kristo <t-kristo@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1757982AbaDXPEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 11:04:04 -0400
+Date: Thu, 24 Apr 2014 10:03:44 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: Chanwoo Choi <cwchoi00@gmail.com>
+CC: Felipe Balbi <balbi@ti.com>, Chanwoo Choi <cw00.choi@samsung.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "myungjoo.ham@samsung.com" <myungjoo.ham@samsung.com>,
+        <gg@slimlogic.co.uk>, Kishon Vijay Abraham I <kishon@ti.com>,
+        <ckeepax@opensource.wolfsonmicro.com>, Mark Brown <broonie@kernel.org>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Subject: Re: [PATCHv3 1/9] extcon: Add extcon_dev_allocate/free() to control
+ the memory of extcon device
+Message-ID: <20140424150344.GO26661@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
+ <1398342897-23670-2-git-send-email-cw00.choi@samsung.com>
+ <20140424144257.GF26661@saruman.home>
+ <CAGTfZH0+VCvr=JNbq8kbtC2CDN63k28+oSd__6sb+Qy2tQ4_ng@mail.gmail.com>
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
-        Mike Turquette <mturquette@linaro.org>
-CC: Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] clk: ti: clk-7xx: Correct ABE DPLL configuration
-References: <1396446525-20302-1-git-send-email-peter.ujfalusi@ti.com> <533C1AC2.1000307@ti.com> <533CFFB3.9070201@ti.com> <5358D534.2070205@ti.com>
-In-Reply-To: <5358D534.2070205@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="V7BlxAaPrdhzdIM1"
+Content-Disposition: inline
+In-Reply-To: <CAGTfZH0+VCvr=JNbq8kbtC2CDN63k28+oSd__6sb+Qy2tQ4_ng@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 12:11 PM, Peter Ujfalusi wrote:
-> Mike, Tero,
->
-> On 04/03/2014 09:29 AM, Peter Ujfalusi wrote:
->> On 04/02/2014 05:12 PM, Tero Kristo wrote:
->>> On 04/02/2014 04:48 PM, Peter Ujfalusi wrote:
->>>> ABE DPLL frequency need to be lowered from 361267200
->>>> to 180633600 to facilitate the ATL requironments.
->>>> The dpll_abe_m2x2_ck clock need to be set to double
->>>> of ABE DPLL rate in order to have correct clocks
->>>> for audio.
->>>
->>> Do you have some sort of TRM reference for this?
->>
->> The ATL's max divider is 32.
->> For audio purpose the clock coming out from the ATL instance should be
->> 128 * fs. It is only possible to have 44.1KHz sampling rate with ABE DPLL set
->> to 361267200 or 180633600. Which means:
->> The atl generated clock should be 128 * 44100 = 5644800
->>  From ABE_DPLL 361267200 we would need to have 64 as divider (ATL can't do this).
->>  From the suggested ABE_DPLL of 180633600 we can use ATL divider of 32, which
->> is the maximum it can do.
->>
->> So the reason for the change is to have ATLPCLK clock which can be used for
->> audio in the future, the 361267200 is just too high.
->
-> Tero: can I have your ack for this patch or do you have further concerns?
+--V7BlxAaPrdhzdIM1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Yea looks good to me, except for the fact that there is some work on 
-getting default rate/parent support through DT. I would like a comment 
-from Mike about the estimate when this can get in, and whether we should 
-merge intermediate solutions still like this.
+Hi,
 
-Anyway, you can consider this patch acked by me, I'll let Mike to decide 
-what to do with it though.
+On Thu, Apr 24, 2014 at 11:58:29PM +0900, Chanwoo Choi wrote:
+> >> +void extcon_dev_free(struct extcon_dev *edev)
+> >> +{
+> >> +     if (edev)
+> >> +             kfree(edev);
+> >
+> > kfree(NULL) is safe
+>=20
+> I don't understand about meaning 'kfree(NULL)'.
+> Why do I free 'NULL' pointer' instead of 'edev' pointer?
 
--Tero
+you don't need to check if evdev is valid before calling kfree() on it
+because if it happens to be NULL, no cute bunnies will be sacrificed.
 
-> Mike: do you want me to resend this patch?
->
-> Thanks,
-> Péter
->
->>
->>>
->>> -Tero
->>>
->>>>
->>>> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->>>> ---
->>>>    drivers/clk/ti/clk-7xx.c | 7 ++++++-
->>>>    1 file changed, 6 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/drivers/clk/ti/clk-7xx.c b/drivers/clk/ti/clk-7xx.c
->>>> index f7e40734c819..19a55bf407dd 100644
->>>> --- a/drivers/clk/ti/clk-7xx.c
->>>> +++ b/drivers/clk/ti/clk-7xx.c
->>>> @@ -16,7 +16,7 @@
->>>>    #include <linux/clkdev.h>
->>>>    #include <linux/clk/ti.h>
->>>>
->>>> -#define DRA7_DPLL_ABE_DEFFREQ                361267200
->>>> +#define DRA7_DPLL_ABE_DEFFREQ                180633600
->>>>    #define DRA7_DPLL_GMAC_DEFFREQ                1000000000
->>>>
->>>>
->>>> @@ -322,6 +322,11 @@ int __init dra7xx_dt_clk_init(void)
->>>>        if (rc)
->>>>            pr_err("%s: failed to configure ABE DPLL!\n", __func__);
->>>>
->>>> +    dpll_ck = clk_get_sys(NULL, "dpll_abe_m2x2_ck");
->>>> +    rc = clk_set_rate(dpll_ck, DRA7_DPLL_ABE_DEFFREQ * 2);
->>>> +    if (rc)
->>>> +        pr_err("%s: failed to configure ABE DPLL m2x2!\n", __func__);
->>>> +
->>>>        dpll_ck = clk_get_sys(NULL, "dpll_gmac_ck");
->>>>        rc = clk_set_rate(dpll_ck, DRA7_DPLL_GMAC_DEFFREQ);
->>>>        if (rc)
->>>>
->>>
->>
->>
->
+--=20
+balbi
 
+--V7BlxAaPrdhzdIM1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJTWSfQAAoJEIaOsuA1yqREpOkP/3jp5HrlQx7O3Da8QeJy9VHj
+R5tNLzpl1HaCNdwHXhOzUkBPFyN++UgShvQjxZKw1rb8w8cUWOB1t0u56dBKgygt
+F4GX1njthZASbEQGsCoTUqLIyUMnuQWXifvTaV12I02ui7sATJgDGBSw97VTuezr
+G7L/xkifCMQMFLuKDGm2ijvL21G4X357FqmfTe6YqciHSckW+ijUI6lajdbD+s7L
+yUOC49u66ac74/uCXknmyK3Nxx8sUznZBrfrH0OalBNcJ3i+spaveV4gwPhJUNqF
+0r5Fy6M6Pz71t1cSFMugMzHQ1ta/S2pW4rWd05wIL4Za6/3XgZ5exjorLHdPUCHB
+sG3CS69gg0H6RljHvJ7oBP/Ec8xXPJX42nmHvwTJHZMyz06xJnP9vf878YGL/FOE
+khSLlnahwkbZFz7lYxEPwobZEMUrGSKNIXXZf13xnJLN/mDPidSrmZqCAmIvyFtA
+O5U02aziV7uUb43XGpnPuvMIHFg1zNIXyzalRcXGsFGccPZfXMAymPJN9YoCIciW
+d6lM6T9co0UtgcX3sIpB+Ta8Qe45WZ18aoZwixwlJIEDYCKl6gz9Vp0TT1lm+Clw
+kaDq4wUT0vbG+2QcnCuaHp4FXslGpSvXhYEPNmnejni6u42u5zwVDbFTflAE+BRO
+J7Bq53HdzbbzV43Wmdkc
+=SY7P
+-----END PGP SIGNATURE-----
+
+--V7BlxAaPrdhzdIM1--
