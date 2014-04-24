@@ -1,71 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbaDXTkl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 15:40:41 -0400
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34681 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751171AbaDXTkj (ORCPT
+	id S1751959AbaDXTlU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 15:41:20 -0400
+Received: from longford.logfs.org ([213.229.74.203]:43192 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734AbaDXTlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 15:40:39 -0400
-Date: Thu, 24 Apr 2014 21:40:38 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        intel-gfx <intel-gfx@lists.freedesktop.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        Jiri Kosina <jikos@jikos.cz>
-Subject: [bisect result] Re: 3.15-rc2: i915 regression: only top 20% of
- screen works in X
-Message-ID: <20140424194037.GB30333@amd.pavel.ucw.cz>
-References: <20140423202248.GA3621@amd.pavel.ucw.cz>
- <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
- <20140423220952.GA3627@amd.pavel.ucw.cz>
- <20140424055023.GA31221@nuc-i3427.alporthouse.com>
- <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
+	Thu, 24 Apr 2014 15:41:18 -0400
+Date: Thu, 24 Apr 2014 15:40:24 -0400
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Rik van Riel <riel@redhat.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, akpm@linux-foundation.org, cxie@redhat.com,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH] printk: Print cpu number along with time
+Message-ID: <20140424194024.GA25446@logfs.org>
+References: <20140423125352.704f9fb2@annuminas.surriel.com>
+ <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
+ <20140424005247.GA17713@logfs.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140424005247.GA17713@logfs.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, 23 April 2014 20:52:47 -0400, Jörn Engel wrote:
+> 
+> I use the patch below for some time now.  While it doesn't avoid the
+> log pollution in the first place, it lessens the impact somewhat.
 
-> And if you can indeed reliably reproduce this a bisect could be really useful.
+Added a config option and ported it to current -linus.  Andrew, would
+you take this patch?
 
-And we have a winner here :-)
+---
 
-Ok, it was not as painfull as I feared.
+Sometimes the printk log is heavily interleaving between different cpus.
+This is particularly bad when you have two backtraces at the same time,
+but can be annoying in other cases as well.  With an explicit cpu
+number, a simple grep can disentangle the mess for you.
 
-It does not revert cleanly, but doing it by hand was not that bad.
+Signed-off-by: Joern Engel <joern@logfs.org>
+---
+ kernel/printk/printk.c | 19 ++++++++++++++++---
+ lib/Kconfig.debug      |  9 +++++++++
+ 2 files changed, 25 insertions(+), 3 deletions(-)
 
-Best regards,
-   	    	   	    	      	    	     	 Pavel
-
-a51435a3137ad8ae75c288c39bd2d8b2696bae8f is the first bad commit
-commit a51435a3137ad8ae75c288c39bd2d8b2696bae8f
-Author: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
-Date:   Wed Mar 12 16:39:40 2014 +0530
-
-    drm/i915: disable rings before HW status page setup
-    
-    Rings should be idle before issuing sync_flush
-    (in intel_ring_setup_status_page). This patch moves the ring
-    disabling before doing the HW status page setup.
-    
-    Signed-off-by: Naresh Kumar Kachhi <naresh.kumar.kachhi@intel.com>
-    Reviewed-by: Chris Wilson <chris@chris-wilson.co.uk>
-    Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-
-:040000 040000 23f2763fe684882008ca395f38d0da1cf197a85e
-f1052c959b35a99ceae9886603086c09edee5df8 M	drivers
-pavel@amd:/data/l/linux-good$ 
-
-
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index a45b50962295..b9e464924825 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -200,6 +200,7 @@ struct printk_log {
+ 	u16 len;		/* length of entire record */
+ 	u16 text_len;		/* length of text buffer */
+ 	u16 dict_len;		/* length of dictionary buffer */
++	u16 cpu;		/* cpu the message was generated on */
+ 	u8 facility;		/* syslog facility */
+ 	u8 flags:5;		/* internal record flags */
+ 	u8 level:3;		/* syslog level */
+@@ -346,6 +347,7 @@ static void log_store(int facility, int level,
+ 	msg->facility = facility;
+ 	msg->level = level & 7;
+ 	msg->flags = flags & 0x1f;
++	msg->cpu = smp_processor_id();
+ 	if (ts_nsec > 0)
+ 		msg->ts_nsec = ts_nsec;
+ 	else
+@@ -859,7 +861,7 @@ static bool printk_time;
+ #endif
+ module_param_named(time, printk_time, bool, S_IRUGO | S_IWUSR);
+ 
+-static size_t print_time(u64 ts, char *buf)
++static size_t print_time(u64 ts, u16 cpu, char *buf)
+ {
+ 	unsigned long rem_nsec;
+ 
+@@ -868,11 +870,20 @@ static size_t print_time(u64 ts, char *buf)
+ 
+ 	rem_nsec = do_div(ts, 1000000000);
+ 
++#ifdef CONFIG_PRINTK_CPU
++	if (!buf)
++		return snprintf(NULL, 0, "[%5lu.000000,%02x] ",
++				(unsigned long)ts, cpu);
++
++	return sprintf(buf, "[%5lu.%06lu,%02x] ",
++			(unsigned long)ts, rem_nsec / 1000, cpu);
++#else
+ 	if (!buf)
+ 		return snprintf(NULL, 0, "[%5lu.000000] ", (unsigned long)ts);
+ 
+ 	return sprintf(buf, "[%5lu.%06lu] ",
+ 		       (unsigned long)ts, rem_nsec / 1000);
++#endif
+ }
+ 
+ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
+@@ -894,7 +905,7 @@ static size_t print_prefix(const struct printk_log *msg, bool syslog, char *buf)
+ 		}
+ 	}
+ 
+-	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
++	len += print_time(msg->ts_nsec, msg->cpu, buf ? buf + len : NULL);
+ 	return len;
+ }
+ 
+@@ -1391,6 +1402,7 @@ static struct cont {
+ 	size_t cons;			/* bytes written to console */
+ 	struct task_struct *owner;	/* task of first print*/
+ 	u64 ts_nsec;			/* time of first print */
++	u16 cpu;			/* cpu the message was generated on */
+ 	u8 level;			/* log level of first message */
+ 	u8 facility;			/* log level of first message */
+ 	enum log_flags flags;		/* prefix, newline flags */
+@@ -1440,6 +1452,7 @@ static bool cont_add(int facility, int level, const char *text, size_t len)
+ 		cont.facility = facility;
+ 		cont.level = level;
+ 		cont.owner = current;
++		cont.cpu = smp_processor_id();
+ 		cont.ts_nsec = local_clock();
+ 		cont.flags = 0;
+ 		cont.cons = 0;
+@@ -1461,7 +1474,7 @@ static size_t cont_print_text(char *text, size_t size)
+ 	size_t len;
+ 
+ 	if (cont.cons == 0 && (console_prev & LOG_NEWLINE)) {
+-		textlen += print_time(cont.ts_nsec, text);
++		textlen += print_time(cont.ts_nsec, cont.cpu, text);
+ 		size -= textlen;
+ 	}
+ 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 819ac51202c0..bdec67eca521 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -15,6 +15,15 @@ config PRINTK_TIME
+ 	  The behavior is also controlled by the kernel command line
+ 	  parameter printk.time=1. See Documentation/kernel-parameters.txt
+ 
++config PRINTK_CPU
++	bool "Show CPU number along with timing information"
++	depends on PRINTK_TIME
++	help
++	  Selecting this option adds the CPU number to be added to
++	  timestamps of printk() messages.  This can be useful when
++	  messages from several CPUs are interleaved, in particular
++	  for stack traces.
++
+ config DEFAULT_MESSAGE_LOGLEVEL
+ 	int "Default message log level (1-7)"
+ 	range 1 7
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+2.0.0.rc0.1.g7b2ba98
+
