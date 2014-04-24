@@ -1,105 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623AbaDXHbw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 03:31:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50775 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752600AbaDXHbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 03:31:50 -0400
-Message-ID: <5358BDDF.1010709@ti.com>
-Date: Thu, 24 Apr 2014 10:31:43 +0300
-From: Peter Ujfalusi <peter.ujfalusi@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: <gregkh@linuxfoundation.org>, <grant.likely@secretlab.ca>
-CC: <broonie@kernel.org>, <lgirdwood@gmail.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 0/2] drivercore: deferral race condition fix
-References: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8bit
+	id S1752669AbaDXHcR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 03:32:17 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:65528 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752469AbaDXHcO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 03:32:14 -0400
+From: Jerry Snitselaar <dev@snitselaar.org>
+To: gregkh@linuxfoundation.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging/line6: blank line after declaration cleanup
+Date: Thu, 24 Apr 2014 00:31:48 -0700
+Message-Id: <1398324708-10060-1-git-send-email-dev@snitselaar.org>
+X-Mailer: git-send-email 2.0.0.rc0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg, Grant,
+Fix coding style warnings reported by checkpath.
 
-On 04/09/2014 01:52 PM, Peter Ujfalusi wrote:
-> Hi,
-> 
-> Changes since v1:
-> - The deferral race detection and handling has been moved to
->   driver_deferred_probe_trigger() and driver_deferred_probe_add() functions with
->   comment section.
-> - driver_deferred_probe_add/del function needed to be moved. Both of them placed
->   after driver_deferred_probe_trigger() so they remain together.
-> - I have not added the Acked-by from Mark and Grant since the patch itself
->   changed from v1, but the functionality remained.
+Signed-off-by: Jerry Snitselaar <dev@snitselaar.org>
+---
+ drivers/staging/line6/capture.c  | 3 +++
+ drivers/staging/line6/midi.c     | 2 ++
+ drivers/staging/line6/playback.c | 6 +++++-
+ drivers/staging/line6/pod.c      | 5 +++++
+ drivers/staging/line6/toneport.c | 2 ++
+ drivers/staging/line6/variax.c   | 2 ++
+ 6 files changed, 19 insertions(+), 1 deletion(-)
 
-Is this solution sounds good? Do you want me to resend the two patch?
-
-Regards,
-Péter
-
-> Explanantion of the issue (from patch 2):
-> When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
-> when all modules loaded but some driver still stuck in the deferred list
-> and there is a need for external event to kick the deferred queue to probe
-> these drivers.
-> 
-> The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
-> audio support built as modules and using nfsroot for root filesystem.
-> 
-> The following log fragment shows such sequence when all audio modules
-> were loaded but the sound card is not present since the machine driver has
-> failed to probe due to missing dependency during it's probe.
-> The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
-> machine driver:
-> 
-> ...
-> [   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
-> [   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
-> [   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
-> [   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
-> [   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
-> [   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
-> [   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
-> [   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
-> [   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
-> [   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
-> [   13.346755] davinci_mcasp_driver_init: LEAVE
-> [   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
-> [   13.592527] platform sound.3: really_probe: probe_count = 0
-> 
-> In the log the machine driver enters it's probe at 12.719969 (this point it
-> has been removed from the deferred lists). McASP driver already executing
-> it's probing (since 12.615118).
-> The machine driver tries to construct the sound card (12.950839) but did
-> not found one of the components so it fails. After this McASP driver
-> registers all the ASoC components (the machine driver still in it's probe
-> function after it failed to construct the card) and the deferred work is
-> prepared at 13.099026 (note that this time the machine driver is not in the
-> lists so it is not going to be handled when the work is executing).
-> Lastly the machine driver exit from it's probe and the core places it to
-> the deferred list but there will be no other driver going to load and the
-> deferred queue is not going to be kicked again - till we have external event
-> like connecting USB stick, etc.
-> 
-> The proposed solution is to try the deferred queue once more when the last
-> driver is asking for deferring and we had drivers loaded while this last
-> driver was probing.
-> 
-> This way we can avoid drivers stuck in the deferred queue.
-> 
-> Regards,
-> Peter
-> ---
-> Peter Ujfalusi (2):
->   drivercore: dd: Move driver_deferred_probe_add/del function down in
->     the code
->   drivercore: deferral race condition fix
-> 
->  drivers/base/dd.c | 71 +++++++++++++++++++++++++++++++++++++------------------
->  1 file changed, 48 insertions(+), 23 deletions(-)
+diff --git a/drivers/staging/line6/capture.c b/drivers/staging/line6/capture.c
+index 0eda51d..e6ca631 100644
+--- a/drivers/staging/line6/capture.c
++++ b/drivers/staging/line6/capture.c
+@@ -97,6 +97,7 @@ void line6_unlink_audio_in_urbs(struct snd_line6_pcm *line6pcm)
+ 		if (test_bit(i, &line6pcm->active_urb_in)) {
+ 			if (!test_and_set_bit(i, &line6pcm->unlink_urb_in)) {
+ 				struct urb *u = line6pcm->urb_audio_in[i];
++
+ 				usb_unlink_urb(u);
+ 			}
+ 		}
+@@ -334,6 +335,7 @@ static int snd_line6_capture_hw_params(struct snd_pcm_substream *substream,
+ static int snd_line6_capture_hw_free(struct snd_pcm_substream *substream)
+ {
+ 	struct snd_line6_pcm *line6pcm = snd_pcm_substream_chip(substream);
++
+ 	line6_pcm_release(line6pcm, LINE6_BIT_PCM_ALSA_CAPTURE_BUFFER);
+ 	return snd_pcm_lib_free_pages(substream);
+ }
+@@ -380,6 +382,7 @@ static snd_pcm_uframes_t
+ snd_line6_capture_pointer(struct snd_pcm_substream *substream)
+ {
+ 	struct snd_line6_pcm *line6pcm = snd_pcm_substream_chip(substream);
++
+ 	return line6pcm->pos_in_done;
+ }
+ 
+diff --git a/drivers/staging/line6/midi.c b/drivers/staging/line6/midi.c
+index 02345fb..1ac343b 100644
+--- a/drivers/staging/line6/midi.c
++++ b/drivers/staging/line6/midi.c
+@@ -183,6 +183,7 @@ static void line6_midi_output_drain(struct snd_rawmidi_substream *substream)
+ 	struct usb_line6 *line6 =
+ 	    line6_rawmidi_substream_midi(substream)->line6;
+ 	struct snd_line6_midi *midi = line6->line6midi;
++
+ 	wait_event_interruptible(midi->send_wait,
+ 				 midi->num_active_send_urbs == 0);
+ }
+@@ -260,6 +261,7 @@ static int snd_line6_new_midi(struct snd_line6_midi *line6midi)
+ static int snd_line6_midi_free(struct snd_device *device)
+ {
+ 	struct snd_line6_midi *line6midi = device->device_data;
++
+ 	line6_midibuf_destroy(&line6midi->midibuf_in);
+ 	line6_midibuf_destroy(&line6midi->midibuf_out);
+ 	return 0;
+diff --git a/drivers/staging/line6/playback.c b/drivers/staging/line6/playback.c
+index 0f72db5..2ca8900 100644
+--- a/drivers/staging/line6/playback.c
++++ b/drivers/staging/line6/playback.c
+@@ -44,6 +44,7 @@ static void change_volume(struct urb *urb_out, int volume[],
+ 		}
+ 	} else if (bytes_per_frame == 6) {
+ 		unsigned char *p, *buf_end;
++
+ 		p = (unsigned char *)urb_out->transfer_buffer;
+ 		buf_end = p + urb_out->transfer_buffer_length;
+ 
+@@ -310,6 +311,7 @@ void line6_unlink_audio_out_urbs(struct snd_line6_pcm *line6pcm)
+ 		if (test_bit(i, &line6pcm->active_urb_out)) {
+ 			if (!test_and_set_bit(i, &line6pcm->unlink_urb_out)) {
+ 				struct urb *u = line6pcm->urb_audio_out[i];
++
+ 				usb_unlink_urb(u);
+ 			}
+ 		}
+@@ -363,7 +365,6 @@ static void audio_out_callback(struct urb *urb)
+ {
+ 	int i, index, length = 0, shutdown = 0;
+ 	unsigned long flags;
+-
+ 	struct snd_line6_pcm *line6pcm = (struct snd_line6_pcm *)urb->context;
+ 	struct snd_pcm_substream *substream =
+ 	    get_substream(line6pcm, SNDRV_PCM_STREAM_PLAYBACK);
+@@ -389,6 +390,7 @@ static void audio_out_callback(struct urb *urb)
+ 
+ 	if (test_bit(LINE6_INDEX_PCM_ALSA_PLAYBACK_STREAM, &line6pcm->flags)) {
+ 		struct snd_pcm_runtime *runtime = substream->runtime;
++
+ 		line6pcm->pos_out_done +=
+ 		    length / line6pcm->properties->bytes_per_frame;
+ 
+@@ -485,6 +487,7 @@ static int snd_line6_playback_hw_params(struct snd_pcm_substream *substream,
+ static int snd_line6_playback_hw_free(struct snd_pcm_substream *substream)
+ {
+ 	struct snd_line6_pcm *line6pcm = snd_pcm_substream_chip(substream);
++
+ 	line6_pcm_release(line6pcm, LINE6_BIT_PCM_ALSA_PLAYBACK_BUFFER);
+ 	return snd_pcm_lib_free_pages(substream);
+ }
+@@ -539,6 +542,7 @@ static snd_pcm_uframes_t
+ snd_line6_playback_pointer(struct snd_pcm_substream *substream)
+ {
+ 	struct snd_line6_pcm *line6pcm = snd_pcm_substream_chip(substream);
++
+ 	return line6pcm->pos_out_done;
+ }
+ 
+diff --git a/drivers/staging/line6/pod.c b/drivers/staging/line6/pod.c
+index f4e95a6..44f4b2f 100644
+--- a/drivers/staging/line6/pod.c
++++ b/drivers/staging/line6/pod.c
+@@ -197,6 +197,7 @@ static ssize_t serial_number_show(struct device *dev,
+ {
+ 	struct usb_interface *interface = to_usb_interface(dev);
+ 	struct usb_line6_pod *pod = usb_get_intfdata(interface);
++
+ 	return sprintf(buf, "%d\n", pod->serial_number);
+ }
+ 
+@@ -208,6 +209,7 @@ static ssize_t firmware_version_show(struct device *dev,
+ {
+ 	struct usb_interface *interface = to_usb_interface(dev);
+ 	struct usb_line6_pod *pod = usb_get_intfdata(interface);
++
+ 	return sprintf(buf, "%d.%02d\n", pod->firmware_version / 100,
+ 		       pod->firmware_version % 100);
+ }
+@@ -220,6 +222,7 @@ static ssize_t device_id_show(struct device *dev,
+ {
+ 	struct usb_interface *interface = to_usb_interface(dev);
+ 	struct usb_line6_pod *pod = usb_get_intfdata(interface);
++
+ 	return sprintf(buf, "%d\n", pod->device_id);
+ }
+ 
+@@ -243,6 +246,7 @@ static void pod_startup2(unsigned long data)
+ {
+ 	struct usb_line6_pod *pod = (struct usb_line6_pod *)data;
+ 	struct usb_line6 *line6 = &pod->line6;
++
+ 	CHECK_STARTUP_PROGRESS(pod->startup_progress, POD_STARTUP_VERSIONREQ);
+ 
+ 	/* request firmware version: */
+@@ -294,6 +298,7 @@ static int snd_pod_control_monitor_get(struct snd_kcontrol *kcontrol,
+ {
+ 	struct snd_line6_pcm *line6pcm = snd_kcontrol_chip(kcontrol);
+ 	struct usb_line6_pod *pod = (struct usb_line6_pod *)line6pcm->line6;
++
+ 	ucontrol->value.integer.value[0] = pod->monitor_level;
+ 	return 0;
+ }
+diff --git a/drivers/staging/line6/toneport.c b/drivers/staging/line6/toneport.c
+index dcab647..6943715 100644
+--- a/drivers/staging/line6/toneport.c
++++ b/drivers/staging/line6/toneport.c
+@@ -185,6 +185,7 @@ static int snd_toneport_monitor_get(struct snd_kcontrol *kcontrol,
+ 				    struct snd_ctl_elem_value *ucontrol)
+ {
+ 	struct snd_line6_pcm *line6pcm = snd_kcontrol_chip(kcontrol);
++
+ 	ucontrol->value.integer.value[0] = line6pcm->volume_monitor;
+ 	return 0;
+ }
+@@ -263,6 +264,7 @@ static void toneport_start_pcm(unsigned long arg)
+ {
+ 	struct usb_line6_toneport *toneport = (struct usb_line6_toneport *)arg;
+ 	struct usb_line6 *line6 = &toneport->line6;
++
+ 	line6_pcm_acquire(line6->line6pcm, LINE6_BITS_PCM_MONITOR);
+ }
+ 
+diff --git a/drivers/staging/line6/variax.c b/drivers/staging/line6/variax.c
+index bd0f694..ae2be99 100644
+--- a/drivers/staging/line6/variax.c
++++ b/drivers/staging/line6/variax.c
+@@ -95,6 +95,7 @@ static void variax_startup3(struct usb_line6_variax *variax)
+ static void variax_startup4(unsigned long data)
+ {
+ 	struct usb_line6_variax *variax = (struct usb_line6_variax *)data;
++
+ 	CHECK_STARTUP_PROGRESS(variax->startup_progress,
+ 			       VARIAX_STARTUP_ACTIVATE);
+ 
+@@ -107,6 +108,7 @@ static void variax_startup4(unsigned long data)
+ static void variax_startup5(unsigned long data)
+ {
+ 	struct usb_line6_variax *variax = (struct usb_line6_variax *)data;
++
+ 	CHECK_STARTUP_PROGRESS(variax->startup_progress,
+ 			       VARIAX_STARTUP_WORKQUEUE);
+ 
+-- 
+2.0.0.rc0
 
