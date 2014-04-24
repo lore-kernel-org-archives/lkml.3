@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757208AbaDXW3P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:29:15 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754842AbaDXVqH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755196AbaDXVqH (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 24 Apr 2014 17:46:07 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39527 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754842AbaDXVp5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:45:57 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Li Zefan <lizefan@huawei.com>, David Woodhouse <dwmw2@infradead.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Brian Norris <computersforpeace@gmail.com>
-Subject: [PATCH 3.14 30/33] jffs2: avoid soft-lockup in jffs2_reserve_space_gc()
-Date: Thu, 24 Apr 2014 14:48:43 -0700
-Message-Id: <20140424214453.955785905@linuxfoundation.org>
+        Mohit Kumar <mohit.kumar@st.com>,
+        Ajay Khandelwal <ajay.khandelwal@st.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH 3.14 06/33] PCI: designware: Fix iATU programming for cfg1, io and mem viewport
+Date: Thu, 24 Apr 2014 14:48:19 -0700
+Message-Id: <20140424214450.379104827@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
 In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
 References: <20140424214449.423169713@linuxfoundation.org>
@@ -31,73 +30,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Li Zefan <lizefan@huawei.com>
+From: Mohit Kumar <mohit.kumar@st.com>
 
-commit 13b546d96207c131eeae15dc7b26c6e7d0f1cad7 upstream.
+commit 017fcdc30cdae18c0946eef1ece1f14b4c7897ba upstream.
 
-We triggered soft-lockup under stress test on 2.6.34 kernel.
+This patch corrects iATU programming for cfg1, io and mem viewport.  Enable
+ATU only after configuring it.
 
-BUG: soft lockup - CPU#1 stuck for 60009ms! [lockf2.test:14488]
-...
-[<bf09a4d4>] (jffs2_do_reserve_space+0x420/0x440 [jffs2])
-[<bf09a528>] (jffs2_reserve_space_gc+0x34/0x78 [jffs2])
-[<bf0a1350>] (jffs2_garbage_collect_dnode.isra.3+0x264/0x478 [jffs2])
-[<bf0a2078>] (jffs2_garbage_collect_pass+0x9c0/0xe4c [jffs2])
-[<bf09a670>] (jffs2_reserve_space+0x104/0x2a8 [jffs2])
-[<bf09dc48>] (jffs2_write_inode_range+0x5c/0x4d4 [jffs2])
-[<bf097d8c>] (jffs2_write_end+0x198/0x2c0 [jffs2])
-[<c00e00a4>] (generic_file_buffered_write+0x158/0x200)
-[<c00e14f4>] (__generic_file_aio_write+0x3a4/0x414)
-[<c00e15c0>] (generic_file_aio_write+0x5c/0xbc)
-[<c012334c>] (do_sync_write+0x98/0xd4)
-[<c0123a84>] (vfs_write+0xa8/0x150)
-[<c0123d74>] (sys_write+0x3c/0xc0)]
-
-Fix this by adding a cond_resched() in the while loop.
-
-[akpm@linux-foundation.org: don't initialize `ret']
-Signed-off-by: Li Zefan <lizefan@huawei.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Cc: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Signed-off-by: Mohit Kumar <mohit.kumar@st.com>
+Signed-off-by: Ajay Khandelwal <ajay.khandelwal@st.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/jffs2/nodemgmt.c |   13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ drivers/pci/host/pcie-designware.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/jffs2/nodemgmt.c
-+++ b/fs/jffs2/nodemgmt.c
-@@ -211,20 +211,25 @@ out:
- int jffs2_reserve_space_gc(struct jffs2_sb_info *c, uint32_t minsize,
- 			   uint32_t *len, uint32_t sumsize)
- {
--	int ret = -EAGAIN;
-+	int ret;
- 	minsize = PAD(minsize);
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -522,13 +522,13 @@ static void dw_pcie_prog_viewport_cfg1(s
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
+ 			  PCIE_ATU_VIEWPORT);
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_CFG1, PCIE_ATU_CR1);
+-	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ 	dw_pcie_writel_rc(pp, pp->cfg1_base, PCIE_ATU_LOWER_BASE);
+ 	dw_pcie_writel_rc(pp, (pp->cfg1_base >> 32), PCIE_ATU_UPPER_BASE);
+ 	dw_pcie_writel_rc(pp, pp->cfg1_base + pp->config.cfg1_size - 1,
+ 			  PCIE_ATU_LIMIT);
+ 	dw_pcie_writel_rc(pp, busdev, PCIE_ATU_LOWER_TARGET);
+ 	dw_pcie_writel_rc(pp, 0, PCIE_ATU_UPPER_TARGET);
++	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ }
  
- 	jffs2_dbg(1, "%s(): Requested 0x%x bytes\n", __func__, minsize);
+ static void dw_pcie_prog_viewport_mem_outbound(struct pcie_port *pp)
+@@ -537,7 +537,6 @@ static void dw_pcie_prog_viewport_mem_ou
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX0,
+ 			  PCIE_ATU_VIEWPORT);
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_MEM, PCIE_ATU_CR1);
+-	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ 	dw_pcie_writel_rc(pp, pp->mem_base, PCIE_ATU_LOWER_BASE);
+ 	dw_pcie_writel_rc(pp, (pp->mem_base >> 32), PCIE_ATU_UPPER_BASE);
+ 	dw_pcie_writel_rc(pp, pp->mem_base + pp->config.mem_size - 1,
+@@ -545,6 +544,7 @@ static void dw_pcie_prog_viewport_mem_ou
+ 	dw_pcie_writel_rc(pp, pp->config.mem_bus_addr, PCIE_ATU_LOWER_TARGET);
+ 	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.mem_bus_addr),
+ 			  PCIE_ATU_UPPER_TARGET);
++	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ }
  
--	spin_lock(&c->erase_completion_lock);
--	while(ret == -EAGAIN) {
-+	while (true) {
-+		spin_lock(&c->erase_completion_lock);
- 		ret = jffs2_do_reserve_space(c, minsize, len, sumsize);
- 		if (ret) {
- 			jffs2_dbg(1, "%s(): looping, ret is %d\n",
- 				  __func__, ret);
- 		}
-+		spin_unlock(&c->erase_completion_lock);
-+
-+		if (ret == -EAGAIN)
-+			cond_resched();
-+		else
-+			break;
- 	}
--	spin_unlock(&c->erase_completion_lock);
- 	if (!ret)
- 		ret = jffs2_prealloc_raw_node_refs(c, c->nextblock, 1);
+ static void dw_pcie_prog_viewport_io_outbound(struct pcie_port *pp)
+@@ -553,7 +553,6 @@ static void dw_pcie_prog_viewport_io_out
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_REGION_OUTBOUND | PCIE_ATU_REGION_INDEX1,
+ 			  PCIE_ATU_VIEWPORT);
+ 	dw_pcie_writel_rc(pp, PCIE_ATU_TYPE_IO, PCIE_ATU_CR1);
+-	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ 	dw_pcie_writel_rc(pp, pp->io_base, PCIE_ATU_LOWER_BASE);
+ 	dw_pcie_writel_rc(pp, (pp->io_base >> 32), PCIE_ATU_UPPER_BASE);
+ 	dw_pcie_writel_rc(pp, pp->io_base + pp->config.io_size - 1,
+@@ -561,6 +560,7 @@ static void dw_pcie_prog_viewport_io_out
+ 	dw_pcie_writel_rc(pp, pp->config.io_bus_addr, PCIE_ATU_LOWER_TARGET);
+ 	dw_pcie_writel_rc(pp, upper_32_bits(pp->config.io_bus_addr),
+ 			  PCIE_ATU_UPPER_TARGET);
++	dw_pcie_writel_rc(pp, PCIE_ATU_ENABLE, PCIE_ATU_CR2);
+ }
  
+ static int dw_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
 
 
