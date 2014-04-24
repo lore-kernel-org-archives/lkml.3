@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782AbaDXIxI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 04:53:08 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:46426 "EHLO
+	id S1754207AbaDXIyF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:54:05 -0400
+Received: from youngberry.canonical.com ([91.189.89.112]:46655 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655AbaDXIwz (ORCPT
+	with ESMTP id S1754163AbaDXIyA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 04:52:55 -0400
+	Thu, 24 Apr 2014 04:54:00 -0400
 From: Luis Henriques <luis.henriques@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Herve Codina <Herve.CODINA@celad.com>,
-        Brian Norris <computersforpeace@gmail.com>,
+Cc: Josef Bacik <jbacik@fb.com>, Chris Mason <clm@fb.com>,
         Luis Henriques <luis.henriques@canonical.com>
-Subject: [PATCH 3.11 042/182] mtd: atmel_nand: Disable subpage NAND write when using Atmel PMECC
-Date: Thu, 24 Apr 2014 09:49:27 +0100
-Message-Id: <1398329507-5911-43-git-send-email-luis.henriques@canonical.com>
+Subject: [PATCH 3.11 086/182] Btrfs: fix deadlock with nested trans handles
+Date: Thu, 24 Apr 2014 09:50:11 +0100
+Message-Id: <1398329507-5911-87-git-send-email-luis.henriques@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
 References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
@@ -28,38 +27,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Herve Codina <Herve.CODINA@celad.com>
+From: Josef Bacik <jbacik@fb.com>
 
-commit 90445ff6241e2a13445310803e2efa606c61f276 upstream.
+commit 3bbb24b20a8800158c33eca8564f432dd14d0bf3 upstream.
 
-Crash detected on sam5d35 and its pmecc nand ecc controller.
+Zach found this deadlock that would happen like this
 
-The problem was a call to chip->ecc.hwctl from nand_write_subpage_hwecc
-(nand_base.c) when we write a sub page.
-chip->ecc.hwctl function is not set when we are using PMECC controller.
-As a workaround, set NAND_NO_SUBPAGE_WRITE for PMECC controller in
-order to disable sub page access in nand_write_page.
+btrfs_end_transaction <- reduce trans->use_count to 0
+  btrfs_run_delayed_refs
+    btrfs_cow_block
+      find_free_extent
+	btrfs_start_transaction <- increase trans->use_count to 1
+          allocate chunk
+	btrfs_end_transaction <- decrease trans->use_count to 0
+	  btrfs_run_delayed_refs
+	    lock tree block we are cowing above ^^
 
-Signed-off-by: Herve Codina <Herve.CODINA@celad.com>
-Acked-by: Josh Wu <josh.wu@atmel.com>
-Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+We need to only decrease trans->use_count if it is above 1, otherwise leave it
+alone.  This will make nested trans be the only ones who decrease their added
+ref, and will let us get rid of the trans->use_count++ hack if we have to commit
+the transaction.  Thanks,
+
+Reported-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Josef Bacik <jbacik@fb.com>
+Tested-by: Zach Brown <zab@redhat.com>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 ---
- drivers/mtd/nand/atmel_nand.c | 1 +
- 1 file changed, 1 insertion(+)
+ fs/btrfs/transaction.c | 14 ++++----------
+ 1 file changed, 4 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-index 2d23d29..cc69e41 100644
---- a/drivers/mtd/nand/atmel_nand.c
-+++ b/drivers/mtd/nand/atmel_nand.c
-@@ -1096,6 +1096,7 @@ static int __init atmel_pmecc_nand_init_params(struct platform_device *pdev,
- 		goto err_pmecc_data_alloc;
+diff --git a/fs/btrfs/transaction.c b/fs/btrfs/transaction.c
+index af1931a..bd3612b 100644
+--- a/fs/btrfs/transaction.c
++++ b/fs/btrfs/transaction.c
+@@ -663,7 +663,8 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
+ 	int lock = (trans->type != TRANS_JOIN_NOLOCK);
+ 	int err = 0;
+ 
+-	if (--trans->use_count) {
++	if (trans->use_count > 1) {
++		trans->use_count--;
+ 		trans->block_rsv = trans->orig_rsv;
+ 		return 0;
+ 	}
+@@ -711,17 +712,10 @@ static int __btrfs_end_transaction(struct btrfs_trans_handle *trans,
  	}
  
-+	nand_chip->options |= NAND_NO_SUBPAGE_WRITE;
- 	nand_chip->ecc.read_page = atmel_nand_pmecc_read_page;
- 	nand_chip->ecc.write_page = atmel_nand_pmecc_write_page;
+ 	if (lock && ACCESS_ONCE(cur_trans->state) == TRANS_STATE_BLOCKED) {
+-		if (throttle) {
+-			/*
+-			 * We may race with somebody else here so end up having
+-			 * to call end_transaction on ourselves again, so inc
+-			 * our use_count.
+-			 */
+-			trans->use_count++;
++		if (throttle)
+ 			return btrfs_commit_transaction(trans, root);
+-		} else {
++		else
+ 			wake_up_process(info->transaction_kthread);
+-		}
+ 	}
  
+ 	if (trans->type & __TRANS_FREEZABLE)
 -- 
 1.9.1
 
