@@ -1,82 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbaDXVYJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 17:24:09 -0400
-Received: from longford.logfs.org ([213.229.74.203]:43198 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126AbaDXVYH (ORCPT
+	id S1753656AbaDXV0S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:26:18 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:44956 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753126AbaDXV0N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:24:07 -0400
-Date: Thu, 24 Apr 2014 17:23:13 -0400
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Kosina <jkosina@suse.cz>, Rik van Riel <riel@redhat.com>,
-        linux-kernel@vger.kernel.org, peterz@infradead.org,
-        akpm@linux-foundation.org, cxie@redhat.com,
-        Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [PATCH] printk: Print cpu number along with time
-Message-ID: <20140424212313.GB25446@logfs.org>
-References: <20140423125352.704f9fb2@annuminas.surriel.com>
- <alpine.LRH.2.00.1404232329020.1491@twin.jikos.cz>
- <20140424005247.GA17713@logfs.org>
- <20140424194024.GA25446@logfs.org>
- <20140424195821.GA3092@kroah.com>
+	Thu, 24 Apr 2014 17:26:13 -0400
+Date: Thu, 24 Apr 2014 15:26:10 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Rajat Jain <rajatxjain@gmail.com>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rajat Jain <rajatjain@juniper.net>, Guenter Roeck <groeck@juniper.net>
+Subject: Re: [PATCH v2] pci: Allow hotplug service drivers to operate in
+ polling mode
+Message-ID: <20140424212610.GH29593@google.com>
+References: <5339FF7B.4020904@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20140424195821.GA3092@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <5339FF7B.4020904@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 April 2014 12:58:21 -0700, Greg Kroah-Hartman wrote:
-> > @@ -868,11 +870,20 @@ static size_t print_time(u64 ts, char *buf)
-> >  
-> >  	rem_nsec = do_div(ts, 1000000000);
-> >  
-> > +#ifdef CONFIG_PRINTK_CPU
-> > +	if (!buf)
-> > +		return snprintf(NULL, 0, "[%5lu.000000,%02x] ",
+On Mon, Mar 31, 2014 at 04:51:23PM -0700, Rajat Jain wrote:
+> Today the PCIe port bus driver disables the Hot-plug service if the
+> port device does not have the capability to generate interrupts.
+> However, a user must be able to use the "pciehp_poll_mode" parameter
+> to use the pciehp in polling method in such a case. Today it is not
+> possible.
 > 
-> %02x for a cpu?  What happens on machines with 8k cpus?
+> This patch allows a hotplug service driver to decide whether or not
+> it would like to continue in absense of interrupts.
+> 
+> Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
+> Signed-off-by: Rajat Jain <rajatjain@juniper.net>
+> Signed-off-by: Guenter Roeck <groeck@juniper.net>
 
-You should get something like:
-Apr 23 10:34:03 [  228.950926,1a] Call Trace:
-Apr 23 10:34:03 [  228.950926,201] Call Trace:
-Apr 23 10:34:03 [  228.950928,1a]  [<ffffffff815e0f29>] schedule+0x29/0x70
-...
+Applied to pci/hotplug for v3.16, thanks!
 
-That said, I don't have access to hardware with >256 cpus and haven't
-actually tested this.
-
-> And is this really an issue?  Debugging by using printk is fun, but not
-> really something that people need to add a cpu number to.  Why not just
-> use a tracepoint in your code to get the needed information instead?
-
-Yes, this is an issue.  There have been several instances in my life
-when I would have had to guess which function belonged to which
-backtrace without this patch.  Good guesses take a long time, bad
-guesses are nearly useless and giving up means you cannot debug the
-issue.
-
-I don't have a good example at hand, but here is something from a
-quick grep for illustration.
-Feb 22 19:04:46 [   11.642470,2e] Call Trace:
-Feb 22 19:04:46 [   11.642472,16] Call Trace:
-Feb 22 19:04:46 [   11.642476,29]  [<ffffffff81115bf8>] pcpu_alloc+0x988/0xa20
-Feb 22 19:04:46 [   11.642481,01]  [<ffffffff810992ad>] ?  find_symbol+0x3d/0xb0
-Feb 22 19:04:46 [   11.642489,05]  [<ffffffff81115bf8>] pcpu_alloc+0x988/0xa20
-Feb 22 19:04:46 [   11.642493,12]  [<ffffffff81115bf8>] pcpu_alloc+0x988/0xa20
-Feb 22 19:04:46 [   11.642498,08]  [<ffffffff81115bf8>] pcpu_alloc+0x988/0xa20
-Feb 22 19:04:46 [   11.642504,21]  [<ffffffff810992ad>] ?  find_symbol+0x3d/0xb0
-
-And are you seriously suggesting I use a tracepoint for kernel panics? ;)
-
-Jörn
-
---
-There's nothing better for promoting creativity in a medium than
-making an audience feel "Hmm ­ I could do better than that!"
--- Douglas Adams in a slashdot interview
+> ---
+> v2: Drop the extra debug msg in pciehp
+>     (and just retain the changes in portdrv_core.c)
+> 
+>  drivers/pci/pcie/portdrv_core.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/pci/pcie/portdrv_core.c b/drivers/pci/pcie/portdrv_core.c
+> index 0b6e766..ba31deb 100644
+> --- a/drivers/pci/pcie/portdrv_core.c
+> +++ b/drivers/pci/pcie/portdrv_core.c
+> @@ -377,10 +377,13 @@ int pcie_port_device_register(struct pci_dev *dev)
+>  	/*
+>  	 * Initialize service irqs. Don't use service devices that
+>  	 * require interrupts if there is no way to generate them.
+> +	 * However, some drivers may have a polling mode (e.g pciehp_poll_mode)
+> +	 * that can be used in absense of irqs. Allow them to determine
+> +	 * if that is to be used.
+>  	 */
+>  	status = init_service_irqs(dev, irqs, capabilities);
+>  	if (status) {
+> -		capabilities &= PCIE_PORT_SERVICE_VC;
+> +		capabilities &= PCIE_PORT_SERVICE_VC | PCIE_PORT_SERVICE_HP;
+>  		if (!capabilities)
+>  			goto error_disable;
+>  	}
+> -- 
+> 1.7.9.5
+> 
