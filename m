@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331AbaDXWAd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:00:33 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39852 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756974AbaDXVxT (ORCPT
+	id S932159AbaDXWAa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:00:30 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:38498 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753624AbaDXWAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:53:19 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Durrant <paul.durrant@citrix.com>,
-        Ian Campbell <ian.campbell@citrix.com>, Wei Liu <wei.liu2@citrix.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 11/27] xen-netback: remove pointless clause from if statement
-Date: Thu, 24 Apr 2014 14:55:45 -0700
-Message-Id: <20140424215552.290585848@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
-References: <20140424215551.942390050@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	Thu, 24 Apr 2014 18:00:25 -0400
+Date: Fri, 25 Apr 2014 00:00:24 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        intel-gfx <intel-gfx@lists.freedesktop.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        Jiri Kosina <jikos@jikos.cz>
+Subject: Re: [bisect result] Re: 3.15-rc2: i915 regression: only top 20% of
+ screen works in X
+Message-ID: <20140424220024.GA27250@atrey.karlin.mff.cuni.cz>
+References: <20140423202248.GA3621@amd.pavel.ucw.cz>
+ <CAKMK7uFT5eW8Y8kKvWO1P_aN=SHgP+bZWB8fO2mATKaO=_DNjA@mail.gmail.com>
+ <20140423220952.GA3627@amd.pavel.ucw.cz>
+ <20140424055023.GA31221@nuc-i3427.alporthouse.com>
+ <CAKMK7uFAgHJ-kYJEcDCvNm3B4ELKC8CFK8iP+-SL7bdT5-VQHA@mail.gmail.com>
+ <20140424194037.GB30333@amd.pavel.ucw.cz>
+ <20140424201521.GN31221@nuc-i3427.alporthouse.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140424201521.GN31221@nuc-i3427.alporthouse.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+Hi!
 
-------------------
+> > > And if you can indeed reliably reproduce this a bisect could be really useful.
+> > 
+> > And we have a winner here :-)
+> > 
+> > Ok, it was not as painfull as I feared.
+> > 
+> > It does not revert cleanly, but doing it by hand was not that bad.
+> 
+> Oh my. That is bizarre, can you check whether you have
 
-From: Paul Durrant <Paul.Durrant@citrix.com>
+> commit 9991ae787a0c87fe7c783b4b6f4754c3cdbb6213
+> Author: Chris Wilson <chris@chris-wilson.co.uk>
+> Date:   Wed Apr 2 16:36:07 2014 +0100
+> 
+>     drm/i915: Move all ring resets before setting the HWS page
+> 
+> in your latest kernel? That just makes
 
-[ Upstream commit 0576eddf24df716d8570ef8ca11452a9f98eaab2 ]
+No, I don't have that one.
 
-This patch removes a test in start_new_rx_buffer() that checks whether
-a copy operation is less than MAX_BUFFER_OFFSET in length, since
-MAX_BUFFER_OFFSET is defined to be PAGE_SIZE and the only caller of
-start_new_rx_buffer() already limits copy operations to PAGE_SIZE or less.
+> To confirm, on drm-intel-nightly you used a patch like:
 
-Signed-off-by: Paul Durrant <paul.durrant@citrix.com>
-Cc: Ian Campbell <ian.campbell@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Sander Eikelenboom <linux@eikelenboom.it>
-Reported-By: Sander Eikelenboom <linux@eikelenboom.it>
-Tested-By: Sander Eikelenboom <linux@eikelenboom.it>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/net/xen-netback/netback.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I did not use drm-intel-nightly, but 3.15-rc2, because
+drm-intel-nightly did not work at all. (Netconsole is not that easy to
+set up, and I'd prefer not debugging 2 problems at the same time.)
 
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -338,8 +338,8 @@ static bool start_new_rx_buffer(int offs
- 	 * into multiple copies tend to give large frags their
- 	 * own buffers as before.
- 	 */
--	if ((offset + size > MAX_BUFFER_OFFSET) &&
--	    (size <= MAX_BUFFER_OFFSET) && offset && !head)
-+	BUG_ON(size > MAX_BUFFER_OFFSET);
-+	if ((offset + size > MAX_BUFFER_OFFSET) && offset && !head)
- 		return true;
- 
- 	return false;
+Let me check with my patch reverted and 9991ae applied.
 
-
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
