@@ -1,100 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaDXUed (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 16:34:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50221 "EHLO mx1.redhat.com"
+	id S1753074AbaDXUgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 16:36:35 -0400
+Received: from mout.gmx.net ([212.227.17.22]:61139 "EHLO mout.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177AbaDXUeb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 16:34:31 -0400
-Date: Thu, 24 Apr 2014 16:34:27 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: luto@amacapital.net, tj@kernel.org, dwalsh@redhat.com,
-        linux-kernel@vger.kernel.org, lpoetter@redhat.com, ssorce@redhat.com,
-        cgroups@vger.kernel.org, kay@redhat.com, netdev@vger.kernel.org
-Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
- cgroup path
-Message-ID: <20140424203427.GC19091@redhat.com>
-References: <20140416002010.GA5035@redhat.com>
- <CALCETrWzHYN3kKcmDTFDfGhZqE4u9+6XDtiOu5nncbK_7KKH0g@mail.gmail.com>
- <20140423164537.GD24651@redhat.com>
- <20140423.132955.671992126955940387.davem@davemloft.net>
+	id S1751177AbaDXUge (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 16:36:34 -0400
+Date: Thu, 24 Apr 2014 22:35:56 +0200
+From: Christian Engelmayer <cengelma@gmx.at>
+To: coelho@ti.com
+Cc: linville@tuxdriver.com, peterhuewe@gmx.de, s.jegen@gmail.com,
+        jg1.han@samsung.com, linux-wireless@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] wlcore: fix usage of platform_device_add_data()
+Message-ID: <20140424223556.34beb0c5@spike>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140423.132955.671992126955940387.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ boundary="Sig_/i36mhlZS2B6vjOWZbiUPOxj"; protocol="application/pgp-signature"
+X-Provags-ID: V03:K0:FV/5TSncInCkFTQAxeRmS2nM2OOvdyrMjinNgg7ikozMaR64evr
+ 3yTUusJihBHihJnbPieQggFmRRlEsZ+KDLhsInY2MVUBHpH890K6Sboc/9C1rcSUOZP/p9j
+ 88YMR1CNzfqM9yC09yZLgmgutwtwCB/rz26IWvO5giCYbUMfkTNIaQncN9Jj57+HjTv2T3a
+ DwhfWYiLnCVopxsigQXew==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Apr 23, 2014 at 01:29:55PM -0400, David Miller wrote:
-> From: Vivek Goyal <vgoyal@redhat.com>
-> Date: Wed, 23 Apr 2014 12:45:37 -0400
-> 
-> > On Tue, Apr 15, 2014 at 08:47:54PM -0700, Andy Lutomirski wrote:
-> > 
-> > [..]
-> >> Here's an attack against SO_PASSCGROUP, as you implemented it: connect
-> >> a socket and get someone else to write(2) to it.  This isn't very
-> >> hard.  Now you've impersonated.
-> > 
-> > If this is a problem then I think kernel requires fixing. Because kernel
-> > will apply all resource management policies based on the cgroup at write(2)
-> > time and not based on open() time.
-> 
-> Anyways, this is not even worth discussing.
-> 
-> We already agreed that the cgroup passed at write time with SO_PASSGROUP
-> enabled should be the socket creation time cgroup.
-> 
-> Just like SO_PASSCRED does.
-> 
-> The identity given is thus the one at open() time.
+--Sig_/i36mhlZS2B6vjOWZbiUPOxj
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Hi Dave,
+Coverity CID 986698 reports leakage of struct wlcore_platdev_data in the
+probe functions of both the SPI/SDIO interfaces. The structure passed to
+platform_device_add_data() is dynamically allocated and only freed in the
+error paths, however, platform_device_add_data() adds a copy of the platform
+specific data to the device. Move the temporary struct that is kmemdup'ed
+to the stack. This issue exists since afb43e6d (wlcore: remove if_ops from
+platform_data).
 
-I am not sure about few things. So I will ask.
+Signed-off-by: Christian Engelmayer <cengelma@gmx.at>
+---
+Applies against v3.15-rc2 as well as branch master in tree
+git.kernel.org/pub/scm/linux/kernel/git/linville/wireless.git and is compile
+tested only.
+---
+ drivers/net/wireless/ti/wlcore/sdio.c | 28 +++++++++++-----------------
+ drivers/net/wireless/ti/wlcore/spi.c  | 23 +++++++++--------------
+ 2 files changed, 20 insertions(+), 31 deletions(-)
 
-By open() time you mean at socket() time or at connect() time? I guess
-you mean connect() time as at socket() time there are no access control
-checks and even if socket fd is passed around, it does not matter. So
-connect() seems to be more close to open() as opposed to socket().
+diff --git a/drivers/net/wireless/ti/wlcore/sdio.c b/drivers/net/wireless/t=
+i/wlcore/sdio.c
+index 29ef249..d3dd7bf 100644
+--- a/drivers/net/wireless/ti/wlcore/sdio.c
++++ b/drivers/net/wireless/ti/wlcore/sdio.c
+@@ -217,7 +217,7 @@ static struct wl1271_if_operations sdio_ops =3D {
+ static int wl1271_probe(struct sdio_func *func,
+ 				  const struct sdio_device_id *id)
+ {
+-	struct wlcore_platdev_data *pdev_data;
++	struct wlcore_platdev_data pdev_data;
+ 	struct wl12xx_sdio_glue *glue;
+ 	struct resource res[1];
+ 	mmc_pm_flag_t mmcflags;
+@@ -228,16 +228,13 @@ static int wl1271_probe(struct sdio_func *func,
+ 	if (func->num !=3D 0x02)
+ 		return -ENODEV;
+=20
+-	pdev_data =3D kzalloc(sizeof(*pdev_data), GFP_KERNEL);
+-	if (!pdev_data)
+-		goto out;
+-
+-	pdev_data->if_ops =3D &sdio_ops;
++	memset(&pdev_data, 0x00, sizeof(pdev_data));
++	pdev_data.if_ops =3D &sdio_ops;
+=20
+ 	glue =3D kzalloc(sizeof(*glue), GFP_KERNEL);
+ 	if (!glue) {
+ 		dev_err(&func->dev, "can't allocate glue\n");
+-		goto out_free_pdev_data;
++		goto out;
+ 	}
+=20
+ 	glue->dev =3D &func->dev;
+@@ -248,9 +245,9 @@ static int wl1271_probe(struct sdio_func *func,
+ 	/* Use block mode for transferring over one block size of data */
+ 	func->card->quirks |=3D MMC_QUIRK_BLKSZ_FOR_BYTE_MODE;
+=20
+-	pdev_data->pdata =3D wl12xx_get_platform_data();
+-	if (IS_ERR(pdev_data->pdata)) {
+-		ret =3D PTR_ERR(pdev_data->pdata);
++	pdev_data.pdata =3D wl12xx_get_platform_data();
++	if (IS_ERR(pdev_data.pdata)) {
++		ret =3D PTR_ERR(pdev_data.pdata);
+ 		dev_err(glue->dev, "missing wlan platform data: %d\n", ret);
+ 		goto out_free_glue;
+ 	}
+@@ -260,7 +257,7 @@ static int wl1271_probe(struct sdio_func *func,
+ 	dev_dbg(glue->dev, "sdio PM caps =3D 0x%x\n", mmcflags);
+=20
+ 	if (mmcflags & MMC_PM_KEEP_POWER)
+-		pdev_data->pdata->pwr_in_suspend =3D true;
++		pdev_data.pdata->pwr_in_suspend =3D true;
+=20
+ 	sdio_set_drvdata(func, glue);
+=20
+@@ -289,7 +286,7 @@ static int wl1271_probe(struct sdio_func *func,
+=20
+ 	memset(res, 0x00, sizeof(res));
+=20
+-	res[0].start =3D pdev_data->pdata->irq;
++	res[0].start =3D pdev_data.pdata->irq;
+ 	res[0].flags =3D IORESOURCE_IRQ;
+ 	res[0].name =3D "irq";
+=20
+@@ -299,8 +296,8 @@ static int wl1271_probe(struct sdio_func *func,
+ 		goto out_dev_put;
+ 	}
+=20
+-	ret =3D platform_device_add_data(glue->core, pdev_data,
+-				       sizeof(*pdev_data));
++	ret =3D platform_device_add_data(glue->core, &pdev_data,
++				       sizeof(pdev_data));
+ 	if (ret) {
+ 		dev_err(glue->dev, "can't add platform data\n");
+ 		goto out_dev_put;
+@@ -319,9 +316,6 @@ out_dev_put:
+ out_free_glue:
+ 	kfree(glue);
+=20
+-out_free_pdev_data:
+-	kfree(pdev_data);
+-
+ out:
+ 	return ret;
+ }
+diff --git a/drivers/net/wireless/ti/wlcore/spi.c b/drivers/net/wireless/ti=
+/wlcore/spi.c
+index dbe826d..5f3a389 100644
+--- a/drivers/net/wireless/ti/wlcore/spi.c
++++ b/drivers/net/wireless/ti/wlcore/spi.c
+@@ -327,27 +327,25 @@ static struct wl1271_if_operations spi_ops =3D {
+ static int wl1271_probe(struct spi_device *spi)
+ {
+ 	struct wl12xx_spi_glue *glue;
+-	struct wlcore_platdev_data *pdev_data;
++	struct wlcore_platdev_data pdev_data;
+ 	struct resource res[1];
+ 	int ret =3D -ENOMEM;
+=20
+-	pdev_data =3D kzalloc(sizeof(*pdev_data), GFP_KERNEL);
+-	if (!pdev_data)
+-		goto out;
++	memset(&pdev_data, 0x00, sizeof(pdev_data));
+=20
+-	pdev_data->pdata =3D dev_get_platdata(&spi->dev);
+-	if (!pdev_data->pdata) {
++	pdev_data.pdata =3D dev_get_platdata(&spi->dev);
++	if (!pdev_data.pdata) {
+ 		dev_err(&spi->dev, "no platform data\n");
+ 		ret =3D -ENODEV;
+-		goto out_free_pdev_data;
++		goto out;
+ 	}
+=20
+-	pdev_data->if_ops =3D &spi_ops;
++	pdev_data.if_ops =3D &spi_ops;
+=20
+ 	glue =3D kzalloc(sizeof(*glue), GFP_KERNEL);
+ 	if (!glue) {
+ 		dev_err(&spi->dev, "can't allocate glue\n");
+-		goto out_free_pdev_data;
++		goto out;
+ 	}
+=20
+ 	glue->dev =3D &spi->dev;
+@@ -385,8 +383,8 @@ static int wl1271_probe(struct spi_device *spi)
+ 		goto out_dev_put;
+ 	}
+=20
+-	ret =3D platform_device_add_data(glue->core, pdev_data,
+-				       sizeof(*pdev_data));
++	ret =3D platform_device_add_data(glue->core, &pdev_data,
++				       sizeof(pdev_data));
+ 	if (ret) {
+ 		dev_err(glue->dev, "can't add platform data\n");
+ 		goto out_dev_put;
+@@ -406,9 +404,6 @@ out_dev_put:
+ out_free_glue:
+ 	kfree(glue);
+=20
+-out_free_pdev_data:
+-	kfree(pdev_data);
+-
+ out:
+ 	return ret;
+ }
+--=20
+1.9.1
 
-You also mentioned that you want SO_PEERCGROUP and SO_PASSCGROUP as pairs
-like SO_PEERCRED and SO_PASSCRED. But to me, SO_PEERCRED and SO_PASSCRED
-are not *exact* pairs and are little different in their semantics.
-SO_PEERCRED gives us client creds at connect() time while SO_PASSCRED
-client's real creds at sendmsg() time. SO_PASSCRED does not store client's
-credential's at connect() time for datagram sockets.
+--Sig_/i36mhlZS2B6vjOWZbiUPOxj
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
 
-So which semantics are we looking for. If we are looking for same
-semantics as PEERCRED/PASSCRED, then I think my patches are already
-there and don't need modifications.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-But if we are looking for deviation SO_PASSCRED and store and pass
-sender's cgroup info retrieved at connect() time, then that requires
-rework of patches.
- 
-W.r.t privilige escalation by tricking setuid program to write to a 
-descriptor, I don't think my patches are susceptible to that. setuid
-programs don't change cgroups themselves, so even if caller tricks setuid
-to write to an fd, receiver will still receive same cgroup info.
+iQIcBAEBAgAGBQJTWXWsAAoJEKssnEpaPQKEy5cP/2rbP8nErYEGMOt0JbgCtUJF
+NvNfUleJmwYOiwh0xkyvEeRdeYu4ZBz30rk/RfS3URcqPKUPFpemVQgPwh+OISKf
+NA/t63meCsc2pJ7WD0fHReJk6MQZ0QlulV2h7ih751iQ7nYbSsARaHIc42HnDkUl
+fqsRVd5+7u/LyciRSv4WH7o/PWRjRPT0TKMt3ieO0vppJ+U1PeY20cu+QtlDfdUk
+r3cp71t4vU0p037buMxLb0wnD7aSM08Fin6u6ZUTql9TuGcXjKJx3tzdiYeCTjrZ
+QmC2sG1wnH55bHjQT2PspGRhWdEYeG66ogP8tWe9Gl8VUzCPFvq1YIq0EYM0mO1c
+QeJLRkcZ9P2NXzroS9PNJtpm1yOpNwOEqN+dhvu63hUOGDMMjD7GOOxY+C95z/DU
+vMmzE7lrR8Wq5LZ5vnplUC/XyQMGQ/rcQ+HGJXRT4n8HGl0T5v/JItuxLS3TvdNT
+9H9h7PvdtFk4SmmKvtT95MjRnbuwPxEYxxNnwkigmDNQ/IR8NEuhiChTMPhe39Cx
+BPGgetC8DdZKdo1vpPcAhJho4ujEgx1tmxFeEbMryTXwP9X+isi3HtCuSmxjLhYA
+epPowm/mbkw+Hy84XmFBPVCcqH3azC3qolh8Qt4oUMPt4gJe+2w2XODGo/jE7eCH
+ISBQarcO0ID3Mni3TfqM
+=qK2y
+-----END PGP SIGNATURE-----
 
-If caller launches setuid program in a different cgroup (using cgexec or some
-other program), that means caller has the privilige to get into that
-cgroup and there is no magic privilige escalation here because caller
-has the permission to go in destination cgroup. IOW, caller can not
-force/trick setuid program to run in a cgroup where caller does not
-have permission to run itself.
-
-Only caveat to this theory is what happens if setuid program changes
-cgroup at his own. As we don't have any notion of real/effective cgroups,
-I guess there needs to be a restriction on setuid programs to not change
-cgroups at their own.
-
-So which semantics you are looking for. Same as current SO_PASSCRED or
-freeze cgroup info at connect() time and pass that info.
-
-Thanks
-Vivek
+--Sig_/i36mhlZS2B6vjOWZbiUPOxj--
