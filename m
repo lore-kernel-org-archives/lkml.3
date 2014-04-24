@@ -1,23 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757948AbaDXPKn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 11:10:43 -0400
-Received: from mail-ig0-f181.google.com ([209.85.213.181]:62695 "EHLO
-	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757066AbaDXPKm (ORCPT
+	id S932175AbaDXPL2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 11:11:28 -0400
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:36778 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757701AbaDXPL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 11:10:42 -0400
+	Thu, 24 Apr 2014 11:11:27 -0400
 MIME-Version: 1.0
-In-Reply-To: <20140424150644.GP26661@saruman.home>
+In-Reply-To: <20140424144533.GH26661@saruman.home>
 References: <1398342897-23670-1-git-send-email-cw00.choi@samsung.com>
-	<1398342897-23670-3-git-send-email-cw00.choi@samsung.com>
-	<20140424144458.GG26661@saruman.home>
-	<CAGTfZH3bZk1_Yrhig_uWDtF5+6u+ePfuqJa9rDCWBJ1GH+AmkQ@mail.gmail.com>
-	<20140424150644.GP26661@saruman.home>
-Date: Fri, 25 Apr 2014 00:10:41 +0900
-Message-ID: <CAGTfZH3d4La5Rtcd4abXUXuPhPX6x6g2PaP7tiRMDkqPvscRxA@mail.gmail.com>
-Subject: Re: [PATCHv3 2/9] extcon: Add devm_extcon_dev_allocate/free to manage
- the resource of extcon device
+	<1398342897-23670-4-git-send-email-cw00.choi@samsung.com>
+	<20140424144533.GH26661@saruman.home>
+Date: Fri, 25 Apr 2014 00:11:26 +0900
+Message-ID: <CAGTfZH1CO3VmfHSgqc5bVBxeHBX5j8CYZ+uQ6zU0d_MPv5AKJw@mail.gmail.com>
+Subject: Re: [PATCHv3 3/9] extcon: max8997: Use devm_extcon_dev_allocate for extcon_dev
 From: Chanwoo Choi <cwchoi00@gmail.com>
 To: Felipe Balbi <balbi@ti.com>
 Cc: Chanwoo Choi <cw00.choi@samsung.com>,
@@ -32,85 +29,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 12:06 AM, Felipe Balbi <balbi@ti.com> wrote:
-> Hi,
->
-> On Fri, Apr 25, 2014 at 12:03:31AM +0900, Chanwoo Choi wrote:
->> On Thu, Apr 24, 2014 at 11:44 PM, Felipe Balbi <balbi@ti.com> wrote:
->> > On Thu, Apr 24, 2014 at 09:34:50PM +0900, Chanwoo Choi wrote:
->> >> This patch add device managed devm_extcon_dev_{allocate,free} to automatically
->> >> free the memory of extcon_dev structure without handling free operation.
->> >>
->> >> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
->> >> ---
->> >>  drivers/extcon/extcon-class.c | 70 +++++++++++++++++++++++++++++++++++--------
->> >>  include/linux/extcon.h        | 11 +++++++
->> >>  2 files changed, 69 insertions(+), 12 deletions(-)
->> >>
->> >> diff --git a/drivers/extcon/extcon-class.c b/drivers/extcon/extcon-class.c
->> >> index bec66d4..f369168 100644
->> >> --- a/drivers/extcon/extcon-class.c
->> >> +++ b/drivers/extcon/extcon-class.c
->> >> @@ -604,6 +604,64 @@ void extcon_dev_free(struct extcon_dev *edev)
->> >>  }
->> >>  EXPORT_SYMBOL_GPL(extcon_dev_free);
->> >>
->> >> +static int devm_extcon_dev_match(struct device *dev, void *res, void *data)
->> >> +{
->> >> +     struct extcon_dev **r = res;
->> >> +
->> >> +     if (!r || !*r) {
->> >> +             WARN_ON(!r || !*r);
->> >> +             return 0;
->> >> +     }
->> >> +
->> >> +     return *r == data;
->> >> +}
->> >> +
->> >> +static void devm_extcon_dev_release(struct device *dev, void *res)
->> >> +{
->> >> +     extcon_dev_free(*(struct extcon_dev **)res);
->> >> +}
->> >> +
->> >> +/**
->> >> + * devm_extcon_dev_allocate - Allocate managed extcon device
->> >> + * @dev:             device owning the extcon device being created
->> >> + * @supported_cable: Array of supported cable names ending with NULL.
->> >> + *                   If supported_cable is NULL, cable name related APIs
->> >> + *                   are disabled.
->> >> + *
->> >> + * This function manages automatically the memory of extcon device using device
->> >> + * resource management and simplify the control of freeing the memory of extcon
->> >> + * device.
->> >> + *
->> >> + * Returns the pointer memory of allocated extcon_dev if success or NULL if fail
->> >> + */
->> >> +struct extcon_dev *devm_extcon_dev_allocate(struct device *dev,
->> >> +                                         const char **supported_cable)
->> >> +{
->> >> +     struct extcon_dev **ptr, *edev;
->> >> +
->> >> +     ptr = devres_alloc(devm_extcon_dev_release, sizeof(*ptr), GFP_KERNEL);
->> >> +     if (!ptr)
->> >> +             return NULL;
->> >
->> > if this fails you return NULL;
->> >
->> >> +
->> >> +     edev = extcon_dev_allocate(supported_cable);
->> >
->> > if this fails, you return -ENOMEM. Not very nice, if you ask me.
+On Thu, Apr 24, 2014 at 11:45 PM, Felipe Balbi <balbi@ti.com> wrote:
+> On Thu, Apr 24, 2014 at 09:34:51PM +0900, Chanwoo Choi wrote:
+>> This patch use devm_extcon_dev_allocate() to simplify the memory control
+>> of extcon device.
 >>
->> I'll fix it as following:
+>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+>> ---
+>>  drivers/extcon/extcon-max8997.c | 5 ++---
+>>  1 file changed, 2 insertions(+), 3 deletions(-)
 >>
->> If  both extcon_dev_allocate() and devm_excon_dev_allocate() failed to
->> allocate memory,
->> two functions would return NULL pointer instead of  ERR_PTR(-ENOMEM).
+>> diff --git a/drivers/extcon/extcon-max8997.c b/drivers/extcon/extcon-max8997.c
+>> index 804a446..e2ee2f5 100644
+>> --- a/drivers/extcon/extcon-max8997.c
+>> +++ b/drivers/extcon/extcon-max8997.c
+>> @@ -699,8 +699,7 @@ static int max8997_muic_probe(struct platform_device *pdev)
+>>       }
+>>
+>>       /* External connector */
+>> -     info->edev = devm_kzalloc(&pdev->dev, sizeof(struct extcon_dev),
+>> -                               GFP_KERNEL);
+>> +     info->edev = devm_extcon_dev_allocate(&pdev->dev, max8997_extcon_cable);
+>>       if (!info->edev) {
 >
-> your call, I'd rather see them both returning ERR_PTR(-ENOMEM), but no
-> strong feelings.
+> and here you never check for IS_ERR(info->evdev)
+>
+> NAK
+>
+> I suspect all following patches have the same defect.
 
-OK, I'll fix it as your comment.
+OK, I'll use IS_ERR() instead of checking NULL.
 
 Thanks,
 Chanwoo Choi
