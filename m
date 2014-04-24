@@ -1,74 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758852AbaDXR4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:56:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38904 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754765AbaDXR42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:56:28 -0400
-Message-ID: <53594FB3.9050505@redhat.com>
-Date: Thu, 24 Apr 2014 13:53:55 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	id S1758824AbaDXR6K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:58:10 -0400
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:62105 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757354AbaDXR6H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 13:58:07 -0400
 MIME-Version: 1.0
-To: Dave Hansen <dave@sr71.net>, Mel Gorman <mgorman@suse.de>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        akpm@linux-foundation.org, kirill.shutemov@linux.intel.com,
-        ak@linux.intel.com, alex.shi@linaro.org, dave.hansen@linux.intel.com,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 5/6] x86: mm: new tunable for single vs full TLB flush
-References: <20140421182418.81CF7519@viggo.jf.intel.com> <20140421182426.D6DD1E8F@viggo.jf.intel.com> <20140424103727.GT23991@suse.de> <53594920.8030203@sr71.net>
-In-Reply-To: <53594920.8030203@sr71.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <20140424173333.GA21799@omega>
+References: <1398193438-23805-1-git-send-email-mcgrof@do-not-panic.com>
+ <20140424164445.GA4675@omega> <CAB=NE6XS9-Zu9sb5geO2WTnnvv6KqyT+QnL5bRf1fiRx3=ocrg@mail.gmail.com>
+ <20140424173333.GA21799@omega>
+From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
+Date: Thu, 24 Apr 2014 10:57:44 -0700
+X-Google-Sender-Auth: EVSF8rur98wRy8YBGIB5BfeDfi8
+Message-ID: <CAB=NE6XQaeyBAqtjneUKqLS-na6ftNY5a22dw2XFQSsOBD1TQA@mail.gmail.com>
+Subject: Re: [Linux-zigbee-devel] [PATCH] 6lowpan: nuke net_ieee802154_lowpan()
+ accessor when 6lowpan is disabled
+To: Alexander Aring <alex.aring@gmail.com>
+Cc: Alexander Smirnov <alex.bluesman.smirnov@gmail.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-zigbee-devel@lists.sourceforge.net,
+        David Miller <davem@davemloft.net>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "backports@vger.kernel.org" <backports@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 01:25 PM, Dave Hansen wrote:
-> On 04/24/2014 03:37 AM, Mel Gorman wrote:
->> On Mon, Apr 21, 2014 at 11:24:26AM -0700, Dave Hansen wrote:
->>> +This will cause us to do the global flush for more cases.
->>> +Lowering it to 0 will disable the use of the individual flushes.
->>> +Setting it to 1 is a very conservative setting and it should
->>> +never need to be 0 under normal circumstances.
->>> +
->>> +Despite the fact that a single individual flush on x86 is
->>> +guaranteed to flush a full 2MB, hugetlbfs always uses the full
->>> +flushes.  THP is treated exactly the same as normal memory.
->>> +
+On Thu, Apr 24, 2014 at 10:33 AM, Alexander Aring <alex.aring@gmail.com> wrote:
+> Hi Luis,
+>
+> On Thu, Apr 24, 2014 at 10:25:58AM -0700, Luis R. Rodriguez wrote:
+>> On Thu, Apr 24, 2014 at 9:44 AM, Alexander Aring <alex.aring@gmail.com> wrote:
+>> > Hi,
+>> >
+>> > On Tue, Apr 22, 2014 at 12:03:58PM -0700, Luis R. Rodriguez wrote:
+>> >> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+>> >>
+>> >> Johannes noted this is not needed, all of the fragment
+>> >> accessors don't need CONFIG_NET_NS. This goes test compiled with
+>> >> CONFIG_BT_6LOWPAN=y and a disabled CONFIG_NET_NS.
+>> >>
+>> >
+>> > a little note about this here. There exists two 6LoWPAN standard. One
+>> > for bluetooth low energy and one for IEEE 802.15.4.
+>> >
+>> > The actual namespace is only for IEEE 802.15.4, because we need
+>> > fragmentation there. 6LoWPAN fragmentation for bluetooth low energy is
+>> > already handled by the MAC-Layer. So this has nothing to do with
+>> > CONFIG_BT_6LOWPAN.
 >>
->> You are the second person that told me this and I felt the manual was
->> unclear on this subject. I was told that it might be a documentation bug
->> but because this discussion was in a bar I completely failed to follow up
->> on it. Specifically this part in 4.10.2.3 caused me problems when I last
->> looked at the area.
-> <snip>
+>> Thanks for the clarification, I actually did mean
+>> CONFIG_IEEE802154_6LOWPAN however, I goofed that on the commit log.
+>>
 >
-> My understanding comes from "4.10.4.2 Recommended Invalidation":
+> ok. But I need to say thanks for sending this patch! :-)
 >
-> 	• If software modifies a paging-structure entry that identifies
-> 	the final page frame for a page number (either a PTE or a
-> 	paging-structure entry in which the PS flag is 1), it should
-> 	execute INVLPG for any linear address with a page number whose
-> 	translation uses that PTE. 2
->
-> and especially the footnote:
->
-> 	2. One execution of INVLPG is sufficient even for a page with
-> 	size greater than 4 KBytes.
->
-> I do agree that it's ambiguous at best.  I'll go see if anybody cares to
-> update that bit.
+> It's nice to see that the community helps to improving the code which I
+> produced and it's really not perfect at the moment. (I was a little bit
+> shocked that somebody makes the effort to making a backport about that).
 
-I suspect that IF the TLB actually uses a 2MB entry for the
-translation, a single INVLPG will work.
+To be clear -- we strive for automatic backport for the entire Linux
+kernel, so the way this should be seen is that if something gets added
+to Linux it will eventually get backported automatically. We're not
+there yet to scale rapid integration of most used drivers but that is
+a lofty objective. In this case what triggered the backport was that
+Hauke orginally had added backport support for CONFIG_IEEE802154, when
+6 Lowpan was merged upstream we took that in as well, that required a
+few changes to help with the automatic backport, and I'm glad these
+have gone in now. I should also note that I haven't personally tested
+the 6lowpan backport but reports from users on the backport with
+IEEE802154 or 6lowpan would be greatly appreciated, typically for
+backports the way it works is if things compile it should work as the
+backports code only consists of about 1% of the code used and bugs
+have been infrequent on that codebase. Since 6lowpan is ever changing,
+as noted in earlier threads, folks can use the latest linux-next based
+backports release, this is listed on the temporary backports release
+page [0].
 
-However, the CPU is free to cache the translations for a 2MB
-region with a bunch of 4kB entries, if it wanted to, so in
-the end we have no guarantee that an INVLPG will actually do
-the right thing...
+[0] http://drvbp1.linux-foundation.org/~mcgrof/rel-html/backports/
 
-The same is definitely true for 1GB vs 2MB entries, with
-some CPUs being capable of parsing page tables with 1GB
-entries, but having no TLB entries for 1GB translations.
+  Luis
