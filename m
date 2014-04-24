@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754669AbaDXXUl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 19:20:41 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:40362 "EHLO
+	id S1754102AbaDXX1g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 19:27:36 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:40455 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752503AbaDXXUj (ORCPT
+	with ESMTP id S1753517AbaDXX1e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 19:20:39 -0400
-Date: Thu, 24 Apr 2014 16:23:32 -0700
+	Thu, 24 Apr 2014 19:27:34 -0400
+Date: Thu, 24 Apr 2014 16:30:27 -0700
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-serial@vger.kernel.org,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        =?iso-8859-1?Q?S=F6ren?= Brinkmann <soren.brinkmann@xilinx.com>
-Subject: Re: [GIT PULL] serial: Cadence
-Message-ID: <20140424232332.GB10457@kroah.com>
-References: <53575983.3030508@monstr.eu>
- <20140423234832.GB17827@kroah.com>
- <5358A188.4080404@monstr.eu>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: "Karicheri, Muralidharan" <m-karicheri2@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "Balbi, Felipe" <balbi@ti.com>, Rob Herring <robh+dt@kernel.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Jiri Slaby <jslaby@suse.cz>
+Subject: Re: [PATCH] serial: uart: add hw flow control support configuration
+Message-ID: <20140424233027.GA21443@kroah.com>
+References: <1397243877-23234-1-git-send-email-m-karicheri2@ti.com>
+ <3E54258959B69E4282D79E01AB1F32B70471B198@DFLE11.ent.ti.com>
+ <20140423152717.7100f604@alan.etchedpixels.co.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <5358A188.4080404@monstr.eu>
+In-Reply-To: <20140423152717.7100f604@alan.etchedpixels.co.uk>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 07:30:48AM +0200, Michal Simek wrote:
-> On 04/24/2014 01:48 AM, Greg Kroah-Hartman wrote:
-> > On Wed, Apr 23, 2014 at 08:11:15AM +0200, Michal Simek wrote:
-> >> Hi Greg,
-> >>
-> >> this is around for a while and I would like to close it.
-> >> I have applied patches 1-7 from v3.
-> >> Patches 8 and 9 should go through arm-soc tree and I will add them
-> >> to my zynq/dt branch.
-> >>
-> >> Please apply these patches to your tree.
-> >> If this should go through different tree please let me know.
-> >>
-> >> Thanks,
-> >> Michal
-> >>
-> >>
-> >> The following changes since commit c9eaa447e77efe77b7fa4c953bd62de8297fd6c5:
-> >>
-> >>   Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
-> >>
-> >> are available in the git repository at:
-> >>
-> >>   git://git.monstr.eu/linux-2.6-microblaze.git tags/cadence-uart-for-3.16
+On Wed, Apr 23, 2014 at 03:27:17PM +0100, One Thousand Gnomes wrote:
+> > >-	if (up->capabilities & UART_CAP_AFE && port->fifosize >= 32) {
+> > >+	if ((up->capabilities & UART_CAP_AFE && (port->fifosize >= 32)) ||
+> > >+	    port->flags & UPF_HARD_FLOW) {
 > > 
-> > I can't take git pulles from random internet sites, sorry.  Just send
-> > these as email and I will queue them up.
+> > [Alan] Surely you want brackets on the port->flags & UPF_HARD_FLOW ??
+> > 
+> > The C precedence table shows following order:=
+> > -> & ||
+> > 
+> > So flags will be accessed first and then AND-ed with  UPF_HARD_FLOW and
+> > result will be OR-ed with left side expression value. So no need for bracket IMO.
 > 
-> I wouldn't say random. This repo is listed in my Microblaze maintainer fragment
-> and I used signed tag and you have sign my key that's why you can easily
-> check it.
+> Yep... agreed.
 
-If you have a signed key, why aren't you using git.kernel.org?  Again, I
-can't pull from any non-kernel.org sites, sorry.
-
-> Anyway we have sent v3 patches via email twice.
-> Origin v3:
-> https://lkml.org/lkml/2014/3/12/499
-> 
-> Resent v3:
-> https://lkml.org/lkml/2014/4/4/523
-> 
-> Patches 1-7 should go through your tree.
-
-I've now applied these, sorry for the delay.
+Perhaps, but please put them there so we all _know_ what it is doing is
+correct.
 
 greg k-h
