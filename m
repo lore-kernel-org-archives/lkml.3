@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758527AbaDXRPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 13:15:09 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:40544 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483AbaDXRPG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 13:15:06 -0400
-Date: Thu, 24 Apr 2014 19:14:53 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jason Low <jason.low2@hp.com>
-Cc: Preeti U Murthy <preeti@linux.vnet.ibm.com>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        alex.shi@linaro.org, efault@gmx.de, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
- whenever newidle balance is attempted
-Message-ID: <20140424171453.GZ11096@twins.programming.kicks-ass.net>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
- <1398303035-18255-2-git-send-email-jason.low2@hp.com>
- <5358E417.8090503@linux.vnet.ibm.com>
- <20140424120415.GS11096@twins.programming.kicks-ass.net>
- <20140424124438.GT13658@twins.programming.kicks-ass.net>
- <1398358417.3509.11.camel@j-VirtualBox>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398358417.3509.11.camel@j-VirtualBox>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	id S1758379AbaDXRPe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 13:15:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54997 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755854AbaDXRP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 13:15:27 -0400
+From: Will Woods <wwoods@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jan Kara <jack@suse.cz>, Eric Paris <eparis@redhat.com>
+Subject: [PATCH 1/1] fanotify: fix -EOVERFLOW with large files on 64-bit
+Date: Thu, 24 Apr 2014 13:15:24 -0400
+Message-Id: <1398359724-10057-1-git-send-email-wwoods@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 09:53:37AM -0700, Jason Low wrote:
-> 
-> So I thought that the original rationale (commit 1bd77f2d) behind
-> updating rq->next_balance in idle_balance() is that, if we are going
-> idle (!pulled_task), we want to ensure that the next_balance gets
-> calculated without the busy_factor.
-> 
-> If the rq is busy, then rq->next_balance gets updated based on
-> sd->interval * busy_factor. However, when the rq goes from "busy"
-> to idle, rq->next_balance might still have been calculated under
-> the assumption that the rq is busy. Thus, if we are going idle, we
-> would then properly update next_balance without the busy factor
-> if we update when !pulled_task.
-> 
+On 64-bit systems, O_LARGEFILE is automatically added to flags inside
+the open() syscall (also openat(), blkdev_open(), etc).
+Userspace therefore defines O_LARGEFILE to be 0 - you can use it,
+but it's a no-op. Everything should be O_LARGEFILE by default.
 
-Its late here and I'm confused!
+But: when fanotify does create_fd() it uses dentry_open(), which skips
+all that. And userspace can't set O_LARGEFILE in fanotify_init() because
+it's defined to 0. So if fanotify gets an event regarding a large file,
+the read() will just fail with -EOVERFLOW.
 
-So the for_each_domain() loop calculates a new next_balance based on
-->balance_interval (which has that busy_factor on, right).
+This patch adds O_LARGEFILE to fanotify_init()'s event_f_flags on 64-bit
+systems, using the same test as open()/openat()/etc.
 
-But if it fails to pull anything, we'll (potentially) iterate the entire
-tree up to the largest domain; and supposedly set next_balanced to the
-largest possible interval.
+Resolves: https://bugzilla.redhat.com/show_bug.cgi?id=696821
 
-So when we go from busy to idle (!pulled_task), we actually set
-->next_balance to the longest interval. Whereas the commit you
-referenced says it sets it to a shorter while.
+Acked-by: Eric Paris <eparis@redhat.com>
+Signed-off-by: Will Woods <wwoods@redhat.com>
+---
+ fs/notify/fanotify/fanotify_user.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-Not seeing it.
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 4e565c8..732648b 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -698,6 +698,8 @@ SYSCALL_DEFINE2(fanotify_init, unsigned int, flags, unsigned int, event_f_flags)
+ 	}
+ 	group->overflow_event = &oevent->fse;
+ 
++	if (force_o_largefile())
++		event_f_flags |= O_LARGEFILE;
+ 	group->fanotify_data.f_flags = event_f_flags;
+ #ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+ 	spin_lock_init(&group->fanotify_data.access_lock);
+-- 
+1.9.0
 
-So the code as modified by Ingo in one of the initial CFS commits, will
-move the ->next_balance time ahead if the balance succeeded
-(pulled_task), thereby reflecting that we are busy and we just did a
-balance so we need not do one again soon. (we might want to re-think
-this if we really make the idle balance only pull 1 task max).
-
-Of course, I've now gone over this code 3 times today, so I'm terminally
-confused.
