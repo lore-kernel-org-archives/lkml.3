@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602AbaDXWO3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:14:29 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39834 "EHLO
+	id S1757967AbaDXWRl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 18:17:41 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:39728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756756AbaDXVxM (ORCPT
+	with ESMTP id S1755420AbaDXVqO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:53:12 -0400
+	Thu, 24 Apr 2014 17:46:14 -0400
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Xin Long <lucien.xin@gmail.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH 3.4 08/27] ipv6: ip6_append_data_mtu do not handle the mtu of the second fragment properly
-Date: Thu, 24 Apr 2014 14:55:42 -0700
-Message-Id: <20140424215552.192344192@linuxfoundation.org>
+        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        Derek Basehore <dbasehore@chromium.org>, Jens Axboe <axboe@kernel.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 09/23] bdi: avoid oops on device removal
+Date: Thu, 24 Apr 2014 14:48:39 -0700
+Message-Id: <20140424214827.088702900@linuxfoundation.org>
 X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424215551.942390050@linuxfoundation.org>
-References: <20140424215551.942390050@linuxfoundation.org>
+In-Reply-To: <20140424214825.933835556@linuxfoundation.org>
+References: <20140424214825.933835556@linuxfoundation.org>
 User-Agent: quilt/0.61-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -26,100 +27,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.4-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: lucien <lucien.xin@gmail.com>
+From: Jan Kara <jack@suse.cz>
 
-[ Upstream commit e367c2d03dba4c9bcafad24688fadb79dd95b218 ]
+commit 5acda9d12dcf1ad0d9a5a2a7c646de3472fa7555 upstream.
 
-In ip6_append_data_mtu(), when the xfrm mode is not tunnel(such as
-transport),the ipsec header need to be added in the first fragment, so the mtu
-will decrease to reserve space for it, then the second fragment come, the mtu
-should be turn back, as the commit 0c1833797a5a6ec23ea9261d979aa18078720b74
-said.  however, in the commit a493e60ac4bbe2e977e7129d6d8cbb0dd236be, it use
-*mtu = min(*mtu, ...) to change the mtu, which lead to the new mtu is alway
-equal with the first fragment's. and cannot turn back.
+After commit 839a8e8660b6 ("writeback: replace custom worker pool
+implementation with unbound workqueue") when device is removed while we
+are writing to it we crash in bdi_writeback_workfn() ->
+set_worker_desc() because bdi->dev is NULL.
 
-when I test through  ping6 -c1 -s5000 $ip (mtu=1280):
-...frag (0|1232) ESP(spi=0x00002000,seq=0xb), length 1232
-...frag (1232|1216)
-...frag (2448|1216)
-...frag (3664|1216)
-...frag (4880|164)
+This can happen because even though bdi_unregister() cancels all pending
+flushing work, nothing really prevents new ones from being queued from
+balance_dirty_pages() or other places.
 
-which should be:
-...frag (0|1232) ESP(spi=0x00001000,seq=0x1), length 1232
-...frag (1232|1232)
-...frag (2464|1232)
-...frag (3696|1232)
-...frag (4928|116)
+Fix the problem by clearing BDI_registered bit in bdi_unregister() and
+checking it before scheduling of any flushing work.
 
-so delete the min() when change back the mtu.
+Fixes: 839a8e8660b6777e7fe4e80af1a048aebe2b5977
 
-Signed-off-by: Xin Long <lucien.xin@gmail.com>
-Fixes: 75a493e60ac4bb ("ipv6: ip6_append_data_mtu did not care about pmtudisc and frag_size")
-Acked-by: Hannes Frederic Sowa <hannes@stressinduktion.org>
-Signed-off-by: David S. Miller <davem@davemloft.net>
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Jan Kara <jack@suse.cz>
+Cc: Derek Basehore <dbasehore@chromium.org>
+Cc: Jens Axboe <axboe@kernel.dk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- net/ipv6/ip6_output.c |   14 ++++++--------
- 1 file changed, 6 insertions(+), 8 deletions(-)
 
---- a/net/ipv6/ip6_output.c
-+++ b/net/ipv6/ip6_output.c
-@@ -1194,21 +1194,19 @@ static void ip6_append_data_mtu(unsigned
- 				unsigned int fragheaderlen,
- 				struct sk_buff *skb,
- 				struct rt6_info *rt,
--				bool pmtuprobe)
-+				unsigned int orig_mtu)
+---
+ fs/fs-writeback.c           |   23 ++++++++++++++++++-----
+ include/linux/backing-dev.h |    2 +-
+ mm/backing-dev.c            |   13 +++++++++----
+ 3 files changed, 28 insertions(+), 10 deletions(-)
+
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -87,16 +87,29 @@ static inline struct inode *wb_inode(str
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/writeback.h>
+ 
++static void bdi_wakeup_thread(struct backing_dev_info *bdi)
++{
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	spin_unlock_bh(&bdi->wb_lock);
++}
++
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+ 			   struct wb_writeback_work *work)
  {
- 	if (!(rt->dst.flags & DST_XFRM_TUNNEL)) {
- 		if (skb == NULL) {
- 			/* first fragment, reserve header_len */
--			*mtu = *mtu - rt->dst.header_len;
-+			*mtu = orig_mtu - rt->dst.header_len;
+ 	trace_writeback_queue(bdi, work);
  
- 		} else {
- 			/*
- 			 * this fragment is not first, the headers
- 			 * space is regarded as data space.
- 			 */
--			*mtu = min(*mtu, pmtuprobe ?
--				   rt->dst.dev->mtu :
--				   dst_mtu(rt->dst.path));
-+			*mtu = orig_mtu;
- 		}
- 		*maxfraglen = ((*mtu - fragheaderlen) & ~7)
- 			      + fragheaderlen - sizeof(struct frag_hdr);
-@@ -1225,7 +1223,7 @@ int ip6_append_data(struct sock *sk, int
- 	struct ipv6_pinfo *np = inet6_sk(sk);
- 	struct inet_cork *cork;
- 	struct sk_buff *skb, *skb_prev = NULL;
--	unsigned int maxfraglen, fragheaderlen, mtu;
-+	unsigned int maxfraglen, fragheaderlen, mtu, orig_mtu;
- 	int exthdrlen;
- 	int dst_exthdrlen;
- 	int hh_len;
-@@ -1310,6 +1308,7 @@ int ip6_append_data(struct sock *sk, int
- 		dst_exthdrlen = 0;
- 		mtu = cork->fragsize;
+ 	spin_lock_bh(&bdi->wb_lock);
++	if (!test_bit(BDI_registered, &bdi->state)) {
++		if (work->done)
++			complete(work->done);
++		goto out_unlock;
++	}
+ 	list_add_tail(&work->list, &bdi->work_list);
+-	spin_unlock_bh(&bdi->wb_lock);
+-
+ 	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++out_unlock:
++	spin_unlock_bh(&bdi->wb_lock);
+ }
+ 
+ static void
+@@ -112,7 +125,7 @@ __bdi_start_writeback(struct backing_dev
+ 	work = kzalloc(sizeof(*work), GFP_ATOMIC);
+ 	if (!work) {
+ 		trace_writeback_nowork(bdi);
+-		mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++		bdi_wakeup_thread(bdi);
+ 		return;
  	}
-+	orig_mtu = mtu;
  
- 	hh_len = LL_RESERVED_SPACE(rt->dst.dev);
+@@ -159,7 +172,7 @@ void bdi_start_background_writeback(stru
+ 	 * writeback as soon as there is no other work to do.
+ 	 */
+ 	trace_writeback_wake_background(bdi);
+-	mod_delayed_work(bdi_wq, &bdi->wb.dwork, 0);
++	bdi_wakeup_thread(bdi);
+ }
  
-@@ -1392,8 +1391,7 @@ alloc_new_skb:
- 			if (skb == NULL || skb_prev == NULL)
- 				ip6_append_data_mtu(&mtu, &maxfraglen,
- 						    fragheaderlen, skb, rt,
--						    np->pmtudisc ==
--						    IPV6_PMTUDISC_PROBE);
-+						    orig_mtu);
+ /*
+@@ -1016,7 +1029,7 @@ void bdi_writeback_workfn(struct work_st
+ 	current->flags |= PF_SWAPWRITE;
  
- 			skb_prev = skb;
+ 	if (likely(!current_is_workqueue_rescuer() ||
+-		   list_empty(&bdi->bdi_list))) {
++		   !test_bit(BDI_registered, &bdi->state))) {
+ 		/*
+ 		 * The normal path.  Keep writing back @bdi until its
+ 		 * work_list is empty.  Note that this path is also taken
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -95,7 +95,7 @@ struct backing_dev_info {
+ 	unsigned int max_ratio, max_prop_frac;
  
+ 	struct bdi_writeback wb;  /* default writeback info for this bdi */
+-	spinlock_t wb_lock;	  /* protects work_list */
++	spinlock_t wb_lock;	  /* protects work_list & wb.dwork scheduling */
+ 
+ 	struct list_head work_list;
+ 
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -296,7 +296,10 @@ void bdi_wakeup_thread_delayed(struct ba
+ 	unsigned long timeout;
+ 
+ 	timeout = msecs_to_jiffies(dirty_writeback_interval * 10);
+-	queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_lock_bh(&bdi->wb_lock);
++	if (test_bit(BDI_registered, &bdi->state))
++		queue_delayed_work(bdi_wq, &bdi->wb.dwork, timeout);
++	spin_unlock_bh(&bdi->wb_lock);
+ }
+ 
+ /*
+@@ -309,9 +312,6 @@ static void bdi_remove_from_list(struct
+ 	spin_unlock_bh(&bdi_lock);
+ 
+ 	synchronize_rcu_expedited();
+-
+-	/* bdi_list is now unused, clear it to mark @bdi dying */
+-	INIT_LIST_HEAD(&bdi->bdi_list);
+ }
+ 
+ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
+@@ -362,6 +362,11 @@ static void bdi_wb_shutdown(struct backi
+ 	 */
+ 	bdi_remove_from_list(bdi);
+ 
++	/* Make sure nobody queues further work */
++	spin_lock_bh(&bdi->wb_lock);
++	clear_bit(BDI_registered, &bdi->state);
++	spin_unlock_bh(&bdi->wb_lock);
++
+ 	/*
+ 	 * Drain work list and shutdown the delayed_work.  At this point,
+ 	 * @bdi->bdi_list is empty telling bdi_Writeback_workfn() that @bdi
 
 
