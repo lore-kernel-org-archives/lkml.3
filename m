@@ -1,68 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751565AbaDXFZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 01:25:28 -0400
-Received: from ozlabs.org ([103.22.144.67]:41671 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750721AbaDXFZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 01:25:22 -0400
-Date: Thu, 24 Apr 2014 15:25:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Mark Salter <msalter@redhat.com>, Liu Hua <sdu.liu@huawei.com>
-Subject: linux-next: manual merge of the akpm-current tree with the arm tree
-Message-Id: <20140424152516.47a704ec9b749f98b9a93048@canb.auug.org.au>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA256";
- boundary="Signature=_Thu__24_Apr_2014_15_25_16_+1000_.w5EEXYkmSBrqh9p"
+	id S1751655AbaDXFZj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 01:25:39 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:43039 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540AbaDXFZ1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 01:25:27 -0400
+Date: Wed, 23 Apr 2014 22:25:23 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Sheng-Liang Song <ssl@chromium.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Shawn Nematbakhsh <shawnn@chromium.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: atkbd - fix keyboard LG Electronics
+Message-ID: <20140424052523.GA29675@core.coreip.homeip.net>
+References: <1398217882-29778-1-git-send-email-ssl@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398217882-29778-1-git-send-email-ssl@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__24_Apr_2014_15_25_16_+1000_.w5EEXYkmSBrqh9p
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Apr 22, 2014 at 06:51:22PM -0700, Sheng-Liang Song wrote:
+> After issuing ATKBD_CMD_RESET_DIS, LG Keyboard stop working.
+> The workaround is to remove ATKBD_CMD_RESET_DIS for LG Keyboards.
+> 
+> In order to keep the minimum changes to the current atkbd driver,
+> I add logic to apply the patch if and only if the device is LG LW25-B7HV or P1-J273B.
 
-Hi Andrew,
+How about if we rework this just a little bit... Does the version of the
+patch below work for you?
 
-Today's linux-next merge of the akpm-current tree got a conflict in
-arch/arm/include/asm/fixmap.h between commits 4221e2e6b316 ("ARM: 8031/1:
-fixmap: remove FIX_KMAP_BEGIN and FIX_KMAP_END") and a05e54c103b0 ("ARM:
-8031/2: change fixmap mapping region to support 32 CPUs") from the arm
-tree and commit a665f864487d ("arm: use generic fixmap.h") from the
-akpm-current tree.
+Also, I do need your "signed-off-by".
 
-I fixed it up (I have just dropped the akpm-current tree patch for now)
-and can carry the fix as necessary (no action is required).
+Thanks!
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+-- 
+Dmitry
 
---Signature=_Thu__24_Apr_2014_15_25_16_+1000_.w5EEXYkmSBrqh9p
-Content-Type: application/pgp-signature
+Input: atkbd - fix keyboard LG Electronics
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
+From: Sheng-Liang Song <ssl@chromium.org>
 
-iQIcBAEBCAAGBQJTWKBAAAoJEMDTa8Ir7ZwV66gQAIiSgQqTB/C/AqdE+9D5kE+w
-aOEBoDhytroYq4QxMMRNWpHkFhhyK4cG8wb6mt5/eFq0YPcDx8nfs9x8UT1Fr4AO
-yw8HlMc2xCe1uB0ssJQBYpCTIYk8Wdqeep8cJ7CfB/SGhwU7rRO6PLUIb7SbbLFT
-dw8LZBigG9FEu0uCokk2agxKANr79VMfl5GnN0latUVy0FCTGopNHT8r28nTGbHs
-Mo5ub7IM0RkrOMc0FqH0OHkyj6ZkQf4ryKKmVBD45noV2QLJp7ubXHsLCQajOhEc
-pM1p4IRDHLMHqaEuv+7sSYmhgj2ARmZaOUIb8nFaEsMD8e9rtYCujSIlNUAlfIU3
-n3xyL3WXydiP6k6ySsM/X12ddApIM34WGGe2o1R2Qfjo7cQnpbsJFOqfi12mtkFg
-AHO4KVzdHnasvwDmig+Pns570sXOYjVvCG7Xe+IVXYycqWMvlVOG7iyjsWlZacV6
-M0fCqNluyIg79798Wfcq1/iSW8dJTkyjs1hFcLRmaOdh9Y/QmvtpXRFXQXRAGxCf
-M/mx5SIIDMFvG2ZmvvJ2/nzrP5o+AZeREaJR6uZhFu/YWWpf0OTzSlDl+6a7UHrT
-YWyGik8SgltEOPDGUfx76T6gCsHYeq+DF4/lmF9VB9dJCU2lH6n3amQIVT+7x69X
-lb2CTBg6uhxKbyoKJumn
-=A7Vh
------END PGP SIGNATURE-----
+After issuing ATKBD_CMD_RESET_DIS, LG Keyboard stop working.  The
+workaround is to remove ATKBD_CMD_RESET_DIS for LG Keyboards.
 
---Signature=_Thu__24_Apr_2014_15_25_16_+1000_.w5EEXYkmSBrqh9p--
+In order to keep the minimum changes to the current atkbd driver, I add
+logic to apply the patch if and only if the device is LG LW25-B7HV or
+P1-J273B.
+
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ drivers/input/keyboard/atkbd.c |   30 ++++++++++++++++++++++++++++--
+ 1 file changed, 28 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/keyboard/atkbd.c b/drivers/input/keyboard/atkbd.c
+index 2626773..06a4b0d 100644
+--- a/drivers/input/keyboard/atkbd.c
++++ b/drivers/input/keyboard/atkbd.c
+@@ -243,6 +243,12 @@ static void (*atkbd_platform_fixup)(struct atkbd *, const void *data);
+ static void *atkbd_platform_fixup_data;
+ static unsigned int (*atkbd_platform_scancode_fixup)(struct atkbd *, unsigned int);
+ 
++/*
++ * Certain keyboards to not like ATKBD_CMD_RESET_DIS and stop responding
++ * to many commands until full reset (ATKBD_CMD_RESET_BAT) is performed.
++ */
++static bool atkbd_skip_deactivate;
++
+ static ssize_t atkbd_attr_show_helper(struct device *dev, char *buf,
+ 				ssize_t (*handler)(struct atkbd *, char *));
+ static ssize_t atkbd_attr_set_helper(struct device *dev, const char *buf, size_t count,
+@@ -698,7 +704,6 @@ static int atkbd_activate(struct atkbd *atkbd)
+  * atkbd_deactivate() resets and disables the keyboard from sending
+  * keystrokes.
+  */
+-
+ static void atkbd_deactivate(struct atkbd *atkbd)
+ {
+ 	struct ps2dev *ps2dev = &atkbd->ps2dev;
+@@ -768,7 +773,8 @@ static int atkbd_probe(struct atkbd *atkbd)
+  * Make sure nothing is coming from the keyboard and disturbs our
+  * internal state.
+  */
+-	atkbd_deactivate(atkbd);
++	if (!atkbd_skip_deactivate)
++		atkbd_deactivate(atkbd);
+ 
+ 	return 0;
+ }
+@@ -1638,6 +1644,12 @@ static int __init atkbd_setup_scancode_fixup(const struct dmi_system_id *id)
+ 	return 1;
+ }
+ 
++static int __init atkbd_deactivate_fixup(const struct dmi_system_id *id)
++{
++	atkbd_skip_deactivate = true;
++	return 1;
++}
++
+ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
+ 	{
+ 		.matches = {
+@@ -1775,6 +1787,20 @@ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
+ 		.callback = atkbd_setup_scancode_fixup,
+ 		.driver_data = atkbd_oqo_01plus_scancode_fixup,
+ 	},
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "LW25-B7HV"),
++		},
++		.callback = atkbd_deactivate_fixup,
++	},
++	{
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "LG Electronics"),
++			DMI_MATCH(DMI_PRODUCT_NAME, "P1-J273B"),
++		},
++		.callback = atkbd_deactivate_fixup,
++	},
+ 	{ }
+ };
+ 
