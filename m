@@ -1,41 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551AbaDXHzk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 03:55:40 -0400
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:44448 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751355AbaDXHzi (ORCPT
+	id S1752642AbaDXIEO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 04:04:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:50243 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752448AbaDXIEC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 03:55:38 -0400
+	Thu, 24 Apr 2014 04:04:02 -0400
+Date: Thu, 24 Apr 2014 01:03:49 -0700
+From: tip-bot for Masanari Iida <tipbot@zytor.com>
+Message-ID: <tip-db66d756c74acb886c51f11b501c2fe622018a0a@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        tglx@linutronix.de, standby24x7@gmail.com
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, standby24x7@gmail.com
+In-Reply-To: <1397753955-2914-1-git-send-email-standby24x7@gmail.com>
+References: <1397753955-2914-1-git-send-email-standby24x7@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched/docbook: Fix 'make htmldocs'
+  warnings caused by missing description
+Git-Commit-ID: db66d756c74acb886c51f11b501c2fe622018a0a
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-In-Reply-To: <1398325667-27060-2-git-send-email-daniel.sangorrin@toshiba.co.jp>
-References: <1398325667-27060-1-git-send-email-daniel.sangorrin@toshiba.co.jp>
-	<1398325667-27060-2-git-send-email-daniel.sangorrin@toshiba.co.jp>
-Date: Thu, 24 Apr 2014 13:25:38 +0530
-Message-ID: <CAKohpomUg+gtL+1_qT05qWTh4qygSGU4HnqPLq8dM0=AmzY8+Q@mail.gmail.com>
-Subject: Re: [PATCH] timer_stats: add core information to event counters
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Randy Dunlap <rdunlap@infradead.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-doc@vger.kernel.org
+Content-Transfer-Encoding: 8bit
 Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24 April 2014 13:17, Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp> wrote:
-> Add information specifying the CPU core where timer callbacks (events)
-> were executed to the output of /proc/timer_stats.
->
-> Signed-off-by: Daniel Sangorrin <daniel.sangorrin@toshiba.co.jp>
-> Signed-off-by: Yoshitake Kobayashi <yoshitake.kobayashi@toshiba.co.jp>
-> ---
->  Documentation/timers/timer_stats.txt | 41 ++++++++++++++++++++----------------
->  kernel/time/timer_stats.c            | 20 ++++++++++--------
->  2 files changed, 34 insertions(+), 27 deletions(-)
+Commit-ID:  db66d756c74acb886c51f11b501c2fe622018a0a
+Gitweb:     http://git.kernel.org/tip/db66d756c74acb886c51f11b501c2fe622018a0a
+Author:     Masanari Iida <standby24x7@gmail.com>
+AuthorDate: Fri, 18 Apr 2014 01:59:15 +0900
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Thu, 24 Apr 2014 09:28:32 +0200
 
-Nice and useful work.
+sched/docbook: Fix 'make htmldocs' warnings caused by missing description
 
-Reviewed-by: Viresh Kumar <viresh.kumar@linaro.org>
+When 'flags' argument to sched_{set,get}attr() syscalls were
+added in:
+
+  6d35ab48090b ("sched: Add 'flags' argument to sched_{set,get}attr() syscalls")
+
+no description for 'flags' was added. It causes the following warnings on "make htmldocs":
+
+  Warning(/kernel/sched/core.c:3645): No description found for parameter 'flags'
+  Warning(/kernel/sched/core.c:3789): No description found for parameter 'flags'
+
+Signed-off-by: Masanari Iida <standby24x7@gmail.com>
+Cc: peterz@infradead.org
+Link: http://lkml.kernel.org/r/1397753955-2914-1-git-send-email-standby24x7@gmail.com
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
+---
+ kernel/sched/core.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index 268a45e..9fe2190 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -3639,6 +3639,7 @@ SYSCALL_DEFINE2(sched_setparam, pid_t, pid, struct sched_param __user *, param)
+  * sys_sched_setattr - same as above, but with extended sched_attr
+  * @pid: the pid in question.
+  * @uattr: structure containing the extended parameters.
++ * @flags: for future extension.
+  */
+ SYSCALL_DEFINE3(sched_setattr, pid_t, pid, struct sched_attr __user *, uattr,
+ 			       unsigned int, flags)
+@@ -3783,6 +3784,7 @@ err_size:
+  * @pid: the pid in question.
+  * @uattr: structure containing the extended parameters.
+  * @size: sizeof(attr) for fwd/bwd comp.
++ * @flags: for future extension.
+  */
+ SYSCALL_DEFINE4(sched_getattr, pid_t, pid, struct sched_attr __user *, uattr,
+ 		unsigned int, size, unsigned int, flags)
