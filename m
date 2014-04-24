@@ -1,98 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757827AbaDXOxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 10:53:37 -0400
-Received: from mail-yh0-f43.google.com ([209.85.213.43]:38069 "EHLO
-	mail-yh0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757235AbaDXOxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 10:53:34 -0400
-Date: Thu, 24 Apr 2014 11:53:29 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth 2014-04-24
-Message-ID: <20140424145329.GD7832@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1757931AbaDXOyW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 10:54:22 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:16047 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757354AbaDXOyU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 10:54:20 -0400
+Date: Thu, 24 Apr 2014 10:54:17 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Takao Indoh <indou.takao@jp.fujitsu.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH] ftrace/module: Hardcode ftrace_module_init() call into
+ load_module()
+Message-ID: <20140424105417.7407bb72@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/9DWx/yDrRhgMJTb"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+[
+  Rusty, you can take this patch, or if you want, you can give me 
+  an Acked-by, and I'll push this through my tree.
+]
 
---/9DWx/yDrRhgMJTb
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 
-Hi John,
+>From 3ad4487ccecb8eb799c8e96309f256a1c9296685 Mon Sep 17 00:00:00 2001
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Date: Thu, 24 Apr 2014 10:40:12 -0400
+Subject: [PATCH] ftrace/module: Hardcode ftrace_module_init() call into
+ load_module()
 
-Some fixes for 3.15. There is a revert for the intel driver, a new device id,
-and two important SSP fixes from Johan.
-Also we've noticed that your wireless.git tree is not up to date, so this pull
-was rebased on top of net.git. If you pull from this you'll will be pulling
-net/master from yesterday as well.
+A race exists between module loading and enabling of function tracer.
 
-Please pull or let me know of any concerns you have. Thanks!
+	CPU 1				CPU 2
+	-----				-----
+  load_module()
+   module->state = MODULE_STATE_COMING
 
-	Gustavo
+				register_ftrace_function()
+				 mutex_lock(&ftrace_lock);
+				 ftrace_startup()
+				  update_ftrace_function();
+				   ftrace_arch_code_modify_prepare()
+				    set_all_module_text_rw();
+				   <enables-ftrace>
+				    ftrace_arch_code_modify_post_process()
+				     set_all_module_text_ro();
 
+				[ here all module text is set to RO,
+				  including the module that is
+				  loading!! ]
+
+   blocking_notifier_call_chain(MODULE_STATE_COMING);
+    ftrace_init_module()
+
+     [ tries to modify code, but it's RO, and fails!
+       ftrace_bug() is called]
+
+When this race happens, ftrace_bug() will produces a nasty warning and
+all of the function tracing features will be disabled until reboot.
+
+The simple solution is to treate module load the same way the core
+kernel is treated at boot. To hardcode the ftrace function modification
+of converting calls to mcount into nops. This is done in init/main.c
+there's no reason it could not be done in load_module(). This gives
+a better control of the changes and doesn't tie the state of the
+module to its notifiers as much. Ftrace is special, it needs to be
+treated as such.
+
+The reason this would work, is that the ftrace_module_init() would be
+called while the module is in MODULE_STATE_UNFORMED, which is ignored
+by the set_all_module_text_ro() call.
+
+Link: http://lkml.kernel.org/r/1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com
+
+Reported-by: Takao Indoh <indou.takao@jp.fujitsu.com>
+Cc: stable@vger.kernel.org # 2.6.38+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
-The following changes since commit 6a51b5e4d59e00051e65e836520912cd7c717be1:
+ include/linux/ftrace.h |  2 ++
+ kernel/module.c        |  3 +++
+ kernel/trace/ftrace.c  | 27 ++++-----------------------
+ 3 files changed, 9 insertions(+), 23 deletions(-)
 
-  hisax/icc: add missing semicolon after label (2014-04-22 21:22:47 -0400)
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 9212b01..ae9504b 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -535,6 +535,7 @@ static inline int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_a
+ extern int ftrace_arch_read_dyn_info(char *buf, int size);
+ 
+ extern int skip_trace(unsigned long ip);
++extern void ftrace_module_init(struct module *mod);
+ 
+ extern void ftrace_disable_daemon(void);
+ extern void ftrace_enable_daemon(void);
+@@ -544,6 +545,7 @@ static inline int ftrace_force_update(void) { return 0; }
+ static inline void ftrace_disable_daemon(void) { }
+ static inline void ftrace_enable_daemon(void) { }
+ static inline void ftrace_release_mod(struct module *mod) {}
++static inline void ftrace_module_init(struct module *mod) {}
+ static inline __init int register_ftrace_command(struct ftrace_func_command *cmd)
+ {
+ 	return -EINVAL;
+diff --git a/kernel/module.c b/kernel/module.c
+index 1186940..5f14fec 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3271,6 +3271,9 @@ static int load_module(struct load_info *info, const char __user *uargs,
+ 
+ 	dynamic_debug_setup(info->debug, info->num_debug);
+ 
++	/* Ftrace init must be called in the MODULE_STATE_UNFORMED state */
++	ftrace_module_init(mod);
++
+ 	/* Finally it's fully formed, ready to start executing. */
+ 	err = complete_formation(mod, info);
+ 	if (err)
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 1fd4b94..4a54a25 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -4330,16 +4330,11 @@ static void ftrace_init_module(struct module *mod,
+ 	ftrace_process_locs(mod, start, end);
+ }
+ 
+-static int ftrace_module_notify_enter(struct notifier_block *self,
+-				      unsigned long val, void *data)
++void ftrace_module_init(struct module *mod)
+ {
+-	struct module *mod = data;
+-
+-	if (val == MODULE_STATE_COMING)
+-		ftrace_init_module(mod, mod->ftrace_callsites,
+-				   mod->ftrace_callsites +
+-				   mod->num_ftrace_callsites);
+-	return 0;
++	ftrace_init_module(mod, mod->ftrace_callsites,
++			   mod->ftrace_callsites +
++			   mod->num_ftrace_callsites);
+ }
+ 
+ static int ftrace_module_notify_exit(struct notifier_block *self,
+@@ -4353,11 +4348,6 @@ static int ftrace_module_notify_exit(struct notifier_block *self,
+ 	return 0;
+ }
+ #else
+-static int ftrace_module_notify_enter(struct notifier_block *self,
+-				      unsigned long val, void *data)
+-{
+-	return 0;
+-}
+ static int ftrace_module_notify_exit(struct notifier_block *self,
+ 				     unsigned long val, void *data)
+ {
+@@ -4365,11 +4355,6 @@ static int ftrace_module_notify_exit(struct notifier_block *self,
+ }
+ #endif /* CONFIG_MODULES */
+ 
+-struct notifier_block ftrace_module_enter_nb = {
+-	.notifier_call = ftrace_module_notify_enter,
+-	.priority = INT_MAX,	/* Run before anything that can use kprobes */
+-};
+-
+ struct notifier_block ftrace_module_exit_nb = {
+ 	.notifier_call = ftrace_module_notify_exit,
+ 	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
+@@ -4403,10 +4388,6 @@ void __init ftrace_init(void)
+ 				  __start_mcount_loc,
+ 				  __stop_mcount_loc);
+ 
+-	ret = register_module_notifier(&ftrace_module_enter_nb);
+-	if (ret)
+-		pr_warning("Failed to register trace ftrace module enter notifier\n");
+-
+ 	ret = register_module_notifier(&ftrace_module_exit_nb);
+ 	if (ret)
+ 		pr_warning("Failed to register trace ftrace module exit notifier\n");
+-- 
+1.8.1.4
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth.git for-upstream
-
-for you to fetch changes up to b66a81831359495b3768ace72452209cdf5d6614:
-
-  Bluetooth: Add support for Lite-on [04ca:3007] (2014-04-24 12:43:33 +0300)
-
-----------------------------------------------------------------
-Johan Hedberg (2):
-      Bluetooth: Fix triggering BR/EDR L2CAP Connect too early
-      Bluetooth: Fix redundant encryption request for reauthentication
-
-Marcel Holtmann (1):
-      Revert "Bluetooth: Enable autosuspend for Intel Bluetooth device"
-
-Mohammed Habibulla (1):
-      Bluetooth: Add support for Lite-on [04ca:3007]
-
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 5 ++---
- net/bluetooth/hci_conn.c  | 9 ++++++---
- net/bluetooth/hci_event.c | 6 ++++++
- 4 files changed, 16 insertions(+), 6 deletions(-)
-
-
---/9DWx/yDrRhgMJTb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTWSVpAAoJEPs3PUX4s20oLWQP/1hhfe6EZ45Sec94NIsSYB5K
-EZYvvOX4sKj3VhTT/dzKIBZDp7aLHyBZGB4HRBezKe0KqiNFV3eVU9Um1BsWxCgH
-u5S/PgS1yj2BOSgCJAy2dZPYqQii8KEUugIocRMzqs6ZtolbnaucQexSy65af4hY
-MVyHPUCRgtYi9tMDu/JTyi3b+LDzYgztYG5mgLzuw3zz2SaGc9bLdJIQ4aPyaIge
-rwzoLxPJKxfF+7xIObhVccMK150AjwapsN9/oV+FGDmP83zxXxGoBOFGf8lorQbh
-2C4Ol0zqJj8pob3cQxExwZjmVX9LG0vm/wqeNW9E3wKfelhkwdf4cF25kvfvnPAl
-pjhhjp7ssbEBnPhxwKqJIEb6VuAaZPMYuV+62g9gcU3wq2LCSSRI1s31LgEiNBbh
-7HedJ12UD4Q6BqHzrSf4Mc3Bhli1jz1HL4wwZy2DxqhAu7mlRxHVjkg+iupeSp6l
-jJDjbWdzF3WH/E+lhJCI9mgGQb97X1ZwzCjLJxO2/QXDs2RlQU6+bSjbDbUDec9+
-0mrRNbfJgzdezuHBFWQEX0UkKG6E6mliXmJ+GH9OJDHA+VTIyMtm7vjowe68jMZW
-a1Iq52ijBMKlo1goMlkVR8K3KE0PpWNSSh0TdoYzrYWzBo8uM80uasyuNDvyhdqc
-Ab1PYbsWaogXz91HHxYG
-=TAG1
------END PGP SIGNATURE-----
-
---/9DWx/yDrRhgMJTb--
