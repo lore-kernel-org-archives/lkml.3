@@ -1,272 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118AbaDXWlL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 18:41:11 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:39521 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754870AbaDXVp6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 17:45:58 -0400
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH 3.14 09/33] staging: comedi: fix circular locking dependency in comedi_mmap()
-Date: Thu, 24 Apr 2014 14:48:22 -0700
-Message-Id: <20140424214450.817373439@linuxfoundation.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <20140424214449.423169713@linuxfoundation.org>
-References: <20140424214449.423169713@linuxfoundation.org>
-User-Agent: quilt/0.61-1
+	id S1754640AbaDXVpO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 17:45:14 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:38847 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753116AbaDXVpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 17:45:08 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Tony Lindgren <tony@atomide.com>, Joel Fernandes <joelf@ti.com>
+Subject: [PATCH 18/26] ARM: OMAP2+: timer: Add legacy code for old way of getting fclk
+Date: Thu, 24 Apr 2014 16:44:01 -0500
+Message-ID: <1398375849-6017-19-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398375849-6017-1-git-send-email-joelf@ti.com>
+References: <1398375849-6017-1-git-send-email-joelf@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+Separate out legacy code for getting timer->fclk and reuse it for
+the DT-case as a fallback. All DT users should ideally be specifying
+a clock property with a phandle of its clock node. Till the migration
+is complete, add a legacy function to keep things working.
 
-------------------
-
-From: Ian Abbott <abbotti@mev.co.uk>
-
-commit b34aa86f12e8848ba453215602c8c50fa63c4cb3 upstream.
-
-Mmapping a comedi data buffer with lockdep checking enabled produced the
-following kernel debug messages:
-
-======================================================
-[ INFO: possible circular locking dependency detected ]
-3.5.0-rc3-ija1+ #9 Tainted: G         C
--------------------------------------------------------
-comedi_test/4160 is trying to acquire lock:
- (&dev->mutex#2){+.+.+.}, at: [<ffffffffa00313f4>] comedi_mmap+0x57/0x1d9 [comedi]
-
-but task is already holding lock:
- (&mm->mmap_sem){++++++}, at: [<ffffffff810c96fe>] vm_mmap_pgoff+0x41/0x76
-
-which lock already depends on the new lock.
-
-the existing dependency chain (in reverse order) is:
-
--> #1 (&mm->mmap_sem){++++++}:
-       [<ffffffff8106d0e8>] lock_acquire+0x97/0x105
-       [<ffffffff810ce3bc>] might_fault+0x6d/0x90
-       [<ffffffffa0031ffb>] do_devinfo_ioctl.isra.7+0x11e/0x14c [comedi]
-       [<ffffffffa003227f>] comedi_unlocked_ioctl+0x256/0xe48 [comedi]
-       [<ffffffff810f7fcd>] vfs_ioctl+0x18/0x34
-       [<ffffffff810f87fd>] do_vfs_ioctl+0x382/0x43c
-       [<ffffffff810f88f9>] sys_ioctl+0x42/0x65
-       [<ffffffff81415c62>] system_call_fastpath+0x16/0x1b
-
--> #0 (&dev->mutex#2){+.+.+.}:
-       [<ffffffff8106c528>] __lock_acquire+0x101d/0x1591
-       [<ffffffff8106d0e8>] lock_acquire+0x97/0x105
-       [<ffffffff8140c894>] mutex_lock_nested+0x46/0x2a4
-       [<ffffffffa00313f4>] comedi_mmap+0x57/0x1d9 [comedi]
-       [<ffffffff810d5816>] mmap_region+0x281/0x492
-       [<ffffffff810d5c92>] do_mmap_pgoff+0x26b/0x2a7
-       [<ffffffff810c971a>] vm_mmap_pgoff+0x5d/0x76
-       [<ffffffff810d493f>] sys_mmap_pgoff+0xc7/0x10d
-       [<ffffffff81004d36>] sys_mmap+0x16/0x20
-       [<ffffffff81415c62>] system_call_fastpath+0x16/0x1b
-
-other info that might help us debug this:
-
- Possible unsafe locking scenario:
-
-       CPU0                    CPU1
-       ----                    ----
-  lock(&mm->mmap_sem);
-                               lock(&dev->mutex#2);
-                               lock(&mm->mmap_sem);
-  lock(&dev->mutex#2);
-
- *** DEADLOCK ***
-
-To avoid the circular dependency, just try to get the lock in
-`comedi_mmap()` instead of blocking.  Since the comedi device's main mutex
-is heavily used, do a down-read of its `attach_lock` rwsemaphore
-instead.  Trying to down-read `attach_lock` should only fail if
-some task has down-write locked it, and that is only done while the
-comedi device is being attached to or detached from a low-level hardware
-device.
-
-Unfortunately, acquiring the `attach_lock` doesn't prevent another
-task replacing the comedi data buffer we are trying to mmap.  The
-details of the buffer are held in a `struct comedi_buf_map` and pointed
-to by `s->async->buf_map` where `s` is the comedi subdevice whose buffer
-we are trying to map.  The `struct comedi_buf_map` is already reference
-counted with a `struct kref`, so we can stop it being freed prematurely.
-
-Modify `comedi_mmap()` to call new function
-`comedi_buf_map_from_subdev_get()` to read the subdevice's current
-buffer map pointer and increment its reference instead of accessing
-`async->buf_map` directly.  Call `comedi_buf_map_put()` to decrement the
-reference once the buffer map structure has been dealt with.  (Note that
-`comedi_buf_map_put()` does nothing if passed a NULL pointer.)
-
-`comedi_buf_map_from_subdev_get()` checks the subdevice's buffer map
-pointer has been set and the buffer map has been initialized enough for
-`comedi_mmap()` to deal with it (specifically, check the `n_pages`
-member has been set to a non-zero value).  If all is well, the buffer
-map's reference is incremented and a pointer to it is returned.  The
-comedi subdevice's spin-lock is used to protect the checks.  Also use
-the spin-lock in `__comedi_buf_alloc()` and `__comedi_buf_free()` to
-protect changes to the subdevice's buffer map structure pointer and the
-buffer map structure's `n_pages` member.  (This checking of `n_pages` is
-a bit clunky and I [Ian Abbott] plan to deal with it in the future.)
-
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
-Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
+Signed-off-by: Joel Fernandes <joelf@ti.com>
 ---
- drivers/staging/comedi/comedi_buf.c      |   37 +++++++++++++++++++++++++++++--
- drivers/staging/comedi/comedi_fops.c     |   18 +++++++++++----
- drivers/staging/comedi/comedi_internal.h |    2 +
- 3 files changed, 51 insertions(+), 6 deletions(-)
+ arch/arm/mach-omap2/timer.c |   32 ++++++++++++++++++++++++--------
+ 1 file changed, 24 insertions(+), 8 deletions(-)
 
---- a/drivers/staging/comedi/comedi_buf.c
-+++ b/drivers/staging/comedi/comedi_buf.c
-@@ -61,6 +61,8 @@ static void __comedi_buf_free(struct com
- 			      struct comedi_subdevice *s)
- {
- 	struct comedi_async *async = s->async;
-+	struct comedi_buf_map *bm;
-+	unsigned long flags;
- 
- 	if (async->prealloc_buf) {
- 		vunmap(async->prealloc_buf);
-@@ -68,8 +70,11 @@ static void __comedi_buf_free(struct com
- 		async->prealloc_bufsz = 0;
- 	}
- 
--	comedi_buf_map_put(async->buf_map);
-+	spin_lock_irqsave(&s->spin_lock, flags);
-+	bm = async->buf_map;
- 	async->buf_map = NULL;
-+	spin_unlock_irqrestore(&s->spin_lock, flags);
-+	comedi_buf_map_put(bm);
+diff --git a/arch/arm/mach-omap2/timer.c b/arch/arm/mach-omap2/timer.c
+index b3db1da..81a29b1 100644
+--- a/arch/arm/mach-omap2/timer.c
++++ b/arch/arm/mach-omap2/timer.c
+@@ -248,6 +248,19 @@ static u32 __init omap_dm_timer_get_errata(void)
+ 	return OMAP_TIMER_ERRATA_I103_I767;
  }
  
- static void __comedi_buf_alloc(struct comedi_device *dev,
-@@ -80,6 +85,7 @@ static void __comedi_buf_alloc(struct co
- 	struct page **pages = NULL;
- 	struct comedi_buf_map *bm;
- 	struct comedi_buf_page *buf;
-+	unsigned long flags;
- 	unsigned i;
- 
- 	if (!IS_ENABLED(CONFIG_HAS_DMA) && s->async_dma_dir != DMA_NONE) {
-@@ -92,8 +98,10 @@ static void __comedi_buf_alloc(struct co
- 	if (!bm)
- 		return;
- 
--	async->buf_map = bm;
- 	kref_init(&bm->refcount);
-+	spin_lock_irqsave(&s->spin_lock, flags);
-+	async->buf_map = bm;
-+	spin_unlock_irqrestore(&s->spin_lock, flags);
- 	bm->dma_dir = s->async_dma_dir;
- 	if (bm->dma_dir != DMA_NONE)
- 		/* Need ref to hardware device to free buffer later. */
-@@ -127,7 +135,9 @@ static void __comedi_buf_alloc(struct co
- 
- 		pages[i] = virt_to_page(buf->virt_addr);
- 	}
-+	spin_lock_irqsave(&s->spin_lock, flags);
- 	bm->n_pages = i;
-+	spin_unlock_irqrestore(&s->spin_lock, flags);
- 
- 	/* vmap the prealloc_buf if all the pages were allocated */
- 	if (i == n_pages)
-@@ -150,6 +160,29 @@ int comedi_buf_map_put(struct comedi_buf
- 	return 1;
- }
- 
-+/* returns s->async->buf_map and increments its kref refcount */
-+struct comedi_buf_map *
-+comedi_buf_map_from_subdev_get(struct comedi_subdevice *s)
++static int legacy_hwmod_clkget(struct omap_dm_timer *timer, const char *oh_name)
 +{
-+	struct comedi_async *async = s->async;
-+	struct comedi_buf_map *bm = NULL;
-+	unsigned long flags;
++	struct omap_hwmod *oh;
 +
-+	if (!async)
-+		return NULL;
++	oh = omap_hwmod_lookup(oh_name);
++	if (!oh)
++		return -ENODEV;
 +
-+	spin_lock_irqsave(&s->spin_lock, flags);
-+	bm = async->buf_map;
-+	/* only want it if buffer pages allocated */
-+	if (bm && bm->n_pages)
-+		comedi_buf_map_get(bm);
-+	else
-+		bm = NULL;
-+	spin_unlock_irqrestore(&s->spin_lock, flags);
-+
-+	return bm;
++	timer->fclk = clk_get(NULL, omap_hwmod_get_main_clk(oh));
++	if (IS_ERR(timer->fclk))
++		return PTR_ERR(timer->fclk);
 +}
 +
- bool comedi_buf_is_mmapped(struct comedi_async *async)
- {
- 	struct comedi_buf_map *bm = async->buf_map;
---- a/drivers/staging/comedi/comedi_fops.c
-+++ b/drivers/staging/comedi/comedi_fops.c
-@@ -1923,14 +1923,21 @@ static int comedi_mmap(struct file *file
- 	struct comedi_device *dev = file->private_data;
- 	struct comedi_subdevice *s;
- 	struct comedi_async *async;
--	struct comedi_buf_map *bm;
-+	struct comedi_buf_map *bm = NULL;
- 	unsigned long start = vma->vm_start;
- 	unsigned long size;
- 	int n_pages;
- 	int i;
- 	int retval;
+ static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
+ 					 const char *fck_source,
+ 					 const char *property,
+@@ -289,6 +302,14 @@ static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
+ 			 * fall back code is to be deleted and we're to return
+ 			 * PTR_ERR(timer->fclk) here.
+ 			 */
++			of_property_read_string_index(np, "ti,hwmods", 0,
++						      &oh_name);
++			if (!oh_name)
++				return -ENODEV;
++
++			r = legacy_hwmod_clkget(timer, oh_name);
++			if (r)
++				return r;
+ 		}
+ 	} else {
+ 		if (omap_dm_timer_reserve_systimer(timer->id))
+@@ -320,15 +341,10 @@ static int __init omap_dm_timer_init_one(struct omap_dm_timer *timer,
  
--	mutex_lock(&dev->mutex);
-+	/*
-+	 * 'trylock' avoids circular dependency with current->mm->mmap_sem
-+	 * and down-reading &dev->attach_lock should normally succeed without
-+	 * contention unless the device is in the process of being attached
-+	 * or detached.
-+	 */
-+	if (!down_read_trylock(&dev->attach_lock))
-+		return -EAGAIN;
+ 		omap_hwmod_setup_one(oh_name);
+ 		omap_hwmod_enable(oh);
+-	}
  
- 	if (!dev->attached) {
- 		dev_dbg(dev->class_dev, "no driver attached\n");
-@@ -1970,7 +1977,9 @@ static int comedi_mmap(struct file *file
+-	if (!timer->fclk || IS_ERR(timer->fclk)) {
+-		oh = omap_hwmod_lookup(oh_name);
+-		if (!oh)
+-			return -ENODEV;
+-		timer->fclk = clk_get(NULL, omap_hwmod_get_main_clk(oh));
+-		if (IS_ERR(timer->fclk))
+-			return PTR_ERR(timer->fclk);
++		r = legacy_hwmod_clkget(timer, oh_name);
++		if (r)
++			return r;
  	}
  
- 	n_pages = size >> PAGE_SHIFT;
--	bm = async->buf_map;
-+
-+	/* get reference to current buf map (if any) */
-+	bm = comedi_buf_map_from_subdev_get(s);
- 	if (!bm || n_pages > bm->n_pages) {
- 		retval = -EINVAL;
- 		goto done;
-@@ -1994,7 +2003,8 @@ static int comedi_mmap(struct file *file
- 
- 	retval = 0;
- done:
--	mutex_unlock(&dev->mutex);
-+	up_read(&dev->attach_lock);
-+	comedi_buf_map_put(bm);	/* put reference to buf map - okay if NULL */
- 	return retval;
- }
- 
---- a/drivers/staging/comedi/comedi_internal.h
-+++ b/drivers/staging/comedi/comedi_internal.h
-@@ -19,6 +19,8 @@ void comedi_buf_reset(struct comedi_asyn
- bool comedi_buf_is_mmapped(struct comedi_async *async);
- void comedi_buf_map_get(struct comedi_buf_map *bm);
- int comedi_buf_map_put(struct comedi_buf_map *bm);
-+struct comedi_buf_map *comedi_buf_map_from_subdev_get(
-+		struct comedi_subdevice *s);
- unsigned int comedi_buf_write_n_allocated(struct comedi_async *async);
- void comedi_device_cancel_all(struct comedi_device *dev);
- 
-
+ 	/*
+-- 
+1.7.9.5
 
