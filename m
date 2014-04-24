@@ -1,180 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932502AbaDXQyx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 12:54:53 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:54207 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754092AbaDXQyu (ORCPT
+	id S1758417AbaDXQ4z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 12:56:55 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:28567 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757710AbaDXQ4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 12:54:50 -0400
-Message-ID: <1398358432.2293.17.camel@dhcp-9-2-203-236.watson.ibm.com>
-Subject: Re: [PATCH 01/20] KEYS: verify a certificate is signed by a
- 'trusted' key
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>
-Cc: dhowells@redhat.com, jmorris@namei.org, roberto.sassu@polito.it,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 24 Apr 2014 12:53:52 -0400
-In-Reply-To: <0f7915604c69374f15cbaf36c499a5d88264e89d.1398259638.git.d.kasatkin@samsung.com>
-References: <cover.1398259638.git.d.kasatkin@samsung.com>
-	 <0f7915604c69374f15cbaf36c499a5d88264e89d.1398259638.git.d.kasatkin@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
-Mime-Version: 1.0
+	Thu, 24 Apr 2014 12:56:52 -0400
+Message-ID: <53594244.6070305@oracle.com>
+Date: Thu, 24 Apr 2014 12:56:36 -0400
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: linux-fsdevel <linux-fsdevel@vger.kernel.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>, Jan Kara <jack@suse.cz>,
+        Dave Jones <davej@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: fs: dcookie: freeing active timer
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042416-9332-0000-0000-00000099A9CE
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-23 at 16:30 +0300, Dmitry Kasatkin wrote: 
-> From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> 
-> Only public keys, with certificates signed by an existing
-> 'trusted' key on the system trusted keyring, should be added
-> to a trusted keyring.  This patch adds support for verifying
-> a certificate's signature.
-> 
-> This is derived from David Howells pkcs7_request_asymmetric_key() patch.
-> 
-> Changes:
-> - Flaged out the code to prevent build break if system keyring
->   is not enabled (Dmitry).
+Hi all,
 
-An updated version of this patch was posted, which resolves the Kconfig
-issues.  There are a number of other issues which need to be addressed,
-before this patch can be upstreamed.  Please refer to the patch
-description for more details -
-http://marc.info/?l=linux-security-module&m=138672063109662&w=2
+While fuzzing with trinity inside a KVM tools guest running the latest -next
+kernel I've stumbled on the following:
 
-Reminder, as per Documentation/SubmittingPatches: "#ifdefs are ugly",
-please no ifdefs in C code.
-
-thanks,
-
-Mimi
-
-> 
-> Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Signed-off-by: Dmitry Kasatkin <d.kasatkin@samsung.com>
-> ---
->  crypto/asymmetric_keys/x509_public_key.c | 85 +++++++++++++++++++++++++++++++-
->  1 file changed, 84 insertions(+), 1 deletion(-)
-> 
-> diff --git a/crypto/asymmetric_keys/x509_public_key.c b/crypto/asymmetric_keys/x509_public_key.c
-> index 382ef0d..d279f43 100644
-> --- a/crypto/asymmetric_keys/x509_public_key.c
-> +++ b/crypto/asymmetric_keys/x509_public_key.c
-> @@ -18,6 +18,7 @@
->  #include <linux/asn1_decoder.h>
->  #include <keys/asymmetric-subtype.h>
->  #include <keys/asymmetric-parser.h>
-> +#include <keys/system_keyring.h>
->  #include <crypto/hash.h>
->  #include "asymmetric_keys.h"
->  #include "public_key.h"
-> @@ -102,6 +103,82 @@ int x509_check_signature(const struct public_key *pub,
->  }
->  EXPORT_SYMBOL_GPL(x509_check_signature);
-> 
-> +#ifdef CONFIG_SYSTEM_TRUSTED_KEYRING
-> +/*
-> + * Find a key in the given keyring by issuer and authority.
-> + */
-> +static struct key *x509_request_asymmetric_key(
-> +	struct key *keyring,
-> +	const char *signer, size_t signer_len,
-> +	const char *authority, size_t auth_len)
-> +{
-> +	key_ref_t key;
-> +	char *id;
-> +
-> +	/* Construct an identifier. */
-> +	id = kmalloc(signer_len + 2 + auth_len + 1, GFP_KERNEL);
-> +	if (!id)
-> +		return ERR_PTR(-ENOMEM);
-> +
-> +	memcpy(id, signer, signer_len);
-> +	id[signer_len + 0] = ':';
-> +	id[signer_len + 1] = ' ';
-> +	memcpy(id + signer_len + 2, authority, auth_len);
-> +	id[signer_len + 2 + auth_len] = 0;
-> +
-> +	pr_debug("Look up: \"%s\"\n", id);
-> +
-> +	key = keyring_search(make_key_ref(keyring, 1),
-> +			     &key_type_asymmetric, id);
-> +	if (IS_ERR(key))
-> +		pr_debug("Request for module key '%s' err %ld\n",
-> +			 id, PTR_ERR(key));
-> +	kfree(id);
-> +
-> +	if (IS_ERR(key)) {
-> +		switch (PTR_ERR(key)) {
-> +			/* Hide some search errors */
-> +		case -EACCES:
-> +		case -ENOTDIR:
-> +		case -EAGAIN:
-> +			return ERR_PTR(-ENOKEY);
-> +		default:
-> +			return ERR_CAST(key);
-> +		}
-> +	}
-> +
-> +	pr_devel("<==%s() = 0 [%x]\n", __func__, key_serial(key_ref_to_ptr(key)));
-> +	return key_ref_to_ptr(key);
-> +}
-> +
-> +/*
-> + * Check the new certificate against the ones in the trust keyring.  If one of
-> + * those is the signing key and validates the new certificate, then mark the
-> + * new certificate as being trusted.
-> + *
-> + * Return 0 if the new certificate was successfully validated, 1 if we couldn't
-> + * find a matching parent certificate in the trusted list and an error if there
-> + * is a matching certificate but the signature check fails.
-> + */
-> +static int x509_validate_trust(struct x509_certificate *cert,
-> +			       struct key *trust_keyring)
-> +{
-> +	const struct public_key *pk;
-> +	struct key *key;
-> +	int ret = 1;
-> +
-> +	key = x509_request_asymmetric_key(trust_keyring,
-> +					  cert->issuer, strlen(cert->issuer),
-> +					  cert->authority,
-> +					  strlen(cert->authority));
-> +	if (!IS_ERR(key))  {
-> +		pk = key->payload.data;
-> +		ret = x509_check_signature(pk, cert);
-> +	}
-> +	return ret;
-> +}
-> +#endif
-> +
->  /*
->   * Attempt to parse a data blob for a key as an X509 certificate.
->   */
-> @@ -155,9 +232,15 @@ static int x509_key_preparse(struct key_preparsed_payload *prep)
->  	/* Check the signature on the key if it appears to be self-signed */
->  	if (!cert->authority ||
->  	    strcmp(cert->fingerprint, cert->authority) == 0) {
-> -		ret = x509_check_signature(cert->pub, cert);
-> +		ret = x509_check_signature(cert->pub, cert); /* self-signed */
->  		if (ret < 0)
->  			goto error_free_cert;
-> +	} else {
-> +#ifdef CONFIG_SYSTEM_TRUSTED_KEYRING
-> +		ret = x509_validate_trust(cert, system_trusted_keyring);
-> +		if (!ret)
-> +			prep->trusted = 1;
-> +#endif
->  	}
-> 
->  	/* Propose a description */
+[  191.835040] WARNING: CPU: 12 PID: 9725 at lib/debugobjects.c:260 debug_print_object+0x8c/0xb0()
+[  191.838129] ODEBUG: free active (active state 0) object type: timer_list hint: delayed_work_timer_fn+0x0/0x20
+[  191.840545] Modules linked in:
+[  191.841297] CPU: 12 PID: 9725 Comm: trinity-c141 Not tainted 3.15.0-rc2-next-20140423-sasha-00018-gc4ff6c4 #408
+[  191.842479]  0000000000000009 ffff88000a8ebc38 ffffffff975271f2 0000000000000001
+[  191.842479]  ffff88000a8ebc88 ffff88000a8ebc78 ffffffff9415afcc ffff88000a8a3d98
+[  191.842479]  ffff8801b3ad5140 ffffffff98e76200 ffffffff988dc502 ffffffff9b70c870
+[  191.842479] Call Trace:
+[  191.842479] dump_stack (lib/dump_stack.c:52)
+[  191.842479] warn_slowpath_common (kernel/panic.c:430)
+[  191.842479] warn_slowpath_fmt (kernel/panic.c:445)
+[  191.842479] debug_print_object (lib/debugobjects.c:262)
+[  191.842479] ? __queue_work (kernel/workqueue.c:1452)
+[  191.842479] __debug_check_no_obj_freed (lib/debugobjects.c:697)
+[  191.842479] debug_check_no_obj_freed (lib/debugobjects.c:726)
+[  191.842479] kmem_cache_free (mm/slub.c:2689 mm/slub.c:2717)
+[  191.871535] ? kmem_cache_destroy (mm/slab_common.c:363)
+[  191.871535] kmem_cache_destroy (mm/slab_common.c:363)
+[  191.871535] dcookie_unregister (fs/dcookies.c:302 fs/dcookies.c:343)
+[  191.871535] event_buffer_release (arch/x86/oprofile/../../../drivers/oprofile/event_buffer.c:153)
+[  191.871535] __fput (fs/file_table.c:217)
+[  191.871535] ____fput (fs/file_table.c:253)
+[  191.871535] task_work_run (kernel/task_work.c:125 (discriminator 1))
+[  191.871535] do_notify_resume (include/linux/tracehook.h:196 arch/x86/kernel/signal.c:751)
+[  191.871535] int_signal (arch/x86/kernel/entry_64.S:807)
 
 
+Thanks,
+Sasha
