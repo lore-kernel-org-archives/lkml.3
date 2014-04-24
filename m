@@ -1,115 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752579AbaDXHbk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 03:31:40 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:36771 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751775AbaDXHbj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 03:31:39 -0400
-Date: Thu, 24 Apr 2014 10:31:31 +0300
-From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-To: Minchan Kim <minchan@kernel.org>
-Cc: Weijie Yang <weijie.yang@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Nitin Gupta'" <ngupta@vflare.org>, iamjoonsoo.kim@lge.com,
-        "'Sergey Senozhatsky'" <sergey.senozhatsky@gmail.com>,
-        "'Bob Liu'" <bob.liu@oracle.com>, weijie.yang.kh@gmail.com,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RESEND] zram: correct offset usage in zram_bio_discard
-Message-ID: <20140424073131.GA1098@swordfish>
-References: <000001cf5ecf$f4f4f850$dedee8f0$%yang@samsung.com>
- <20140424020632.GA863@bbox>
+	id S1752623AbaDXHbw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 03:31:52 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:50775 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752600AbaDXHbu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 03:31:50 -0400
+Message-ID: <5358BDDF.1010709@ti.com>
+Date: Thu, 24 Apr 2014 10:31:43 +0300
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424020632.GA863@bbox>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <gregkh@linuxfoundation.org>, <grant.likely@secretlab.ca>
+CC: <broonie@kernel.org>, <lgirdwood@gmail.com>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 0/2] drivercore: deferral race condition fix
+References: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com>
+In-Reply-To: <1397040727-2447-1-git-send-email-peter.ujfalusi@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Minchan,
+Hi Greg, Grant,
 
-On (04/24/14 11:06), Minchan Kim wrote:
-> Hello,
+On 04/09/2014 01:52 PM, Peter Ujfalusi wrote:
+> Hi,
 > 
-> On Wed, Apr 23, 2014 at 04:41:15PM +0800, Weijie Yang wrote:
-> > We want to skip the physical block(PAGE_SIZE) which is partially
-> > covered by the discard bio, so we check the remaining size and
-> > subtract it if there is a need to goto the next physical block.
-> > 
-> > The current offset usage in zram_bio_discard is incorrect, it will
-> > cause its upper filesystem breakdown.
-> > Consider the following scenario:
-> > on some architecture or config, PAGE_SIZE is 64K for example,
-> > filesystem is set up on zram disk without PAGE_SIZE aligned,
-> > a discard bio leads to a offset = 4K and size=72K,
-> > normally, it should not really discard any physical block as it
-> > partially cover two physical blocks.
-> > However, with the current offset usage, it will discard the second
-> > physical block and free its memory, which will cause filesystem breakdown.
-> > 
-> > This patch corrects the offset usage in zram_bio_discard.
-> 
-> Nice catch.
-> Surely we need fix but I'd like to go further. Let's think.
-> How do you find that? Real problem or code review?
-> I'd like to know how much that happens in real practice because if it's
-> a lot, it means discard support is just an overhead without any benefit.
-> 
-> If you just found it with code review(ie, don't have any data),
-> would you mind adding some stat like 'num_discard/failed_discard' so
-> we can keep an eye on that. Although it's for rare case, I think it's worth.
-> Because someone would do swapon zram with --discard,
-> it could make same problem due to early page freeing of zram-swap to
-> avoid duplicating VM-owned memory and ZRAM-owned memory.
-> 
-> We can guide to zram-swap user not to use swapon with --discard but
-> I don't want it because swap_slot_free_notify is really mess which
-> violates layering so I hope replace it with discard finally so such
-> statistics really help us to drive that way more quickly.
-> 
+> Changes since v1:
+> - The deferral race detection and handling has been moved to
+>   driver_deferred_probe_trigger() and driver_deferred_probe_add() functions with
+>   comment section.
+> - driver_deferred_probe_add/del function needed to be moved. Both of them placed
+>   after driver_deferred_probe_trigger() so they remain together.
+> - I have not added the Acked-by from Mark and Grant since the patch itself
+>   changed from v1, but the functionality remained.
 
-I second this. if we could drop swap_slot_free_notify that'd be nice.
+Is this solution sounds good? Do you want me to resend the two patch?
 
-	-ss
+Regards,
+Péter
 
-> > 
-> > Signed-off-by: Weijie Yang <weijie.yang@samsung.com>
-> > Acked-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-> > ---
-> >  drivers/block/zram/zram_drv.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-> > index 9849b52..48eccb3 100644
-> > --- a/drivers/block/zram/zram_drv.c
-> > +++ b/drivers/block/zram/zram_drv.c
-> > @@ -572,10 +572,10 @@ static void zram_bio_discard(struct zram *zram, u32 index,
-> >  	 * skipping this logical block is appropriate here.
-> >  	 */
-> >  	if (offset) {
-> > -		if (n < offset)
-> > +		if (n <= (PAGE_SIZE - offset))
-> >  			return;
-> >  
-> > -		n -= offset;
-> > +		n -= (PAGE_SIZE - offset);
-> >  		index++;
-> >  	}
-> >  
-> > -- 
-> > 1.7.10.4
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
+> Explanantion of the issue (from patch 2):
+> When the kernel is built with CONFIG_PREEMPT it is possible to reach a state
+> when all modules loaded but some driver still stuck in the deferred list
+> and there is a need for external event to kick the deferred queue to probe
+> these drivers.
 > 
-> -- 
-> Kind regards,
-> Minchan Kim
+> The issue has been observed on embedded systems with CONFIG_PREEMPT enabled,
+> audio support built as modules and using nfsroot for root filesystem.
 > 
+> The following log fragment shows such sequence when all audio modules
+> were loaded but the sound card is not present since the machine driver has
+> failed to probe due to missing dependency during it's probe.
+> The board is am335x-evmsk (McASP<->tlv320aic3106 codec) with davinci-evm
+> machine driver:
+> 
+> ...
+> [   12.615118] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: ENTER
+> [   12.719969] davinci_evm sound.3: davinci_evm_probe: ENTER
+> [   12.725753] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card
+> [   12.753846] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component
+> [   12.922051] davinci-mcasp 4803c000.mcasp: davinci_mcasp_probe: snd_soc_register_component DONE
+> [   12.950839] davinci_evm sound.3: ASoC: platform (null) not registered
+> [   12.957898] davinci_evm sound.3: davinci_evm_probe: snd_soc_register_card DONE (-517)
+> [   13.099026] davinci-mcasp 4803c000.mcasp: Kicking the deferred list
+> [   13.177838] davinci-mcasp 4803c000.mcasp: really_probe: probe_count = 2
+> [   13.194130] davinci_evm sound.3: snd_soc_register_card failed (-517)
+> [   13.346755] davinci_mcasp_driver_init: LEAVE
+> [   13.377446] platform sound.3: Driver davinci_evm requests probe deferral
+> [   13.592527] platform sound.3: really_probe: probe_count = 0
+> 
+> In the log the machine driver enters it's probe at 12.719969 (this point it
+> has been removed from the deferred lists). McASP driver already executing
+> it's probing (since 12.615118).
+> The machine driver tries to construct the sound card (12.950839) but did
+> not found one of the components so it fails. After this McASP driver
+> registers all the ASoC components (the machine driver still in it's probe
+> function after it failed to construct the card) and the deferred work is
+> prepared at 13.099026 (note that this time the machine driver is not in the
+> lists so it is not going to be handled when the work is executing).
+> Lastly the machine driver exit from it's probe and the core places it to
+> the deferred list but there will be no other driver going to load and the
+> deferred queue is not going to be kicked again - till we have external event
+> like connecting USB stick, etc.
+> 
+> The proposed solution is to try the deferred queue once more when the last
+> driver is asking for deferring and we had drivers loaded while this last
+> driver was probing.
+> 
+> This way we can avoid drivers stuck in the deferred queue.
+> 
+> Regards,
+> Peter
+> ---
+> Peter Ujfalusi (2):
+>   drivercore: dd: Move driver_deferred_probe_add/del function down in
+>     the code
+>   drivercore: deferral race condition fix
+> 
+>  drivers/base/dd.c | 71 +++++++++++++++++++++++++++++++++++++------------------
+>  1 file changed, 48 insertions(+), 23 deletions(-)
+
