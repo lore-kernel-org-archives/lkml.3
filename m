@@ -1,338 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744AbaDYWky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:40:54 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:65057 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002AbaDYWkv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:40:51 -0400
-Message-ID: <535AE46F.5080000@gmail.com>
-Date: Sat, 26 Apr 2014 00:40:47 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-CC: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
-        chow.kim@samsung.com, yg1004.jang@samsung.com,
-        vikas.sajjan@samsung.com, s.nawrocki@samsung.com,
-        b.zolnierkie@samsung.com
-Subject: Re: [PATCH v2 10/10] ARM: EXYNOS: Add device tree based initialization
- support for PMU.
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-11-git-send-email-pankaj.dubey@samsung.com>
-In-Reply-To: <1398429166-5539-11-git-send-email-pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752785AbaDYWlf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:41:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:37561 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750837AbaDYWhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 18:37:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,929,1389772800"; 
+   d="scan'208";a="527577019"
+Subject: [PATCH 2/8] x86: mm: rip out complicated, out-of-date, buggy TLB flushing
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, x86@kernel.org, Dave Hansen <dave@sr71.net>
+From: Dave Hansen <dave@sr71.net>
+Date: Fri, 25 Apr 2014 15:37:44 -0700
+References: <20140425223742.0A27E42E@viggo.jf.intel.com>
+In-Reply-To: <20140425223742.0A27E42E@viggo.jf.intel.com>
+Message-Id: <20140425223744.C277D8FE@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On 25.04.2014 14:32, Pankaj Dubey wrote:
-> This patch adds device tree based initialization for PMU and modifies
-> PMU initialization implementation in following way:
->
-> 1: Let's initialize PMU based on device tree compatibility string.
-> 2: Obtain PMU regmap handle using "syscon_early_regmap_lookup_by_phandle"
-> so that we can reduce dependency over machine header files.
-> 3: Separate each SoC's PMU initialization function and bind this initialization
-> function with PMU compatibility string.
-> 4 : It also removes uses of soc_is_exynosXXXX() thus making PMU implementation
-> independent of "plat/cpu.h".
->
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
-> ---
->   arch/arm/mach-exynos/pmu.c |  182 +++++++++++++++++++++++++++++++++-----------
->   1 file changed, 138 insertions(+), 44 deletions(-)
->
-> diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
-> index 67116a5..abcf753 100644
-> --- a/arch/arm/mach-exynos/pmu.c
-> +++ b/arch/arm/mach-exynos/pmu.c
-> @@ -9,17 +9,31 @@
->    * published by the Free Software Foundation.
->    */
->
-> -#include <linux/io.h>
->   #include <linux/kernel.h>
->   #include <linux/regmap.h>
-> -
-> -#include <plat/cpu.h>
-> +#include <linux/of.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-> +#include <linux/mfd/syscon.h>
->
->   #include "common.h"
->   #include "regs-pmu.h"
->
-> +enum exynos_pmu_id {
-> +	PMU_EXYNOS4210,
-> +	PMU_EXYNOS4X12,
-> +	PMU_EXYNOS4412,
-> +	PMU_EXYNOS5250,
-> +};
-> +
-> +struct exynos_pmu_data {
-> +	enum exynos_pmu_id	pmu_id;
-> +	struct regmap		*pmu_regmap;
+From: Dave Hansen <dave.hansen@linux.intel.com>
 
-Again, since this uses the PMU node directly and doesn't seem to access 
-any registers shared with other drivers (or at least not at the time 
-most the functions from this file are called) I don't think there is any 
-reason why not to use of_iomap() and access the registers directly.
+I think the flush_tlb_mm_range() code that tries to tune the
+flush sizes based on the CPU needs to get ripped out for
+several reasons:
 
-What about adding more fields to this struct? For example .pmu_config, 
-.pmu_config_extra (for model-specific settings, like for Exynos4412, see 
-my comment below) and (*pmu_init)? Of course the regmap (or base 
-address) would have to be moved outside, as it isn't const data.
+1. It is obviously buggy.  It uses mm->total_vm to judge the
+   task's footprint in the TLB.  It should certainly be using
+   some measure of RSS, *NOT* ->total_vm since only resident
+   memory can populate the TLB.
+2. Haswell, and several other CPUs are missing from the
+   intel_tlb_flushall_shift_set() function.  Thus, it has been
+   demonstrated to bitrot quickly in practice.
+3. It is plain wrong in my vm:
+	[    0.037444] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
+	[    0.037444] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0
+	[    0.037444] tlb_flushall_shift: 6
+   Which leads to it to never use invlpg.
+4. The assumptions about TLB refill costs are wrong:
+	http://lkml.kernel.org/r/1337782555-8088-3-git-send-email-alex.shi@intel.com
+    (more on this in later patches)
+5. I can not reproduce the original data: https://lkml.org/lkml/2012/5/17/59
+   I believe the sample times were too short.  Running the
+   benchmark in a loop yields times that vary quite a bit.
 
-Then for each PMU variant there would be a static const struct will all 
-those fields already filled in and entries in OF match table would 
-already point to appropriate structure.
+Note that this leaves us with a static ceiling of 1 page.  This
+is a conservative, dumb setting, and will be revised in a later
+patch.
 
-> +};
-> +
-> +struct exynos_pmu_data		*pmu_data;
->   static const struct exynos_pmu_conf *exynos_pmu_config;
-> -static struct regmap *pmu_regmap;
-> +typedef void (*exynos_pmu_init_t)(void);
->
->   static const struct exynos_pmu_conf exynos4210_pmu_config[] = {
->   	/* { .reg = address, .val = { AFTR, LPA, SLEEP } */
-> @@ -348,28 +362,31 @@ static void exynos5_init_pmu(void)
->   	 * Enable both SC_FEEDBACK and SC_COUNTER
->   	 */
->   	for (i = 0 ; i < ARRAY_SIZE(exynos5_list_both_cnt_feed) ; i++) {
-> -		regmap_read(pmu_regmap, exynos5_list_both_cnt_feed[i], &tmp);
-> +		regmap_read(pmu_data->pmu_regmap,
-> +				exynos5_list_both_cnt_feed[i], &tmp);
->   		tmp |= (EXYNOS5_USE_SC_FEEDBACK |
->   			EXYNOS5_USE_SC_COUNTER);
-> -		regmap_write(pmu_regmap, exynos5_list_both_cnt_feed[i], tmp);
-> +		regmap_write(pmu_data->pmu_regmap,
-> +				exynos5_list_both_cnt_feed[i], tmp);
->   	}
->
->   	/*
->   	 * SKIP_DEACTIVATE_ACEACP_IN_PWDN_BITFIELD Enable
->   	 */
-> -	regmap_read(pmu_regmap, EXYNOS5_ARM_COMMON_OPTION, &tmp);
-> +	regmap_read(pmu_data->pmu_regmap, EXYNOS5_ARM_COMMON_OPTION, &tmp);
->   	tmp |= EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN;
-> -	regmap_write(pmu_regmap, EXYNOS5_ARM_COMMON_OPTION, tmp);
-> +	regmap_write(pmu_data->pmu_regmap, EXYNOS5_ARM_COMMON_OPTION, tmp);
->
->   	/*
->   	 * Disable WFI/WFE on XXX_OPTION
->   	 */
->   	for (i = 0 ; i < ARRAY_SIZE(exynos5_list_diable_wfi_wfe) ; i++) {
-> -		tmp = regmap_read(pmu_regmap, exynos5_list_diable_wfi_wfe[i],
-> -				&tmp);
-> +		tmp = regmap_read(pmu_data->pmu_regmap,
-> +				exynos5_list_diable_wfi_wfe[i], &tmp);
->   		tmp &= ~(EXYNOS5_OPTION_USE_STANDBYWFE |
->   			 EXYNOS5_OPTION_USE_STANDBYWFI);
-> -		regmap_write(pmu_regmap, exynos5_list_diable_wfi_wfe[i], tmp);
-> +		regmap_write(pmu_data->pmu_regmap,
-> +				exynos5_list_diable_wfi_wfe[i], tmp);
->   	}
->   }
->
-> @@ -377,52 +394,129 @@ void exynos_sys_powerdown_conf(enum sys_powerdown mode)
->   {
->   	unsigned int i;
->
-> -	if (soc_is_exynos5250())
-> +	if (pmu_data->pmu_id == PMU_EXYNOS5250)
->   		exynos5_init_pmu();
+This also removes the code which attempts to predict whether we
+are flushing data or instructions.  We expect instruction flushes
+to be relatively rare and not worth tuning for explicitly.
 
-Next field could be added to exynos_pmu_data struct, called 
-(*powerdown_conf) and then the code above replaced with:
+Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Mel Gorman <mgorman@suse.de>
+---
 
-	if (pmu_data->powerdown_conf)
-		pmu_data->powerdown_conf(mode);
+ b/arch/x86/include/asm/processor.h |    1 
+ b/arch/x86/kernel/cpu/amd.c        |    7 --
+ b/arch/x86/kernel/cpu/common.c     |   13 -----
+ b/arch/x86/kernel/cpu/intel.c      |   26 -----------
+ b/arch/x86/mm/tlb.c                |   87 ++++---------------------------------
+ 5 files changed, 13 insertions(+), 121 deletions(-)
 
->
->   	for (i = 0; (exynos_pmu_config[i].offset != PMU_TABLE_END) ; i++)
-> -		regmap_write(pmu_regmap, exynos_pmu_config[i].offset,
-> +		regmap_write(pmu_data->pmu_regmap, exynos_pmu_config[i].offset,
->   				exynos_pmu_config[i].val[mode]);
->
-> -	if (soc_is_exynos4412()) {
-> +	if (pmu_data->pmu_id == PMU_EXYNOS4412) {
->   		for (i = 0; exynos4412_pmu_config[i].offset != PMU_TABLE_END; i++)
-> -			regmap_write(pmu_regmap, exynos4412_pmu_config[i].offset,
-> +			regmap_write(pmu_data->pmu_regmap,
-> +					exynos4412_pmu_config[i].offset,
->   					exynos4412_pmu_config[i].val[mode]);
->   	}
-
-As I mentioned above, the pmu_data struct could have a field called 
-pmu_config_extra that would be non-NULL for Exynos4412 and then the code 
-above could be replaced with:
-
-	if (pmu_data->pmu_config_extra) {
-		// iterate over pmu_config_extra
-		// ...
-	}
-
-This way you could completely remove the pmu_id field and checks for 
-particular SoCs from the code.
-
->   }
->
-> -static int __init exynos_pmu_init(void)
-> +static void exynos4210_pmu_init(void)
->   {
-> -	unsigned int value;
-> -
->   	exynos_pmu_config = exynos4210_pmu_config;
-> -	pmu_regmap = get_exynos_pmuregmap();
-> -
-> -	if (soc_is_exynos4210()) {
-> -		exynos_pmu_config = exynos4210_pmu_config;
-> -		pr_info("EXYNOS4210 PMU Initialize\n");
-> -	} else if (soc_is_exynos4212() || soc_is_exynos4412()) {
-> -		exynos_pmu_config = exynos4x12_pmu_config;
-> -		pr_info("EXYNOS4x12 PMU Initialize\n");
-> -	} else if (soc_is_exynos5250()) {
-> -		/*
-> -		 * When SYS_WDTRESET is set, watchdog timer reset request
-> -		 * is ignored by power management unit.
-> -		 */
-> -		regmap_read(pmu_regmap, EXYNOS5_AUTO_WDTRESET_DISABLE, &value);
-> -		value &= ~EXYNOS5_SYS_WDTRESET;
-> -		regmap_write(pmu_regmap, EXYNOS5_AUTO_WDTRESET_DISABLE, value);
-> -
-> -		regmap_read(pmu_regmap, EXYNOS5_MASK_WDTRESET_REQUEST, &value);
-> -		value &= ~EXYNOS5_SYS_WDTRESET;
-> -		regmap_write(pmu_regmap, EXYNOS5_MASK_WDTRESET_REQUEST, value);
-> -
-> -		exynos_pmu_config = exynos5250_pmu_config;
-> -		pr_info("EXYNOS5250 PMU Initialize\n");
-> -	} else {
-> -		pr_info("EXYNOS: PMU not supported\n");
-> +	pmu_data->pmu_id = PMU_EXYNOS4210;
-> +
-> +	pr_info("EXYNOS4210 PMU Initialize\n");
-> +}
-> +
-> +static void exynos4x12_pmu_init(void)
-> +{
-> +	exynos_pmu_config = exynos4x12_pmu_config;
-> +	pmu_data->pmu_id = PMU_EXYNOS4X12;
-> +
-> +	pr_info("EXYNOS4x12 PMU Initialize\n");
-> +}
-> +
-> +static void exynos4412_pmu_init(void)
-> +{
-> +	exynos_pmu_config = exynos4x12_pmu_config;
-> +	pmu_data->pmu_id = PMU_EXYNOS4412;
-> +
-> +	pr_info("EXYNOS4412 PMU Initialize\n");
-> +}
-> +
-> +static void exynos5250_pmu_init(void)
-> +{
-> +	unsigned int tmp;
-> +
-> +	/*
-> +	 * When SYS_WDTRESET is set, watchdog timer reset request
-> +	 * is ignored by power management unit.
-> +	 */
-> +	regmap_read(pmu_data->pmu_regmap, EXYNOS5_AUTO_WDTRESET_DISABLE, &tmp);
-> +	tmp &= ~EXYNOS5_SYS_WDTRESET;
-> +	regmap_write(pmu_data->pmu_regmap, EXYNOS5_AUTO_WDTRESET_DISABLE, tmp);
-> +
-> +	regmap_read(pmu_data->pmu_regmap, EXYNOS5_MASK_WDTRESET_REQUEST, &tmp);
-> +	tmp &= ~EXYNOS5_SYS_WDTRESET;
-> +	regmap_write(pmu_data->pmu_regmap, EXYNOS5_MASK_WDTRESET_REQUEST, tmp);
-> +
-> +	exynos_pmu_config = exynos5250_pmu_config;
-> +	pmu_data->pmu_id = PMU_EXYNOS5250;
-> +
-> +	pr_info("EXYNOS5250 PMU Initialize\n");
-> +}
-
-This part is very nice. Finally there is no huge if with else if clause 
-for every SoC. Thanks.
-
-> +
-> +/*
-> + * PMU platform driver and devicetree bindings.
-> + */
-> +static struct of_device_id exynos_pmu_of_device_ids[] = {
-> +	{
-> +		.compatible = "samsung,exynos4210-pmu",
-> +		.data = (void *)exynos4210_pmu_init
-> +	},
-> +	{
-> +		.compatible = "samsung,exynos4212-pmu",
-> +		.data = (void *)exynos4x12_pmu_init
-> +	},
-> +	{
-> +		.compatible = "samsung,exynos4412-pmu",
-> +		.data = (void *)exynos4412_pmu_init
-> +	},
-> +	{
-> +		.compatible = "samsung,exynos5250-pmu",
-> +		.data = (void *)exynos5250_pmu_init
-> +	},
-> +	{},
-> +};
-> +
-> +static int exynos_pmu_probe(struct device_node *np)
-> +{
-> +	const struct of_device_id *match;
-> +	exynos_pmu_init_t exynos_pmu_init;
-> +
-> +	pmu_data = kzalloc(sizeof(struct exynos_pmu_data), GFP_KERNEL);
-> +	if (!pmu_data) {
-> +		pr_err("exynos_pmu driver probe failed\n");
-> +		return -ENOMEM;
->   	}
->
-> +	match = of_match_node(exynos_pmu_of_device_ids, np);
-> +	if (!match) {
-> +		pr_err("fail to get matching of_match struct\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	exynos_pmu_init = match->data;
-> +
-> +	pmu_data->pmu_regmap = syscon_early_regmap_lookup_by_phandle(np,
-> +			"samsung,syscon-phandle");
-> +	if (IS_ERR(pmu_data->pmu_regmap)) {
-> +		pr_err("failed to find exynos_pmu_regmap\n");
-> +		return PTR_ERR(pmu_data->pmu_regmap);
-> +	}
-> +
-> +	exynos_pmu_init();
-> +
->   	return 0;
-> +};
-> +
-> +static int __init exynos_pmu_of_init(void)
-> +{
-> +	int ret = 0;
-> +	struct device_node *np;
-> +
-> +	for_each_matching_node_and_match(np, exynos_pmu_of_device_ids, NULL)
-> +		ret = exynos_pmu_probe(np);
-
-I wouldn't expect more than one PMU in the system, so probably a simple
-
-	for_each_matching_node_and_match(np, exynos_pmu_of_device_ids...
-		return exynos_pmu_probe(np);
-
-	return -ENODEV;
-
-would be enough here.
-
-Best regards,
-Tomasz
+diff -puN arch/x86/include/asm/processor.h~x8x-mm-rip-out-complicated-tlb-flushing arch/x86/include/asm/processor.h
+--- a/arch/x86/include/asm/processor.h~x8x-mm-rip-out-complicated-tlb-flushing	2014-04-25 15:33:12.526032931 -0700
++++ b/arch/x86/include/asm/processor.h	2014-04-25 15:33:12.536033383 -0700
+@@ -72,7 +72,6 @@ extern u16 __read_mostly tlb_lld_4k[NR_I
+ extern u16 __read_mostly tlb_lld_2m[NR_INFO];
+ extern u16 __read_mostly tlb_lld_4m[NR_INFO];
+ extern u16 __read_mostly tlb_lld_1g[NR_INFO];
+-extern s8  __read_mostly tlb_flushall_shift;
+ 
+ /*
+  *  CPU type and hardware bug flags. Kept separately for each CPU.
+diff -puN arch/x86/kernel/cpu/amd.c~x8x-mm-rip-out-complicated-tlb-flushing arch/x86/kernel/cpu/amd.c
+--- a/arch/x86/kernel/cpu/amd.c~x8x-mm-rip-out-complicated-tlb-flushing	2014-04-25 15:33:12.527032976 -0700
++++ b/arch/x86/kernel/cpu/amd.c	2014-04-25 15:33:12.536033383 -0700
+@@ -741,11 +741,6 @@ static unsigned int amd_size_cache(struc
+ }
+ #endif
+ 
+-static void cpu_set_tlb_flushall_shift(struct cpuinfo_x86 *c)
+-{
+-	tlb_flushall_shift = 6;
+-}
+-
+ static void cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
+ {
+ 	u32 ebx, eax, ecx, edx;
+@@ -793,8 +788,6 @@ static void cpu_detect_tlb_amd(struct cp
+ 		tlb_lli_2m[ENTRIES] = eax & mask;
+ 
+ 	tlb_lli_4m[ENTRIES] = tlb_lli_2m[ENTRIES] >> 1;
+-
+-	cpu_set_tlb_flushall_shift(c);
+ }
+ 
+ static const struct cpu_dev amd_cpu_dev = {
+diff -puN arch/x86/kernel/cpu/common.c~x8x-mm-rip-out-complicated-tlb-flushing arch/x86/kernel/cpu/common.c
+--- a/arch/x86/kernel/cpu/common.c~x8x-mm-rip-out-complicated-tlb-flushing	2014-04-25 15:33:12.529033068 -0700
++++ b/arch/x86/kernel/cpu/common.c	2014-04-25 15:33:12.537033428 -0700
+@@ -479,26 +479,17 @@ u16 __read_mostly tlb_lld_2m[NR_INFO];
+ u16 __read_mostly tlb_lld_4m[NR_INFO];
+ u16 __read_mostly tlb_lld_1g[NR_INFO];
+ 
+-/*
+- * tlb_flushall_shift shows the balance point in replacing cr3 write
+- * with multiple 'invlpg'. It will do this replacement when
+- *   flush_tlb_lines <= active_lines/2^tlb_flushall_shift.
+- * If tlb_flushall_shift is -1, means the replacement will be disabled.
+- */
+-s8  __read_mostly tlb_flushall_shift = -1;
+-
+ void cpu_detect_tlb(struct cpuinfo_x86 *c)
+ {
+ 	if (this_cpu->c_detect_tlb)
+ 		this_cpu->c_detect_tlb(c);
+ 
+ 	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n"
+-		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n"
+-		"tlb_flushall_shift: %d\n",
++		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
+ 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
+ 		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
+ 		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
+-		tlb_lld_1g[ENTRIES], tlb_flushall_shift);
++		tlb_lld_1g[ENTRIES]);
+ }
+ 
+ void detect_ht(struct cpuinfo_x86 *c)
+diff -puN arch/x86/kernel/cpu/intel.c~x8x-mm-rip-out-complicated-tlb-flushing arch/x86/kernel/cpu/intel.c
+--- a/arch/x86/kernel/cpu/intel.c~x8x-mm-rip-out-complicated-tlb-flushing	2014-04-25 15:33:12.531033158 -0700
++++ b/arch/x86/kernel/cpu/intel.c	2014-04-25 15:33:12.537033428 -0700
+@@ -634,31 +634,6 @@ static void intel_tlb_lookup(const unsig
+ 	}
+ }
+ 
+-static void intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
+-{
+-	switch ((c->x86 << 8) + c->x86_model) {
+-	case 0x60f: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
+-	case 0x616: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
+-	case 0x617: /* current 45 nm celeron/core2/xeon "Penryn"/"Wolfdale" */
+-	case 0x61d: /* six-core 45 nm xeon "Dunnington" */
+-		tlb_flushall_shift = -1;
+-		break;
+-	case 0x63a: /* Ivybridge */
+-		tlb_flushall_shift = 2;
+-		break;
+-	case 0x61a: /* 45 nm nehalem, "Bloomfield" */
+-	case 0x61e: /* 45 nm nehalem, "Lynnfield" */
+-	case 0x625: /* 32 nm nehalem, "Clarkdale" */
+-	case 0x62c: /* 32 nm nehalem, "Gulftown" */
+-	case 0x62e: /* 45 nm nehalem-ex, "Beckton" */
+-	case 0x62f: /* 32 nm Xeon E7 */
+-	case 0x62a: /* SandyBridge */
+-	case 0x62d: /* SandyBridge, "Romely-EP" */
+-	default:
+-		tlb_flushall_shift = 6;
+-	}
+-}
+-
+ static void intel_detect_tlb(struct cpuinfo_x86 *c)
+ {
+ 	int i, j, n;
+@@ -683,7 +658,6 @@ static void intel_detect_tlb(struct cpui
+ 		for (j = 1 ; j < 16 ; j++)
+ 			intel_tlb_lookup(desc[j]);
+ 	}
+-	intel_tlb_flushall_shift_set(c);
+ }
+ 
+ static const struct cpu_dev intel_cpu_dev = {
+diff -puN arch/x86/mm/tlb.c~x8x-mm-rip-out-complicated-tlb-flushing arch/x86/mm/tlb.c
+--- a/arch/x86/mm/tlb.c~x8x-mm-rip-out-complicated-tlb-flushing	2014-04-25 15:33:12.532033203 -0700
++++ b/arch/x86/mm/tlb.c	2014-04-25 15:33:12.538033473 -0700
+@@ -158,13 +158,14 @@ void flush_tlb_current_task(void)
+ 	preempt_enable();
+ }
+ 
++/* in units of pages */
++unsigned long tlb_single_page_flush_ceiling = 1;
++
+ void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
+ 				unsigned long end, unsigned long vmflag)
+ {
+-	bool need_flush_others_all = true;
++	int need_flush_others_all = 1;
+ 	unsigned long addr;
+-	unsigned act_entries, tlb_entries = 0;
+-	unsigned long nr_base_pages;
+ 
+ 	preempt_disable();
+ 	if (current->active_mm != mm)
+@@ -175,29 +176,16 @@ void flush_tlb_mm_range(struct mm_struct
+ 		goto out;
+ 	}
+ 
+-	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1
+-					|| vmflag & VM_HUGETLB) {
++	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
+ 		local_flush_tlb();
+ 		goto out;
+ 	}
+ 
+-	/* In modern CPU, last level tlb used for both data/ins */
+-	if (vmflag & VM_EXEC)
+-		tlb_entries = tlb_lli_4k[ENTRIES];
+-	else
+-		tlb_entries = tlb_lld_4k[ENTRIES];
+-
+-	/* Assume all of TLB entries was occupied by this task */
+-	act_entries = tlb_entries >> tlb_flushall_shift;
+-	act_entries = mm->total_vm > act_entries ? act_entries : mm->total_vm;
+-	nr_base_pages = (end - start) >> PAGE_SHIFT;
+-
+-	/* tlb_flushall_shift is on balance point, details in commit log */
+-	if (nr_base_pages > act_entries) {
++	if ((end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
+ 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
+ 		local_flush_tlb();
+ 	} else {
+-		need_flush_others_all = false;
++		need_flush_others_all = 0;
+ 		/* flush range by one by one 'invlpg' */
+ 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
+ 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
+@@ -259,68 +247,15 @@ static void do_kernel_range_flush(void *
+ 
+ void flush_tlb_kernel_range(unsigned long start, unsigned long end)
+ {
+-	unsigned act_entries;
+-	struct flush_tlb_info info;
+-
+-	/* In modern CPU, last level tlb used for both data/ins */
+-	act_entries = tlb_lld_4k[ENTRIES];
+ 
+ 	/* Balance as user space task's flush, a bit conservative */
+-	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1 ||
+-		(end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift)
+-
++	if (end == TLB_FLUSH_ALL ||
++	    (end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
+ 		on_each_cpu(do_flush_tlb_all, NULL, 1);
+-	else {
++	} else {
++		struct flush_tlb_info info;
+ 		info.flush_start = start;
+ 		info.flush_end = end;
+ 		on_each_cpu(do_kernel_range_flush, &info, 1);
+ 	}
+ }
+-
+-#ifdef CONFIG_DEBUG_TLBFLUSH
+-static ssize_t tlbflush_read_file(struct file *file, char __user *user_buf,
+-			     size_t count, loff_t *ppos)
+-{
+-	char buf[32];
+-	unsigned int len;
+-
+-	len = sprintf(buf, "%hd\n", tlb_flushall_shift);
+-	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
+-}
+-
+-static ssize_t tlbflush_write_file(struct file *file,
+-		 const char __user *user_buf, size_t count, loff_t *ppos)
+-{
+-	char buf[32];
+-	ssize_t len;
+-	s8 shift;
+-
+-	len = min(count, sizeof(buf) - 1);
+-	if (copy_from_user(buf, user_buf, len))
+-		return -EFAULT;
+-
+-	buf[len] = '\0';
+-	if (kstrtos8(buf, 0, &shift))
+-		return -EINVAL;
+-
+-	if (shift < -1 || shift >= BITS_PER_LONG)
+-		return -EINVAL;
+-
+-	tlb_flushall_shift = shift;
+-	return count;
+-}
+-
+-static const struct file_operations fops_tlbflush = {
+-	.read = tlbflush_read_file,
+-	.write = tlbflush_write_file,
+-	.llseek = default_llseek,
+-};
+-
+-static int __init create_tlb_flushall_shift(void)
+-{
+-	debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
+-			    arch_debugfs_dir, NULL, &fops_tlbflush);
+-	return 0;
+-}
+-late_initcall(create_tlb_flushall_shift);
+-#endif
+_
