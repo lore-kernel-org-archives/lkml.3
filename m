@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752151AbaDYKMN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 06:12:13 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:41946 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751471AbaDYKMJ (ORCPT
+	id S1752526AbaDYKNg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 06:13:36 -0400
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:58360 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752431AbaDYKNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 06:12:09 -0400
-Message-ID: <535A34F1.3000106@hitachi.com>
-Date: Fri, 25 Apr 2014 19:12:01 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 25 Apr 2014 06:13:32 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Jason Baron <jbaron@akamai.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
-        mingo@redhat.com, Rob Landley <rob@landley.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>, systemtap@sourceware.org
-Subject: Re: [PATCH -tip v9 20/26] kprobes: Support blacklist functions in
- module
-References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140417081856.26341.53535.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140424085601.GA7768@gmail.com> <5358F458.1030300@hitachi.com> <20140425081951.GA24829@gmail.com>
-In-Reply-To: <20140425081951.GA24829@gmail.com>
+In-Reply-To: <201404221552.00501.arnd@arndb.de>
+References: <1397824031-4892-1-git-send-email-lftan@altera.com>
+	<1397845149-3141-1-git-send-email-lftan@altera.com>
+	<1397845149-3141-4-git-send-email-lftan@altera.com>
+	<201404221552.00501.arnd@arndb.de>
+Date: Fri, 25 Apr 2014 18:13:31 +0800
+X-Google-Sender-Auth: cnSv5t4lUrPoG1A-Wk7n_3nNVao
+Message-ID: <CAFiDJ58__vjDk93crSxGe1us0K7a3kSUwScgk=VaJYy+VqXsWQ@mail.gmail.com>
+Subject: Re: [PATCH 14/28] nios2: DMA mapping API
+From: Ley Foon Tan <lftan@altera.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linux-Arch <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        cltang@codesourcery.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/25 17:19), Ingo Molnar wrote:
-> 
-> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> 
->> (2014/04/24 17:56), Ingo Molnar wrote:
->>>> diff --git a/include/linux/module.h b/include/linux/module.h
->>>> index f520a76..2fdb673 100644
->>>> --- a/include/linux/module.h
->>>> +++ b/include/linux/module.h
->>>> @@ -16,6 +16,7 @@
->>>>  #include <linux/kobject.h>
->>>>  #include <linux/moduleparam.h>
->>>>  #include <linux/jump_label.h>
->>>> +#include <linux/kprobes.h>
->>>
->>> This include breaks the x86 build:
->>>
->>>   CC      arch/x86/kernel/jump_label.o
->>>   In file included from arch/x86/kernel/jump_label.c:14:0:
->>>   /fast/mingo/tip/arch/x86/include/asm/kprobes.h:35:12: error: conflicting types for ‘kprobe_opcode_t' typedef u8 kprobe_opcode_t;
->>>   [...]
->>
->> Hmm, this error seems very odd... and I don't see
-> 
-> Needs 'make allnoconfig' or some similar .config combination.
-
-Ah, OK. I could reproduce it. And as far as I can see, this is jump_label's bug.
-jump_label.c includes asm/kprobes.h directly, but that header is for internal use.
-It has to include linux/kprobes.h instead. Moreover, it doesn't need kprobes.h anymore.
-
-I'll fix that by another patch.
-
-Thank you,
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+On Tue, Apr 22, 2014 at 9:52 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 18 April 2014, Ley Foon Tan wrote:
+>
+>> +static inline int dma_supported(struct device *dev, u64 mask)
+>> +{
+>> +     /* we fall back to GFP_DMA when the mask isn't all 1s,
+>> +      * so we can't guarantee allocations that must be
+>> +      * within a tighter range than GFP_DMA.
+>> +      */
+>> +     if (mask < 0x00ffffff)
+>> +             return 0;
+>> +
+>> +     return 1;
+>> +}
+>
+>> +void *dma_alloc_coherent(struct device *dev, size_t size,
+>> +                         dma_addr_t *dma_handle, gfp_t gfp)
+>> +{
+>> +     void *ret;
+>> +
+>> +     /* ignore region specifiers */
+>> +     gfp &= ~(__GFP_DMA | __GFP_HIGHMEM);
+>> +
+>> +     /* optimized page clearing */
+>> +     gfp |= __GFP_ZERO;
+>> +
+>> +     if (dev == NULL || (dev->coherent_dma_mask < 0xffffffff))
+>> +             gfp |= GFP_DMA;
+>
+> What is the significance of ZONE_DMA on this architecture?
+>
+> Do you actually have DMA masters with a 0x00ffffff mask?
+Actually, nios2 doesn't have DMA master with 0x00ffffff mask. I will
+change it to return 1, same as some other architectures
+implementation.
+And the ZONE_DMA stuff will remove as well, it shouldn't have ZONE_DMA
+limitation.
