@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754526AbaDYUB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 16:01:29 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:49608 "EHLO
+	id S1754646AbaDYUBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 16:01:40 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:49626 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752761AbaDYUB1 (ORCPT
+	with ESMTP id S1754532AbaDYUBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 16:01:27 -0400
+	Fri, 25 Apr 2014 16:01:32 -0400
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Mike Turquette <mturquette@linaro.org>
 Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
@@ -15,11 +15,10 @@ Cc: Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
         Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Jimmy Xu <zmxu@marvell.com>, Jisheng Zhang <jszhang@marvell.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        devicetree@vger.kernel.org
-Subject: [RFC 2/5] clk: berlin: add berlin clock groups DT bindings documentation
-Date: Fri, 25 Apr 2014 22:00:21 +0200
-Message-Id: <1398456024-27876-4-git-send-email-alexandre.belloni@free-electrons.com>
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [RFC 5/5] ARM: berlin/dt: add support for the clock group to BG2Q
+Date: Fri, 25 Apr 2014 22:00:24 +0200
+Message-Id: <1398456024-27876-7-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1398456024-27876-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1398456024-27876-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -27,62 +26,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document the device tree for the clocks sharing a common set of registers
+Use the newly added marvell,berlin2-clkgrp driver, add real support for cfgclk
+and add the nfcecc clock.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
-Cc: devicetree@vger.kernel.org
- .../devicetree/bindings/clock/berlin-clock.txt     | 29 ++++++++++++++++++++++
- 1 file changed, 29 insertions(+)
+ arch/arm/boot/dts/berlin2q.dtsi | 24 ++++++++++++++++++------
+ 1 file changed, 18 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/clock/berlin-clock.txt b/Documentation/devicetree/bindings/clock/berlin-clock.txt
-index 49bc229827a0..6d374066d6b9 100644
---- a/Documentation/devicetree/bindings/clock/berlin-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/berlin-clock.txt
-@@ -11,10 +11,18 @@ Required properties:
- 		CPU PLL and System PLL
- 	"marvell,berlin2-clk":
- 		simple clocks
-+	"marvell,berlin2-clkgrp":
-+		clocks sharing a common set of registers
- - reg: Address and length of the clock register set.
- - #clock-cells: from common clock binding; shall be set to 0.
- - clocks: from common clock binding
+diff --git a/arch/arm/boot/dts/berlin2q.dtsi b/arch/arm/boot/dts/berlin2q.dtsi
+index 559819b89ea1..169c783ef262 100644
+--- a/arch/arm/boot/dts/berlin2q.dtsi
++++ b/arch/arm/boot/dts/berlin2q.dtsi
+@@ -53,12 +53,6 @@
+ 		clock-frequency = <25000000>;
+ 	};
  
-+For the clock groups:
-+- marvell,clk-switch-offset: offset in bits to the first bit related to the
-+  clock in the switch registers
-+- marvell,clk-select-offset: offset in bits to the first bit related to the
-+  clock in the selection registers.
+-	cfgclk: config-clock {
+-		compatible = "fixed-clock";
+-		#clock-cells = <0>;
+-		clock-frequency = <100000000>;
+-	};
+-
+ 	twdclk: twdclk {
+ 		compatible = "fixed-factor-clock";
+ 		#clock-cells = <0>;
+@@ -191,6 +185,24 @@
+ 			reg = <0xea0030 0x8>;
+ 		};
+ 
++		grpclk: grpclk@ea00ec {
++			compatible = "marvell,berlin2-clkgrp";
++			clocks = <&syspll>;
++			reg = <0xea00f8 0x4>, <0xea00ec 0xc>;
 +
- smclk: sysmgr-clock {
- 	compatible = "fixed-clock";
- 	#clock-cells = <0>;
-@@ -34,3 +42,24 @@ sdio0xinclk: sdio0xinclk@ea023c {
- 	#clock-cells = <0>;
- 	reg = <0xea023c 0x4>;
- };
++			cfgclk: cfgclk {
++				#clock-cells = <0>;
++				marvell,clk-switch-offset = <9>;
++				marvell,clk-select-offset = <12>;
++			};
 +
++			nfceccclk: nfceccclk {
++				#clock-cells = <0>;
++				marvell,clk-switch-offset = <27>;
++				marvell,clk-select-offset = <50>;
++			};
++		};
 +
-+grpclk: grpclk@ea00ec {
-+	compatible = "marvell,berlin-clkgrp";
-+	clocks = <&syspll>;
-+	reg = <0xea00f8 0x4>, <0xea00ec 0xc>;
-+
-+	cfgclk: cfgclk {
-+		#clock-cells = <0>;
-+		marvell,clk-switch-offset = <9>;
-+		marvell,clk-select-offset = <12>;
-+	};
-+
-+	nfcecccclk: nfcecccclk {
-+		#clock-cells = <0>;
-+		marvell,clk-switch-offset = <27>;
-+		marvell,clk-select-offset = <50>;
-+	};
-+};
-+
-+
+ 		sdio0xinclk: sdio0xinclk@ea0158 {
+ 			compatible = "marvell,berlin-clk";
+ 			clocks = <&syspll>;
 -- 
 1.9.1
 
