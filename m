@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752422AbaDYIGB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 04:06:01 -0400
-Received: from mail-ee0-f53.google.com ([74.125.83.53]:57404 "EHLO
-	mail-ee0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbaDYIFv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 04:05:51 -0400
-Date: Fri, 25 Apr 2014 10:05:46 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL 00/11] perf/core improvements and fixes
-Message-ID: <20140425080545.GA21360@gmail.com>
-References: <1398354045-16505-1-git-send-email-jolsa@kernel.org>
+	id S1752398AbaDYIFZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 04:05:25 -0400
+Received: from ja.ssi.bg ([178.16.129.10]:36328 "EHLO ja.home.ssi.bg"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752310AbaDYIFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 04:05:06 -0400
+X-Greylist: delayed 406 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Apr 2014 04:05:01 EDT
+Date: Fri, 25 Apr 2014 10:57:03 +0300 (EEST)
+From: Julian Anastasov <ja@ssi.bg>
+X-X-Sender: ja@ja.home.ssi.bg
+To: Xufeng Zhang <xufeng.zhang@windriver.com>
+cc: vyasevich@gmail.com, nhorman@tuxdriver.com, davem@davemloft.net,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] sctp: reset flowi4_oif parameter on route lookup
+In-Reply-To: <1398410978-15954-1-git-send-email-xufeng.zhang@windriver.com>
+Message-ID: <alpine.LFD.2.11.1404251050490.1969@ja.home.ssi.bg>
+References: <1398410978-15954-1-git-send-email-xufeng.zhang@windriver.com>
+User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398354045-16505-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Jiri Olsa <jolsa@kernel.org> wrote:
+	Hello,
 
-> hi Ingo,
-> please consider pulling
-> 
-> thanks,
-> jirka
-> 
-> 
-> The following changes since commit a81fef347b32dea2b31275826afe1c93fa0d2d54:
-> 
->   Merge tag 'perf-core-for-mingo' of git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf into perf/core (2014-04-22 20:28:23 +0200)
-> 
-> are available in the git repository at:
-> 
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git tags/perf-core-for-mingo
-> 
-> for you to fetch changes up to c3b789527b236873557f53740ceac47747e0e1cb:
-> 
->   perf hists/tui: Count callchain rows separately (2014-04-24 16:34:27 +0200)
-> 
-> ----------------------------------------------------------------
-> perf/core improvements and fixes:
-> 
-> . Factor hists statistics counts processing which in turn also
->   fixes several bugs in TUI report command (Namhyung Kim)
-> 
-> Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-> 
-> ----------------------------------------------------------------
-> Namhyung Kim (11):
->       perf report: Count number of entries separately
->       perf hists: Rename hists__inc_stats()
->       perf hists: Move column length calculation out of hists__inc_stats()
->       perf hists: Add a couple of hists stat helper functions
->       perf hists: Collapse expanded callchains after filter is applied
->       perf tools: Account entry stats when it's added to the output tree
->       perf hists: Add missing update on filtered stats in hists__decay_entries()
->       perf ui/tui: Fix off-by-one in hist_browser__update_nr_entries()
->       perf ui/tui: Rename hist_browser__update_nr_entries()
->       perf top/tui: Update nr_entries properly after a filter is applied
->       perf hists/tui: Count callchain rows separately
-> 
->  tools/perf/builtin-annotate.c  |  3 +-
->  tools/perf/builtin-diff.c      | 23 ++++++-----
->  tools/perf/builtin-report.c    | 64 ++++++++++++++---------------
->  tools/perf/ui/browsers/hists.c | 92 +++++++++++++++++++++++++++++-------------
->  tools/perf/util/hist.c         | 83 ++++++++++++++++++++++++-------------
->  tools/perf/util/hist.h         |  9 ++++-
->  6 files changed, 171 insertions(+), 103 deletions(-)
+On Fri, 25 Apr 2014, Xufeng Zhang wrote:
 
-Pulled, thanks a lot Jiri!
+> commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
+> in output route lookups.) introduces another regression which
+> is very similar to the problem of commit e6b45241c (ipv4: reset
+> flowi parameters on route connect) wants to fix:
+> Before we call ip_route_output_key() in sctp_v4_get_dst() to
+> get a dst that matches a bind address as the source address,
+> we have already called this function previously and the flowi
+> parameters have been initialized including flowi4_oif, so when
+> we call this function again, the process in ip_route_output_slow()
+> will be different because of the setting of flowi4_oif, and we'll
+> get a networking device which corresponds to the inputted flowi4_oif
+> as the output device, this is wrong because we'll never hit this
+> place if the previously returned source address of dst match one
+> of the bound addresses.
+> 
+> To reproduce this problem, a vlan setting is enough:
+>   # ifconfig eth0 up
+>   # route del default
+>   # vconfig add eth0 2
+>   # vconfig add eth0 3
+>   # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
+>   # route add default gw 10.0.1.254 dev eth0.2
+>   # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
+>   # ip rule add from 10.0.0.14 table 4
+>   # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
+>   # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
+> You'll detect that all the flow are routed to eth0.2(10.0.1.254).
+> 
+> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+> ---
+>  net/sctp/protocol.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+> index c09757f..f8a5968 100644
+> --- a/net/sctp/protocol.c
+> +++ b/net/sctp/protocol.c
+> @@ -493,6 +493,10 @@ static void sctp_v4_get_dst(struct sctp_transport *t, union sctp_addr *saddr,
+>  		    (AF_INET == laddr->a.sa.sa_family)) {
+>  			fl4->saddr = laddr->a.v4.sin_addr.s_addr;
+>  			fl4->fl4_sport = laddr->a.v4.sin_port;
+> +			/* Reset flowi4_oif so that it won't be incorrectly used
+> +			 * as input parameter to routing lookups.
+> +			 */
+> +			fl4->flowi4_oif = 0;
 
-	Ingo
+	May be something like this is more correct:
+
+			flowi4_update_output(fl4,
+					     asoc->base.sk->sk_bound_dev_if,
+					     RT_CONN_FLAGS(asoc->base.sk),
+					     daddr->v4.sin_addr.s_addr,
+					     laddr->a.v4.sin_addr.s_addr);
+
+>  			rt = ip_route_output_key(sock_net(sk), fl4);
+>  			if (!IS_ERR(rt)) {
+>  				dst = &rt->dst;
+
+Regards
+
+--
+Julian Anastasov <ja@ssi.bg>
