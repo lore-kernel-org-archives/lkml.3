@@ -1,213 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753009AbaDYJnr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:43:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41421 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518AbaDYJnm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:43:42 -0400
-Date: Fri, 25 Apr 2014 11:43:31 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Cc: Jason Low <jason.low2@hp.com>, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        alex.shi@linaro.org, efault@gmx.de, vincent.guittot@linaro.org,
-        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
-Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
- whenever newidle balance is attempted
-Message-ID: <20140425094331.GF26782@laptop.programming.kicks-ass.net>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
- <1398303035-18255-2-git-send-email-jason.low2@hp.com>
- <5358E417.8090503@linux.vnet.ibm.com>
- <20140424120415.GS11096@twins.programming.kicks-ass.net>
- <20140424124438.GT13658@twins.programming.kicks-ass.net>
- <1398358417.3509.11.camel@j-VirtualBox>
- <20140424171453.GZ11096@twins.programming.kicks-ass.net>
- <5359EDDB.4060409@linux.vnet.ibm.com>
+	id S1753227AbaDYJoI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:44:08 -0400
+Received: from mail-bn1lp0139.outbound.protection.outlook.com ([207.46.163.139]:9345
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751933AbaDYJoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 05:44:01 -0400
+Date: Fri, 25 Apr 2014 11:43:43 +0200
+From: Anders Berg <anders.berg@lsi.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/6] ARM: dts: Device tree for AXM55xx.
+Message-ID: <20140425094343.GA3160@swsaberg01>
+References: <cover.1398335771.git.anders.berg@lsi.com>
+ <2386bd1367aa44741979461358a72dec89608597.1398335771.git.anders.berg@lsi.com>
+ <CACRpkdbU6UashxCuPMDjEB_nbB=mXicGpjJy=HGC6r3qfxCtVQ@mail.gmail.com>
+ <20140424174741.GA23444@swsaberg01>
+ <CACRpkdZ1CA4mqcd5MA5HFmXSeGp-wspA0M6wnPbAsgL_gX76Fw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <5359EDDB.4060409@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <CACRpkdZ1CA4mqcd5MA5HFmXSeGp-wspA0M6wnPbAsgL_gX76Fw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [85.229.45.38]
+X-ClientProxiedBy: AM3PR02CA006.eurprd02.prod.outlook.com (10.242.240.26) To
+ BLUPR07MB369.namprd07.prod.outlook.com (10.141.26.142)
+X-Forefront-PRVS: 0192E812EC
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019001)(6009001)(428001)(51704005)(24454002)(377454003)(199002)(189002)(76482001)(79102001)(42186004)(33656001)(46406003)(76176999)(54356999)(50986999)(74502001)(46102001)(74662001)(4396001)(92566001)(83072002)(92726001)(77982001)(33716001)(97756001)(85852003)(20776003)(47776003)(31966008)(50466002)(99396002)(23726002)(80022001)(81542001)(87976001)(66066001)(80976001)(19580395003)(83322001)(19580405001)(81342001)(83506001)(86362001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR07MB369;H:swsaberg01;FPR:FFF2F8AC.ADC61F09.75FCBE74.C6EEF0D5.20220;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+X-OriginatorOrg: lsi.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 10:38:43AM +0530, Preeti U Murthy wrote:
-> > But if it fails to pull anything, we'll (potentially) iterate the entire
-> > tree up to the largest domain; and supposedly set next_balanced to the
-> > largest possible interval.
+On Fri, Apr 25, 2014 at 11:16:18AM +0200, Linus Walleij wrote:
+> On Thu, Apr 24, 2014 at 7:47 PM, Anders Berg <anders.berg@lsi.com> wrote:
+> > On Thu, Apr 24, 2014 at 03:24:14PM +0200, Linus Walleij wrote:
 > 
-> *to the smallest possible interval.
-> > 
-> > So when we go from busy to idle (!pulled_task), we actually set
-> > ->next_balance to the longest interval. Whereas the commit you
-> > referenced says it sets it to a shorter while.
+> >> One interrupt per CPU core?
+> >>
+> >> The drivers for these blocks will really just grab the first IRQ and
+> >> then I guess they
+> >> will only be able to execute on CPU0.
+> >>
+> >> It's definately correct to list all the IRQs here, but how do you envision
+> >> the drivers making use of them in the long run?
+> >
+> > It's one interrupt line per input pin (so with the current driver only the first pin
+> > is usable as interrupt source).
 > 
-> We will set next_balance to the earliest balance time among the sched
-> domains iterated.
-
-Duh. I read that time_after the wrong way around.. silly me :-)
-
-> I am unable to understand how updating of rq->next_balance should depend
-> solely on the pulled_task parameter( I am not considering the expiry of
-> rq->next_balance here).
+> Hm I'm not sure I understand what a "pin" is in this concept ...
+> being maintainer of the pin control subsystem and all that really
+> triggers my interest.
 > 
-> True that we will need to override the busy_factor in rq->next_balance
-> if we do not pull any tasks and go to idle. Besides that however we will
-> probably need to override rq->next_balance irrespective of whether we
-> pull any tasks.
+
+Ok, maybe should replace "pin" with "GPIO" in my previous comment.
+
+So, a clarification. In one of the PL061 blocks (named gpio0 in the dts) there
+is a separate interrupt per GPIO (I assume the motivation here is to enable to
+control irq affinity per GPIO), where as the other block has a more standard
+configuration with a single interrupt for all 8 GPIOs in that block.
+
+/Anders
+
+
+> Yours.
+> Linus Walleij
 > 
-> Lets look at what happens to the sd->balance_interval in load_balance().
-> If we pull tasks then it is set to min_interval. If active balance
-> occurs or if tasks are pinned then we push the interval farther away.In
-> the former case where it is set to min_interval, pulled_tasks > 0, in
-> the latter case, especially the pinned case, pulled_task=0 (not sure
-> about the active balance case).
-> 
-> If after this modification on sd->balance_interval,
-> rq->next_balance > sd->last_balance + sd->balance_interval then
-> shouldn't we be resetting rq->next_balance? And if we should, then the
-> dependence on pulled_tasks is not justified is it? All this assuming
-> that rq->next_balance should always reflect the minimum value of
-> sd->next_balance among the sched domains of which the rq is a part.
-
-So how about something like this? It tracks the minimal next_balance for
-whatever domains we do visit, or the very bottom domain in the
-insta-bail case (but yeah, Mike's got a point.. we could think of
-removing that).
-
-The thought is that since the higher domains have larger intervals
-anyway, its less likely they will move the timer back often, so skipping
-them is not that big a deal.
-
-I also considered tracking next_busy_balance and using that when
-pulled_task, but I decided against it (after I'd actually written the
-code to do so). We were on the brink of going idle, that's really not
-busy.
-
----
- kernel/sched/fair.c | 58 ++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 35 insertions(+), 23 deletions(-)
-
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 43232b8bacde..2ac1ad3de6c6 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -6645,17 +6645,29 @@ static int load_balance(int this_cpu, struct rq *this_rq,
- 	return ld_moved;
- }
- 
-+static inline void
-+update_next_balance(struct sched_domain *sd, unsigned long *next_balance)
-+{
-+	unsigned long interval, next;
-+
-+	interval = msecs_to_jiffies(sd->balance_interval);
-+	next = sd->last_balance + interval;
-+
-+	if (time_after(*next_balance, next))
-+		*next_balance = next;
-+}
-+
- /*
-  * idle_balance is called by schedule() if this_cpu is about to become
-  * idle. Attempts to pull tasks from other CPUs.
-  */
- static int idle_balance(struct rq *this_rq)
- {
-+	unsigned long next_balance = jiffies + HZ;
-+	int this_cpu = this_rq->cpu;
- 	struct sched_domain *sd;
- 	int pulled_task = 0;
--	unsigned long next_balance = jiffies + HZ;
- 	u64 curr_cost = 0;
--	int this_cpu = this_rq->cpu;
- 
- 	idle_enter_fair(this_rq);
- 	/*
-@@ -6664,8 +6676,14 @@ static int idle_balance(struct rq *this_rq)
- 	 */
- 	this_rq->idle_stamp = rq_clock(this_rq);
- 
--	if (this_rq->avg_idle < sysctl_sched_migration_cost)
-+	if (this_rq->avg_idle < sysctl_sched_migration_cost) {
-+		rcu_read_lock();
-+		update_next_balance(
-+			rcu_dereference_check_sched_domain(this_rq->sd),
-+			&next_balance);
-+		rcu_read_unlock();
- 		goto out;
-+	}
- 
- 	/*
- 	 * Drop the rq->lock, but keep IRQ/preempt disabled.
-@@ -6675,15 +6693,16 @@ static int idle_balance(struct rq *this_rq)
- 	update_blocked_averages(this_cpu);
- 	rcu_read_lock();
- 	for_each_domain(this_cpu, sd) {
--		unsigned long interval;
- 		int continue_balancing = 1;
- 		u64 t0, domain_cost;
- 
- 		if (!(sd->flags & SD_LOAD_BALANCE))
- 			continue;
- 
--		if (this_rq->avg_idle < curr_cost + sd->max_newidle_lb_cost)
-+		if (this_rq->avg_idle < curr_cost + sd->max_newidle_lb_cost) {
-+			update_next_balance(sd, &next_balance);
- 			break;
-+		}
- 
- 		if (sd->flags & SD_BALANCE_NEWIDLE) {
- 			t0 = sched_clock_cpu(this_cpu);
-@@ -6700,9 +6719,7 @@ static int idle_balance(struct rq *this_rq)
- 			curr_cost += domain_cost;
- 		}
- 
--		interval = msecs_to_jiffies(sd->balance_interval);
--		if (time_after(next_balance, sd->last_balance + interval))
--			next_balance = sd->last_balance + interval;
-+		update_next_balance(sd, &next_balance);
- 		if (pulled_task)
- 			break;
- 	}
-@@ -6710,27 +6727,22 @@ static int idle_balance(struct rq *this_rq)
- 
- 	raw_spin_lock(&this_rq->lock);
- 
-+	if (curr_cost > this_rq->max_idle_balance_cost)
-+		this_rq->max_idle_balance_cost = curr_cost;
-+
- 	/*
--	 * While browsing the domains, we released the rq lock.
--	 * A task could have be enqueued in the meantime
-+	 * While browsing the domains, we released the rq lock, a task could
-+	 * have be enqueued in the meantime. Since we're not going idle,
-+	 * pretend we pulled a task.
- 	 */
--	if (this_rq->cfs.h_nr_running && !pulled_task) {
-+	if (this_rq->cfs.h_nr_running && !pulled_task)
- 		pulled_task = 1;
--		goto out;
--	}
- 
--	if (pulled_task || time_after(jiffies, this_rq->next_balance)) {
--		/*
--		 * We are going idle. next_balance may be set based on
--		 * a busy processor. So reset next_balance.
--		 */
-+out:
-+	/* Move the next balance forward */
-+	if (time_after(this_rq->next_balance, next_balance))
- 		this_rq->next_balance = next_balance;
--	}
--
--	if (curr_cost > this_rq->max_idle_balance_cost)
--		this_rq->max_idle_balance_cost = curr_cost;
- 
--out:
- 	/* Is there a task of a high priority class? */
- 	if (this_rq->nr_running != this_rq->cfs.h_nr_running)
- 		pulled_task = -1;
