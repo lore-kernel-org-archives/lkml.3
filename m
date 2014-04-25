@@ -1,100 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751322AbaDYFD2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 01:03:28 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:31996 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbaDYFDY (ORCPT
+	id S1751565AbaDYFE4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 01:04:56 -0400
+Received: from mail-ee0-f46.google.com ([74.125.83.46]:40741 "EHLO
+	mail-ee0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436AbaDYFEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 01:03:24 -0400
-X-AuditID: cbfee68e-b7fd86d0000038e3-4f-5359ec9a0d3a
-Message-id: <5359EC99.2010107@samsung.com>
-Date: Fri, 25 Apr 2014 14:03:21 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: kgene.kim@samsung.com, t.figa@samsung.com, linux-kernel@vger.kernel.org,
-        linux@arm.linux.org.uk, ben-linux@fluff.org, arnd@arndb.de,
-        olof@lixom.net, marc.zyngier@arm.com, thomas.abraham@linaro.org,
-        kyungmin.park@samsung.com, inki.dae@samsung.com,
-        sw0312.kim@samsung.com, hyunhee.kim@samsung.com, yj44.cho@samsung.com,
-        chanho61.park@samsung.com, sajjan.linux@gmail.com,
-        sachin.kamat@linaro.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCHv4 7/7] ARM: dts: Add device tree sources for Exynos3250
-References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com>
- <1398388572-30239-8-git-send-email-cw00.choi@samsung.com>
- <5359E6DD.6000608@linaro.org>
-In-reply-to: <5359E6DD.6000608@linaro.org>
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPKsWRmVeSWpSXmKPExsWyRsSkUHfWm8hgg5dbZCz+TjrGbrFxxnpW
-	i0nrDjBZXN6vbTH/yDlWi/43C1ktPn9oYbc492olo8Wk+xNYLG78amO16F1wlc3ibNMbdotN
-	j6+xWlzeNYfNYsb5fUwWty/zWvy984/NYun1i0wWp65/ZrOYMH0ti0Xr3iPsFif/9DJaPDn8
-	kdVixuSXbBbrZ7xmsTg2YwmjRfvfvWwWe3dOZnSQ8Vgzbw2jR0tzD5vH71+TGD0u9/Uyefxd
-	9YLZY+esu+weK5d/YfPYtKqTzePOtT1sHpuX1HtcOdHE6tG3ZRWjx+dNcgG8UVw2Kak5mWWp
-	Rfp2CVwZO3+2MxXMZK14fesSawPjDJYuRk4OCQETifcX77ND2GISF+6tZ+ti5OIQEljKKHF1
-	4g64ogl7H7FAJKYzSqxePh/Kec0o8ePUW7B2XgEtib1vL4LZLAKqEu/OrmQEsdmA4vtf3GAD
-	sUUFwiRWTr/CAlEvKPFj8j0wW0RAR+LBor1gQ5kF5rFJfL48B6xBWMBb4umCk4wQ2xYyStx5
-	9QFsAyfQ1PMz+sFsZqDu/a3T2CBseYnNa94ygzRICMzmlNj07zozxEkCEt8mHwJawQGUkJXY
-	dIAZ4jdJiYMrbrBMYBSbheSoWUjGzkIydgEj8ypG0dSC5ILipPQiI73ixNzi0rx0veT83E2M
-	wMR0+t+zvh2MNw9YH2JMBlo5kVlKNDkfmNjySuINjc2MLExNTI2NzC3NSBNWEudd9DApSEgg
-	PbEkNTs1tSC1KL6oNCe1+BAjEwenVAOj98EOZdEl3qEf1J6fVUm8pCjMeO/EajnbPzkJrybk
-	Mm3S0AqKalm6voHt+tKa0q70MDb2StmJVj+YqzXbeA9GvagUm61omdA01eXXCiGmIL/3HVMi
-	FRgfVjxeKSLDyali3K5fUeoptPZgUPrRJonq3gkvZj42tZw8rVJV1+zPm7hn/kbTbZRYijMS
-	DbWYi4oTAcs5jnBiAwAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA5WSe0hTYRjG+XbO+TalwWllndZNjgRhzdwyfaULRWEnLLA0y/6x0zyp5TbZ
-	0cgiGuYKK3Vp5FrhjcK2VpIWZLUsEyvLbiuTMruH5ezCulpKc1ZI/dX31+97eJ73gZdXRiic
-	WClL12cJRj2fweJA8lr/8+EqmycpPnyXdQT0FTdL4YS1hoLi4xck4G6YAuVNNygo8lRS4H2f
-	J4Ubb+wIih9bSGjv3U5BQcU9DK25HinUPm+jwH3mIAbrzfMSeOiWQ19HP4bD929LoOW+F4Ol
-	9BgJZleTFK7+KEDw4tIHCqwlrzHUWLtJaLYeQrCjz4XBVV+C5o7jnGVOxOVt2425773FiHMX
-	Fki4PkcXwdXbHkk5e/VHzNU68jHX0XYOc3WHtnJ3r+RSXOFJB+K8tRPi5KtMaFaawKcIxmBB
-	rzWkpOtTZ7Ox8cnzk2dEhqtV6miIYoP1vE6YzS5YHKeKSc/wbYUN3sBnZPukOF4U2Wlz/p2w
-	PCFGBb+DK1VLEpb9yWjC/3qrnSit/tsOSeZ+amP3gzuUCVnJnShAxtARjMX17BePYm511uCd
-	KFCmoEsRc7S6nBz8dCPma0uPdMAlp0MZV89tP5P0JOZtqx0NMPbpDV3teICD6ETGXnqXHPQP
-	Z76WdPp5JD2VeVLl8g8l6DLMeN0H/YERdCzzsuIqGmyrREzHm/f+hgDf1JvWIj8TvnSDeR8e
-	5IlMnbOHsCDaNqTENsRmG2KrQIQDBQmZ2kxxTapOEybyOjFbnxqmNehqkf/2Xo09jRwmaES0
-	DLHD5JbxSfEKit8g5ugaESMj2JHyEIdPkqfwOZsEoyHZmJ0hiI1I69vBHkIZpDX4Llmflaye
-	HhGpidZEqUEzPer/ZHa0/KJ55lIFncpnCesFIVMw/m6RyAKUJnSidaH71LzQQFoV+QB9Cck9
-	3lvlaieVzR/Nt+7Eppujt+Tpv7TVHK64Vnh2vLJrRchyjyTsc1vR5smahLJl8LlpjGguT5nv
-	zt8alvj0yTAVuWqP4brJ4q0OPdA+pv/Iu32ecWcSp6y7HBHTkLs3Z6Klcy33KVDSP+p0h6Fl
-	UUy+XcGSYhqvDiWMIv8TFpInFb8DAAA=
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 25 Apr 2014 01:04:53 -0400
+Message-ID: <5359ECEC.5050902@monstr.eu>
+Date: Fri, 25 Apr 2014 07:04:44 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-serial@vger.kernel.org,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        =?ISO-8859-1?Q?S=F6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
+Subject: Re: [GIT PULL] serial: Cadence
+References: <53575983.3030508@monstr.eu> <20140423234832.GB17827@kroah.com> <5358A188.4080404@monstr.eu> <20140424232332.GB10457@kroah.com>
+In-Reply-To: <20140424232332.GB10457@kroah.com>
+X-Enigmail-Version: 1.6
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="Fcx92oxLRspdUiRXSEeCpRfPgd3Do7Gpk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2014 01:38 PM, Tushar Behera wrote:
-> On 04/25/2014 06:46 AM, Chanwoo Choi wrote:
->> From: Tomasz Figa <t.figa@samsung.com>
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Fcx92oxLRspdUiRXSEeCpRfPgd3Do7Gpk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+On 04/25/2014 01:23 AM, Greg Kroah-Hartman wrote:
+> On Thu, Apr 24, 2014 at 07:30:48AM +0200, Michal Simek wrote:
+>> On 04/24/2014 01:48 AM, Greg Kroah-Hartman wrote:
+>>> On Wed, Apr 23, 2014 at 08:11:15AM +0200, Michal Simek wrote:
+>>>> Hi Greg,
+>>>>
+>>>> this is around for a while and I would like to close it.
+>>>> I have applied patches 1-7 from v3.
+>>>> Patches 8 and 9 should go through arm-soc tree and I will add them
+>>>> to my zynq/dt branch.
+>>>>
+>>>> Please apply these patches to your tree.
+>>>> If this should go through different tree please let me know.
+>>>>
+>>>> Thanks,
+>>>> Michal
+>>>>
+>>>>
+>>>> The following changes since commit c9eaa447e77efe77b7fa4c953bd62de82=
+97fd6c5:
+>>>>
+>>>>   Linux 3.15-rc1 (2014-04-13 14:18:35 -0700)
+>>>>
+>>>> are available in the git repository at:
+>>>>
+>>>>   git://git.monstr.eu/linux-2.6-microblaze.git tags/cadence-uart-for=
+-3.16
+>>>
+>>> I can't take git pulles from random internet sites, sorry.  Just send=
+
+>>> these as email and I will queue them up.
 >>
->> This patch add new exynos3250.dtsi to support Exynos3250 SoC based on Cortex-A7
->> dual core and includes following dt nodes:
->>
-> 
-> [ ... ]
-> 
->> ---
->>  arch/arm/boot/dts/exynos3250-pinctrl.dtsi | 477 +++++++++++++++
->>  arch/arm/boot/dts/exynos3250.dtsi         | 405 +++++++++++++
->>  arch/arm/boot/dts/exynos4212-tizenw.dts   | 926 ++++++++++++++++++++++++++++++
-> 
-> exynos4412-tizenw.dts related changes are unrelated.
+>> I wouldn't say random. This repo is listed in my Microblaze maintainer=
+ fragment
+>> and I used signed tag and you have sign my key that's why you can easi=
+ly
+>> check it.
+>=20
+> If you have a signed key, why aren't you using git.kernel.org?  Again, =
+I
+> can't pull from any non-kernel.org sites, sorry.
+
+ok. I have never had a need to have git repo at kernel.org.
+But maybe I should asked for one.
 
 
-Right, It is may mistake.
-I'll resend this patch.
+>> Anyway we have sent v3 patches via email twice.
+>> Origin v3:
+>> https://lkml.org/lkml/2014/3/12/499
+>>
+>> Resent v3:
+>> https://lkml.org/lkml/2014/4/4/523
+>>
+>> Patches 1-7 should go through your tree.
+>=20
+> I've now applied these, sorry for the delay.
 
 Thanks,
-Chanwoo Choi
+Michal
 
+
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
+
+
+
+--Fcx92oxLRspdUiRXSEeCpRfPgd3Do7Gpk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Thunderbird - http://www.enigmail.net/
+
+iEYEARECAAYFAlNZ7OwACgkQykllyylKDCHxNQCeOUTnbxqDOAHjyizSmBI+yL1L
+p1oAn0cIpc6x8Tka/Y9akFOrzmYodnC7
+=DiIE
+-----END PGP SIGNATURE-----
+
+--Fcx92oxLRspdUiRXSEeCpRfPgd3Do7Gpk--
