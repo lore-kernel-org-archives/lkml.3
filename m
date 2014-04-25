@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752664AbaDYQpr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:45:47 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:48276 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752471AbaDYQpn (ORCPT
+	id S1752761AbaDYQtN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:49:13 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59230 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329AbaDYQtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:45:43 -0400
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+zf0bvbsHeRvVrcGbDXUUaOtngu7IPwGw=
-X-DKIM: OpenDKIM Filter v2.0.1 titan CD44C563452
-From: Jason Cooper <jason@lakedaemon.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jason Cooper <jason@lakedaemon.net>, Fengguang Wu <fengguang.wu@intel.com>,
-        kbuild-all@01.org, linux-crypto@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: crypto: skein: depend upon CRYPTO
-Date: Fri, 25 Apr 2014 16:45:09 +0000
-Message-Id: <1398444309-24672-1-git-send-email-jason@lakedaemon.net>
-X-Mailer: git-send-email 1.9.2
-In-Reply-To: <20140425151554.GB31117@localhost>
-References: <20140425151554.GB31117@localhost>
+	Fri, 25 Apr 2014 12:49:10 -0400
+Date: Fri, 25 Apr 2014 17:48:48 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Charles Coldwell <coldwell@gmail.com>
+Cc: Jon Ringle <jon@ringle.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        Alexander Shiyan <shc_work@mail.ru>,
+        Jon Ringle <jringle@gridpoint.com>
+Subject: Re: [PATCH v7 1/2] serial: sc16is7xx
+Message-ID: <20140425174848.7e79066e@alan.etchedpixels.co.uk>
+In-Reply-To: <alpine.LRH.2.03.1404251019300.2893@frank.harvard.edu>
+References: <1398387367-4047-1-git-send-email-jon@ringle.org>
+	<alpine.LRH.2.03.1404250914380.30160@frank.harvard.edu>
+	<alpine.LRH.2.03.1404250941590.2625@frank.harvard.edu>
+	<CAMwGMjyqiC1DLKfz0LUFg-iN8mDKc54w+8AYKFHOydiwtXHrFQ@mail.gmail.com>
+	<alpine.LRH.2.03.1404251019300.2893@frank.harvard.edu>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fengguang's randconfig kernel build tester discovered the following
-warnings:
+> Fair enough, but the 8250 framework does allow you to insert your own
+> irq service routine. "serial8250_default_handle_irq" is the default
+> (unsurprisingly), but if the uart_port has a non-NULL "handle_irq"
+> method it will be faithfully copied into the uart_8250_port
+> "handle_irq" method in 8250_core.c:early_serial_setup.
 
-warning: (CRYPTO_THREEFISH) selects CRYPTO_ALGAPI which has unmet direct dependencies (CRYPTO)
-warning: (DM_VERITY && CRYPTO_SKEIN) selects CRYPTO_HASH which has unmet direct dependencies (CRYPTO)
+It's nowhere near sufficient and this was discussed earlier in some depth.
 
-Fix this in the Kconfig by depending on CRYPTO.
+> If that's really true, then I would say it argues in favor of a
+> revision of the 8250 code.  Certainly, this is not the last time that
+> a 16550-compatible UART will appear on a non-PCI, non-ISA bus.
 
-Reported-by: Fengguang Wu <fengguang.wu@intel.com>
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
----
- drivers/staging/skein/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+The 8250 code has deep seated assumptions about locking and atomicity.
+Not only would it be very hard to unify the drivers the end result would
+probably be quite horrible to maintain.
 
-diff --git a/drivers/staging/skein/Kconfig b/drivers/staging/skein/Kconfig
-index 8f5a72a90ced..b9172bfcdc1b 100644
---- a/drivers/staging/skein/Kconfig
-+++ b/drivers/staging/skein/Kconfig
-@@ -1,6 +1,6 @@
- config CRYPTO_SKEIN
- 	bool "Skein digest algorithm"
--	depends on (X86 || UML_X86) && 64BIT
-+	depends on (X86 || UML_X86) && 64BIT && CRYPTO
- 	select CRYPTO_THREEFISH
- 	select CRYPTO_HASH
- 	help
-@@ -17,7 +17,7 @@ config CRYPTO_SKEIN
+We should just merge the driver as is, as submitted in version 7. It's
+fine. The fact all the I/O accesses are asynchronous completely changes
+the way the driver is written. Architecturally from the 8250 driver's
+point of view its a completely unrelated piece of hardware that shares
+some constants.
+
+If there are other 16x50 i2c/spi uarts then yes merge them with the
+sc16is7xx driver.
+
+Alan
  
- config CRYPTO_THREEFISH
- 	bool "Threefish tweakable block cipher"
--	depends on (X86 || UML_X86) && 64BIT
-+	depends on (X86 || UML_X86) && 64BIT && CRYPTO
- 	select CRYPTO_ALGAPI
- 	help
- 	  Threefish cipher algorithm is the tweakable block cipher underneath
--- 
-1.9.2
-
