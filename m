@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754461AbaDYOQu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:16:50 -0400
-Received: from ns.mm-sol.com ([37.157.136.199]:36961 "EHLO extserv.mm-sol.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753216AbaDYOQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:16:46 -0400
-Message-ID: <1398435350.4724.244.camel@iivanov-dev>
-Subject: Re: [RFC PATCH] mfd: pm8x41: Naive function devices registration
-From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Date: Fri, 25 Apr 2014 17:15:50 +0300
-In-Reply-To: <CAL_Jsq+biEgbb7MmDuMsZ-bjocX0u=vvgZQHb6D696eGWDF7WA@mail.gmail.com>
-References: <1398429171-8566-1-git-send-email-iivanov@mm-sol.com>
-	 <CAL_JsqJMs1ULgLMAia6ojz+i3b=7W6hxyqSTMATo96i0cS2n0g@mail.gmail.com>
-	 <1398432541.4724.243.camel@iivanov-dev>
-	 <CAL_Jsq+biEgbb7MmDuMsZ-bjocX0u=vvgZQHb6D696eGWDF7WA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754388AbaDYOQO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:16:14 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47287 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754066AbaDYOHl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 10:07:41 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: [PATCH v2 08/18] ARM: configs: Add usb_xhci_mvebu to mvebu_v7_defconfig
+Date: Fri, 25 Apr 2014 16:07:06 +0200
+Message-Id: <1398434836-18908-9-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-25 at 08:43 -0500, Rob Herring wrote:
-> On Fri, Apr 25, 2014 at 8:29 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
-> > On Fri, 2014-04-25 at 08:00 -0500, Rob Herring wrote:
-> >> On Fri, Apr 25, 2014 at 7:32 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
-> >> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> >> >
-> >> > Currently functions that exist in both the controller at the
-> >> > same address offset can not be specified with the same names.
-> >> >
-> >> > Adding Unique Slave ID device address to prefix function
-> >> > device names fixes this.
-> >> >
-> >> > Function devices are SPMI devices, so register them on
-> >> > SPMI bus.
-> >> >
-> >> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
-> >> > ---
-> >> >  drivers/mfd/pm8x41.c | 61 ++++++++++++++++++++++++++++++++++++++++++++++++----
-> >>
-> >> No, this should be fixed in the core, not the driver.
-> >
-> > I think that at core level they are no issues.
-> 
-> By core, I mean the device naming conventions used by the DT platform
-> device code. There is a problem and it should be handled.
-> 
-> As I mentioned in the other thread, either we should not use the
-> address on non-translatable addresses like this or append the parent
-> address.
+The Marvell Armada 38x platform needs the xhci_mvebu driver enabled
+for the xHCI USB hosts, so this commit enables the corresponding
+Kconfig option in mvebu_v7_defconfig.
 
-Ok, I see.
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ arch/arm/configs/mvebu_v7_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
 
-Regards,
-Ivan
+diff --git a/arch/arm/configs/mvebu_v7_defconfig b/arch/arm/configs/mvebu_v7_defconfig
+index a34713d8db9f..e8811066b8e4 100644
+--- a/arch/arm/configs/mvebu_v7_defconfig
++++ b/arch/arm/configs/mvebu_v7_defconfig
+@@ -78,6 +78,7 @@ CONFIG_USB_EHCI_HCD=y
+ CONFIG_USB_EHCI_ROOT_HUB_TT=y
+ CONFIG_USB_STORAGE=y
+ CONFIG_USB_XHCI_HCD=y
++CONFIG_USB_XHCI_MVEBU=y
+ CONFIG_MMC=y
+ CONFIG_MMC_MVSDIO=y
+ CONFIG_NEW_LEDS=y
+-- 
+1.8.1.2
 
