@@ -1,58 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753293AbaDYNml (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:42:41 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:59174 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891AbaDYNmj (ORCPT
+	id S1754005AbaDYNoD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:44:03 -0400
+Received: from mail-ve0-f177.google.com ([209.85.128.177]:59250 "EHLO
+	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891AbaDYNoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:42:39 -0400
-Message-ID: <535A664B.3000805@linux.com>
-Date: Fri, 25 Apr 2014 15:42:35 +0200
-From: Levente Kurusa <levex@linux.com>
-Reply-To: Levente Kurusa <levex@linux.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.1.0
+	Fri, 25 Apr 2014 09:44:00 -0400
 MIME-Version: 1.0
-To: Nicolas Del Piano <ndel314@gmail.com>, gregkh@linuxfoundation.org
-CC: aaro.koskinen@iki.fi, devendra.aaru@gmail.com, raluca.oncioiu91@gmail.com,
-        david.daney@cavium.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: octeon-usb: fixed a macro coding style issue
-References: <1398433233-2749-1-git-send-email-ndel314@gmail.com>
-In-Reply-To: <1398433233-2749-1-git-send-email-ndel314@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1398432541.4724.243.camel@iivanov-dev>
+References: <1398429171-8566-1-git-send-email-iivanov@mm-sol.com>
+	<CAL_JsqJMs1ULgLMAia6ojz+i3b=7W6hxyqSTMATo96i0cS2n0g@mail.gmail.com>
+	<1398432541.4724.243.camel@iivanov-dev>
+Date: Fri, 25 Apr 2014 08:43:59 -0500
+Message-ID: <CAL_Jsq+biEgbb7MmDuMsZ-bjocX0u=vvgZQHb6D696eGWDF7WA@mail.gmail.com>
+Subject: Re: [RFC PATCH] mfd: pm8x41: Naive function devices registration
+From: Rob Herring <robherring2@gmail.com>
+To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Apr 25, 2014 at 8:29 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+> On Fri, 2014-04-25 at 08:00 -0500, Rob Herring wrote:
+>> On Fri, Apr 25, 2014 at 7:32 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+>> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+>> >
+>> > Currently functions that exist in both the controller at the
+>> > same address offset can not be specified with the same names.
+>> >
+>> > Adding Unique Slave ID device address to prefix function
+>> > device names fixes this.
+>> >
+>> > Function devices are SPMI devices, so register them on
+>> > SPMI bus.
+>> >
+>> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+>> > ---
+>> >  drivers/mfd/pm8x41.c | 61 ++++++++++++++++++++++++++++++++++++++++++++++++----
+>>
+>> No, this should be fixed in the core, not the driver.
+>
+> I think that at core level they are no issues.
 
-On 04/25/2014 03:40 PM, Nicolas Del Piano wrote:
-> Fixed a coding style error, macros with comples values should be enclosed in parenthesis.
-> 
-> Signed-off-by: Nicolas Del Piano <ndel314@gmail.com>
-> ---
->  drivers/staging/octeon-usb/octeon-hcd.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/octeon-usb/octeon-hcd.c b/drivers/staging/octeon-usb/octeon-hcd.c
-> index 8b8ce72..475ecc4 100644
-> --- a/drivers/staging/octeon-usb/octeon-hcd.c
-> +++ b/drivers/staging/octeon-usb/octeon-hcd.c
-> @@ -246,7 +246,7 @@ enum cvmx_usb_pipe_flags {
->  };
-> 
->  /* Normal prefetch that use the pref instruction. */
-> -#define CVMX_PREFETCH(address, offset) asm volatile ("pref %[type], %[off](%[rbase])" : : [rbase] "d" (address), [off] "I" (offset), [type] "n" (0))
-> +#define (CVMX_PREFETCH(address, offset) asm volatile ("pref %[type], %[off](%[rbase])" : : [rbase] "d" (address), [off] "I" (offset), [type] "n" (0)))
+By core, I mean the device naming conventions used by the DT platform
+device code. There is a problem and it should be handled.
 
-Not that way around! :-)
+As I mentioned in the other thread, either we should not use the
+address on non-translatable addresses like this or append the parent
+address.
 
-The parantheses should be around the code block not the
-name block.
-
--- 
-Regards,
-Levente Kurusa
-PGP: 4EF5D641
+> There is no name clashes with "top level" devices.
+>
+> spmi@...{
+>         ...
+>         child@0 {
+>                 compatible = "qcom,pm8941";
+>                 reg = <0x0 SPMI_USID>;
+>
+>                 #address-cells = <1>;
+>                 #size-cells = <0>;
+>
+>                 revid@100 {
+>                         compatible = "qcom,qpnp-revid";
+>                         reg = <0x100>;
+>                 };
+>         };
+>
+>         child@4 {
+>                 compatible = "qcom,pm8841";
+>                 reg = <0x4 SPMI_USID>;
+>
+>                 #address-cells = <1>;
+>                 #size-cells = <0>;
+>
+>                 revid@100 {
+>                         compatible = "qcom,qpnp-revid";
+>                         reg = <0x100>;
+>                 };
+>         };
+> };
+>
+> I don't have experience with SPMI devices, but it looks
+> like address partitioning is specific to this "PMIC"
+> controllers.
+>
+> Regards,
+> Ivan
+>
+>>
+>> Rob
+>
+>
