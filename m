@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753320AbaDYLyG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 07:54:06 -0400
-Received: from smtpfb1-g21.free.fr ([212.27.42.9]:44142 "EHLO
-	smtpfb1-g21.free.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847AbaDYLyC (ORCPT
+	id S1753460AbaDYLzK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 07:55:10 -0400
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50224 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752704AbaDYLzJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 07:54:02 -0400
-Message-ID: <535A4CBF.1090301@free.fr>
-Date: Fri, 25 Apr 2014 13:53:35 +0200
-From: mathieu souchaud <mattieu.souchaud@free.fr>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 25 Apr 2014 07:55:09 -0400
+Date: Fri, 25 Apr 2014 12:54:13 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Anders Berg <anders.berg@lsi.com>, Arnd Bergmann <arnd@arndb.de>,
+        Olof Johansson <olof@lixom.net>,
+        Mike Turquette <mturquette@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 3/6] ARM: dts: Device tree for AXM55xx.
+Message-ID: <20140425115413.GL26756@n2100.arm.linux.org.uk>
+References: <cover.1398335771.git.anders.berg@lsi.com> <2386bd1367aa44741979461358a72dec89608597.1398335771.git.anders.berg@lsi.com> <CACRpkdbU6UashxCuPMDjEB_nbB=mXicGpjJy=HGC6r3qfxCtVQ@mail.gmail.com> <20140424174741.GA23444@swsaberg01> <CACRpkdZ1CA4mqcd5MA5HFmXSeGp-wspA0M6wnPbAsgL_gX76Fw@mail.gmail.com> <20140425094343.GA3160@swsaberg01> <CACRpkdaqPx3=qvUtsg44rBk+ZiscUg54HmNgETcei0LzfE9uOQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>
-CC: tony.luck@intel.com, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] x86/mce: Check misc_register() return code.
-References: <1398419295-18590-1-git-send-email-mattieu.souchaud@free.fr> <20140425104256.GB18540@nazgul.tnic>
-In-Reply-To: <20140425104256.GB18540@nazgul.tnic>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CACRpkdaqPx3=qvUtsg44rBk+ZiscUg54HmNgETcei0LzfE9uOQ@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Great,
+On Fri, Apr 25, 2014 at 01:50:25PM +0200, Linus Walleij wrote:
+> This means that you can only get a proper, working IRQ from the
+> first line on gpio0 right? All other IRQs will be ignored.
+> 
+> I see no problem in augmenting the driver to handle this
+> if #irqs == 8, the big change needs to happen in drivers/amba/bus.c
+> that has no way to pass any more than two IRQs atm.
+> 
+> I guess the best is to augment struct amba_device with a field
+> struct resource *resource and num_resources like platform_device
+> instead of the hard-coded single resource for iomem and two
+> hardcoded IRQ placeholders, so that an arbitrary amount of
+> resources can be added to an amba_device as well. But that
+> may be quite a lot of work. (Russell will know which direction to
+> take here.)
 
-I will fix that soon.
+I definitely don't want to go down that route - I believe that the
+resource arrays are more pain than they're really worth - it requires
+a great amount of support to make that stuff work (just look at the
+amount of code there is to search the arrays, create them, etc.)
 
-Thanks.
+We already have support for up to 9 IRQs, so 8 for GPIOs is already
+catered for.
 
-Le 25/04/2014 12:42, Borislav Petkov a écrit :
-> On Fri, Apr 25, 2014 at 11:48:15AM +0200, Mathieu Souchaud wrote:
->> The current code does not check the return from misc_register() so set
->> the return variable with the return code of misc_register.
->>
->> Signed-off-by: Mathieu Souchaud <mattieu.souchaud@free.fr>
->> ---
->>   arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
->> index 68317c8..45fb7aa 100644
->> --- a/arch/x86/kernel/cpu/mcheck/mce.c
->> +++ b/arch/x86/kernel/cpu/mcheck/mce.c
->> @@ -2462,7 +2462,7 @@ static __init int mcheck_init_device(void)
->>   	cpu_notifier_register_done();
->>   
->>   	/* register character device /dev/mcelog */
->> -	misc_register(&mce_chrdev_device);
->> +	err = misc_register(&mce_chrdev_device);
-> This function mcheck_init_device() is a one big sloppy mess
-> of not handling the error cases responsibly. It doesn't check
-> zalloc_cpumask_var() retval, it doesn't free the mce_device_initialized
-> when subsys_system_register() fails, the same when mce_device_create
-> fails, the same with __register_hotcpu_notifier and finally with
-> misc_register.
->
-> Would you be willing to fix this properly with goto labels and proper
-> unwinding, like it is done in other, saner places in the kernel, and
-> at the end maybe add a printk for the error case warning us that
-> /dev/mcelog didn't get registered?
->
-> That would be a very nice cleanup! :-)
->
-> Thanks.
-
+-- 
+FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
+improving, and getting towards what was expected from it.
