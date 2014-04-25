@@ -1,100 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699AbaDYU0C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 16:26:02 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:54146 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532AbaDYUZ7 (ORCPT
+	id S1754752AbaDYU0j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 16:26:39 -0400
+Received: from fallback7.mail.ru ([94.100.176.135]:43261 "EHLO
+	fallback7.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060AbaDYU0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 16:25:59 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Serge E. Hallyn" <serge@canonical.com>,
-        Linux Containers <containers@lists.linux-foundation.org>
-References: <CALCETrVSaboa0Y2v_sTbSz3xOxOZ-6jSq_D7DyQXMRB9VXJB8w@mail.gmail.com>
-	<87ha5h42va.fsf@x220.int.ebiederm.org>
-	<CALCETrX3GjNkhKkST9Nw4sk2ETt=MRUWcc+bNXnGFTXn7ve-ww@mail.gmail.com>
-Date: Fri, 25 Apr 2014 13:25:27 -0700
-In-Reply-To: <CALCETrX3GjNkhKkST9Nw4sk2ETt=MRUWcc+bNXnGFTXn7ve-ww@mail.gmail.com>
-	(Andy Lutomirski's message of "Fri, 25 Apr 2014 12:50:49 -0700")
-Message-ID: <87tx9h2m2w.fsf@x220.int.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain
-X-XM-AID: U2FsdGVkX1/BnXxdg05Rz1xngAy+X60bDN1p3lFsW0E=
-X-SA-Exim-Connect-IP: 98.234.51.111
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -0.0 BAYES_20 BODY: Bayes spam probability is 5 to 20%
-	*      [score: 0.0738]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andy Lutomirski <luto@amacapital.net>
-X-Spam-Relay-Country: 
-Subject: Re: pid ns feature request
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Fri, 25 Apr 2014 16:26:37 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?R3JlZyBLSA==?= <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        =?UTF-8?B?Sm9uIFJpbmdsZQ==?= <jringle@gridpoint.com>, jon@ringle.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCAxLzJdIHNlcmlhbDogc2MxNmlzN3h4OiBkZXBlbmQgb24g?=
+ =?UTF-8?B?STJD?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [5.18.98.0]
+Date: Sat, 26 Apr 2014 00:26:16 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1398457576.792048107@f368.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <20140425202315.GA8821@kroah.com>
+References: <1398455590-4374-1-git-send-email-jon@ringle.org>
+ <20140425202315.GA8821@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3PKQmFb010288
 
-Andy Lutomirski <luto@amacapital.net> writes:
+Fri, 25 Apr 2014 13:23:15 -0700 Ğ¾Ñ‚ Greg KH <gregkh@linuxfoundation.org>:
+> On Fri, Apr 25, 2014 at 03:53:09PM -0400, jon@ringle.org wrote:
+> > From: Jon Ringle <jringle@gridpoint.com>
+> > 
+> > Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+> > ---
+> >  drivers/tty/serial/Kconfig | 1 +
+> >  1 file changed, 1 insertion(+)
+> > 
+> > diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+> > index c3e2b32..64c5659 100644
+> > --- a/drivers/tty/serial/Kconfig
+> > +++ b/drivers/tty/serial/Kconfig
+> > @@ -1180,6 +1180,7 @@ config SERIAL_SCCNXP_CONSOLE
+> >  
+> >  config SERIAL_SC16IS7XX
+> >  	tristate "SC16IS7xx serial support"
+> > +	depends on I2C
+> >  	select SERIAL_CORE
+> >  	select REGMAP_I2C if I2C
+> >  	help
+> > -- 
+> > 1.8.5.4
+> 
+> Better, but I still have the build warnings :(
 
-> On Fri, Apr 25, 2014 at 12:37 PM, Eric W. Biederman
-> <ebiederm@xmission.com> wrote:
->> Andy Lutomirski <luto@amacapital.net> writes:
->>
->>> Unless I'm missing some trick, it's currently rather painful to mount
->>> a namespace /proc.  You have to actually be in the pid namespace to
->>> mount the correct /proc instance, and you can't unmount the old /proc
->>> until you've mounted the new /proc.  This means that you have to fork
->>> into the new pid namespace before you can finish setting it up.
->>
->> Yes.  You have to be inside just about all namespaces before you can
->> finish setting them up.
->>
->> I don't know the context in which needed to be inside the pid namespace
->> is a burden.
->
-> I'm trying to sandbox myself.  I unshare everything, setup up new
-> mounts, pivot_root, umount the old stuff, fork, and wait around for
-> the child to finish.
->
-> This doesn't work: the parent can't mount the new /proc, and the child
-> can't either because it's too late.
->
-> The only solution I can think of without kernel changes is to fork the
-> child (pid 1) before pivot_root, which makes everything more
-> complicated.  I suppose I can unshare, fork immediately, have the
-> child set up all the mounts, and then wake the parent, but this is an
-> annoying bit of extra complexity for no obvious gain.
+I hope not same as before?
 
-Or perhaps just use clone and clone flags.
+---
 
-What are you doing with the parent process?  What value does it serve?
-
->>> Would it make sense to add a mount option to procfs to request a mount
->>> for pid_ns_for_children instead of task_active_pid_ns?
->>
->> This is about the using setns and unshare?
->>
->> Adding a proc amount option that takes a pid namespace file descriptor
->> would be the general solution, and might be worth implementing.
->>
->> Getting a pid namespace file descriptors when there are no pids might be
->> a challenge.
->
-> Indeed, hence my request for a specific mode to mount /proc for
-> pid_ns_for_children.
->
-> FWIW, I also tried forking, having the child mount /proc and exit,
-> then forking again later on.  That also doesn't work -- it looks like
-> you can't recreate pid 1 after it does.
-
-Nope. Once pid 1 (init) is dead the pid namespace is dead.
-
-Eric
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
