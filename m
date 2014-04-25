@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752620AbaDYJmW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:42:22 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:46551 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752339AbaDYJmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:42:12 -0400
-From: Fabio Falzoi <fabio.falzoi84@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Fabio Falzoi <fabio.falzoi84@gmail.com>
-Subject: [PATCH 1/3] Staging: lustre: Avoid using 0 instead of NULL
-Date: Fri, 25 Apr 2014 11:41:41 +0200
-Message-Id: <1398418903-13315-2-git-send-email-fabio.falzoi84@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1398418903-13315-1-git-send-email-fabio.falzoi84@gmail.com>
-References: <1398418903-13315-1-git-send-email-fabio.falzoi84@gmail.com>
+	id S1752745AbaDYJm3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:42:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3971 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752418AbaDYJmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 05:42:25 -0400
+Date: Fri, 25 Apr 2014 11:43:50 +0200
+From: Alexander Gordeev <agordeev@redhat.com>
+To: Shahed Shaikh <shahed.shaikh@qlogic.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Dept-HSG Linux NIC Dev <Dept-HSGLinuxNICDev@qlogic.com>,
+        netdev <netdev@vger.kernel.org>, linux-pci <linux-pci@vger.kernel.org>
+Subject: [PATCH v2 net-next 2/2] qlcnic: Use pci_enable_msix_exact() instead
+ of pci_enable_msix()
+Message-ID: <20140425094349.GA6397@dhcp-26-207.brq.redhat.com>
+References: <cover.1398412015.git.agordeev@redhat.com>
+ <0a0d5f5c33d86e3777c22c3c1bbd81035660d57c.1398412015.git.agordeev@redhat.com>
+ <262CB373A6D1F14F9B81E82F74F77D5A46F9EE54@avmb2.qlogic.org>
+ <20140425090029.GA2500@dhcp-26-207.brq.redhat.com>
+ <262CB373A6D1F14F9B81E82F74F77D5A46F9EEA2@avmb2.qlogic.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <262CB373A6D1F14F9B81E82F74F77D5A46F9EEA2@avmb2.qlogic.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the following sparse complaints:
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
 
-drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/ldlm_pool.c:755:9:
-	warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/ldlm_pool.c:757:9:
-	warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/ldlm_pool.c:758:9:
-	warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/ldlm_pool.c:759:9:
-	warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/ldlm_pool.c:760:9:
-	warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/ldlm_pool.c:762:9:
-	warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/ldlm_pool.c:764:9:
-	warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/ldlm_pool.c:765:9:
-	warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/ldlm_pool.c:766:9:
-	warning: Using plain integer as NULL pointer
-drivers/staging/lustre/lustre/ptlrpc/../../lustre/ldlm/ldlm_pool.c:768:9:
-	warning: Using plain integer as NULL pointer
+Cc: Shahed Shaikh <shahed.shaikh@qlogic.com>
+Cc: Dept-HSGLinuxNICDev@qlogic.com
+Cc: netdev@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
 
-Signed-off-by: Fabio Falzoi <fabio.falzoi84@gmail.com>
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
 ---
- drivers/staging/lustre/lustre/ldlm/ldlm_pool.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/ldlm/ldlm_pool.c b/drivers/staging/lustre/lustre/ldlm/ldlm_pool.c
-index 6758646..5fa9ef4 100644
---- a/drivers/staging/lustre/lustre/ldlm/ldlm_pool.c
-+++ b/drivers/staging/lustre/lustre/ldlm/ldlm_pool.c
-@@ -718,7 +718,7 @@ LPROC_SEQ_FOPS_RO(lprocfs_grant_speed);
- 		snprintf(var_name, MAX_STRING_SIZE, #name);	\
- 		pool_vars[0].data = var;			\
- 		pool_vars[0].fops = ops;			\
--		lprocfs_add_vars(pl->pl_proc_dir, pool_vars, 0);\
-+		lprocfs_add_vars(pl->pl_proc_dir, pool_vars, NULL);\
- 	} while (0)
+diff --git a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+index dbf7539..73f908a 100644
+--- a/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
++++ b/drivers/net/ethernet/qlogic/qlcnic/qlcnic_main.c
+@@ -690,10 +690,10 @@ int qlcnic_setup_tss_rss_intr(struct qlcnic_adapter *adapter)
+ 		adapter->msix_entries[vector].entry = vector;
  
- static int ldlm_pool_proc_init(struct ldlm_pool *pl)
+ restore:
+-	err = pci_enable_msix(pdev, adapter->msix_entries, num_msix);
+-	if (err > 0) {
++	err = pci_enable_msix_exact(pdev, adapter->msix_entries, num_msix);
++	if (err == -ENOSPC) {
+ 		if (!adapter->drv_tss_rings && !adapter->drv_rss_rings)
+-			return -ENOSPC;
++			return err;
+ 
+ 		netdev_info(adapter->netdev,
+ 			    "Unable to allocate %d MSI-X vectors, Available vectors %d\n",
 -- 
-1.9.1
+1.7.7.6
 
+-- 
+Regards,
+Alexander Gordeev
+agordeev@redhat.com
