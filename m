@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbaDYOnO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:43:14 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:54999 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552AbaDYOnL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:43:11 -0400
-Date: Fri, 25 Apr 2014 16:43:01 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <rric@kernel.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>, Borislav Petkov <bp@alien8.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH 04/16] perf, mmap: Factor out perf_get_fd()
-Message-ID: <20140425144301.GI11096@twins.programming.kicks-ass.net>
-References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
- <1396883078-25320-5-git-send-email-jean.pihet@linaro.org>
- <20140422142759.GM11182@twins.programming.kicks-ass.net>
- <20140425135413.GE32718@rric.localhost>
+	id S1751983AbaDYOov (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:44:51 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55338 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751015AbaDYOot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 10:44:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
+   d="scan'208";a="528343501"
+Message-ID: <535A74DB.2070709@intel.com>
+Date: Fri, 25 Apr 2014 22:44:43 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140425135413.GE32718@rric.localhost>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
+References: <53548008.3040504@intel.com> <20140422113545.GA14950@gmail.com> <CABPqkBTHv3U6L4fKOvsFcaWR8HcOEaqGGxRMRn-+O68a0BLCuA@mail.gmail.com> <20140424081408.GA7709@gmail.com> <5358E6A2.3020505@intel.com> <CABPqkBRihMr=+X_Gb5dSYfForTpGA6XZGfTHOA3PZNAHTJDPkg@mail.gmail.com> <20140424112715.GQ11096@twins.programming.kicks-ass.net> <535A6070.90803@intel.com> <20140425135549.GF11096@twins.programming.kicks-ass.net> <535A6BD7.4090709@intel.com> <20140425143501.GH11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140425143501.GH11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 03:54:13PM +0200, Robert Richter wrote:
-> I guess its this patch from Al you referring to:
+On 04/25/2014 10:35 PM, Peter Zijlstra wrote:
+> On Fri, Apr 25, 2014 at 10:06:15PM +0800, Yan, Zheng wrote:
+>> the uncore driver does not support NHM/WSM-EP (I don't know the module numbers for NHM/WSM-EP, maybe I'm wrong)
 > 
->  ea635c6 Fix racy use of anon_inode_getfd() in perf_event.c
+> My wsm-ep has /sys/bus/event_source/devices/uncore so I suppose the
+> driver loaded. Its model 44 fwiw.
 > 
-> I think we do not introduce it back due to:
+> Also, from the uncore driver:
 > 
->  a6fa941 perf_event: Switch to internal refcount, fix race with close()
+> 	switch (boot_cpu_data.x86_model) {
+> 	case 26: /* Nehalem */
+> 	case 30:
+> 	case 37: /* Westmere */
+> 	case 44:
+> 		msr_uncores = nhm_msr_uncores;
+> 		break;
 > 
-> which removes the user of event_file.
 
-linux-2.6# git show a6fa941
-error: short SHA1 a6fa941 is ambiguous.
-error: short SHA1 a6fa941 is ambiguous.
-fatal: ambiguous argument 'a6fa941': unknown revision or path not in the working tree.
+looks like the uncore in NHM/WSM-EP is the same as uncore in desktop version NHM/WSM.
 
-Which is I think why Linus makes us use 12 chars instead of the git
-default of 8.
+Regards
+Yan, Zheng
 
-Of course its also entirely useless of git to not list the full IDs for
-those it did find to be ambiguous.
+
