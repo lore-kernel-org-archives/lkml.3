@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbaDYHH4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 03:07:56 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:33735 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaDYHHx (ORCPT
+	id S1751933AbaDYHNP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 03:13:15 -0400
+Received: from g4t3425.houston.hp.com ([15.201.208.53]:21115 "EHLO
+	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaDYHNM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 03:07:53 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.39 with qID s3P774Tf001561, This message is accepted by code: ctloc85258
-Message-ID: <535A096A.3070603@realtek.com>
-Date: Fri, 25 Apr 2014 15:06:18 +0800
-From: Roger <rogerable@realtek.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Chris Ball <chris@printf.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Oliver Neukum <oneukum@suse.de>,
-        <linux-kernel@vger.kernel.org>, <linux-mmc@vger.kernel.org>,
-        <driverdev-devel@linuxdriverproject.org>, <wei_wang@realsil.com.cn>,
-        <micky_ching@realsil.com.cn>
-Subject: Re: [PATCH v7 4/4] memstick: Add realtek USB memstick host driver
-References: <1397199203-2235-1-git-send-email-rogerable@realtek.com> <1397199203-2235-5-git-send-email-rogerable@realtek.com> <20140416081352.GA4754@lee--X1>
-In-Reply-To: <20140416081352.GA4754@lee--X1>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+	Fri, 25 Apr 2014 03:13:12 -0400
+Message-ID: <1398409990.12047.27.camel@j-VirtualBox>
+Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
+ whenever newidle balance is attempted
+From: Jason Low <jason.low2@hp.com>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
+        alex.shi@linaro.org, efault@gmx.de, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
+Date: Fri, 25 Apr 2014 00:13:10 -0700
+In-Reply-To: <5359EEBE.2030808@linux.vnet.ibm.com>
+References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
+	 <1398303035-18255-2-git-send-email-jason.low2@hp.com>
+	 <5358E417.8090503@linux.vnet.ibm.com>
+	 <20140424120415.GS11096@twins.programming.kicks-ass.net>
+	 <20140424124438.GT13658@twins.programming.kicks-ass.net>
+	 <1398358417.3509.11.camel@j-VirtualBox>
+	 <20140424171453.GZ11096@twins.programming.kicks-ass.net>
+	 <1398377917.3509.32.camel@j-VirtualBox>
+	 <5359EEBE.2030808@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [172.21.81.189]
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2014-04-25 at 10:42 +0530, Preeti U Murthy wrote:
+> I agree with this. However I am concerned with an additional point that
+> I have mentioned in my reply to Peter's mail on this thread.
+> 
+> Should we verify if rq->next_balance update is independent of
+> pulled_tasks? sd->balance_interval is changed during load_balance() and
+> rq->next_balance should perhaps consider that?
 
-On 04/16/2014 04:13 PM, Lee Jones wrote:
-> Hi Andrew,
->
->> From: Roger Tseng <rogerable@realtek.com>
->>
->> Realtek USB memstick host driver provides memstick host support based on the
->> Realtek USB card reader MFD driver.
->>
->> Signed-off-by: Roger Tseng <rogerable@realtek.com>
->> ---
->>   drivers/memstick/host/Kconfig       |  10 +
->>   drivers/memstick/host/Makefile      |   1 +
->>   drivers/memstick/host/rtsx_usb_ms.c | 839 ++++++++++++++++++++++++++++++++++++
->>   3 files changed, 850 insertions(+)
->>   create mode 100644 drivers/memstick/host/rtsx_usb_ms.c
->
-> It seems Max and Alex are less than interested in this patch, so I'm
-> going to apply it anyway. In your last review you mentioned that it
-> looked good to your inexpert eye. Can I apply your Ack to that effect?
->
-Hi Andrew,
+Hi Preeti,
 
-Would you confirm the Ack for Lee?
+I agree that we may want to consider having rq->next balance update be
+independent of pulled_task. As you mentioned, load_balance() can modify
+the balance_interval.
 
-Best regards,
-Roger Tseng
+There are a few things I'm wondering if we would need to also add then:
+
+1. In the case that this_rq->avg_idle < sysctl_sched_migration_cost, we
+   would need to also traverse the domains to properly compute
+   next_balance (without the sd->busy_factor) as we would be going idle.
+   Otherwise, next_balance could get set to jiffies + HZ while the
+   CPU goes idle.
+
+2. In the domain traversal, when we pulled_task, we might want to
+   multiply interval by sd->busy_factor because the rq will remain busy.
+
+3. If this_rq->avg_idle < curr_cost + sd->max_newidle_lb_cost, then we
+   may still want to compute next_balance, rather than simply break out
+   of the sched domain traversal loop. This is also to avoid having
+   the next_balance = jiffies + HZ when a domain should rebalance
+   less than 1 second later.
+
+
