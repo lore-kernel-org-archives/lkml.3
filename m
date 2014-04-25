@@ -1,54 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726AbaDYXnA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 19:43:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28292 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751216AbaDYXm6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 19:42:58 -0400
-Message-ID: <535AF2E9.1000005@redhat.com>
-Date: Sat, 26 Apr 2014 00:42:33 +0100
-From: Pedro Alves <palves@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+	id S1751176AbaDYXpH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 19:45:07 -0400
+Received: from mail-pd0-f175.google.com ([209.85.192.175]:49144 "EHLO
+	mail-pd0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaDYXpA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 19:45:00 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Geert Uytterhoeven <geert+renesas@glider.be>
+Cc: Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Ben Dooks <ben.dooks@codethink.co.uk>, Felipe Balbi <balbi@ti.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, linux-sh@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH/RFC 3/4] of/clk: Register clocks suitable for Runtime PM with the PM core
+References: <1398334403-26181-1-git-send-email-geert+renesas@glider.be>
+	<1398334403-26181-4-git-send-email-geert+renesas@glider.be>
+Date: Fri, 25 Apr 2014 16:44:58 -0700
+In-Reply-To: <1398334403-26181-4-git-send-email-geert+renesas@glider.be>
+	(Geert Uytterhoeven's message of "Thu, 24 Apr 2014 12:13:22 +0200")
+Message-ID: <7hoazpdldx.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org, avagin@openvz.org,
-        oleg@redhat.com, mikey@neuling.org, benh@kernel.crashing.org
-Subject: Re: [PATCH 2/3] powerpc, ptrace: Add new ptrace request macros for
- transactional memory
-References: <1396422144-11032-1-git-send-email-khandual@linux.vnet.ibm.com> <1396422144-11032-3-git-send-email-khandual@linux.vnet.ibm.com>
-In-Reply-To: <1396422144-11032-3-git-send-email-khandual@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/02/2014 08:02 AM, Anshuman Khandual wrote:
-> This patch adds following new sets of ptrace request macros for transactional
-> memory expanding the existing ptrace ABI on PowerPC.
-> 
-> 	/* TM special purpose registers */
-> 	PTRACE_GETTM_SPRREGS
-> 	PTRACE_SETTM_SPRREGS
-> 
-> 	/* TM checkpointed GPR registers */
-> 	PTRACE_GETTM_CGPRREGS
-> 	PTRACE_SETTM_CGPRREGS
-> 
-> 	/* TM checkpointed FPR registers */
-> 	PTRACE_GETTM_CFPRREGS
-> 	PTRACE_SETTM_CFPRREGS
-> 
-> 	/* TM checkpointed VMX registers */
-> 	PTRACE_GETTM_CVMXREGS
-> 	PTRACE_SETTM_CVMXREGS
+Geert Uytterhoeven <geert+renesas@glider.be> writes:
 
-Urgh, we're _still_ adding specialized register specific calls?
-Why aren't these exported as new register sets, accessible through
-PTRACE_GETREGSET /  PTRACE_SETREGSET?  That's supposed to be the
-Modern Way to do things.
+> When adding a device from DT, check if its clocks are suitable for Runtime
+> PM, and register them with the PM core.
+> If Runtime PM is disabled, just enable the clock.
+>
+> This allows the PM core to automatically manage gate clocks of devices for
+> Runtime PM.
 
--- 
-Pedro Alves
+...unless the device is already in an existing pm_domain, right?
 
+I like this approach, and it extends nicely what we already do on
+platforms using drivers/base/power/clock_ops.c into DT land.
+
+My only concern is how this will interact if it's used along with
+devices that have existing pm_domains.  I don't have any specific
+concerns (yet, because it's Friday, and my brain is turing off), but it
+just made me wonder if this will be potentially confusing.
+ 
+Also...
+
+[...]
+
+> +static int of_clk_register(struct device *dev, struct clk *clk)
+> +{
+> +	int error;
+> +
+> +	if (!dev->pm_domain) {
+> +		error = pm_clk_create(dev);
+> +		if (error)
+> +			return error;
+> +
+> +		dev->pm_domain = &of_clk_pm_domain;
+> +	}
+> +
+> +	dev_dbg(dev, "Setting up clock for runtime PM management\n");
+> +	return pm_clk_add_clk(dev, clk);
+
+I would've expected these 2 lines to be inside the pm_domain check.
+
+What's the reason for doing the pm_clk_add() when the pm_domain isn't
+going to be used?  I suppose it's harmless, but it's a bit confusing.
+
+Kevin
