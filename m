@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751699AbaDYBRd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 21:17:33 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:39132 "EHLO
+	id S1751626AbaDYBR2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 21:17:28 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:39160 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815AbaDYBQU (ORCPT
+	with ESMTP id S1751255AbaDYBQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 21:16:20 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-d8-5359b75f98e9
+	Thu, 24 Apr 2014 21:16:24 -0400
+X-AuditID: cbfee690-b7fcd6d0000026e0-87-5359b762b5f5
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: kgene.kim@samsung.com, t.figa@samsung.com
 Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
@@ -18,40 +18,49 @@ Cc: linux-kernel@vger.kernel.org, linux@arm.linux.org.uk, ben-linux@fluff.org,
         chanho61.park@samsung.com, sajjan.linux@gmail.com,
         tushar.behera@linaro.org, sachin.kamat@linaro.org,
         linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org
-Subject: [PATCHv4 1/7] ARM: EXYNOS: Add Exynos3250 SoC ID
-Date: Fri, 25 Apr 2014 10:16:06 +0900
-Message-id: <1398388572-30239-2-git-send-email-cw00.choi@samsung.com>
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>
+Subject: [PATCHv4 6/7] dt-bindings: add documentation for Exynos3250 clock
+ controller
+Date: Fri, 25 Apr 2014 10:16:11 +0900
+Message-id: <1398388572-30239-7-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com>
 References: <1398388572-30239-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsWyRsSkQDdhe2SwwdSDTBZ/Jx1jt5i07gCT
-	xeX92hbXvzxntZh/5ByrxecPLUDx+xNYLHoXXGWzONv0ht1i0+NrrBaXd81hs5hxfh+Txe3L
-	vBZ/7/xjszh1/TObxck/vYwWTw5/ZLWYMfklm8X6Ga9ZLI7NWMJo0f53L5vF3p2TGR3EPNbM
-	W8Po0dLcw+bx+9ckRo+/q14we+ycdZfd4861PWwem5fUe1w50cTq0bdlFaPH501yAVxRXDYp
-	qTmZZalF+nYJXBkXe5exFpyQqui8tJa9gXG/WBcjJ4eEgIlE/+F7bBC2mMSFe+uBbC4OIYGl
-	jBL3L59lgSm6+GcSK0RiOqPE2qU9UFVNTBLT179nB6liE9CS2P/iBtgoEQFdiSkz77CC2MwC
-	rSwSfVtqQGxhAUuJ5T+XAcU5OFgEVCU63+iDhHkFXCVen+lghFgmJ/FhzyOwkZwCbhI7d71i
-	AikXAqpZ+scDZK2EwFIOiS3XN4GNZxEQkPg2+RALSI2EgKzEpgPMEGMkJQ6uuMEygVF4ASPD
-	KkbR1ILkguKk9CJDveLE3OLSvHS95PzcTYzAOD3971nvDsbbB6wPMSYDjZvILCWanA+M87yS
-	eENjMyMLUxNTYyNzSzPShJXEeZMeJgUJCaQnlqRmp6YWpBbFF5XmpBYfYmTi4JRqYMxMT264
-	vE3scN5vKTU/h5L8wFX7co10dmzmuJhuefiz5mJ7kT9Tett/x/3pL6j5J5ib8977F1P8XdaI
-	A2wO2w4H/9i2tOVolNLnxnjjWc3/Yxaom0Zz3JtSlDH1dMgap1bDe+eizfK+W0X/mzUl7UDi
-	hU6+Zss7fk8Wn1rz1iSnfsvOIwK7fyuxFGckGmoxFxUnAgA1rwNv6QIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrMKsWRmVeSWpSXmKPExsVy+t9jQd347ZHBBruWmln8nXSM3WLSugNM
-	Fpf3a1tc//Kc1WL+kXOsFp8/tADF709gsehdcJXN4mzTG3aLTY+vsVpc3jWHzWLG+X1MFrcv
-	81r8vfOPzeLU9c9sFif/9DJaPDn8kdVixuSXbBbrZ7xmsTg2YwmjRfvfvWwWe3dOZnQQ81gz
-	bw2jR0tzD5vH71+TGD3+rnrB7LFz1l12jzvX9rB5bF5S73HlRBOrR9+WVYwenzfJBXBFNTDa
-	ZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXmptoqufgE6Lpl5gA9qqRQlphT
-	ChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHMuNi7jLXghFRF56W17A2M+8W6GDk5
-	JARMJC7+mcQKYYtJXLi3nq2LkYtDSGA6o8TapT1QThOTxPT179lBqtgEtCT2v7jBBmKLCOhK
-	TJl5B6ybWaCVRaJvSw2ILSxgKbH85zKgOAcHi4CqROcbfZAwr4CrxOszHYwQy+QkPux5BDaS
-	U8BNYueuV0wg5UJANUv/eExg5F3AyLCKUTS1ILmgOCk911CvODG3uDQvXS85P3cTIzgJPJPa
-	wbiyweIQowAHoxIP7we1yGAh1sSy4srcQ4wSHMxKIrzKq4BCvCmJlVWpRfnxRaU5qcWHGJOB
-	bprILCWanA9MUHkl8YbGJmZGlkbmhhZGxuakCSuJ8x5otQ4UEkhPLEnNTk0tSC2C2cLEwSnV
-	wOh712sNF/di9d13ZJ3fq31pvpq7tFX6UeyeZ986lE13JH6wzk6b1F9WPUd+Rf7WkhdS9c2K
-	ETPEZ95LWRmbJrJw0ZSp2wr905YVsDjySpTLin2z3e3ktiI8Z+1v7VzVL61xUnvPsZ31Erin
-	atxVeFO85EBbzSTbptxm9TtZW1LvbM69ebjithJLcUaioRZzUXEiACbVyHZGAwAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA5VS/S+UcQDv+9zzPHeu1JOXfLP4wdTWNeS1L8n8oj3zU2rLUpvOeYblju5o
+	bUXmZSQvT2hORTIWl7ddEnJej5CUeV2da5PjEsVOprzUnVt/QL993vb5/PLhcazyCHtejCSB
+	kUqEsU4kH6+18bruInp16cLJLDWOtgv6uaigvgtDY50n0NTaAoGeqEcIlL/0lECGlXQuGlms
+	AajgM4uj3PIJEr1LXeIi5ZdJAo21PSaR/H0Hhj6NWaJtzQ6JqqZGMaRjR0k0NGUgEVtch6Nl
+	TTGOMlRqLhrcygVorneVQPLCryRqkH/DUb+8EqDMbRWJVK2FINCBri2rBXR6Wg5Jb/4uAPRY
+	Xi5Gbyv0HLr14QyXrnm2RtIvqgW0UnGXpDWT7UZWeYceH0gl6LwmBaANSsdz+8P4/pFMbMwN
+	RuoWcJUffY/9RcSX2dwsrSjmpoCsg9nAggcpL5jGtuNmfAh+0DaQ2YDPs6KqAMzZ6SL/hWY3
+	RzGzUQxgS/0U10xSMaiYVu2mSEoAO/XTu9iGcoFFJRrCFOJQRSRcfdlBmAxrKhT+0ZRiJoxT
+	R6HheRbXhC2pINir1WLmOUe40j67q1tQZ2Fr26JR5xnXgmDVFm3qhNQGD641lZLmHgquF/bg
+	pgykHKCyi2OuOQy7q6dxFliXgz0KYMvEi+JlEVFSL1eZUCxLlES5iuLESmD8wtudebYFaLtO
+	9wCRse4+x95WFGf8iiQh3N3TxwN5e3l7epzy9fk/2cnO8thsxHkrKkqYwFxjmHhGGi5NjGVk
+	PQDjWdinALaRqilpjjowM2xJ8a8Y1PJmW9rn9RG/sIt9rr4hdvv9Wib2hc5VuwXrflQEAQn4
+	Gf1It+GT4bT+IDFDl56ZHClO0uc38OrGKzMDgrUf82pj5udCIm8nLYulCZe/n3GOuKWvbhzy
+	1w70+dkNc/QegYNvkvUh7MJeZ0m34PjwsBMuixa6CzhSmfAvItxg8CEDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrNKsWRmVeSWpSXmKPExsVy+t9jQd2k7ZHBBg3fzCz+TjrGbjFp3QEm
+	i8v7tS2uf3nOajH/yDlWi/43C1ktPn9oYbc492olo8Wk+xNYLHoXXGWzONv0ht1i0+NrrBaX
+	d81hs5hxfh+Txe3LvBZ/7/xjs1h6/SKTxdMJF9ksTl3/zGYxYfpaFou3d6azWLTuPcJucfJP
+	L6PFk8MfWS1mTH7JZrF+xmsWi2MzljBatP/dy2axd+dkRgdZjzXz1jB6tDT3sHn8/jWJ0eNy
+	Xy+Tx99VL5g9ds66y+6xcvkXNo/NK7Q8Nq3qZPO4c20PkLek3uPKiSZWj74tqxg9Pm+SC+CL
+	amC0yUhNTEktUkjNS85PycxLt1XyDo53jjc1MzDUNbS0MFdSyEvMTbVVcvEJ0HXLzAEGj5JC
+	WWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYxo3vCT9aCeSIVcxdNZ29g7BDs
+	YuTkkBAwkXj0+yIThC0mceHeerYuRi4OIYHpjBI71l1nh3CamCRW3djLBlLFJqAlsf/FDTBb
+	REBXYsrMO6wgRcwCU9gkPm7dxwqSEBYIl/h/Zy7YWBYBVYnPqzvYQWxeAVeJw/fuQa2Tk/iw
+	5xFYnFPATWLnrldAcQ6gba4SS/94TGDkXcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMj
+	OOk8k9rBuLLB4hCjAAejEg/vB7XIYCHWxLLiytxDjBIczEoivMqrgEK8KYmVValF+fFFpTmp
+	xYcYk4GOmsgsJZqcD0yIeSXxhsYmZkaWRuaGFkbG5qQJK4nzHmi1DhQSSE8sSc1OTS1ILYLZ
+	wsTBKdXAuHSqH+vqlFYBj2X/C24mf2es5p/zrqRMx++IVHnsiWXSOS7XWPJO9Vxsr97NqbT3
+	uUttYOXivEcm+x6GKn5UuSTelcC+ie8Yb+ipzT/tfqtc9eEW3cPEnSn5Llz06hf1vwubD5pY
+	NbxoMo5ZOsciwO2wZTrL9tI1Pf9f33+oejT6s+XVUxFnlFiKMxINtZiLihMBclLqOn4DAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -59,106 +68,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add Exynos3250's SoC ID. Exynos 3250 is System-On-Chip(SoC) that
-is based on the 32-bit RISC processor for Smartphone. Exynos3250 uses Cortex-A7
-dual cores and has a target speed of 1.0GHz.
+The Exynos3250 clocks are statically listed and registered using the
+Samsung specific common clock helper functions. Both device tree based
+clock lookup and clkdev based clock lookups are supported.
 
+Cc: Mike Turquette <mturquette@linaro.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: Pawel Moll <pawel.moll@arm.com>
+Cc: Mark Rutland <mark.rutland@arm.com>
+Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+Cc: Kumar Gala <galak@codeaurora.org>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Tomasz Figa <t.figa@samsung.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Signed-off-by: Tomasz Figa <t.figa@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/mach-exynos/Kconfig             | 22 ++++++++++++++++++++++
- arch/arm/mach-exynos/exynos.c            |  2 ++
- arch/arm/plat-samsung/include/plat/cpu.h | 10 ++++++++++
- 3 files changed, 34 insertions(+)
+ .../devicetree/bindings/clock/exynos3250-clock.txt | 41 ++++++++++++++++++++++
+ 1 file changed, 41 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/clock/exynos3250-clock.txt
 
-diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-index fc8bf18..6da8a68 100644
---- a/arch/arm/mach-exynos/Kconfig
-+++ b/arch/arm/mach-exynos/Kconfig
-@@ -11,6 +11,17 @@ if ARCH_EXYNOS
- 
- menu "SAMSUNG EXYNOS SoCs Support"
- 
-+config ARCH_EXYNOS3
-+	bool "SAMSUNG EXYNOS3"
-+	select ARM_AMBA
-+	select CLKSRC_OF
-+	select HAVE_ARM_SCU if SMP
-+	select HAVE_SMP
-+	select PINCTRL
-+	select PM_GENERIC_DOMAINS if PM_RUNTIME
-+	help
-+	  Samsung EXYNOS3 SoCs based systems
+diff --git a/Documentation/devicetree/bindings/clock/exynos3250-clock.txt b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+new file mode 100644
+index 0000000..aadc9c5
+--- /dev/null
++++ b/Documentation/devicetree/bindings/clock/exynos3250-clock.txt
+@@ -0,0 +1,41 @@
++* Samsung Exynos3250 Clock Controller
 +
- config ARCH_EXYNOS4
- 	bool "SAMSUNG EXYNOS4"
- 	default y
-@@ -41,6 +52,17 @@ config ARCH_EXYNOS5
- 
- comment "EXYNOS SoCs"
- 
-+config SOC_EXYNOS3250
-+	bool "SAMSUNG EXYNOS3250"
-+	default y
-+	depends on ARCH_EXYNOS3
-+	select ARCH_HAS_BANDGAP
-+	select ARM_CPU_SUSPEND if PM
-+	select PINCTRL_EXYNOS
-+	select SAMSUNG_DMADEV
-+	help
-+	  Enable EXYNOS3250 CPU support
++The Exynos3250 clock controller generates and supplies clock to various
++controllers within the Exynos3250 SoC.
 +
- config CPU_EXYNOS4210
- 	bool "SAMSUNG EXYNOS4210"
- 	default y
-diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-index 6a5fe18..e7dc6fd 100644
---- a/arch/arm/mach-exynos/exynos.c
-+++ b/arch/arm/mach-exynos/exynos.c
-@@ -346,6 +346,8 @@ static void __init exynos_dt_machine_init(void)
- }
- 
- static char const *exynos_dt_compat[] __initconst = {
-+	"samsung,exynos3",
-+	"samsung,exynos3250",
- 	"samsung,exynos4",
- 	"samsung,exynos4210",
- 	"samsung,exynos4212",
-diff --git a/arch/arm/plat-samsung/include/plat/cpu.h b/arch/arm/plat-samsung/include/plat/cpu.h
-index 5992b8d..3d808f6b 100644
---- a/arch/arm/plat-samsung/include/plat/cpu.h
-+++ b/arch/arm/plat-samsung/include/plat/cpu.h
-@@ -43,6 +43,9 @@ extern unsigned long samsung_cpu_id;
- #define S5PV210_CPU_ID		0x43110000
- #define S5PV210_CPU_MASK	0xFFFFF000
- 
-+#define EXYNOS3250_SOC_ID       0xE3472000
-+#define EXYNOS3_SOC_MASK        0xFFFFF000
++Required Properties:
 +
- #define EXYNOS4210_CPU_ID	0x43210000
- #define EXYNOS4212_CPU_ID	0x43220000
- #define EXYNOS4412_CPU_ID	0xE4412200
-@@ -68,6 +71,7 @@ IS_SAMSUNG_CPU(s5p6440, S5P6440_CPU_ID, S5P64XX_CPU_MASK)
- IS_SAMSUNG_CPU(s5p6450, S5P6450_CPU_ID, S5P64XX_CPU_MASK)
- IS_SAMSUNG_CPU(s5pc100, S5PC100_CPU_ID, S5PC100_CPU_MASK)
- IS_SAMSUNG_CPU(s5pv210, S5PV210_CPU_ID, S5PV210_CPU_MASK)
-+IS_SAMSUNG_CPU(exynos3250, EXYNOS3250_SOC_ID, EXYNOS3_SOC_MASK)
- IS_SAMSUNG_CPU(exynos4210, EXYNOS4210_CPU_ID, EXYNOS4_CPU_MASK)
- IS_SAMSUNG_CPU(exynos4212, EXYNOS4212_CPU_ID, EXYNOS4_CPU_MASK)
- IS_SAMSUNG_CPU(exynos4412, EXYNOS4412_CPU_ID, EXYNOS4_CPU_MASK)
-@@ -126,6 +130,12 @@ IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
- # define soc_is_s5pv210()	0
- #endif
- 
-+#if defined(CONFIG_SOC_EXYNOS3250)
-+# define soc_is_exynos3250()    is_samsung_exynos3250()
-+#else
-+# define soc_is_exynos3250()    0
-+#endif
++- compatible: should be one of the following.
++  - "samsung,exynos3250-cmu" - controller compatible with Exynos3250 SoC.
 +
- #if defined(CONFIG_CPU_EXYNOS4210)
- # define soc_is_exynos4210()	is_samsung_exynos4210()
- #else
++- reg: physical base address of the controller and length of memory mapped
++  region.
++
++- #clock-cells: should be 1.
++
++Each clock is assigned an identifier and client nodes can use this identifier
++to specify the clock which they consume.
++
++All available clocks are defined as preprocessor macros in
++dt-bindings/clock/exynos3250.h header and can be used in device
++tree sources.
++
++Example 1: An example of a clock controller node is listed below.
++
++	cmu: clock-controller@10030000 {
++		compatible = "samsung,exynos3250-cmu";
++		reg = <0x10030000 0x20000>;
++		#clock-cells = <1>;
++	};
++
++Example 2: UART controller node that consumes the clock generated by the clock
++	   controller. Refer to the standard clock bindings for information
++	   about 'clocks' and 'clock-names' property.
++
++	serial@13800000 {
++		compatible = "samsung,exynos4210-uart";
++		reg = <0x13800000 0x100>;
++		interrupts = <0 109 0>;
++		clocks = <&cmu CLK_UART0>, <&cmu CLK_SCLK_UART0>;
++		clock-names = "uart", "clk_uart_baud0";
++	};
 -- 
 1.8.0
 
