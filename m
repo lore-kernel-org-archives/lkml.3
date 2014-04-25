@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752667AbaDYWyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:54:32 -0400
-Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:41105 "EHLO
-	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751468AbaDYWyb (ORCPT
+	id S1752511AbaDYW5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:57:07 -0400
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:36770 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002AbaDYW46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:54:31 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtMVAKvmWlNXQASl/2dsb2JhbABZgwarVJlwAgKBEhd0glMTHCMYgQIkE4hFAcpfhVqIG2SEQAEDjnaKDgGKcYdrgzM7gSw
-Date: Sat, 26 Apr 2014 00:56:31 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: jack <jack@suse.cz>, hch <hch@infradead.org>,
-        Viro <viro@zeniv.linux.org.uk>, tytso <tytso@mit.edu>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH V2 2/2] fs/ext4/fsync.c: generic_file_fsync call based on
- barrier flag
-Message-Id: <20140426005631.ed2263500401a9076296bccb@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Apr 2014 18:56:58 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Tarek Dakhran <t.dakhran@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Romain Naour <romain.naour@openwide.fr>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
+Subject: Re: [PATCH v8 0/3] Exynos 5410 support
+References: <1397459860-21869-1-git-send-email-t.dakhran@samsung.com>
+Date: Fri, 25 Apr 2014 15:56:55 -0700
+In-Reply-To: <1397459860-21869-1-git-send-email-t.dakhran@samsung.com> (Tarek
+	Dakhran's message of "Mon, 14 Apr 2014 11:17:37 +0400")
+Message-ID: <7hppk5f26g.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-generic_file_fsync has been updated to issue a flush for
-older filesystems.
+Tarek Dakhran <t.dakhran@samsung.com> writes:
 
-This patch checks barrier flag in ext4 mount flags
-and calls the right function.
+> The series of patches represent support of Exynos 5410 SoC
+>
+> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture
+>
+> Patches add new platform description, support of clock controller and device
+> tree for Exynos 5410.
+>
+> Has been build on Linux Kernel v3.15-rc1
+> Has been tested on: 1) Exynos 5410 reference board (exynos_defconfig)
+> 		    2) Odroid-XU board (exynos_defconfig)
 
-Suggested-by: Jan Kara <jack@suse.cz>
-Suggested-by: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/ext4/fsync.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Tested-by: Kevin Hilman <khilman@linaro.org>
 
-diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
-index a8bc47f..95bbca0 100644
---- a/fs/ext4/fsync.c
-+++ b/fs/ext4/fsync.c
-@@ -107,7 +107,11 @@ int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
- 	}
- 
- 	if (!journal) {
--		ret = generic_file_fsync(file, start, end, datasync);
-+		if (test_opt(inode->i_sb, BARRIER))
-+			ret = generic_file_fsync(file, start, end, datasync);
-+		   else
-+			ret = __generic_file_fsync(file, start, end, datasync,
-+						   false);
- 		if (!ret && !hlist_empty(&inode->i_dentry))
- 			ret = ext4_sync_parent(inode);
- 		goto out;
--- 
-1.8.4.5
+I also boot tested (to initramfs) on my odroid-XU and see the 4 "big"
+cores booted.  Presumably I'm still missing the u-boot/firmware magic
+for the little cores.
 
+Kevin
