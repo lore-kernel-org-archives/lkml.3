@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753767AbaDYRsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:48:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2459 "EHLO mx1.redhat.com"
+	id S1754024AbaDYRsk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:48:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59777 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753092AbaDYRry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:47:54 -0400
-Date: Fri, 25 Apr 2014 19:47:31 +0200
+	id S1753125AbaDYRrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 13:47:48 -0400
+Date: Fri, 25 Apr 2014 19:47:24 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -17,9 +17,8 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] uprobes/x86: Cleanup the usage of
-	UPROBE_FIX_IP/UPROBE_FIX_CALL
-Message-ID: <20140425174731.GA7979@redhat.com>
+Subject: [PATCH 2/4] uprobes/x86: Introduce push_ret_address()
+Message-ID: <20140425174724.GA7969@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,85 +28,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that UPROBE_FIX_IP/UPROBE_FIX_CALL are mutually exclusive we can
-use a single "fix_ip_or_call" enum instead of 2 fix_* booleans. This
-way the logic looks more understandable and clean to me.
-
-While at it, join "case 0xea" with other "ip is correct" ret/lret cases.
-Also change default_post_xol_op() to use "else if" for the same reason.
+Extract the "push return address" code from branch_emulate_op() into
+the new simple helper, push_ret_address(). It will have more users.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/kernel/uprobes.c |   27 +++++++++++----------------
- 1 files changed, 11 insertions(+), 16 deletions(-)
+ arch/x86/kernel/uprobes.c |   15 ++++++++++++---
+ 1 files changed, 12 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 4c60b7a..4ae2406 100644
+index 37e73b6..48d2623 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -424,10 +424,9 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
- 	long correction = (long)(utask->vaddr - utask->xol_vaddr);
- 
- 	handle_riprel_post_xol(auprobe, regs, &correction);
--	if (auprobe->def.fixups & UPROBE_FIX_IP)
-+	if (auprobe->def.fixups & UPROBE_FIX_IP) {
- 		regs->ip += correction;
--
--	if (auprobe->def.fixups & UPROBE_FIX_CALL) {
-+	} else if (auprobe->def.fixups & UPROBE_FIX_CALL) {
- 		regs->sp += sizeof_long();
- 		if (push_ret_address(regs, utask->vaddr + auprobe->def.ilen))
- 			return -ERESTART;
-@@ -612,7 +611,7 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
- int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
- {
- 	struct insn insn;
--	bool fix_ip = true, fix_call = false;
-+	u8 fix_ip_or_call = UPROBE_FIX_IP;
- 	int ret;
- 
- 	ret = uprobe_init_insn(auprobe, &insn, is_64bit_mm(mm));
-@@ -636,21 +635,20 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	case 0xcb:
- 	case 0xc2:
- 	case 0xca:
--		fix_ip = false;
-+	case 0xea:		/* jmp absolute -- ip is correct */
-+		fix_ip_or_call = 0;
- 		break;
- 	case 0x9a:		/* call absolute - Fix return addr, not ip */
--		fix_call = true;
--		fix_ip = false;
--		break;
--	case 0xea:		/* jmp absolute -- ip is correct */
--		fix_ip = false;
-+		fix_ip_or_call = UPROBE_FIX_CALL;
- 		break;
- 	case 0xff:
- 		switch (MODRM_REG(&insn)) {
- 		case 2: case 3:			/* call or lcall, indirect */
--			fix_call = true;
-+			fix_ip_or_call = UPROBE_FIX_CALL;
-+			break;
- 		case 4: case 5:			/* jmp or ljmp, indirect */
--			fix_ip = false;
-+			fix_ip_or_call = 0;
-+			break;
- 		}
- 		/* fall through */
- 	default:
-@@ -658,10 +656,7 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
- 	}
- 
- 	auprobe->def.ilen = insn.length;
--	if (fix_ip)
--		auprobe->def.fixups |= UPROBE_FIX_IP;
--	if (fix_call)
--		auprobe->def.fixups |= UPROBE_FIX_CALL;
-+	auprobe->def.fixups |= fix_ip_or_call;
- 
- 	auprobe->ops = &default_xol_ops;
+@@ -407,6 +407,17 @@ static int default_pre_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
  	return 0;
+ }
+ 
++static int push_ret_address(struct pt_regs *regs, unsigned long ip)
++{
++	unsigned long new_sp = regs->sp - sizeof_long();
++
++	if (copy_to_user((void __user *)new_sp, &ip, sizeof_long()))
++		return -EFAULT;
++
++	regs->sp = new_sp;
++	return 0;
++}
++
+ /*
+  * Adjust the return address pushed by a call insn executed out of line.
+  */
+@@ -517,7 +528,6 @@ static bool branch_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 	unsigned long offs = (long)auprobe->branch.offs;
+ 
+ 	if (branch_is_call(auprobe)) {
+-		unsigned long new_sp = regs->sp - sizeof_long();
+ 		/*
+ 		 * If it fails we execute this (mangled, see the comment in
+ 		 * branch_clear_offset) insn out-of-line. In the likely case
+@@ -527,9 +537,8 @@ static bool branch_emulate_op(struct arch_uprobe *auprobe, struct pt_regs *regs)
+ 		 *
+ 		 * But there is corner case, see the comment in ->post_xol().
+ 		 */
+-		if (copy_to_user((void __user *)new_sp, &new_ip, sizeof_long()))
++		if (push_ret_address(regs, new_ip))
+ 			return false;
+-		regs->sp = new_sp;
+ 	} else if (!check_jmp_cond(auprobe, regs)) {
+ 		offs = 0;
+ 	}
 -- 
 1.5.5.1
 
