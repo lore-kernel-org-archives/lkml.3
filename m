@@ -1,137 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809AbaDYIWe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 04:22:34 -0400
-Received: from mail-la0-f45.google.com ([209.85.215.45]:44395 "EHLO
-	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752467AbaDYIUr (ORCPT
+	id S1751921AbaDYIXx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 04:23:53 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:40141 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751443AbaDYIXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 04:20:47 -0400
-Message-Id: <20140425082042.848656782@openvz.org>
-User-Agent: quilt/0.60-1
-Date: Fri, 25 Apr 2014 12:10:32 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, torvalds@linux-foundation.org, mgorman@suse.de,
-        hpa@zytor.com, mingo@kernel.org, steven@uplinklabs.net,
-        riel@redhat.com, david.vrabel@citrix.com, akpm@linux-foundation.org,
-        peterz@infradead.org, xemul@parallels.com, gorcunov@openvz.org
-Subject: [patch 2/2] mm: pgtable -- Require X86_64 for soft-dirty tracker
-References: <20140425081030.185969086@openvz.org>
-Content-Disposition: inline; filename=pgbits-drop-softdirty-non-x86-64
+	Fri, 25 Apr 2014 04:23:37 -0400
+Message-ID: <535A1B5B.9000705@linux.vnet.ibm.com>
+Date: Fri, 25 Apr 2014 13:52:51 +0530
+From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+MIME-Version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+CC: rjw@rjwysocki.net, mroos@linux.ee, linaro-kernel@lists.linaro.org,
+        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cpufreq: Set CPUFREQ_ASYNC_NOTIFICATION for drivers handling
+ notification
+References: <c6c53fee017018869c7524a487688edf902c1413.1398412138.git.viresh.kumar@linaro.org>
+In-Reply-To: <c6c53fee017018869c7524a487688edf902c1413.1398412138.git.viresh.kumar@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042508-2674-0000-0000-00000DF57024
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tracking dirty status on 2 level pages requires very ugly macros
-and taking into account how old the machines who can operate
-without PAE mode only are, lets drop soft dirty tracker from
-them for code simplicity (note I can't drop all the macros
-from 2 level pages by now since _PAGE_BIT_PROTNONE and
-_PAGE_BIT_FILE are still used even without tracker).
+On 04/25/2014 01:22 PM, Viresh Kumar wrote:
+> CPUFREQ_ASYNC_NOTIFICATION was initially designed for drivers which don't want
+> core to send notifications for them as they wouldn't finish frequency
+> transitions in ->target_index().
+>
 
-Linus proposed to completely rip off softdirty support on
-x86-32 (even with PAE) and since for CRIU we're not planning
-to support native x86-32 mode, lets do that.
-
-(Softdirty tracker is relatively new feature which mostly used
- by CRIU so I don't expect if such API change would cause problems
- on userspace).
-
-CC: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>
-CC: Peter Anvin <hpa@zytor.com>
-CC: Ingo Molnar <mingo@kernel.org>
-CC: Steven Noonan <steven@uplinklabs.net>
-CC: Rik van Riel <riel@redhat.com>
-CC: David Vrabel <david.vrabel@citrix.com>
-CC: Andrew Morton <akpm@linux-foundation.org>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Pavel Emelyanov <xemul@parallels.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- arch/x86/Kconfig                      |    2 -
- arch/x86/include/asm/pgtable-2level.h |   49 ----------------------------------
- 2 files changed, 1 insertion(+), 50 deletions(-)
-
-Index: linux-2.6.git/arch/x86/Kconfig
-===================================================================
---- linux-2.6.git.orig/arch/x86/Kconfig
-+++ linux-2.6.git/arch/x86/Kconfig
-@@ -106,7 +106,7 @@ config X86
- 	select HAVE_ARCH_SECCOMP_FILTER
- 	select BUILDTIME_EXTABLE_SORT
- 	select GENERIC_CMOS_UPDATE
--	select HAVE_ARCH_SOFT_DIRTY
-+	select HAVE_ARCH_SOFT_DIRTY if X86_64
- 	select CLOCKSOURCE_WATCHDOG
- 	select GENERIC_CLOCKEVENTS
- 	select ARCH_CLOCKSOURCE_DATA
-Index: linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-===================================================================
---- linux-2.6.git.orig/arch/x86/include/asm/pgtable-2level.h
-+++ linux-2.6.git/arch/x86/include/asm/pgtable-2level.h
-@@ -62,53 +62,6 @@ static inline unsigned long pte_bitop(un
- 	return ((value >> rightshift) & mask) << leftshift;
- }
+And let's keep it that way. Overloading ASYNC_NOTIFICATION with other meanings
+is a bad idea.
  
--#ifdef CONFIG_MEM_SOFT_DIRTY
--
--/*
-- * Bits _PAGE_BIT_PRESENT, _PAGE_BIT_FILE, _PAGE_BIT_SOFT_DIRTY and
-- * _PAGE_BIT_PROTNONE are taken, split up the 28 bits of offset
-- * into this range.
-- */
--#define PTE_FILE_MAX_BITS	28
--#define PTE_FILE_SHIFT1		(_PAGE_BIT_PRESENT + 1)
--#define PTE_FILE_SHIFT2		(_PAGE_BIT_FILE + 1)
--#define PTE_FILE_SHIFT3		(_PAGE_BIT_PROTNONE + 1)
--#define PTE_FILE_SHIFT4		(_PAGE_BIT_SOFT_DIRTY + 1)
--#define PTE_FILE_BITS1		(PTE_FILE_SHIFT2 - PTE_FILE_SHIFT1 - 1)
--#define PTE_FILE_BITS2		(PTE_FILE_SHIFT3 - PTE_FILE_SHIFT2 - 1)
--#define PTE_FILE_BITS3		(PTE_FILE_SHIFT4 - PTE_FILE_SHIFT3 - 1)
--
--#define PTE_FILE_MASK1		((1U << PTE_FILE_BITS1) - 1)
--#define PTE_FILE_MASK2		((1U << PTE_FILE_BITS2) - 1)
--#define PTE_FILE_MASK3		((1U << PTE_FILE_BITS3) - 1)
--
--#define PTE_FILE_LSHIFT2	(PTE_FILE_BITS1)
--#define PTE_FILE_LSHIFT3	(PTE_FILE_BITS1 + PTE_FILE_BITS2)
--#define PTE_FILE_LSHIFT4	(PTE_FILE_BITS1 + PTE_FILE_BITS2 + PTE_FILE_BITS3)
--
--static __always_inline pgoff_t pte_to_pgoff(pte_t pte)
--{
--	return (pgoff_t)
--		(pte_bitop(pte.pte_low, PTE_FILE_SHIFT1, PTE_FILE_MASK1,  0)		    +
--		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT2, PTE_FILE_MASK2,  PTE_FILE_LSHIFT2) +
--		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT3, PTE_FILE_MASK3,  PTE_FILE_LSHIFT3) +
--		 pte_bitop(pte.pte_low, PTE_FILE_SHIFT4,           -1UL,  PTE_FILE_LSHIFT4));
--}
--
--static __always_inline pte_t pgoff_to_pte(pgoff_t off)
--{
--	return (pte_t){
--		.pte_low =
--			pte_bitop(off,                0, PTE_FILE_MASK1,  PTE_FILE_SHIFT1) +
--			pte_bitop(off, PTE_FILE_LSHIFT2, PTE_FILE_MASK2,  PTE_FILE_SHIFT2) +
--			pte_bitop(off, PTE_FILE_LSHIFT3, PTE_FILE_MASK3,  PTE_FILE_SHIFT3) +
--			pte_bitop(off, PTE_FILE_LSHIFT4,           -1UL,  PTE_FILE_SHIFT4) +
--			_PAGE_FILE,
--	};
--}
--
--#else /* CONFIG_MEM_SOFT_DIRTY */
--
- /*
-  * Bits _PAGE_BIT_PRESENT, _PAGE_BIT_FILE and _PAGE_BIT_PROTNONE are taken,
-  * split up the 29 bits of offset into this range.
-@@ -145,8 +98,6 @@ static __always_inline pte_t pgoff_to_pt
- 	};
- }
- 
--#endif /* CONFIG_MEM_SOFT_DIRTY */
--
- /* Encode and de-code a swap entry */
- #define SWP_TYPE_BITS (_PAGE_BIT_FILE - _PAGE_BIT_PRESENT - 1)
- #define SWP_OFFSET_SHIFT (_PAGE_BIT_PROTNONE + 1)
+> But there were other kinds of drivers as well who don't have straight forward
+> implementations of ->target_index() routines and wanted to handle notifications
+> themselves.
+> 
+
+Looking at longhaul, powernow-k6 and powernow-k7, I think we can safely remove
+the extra notifications from them and let them depend on the cpufreq core's set
+of notifications. The patchset I posted just now uses that design.
+
+Regards,
+Srivatsa S. Bhat
 
