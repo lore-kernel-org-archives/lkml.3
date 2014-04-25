@@ -1,83 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896AbaDYUQb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 16:16:31 -0400
-Received: from sema.semaphore.gr ([78.46.194.137]:59844 "EHLO
+	id S1754930AbaDYUQr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 16:16:47 -0400
+Received: from sema.semaphore.gr ([78.46.194.137]:59851 "EHLO
 	sema.semaphore.gr" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754819AbaDYUQ2 (ORCPT
+	with ESMTP id S1754907AbaDYUQm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 16:16:28 -0400
-Message-ID: <535AC299.5020202@semaphore.gr>
-Date: Fri, 25 Apr 2014 23:16:25 +0300
+	Fri, 25 Apr 2014 16:16:42 -0400
+Message-ID: <535AC2A7.2050806@semaphore.gr>
+Date: Fri, 25 Apr 2014 23:16:39 +0300
 From: Stratos Karafotis <stratosk@semaphore.gr>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>, Viresh Kumar <viresh.kumar@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: John Crispin <blogic@openwrt.org>,
-        Simon Horman <horms+renesas@verge.net.au>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-mips@linux-mips.org, LKML <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>
-Subject: [PATCH v5 4/8] mips: lemote 2f: Use cpufreq_for_each_entry macro
- for iteration
+To: Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <eduardo.valentin@ti.com>
+CC: "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Viresh Kumar <viresh.kumar@linaro.org>
+Subject: [PATCH v5 6/8] thermal: cpu_cooling: Use cpufreq_for_each_valid_entry
+ macro for iteration
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cpufreq core now supports the cpufreq_for_each_entry macro helper
-for iteration over the cpufreq_frequency_table, so use it.
+The cpufreq core now supports the cpufreq_for_each_valid_entry macro
+helper for iteration over the cpufreq_frequency_table, so use it.
+
+Also remove the redundant !! operator.
 
 It should have no functional changes.
 
 Signed-off-by: Stratos Karafotis <stratosk@semaphore.gr>
 ---
- arch/mips/loongson/lemote-2f/clock.c | 16 +++++-----------
- 1 file changed, 5 insertions(+), 11 deletions(-)
+ drivers/thermal/cpu_cooling.c | 33 +++++++++++++--------------------
+ 1 file changed, 13 insertions(+), 20 deletions(-)
 
-diff --git a/arch/mips/loongson/lemote-2f/clock.c b/arch/mips/loongson/lemote-2f/clock.c
-index e1f427f..1eed38e 100644
---- a/arch/mips/loongson/lemote-2f/clock.c
-+++ b/arch/mips/loongson/lemote-2f/clock.c
-@@ -91,9 +91,9 @@ EXPORT_SYMBOL(clk_put);
- 
- int clk_set_rate(struct clk *clk, unsigned long rate)
+diff --git a/drivers/thermal/cpu_cooling.c b/drivers/thermal/cpu_cooling.c
+index 4246262..84a75f8 100644
+--- a/drivers/thermal/cpu_cooling.c
++++ b/drivers/thermal/cpu_cooling.c
+@@ -144,11 +144,11 @@ static int get_property(unsigned int cpu, unsigned long input,
+ 			unsigned int *output,
+ 			enum cpufreq_cooling_property property)
  {
-+	struct cpufreq_frequency_table *pos;
- 	int ret = 0;
- 	int regval;
--	int i;
+-	int i, j;
++	int i;
+ 	unsigned long max_level = 0, level = 0;
+ 	unsigned int freq = CPUFREQ_ENTRY_INVALID;
+ 	int descend = -1;
+-	struct cpufreq_frequency_table *table =
++	struct cpufreq_frequency_table *pos, *table =
+ 					cpufreq_frequency_get_table(cpu);
  
- 	if (likely(clk->ops && clk->ops->set_rate)) {
- 		unsigned long flags;
-@@ -106,22 +106,16 @@ int clk_set_rate(struct clk *clk, unsigned long rate)
- 	if (unlikely(clk->flags & CLK_RATE_PROPAGATES))
- 		propagate_rate(clk);
+ 	if (!output)
+@@ -157,20 +157,16 @@ static int get_property(unsigned int cpu, unsigned long input,
+ 	if (!table)
+ 		return -EINVAL;
  
--	for (i = 0; loongson2_clockmod_table[i].frequency != CPUFREQ_TABLE_END;
--	     i++) {
--		if (loongson2_clockmod_table[i].frequency ==
--		    CPUFREQ_ENTRY_INVALID)
+-	for (i = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+-		/* ignore invalid entries */
+-		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
 -			continue;
--		if (rate == loongson2_clockmod_table[i].frequency)
-+	cpufreq_for_each_valid_entry(pos, loongson2_clockmod_table)
-+		if (rate == pos->frequency)
- 			break;
--	}
--	if (rate != loongson2_clockmod_table[i].frequency)
-+	if (rate != pos->frequency)
- 		return -ENOTSUPP;
+-
++	cpufreq_for_each_valid_entry(pos, table) {
+ 		/* ignore duplicate entry */
+-		if (freq == table[i].frequency)
++		if (freq == pos->frequency)
+ 			continue;
  
- 	clk->rate = rate;
+ 		/* get the frequency order */
+ 		if (freq != CPUFREQ_ENTRY_INVALID && descend == -1)
+-			descend = !!(freq > table[i].frequency);
++			descend = freq > pos->frequency;
  
- 	regval = LOONGSON_CHIPCFG0;
--	regval = (regval & ~0x7) |
--		(loongson2_clockmod_table[i].driver_data - 1);
-+	regval = (regval & ~0x7) | (pos->driver_data - 1);
- 	LOONGSON_CHIPCFG0 = regval;
+-		freq = table[i].frequency;
++		freq = pos->frequency;
+ 		max_level++;
+ 	}
  
- 	return ret;
+@@ -190,29 +186,26 @@ static int get_property(unsigned int cpu, unsigned long input,
+ 	if (property == GET_FREQ)
+ 		level = descend ? input : (max_level - input);
+ 
+-	for (i = 0, j = 0; table[i].frequency != CPUFREQ_TABLE_END; i++) {
+-		/* ignore invalid entry */
+-		if (table[i].frequency == CPUFREQ_ENTRY_INVALID)
+-			continue;
+-
++	i = 0;
++	cpufreq_for_each_valid_entry(pos, table) {
+ 		/* ignore duplicate entry */
+-		if (freq == table[i].frequency)
++		if (freq == pos->frequency)
+ 			continue;
+ 
+ 		/* now we have a valid frequency entry */
+-		freq = table[i].frequency;
++		freq = pos->frequency;
+ 
+ 		if (property == GET_LEVEL && (unsigned int)input == freq) {
+ 			/* get level by frequency */
+-			*output = descend ? j : (max_level - j);
++			*output = descend ? i : (max_level - i);
+ 			return 0;
+ 		}
+-		if (property == GET_FREQ && level == j) {
++		if (property == GET_FREQ && level == i) {
+ 			/* get frequency by level */
+ 			*output = freq;
+ 			return 0;
+ 		}
+-		j++;
++		i++;
+ 	}
+ 
+ 	return -EINVAL;
 -- 
 1.9.0
+
