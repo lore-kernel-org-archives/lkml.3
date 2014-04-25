@@ -1,61 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbaDYW5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:57:07 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:36770 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752002AbaDYW46 (ORCPT
+	id S1752665AbaDYXA1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 19:00:27 -0400
+Received: from mail-pd0-f177.google.com ([209.85.192.177]:48995 "EHLO
+	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752062AbaDYXAX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:56:58 -0400
-From: Kevin Hilman <khilman@linaro.org>
-To: Tarek Dakhran <t.dakhran@samsung.com>
-Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Tomasz Figa <t.figa@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
-        Thomas Abraham <thomas.abraham@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Heiko Stuebner <heiko@sntech.de>,
-        Romain Naour <romain.naour@openwide.fr>,
-        Chander Kashyap <chander.kashyap@linaro.org>,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
-Subject: Re: [PATCH v8 0/3] Exynos 5410 support
-References: <1397459860-21869-1-git-send-email-t.dakhran@samsung.com>
-Date: Fri, 25 Apr 2014 15:56:55 -0700
-In-Reply-To: <1397459860-21869-1-git-send-email-t.dakhran@samsung.com> (Tarek
-	Dakhran's message of "Mon, 14 Apr 2014 11:17:37 +0400")
-Message-ID: <7hppk5f26g.fsf@paris.lan>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+	Fri, 25 Apr 2014 19:00:23 -0400
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 8BIT
+To: Alex Elder <elder@linaro.org>, mporter@linaro.org, bcm@fixthebug.org
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1398114703-32410-1-git-send-email-elder@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+References: <1398114703-32410-1-git-send-email-elder@linaro.org>
+Message-ID: <20140425230019.7224.94561@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v4 RESEND 0/7] clk: bcm281xx: updates
+Date: Fri, 25 Apr 2014 16:00:19 -0700
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tarek Dakhran <t.dakhran@samsung.com> writes:
+Quoting Alex Elder (2014-04-21 14:11:36)
+> This series includes updates for the bcm281xx clock code.  It is
+> dependent on the following patch, which has been taken into the
+> clk-fixes tree:
+>     clk: bcm281xx: don't use unnamed structs or unions
+>     https://lkml.org/lkml/2014/4/7/322
 
-> The series of patches represent support of Exynos 5410 SoC
->
-> The Exynos 5410 is the first Samsung SoC based on bigLITTLE architecture
->
-> Patches add new platform description, support of clock controller and device
-> tree for Exynos 5410.
->
-> Has been build on Linux Kernel v3.15-rc1
-> Has been tested on: 1) Exynos 5410 reference board (exynos_defconfig)
-> 		    2) Odroid-XU board (exynos_defconfig)
+Thanks for the resend. I've taken these into clk-next.
 
-Tested-by: Kevin Hilman <khilman@linaro.org>
+Regards,
+Mike
 
-I also boot tested (to initramfs) on my odroid-XU and see the 4 "big"
-cores booted.  Presumably I'm still missing the u-boot/firmware magic
-for the little cores.
-
-Kevin
+> 
+> There are three groups of patches:
+>     - Some straightforward code cleanups
+>     - Changing CCU and clock definitions so they're almost
+>       completely initialized statically (i.e., not at run-time)
+>     - Add two small features
+> 
+> Initially this series included support for "prerequisite clocks"
+> but that has been removed so it can be discussed independently.
+> 
+> The patches in this series--based on the current linus/master branch
+> plus the patch mentioned above--are available here:
+>     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
+>     Branch review/bcm-clk-next-v4
+> 
+>                                         -Alex
+> 
+> History:
+>   - v4: Rebased on current linus/master and reworked to account
+>         for the no-longer-unnamed union and struct members.
+>   - v3: Dropped prerequisite clock support so resolving how
+>         best to handle that can be resolved separately.  As
+>         a result, bus clock support is no longer included.
+>   - v2: Removed one unrelated patch from the series.
+> 
+> Alex Elder (7):
+>   clk: bcm281xx: warn if ccu_wait_bit() fails
+>   clk: bcm281xx: use init_data.name for clock name
+>   clk: bcm281xx: change some symbol names
+>   clk: bcm281xx: initialize CCU structures statically
+>   clk: bcm281xx: define CCU clock data statically
+>   clk: bcm281xx: add clock policy support
+>   clk: bcm281xx: add clock hysteresis support
+> 
+>  drivers/clk/bcm/clk-bcm281xx.c   | 243 +++++++++++++++++----------------------
+>  drivers/clk/bcm/clk-kona-setup.c | 229 ++++++++++++++++++++++++++----------
+>  drivers/clk/bcm/clk-kona.c       | 212 ++++++++++++++++++++++++++++++++--
+>  drivers/clk/bcm/clk-kona.h       | 160 +++++++++++++++++++++-----
+>  4 files changed, 611 insertions(+), 233 deletions(-)
+> 
+> -- 
+> 1.9.1
+> 
