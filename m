@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752737AbaDYJs4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:48:56 -0400
-Received: from smtp2-g21.free.fr ([212.27.42.2]:60001 "EHLO smtp2-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751305AbaDYJsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:48:53 -0400
-From: Mathieu Souchaud <mattieu.souchaud@free.fr>
-To: tony.luck@intel.com, bp@alien8.de, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Cc: Mathieu Souchaud <mattieu.souchaud@free.fr>
-Subject: [PATCH] x86/mce: Check misc_register() return code.
-Date: Fri, 25 Apr 2014 11:48:15 +0200
-Message-Id: <1398419295-18590-1-git-send-email-mattieu.souchaud@free.fr>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752231AbaDYJw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:52:58 -0400
+Received: from aserp1040.oracle.com ([141.146.126.69]:24824 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751286AbaDYJwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 05:52:55 -0400
+Date: Fri, 25 Apr 2014 12:52:17 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, rogerable@realtek.com,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>, Alex Dubov <oakad@yahoo.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        driverdev-devel@linuxdriverproject.org, linux-mmc@vger.kernel.org,
+        Chris Ball <chris@printf.net>, linux-kernel@vger.kernel.org,
+        wei_wang@realsil.com.cn, Oliver Neukum <oneukum@suse.de>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [PATCH v7 4/4] memstick: Add realtek USB memstick host driver
+Message-ID: <20140425095217.GI26890@mwanda>
+References: <1397199203-2235-1-git-send-email-rogerable@realtek.com>
+ <1397199203-2235-5-git-send-email-rogerable@realtek.com>
+ <20140416081352.GA4754@lee--X1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140416081352.GA4754@lee--X1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code does not check the return from misc_register() so set
-the return variable with the return code of misc_register.
+On Wed, Apr 16, 2014 at 09:13:52AM +0100, Lee Jones wrote:
+> It seems Max and Alex are less than interested in this patch, so I'm
+> going to apply it anyway. In your last review you mentioned that it
+> looked good to your inexpert eye. Can I apply your Ack to that effect?
+> 
 
-Signed-off-by: Mathieu Souchaud <mattieu.souchaud@free.fr>
----
- arch/x86/kernel/cpu/mcheck/mce.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Just apply it...  He said it was ok.
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 68317c8..45fb7aa 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -2462,7 +2462,7 @@ static __init int mcheck_init_device(void)
- 	cpu_notifier_register_done();
- 
- 	/* register character device /dev/mcelog */
--	misc_register(&mce_chrdev_device);
-+	err = misc_register(&mce_chrdev_device);
- 
- 	return err;
- }
--- 
-1.7.9.5
+These two new drivers are not beautiful works of art but they're not
+horrible.
+
+Roger and the Realtek devs have been very responsive so I imagine
+they'll fix which ever bugs show up.  Let's move on with this.
+
+regards,
+dan carpenter
 
