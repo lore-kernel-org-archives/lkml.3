@@ -1,212 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540AbaDYQbl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:31:41 -0400
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:34292 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863AbaDYQ37 (ORCPT
+	id S1754005AbaDYQbz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:31:55 -0400
+Received: from smtp.codeaurora.org ([198.145.11.231]:43353 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753627AbaDYQbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:29:59 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com
-Subject: [RFC v3 6/9] kdb: Remove KDB_REPEAT_NONE flag
-Date: Fri, 25 Apr 2014 17:29:27 +0100
-Message-Id: <1398443370-12668-7-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1398443370-12668-1-git-send-email-daniel.thompson@linaro.org>
-References: <1396453440-16445-1-git-send-email-daniel.thompson@linaro.org>
- <1398443370-12668-1-git-send-email-daniel.thompson@linaro.org>
+	Fri, 25 Apr 2014 12:31:51 -0400
+Message-ID: <535A8DF5.4090104@codeaurora.org>
+Date: Fri, 25 Apr 2014 11:31:49 -0500
+From: Timur Tabi <timur@codeaurora.org>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:28.0) Gecko/20100101 Firefox/28.0 SeaMonkey/2.25
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>
+CC: Mathias Nyman <mathias.nyman@linux.intel.com>,
+        Linus <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
+References: <534D0370.50108@linux.intel.com> <535005BA.1040405@codeaurora.org> <5357A80B.8030701@linux.intel.com> <5357ACF1.9070206@codeaurora.org> <20140423135915.GY30677@intel.com> <5357D8CC.3080501@codeaurora.org> <20140424063546.GA30677@intel.com> <5358F30E.9080402@codeaurora.org> <20140424115848.GG30677@intel.com> <53592D04.4040001@codeaurora.org> <20140425074156.GI30677@intel.com> <535A899E.5020801@codeaurora.org> <535A8B91.6030903@intel.com>
+In-Reply-To: <535A8B91.6030903@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Vorontsov <anton.vorontsov@linaro.org>
+Rafael J. Wysocki wrote:
+>>
+>
+> I would be interested in understanding what exactly the flow is in that
+> situation, so care to educate me?  What does the driver do to trigger
+> this and what exactly does happen in response to that?
 
-Since we now treat KDB_REPEAT_* as flags, there is no need to
-pass KDB_REPEAT_NONE. It's just the default behaviour when no
-flags are specified.
+I only just learned some of this myself, so I'm no expert.  My 
+understanding is that the all of the pinctrl-* properties and nodes are 
+scanned by the pinctrl layer itself.  So you could have a SATA 
+controller node that points to a pin control node (via phandles).  When 
+the SATA driver is probed, the pinctrl layer notices the phandles and 
+automatically calls the pinctrl layer to configure the pins and pin muxes.
 
-Signed-off-by: Anton Vorontsov <anton.vorontsov@linaro.org>
-Signed-off-by: John Stultz <john.stultz@linaro.org>
----
- include/linux/kdb.h         |  1 -
- kernel/debug/kdb/kdb_bp.c   |  6 ++---
- kernel/debug/kdb/kdb_main.c | 59 ++++++++++++++++++++++-----------------------
- kernel/trace/trace_kdb.c    |  2 +-
- 4 files changed, 33 insertions(+), 35 deletions(-)
-
-diff --git a/include/linux/kdb.h b/include/linux/kdb.h
-index f5cc722..4b656d6 100644
---- a/include/linux/kdb.h
-+++ b/include/linux/kdb.h
-@@ -14,7 +14,6 @@
-  */
- 
- typedef enum {
--	KDB_REPEAT_NONE = 0,	/* Do not repeat this command */
- 	KDB_REPEAT_NO_ARGS	= 0x1, /* Repeat the command w/o arguments */
- 	KDB_REPEAT_WITH_ARGS	= 0x2, /* Repeat the command w/ its arguments */
- } kdb_cmdflags_t;
-diff --git a/kernel/debug/kdb/kdb_bp.c b/kernel/debug/kdb/kdb_bp.c
-index 7be2c5d..87343f0 100644
---- a/kernel/debug/kdb/kdb_bp.c
-+++ b/kernel/debug/kdb/kdb_bp.c
-@@ -539,11 +539,11 @@ void __init kdb_initbptab(void)
- 		kdb_register_flags("bph", kdb_bp, "[<vaddr>]",
- 		"[datar [length]|dataw [length]]   Set hw brk", 0, KDB_REPEAT_NO_ARGS);
- 	kdb_register_flags("bc", kdb_bc, "<bpnum>",
--		"Clear Breakpoint", 0, KDB_REPEAT_NONE);
-+		"Clear Breakpoint", 0, 0);
- 	kdb_register_flags("be", kdb_bc, "<bpnum>",
--		"Enable Breakpoint", 0, KDB_REPEAT_NONE);
-+		"Enable Breakpoint", 0, 0);
- 	kdb_register_flags("bd", kdb_bc, "<bpnum>",
--		"Disable Breakpoint", 0, KDB_REPEAT_NONE);
-+		"Disable Breakpoint", 0, 0);
- 
- 	kdb_register_flags("ss", kdb_ss, "",
- 		"Single Step", 1, KDB_REPEAT_NO_ARGS);
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 5d67ff6..a40b05b 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2698,7 +2698,7 @@ EXPORT_SYMBOL_GPL(kdb_register_flags);
- /*
-  * kdb_register - Compatibility register function for commands that do
-  *	not need to specify a repeat state.  Equivalent to
-- *	kdb_register_flags with KDB_REPEAT_NONE.
-+ *	kdb_register_flags with flags set to 0.
-  * Inputs:
-  *	cmd	Command name
-  *	func	Function to execute the command
-@@ -2713,8 +2713,7 @@ int kdb_register(char *cmd,
- 	     char *help,
- 	     short minlen)
- {
--	return kdb_register_flags(cmd, func, usage, help, minlen,
--				  KDB_REPEAT_NONE);
-+	return kdb_register_flags(cmd, func, usage, help, minlen, 0);
- }
- EXPORT_SYMBOL_GPL(kdb_register);
- 
-@@ -2768,68 +2767,68 @@ static void __init kdb_inittab(void)
- 	kdb_register_flags("mm", kdb_mm, "<vaddr> <contents>",
- 	  "Modify Memory Contents", 0, KDB_REPEAT_NO_ARGS);
- 	kdb_register_flags("go", kdb_go, "[<vaddr>]",
--	  "Continue Execution", 1, KDB_REPEAT_NONE);
-+	  "Continue Execution", 1, 0);
- 	kdb_register_flags("rd", kdb_rd, "",
--	  "Display Registers", 0, KDB_REPEAT_NONE);
-+	  "Display Registers", 0, 0);
- 	kdb_register_flags("rm", kdb_rm, "<reg> <contents>",
--	  "Modify Registers", 0, KDB_REPEAT_NONE);
-+	  "Modify Registers", 0, 0);
- 	kdb_register_flags("ef", kdb_ef, "<vaddr>",
--	  "Display exception frame", 0, KDB_REPEAT_NONE);
-+	  "Display exception frame", 0, 0);
- 	kdb_register_flags("bt", kdb_bt, "[<vaddr>]",
--	  "Stack traceback", 1, KDB_REPEAT_NONE);
-+	  "Stack traceback", 1, 0);
- 	kdb_register_flags("btp", kdb_bt, "<pid>",
--	  "Display stack for process <pid>", 0, KDB_REPEAT_NONE);
-+	  "Display stack for process <pid>", 0, 0);
- 	kdb_register_flags("bta", kdb_bt, "[D|R|S|T|C|Z|E|U|I|M|A]",
--	  "Backtrace all processes matching state flag", 0, KDB_REPEAT_NONE);
-+	  "Backtrace all processes matching state flag", 0, 0);
- 	kdb_register_flags("btc", kdb_bt, "",
--	  "Backtrace current process on each cpu", 0, KDB_REPEAT_NONE);
-+	  "Backtrace current process on each cpu", 0, 0);
- 	kdb_register_flags("btt", kdb_bt, "<vaddr>",
- 	  "Backtrace process given its struct task address", 0,
--			    KDB_REPEAT_NONE);
-+			    0);
- 	kdb_register_flags("env", kdb_env, "",
--	  "Show environment variables", 0, KDB_REPEAT_NONE);
-+	  "Show environment variables", 0, 0);
- 	kdb_register_flags("set", kdb_set, "",
--	  "Set environment variables", 0, KDB_REPEAT_NONE);
-+	  "Set environment variables", 0, 0);
- 	kdb_register_flags("help", kdb_help, "",
--	  "Display Help Message", 1, KDB_REPEAT_NONE);
-+	  "Display Help Message", 1, 0);
- 	kdb_register_flags("?", kdb_help, "",
--	  "Display Help Message", 0, KDB_REPEAT_NONE);
-+	  "Display Help Message", 0, 0);
- 	kdb_register_flags("cpu", kdb_cpu, "<cpunum>",
--	  "Switch to new cpu", 0, KDB_REPEAT_NONE);
-+	  "Switch to new cpu", 0, 0);
- 	kdb_register_flags("kgdb", kdb_kgdb, "",
--	  "Enter kgdb mode", 0, KDB_REPEAT_NONE);
-+	  "Enter kgdb mode", 0, 0);
- 	kdb_register_flags("ps", kdb_ps, "[<flags>|A]",
--	  "Display active task list", 0, KDB_REPEAT_NONE);
-+	  "Display active task list", 0, 0);
- 	kdb_register_flags("pid", kdb_pid, "<pidnum>",
--	  "Switch to another task", 0, KDB_REPEAT_NONE);
-+	  "Switch to another task", 0, 0);
- 	kdb_register_flags("reboot", kdb_reboot, "",
--	  "Reboot the machine immediately", 0, KDB_REPEAT_NONE);
-+	  "Reboot the machine immediately", 0, 0);
- #if defined(CONFIG_MODULES)
- 	kdb_register_flags("lsmod", kdb_lsmod, "",
--	  "List loaded kernel modules", 0, KDB_REPEAT_NONE);
-+	  "List loaded kernel modules", 0, 0);
- #endif
- #if defined(CONFIG_MAGIC_SYSRQ)
- 	kdb_register_flags("sr", kdb_sr, "<key>",
--	  "Magic SysRq key", 0, KDB_REPEAT_NONE);
-+	  "Magic SysRq key", 0, 0);
- #endif
- #if defined(CONFIG_PRINTK)
- 	kdb_register_flags("dmesg", kdb_dmesg, "[lines]",
--	  "Display syslog buffer", 0, KDB_REPEAT_NONE);
-+	  "Display syslog buffer", 0, 0);
- #endif
- 	if (arch_kgdb_ops.enable_nmi) {
- 		kdb_register_flags("disable_nmi", kdb_disable_nmi, "",
--		  "Disable NMI entry to KDB", 0, KDB_REPEAT_NONE);
-+		  "Disable NMI entry to KDB", 0, 0);
- 	}
- 	kdb_register_flags("defcmd", kdb_defcmd, "name \"usage\" \"help\"",
--	  "Define a set of commands, down to endefcmd", 0, KDB_REPEAT_NONE);
-+	  "Define a set of commands, down to endefcmd", 0, 0);
- 	kdb_register_flags("kill", kdb_kill, "<-signal> <pid>",
--	  "Send a signal to a process", 0, KDB_REPEAT_NONE);
-+	  "Send a signal to a process", 0, 0);
- 	kdb_register_flags("summary", kdb_summary, "",
--	  "Summarize the system", 4, KDB_REPEAT_NONE);
-+	  "Summarize the system", 4, 0);
- 	kdb_register_flags("per_cpu", kdb_per_cpu, "<sym> [<bytes>] [<cpu>]",
--	  "Display per_cpu variables", 3, KDB_REPEAT_NONE);
-+	  "Display per_cpu variables", 3, 0);
- 	kdb_register_flags("grephelp", kdb_grep_help, "",
--	  "Display help on | grep", 0, KDB_REPEAT_NONE);
-+	  "Display help on | grep", 0, 0);
- }
- 
- /* Execute any commands defined in kdb_cmds.  */
-diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-index 1e3b36c..3da7e30 100644
---- a/kernel/trace/trace_kdb.c
-+++ b/kernel/trace/trace_kdb.c
-@@ -128,7 +128,7 @@ static int kdb_ftdump(int argc, const char **argv)
- static __init int kdb_ftrace_register(void)
- {
- 	kdb_register_flags("ftdump", kdb_ftdump, "[skip_#lines] [cpu]",
--			    "Dump ftrace log", 0, KDB_REPEAT_NONE);
-+			    "Dump ftrace log", 0, 0);
- 	return 0;
- }
- 
 -- 
-1.9.0
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the
+Code Aurora Forum, hosted by The Linux Foundation.
