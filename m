@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752788AbaDYSko (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 14:40:44 -0400
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:37904 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751333AbaDYSkm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 14:40:42 -0400
-X-IronPort-AV: E=Sophos;i="4.97,928,1389772800"; 
-   d="scan'208";a="26107488"
-From: Tim Kryger <tim.kryger@linaro.org>
-To: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>
-CC: Tim Kryger <tim.kryger@linaro.org>,
-        Mike Looijmans <mike.looijmans@topic.nl>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        "Linux MMC List" <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH RESEND] mmc: core: Improve support for deferred regulators
-Date: Fri, 25 Apr 2014 11:40:11 -0700
-Message-ID: <1398451211-19693-1-git-send-email-tim.kryger@linaro.org>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753566AbaDYSmT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 14:42:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42360 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751346AbaDYSmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 14:42:16 -0400
+Date: Fri, 25 Apr 2014 14:41:47 -0400
+From: Rik van Riel <riel@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, lwoodman@redhat.com, peterz@infradead.org,
+        mgorman@suse.de, dave.hansen@intel.com, sunil.k.pandey@intel.com
+Subject: [PATCH] mm,numa: remove BUG_ON in __handle_mm_fault
+Message-ID: <20140425144147.679a7608@annuminas.surriel.com>
+Organization: Red Hat, Inc.
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is important that callers of mmc_regulator_get_supply know if either
-vmmc or vqmmc are present but not yet available.  To support this need,
-modify this function to return zero except when either of the regulator
-get operations fail with -EPROBE_DEFER.  Current callers don't check the
-return value and may continue to use IS_ERR on the vmmc/vqmmc values to
-determine if those regulators are available.  Furthermore, since all of
-these callers are capable of dealing with absent regulators, switch over
-to use the non-optional variety of the regulator get call.
+Changing PTEs and PMDs to pte_numa & pmd_numa is done with the
+mmap_sem held for reading, which means a pmd can be instantiated
+and/or turned into a numa one while __handle_mm_fault is examining
+the value of orig_pmd.
 
-Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
+If that happens, __handle_mm_fault should just return and let
+the page fault retry, instead of throwing an oops.
+
+Signed-off-by: Rik van Riel <riel@redhat.com>
+Reported-by: Sunil Pandey <sunil.k.pandey@intel.com>
 ---
- drivers/mmc/core/core.c |   27 +++++++++++++++++----------
- 1 file changed, 17 insertions(+), 10 deletions(-)
+ mm/memory.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index acbc3f2..095eef0 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1313,21 +1313,28 @@ EXPORT_SYMBOL_GPL(mmc_regulator_set_ocr);
- int mmc_regulator_get_supply(struct mmc_host *mmc)
- {
- 	struct device *dev = mmc_dev(mmc);
--	struct regulator *supply;
- 	int ret;
+diff --git a/mm/memory.c b/mm/memory.c
+index d0f0bef..9edccb2 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3900,8 +3900,9 @@ static int __handle_mm_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		}
+ 	}
  
--	supply = devm_regulator_get(dev, "vmmc");
--	mmc->supply.vmmc = supply;
-+	mmc->supply.vmmc = devm_regulator_get_optional(dev, "vmmc");
- 	mmc->supply.vqmmc = devm_regulator_get_optional(dev, "vqmmc");
+-	/* THP should already have been handled */
+-	BUG_ON(pmd_numa(*pmd));
++	/* The PMD became NUMA while we examined orig_pmd. Return & retry */
++	if (pmd_numa(*pmd))
++		return 0;
  
--	if (IS_ERR(supply))
--		return PTR_ERR(supply);
-+	if (IS_ERR(mmc->supply.vmmc)) {
-+		if (PTR_ERR(mmc->supply.vmmc) == -EPROBE_DEFER)
-+			return -EPROBE_DEFER;
-+		dev_info(dev, "No vmmc regulator found\n");
-+	} else {
-+		ret = mmc_regulator_get_ocrmask(mmc->supply.vmmc);
-+		if (ret > 0)
-+			mmc->ocr_avail = ret;
-+		else
-+			dev_warn(dev, "Failed getting OCR mask: %d\n", ret);
-+	}
- 
--	ret = mmc_regulator_get_ocrmask(supply);
--	if (ret > 0)
--		mmc->ocr_avail = ret;
--	else
--		dev_warn(mmc_dev(mmc), "Failed getting OCR mask: %d\n", ret);
-+	if (IS_ERR(mmc->supply.vqmmc)) {
-+		if (PTR_ERR(mmc->supply.vqmmc) == -EPROBE_DEFER)
-+			return -EPROBE_DEFER;
-+		dev_info(dev, "No vqmmc regulator found\n");
-+	}
- 
- 	return 0;
- }
--- 
-1.7.9.5
-
+ 	/*
+ 	 * Use __pte_alloc instead of pte_alloc_map, because we can't
