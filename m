@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753208AbaDYJTp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:19:45 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:45708 "EHLO
+	id S1752612AbaDYJ0E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:26:04 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:45838 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110AbaDYJTj (ORCPT
+	with ESMTP id S1752434AbaDYJTp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:19:39 -0400
+	Fri, 25 Apr 2014 05:19:45 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
@@ -15,10 +15,12 @@ CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, <x86@kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 00/13] Refactor pci_is_brdige() to simplify code
-Date: Fri, 25 Apr 2014 17:18:22 +0800
-Message-ID: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 02/13] PCI: Introduce new pci_is_bridge() helper function
+Date: Fri, 25 Apr 2014 17:18:24 +0800
+Message-ID: <1398417515-8740-3-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
+In-Reply-To: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
+References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.177.27.212]
@@ -27,43 +29,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset rename the current pci_is_bridge() to pci_has_subordinate(), 
-and introduce a new pci_is_bridge() which determine pci bridge by check
-dev->hdr_type. The new one is more accurate. PCIe Spec define the pci
-device is a bridge by the dev->hdr_type = 0x01 || 0x02.
+PCIe Spec define the PCI bridge is the PCI device
+which header type(bit 0 through 6) is 0x1(PCI bridge)
+or 0x2(CardBus bridge).
 
-Yijing Wang (13):
-  PCI: rename pci_is_bridge() to pci_has_subordinate()
-  PCI: Introduce new pci_is_bridge() helper function
-  PCI: Use new pci_is_bridge() to simplify code
-  x86/PCI: Use new pci_is_bridge() to simplify code
-  IA64/PCI: Use new pci_is_bridge() to simplify code
-  powerpc/PCI: Use new pci_is_bridge() to simplify code
-  sparc/PCI: Use new pci_is_bridge() to simplify code
-  PCI, rpaphp: Use new pci_is_bridge() to simplify code
-  PCI, shpchp: Use new pci_is_bridge() to simplify code
-  PCI, cpcihp: Use new pci_is_bridge() to simplify code
-  PCI, acpiphp: Use new pci_is_bridge() to simplify code
-  PCI, pcmcia: Use new pci_is_bridge() to simplify code
-  PCI, pciehp: Use new pci_is_bridge() to simplify code
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+---
+ include/linux/pci.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
- arch/ia64/pci/fixup.c                  |    4 +---
- arch/powerpc/kernel/pci-hotplug.c      |    3 +--
- arch/powerpc/kernel/pci_of_scan.c      |    3 +--
- arch/sparc/kernel/pci.c                |    3 +--
- arch/x86/pci/fixup.c                   |    4 +---
- drivers/pci/hotplug/acpiphp_glue.c     |    3 +--
- drivers/pci/hotplug/cpci_hotplug_pci.c |    3 +--
- drivers/pci/hotplug/pciehp_pci.c       |    3 +--
- drivers/pci/hotplug/rpadlpar_core.c    |    3 +--
- drivers/pci/hotplug/shpchp_pci.c       |    3 +--
- drivers/pci/pci-acpi.c                 |    8 +-------
- drivers/pci/pci-driver.c               |    8 ++++----
- drivers/pci/pci.h                      |    2 +-
- drivers/pci/probe.c                    |    3 +--
- drivers/pci/setup-bus.c                |    4 +---
- drivers/pcmcia/cardbus.c               |    3 +--
- include/linux/pci.h                    |    6 ++++++
- 17 files changed, 25 insertions(+), 41 deletions(-)
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index aab57b4..827077a 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -477,6 +477,12 @@ static inline bool pci_is_root_bus(struct pci_bus *pbus)
+ 	return !(pbus->parent);
+ }
+ 
++static inline bool pci_is_bridge(struct pci_dev *dev)
++{
++	return dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
++		dev->hdr_type == PCI_HEADER_TYPE_CARDBUS;
++}
++
+ static inline struct pci_dev *pci_upstream_bridge(struct pci_dev *dev)
+ {
+ 	dev = pci_physfn(dev);
+-- 
+1.7.1
 
 
