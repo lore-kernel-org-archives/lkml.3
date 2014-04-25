@@ -1,51 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505AbaDYUoF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 16:44:05 -0400
-Received: from smtpgcba1.buenosaires.gob.ar ([200.89.135.225]:55181 "EHLO
-	smtpgcba1.buenosaires.gob.ar" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751333AbaDYUoD (ORCPT
+	id S1754907AbaDYUoU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 16:44:20 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:42434 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333AbaDYUoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 16:44:03 -0400
-X-Greylist: delayed 697 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Apr 2014 16:44:03 EDT
-Message-ID: <20140425173028.78709zj34ie2pvj8@webmail.buenosaires.gob.ar>
-Date: Fri, 25 Apr 2014 17:30:28 -0300
-From: webmail adminstrador 2014 <ecapelli@buenosaires.gob.ar>
-To: undisclosed-recipients:;
-Subject: Estimado E-mail del usuario;
+	Fri, 25 Apr 2014 16:44:16 -0400
+Message-ID: <535AC91A.1070504@infradead.org>
+Date: Fri, 25 Apr 2014 13:44:10 -0700
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
-X-GCBA-Alerce-Info: Al
-X-MailScanner-Id: 56e578a245b54b8b0509b3247f8f7a7d
-X-GCBA-Alerce: limpio
-X-GCBA-Alerce-From: ecapelli@buenosaires.gob.ar
+To: Rik van Riel <riel@redhat.com>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>, linux-next@vger.kernel.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        umgwanakikbuti@gmail.com
+Subject: Re: mmotm 2014-04-24-13-07 uploaded
+References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>	<535992DD.3060808@infradead.org> <20140425100459.7824f676@annuminas.surriel.com>
+In-Reply-To: <20140425100459.7824f676@annuminas.surriel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04/25/14 07:04, Rik van Riel wrote:
+> On Thu, 24 Apr 2014 15:40:29 -0700
+> Randy Dunlap <rdunlap@infradead.org> wrote:
+> 
+> 
+>> uml on x86_64 defconfig:
+>>
+>> drivers/built-in.o: In function `__handle_sysrq':
+>> drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
+>> drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
+> 
+> Randy, does the patch below fix it?
 
-Estimado E-mail del usuario;
+Hm, no, it does not.  I'll look into it.
 
-Se ha superado 23.432 Repositorio para el conjunto buzón
-Servicios Web / Administrador, y habrás problemas al enviar y
-recepción de correo, mientras que volver a verificar. Debe actualizar
-haciendo clic en enlace de abajo y complete la información para  
-verificar su cuenta.
+> Mike, this patch should also address your concerns.
+> 
+> Andrew, this can be a -fix patch for the sysctl-rcu patch,
+> assuming it fixes things :)
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com
+> ---
+>  drivers/tty/sysrq.c | 1 +
+>  kernel/rcu/update.c | 3 ++-
+>  2 files changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
+> index dd53af9..0867433 100644
+> --- a/drivers/tty/sysrq.c
+> +++ b/drivers/tty/sysrq.c
+> @@ -46,6 +46,7 @@
+>  #include <linux/jiffies.h>
+>  #include <linux/syscalls.h>
+>  #include <linux/of.h>
+> +#include <linux/rcupdate.h>
+>  
+>  #include <asm/ptrace.h>
+>  #include <asm/irq_regs.h>
+> diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
+> index 2ac3289..d22309c 100644
+> --- a/kernel/rcu/update.c
+> +++ b/kernel/rcu/update.c
+> @@ -322,7 +322,8 @@ int rcu_jiffies_till_stall_check(void)
+>  
+>  void rcu_sysrq_start(void)
+>  {
+> -	rcu_cpu_stall_suppress = 2;
+> +	if (!rcu_cpu_stall_suppress)
+> +		rcu_cpu_stall_suppress = 2;
+>  }
+>  
+>  void rcu_sysrq_end(void)
+> 
 
-http://webalert020.jimdo.com/
 
-Por favor, haga clic en el siguiente enlace para actualizar la bandeja de
-entrada.
-¡Atención!
-De no hacerlo, tendrá acceso limitado a su buzón de correo.
-Si no actualiza su cuenta dentro de los tres días posteriores a la
-actualización
-aviso, su cuenta será cerrada permanentemente.
-
-
+-- 
+~Randy
