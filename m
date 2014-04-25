@@ -1,137 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789AbaDYNPb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:15:31 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40561 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753717AbaDYNPX (ORCPT
+	id S1753856AbaDYNPx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:15:53 -0400
+Received: from mail-ee0-f43.google.com ([74.125.83.43]:58537 "EHLO
+	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753761AbaDYNPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:15:23 -0400
-Date: Fri, 25 Apr 2014 06:15:12 -0700
-From: tip-bot for Namhyung Kim <tipbot@zytor.com>
-Message-ID: <tip-268397cb2a47ce6e1c0298d9de1762143867f9d3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
-In-Reply-To: <1398327843-31845-11-git-send-email-namhyung@kernel.org>
-References: <1398327843-31845-11-git-send-email-namhyung@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf top/tui:
-  Update nr_entries properly after a filter is applied
-Git-Commit-ID: 268397cb2a47ce6e1c0298d9de1762143867f9d3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 25 Apr 2014 09:15:30 -0400
+Date: Fri, 25 Apr 2014 15:15:25 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: "Chen, Gong" <gong.chen@linux.intel.com>
+Cc: Borislav Petkov <bp@alien8.de>, Owen Kibel <qmewlo@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Josh Boyer <jwboyer@fedoraproject.org>,
+        "Luck, Tony" <tony.luck@intel.com>,
+        Peter Zijlstra <peterz@infradead.org>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "atodorov@redhat.com" <atodorov@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:x86/urgent] x86/mce: Fix CMCI preemption bugs
+Message-ID: <20140425131525.GA27668@gmail.com>
+References: <CA+5PVA7i=RrGUk_7zz1yU5gseWpvr+a=4dfkg=n9cNc53S7nPA@mail.gmail.com>
+ <20140417192330.GE4321@pd.tnic>
+ <CA+55aFyz62W7CD9=9p9OxKuFs9Rck_p93E_40CqLat1HvDdf0Q@mail.gmail.com>
+ <20140417194241.GF4321@pd.tnic>
+ <20140417205807.GA27852@pd.tnic>
+ <CAK7FoDt6tnknX7cioe7=2svVksyAyLUtoZX_oprzJNxoHZEpdw@mail.gmail.com>
+ <20140417213012.GC27852@pd.tnic>
+ <20140417222028.GD27852@pd.tnic>
+ <20140418080716.GA14280@gmail.com>
+ <20140425084723.GA7455@gchen.bj.intel.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20140425084723.GA7455@gchen.bj.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  268397cb2a47ce6e1c0298d9de1762143867f9d3
-Gitweb:     http://git.kernel.org/tip/268397cb2a47ce6e1c0298d9de1762143867f9d3
-Author:     Namhyung Kim <namhyung@kernel.org>
-AuthorDate: Tue, 22 Apr 2014 14:49:31 +0900
-Committer:  Jiri Olsa <jolsa@kernel.org>
-CommitDate: Thu, 24 Apr 2014 16:34:09 +0200
 
-perf top/tui: Update nr_entries properly after a filter is applied
+* Chen, Gong <gong.chen@linux.intel.com> wrote:
 
-The hist_browser__reset() is only called right after a filter is
-applied so it needs to udpate browser->nr_entries properly.  We cannot
-use hists->nr_non_filtered_entreis directly since it's possible that
-such entries are also filtered out by minimum percentage limit.
+> On Fri, Apr 18, 2014 at 10:07:16AM +0200, Ingo Molnar wrote:
+> > Okay, so AFAICS the fix in x86/urgent isn't wrong functionally, it's 
+> > just that the changelog incorrectly claims the raw-spinlock use is a 
+> > bug causing a problem here.
+> > 
+> > Still that raw spinlock is bogus and might be hiding other problems, 
+> > so we can keep the x86/urgent change (ea431643d6c3) as-is and I'll get 
+> > it to Linus later today ...
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
+> Hi, Ingo
+> 
+> We ever had a patch(59d958d2c7) to make spinlock -> raw_spinlock.
+> Would you please explain it a little more why you revert it?
 
-In addition when a filter is used for perf top, hist browser's
-nr_entries field was not updated after applying the filter.  But it
-needs to be updated as new samples are coming.
+It was years ago and I forgot about that. Should be redone I guess.
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-Link: http://lkml.kernel.org/r/1398327843-31845-11-git-send-email-namhyung@kernel.org
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/ui/browsers/hists.c | 20 ++++++++++++++++----
- tools/perf/util/hist.h         |  6 ++++++
- 2 files changed, 22 insertions(+), 4 deletions(-)
+Thanks,
 
-diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
-index 769295b..886eee0 100644
---- a/tools/perf/ui/browsers/hists.c
-+++ b/tools/perf/ui/browsers/hists.c
-@@ -35,6 +35,11 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
- 				const char *ev_name);
- static void hist_browser__update_nr_entries(struct hist_browser *hb);
- 
-+static bool hist_browser__has_filter(struct hist_browser *hb)
-+{
-+	return hists__has_filter(hb->hists) || hb->min_pcnt;
-+}
-+
- static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- {
- 	/* 3 == +/- toggle symbol before actual hist_entry rendering */
-@@ -44,7 +49,8 @@ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
- 
- static void hist_browser__reset(struct hist_browser *browser)
- {
--	browser->b.nr_entries = browser->hists->nr_entries;
-+	hist_browser__update_nr_entries(browser);
-+	browser->b.nr_entries = browser->nr_non_filtered_entries;
- 	hist_browser__refresh_dimensions(browser);
- 	ui_browser__reset_index(&browser->b);
- }
-@@ -319,9 +325,10 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 	int delay_secs = hbt ? hbt->refresh : 0;
- 
- 	browser->b.entries = &browser->hists->entries;
--	browser->b.nr_entries = browser->hists->nr_entries;
--	if (browser->min_pcnt)
-+	if (hist_browser__has_filter(browser))
- 		browser->b.nr_entries = browser->nr_non_filtered_entries;
-+	else
-+		browser->b.nr_entries = browser->hists->nr_entries;
- 
- 	hist_browser__refresh_dimensions(browser);
- 	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
-@@ -338,7 +345,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
- 			u64 nr_entries;
- 			hbt->timer(hbt->arg);
- 
--			if (browser->min_pcnt) {
-+			if (hist_browser__has_filter(browser)) {
- 				hist_browser__update_nr_entries(browser);
- 				nr_entries = browser->nr_non_filtered_entries;
- 			} else {
-@@ -1347,6 +1354,11 @@ static void hist_browser__update_nr_entries(struct hist_browser *hb)
- 	u64 nr_entries = 0;
- 	struct rb_node *nd = rb_first(&hb->hists->entries);
- 
-+	if (hb->min_pcnt == 0) {
-+		hb->nr_non_filtered_entries = hb->hists->nr_non_filtered_entries;
-+		return;
-+	}
-+
- 	while ((nd = hists__filter_entries(nd, hb->hists,
- 					   hb->min_pcnt)) != NULL) {
- 		nr_entries++;
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index ef1ad7a..38c3e87 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -129,6 +129,12 @@ void hists__filter_by_dso(struct hists *hists);
- void hists__filter_by_thread(struct hists *hists);
- void hists__filter_by_symbol(struct hists *hists);
- 
-+static inline bool hists__has_filter(struct hists *hists)
-+{
-+	return hists->thread_filter || hists->dso_filter ||
-+		hists->symbol_filter_str;
-+}
-+
- u16 hists__col_len(struct hists *hists, enum hist_column col);
- void hists__set_col_len(struct hists *hists, enum hist_column col, u16 len);
- bool hists__new_col_len(struct hists *hists, enum hist_column col, u16 len);
+	Ingo
