@@ -1,64 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752885AbaDYQtj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:49:39 -0400
-Received: from mail-pa0-f51.google.com ([209.85.220.51]:37914 "EHLO
-	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751500AbaDYQtg (ORCPT
+	id S1752126AbaDYQtL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:49:11 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:44803 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063AbaDYQtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:49:36 -0400
-Message-ID: <1398444575.29914.93.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH] net: guard against coalescing packets from buggy
- network drivers
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Svenning =?ISO-8859-1?Q?S=F8rensen?= <sss@secomea.com>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Fri, 25 Apr 2014 09:49:35 -0700
-In-Reply-To: <535A86F3.5010602@secomea.com>
-References: <535A78ED.3020309@secomea.com>
-	 <1398440595.29914.77.camel@edumazet-glaptop2.roam.corp.google.com>
-	 <535A86F3.5010602@secomea.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 8bit
+	Fri, 25 Apr 2014 12:49:08 -0400
+Date: Fri, 25 Apr 2014 12:49:03 -0400 (EDT)
+Message-Id: <20140425.124903.145066741692796378.davem@davemloft.net>
+To: wangyijing@huawei.com
+Cc: bhelgaas@google.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, tony.luck@intel.com,
+        linux-ia64@vger.kernel.org, sparclinux@vger.kernel.org,
+        tglx@linutronix.de, x86@kernel.org, benh@kernel.crashing.org
+Subject: Re: [PATCH 07/13] sparc/PCI: Use new pci_is_bridge() to simplify
+ code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1398417515-8740-8-git-send-email-wangyijing@huawei.com>
+References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
+	<1398417515-8740-8-git-send-email-wangyijing@huawei.com>
+X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 25 Apr 2014 09:49:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2014-04-25 at 18:01 +0200, Svenning Sørensen wrote:
+From: Yijing Wang <wangyijing@huawei.com>
+Date: Fri, 25 Apr 2014 17:18:29 +0800
 
-> You are right, of course, there are more effective ways to catch buggy 
-> drivers.
-> But they will probably also be much more expensive.
-> This one is very cheap, being in a relatively cold path, especially 
-> compared to the memcpy in the same path.
+> Now we can use new pci_is_bridge() helper function
+> to simplify code.
+> 
+> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 
-It seems you missed the recent tipc thread then.
-
-They are many ways this code path can be abused, your patch only takes
-care of one case.
-
-In tipc case, they added skb to shinfo->frag_list without changing
-skb->data_len.
-
-So skb_tailroom(to) was not returning 0 as it should.
-
-The invariant should be more strict.
-
-BUG_ON(to->data + to->len != skb_tail_pointer(to));
-
-I still think a BUG() to catch this is better.
-
-There is no guarantee the developer/user will catch a WARN(),
-the bug could sit there a long time.
-
-I have no pity for serious bugs like that.
-
-Since you spot buggy drivers, please provide their fixes or at least
-name them so that we can take care of them.
-
-Thanks
-
-
+Acked-by: David S. Miller <davem@davemloft.net>
