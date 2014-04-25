@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbaDYWVH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:21:07 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:50914 "EHLO
+	id S1752120AbaDYWWN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:22:13 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:50920 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750971AbaDYWVF (ORCPT
+	with ESMTP id S1752004AbaDYWWH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:21:05 -0400
-Date: Fri, 25 Apr 2014 15:23:56 -0700
+	Fri, 25 Apr 2014 18:22:07 -0400
+Date: Fri, 25 Apr 2014 15:24:59 -0700
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Paul McQuade <paulmcquad@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Staging:keucr:scsiglue.c-no semicolon terminated
-Message-ID: <20140425222356.GA24112@kroah.com>
-References: <1396974765-30902-1-git-send-email-paulmcquad@gmail.com>
+To: Tair <tair.rzayev@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: keucr: smilmain.c: Fix sparse warning
+Message-ID: <20140425222459.GA25868@kroah.com>
+References: <53555897.10409@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1396974765-30902-1-git-send-email-paulmcquad@gmail.com>
+In-Reply-To: <53555897.10409@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 08, 2014 at 05:32:45PM +0100, Paul McQuade wrote:
-> WARNING: do {} while (0) macros should not be semicolon terminated
+On Mon, Apr 21, 2014 at 08:42:47PM +0300, Tair wrote:
+> From: Tair Rzayev <tair.rzayev@gmail.com>
 > 
-> Signed-off-by: Paul McQuade <paulmcquad@gmail.com>
-> ---
->  drivers/staging/keucr/scsiglue.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/keucr/scsiglue.c b/drivers/staging/keucr/scsiglue.c
-> index ac3d34d..fce19a4 100644
-> --- a/drivers/staging/keucr/scsiglue.c
-> +++ b/drivers/staging/keucr/scsiglue.c
-> @@ -277,7 +277,7 @@ static int show_info(struct seq_file *m, struct Scsi_Host *host)
->  	do { \
->  		if (us->fflags & value) \
->  			SPRINTF(" " #name); \
-> -	} while (0);
-> +	} while (0)
->  US_DO_ALL_FLAGS
->  #undef US_FLAG
->  	seq_putc(m, '\n');
+> Fix "Should be static" sparse warning:
+> * Add Check_D_MediaFmt() declaration to smil.h;
+> * Move Check_D_MediaFmt() implementation up in smilmain.c to keep
+>   all the non-static functions at the top of the file;
+> * Include "init.h" into "smil.h", remove externs from "smil.h"
+>   which are no longer needed;
+> * SM_Init[] and SM_Rdwr[] are renamed because otherwise SM_Init[]
+>   collides with SM_Init() from "smil.h".
 
-Why would you send a patch that you obviously have not at least compile
-tested?
+That's a lot of things to do all at once.
 
-Hint, this breaks the build :(
+In fact, it doesn't apply to my tree anymore because someone else just
+did a part of what you did, so this might not be needed anymore.  Can
+you please rebase your patch on top of my staging-next branch on the
+staging.git tree on git.kernel.org and resend it?
 
-ALWAYS test build your patches, to not do so is rude to others, don't
-you agree?
+thanks,
 
 greg k-h
