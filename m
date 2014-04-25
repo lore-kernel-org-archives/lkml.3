@@ -1,46 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763AbaDYTFr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 15:05:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56488 "EHLO mx1.redhat.com"
+	id S1754206AbaDYTGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 15:06:35 -0400
+Received: from ring0.de ([5.45.105.125]:50200 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752507AbaDYTFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 15:05:40 -0400
-Date: Fri, 25 Apr 2014 21:05:32 +0200
-From: Mateusz Guzik <mguzik@redhat.com>
-To: Kumar Gaurav <kumargauravgupta3@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
-        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: Clarification needed on use of put_user inside a loop
-Message-ID: <20140425190531.GD3636@mguzik.redhat.com>
-References: <535A88D5.3030008@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <535A88D5.3030008@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752230AbaDYTG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 15:06:29 -0400
+X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
+	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 NO_RECEIVED Informational: message has no Received headers
+From: Sebastian Reichel <sre@kernel.org>
+To: Sebastian Reichel <sre@ring0.de>, Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        =?UTF-8?q?Pali=20Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        =?UTF-8?q?=D0=98=D0=B2=D0=B0=D0=B9=D0=BB=D0=BE=20=D0=94=D0=B8=D0=BC=D0=B8=D1=82=D1=80=D0=BE=D0=B2?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>,
+        Sebastian Reichel <sre@kernel.org>
+Subject: [PATCHv4 00/13] OMAP SSI driver / N900 modem support
+Date: Fri, 25 Apr 2014 21:06:03 +0200
+Message-Id: <1398452776-28638-1-git-send-email-sre@kernel.org>
+X-Mailer: git-send-email 1.9.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 09:39:57PM +0530, Kumar Gaurav wrote:
-> Hence when transferring data involves loops then checking permission
-> (using access_ok()) once should be good to go then after we can
-> simply transfer data using __put_user(), instead of using put_user()
-> itself in loop.
-> 
+Hi,
 
-Well, I can't tell you whether this is a good idea, but:
+This is the eigth round of the OMAP SSI driver patches. The plan is
+to get it merged into 3.16.
 
-This looks correct and other code is doing this already.
+Changes since PATCHv3 [0]:
+ * Rebased devel branch to current master
+ * Dropped "ARM: dts: omap3 clocks: simplify ssi aliases"
+   (included in 3.15-rc)
+ * Added Reviewed-by tag from Pavel Machek to some of the patches
+ * Changed some style issues in nokia-modem driver found by
+   Pavel (and some more found by checkpatch)
+ * Fixed indention issues in omap_ssi_port.c found by Pavel
+ * Use "hsi-channel-ids" instead of "reg" as property name for
+   channels IDs as suggested by Rob Herring
+ * Use "hsi-channel-names" instead of "reg-names" (which is the
+   logical consequence of the previous change)
+ * Use port addresses instead of port ids in the port node names
+ * Add second port to the example dts to make it more clear,
+   that the controller has two ports
+ * Define order for memory and interrupt DT properties
+ * Drop interrupt names for ssi ports
+ * Remove ugly endianess #ifdef from ssi protocol driver by properly
+   using ntohs() and htons() macros
+ * Use for_each_available_child_of_node with of_platform_device_create
+   instead of of_platform_bus_create to make sure *only* omap3-ssi-port
+   subdevices are probed
+ * Removed hack, that the same resource is used for rx and tx channel
+   for clients initialized from DT
+ * Update my mail address in MODULE_AUTHOR to sre@kernel.org
 
-However, put_user calls might_fault, but __put_user consumers I found
-(e.g. copy_siginfo_to_user) don't do that.
+Please send feedback (e.g. Tested-By or Reviewed-By :)), so that I can
+send a pull request for 3.16. You can either apply this patchset or
+use the n900-modem-support-2 branch available on [1].
 
-While it has only debugging purposes and would not change anything for
-those consumers, it seems to be a bug to not include it.
+For testing the patchset you should build the kernel with all config
+entries in the HSI subsystem activated and boot using the updated
+device tree information, since platform data based booting is not
+supported. Testing the patchset with ofono works like this:
 
-Thus I suggest adding access_ok variant which calls might_fault.
+ # provide cmt device for ofono
+ ln -sf /sys/bus/hsi/n900-modem /dev/cmt
+ # start ofono
+ ofono --nodetach --debug
+ # enable the modem
+ mdbus2 -s org.ofono /n900_0 org.ofono.Modem.SetProperty Powered true
+ # enable modem's RF parts
+ mdbus2 -s org.ofono /n900_0 org.ofono.Modem.SetProperty Online true
+ # scan for available networks (takes some time)
+ mdbus2 -s org.ofono /n900_0 org.ofono.NetworkRegistration.Scan
+
+TODO (post-merge):
+* Central Message Queue in HSI framework
+* Remove the hwmod DT hack
+* Implement proper context loss detection
+* Implement N900 modem PM
+* Remove wakeline checks (-> FIXMEs)
+
+[0] https://lkml.org/lkml/2014/3/28/492
+[1] git://git.kernel.org/pub/scm/linux/kernel/git/sre/linux-hsi.git
+
+-- Sebastian
+
+Sebastian Reichel (13):
+  Documentation: HSI: Add some general description for the HSI subsystem
+  MAINTAINERS: update HSI entry
+  HSI: hsi-char: fix driver for multiport scenarios
+  HSI: method to unregister clients from an hsi port
+  HSI: Add channel resource support to HSI clients
+  HSI: export method to (un)register clients
+  HSI: Add common DT binding for HSI client devices
+  HSI: Introduce OMAP SSI driver
+  Documentation: DT: omap-ssi binding documentation
+  HSI: Introduce driver for SSI Protocol
+  HSI: Introduce Nokia N900 modem driver
+  DTS: ARM: OMAP3-N900: Add SSI support
+  DTS: ARM: OMAP3-N900: Add modem support
+
+ .../devicetree/bindings/hsi/client-devices.txt     |   44 +
+ .../devicetree/bindings/hsi/nokia-modem.txt        |   57 +
+ Documentation/devicetree/bindings/hsi/omap-ssi.txt |   97 ++
+ Documentation/hsi.txt                              |   75 ++
+ MAINTAINERS                                        |    4 +-
+ arch/arm/boot/dts/omap3-n900.dts                   |   65 +
+ arch/arm/boot/dts/omap3.dtsi                       |   45 +
+ arch/arm/boot/dts/omap34xx.dtsi                    |   11 +
+ arch/arm/boot/dts/omap36xx.dtsi                    |   11 +
+ drivers/hsi/Kconfig                                |    1 +
+ drivers/hsi/Makefile                               |    1 +
+ drivers/hsi/clients/Kconfig                        |   17 +
+ drivers/hsi/clients/Makefile                       |    4 +-
+ drivers/hsi/clients/hsi_char.c                     |   14 +-
+ drivers/hsi/clients/nokia-modem.c                  |  272 ++++
+ drivers/hsi/clients/ssi_protocol.c                 | 1190 +++++++++++++++++
+ drivers/hsi/controllers/Kconfig                    |   19 +
+ drivers/hsi/controllers/Makefile                   |    6 +
+ drivers/hsi/controllers/omap_ssi.c                 |  625 +++++++++
+ drivers/hsi/controllers/omap_ssi.h                 |  166 +++
+ drivers/hsi/controllers/omap_ssi_port.c            | 1399 ++++++++++++++++++++
+ drivers/hsi/controllers/omap_ssi_regs.h            |  171 +++
+ drivers/hsi/hsi.c                                  |  273 +++-
+ include/linux/hsi/hsi.h                            |   30 +-
+ include/linux/hsi/ssi_protocol.h                   |   42 +
+ 25 files changed, 4620 insertions(+), 19 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/hsi/client-devices.txt
+ create mode 100644 Documentation/devicetree/bindings/hsi/nokia-modem.txt
+ create mode 100644 Documentation/devicetree/bindings/hsi/omap-ssi.txt
+ create mode 100644 Documentation/hsi.txt
+ create mode 100644 drivers/hsi/clients/nokia-modem.c
+ create mode 100644 drivers/hsi/clients/ssi_protocol.c
+ create mode 100644 drivers/hsi/controllers/Kconfig
+ create mode 100644 drivers/hsi/controllers/Makefile
+ create mode 100644 drivers/hsi/controllers/omap_ssi.c
+ create mode 100644 drivers/hsi/controllers/omap_ssi.h
+ create mode 100644 drivers/hsi/controllers/omap_ssi_port.c
+ create mode 100644 drivers/hsi/controllers/omap_ssi_regs.h
+ create mode 100644 include/linux/hsi/ssi_protocol.h
 
 -- 
-Mateusz Guzik
+1.9.2
+
