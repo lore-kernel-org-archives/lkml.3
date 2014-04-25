@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036AbaDYN74 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:59:56 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42515 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751184AbaDYN7y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:59:54 -0400
-Date: Fri, 25 Apr 2014 09:59:53 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-cc: Johan Hovold <jhovold@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <rafael.j.wysocki@intel.com>
-Subject: Re: [PATCH] USB: serial: fix sysfs-attribute removal deadlock
-In-Reply-To: <1398392217.2805.150.camel@ThinkPad-T5421.cn.ibm.com>
-Message-ID: <Pine.LNX.4.44L0.1404250954360.1140-100000@iolanthe.rowland.org>
+	id S1752675AbaDYOBN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:01:13 -0400
+Received: from mga01.intel.com ([192.55.52.88]:34383 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751858AbaDYOBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 10:01:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
+   d="scan'208";a="527324632"
+Date: Fri, 25 Apr 2014 10:01:01 -0400
+From: Matthew Wilcox <willy@linux.intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Matthew Wilcox <matthew.r.wilcox@intel.com>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v3 5/7] swap: Use bdev_read_page() / bdev_write_page()
+Message-ID: <20140425140100.GF5886@linux.intel.com>
+References: <cover.1397429628.git.matthew.r.wilcox@intel.com>
+ <9fb0b4031b0fba312963a7cc21bf258d944cddcf.1397429628.git.matthew.r.wilcox@intel.com>
+ <20140424111817.9cc62b2ff1e368c5cf27d262@linux-foundation.org>
+ <20140424185740.GE5886@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140424185740.GE5886@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Apr 2014, Li Zhong wrote:
+On Thu, Apr 24, 2014 at 02:57:40PM -0400, Matthew Wilcox wrote:
+> By calling the device driver to write the page directly, we avoid
+> allocating a BIO, which allows us to free memory without allocating
+> memory.
 
-> > No, this isn't self removal. The driver-attribute (not device-attribute)
-> > store operation simply grabs a lock that is also held while the driver
-> > is being deregistered at module unload. Taking a reference to the module
-> > in this case will prevent deregistration while store is running.
-> > 
-> > But it seems like this can be solved for usb-serial by simply not
-> > holding the lock while deregistering.
-> 
-> I didn't look carefully about this lock. 
-> 
-> But I'm not sure whether there are such requirements for driver
-> attributes:
-> 
-> some lock needs be grabbed in the driver attributes store callbacks, and
-> the same lock also needs to be grabbed during driver unregister. 
+I got handed some performance numbers last night!  Next time you're updating
+the patch description, please use:
 
-In this case, the lock does _not_ need to be grabbed during driver 
-unregister.  The driver grabs the lock, but it doesn't need to.
+By calling the device driver to write the page directly, we avoid
+allocating a BIO, which allows us to free memory without allocating
+memory.  When running a swap-heavy benchmark, system time is reduced by
+about 20%.
 
-> If we have such requirements currently or in the future, I think they
-> could all be solved by breaking active protection after get the module
-> reference.
-
-No!  That would be very bad.
-
-Unloading modules is quite different from unbinding drivers.  After the
-driver is unbound, its attribute callback routines can continue to run.  
-But after a driver module has been unloaded, its attribute callback 
-routines _cannot_ run because they aren't present in memory any more.
-
-If we allowed a module to be unloaded while one of its callbacks was 
-running (because active protection was broken), imagine what would 
-happen...
-
-Alan Stern
-
+Tested-by: Dheeraj Reddy <dheeraj.reddy@intel.com>
+Signed-off-by: Matthew Wilcox <matthew.r.wilcox@intel.com>
