@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752102AbaDYPty (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 11:49:54 -0400
-Received: from mail-by2on0113.outbound.protection.outlook.com ([207.46.100.113]:46723
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751125AbaDYPtx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 11:49:53 -0400
-X-Greylist: delayed 61104 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Apr 2014 11:49:52 EDT
-Message-ID: <1398440850.389.0.camel@linux-builds1>
-Subject: Re: [PATCH 1/4] dt: bindings: Typo s/clocks-names/clock-names/g
-From: Dinh Nguyen <dinguyen@altera.com>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-CC: Rob Herring <robh+dt@kernel.org>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        <netdev@vger.kernel.org>
-Date: Fri, 25 Apr 2014 10:47:30 -0500
-In-Reply-To: <1398192025-31523-1-git-send-email-geert+renesas@glider.be>
-References: <1398192025-31523-1-git-send-email-geert+renesas@glider.be>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
+	id S1752307AbaDYPuh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 11:50:37 -0400
+Received: from vps0.lunn.ch ([178.209.37.122]:33267 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752160AbaDYPue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 11:50:34 -0400
+Date: Fri, 25 Apr 2014 17:47:46 +0200
+From: Andrew Lunn <andrew@lunn.ch>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 02/18] usb: host: xhci-plat: Add clocks support
+Message-ID: <20140425154746.GB12472@lunn.ch>
+References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
+ <1398434836-18908-3-git-send-email-gregory.clement@free-electrons.com>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:66.35.236.232;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019001)(6009001)(458001)(189002)(199002)(377424004)(51704005)(24454002)(164054003)(6806004)(83322001)(79102001)(19580405001)(44976005)(47776003)(20776003)(77156001)(19580395003)(77982001)(80976001)(33646001)(76482001)(33716001)(23676002)(31966008)(2009001)(74662001)(88136002)(74502001)(87936001)(81342001)(97736001)(83072002)(89996001)(85852003)(87286001)(84676001)(80022001)(92566001)(575784001)(93916002)(4396001)(92726001)(46102001)(62966002)(50466002)(50226001)(50986999)(86362001)(76176999)(81542001)(99396002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2FFO11HUB022;H:SJ-ITEXEDGE02.altera.priv.altera.com;FPR:AF12F466.B1A34DCB.57558303.A092FA49.20214;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-OriginatorOrg: altera.onmicrosoft.com
-X-Forefront-PRVS: 0192E812EC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398434836-18908-3-git-send-email-gregory.clement@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-22 at 20:40 +0200, Geert Uytterhoeven wrote:
-> Signed-off-by: Geert Uytterhoeven <geert+renesas@glider.be>
-> Cc: Dinh Nguyen <dinguyen@altera.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Cc: netdev@vger.kernel.org
-> ---
->  .../devicetree/bindings/net/socfpga-dwmac.txt      |    2 +-
->  Documentation/devicetree/bindings/net/stmmac.txt   |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
+On Fri, Apr 25, 2014 at 04:07:00PM +0200, Gregory CLEMENT wrote:
+> Some platform (such as the Armada 38x ones) can gate the clock of
+> their USB controller. This patch add the support for the clock, by
+> enabling them during probe and disabling them on remove.
 > 
-> diff --git a/Documentation/devicetree/bindings/net/socfpga-dwmac.txt b/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
-> index 636f0ac4e223..2a60cd3e8d5d 100644
-> --- a/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
-> +++ b/Documentation/devicetree/bindings/net/socfpga-dwmac.txt
-> @@ -23,5 +23,5 @@ gmac0: ethernet@ff700000 {
->  	interrupt-names = "macirq";
->  	mac-address = [00 00 00 00 00 00];/* Filled in by U-Boot */
->  	clocks = <&emac_0_clk>;
-> -	clocks-names = "stmmaceth";
-> +	clock-names = "stmmaceth";
->  };
-> diff --git a/Documentation/devicetree/bindings/net/stmmac.txt b/Documentation/devicetree/bindings/net/stmmac.txt
-> index 80c1fb8bfbb8..a2acd2b26baf 100644
-> --- a/Documentation/devicetree/bindings/net/stmmac.txt
-> +++ b/Documentation/devicetree/bindings/net/stmmac.txt
-> @@ -33,7 +33,7 @@ Optional properties:
->  - max-frame-size: See ethernet.txt file in the same directory
->  - clocks: If present, the first clock should be the GMAC main clock,
->    further clocks may be specified in derived bindings.
-> -- clocks-names: One name for each entry in the clocks property, the
-> +- clock-names: One name for each entry in the clocks property, the
->    first one should be "stmmaceth".
+> As not all platforms have clock support then enabling and disabling
+> the clocks have been placed in separate functions. Then if the clocks
+> are not supported we still can use the same calls, and there is no
+> 
+> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+> ---
+>  drivers/usb/host/xhci-plat.c | 52 ++++++++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 50 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
+> index f5351af4b2c5..bb5d563f729c 100644
+> --- a/drivers/usb/host/xhci-plat.c
+> +++ b/drivers/usb/host/xhci-plat.c
+> @@ -11,6 +11,7 @@
+>   * version 2 as published by the Free Software Foundation.
+>   */
 >  
->  Examples:
+> +#include <linux/clk.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/module.h>
+>  #include <linux/of.h>
+> @@ -85,6 +86,42 @@ static const struct hc_driver xhci_plat_xhci_driver = {
+>  	.bus_resume =		xhci_bus_resume,
+>  };
+>  
+> +#if defined(CONFIG_HAVE_CLK)
 
-I've applied this patch to git.rocketboards.org/linux-socfpga-next.git
-next-dt.
+Hi Gregory
 
-Thanks,
-Dinh
+You probably don't need to do this conditional on CONFIG_HAVE_CLK.
+There are stub functions in clk.h for when CONFIG_HAVE_CLK is not
+defined. So the compiler knows devm_clk_get() will return NULL, it can
+evaluate IS_ERR is false, clk_prepare() returns 0 and so the whole
+function collapses to "return 0;"
 
+> +static int try_enable_clk(struct platform_device *pdev)
+> +{
+> +	struct clk *clk = devm_clk_get(&pdev->dev, NULL);
+> +
+> +	/* Not all platforms have a clk so it is not an error if the clock
+> +	   does not exists. */
+> +	if (!IS_ERR(clk))
+> +		if (clk_prepare_enable(clk))
+> +			return  -ENODEV;
 
+Is ENODEV the correct error code? It would probably be better to
+return the return value of clk_prepare_enable()
+
+> +	return 0;
+> +}
