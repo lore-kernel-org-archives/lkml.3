@@ -1,73 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751590AbaDYVzU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 17:55:20 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60240 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751091AbaDYVzS (ORCPT
+	id S1751872AbaDYV4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 17:56:36 -0400
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:38747 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751283AbaDYV4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 17:55:18 -0400
-Date: Fri, 25 Apr 2014 22:55:09 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
+	Fri, 25 Apr 2014 17:56:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <CACE9dm-fdqDgFT5Pw1ry6XOuAhqmsEEiQMOFw=rooazBkdx-wg@mail.gmail.com>
+References: <535A5C78.1070901@samsung.com>
+	<535A75C1.3050901@samsung.com>
+	<20140425182310.GA9128@redhat.com>
+	<87sip15iy5.fsf@x220.int.ebiederm.org>
+	<20140425192543.GA11908@redhat.com>
+	<878uqt42q7.fsf@x220.int.ebiederm.org>
+	<20140425200156.GA13727@redhat.com>
+	<CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
+	<874n1h16le.fsf@x220.int.ebiederm.org>
+	<CACE9dm_56FvbJDVyxvTtd3yL+d89XYhZ-i038HJS-sUsZAPpaQ@mail.gmail.com>
+	<87iopxxfpp.fsf@x220.int.ebiederm.org>
+	<CACE9dm-fdqDgFT5Pw1ry6XOuAhqmsEEiQMOFw=rooazBkdx-wg@mail.gmail.com>
+Date: Sat, 26 Apr 2014 00:56:32 +0300
+Message-ID: <CACE9dm9CTU0-FFr3KveE8QV0dR-vxiDg91Km_2w3v37O5eTcYg@mail.gmail.com>
+Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
+From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
 To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>,
-        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+Cc: Oleg Nesterov <oleg@redhat.com>, Dmitry Kasatkin <d.kasatkin@samsung.com>,
         linux-security-module <linux-security-module@vger.kernel.org>,
         John Johansen <john.johansen@canonical.com>,
         Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>,
+        James Morris <jmorris@namei.org>, viro@zeniv.linux.org.uk,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         kernel-team <kernel-team@lists.ubuntu.com>
-Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
-Message-ID: <20140425215509.GD18016@ZenIV.linux.org.uk>
-References: <535A75C1.3050901@samsung.com>
- <20140425182310.GA9128@redhat.com>
- <87sip15iy5.fsf@x220.int.ebiederm.org>
- <20140425192543.GA11908@redhat.com>
- <878uqt42q7.fsf@x220.int.ebiederm.org>
- <20140425200156.GA13727@redhat.com>
- <CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
- <874n1h16le.fsf@x220.int.ebiederm.org>
- <20140425212128.GB18016@ZenIV.linux.org.uk>
- <87ppk5w0dt.fsf@x220.int.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ppk5w0dt.fsf@x220.int.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 02:43:42PM -0700, Eric W. Biederman wrote:
+On 26 April 2014 00:46, Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
+> On 26 April 2014 00:27, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>> Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
+>>
+>>> On 25 April 2014 23:45, Eric W. Biederman <ebiederm@xmission.com> wrote:
+>>>> Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
+>>>>
+>>>>> On 25 April 2014 23:01, Oleg Nesterov <oleg@redhat.com> wrote:
+>>>>>> On 04/25, Eric W. Biederman wrote:
+>>>>>>>
+>>>>>>> Oleg Nesterov <oleg@redhat.com> writes:
+>>>>>>>
+>>>>>>> > Well. I _think_ that __fput() and ima_file_free() in particular should not
+>>>>>>> > depend on current and/or current->nsproxy. If nothing else, fput() can be
+>>>>>>> > called by the unrelated task which looks into /proc/pid/.
+>>>>>>> >
+>>>>>>> > But again, task_work_add() has more and more users, and it seems that even
+>>>>>>> > __fput() paths can do "everything", so perhaps it would be safer to allow
+>>>>>>> > to use ->nsproxy in task_work_run.
+>>>>>>>
+>>>>>>> Like I said, give me a clear motivating case.
+>>>>>>
+>>>>>> I agree, we need a reason. Currently I do not see one.
+>>>>>>
+>>>>>>> Right now not allowing
+>>>>>>> nsproxy is turning up bugs in __fput.  Which seems like a good thing.
+>>>>>>
+>>>>>> This is what I certainly agree with ;)
+>>>>>>
+>>>>>
+>>>>> Hi,
+>>>>>
+>>>>> IMA uses kernel_read API which does not know anything about caller.
+>>>>> And of course security frameworks are at guard as usual.
+>>>>>
+>>>>> Exactly after reading first Eric's respons, I thought why to scratch
+>>>>> the head when task work queues are indeed designed for tasks...
+>>>>
+>>>> __fput has no guarantee of running in the task that close the file
+>>>> descriptor.  If your code depends on that your code is broken.
+>>>>
+>>>>> And if you to dig for the history, IMA-appraisal was stuck due to
+>>>>> lockdep reporting even though it was on non-everlaping cases.
+>>>>> IIRC files vs. directories...
+>>>>>
+>>>>> After that IIRC Al Viro discussed about delayed fput and IIRC Oleg
+>>>>> (sorry if I am wrong) introduced task work queues.
+>>>>>
+>>>>> So IMA-appraisal was able to be upstreamed... That was ~3.4 time frame, IIRC
+>>>>>
+>>>>> Name space also dated around ~3.4??
+>>>>> Apparmor namespace change was also around that time.
+>>>>>
+>>>>> 3.10 introduces this name space order change and broke IMA-appraisal.
+>>>>
+>>>> IMA-appraisal is fundamentally broken because I can take a mandatory
+>>>> file lock and prevent IMA-apprasial.
+>>>>
+>>>
+>>> What file lock are you talking about?
+>>> IMA-appraisal does not depends on file locks...
+>>
+>> It honors them.  Look at rw_verify_area, in vfs_read, in kernel_read.
+>>
+>> It sure looks like locks_mandatory_area can cause your kernel_read to
+>> fail.
+>>
+>>>> Using kernel_read is what allows this.
+>>>>
+>>>>> Isn't it a clear motivating case???
+>>>>
+>>>> kernel_read is not appropriate for IMA use.  The rest of this is just
+>>>> the messenger.
+>>>>
+>>>> IMA needs to use a cousin of kernel_read that operates at a lower level
+>>>> than vfs_read.  A function that all of the permission checks and the
+>>>> fsnotify work.
+>>>>
+>>>> I am sorry to be the bearer of bad news.  But kernel_read is totally
+>>>> inappropriate for IMA.
+>>>>
+>>>
+>>> So you break IMA-appraisal and declare that it cannot be used now?
+>>
+>> I didn't break it.  I read the code, and I read the back trace to see
+>> where the bug was.
+>>
+>> I see IMA-appraisal trying to read file data as if it were a user space
+>> application in such a way that it can get permission denied for a whole
+>> host of reasons.
+>>
+>> My understanding of IMA-appraisal is that using a code path that can
+>> give use permission denined when performing appraisal is a way for
+>> clever people to attack and avoid IMA-appraisal without violating any
+>> security policy.
+>>
+>
+> Interesting thing is that file was already open before and LSM gave OK for this.
+> Then re-reading the file on close in fact does not need any LSM
+> permission checks.
+> But as kernel_read API is still the same, it goes via the same checks...
+>
+> But on close with delayed fput nsproxy is missing ....
+>
+>> Am I wrong.  Is it ok for IMA-appraisal to get permission denied when it
+>> wants to appraise a file?
+>>
+>
+> IMA is called after may_open...
+>
+>
+>> Eric
+>
+>
 
-> ssize_t __vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
-> {
-> 	ssize_t ret;
-> 
-> 	if (!(file->f_mode & FMODE_READ))
-> 		return -EBADF;
-> 	if (!file->f_op->read && !file->f_op->aio_read)
-> 		return -EINVAL;
-> 	if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
-> 		return -EFAULT;
-> 
-> 	if (ret >= 0) {
-> 		count = ret;
-> 		if (file->f_op->read)
-> 			ret = file->f_op->read(file, buf, count, pos);
-> 		else
-> 			ret = do_sync_read(file, buf, count, pos);
-> 	}
-> 
-> 	return ret;
-> }
+Is it really a show stopper to switch order of 2 functions as quick fix?
+It was like that before 3.10 and seemed ok...
 
-... which lacks the f_pos wraparound, etc. checks done by rw_verify_area().
-IOW, it's one more place to grep through while verifying that ->read()
-et.al. do not get called with such arguments.
 
-fanotify probably could be skipped - ask the security circus crowd about
-that one, it's their bast^Wbaby.  add_rchar() and inc_syscr()... depends on
-whether you want those reads hidden from accounting.
+>
+> --
+> Thanks,
+> Dmitry
+
+
+-- 
+Thanks,
+Dmitry
