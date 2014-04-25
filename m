@@ -1,130 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517AbaDYBrG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 21:47:06 -0400
-Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:45560 "EHLO
-	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbaDYBrE (ORCPT
+	id S1751564AbaDYBrv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 21:47:51 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:46998 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbaDYBrt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 21:47:04 -0400
-Message-ID: <1398390415.2805.129.camel@ThinkPad-T5421.cn.ibm.com>
-Subject: Re: [RFC PATCH v5 2/2] Use kernfs_break_active_protection() for
- device online store callbacks
-From: Li Zhong <zhong@linux.vnet.ibm.com>
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Cc: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, toshi.kani@hp.com
-Date: Fri, 25 Apr 2014 09:46:55 +0800
-In-Reply-To: <5358E12C.2050800@intel.com>
-References: <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140416151749.GE1257@htj.dyndns.org>
-	 <1397717444.4034.15.camel@ThinkPad-T5421>
-	 <20140417151728.GK15326@htj.dyndns.org>
-	 <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>
-	 <1398072230.2755.43.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140421224606.GE22730@htj.dyndns.org>
-	 <1398137679.2805.28.camel@ThinkPad-T5421.cn.ibm.com>
-	 <20140422204455.GB3615@mtj.dyndns.org> <5356EB6D.3010102@intel.com>
-	 <20140423142346.GB4781@htj.dyndns.org> <5357E651.2040400@intel.com>
-	 <1398329996.2805.110.camel@ThinkPad-T5421.cn.ibm.com>
-	 <5358E12C.2050800@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042501-0342-0000-0000-0000088C7D2E
+	Thu, 24 Apr 2014 21:47:49 -0400
+X-AuditID: cbfee68f-b7eff6d000002b70-37-5359bec2265a
+Message-id: <1398390340.4283.36.camel@kjgkr>
+Subject: [BUG] kmemleak on __radix_tree_preload
+From: Jaegeuk Kim <jaegeuk.kim@samsung.com>
+Reply-to: jaegeuk.kim@samsung.com
+To: "Linux Kernel, Mailing List" <linux-kernel@vger.kernel.org>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Date: Fri, 25 Apr 2014 10:45:40 +0900
+Organization: Samsung
+Content-type: text/plain; charset=UTF-8
+X-Mailer: Evolution 3.2.3-0ubuntu6
+Content-transfer-encoding: 7bit
+MIME-version: 1.0
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t8zI91D+yKDDb43yFtc3jWHzeLemv+s
+	Dkwemz5NYvf4vEkugCmKyyYlNSezLLVI3y6BK+Pxz1tMBVt5K/Y2bGBpYNzI3cXIySEhYCJx
+	690yZghbTOLCvfVsXYxcHEICyxglplw4wAJT1L7xMCNEYjqjxLLjd6CcV4wSSx9dZASp4hXQ
+	kdj2bh6YLSygL/Ft536gbg4ONgFtic37DUDCQgKKEm/332UFCYsI2EtcbDMCMZkFdCUeLrIA
+	qWARUJU4/LSXFcTmFxCVOLxwO9htzALqEpPmLYK6U0lid3snO0RcXmLzmrfMEAcISvyYfI8F
+	5DIJgcnsEk9+7maCGCog8W3yIbBrJARkJTYdgJojKXFwxQ2WCYxis5CsmIVk7CwkYxcwMq9i
+	FE0tSC4oTkovMtYrTswtLs1L10vOz93ECImR/h2Mdw9YH2JMBlo5kVlKNDkfGGN5JfGGxmZG
+	FqYmpsZG5pZmpAkrifPef5gUJCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoHRxsfxzdJtNQcu
+	q8s8TthzTqe3e4vSoZ9TZNOLP9SGqt72a7djYHlYPyFMQopvou3Tthfx7cmHrWPn8m2as09Q
+	gfncm9BjhxKjH1zYMzvNx+6W85qzlnYR/xvsxdrS20oi9r9+sX5y0aTZ7n/+XmRwErTkZCm0
+	8jU8HbQ3KSPfdaPhiXk/JrIosRRnJBpqMRcVJwIAcHLUU6cCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrIIsWRmVeSWpSXmKPExsVy+t9jQd1D+yKDDc7slLa4vGsOm8W9Nf9Z
+	HZg8Nn2axO7xeZNcAFNUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJu
+	qq2Si0+ArltmDtB8JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhHWPG45+3
+	mAq28lbsbdjA0sC4kbuLkZNDQsBEon3jYUYIW0ziwr31bF2MXBxCAtMZJZYdv8MI4bxilFj6
+	6CJYFa+AjsS2d/PAbGEBfYlvO/ezdDFycLAJaEts3m8AEhYSUJR4u/8uK0hYRMBe4mKbEYjJ
+	LKAr8XCRBUgFi4CqxOGnvawgNr+AqMThhduZQWxmAXWJSfMWMUOcoySxu72THSIuL7F5zVtm
+	iAMEJX5MvscygVFgFpKWWUjKZiEpW8DIvIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOAKf
+	Se9gXNVgcYhRgINRiYd3gmxksBBrYllxZe4hRgkOZiURXuVVQCHelMTKqtSi/Pii0pzU4kOM
+	yUBfTGSWEk3OByaHvJJ4Q2MTMyNLIzMLIxNzc9KElcR5D7ZaBwoJpCeWpGanphakFsFsYeLg
+	lGpg3DBFuSu/2sRT98p2ti3lDX1h63Zfb+o2fN9Van1jde6uI9rmsjmXsoXmF0ufdfhv82N9
+	l+Tr6Y/9Jay/X0nLNjnwZIL3pGd7179Jv+Zl3nFQ0m/ilNhtvQdcfoaGKF/+bby2UW+qzIWr
+	bGYiDn77brc63qsy5eqz7K+68PDTxp8BHgXmF+ZaKrEUZyQaajEXFScCAPutYjcEAwAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-24 at 12:02 +0200, Rafael J. Wysocki wrote:
-> On 4/24/2014 10:59 AM, Li Zhong wrote:
-> > On Wed, 2014-04-23 at 18:12 +0200, Rafael J. Wysocki wrote:
-> >> On 4/23/2014 4:23 PM, Tejun Heo wrote:
-> >>> Hello, Rafael.
-> >> Hi,
-> >>
-> >>> On Wed, Apr 23, 2014 at 12:21:33AM +0200, Rafael J. Wysocki wrote:
-> >>>> Can you please elaborate a bit?
-> >>> Because it can get involved in larger locking dependency issues by
-> >>> joining dependency graphs of two otherwise largely disjoint
-> >>> subsystems.  It has potential to create possible deadlocks which don't
-> >>> need to exist.
-> >> Well, I do my best not to add unnecessary locks if that's what you mean.
-> >>
-> >>>> It is there to protect hotplug operations involving multiple devices
-> >>>> (in different subsystems) from racing with each other.  Why exactly
-> >>>> is it bad?
-> >>> But why would different subsystems, say cpu and memory, use the same
-> >>> lock?  Wouldn't those subsystems already have proper locking inside
-> >>> their own subsystems?
-> >> That locking is not sufficient.
-> >>
-> >>> Why add this additional global lock across multiple subsystems?
-> >> That basically is because of how eject works when it is triggered via ACPI.
-> >>
-> >> It is signaled for a device at the top of a subtree.  It may be a
-> >> container of some sort and the eject involves everything below that
-> >> device in the ACPI namespace.  That may involve multiple subsystem
-> >> (CPUs, memory, PCI host bridge, etc.).
-> >>
-> >> We do that in two steps, offline (which can fail) and eject proper
-> >> (which can't fail and makes all of the involved devices go away). All
-> >> that has to be done in one go with respect to the sysfs-triggered
-> >> offline/online and that's why the lock is there.
-> > Thank you for the education. It's more clear to me now why we need this
-> > lock.
-> >
-> > I still have some small questions about when this lock is needed:
-> >
-> > I could understand sysfs-triggered online is not acceptable when
-> > removing devices in multiple subsystems. But maybe concurrent offline
-> > and remove(with proper per subsystem locks) seems not harmful?
-> >
-> > And if we just want to remove some devices in a specific subsystem, e.g.
-> > like writing /cpu/release, if it just wants to offline and remove some
-> > cpus, then maybe we don't require the device_hotplug_lock to be taken?
-> 
-> No and no.
-> 
-> If the offline phase fails for any device in the subtree, we roll back 
-> the operation
-> and online devices that have already been offlined by it.  Also the ACPI 
-> hot-addition
-> needs to acquire device_hotplug_lock so that it doesn't race with ejects 
-> and so
-> that lock needs to be taken by sysfs-triggered offline too.
+Hi mm folks,
 
-I can understand that hot-addition needs the device_hotplug lock, but
-still not very clear about the offline. 
+When I was testing recent linus tree, I got several kmemleaks as below.
+Could any of you guys guide how to fix this?
+Thanks,
 
-I guess your are describing following scenario: 
+0. Test
+ - fsstress on f2fs
 
-user A: (trying remove cpu 1 and memory 1-10)
+1. Kernel version
+commit 4d0fa8a0f01272d4de33704f20303dcecdb55df1
+Merge: 39bfe90 b5539fa
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Tue Apr 22 09:28:02 2014 -0700
 
-lock_device_hotplug
-offline cpu with cpu locks          -- successful
-offline memories with memory locks  -- failed, e.g. for memory8
-online cpu and memory with their locks
-unlock_device_hotplug
+    Merge tag 'gpio-v3.15-2' of
+git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio
+    
+    Pull gpio fixes from Linus Walleij:
 
-user B: (trying offline cpu 1)
+2. Bug
+ This is one of the results, but all the results indicate
+__radix_tree_preload.
 
-offline cpu with cpu locks
+unreferenced object 0xffff88002ae2a238 (size 576):
+comm "fsstress", pid 25019, jiffies 4295651360 (age 2276.104s)
+hex dump (first 32 bytes):
+01 00 00 00 81 ff ff ff 00 00 00 00 00 00 00 00  ................
+40 7d 37 81 ff ff ff ff 50 a2 e2 2a 00 88 ff ff  @}7.....P..*....
+backtrace:
+ [<ffffffff8170e546>] kmemleak_alloc+0x26/0x50
+ [<ffffffff8119feac>] kmem_cache_alloc+0xdc/0x190
+ [<ffffffff81378709>] __radix_tree_preload+0x49/0xc0
+ [<ffffffff813787a1>] radix_tree_maybe_preload+0x21/0x30
+ [<ffffffff8114bbbc>] add_to_page_cache_lru+0x3c/0xc0
+ [<ffffffff8114c778>] grab_cache_page_write_begin+0x98/0xf0
+ [<ffffffffa02d3151>] f2fs_write_begin+0xa1/0x370 [f2fs]
+ [<ffffffff8114af47>] generic_perform_write+0xc7/0x1e0
+ [<ffffffff8114d230>] __generic_file_aio_write+0x1d0/0x400
+ [<ffffffff8114d4c0>] generic_file_aio_write+0x60/0xe0
+ [<ffffffff811b281a>] do_sync_write+0x5a/0x90
+ [<ffffffff811b3575>] vfs_write+0xc5/0x1f0
+ [<ffffffff811b3a92>] SyS_write+0x52/0xb0
+ [<ffffffff81730912>] system_call_fastpath+0x16/0x1b
+ [<ffffffffffffffff>] 0xffffffffffffffff
 
-But I don't see any problem for user B not taking the device_hotplug
-lock. The result may be different for user B to take or not take the
-lock. But I think it could be seen as concurrent online/offline for cpu1
-under cpu hotplug locks, which just depends on which is executed last? 
 
-Or did I miss something here? 
-
-Thanks, Zhong
-
-> Thanks,
-> Rafael
-> 
-
+-- 
+Jaegeuk Kim
+Samsung
 
