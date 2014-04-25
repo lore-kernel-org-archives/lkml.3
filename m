@@ -1,85 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbaDYVVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 17:21:18 -0400
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:34632 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751156AbaDYVVQ (ORCPT
+	id S1752007AbaDYVVo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 17:21:44 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60200 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750734AbaDYVVk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 17:21:16 -0400
-Date: Fri, 25 Apr 2014 14:21:12 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 1/3] Input: gpio_keys - use dev instead of pdev in
- gpio_keys_setup_key()
-Message-ID: <20140425212112.GA16783@core.coreip.homeip.net>
-References: <1398442937-15309-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <1398442937-15309-2-git-send-email-andriy.shevchenko@linux.intel.com>
+	Fri, 25 Apr 2014 17:21:40 -0400
+Date: Fri, 25 Apr 2014 22:21:28 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-team <kernel-team@lists.ubuntu.com>
+Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
+Message-ID: <20140425212128.GB18016@ZenIV.linux.org.uk>
+References: <535A5C78.1070901@samsung.com>
+ <535A75C1.3050901@samsung.com>
+ <20140425182310.GA9128@redhat.com>
+ <87sip15iy5.fsf@x220.int.ebiederm.org>
+ <20140425192543.GA11908@redhat.com>
+ <878uqt42q7.fsf@x220.int.ebiederm.org>
+ <20140425200156.GA13727@redhat.com>
+ <CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
+ <874n1h16le.fsf@x220.int.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1398442937-15309-2-git-send-email-andriy.shevchenko@linux.intel.com>
+In-Reply-To: <874n1h16le.fsf@x220.int.ebiederm.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 07:22:15PM +0300, Andy Shevchenko wrote:
-> The platform device is not used in gpio_keys_setup_key(). This patch
-> substitutes it by struct device.
+On Fri, Apr 25, 2014 at 01:45:17PM -0700, Eric W. Biederman wrote:
 
-And the benefit of this is...?
-
+> IMA-appraisal is fundamentally broken because I can take a mandatory
+> file lock and prevent IMA-apprasial.
 > 
-> Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> ---
->  drivers/input/keyboard/gpio_keys.c | 7 +++----
->  1 file changed, 3 insertions(+), 4 deletions(-)
+> Using kernel_read is what allows this.
 > 
-> diff --git a/drivers/input/keyboard/gpio_keys.c b/drivers/input/keyboard/gpio_keys.c
-> index 2db1324..209d4c6 100644
-> --- a/drivers/input/keyboard/gpio_keys.c
-> +++ b/drivers/input/keyboard/gpio_keys.c
-> @@ -424,13 +424,12 @@ out:
->  	return IRQ_HANDLED;
->  }
->  
-> -static int gpio_keys_setup_key(struct platform_device *pdev,
-> +static int gpio_keys_setup_key(struct device *dev,
->  				struct input_dev *input,
->  				struct gpio_button_data *bdata,
->  				const struct gpio_keys_button *button)
->  {
->  	const char *desc = button->desc ? button->desc : "gpio_keys";
-> -	struct device *dev = &pdev->dev;
->  	irq_handler_t isr;
->  	unsigned long irqflags;
->  	int irq, error;
-> @@ -719,7 +718,7 @@ static int gpio_keys_probe(struct platform_device *pdev)
->  
->  	input->name = pdata->name ? : pdev->name;
->  	input->phys = "gpio-keys/input0";
-> -	input->dev.parent = &pdev->dev;
-> +	input->dev.parent = dev;
->  	input->open = gpio_keys_open;
->  	input->close = gpio_keys_close;
->  
-> @@ -736,7 +735,7 @@ static int gpio_keys_probe(struct platform_device *pdev)
->  		const struct gpio_keys_button *button = &pdata->buttons[i];
->  		struct gpio_button_data *bdata = &ddata->data[i];
->  
-> -		error = gpio_keys_setup_key(pdev, input, bdata, button);
-> +		error = gpio_keys_setup_key(dev, input, bdata, button);
->  		if (error)
->  			goto fail2;
->  
-> -- 
-> 1.9.2
+> > Isn't it a clear motivating case???
 > 
+> kernel_read is not appropriate for IMA use.  The rest of this is just
+> the messenger.
+> 
+> IMA needs to use a cousin of kernel_read that operates at a lower level
+> than vfs_read.  A function that all of the permission checks and the
+> fsnotify work.
 
-Thanks.
+It's worse than that, actually ;-/  IMA hooks in __fput() have interesting
+interplay with revoke-related stuff as well.  Another very messy thing in
+the same area is that it actually does ->read() from under ->i_mutex, leading
+to all kinds of interesting locking issues...
 
--- 
-Dmitry
+I doubt that your "let's open-code vfs_read() guts" would be a good idea;
+if nothing else, it might make more sense to make rw_verify_area() skip
+the mandlock and security theatre when called in such situation.
+
+What a mess... ;-/
