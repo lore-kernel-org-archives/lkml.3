@@ -1,125 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753724AbaDYMrR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 08:47:17 -0400
-Received: from mga02.intel.com ([134.134.136.20]:18400 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753673AbaDYMrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 08:47:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
-   d="scan'208";a="519693160"
-Message-ID: <535A594F.2010604@intel.com>
-Date: Fri, 25 Apr 2014 14:47:11 +0200
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
-Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
- 173, 80-298 Gdansk
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Li Zhong <zhong@linux.vnet.ibm.com>
-CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        gregkh@linuxfoundation.org, toshi.kani@hp.com
-Subject: Re: [RFC PATCH v5 2/2] Use kernfs_break_active_protection() for device
- online store callbacks
-References: <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>	 <20140416151749.GE1257@htj.dyndns.org>	 <1397717444.4034.15.camel@ThinkPad-T5421>	 <20140417151728.GK15326@htj.dyndns.org>	 <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>	 <1398072230.2755.43.camel@ThinkPad-T5421.cn.ibm.com>	 <20140421224606.GE22730@htj.dyndns.org>	 <1398137679.2805.28.camel@ThinkPad-T5421.cn.ibm.com>	 <20140422204455.GB3615@mtj.dyndns.org> <5356EB6D.3010102@intel.com>	 <20140423142346.GB4781@htj.dyndns.org> <5357E651.2040400@intel.com>	 <1398329996.2805.110.camel@ThinkPad-T5421.cn.ibm.com>	 <5358E12C.2050800@intel.com> <1398390415.2805.129.camel@ThinkPad-T5421.cn.ibm.com>
-In-Reply-To: <1398390415.2805.129.camel@ThinkPad-T5421.cn.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753798AbaDYMrv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 08:47:51 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:46026 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753749AbaDYMrs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 08:47:48 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-b2-535a5972628e
+From: Pankaj Dubey <pankaj.dubey@samsung.com>
+To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
+        chow.kim@samsung.com, yg1004.jang@samsung.com,
+        vikas.sajjan@samsung.com, b.zolnierkie@samsung.com,
+        Pankaj Dubey <pankaj.dubey@samsung.com>
+Subject: [RFC PATCH v2 0/3] Add support for Exynos PMU driver
+Date: Fri, 25 Apr 2014 22:05:28 +0900
+Message-id: <1398431131-5946-1-git-send-email-pankaj.dubey@samsung.com>
+X-Mailer: git-send-email 1.7.9.5
+In-reply-to: <1396427085-4696-1-git-send-email-pankaj.dubey@samsung.com>
+References: <1396427085-4696-1-git-send-email-pankaj.dubey@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42I5/e+ZoW5RZFSwQfssK4uNM9azWiybdJfN
+	onfBVTaLTY+vsVpc3jWHzWLG+X1MFrcv81os2vqF3WL9jNcsFjefbWey2NGymsWB26OluYfN
+	Y/OSeo++LasYPT5vkgtgieKySUnNySxLLdK3S+DKeH54AmvBI9GKI3ua2BsYjwh0MXJwSAiY
+	SFw4mdHFyAlkiklcuLeerYuRi0NIYBmjxNk1LWwQCROJ1oVvmCASixgl5vS8g6pqY5KY//EK
+	C0gVm4CuxJP3c5lBbBGBbIkrjfeZQYqYBa4ySpx82Q6WEBawlXi6cgMjiM0ioCrR/n4ZWJxX
+	wF3i9LLDLBAnKUjMmWQDEuYU8JD4Pm0+WLkQUMmFv0fBrpAQ2MQu0XdpGzPEHAGJb5MPQfXK
+	Smw6wAxxtaTEwRU3WCYwCi9gZFjFKJpakFxQnJReZKpXnJhbXJqXrpecn7uJERIBE3cw3j9g
+	fYgxGWjcRGYp0eR8YATllcQbGpsZWZiamBobmVuakSasJM6b/igpSEggPbEkNTs1tSC1KL6o
+	NCe1+BAjEwenVANj7oevPzXaFa+c/7zkSWvjWh+tUx78fPxlytltYleOxLJxqjdqbE3a43Tn
+	s71WWrjsE23D85Z8Jm9FlumdOeQVtmWCTq4I6+yNdxyzn5noFSQdPhf4bkfp/Xfng+prd11N
+	dLynv+P9odsp1nN22hUzhf6yn2x5ybuvd1tODcerfXcux5dvTFugxFKckWioxVxUnAgA/NTj
+	nZYCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t9jAd2iyKhgg10zTC02zljParFs0l02
+	i94FV9ksNj2+xmpxedccNosZ5/cxWdy+zGuxaOsXdov1M16zWNx8tp3JYkfLahYHbo+W5h42
+	j81L6j36tqxi9Pi8SS6AJaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEv
+	MTfVVsnFJ0DXLTMH6CglhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8bz
+	wxNYCx6JVhzZ08TewHhEoIuRk0NCwESideEbJghbTOLCvfVsXYxcHEICixgl5vS8g3LamCTm
+	f7zCAlLFJqAr8eT9XGYQW0QgW+JK431mkCJmgauMEidftoMlhAVsJZ6u3MAIYrMIqEq0v18G
+	FucVcJc4veww0CAOoHUKEnMm2YCEOQU8JL5Pmw9WLgRUcuHvUaYJjLwLGBlWMYqmFiQXFCel
+	5xrqFSfmFpfmpesl5+duYgRH2DOpHYwrGywOMQpwMCrx8H5QiwwWYk0sK67MPcQowcGsJML7
+	wS8qWIg3JbGyKrUoP76oNCe1+BBjMtBRE5mlRJPzgdGfVxJvaGxiZmRpZGZhZGJuTpqwkjjv
+	gVbrQCGB9MSS1OzU1ILUIpgtTBycUg2MrEvUVXYuqNFY1eTzl8P0ZUB52qKLVWb5+oV12Svl
+	F+6/d3DHgdeH/mub3ZhnFJo+J3+Cxw9e4xcbd0ltrjx01dWxkyfBM8fWL+hfjcK7KdOYZzVK
+	vMvNX/qIVVeudc+Zw0/lY//t3/ayZIfCTxbZI27VX2caxq91t5x+0dbw/NM596zfcTafV2Ip
+	zkg01GIuKk4EAMxqFjP0AgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4/25/2014 3:46 AM, Li Zhong wrote:
-> On Thu, 2014-04-24 at 12:02 +0200, Rafael J. Wysocki wrote:
->> On 4/24/2014 10:59 AM, Li Zhong wrote:
->>> On Wed, 2014-04-23 at 18:12 +0200, Rafael J. Wysocki wrote:
->>>> On 4/23/2014 4:23 PM, Tejun Heo wrote:
->>>>> Hello, Rafael.
->>>> Hi,
->>>>
->>>>> On Wed, Apr 23, 2014 at 12:21:33AM +0200, Rafael J. Wysocki wrote:
->>>>>> Can you please elaborate a bit?
->>>>> Because it can get involved in larger locking dependency issues by
->>>>> joining dependency graphs of two otherwise largely disjoint
->>>>> subsystems.  It has potential to create possible deadlocks which don't
->>>>> need to exist.
->>>> Well, I do my best not to add unnecessary locks if that's what you mean.
->>>>
->>>>>> It is there to protect hotplug operations involving multiple devices
->>>>>> (in different subsystems) from racing with each other.  Why exactly
->>>>>> is it bad?
->>>>> But why would different subsystems, say cpu and memory, use the same
->>>>> lock?  Wouldn't those subsystems already have proper locking inside
->>>>> their own subsystems?
->>>> That locking is not sufficient.
->>>>
->>>>> Why add this additional global lock across multiple subsystems?
->>>> That basically is because of how eject works when it is triggered via ACPI.
->>>>
->>>> It is signaled for a device at the top of a subtree.  It may be a
->>>> container of some sort and the eject involves everything below that
->>>> device in the ACPI namespace.  That may involve multiple subsystem
->>>> (CPUs, memory, PCI host bridge, etc.).
->>>>
->>>> We do that in two steps, offline (which can fail) and eject proper
->>>> (which can't fail and makes all of the involved devices go away). All
->>>> that has to be done in one go with respect to the sysfs-triggered
->>>> offline/online and that's why the lock is there.
->>> Thank you for the education. It's more clear to me now why we need this
->>> lock.
->>>
->>> I still have some small questions about when this lock is needed:
->>>
->>> I could understand sysfs-triggered online is not acceptable when
->>> removing devices in multiple subsystems. But maybe concurrent offline
->>> and remove(with proper per subsystem locks) seems not harmful?
->>>
->>> And if we just want to remove some devices in a specific subsystem, e.g.
->>> like writing /cpu/release, if it just wants to offline and remove some
->>> cpus, then maybe we don't require the device_hotplug_lock to be taken?
->> No and no.
->>
->> If the offline phase fails for any device in the subtree, we roll back
->> the operation
->> and online devices that have already been offlined by it.  Also the ACPI
->> hot-addition
->> needs to acquire device_hotplug_lock so that it doesn't race with ejects
->> and so
->> that lock needs to be taken by sysfs-triggered offline too.
-> I can understand that hot-addition needs the device_hotplug lock, but
-> still not very clear about the offline.
->
-> I guess your are describing following scenario:
->
-> user A: (trying remove cpu 1 and memory 1-10)
->
-> lock_device_hotplug
-> offline cpu with cpu locks          -- successful
-> offline memories with memory locks  -- failed, e.g. for memory8
-> online cpu and memory with their locks
-> unlock_device_hotplug
+This patch series moves PMU implementation from "mach-exynos/pmu.c" to
+"drivers/mfd/exynos-pmu.c". Patch v1 was posted as RFC [1].
 
-What about if all is successful and CPU1 is gone before 
-device_hotplug_lock is released?
 
-> user B: (trying offline cpu 1)
->
-> offline cpu with cpu locks
->
-> But I don't see any problem for user B not taking the device_hotplug
-> lock. The result may be different for user B to take or not take the
-> lock. But I think it could be seen as concurrent online/offline for cpu1
-> under cpu hotplug locks, which just depends on which is executed last?
->
-> Or did I miss something here?
+In case of ARM32 we had machine folder such as "mach-exynos" but
+moving forward with ARM64 SoC support we can not have any more such
+machine folders, keeping that in mind we have planned to move PMU
+implementation out of machine folder, so that common piece of code
+can be reused.
 
-Yes, you could do offline in parallel with user A without taking 
-device_hotplug_lock, but the result may be surprising to user B then.
+This patch series is based on kgene for-next and depends on following
+patch series
+ a) [PATCH v2 0/5] Add PMU node for Exynos SoCs
+	https://lkml.org/lkml/2014/4/25/216
+ b) [PATCH v2 00/10] ARM: Exynos: PMU cleanup and refactoring for using DT
+	https://lkml.org/lkml/2014/4/25/252
 
-With device _hotplug_lock user B will always see CPU1 off line (or gone) 
-after his offline in this scenario, while without taking the lock user B 
-may sometimes see CPU1 on line after his offline.  I don't think that's 
-a good thing.
 
-Rafael
+1) [RFC PATCH 0/2] Add support for Exynos PMU driver
+	https://lkml.org/lkml/2014/4/2/69
+
+Changes since v1:
+ - Rebased on Kukjin Kim's for-next (3.15_rc1 tag)
+ - Added patch: Move PMU specific definitions from common.h
+ - Added patch: Move pmu specific header files under "linux/mfd/samsung"
+ - Removed patch: ARM: EXYNOS: remove arch specific PMU implementation
+	As suggested breaking down patches into smalled pieces for better review.
+	Also modified all changes in pmu.c under mach-exynos itself and then
+	prepared patches moving files from mach-exynos to "drivers/mfd"
+
+Pankaj Dubey (2):
+  ARM: EXYNOS: Move pmu specific header files under "linux/mfd/samsung"
+  drivers: mfd: Add support for Exynos PMU driver
+
+Younggun Jang (1):
+  ARM: EXYNOS: Move PMU specific definitions from common.h
+
+ arch/arm/mach-exynos/Kconfig                |    2 +
+ arch/arm/mach-exynos/Makefile               |    2 -
+ arch/arm/mach-exynos/common.h               |   17 -
+ arch/arm/mach-exynos/cpuidle.c              |    3 +-
+ arch/arm/mach-exynos/exynos.c               |    2 +-
+ arch/arm/mach-exynos/hotplug.c              |    2 +-
+ arch/arm/mach-exynos/platsmp.c              |    2 +-
+ arch/arm/mach-exynos/pm.c                   |    3 +-
+ arch/arm/mach-exynos/pmu.c                  |  522 ---------------------------
+ arch/arm/mach-exynos/regs-pmu.h             |  308 ----------------
+ drivers/mfd/Kconfig                         |    9 +
+ drivers/mfd/Makefile                        |    1 +
+ drivers/mfd/exynos-pmu.c                    |  521 ++++++++++++++++++++++++++
+ include/linux/mfd/samsung/exynos-pmu.h      |   31 ++
+ include/linux/mfd/samsung/exynos-regs-pmu.h |  308 ++++++++++++++++
+ 15 files changed, 879 insertions(+), 854 deletions(-)
+ delete mode 100644 arch/arm/mach-exynos/pmu.c
+ delete mode 100644 arch/arm/mach-exynos/regs-pmu.h
+ create mode 100644 drivers/mfd/exynos-pmu.c
+ create mode 100644 include/linux/mfd/samsung/exynos-pmu.h
+ create mode 100644 include/linux/mfd/samsung/exynos-regs-pmu.h
+
+-- 
+1.7.10.4
 
