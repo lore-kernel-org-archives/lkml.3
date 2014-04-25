@@ -1,163 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751231AbaDYBgx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 21:36:53 -0400
-Received: from mga01.intel.com ([192.55.52.88]:62703 "EHLO mga01.intel.com"
+	id S1751458AbaDYBkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 21:40:05 -0400
+Received: from mail.phunq.net ([184.71.0.62]:52730 "EHLO starbase.phunq.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750776AbaDYBgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 21:36:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,923,1389772800"; 
-   d="scan'208";a="527012031"
-From: Jason Chen <jason.cj.chen@intel.com>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Jason Chen <jason.cj.chen@intel.com>
-Subject: [PATCH 1/1] x86/apic: add apic_irqs bitmap to identify irqs from apic
-Date: Fri, 25 Apr 2014 09:30:52 +0800
-Message-Id: <de1f9f2834ba87e3ceba9e4d413f949397a83397.1398418448.git.jason.cj.chen@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751350AbaDYBkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 21:40:02 -0400
+X-Greylist: delayed 2664 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Apr 2014 21:40:02 EDT
+Message-ID: <5359B279.7070003@partner.samsung.com>
+Date: Thu, 24 Apr 2014 17:55:21 -0700
+From: Daniel Phillips <d.phillips@partner.samsung.com>
+Reply-To: daniel@phunq.net
+Organization: Samsung
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: linux-fsdevel@vger.kernel.org, tux3@tux3.org
+Subject: Tux3 Report: Untar Unleashed
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-During irq migration, fixup_irqs() in arch/x86/kernel/irq.c will
-call irq_force_complete_move() for every valid irqs, including
-whose irq_chip is not apic(like ioapic_chip, msi_chip, etc) kind.
+Hi,
 
-While the function irq_force_complete_move() in
-arch/x86/kernel/apic/io_apic.c will treat all input irqs as apic
-kind, which has the structure irq_cfg as its chip_data and with
-chance to be modified.
 
-During supporting intel MID platform, some new irq_chip were added
-like gpio, whose sub-irqs are valid and will call
-irq_force_complete_move(). We met one softlockup/hardlockup issue
-while adding a new pmic irq_chip, whose chip_data's value condition
-triggered IPI send for clean up vector when miss calling
-irq_force_complete_move(),  then one lock field in its chip_data
-was unexpected modified.
+It is about time to post Tux3 patches for review. Almost. Running the 
+classic kernel untar test on an older 60 MB/sec hard disk turned up a 
+performance gap versus Ext4 by a factor of six. Hmm, that is in the 
+range where it could be a basic design bug, we need to do something.
 
-This patch add an apic_irqs bitmap to identify irqs from apic
-irq_chip, this bitmap only be set when apic kind of irq try to
-assign_irq_vector, and clear when __clear_irq_vector.
-By checking apic_irqs bitmap, irq_force_complete_move() can avoid
-being called when input irq does not belong to apic kind of irq_chip.
 
-Signed-off-by: Jason Chen <jason.cj.chen@intel.com>
----
- arch/x86/kernel/apic/io_apic.c | 21 ++++++++++++++++++++-
- include/linux/irqdesc.h        |  6 ++++++
- kernel/irq/internals.h         |  6 ------
- 3 files changed, 26 insertions(+), 7 deletions(-)
+Tux3 performed fine on the actual untar, but syncing those thousands of 
+small files to disk was slow. The cause turned out to be multiple 
+issues. Two were unimplemented design features. For every file, we were 
+writing a btree root and a leaf block with pointers to data extents. 
+Instead, most btrees can be "zero depth" with just a leaf block and no 
+index block. And many files are just a single extent so the btree is not 
+needed at all. When writing lots of small files, we were transferring up 
+to three times more blocks than necessary.
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 6ad4658..1e2bcb5 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -37,6 +37,7 @@
- #include <linux/kthread.h>
- #include <linux/jiffies.h>	/* time_after() */
- #include <linux/slab.h>
-+#include <linux/irqdesc.h>
- #include <linux/bootmem.h>
- #include <linux/dmar.h>
- #include <linux/hpet.h>
-@@ -74,6 +75,8 @@ int sis_apic_bug = -1;
- static DEFINE_RAW_SPINLOCK(ioapic_lock);
- static DEFINE_RAW_SPINLOCK(vector_lock);
- 
-+static DECLARE_BITMAP(apic_irqs, IRQ_BITMAP_BITS);
-+
- static struct ioapic {
- 	/*
- 	 * # of IRQ routing registers
-@@ -1158,6 +1161,10 @@ next:
- 		err = 0;
- 		break;
- 	}
-+
-+	if (err == 0)
-+		set_bit(irq, apic_irqs);
-+
- 	free_cpumask_var(tmp_mask);
- 	return err;
- }
-@@ -1185,6 +1192,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
- 
- 	cfg->vector = 0;
- 	cpumask_clear(cfg->domain);
-+	clear_bit(irq, apic_irqs);
- 
- 	if (likely(!cfg->move_in_progress))
- 		return;
-@@ -1213,6 +1221,9 @@ void __setup_vector_irq(int cpu)
- 	raw_spin_lock(&vector_lock);
- 	/* Mark the inuse vectors */
- 	for_each_active_irq(irq) {
-+		if (!test_bit(irq, apic_irqs))
-+			continue;
-+
- 		cfg = irq_get_chip_data(irq);
- 		if (!cfg)
- 			continue;
-@@ -2268,7 +2279,12 @@ static void irq_complete_move(struct irq_cfg *cfg)
- 
- void irq_force_complete_move(int irq)
- {
--	struct irq_cfg *cfg = irq_get_chip_data(irq);
-+	struct irq_cfg *cfg;
-+
-+	if (!test_bit(irq, apic_irqs))
-+		return;
-+
-+	cfg = irq_get_chip_data(irq);
- 
- 	if (!cfg)
- 		return;
-@@ -2541,6 +2557,9 @@ static inline void init_IO_APIC_traps(void)
- 	 * 0x80, because int 0x80 is hm, kind of importantish. ;)
- 	 */
- 	for_each_active_irq(irq) {
-+		if (!test_bit(irq, apic_irqs))
-+			continue;
-+
- 		cfg = irq_get_chip_data(irq);
- 		if (IO_APIC_IRQ(irq) && cfg && !cfg->vector) {
- 			/*
-diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-index 26e2661..1b20979 100644
---- a/include/linux/irqdesc.h
-+++ b/include/linux/irqdesc.h
-@@ -1,6 +1,12 @@
- #ifndef _LINUX_IRQDESC_H
- #define _LINUX_IRQDESC_H
- 
-+#ifdef CONFIG_SPARSE_IRQ
-+# define IRQ_BITMAP_BITS	(NR_IRQS + 8196)
-+#else
-+# define IRQ_BITMAP_BITS	NR_IRQS
-+#endif
-+
- /*
-  * Core internal functions to deal with irq descriptors
-  *
-diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
-index ddf1ffe..b2fb994 100644
---- a/kernel/irq/internals.h
-+++ b/kernel/irq/internals.h
-@@ -8,12 +8,6 @@
- #include <linux/irqdesc.h>
- #include <linux/kernel_stat.h>
- 
--#ifdef CONFIG_SPARSE_IRQ
--# define IRQ_BITMAP_BITS	(NR_IRQS + 8196)
--#else
--# define IRQ_BITMAP_BITS	NR_IRQS
--#endif
--
- #define istate core_internal_state__do_not_mess_with_it
- 
- extern bool noirqdebug;
--- 
-1.8.1.2
+
+The kernel tarball showed a metadata-to-data ratio of about 1.2. This is 
+way too high, it should be less than a tenth of that. After factoring 
+out those extra blocks, a huge performance gap still remains. This must 
+have something to do with seeking, but our disk layout for this load is 
+pretty good, so what is going on?
+
+
+It turns out to be important not only to write to the right place, but 
+at the right time. The block scheduler tries to merge physically 
+contiguous requests even when submitted out of order, but if the 
+requests are too far apart in time, an earlier request may have already 
+left the queue by the time an adjacent request shows up. This causes 
+extra, costly seeks on spinning disks. Ideally, we want our writes 
+contiguous in both time and space. Then the disk hardware should be able 
+to make seek costs effectively disappear and stream the data out at 
+close to media speed.
+
+
+Fixes for these issues took the form of patches from Hirofumi to 
+eliminate redundant btree roots and submit metadata writes in a better 
+order for block scheduling, and a patch from me to implement a planned 
+"direct extent" feature to eliminate btrees completely for small files. 
+Iterative improvements went something like this:
+
+
+* Start: 60 seconds to sync but Ext4 only needs 10 seconds
+
+* Eliminate most btree roots => now sync in 53 seconds
+
+* Submit file btree together with data => sync in 19 seconds
+
+* Eliminate btree complete for small files => 15 seconds
+
+* Flush inode table blocks after all data => 8 seconds
+
+
+We ended up with:
+
+
+untar:
+
+real 0m2.706s
+
+user 0m0.360s
+
+sys 0m2.160s
+
+
+sync:
+
+real 0m8.651s
+
+user 0m0.000s
+
+sys 0m0.024s
+
+
+Ext4 takes about 4 seconds to untar and 10 seconds to sync, turning in a 
+respectable 50 MB/sec write bandwidth on a 62 MB/sec disk. Tux3 now 
+syncs at 60 MB/sec, or 97% of raw media bandwidth. So we went from 500% 
+slower to 23% faster, woohoo. The cost for this is that we dropped out 
+of sight for a few weeks. Maybe it was worth it because the performance 
+artifact was so big that it could have been a major design deficiency 
+instead of what it really was: leaving some details for later.
+
+
+When we checked read performance on the untarred tree, we immediately 
+saw mixed results. Re-tarring the kernel tree is faster than Ext4, but 
+directory listing is slower by a multiple. So we need to analyze and fix 
+ls without breaking the good tar and untar behavior. The question is, is 
+it worth another delay before putting Tux3 patches up for review?
+
+
+I think not. In fact, by going quiet when we hit these things, we 
+detract from the spectator sport aspect of open source. It might not be 
+any faster to work in public, but it is more fun. Plus, it engraves a 
+record on the internet as a guide for the next effort to invent a new 
+and wonderful filesystem. It is hard to overstate the value to our 
+project of all the historical chatter about design and development 
+process for Ext4 and other Linux filesystems. We often find ourselves 
+retracing the same learning processes. By doing this work in public, we 
+give something back.
+
+
+Improving ls performance to Ext4 standards may just be a matter of 
+implementing inode table readahead, or it might be that plus something 
+else. In any case, this will go on the longish list of important issues 
+that are not central.
+
+
+Inline data is a related item already on that list. There is a nice plan 
+for it, where the same design feature handles inline files and tail 
+packing, similar to extended attributes. In particular, most directories 
+in the kernel tarball are small enough to inline, which could speed up 
+ls significantly. With most files and directories inlined, a Tux3 
+filesystem becomes a single, fatter btree, with different issues and 
+tradeoffs. On the whole, I expect substantial improvements in both space 
+utilization and performance. The final chapter in the tar performance 
+saga has yet to be written.
+
+We also need to ask why we are putting so much effort into performing 
+well on spinning disks, which are rapidly disappearing. Two reasons. 
+First, spinning disks are not gone yet, they are just migrating to a 
+backend storage role. Second, optimizations for spinning disk are 
+helpful for solid state storage more often than not. In this case, 
+keeping related requests close together in time lets the flash 
+translation layer pack its erase blocks better, reducing write 
+multiplication during space recovery, and in turn increasing media life 
+and performance. So it is too soon to forget about the idiosyncrasies 
+and challenges of traditional rotating media, perhaps ten or twenty 
+years too soon.
+
+
+Regards,
+
+
+Daniel
+
 
