@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbaDYGbP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 02:31:15 -0400
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:36038 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318AbaDYGbM (ORCPT
+	id S1752010AbaDYGfP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 02:35:15 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:49661 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750844AbaDYGfN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 02:31:12 -0400
-Message-ID: <535A0125.9020207@linaro.org>
-Date: Fri, 25 Apr 2014 12:01:01 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 25 Apr 2014 02:35:13 -0400
+Date: Thu, 24 Apr 2014 23:35:09 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Sheng-Liang Song <ssl@chromium.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Shawn Nematbakhsh <shawnn@chromium.org>, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Input: atkbd - fix keyboard LG Electronics
+Message-ID: <20140425063509.GA10433@core.coreip.homeip.net>
+References: <1398351432-5361-1-git-send-email-ssl@chromium.org>
 MIME-Version: 1.0
-To: Vivek Gautam <gautam.vivek@samsung.com>, linux-usb@vger.kernel.org,
-        linux-samsung-soc@vger.kernel.org, devicetree@vger.kernel.org
-CC: kgene.kim@samsung.com, gregkh@linuxfoundation.org, t.figa@samsung.com,
-        jg1.han@samsung.com, linux-kernel@vger.kernel.org, balbi@ti.com,
-        robh+dt@kernel.org, olof@lixom.net,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v5 3/9] dt: exynos5250: Enable support for generic USB
- DRD phy
-References: <1398263451-18023-1-git-send-email-gautam.vivek@samsung.com> <1398263451-18023-4-git-send-email-gautam.vivek@samsung.com>
-In-Reply-To: <1398263451-18023-4-git-send-email-gautam.vivek@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398351432-5361-1-git-send-email-ssl@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/23/2014 08:00 PM, Vivek Gautam wrote:
-> Add device tree node for new usbdrd-phy driver, which
-> is based on generic phy framework.
+On Thu, Apr 24, 2014 at 07:57:12AM -0700, Sheng-Liang Song wrote:
+> After issuing ATKBD_CMD_RESET_DIS, LG Keyboard stop working.  The
+> workaround is to remove ATKBD_CMD_RESET_DIS for LG Keyboards.
 > 
-> Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
-> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
-> ---
->  arch/arm/boot/dts/exynos5250.dtsi |   10 ++++++++++
->  1 file changed, 10 insertions(+)
+> In order to keep the minimum changes to the current atkbd driver, I add
+> logic to apply the patch if and only if the device is LG LW25-B7HV or
+> P1-J273B.
 > 
-> diff --git a/arch/arm/boot/dts/exynos5250.dtsi b/arch/arm/boot/dts/exynos5250.dtsi
-> index 3742331..d4254c0 100644
-> --- a/arch/arm/boot/dts/exynos5250.dtsi
-> +++ b/arch/arm/boot/dts/exynos5250.dtsi
-> @@ -551,6 +551,16 @@
->  		};
->  	};
->  
-> +	usbdrd_phy: phy@12100000 {
-> +		compatible = "samsung,exynos5250-usbdrd-phy";
-> +		reg = <0x12100000 0x100>;
-> +		clocks = <&clock CLK_USB3>, <&clock CLK_FIN_PLL>;
-> +		clock-names = "phy", "ref";
-> +		samsung,pmu-syscon = <&pmu_system_controller>;
+> Signed-off-by: Sheng-Liang Song <ssl@chromium.org>
 
-Replace samsung,pmu-syscon by samsung,syscon-phandle ?
-
-> +		samsung,pmu-offset = <0x704>;
-> +		#phy-cells = <1>;
-> +	};
-> +
->  	usb@12110000 {
->  		compatible = "samsung,exynos4210-ehci";
->  		reg = <0x12110000 0x100>;
-> 
-
+Applied, thank you.
 
 -- 
-Tushar Behera
+Dmitry
