@@ -1,159 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbaDYQJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:09:48 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:33311 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751986AbaDYQJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:09:46 -0400
-Date: Fri, 25 Apr 2014 18:07:05 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 14/18] ARM: mvebu: Add support for USB cluster on the
- Armada 375 SoC
-Message-ID: <20140425160705.GE12472@lunn.ch>
-References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
- <1398434836-18908-15-git-send-email-gregory.clement@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398434836-18908-15-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753205AbaDYQKA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:10:00 -0400
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:34020 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753176AbaDYQJx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 12:09:53 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: matt.fleming@intel.com, catalin.marinas@arm.com, msalter@redhat.com,
+        grant.likely@linaro.org, roy.franz@linaro.org,
+        ard.biesheuvel@linaro.org, mark.rutland@arm.com,
+        linux-doc@vger.kernel.org
+Subject: [PATCH v2 00/10] arm64: UEFI support
+Date: Fri, 25 Apr 2014 17:09:04 +0100
+Message-Id: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 04:07:12PM +0200, Gregory CLEMENT wrote:
-> The Armada 375 SoC comes with an USB2 host and device controller and
-> an USB3 controller. The USB cluster control register allows to manage
-> common features of both USB controllers.
-> 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
->  arch/arm/mach-mvebu/Makefile      |  2 +-
->  arch/arm/mach-mvebu/usb-cluster.c | 96 +++++++++++++++++++++++++++++++++++++++
->  2 files changed, 97 insertions(+), 1 deletion(-)
->  create mode 100644 arch/arm/mach-mvebu/usb-cluster.c
-> 
-> diff --git a/arch/arm/mach-mvebu/Makefile b/arch/arm/mach-mvebu/Makefile
-> index a63e43b6b451..dec05e7e1802 100644
-> --- a/arch/arm/mach-mvebu/Makefile
-> +++ b/arch/arm/mach-mvebu/Makefile
-> @@ -4,7 +4,7 @@ ccflags-$(CONFIG_ARCH_MULTIPLATFORM) := -I$(srctree)/$(src)/include \
->  AFLAGS_coherency_ll.o		:= -Wa,-march=armv7-a
->  
->  obj-y				 += system-controller.o mvebu-soc-id.o
-> -obj-$(CONFIG_MACH_MVEBU_V7)      += board-v7.o
-> +obj-$(CONFIG_MACH_MVEBU_V7)      += board-v7.o usb-cluster.o
->  obj-$(CONFIG_MACH_DOVE)		 += dove.o
->  obj-$(CONFIG_ARCH_MVEBU)	 += coherency.o coherency_ll.o pmsu.o
->  obj-$(CONFIG_SMP)                += platsmp.o headsmp.o
-> diff --git a/arch/arm/mach-mvebu/usb-cluster.c b/arch/arm/mach-mvebu/usb-cluster.c
-> new file mode 100644
-> index 000000000000..4c15d282db23
-> --- /dev/null
-> +++ b/arch/arm/mach-mvebu/usb-cluster.c
-> @@ -0,0 +1,96 @@
-> +/*
-> + * USB cluster support for Armada 375 platform.
-> + *
-> + * Copyright (C) 2014 Marvell
-> + *
-> + * Gregory CLEMENT <gregory.clement@free-electrons.com>
-> + *
-> + * This file is licensed under the terms of the GNU General Public
-> + * License version 2.  This program is licensed "as is" without any
-> + * warranty of any kind, whether express or implied.
-> + *
-> + * Armada 375 comes with an USB2 host and device controller and an
-> + * USB3 controller. The USB cluster control register allows to manage
-> + * common features of both USB controller.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/init.h>
-> +#include <linux/of_address.h>
-> +#include <linux/io.h>
-> +#include <linux/slab.h>
-> +
-> +#define USB2_PHY_CONFIG_ENABLE BIT(0) /* active low */
-> +
-> +static struct of_device_id of_usb_cluster_table[] = {
-> +	{ .compatible = "marvell,armada-375-usb-cluster", },
-> +	{ /* end of list */ },
-> +};
-> +
-> +static int __init mvebu_usb_cluster_init(void)
-> +{
-> +	struct device_node *np;
-> +
-> +	np = of_find_matching_node(NULL, of_usb_cluster_table);
-> +	if (np) {
-> +		void __iomem *usb_cluster_base;
-> +		u32 reg;
-> +		struct device_node *ehci_node, *xhci_node;
-> +		struct property *ehci_status;
-> +		bool use_usb3 = false;
-> +
-> +		usb_cluster_base = of_iomap(np, 0);
-> +		BUG_ON(!usb_cluster_base);
-> +
-> +		xhci_node = of_find_compatible_node(NULL, NULL,
-> +						"marvell,armada-375-xhci");
-> +
-> +		if (xhci_node && of_device_is_available(xhci_node))
-> +			use_usb3 = true;
-> +
-> +		ehci_node = of_find_compatible_node(NULL, NULL,
-> +						"marvell,orion-ehci");
-> +
-> +		if (ehci_node && of_device_is_available(ehci_node)
-> +			&& use_usb3) {
-> +			/*
-> +			 * We can't use usb2 and usb3 in the same time, so let's
-> +			 * disbale usb2 and complain about it to the user askinf
-> +			 * to fix the device tree.
-> +			 */
-> +
-> +			ehci_status = kzalloc(sizeof(struct property),
-> +					GFP_KERNEL);
-> +			WARN_ON(!ehci_status);
-> +
-> +			ehci_status->value = kstrdup("disabled", GFP_KERNEL);
-> +			WARN_ON(!ehci_status->value);
-> +
-> +			ehci_status->length = 8;
-> +			ehci_status->name = kstrdup("status", GFP_KERNEL);
-> +			WARN_ON(!ehci_status->name);
-> +
-> +			of_update_property(ehci_node, ehci_status);
-> +			pr_err("%s: armada-375-xhci and orion-ehci are incompatible for this SoC.\n",
-> +				__func__);
-> +			pr_err("Please fix your dts!\n");
-> +			pr_err("orion-ehci have been disabled by default...\n");
-> +
-> +		}
-> +
-> +		reg = readl(usb_cluster_base);
-> +		if (use_usb3)
-> +			reg |= USB2_PHY_CONFIG_ENABLE;
-> +		else
-> +			reg &= ~USB2_PHY_CONFIG_ENABLE;
-> +		writel(reg, usb_cluster_base);
+This set adds support for UEFI to the arm64 port - a stub loader, as
+well as runtime services support for efivars.
 
-Am i right in saying this in the end is about enabling the USB2 phy or
-a USB3 why? So why not just implement a phy driver?
+It depends on some core EFI patches currently in linux-next.
 
-  Andrew
+This includes bits shared between arm and arm64 support.
+Remaining bits required for arm support will be submitted separately.
+
+Changes from previous version:
+- Reordered runtime and stub packages to avoid bisect breakage.
+- Added more comments to efi-entry.S.
+- Use actual instruction to generate "MZ" signature in head.S.
+- Redundant cache/tlb maintenance removed.
+- Properly use %pa instead of %llx in mm error messages..
+- Stub deletes DT nodes of type "memory" instead of nodes called
+  "memory".
+
+Changes from earlier versions:
+- Enter_virtual_mode() is now an early initcall.
+- UEFI Reserved regions now preserved.
+- Bugfix for dtb= support with SecureBoot.
+- Stub now flushes instruction cache by address for kernel image area.
+- CONFIG_EFI_STUB merged into CONFIG_EFI since they are interdependent.
+- EFI_DEVICE_TREE_GUID renamed DEVICE_TREE_GUID.
+- Minor cleanups.
+
+Ard Biesheuvel (1):
+  efi/arm64: ignore dtb= when UEFI SecureBoot is enabled
+
+Leif Lindholm (1):
+  doc: arm: add UEFI support documentation
+
+Mark Salter (6):
+  lib: add fdt_empty_tree.c
+  efi: add helper function to get UEFI params from FDT
+  arm64: Add function to create identity mappings
+  arm64: add EFI runtime services
+  arm64: efi: add EFI stub
+  doc: arm64: add description of EFI stub support
+
+Roy Franz (2):
+  doc: efi-stub.txt updates for ARM
+  efi: Add shared FDT related functions for ARM/ARM64
+
+ Documentation/arm/00-INDEX      |    2 +
+ Documentation/arm/uefi.txt      |   64 ++++++
+ Documentation/arm64/booting.txt |    4 +
+ Documentation/efi-stub.txt      |   33 ++-
+ arch/arm64/Kconfig              |   16 ++
+ arch/arm64/include/asm/efi.h    |   14 ++
+ arch/arm64/include/asm/mmu.h    |    2 +
+ arch/arm64/kernel/Makefile      |    3 +
+ arch/arm64/kernel/efi-entry.S   |  109 +++++++++
+ arch/arm64/kernel/efi-stub.c    |   81 +++++++
+ arch/arm64/kernel/efi.c         |  466 +++++++++++++++++++++++++++++++++++++++
+ arch/arm64/kernel/head.S        |  112 ++++++++++
+ arch/arm64/kernel/setup.c       |    5 +
+ arch/arm64/mm/mmu.c             |   65 ++++--
+ drivers/firmware/efi/Kconfig    |    7 +
+ drivers/firmware/efi/arm-stub.c |  278 +++++++++++++++++++++++
+ drivers/firmware/efi/efi.c      |   79 +++++++
+ drivers/firmware/efi/fdt.c      |  285 ++++++++++++++++++++++++
+ include/linux/efi.h             |   12 +
+ lib/Makefile                    |    3 +-
+ lib/fdt_empty_tree.c            |    2 +
+ 21 files changed, 1616 insertions(+), 26 deletions(-)
+ create mode 100644 Documentation/arm/uefi.txt
+ create mode 100644 arch/arm64/include/asm/efi.h
+ create mode 100644 arch/arm64/kernel/efi-entry.S
+ create mode 100644 arch/arm64/kernel/efi-stub.c
+ create mode 100644 arch/arm64/kernel/efi.c
+ create mode 100644 drivers/firmware/efi/arm-stub.c
+ create mode 100644 drivers/firmware/efi/fdt.c
+ create mode 100644 lib/fdt_empty_tree.c
+
+-- 
+1.7.10.4
+
