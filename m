@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753938AbaDYNvr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:51:47 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:52605 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751784AbaDYNvq (ORCPT
+	id S1753944AbaDYNvz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:51:55 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55279 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751784AbaDYNvv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:51:46 -0400
-Date: Fri, 25 Apr 2014 09:51:41 -0400
-From: Matt Porter <mporter@linaro.org>
-To: Alex Elder <elder@linaro.org>
-Cc: bcm@fixthebug.org, bcm-kernel-feedback-list@broadcom.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 00/10] ARM: bcm: SCM and L2 cache code cleanup
-Message-ID: <20140425135141.GE1127@beef>
-References: <1398117191-2433-1-git-send-email-elder@linaro.org>
+	Fri, 25 Apr 2014 09:51:51 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <535A6873.9020404@roeck-us.net>
+Date: Fri, 25 Apr 2014 06:51:47 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398117191-2433-1-git-send-email-elder@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: monstr@monstr.eu
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Microblaze image hanging in qemu with 3.15-rc
+References: <20140422172356.GA15672@roeck-us.net> <53575074.6010602@monstr.eu> <5357C246.7050604@roeck-us.net> <5357CA6B.1070101@monstr.eu> <20140423154533.GA15644@roeck-us.net> <5358AC50.7020308@monstr.eu> <535913E1.70509@roeck-us.net> <535A0DD7.4080204@monstr.eu> <535A631F.5020208@roeck-us.net>
+In-Reply-To: <535A631F.5020208@roeck-us.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Apr 21, 2014 at 04:53:01PM -0500, Alex Elder wrote:
-> This series cleans up a number of things in the code that issues
-> secure monitor ("smc") requests for the bcm281xx and bcm21664 SoC
-> families.  This code is currently used only for enabling the level-2
-> cache.
-> 
-> There are some bug fixes and other improvements.  An assembly
-> language file containing a single function has been eliminated by
-> re-implementing the code using inline assembly.  Some comments have
-> been expanded and clarified.  Kernel configuration options allow
-> finer-grained control over how this code gets built.  Finally, the
-> "kona.c" and "kona.h" files are renamed to reflect the fact that
-> only contain code related to level-2 cache support.
+On 04/25/2014 06:29 AM, Guenter Roeck wrote:
+> On 04/25/2014 12:25 AM, Michal Simek wrote:
+> [ ... ]
+>
+>>
+>> It should be pretty easy to fix it in timer_write function like this.
+>>
+>> diff --git a/hw/timer/xilinx_timer.c b/hw/timer/xilinx_timer.c
+>> index 6113b97..3ff1da9 100644
+>> --- a/hw/timer/xilinx_timer.c
+>> +++ b/hw/timer/xilinx_timer.c
+>> @@ -169,7 +169,7 @@ timer_write(void *opaque, hwaddr addr,
+>>               if (value & TCSR_TINT)
+>>                   value &= ~TCSR_TINT;
+>>
+>> -            xt->regs[addr] = value;
+>> +            xt->regs[addr] = value & 0x7ff;
+>>               if (value & TCSR_ENT)
+>>                   timer_enable(xt);
+>>               break;
+>>
+>
+> Hi Michal,
+>
+> that fixes endianness detection, but the image is still hanging.
+>
+> Here is the log:
+>
+> NR_IRQS:33
+> /plb@0/interrupt-controller@81800000: num_irq=4, edge=0xa
+> ERROR: CPU CCF input clock not found
+> Reading TCSR0 returned 0x0, expected 0x1
+> Switch to big endian mode
+> /plb@0/timer@83c00000: irq=1
+> ERROR: timer CCF input clock not found
+> ERROR: Using CPU clock frequency
+> xilinx_timer_set_mode: shutdown
+> xilinx_timer_set_mode: periodic
+> sched_clock: 32 bits at 62MHz, resolution 16ns, wraps every 68719476720ns
+> Calibrating delay loop... QEMU: Terminated
+>
+> I added a couple of log messages to make sure that the mode is detected correctly.
+> Any idea what else might be wrong ?
+>
 
-Applied the series to mach-bcm for-3.16/cleanup
+Never mind, I found it. Same problem with interrupt handler.
+Can you give me the valid bit mask for intc_baseaddr + MER ?
 
 Thanks,
-Matt
+Guenter
 
-> 
-> This series is based on v3.15-rc2, and depends on one patch posted
-> previously:
->     [PATCH v4] mach-bcm: clean up config and build targets
->     https://lkml.org/lkml/2014/4/15/303
-> 
-> It is available here:
->     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
->     Branch review/bcm-smc-cleanup-v2
-> 
-> 					-Alex
-> 
-> History:
-> v2: - Followed two suggestions from Russell King.  Rebased to v3.15-rc2
-> 
-> Alex Elder (10):
->   ARM: bcm: use memory accessors for ioremapped area
->   ARM: bcm: err, don't BUG() on SMC init failures
->   ARM: bcm: clean up SMC code
->   ARM: bcm: have bcm_kona_smc() return request result
->   ARM: bcm: don't special-case CPU 0 in bcm_kona_smc()
->   ARM: bcm: config option for l2 cache support
->   ARM: bcm: tidy up a few includes
->   ARM: bcm: use inline assembly for "smc" request
->   ARM: bcm: rewrite commentary for bcm_kona_do_smc()
->   ARM: bcm: rename "kona.h" and "kona.c"
-> 
->  arch/arm/mach-bcm/Kconfig                     |  12 ++-
->  arch/arm/mach-bcm/Makefile                    |  10 +-
->  arch/arm/mach-bcm/bcm_kona_smc.c              | 136 +++++++++++++++++++-------
->  arch/arm/mach-bcm/bcm_kona_smc.h              |  52 +---------
->  arch/arm/mach-bcm/bcm_kona_smc_asm.S          |  41 --------
->  arch/arm/mach-bcm/board_bcm21664.c            |   5 +-
->  arch/arm/mach-bcm/board_bcm281xx.c            |   2 +-
->  arch/arm/mach-bcm/{kona.c => kona_l2_cache.c} |  16 +--
->  arch/arm/mach-bcm/{kona.h => kona_l2_cache.h} |   6 +-
->  9 files changed, 136 insertions(+), 144 deletions(-)
->  delete mode 100644 arch/arm/mach-bcm/bcm_kona_smc_asm.S
->  rename arch/arm/mach-bcm/{kona.c => kona_l2_cache.c} (80%)
->  rename arch/arm/mach-bcm/{kona.h => kona_l2_cache.h} (80%)
-> 
-> -- 
-> 1.9.1
-> 
