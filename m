@@ -1,66 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752758AbaDYNxd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:53:33 -0400
-Received: from mail-yh0-f51.google.com ([209.85.213.51]:34506 "EHLO
-	mail-yh0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751213AbaDYNxa (ORCPT
+	id S1753329AbaDYNyU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:54:20 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:54423 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751028AbaDYNyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:53:30 -0400
-X-Google-Original-From: Charles Coldwell <coldwell@frank.harvard.edu>
-Date: Fri, 25 Apr 2014 09:44:52 -0400 (EDT)
-From: Charles Coldwell <coldwell@gmail.com>
-To: Charles Coldwell <coldwell@gmail.com>
-cc: jon@ringle.org, linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gregkh@linuxfoundation.org, shc_work@mail.ru,
-        Jon Ringle <jringle@gridpoint.com>
-Subject: Re: [PATCH v7 1/2] serial: sc16is7xx
-In-Reply-To: <alpine.LRH.2.03.1404250914380.30160@frank.harvard.edu>
-Message-ID: <alpine.LRH.2.03.1404250941590.2625@frank.harvard.edu>
-References: <1398387367-4047-1-git-send-email-jon@ringle.org> <alpine.LRH.2.03.1404250914380.30160@frank.harvard.edu>
-User-Agent: Alpine 2.03 (LRH 1266 2009-07-14)
+	Fri, 25 Apr 2014 09:54:18 -0400
+Date: Fri, 25 Apr 2014 15:54:13 +0200
+From: Robert Richter <rric@kernel.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jean Pihet <jean.pihet@linaro.org>, Borislav Petkov <bp@alien8.de>,
+        Ingo Molnar <mingo@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: Re: [PATCH 04/16] perf, mmap: Factor out perf_get_fd()
+Message-ID: <20140425135413.GE32718@rric.localhost>
+References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
+ <1396883078-25320-5-git-send-email-jean.pihet@linaro.org>
+ <20140422142759.GM11182@twins.programming.kicks-ass.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140422142759.GM11182@twins.programming.kicks-ass.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Apr 2014, Charles Coldwell wrote:
-
-> On Thu, 24 Apr 2014, jon@ringle.org wrote:
-> 
-> > diff --git a/drivers/tty/serial/sc16is7xx.c b/drivers/tty/serial/sc16is7xx.c
-> > new file mode 100644
-> > index 0000000..ed139f5
-> > --- /dev/null
-> > +++ b/drivers/tty/serial/sc16is7xx.c
-> 
+On 22.04.14 16:27:59, Peter Zijlstra wrote:
+> On Mon, Apr 07, 2014 at 05:04:26PM +0200, Jean Pihet wrote:
+> > From: Robert Richter <robert.richter@linaro.org>
+> > 
+> > This new function creates a new fd for an event. We need this later to
+> > get a fd from a persistent event.
+> > 
+> > Signed-off-by: Robert Richter <robert.richter@linaro.org>
+> > Signed-off-by: Robert Richter <rric@kernel.org>
+> > Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
+> > ---
+> >  kernel/events/core.c     | 14 ++++++++------
+> >  kernel/events/internal.h |  1 +
+> >  2 files changed, 9 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/kernel/events/core.c b/kernel/events/core.c
+> > index 22ec8f0..9857475 100644
+> > --- a/kernel/events/core.c
+> > +++ b/kernel/events/core.c
+> > @@ -4206,6 +4206,11 @@ static const struct file_operations perf_fops = {
+> >  	.fasync			= perf_fasync,
+> >  };
+> >  
+> > +int perf_get_fd(struct perf_event *event, int f_flags)
+> > +{
+> > +	return anon_inode_getfd("[perf_event]", &perf_fops, event, f_flags);
+> > +}
 > > +
-> > +/* SC16IS7XX register definitions */
-> > +#define SC16IS7XX_RHR_REG		(0x00) /* RX FIFO */
-> > +#define SC16IS7XX_THR_REG		(0x00) /* TX FIFO */
-> > +#define SC16IS7XX_IER_REG		(0x01) /* Interrupt enable */
-> > +#define SC16IS7XX_IIR_REG		(0x02) /* Interrupt Identification */
-> > +#define SC16IS7XX_FCR_REG		(0x02) /* FIFO control */
-> > +#define SC16IS7XX_LCR_REG		(0x03) /* Line Control */
-> > +#define SC16IS7XX_MCR_REG		(0x04) /* Modem Control */
-> > +#define SC16IS7XX_LSR_REG		(0x05) /* Line Status */
-> > +#define SC16IS7XX_MSR_REG		(0x06) /* Modem Status */
-> > +#define SC16IS7XX_SPR_REG		(0x07) /* Scratch Pad */
+> >  /*
+> >   * Perf event wakeup
+> >   *
+> > @@ -7028,7 +7033,6 @@ SYSCALL_DEFINE5(perf_event_open,
+> >  	struct perf_event *event, *sibling;
+> >  	struct perf_event_attr attr;
+> >  	struct perf_event_context *ctx;
+> > -	struct file *event_file = NULL;
+> >  	struct fd group = {NULL, 0};
+> >  	struct task_struct *task = NULL;
+> >  	struct pmu *pmu;
+> > @@ -7189,10 +7193,9 @@ SYSCALL_DEFINE5(perf_event_open,
+> >  			goto err_context;
+> >  	}
+> >  
+> > -	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event,
+> > -					f_flags);
+> > -	if (IS_ERR(event_file)) {
+> > -		err = PTR_ERR(event_file);
+> > +	event_fd = perf_get_fd(event, f_flags);
+> > +	if (event_fd < 0) {
+> > +		err = event_fd;
+> >  		goto err_context;
+> >  	}
+> >  
+> > @@ -7257,7 +7260,6 @@ SYSCALL_DEFINE5(perf_event_open,
+> >  	 * perf_group_detach().
+> >  	 */
+> >  	fdput(group);
+> > -	fd_install(event_fd, event_file);
+> >  	return event_fd;
+> >  
+> >  err_context:
 > 
-> Isn't this a lot of duplication?
+> ISTR there being a good reason we only install the FD at the very last
+> moment. Of course I cannot quite recall it :/
+> 
+> I suspect it had something to do with not being able to fudge the state
+> while its being set-up or somesuch.
 
-Actually, the whole thing seems like duplication to me.  The SC16IS7X0 
-parts are designed to be 16550-compatible (hence the duplication in the 
-register map), and so I would vote for putting the driver into the 
-drivers/tty/serial/8250 framework.  There's really not much difference 
-between these parts and other 16550 parts except that they are reached 
-over the SPI/I2C bus.
+I guess its this patch from Al you referring to:
 
--- 
-Charles M. Coldwell, W1CMC
-"Turn on, log in, tune out"
-Belmont, Massachusetts, New England (FN42jj)
+ ea635c6 Fix racy use of anon_inode_getfd() in perf_event.c
 
-GPG ID:  852E052F
-GPG FPR: 77E5 2B51 4907 F08A 7E92  DE80 AFA9 9A8F 852E 052F
+I think we do not introduce it back due to:
+
+ a6fa941 perf_event: Switch to internal refcount, fix race with close()
+
+which removes the user of event_file.
+
+-Robert
