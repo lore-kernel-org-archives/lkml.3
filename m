@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbaDYRrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:47:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37599 "EHLO mx1.redhat.com"
+	id S1753767AbaDYRsB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:48:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2459 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753070AbaDYRrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:47:45 -0400
-Date: Fri, 25 Apr 2014 19:47:21 +0200
+	id S1753092AbaDYRry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 13:47:54 -0400
+Date: Fri, 25 Apr 2014 19:47:31 +0200
 From: Oleg Nesterov <oleg@redhat.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
@@ -17,9 +17,9 @@ Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/4] uprobes/x86: Cleanup the usage of
-	arch_uprobe->def.fixups, make it u8
-Message-ID: <20140425174721.GA7966@redhat.com>
+Subject: [PATCH 4/4] uprobes/x86: Cleanup the usage of
+	UPROBE_FIX_IP/UPROBE_FIX_CALL
+Message-ID: <20140425174731.GA7979@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,73 +29,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-handle_riprel_insn() assumes that nobody else could modify ->fixups
-before. This is correct but fragile, change it to use "|=".
+Now that UPROBE_FIX_IP/UPROBE_FIX_CALL are mutually exclusive we can
+use a single "fix_ip_or_call" enum instead of 2 fix_* booleans. This
+way the logic looks more understandable and clean to me.
 
-Also make ->fixups u8, we are going to add the new members into the
-union. It is not clear why UPROBE_FIX_RIP_.X lived in the upper byte,
-redefine them so that they can fit into u8.
+While at it, join "case 0xea" with other "ip is correct" ret/lret cases.
+Also change default_post_xol_op() to use "else if" for the same reason.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/include/asm/uprobes.h |    2 +-
- arch/x86/kernel/uprobes.c      |   14 +++++++-------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+ arch/x86/kernel/uprobes.c |   27 +++++++++++----------------
+ 1 files changed, 11 insertions(+), 16 deletions(-)
 
-diff --git a/arch/x86/include/asm/uprobes.h b/arch/x86/include/asm/uprobes.h
-index 72caff7..9ce25ce 100644
---- a/arch/x86/include/asm/uprobes.h
-+++ b/arch/x86/include/asm/uprobes.h
-@@ -53,7 +53,7 @@ struct arch_uprobe {
- #ifdef CONFIG_X86_64
- 			long	riprel_target;
- #endif
--			u16	fixups;
-+			u8	fixups;
- 		} 			def;
- 	};
- };
 diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-index 69b2d61..37e73b6 100644
+index 4c60b7a..4ae2406 100644
 --- a/arch/x86/kernel/uprobes.c
 +++ b/arch/x86/kernel/uprobes.c
-@@ -33,16 +33,16 @@
- /* Post-execution fixups. */
+@@ -424,10 +424,9 @@ static int default_post_xol_op(struct arch_uprobe *auprobe, struct pt_regs *regs
+ 	long correction = (long)(utask->vaddr - utask->xol_vaddr);
  
- /* Adjust IP back to vicinity of actual insn */
--#define UPROBE_FIX_IP		0x1
-+#define UPROBE_FIX_IP		0x01
+ 	handle_riprel_post_xol(auprobe, regs, &correction);
+-	if (auprobe->def.fixups & UPROBE_FIX_IP)
++	if (auprobe->def.fixups & UPROBE_FIX_IP) {
+ 		regs->ip += correction;
+-
+-	if (auprobe->def.fixups & UPROBE_FIX_CALL) {
++	} else if (auprobe->def.fixups & UPROBE_FIX_CALL) {
+ 		regs->sp += sizeof_long();
+ 		if (push_ret_address(regs, utask->vaddr + auprobe->def.ilen))
+ 			return -ERESTART;
+@@ -612,7 +611,7 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
+ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm, unsigned long addr)
+ {
+ 	struct insn insn;
+-	bool fix_ip = true, fix_call = false;
++	u8 fix_ip_or_call = UPROBE_FIX_IP;
+ 	int ret;
  
- /* Adjust the return address of a call insn */
--#define UPROBE_FIX_CALL	0x2
-+#define UPROBE_FIX_CALL		0x02
- 
- /* Instruction will modify TF, don't change it */
--#define UPROBE_FIX_SETF	0x4
-+#define UPROBE_FIX_SETF		0x04
- 
--#define UPROBE_FIX_RIP_AX	0x8000
--#define UPROBE_FIX_RIP_CX	0x4000
-+#define UPROBE_FIX_RIP_AX	0x08
-+#define UPROBE_FIX_RIP_CX	0x10
- 
- #define	UPROBE_TRAP_NR		UINT_MAX
- 
-@@ -307,12 +307,12 @@ handle_riprel_insn(struct arch_uprobe *auprobe, struct insn *insn)
- 		 * is NOT the register operand, so we use %rcx (register
- 		 * #1) for the scratch register.
- 		 */
--		auprobe->def.fixups = UPROBE_FIX_RIP_CX;
-+		auprobe->def.fixups |= UPROBE_FIX_RIP_CX;
- 		/* Change modrm from 00 000 101 to 00 000 001. */
- 		*cursor = 0x1;
- 	} else {
- 		/* Use %rax (register #0) for the scratch register. */
--		auprobe->def.fixups = UPROBE_FIX_RIP_AX;
-+		auprobe->def.fixups |= UPROBE_FIX_RIP_AX;
- 		/* Change modrm from 00 xxx 101 to 00 xxx 000 */
- 		*cursor = (reg << 3);
+ 	ret = uprobe_init_insn(auprobe, &insn, is_64bit_mm(mm));
+@@ -636,21 +635,20 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
+ 	case 0xcb:
+ 	case 0xc2:
+ 	case 0xca:
+-		fix_ip = false;
++	case 0xea:		/* jmp absolute -- ip is correct */
++		fix_ip_or_call = 0;
+ 		break;
+ 	case 0x9a:		/* call absolute - Fix return addr, not ip */
+-		fix_call = true;
+-		fix_ip = false;
+-		break;
+-	case 0xea:		/* jmp absolute -- ip is correct */
+-		fix_ip = false;
++		fix_ip_or_call = UPROBE_FIX_CALL;
+ 		break;
+ 	case 0xff:
+ 		switch (MODRM_REG(&insn)) {
+ 		case 2: case 3:			/* call or lcall, indirect */
+-			fix_call = true;
++			fix_ip_or_call = UPROBE_FIX_CALL;
++			break;
+ 		case 4: case 5:			/* jmp or ljmp, indirect */
+-			fix_ip = false;
++			fix_ip_or_call = 0;
++			break;
+ 		}
+ 		/* fall through */
+ 	default:
+@@ -658,10 +656,7 @@ int arch_uprobe_analyze_insn(struct arch_uprobe *auprobe, struct mm_struct *mm,
  	}
+ 
+ 	auprobe->def.ilen = insn.length;
+-	if (fix_ip)
+-		auprobe->def.fixups |= UPROBE_FIX_IP;
+-	if (fix_call)
+-		auprobe->def.fixups |= UPROBE_FIX_CALL;
++	auprobe->def.fixups |= fix_ip_or_call;
+ 
+ 	auprobe->ops = &default_xol_ops;
+ 	return 0;
 -- 
 1.5.5.1
 
