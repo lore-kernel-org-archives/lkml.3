@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751256AbaDYAxX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:53:23 -0400
-Received: from mga03.intel.com ([143.182.124.21]:63969 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750773AbaDYAxV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:53:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,923,1389772800"; 
-   d="scan'208";a="423599544"
-From: xiao jin <jin.xiao@intel.com>
-To: jhovold@gmail.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: juan.zou@intel.com, yanmin.zhang@intel.com, david.a.cohen@linux.intel.com,
-        xiao jin <jin.xiao@intel.com>, "Zhang, Qi1" <qi1.zhang@intel.com>
-Subject: [PATCH] usb_wwan: some improvement on write and resume
-Date: Fri, 25 Apr 2014 08:57:15 +0800
-Message-Id: <1398387435-13829-1-git-send-email-jin.xiao@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1751340AbaDYA4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:56:30 -0400
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:50339 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbaDYA40 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 20:56:26 -0400
+From: jon@ringle.org
+To: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: gregkh@linuxfoundation.org, shc_work@mail.ru,
+        Jon Ringle <jringle@gridpoint.com>
+Subject: [PATCH v7 2/2] serial: sc16is7xx: Add bindings documentation for the SC16IS7XX UARTs
+Date: Thu, 24 Apr 2014 20:56:07 -0400
+Message-Id: <1398387367-4047-2-git-send-email-jon@ringle.org>
+X-Mailer: git-send-email 1.8.5.4
+In-Reply-To: <1398387367-4047-1-git-send-email-jon@ringle.org>
+References: <1398387367-4047-1-git-send-email-jon@ringle.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When enable usb serial for modem data, sometimes the tty is blocked
-in tty_wait_until_sent because portdata->out_busy always is set and
-have no chance to be cleared.
+From: Jon Ringle <jringle@gridpoint.com>
 
-We have found two scenarios lead to portdata->out_busy problem.
-1. usb_wwan_write set portdata->out_busy firstly, then try autopm
-async with error. No out urb submit and no usb_wwan_outdat_callback
-to this write, portdata->out_busy can't be cleared.
-2. usb_wwan_resume run play_delayed() and spin_unlock, but
-intfdata->suspended still is not set to zero. At this time
-usb_wwan_write is called and anchor the urb to delay list. Then resume
-keep running but the delayed urb have no chance to be commit until next
-resume. If the time of next resume is far away, tty will be blocked
-in tty_wait_until_sent during time.
+This patch adds the devicetree documentation for the NXP SC16IS7XX UARTs.
 
-The patch make some enhancement on write and resume.
-1. clear portdata->out_busy if usb_wwan_write try autopm async with
-error.
-2. put play_Delayed and intfdata->suspended together in the spinlock,
-it's to avoid the write race during resume.
-
-Signed-off-by: xiao jin <jin.xiao@intel.com>
-Signed-off-by: Zhang, Qi1 <qi1.zhang@intel.com>
-Reviewed-by: David Cohen <david.a.cohen@linux.intel.com>
+Signed-off-by: Jon Ringle <jringle@gridpoint.com>
 ---
- drivers/usb/serial/usb_wwan.c |   12 +++++-------
- 1 file changed, 5 insertions(+), 7 deletions(-)
+ .../devicetree/bindings/serial/nxp,sc16is7xx.txt   | 33 ++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
 
-diff --git a/drivers/usb/serial/usb_wwan.c b/drivers/usb/serial/usb_wwan.c
-index 640fe01..8e06afc 100644
---- a/drivers/usb/serial/usb_wwan.c
-+++ b/drivers/usb/serial/usb_wwan.c
-@@ -228,8 +228,10 @@ int usb_wwan_write(struct tty_struct *tty, struct usb_serial_port *port,
- 			usb_pipeendpoint(this_urb->pipe), i);
- 
- 		err = usb_autopm_get_interface_async(port->serial->interface);
--		if (err < 0)
-+		if (err < 0) {
-+			clear_bit(i, &portdata->out_busy);
- 			break;
-+		}
- 
- 		/* send the data */
- 		memcpy(this_urb->transfer_buffer, buf, todo);
-@@ -661,17 +663,15 @@ int usb_wwan_resume(struct usb_serial *serial)
- 		}
- 	}
- 
-+	spin_lock_irq(&intfdata->susp_lock);
- 	for (i = 0; i < serial->num_ports; i++) {
- 		/* walk all ports */
- 		port = serial->port[i];
- 		portdata = usb_get_serial_port_data(port);
- 
- 		/* skip closed ports */
--		spin_lock_irq(&intfdata->susp_lock);
--		if (!portdata || !portdata->opened) {
--			spin_unlock_irq(&intfdata->susp_lock);
-+		if (!portdata || !portdata->opened)
- 			continue;
--		}
- 
- 		for (j = 0; j < N_IN_URB; j++) {
- 			urb = portdata->in_urbs[j];
-@@ -684,9 +684,7 @@ int usb_wwan_resume(struct usb_serial *serial)
- 			}
- 		}
- 		play_delayed(port);
--		spin_unlock_irq(&intfdata->susp_lock);
- 	}
--	spin_lock_irq(&intfdata->susp_lock);
- 	intfdata->suspended = 0;
- 	spin_unlock_irq(&intfdata->susp_lock);
- err_out:
+diff --git a/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+new file mode 100644
+index 0000000..246c795
+--- /dev/null
++++ b/Documentation/devicetree/bindings/serial/nxp,sc16is7xx.txt
+@@ -0,0 +1,33 @@
++* NXP SC16IS7xx advanced Universal Asynchronous Receiver-Transmitter (UART)
++
++Required properties:
++- compatible: Should be one of the following:
++  - "nxp,sc16is740" for NXP SC16IS740,
++  - "nxp,sc16is741" for NXP SC16IS741,
++  - "nxp,sc16is750" for NXP SC16IS750,
++  - "nxp,sc16is752" for NXP SC16IS752,
++  - "nxp,sc16is760" for NXP SC16IS760,
++  - "nxp,sc16is762" for NXP SC16IS762.
++- reg: I2C address of the SC16IS7xx device.
++- interrupt-parent: The phandle for the interrupt controller that
++  services interrupts for this IC.
++- interrupts: Should contain the UART interrupt
++- clocks: Reference to the IC source clock.
++
++Optional properties:
++- gpio-controller: Marks the device node as a GPIO controller.
++- #gpio-cells: Should be two. The first cell is the GPIO number and
++  the second cell is used to specify the GPIO polarity:
++    0 = active high,
++    1 = active low.
++
++Example:
++        sc16is750: sc16is750@51 {
++                compatible = "nxp,sc16is750";
++                reg = <0x51>;
++                clocks = <&clk20m>;
++                interrupt-parent = <&gpio3>;
++                interrupts = <7 IRQ_TYPE_EDGE_FALLING>;
++                gpio-controller;
++                #gpio-cells = <2>;
++        };
 -- 
-1.7.9.5
+1.8.5.4
 
