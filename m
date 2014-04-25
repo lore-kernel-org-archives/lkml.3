@@ -1,55 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753988AbaDYNSR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:18:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1257 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096AbaDYNSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:18:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
-   d="scan'208";a="528296777"
-Message-ID: <535A6070.90803@intel.com>
-Date: Fri, 25 Apr 2014 21:17:36 +0800
-From: "Yan, Zheng" <zheng.z.yan@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	id S1754049AbaDYNSb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:18:31 -0400
+Received: from mail-ob0-f170.google.com ([209.85.214.170]:60142 "EHLO
+	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992AbaDYNSW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 09:18:22 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-CC: Ingo Molnar <mingo@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
-References: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com> <20140418105354.GA29167@gmail.com> <53548008.3040504@intel.com> <20140422113545.GA14950@gmail.com> <CABPqkBTHv3U6L4fKOvsFcaWR8HcOEaqGGxRMRn-+O68a0BLCuA@mail.gmail.com> <20140424081408.GA7709@gmail.com> <5358E6A2.3020505@intel.com> <CABPqkBRihMr=+X_Gb5dSYfForTpGA6XZGfTHOA3PZNAHTJDPkg@mail.gmail.com> <20140424112715.GQ11096@twins.programming.kicks-ass.net>
-In-Reply-To: <20140424112715.GQ11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1398346054-3322-3-git-send-email-namhyung@kernel.org>
+References: <1398346054-3322-1-git-send-email-namhyung@kernel.org>
+	<1398346054-3322-3-git-send-email-namhyung@kernel.org>
+Date: Fri, 25 Apr 2014 15:18:21 +0200
+Message-ID: <CABPqkBQfSftQRbnFMLvPUHSMa3Dv62ARmyeN530ee=3V2e80Cw@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] perf tools: Get rid of on_exit() feature test
+From: Stephane Eranian <eranian@google.com>
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>,
+        Irina Tirdea <irina.tirdea@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 07:27 PM, Peter Zijlstra wrote:
-> On Thu, Apr 24, 2014 at 12:36:01PM +0200, Stephane Eranian wrote:
->>> Most of hardware specific codes in the Intel uncore driver are for
->>> SandyBridge/IvyBridge/Haswell. Uncore subsystem in these CPUs are
->>> similar. One module per CPU type means we have to duplicate lots of
->>> code. I don't think it's a good idea.
->>>
->> Then, at least split nhm_ex from the rest. It is very big.
-> 
-> Aren't the EX parts in general far more complex and different from the
-> EP parts? Or will the SNB/IVB/HSW-EX parts also be similar again? (this
-> would be a good thing).
+On Thu, Apr 24, 2014 at 3:27 PM, Namhyung Kim <namhyung@kernel.org> wrote:
+> The on_exit() function was only used in perf record but it's gone in
+> previous patch.
+>
+Acked-by: Stephane Eranian <eranian@google.com>
 
-SNB/IVB/HSW-EX are almost identical to SNB/IVB/HSW-EP. NHM/WSM-EX are complete
-different from SNB/IVB/HSW-EX
-
-Regards
-Yan, Zheng
-
-
-> 
-> But yes, it makes sense to at least split the EP and EX parts, and split
-> where the families are different.
-> 
-
+> Cc: Bernhard Rosenkraenzer <Bernhard.Rosenkranzer@linaro.org>
+> Cc: Irina Tirdea <irina.tirdea@intel.com>
+> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> ---
+>  tools/perf/builtin-record.c                     |   31 -----------------------
+>  tools/perf/config/Makefile                      |    8 ------
+>  tools/perf/config/feature-checks/Makefile       |    4 ---
+>  tools/perf/config/feature-checks/test-all.c     |    5 ----
+>  tools/perf/config/feature-checks/test-on-exit.c |   16 ------------
+>  5 files changed, 64 deletions(-)
+>  delete mode 100644 tools/perf/config/feature-checks/test-on-exit.c
+>
+> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+> index b1523d8a6191..1c127806fcb1 100644
+> --- a/tools/perf/builtin-record.c
+> +++ b/tools/perf/builtin-record.c
+> @@ -30,37 +30,6 @@
+>  #include <sched.h>
+>  #include <sys/mman.h>
+>
+> -#ifndef HAVE_ON_EXIT_SUPPORT
+> -#ifndef ATEXIT_MAX
+> -#define ATEXIT_MAX 32
+> -#endif
+> -static int __on_exit_count = 0;
+> -typedef void (*on_exit_func_t) (int, void *);
+> -static on_exit_func_t __on_exit_funcs[ATEXIT_MAX];
+> -static void *__on_exit_args[ATEXIT_MAX];
+> -static int __exitcode = 0;
+> -static void __handle_on_exit_funcs(void);
+> -static int on_exit(on_exit_func_t function, void *arg);
+> -#define exit(x) (exit)(__exitcode = (x))
+> -
+> -static int on_exit(on_exit_func_t function, void *arg)
+> -{
+> -       if (__on_exit_count == ATEXIT_MAX)
+> -               return -ENOMEM;
+> -       else if (__on_exit_count == 0)
+> -               atexit(__handle_on_exit_funcs);
+> -       __on_exit_funcs[__on_exit_count] = function;
+> -       __on_exit_args[__on_exit_count++] = arg;
+> -       return 0;
+> -}
+> -
+> -static void __handle_on_exit_funcs(void)
+> -{
+> -       int i;
+> -       for (i = 0; i < __on_exit_count; i++)
+> -               __on_exit_funcs[i] (__exitcode, __on_exit_args[i]);
+> -}
+> -#endif
+>
+>  struct record {
+>         struct perf_tool        tool;
+> diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
+> index ee21fa95ebcf..7b7003d11983 100644
+> --- a/tools/perf/config/Makefile
+> +++ b/tools/perf/config/Makefile
+> @@ -156,7 +156,6 @@ CORE_FEATURE_TESTS =                        \
+>         libpython-version               \
+>         libslang                        \
+>         libunwind                       \
+> -       on-exit                         \
+>         stackprotector-all              \
+>         timerfd                         \
+>         libdw-dwarf-unwind
+> @@ -182,7 +181,6 @@ VF_FEATURE_TESTS =                  \
+>         libelf-getphdrnum               \
+>         libelf-mmap                     \
+>         libpython-version               \
+> -       on-exit                         \
+>         stackprotector-all              \
+>         timerfd                         \
+>         libunwind-debug-frame           \
+> @@ -541,12 +539,6 @@ ifneq ($(filter -lbfd,$(EXTLIBS)),)
+>    CFLAGS += -DHAVE_LIBBFD_SUPPORT
+>  endif
+>
+> -ifndef NO_ON_EXIT
+> -  ifeq ($(feature-on-exit), 1)
+> -    CFLAGS += -DHAVE_ON_EXIT_SUPPORT
+> -  endif
+> -endif
+> -
+>  ifndef NO_BACKTRACE
+>    ifeq ($(feature-backtrace), 1)
+>      CFLAGS += -DHAVE_BACKTRACE_SUPPORT
+> diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
+> index 2da103c53f89..64c84e5f0514 100644
+> --- a/tools/perf/config/feature-checks/Makefile
+> +++ b/tools/perf/config/feature-checks/Makefile
+> @@ -24,7 +24,6 @@ FILES=                                        \
+>         test-libslang.bin               \
+>         test-libunwind.bin              \
+>         test-libunwind-debug-frame.bin  \
+> -       test-on-exit.bin                \
+>         test-stackprotector-all.bin     \
+>         test-timerfd.bin                \
+>         test-libdw-dwarf-unwind.bin
+> @@ -133,9 +132,6 @@ test-liberty-z.bin:
+>  test-cplus-demangle.bin:
+>         $(BUILD) -liberty
+>
+> -test-on-exit.bin:
+> -       $(BUILD)
+> -
+>  test-backtrace.bin:
+>         $(BUILD)
+>
+> diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
+> index fc37eb3ca17b..fe5c1e5c952f 100644
+> --- a/tools/perf/config/feature-checks/test-all.c
+> +++ b/tools/perf/config/feature-checks/test-all.c
+> @@ -69,10 +69,6 @@
+>  # include "test-libbfd.c"
+>  #undef main
+>
+> -#define main main_test_on_exit
+> -# include "test-on-exit.c"
+> -#undef main
+> -
+>  #define main main_test_backtrace
+>  # include "test-backtrace.c"
+>  #undef main
+> @@ -110,7 +106,6 @@ int main(int argc, char *argv[])
+>         main_test_gtk2(argc, argv);
+>         main_test_gtk2_infobar(argc, argv);
+>         main_test_libbfd();
+> -       main_test_on_exit();
+>         main_test_backtrace();
+>         main_test_libnuma();
+>         main_test_timerfd();
+> diff --git a/tools/perf/config/feature-checks/test-on-exit.c b/tools/perf/config/feature-checks/test-on-exit.c
+> deleted file mode 100644
+> index 8e88b16e6ded..000000000000
+> --- a/tools/perf/config/feature-checks/test-on-exit.c
+> +++ /dev/null
+> @@ -1,16 +0,0 @@
+> -#include <stdio.h>
+> -#include <stdlib.h>
+> -
+> -static void exit_fn(int status, void *__data)
+> -{
+> -       printf("exit status: %d, data: %d\n", status, *(int *)__data);
+> -}
+> -
+> -static int data = 123;
+> -
+> -int main(void)
+> -{
+> -       on_exit(exit_fn, &data);
+> -
+> -       return 321;
+> -}
+> --
+> 1.7.9.2
+>
