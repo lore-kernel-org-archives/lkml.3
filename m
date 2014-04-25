@@ -1,131 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845AbaDYQ5m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:57:42 -0400
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:22836 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751236AbaDYQ5j (ORCPT
+	id S1753273AbaDYRB3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:01:29 -0400
+Received: from mail-we0-f173.google.com ([74.125.82.173]:45730 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225AbaDYRB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:57:39 -0400
-Date: Fri, 25 Apr 2014 12:57:35 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com
-Subject: Re: [RFC v3 7/9] kdb: Categorize kdb commands (similar to SysRq
- categorization)
-Message-ID: <20140425125735.334add30@gandalf.local.home>
-In-Reply-To: <1398443370-12668-8-git-send-email-daniel.thompson@linaro.org>
-References: <1396453440-16445-1-git-send-email-daniel.thompson@linaro.org>
-	<1398443370-12668-1-git-send-email-daniel.thompson@linaro.org>
-	<1398443370-12668-8-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
+	Fri, 25 Apr 2014 13:01:26 -0400
+Message-ID: <535A94E3.5080004@linaro.org>
+Date: Fri, 25 Apr 2014 19:01:23 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+To: Peter Zijlstra <peterz@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Amit Kucheria <amit.kucheria@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org> <535911DC.9050109@linaro.org> <CAP245DXFRfARtEfj70XD8D8OiAT_1i_5G2zao+y0DT0Lg_YFJA@mail.gmail.com> <2713863.BLQTYQm2Oa@vostro.rjw.lan> <20140425132055.GC11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140425132055.GC11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 25 Apr 2014 17:29:28 +0100
-Daniel Thompson <daniel.thompson@linaro.org> wrote:
+On 04/25/2014 03:20 PM, Peter Zijlstra wrote:
+> On Fri, Apr 25, 2014 at 01:46:53PM +0200, Rafael J. Wysocki wrote:
+>
+> _trim_ emails!!! one of these days I'm going to write a bot to flame
+> your head of if there's excessive quoting.
+>
+>>> I had a offline conversation with Daniel about this since there are
+>>> other triggers - thermal constraints and game-like apps being examples
+>>> - that might want to override the system policy. He intended
+>>> "performance" mode to mean the existing code paths and "power" mode to
+>>> mean *additional* new heuristics for energy-efficiency. The power
+>>> supply assumption is just the first one of those heuristics.
+>>
+>> Well, so now the question is whether or not we relly want to always
+>> go to the "power" (or "energy efficiency" if you will) mode if the system
+>> is on battery.  That arguably may not be a good thing even for energy
+>> efficiency depending on how exactly the modes are defined.
+>
+> Nobody is talking about always. But in general it seems a good enough
+> approach. Hell, many of the AC/BAT switches in todays power management
+> crap things are not always right.
+>
+> Do I want it to dim the LCD further when I unplug the laptop -- mostly
+> no, but still it does. And the most annoying one is that it reduces the
+> screen blank time to something near 5 seconds or so.
+>
+> Why would this be any different? If you know what you want you can turn
+> the knob.
+>
+>> So in my opinion it's too early to add things like that at this point.
+>
+> Meh..
+>
 
-> This patch introduces several new flags to collect kdb commands into
-> groups (later allowing them to be optionally disabled).
-> 
-> This follows similar prior art to enable/disable magic sysrq
-> commands.
-> 
-> The commands have been categorized as follows:
-> 
-> Always on:  go (w/o args), env, set, help, ?, cpu (w/o args), sr,
->             dmesg, disable_nmi, defcmd, summary, grephelp
-> Mem read:   md, mdr, mdp, mds, ef, bt (with args), per_cpu
-> Mem write:  mm
-> Reg read:   rd
-> Reg write:  go (with args), rm
-> Inspect:    bt (w/o args), btp, bta, btc, btt, ps, pid, lsmod
-> Flow ctrl:  bp, bl, bph, bc, be, bd, ss
-> Signal:     kill
-> Reboot:     reboot
-> All:        cpu, kgdb, (and all of the above), nmi_console
-> 
-> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> ---
->  include/linux/kdb.h         |  52 ++++++++++++++++++++++-
->  kernel/debug/kdb/kdb_bp.c   |  21 ++++++----
->  kernel/debug/kdb/kdb_main.c | 100 +++++++++++++++++++++++++++++---------------
->  kernel/trace/trace_kdb.c    |   2 +-
->  4 files changed, 132 insertions(+), 43 deletions(-)
-> 
-> diff --git a/include/linux/kdb.h b/include/linux/kdb.h
-> index 4b656d6..2f65c7a 100644
-> --- a/include/linux/kdb.h
-> +++ b/include/linux/kdb.h
-> @@ -14,10 +14,58 @@
->   */
->  
->  typedef enum {
-> -	KDB_REPEAT_NO_ARGS	= 0x1, /* Repeat the command w/o arguments */
-> -	KDB_REPEAT_WITH_ARGS	= 0x2, /* Repeat the command w/ its arguments */
-> +	KDB_ENABLE_ALL       = 0x00000001, /* Enable everything */
-> +	KDB_ENABLE_MEM_READ  = 0x00000002,
-> +	KDB_ENABLE_MEM_WRITE = 0x00000004,
-> +	KDB_ENABLE_REG_READ  = 0x00000008,
-> +	KDB_ENABLE_REG_WRITE = 0x00000010,
-> +	KDB_ENABLE_INSPECT   = 0x00000020,
-> +	KDB_ENABLE_FLOW_CTRL = 0x00000040,
-> +	KDB_ENABLE_SIGNAL    = 0x00000080,
-> +	KDB_ENABLE_REBOOT    = 0x00000100,
-> +	/* User exposed values stop here, all remaining flags are
-> +	 * exclusively used to describe a commands behaviour.
-> +	 */
-> +
-> +	KDB_ENABLE_ALWAYS_SAFE = 0x00000200,
-> +	KDB_ENABLE_MASK = 0x000003ff,
-> +
-> +	KDB_ENABLE_ALL_NO_ARGS = KDB_ENABLE_ALL << 16,
-> +	KDB_ENABLE_MEM_READ_NO_ARGS = KDB_ENABLE_MEM_READ << 16,
-> +	KDB_ENABLE_MEM_WRITE_NO_ARGS = KDB_ENABLE_MEM_WRITE << 16,
-> +	KDB_ENABLE_REG_READ_NO_ARGS = KDB_ENABLE_REG_READ << 16,
-> +	KDB_ENABLE_REG_WRITE_NO_ARGS = KDB_ENABLE_REG_WRITE << 16,
-> +	KDB_ENABLE_INSPECT_NO_ARGS = KDB_ENABLE_INSPECT << 16,
-> +	KDB_ENABLE_FLOW_CTRL_NO_ARGS = KDB_ENABLE_FLOW_CTRL << 16,
-> +	KDB_ENABLE_SIGNAL_NO_ARGS = KDB_ENABLE_SIGNAL << 16,
-> +	KDB_ENABLE_REBOOT_NO_ARGS = KDB_ENABLE_REBOOT << 16,
-> +	KDB_ENABLE_ALWAYS_SAFE_NO_ARGS = KDB_ENABLE_ALWAYS_SAFE << 16,
-> +	KDB_ENABLE_MASK_NO_ARGS = KDB_ENABLE_MASK << 16,
+Peter,
 
-I would recommend defining a KDB_NO_ARGS_SHIFT to be 16 and use that
-instead of having a magic number 16 to deal with. This also makes it
-easier if you need to shift a bit more in the future.
+I assume the patchset is correct for you (modulo the few comments about 
+code), right ?
 
-	KDB_ENABLE_ALL_NO_ARGS = KDB_ENABLE_ALL << KDB_NO_ARGS_SHIFT,
+As the sysctl is some kind of ABI, I would like to make sure we reach a 
+consensus and discuss a bit about that.
 
-Although, I'm not sure why you just didn't have a KDB_ENABLE_ARGS flag,
-and then you don't need to repeat all the flags again. Seems rather
-silly.
+I understand Rafael and Amit could be reluctant with the power supply to 
+be hardcoded. As mentioned Amit, we may want to switch to 'power' if the 
+thermal framework tells us we are reaching a threshold. For example, the 
+system is set to 'auto', we are on battery, thus the current policy is 
+'power', we plug the device, the current policy will switch to 
+'performance' but the thermal framework may want to do 'power' because 
+of some thermal constraint.
 
-KDB_ENABLE_ALL_NO_ARGS would then be just
-KDB_ENABLE_ALL|KDB_ENABLE_NO_ARGS.
+IMO, the power supply part could be extended to take into account the 
+thermal.
 
-Or can you have multiple settings? That is, MEM_READ and
-MEM_WRITE_NO_ARGS both set such that you can't just have a simple args
-or no args command for the entire flags?
+The other point is, I guess, what should do the 'power' policy ? pack 
+tasks or not ? Override the cpuidle governor and choose the deeper idle 
+states or not ? etc ... So in other words, how can we put a cursor 
+between 'performance' and 'power'. Knowing on some platform one may be 
+more efficient than another platform.
 
--- Steve
+IIUC, 'performance' for you means 'max performance' and 'power' means 
+'max power', and a list of sysctl for each power/performance option give 
+us the knobs to tune one or another policy ? (Each platform defining its 
+own options)
+
+Would this approach be ok ?
+
+Thanks
+
+   -- Daniel
 
 
-> +
-> +	KDB_REPEAT_NO_ARGS = 0x40000000, /* Repeat the command w/o arguments */
-> +	KDB_REPEAT_WITH_ARGS = 0x80000000, /* Repeat the command with args */
->  } kdb_cmdflags_t;
->  
+
+
+
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
