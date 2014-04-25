@@ -1,168 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751872AbaDYV4g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 17:56:36 -0400
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:38747 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751283AbaDYV4e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 17:56:34 -0400
+	id S1751424AbaDYWBV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:01:21 -0400
+Received: from mga03.intel.com ([143.182.124.21]:62856 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751139AbaDYWBT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 18:01:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,929,1389772800"; 
+   d="scan'208";a="424129277"
+From: "Hohndel, Dirk" <dirk.hohndel@intel.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Subject: Re: how to include already compiled object files to kernel
+Thread-Topic: how to include already compiled object files to kernel
+Thread-Index: Ac9gojb8jtX0K20pQFGL2vOl15VYggAalj8A
+Date: Fri, 25 Apr 2014 22:01:17 +0000
+Message-ID: <1398463280.37783.3.camel@rrmbp.gr8dns.org>
+References: <D854C92F57B1B347B57E531E78D05EAD574BFA6D@BGSMSX104.gar.corp.intel.com>
+In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD574BFA6D@BGSMSX104.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.19.17.220]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <D029BC40924F5C4EADCA7ED257729429@intel.com>
 MIME-Version: 1.0
-In-Reply-To: <CACE9dm-fdqDgFT5Pw1ry6XOuAhqmsEEiQMOFw=rooazBkdx-wg@mail.gmail.com>
-References: <535A5C78.1070901@samsung.com>
-	<535A75C1.3050901@samsung.com>
-	<20140425182310.GA9128@redhat.com>
-	<87sip15iy5.fsf@x220.int.ebiederm.org>
-	<20140425192543.GA11908@redhat.com>
-	<878uqt42q7.fsf@x220.int.ebiederm.org>
-	<20140425200156.GA13727@redhat.com>
-	<CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
-	<874n1h16le.fsf@x220.int.ebiederm.org>
-	<CACE9dm_56FvbJDVyxvTtd3yL+d89XYhZ-i038HJS-sUsZAPpaQ@mail.gmail.com>
-	<87iopxxfpp.fsf@x220.int.ebiederm.org>
-	<CACE9dm-fdqDgFT5Pw1ry6XOuAhqmsEEiQMOFw=rooazBkdx-wg@mail.gmail.com>
-Date: Sat, 26 Apr 2014 00:56:32 +0300
-Message-ID: <CACE9dm9CTU0-FFr3KveE8QV0dR-vxiDg91Km_2w3v37O5eTcYg@mail.gmail.com>
-Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
-From: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        John Johansen <john.johansen@canonical.com>,
-        Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>, viro@zeniv.linux.org.uk,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-team <kernel-team@lists.ubuntu.com>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3PM1eCO010794
 
-On 26 April 2014 00:46, Dmitry Kasatkin <dmitry.kasatkin@gmail.com> wrote:
-> On 26 April 2014 00:27, Eric W. Biederman <ebiederm@xmission.com> wrote:
->> Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
->>
->>> On 25 April 2014 23:45, Eric W. Biederman <ebiederm@xmission.com> wrote:
->>>> Dmitry Kasatkin <dmitry.kasatkin@gmail.com> writes:
->>>>
->>>>> On 25 April 2014 23:01, Oleg Nesterov <oleg@redhat.com> wrote:
->>>>>> On 04/25, Eric W. Biederman wrote:
->>>>>>>
->>>>>>> Oleg Nesterov <oleg@redhat.com> writes:
->>>>>>>
->>>>>>> > Well. I _think_ that __fput() and ima_file_free() in particular should not
->>>>>>> > depend on current and/or current->nsproxy. If nothing else, fput() can be
->>>>>>> > called by the unrelated task which looks into /proc/pid/.
->>>>>>> >
->>>>>>> > But again, task_work_add() has more and more users, and it seems that even
->>>>>>> > __fput() paths can do "everything", so perhaps it would be safer to allow
->>>>>>> > to use ->nsproxy in task_work_run.
->>>>>>>
->>>>>>> Like I said, give me a clear motivating case.
->>>>>>
->>>>>> I agree, we need a reason. Currently I do not see one.
->>>>>>
->>>>>>> Right now not allowing
->>>>>>> nsproxy is turning up bugs in __fput.  Which seems like a good thing.
->>>>>>
->>>>>> This is what I certainly agree with ;)
->>>>>>
->>>>>
->>>>> Hi,
->>>>>
->>>>> IMA uses kernel_read API which does not know anything about caller.
->>>>> And of course security frameworks are at guard as usual.
->>>>>
->>>>> Exactly after reading first Eric's respons, I thought why to scratch
->>>>> the head when task work queues are indeed designed for tasks...
->>>>
->>>> __fput has no guarantee of running in the task that close the file
->>>> descriptor.  If your code depends on that your code is broken.
->>>>
->>>>> And if you to dig for the history, IMA-appraisal was stuck due to
->>>>> lockdep reporting even though it was on non-everlaping cases.
->>>>> IIRC files vs. directories...
->>>>>
->>>>> After that IIRC Al Viro discussed about delayed fput and IIRC Oleg
->>>>> (sorry if I am wrong) introduced task work queues.
->>>>>
->>>>> So IMA-appraisal was able to be upstreamed... That was ~3.4 time frame, IIRC
->>>>>
->>>>> Name space also dated around ~3.4??
->>>>> Apparmor namespace change was also around that time.
->>>>>
->>>>> 3.10 introduces this name space order change and broke IMA-appraisal.
->>>>
->>>> IMA-appraisal is fundamentally broken because I can take a mandatory
->>>> file lock and prevent IMA-apprasial.
->>>>
->>>
->>> What file lock are you talking about?
->>> IMA-appraisal does not depends on file locks...
->>
->> It honors them.  Look at rw_verify_area, in vfs_read, in kernel_read.
->>
->> It sure looks like locks_mandatory_area can cause your kernel_read to
->> fail.
->>
->>>> Using kernel_read is what allows this.
->>>>
->>>>> Isn't it a clear motivating case???
->>>>
->>>> kernel_read is not appropriate for IMA use.  The rest of this is just
->>>> the messenger.
->>>>
->>>> IMA needs to use a cousin of kernel_read that operates at a lower level
->>>> than vfs_read.  A function that all of the permission checks and the
->>>> fsnotify work.
->>>>
->>>> I am sorry to be the bearer of bad news.  But kernel_read is totally
->>>> inappropriate for IMA.
->>>>
->>>
->>> So you break IMA-appraisal and declare that it cannot be used now?
->>
->> I didn't break it.  I read the code, and I read the back trace to see
->> where the bug was.
->>
->> I see IMA-appraisal trying to read file data as if it were a user space
->> application in such a way that it can get permission denied for a whole
->> host of reasons.
->>
->> My understanding of IMA-appraisal is that using a code path that can
->> give use permission denined when performing appraisal is a way for
->> clever people to attack and avoid IMA-appraisal without violating any
->> security policy.
->>
->
-> Interesting thing is that file was already open before and LSM gave OK for this.
-> Then re-reading the file on close in fact does not need any LSM
-> permission checks.
-> But as kernel_read API is still the same, it goes via the same checks...
->
-> But on close with delayed fput nsproxy is missing ....
->
->> Am I wrong.  Is it ok for IMA-appraisal to get permission denied when it
->> wants to appraise a file?
->>
->
-> IMA is called after may_open...
->
->
->> Eric
->
->
+On Fri, 2014-04-25 at 16:24 +0000, Pallala, Ramakrishna wrote:
+> HI All,
+> 
+> I have received few kernel library .o (object files) from third party and I am planning to include in our kernel tree. As the library contains some proprietary algorithms  the sources are not shared.
+> 
+> How can I include this library .o files to my kernel and if this kernel is release to customers will there be any license issues? Third party says the sources are under GPL.
+> 
 
-Is it really a show stopper to switch order of 2 functions as quick fix?
-It was like that before 3.10 and seemed ok...
+Oh joy. Just what I wanted to read today...
 
+Our apologies; this is not a question or issue that should have been
+posted to LKML.  Legal questions (such as what is permitted by any
+particular license) by Intel employees are supposed to be directed to
+Intel's legal department and not to public mailing lists.  Intel also
+has a technical and business review process for reviewing *all* Open
+Source software activities, including all Linux kernel contributions,
+and the very first response from that review process would have been to
+direct questions about license interpretation and permissible licensing
+models to Intel's Legal Department.
+ 
+We'll be following up with the development of this not-yet-released
+product to ensure that it is fully compliant with the GPL and other open
+source licenses as well as community-accepted practices, that it follows
+Intel's normal review processes, and that all the developers involved
+are familiar with Intel's policies for working with open source.
+ 
+For those who have responded to the original mail, both privately and
+publicly: thank you for your diligence and suggestions; we have been
+working internally for the last few hours (literally since WE saw it on
+the mailing list). But it's good to see that the community is as
+responsive to these issues as we are.
 
->
-> --
-> Thanks,
-> Dmitry
+And now back to our regularly scheduled emergencies.
+
+/D
 
 
 -- 
-Thanks,
-Dmitry
+Dirk Hohndel
+Chief Linux and Open Source Technologist
+Intel Open Source Technology Center
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
