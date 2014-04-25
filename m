@@ -1,63 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421AbaDYB1I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 21:27:08 -0400
-Received: from g9t1613g.houston.hp.com ([15.240.0.71]:35663 "EHLO
-	g9t1613g.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750765AbaDYB1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 21:27:07 -0400
-Message-ID: <1398389099.8470.37.camel@j-VirtualBox>
-Subject: Re: [PATCH 3/3] sched, fair: Stop searching for tasks in newidle
- balance if there are runnable tasks
-From: Jason Low <jason.low2@hp.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
-        alex.shi@linaro.org, preeti@linux.vnet.ibm.com, efault@gmx.de,
-        vincent.guittot@linaro.org, morten.rasmussen@arm.com, aswin@hp.com,
-        chegu_vinod@hp.com
-Date: Thu, 24 Apr 2014 18:24:59 -0700
-In-Reply-To: <20140424165219.GX11096@twins.programming.kicks-ass.net>
-References: <1398303035-18255-1-git-send-email-jason.low2@hp.com>
-	 <1398303035-18255-4-git-send-email-jason.low2@hp.com>
-	 <20140424071541.GZ26782@laptop.programming.kicks-ass.net>
-	 <1398357789.3509.6.camel@j-VirtualBox>
-	 <20140424165219.GX11096@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3-0ubuntu6 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1751231AbaDYBgx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 21:36:53 -0400
+Received: from mga01.intel.com ([192.55.52.88]:62703 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750776AbaDYBgw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 21:36:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,923,1389772800"; 
+   d="scan'208";a="527012031"
+From: Jason Chen <jason.cj.chen@intel.com>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Jason Chen <jason.cj.chen@intel.com>
+Subject: [PATCH 1/1] x86/apic: add apic_irqs bitmap to identify irqs from apic
+Date: Fri, 25 Apr 2014 09:30:52 +0800
+Message-Id: <de1f9f2834ba87e3ceba9e4d413f949397a83397.1398418448.git.jason.cj.chen@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-24 at 18:52 +0200, Peter Zijlstra wrote:
-> On Thu, Apr 24, 2014 at 09:43:09AM -0700, Jason Low wrote:
-> > If the below patch is what you were referring to, I believe this
-> > can help too. This was also something that I was testing out before
-> > we went with those patches which compares avg_idle with idle balance
-> > cost. I recall seeing somewhere around a +7% performance improvement
-> > in at least least 1 of the AIM7 workloads. I can do some more testing
-> > with this.
-> 
-> Yes, exactly that.
-> 
-> I can't remember the details, but I suspect we feared the less agressive
-> idle balance due to that patch (it will only pull a single task, instead
-> of multiple) would cause more idle_balance invocations and thereby
-> decrease throughput.
-> 
-> So I suppose something with _many_ bursty threads which leads to severe
-> inequalities would be the workload to trigger that.
-> 
-> Not sure we've ever seen that.. maybe Mike remembers, he seems to have a
-> head for such details.
+During irq migration, fixup_irqs() in arch/x86/kernel/irq.c will
+call irq_force_complete_move() for every valid irqs, including
+whose irq_chip is not apic(like ioapic_chip, msi_chip, etc) kind.
 
-Okay, so running the AIM7 fserver workload, I didn't see any noticeable
-performance gains with having move_tasks() pull at most one task. The
-+7% performance improvement that I saw was without the idle balance cost
-patches. I think that with those idle balance cost patches, there aren't
-as much benefits with this patch, and allowing more than 1 task to be
-pulled in move_task(), like we have now, may be the best option.
+While the function irq_force_complete_move() in
+arch/x86/kernel/apic/io_apic.c will treat all input irqs as apic
+kind, which has the structure irq_cfg as its chip_data and with
+chance to be modified.
 
+During supporting intel MID platform, some new irq_chip were added
+like gpio, whose sub-irqs are valid and will call
+irq_force_complete_move(). We met one softlockup/hardlockup issue
+while adding a new pmic irq_chip, whose chip_data's value condition
+triggered IPI send for clean up vector when miss calling
+irq_force_complete_move(),  then one lock field in its chip_data
+was unexpected modified.
+
+This patch add an apic_irqs bitmap to identify irqs from apic
+irq_chip, this bitmap only be set when apic kind of irq try to
+assign_irq_vector, and clear when __clear_irq_vector.
+By checking apic_irqs bitmap, irq_force_complete_move() can avoid
+being called when input irq does not belong to apic kind of irq_chip.
+
+Signed-off-by: Jason Chen <jason.cj.chen@intel.com>
+---
+ arch/x86/kernel/apic/io_apic.c | 21 ++++++++++++++++++++-
+ include/linux/irqdesc.h        |  6 ++++++
+ kernel/irq/internals.h         |  6 ------
+ 3 files changed, 26 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index 6ad4658..1e2bcb5 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -37,6 +37,7 @@
+ #include <linux/kthread.h>
+ #include <linux/jiffies.h>	/* time_after() */
+ #include <linux/slab.h>
++#include <linux/irqdesc.h>
+ #include <linux/bootmem.h>
+ #include <linux/dmar.h>
+ #include <linux/hpet.h>
+@@ -74,6 +75,8 @@ int sis_apic_bug = -1;
+ static DEFINE_RAW_SPINLOCK(ioapic_lock);
+ static DEFINE_RAW_SPINLOCK(vector_lock);
+ 
++static DECLARE_BITMAP(apic_irqs, IRQ_BITMAP_BITS);
++
+ static struct ioapic {
+ 	/*
+ 	 * # of IRQ routing registers
+@@ -1158,6 +1161,10 @@ next:
+ 		err = 0;
+ 		break;
+ 	}
++
++	if (err == 0)
++		set_bit(irq, apic_irqs);
++
+ 	free_cpumask_var(tmp_mask);
+ 	return err;
+ }
+@@ -1185,6 +1192,7 @@ static void __clear_irq_vector(int irq, struct irq_cfg *cfg)
+ 
+ 	cfg->vector = 0;
+ 	cpumask_clear(cfg->domain);
++	clear_bit(irq, apic_irqs);
+ 
+ 	if (likely(!cfg->move_in_progress))
+ 		return;
+@@ -1213,6 +1221,9 @@ void __setup_vector_irq(int cpu)
+ 	raw_spin_lock(&vector_lock);
+ 	/* Mark the inuse vectors */
+ 	for_each_active_irq(irq) {
++		if (!test_bit(irq, apic_irqs))
++			continue;
++
+ 		cfg = irq_get_chip_data(irq);
+ 		if (!cfg)
+ 			continue;
+@@ -2268,7 +2279,12 @@ static void irq_complete_move(struct irq_cfg *cfg)
+ 
+ void irq_force_complete_move(int irq)
+ {
+-	struct irq_cfg *cfg = irq_get_chip_data(irq);
++	struct irq_cfg *cfg;
++
++	if (!test_bit(irq, apic_irqs))
++		return;
++
++	cfg = irq_get_chip_data(irq);
+ 
+ 	if (!cfg)
+ 		return;
+@@ -2541,6 +2557,9 @@ static inline void init_IO_APIC_traps(void)
+ 	 * 0x80, because int 0x80 is hm, kind of importantish. ;)
+ 	 */
+ 	for_each_active_irq(irq) {
++		if (!test_bit(irq, apic_irqs))
++			continue;
++
+ 		cfg = irq_get_chip_data(irq);
+ 		if (IO_APIC_IRQ(irq) && cfg && !cfg->vector) {
+ 			/*
+diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
+index 26e2661..1b20979 100644
+--- a/include/linux/irqdesc.h
++++ b/include/linux/irqdesc.h
+@@ -1,6 +1,12 @@
+ #ifndef _LINUX_IRQDESC_H
+ #define _LINUX_IRQDESC_H
+ 
++#ifdef CONFIG_SPARSE_IRQ
++# define IRQ_BITMAP_BITS	(NR_IRQS + 8196)
++#else
++# define IRQ_BITMAP_BITS	NR_IRQS
++#endif
++
+ /*
+  * Core internal functions to deal with irq descriptors
+  *
+diff --git a/kernel/irq/internals.h b/kernel/irq/internals.h
+index ddf1ffe..b2fb994 100644
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@ -8,12 +8,6 @@
+ #include <linux/irqdesc.h>
+ #include <linux/kernel_stat.h>
+ 
+-#ifdef CONFIG_SPARSE_IRQ
+-# define IRQ_BITMAP_BITS	(NR_IRQS + 8196)
+-#else
+-# define IRQ_BITMAP_BITS	NR_IRQS
+-#endif
+-
+ #define istate core_internal_state__do_not_mess_with_it
+ 
+ extern bool noirqdebug;
+-- 
+1.8.1.2
 
