@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183AbaDYPob (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 11:44:31 -0400
-Received: from s3.sipsolutions.net ([144.76.43.152]:56476 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751653AbaDYPo2 (ORCPT
+	id S1752729AbaDYPqi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 11:46:38 -0400
+Received: from mail-vc0-f171.google.com ([209.85.220.171]:48545 "EHLO
+	mail-vc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752690AbaDYPqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 11:44:28 -0400
-Message-ID: <1398440433.4152.22.camel@jlt4.sipsolutions.net>
-Subject: Re: [PATCH 0/2 v3] cfg80211: The very first steps to support
- 5/10MHz channels in 5.9Ghz band
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Rostislav Lisovy <lisovy@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Sojka <sojkam1@fel.cvut.cz>, s.sander@nordsys.de,
-        jan-niklas.meier@volkswagen.de,
-        Rostislav Lisovy <rostislav.lisovy@fel.cvut.cz>
-Date: Fri, 25 Apr 2014 17:40:33 +0200
-In-Reply-To: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz> (sfid-20140415_143803_281449_E72A76A1)
-References: <1397565476-4348-1-git-send-email-rostislav.lisovy@fel.cvut.cz>
-	 (sfid-20140415_143803_281449_E72A76A1)
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.8.5-2+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Apr 2014 11:46:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398420888-5506-2-git-send-email-ch.naveen@samsung.com>
+References: <1398420888-5506-1-git-send-email-ch.naveen@samsung.com>
+	<1398420888-5506-2-git-send-email-ch.naveen@samsung.com>
+Date: Fri, 25 Apr 2014 08:46:31 -0700
+X-Google-Sender-Auth: JOpt2JULDXE0ju59m8JbY_00xcs
+Message-ID: <CAD=FV=V28_iDiNWeX6bXLzMW5kWygJz-YAExJkETJKgTDicHQg@mail.gmail.com>
+Subject: Re: [PATCH 1/5] iio: exynos_adc: use indio_dev->dev structure to
+ handle child nodes
+From: Doug Anderson <dianders@chromium.org>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, "cpgs ." <cpgs@samsung.com>,
+        Grant Grundler <grundler@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2014-04-15 at 14:37 +0200, Rostislav Lisovy wrote:
-> The IEEE 802.11p amendment specifies usage of 5 and 10 MHz wide
-> channels in 5.9GHz band for vehicular environment. This patch-set
-> adds new channel attributes holding the information about the
-> prohibited bandwidths. This is meant to be used mainly with
-> channels in 5.9GHz band in future implementation of 802.11p.
+Naveen,
 
-Both applied.
+Thanks for sending this.  Given that Jonathan Cameron was involved in
+the previous discussion, it probably would have been wise to include
+him on the CC list.
 
-johannes
+On Fri, Apr 25, 2014 at 3:14 AM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> From: Naveen Krishna Ch <ch.naveen@samsung.com>
+>
+> Using pdev->dev with device_for_each_child() would iterate over all
+> of the children of the platform device and delete them.
+> Thus, causing crashes during module unload.
+>
+> We should be using the indio_dev->dev structure for
+> registering/unregistering child nodes.
+>
+> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+> ---
+> This change was tested on top of
+>    https://lkml.org/lkml/2014/4/21/481 from Doug.
+>
+>  drivers/iio/adc/exynos_adc.c |    6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
+Reported-by: Doug Anderson <dianders@chromium.org>
+Reviewed-by: Doug Anderson <dianders@chromium.org>
+Tested-by: Doug Anderson <dianders@chromium.org>
