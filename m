@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418AbaDYN03 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:26:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10405 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751311AbaDYN02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:26:28 -0400
-Message-ID: <535A6263.10009@redhat.com>
-Date: Fri, 25 Apr 2014 09:25:55 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+	id S1753536AbaDYN3H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:29:07 -0400
+Received: from mail.active-venture.com ([67.228.131.205]:55552 "EHLO
+	mail.active-venture.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750886AbaDYN3F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 09:29:05 -0400
+X-Originating-IP: 108.223.40.66
+Message-ID: <535A631F.5020208@roeck-us.net>
+Date: Fri, 25 Apr 2014 06:29:03 -0700
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com, Randy Dunlap <rdunlap@infradead.org>
-CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, linux-next@vger.kernel.org
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com> <535992DD.3060808@infradead.org> <20140425024924.GR4496@linux.vnet.ibm.com>
-In-Reply-To: <20140425024924.GR4496@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: monstr@monstr.eu
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Microblaze image hanging in qemu with 3.15-rc
+References: <20140422172356.GA15672@roeck-us.net> <53575074.6010602@monstr.eu> <5357C246.7050604@roeck-us.net> <5357CA6B.1070101@monstr.eu> <20140423154533.GA15644@roeck-us.net> <5358AC50.7020308@monstr.eu> <535913E1.70509@roeck-us.net> <535A0DD7.4080204@monstr.eu>
+In-Reply-To: <535A0DD7.4080204@monstr.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 10:49 PM, Paul E. McKenney wrote:
-> On Thu, Apr 24, 2014 at 03:40:29PM -0700, Randy Dunlap wrote:
->> On 04/24/14 13:08, akpm@linux-foundation.org wrote:
->>> The mm-of-the-moment snapshot 2014-04-24-13-07 has been uploaded to
->>>
->>>    http://www.ozlabs.org/~akpm/mmotm/
->>>
->>> mmotm-readme.txt says
->>>
->>> README for mm-of-the-moment:
->>>
->>> http://www.ozlabs.org/~akpm/mmotm/
->>>
->>> This is a snapshot of my -mm patch queue.  Uploaded at random hopefully
->>> more than once a week.
->>>
->>> You will need quilt to apply these patches to the latest Linus release (3.x
->>> or 3.x-rcY).  The series file is in broken-out.tar.gz and is duplicated in
->>> http://ozlabs.org/~akpm/mmotm/series
->>>
->>
->> uml on x86_64 defconfig:
->>
->> drivers/built-in.o: In function `__handle_sysrq':
->> drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
->> drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
-> 
-> Hmmm...  Looks like Rik's patch needs declarations in rcupdate.h.
-> Not sure how I missed that...  :-/
+On 04/25/2014 12:25 AM, Michal Simek wrote:
+[ ... ]
 
-Looks like maybe sysrq.c should explicitly #include rcupdate.h.
+>
+> It should be pretty easy to fix it in timer_write function like this.
+>
+> diff --git a/hw/timer/xilinx_timer.c b/hw/timer/xilinx_timer.c
+> index 6113b97..3ff1da9 100644
+> --- a/hw/timer/xilinx_timer.c
+> +++ b/hw/timer/xilinx_timer.c
+> @@ -169,7 +169,7 @@ timer_write(void *opaque, hwaddr addr,
+>               if (value & TCSR_TINT)
+>                   value &= ~TCSR_TINT;
+>
+> -            xt->regs[addr] = value;
+> +            xt->regs[addr] = value & 0x7ff;
+>               if (value & TCSR_ENT)
+>                   timer_enable(xt);
+>               break;
+>
 
-On x86-64 the code compiled just fine, because something else
-included rcupdate.h. Apparently on UML this breaks...
+Hi Michal,
 
--- 
-All rights reversed
+that fixes endianness detection, but the image is still hanging.
+
+Here is the log:
+
+NR_IRQS:33
+/plb@0/interrupt-controller@81800000: num_irq=4, edge=0xa
+ERROR: CPU CCF input clock not found
+Reading TCSR0 returned 0x0, expected 0x1
+Switch to big endian mode
+/plb@0/timer@83c00000: irq=1
+ERROR: timer CCF input clock not found
+ERROR: Using CPU clock frequency
+xilinx_timer_set_mode: shutdown
+xilinx_timer_set_mode: periodic
+sched_clock: 32 bits at 62MHz, resolution 16ns, wraps every 68719476720ns
+Calibrating delay loop... QEMU: Terminated
+
+I added a couple of log messages to make sure that the mode is detected correctly.
+Any idea what else might be wrong ?
+
+Thanks,
+Guenter
+
