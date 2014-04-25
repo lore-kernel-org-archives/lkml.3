@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877AbaDYMdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 08:33:21 -0400
-Received: from relay.parallels.com ([195.214.232.42]:33591 "EHLO
+	id S1753996AbaDYMfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 08:35:21 -0400
+Received: from relay.parallels.com ([195.214.232.42]:33613 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753847AbaDYMdR (ORCPT
+	with ESMTP id S1753856AbaDYMdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 08:33:17 -0400
+	Fri, 25 Apr 2014 08:33:20 -0400
 From: Vladimir Davydov <vdavydov@parallels.com>
 To: <akpm@linux-foundation.org>
 CC: <mhocko@suse.cz>, <hannes@cmpxchg.org>, <glommer@gmail.com>,
         <cl@linux-foundation.org>, <penberg@kernel.org>,
         <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
         <devel@openvz.org>
-Subject: [PATCH -mm 2/6] memcg: allocate memcg_caches array on first per memcg cache creation
-Date: Fri, 25 Apr 2014 16:33:08 +0400
-Message-ID: <bec08699efd10117767e8c04572ffe740f3cef38.1398428532.git.vdavydov@parallels.com>
+Subject: [PATCH -mm 5/6] memcg: cleanup kmem cache creation/destruction functions naming
+Date: Fri, 25 Apr 2014 16:33:11 +0400
+Message-ID: <a6700a550361b6858c2424815cd2d4461b1b6ac8.1398428532.git.vdavydov@parallels.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <cover.1398428532.git.vdavydov@parallels.com>
 References: <cover.1398428532.git.vdavydov@parallels.com>
@@ -26,227 +26,337 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is no need to allocate the memcg_caches array on kmem cache
-creation, because we perfectly handle root caches without memcg_params
-everywhere. Since not all caches will necessarily be used by memory
-cgroups, this rather looks like a waste of memory. So let's allocate
-the memcg_caches array on the first per memcg cache creation.
+Current names are rather confusing. Let's try to improve them.
 
-A couple of things to note about this patch:
+Brief change log:
 
- - after it is applied memcg_{alloc, free}_cache_params do nothing for
-   root caches so that they can be inlined into memcg_kmem_{create,
-   destroy}_cache;
+** old name **                          ** new name **
 
- - since memcg_limited_groups_array_size is now accessed under
-   activate_kmem_mutex, we can move memcg_limited_groups_array_size
-   update (memcg_update_array_size) out of slab_mutex, which is nice,
-   because it isn't something specific to kmem caches - it will be used
-   in per memcg list_lru in the future;
+kmem_cache_create_memcg                 kmem_cache_request_memcg_copy
+memcg_kmem_create_cache                 memcg_copy_kmem_cache
+memcg_kmem_destroy_cache                memcg_destroy_kmem_cache_copy
 
- - memcg_caches allocation scheme is now spread between slab_common.c
-   and memcontrol.c, but that'll be fixed by the next patches where I'll
-   move it completely to slab_common.c
+__kmem_cache_destroy_memcg_children     kmem_cache_destroy_memcg_copies
+kmem_cache_destroy_memcg_children       kmem_cache_destroy_memcg_array
+mem_cgroup_destroy_all_caches           memcg_destroy_kmem_cache_copies
+
+create_work                             memcg_kmem_cache_copy_work
+memcg_create_cache_work_func            memcg_kmem_cache_copy_work_func
+memcg_create_cache_enqueue              memcg_schedule_kmem_cache_copy
 
 Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- include/linux/slab.h |    1 +
- mm/memcontrol.c      |   64 +++++++++++++++++++++++++++++++-------------------
- mm/slab_common.c     |   41 ++++++++++++++++++++++++++++++++
- 3 files changed, 82 insertions(+), 24 deletions(-)
+ include/linux/memcontrol.h |    2 +-
+ include/linux/slab.h       |    4 +-
+ mm/memcontrol.c            |   92 +++++++++++++++++++++++++-------------------
+ mm/slab_common.c           |   14 +++----
+ 4 files changed, 62 insertions(+), 50 deletions(-)
 
+diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+index 3aee79fc7876..3ee73da2991b 100644
+--- a/include/linux/memcontrol.h
++++ b/include/linux/memcontrol.h
+@@ -498,7 +498,7 @@ __memcg_kmem_get_cache(struct kmem_cache *cachep, gfp_t gfp);
+ int __memcg_charge_slab(struct kmem_cache *cachep, gfp_t gfp, int order);
+ void __memcg_uncharge_slab(struct kmem_cache *cachep, int order);
+ 
+-int __kmem_cache_destroy_memcg_children(struct kmem_cache *s);
++int kmem_cache_destroy_memcg_copies(struct kmem_cache *cachep);
+ 
+ /**
+  * memcg_kmem_newpage_charge: verify if a new kmem allocation is allowed.
 diff --git a/include/linux/slab.h b/include/linux/slab.h
-index 86e5b26fbdab..095ce8e47a36 100644
+index 22cc9cab4279..1f22c6130f1a 100644
 --- a/include/linux/slab.h
 +++ b/include/linux/slab.h
-@@ -119,6 +119,7 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
- struct kmem_cache *kmem_cache_create_memcg(struct mem_cgroup *,
- 					   struct kmem_cache *,
- 					   const char *);
-+int kmem_cache_init_memcg_array(struct kmem_cache *, int);
+@@ -118,8 +118,8 @@ struct kmem_cache *kmem_cache_create(const char *, size_t, size_t,
+ 			unsigned long,
+ 			void (*)(void *));
+ #ifdef CONFIG_MEMCG_KMEM
+-struct kmem_cache *kmem_cache_create_memcg(struct memcg_cache_params *,
+-					   const char *);
++struct kmem_cache *kmem_cache_request_memcg_copy(struct memcg_cache_params *,
++						 const char *);
+ int kmem_cache_init_memcg_array(struct kmem_cache *, int);
+ int kmem_cache_grow_memcg_arrays(int);
  #endif
- void kmem_cache_destroy(struct kmem_cache *);
- int kmem_cache_shrink(struct kmem_cache *);
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 605d72044533..fa7cbce8f0cf 100644
+index b6ddbe8b4364..bdd3d373cdca 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
-@@ -3059,6 +3059,9 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
- 
- 	VM_BUG_ON(!is_root_cache(s));
- 
-+	if (!cur_params)
-+		return 0;
-+
- 	if (num_groups > memcg_limited_groups_array_size) {
- 		int i;
- 		struct memcg_cache_params *new_params;
-@@ -3099,8 +3102,7 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
- 		 * anyway.
- 		 */
- 		rcu_assign_pointer(s->memcg_params, new_params);
--		if (cur_params)
--			kfree_rcu(cur_params, rcu_head);
-+		kfree_rcu(cur_params, rcu_head);
- 	}
- 	return 0;
- }
-@@ -3108,40 +3110,52 @@ int memcg_update_cache_size(struct kmem_cache *s, int num_groups)
- int memcg_alloc_cache_params(struct mem_cgroup *memcg, struct kmem_cache *s,
- 			     struct kmem_cache *root_cache)
- {
--	size_t size;
--
--	if (!memcg_kmem_enabled())
-+	if (!memcg)
- 		return 0;
- 
--	if (!memcg) {
--		size = offsetof(struct memcg_cache_params, memcg_caches);
--		size += memcg_limited_groups_array_size * sizeof(void *);
--	} else
--		size = sizeof(struct memcg_cache_params);
--
--	s->memcg_params = kzalloc(size, GFP_KERNEL);
-+	s->memcg_params = kzalloc(sizeof(*s->memcg_params), GFP_KERNEL);
- 	if (!s->memcg_params)
- 		return -ENOMEM;
- 
--	if (memcg) {
--		s->memcg_params->memcg = memcg;
--		s->memcg_params->root_cache = root_cache;
--		css_get(&memcg->css);
--	} else
--		s->memcg_params->is_root_cache = true;
-+	s->memcg_params->memcg = memcg;
-+	s->memcg_params->root_cache = root_cache;
-+	css_get(&memcg->css);
- 
- 	return 0;
+@@ -3099,8 +3099,12 @@ static int memcg_prepare_kmem_cache(struct kmem_cache *cachep)
+ 	return ret;
  }
  
- void memcg_free_cache_params(struct kmem_cache *s)
- {
--	if (!s->memcg_params)
-+	if (is_root_cache(s))
- 		return;
--	if (!s->memcg_params->is_root_cache)
--		css_put(&s->memcg_params->memcg->css);
-+	css_put(&s->memcg_params->memcg->css);
- 	kfree(s->memcg_params);
- }
- 
+-static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
+-				    struct kmem_cache *root_cache)
 +/*
-+ * Prepares the memcg_caches array of the given kmem cache for disposing
-+ * memcgs' copies.
++ * Creates a copy of the given kmem cache to be used for fulfilling allocation
++ * requests coming from the memcg to the cache.
 + */
-+static int memcg_prepare_kmem_cache(struct kmem_cache *cachep)
-+{
-+	int ret;
++static void memcg_copy_kmem_cache(struct mem_cgroup *memcg,
++				  struct kmem_cache *root_cache)
+ {
+ 	static char memcg_name[NAME_MAX + 1];
+ 	struct memcg_cache_params *params;
+@@ -3127,7 +3131,7 @@ static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
+ 	params->root_cache = root_cache;
+ 
+ 	cgroup_name(memcg->css.cgroup, memcg_name, NAME_MAX + 1);
+-	cachep = kmem_cache_create_memcg(params, memcg_name);
++	cachep = kmem_cache_request_memcg_copy(params, memcg_name);
+ 	/*
+ 	 * If we could not create a memcg cache, do not complain, because
+ 	 * that's not critical at all as we can always proceed with the root
+@@ -3152,7 +3156,8 @@ static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
+ 	root_cache->memcg_params->memcg_caches[id] = cachep;
+ }
+ 
+-static int memcg_kmem_destroy_cache(struct kmem_cache *cachep)
++/* Attempts to destroy a per memcg kmem cache copy. Returns 0 on success. */
++static int memcg_destroy_kmem_cache_copy(struct kmem_cache *cachep)
+ {
+ 	struct kmem_cache *root_cache;
+ 	struct mem_cgroup *memcg;
+@@ -3225,25 +3230,39 @@ static inline void memcg_resume_kmem_account(void)
+ 	current->memcg_kmem_skip_account--;
+ }
+ 
+-int __kmem_cache_destroy_memcg_children(struct kmem_cache *s)
++/*
++ * Attempts to destroy all per memcg copies of the given kmem cache. Called on
++ * kmem cache destruction. Returns 0 on success.
++ */
++int kmem_cache_destroy_memcg_copies(struct kmem_cache *cachep)
+ {
+ 	struct kmem_cache *c;
+-	int i, failed = 0;
++	int i;
++	int ret = 0;
 +
 +	BUG_ON(!is_root_cache(cachep));
-+
-+	if (cachep->memcg_params)
-+		return 0;
-+
-+	/* activate_kmem_mutex guarantees a stable value of
-+	 * memcg_limited_groups_array_size */
-+	mutex_lock(&activate_kmem_mutex);
-+	mutex_lock(&memcg_slab_mutex);
-+	ret = kmem_cache_init_memcg_array(cachep,
-+			memcg_limited_groups_array_size);
-+	mutex_unlock(&memcg_slab_mutex);
-+	mutex_unlock(&activate_kmem_mutex);
+ 
+ 	mutex_lock(&memcg_slab_mutex);
+ 	for_each_memcg_cache_index(i) {
+-		c = cache_from_memcg_idx(s, i);
++		c = cache_from_memcg_idx(cachep, i);
+ 		if (!c)
+ 			continue;
+ 
+-		if (memcg_kmem_destroy_cache(c) != 0)
+-			failed++;
++		if (memcg_destroy_kmem_cache_copy(c) != 0)
++			ret = -EBUSY;
+ 	}
+ 	mutex_unlock(&memcg_slab_mutex);
+-	return failed;
 +	return ret;
-+}
-+
- static void memcg_kmem_create_cache(struct mem_cgroup *memcg,
- 				    struct kmem_cache *root_cache)
+ }
+ 
+-static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
++/*
++ * Attempts to destroy all kmem cache copies corresponding to the given memcg.
++ * Called on css offline.
++ *
++ * XXX: Caches that still have objects on css offline will be leaked. Need to
++ * reparent them instead.
++ */
++static void memcg_destroy_kmem_cache_copies(struct mem_cgroup *memcg)
  {
-@@ -3287,10 +3301,13 @@ static void memcg_create_cache_work_func(struct work_struct *w)
+ 	struct kmem_cache *cachep;
+ 	struct memcg_cache_params *params, *tmp;
+@@ -3256,20 +3275,21 @@ static void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
+ 		cachep = memcg_params_to_cache(params);
+ 		kmem_cache_shrink(cachep);
+ 		if (atomic_read(&cachep->memcg_params->nr_pages) == 0)
+-			memcg_kmem_destroy_cache(cachep);
++			memcg_destroy_kmem_cache_copy(cachep);
+ 	}
+ 	mutex_unlock(&memcg_slab_mutex);
+ }
+ 
+-struct create_work {
++struct memcg_kmem_cache_copy_work {
+ 	struct mem_cgroup *memcg;
+ 	struct kmem_cache *cachep;
+ 	struct work_struct work;
+ };
+ 
+-static void memcg_create_cache_work_func(struct work_struct *w)
++static void memcg_kmem_cache_copy_work_func(struct work_struct *w)
+ {
+-	struct create_work *cw = container_of(w, struct create_work, work);
++	struct memcg_kmem_cache_copy_work *cw = container_of(w,
++			struct memcg_kmem_cache_copy_work, work);
  	struct mem_cgroup *memcg = cw->memcg;
  	struct kmem_cache *cachep = cw->cachep;
  
-+	if (memcg_prepare_kmem_cache(cachep) != 0)
-+		goto out;
-+
+@@ -3277,22 +3297,19 @@ static void memcg_create_cache_work_func(struct work_struct *w)
+ 		goto out;
+ 
  	mutex_lock(&memcg_slab_mutex);
- 	memcg_kmem_create_cache(memcg, cachep);
+-	memcg_kmem_create_cache(memcg, cachep);
++	memcg_copy_kmem_cache(memcg, cachep);
  	mutex_unlock(&memcg_slab_mutex);
--
-+out:
+ out:
  	css_put(&memcg->css);
  	kfree(cw);
  }
-@@ -3371,8 +3388,7 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
- 	struct mem_cgroup *memcg;
- 	struct kmem_cache *memcg_cachep;
  
--	VM_BUG_ON(!cachep->memcg_params);
--	VM_BUG_ON(!cachep->memcg_params->is_root_cache);
-+	VM_BUG_ON(!is_root_cache(cachep));
+-/*
+- * Enqueue the creation of a per-memcg kmem_cache.
+- */
+-static void __memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+-					 struct kmem_cache *cachep)
++static void __memcg_schedule_kmem_cache_copy(struct mem_cgroup *memcg,
++					     struct kmem_cache *cachep)
+ {
+-	struct create_work *cw;
++	struct memcg_kmem_cache_copy_work *cw;
  
- 	if (!current->mm || current->memcg_kmem_skip_account)
- 		return cachep;
+-	cw = kmalloc(sizeof(struct create_work), GFP_NOWAIT);
++	cw = kmalloc(sizeof(*cw), GFP_NOWAIT);
+ 	if (cw == NULL) {
+ 		css_put(&memcg->css);
+ 		return;
+@@ -3300,18 +3317,18 @@ static void __memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+ 
+ 	cw->memcg = memcg;
+ 	cw->cachep = cachep;
++	INIT_WORK(&cw->work, memcg_kmem_cache_copy_work_func);
+ 
+-	INIT_WORK(&cw->work, memcg_create_cache_work_func);
+ 	schedule_work(&cw->work);
+ }
+ 
+-static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+-				       struct kmem_cache *cachep)
++static void memcg_schedule_kmem_cache_copy(struct mem_cgroup *memcg,
++					   struct kmem_cache *cachep)
+ {
+ 	/*
+ 	 * We need to stop accounting when we kmalloc, because if the
+ 	 * corresponding kmalloc cache is not yet created, the first allocation
+-	 * in __memcg_create_cache_enqueue will recurse.
++	 * in __memcg_schedule_kmem_cache_copy will recurse.
+ 	 *
+ 	 * However, it is better to enclose the whole function. Depending on
+ 	 * the debugging options enabled, INIT_WORK(), for instance, can
+@@ -3320,7 +3337,7 @@ static void memcg_create_cache_enqueue(struct mem_cgroup *memcg,
+ 	 * the safest choice is to do it like this, wrapping the whole function.
+ 	 */
+ 	memcg_stop_kmem_account();
+-	__memcg_create_cache_enqueue(memcg, cachep);
++	__memcg_schedule_kmem_cache_copy(memcg, cachep);
+ 	memcg_resume_kmem_account();
+ }
+ 
+@@ -3384,22 +3401,17 @@ struct kmem_cache *__memcg_kmem_get_cache(struct kmem_cache *cachep,
+ 
+ 	/*
+ 	 * If we are in a safe context (can wait, and not in interrupt
+-	 * context), we could be be predictable and return right away.
++	 * context), we could be predictable and return right away.
+ 	 * This would guarantee that the allocation being performed
+ 	 * already belongs in the new cache.
+ 	 *
+ 	 * However, there are some clashes that can arrive from locking.
+ 	 * For instance, because we acquire the slab_mutex while doing
+-	 * kmem_cache_dup, this means no further allocation could happen
+-	 * with the slab_mutex held.
+-	 *
+-	 * Also, because cache creation issue get_online_cpus(), this
+-	 * creates a lock chain: memcg_slab_mutex -> cpu_hotplug_mutex,
+-	 * that ends up reversed during cpu hotplug. (cpuset allocates
+-	 * a bunch of GFP_KERNEL memory during cpuup). Due to all that,
+-	 * better to defer everything.
++	 * kmem_cache_create, this means no further allocation could
++	 * happen with the slab_mutex held. So it's better to defer
++	 * everything.
+ 	 */
+-	memcg_create_cache_enqueue(memcg, cachep);
++	memcg_schedule_kmem_cache_copy(memcg, cachep);
+ 	return cachep;
+ out:
+ 	rcu_read_unlock();
+@@ -3523,7 +3535,7 @@ void __memcg_kmem_uncharge_pages(struct page *page, int order)
+ 	memcg_uncharge_kmem(memcg, PAGE_SIZE << order);
+ }
+ #else
+-static inline void mem_cgroup_destroy_all_caches(struct mem_cgroup *memcg)
++static inline void memcg_destroy_kmem_cache_copies(struct mem_cgroup *memcg)
+ {
+ }
+ #endif /* CONFIG_MEMCG_KMEM */
+@@ -6358,7 +6370,7 @@ static void mem_cgroup_css_offline(struct cgroup_subsys_state *css)
+ 	css_for_each_descendant_post(iter, css)
+ 		mem_cgroup_reparent_charges(mem_cgroup_from_css(iter));
+ 
+-	mem_cgroup_destroy_all_caches(memcg);
++	memcg_destroy_kmem_cache_copies(memcg);
+ 	vmpressure_cleanup(&memcg->vmpressure);
+ }
+ 
 diff --git a/mm/slab_common.c b/mm/slab_common.c
-index 6b6397d2e05e..44bfc4b1ee09 100644
+index cb4e2293ec46..36d9b866a3ab 100644
 --- a/mm/slab_common.c
 +++ b/mm/slab_common.c
-@@ -77,6 +77,45 @@ static inline int kmem_cache_sanity_check(const char *name, size_t size)
- #endif
+@@ -304,7 +304,7 @@ EXPORT_SYMBOL(kmem_cache_create);
  
  #ifdef CONFIG_MEMCG_KMEM
-+static int kmem_cache_alloc_memcg_array(struct kmem_cache *s, int nr_entries)
-+{
-+	size_t size;
-+	struct memcg_cache_params *new;
-+
-+	size = offsetof(struct memcg_cache_params, memcg_caches);
-+	size += nr_entries * sizeof(void *);
-+
-+	new = kzalloc(size, GFP_KERNEL);
-+	if (!new)
-+		return -ENOMEM;
-+
-+	new->is_root_cache = true;
-+
-+	/* matching rcu_dereference is in cache_from_memcg_idx */
-+	rcu_assign_pointer(s->memcg_params, new);
-+
-+	return 0;
-+}
-+
-+static void kmem_cache_free_memcg_array(struct kmem_cache *s)
-+{
-+	kfree(s->memcg_params);
-+	s->memcg_params = NULL;
-+}
-+
-+int kmem_cache_init_memcg_array(struct kmem_cache *s, int nr_entries)
-+{
-+	int ret = 0;
-+
-+	BUG_ON(!is_root_cache(s));
-+
-+	mutex_lock(&slab_mutex);
-+	if (!s->memcg_params)
-+		ret = kmem_cache_alloc_memcg_array(s, nr_entries);
-+	mutex_unlock(&slab_mutex);
-+	return ret;
-+}
-+
- int memcg_update_all_caches(int num_memcgs)
+ /*
+- * kmem_cache_create_memcg - Create a cache for a memory cgroup.
++ * kmem_cache_request_memcg_copy - Create a cache for a memory cgroup.
+  * @memcg_params: The memcg params to initialize the cache with.
+  * @memcg_name: The name of the memory cgroup.
+  *
+@@ -313,8 +313,8 @@ EXPORT_SYMBOL(kmem_cache_create);
+  * from its parent.
+  */
+ struct kmem_cache *
+-kmem_cache_create_memcg(struct memcg_cache_params *memcg_params,
+-			const char *memcg_name)
++kmem_cache_request_memcg_copy(struct memcg_cache_params *memcg_params,
++			      const char *memcg_name)
  {
- 	struct kmem_cache *s;
-@@ -317,6 +356,8 @@ static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
- 	rc = __kmem_cache_destroy_memcg_children(s);
+ 	struct mem_cgroup *memcg = memcg_params->memcg;
+ 	struct kmem_cache *root_cache = memcg_params->root_cache;
+@@ -349,7 +349,7 @@ out_unlock:
+ 	return s;
+ }
+ 
+-static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
++static int kmem_cache_destroy_memcg_array(struct kmem_cache *s)
+ {
+ 	int rc;
+ 
+@@ -358,7 +358,7 @@ static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
+ 		return 0;
+ 
+ 	mutex_unlock(&slab_mutex);
+-	rc = __kmem_cache_destroy_memcg_children(s);
++	rc = kmem_cache_destroy_memcg_copies(s);
  	mutex_lock(&slab_mutex);
  
-+	if (rc == 0)
-+		kmem_cache_free_memcg_array(s);
+ 	if (rc == 0)
+@@ -366,7 +366,7 @@ static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
  	return rc;
  }
  #else
+-static int kmem_cache_destroy_memcg_children(struct kmem_cache *s)
++static int kmem_cache_destroy_memcg_array(struct kmem_cache *s)
+ {
+ 	return 0;
+ }
+@@ -393,7 +393,7 @@ int kmem_cache_destroy(struct kmem_cache *s)
+ 		goto out_unlock;
+ 
+ 	ret = -EBUSY;
+-	if (kmem_cache_destroy_memcg_children(s) != 0)
++	if (kmem_cache_destroy_memcg_array(s) != 0)
+ 		goto out_unlock;
+ 
+ 	list_del(&s->list);
 -- 
 1.7.10.4
 
