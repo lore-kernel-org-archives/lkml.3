@@ -1,62 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751502AbaDYCVc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 22:21:32 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:34232 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776AbaDYCVa (ORCPT
+	id S1751305AbaDYCcA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 22:32:00 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.227]:11927 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750820AbaDYCb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 22:21:30 -0400
-Date: Thu, 24 Apr 2014 22:21:03 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
-        "linux-wireless@vger.kernel.org Wireless" 
-	<linux-wireless@vger.kernel.org>,
-        BlueZ development <linux-bluetooth@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: bluetooth 2014-04-24
-Message-ID: <20140425020421.GD3410@tuxdriver.com>
-References: <20140424145329.GD7832@joana>
- <20140425014446.GC3410@tuxdriver.com>
- <C9BCBE06-78C4-41C6-9B70-BFB2C6AFDF7A@holtmann.org>
+	Thu, 24 Apr 2014 22:31:58 -0400
+Date: Thu, 24 Apr 2014 22:31:47 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
+        John Kacur <jkacur@redhat.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [ANNOUNCE] 3.10.37-rt37
+Message-ID: <20140424223147.0a74a975@gandalf.local.home>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C9BCBE06-78C4-41C6-9B70-BFB2C6AFDF7A@holtmann.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 06:51:13PM -0700, Marcel Holtmann wrote:
-> Hi John,
-> 
-> > This tag has a lot of stuff in it not in the wireless tree.
-> > Please only send me pull requests that only include patches related
-> > to Bluetooth.
-> > 
-> >> Some fixes for 3.15. There is a revert for the intel driver, a new device id,
-> >> and two important SSP fixes from Johan.
-> >> Also we've noticed that your wireless.git tree is not up to date, so this pull
-> >> was rebased on top of net.git. If you pull from this you'll will be pulling
-> >> net/master from yesterday as well.
-> 
-> as Gustavo explained, this is against net.git since wireless.git has not yet been rebased.
-> 
-> Regards
-> 
-> Marcel
 
-wireless.git is where it is going to be.  It is based from a few dozen
-commits before -rc1, which was what Dave had as the base of his tree
-when I started merging post -rc1 fixes into wireless.git.
+Dear RT Folks,
 
-I'm sorry if this is inconvenient, but among other things this keeps
-net.git and linux.git stuff from getting into wireless-testing.git
-prematurely.
+I'm pleased to announce the 3.10.37-rt37 stable release.
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+
+This release is just an update to the new stable 3.10.37 version
+and no RT specific changes have been made.
+
+
+You can get this release via the git tree at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+
+  branch: v3.10-rt
+  Head SHA1: dbd6cbf37e9c627d224eda99a997eec2d4125095
+
+
+Or to build 3.10.37-rt37 directly, the following patches should be applied:
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
+
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.37.xz
+
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.37-rt37.patch.xz
+
+
+
+
+Enjoy,
+
+-- Steve
+
