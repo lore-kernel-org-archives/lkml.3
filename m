@@ -1,79 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970AbaDYK4F (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 06:56:05 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:50143 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752548AbaDYK4B (ORCPT
+	id S1752591AbaDYLCS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 07:02:18 -0400
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:41130 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751415AbaDYLCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 06:56:01 -0400
-Message-ID: <535A3F39.9020905@hitachi.com>
-Date: Fri, 25 Apr 2014 19:55:53 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 25 Apr 2014 07:02:15 -0400
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@kernel.org>, Jason Baron <jbaron@akamai.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Andi Kleen <andi@firstfloor.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
-        mingo@redhat.com, Rob Landley <rob@landley.net>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>, systemtap@sourceware.org
-Subject: Re: [PATCH -tip v9 20/26] kprobes: Support blacklist functions in
- module
-References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140417081856.26341.53535.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140424085601.GA7768@gmail.com> <5358F458.1030300@hitachi.com> <20140425081951.GA24829@gmail.com> <535A34F1.3000106@hitachi.com>
-In-Reply-To: <535A34F1.3000106@hitachi.com>
+In-Reply-To: <20140425092607.GH26890@mwanda>
+References: <20140425070459.GA9155@devel>
+	<20140425092607.GH26890@mwanda>
+Date: Fri, 25 Apr 2014 20:02:14 +0900
+Message-ID: <CAHb8M2Ay22vh-zuGgKhjr0DCJ-ajVPiPmYDRu159HF9N0CDEpg@mail.gmail.com>
+Subject: Re: [PATCH] staging: dgap: implement error handling in dgap_tty_register()
+From: DaeSeok Youn <daeseok.youn@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+Cc: Mark Hounschell <markh@compro.net>, Lidza Louina <lidza.louina@gmail.com>,
+        Greg KH <gregkh@linuxfoundation.org>,
+        devel <devel@driverdev.osuosl.org>,
+        driverdev-devel@linuxdriverproject.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/25 19:12), Masami Hiramatsu wrote:
-> (2014/04/25 17:19), Ingo Molnar wrote:
+Hi, Dan.
+
+2014-04-25 18:26 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
+> Mark, maybe you should add yourself to the MAINTAINERS entry for this
+> driver?
+>
+> On Fri, Apr 25, 2014 at 04:04:59PM +0900, Daeseok Youn wrote:
+>> @@ -1263,7 +1277,8 @@ static int dgap_tty_register(struct board_t *brd)
+>>               /* Register tty devices */
+>>               rc = tty_register_driver(brd->SerialDriver);
+>>               if (rc < 0)
+>> -                     return rc;
+>> +                     goto free_print_ttys;
+>> +
+>>               brd->dgap_Major_Serial_Registered = TRUE;
+>>               dgap_BoardsByMajor[brd->SerialDriver->major] = brd;
+>>               brd->dgap_Serial_Major = brd->SerialDriver->major;
+>> @@ -1273,13 +1288,29 @@ static int dgap_tty_register(struct board_t *brd)
+>>               /* Register Transparent Print devices */
+>>               rc = tty_register_driver(brd->PrintDriver);
+>>               if (rc < 0)
+>> -                     return rc;
+>> +                     goto unregister_serial_drv;
+>> +
+>>               brd->dgap_Major_TransparentPrint_Registered = TRUE;
+>>               dgap_BoardsByMajor[brd->PrintDriver->major] = brd;
+>>               brd->dgap_TransparentPrint_Major = brd->PrintDriver->major;
+>>       }
 >>
->> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
->>
->>> (2014/04/24 17:56), Ingo Molnar wrote:
->>>>> diff --git a/include/linux/module.h b/include/linux/module.h
->>>>> index f520a76..2fdb673 100644
->>>>> --- a/include/linux/module.h
->>>>> +++ b/include/linux/module.h
->>>>> @@ -16,6 +16,7 @@
->>>>>  #include <linux/kobject.h>
->>>>>  #include <linux/moduleparam.h>
->>>>>  #include <linux/jump_label.h>
->>>>> +#include <linux/kprobes.h>
->>>>
->>>> This include breaks the x86 build:
->>>>
->>>>   CC      arch/x86/kernel/jump_label.o
->>>>   In file included from arch/x86/kernel/jump_label.c:14:0:
->>>>   /fast/mingo/tip/arch/x86/include/asm/kprobes.h:35:12: error: conflicting types for ‘kprobe_opcode_t' typedef u8 kprobe_opcode_t;
->>>>   [...]
->>>
->>> Hmm, this error seems very odd... and I don't see
->>
->> Needs 'make allnoconfig' or some similar .config combination.
-> 
-> Ah, OK. I could reproduce it. And as far as I can see, this is jump_label's bug.
-> jump_label.c includes asm/kprobes.h directly, but that header is for internal use.
-> It has to include linux/kprobes.h instead. Moreover, it doesn't need kprobes.h anymore.
+>>       return rc;
+>> +
+>> +unregister_serial_drv:
+>> +     tty_unregister_driver(brd->SerialDriver);
+>
+> We only register the ->SerialDriver if someone else hasn't registered it
+> first?  So this should be:
+>
+>         if (we_were_the_ones_who_registered_the_serial_driver)
+>                 tty_unregister_driver(brd->SerialDriver);
+>
+> I haven't followed looked at this.  Who else is registering the serial
+> driver?  You have looked at this, what do you think?  Or Mark.
 
-Oops, arch/x86/kernel/ftrace.c also has same problem. At this point, I'll just
-remove unneeded #include from module.h, which can avoid both.
+I think brd struct is from dgap_Board array as global static variable
+when this function is
+called. So brd->dgap_Major_Serial_Registered is always "false".
+If dgap_NumBoards is less than MAXBOARDS, brd->SerialDriver should be
+registered.
 
-Thank you,
+I'm not sure..
 
+Thanks.
 
--- 
-Masami HIRAMATSU
-IT Management Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Regards,
+Daeseok Youn.
 
-
+>
+> regards,
+> dan carpenter
+>
