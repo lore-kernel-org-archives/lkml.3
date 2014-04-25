@@ -1,45 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753548AbaDYNsd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:48:33 -0400
-Received: from mail-yk0-f171.google.com ([209.85.160.171]:48487 "EHLO
-	mail-yk0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953AbaDYNsb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:48:31 -0400
-From: Nicolas Del Piano <ndel314@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: aaro.koskinen@iki.fi, devendra.aaru@gmail.com, raluca.oncioiu91@gmail.com,
-        david.daney@cavium.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Nicolas Del Piano <ndel314@gmail.com>
-Subject: [PATCH] Staging: octeon-usb: fixed a macro coding style issue
-Date: Fri, 25 Apr 2014 10:48:22 -0300
-Message-Id: <1398433702-2931-1-git-send-email-ndel314@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752529AbaDYNt6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:49:58 -0400
+Received: from imap.thunk.org ([74.207.234.97]:60954 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752639AbaDYNtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 09:49:55 -0400
+Date: Fri, 25 Apr 2014 09:49:51 -0400
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 1/1] random: export add_disk_randomness
+Message-ID: <20140425134951.GF11124@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	Christoph Hellwig <hch@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+	linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+References: <20140425073610.GA2143@infradead.org>
+ <20140425073637.GB2143@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140425073637.GB2143@infradead.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a coding style error, macros with complex values should be enclosed in parentheses.
+On Fri, Apr 25, 2014 at 12:36:37AM -0700, Christoph Hellwig wrote:
+> This will be needed for pending changes to the scsi midlayer that now calls
+> lower level block APIs, as well as any blk-mq driver that wants to contribute
+> to the random pool.
+> 
+> Signed-off-by: Christoph Hellwig <hch@lst.de>
 
-Signed-off-by: Nicolas Del Piano <ndel314@gmail.com>
----
- drivers/staging/octeon-usb/octeon-hcd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/octeon-usb/octeon-hcd.c b/drivers/staging/octeon-usb/octeon-hcd.c
-index 8b8ce72..ef3a8ce 100644
---- a/drivers/staging/octeon-usb/octeon-hcd.c
-+++ b/drivers/staging/octeon-usb/octeon-hcd.c
-@@ -246,7 +246,7 @@ enum cvmx_usb_pipe_flags {
- };
-
- /* Normal prefetch that use the pref instruction. */
--#define CVMX_PREFETCH(address, offset) asm volatile ("pref %[type], %[off](%[rbase])" : : [rbase] "d" (address), [off] "I" (offset), [type] "n" (0))
-+#define CVMX_PREFETCH(address, offset) (asm volatile ("pref %[type], %[off](%[rbase])" : : [rbase] "d" (address), [off] "I" (offset), [type] "n" (0)))
-
- /* Maximum number of times to retry failed transactions */
- #define MAX_RETRIES		3
---
-1.7.9.5
+Acked-by: "Theodore Ts'o" <tytso@mit.edu>
 
