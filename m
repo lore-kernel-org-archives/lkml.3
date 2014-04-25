@@ -1,71 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752680AbaDYIJo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 04:09:44 -0400
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:33088 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752195AbaDYIJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 04:09:32 -0400
-Message-ID: <535A1840.2010109@gmail.com>
-Date: Fri, 25 Apr 2014 16:09:36 +0800
-From: zhuyj <zyjzyj2000@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Willy Tarreau <w@1wt.eu>
-CC: Ben Hutchings <ben@decadent.org.uk>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        joe@perches.com, julia.lawall@lip6.fr, dingtianhong@huawei.com,
-        linux-kernel@vger.kernel.org, jasowang@redhat.com, mst@redhat.com,
-        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
-        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
-        "Tao, Yue" <Yue.Tao@windriver.com>
-Subject: Re: in kernel 2.6.x, tun/tap nic supports vlan packets
-References: <534F4C1E.1000006@gmail.com> <20140417050228.GC8243@1wt.eu> <1398189237.7767.77.camel@deadeye.wl.decadent.org.uk> <53577036.2040307@gmail.com> <1398253309.7767.136.camel@deadeye.wl.decadent.org.uk> <53587280.4020101@gmail.com> <20140424052447.GC17409@1wt.eu>
-In-Reply-To: <20140424052447.GC17409@1wt.eu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1752639AbaDYIIQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 04:08:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51165 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752465AbaDYIFV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 04:05:21 -0400
+From: Alexander Gordeev <agordeev@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Alexander Gordeev <agordeev@redhat.com>,
+        Mitch Williams <mitch.a.williams@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        Linux NICS <linux.nics@intel.com>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org
+Subject: [PATCH net-next 1/2] i40evf: Use pci_enable_msix_range() instead of pci_enable_msix()
+Date: Fri, 25 Apr 2014 10:06:24 +0200
+Message-Id: <110dd7806f49f62272bd960ae8101c9da81a3f01.1398412015.git.agordeev@redhat.com>
+In-Reply-To: <cover.1398412015.git.agordeev@redhat.com>
+References: <cover.1398412015.git.agordeev@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 01:24 PM, Willy Tarreau wrote:
-> On Thu, Apr 24, 2014 at 10:10:08AM +0800, zhuyj wrote:
->> On 04/23/2014 07:41 PM, Ben Hutchings wrote:
->>> On Wed, 2014-04-23 at 15:48 +0800, zhuyj wrote:
->>>> On 04/23/2014 01:53 AM, Ben Hutchings wrote:
->>> [...]
->>>>> For what it's worth, I would recommend against applying this.  I don't
->>>>> think even Red Hat has backported the VLAN changes, and they have been
->>>>> quite aggressive about backporting features to RHEL 6.
->>>> If we do not merge these patches, maybe RHEL 6 can not make tap driver
->>>> support vlan well.
->>> RHEL 6 isn't based on 2.6.32.y, they do all their own backporting.
->> Hi, Ben
->>
->> It is well known that extraction vlan tag is not implemented in kernel
->> 2.6.32.y.  Kernel 2.6.32.y depends on nic hardware to extract vlan tag.
->> So if the patches are not applied, tap driver can not support vlan well.
-> What Ben is saying is that RHEL doesn't use 2.6.32.y, but did their own
-> fork of 2.6.32 so even if we merged your patch, they wouldn't pick it
-> from this tree anyway. However they could possibly take your patch if
-> some customers requested the feature even if it's not in 2.6.32.y.
-OK. as your wish.
+As result of deprecation of MSI-X/MSI enablement functions
+pci_enable_msix() and pci_enable_msi_block() all drivers
+using these two interfaces need to be updated to use the
+new pci_enable_msi_range()  or pci_enable_msi_exact()
+and pci_enable_msix_range() or pci_enable_msix_exact()
+interfaces.
 
-Best Regards!
-Zhu Yanjun
->
-> Clearly, the fact that nobody complained about this in 4.5 years of
-> 2.6.32 means that there's no particular reason any user would suddenly
-> miss it now. 2.6.32.y is mostly used to update existing deployments but
-> rarely for new deployments. That's why the usefulness of your backport
-> in this kernel for its users is likely limited, and at the same time
-> the risk of causing a regression is far from being null for existing
-> users (eg: if some worked around the issue a different way, their
-> workaround would likely not work anymore).
->
-> Best regards,
-> Willy
->
->
+Signed-off-by: Alexander Gordeev <agordeev@redhat.com>
+Cc: Mitch Williams <mitch.a.williams@intel.com>
+Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: Linux NICS <linux.nics@intel.com>
+Cc: e1000-devel@lists.sourceforge.net
+Cc: netdev@vger.kernel.org
+Cc: linux-pci@vger.kernel.org
+---
+ drivers/net/ethernet/intel/i40evf/i40evf_main.c |   31 ++++++++--------------
+ 1 files changed, 11 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/net/ethernet/intel/i40evf/i40evf_main.c b/drivers/net/ethernet/intel/i40evf/i40evf_main.c
+index da6054c..78f1859 100644
+--- a/drivers/net/ethernet/intel/i40evf/i40evf_main.c
++++ b/drivers/net/ethernet/intel/i40evf/i40evf_main.c
+@@ -1027,30 +1027,21 @@ i40evf_acquire_msix_vectors(struct i40evf_adapter *adapter, int vectors)
+ 	 * Right now, we simply care about how many we'll get; we'll
+ 	 * set them up later while requesting irq's.
+ 	 */
+-	while (vectors >= vector_threshold) {
+-		err = pci_enable_msix(adapter->pdev, adapter->msix_entries,
+-				      vectors);
+-		if (!err) /* Success in acquiring all requested vectors. */
+-			break;
+-		else if (err < 0)
+-			vectors = 0; /* Nasty failure, quit now */
+-		else /* err == number of vectors we should try again with */
+-			vectors = err;
+-	}
+-
+-	if (vectors < vector_threshold) {
++	err = pci_enable_msix_range(adapter->pdev, adapter->msix_entries,
++				    vector_threshold, vectors);
++	if (err < 0) {
+ 		dev_err(&adapter->pdev->dev, "Unable to allocate MSI-X interrupts.\n");
+ 		kfree(adapter->msix_entries);
+ 		adapter->msix_entries = NULL;
+-		err = -EIO;
+-	} else {
+-		/* Adjust for only the vectors we'll use, which is minimum
+-		 * of max_msix_q_vectors + NONQ_VECS, or the number of
+-		 * vectors we were allocated.
+-		 */
+-		adapter->num_msix_vectors = vectors;
++		return err;
+ 	}
+-	return err;
++
++	/* Adjust for only the vectors we'll use, which is minimum
++	 * of max_msix_q_vectors + NONQ_VECS, or the number of
++	 * vectors we were allocated.
++	 */
++	adapter->num_msix_vectors = err;
++	return 0;
+ }
+ 
+ /**
+-- 
+1.7.7.6
 
