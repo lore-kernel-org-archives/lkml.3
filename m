@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754343AbaDYOTV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:19:21 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:58958 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaDYOTN (ORCPT
+	id S1754532AbaDYOU3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:20:29 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47242 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753919AbaDYOHg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:19:13 -0400
-Date: Fri, 25 Apr 2014 09:15:51 -0500
-From: Josh Cartwright <joshc@codeaurora.org>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Rob Herring <robherring2@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Subject: Re: [RFC PATCH] mfd: pm8x41: Naive function devices registration
-Message-ID: <20140425141551.GL5546@joshc.qualcomm.com>
-References: <1398429171-8566-1-git-send-email-iivanov@mm-sol.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398429171-8566-1-git-send-email-iivanov@mm-sol.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Fri, 25 Apr 2014 10:07:36 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: [PATCH v2 04/18] xhci-platform: Add a new controller using xhci: Armada 38x
+Date: Fri, 25 Apr 2014 16:07:02 +0200
+Message-Id: <1398434836-18908-5-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
+In-Reply-To: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
+References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 03:32:51PM +0300, Ivan T. Ivanov wrote:
-> From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-> 
-> Currently functions that exist in both the controller at the
-> same address offset can not be specified with the same names.
+Extend the compatible string list with armada-380-xhci. It is used to
+describe xhci controller which is in the Armada 38x SoCs.
 
-The terminology here is a bit confusing.  When I read "controller", I
-hear "SPMI controller", but this is really not a limitation of the SPMI
-core, but rather a limitation of of_platform_populate() used by this
-particular SPMI slave MFD driver.
+Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+---
+ Documentation/devicetree/bindings/usb/usb-xhci.txt | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-> Adding Unique Slave ID device address to prefix function
-> device names fixes this.
-> 
-> Function devices are SPMI devices, so register them on
-> SPMI bus.
-
-This is a step backwards.  The PMIC functions are not individually
-addressable SPMI slaves, and as such should not be represented as
-independent devices to the SPMI core.
-
-They really are subfunctions of a particular SPMI slave, and should be
-modeled as children of that slave device.  With this driver, we've
-chosen to model the child devices as platform devices, but it could
-also be a separate bus type.
-
-  Josh
-
+diff --git a/Documentation/devicetree/bindings/usb/usb-xhci.txt b/Documentation/devicetree/bindings/usb/usb-xhci.txt
+index 90f8f607d125..cbc91414fd59 100644
+--- a/Documentation/devicetree/bindings/usb/usb-xhci.txt
++++ b/Documentation/devicetree/bindings/usb/usb-xhci.txt
+@@ -1,7 +1,8 @@
+ USB xHCI controllers
+ 
+ Required properties:
+-  - compatible: should be "generic-xhci" (deprecated: "xhci-platform").
++  - compatible: should be on of "generic-xhci",
++    "marvell,armada-380-xhci" (deprecated: "xhci-platform").
+   - reg: should contain address and length of the standard XHCI
+     register set for the device.
+   - interrupts: one XHCI interrupt should be described here.
 -- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-hosted by The Linux Foundation
+1.8.1.2
+
