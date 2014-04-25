@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239AbaDYPMs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 11:12:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56907 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353AbaDYPMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 11:12:45 -0400
-Date: Fri, 25 Apr 2014 10:12:22 -0500
-From: Felipe Balbi <balbi@ti.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-CC: <linux-kernel@vger.kernel.org>, <myungjoo.ham@samsung.com>, <balbi@ti.com>,
-        <gg@slimlogic.co.uk>, <kishon@ti.com>,
-        <ckeepax@opensource.wolfsonmicro.com>, <broonie@kernel.org>,
-        <k.kozlowski@samsung.com>, <kyungmin.park@samsung.com>
-Subject: Re: [PATCHv4 1/9] extcon: Add extcon_dev_allocate/free() to control
- the memory of extcon device
-Message-ID: <20140425151222.GE29632@saruman.home>
-Reply-To: <balbi@ti.com>
-References: <1398386544-16295-1-git-send-email-cw00.choi@samsung.com>
- <1398386544-16295-2-git-send-email-cw00.choi@samsung.com>
+	id S1752315AbaDYPNI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 11:13:08 -0400
+Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:45541 "EHLO
+	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752268AbaDYPNE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 11:13:04 -0400
+X-Greylist: delayed 643 seconds by postgrey-1.27 at vger.kernel.org; Fri, 25 Apr 2014 11:13:04 EDT
+From: Roman Gushchin <klamm@yandex-team.ru>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@redhat.com" <mingo@redhat.com>,
+        "tkhai@yandex.ru" <tkhai@yandex.ru>
+In-Reply-To: <20140425131620.GB11096@twins.programming.kicks-ass.net>
+References: <36851398363372@webcorp2g.yandex-team.ru>
+	 <20140424185858.GB26782@laptop.programming.kicks-ass.net>
+	 <17051398423889@webcorp2e.yandex-team.ru> <20140425131620.GB11096@twins.programming.kicks-ass.net>
+Subject: Re: Real-time scheduling policies and hyper-threading
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="YkJPYEFdoxh/AXLE"
-Content-Disposition: inline
-In-Reply-To: <1398386544-16295-2-git-send-email-cw00.choi@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Message-Id: <34791398438136@webcorp2g.yandex-team.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Fri, 25 Apr 2014 19:02:16 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---YkJPYEFdoxh/AXLE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+25.04.2014, 17:16, "Peter Zijlstra" <peterz@infradead.org>:
+> On Fri, Apr 25, 2014 at 03:04:49PM +0400, Roman Gushchin wrote:
+>
+>> š24.04.2014, 22:59, "Peter Zijlstra" <peterz@infradead.org>:
+>>> šOn Thu, Apr 24, 2014 at 10:16:12PM +0400, Roman Gushchin wrote:
+>>>> ššAre there any known solutions of this problem except disabling
+>>>> ššhyper-threading and frequency scaling at all?
+>>> šThis is what we generally tell people to do; disable HT in the BIOS,
+>>> šoffline the siblings or similar approaches.
+>> šIt's a good, but expensive approach, if you have many machines.
+>
+> Expensive how? If you require the latency, there's really no option.
 
-On Fri, Apr 25, 2014 at 09:42:16AM +0900, Chanwoo Choi wrote:
-> This patch add APIs to control the extcon device on extcon provider drive=
-r.
-> The extcon_dev_allocate() allocates the memory of extcon device and initi=
-alizes
-> supported cables. And then extcon_dev_free() decrement the reference of t=
-he
-> device of extcon device and free the memory of the extcon device. This AP=
-Is
-> must need to implement devm_extcon_dev_allocate()/free() APIs.
->=20
-> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Hm. What I really want (and try to implement), is 
+"work as if ht is disabled if there are free physical cores, start using ht siblings otherwise".
 
-except for the one comment below, you can add:
+> That said, if only a small part of your workload is RT then you don't
+> need to disable all SMT siblings, you can only disable the few that are
+> in your RT partition.
 
-Reviewed-by: Felipe Balbi <balbi@ti.com>
+Ok, I understand, that I have something different than what is usual called RT.
 
-> @@ -267,6 +273,13 @@ static inline int devm_extcon_dev_register(struct de=
-vice *dev,
->  static inline void devm_extcon_dev_unregister(struct device *dev,
->  					      struct extcon_dev *edev) { }
-> =20
-> +static inline struct extcon_dev *extcon_dev_allocate(const char **cables)
-> +{
-> +	return ERR_PTR(-ENOMEM);
+I have requests from a user and I want to handle them without any significant delays,
+while possible. For instance, if a request takes 100ms, I don't want to get 165ms
+just because the sibling ht thread was loaded. In the same time, it's important to have
+good resource utilization, what can be less important in real RT tasks.
 
-so this is executed when extcon isn't enabled right ? -ENOMEM is kind of
-lying to your user. You're telling the user that you don't have memory
-when in reality you didn't implement this function. -ENOSYS looks like a
-better choice
+Of course, there is always a trade-off between latency and performance utilization,
+but the common practice here is to keep cpu load between 40% and 70%. So, there is
+fast always a free CPU thread, and a good chance that there is a free core.
+In this case, both latency and average performance depends on how effectively 
+all physical cores are utilized.
 
---=20
-balbi
+Below is the comparison of average response times (in microseconds) under CFS and RT
+scheduler with my patches depending on the number of simultaneous requests. 
+It's a 32-thread processor with 16 physical cores.
 
---YkJPYEFdoxh/AXLE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+nr_req  CFS  RT*      diff                                                                                                                    
+1       9664     9237    +4.41%                                                                                                                  
+2       9179     9107    +0.79%                                                                                                                  
+3       9179     9310    -1.43%                                                                                                                  
+4       9325     9245    +0.86%                                                                                                                  
+5       9562     9387    +1.83%                                                                                                                  
+6       9523     9478    +0.47%                                                                                                                  
+7       10105   9727    +3.74%                                                                                                                  
+8       9900     9781    +1.21%                                                                                                                  
+9       10077   9871    +2.04%                                                                                                                  
+10     10270   9963    +2.99%                                                                                                                  
+11     10604   10231   +3.52%                                                                                                                  
+12     10760   10299   +4.29%                                                                                                                  
+13     11022   10316   +6.40%                                                                                                                  
+14     11595   10310   +11.08%                                                                                                                 
+15     11489   10200   +11.22%                                                                                                                 
+16     12059   10404   +13.72%                                                                                                                 
+17     12056   10691   +11.32%                                                                                                                 
+18     12208   11027   +9.67%                                                                                                                  
+19     12412   11337   +8.66%                                                                                                                  
+20     12634   11663   +7.69%                                                                                                                  
+21     12843   12165   +5.28%                                                                                                                  
+22     13181   12273   +6.89%                                                                                                                  
+23     13214   12560   +4.95%                                                                                                                  
+24     13465   12822   +4.78%                                                                                                                  
+25     13469   13106   +2.70%                                                                                                                  
+26     13725   13329   +2.88%                                                                                                                  
+27     13943   13581   +2.60%                                                                                                                  
+28     14007   13845   +1.16%                                                                                                                  
+29     14242   14040   +1.41%                                                                                                                  
+30     14386   14265   +0.84%                                                                                                                  
+31     14909   14478   +2.90%                                                                                                                  
+32     14772   14769   +0.02%     
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Probably, it's possible to tune CFS for this case, but I have no idea how.
 
-iQIcBAEBAgAGBQJTWntWAAoJEIaOsuA1yqREla4QAJR7jcu+V0RDiLGfAZemPRm2
-26oiwrjbxPxhQ7hXxcUBSi687G4fI3qC7b68YCFr2aVIvO1oR1RqTLOZtRBDb6so
-trJIvBGk1JMlnNrMIHvswz3Mq6FLO4A0ZQxn3nUfyzvMZwnLO9H8RZ9bGGNRpc2y
-i6o+2q+LBQwyKKTbk04QU5KOPHlKjM8w6goZWQoMrVT//A7LtzzdtgSzO7FvzkjL
-tMZZPboQoAT/DiBRwmGxzeKBjaS5ceyD0UwsjsAkNPLS/EsREqAwQN7O1GW+mPrP
-P6C9SkhImB6ywGqYH9JG2yPi7b1bxEPixzQbQUit7cG99c+Hq/a70oHnhz0IHMoE
-DUXS1rrhiys80rPfFW4ivFbfiu4CbtJf7HuEoSbTrH5Z74IwThLkqKXc7YoH2ISZ
-haY0JljiDwNNUxuA2GVZG8T3oj5bUDRdZfVlr5jj5bOTHG+x5Lb1UV8UAZXRL8an
-gizCLY1CKi6MF5FWIZxMaPt+tWt13mHfa6JFLcrsFrZiQqVOoxpfxvz57s37sPkX
-+QpGvhY4lKsXIGyQ27n6k3ZMlP0G2ytKMeKh6VXEPdiV1pyV0jLQBCHPMKiE84G9
-0t8JBhMUcht8NNpJ0Zhe0ErNd+A2LD8hPdRPPsDTOPLhCFfJ097O7vzqGCXZd0zw
-JHPNkdFBIW0mJLuTm7Te
-=fjeY
------END PGP SIGNATURE-----
+In my opinion, such load pattern is not very rare. For instance, front-end 
+web-servers can have similar load.
 
---YkJPYEFdoxh/AXLE--
+Thanks,
+Roman
