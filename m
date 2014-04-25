@@ -1,123 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753902AbaDYTn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 15:43:56 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:46104 "EHLO
+	id S1754251AbaDYToL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 15:44:11 -0400
+Received: from shards.monkeyblade.net ([149.20.54.216]:46107 "EHLO
 	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753003AbaDYTnw (ORCPT
+	with ESMTP id S1753726AbaDYTnz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 15:43:52 -0400
-Date: Fri, 25 Apr 2014 15:43:50 -0400 (EDT)
-Message-Id: <20140425.154350.2167668316872813873.davem@davemloft.net>
+	Fri, 25 Apr 2014 15:43:55 -0400
+Date: Fri, 25 Apr 2014 15:43:54 -0400 (EDT)
+Message-Id: <20140425.154354.575760952778725388.davem@davemloft.net>
 To: sparclinux@vger.kernel.org
 CC: mroos@linux.ee, aaro.koskinen@iki.fi, hughd@google.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 2/3] sparc64: Fix huge PMD invalidation.
+Subject: [PATCH 3/3] sparc64: Fix bugs in get_user_pages_fast() wrt. THP.
 From: David Miller <davem@davemloft.net>
 X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 25 Apr 2014 12:43:51 -0700 (PDT)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 25 Apr 2014 12:43:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-On sparc64 "present" and "valid" are seperate PTE bits, this allows us to
-naturally distinguish between the user explicitly asking for PROT_NONE
-with mprotect() and other situations.
+First of all, we were blocking the wrong kind of interrupts
+over the page table scan.
 
-However we weren't handling this properly in the huge PMD paths.
+%pil based interrupts (the ones blocked by local_irq_disable) are not
+the type which are used to deliver remote TLB flushes.  Rather,
+interrupt vectors are used for that.
 
-First of all, the page table walker in the TSB miss path only checks
-for _PAGE_PMD_HUGE.  So the generic pmdp_invalidate() would clear
-_PAGE_PRESENT but the TLB miss paths would still load it into the TLB
-as a valid huge PMD.
+And interrupt vector delivery can only be blocked by turning off
+PSTATE_IE in the %pstate register.
 
-Fix this by clearing the valid bit in pmdp_invalidate(), and also
-checking the valid bit in USER_PGTABLE_CHECK_PMD_HUGE using "brgez"
-since _PAGE_VALID is bit 63 in both the sun4u and sun4v pte layouts.
+So use that instead of local_irq_{disable,enable}().
+
+Secondly, the large PMD path needs to check _PAGE_VALID not
+_PAGE_PRESENT, to decide if it needs to bail and return 0.
+
+pmd_large() should therefore just check _PAGE_PMD_HUGE.
+
+Calls to gup_huge_pmd() are guarded with a check of pmd_large(), so we
+just need to add a valid bit check.
 
 Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- arch/sparc/include/asm/pgtable_64.h | 18 ++++--------------
- arch/sparc/include/asm/tsb.h        |  3 ++-
- arch/sparc/mm/tlb.c                 | 11 +++++++++++
- 3 files changed, 17 insertions(+), 15 deletions(-)
+ arch/sparc/include/asm/pgtable_64.h |  2 +-
+ arch/sparc/mm/gup.c                 | 19 +++++++++++++++----
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
 diff --git a/arch/sparc/include/asm/pgtable_64.h b/arch/sparc/include/asm/pgtable_64.h
-index 0f9e945..e3db4b8 100644
+index e3db4b8..1f28103 100644
 --- a/arch/sparc/include/asm/pgtable_64.h
 +++ b/arch/sparc/include/asm/pgtable_64.h
-@@ -719,20 +719,6 @@ static inline pmd_t pmd_mkwrite(pmd_t pmd)
- 	return __pmd(pte_val(pte));
- }
- 
--static inline pmd_t pmd_mknotpresent(pmd_t pmd)
--{
--	unsigned long mask;
--
--	if (tlb_type == hypervisor)
--		mask = _PAGE_PRESENT_4V;
--	else
--		mask = _PAGE_PRESENT_4U;
--
--	pmd_val(pmd) &= ~mask;
--
--	return pmd;
--}
--
- static inline pmd_t pmd_mksplitting(pmd_t pmd)
+@@ -633,7 +633,7 @@ static inline unsigned long pmd_large(pmd_t pmd)
  {
  	pte_t pte = __pte(pmd_val(pmd));
-@@ -893,6 +879,10 @@ extern void update_mmu_cache(struct vm_area_struct *, unsigned long, pte_t *);
- extern void update_mmu_cache_pmd(struct vm_area_struct *vma, unsigned long addr,
- 				 pmd_t *pmd);
  
-+#define __HAVE_ARCH_PMDP_INVALIDATE
-+extern void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
-+			    pmd_t *pmdp);
-+
- #define __HAVE_ARCH_PGTABLE_DEPOSIT
- extern void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
- 				       pgtable_t pgtable);
-diff --git a/arch/sparc/include/asm/tsb.h b/arch/sparc/include/asm/tsb.h
-index 2230f80..90916f9 100644
---- a/arch/sparc/include/asm/tsb.h
-+++ b/arch/sparc/include/asm/tsb.h
-@@ -171,7 +171,8 @@ extern struct tsb_phys_patch_entry __tsb_phys_patch, __tsb_phys_patch_end;
- 	andcc		REG1, REG2, %g0;		\
- 	be,pt		%xcc, 700f;			\
- 	 sethi		%hi(4 * 1024 * 1024), REG2;	\
--	andn		REG1, REG2, REG1;		\
-+	brgez,pn	REG1, FAIL_LABEL;		\
-+	 andn		REG1, REG2, REG1;		\
- 	and		VADDR, REG2, REG2;		\
- 	brlz,pt		REG1, PTE_LABEL;		\
- 	 or		REG1, REG2, REG1;		\
-diff --git a/arch/sparc/mm/tlb.c b/arch/sparc/mm/tlb.c
-index c07667f..b89aba2 100644
---- a/arch/sparc/mm/tlb.c
-+++ b/arch/sparc/mm/tlb.c
-@@ -193,6 +193,17 @@ void set_pmd_at(struct mm_struct *mm, unsigned long addr,
- 	}
+-	return (pte_val(pte) & _PAGE_PMD_HUGE) && pte_present(pte);
++	return pte_val(pte) & _PAGE_PMD_HUGE;
  }
  
-+void pmdp_invalidate(struct vm_area_struct *vma, unsigned long address,
-+		     pmd_t *pmdp)
-+{
-+	pmd_t entry = *pmdp;
-+
-+	pmd_val(entry) &= ~_PAGE_VALID;
-+
-+	set_pmd_at(vma->vm_mm, address, pmdp, entry);
-+	flush_tlb_range(vma, address, address + HPAGE_PMD_SIZE);
-+}
-+
- void pgtable_trans_huge_deposit(struct mm_struct *mm, pmd_t *pmdp,
- 				pgtable_t pgtable)
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+diff --git a/arch/sparc/mm/gup.c b/arch/sparc/mm/gup.c
+index c4d3da6..97fb4fc 100644
+--- a/arch/sparc/mm/gup.c
++++ b/arch/sparc/mm/gup.c
+@@ -73,7 +73,7 @@ static int gup_huge_pmd(pmd_t *pmdp, pmd_t pmd, unsigned long addr,
+ 	struct page *head, *page, *tail;
+ 	int refs;
+ 
+-	if (!pmd_large(pmd))
++	if (!(pmd_val(pmd) & _PAGE_VALID))
+ 		return 0;
+ 
+ 	if (write && !pmd_write(pmd))
+@@ -165,7 +165,7 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
  {
+ 	struct mm_struct *mm = current->mm;
+ 	unsigned long addr, len, end;
+-	unsigned long next;
++	unsigned long next, pstate;
+ 	pgd_t *pgdp;
+ 	int nr = 0;
+ 
+@@ -191,7 +191,12 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 	 * So long as we atomically load page table pointers versus teardown,
+ 	 * we can follow the address down to the the page and take a ref on it.
+ 	 */
+-	local_irq_disable();
++	__asm__ __volatile__(
++		"rdpr %%pstate, %0\n\t"
++		"andn %0, %1, %0\n\t"
++		"wrpr %0, %%g0, %%pstate"
++		: "=&r" (pstate)
++		: "i" (PSTATE_IE));
+ 
+ 	pgdp = pgd_offset(mm, addr);
+ 	do {
+@@ -204,7 +209,13 @@ int get_user_pages_fast(unsigned long start, int nr_pages, int write,
+ 			goto slow;
+ 	} while (pgdp++, addr = next, addr != end);
+ 
+-	local_irq_enable();
++	/* Re-enable interrupts. */
++	__asm__ __volatile__(
++		"rdpr %%pstate, %0\n\t"
++		"or %0, %1, %0\n\t"
++		"wrpr %0, %%g0, %%pstate"
++		: "=&r" (pstate)
++		: "i" (PSTATE_IE));
+ 
+ 	VM_BUG_ON(nr != (end - start) >> PAGE_SHIFT);
+ 	return nr;
 -- 
 1.9.0
 
