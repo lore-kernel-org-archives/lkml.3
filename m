@@ -1,210 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751779AbaDYFKv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 01:10:51 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:57725 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096AbaDYFKt (ORCPT
+	id S1751613AbaDYFNA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 01:13:00 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:45503 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750767AbaDYFM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 01:10:49 -0400
-Message-ID: <5359EE50.2000007@hitachi.com>
-Date: Fri, 25 Apr 2014 14:10:40 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Fri, 25 Apr 2014 01:12:58 -0400
+Message-ID: <5359EDDB.4060409@linux.vnet.ibm.com>
+Date: Fri, 25 Apr 2014 10:38:43 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:14.0) Gecko/20120717 Thunderbird/14.0
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Takao Indoh <indou.takao@jp.fujitsu.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] ftrace/module: Hardcode ftrace_module_init() call
- into load_module()
-References: <20140424105417.7407bb72@gandalf.local.home>
-In-Reply-To: <20140424105417.7407bb72@gandalf.local.home>
+To: Peter Zijlstra <peterz@infradead.org>, Jason Low <jason.low2@hp.com>
+CC: mingo@kernel.org, linux-kernel@vger.kernel.org, daniel.lezcano@linaro.org,
+        alex.shi@linaro.org, efault@gmx.de, vincent.guittot@linaro.org,
+        morten.rasmussen@arm.com, aswin@hp.com, chegu_vinod@hp.com
+Subject: Re: [PATCH 1/3] sched, balancing: Update rq->max_idle_balance_cost
+ whenever newidle balance is attempted
+References: <1398303035-18255-1-git-send-email-jason.low2@hp.com> <1398303035-18255-2-git-send-email-jason.low2@hp.com> <5358E417.8090503@linux.vnet.ibm.com> <20140424120415.GS11096@twins.programming.kicks-ass.net> <20140424124438.GT13658@twins.programming.kicks-ass.net> <1398358417.3509.11.camel@j-VirtualBox> <20140424171453.GZ11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140424171453.GZ11096@twins.programming.kicks-ass.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042505-9332-0000-0000-0000009B3159
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2014/04/24 23:54), Steven Rostedt wrote:
-> [
->   Rusty, you can take this patch, or if you want, you can give me 
->   an Acked-by, and I'll push this through my tree.
-> ]
+On 04/24/2014 10:44 PM, Peter Zijlstra wrote:
+> On Thu, Apr 24, 2014 at 09:53:37AM -0700, Jason Low wrote:
+>>
+>> So I thought that the original rationale (commit 1bd77f2d) behind
+>> updating rq->next_balance in idle_balance() is that, if we are going
+>> idle (!pulled_task), we want to ensure that the next_balance gets
+>> calculated without the busy_factor.
+>>
+>> If the rq is busy, then rq->next_balance gets updated based on
+>> sd->interval * busy_factor. However, when the rq goes from "busy"
+>> to idle, rq->next_balance might still have been calculated under
+>> the assumption that the rq is busy. Thus, if we are going idle, we
+>> would then properly update next_balance without the busy factor
+>> if we update when !pulled_task.
+>>
 > 
+> Its late here and I'm confused!
 > 
->>From 3ad4487ccecb8eb799c8e96309f256a1c9296685 Mon Sep 17 00:00:00 2001
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> Date: Thu, 24 Apr 2014 10:40:12 -0400
-> Subject: [PATCH] ftrace/module: Hardcode ftrace_module_init() call into
->  load_module()
+> So the for_each_domain() loop calculates a new next_balance based on
+> ->balance_interval (which has that busy_factor on, right).
 > 
-> A race exists between module loading and enabling of function tracer.
-> 
-> 	CPU 1				CPU 2
-> 	-----				-----
->   load_module()
->    module->state = MODULE_STATE_COMING
-> 
-> 				register_ftrace_function()
-> 				 mutex_lock(&ftrace_lock);
-> 				 ftrace_startup()
-> 				  update_ftrace_function();
-> 				   ftrace_arch_code_modify_prepare()
-> 				    set_all_module_text_rw();
-> 				   <enables-ftrace>
-> 				    ftrace_arch_code_modify_post_process()
-> 				     set_all_module_text_ro();
-> 
-> 				[ here all module text is set to RO,
-> 				  including the module that is
-> 				  loading!! ]
-> 
->    blocking_notifier_call_chain(MODULE_STATE_COMING);
->     ftrace_init_module()
-> 
->      [ tries to modify code, but it's RO, and fails!
->        ftrace_bug() is called]
-> 
-> When this race happens, ftrace_bug() will produces a nasty warning and
-> all of the function tracing features will be disabled until reboot.
-> 
-> The simple solution is to treate module load the same way the core
-> kernel is treated at boot. To hardcode the ftrace function modification
-> of converting calls to mcount into nops. This is done in init/main.c
-> there's no reason it could not be done in load_module(). This gives
-> a better control of the changes and doesn't tie the state of the
-> module to its notifiers as much. Ftrace is special, it needs to be
-> treated as such.
-> 
-> The reason this would work, is that the ftrace_module_init() would be
-> called while the module is in MODULE_STATE_UNFORMED, which is ignored
-> by the set_all_module_text_ro() call.
-> 
-> Link: http://lkml.kernel.org/r/1395637826-3312-1-git-send-email-indou.takao@jp.fujitsu.com
-> 
-> Reported-by: Takao Indoh <indou.takao@jp.fujitsu.com>
-> Cc: stable@vger.kernel.org # 2.6.38+
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> But if it fails to pull anything, we'll (potentially) iterate the entire
+> tree up to the largest domain; and supposedly set next_balanced to the
+> largest possible interval.
 
-Looks good to me.
-
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thank you,
-
-> ---
->  include/linux/ftrace.h |  2 ++
->  kernel/module.c        |  3 +++
->  kernel/trace/ftrace.c  | 27 ++++-----------------------
->  3 files changed, 9 insertions(+), 23 deletions(-)
+*to the smallest possible interval.
 > 
-> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> index 9212b01..ae9504b 100644
-> --- a/include/linux/ftrace.h
-> +++ b/include/linux/ftrace.h
-> @@ -535,6 +535,7 @@ static inline int ftrace_modify_call(struct dyn_ftrace *rec, unsigned long old_a
->  extern int ftrace_arch_read_dyn_info(char *buf, int size);
->  
->  extern int skip_trace(unsigned long ip);
-> +extern void ftrace_module_init(struct module *mod);
->  
->  extern void ftrace_disable_daemon(void);
->  extern void ftrace_enable_daemon(void);
-> @@ -544,6 +545,7 @@ static inline int ftrace_force_update(void) { return 0; }
->  static inline void ftrace_disable_daemon(void) { }
->  static inline void ftrace_enable_daemon(void) { }
->  static inline void ftrace_release_mod(struct module *mod) {}
-> +static inline void ftrace_module_init(struct module *mod) {}
->  static inline __init int register_ftrace_command(struct ftrace_func_command *cmd)
->  {
->  	return -EINVAL;
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 1186940..5f14fec 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -3271,6 +3271,9 @@ static int load_module(struct load_info *info, const char __user *uargs,
->  
->  	dynamic_debug_setup(info->debug, info->num_debug);
->  
-> +	/* Ftrace init must be called in the MODULE_STATE_UNFORMED state */
-> +	ftrace_module_init(mod);
-> +
->  	/* Finally it's fully formed, ready to start executing. */
->  	err = complete_formation(mod, info);
->  	if (err)
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 1fd4b94..4a54a25 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -4330,16 +4330,11 @@ static void ftrace_init_module(struct module *mod,
->  	ftrace_process_locs(mod, start, end);
->  }
->  
-> -static int ftrace_module_notify_enter(struct notifier_block *self,
-> -				      unsigned long val, void *data)
-> +void ftrace_module_init(struct module *mod)
->  {
-> -	struct module *mod = data;
-> -
-> -	if (val == MODULE_STATE_COMING)
-> -		ftrace_init_module(mod, mod->ftrace_callsites,
-> -				   mod->ftrace_callsites +
-> -				   mod->num_ftrace_callsites);
-> -	return 0;
-> +	ftrace_init_module(mod, mod->ftrace_callsites,
-> +			   mod->ftrace_callsites +
-> +			   mod->num_ftrace_callsites);
->  }
->  
->  static int ftrace_module_notify_exit(struct notifier_block *self,
-> @@ -4353,11 +4348,6 @@ static int ftrace_module_notify_exit(struct notifier_block *self,
->  	return 0;
->  }
->  #else
-> -static int ftrace_module_notify_enter(struct notifier_block *self,
-> -				      unsigned long val, void *data)
-> -{
-> -	return 0;
-> -}
->  static int ftrace_module_notify_exit(struct notifier_block *self,
->  				     unsigned long val, void *data)
->  {
-> @@ -4365,11 +4355,6 @@ static int ftrace_module_notify_exit(struct notifier_block *self,
->  }
->  #endif /* CONFIG_MODULES */
->  
-> -struct notifier_block ftrace_module_enter_nb = {
-> -	.notifier_call = ftrace_module_notify_enter,
-> -	.priority = INT_MAX,	/* Run before anything that can use kprobes */
-> -};
-> -
->  struct notifier_block ftrace_module_exit_nb = {
->  	.notifier_call = ftrace_module_notify_exit,
->  	.priority = INT_MIN,	/* Run after anything that can remove kprobes */
-> @@ -4403,10 +4388,6 @@ void __init ftrace_init(void)
->  				  __start_mcount_loc,
->  				  __stop_mcount_loc);
->  
-> -	ret = register_module_notifier(&ftrace_module_enter_nb);
-> -	if (ret)
-> -		pr_warning("Failed to register trace ftrace module enter notifier\n");
-> -
->  	ret = register_module_notifier(&ftrace_module_exit_nb);
->  	if (ret)
->  		pr_warning("Failed to register trace ftrace module exit notifier\n");
+> So when we go from busy to idle (!pulled_task), we actually set
+> ->next_balance to the longest interval. Whereas the commit you
+> referenced says it sets it to a shorter while.
+
+We will set next_balance to the earliest balance time among the sched
+domains iterated.
 > 
+> Not seeing it.
+> 
+> So the code as modified by Ingo in one of the initial CFS commits, will
+> move the ->next_balance time ahead if the balance succeeded
+> (pulled_task), thereby reflecting that we are busy and we just did a
+> balance so we need not do one again soon. (we might want to re-think
+> this if we really make the idle balance only pull 1 task max).
+> 
+> Of course, I've now gone over this code 3 times today, so I'm terminally
+> confused.
 
+I am unable to understand how updating of rq->next_balance should depend
+solely on the pulled_task parameter( I am not considering the expiry of
+rq->next_balance here).
 
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+True that we will need to override the busy_factor in rq->next_balance
+if we do not pull any tasks and go to idle. Besides that however we will
+probably need to override rq->next_balance irrespective of whether we
+pull any tasks.
 
+Lets look at what happens to the sd->balance_interval in load_balance().
+If we pull tasks then it is set to min_interval. If active balance
+occurs or if tasks are pinned then we push the interval farther away.In
+the former case where it is set to min_interval, pulled_tasks > 0, in
+the latter case, especially the pinned case, pulled_task=0 (not sure
+about the active balance case).
+
+If after this modification on sd->balance_interval,
+rq->next_balance > sd->last_balance + sd->balance_interval then
+shouldn't we be resetting rq->next_balance? And if we should, then the
+dependence on pulled_tasks is not justified is it? All this assuming
+that rq->next_balance should always reflect the minimum value of
+sd->next_balance among the sched domains of which the rq is a part.
+
+Regards
+Preeti U Murthy
+> 
 
