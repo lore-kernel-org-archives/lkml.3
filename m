@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751382AbaDYAms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:42:48 -0400
+	id S1751338AbaDYAmr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:42:47 -0400
 Received: from mailout4.samsung.com ([203.254.224.34]:57252 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818AbaDYAmj (ORCPT
+	with ESMTP id S1750717AbaDYAmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:42:39 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-c7-5359af7a8868
+	Thu, 24 Apr 2014 20:42:37 -0400
+X-AuditID: cbfee691-b7f3e6d000002ce8-16-5359af798daa
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: myungjoo.ham@samsung.com, balbi@ti.com, gg@slimlogic.co.uk, kishon@ti.com,
         ckeepax@opensource.wolfsonmicro.com, broonie@kernel.org,
         k.kozlowski@samsung.com, kyungmin.park@samsung.com,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        patches@opensource.wolfsonmicro.com
-Subject: [PATCHv4 6/9] extcon: arizona: Use devm_extcon_dev_allocate for
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: [PATCHv4 4/9] extcon: max77693: Use devm_extcon_dev_allocate for
  extcon_dev
-Date: Fri, 25 Apr 2014 09:42:21 +0900
-Message-id: <1398386544-16295-7-git-send-email-cw00.choi@samsung.com>
+Date: Fri, 25 Apr 2014 09:42:19 +0900
+Message-id: <1398386544-16295-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1398386544-16295-1-git-send-email-cw00.choi@samsung.com>
 References: <1398386544-16295-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplkeLIzCtJLcpLzFFi42JZI2JSpFu1PjLY4PMTGYuD9+stpj58wmbx
-	b8oNdovrX56zWvRvcbF4/cLQ4sLTHjaLs01v2C0u75rDZnG7cQWbxfK3/9kcuD02repk83g5
-	8TebR9+WVYweU6f8ZfQ4fmM7k8fnTXIBbFFcNimpOZllqUX6dglcGUeu5hW0KlXsvnacqYHx
-	r3QXIyeHhICJxMr1H5ggbDGJC/fWs3UxcnEICSxllNj5dD0zTFHnxU0sEInpjBK/rlxnhXCa
-	mCT2//vAClLFJqAlsf/FDTYQW0RAQWJz7zOwImaBbiaJzTMWg40SFgiVmPS1jwXEZhFQlTix
-	+gxYA6+Aq8SpjV+h1slJfNjziB3E5hRwkzh0ohesXgio5tW5OUwgQyUEdrFLvFh/jRVikIDE
-	t8mHgIo4gBKyEpsOQM2RlDi44gbLBEbhBYwMqxhFUwuSC4qT0osM9YoTc4tL89L1kvNzNzEC
-	o+L0v2e9OxhvH7A+xJgMNG4is5Rocj4wqvJK4g2NzYwsTE1MjY3MLc1IE1YS5016mBQkJJCe
-	WJKanZpakFoUX1Sak1p8iJGJg1OqgTHM/duM2QL5J+6s3RgYdkKWpX63xpZlh/2mJryr8Nl0
-	6sqbjzcXnrixvHfeU87kOZOfLqra/nOL/3eB2LyqB29Lrvi1+XGFegsnW3c5f3NnPuEe9zSA
-	Z4ryP/NfudP/LeRwOcQ9iU3ANS/kW4bZ1v1frDLdVz96K5/4Rc5V4Kxak+s+uVnJdmlKLMUZ
-	iYZazEXFiQBsHjrmoAIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrFIsWRmVeSWpSXmKPExsVy+t9jQd2q9ZHBBituiFocvF9vMfXhEzaL
-	f1NusFtc//Kc1aJ/i4vF6xeGFhee9rBZnG16w25xedccNovbjSvYLJa//c/mwO2xaVUnm8fL
-	ib/ZPPq2rGL0mDrlL6PH8RvbmTw+b5ILYItqYLTJSE1MSS1SSM1Lzk/JzEu3VfIOjneONzUz
-	MNQ1tLQwV1LIS8xNtVVy8QnQdcvMAbpOSaEsMacUKBSQWFyspG+HaUJoiJuuBUxjhK5vSBBc
-	j5EBGkhYw5hx5GpeQatSxe5rx5kaGP9KdzFyckgImEh0XtzEAmGLSVy4t56ti5GLQ0hgOqPE
-	ryvXWSGcJiaJ/f8+sIJUsQloSex/cYMNxBYRUJDY3PsMrIhZoJtJYvOMxcwgCWGBUIlJX/vA
-	xrIIqEqcWH0GrIFXwFXi1MavzBDr5CQ+7HnEDmJzCrhJHDrRC1YvBFTz6twcpgmMvAsYGVYx
-	iqYWJBcUJ6XnGukVJ+YWl+al6yXn525iBMfcM+kdjKsaLA4xCnAwKvHwTpCNDBZiTSwrrsw9
-	xCjBwawkwqu8CijEm5JYWZValB9fVJqTWnyIMRnoqonMUqLJ+cB0kFcSb2hsYmZkaWRuaGFk
-	bE6asJI478FW60AhgfTEktTs1NSC1CKYLUwcnFINjMmWmY7vMyqXJCUYnDl87sHBvvtXEgIn
-	n50R517WELpwhey5dSd390hensGdekk79Oy1gpVGFx6Vv04r//hFP1k3s1lsfSCraEvtVlHx
-	rivK4hMcwg8/kci6MMn4rP4JcT5Ba6bwlwyR3onJVeukU3/2q2qLX7tw8BqD7KLZomadHz5w
-	OjHfV2Ipzkg01GIuKk4EAJzltwT9AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupkkeLIzCtJLcpLzFFi42JZI2JSqFu5PjLY4OlGFYuD9+stpj58wmbx
+	b8oNdovrX56zWvRvcbF4/cLQ4sLTHjaLs01v2C0u75rDZnG7cQWbA5fHplWdbB4vJ/5m8+jb
+	sorRY+qUv4wex29sZ/L4vEkugC2KyyYlNSezLLVI3y6BK+Ptos2MBfO4K158P8jawLiEs4uR
+	k0NCwESi/89sRghbTOLCvfVsXYxcHEICSxklLs66ywJTdKrjFCtEYjqjxK91e5khnCYmiXXt
+	X5hAqtgEtCT2v7jBBmKLCChIbO59BtbBLPCMUeLE1RPMIAlhgTCJBevWsoPYLAKqEsdut4A1
+	8Aq4SrzsbGaGWCcn8WHPI7AaTgE3iUMnesHOEAKqeXVuDhPIUAmBbewST889YIMYJCDxbfIh
+	oCIOoISsxKYDUHMkJQ6uuMEygVF4ASPDKkbR1ILkguKk9CJTveLE3OLSvHS95PzcTYzAaDj9
+	79nEHYz3D1gfYkwGGjeRWUo0OR8YTXkl8YbGZkYWpiamxkbmlmakCSuJ86Y/SgoSEkhPLEnN
+	Tk0tSC2KLyrNSS0+xMjEwSnVwNjB66xhzf0w4ECl3dfdR3S524R3TeV6Vf1swdkLfvMkwn1b
+	+e0kWm/mzlLQun/e/cUhhhamU1fPZDF0JO3JX6Zo08JR/N/ORn6h2Pdw+/OxvcdXuUmcf+G7
+	U29KoGDk8fsVq2MLS9dGJDZ6LTt6suxt4daa16y/vv3f2aloOHPK+omn+JUOPFBiKc5INNRi
+	LipOBADOGjYKnAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrGIsWRmVeSWpSXmKPExsVy+t9jQd3K9ZHBBn/nyVocvF9vMfXhEzaL
+	f1NusFtc//Kc1aJ/i4vF6xeGFhee9rBZnG16w25xedccNovbjSvYHLg8Nq3qZPN4OfE3m0ff
+	llWMHlOn/GX0OH5jO5PH501yAWxRDYw2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW
+	5koKeYm5qbZKLj4Bum6ZOUCHKSmUJeaUAoUCEouLlfTtME0IDXHTtYBpjND1DQmC6zEyQAMJ
+	axgz3i7azFgwj7vixfeDrA2MSzi7GDk5JARMJE51nGKFsMUkLtxbz9bFyMUhJDCdUeLXur3M
+	EE4Tk8S69i9MIFVsAloS+1/cYAOxRQQUJDb3PmMFKWIWeMYoceLqCWaQhLBAmMSCdWvZQWwW
+	AVWJY7dbwBp4BVwlXnY2M0Osk5P4sOcRWA2ngJvEoRO9LCC2EFDNq3NzmCYw8i5gZFjFKJpa
+	kFxQnJSea6RXnJhbXJqXrpecn7uJERxrz6R3MK5qsDjEKMDBqMTDO0E2MliINbGsuDL3EKME
+	B7OSCK/yKqAQb0piZVVqUX58UWlOavEhxmSgqyYyS4km5wPTQF5JvKGxiZmRpZG5oYWRsTlp
+	wkrivAdbrQOFBNITS1KzU1MLUotgtjBxcEo1MPbMj5o+4+2/pd03k77uC5wS4n9M7fVitUkH
+	A9/yes0w3+C674C0WsZEbm9vgd1FSrt3/dG436Ll9uF/1OSCald3h6+X13awuasy20bst5ut
+	xm05dZ+bzNpyo9Z7/M6cL15Zmf9K/HvchLNd/OKMlBJjBy7960sOf/3gfD9hJhuTZ7nFwjPm
+	C5RYijMSDbWYi4oTAbhobKD5AgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,120 +56,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 This patch use devm_extcon_dev_allocate() to simplify the memory control
 of extcon device.
 
-Cc: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: patches@opensource.wolfsonmicro.com
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 ---
- drivers/extcon/extcon-arizona.c | 30 +++++++++++++++++-------------
- 1 file changed, 17 insertions(+), 13 deletions(-)
+ drivers/extcon/extcon-max77693.c | 9 ++++-----
+ 1 file changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/extcon/extcon-arizona.c b/drivers/extcon/extcon-arizona.c
-index f63fa6f..6c84e3d 100644
---- a/drivers/extcon/extcon-arizona.c
-+++ b/drivers/extcon/extcon-arizona.c
-@@ -91,7 +91,7 @@ struct arizona_extcon_info {
- 
- 	int hpdet_ip;
- 
--	struct extcon_dev edev;
-+	struct extcon_dev *edev;
- };
- 
- static const struct arizona_micd_config micd_default_modes[] = {
-@@ -546,7 +546,7 @@ static irqreturn_t arizona_hpdet_irq(int irq, void *data)
+diff --git a/drivers/extcon/extcon-max77693.c b/drivers/extcon/extcon-max77693.c
+index f0f18e2..2c7c3e1 100644
+--- a/drivers/extcon/extcon-max77693.c
++++ b/drivers/extcon/extcon-max77693.c
+@@ -1175,23 +1175,22 @@ static int max77693_muic_probe(struct platform_device *pdev)
  	}
  
- 	/* If the cable was removed while measuring ignore the result */
--	ret = extcon_get_cable_state_(&info->edev, ARIZONA_CABLE_MECHANICAL);
-+	ret = extcon_get_cable_state_(info->edev, ARIZONA_CABLE_MECHANICAL);
- 	if (ret < 0) {
- 		dev_err(arizona->dev, "Failed to check cable state: %d\n",
- 			ret);
-@@ -581,7 +581,7 @@ static irqreturn_t arizona_hpdet_irq(int irq, void *data)
- 	else
- 		report = ARIZONA_CABLE_HEADPHONE;
- 
--	ret = extcon_set_cable_state_(&info->edev, report, true);
-+	ret = extcon_set_cable_state_(info->edev, report, true);
- 	if (ret != 0)
- 		dev_err(arizona->dev, "Failed to report HP/line: %d\n",
- 			ret);
-@@ -664,7 +664,7 @@ err:
- 			   ARIZONA_ACCDET_MODE_MASK, ARIZONA_ACCDET_MODE_MIC);
- 
- 	/* Just report headphone */
--	ret = extcon_update_state(&info->edev,
-+	ret = extcon_update_state(info->edev,
- 				  1 << ARIZONA_CABLE_HEADPHONE,
- 				  1 << ARIZONA_CABLE_HEADPHONE);
- 	if (ret != 0)
-@@ -723,7 +723,7 @@ err:
- 			   ARIZONA_ACCDET_MODE_MASK, ARIZONA_ACCDET_MODE_MIC);
- 
- 	/* Just report headphone */
--	ret = extcon_update_state(&info->edev,
-+	ret = extcon_update_state(info->edev,
- 				  1 << ARIZONA_CABLE_HEADPHONE,
- 				  1 << ARIZONA_CABLE_HEADPHONE);
- 	if (ret != 0)
-@@ -764,7 +764,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 	mutex_lock(&info->lock);
- 
- 	/* If the cable was removed while measuring ignore the result */
--	ret = extcon_get_cable_state_(&info->edev, ARIZONA_CABLE_MECHANICAL);
-+	ret = extcon_get_cable_state_(info->edev, ARIZONA_CABLE_MECHANICAL);
- 	if (ret < 0) {
- 		dev_err(arizona->dev, "Failed to check cable state: %d\n",
- 				ret);
-@@ -812,7 +812,7 @@ static void arizona_micd_detect(struct work_struct *work)
- 	if (info->detecting && (val & ARIZONA_MICD_LVL_8)) {
- 		arizona_identify_headphone(info);
- 
--		ret = extcon_update_state(&info->edev,
-+		ret = extcon_update_state(info->edev,
- 					  1 << ARIZONA_CABLE_MICROPHONE,
- 					  1 << ARIZONA_CABLE_MICROPHONE);
- 
-@@ -999,7 +999,7 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
- 
- 	if (info->last_jackdet == present) {
- 		dev_dbg(arizona->dev, "Detected jack\n");
--		ret = extcon_set_cable_state_(&info->edev,
-+		ret = extcon_set_cable_state_(info->edev,
- 					      ARIZONA_CABLE_MECHANICAL, true);
- 
- 		if (ret != 0)
-@@ -1038,7 +1038,7 @@ static irqreturn_t arizona_jackdet(int irq, void *data)
- 					 info->micd_ranges[i].key, 0);
- 		input_sync(info->input);
- 
--		ret = extcon_update_state(&info->edev, 0xffffffff, 0);
-+		ret = extcon_update_state(info->edev, 0xffffffff, 0);
- 		if (ret != 0)
- 			dev_err(arizona->dev, "Removal report failed: %d\n",
- 				ret);
-@@ -1150,11 +1150,15 @@ static int arizona_extcon_probe(struct platform_device *pdev)
- 		break;
- 	}
- 
--	info->edev.name = "Headset Jack";
--	info->edev.dev.parent = arizona->dev;
--	info->edev.supported_cable = arizona_cable;
-+	info->edev = devm_extcon_dev_allocate(&pdev->dev, arizona_cable);
+ 	/* Initialize extcon device */
+-	info->edev = devm_kzalloc(&pdev->dev, sizeof(struct extcon_dev),
+-				  GFP_KERNEL);
+-	if (!info->edev) {
++	info->edev = devm_extcon_dev_allocate(&pdev->dev,
++					      max77693_extcon_cable);
 +	if (IS_ERR(info->edev)) {
-+		dev_err(&pdev->dev, "failed to allocate extcon device\n");
-+		return -ENOMEM;
-+	}
-+	info->edev->name = "Headset Jack";
-+	info->edev->dev.parent = arizona->dev;
+ 		dev_err(&pdev->dev, "failed to allocate memory for extcon\n");
+ 		ret = -ENOMEM;
+ 		goto err_irq;
+ 	}
+ 	info->edev->name = DEV_NAME;
+ 	info->edev->dev.parent = &pdev->dev;
+-	info->edev->supported_cable = max77693_extcon_cable;
++
+ 	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
+ 	if (ret) {
+ 		dev_err(&pdev->dev, "failed to register extcon device\n");
+ 		goto err_irq;
+ 	}
  
--	ret = devm_extcon_dev_register(&pdev->dev, &info->edev);
-+	ret = devm_extcon_dev_register(&pdev->dev, info->edev);
- 	if (ret < 0) {
- 		dev_err(arizona->dev, "extcon_dev_register() failed: %d\n",
- 			ret);
+-
+ 	/* Initialize MUIC register by using platform data or default data */
+ 	if (pdata && pdata->muic_data) {
+ 		init_data = pdata->muic_data->init_data;
 -- 
 1.8.0
 
