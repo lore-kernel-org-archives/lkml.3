@@ -1,91 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbaDYPuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 11:50:37 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:33267 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752160AbaDYPue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 11:50:34 -0400
-Date: Fri, 25 Apr 2014 17:47:46 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 02/18] usb: host: xhci-plat: Add clocks support
-Message-ID: <20140425154746.GB12472@lunn.ch>
-References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
- <1398434836-18908-3-git-send-email-gregory.clement@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398434836-18908-3-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752030AbaDYPzt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 11:55:49 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33827 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751125AbaDYPzs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 11:55:48 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@kernel.org
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 1/2] regulator: arizona-micsupp: Fix build errors with CONFIG_OF not defined
+Date: Fri, 25 Apr 2014 16:55:40 +0100
+Message-Id: <1398441341-19436-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 04:07:00PM +0200, Gregory CLEMENT wrote:
-> Some platform (such as the Armada 38x ones) can gate the clock of
-> their USB controller. This patch add the support for the clock, by
-> enabling them during probe and disabling them on remove.
-> 
-> As not all platforms have clock support then enabling and disabling
-> the clocks have been placed in separate functions. Then if the clocks
-> are not supported we still can use the same calls, and there is no
-> 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
->  drivers/usb/host/xhci-plat.c | 52 ++++++++++++++++++++++++++++++++++++++++++--
->  1 file changed, 50 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-> index f5351af4b2c5..bb5d563f729c 100644
-> --- a/drivers/usb/host/xhci-plat.c
-> +++ b/drivers/usb/host/xhci-plat.c
-> @@ -11,6 +11,7 @@
->   * version 2 as published by the Free Software Foundation.
->   */
->  
-> +#include <linux/clk.h>
->  #include <linux/dma-mapping.h>
->  #include <linux/module.h>
->  #include <linux/of.h>
-> @@ -85,6 +86,42 @@ static const struct hc_driver xhci_plat_xhci_driver = {
->  	.bus_resume =		xhci_bus_resume,
->  };
->  
-> +#if defined(CONFIG_HAVE_CLK)
+Some of the OF handling functions do not have empty alternatives defined
+if CONFIG_OF is not defined. This patch ifdefs out the offending code.
 
-Hi Gregory
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/arizona-micsupp.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-You probably don't need to do this conditional on CONFIG_HAVE_CLK.
-There are stub functions in clk.h for when CONFIG_HAVE_CLK is not
-defined. So the compiler knows devm_clk_get() will return NULL, it can
-evaluate IS_ERR is false, clk_prepare() returns 0 and so the whole
-function collapses to "return 0;"
+diff --git a/drivers/regulator/arizona-micsupp.c b/drivers/regulator/arizona-micsupp.c
+index b80ebbe..19d0b2c 100644
+--- a/drivers/regulator/arizona-micsupp.c
++++ b/drivers/regulator/arizona-micsupp.c
+@@ -196,6 +196,7 @@ static const struct regulator_init_data arizona_micsupp_ext_default = {
+ 	.num_consumer_supplies = 1,
+ };
+ 
++#if IS_ENABLED(CONFIG_OF)
+ static int arizona_micsupp_of_get_pdata(struct arizona *arizona,
+ 					struct regulator_config *config)
+ {
+@@ -222,6 +223,22 @@ static int arizona_micsupp_of_get_pdata(struct arizona *arizona,
+ 	return 0;
+ }
+ 
++static void arizona_micsupp_of_put_pdata(struct regulator_config *config)
++{
++	of_node_put(config->of_node);
++}
++#else
++static int arizona_micsupp_of_get_pdata(struct arizona *arizona,
++					struct regulator_config *config)
++{
++	return 0;
++}
++
++static void arizona_micsupp_of_put_pdata(struct regulator_config *config)
++{
++}
++#endif
++
+ static int arizona_micsupp_probe(struct platform_device *pdev)
+ {
+ 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
+@@ -288,7 +305,8 @@ static int arizona_micsupp_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
+-	of_node_put(config.of_node);
++	if (IS_ENABLED(CONFIG_OF))
++		arizona_micsupp_of_put_pdata(&config);
+ 
+ 	platform_set_drvdata(pdev, micsupp);
+ 
+-- 
+1.7.9.5
 
-> +static int try_enable_clk(struct platform_device *pdev)
-> +{
-> +	struct clk *clk = devm_clk_get(&pdev->dev, NULL);
-> +
-> +	/* Not all platforms have a clk so it is not an error if the clock
-> +	   does not exists. */
-> +	if (!IS_ERR(clk))
-> +		if (clk_prepare_enable(clk))
-> +			return  -ENODEV;
-
-Is ENODEV the correct error code? It would probably be better to
-return the return value of clk_prepare_enable()
-
-> +	return 0;
-> +}
