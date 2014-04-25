@@ -1,102 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614AbaDYA3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 20:29:08 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:39015 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752052AbaDYA3F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 20:29:05 -0400
-Subject: Re: [PATCH] uprobes/x86: Refuse to attach uprobe to "word-sized"
- branch insns
-From: Jim Keniston <jkenisto@linux.vnet.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <dvlasenk@redhat.com>, linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20140424173333.GA416@redhat.com>
-References: <1398359304-26472-1-git-send-email-dvlasenk@redhat.com>
-	 <20140424173333.GA416@redhat.com>
+	id S1754883AbaDYA3t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 20:29:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35809 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752052AbaDYA3r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 20:29:47 -0400
+Subject: Re: [PATCH 2/2] net: Implement SO_PASSCGROUP to enable passing
+ cgroup path
+From: Simo Sorce <ssorce@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: vgoyal@redhat.com, luto@amacapital.net, tj@kernel.org, dwalsh@redhat.com,
+        linux-kernel@vger.kernel.org, lpoetter@redhat.com,
+        cgroups@vger.kernel.org, kay@redhat.com, netdev@vger.kernel.org
+In-Reply-To: <20140424.171155.806959282091051918.davem@davemloft.net>
+References: <20140424203427.GC19091@redhat.com>
+	 <20140424.164820.1543648508330465096.davem@davemloft.net>
+	 <20140424210429.GD19091@redhat.com>
+	 <20140424.171155.806959282091051918.davem@davemloft.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 24 Apr 2014 17:28:57 -0700
-Message-ID: <1398385737.4536.13.camel@oc7886638347.ibm.com.usor.ibm.com>
+Date: Thu, 24 Apr 2014 20:29:41 -0400
+Message-ID: <1398385781.2628.452.camel@willson.li.ssimo.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 (2.32.3-30.el6) 
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: No
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042500-9332-0000-0000-0000009AA489
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-04-24 at 19:33 +0200, Oleg Nesterov wrote:
-> Thanks!
+On Thu, 2014-04-24 at 17:11 -0400, David Miller wrote:
+> From: Vivek Goyal <vgoyal@redhat.com>
+> Date: Thu, 24 Apr 2014 17:04:29 -0400
 > 
-> Masami, Jim, any acks?
-
-Acked-by: Jim Keniston <jkenisto@us.ibm.com>
-
+> > Does it really matter.
 > 
-> On 04/24, Denys Vlasenko wrote:
-> >
-> > All branch insns on x86 can be prefixed with the operand-size
-> > override prefix, 0x66. It was only ever useful for performing
-> > jumps to 32-bit offsets in 16-bit code segments.
-> >
-> > In 32-bit code, such instructions are useless since
-> > they cause IP truncation to 16 bits, and in case of call insns,
-> > they save only 16 bits of return address and misalign
-> > the stack pointer as a "bonus".
-> >
-> > In 64-bit code, such instructions are treated differently by Intel
-> > and AMD CPUs: Intel ignores the prefix altogether,
-> > AMD treats them the same as in 32-bit mode.
-> >
-> > Before this patch, the emulation code would execute
-> > the instructions as if they have no 0x66 prefix.
-> >
-> > With this patch, we refuse to attach uprobes to such insns.
-> >
-> > Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
-> > Cc: Oleg Nesterov <oleg@redhat.com>
-> > ---
-> >  arch/x86/kernel/uprobes.c | 12 ++++++++++++
-> >  1 file changed, 12 insertions(+)
-> >
-> > diff --git a/arch/x86/kernel/uprobes.c b/arch/x86/kernel/uprobes.c
-> > index ace2291..29b152d 100644
-> > --- a/arch/x86/kernel/uprobes.c
-> > +++ b/arch/x86/kernel/uprobes.c
-> > @@ -582,6 +582,7 @@ static struct uprobe_xol_ops branch_xol_ops = {
-> >  /* Returns -ENOSYS if branch_xol_ops doesn't handle this insn */
-> >  static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
-> >  {
-> > +	int i;
-> >  	u8 opc1 = OPCODE1(insn);
-> >
-> >  	/* has the side-effect of processing the entire instruction */
-> > @@ -612,6 +613,17 @@ static int branch_setup_xol_ops(struct arch_uprobe *auprobe, struct insn *insn)
-> >  			return -ENOSYS;
-> >  	}
-> >
-> > +	/*
-> > +	 * 16-bit overrides such as CALLW (66 e8 nn nn) are not supported.
-> > +	 * Intel and AMD behavior differ in 64-bit mode: Intel ignores 66 prefix.
-> > +	 * No one uses these insns.
-> > +	 * Reject any branch insns with such prefix.
-> > +	 */
-> > +	for (i = 0; i < insn->prefixes.nbytes; i++) {
-> > +		if (insn->prefixes.bytes[i] == 0x66)
-> > +			return -ENOTSUPP;
-> > +	}
-> > +
-> >  	auprobe->branch.opc1 = opc1;
-> >  	auprobe->branch.ilen = insn->length;
-> >  	auprobe->branch.offs = insn->immediate.value;
-> > --
-> > 1.8.1.4
-> >
+> Good question, if it doesn't matter, you might as well log garbage.
 > 
+> There are a lot of logical holes in this discussion.
+> 
+> Real UIDs are always reported at sendmsg() time, not effective ones
+> (the UID "at sendmsg() time").
+> 
+> Therefore if we were to add CGROUP passing at sendmsg() time it should
+> report the "real cgroup", the one the task has at the time the file
+> descriptor / socket was "created".
 
+Given we are creating a new interface ... should we just send both the
+cgroup at creation time and (optionally, if it differs) the cgroup the
+process has at sendmsg() time, and let the peer sort out which one it is
+interested in ?
+
+Simo.
 
