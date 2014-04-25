@@ -1,108 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaDYPbi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 11:31:38 -0400
-Received: from mail-pb0-f51.google.com ([209.85.160.51]:47894 "EHLO
-	mail-pb0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751334AbaDYPbg convert rfc822-to-8bit (ORCPT
+	id S1752298AbaDYPbt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 11:31:49 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:40843 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752057AbaDYPbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 11:31:36 -0400
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Maxime COQUELIN <maxime.coquelin@st.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1391012648-12481-2-git-send-email-maxime.coquelin@st.com>
-Cc: kernel@stlinux.com, maxime.coquelin@st.com
-References: <1391012648-12481-1-git-send-email-maxime.coquelin@st.com>
- <1391012648-12481-2-git-send-email-maxime.coquelin@st.com>
-Message-ID: <20140425153126.23156.76868@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH 1/3] clk: divider: Fix best div calculation for power-of-two and
- table dividers
-Date: Fri, 25 Apr 2014 08:31:26 -0700
+	Fri, 25 Apr 2014 11:31:45 -0400
+From: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+To: Jiri Olsa <jolsa@redhat.com>, Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@redhat.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        KVM <kvm@vger.kernel.org>, linux-s390 <linux-s390@vger.kernel.org>,
+        Christian Borntraeger <borntraeger@de.ibm.com>,
+        Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org,
+        Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+Subject: [PATCH 1/3] perf tools: parse tracepooints with '-' in system name
+Date: Fri, 25 Apr 2014 17:34:05 +0200
+Message-Id: <1398440047-6641-2-git-send-email-yarygin@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.4
+In-Reply-To: <1398440047-6641-1-git-send-email-yarygin@linux.vnet.ibm.com>
+References: <1398440047-6641-1-git-send-email-yarygin@linux.vnet.ibm.com>
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042515-1948-0000-0000-000008959FD6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Maxime COQUELIN (2014-01-29 08:24:06)
-> The divider returned by clk_divider_bestdiv() is likely to be invalid in case
-> of power-of-two and table dividers when CLK_SET_RATE_PARENT flag isn't set.
-> 
-> Signed-off-by: Maxime Coquelin <maxime.coquelin@st.com>
+Trace events potentially can have a '-' in their trace system name,
+e.g. kvm on s390 defines kvm-s390:* tracepoints.
+tools/perf could not parse them, because there was no rule for this:
+$ sudo ./perf top -e "kvm-s390:*"
+invalid or unsupported event: 'kvm-s390:*'
 
-I've taken this into clk-fixes for 3.15-rcX.
+This patch adds an extra rule to event_legacy_tracepoint which handles
+those cases. Without the patch, perf will not accept such tracepoints in
+the -e option.
 
-Thanks,
-Mike
+Signed-off-by: Alexander Yarygin <yarygin@linux.vnet.ibm.com>
+---
+ tools/perf/util/parse-events.y |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-> ---
->  drivers/clk/clk-divider.c |   37 ++++++++++++++++++++++++++++++++++++-
->  1 file changed, 36 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/clk/clk-divider.c b/drivers/clk/clk-divider.c
-> index 5543b7d..2137d58 100644
-> --- a/drivers/clk/clk-divider.c
-> +++ b/drivers/clk/clk-divider.c
-> @@ -144,6 +144,37 @@ static bool _is_valid_div(struct clk_divider *divider, unsigned int div)
->         return true;
->  }
->  
-> +static int _round_up_table(const struct clk_div_table *table, int div)
-> +{
-> +       const struct clk_div_table *clkt;
-> +       int up = _get_table_maxdiv(table);
-> +
-> +       for (clkt = table; clkt->div; clkt++) {
-> +               if (clkt->div == div)
-> +                       return clkt->div;
-> +               else if (clkt->div < div)
-> +                       continue;
-> +
-> +               if ((clkt->div - div) < (up - div))
-> +                       up = clkt->div;
-> +       }
-> +
-> +       return up;
-> +}
-> +
-> +static int _div_round_up(struct clk_divider *divider,
-> +               unsigned long parent_rate, unsigned long rate)
-> +{
-> +       int div = DIV_ROUND_UP(parent_rate, rate);
-> +
-> +       if (divider->flags & CLK_DIVIDER_POWER_OF_TWO)
-> +               div = __roundup_pow_of_two(div);
-> +       if (divider->table)
-> +               div = _round_up_table(divider->table, div);
-> +
-> +       return div;
-> +}
-> +
->  static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
->                 unsigned long *best_parent_rate)
->  {
-> @@ -159,7 +190,7 @@ static int clk_divider_bestdiv(struct clk_hw *hw, unsigned long rate,
->  
->         if (!(__clk_get_flags(hw->clk) & CLK_SET_RATE_PARENT)) {
->                 parent_rate = *best_parent_rate;
-> -               bestdiv = DIV_ROUND_UP(parent_rate, rate);
-> +               bestdiv = _div_round_up(divider, parent_rate, rate);
->                 bestdiv = bestdiv == 0 ? 1 : bestdiv;
->                 bestdiv = bestdiv > maxdiv ? maxdiv : bestdiv;
->                 return bestdiv;
-> @@ -219,6 +250,10 @@ static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
->         u32 val;
->  
->         div = parent_rate / rate;
-> +
-> +       if (!_is_valid_div(divider, div))
-> +               return -EINVAL;
-> +
->         value = _get_val(divider, div);
->  
->         if (value > div_mask(divider))
-> -- 
-> 1.7.9.5
-> 
+diff --git a/tools/perf/util/parse-events.y b/tools/perf/util/parse-events.y
+index 4eb67ec..ac9db9f 100644
+--- a/tools/perf/util/parse-events.y
++++ b/tools/perf/util/parse-events.y
+@@ -299,6 +299,18 @@ PE_PREFIX_MEM PE_VALUE sep_dc
+ }
+ 
+ event_legacy_tracepoint:
++PE_NAME '-' PE_NAME ':' PE_NAME
++{
++	struct parse_events_evlist *data = _data;
++	struct list_head *list;
++	char sys_name[128];
++	snprintf(&sys_name, 128, "%s-%s", $1, $3);
++
++	ALLOC_LIST(list);
++	ABORT_ON(parse_events_add_tracepoint(list, &data->idx, &sys_name, $5));
++	$$ = list;
++}
++|
+ PE_NAME ':' PE_NAME
+ {
+ 	struct parse_events_evlist *data = _data;
+-- 
+1.7.9.5
+
