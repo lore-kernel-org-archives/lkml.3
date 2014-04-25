@@ -1,46 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752889AbaDYNhU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:37:20 -0400
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:37816 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751454AbaDYNhS (ORCPT
+	id S1753354AbaDYNhu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:37:50 -0400
+Received: from out1-smtp.messagingengine.com ([66.111.4.25]:49143 "EHLO
+	out1-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752894AbaDYNhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:37:18 -0400
-From: Johan Hovold <jhovold@gmail.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: =?UTF-8?q?Beno=C3=AEt=20Cousson?= <bcousson@baylibre.com>,
-        linux-omap@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Johan Hovold <jhovold@gmail.com>
-Subject: [PATCH] ARM: dts: am335x-boneblack: remove use of ti,vcc-aux-disable-is-sleep
-Date: Fri, 25 Apr 2014 15:36:26 +0200
-Message-Id: <1398432986-30585-1-git-send-email-jhovold@gmail.com>
-X-Mailer: git-send-email 1.8.3.2
+	Fri, 25 Apr 2014 09:37:45 -0400
+X-Sasl-enc: SO5hrvZ4OkNn9amodtYAI7J5tqggIYRLB48X2uyqokCE 1398433064
+Date: Fri, 25 Apr 2014 06:38:19 -0700
+From: Greg KH <greg@kroah.com>
+To: Xufeng Zhang <xufeng.zhang@windriver.com>
+Cc: vyasevich@gmail.com, nhorman@tuxdriver.com, davem@davemloft.net, ja@ssi.bg,
+        linux-sctp@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH V2] sctp: reset flowi4_oif parameter on route lookup
+Message-ID: <20140425133819.GA26979@kroah.com>
+References: <1398416141-18916-1-git-send-email-xufeng.zhang@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398416141-18916-1-git-send-email-xufeng.zhang@windriver.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove use of property ti,vcc-aux-disable-is-sleep, which does not
-exist.
+On Fri, Apr 25, 2014 at 04:55:41PM +0800, Xufeng Zhang wrote:
+> commit 813b3b5db83 (ipv4: Use caller's on-stack flowi as-is
+> in output route lookups.) introduces another regression which
+> is very similar to the problem of commit e6b45241c (ipv4: reset
+> flowi parameters on route connect) wants to fix:
+> Before we call ip_route_output_key() in sctp_v4_get_dst() to
+> get a dst that matches a bind address as the source address,
+> we have already called this function previously and the flowi
+> parameters have been initialized including flowi4_oif, so when
+> we call this function again, the process in __ip_route_output_key()
+> will be different because of the setting of flowi4_oif, and we'll
+> get a networking device which corresponds to the inputted flowi4_oif
+> as the output device, this is wrong because we'll never hit this
+> place if the previously returned source address of dst match one
+> of the bound addresses.
+> 
+> To reproduce this problem, a vlan setting is enough:
+>   # ifconfig eth0 up
+>   # route del default
+>   # vconfig add eth0 2
+>   # vconfig add eth0 3
+>   # ifconfig eth0.2 10.0.1.14 netmask 255.255.255.0
+>   # route add default gw 10.0.1.254 dev eth0.2
+>   # ifconfig eth0.3 10.0.0.14 netmask 255.255.255.0
+>   # ip rule add from 10.0.0.14 table 4
+>   # ip route add table 4 default via 10.0.0.254 src 10.0.0.14 dev eth0.3
+>   # sctp_darn -H 10.0.0.14 -P 36422 -h 10.1.4.134 -p 36422 -s -I
+> You'll detect that all the flow are routed to eth0.2(10.0.1.254).
+> 
+> Signed-off-by: Xufeng Zhang <xufeng.zhang@windriver.com>
+> Signed-off-by: Julian Anastasov <ja@ssi.bg>
+> ---
+> Changelog:
+> 
+> v1->v2:
+>  Suggested by Julian Anastasov, reset flowi parameters by flowi4_update_output().
+> 
+>  net/sctp/protocol.c |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
 
-Signed-off-by: Johan Hovold <jhovold@gmail.com>
----
- arch/arm/boot/dts/am335x-boneblack.dts | 1 -
- 1 file changed, 1 deletion(-)
+<formletter>
 
-diff --git a/arch/arm/boot/dts/am335x-boneblack.dts b/arch/arm/boot/dts/am335x-boneblack.dts
-index 6b71ad95a5cf..305975d3f531 100644
---- a/arch/arm/boot/dts/am335x-boneblack.dts
-+++ b/arch/arm/boot/dts/am335x-boneblack.dts
-@@ -26,7 +26,6 @@
- 	pinctrl-0 = <&emmc_pins>;
- 	bus-width = <8>;
- 	status = "okay";
--	ti,vcc-aux-disable-is-sleep;
- };
- 
- &am33xx_pinmux {
--- 
-1.8.3.2
+This is not the correct way to submit patches for inclusion in the
+stable kernel tree.  Please read Documentation/stable_kernel_rules.txt
+for how to do this properly.
 
+</formletter>
