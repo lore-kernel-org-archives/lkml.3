@@ -1,120 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508AbaDYP4X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 11:56:23 -0400
-Received: from vps0.lunn.ch ([178.209.37.122]:33281 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752281AbaDYP4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 11:56:20 -0400
-Date: Fri, 25 Apr 2014 17:53:40 +0200
-From: Andrew Lunn <andrew@lunn.ch>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 05/18] ARM: mvebu: Add Device Tree description of xHCI
- hosts on Armada 38x
-Message-ID: <20140425155340.GC12472@lunn.ch>
-References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
- <1398434836-18908-6-git-send-email-gregory.clement@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398434836-18908-6-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752715AbaDYP5B (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 11:57:01 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33832 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751666AbaDYPzt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 11:55:49 -0400
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: broonie@kernel.org
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com,
+        Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] regulator: arizona-ldo1: Fix build errors for when CONFIG_OF not defined
+Date: Fri, 25 Apr 2014 16:55:41 +0100
+Message-Id: <1398441341-19436-2-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1398441341-19436-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+References: <1398441341-19436-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 04:07:03PM +0200, Gregory CLEMENT wrote:
-> The Marvell Armada 38x SoCs contain two xHCI host. This commit adds
-> the Device Tree description of those interfaces at the SoC level, and
-> also enables the two USB3 ports on the Armada 385 DB platform and one
-> USB3 port on the Armada 385 RD platforms.
-> 
-> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-> ---
->  arch/arm/boot/dts/armada-385-db.dts |  8 ++++++++
->  arch/arm/boot/dts/armada-385-rd.dts |  4 ++++
->  arch/arm/boot/dts/armada-38x.dtsi   | 17 +++++++++++++++++
->  3 files changed, 29 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/armada-385-db.dts b/arch/arm/boot/dts/armada-385-db.dts
-> index 6828d77696a6..d5db1466da82 100644
-> --- a/arch/arm/boot/dts/armada-385-db.dts
-> +++ b/arch/arm/boot/dts/armada-385-db.dts
-> @@ -101,6 +101,14 @@
->  					reg = <0x1000000 0x3f000000>;
->  				};
->  			};
-> +
-> +			usb3@f0000 {
-> +				status = "okay";
-> +			};
-> +
-> +			usb3@f8000 {
-> +				status = "okay";
-> +			};
->  		};
->  
->  		pcie-controller {
-> diff --git a/arch/arm/boot/dts/armada-385-rd.dts b/arch/arm/boot/dts/armada-385-rd.dts
-> index 45250c88814b..a505fe94ff37 100644
-> --- a/arch/arm/boot/dts/armada-385-rd.dts
-> +++ b/arch/arm/boot/dts/armada-385-rd.dts
-> @@ -77,6 +77,10 @@
->  					reg = <1>;
->  				};
->  			};
-> +
-> +			usb3@f0000 {
-> +				status = "okay";
-> +			};
->  		};
->  
->  		pcie-controller {
-> diff --git a/arch/arm/boot/dts/armada-38x.dtsi b/arch/arm/boot/dts/armada-38x.dtsi
-> index a064f59da02d..5913ce1cc601 100644
-> --- a/arch/arm/boot/dts/armada-38x.dtsi
-> +++ b/arch/arm/boot/dts/armada-38x.dtsi
-> @@ -355,6 +355,23 @@
->  				clocks = <&coredivclk 0>;
->  				status = "disabled";
->  			};
-> +
-> +			usb3@f0000 {
-> +				compatible = "marvell,armada-380-xhci";
-> +				reg = <0xf0000 0x3fff>,<0xf4000 0x3fff>;
+Some of the OF handling functions do not have empty alternatives defined
+if CONFIG_OF is not defined. This patch ifdefs out the offending code.
 
-s/0x3fff/0x4000/g  ?
+Reported-by: Randy Dunlap <rdunlap@infradead.org>
+Signed-off-by: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+---
+ drivers/regulator/arizona-ldo1.c |   20 +++++++++++++++++++-
+ 1 file changed, 19 insertions(+), 1 deletion(-)
 
-	Andrew		   
+diff --git a/drivers/regulator/arizona-ldo1.c b/drivers/regulator/arizona-ldo1.c
+index d3787e1..051db72f 100644
+--- a/drivers/regulator/arizona-ldo1.c
++++ b/drivers/regulator/arizona-ldo1.c
+@@ -179,6 +179,7 @@ static const struct regulator_init_data arizona_ldo1_default = {
+ 	.num_consumer_supplies = 1,
+ };
+ 
++#if IS_ENABLED(CONFIG_OF)
+ static int arizona_ldo1_of_get_pdata(struct arizona *arizona,
+ 				     struct regulator_config *config)
+ {
+@@ -215,6 +216,22 @@ static int arizona_ldo1_of_get_pdata(struct arizona *arizona,
+ 	return 0;
+ }
+ 
++static void arizona_ldo1_of_put_pdata(struct regulator_config *config)
++{
++	of_node_put(config->of_node);
++}
++#else
++static int arizona_ldo1_of_get_pdata(struct arizona *arizona,
++				     struct regulator_config *config)
++{
++	return 0;
++}
++
++static void arizona_ldo1_of_put_pdata(struct regulator_config *config)
++{
++}
++#endif
++
+ static int arizona_ldo1_probe(struct platform_device *pdev)
+ {
+ 	struct arizona *arizona = dev_get_drvdata(pdev->dev.parent);
+@@ -286,7 +303,8 @@ static int arizona_ldo1_probe(struct platform_device *pdev)
+ 		return ret;
+ 	}
+ 
+-	of_node_put(config.of_node);
++	if (IS_ENABLED(CONFIG_OF))
++		arizona_ldo1_of_put_pdata(&config);
+ 
+ 	platform_set_drvdata(pdev, ldo1);
+ 
+-- 
+1.7.9.5
 
-> +				interrupts = <GIC_SPI 16 IRQ_TYPE_LEVEL_HIGH>;
-> +				clocks = <&gateclk 9>;
-> +				status = "disabled";
-> +			};
-> +
-> +			usb3@f8000 {
-> +				compatible = "marvell,armada-380-xhci";
-> +				reg = <0xf8000 0x3fff>,<0xfc000 0x3fff>;
-> +				interrupts = <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
-> +				clocks = <&gateclk 10>;
-> +				status = "disabled";
-> +			};
-> +
->  		};
->  	};
->  
-> -- 
-> 1.8.1.2
-> 
