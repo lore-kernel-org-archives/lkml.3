@@ -1,142 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751635AbaDYNAB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:00:01 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:41552 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836AbaDYM7s (ORCPT
+	id S1752562AbaDYNA3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:00:29 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39417 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891AbaDYNAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 08:59:48 -0400
-X-AuditID: cbfec7f4-b7fb36d000006ff7-df-535a5c3d2ed6
-Message-id: <535A5C78.1070901@samsung.com>
-Date: Fri, 25 Apr 2014 16:00:40 +0300
-From: Dmitry Kasatkin <d.kasatkin@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: linux-security-module <linux-security-module@vger.kernel.org>,
-        john.johansen@canonical.com, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-team@lists.ubuntu.com
-Subject: Kernel panic at Ubuntu: IMA + Apparmor
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7bit
-X-Originating-IP: [106.122.1.121]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xy7q2MVHBBre+s1qsW7+YyeLEl1Y2
-	izmPNrFbXN41h83iQ88jNotPKyYxO7B5zGroZfN4cGgzi8e1G/dZPHq+J3t83iQXwBrFZZOS
-	mpNZllqkb5fAlXFizybWgga1itWLe9gbGI8pdDFyckgImEhsXdzHBGGLSVy4t56ti5GLQ0hg
-	KaPEnq/3mSCcRiaJh49nsIFUCQnMYpTo7pcDsXkFtCR2fp4IFmcRUJV4NfUPO4jNJqAnsaH5
-	B5gtKhAhca/xMCtEvaDEj8n3WECGigisBpozcwZYEbNAjMS2Vd/BioQF9CXmrVzBDBHXkdjf
-	Oo0NwpaX2LzmLTPEEaoS3WvXskGcrShxevI55gmMgrOQ7JiFpH0WkvYFjMyrGEVTS5MLipPS
-	cw31ihNzi0vz0vWS83M3MUKC/ssOxsXHrA4xCnAwKvHwflCLDBZiTSwrrsw9xCjBwawkwvvB
-	LypYiDclsbIqtSg/vqg0J7X4ECMTB6dUA6O33kmT4lBj1WO9d5us16kV+KyNs529Y/3D/7an
-	whrrCmWDisxVjkWu9t/6WGfelQUi8jbFV4PU3WXjXzyefn5S3rIz/3f+PP4m4aHvh3gO27aw
-	9yWRTDlxTssaefi9tuzY+Wrlvy0i27+eil7eJSCd1lRT7H364el9mvvtlWxtJB04fzYrHVBi
-	Kc5INNRiLipOBABULi/vWAIAAA==
+	Fri, 25 Apr 2014 09:00:22 -0400
+Date: Fri, 25 Apr 2014 08:58:33 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Gustavo Padovan <gustavo@padovan.org>, linux-wireless@vger.kernel.org,
+        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: pull request: bluetooth 2014-04-25
+Message-ID: <20140425125831.GA17143@tuxdriver.com>
+References: <20140425124602.GF7832@joana>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20140425124602.GF7832@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Apr 25, 2014 at 09:46:02AM -0300, Gustavo Padovan wrote:
+> Hi John,
+> 
+> Some fixes for 3.15. There is a revert for the intel driver, a new device id,
+> and two important SSP fixes from Johan. This one is rebased on wireless/master.
+> 
+> Please pull or let me know of any concerns you have. Thanks!
+> 	
+> 	Gustavo
+> 
+> ---
+> The following changes since commit ffa216bb5eecfce0f01b0b2a95d5c320dde90005:
+> 
+>   brcmfmac: Fix brcmf_chip_ai_coredisable not applying reset bits to BCMA_IOCTL (2014-04-24 21:46:22 -0400)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth.git for-upstream
+> 
+> for you to fetch changes up to 1fb4e09a7e780b915dbd172592ae7e2a4c071065:
+> 
+>   Bluetooth: Add support for Lite-on [04ca:3007] (2014-04-25 09:47:16 +0300)
 
-I discovered a kernel panic on system running Ubuntu when IMA is enabled.
-It happens on reboot.
+Pulling now...thanks!
 
-----------------------
-[  106.750100] NSPROXY is NULL: error.log (/var/log/mysql/error.log)
-[  106.750167] BUG: unable to handle kernel NULL pointer dereference at
-0000000000000018
-[  106.750221] IP: [<ffffffff811ec7da>] our_mnt+0x1a/0x30
-[  106.750241] PGD 0
-[  106.750254] Oops: 0000 [#1] SMP
-[  106.750272] Modules linked in: cuse parport_pc ppdev bnep rfcomm
-bluetooth rpcsec_gss_krb5 nfsd auth_rpcgss nfs_acl nfs lockd sunrpc
-fscache dm_crypt intel_rapl x86_pkg_temp_thermal intel_powerclamp
-kvm_intel snd_hda_codec_hdmi kvm crct10dif_pclmul crc32_pclmul
-ghash_clmulni_intel aesni_intel aes_x86_64 glue_helper lrw gf128mul
-ablk_helper cryptd snd_hda_codec_realtek dcdbas snd_hda_intel
-snd_hda_codec snd_hwdep snd_pcm snd_page_alloc snd_seq_midi
-snd_seq_midi_event snd_rawmidi psmouse snd_seq microcode serio_raw
-snd_timer snd_seq_device snd soundcore video lpc_ich coretemp mac_hid lp
-parport mei_me mei nbd hid_generic e1000e usbhid ahci ptp hid libahci
-pps_core
-[  106.750658] CPU: 6 PID: 1394 Comm: mysqld Not tainted 3.13.0-rc7-kds+ #15
-[  106.750673] Hardware name: Dell Inc. OptiPlex 9010/0M9KCM, BIOS A08
-09/19/2012
-[  106.750689] task: ffff8800de804920 ti: ffff880400fca000 task.ti:
-ffff880400fca000
-[  106.750704] RIP: 0010:[<ffffffff811ec7da>]  [<ffffffff811ec7da>]
-our_mnt+0x1a/0x30
-[  106.750725] RSP: 0018:ffff880400fcba60  EFLAGS: 00010286
-[  106.750738] RAX: 0000000000000000 RBX: 0000000000000100 RCX:
-ffff8800d51523e7
-[  106.750764] RDX: ffffffffffffffea RSI: ffff880400fcba34 RDI:
-ffff880402d20020
-[  106.750791] RBP: ffff880400fcbae0 R08: 0000000000000000 R09:
-0000000000000001
-[  106.750817] R10: 0000000000000000 R11: 0000000000000001 R12:
-ffff8800d5152300
-[  106.750844] R13: ffff8803eb8df510 R14: ffff880400fcbb28 R15:
-ffff8800d51523e7
-[  106.750871] FS:  0000000000000000(0000) GS:ffff88040d200000(0000)
-knlGS:0000000000000000
-[  106.750910] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  106.750935] CR2: 0000000000000018 CR3: 0000000001c0e000 CR4:
-00000000001407e0
-[  106.750962] Stack:
-[  106.750981]  ffffffff813434eb ffff880400fcbb20 ffff880400fcbb18
-0000000000000000
-[  106.751037]  ffff8800de804920 ffffffff8101b9b9 0001800000000000
-0000000000000100
-[  106.751093]  0000010000000000 0000000000000002 000000000000000e
-ffff8803eb8df500
-[  106.751149] Call Trace:
-[  106.751172]  [<ffffffff813434eb>] ? aa_path_name+0x2ab/0x430
-[  106.751199]  [<ffffffff8101b9b9>] ? sched_clock+0x9/0x10
-[  106.751225]  [<ffffffff8134a68d>] aa_path_perm+0x7d/0x170
-[  106.751250]  [<ffffffff8101b945>] ? native_sched_clock+0x15/0x80
-[  106.751276]  [<ffffffff8134aa73>] aa_file_perm+0x33/0x40
-[  106.751301]  [<ffffffff81348c5e>] common_file_perm+0x8e/0xb0
-[  106.751327]  [<ffffffff81348d78>] apparmor_file_permission+0x18/0x20
-[  106.751355]  [<ffffffff8130c853>] security_file_permission+0x23/0xa0
-[  106.751382]  [<ffffffff811c77a2>] rw_verify_area+0x52/0xe0
-[  106.751407]  [<ffffffff811c789d>] vfs_read+0x6d/0x170
-[  106.751432]  [<ffffffff811cda31>] kernel_read+0x41/0x60
-[  106.751457]  [<ffffffff8134fd45>] ima_calc_file_hash+0x225/0x280
-[  106.751483]  [<ffffffff8134fb52>] ? ima_calc_file_hash+0x32/0x280
-[  106.751509]  [<ffffffff8135022d>] ima_collect_measurement+0x9d/0x160
-[  106.751536]  [<ffffffff810b552d>] ? trace_hardirqs_on+0xd/0x10
-[  106.751562]  [<ffffffff8134f07c>] ? ima_file_free+0x6c/0xd0
-[  106.751587]  [<ffffffff81352824>] ima_update_xattr+0x34/0x60
-[  106.751612]  [<ffffffff8134f0d0>] ima_file_free+0xc0/0xd0
-[  106.751637]  [<ffffffff811c9635>] __fput+0xd5/0x300
-[  106.751662]  [<ffffffff811c98ae>] ____fput+0xe/0x10
-[  106.751687]  [<ffffffff81086774>] task_work_run+0xc4/0xe0
-[  106.751712]  [<ffffffff81066fad>] do_exit+0x2bd/0xa90
-[  106.751738]  [<ffffffff8173c958>] ? retint_swapgs+0x13/0x1b
-[  106.751763]  [<ffffffff8106780c>] do_group_exit+0x4c/0xc0
-[  106.751788]  [<ffffffff81067894>] SyS_exit_group+0x14/0x20
-[  106.751814]  [<ffffffff8174522d>] system_call_fastpath+0x1a/0x1f
-[  106.751839] Code: c3 0f 1f 44 00 00 55 48 89 e5 e8 22 fe ff ff 5d c3
-0f 1f 44 00 00 55 65 48 8b 04 25 c0 c9 00 00 48 8b 80 28 06 00 00 48 89
-e5 5d <48> 8b 40 18 48 39 87 c0 00 00 00 0f 94 c0 c3 0f 1f 80 00 00 00
-[  106.752185] RIP  [<ffffffff811ec7da>] our_mnt+0x1a/0x30
-[  106.752214]  RSP <ffff880400fcba60>
-[  106.752236] CR2: 0000000000000018
-[  106.752258] ---[ end trace 3c520748b4732721 ]---
-[  106.752282] Fixing recursive fault but reboot is needed!
-
-----------------------------
-
-It happens in "our_mnt", because current->nsproxy is NULL...
-
-It looks like "current->nsproxy" is gone before mysqld closes error.log,
-or it is always NULL for mysqld???
-
-
-Does anyone have any ideas?
-
-Thanks,
-Dmitry
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
