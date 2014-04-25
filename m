@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752257AbaDYJYh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:24:37 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:45962 "EHLO
+	id S1753208AbaDYJTp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:19:45 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:45708 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329AbaDYJTs (ORCPT
+	with ESMTP id S1752110AbaDYJTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:19:48 -0400
+	Fri, 25 Apr 2014 05:19:39 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
@@ -15,12 +15,10 @@ CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, <x86@kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 07/13] sparc/PCI: Use new pci_is_bridge() to simplify code
-Date: Fri, 25 Apr 2014 17:18:29 +0800
-Message-ID: <1398417515-8740-8-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 00/13] Refactor pci_is_brdige() to simplify code
+Date: Fri, 25 Apr 2014 17:18:22 +0800
+Message-ID: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
-In-Reply-To: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
-References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.177.27.212]
@@ -29,29 +27,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we can use new pci_is_bridge() helper function
-to simplify code.
+This patchset rename the current pci_is_bridge() to pci_has_subordinate(), 
+and introduce a new pci_is_bridge() which determine pci bridge by check
+dev->hdr_type. The new one is more accurate. PCIe Spec define the pci
+device is a bridge by the dev->hdr_type = 0x01 || 0x02.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
----
- arch/sparc/kernel/pci.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Yijing Wang (13):
+  PCI: rename pci_is_bridge() to pci_has_subordinate()
+  PCI: Introduce new pci_is_bridge() helper function
+  PCI: Use new pci_is_bridge() to simplify code
+  x86/PCI: Use new pci_is_bridge() to simplify code
+  IA64/PCI: Use new pci_is_bridge() to simplify code
+  powerpc/PCI: Use new pci_is_bridge() to simplify code
+  sparc/PCI: Use new pci_is_bridge() to simplify code
+  PCI, rpaphp: Use new pci_is_bridge() to simplify code
+  PCI, shpchp: Use new pci_is_bridge() to simplify code
+  PCI, cpcihp: Use new pci_is_bridge() to simplify code
+  PCI, acpiphp: Use new pci_is_bridge() to simplify code
+  PCI, pcmcia: Use new pci_is_bridge() to simplify code
+  PCI, pciehp: Use new pci_is_bridge() to simplify code
 
-diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
-index 1555bbc..857ad77 100644
---- a/arch/sparc/kernel/pci.c
-+++ b/arch/sparc/kernel/pci.c
-@@ -543,8 +543,7 @@ static void pci_of_scan_bus(struct pci_pbm_info *pbm,
- 			printk("PCI: dev header type: %x\n",
- 			       dev->hdr_type);
- 
--		if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
--		    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
-+		if (pci_is_bridge(dev))
- 			of_scan_pci_bridge(pbm, child, dev);
- 	}
- }
--- 
-1.7.1
+ arch/ia64/pci/fixup.c                  |    4 +---
+ arch/powerpc/kernel/pci-hotplug.c      |    3 +--
+ arch/powerpc/kernel/pci_of_scan.c      |    3 +--
+ arch/sparc/kernel/pci.c                |    3 +--
+ arch/x86/pci/fixup.c                   |    4 +---
+ drivers/pci/hotplug/acpiphp_glue.c     |    3 +--
+ drivers/pci/hotplug/cpci_hotplug_pci.c |    3 +--
+ drivers/pci/hotplug/pciehp_pci.c       |    3 +--
+ drivers/pci/hotplug/rpadlpar_core.c    |    3 +--
+ drivers/pci/hotplug/shpchp_pci.c       |    3 +--
+ drivers/pci/pci-acpi.c                 |    8 +-------
+ drivers/pci/pci-driver.c               |    8 ++++----
+ drivers/pci/pci.h                      |    2 +-
+ drivers/pci/probe.c                    |    3 +--
+ drivers/pci/setup-bus.c                |    4 +---
+ drivers/pcmcia/cardbus.c               |    3 +--
+ include/linux/pci.h                    |    6 ++++++
+ 17 files changed, 25 insertions(+), 41 deletions(-)
 
 
