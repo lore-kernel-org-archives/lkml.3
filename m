@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442AbaDYIIy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 04:08:54 -0400
-Received: from mail-qc0-f169.google.com ([209.85.216.169]:45207 "EHLO
-	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752389AbaDYIIb (ORCPT
+	id S1752680AbaDYIJo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 04:09:44 -0400
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:33088 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752195AbaDYIJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 04:08:31 -0400
+	Fri, 25 Apr 2014 04:09:32 -0400
+Message-ID: <535A1840.2010109@gmail.com>
+Date: Fri, 25 Apr 2014 16:09:36 +0800
+From: zhuyj <zyjzyj2000@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-In-Reply-To: <535A156F.6060004@linaro.org>
-References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com>
-	<1396967803-28868-2-git-send-email-gautam.vivek@samsung.com>
-	<534BF28E.7040906@samsung.com>
-	<535A156F.6060004@linaro.org>
-Date: Fri, 25 Apr 2014 13:38:30 +0530
-X-Google-Sender-Auth: Qhr5BFmCGAl58i0q_CJ4Dwv7FYw
-Message-ID: <CAFp+6iHg=oDXqcR+d1N0FqBaiEAsy2eL-E7J9Xho8nSErp9MeA@mail.gmail.com>
-Subject: Re: [PATCH V4 1/5] phy: Add new Exynos5 USB 3.0 PHY driver
-From: Vivek Gautam <gautam.vivek@samsung.com>
-To: Tushar Behera <tushar.behera@linaro.org>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-doc@vger.kernel.org, kishon <kishon@ti.com>,
-        Greg KH <gregkh@linuxfoundation.org>, Felipe Balbi <balbi@ti.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Tomasz Figa <t.figa@samsung.com>,
-        Kamil Debski <k.debski@samsung.com>, Jingoo Han <jg1.han@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+To: Willy Tarreau <w@1wt.eu>
+CC: Ben Hutchings <ben@decadent.org.uk>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        joe@perches.com, julia.lawall@lip6.fr, dingtianhong@huawei.com,
+        linux-kernel@vger.kernel.org, jasowang@redhat.com, mst@redhat.com,
+        "Yang, Zhangle (Eric)" <Zhangle.Yang@windriver.com>,
+        "Wu, Kuaikuai" <Kuaikuai.Wu@windriver.com>,
+        "Tao, Yue" <Yue.Tao@windriver.com>
+Subject: Re: in kernel 2.6.x, tun/tap nic supports vlan packets
+References: <534F4C1E.1000006@gmail.com> <20140417050228.GC8243@1wt.eu> <1398189237.7767.77.camel@deadeye.wl.decadent.org.uk> <53577036.2040307@gmail.com> <1398253309.7767.136.camel@deadeye.wl.decadent.org.uk> <53587280.4020101@gmail.com> <20140424052447.GC17409@1wt.eu>
+In-Reply-To: <20140424052447.GC17409@1wt.eu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-
-On Fri, Apr 25, 2014 at 1:27 PM, Tushar Behera <tushar.behera@linaro.org> wrote:
-> On 04/14/2014 08:07 PM, Sylwester Nawrocki wrote:
->> On 08/04/14 16:36, Vivek Gautam wrote:
->>> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
->>> index 28f9edb..6d99ba9 100644
->>> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
->>> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
->>> @@ -74,3 +74,45 @@ phy-consumer@12340000 {
->>>
->>>  Refer to DT bindings documentation of particular PHY consumer devices for more
->>>  information about required PHYs and the way of specification.
->>> +
->>> +Samsung Exynos5 SoC series USB DRD PHY controller
->>> +--------------------------------------------------
->>> +
->>> +Required properties:
->>> +- compatible : Should be set to one of the following supported values:
->>> +    - "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
->>> +    - "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
->>> +- reg : Register offset and length of USB DRD PHY register set;
->>> +- clocks: Clock IDs array as required by the controller
->>> +- clock-names: names of clocks correseponding to IDs in the clock property;
->>> +           Required clocks:
->>> +    - phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
->>> +           used for register access.
->>> +    - ref: PHY's reference clock (usually crystal clock), associated by
->>> +           phy name, used to determine bit values for clock settings
->>> +           register.
->>> +    Additional clock required for Exynos5420:
->>> +    - usb30_sclk_100m: Additional special clock used for PHY operation
->>> +                       depicted as 'sclk_usbphy30' in CMU of Exynos5420.
->>> +- samsung,syscon-phandle: phandle for syscon interface, which is used to
->>> +                      control pmu registers for power isolation.
+On 04/24/2014 01:24 PM, Willy Tarreau wrote:
+> On Thu, Apr 24, 2014 at 10:10:08AM +0800, zhuyj wrote:
+>> On 04/23/2014 07:41 PM, Ben Hutchings wrote:
+>>> On Wed, 2014-04-23 at 15:48 +0800, zhuyj wrote:
+>>>> On 04/23/2014 01:53 AM, Ben Hutchings wrote:
+>>> [...]
+>>>>> For what it's worth, I would recommend against applying this.  I don't
+>>>>> think even Red Hat has backported the VLAN changes, and they have been
+>>>>> quite aggressive about backporting features to RHEL 6.
+>>>> If we do not merge these patches, maybe RHEL 6 can not make tap driver
+>>>> support vlan well.
+>>> RHEL 6 isn't based on 2.6.32.y, they do all their own backporting.
+>> Hi, Ben
 >>
->> Why to append "-phandle" to the property's name ? If this is for PMU
->> perhaps make it more explicit and name it: samsung,pmu-syscon or
->> samsung,pmureg ?
->>
+>> It is well known that extraction vlan tag is not implemented in kernel
+>> 2.6.32.y.  Kernel 2.6.32.y depends on nic hardware to extract vlan tag.
+>> So if the patches are not applied, tap driver can not support vlan well.
+> What Ben is saying is that RHEL doesn't use 2.6.32.y, but did their own
+> fork of 2.6.32 so even if we merged your patch, they wouldn't pick it
+> from this tree anyway. However they could possibly take your patch if
+> some customers requested the feature even if it's not in 2.6.32.y.
+OK. as your wish.
+
+Best Regards!
+Zhu Yanjun
 >
-> There are already a couple of nodes (watchdog and sata) using
-> samsung,syscon-phandle. IMHO, we should keep only property string for
-> syscon node. Either we keep syscon-phandle here or change sata/watchdog
-> driver to use the modified property name.
+> Clearly, the fact that nobody complained about this in 4.5 years of
+> 2.6.32 means that there's no particular reason any user would suddenly
+> miss it now. 2.6.32.y is mostly used to update existing deployments but
+> rarely for new deployments. That's why the usefulness of your backport
+> in this kernel for its users is likely limited, and at the same time
+> the risk of causing a regression is far from being null for existing
+> users (eg: if some worked around the issue a different way, their
+> workaround would likely not work anymore).
+>
+> Best regards,
+> Willy
+>
+>
 
-IMHO samsung,pmu-syscon make more sense rather than appending a
-'-phandle' to the property name.
-This is a 'phandle' and that is in fact understood, isn't it ?
-We can change in the watchdog, sata drivers to use use the modified name.
-I can send a patch for the same if we are OK with this, so that we
-maintain the consistency in the device tree.
-
-
--- 
-Best Regards
-Vivek Gautam
-Samsung R&D Institute, Bangalore
-India
