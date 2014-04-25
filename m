@@ -1,106 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140AbaDYNWZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:22:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36303 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752953AbaDYNOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:14:12 -0400
-Message-ID: <1398431623.3010.76.camel@deneb.redhat.com>
-Subject: Re: [PATCH v3 4/4] drivers: net: Add APM X-Gene SoC ethernet driver
- support.
-From: Mark Salter <msalter@redhat.com>
-To: Iyappan Subramanian <isubramanian@apm.com>
-Cc: davem@davemloft.net, netdev@vger.kernel.org, devicetree@vger.kernel.org,
-        jcm@redhat.com, gregkh@linuxfoundation.org, patches@apm.com,
-        linux-kernel@vger.kernel.org, Keyur Chudgar <kchudgar@apm.com>,
-        linux-arm-kernel@lists.infradead.org, Ravi Patel <rapatel@apm.com>
-Date: Fri, 25 Apr 2014 09:13:43 -0400
-In-Reply-To: <1397702368-4846-5-git-send-email-isubramanian@apm.com>
-References: <1397702368-4846-1-git-send-email-isubramanian@apm.com>
-	 <1397702368-4846-5-git-send-email-isubramanian@apm.com>
-Organization: Red Hat, Inc
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753945AbaDYNWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:22:47 -0400
+Received: from bombadil.infradead.org ([198.137.202.9]:35922 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753478AbaDYNWp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 09:22:45 -0400
+Date: Fri, 25 Apr 2014 15:22:38 +0200
+From: Peter Zijlstra <peterz@infradead.org>
+To: Amit Kucheria <amit.kucheria@linaro.org>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>, Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+Message-ID: <20140425132238.GD11096@twins.programming.kicks-ass.net>
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org>
+ <1398342291-16322-3-git-send-email-daniel.lezcano@linaro.org>
+ <CAP245DX9wewQFhcyGj5ZuNE7hHC4fRn90POC32HLF6ugja6nJg@mail.gmail.com>
+ <535911DC.9050109@linaro.org>
+ <CAP245DXFRfARtEfj70XD8D8OiAT_1i_5G2zao+y0DT0Lg_YFJA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAP245DXFRfARtEfj70XD8D8OiAT_1i_5G2zao+y0DT0Lg_YFJA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2014-04-16 at 19:39 -0700, Iyappan Subramanian wrote:
-> +static int xgene_enet_refill_bufpool(struct xgene_enet_desc_ring *buf_pool,
-> +                                    u32 nbuf)
-> +{
-> +       struct sk_buff *skb;
-> +       struct xgene_enet_desc16 *desc;
-> +       struct net_device *ndev;
-> +       struct device *dev;
-> +       dma_addr_t dma_addr;
-> +       u32 tail = buf_pool->tail;
-> +       u32 slots = buf_pool->slots - 1;
-> +       int i, ret = 0;
-> +       u16 bufdatalen = BUF_LEN_CODE_2K | (SKB_BUFFER_SIZE & GENMASK(11, 0));
-> +
-> +       ndev = buf_pool->ndev;
-> +       dev = ndev_to_dev(buf_pool->ndev);
-> +
-> +       for (i = 0; i < nbuf; i++) {
-> +               desc = &buf_pool->desc16[tail];
-> +
-> +               skb = netdev_alloc_skb_ip_align(ndev, XGENE_ENET_MAX_MTU);
-> +               if (unlikely(!skb)) {
-> +                       netdev_err(ndev, "Could not allocate skb");
-> +                       ret = -ENOMEM;
-> +                       goto out;
-> +               }
-> +               buf_pool->rx_skb[tail] = skb;
-> +
-> +               dma_addr = dma_map_single(dev, skb->data, skb->len,
-> +                                         DMA_TO_DEVICE);
 
-Shouldn't this be:
+The infinite wisdom of the original PC keyboard gifted us with backspace
+and delete, use them!
 
-               dma_addr = dma_map_single(dev, skb->data, XGENE_ENET_MAX_MTU,
-                                         DMA_TO_DEVICE);
+On Fri, Apr 25, 2014 at 04:24:49PM +0530, Amit Kucheria wrote:
+> In that case, "performance" should be the default so we don't change
+> existing system behavior. And perhaps we want to keep these energy
+> heuristics in a separate file, at least until we've gotten them right.
 
-You just allocated the skb and nothing is in it, so ->len is zero.
-
-> +
-> +static int xgene_enet_rx_frame(struct xgene_enet_desc_ring *rx_ring,
-> +                               struct xgene_enet_desc *desc)
-> +{
-> +       struct net_device *ndev = rx_ring->ndev;
-> +       struct device *dev = ndev_to_dev(rx_ring->ndev);
-> +       struct xgene_enet_desc_ring *buf_pool = rx_ring->buf_pool;
-> +       u32 datalen, skb_index;
-> +       struct sk_buff *skb;
-> +       dma_addr_t pa;
-> +       size_t len;
-> +       int ret = 0;
-> +
-> +       skb_index = get_desc(desc, USERINFO);
-> +       skb = buf_pool->rx_skb[skb_index];
-> +       prefetch(skb->data - NET_IP_ALIGN);
-> +
-> +       /* Strip off CRC as HW isn't doing this */
-> +       datalen = get_desc(desc, BUFDATALEN);
-> +       datalen -= 4;
-> +       skb_put(skb, datalen);
-> +
-> +       pa = (dma_addr_t)get_desc(desc, DATAADDR);
-> +       len = get_desc(desc, BUFDATALEN);
-> +       dma_unmap_single(dev, pa, len, DMA_TO_DEVICE);
-> +
-
-And here, should be:
-
-	dma_unmap_single(dev, pa, XGENE_ENET_MAX_MTU, DMA_TO_DEVICE);
-
-You want to unmap the whole buffer, not just the part actually used.
-
-The underlying code works with pages, so the existing code may work by
-chance, but you get err_printks is you turn on dma debug.
-
---Mark
-
-
+No, we're not going to make a separate file. Its going to be fully
+integrated in the normal load balancer, no special add on hacks and
+warts.
