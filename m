@@ -1,206 +1,338 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696AbaDYWkX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:40:23 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37548 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752304AbaDYWht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:37:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,929,1389772800"; 
-   d="scan'208";a="499974400"
-Subject: [PATCH 5/8] x86: mm: add tracepoints for TLB flushes
-To: linux-kernel@vger.kernel.org
-Cc: linux-mm@kvack.org, x86@kernel.org, Dave Hansen <dave@sr71.net>
-From: Dave Hansen <dave@sr71.net>
-Date: Fri, 25 Apr 2014 15:37:49 -0700
-References: <20140425223742.0A27E42E@viggo.jf.intel.com>
-In-Reply-To: <20140425223742.0A27E42E@viggo.jf.intel.com>
-Message-Id: <20140425223749.9D08513F@viggo.jf.intel.com>
+	id S1752744AbaDYWky (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:40:54 -0400
+Received: from mail-ee0-f49.google.com ([74.125.83.49]:65057 "EHLO
+	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752002AbaDYWkv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 18:40:51 -0400
+Message-ID: <535AE46F.5080000@gmail.com>
+Date: Sat, 26 Apr 2014 00:40:47 +0200
+From: Tomasz Figa <tomasz.figa@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+CC: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
+        chow.kim@samsung.com, yg1004.jang@samsung.com,
+        vikas.sajjan@samsung.com, s.nawrocki@samsung.com,
+        b.zolnierkie@samsung.com
+Subject: Re: [PATCH v2 10/10] ARM: EXYNOS: Add device tree based initialization
+ support for PMU.
+References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-11-git-send-email-pankaj.dubey@samsung.com>
+In-Reply-To: <1398429166-5539-11-git-send-email-pankaj.dubey@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Changes from v3:
- * remove trace_tlb.c and __print_symbolic() instead
- * make sure to cover all cases in flush_tlb_func()
- * remove _DONE "reason" since it was not precise enough
+On 25.04.2014 14:32, Pankaj Dubey wrote:
+> This patch adds device tree based initialization for PMU and modifies
+> PMU initialization implementation in following way:
+>
+> 1: Let's initialize PMU based on device tree compatibility string.
+> 2: Obtain PMU regmap handle using "syscon_early_regmap_lookup_by_phandle"
+> so that we can reduce dependency over machine header files.
+> 3: Separate each SoC's PMU initialization function and bind this initialization
+> function with PMU compatibility string.
+> 4 : It also removes uses of soc_is_exynosXXXX() thus making PMU implementation
+> independent of "plat/cpu.h".
+>
+> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
+> Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
+> ---
+>   arch/arm/mach-exynos/pmu.c |  182 +++++++++++++++++++++++++++++++++-----------
+>   1 file changed, 138 insertions(+), 44 deletions(-)
+>
+> diff --git a/arch/arm/mach-exynos/pmu.c b/arch/arm/mach-exynos/pmu.c
+> index 67116a5..abcf753 100644
+> --- a/arch/arm/mach-exynos/pmu.c
+> +++ b/arch/arm/mach-exynos/pmu.c
+> @@ -9,17 +9,31 @@
+>    * published by the Free Software Foundation.
+>    */
+>
+> -#include <linux/io.h>
+>   #include <linux/kernel.h>
+>   #include <linux/regmap.h>
+> -
+> -#include <plat/cpu.h>
+> +#include <linux/of.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/mfd/syscon.h>
+>
+>   #include "common.h"
+>   #include "regs-pmu.h"
+>
+> +enum exynos_pmu_id {
+> +	PMU_EXYNOS4210,
+> +	PMU_EXYNOS4X12,
+> +	PMU_EXYNOS4412,
+> +	PMU_EXYNOS5250,
+> +};
+> +
+> +struct exynos_pmu_data {
+> +	enum exynos_pmu_id	pmu_id;
+> +	struct regmap		*pmu_regmap;
 
---
+Again, since this uses the PMU node directly and doesn't seem to access 
+any registers shared with other drivers (or at least not at the time 
+most the functions from this file are called) I don't think there is any 
+reason why not to use of_iomap() and access the registers directly.
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+What about adding more fields to this struct? For example .pmu_config, 
+.pmu_config_extra (for model-specific settings, like for Exynos4412, see 
+my comment below) and (*pmu_init)? Of course the regmap (or base 
+address) would have to be moved outside, as it isn't const data.
 
-We don't have any good way to figure out what kinds of flushes
-are being attempted.  Right now, we can try to use the vm
-counters, but those only tell us what we actually did with the
-hardware (one-by-one vs full) and don't tell us what was actually
-_requested_.
+Then for each PMU variant there would be a static const struct will all 
+those fields already filled in and entries in OF match table would 
+already point to appropriate structure.
 
-This allows us to select out "interesting" TLB flushes that we
-might want to optimize (like the ranged ones) and ignore the ones
-that we have very little control over (the ones at context
-switch).
+> +};
+> +
+> +struct exynos_pmu_data		*pmu_data;
+>   static const struct exynos_pmu_conf *exynos_pmu_config;
+> -static struct regmap *pmu_regmap;
+> +typedef void (*exynos_pmu_init_t)(void);
+>
+>   static const struct exynos_pmu_conf exynos4210_pmu_config[] = {
+>   	/* { .reg = address, .val = { AFTR, LPA, SLEEP } */
+> @@ -348,28 +362,31 @@ static void exynos5_init_pmu(void)
+>   	 * Enable both SC_FEEDBACK and SC_COUNTER
+>   	 */
+>   	for (i = 0 ; i < ARRAY_SIZE(exynos5_list_both_cnt_feed) ; i++) {
+> -		regmap_read(pmu_regmap, exynos5_list_both_cnt_feed[i], &tmp);
+> +		regmap_read(pmu_data->pmu_regmap,
+> +				exynos5_list_both_cnt_feed[i], &tmp);
+>   		tmp |= (EXYNOS5_USE_SC_FEEDBACK |
+>   			EXYNOS5_USE_SC_COUNTER);
+> -		regmap_write(pmu_regmap, exynos5_list_both_cnt_feed[i], tmp);
+> +		regmap_write(pmu_data->pmu_regmap,
+> +				exynos5_list_both_cnt_feed[i], tmp);
+>   	}
+>
+>   	/*
+>   	 * SKIP_DEACTIVATE_ACEACP_IN_PWDN_BITFIELD Enable
+>   	 */
+> -	regmap_read(pmu_regmap, EXYNOS5_ARM_COMMON_OPTION, &tmp);
+> +	regmap_read(pmu_data->pmu_regmap, EXYNOS5_ARM_COMMON_OPTION, &tmp);
+>   	tmp |= EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN;
+> -	regmap_write(pmu_regmap, EXYNOS5_ARM_COMMON_OPTION, tmp);
+> +	regmap_write(pmu_data->pmu_regmap, EXYNOS5_ARM_COMMON_OPTION, tmp);
+>
+>   	/*
+>   	 * Disable WFI/WFE on XXX_OPTION
+>   	 */
+>   	for (i = 0 ; i < ARRAY_SIZE(exynos5_list_diable_wfi_wfe) ; i++) {
+> -		tmp = regmap_read(pmu_regmap, exynos5_list_diable_wfi_wfe[i],
+> -				&tmp);
+> +		tmp = regmap_read(pmu_data->pmu_regmap,
+> +				exynos5_list_diable_wfi_wfe[i], &tmp);
+>   		tmp &= ~(EXYNOS5_OPTION_USE_STANDBYWFE |
+>   			 EXYNOS5_OPTION_USE_STANDBYWFI);
+> -		regmap_write(pmu_regmap, exynos5_list_diable_wfi_wfe[i], tmp);
+> +		regmap_write(pmu_data->pmu_regmap,
+> +				exynos5_list_diable_wfi_wfe[i], tmp);
+>   	}
+>   }
+>
+> @@ -377,52 +394,129 @@ void exynos_sys_powerdown_conf(enum sys_powerdown mode)
+>   {
+>   	unsigned int i;
+>
+> -	if (soc_is_exynos5250())
+> +	if (pmu_data->pmu_id == PMU_EXYNOS5250)
+>   		exynos5_init_pmu();
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mgorman@suse.de>
----
+Next field could be added to exynos_pmu_data struct, called 
+(*powerdown_conf) and then the code above replaced with:
 
- b/arch/x86/include/asm/mmu_context.h |    6 +++++
- b/arch/x86/mm/tlb.c                  |   14 ++++++++++-
- b/include/linux/mm_types.h           |    8 ++++++
- b/include/trace/events/tlb.h         |   41 +++++++++++++++++++++++++++++++++++
- 4 files changed, 67 insertions(+), 2 deletions(-)
+	if (pmu_data->powerdown_conf)
+		pmu_data->powerdown_conf(mode);
 
-diff -puN arch/x86/include/asm/mmu_context.h~tlb-trace-flushes arch/x86/include/asm/mmu_context.h
---- a/arch/x86/include/asm/mmu_context.h~tlb-trace-flushes	2014-04-25 15:33:13.352070158 -0700
-+++ b/arch/x86/include/asm/mmu_context.h	2014-04-25 15:33:13.358070428 -0700
-@@ -3,6 +3,10 @@
- 
- #include <asm/desc.h>
- #include <linux/atomic.h>
-+#include <linux/mm_types.h>
-+
-+#include <trace/events/tlb.h>
-+
- #include <asm/pgalloc.h>
- #include <asm/tlbflush.h>
- #include <asm/paravirt.h>
-@@ -44,6 +48,7 @@ static inline void switch_mm(struct mm_s
- 
- 		/* Re-load page tables */
- 		load_cr3(next->pgd);
-+		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
- 
- 		/* Stop flush ipis for the previous mm */
- 		cpumask_clear_cpu(cpu, mm_cpumask(prev));
-@@ -71,6 +76,7 @@ static inline void switch_mm(struct mm_s
- 			 * to make sure to use no freed page tables.
- 			 */
- 			load_cr3(next->pgd);
-+			trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
- 			load_LDT_nolock(&next->context);
- 		}
- 	}
-diff -puN arch/x86/mm/tlb.c~tlb-trace-flushes arch/x86/mm/tlb.c
---- a/arch/x86/mm/tlb.c~tlb-trace-flushes	2014-04-25 15:33:13.353070203 -0700
-+++ b/arch/x86/mm/tlb.c	2014-04-25 15:33:13.359070473 -0700
-@@ -14,6 +14,9 @@
- #include <asm/uv/uv.h>
- #include <linux/debugfs.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/tlb.h>
-+
- DEFINE_PER_CPU_SHARED_ALIGNED(struct tlb_state, cpu_tlbstate)
- 			= { &init_mm, 0, };
- 
-@@ -49,6 +52,7 @@ void leave_mm(int cpu)
- 	if (cpumask_test_cpu(cpu, mm_cpumask(active_mm))) {
- 		cpumask_clear_cpu(cpu, mm_cpumask(active_mm));
- 		load_cr3(swapper_pg_dir);
-+		trace_tlb_flush(TLB_FLUSH_ON_TASK_SWITCH, TLB_FLUSH_ALL);
- 	}
- }
- EXPORT_SYMBOL_GPL(leave_mm);
-@@ -107,15 +111,19 @@ static void flush_tlb_func(void *info)
- 
- 	count_vm_tlb_event(NR_TLB_REMOTE_FLUSH_RECEIVED);
- 	if (this_cpu_read(cpu_tlbstate.state) == TLBSTATE_OK) {
--		if (f->flush_end == TLB_FLUSH_ALL)
-+		if (f->flush_end == TLB_FLUSH_ALL) {
- 			local_flush_tlb();
--		else {
-+			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, TLB_FLUSH_ALL);
-+		} else {
- 			unsigned long addr;
-+			unsigned long nr_pages =
-+				f->flush_end - f->flush_start / PAGE_SIZE;
- 			addr = f->flush_start;
- 			while (addr < f->flush_end) {
- 				__flush_tlb_single(addr);
- 				addr += PAGE_SIZE;
- 			}
-+			trace_tlb_flush(TLB_REMOTE_SHOOTDOWN, nr_pages);
- 		}
- 	} else
- 		leave_mm(smp_processor_id());
-@@ -153,6 +161,7 @@ void flush_tlb_current_task(void)
- 
- 	count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
- 	local_flush_tlb();
-+	trace_tlb_flush(TLB_LOCAL_SHOOTDOWN, TLB_FLUSH_ALL);
- 	if (cpumask_any_but(mm_cpumask(mm), smp_processor_id()) < nr_cpu_ids)
- 		flush_tlb_others(mm_cpumask(mm), mm, 0UL, TLB_FLUSH_ALL);
- 	preempt_enable();
-@@ -191,6 +200,7 @@ void flush_tlb_mm_range(struct mm_struct
- 			__flush_tlb_single(addr);
- 		}
- 	}
-+	trace_tlb_flush(TLB_LOCAL_MM_SHOOTDOWN, base_pages_to_flush);
- out:
- 	if (base_pages_to_flush == TLB_FLUSH_ALL) {
- 		start = 0UL;
-diff -puN include/linux/mm_types.h~tlb-trace-flushes include/linux/mm_types.h
---- a/include/linux/mm_types.h~tlb-trace-flushes	2014-04-25 15:33:13.355070293 -0700
-+++ b/include/linux/mm_types.h	2014-04-25 15:33:13.359070473 -0700
-@@ -510,4 +510,12 @@ static inline void clear_tlb_flush_pendi
- }
- #endif
- 
-+enum tlb_flush_reason {
-+	TLB_FLUSH_ON_TASK_SWITCH,
-+	TLB_REMOTE_SHOOTDOWN,
-+	TLB_LOCAL_SHOOTDOWN,
-+	TLB_LOCAL_MM_SHOOTDOWN,
-+	NR_TLB_FLUSH_REASONS,
-+};
-+
- #endif /* _LINUX_MM_TYPES_H */
-diff -puN /dev/null include/trace/events/tlb.h
---- /dev/null	2014-04-10 11:28:14.066815724 -0700
-+++ b/include/trace/events/tlb.h	2014-04-25 15:33:13.359070473 -0700
-@@ -0,0 +1,41 @@
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM tlb
-+
-+#if !defined(_TRACE_TLB_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_TLB_H
-+
-+#include <linux/mm_types.h>
-+#include <linux/tracepoint.h>
-+
-+#define TLB_FLUSH_REASON	\
-+	{ TLB_FLUSH_ON_TASK_SWITCH, 	"flush on task switch" },	\
-+	{ TLB_REMOTE_SHOOTDOWN,		"remote shootdown" },		\
-+	{ TLB_LOCAL_SHOOTDOWN, 		"local shootdown" },		\
-+	{ TLB_LOCAL_MM_SHOOTDOWN,	"local mm shootdown" }
-+
-+TRACE_EVENT(tlb_flush,
-+
-+	TP_PROTO(int reason, unsigned long pages),
-+	TP_ARGS(reason, pages),
-+
-+	TP_STRUCT__entry(
-+		__field(	  int, reason)
-+		__field(unsigned long,  pages)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->reason = reason;
-+		__entry->pages  = pages;
-+	),
-+
-+	TP_printk("pages:%ld reason:%s (%d)",
-+		__entry->pages,
-+		__print_symbolic(__entry->reason, TLB_FLUSH_REASON),
-+		__entry->reason)
-+);
-+
-+#endif /* _TRACE_TLB_H */
-+
-+/* This part must be outside protection */
-+#include <trace/define_trace.h>
-+
-_
+>
+>   	for (i = 0; (exynos_pmu_config[i].offset != PMU_TABLE_END) ; i++)
+> -		regmap_write(pmu_regmap, exynos_pmu_config[i].offset,
+> +		regmap_write(pmu_data->pmu_regmap, exynos_pmu_config[i].offset,
+>   				exynos_pmu_config[i].val[mode]);
+>
+> -	if (soc_is_exynos4412()) {
+> +	if (pmu_data->pmu_id == PMU_EXYNOS4412) {
+>   		for (i = 0; exynos4412_pmu_config[i].offset != PMU_TABLE_END; i++)
+> -			regmap_write(pmu_regmap, exynos4412_pmu_config[i].offset,
+> +			regmap_write(pmu_data->pmu_regmap,
+> +					exynos4412_pmu_config[i].offset,
+>   					exynos4412_pmu_config[i].val[mode]);
+>   	}
+
+As I mentioned above, the pmu_data struct could have a field called 
+pmu_config_extra that would be non-NULL for Exynos4412 and then the code 
+above could be replaced with:
+
+	if (pmu_data->pmu_config_extra) {
+		// iterate over pmu_config_extra
+		// ...
+	}
+
+This way you could completely remove the pmu_id field and checks for 
+particular SoCs from the code.
+
+>   }
+>
+> -static int __init exynos_pmu_init(void)
+> +static void exynos4210_pmu_init(void)
+>   {
+> -	unsigned int value;
+> -
+>   	exynos_pmu_config = exynos4210_pmu_config;
+> -	pmu_regmap = get_exynos_pmuregmap();
+> -
+> -	if (soc_is_exynos4210()) {
+> -		exynos_pmu_config = exynos4210_pmu_config;
+> -		pr_info("EXYNOS4210 PMU Initialize\n");
+> -	} else if (soc_is_exynos4212() || soc_is_exynos4412()) {
+> -		exynos_pmu_config = exynos4x12_pmu_config;
+> -		pr_info("EXYNOS4x12 PMU Initialize\n");
+> -	} else if (soc_is_exynos5250()) {
+> -		/*
+> -		 * When SYS_WDTRESET is set, watchdog timer reset request
+> -		 * is ignored by power management unit.
+> -		 */
+> -		regmap_read(pmu_regmap, EXYNOS5_AUTO_WDTRESET_DISABLE, &value);
+> -		value &= ~EXYNOS5_SYS_WDTRESET;
+> -		regmap_write(pmu_regmap, EXYNOS5_AUTO_WDTRESET_DISABLE, value);
+> -
+> -		regmap_read(pmu_regmap, EXYNOS5_MASK_WDTRESET_REQUEST, &value);
+> -		value &= ~EXYNOS5_SYS_WDTRESET;
+> -		regmap_write(pmu_regmap, EXYNOS5_MASK_WDTRESET_REQUEST, value);
+> -
+> -		exynos_pmu_config = exynos5250_pmu_config;
+> -		pr_info("EXYNOS5250 PMU Initialize\n");
+> -	} else {
+> -		pr_info("EXYNOS: PMU not supported\n");
+> +	pmu_data->pmu_id = PMU_EXYNOS4210;
+> +
+> +	pr_info("EXYNOS4210 PMU Initialize\n");
+> +}
+> +
+> +static void exynos4x12_pmu_init(void)
+> +{
+> +	exynos_pmu_config = exynos4x12_pmu_config;
+> +	pmu_data->pmu_id = PMU_EXYNOS4X12;
+> +
+> +	pr_info("EXYNOS4x12 PMU Initialize\n");
+> +}
+> +
+> +static void exynos4412_pmu_init(void)
+> +{
+> +	exynos_pmu_config = exynos4x12_pmu_config;
+> +	pmu_data->pmu_id = PMU_EXYNOS4412;
+> +
+> +	pr_info("EXYNOS4412 PMU Initialize\n");
+> +}
+> +
+> +static void exynos5250_pmu_init(void)
+> +{
+> +	unsigned int tmp;
+> +
+> +	/*
+> +	 * When SYS_WDTRESET is set, watchdog timer reset request
+> +	 * is ignored by power management unit.
+> +	 */
+> +	regmap_read(pmu_data->pmu_regmap, EXYNOS5_AUTO_WDTRESET_DISABLE, &tmp);
+> +	tmp &= ~EXYNOS5_SYS_WDTRESET;
+> +	regmap_write(pmu_data->pmu_regmap, EXYNOS5_AUTO_WDTRESET_DISABLE, tmp);
+> +
+> +	regmap_read(pmu_data->pmu_regmap, EXYNOS5_MASK_WDTRESET_REQUEST, &tmp);
+> +	tmp &= ~EXYNOS5_SYS_WDTRESET;
+> +	regmap_write(pmu_data->pmu_regmap, EXYNOS5_MASK_WDTRESET_REQUEST, tmp);
+> +
+> +	exynos_pmu_config = exynos5250_pmu_config;
+> +	pmu_data->pmu_id = PMU_EXYNOS5250;
+> +
+> +	pr_info("EXYNOS5250 PMU Initialize\n");
+> +}
+
+This part is very nice. Finally there is no huge if with else if clause 
+for every SoC. Thanks.
+
+> +
+> +/*
+> + * PMU platform driver and devicetree bindings.
+> + */
+> +static struct of_device_id exynos_pmu_of_device_ids[] = {
+> +	{
+> +		.compatible = "samsung,exynos4210-pmu",
+> +		.data = (void *)exynos4210_pmu_init
+> +	},
+> +	{
+> +		.compatible = "samsung,exynos4212-pmu",
+> +		.data = (void *)exynos4x12_pmu_init
+> +	},
+> +	{
+> +		.compatible = "samsung,exynos4412-pmu",
+> +		.data = (void *)exynos4412_pmu_init
+> +	},
+> +	{
+> +		.compatible = "samsung,exynos5250-pmu",
+> +		.data = (void *)exynos5250_pmu_init
+> +	},
+> +	{},
+> +};
+> +
+> +static int exynos_pmu_probe(struct device_node *np)
+> +{
+> +	const struct of_device_id *match;
+> +	exynos_pmu_init_t exynos_pmu_init;
+> +
+> +	pmu_data = kzalloc(sizeof(struct exynos_pmu_data), GFP_KERNEL);
+> +	if (!pmu_data) {
+> +		pr_err("exynos_pmu driver probe failed\n");
+> +		return -ENOMEM;
+>   	}
+>
+> +	match = of_match_node(exynos_pmu_of_device_ids, np);
+> +	if (!match) {
+> +		pr_err("fail to get matching of_match struct\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	exynos_pmu_init = match->data;
+> +
+> +	pmu_data->pmu_regmap = syscon_early_regmap_lookup_by_phandle(np,
+> +			"samsung,syscon-phandle");
+> +	if (IS_ERR(pmu_data->pmu_regmap)) {
+> +		pr_err("failed to find exynos_pmu_regmap\n");
+> +		return PTR_ERR(pmu_data->pmu_regmap);
+> +	}
+> +
+> +	exynos_pmu_init();
+> +
+>   	return 0;
+> +};
+> +
+> +static int __init exynos_pmu_of_init(void)
+> +{
+> +	int ret = 0;
+> +	struct device_node *np;
+> +
+> +	for_each_matching_node_and_match(np, exynos_pmu_of_device_ids, NULL)
+> +		ret = exynos_pmu_probe(np);
+
+I wouldn't expect more than one PMU in the system, so probably a simple
+
+	for_each_matching_node_and_match(np, exynos_pmu_of_device_ids...
+		return exynos_pmu_probe(np);
+
+	return -ENODEV;
+
+would be enough here.
+
+Best regards,
+Tomasz
