@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751873AbaDYRVh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:21:37 -0400
-Received: from mailout2.w2.samsung.com ([211.189.100.12]:9132 "EHLO
-	usmailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176AbaDYRVf (ORCPT
+	id S1753725AbaDYRXs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:23:48 -0400
+Received: from mail.linuxfoundation.org ([140.211.169.12]:48100 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125AbaDYRXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:21:35 -0400
-X-AuditID: cbfec37b-b7fc26d0000070ab-03-535a999da8d7
-Message-id: <535A999A.2070806@samsung.com>
-Date: Fri, 25 Apr 2014 11:21:30 -0600
-From: Shuah Khan <shuah.kh@samsung.com>
-Reply-to: shuah.kh@samsung.com
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101
- Thunderbird/24.4.0
-MIME-version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux@roeck-us.net, satoru.takeuchi@gmail.com, stable@vger.kernel.org,
-        Shuah Khan <shuah.kh@samsung.com>
-Subject: Re: [PATCH 3.4 00/27] 3.4.88-stable review
-References: <20140424215551.942390050@linuxfoundation.org>
-In-reply-to: <20140424215551.942390050@linuxfoundation.org>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Originating-IP: [105.144.34.8]
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsVy+t9hP925M6OCDZa/ULCYs34Nm0Xz4vVs
-	Fpd3zWGzeLLwDJPF1FMTWCwWbHzEaPGo7y27A7vHzll32T1OzPjN4rF/7hog93sDu8fnTXIB
-	rFFcNimpOZllqUX6dglcGTd+H2As2MBWsfXPJOYGxi7WLkZODgkBE4mWq+tYIGwxiQv31rN1
-	MXJxCAksY5TYPPsqI0hCSKCXSWJ5bxJEYgOjxNW+2exdjBwcvAJaEp+vqYLUsAioSnxs+AU2
-	lE1AXeLz6x3sEL1yEk1LVjOD2KICERL3Gg+D1fAKCEr8mHwPbLGIQLDE2q8LGUHmMwusYpS4
-	fnk5G0hCWMBYYuXfqSwQg6wkLt1sBotzClhL9C9dDzaUWcBM4lHLOihbXmLzmrfMEPXKEn8u
-	n2ICuVNCQEHia4/DBEaRWUhWz0LSPQtJ9wJG5lWMYqXFyQXFSempFUZ6xYm5xaV56XrJ+bmb
-	GCFxVL2D8e5Xm0OMAhyMSjy8O3KigoVYE8uKK3MPMUpwMCuJ8HL0AIV4UxIrq1KL8uOLSnNS
-	iw8xMnFwSjUw8s5tcHpwL/fM4pbLxw61Kd50/nXa9Gampke+x0fFf92C5xaHrb+QPbk9Ifxm
-	TpFYoeqySQyi3hs9zCep+Vd0TPbaUhDTn/hi6YsMgRkvjh3d6M+zvydtY95Tqcj7n0OmFV3N
-	2C7CZPGP/dg8Xqvp82I2CwhzbNu7kPnIuWSzXTLn19/ctdotRImlOCPRUIu5qDgRANIAA/qB	AgAA
+	Fri, 25 Apr 2014 13:23:46 -0400
+Date: Fri, 25 Apr 2014 10:26:40 -0700
+From: Greg KH <gregkh@linuxfoundation.org>
+To: jon@ringle.org
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        shc_work@mail.ru, Jon Ringle <jringle@gridpoint.com>
+Subject: Re: [PATCH v7 1/2] serial: sc16is7xx
+Message-ID: <20140425172640.GA27841@kroah.com>
+References: <1398387367-4047-1-git-send-email-jon@ringle.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1398387367-4047-1-git-send-email-jon@ringle.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/2014 03:55 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.4.88 release.
-> There are 27 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Sat Apr 26 21:55:41 UTC 2014.
-> Anything received after that time might be too late.
->
-> The whole patch series can be found in one patch at:
-> 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.4.88-rc1.gz
-> and the diffstat can be found below.
->
-> thanks,
->
-> greg k-h
->
+On Thu, Apr 24, 2014 at 08:56:06PM -0400, jon@ringle.org wrote:
+> From: Jon Ringle <jringle@gridpoint.com>
+> 
+> The SC16IS7xx is a slave I2C-bus/SPI interface to a single-channel
+> high performance UART. The SC16IS7xx's internal register set is
+> backward-compatible with the widely used and widely popular 16C450.
+> 
+> The SC16IS7xx also provides additional advanced features such as
+> auto hardware and software flow control, automatic RS-485 support, and
+> software reset.
+> 
+> Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+> ---
+>  drivers/tty/serial/Kconfig       |    9 +
+>  drivers/tty/serial/Makefile      |    1 +
+>  drivers/tty/serial/sc16is7xx.c   | 1279 ++++++++++++++++++++++++++++++++++++++
+>  include/uapi/linux/serial_core.h |    3 +
+>  4 files changed, 1292 insertions(+)
+>  create mode 100644 drivers/tty/serial/sc16is7xx.c
 
-Compiled and booted. No dmesg regressions.
+I get a few build warnings with this patch applied:
 
--- Shuah
--- 
-Shuah Khan
-Senior Linux Kernel Developer - Open Source Group
-Samsung Research America(Silicon Valley)
-shuah.kh@samsung.com | (970) 672-0658
+drivers/tty/serial/sc16is7xx.c:1059:12: warning: ‘sc16is7xx_probe’ defined but not used [-Wunused-function]
+ static int sc16is7xx_probe(struct device *dev,
+            ^
+drivers/tty/serial/sc16is7xx.c:1175:12: warning: ‘sc16is7xx_remove’ defined but not used [-Wunused-function]
+ static int sc16is7xx_remove(struct device *dev)
+            ^
+drivers/tty/serial/sc16is7xx.c:1214:29: warning: ‘regcfg’ defined but not used [-Wunused-variable]
+ static struct regmap_config regcfg = {
+                             ^
+
+Can you send a follow-on patch to fix them?
+
+thanks,
+
+greg k-h
