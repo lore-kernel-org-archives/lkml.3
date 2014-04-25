@@ -1,161 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbaDYShP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 14:37:15 -0400
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:47225 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715AbaDYShM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 14:37:12 -0400
-X-IronPort-AV: E=Sophos;i="4.97,928,1389772800"; 
-   d="scan'208";a="26301324"
-Date: Fri, 25 Apr 2014 11:37:11 -0700
-From: Zi Shen Lim <zlim@broadcom.com>
-To: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-CC: Mark Brown <broonie@linaro.org>, Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>, Will Deacon <Will.Deacon@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCHv2 2/2] arm64: topology: add MPIDR-based detection
-Message-ID: <20140425183711.GA2161@lc-sj1-5012.sj.broadcom.com>
-References: <1398395922-7482-1-git-send-email-zlim@broadcom.com> <1398395922-7482-3-git-send-email-zlim@broadcom.com> <20140425111842.GB23464@e102568-lin.cambridge.arm.com>
+	id S1754214AbaDYSio (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 14:38:44 -0400
+Received: from mail.kernel.org ([198.145.19.201]:59354 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752821AbaDYSik (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 14:38:40 -0400
+Date: Fri, 25 Apr 2014 20:38:33 +0200
+From: Sebastian Reichel <sre@kernel.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
+        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
+        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
+	<freemangordon@abv.bg>,
+        Joni Lapilainen <joni.lapilainen@gmail.com>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: Re: [PATCHv3 09/14] Documentation: DT: omap-ssi binding documentation
+Message-ID: <20140425183832.GE22721@earth.universe>
+References: <1396053110-21639-1-git-send-email-sre@kernel.org>
+ <1396053110-21639-10-git-send-email-sre@kernel.org>
+ <CAL_Jsq+jGeuM+Vmb8uzz3-ZUvKQu=kDv3RqVY0Dudmc9XTm-BA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="WK3l2KTTmXPVedZ6"
 Content-Disposition: inline
-In-Reply-To: <20140425111842.GB23464@e102568-lin.cambridge.arm.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <CAL_Jsq+jGeuM+Vmb8uzz3-ZUvKQu=kDv3RqVY0Dudmc9XTm-BA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Lorenzo,
 
-On Fri, Apr 25, 2014 at 12:18:43PM +0100, Lorenzo Pieralisi wrote:
-> On Fri, Apr 25, 2014 at 04:18:42AM +0100, Zi Shen Lim wrote:
-> > Create cpu topology based on MPIDR. When hardware sets MPIDR to sane
-> > values, this method will always work. Therefore it should also work well
-> > as the fallback method. [1]
-> 
-> It has to be implemented as fallback, so you have to rebase this patch
-> on top of Mark's series.
+--WK3l2KTTmXPVedZ6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ok, I'll rebase this patch :)
+Hi,
 
-> 
-> > When we have multiple processing elements in the system, we create
-> > the cpu topology by mapping each affinity level (from lowest to highest)
-> > to threads (if they exist), cores, and clusters.
-> > 
-> > We combine data from all higher affinity levels into cluster_id
-> > so we don't lose any information from MPIDR. [2]
-> > 
-> > [1] http://www.spinics.net/lists/arm-kernel/msg317445.html
-> > [2] https://lkml.org/lkml/2014/4/23/703
-> > 
-> > Signed-off-by: Zi Shen Lim <zlim@broadcom.com>
+On Mon, Apr 21, 2014 at 11:43:47AM -0500, Rob Herring wrote:
+> On Fri, Mar 28, 2014 at 7:31 PM, Sebastian Reichel <sre@kernel.org> wrote:
+> > Create device tree binding documentation for
+> > OMAP Synchronous Serial Interface (SSI) device.
+> >
+> > Signed-off-by: Sebastian Reichel <sre@kernel.org>
 > > ---
-> > v1->v2: Addressed comments from Mark Brown.
-> >  - Reduce noise. Use pr_debug instead of pr_info.
-> >  - Don't ignore higher affinity levels.
-> > 
-> >  arch/arm64/include/asm/cputype.h |  2 ++
-> >  arch/arm64/kernel/topology.c     | 34 ++++++++++++++++++++++++++++++++++
-> >  2 files changed, 36 insertions(+)
-> > 
-> > diff --git a/arch/arm64/include/asm/cputype.h b/arch/arm64/include/asm/cputype.h
-> > index c404fb0..7639e8b 100644
-> > --- a/arch/arm64/include/asm/cputype.h
-> > +++ b/arch/arm64/include/asm/cputype.h
-> > @@ -18,6 +18,8 @@
-> >  
-> >  #define INVALID_HWID		ULONG_MAX
-> >  
-> > +#define MPIDR_UP_BITMASK	(0x1 << 30)
-> > +#define MPIDR_MT_BITMASK	(0x1 << 24)
-> >  #define MPIDR_HWID_BITMASK	0xff00ffffff
-> >  
-> >  #define MPIDR_LEVEL_BITS_SHIFT	3
-> > diff --git a/arch/arm64/kernel/topology.c b/arch/arm64/kernel/topology.c
-> > index 3e06b0b..7dbf981 100644
-> > --- a/arch/arm64/kernel/topology.c
-> > +++ b/arch/arm64/kernel/topology.c
-> > @@ -19,6 +19,8 @@
-> >  #include <linux/nodemask.h>
-> >  #include <linux/sched.h>
-> >  
-> > +#include <asm/cputype.h>
-> > +#include <asm/smp_plat.h>
-> >  #include <asm/topology.h>
-> >  
-> >  /*
-> > @@ -71,6 +73,38 @@ static void update_siblings_masks(unsigned int cpuid)
-> >  
-> >  void store_cpu_topology(unsigned int cpuid)
-> >  {
-> > +	struct cpu_topology *cpuid_topo = &cpu_topology[cpuid];
-> > +	u64 mpidr;
+> >  Documentation/devicetree/bindings/hsi/omap-ssi.txt | 85 ++++++++++++++=
+++++++++
+> >  1 file changed, 85 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/hsi/omap-ssi.txt
+> >
+> > diff --git a/Documentation/devicetree/bindings/hsi/omap-ssi.txt b/Docum=
+entation/devicetree/bindings/hsi/omap-ssi.txt
+> > new file mode 100644
+> > index 0000000..709419b
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/hsi/omap-ssi.txt
+> > @@ -0,0 +1,85 @@
+> > +OMAP SSI controller bindings
 > > +
-> > +	mpidr = read_cpuid_mpidr();
+> > +OMAP Synchronous Serial Interface (SSI) controller implements a legacy
+> > +variant of MIPI's High Speed Synchronous Serial Interface (HSI).
 > > +
-> > +	/* Create cpu topology mapping based on MPIDR. */
-> > +	if (mpidr & MPIDR_UP_BITMASK) {
-> > +		/* Uniprocessor system */
-> > +		cpuid_topo->thread_id  = -1;
-> > +		cpuid_topo->core_id    = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-> > +		cpuid_topo->cluster_id = -1;
-> > +	} else if (mpidr & MPIDR_MT_BITMASK) {
-> > +		/* Multiprocessor system : Multi-threads per core */
-> > +		cpuid_topo->thread_id  = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-> > +		cpuid_topo->core_id    = MPIDR_AFFINITY_LEVEL(mpidr, 1);
-> > +		cpuid_topo->cluster_id =
-> > +			MPIDR_AFFINITY_LEVEL(mpidr, 2) |
-> > +			MPIDR_AFFINITY_LEVEL(mpidr, 3) << mpidr_hash.shift_aff[3];
-> 
-> That's probably not what you want, even though you still end up with a
-> unique cluster identifier (but insanely large) if you get lucky and it
-> does not overflow an int. The shift is the amount of bits the level must be
-> shift _right_ to create the hash value.
+> > +Required properties:
+> > +- compatible:          Should include "ti,omap3-ssi".
+> > +- reg-names:           Contains the values "sys" and "gdd".
+> > +- reg:                 Contains a register specifier for each entry in
+> > +                       reg-names.
+>=20
+> You need to define the order here unless you have a strong
+> argument why you can't.
 
-Oh oops, I should read the mpidr_hash code more carefully.
-My intention of using your mpidr_hash values is to achieve something better than
-the naive solution of (aff2 | (aff3 << 8)).
+ok.
 
-> 
-> I am wondering whether it is time for me to add those as macros.
-
-Sure :)
-
-> 
-> > +	} else {
-> > +		/* Multiprocessor system : Single-thread per core */
-> > +		cpuid_topo->thread_id  = -1;
-> > +		cpuid_topo->core_id    = MPIDR_AFFINITY_LEVEL(mpidr, 0);
-> > +		cpuid_topo->cluster_id =
-> > +			MPIDR_AFFINITY_LEVEL(mpidr, 1) |
-> > +			MPIDR_AFFINITY_LEVEL(mpidr, 2) << mpidr_hash.shift_aff[2] |
-> > +			MPIDR_AFFINITY_LEVEL(mpidr, 3) << mpidr_hash.shift_aff[3];
-> 
-> Ditto.
-> 
-> > +	}
+> > +- interrupt-names:      Contains the value "gdd_mpu".
+> > +- interrupts:          Contains interrupt information for each entry in
+> > +                       interrupt-names.
+> > +- ranges:              Represents the bus address mapping between the =
+main
+> > +                       controller node and the child nodes below.
+> > +- clocks:              Contains clock specifiers for each entry in
+> > +                        clock-names.
+> > +- clock-names:         Must include the following entries:
+> > +  "ssi_ssr_fck": The OMAP clock of that name
+> > +  "ssi_sst_fck": The OMAP clock of that name
+> > +  "ssi_ick": The OMAP clock of that name
+> > +- #address-cells:      Should be set to <1>
+> > +- #size-cells:         Should be set to <1>
 > > +
-> > +	pr_debug("CPU%u: cluster %d core %d thread %d mpidr %llx\n",
-> > +		 cpuid, cpuid_topo->cluster_id, cpuid_topo->core_id,
-> > +		 cpuid_topo->thread_id, mpidr);
+> > +Each port is represented as a sub-node of the ti,omap3-ssi device.
 > > +
-> >  	update_siblings_masks(cpuid);
-> 
-> That's why I object. With this implementation MPIDR_EL1 takes over DT,
-> and we do not want that. It has to work the other way around.
-> 
-> What you should do, in update_sibling_masks(), check if the topology has
-> been reset (ie it is not set-up), and parse the MPIDR if that's the case.
+> > +Required Port sub-node properties:
+> > +- compatible:          Should be set to the following value
+> > +                        ti,omap3-ssi-port (applicable to OMAP34xx devi=
+ces)
+> > +- reg-names:           Contains the values "rx" and "tx".
+> > +- reg:                 Contains a register specifier for each entry in
+> > +                       reg-names.
+>=20
+> You need to define the order here unless you have a strong argument
+> why you can't.
 
-Ok, point taken. MPIDR as fallback.
-In the rebased patch, I'll take care of it.
+ok.
 
-> 
-> Thanks,
-> Lorenzo
-> 
+> > +- interrupt-parent     Should be a phandle for the interrupt controller
+> > +- interrupt-names:     Contains the values "mpu_irq0" and "mpu_irq1".
+>=20
+> Those names aren't exactly useful.
+
+I removed interrupt-names in PATCHv4.
+
+> > +- interrupts:          Contains interrupt information for each entry in
+> > +                       interrupt-names.
+>=20
+> You need to define the order here unless you have a strong argument
+> why you can't.
+
+ok.
+
+> > +- ti,ssi-cawake-gpio:  Defines which GPIO pin is used to signify CAWAKE
+> > +                       events for the port. This is an optional board-=
+specific
+> > +                       property. If it's missing the port will not be
+> > +                       enabled.
+> > +
+> > +Example for Nokia N900:
+> > +
+> > +ssi-controller@48058000 {
+> > +       compatible =3D "ti,omap3-ssi";
+> > +
+> > +       /* needed until hwmod is updated to use the compatible string */
+> > +       ti,hwmods =3D "ssi";
+> > +
+> > +       reg =3D <0x48058000 0x1000>,
+> > +             <0x48059000 0x1000>;
+> > +       reg-names =3D "sys",
+> > +                   "gdd";
+> > +
+> > +       interrupts =3D <55>;
+> > +       interrupt-names =3D "gdd_mpu";
+> > +
+> > +       clocks =3D <&ssi_ssr_fck>,
+> > +                <&ssi_sst_fck>,
+> > +                <&ssi_ick>;
+> > +       clock-names =3D "ssi_ssr_fck",
+> > +                     "ssi_sst_fck",
+> > +                     "ssi_ick";
+> > +
+> > +       #address-cells =3D <1>;
+> > +       #size-cells =3D <1>;
+> > +       ranges;
+> > +
+> > +       ssi-port@0 {
+>=20
+> Does this h/w really have more than 1 port?
+
+Yes. I added this to the example in PATCHv4.
+
+> This should really be "ssi-port@4805a800" Or you need to fill in
+> ranges to have a local offset.
+
+ok.
+
+>> [...]
+
+-- Sebastian
+
+--WK3l2KTTmXPVedZ6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJTWquoAAoJENju1/PIO/qaFDIP/j+LmisTdmEr9ZsOjgBGa8Ka
+wGY4/UKwJvWFYETSkxuVxCeuM0Ndd88OSc2uEf748/Q3c4WoB+7ugIt/PyxngFYc
+yMTtU8MQg3QVlWWb7OXjRgAzmUlV4W2p8qLB6VZuRsPpi8k9hYMw4/hoD/PxTew8
+AeXCU/mIGkdKaUm3qhd5uCW76Iovw/11xC+ZY+lma7vVnwq44dU1ZNHRgXz9YxG2
+Xa5Tx+M158ORCxyiSoNAqck/jKG3NOz8SFhsoM+XKotrD6uWPkxfZIKbrIuIhHE3
+NkmMmP6SNc2TibT5W6n6PploQW75k98P/Qw4PTS0Vu7I4JENIPEs1vcXbpqZDXC/
+OXu1JdVxI8ckNc0CAcOeoMURkqEJEYa573CWjkTpa6U/eciVfDpjqy2a8MM3gneh
+i/pxl6vBwUjx2HUpaxc3Y9fgs1us9VrERIcQ2Q0UT3RnKYax1Igf9f+PeQpTDfio
+4SVb904iVxEFdgmedb4/zujsIYad8mdcw0BrJ5yi9RsB7pcm3QtKohe0kecmsCcF
+YO9pP0dYWUwzSpD0uQSnvBBATl9QRYOyAjqcbq4GnVMDmoOE/Jz5aDs0ceD115jM
+dWVr7YiuUzu+tRSBrNLC84vUkcbo47eUBDW+UT4eymo8UfQ8OOZGu79+BLTXo2NG
+KjCVFngZCjZauDLwdVVZ
+=WwJN
+-----END PGP SIGNATURE-----
+
+--WK3l2KTTmXPVedZ6--
