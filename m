@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaDYQbz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:31:55 -0400
-Received: from smtp.codeaurora.org ([198.145.11.231]:43353 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753627AbaDYQbv (ORCPT
+	id S1754045AbaDYQca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:32:30 -0400
+Received: from mail-ve0-f181.google.com ([209.85.128.181]:40549 "EHLO
+	mail-ve0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762AbaDYQcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:31:51 -0400
-Message-ID: <535A8DF5.4090104@codeaurora.org>
-Date: Fri, 25 Apr 2014 11:31:49 -0500
-From: Timur Tabi <timur@codeaurora.org>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:28.0) Gecko/20100101 Firefox/28.0 SeaMonkey/2.25
+	Fri, 25 Apr 2014 12:32:24 -0400
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>
-CC: Mathias Nyman <mathias.nyman@linux.intel.com>,
-        Linus <linus.walleij@linaro.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>
-Subject: Re: [PATCH v3 1/1] pinctrl: add Intel BayTrail GPIO/pinctrl support
-References: <534D0370.50108@linux.intel.com> <535005BA.1040405@codeaurora.org> <5357A80B.8030701@linux.intel.com> <5357ACF1.9070206@codeaurora.org> <20140423135915.GY30677@intel.com> <5357D8CC.3080501@codeaurora.org> <20140424063546.GA30677@intel.com> <5358F30E.9080402@codeaurora.org> <20140424115848.GG30677@intel.com> <53592D04.4040001@codeaurora.org> <20140425074156.GI30677@intel.com> <535A899E.5020801@codeaurora.org> <535A8B91.6030903@intel.com>
-In-Reply-To: <535A8B91.6030903@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1398420888-5506-6-git-send-email-ch.naveen@samsung.com>
+References: <1398420888-5506-1-git-send-email-ch.naveen@samsung.com>
+	<1398420888-5506-6-git-send-email-ch.naveen@samsung.com>
+Date: Fri, 25 Apr 2014 09:32:23 -0700
+X-Google-Sender-Auth: XVynLMdG1DMHuZLbSnW3tGfIFZY
+Message-ID: <CAD=FV=Uv7NdY8vw0atu1Szyz5-VoFbqeM6rc2Jk_LBBzBxGkuw@mail.gmail.com>
+Subject: Re: [PATCH 5/5] iio: exynos_adc: do a reinit_completion before the conversion
+From: Doug Anderson <dianders@chromium.org>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, "cpgs ." <cpgs@samsung.com>,
+        Grant Grundler <grundler@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki wrote:
->>
+Naveen
+
+On Fri, Apr 25, 2014 at 3:14 AM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> Add reinit_completion() before the wait_for_completion_timeout in
+> raw_read() call.
 >
-> I would be interested in understanding what exactly the flow is in that
-> situation, so care to educate me?  What does the driver do to trigger
-> this and what exactly does happen in response to that?
+> Change-Id: I70fa00841bc49eba838a5bd6779015844297dfdb
 
-I only just learned some of this myself, so I'm no expert.  My 
-understanding is that the all of the pinctrl-* properties and nodes are 
-scanned by the pinctrl layer itself.  So you could have a SATA 
-controller node that points to a pin control node (via phandles).  When 
-the SATA driver is probed, the pinctrl layer notices the phandles and 
-automatically calls the pinctrl layer to configure the pins and pin muxes.
+Again, remove Change-Id (in the previous patch, too).
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the
-Code Aurora Forum, hosted by The Linux Foundation.
+> Signed-off-by: Naveen Krishna Chatradhi <ch.naveen@samsung.com>
+> ---
+>  drivers/iio/adc/exynos_adc.c |    1 +
+>  1 file changed, 1 insertion(+)
+
+Seems reasonable.
+
+Reviewed-by: Doug Anderson <dianders@chromium.org>
