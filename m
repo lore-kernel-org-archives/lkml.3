@@ -1,85 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441AbaDYOQb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:16:31 -0400
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45140 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754414AbaDYOQY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:16:24 -0400
-Date: Fri, 25 Apr 2014 15:16:09 +0100
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Tomasz Figa <t.figa@samsung.com>, Anton Vorontsov <anton@enomsg.org>
-Message-ID: <20140425141609.GO12304@sirena.org.uk>
-References: <1398264640-12122-1-git-send-email-k.kozlowski@samsung.com>
- <1398264640-12122-3-git-send-email-k.kozlowski@samsung.com>
- <20140424124803.GW12304@sirena.org.uk>
- <1398433531.30695.3.camel@AMDC1943>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="RI+P/CiYqhD6quxl"
-Content-Disposition: inline
-In-Reply-To: <1398433531.30695.3.camel@AMDC1943>
-X-Cookie: You will be successful in your work.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH part2 2/6] regulator/mfd: max14577: Export symbols for
- calculating charger current
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	id S1754461AbaDYOQu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:16:50 -0400
+Received: from ns.mm-sol.com ([37.157.136.199]:36961 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753216AbaDYOQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 10:16:46 -0400
+Message-ID: <1398435350.4724.244.camel@iivanov-dev>
+Subject: Re: [RFC PATCH] mfd: pm8x41: Naive function devices registration
+From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
+Date: Fri, 25 Apr 2014 17:15:50 +0300
+In-Reply-To: <CAL_Jsq+biEgbb7MmDuMsZ-bjocX0u=vvgZQHb6D696eGWDF7WA@mail.gmail.com>
+References: <1398429171-8566-1-git-send-email-iivanov@mm-sol.com>
+	 <CAL_JsqJMs1ULgLMAia6ojz+i3b=7W6hxyqSTMATo96i0cS2n0g@mail.gmail.com>
+	 <1398432541.4724.243.camel@iivanov-dev>
+	 <CAL_Jsq+biEgbb7MmDuMsZ-bjocX0u=vvgZQHb6D696eGWDF7WA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.1-2ubuntu2~saucy1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 2014-04-25 at 08:43 -0500, Rob Herring wrote:
+> On Fri, Apr 25, 2014 at 8:29 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+> > On Fri, 2014-04-25 at 08:00 -0500, Rob Herring wrote:
+> >> On Fri, Apr 25, 2014 at 7:32 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
+> >> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
+> >> >
+> >> > Currently functions that exist in both the controller at the
+> >> > same address offset can not be specified with the same names.
+> >> >
+> >> > Adding Unique Slave ID device address to prefix function
+> >> > device names fixes this.
+> >> >
+> >> > Function devices are SPMI devices, so register them on
+> >> > SPMI bus.
+> >> >
+> >> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
+> >> > ---
+> >> >  drivers/mfd/pm8x41.c | 61 ++++++++++++++++++++++++++++++++++++++++++++++++----
+> >>
+> >> No, this should be fixed in the core, not the driver.
+> >
+> > I think that at core level they are no issues.
+> 
+> By core, I mean the device naming conventions used by the DT platform
+> device code. There is a problem and it should be handled.
+> 
+> As I mentioned in the other thread, either we should not use the
+> address on non-translatable addresses like this or append the parent
+> address.
 
---RI+P/CiYqhD6quxl
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Ok, I see.
 
-On Fri, Apr 25, 2014 at 03:45:31PM +0200, Krzysztof Kozlowski wrote:
+Regards,
+Ivan
 
-> Thanks for the ack, however this patch already got it:
-> https://lkml.org/lkml/2014/2/7/640
-
-If something has already been reviewed or acked you should be including
-that in reposts, otherwise nobody is going to remember that the review
-happened.
-
-> I need your ack on the fifth patch:
->  * [PATCH part2 5/6] regulator: max14577: Implement SUSPEND mode for
->    MAX77836 LDO-s
-
-I'll get to it at some point.
-
---RI+P/CiYqhD6quxl
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.22 (GNU/Linux)
-
-iQIcBAEBAgAGBQJTWm4mAAoJELSic+t+oim9iWAP/ROYV+tIgjMyQWsT/ilyFjDH
-/n/r23tS04B5QOq32t6e/7WV6SvAuW4dGqDrxIvmCc3qs71ktVDpaEAMSia8cEsz
-OKNLnx0bdJIZgQBCqsTeYhFe4lmo5OpIZBAsGR7GtGTKw7UnRslDIY120ZOLdJLt
-iB9tBiCQFJ1nyti4bJZk+DVR/UrQa01YGL6vpfbFjaoLoJwQiipvzkvwPENfD97d
-85k9AJWlDbVSBRKumOVLQFAFximjQgehgHWYztQTSWj8IBxps6jrylVZp81xjkiA
-xZ2fVQ87YKEK0pm8Yxq5uYVRiM/LZRUQtDbHempv5Qr4GWjixLI/AgMSp3Hz/vr4
-/JjYu3VTG3I/4p1TuCYJy7y8bSZV9rfXdv+XdnLrCM1LGLenS0+hhyZnrPFFFIUi
-l4IE2PLXxyaqEqzz4kaDk/EeU+7wXwn/hZg6esnunsAWyFT1WMDNDfV+ndPLTW0r
-yKO6k9Gvc8FGQtqvWgsuhF7NLpIz8bp7f5zJZH3vh1h+nhkUZTMCKY04350UO17F
-x5BmozLg+6x2b4vffrkaxoy86feYvv9CEWxrT5qYNUdrcAU+KDDHpydLjHykAf5m
-nRb75uHZYVePd+Yvez/JzgZfXrLTKCwghJm+VWXbS8fcJKyqo2mQLQF8CCm1nINu
-anEx+q0bEJ0xpDgAHuPs
-=8y9C
------END PGP SIGNATURE-----
-
---RI+P/CiYqhD6quxl--
