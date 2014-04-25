@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753590AbaDYRRI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:17:08 -0400
-Received: from mail-pd0-f172.google.com ([209.85.192.172]:58034 "EHLO
-	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753349AbaDYRRB (ORCPT
+	id S1753309AbaDYRQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:16:58 -0400
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:58824 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752298AbaDYRQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:17:01 -0400
-Subject: [PATCH 4/4] x86/gart: Tidy messages and add bridge device info
+	Fri, 25 Apr 2014 13:16:43 -0400
+Subject: [PATCH 2/4] x86/PCI: Mark HPET BAR as IORESOURCE_PCI_FIXED
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: David Airlie <airlied@linux.ie>, Bodo Eggert <7eggert@gmx.de>,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 25 Apr 2014 11:16:55 -0600
-Message-ID: <20140425171655.312.97511.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Fri, 25 Apr 2014 11:16:39 -0600
+Message-ID: <20140425171639.312.28185.stgit@bhelgaas-glaptop.roam.corp.google.com>
 In-Reply-To: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
 References: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
@@ -24,61 +24,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Print the AGP bridge info the same way as the rest of the kernel, e.g.,
-"0000:00:04.0" instead of "00:04:00".
+Bodo reported that on the Asrock M3A UCC, v3.12.6 hangs during boot unless
+he uses "pci=nocrs".  This regression was caused by 7bc5e3f2be32 ("x86/PCI:
+use host bridge _CRS info by default on 2008 and newer machines"), which
+appeared in v2.6.34.
 
-Also print the AGP aperture address range the same way we print resources,
-and label it explicitly as a bus address range.
+The reason is that the HPET address appears in a PCI device BAR, and this
+address is not contained in any of the host bridge windows.  Linux moves
+the PCI BAR into a window, but the original address was published via the
+HPET table and an ACPI device, so changing the BAR is a bad idea:
 
-No functional change.
+  ACPI: HPET id: 0x43538301 base: 0xfed00000
+  pci_root PNP0A03:00: host bridge window [mem 0xd0000000-0xdfffffff]
+  pci_root PNP0A03:00: host bridge window [mem 0xf0000000-0xfebfffff]
+  pci 0000:00:14.0: [1002:4385] type 0 class 0x000c05
+  pci 0000:00:14.0: reg 14: [mem 0xfed00000-0xfed003ff]
+  hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0, 0
+  pnp 00:06: Plug and Play ACPI device, IDs PNP0103 (active)
+  pnp 00:06: [mem 0xfed00000-0xfed003ff]
 
+This patch marks the BAR as IORESOURCE_PCI_FIXED to prevent Linux from
+moving it.  This depends on a previous patch ("x86/PCI: Don't try to move
+IORESOURCE_PCI_FIXED resources") to check for this flag when
+pci_claim_resource() fails.
+
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=68591
+Reported-by: Bodo Eggert <7eggert@gmx.de>
 Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
- arch/x86/kernel/aperture_64.c |   20 ++++++++++++--------
- 1 file changed, 12 insertions(+), 8 deletions(-)
+ arch/x86/pci/fixup.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/arch/x86/kernel/aperture_64.c b/arch/x86/kernel/aperture_64.c
-index 9fa8aa051f54..4dd76d3df056 100644
---- a/arch/x86/kernel/aperture_64.c
-+++ b/arch/x86/kernel/aperture_64.c
-@@ -126,10 +126,12 @@ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
- 	u64 aper;
- 	u32 old_order;
+diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
+index 94ae9ae9574f..d4359f9d74b6 100644
+--- a/arch/x86/pci/fixup.c
++++ b/arch/x86/pci/fixup.c
+@@ -6,6 +6,7 @@
+ #include <linux/dmi.h>
+ #include <linux/pci.h>
+ #include <linux/vgaarb.h>
++#include <asm/hpet.h>
+ #include <asm/pci_x86.h>
  
--	printk(KERN_INFO "AGP bridge at %02x:%02x:%02x\n", bus, slot, func);
-+	printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP bridge\n", bus, slot,
-+	       func);
- 	apsizereg = read_pci_config_16(bus, slot, func, cap + 0x14);
- 	if (apsizereg == 0xffffffff) {
--		printk(KERN_ERR "APSIZE in AGP bridge unreadable\n");
-+		printk(KERN_ERR "pci 0000:%02x:%02x.%d: APSIZE unreadable\n",
-+		       bus, slot, func);
- 		return 0;
- 	}
+ static void pci_fixup_i450nx(struct pci_dev *d)
+@@ -526,6 +527,17 @@ static void sb600_disable_hpet_bar(struct pci_dev *dev)
+ }
+ DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
  
-@@ -153,16 +155,18 @@ static u32 __init read_agp(int bus, int slot, int func, int cap, u32 *order)
- 	 * On some sick chips, APSIZE is 0. It means it wants 4G
- 	 * so let double check that order, and lets trust AMD NB settings:
- 	 */
--	printk(KERN_INFO "Aperture from AGP @ %Lx old size %u MB\n",
--			aper, 32 << old_order);
-+	printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP aperture [bus %Lx-%Lx] old size %u MB\n",
-+	       bus, slot, func, aper, aper + (32 << old_order) - 1,
-+	       32 << old_order);
- 	if (aper + (32ULL<<(20 + *order)) > 0x100000000ULL) {
--		printk(KERN_INFO "Aperture size %u MB (APSIZE %x) is not right, using settings from NB\n",
--				32 << *order, apsizereg);
-+		printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP aperture size %u MB (APSIZE %x) is not right, using settings from NB\n",
-+		       bus, slot, func, 32 << *order, apsizereg);
- 		*order = old_order;
- 	}
- 
--	printk(KERN_INFO "Aperture from AGP @ %Lx size %u MB (APSIZE %x)\n",
--			aper, 32 << *order, apsizereg);
-+	printk(KERN_INFO "pci 0000:%02x:%02x.%d: AGP aperture [bus %Lx-%Lx] size %u MB (APSIZE %x)\n",
-+	       bus, slot, func, aper, aper + (32 << *order) - 1, 32 << *order,
-+	       apsizereg);
- 
- 	if (!aperture_valid(aper, (32*1024*1024) << *order, 32<<20))
- 		return 0;
++static void sb600_hpet_quirk(struct pci_dev *dev)
++{
++	struct resource *r = &dev->resource[0];
++
++	if (r->flags & IORESOURCE_MEM && r->start == hpet_address) {
++		r->flags |= IORESOURCE_PCI_FIXED;
++		dev_info(&dev->dev, "reg 0x10 contains HPET; making it immovable\n");
++	}
++}
++DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, 0x4385, sb600_hpet_quirk);
++
+ /*
+  * Twinhead H12Y needs us to block out a region otherwise we map devices
+  * there and any access kills the box.
 
