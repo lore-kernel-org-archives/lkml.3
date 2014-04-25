@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754479AbaDYTGt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 15:06:49 -0400
-Received: from ring0.de ([5.45.105.125]:50338 "EHLO ring0.de"
+	id S932077AbaDYTHI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 15:07:08 -0400
+Received: from ring0.de ([5.45.105.125]:50408 "EHLO ring0.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752230AbaDYTGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 15:06:42 -0400
+	id S1752230AbaDYTG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 15:06:56 -0400
 X-Spam-Report: * -0.0 NO_RELAYS Informational: message was not relayed via SMTP
 	* -1.9 BAYES_00 BODY: Bayes spam probability is 0 to 1%
 	*      [score: 0.0000]
@@ -24,9 +24,9 @@ Cc: Tony Lindgren <tony@atomide.com>, Rob Herring <robh+dt@kernel.org>,
         Joni Lapilainen <joni.lapilainen@gmail.com>,
         Aaro Koskinen <aaro.koskinen@iki.fi>, Pavel Machek <pavel@ucw.cz>,
         Sebastian Reichel <sre@kernel.org>
-Subject: [PATCHv4 04/13] HSI: method to unregister clients from an hsi port
-Date: Fri, 25 Apr 2014 21:06:07 +0200
-Message-Id: <1398452776-28638-5-git-send-email-sre@kernel.org>
+Subject: [PATCHv4 07/13] HSI: Add common DT binding for HSI client devices
+Date: Fri, 25 Apr 2014 21:06:10 +0200
+Message-Id: <1398452776-28638-8-git-send-email-sre@kernel.org>
 X-Mailer: git-send-email 1.9.2
 In-Reply-To: <1398452776-28638-1-git-send-email-sre@kernel.org>
 References: <1398452776-28638-1-git-send-email-sre@kernel.org>
@@ -34,49 +34,320 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This exports a method to unregister all clients from
-an hsi port.
+Implement and document generic DT bindings for HSI clients.
 
 Signed-off-by: Sebastian Reichel <sre@kernel.org>
 Reviewed-by: Pavel Machek <pavel@ucw.cz>
 ---
- drivers/hsi/hsi.c       | 10 ++++++++++
- include/linux/hsi/hsi.h |  1 +
- 2 files changed, 11 insertions(+)
+ .../devicetree/bindings/hsi/client-devices.txt     |  44 +++++
+ drivers/hsi/hsi.c                                  | 206 ++++++++++++++++++++-
+ include/linux/hsi/hsi.h                            |   2 +
+ 3 files changed, 250 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/hsi/client-devices.txt
 
+diff --git a/Documentation/devicetree/bindings/hsi/client-devices.txt b/Documentation/devicetree/bindings/hsi/client-devices.txt
+new file mode 100644
+index 0000000..104c9a3
+--- /dev/null
++++ b/Documentation/devicetree/bindings/hsi/client-devices.txt
+@@ -0,0 +1,44 @@
++Each HSI port is supposed to have one child node, which
++symbols the remote device connected to the HSI port. The
++following properties are standardized for HSI clients:
++
++Required HSI configuration properties:
++
++- hsi-channel-ids:	A list of channel ids
++
++- hsi-rx-mode:		Receiver Bit transmission mode ("stream" or "frame")
++- hsi-tx-mode:		Transmitter Bit transmission mode ("stream" or "frame")
++- hsi-mode:		May be used instead hsi-rx-mode and hsi-tx-mode if
++			the transmission mode is the same for receiver and
++			transmitter
++- hsi-speed-kbps:	Max bit transmission speed in kbit/s
++- hsi-flow:		RX flow type ("synchronized" or "pipeline")
++- hsi-arb-mode:		Arbitration mode for TX frame ("round-robin", "priority")
++
++Optional HSI configuration properties:
++
++- hsi-channel-names:	A list with one name per channel specified in the
++			hsi-channel-ids property
++
++
++Device Tree node example for an HSI client:
++
++hsi-controller {
++	hsi-port {
++		modem: hsi-client {
++			compatible = "nokia,n900-modem";
++
++			hsi-channel-ids = <0>, <1>, <2>, <3>;
++			hsi-channel-names = "mcsaab-control",
++					    "speech-control",
++					    "speech-data",
++					    "mcsaab-data";
++			hsi-speed-kbps = <55000>;
++			hsi-mode = "frame";
++			hsi-flow = "synchronized";
++			hsi-arb-mode = "round-robin";
++
++			/* more client specific properties */
++		};
++	};
++};
 diff --git a/drivers/hsi/hsi.c b/drivers/hsi/hsi.c
-index 749f7b5..e96a987 100644
+index 834a2d6..2b4f9da 100644
 --- a/drivers/hsi/hsi.c
 +++ b/drivers/hsi/hsi.c
-@@ -130,6 +130,16 @@ static void hsi_port_release(struct device *dev)
+@@ -26,8 +26,14 @@
+ #include <linux/slab.h>
+ #include <linux/string.h>
+ #include <linux/notifier.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
+ #include "hsi_core.h"
+ 
++static struct hsi_board_info hsi_char_dev_info = {
++	.name = "hsi_char",
++};
++
+ static ssize_t modalias_show(struct device *dev,
+ 			struct device_attribute *a __maybe_unused, char *buf)
+ {
+@@ -50,7 +56,13 @@ static int hsi_bus_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 
+ static int hsi_bus_match(struct device *dev, struct device_driver *driver)
+ {
+-	return strcmp(dev_name(dev), driver->name) == 0;
++	if (of_driver_match_device(dev, driver))
++		return true;
++
++	if (strcmp(dev_name(dev), driver->name) == 0)
++		return true;
++
++	return false;
  }
  
- /**
-+ * hsi_unregister_port - Unregister an HSI port
-+ * @port: The HSI port to unregister
-+ */
-+void hsi_port_unregister_clients(struct hsi_port *port)
+ static struct bus_type hsi_bus_type = {
+@@ -123,6 +135,196 @@ static void hsi_scan_board_info(struct hsi_controller *hsi)
+ 		}
+ }
+ 
++static int hsi_of_property_parse_mode(struct device_node *client, char *name,
++				      unsigned int *result)
 +{
-+	device_for_each_child(&port->device, NULL, hsi_remove_client);
-+}
-+EXPORT_SYMBOL_GPL(hsi_port_unregister_clients);
++	const char *mode;
++	int err;
 +
-+/**
-  * hsi_unregister_controller - Unregister an HSI controller
-  * @hsi: The HSI controller to register
-  */
++	err = of_property_read_string(client, name, &mode);
++	if (err < 0)
++		return err;
++
++	if (strcmp(mode, "stream") == 0)
++		*result = HSI_MODE_STREAM;
++	else if (strcmp(mode, "frame") == 0)
++		*result = HSI_MODE_FRAME;
++	else
++		return -EINVAL;
++
++	return 0;
++}
++
++static int hsi_of_property_parse_flow(struct device_node *client, char *name,
++				      unsigned int *result)
++{
++	const char *flow;
++	int err;
++
++	err = of_property_read_string(client, name, &flow);
++	if (err < 0)
++		return err;
++
++	if (strcmp(flow, "synchronized") == 0)
++		*result = HSI_FLOW_SYNC;
++	else if (strcmp(flow, "pipeline") == 0)
++		*result = HSI_FLOW_PIPE;
++	else
++		return -EINVAL;
++
++	return 0;
++}
++
++static int hsi_of_property_parse_arb_mode(struct device_node *client,
++					  char *name, unsigned int *result)
++{
++	const char *arb_mode;
++	int err;
++
++	err = of_property_read_string(client, name, &arb_mode);
++	if (err < 0)
++		return err;
++
++	if (strcmp(arb_mode, "round-robin") == 0)
++		*result = HSI_ARB_RR;
++	else if (strcmp(arb_mode, "priority") == 0)
++		*result = HSI_ARB_PRIO;
++	else
++		return -EINVAL;
++
++	return 0;
++}
++
++static void hsi_add_client_from_dt(struct hsi_port *port,
++						struct device_node *client)
++{
++	struct hsi_client *cl;
++	struct hsi_channel channel;
++	struct property *prop;
++	char name[32];
++	int length, cells, err, i, max_chan, mode;
++
++	cl = kzalloc(sizeof(*cl), GFP_KERNEL);
++	if (!cl)
++		return;
++
++	err = of_modalias_node(client, name, sizeof(name));
++	if (err)
++		goto err;
++
++	dev_set_name(&cl->device, "%s", name);
++
++	err = hsi_of_property_parse_mode(client, "hsi-mode", &mode);
++	if (err) {
++		err = hsi_of_property_parse_mode(client, "hsi-rx-mode",
++						 &cl->rx_cfg.mode);
++		if (err)
++			goto err;
++
++		err = hsi_of_property_parse_mode(client, "hsi-tx-mode",
++						 &cl->tx_cfg.mode);
++		if (err)
++			goto err;
++	} else {
++		cl->rx_cfg.mode = mode;
++		cl->tx_cfg.mode = mode;
++	}
++
++	err = of_property_read_u32(client, "hsi-speed-kbps",
++				   &cl->tx_cfg.speed);
++	if (err)
++		goto err;
++	cl->rx_cfg.speed = cl->tx_cfg.speed;
++
++	err = hsi_of_property_parse_flow(client, "hsi-flow",
++					 &cl->rx_cfg.flow);
++	if (err)
++		goto err;
++
++	err = hsi_of_property_parse_arb_mode(client, "hsi-arb-mode",
++					     &cl->rx_cfg.arb_mode);
++	if (err)
++		goto err;
++
++	prop = of_find_property(client, "hsi-channel-ids", &length);
++	if (!prop) {
++		err = -EINVAL;
++		goto err;
++	}
++
++	cells = length / sizeof(u32);
++
++	cl->rx_cfg.num_channels = cells;
++	cl->tx_cfg.num_channels = cells;
++
++	cl->rx_cfg.channels = kzalloc(cells * sizeof(channel), GFP_KERNEL);
++	if (!cl->rx_cfg.channels) {
++		err = -ENOMEM;
++		goto err;
++	}
++
++	cl->tx_cfg.channels = kzalloc(cells * sizeof(channel), GFP_KERNEL);
++	if (!cl->tx_cfg.channels) {
++		err = -ENOMEM;
++		goto err2;
++	}
++
++	max_chan = 0;
++	for (i = 0; i < cells; i++) {
++		err = of_property_read_u32_index(client, "hsi-channel-ids", i,
++						 &channel.id);
++		if (err)
++			goto err3;
++
++		err = of_property_read_string_index(client, "hsi-channel-names",
++						    i, &channel.name);
++		if (err)
++			channel.name = NULL;
++
++		if (channel.id > max_chan)
++			max_chan = channel.id;
++
++		cl->rx_cfg.channels[i] = channel;
++		cl->tx_cfg.channels[i] = channel;
++	}
++
++	cl->rx_cfg.num_hw_channels = max_chan + 1;
++	cl->tx_cfg.num_hw_channels = max_chan + 1;
++
++	cl->device.bus = &hsi_bus_type;
++	cl->device.parent = &port->device;
++	cl->device.release = hsi_client_release;
++	cl->device.of_node = client;
++
++	if (device_register(&cl->device) < 0) {
++		pr_err("hsi: failed to register client: %s\n", name);
++		put_device(&cl->device);
++		goto err3;
++	}
++
++	return;
++
++err3:
++	kfree(cl->tx_cfg.channels);
++err2:
++	kfree(cl->rx_cfg.channels);
++err:
++	kfree(cl);
++	pr_err("hsi client: missing or incorrect of property: err=%d\n", err);
++}
++
++void hsi_add_clients_from_dt(struct hsi_port *port, struct device_node *clients)
++{
++	struct device_node *child;
++
++	/* register hsi-char device */
++	hsi_new_client(port, &hsi_char_dev_info);
++
++	for_each_available_child_of_node(clients, child)
++		hsi_add_client_from_dt(port, child);
++}
++EXPORT_SYMBOL_GPL(hsi_add_clients_from_dt);
++
+ int hsi_remove_client(struct device *dev, void *data __maybe_unused)
+ {
+ 	device_unregister(dev);
+@@ -505,7 +707,7 @@ int hsi_unregister_port_event(struct hsi_client *cl)
+ EXPORT_SYMBOL_GPL(hsi_unregister_port_event);
+ 
+ /**
+- * hsi_event -Notifies clients about port events
++ * hsi_event - Notifies clients about port events
+  * @port: Port where the event occurred
+  * @event: The event type
+  *
 diff --git a/include/linux/hsi/hsi.h b/include/linux/hsi/hsi.h
-index 39bfd5b..5a9f121 100644
+index e20a399..1220109 100644
 --- a/include/linux/hsi/hsi.h
 +++ b/include/linux/hsi/hsi.h
-@@ -282,6 +282,7 @@ struct hsi_controller *hsi_alloc_controller(unsigned int n_ports, gfp_t flags);
- void hsi_put_controller(struct hsi_controller *hsi);
- int hsi_register_controller(struct hsi_controller *hsi);
+@@ -298,6 +298,8 @@ int hsi_register_controller(struct hsi_controller *hsi);
  void hsi_unregister_controller(struct hsi_controller *hsi);
-+void hsi_port_unregister_clients(struct hsi_port *port);
+ struct hsi_client *hsi_new_client(struct hsi_port *port,
+ 						struct hsi_board_info *info);
++void hsi_add_clients_from_dt(struct hsi_port *port,
++						struct device_node *clients);
+ int hsi_remove_client(struct device *dev, void *data);
+ void hsi_port_unregister_clients(struct hsi_port *port);
  
- static inline void hsi_controller_set_drvdata(struct hsi_controller *hsi,
- 								void *data)
 -- 
 1.9.2
 
