@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842AbaDYWxi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:53:38 -0400
-Received: from mail-vc0-f177.google.com ([209.85.220.177]:36185 "EHLO
-	mail-vc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156AbaDYWxg (ORCPT
+	id S1752667AbaDYWyc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:54:32 -0400
+Received: from mailrelay012.isp.belgacom.be ([195.238.6.179]:41105 "EHLO
+	mailrelay012.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751468AbaDYWyb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:53:36 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1404251547020.6936@chino.kir.corp.google.com>
-References: <1398437960.2159.4.camel@dabdike.int.hansenpartnership.com>
-	<alpine.DEB.2.02.1404251547020.6936@chino.kir.corp.google.com>
-Date: Fri, 25 Apr 2014 15:53:35 -0700
-X-Google-Sender-Auth: BICbUydBQopvlG7Xdbunjf6Nd5Y
-Message-ID: <CA+55aFwtF=PSrixQg7+=bhmB_6hDheykBpU2pYMGE6+zNQz=Sg@mail.gmail.com>
-Subject: Re: [GIT PULL] SCSI fixes for 3.15-rc3
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@lst.de>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 Apr 2014 18:54:31 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtMVAKvmWlNXQASl/2dsb2JhbABZgwarVJlwAgKBEhd0glMTHCMYgQIkE4hFAcpfhVqIG2SEQAEDjnaKDgGKcYdrgzM7gSw
+Date: Sat, 26 Apr 2014 00:56:31 +0200
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: jack <jack@suse.cz>, hch <hch@infradead.org>,
+        Viro <viro@zeniv.linux.org.uk>, tytso <tytso@mit.edu>,
+        akpm <akpm@linux-foundation.org>
+Subject: [PATCH V2 2/2] fs/ext4/fsync.c: generic_file_fsync call based on
+ barrier flag
+Message-Id: <20140426005631.ed2263500401a9076296bccb@skynet.be>
+X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 3:49 PM, David Rientjes <rientjes@google.com> wrote:
->
-> Hmm, I see why this is needed because of the scsi_put_command(cmd), but I
-> think you need to do struct scsi_device *sdev = ACCESS_ONCE(cmd->device)
-> instead to prevent gcc from messing with the code generation.
+generic_file_fsync has been updated to issue a flush for
+older filesystems.
 
-No, if gcc were to move the access to 'cmd' to after the
-'scsi_put_command(cmd)', that would be a major compiler bug.
+This patch checks barrier flag in ext4 mount flags
+and calls the right function.
 
-Compilers can't just randomly move code around, guys.
+Suggested-by: Jan Kara <jack@suse.cz>
+Suggested-by: Christoph Hellwig <hch@infradead.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/ext4/fsync.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
 
-            Linus
+diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+index a8bc47f..95bbca0 100644
+--- a/fs/ext4/fsync.c
++++ b/fs/ext4/fsync.c
+@@ -107,7 +107,11 @@ int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+ 	}
+ 
+ 	if (!journal) {
+-		ret = generic_file_fsync(file, start, end, datasync);
++		if (test_opt(inode->i_sb, BARRIER))
++			ret = generic_file_fsync(file, start, end, datasync);
++		   else
++			ret = __generic_file_fsync(file, start, end, datasync,
++						   false);
+ 		if (!ret && !hlist_empty(&inode->i_dentry))
+ 			ret = ext4_sync_parent(inode);
+ 		goto out;
+-- 
+1.8.4.5
+
