@@ -1,164 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751805AbaDYCrK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 22:47:10 -0400
-Received: from mail-by2lp0236.outbound.protection.outlook.com ([207.46.163.236]:46294
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750820AbaDYCrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 22:47:08 -0400
-X-Greylist: delayed 918 seconds by postgrey-1.27 at vger.kernel.org; Thu, 24 Apr 2014 22:47:08 EDT
-Date: Fri, 25 Apr 2014 09:34:36 +0800
-From: Huang Shijie <b32955@freescale.com>
-To: Graham Moore <grmoore@altera.com>
-CC: <ggrahammoore@gmail.com>, ZY - marex <marex@denx.de>,
-        Geert Uytterhoeven <geert+renesas@linux-m68k.org>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        Jingoo Han <jg1.han@samsung.com>, <linux-kernel@vger.kernel.org>,
-        Yves Vandervennet <rocket.yvanderv@gmail.com>,
-        <linux-mtd@lists.infradead.org>, Insop Song <insop.song@gainspeed.com>,
-        Alan Tull <atull@altera.com>, Sourav Poddar <sourav.poddar@ti.com>,
-        Brian Norris <computersforpeace@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Dinh Nguyen <dinguyen@altera.com>
-Subject: Re: [PATCH V3] Add support for flag status register on Micron
- chips.
-Message-ID: <20140425013434.GA24530@localhost>
-References: <1398175396-7560-1-git-send-email-grmoore@altera.com>
- <1398175396-7560-2-git-send-email-grmoore@altera.com>
+	id S1751847AbaDYCrs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 22:47:48 -0400
+Received: from mail-qc0-f170.google.com ([209.85.216.170]:61713 "EHLO
+	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbaDYCrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 22:47:45 -0400
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Thu, 24 Apr 2014 22:51:08 -0400 (EDT)
+From: Vince Weaver <vincent.weaver@maine.edu>
+To: Vince Weaver <vincent.weaver@maine.edu>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@kernel.org>,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [perf] more perf_fuzzer memory corruption
+In-Reply-To: <alpine.DEB.2.10.1404231643420.30955@vincent-weaver-1.um.maine.edu>
+Message-ID: <alpine.DEB.2.10.1404242243220.12717@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.10.1404161326380.19325@vincent-weaver-1.um.maine.edu> <alpine.DEB.2.10.1404161337350.19325@vincent-weaver-1.um.maine.edu> <20140417094815.GA9348@gmail.com> <20140417114533.GJ11096@twins.programming.kicks-ass.net> <20140417142213.GA29338@gmail.com>
+ <alpine.DEB.2.10.1404171037590.22226@vincent-weaver-1.um.maine.edu> <20140417145418.GM11096@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404181042320.26918@vincent-weaver-1.um.maine.edu> <20140418152314.GY11182@twins.programming.kicks-ass.net>
+ <20140418165958.GQ13658@twins.programming.kicks-ass.net> <20140418171516.GR13658@twins.programming.kicks-ass.net> <alpine.DEB.2.10.1404231643420.30955@vincent-weaver-1.um.maine.edu>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1398175396-7560-2-git-send-email-grmoore@altera.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-EOPAttributedMessage: 0
-X-Forefront-Antispam-Report: CIP:192.88.158.246;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009001)(6009001)(428001)(199002)(189002)(24454002)(51704005)(57986002)(46102001)(23726002)(92566001)(92726001)(77096999)(54356999)(20776003)(47776003)(76176999)(46406003)(50986999)(74502001)(79102001)(31966008)(74662001)(97756001)(76482001)(85852003)(83072002)(80022001)(33656001)(33716001)(99396002)(50466002)(77982001)(81542001)(6806004)(19580405001)(83322001)(19580395003)(87936001)(80976001)(4396001)(83506001)(44976005)(81342001)(42262001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY2PR03MB026;H:az84smr01.freescale.net;FPR:;MLV:sfv;PTR:gate-az5.freescale.com;A:1;MX:1;LANG:en;
-X-Forefront-PRVS: 0192E812EC
-Authentication-Results: spf=none (sender IP is 192.88.158.246)
- smtp.mailfrom=shijie.huang@freescale.com; 
-X-OriginatorOrg: freescale.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Apr 22, 2014 at 09:03:16AM -0500, Graham Moore wrote:
-> Some new Micron flash chips require reading the flag
-> status register to determine when operations have completed.
-> 
-> Furthermore, chips with multi-die stacks of the 65nm 256Mb QSPI also
-> require reading the status register before reading the flag status register.
-> 
-> This patch adds support for the flag status register in the n25q512ax3 and n25q00
-> Micron QSPI flash chips.
-> 
-> Signed-off-by: Graham Moore <grmoore@altera.com>
-> ---
-> V3:
-> Rebase to l2-mtd spinor branch.
-> V2:
-> Remove leading underscore in function names.
-> Remove type cast in dev_err call and use the proper format
-> specifier instead.
-> ---
->  drivers/mtd/spi-nor/spi-nor.c |   51 +++++++++++++++++++++++++++++++++++++++++
->  include/linux/mtd/spi-nor.h   |    4 ++++
->  2 files changed, 55 insertions(+)
-> 
-> diff --git a/drivers/mtd/spi-nor/spi-nor.c b/drivers/mtd/spi-nor/spi-nor.c
-> index d6f44d5..24b84d8 100644
-> --- a/drivers/mtd/spi-nor/spi-nor.c
-> +++ b/drivers/mtd/spi-nor/spi-nor.c
-> @@ -48,6 +48,25 @@ static int read_sr(struct spi_nor *nor)
->  }
->  
->  /*
-> + * Read the flag status register, returning its value in the location
-> + * Return the status register value.
-> + * Returns negative if error occurred.
-> + */
-> +static int read_fsr(struct spi_nor *nor)
-> +{
-> +	int ret;
-> +	u8 val;
-> +
-> +	ret = nor->read_reg(nor, SPINOR_OP_RDFSR, &val, 1);
-> +	if (ret < 0) {
-> +		pr_err("error %d reading FSR\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	return val;
-> +}
-> +
-> +/*
->   * Read configuration register, returning its value in the
->   * location. Return the configuration register value.
->   * Returns negative if error occured.
-> @@ -165,6 +184,32 @@ static int spi_nor_wait_till_ready(struct spi_nor *nor)
->  	return -ETIMEDOUT;
->  }
->  
-> +static int spi_nor_wait_till_fsr_ready(struct spi_nor *nor)
-> +{
-> +	unsigned long deadline;
-> +	int sr;
-> +	int fsr;
-> +
-> +	deadline = jiffies + MAX_READY_WAIT_JIFFIES;
-> +
-> +	do {
-> +		cond_resched();
-> +
-> +		sr = read_sr(nor);
-> +		if (sr < 0)
-> +			break;
-> +		else if (!(sr & SR_WIP)) {
-> +			fsr = read_fsr(nor);
-> +			if (fsr < 0)
-> +				break;
-> +			if (fsr & FSR_READY)
-> +				return 0;			
-> +		}
-> +	} while (!time_after_eq(jiffies, deadline));
-> +
-> +	return -ETIMEDOUT;
-> +}
-> +
->  /*
->   * Service routine to read status register until ready, or timeout occurs.
->   * Returns non-zero if error.
-> @@ -402,6 +447,7 @@ struct flash_info {
->  #define	SECT_4K_PMC		0x10	/* SPINOR_OP_BE_4K_PMC works uniformly */
->  #define	SPI_NOR_DUAL_READ	0x20    /* Flash supports Dual Read */
->  #define	SPI_NOR_QUAD_READ	0x40    /* Flash supports Quad Read */
-> +#define	USE_FSR			0x80	/* use flag status register */
->  };
->  
->  #define INFO(_jedec_id, _ext_id, _sector_size, _n_sectors, _flags)	\
-> @@ -488,6 +534,8 @@ const struct spi_device_id spi_nor_ids[] = {
->  	{ "n25q128a13",  INFO(0x20ba18, 0, 64 * 1024,  256, 0) },
->  	{ "n25q256a",    INFO(0x20ba19, 0, 64 * 1024,  512, SECT_4K) },
->  	{ "n25q512a",    INFO(0x20bb20, 0, 64 * 1024, 1024, SECT_4K) },
-> +	{ "n25q512ax3",  INFO(0x20ba20, 0, 64 * 1024, 1024, USE_FSR) },
-> +	{ "n25q00",      INFO(0x20ba21, 0, 64 * 1024, 2048, USE_FSR) },
->  
->  	/* PMC */
->  	{ "pm25lv512",   INFO(0,        0, 32 * 1024,    2, SECT_4K_PMC) },
-> @@ -965,6 +1013,9 @@ int spi_nor_scan(struct spi_nor *nor, const struct spi_device_id *id,
->  	else
->  		mtd->_write = spi_nor_write;
->  
-> +	if (info->flags & USE_FSR)
-> +		nor->wait_till_ready = spi_nor_wait_till_fsr_ready;
-> +
-the drivers may fills this hook itself, so the code should like this:
-   --------------------------------------------------
-	if ((info->flags & USE_FSR) &&
-	       	nor->wait_till_ready == spi_nor_wait_till_fsr_ready)
-		nor->wait_till_ready = spi_nor_wait_till_fsr_ready;
-   --------------------------------------------------
+
+I got the bug to trigger again, this time it finally managed to hit a 
+debug_objects WARNING if that's any additional help.
+
+The bug followed the same pattern, software event 
+(PERF_TYPE_SOFTWARE / PERF_COUNT_SW_TASK_CLOCK) created, fork happens,
+event closes in parent, child killed, rcu grace period expires and kfree
+but event still active.
+
+here's the kernel message followed by excerpts from the trace, I can 
+provide full trace if anyone cares.
+
+Vince
+
+[ 2226.252441] ------------[ cut here ]------------
+[ 2226.257503] WARNING: CPU: 4 PID: 0 at lib/debugobjects.c:260 debug_print_object+0x83/0xa0()
+[ 2226.266545] ODEBUG: free active (active state 0) object type: hrtimer hint: perf_swevent_hrtimer+0x0/0x140
+[ 2226.276952] Modules linked in: fuse x86_pkg_temp_thermal intel_powerclamp snd_hda_codec_realtek snd_hda_codec_hdmi snd_hda_codec_generic coretemp snd_hda_intel snd_hda_controller snd_hda_codec snd_hwdep kvm i915 crct10dif_pclmul crc32_pclmul iTCO_wdt snd_pcm drm_kms_helper ghash_clmulni_intel iTCO_vendor_support snd_seq snd_timer snd_seq_device aesni_intel snd lpc_ich drm evdev i2c_i801 aes_x86_64 lrw gf128mul glue_helper ablk_helper cryptd psmouse soundcore serio_raw pcspkr i2c_algo_bit parport_pc parport mei_me mei mfd_core i2c_core wmi button processor video battery tpm_tis tpm sg sd_mod sr_mod crc_t10dif crct10dif_common cdrom ehci_pci ahci e1000e xhci_hcd ehci_hcd libahci libata ptp crc32c_intel usbcore scsi_mod usb_common pps_core fan thermal thermal_sys
+[ 2226.350769] CPU: 4 PID: 0 Comm: swapper/4 Not tainted 3.15.0-rc1+ #87
+[ 2226.357730] Hardware name: LENOVO 10AM000AUS/SHARKBAY, BIOS FBKT72AUS 01/26/2014
+[ 2226.365658]  0000000000000009 ffff88011eb03cd8 ffffffff8164f7b3 ffff88011eb03d20
+[ 2226.373728]  ffff88011eb03d10 ffffffff810647cd ffff8800ce03c888 ffffffff81c433e0
+[ 2226.381835]  ffffffff81a19730 ffff8800cf4e0000 ffff8800ce03c888 ffff88011eb03d70
+[ 2226.389820] Call Trace:
+[ 2226.392428]  <IRQ>  [<ffffffff8164f7b3>] dump_stack+0x45/0x56
+[ 2226.398595]  [<ffffffff810647cd>] warn_slowpath_common+0x7d/0xa0
+[ 2226.405059]  [<ffffffff8106483c>] warn_slowpath_fmt+0x4c/0x50
+[ 2226.411240]  [<ffffffff813cc9e3>] debug_print_object+0x83/0xa0
+[ 2226.417535]  [<ffffffff81139200>] ? __perf_event_overflow+0x270/0x270
+[ 2226.424463]  [<ffffffff813cde73>] debug_check_no_obj_freed+0x263/0x360
+[ 2226.431500]  [<ffffffff811316aa>] ? free_event_rcu+0x2a/0x30
+[ 2226.437579]  [<ffffffff81196fd0>] kfree+0xb0/0x560
+[ 2226.442740]  [<ffffffff810ccd46>] ? rcu_process_callbacks+0x236/0x620
+[ 2226.449658]  [<ffffffff81131680>] ? pmu_dev_release+0x10/0x10
+[ 2226.455811]  [<ffffffff811316aa>] free_event_rcu+0x2a/0x30
+[ 2226.461727]  [<ffffffff810ccdad>] rcu_process_callbacks+0x29d/0x620
+[ 2226.468440]  [<ffffffff810ccd46>] ? rcu_process_callbacks+0x236/0x620
+[ 2226.475384]  [<ffffffff81069ab5>] __do_softirq+0xf5/0x290
+[ 2226.481210]  [<ffffffff81069e9d>] irq_exit+0xad/0xc0
+[ 2226.486540]  [<ffffffff81662e35>] smp_apic_timer_interrupt+0x45/0x60
+[ 2226.493350]  [<ffffffff8166181d>] apic_timer_interrupt+0x6d/0x80
+[ 2226.499798]  <EOI>  [<ffffffff810d958e>] ? tick_nohz_idle_exit+0x12e/0x1b0
+[ 2226.507192]  [<ffffffff810aa7de>] cpu_startup_entry+0x12e/0x3d0
+[ 2226.513542]  [<ffffffff81042a43>] start_secondary+0x193/0x200
+[ 2226.519706] ---[ end trace ec55e71b02ef43b3 ]---
 
 
-thanks
-Huang Shijie
+Event Created:
+	<...>-13590 [000]  2225.706150: sys_enter:            NR 298 (699a70, 0, ffffffff, ffffffff, 8, 8)
+	<...>-13590 [000]  2225.706160: kmalloc:              (perf_event_alloc+0x55) call_site=ffffffff8113a565 ptr=0xffff8800cfa02000 bytes_req=1272 bytes_alloc=2048 gfp_flags=GFP_KERNEL|GFP_ZERO
+	<...>-13590 [000]  2225.706180: bprint:               SYSC_perf_event_open: Opened: 1 1 0 (PERF_TYPE_SOFTWARE,PERF_COUNT_SW_TASK_CLOCK)
+	<...>-13590 [000]  2225.706180: sys_exit:             NR 298 = 14 (0xe)
+
+Fork:
+	<...>-13590 [003]  2226.204981: sys_enter:            NR 56 (1200011, 0, 0, 7f6fab28b9d0, 0, 3516)
+
+Close in parent:
+	<...>-13590 [003]  2226.216548: sys_enter:            NR 3 (e, 11000, 11000, 22, 7f6fab0780b4, 7f6fab078120)
+	<...>-14467 [004]  2226.216548: mm_page_free:         page=0xffffea0002d567e0 pfn=47540192 order=0
+	<...>-13590 [003]  2226.216549: sys_exit:             NR 3 = 0
+
+Kill of child:
+	<...>-13590 [002]  2226.245087: sys_enter:            NR 62 (3884, 9, 7, 1, 7f6fab0780fc, 7f6fab078120)
+
+Grace period expire/kfree:
+	<idle>-0     [004]  2226.252428: kfree:               (free_event_rcu+0x2a) call_site=ffffffff811316aa ptr=0xffff8800cfa02000
+
