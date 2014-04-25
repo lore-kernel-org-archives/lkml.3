@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354AbaDYLTp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 07:19:45 -0400
-Received: from mail-pb0-f53.google.com ([209.85.160.53]:40734 "EHLO
-	mail-pb0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091AbaDYLSX (ORCPT
+	id S1753417AbaDYLV2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 07:21:28 -0400
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:59115 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751529AbaDYLVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 07:18:23 -0400
+	Fri, 25 Apr 2014 07:21:23 -0400
 From: Vivek Gautam <gautam.vivek@samsung.com>
 To: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
         devicetree@vger.kernel.org, linux-doc@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         gregkh@linuxfoundation.org, stern@rowland.harvard.edu, balbi@ti.com,
         kgene.kim@samsung.com, k.debski@samsung.com, jg1.han@samsung.com
-Subject: [PATCH v7 2/2] usb: ehci-exynos: Change to use phy provided by the generic phy framework
-Date: Fri, 25 Apr 2014 16:48:03 +0530
-Message-Id: <1398424683-20168-3-git-send-email-gautam.vivek@samsung.com>
+Subject: [PATCH v8 2/2] usb: ehci-exynos: Change to use phy provided by the generic phy framework
+Date: Fri, 25 Apr 2014 16:51:13 +0530
+Message-Id: <1398424873-20257-1-git-send-email-gautam.vivek@samsung.com>
 X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1398424683-20168-1-git-send-email-gautam.vivek@samsung.com>
-References: <1398424683-20168-1-git-send-email-gautam.vivek@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,7 +28,7 @@ Generic phy framework.
 Keeping the support for older USB phy intact right now, in order
 to prevent any functionality break in absence of relevant
 device tree side change for ehci-exynos.
-Once we move to new phy in the device nodes for ohci, we can
+Once we move to new phy in the device nodes for ehci, we can
 remove the support for older phys.
 
 Signed-off-by: Kamil Debski <k.debski@samsung.com>
@@ -40,6 +38,9 @@ added support for new exynos5-usb2phy in generic phy framework]
 [gautam.vivek@samsung.com: Edited the commit message]
 Signed-off-by: Vivek Gautam <gautam.vivek@samsung.com>
 ---
+
+Changes from v7:
+just edited in the commit message: s/ohci/ehci
 
 Although the patch-series is named as 'v2' version, but
 this patch is named as 'v7' since it is the next version of the patch
