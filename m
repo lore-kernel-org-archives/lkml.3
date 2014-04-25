@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987AbaDYQIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:08:19 -0400
-Received: from p3plex2out01.prod.phx3.secureserver.net ([184.168.131.12]:49357
-	"EHLO p3plex2out01.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752934AbaDYQIS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:08:18 -0400
-From: Hartley Sweeten <HartleyS@visionengravers.com>
-To: Chase Southwood <chase.southwood@gmail.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>
-CC: "abbotti@mev.co.uk" <abbotti@mev.co.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 2/2] staging: comedi: addi_apci_1564: board does not
- have analog outputs
-Thread-Topic: [PATCH 2/2] staging: comedi: addi_apci_1564: board does not
- have analog outputs
-Thread-Index: AQHPYF7tgCDWx0QIIk+5iGxkXsu9Wpsif4eg
-Date: Fri, 25 Apr 2014 16:08:16 +0000
-Message-ID: <DC148C5AA1CEBA4E87973D432B1C2D8825E18B91@P3PWEX4MB008.ex4.secureserver.net>
-References: <1398413826-19400-1-git-send-email-chase.southwood@gmail.com>
- <1398413890-19672-1-git-send-email-chase.southwood@gmail.com>
-In-Reply-To: <1398413890-19672-1-git-send-email-chase.southwood@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [184.183.19.121]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1753047AbaDYQJT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:09:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:29604 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751892AbaDYQJR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 12:09:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
+   d="scan'208";a="519794170"
+From: Mathias Nyman <mathias.nyman@linux.intel.com>
+To: <gregkh@linuxfoundation.org>
+Cc: <linux-usb@vger.kernel.org>, <sarah.a.sharp@linux.intel.com>,
+        <linux-kernel@vger.kernel.org>,
+        Mathias Nyman <mathias.nyman@linux.intel.com>
+Subject: [PATCH v2 0/4] xhci: fixes for 3.15-rc usb-linus
+Date: Fri, 25 Apr 2014 19:20:12 +0300
+Message-Id: <1398442816-32538-1-git-send-email-mathias.nyman@linux.intel.com>
+X-Mailer: git-send-email 1.8.3.2
 MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, April 25, 2014 1:18 AM, Chase Southwood wrote:
-> The board supported by this driver does not have analog outputs.  Remove
-> the subdevice init for it.
->
-> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
-> Cc: Ian Abbott <abbotti@mev.co.uk>
-> Cc: H Hartley Sweeten <hsweeten@visionengravers.com>
+Hi Greg                                                                                                
+                                                                                                       
+Second try at this xhci fixes series for 3.15-rc usb-linus.                                                         
+Most of them are very small fixes that didn't make                                                     
+it to 3.14, sitting and waiting for 3.15-rc1 to come out.                                              
+                                                                                                       
+Only the "Prefer endpoint context.." patch  by Julius has a bit more content.                          
+                                                                                                       
+These patches are picked together with Sarah, they are tested on top of                                
+3.15-rc1, and apply on your current usb-linus branch                                                   
 
-Looks good.
+changes since v1:
 
-Reviewed-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Drop "xhci: Use pci_enable_msix_exact() instead of pci_enable_msix()"
+from this fixes series, and move to for-usb-next (3.16) instead
+
+Add proper stable tags and information to commit messages    
+
+-Mathias                                   
+
+
+David Cohen (1):
+  usb/xhci: fix compilation warning when !CONFIG_PCI && !CONFIG_PM
+
+Denis Turischev (1):
+  xhci: Switch Intel Lynx Point ports to EHCI on shutdown.
+
+Igor Gnatenko (1):
+  xhci: extend quirk for Renesas cards
+
+Julius Werner (1):
+  usb: xhci: Prefer endpoint context dequeue pointer over stopped_trb
+
+ drivers/usb/host/xhci-pci.c  |  6 ++--
+ drivers/usb/host/xhci-ring.c | 67 ++++++++++++++++++++------------------------
+ drivers/usb/host/xhci.c      |  7 ++---
+ drivers/usb/host/xhci.h      |  2 --
+ 4 files changed, 37 insertions(+), 45 deletions(-)
+
+-- 
+1.8.3.2
 
