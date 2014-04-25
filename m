@@ -1,353 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753714AbaDYQ0O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:26:14 -0400
-Received: from mail-we0-f182.google.com ([74.125.82.182]:40327 "EHLO
-	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753271AbaDYQKS (ORCPT
+	id S1754108AbaDYQ1G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:27:06 -0400
+Received: from mail-pa0-f43.google.com ([209.85.220.43]:35640 "EHLO
+	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220AbaDYQKH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:10:18 -0400
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: matt.fleming@intel.com, catalin.marinas@arm.com, msalter@redhat.com,
-        grant.likely@linaro.org, roy.franz@linaro.org,
-        ard.biesheuvel@linaro.org, mark.rutland@arm.com,
-        linux-doc@vger.kernel.org
-Subject: [PATCH v2 05/10] efi: Add shared FDT related functions for ARM/ARM64
-Date: Fri, 25 Apr 2014 17:09:09 +0100
-Message-Id: <1398442154-19974-6-git-send-email-leif.lindholm@linaro.org>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
-References: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
+	Fri, 25 Apr 2014 12:10:07 -0400
+Message-ID: <535A88D5.3030008@gmail.com>
+Date: Fri, 25 Apr 2014 21:39:57 +0530
+From: Kumar Gaurav <kumargauravgupta3@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: kernel-janitors@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
+Subject: Clarification needed on use of put_user inside a loop
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roy Franz <roy.franz@linaro.org>
+Hi All,
 
-Both ARM and ARM64 stubs will update the device tree that they pass to
-the kernel.  In both cases they primarily need to add the same UEFI
-related information, so the function can be shared.  Create a new FDT
-related file for this to avoid use of architecture #ifdefs in
-efi-stub-helper.c.
+function put_user() is used to transfer small bytes of data (1-8 byte) 
+from kernel space to user space and before transferring, it checks for 
+the user's access over that memory area (in user space of-course) using 
+function access_ok(). function __put_user() is used for same purpose but 
+it skips checking permission part.
 
-Signed-off-by: Roy Franz <roy.franz@linaro.org>
-[ Fixed memory node deletion code. ]
-Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
-Acked-by: Grant Likely <grant.likely@linaro.org>
----
- drivers/firmware/efi/fdt.c |  285 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/efi.h        |    3 +
- 2 files changed, 288 insertions(+)
- create mode 100644 drivers/firmware/efi/fdt.c
+Hence when transferring data involves loops then checking permission 
+(using access_ok()) once should be good to go then after we can simply 
+transfer data using __put_user(), instead of using put_user() itself in 
+loop.
 
-diff --git a/drivers/firmware/efi/fdt.c b/drivers/firmware/efi/fdt.c
-new file mode 100644
-index 0000000..5c6a8e8
---- /dev/null
-+++ b/drivers/firmware/efi/fdt.c
-@@ -0,0 +1,285 @@
-+/*
-+ * FDT related Helper functions used by the EFI stub on multiple
-+ * architectures. This should be #included by the EFI stub
-+ * implementation files.
-+ *
-+ * Copyright 2013 Linaro Limited; author Roy Franz
-+ *
-+ * This file is part of the Linux kernel, and is made available
-+ * under the terms of the GNU General Public License version 2.
-+ *
-+ */
-+
-+static efi_status_t update_fdt(efi_system_table_t *sys_table, void *orig_fdt,
-+			       unsigned long orig_fdt_size,
-+			       void *fdt, int new_fdt_size, char *cmdline_ptr,
-+			       u64 initrd_addr, u64 initrd_size,
-+			       efi_memory_desc_t *memory_map,
-+			       unsigned long map_size, unsigned long desc_size,
-+			       u32 desc_ver)
-+{
-+	int node, prev;
-+	int status;
-+	u32 fdt_val32;
-+	u64 fdt_val64;
-+
-+	/*
-+	 * Copy definition of linux_banner here.  Since this code is
-+	 * built as part of the decompressor for ARM v7, pulling
-+	 * in version.c where linux_banner is defined for the
-+	 * kernel brings other kernel dependencies with it.
-+	 */
-+	const char linux_banner[] =
-+	    "Linux version " UTS_RELEASE " (" LINUX_COMPILE_BY "@"
-+	    LINUX_COMPILE_HOST ") (" LINUX_COMPILER ") " UTS_VERSION "\n";
-+
-+	/* Do some checks on provided FDT, if it exists*/
-+	if (orig_fdt) {
-+		if (fdt_check_header(orig_fdt)) {
-+			pr_efi_err(sys_table, "Device Tree header not valid!\n");
-+			return EFI_LOAD_ERROR;
-+		}
-+		/*
-+		 * We don't get the size of the FDT if we get if from a
-+		 * configuration table.
-+		 */
-+		if (orig_fdt_size && fdt_totalsize(orig_fdt) > orig_fdt_size) {
-+			pr_efi_err(sys_table, "Truncated device tree! foo!\n");
-+			return EFI_LOAD_ERROR;
-+		}
-+	}
-+
-+	if (orig_fdt)
-+		status = fdt_open_into(orig_fdt, fdt, new_fdt_size);
-+	else
-+		status = fdt_create_empty_tree(fdt, new_fdt_size);
-+
-+	if (status != 0)
-+		goto fdt_set_fail;
-+
-+	/*
-+	 * Delete any memory nodes present. We must delete nodes which
-+	 * early_init_dt_scan_memory may try to use.
-+	 */
-+	prev = 0;
-+	for (;;) {
-+		const char *type, *name;
-+		int len;
-+
-+		node = fdt_next_node(fdt, prev, NULL);
-+		if (node < 0)
-+			break;
-+
-+		type = fdt_getprop(fdt, node, "device_type", &len);
-+		if (type && strncmp(type, "memory", len) == 0) {
-+			fdt_del_node(fdt, node);
-+			continue;
-+		}
-+
-+		prev = node;
-+	}
-+
-+	node = fdt_subnode_offset(fdt, 0, "chosen");
-+	if (node < 0) {
-+		node = fdt_add_subnode(fdt, 0, "chosen");
-+		if (node < 0) {
-+			status = node; /* node is error code when negative */
-+			goto fdt_set_fail;
-+		}
-+	}
-+
-+	if ((cmdline_ptr != NULL) && (strlen(cmdline_ptr) > 0)) {
-+		status = fdt_setprop(fdt, node, "bootargs", cmdline_ptr,
-+				     strlen(cmdline_ptr) + 1);
-+		if (status)
-+			goto fdt_set_fail;
-+	}
-+
-+	/* Set initrd address/end in device tree, if present */
-+	if (initrd_size != 0) {
-+		u64 initrd_image_end;
-+		u64 initrd_image_start = cpu_to_fdt64(initrd_addr);
-+
-+		status = fdt_setprop(fdt, node, "linux,initrd-start",
-+				     &initrd_image_start, sizeof(u64));
-+		if (status)
-+			goto fdt_set_fail;
-+		initrd_image_end = cpu_to_fdt64(initrd_addr + initrd_size);
-+		status = fdt_setprop(fdt, node, "linux,initrd-end",
-+				     &initrd_image_end, sizeof(u64));
-+		if (status)
-+			goto fdt_set_fail;
-+	}
-+
-+	/* Add FDT entries for EFI runtime services in chosen node. */
-+	node = fdt_subnode_offset(fdt, 0, "chosen");
-+	fdt_val64 = cpu_to_fdt64((u64)(unsigned long)sys_table);
-+	status = fdt_setprop(fdt, node, "linux,uefi-system-table",
-+			     &fdt_val64, sizeof(fdt_val64));
-+	if (status)
-+		goto fdt_set_fail;
-+
-+	fdt_val64 = cpu_to_fdt64((u64)(unsigned long)memory_map);
-+	status = fdt_setprop(fdt, node, "linux,uefi-mmap-start",
-+			     &fdt_val64,  sizeof(fdt_val64));
-+	if (status)
-+		goto fdt_set_fail;
-+
-+	fdt_val32 = cpu_to_fdt32(map_size);
-+	status = fdt_setprop(fdt, node, "linux,uefi-mmap-size",
-+			     &fdt_val32,  sizeof(fdt_val32));
-+	if (status)
-+		goto fdt_set_fail;
-+
-+	fdt_val32 = cpu_to_fdt32(desc_size);
-+	status = fdt_setprop(fdt, node, "linux,uefi-mmap-desc-size",
-+			     &fdt_val32, sizeof(fdt_val32));
-+	if (status)
-+		goto fdt_set_fail;
-+
-+	fdt_val32 = cpu_to_fdt32(desc_ver);
-+	status = fdt_setprop(fdt, node, "linux,uefi-mmap-desc-ver",
-+			     &fdt_val32, sizeof(fdt_val32));
-+	if (status)
-+		goto fdt_set_fail;
-+
-+	/*
-+	 * Add kernel version banner so stub/kernel match can be
-+	 * verified.
-+	 */
-+	status = fdt_setprop_string(fdt, node, "linux,uefi-stub-kern-ver",
-+			     linux_banner);
-+	if (status)
-+		goto fdt_set_fail;
-+
-+	return EFI_SUCCESS;
-+
-+fdt_set_fail:
-+	if (status == -FDT_ERR_NOSPACE)
-+		return EFI_BUFFER_TOO_SMALL;
-+
-+	return EFI_LOAD_ERROR;
-+}
-+
-+#ifndef EFI_FDT_ALIGN
-+#define EFI_FDT_ALIGN EFI_PAGE_SIZE
-+#endif
-+
-+/*
-+ * Allocate memory for a new FDT, then add EFI, commandline, and
-+ * initrd related fields to the FDT.  This routine increases the
-+ * FDT allocation size until the allocated memory is large
-+ * enough.  EFI allocations are in EFI_PAGE_SIZE granules,
-+ * which are fixed at 4K bytes, so in most cases the first
-+ * allocation should succeed.
-+ * EFI boot services are exited at the end of this function.
-+ * There must be no allocations between the get_memory_map()
-+ * call and the exit_boot_services() call, so the exiting of
-+ * boot services is very tightly tied to the creation of the FDT
-+ * with the final memory map in it.
-+ */
-+
-+efi_status_t allocate_new_fdt_and_exit_boot(efi_system_table_t *sys_table,
-+					    void *handle,
-+					    unsigned long *new_fdt_addr,
-+					    unsigned long max_addr,
-+					    u64 initrd_addr, u64 initrd_size,
-+					    char *cmdline_ptr,
-+					    unsigned long fdt_addr,
-+					    unsigned long fdt_size)
-+{
-+	unsigned long map_size, desc_size;
-+	u32 desc_ver;
-+	unsigned long mmap_key;
-+	efi_memory_desc_t *memory_map;
-+	unsigned long new_fdt_size;
-+	efi_status_t status;
-+
-+	/*
-+	 * Estimate size of new FDT, and allocate memory for it. We
-+	 * will allocate a bigger buffer if this ends up being too
-+	 * small, so a rough guess is OK here.
-+	 */
-+	new_fdt_size = fdt_size + EFI_PAGE_SIZE;
-+	while (1) {
-+		status = efi_high_alloc(sys_table, new_fdt_size, EFI_FDT_ALIGN,
-+					new_fdt_addr, max_addr);
-+		if (status != EFI_SUCCESS) {
-+			pr_efi_err(sys_table, "Unable to allocate memory for new device tree.\n");
-+			goto fail;
-+		}
-+
-+		/*
-+		 * Now that we have done our final memory allocation (and free)
-+		 * we can get the memory map key  needed for
-+		 * exit_boot_services().
-+		 */
-+		status = efi_get_memory_map(sys_table, &memory_map, &map_size,
-+					    &desc_size, &desc_ver, &mmap_key);
-+		if (status != EFI_SUCCESS)
-+			goto fail_free_new_fdt;
-+
-+		status = update_fdt(sys_table,
-+				    (void *)fdt_addr, fdt_size,
-+				    (void *)*new_fdt_addr, new_fdt_size,
-+				    cmdline_ptr, initrd_addr, initrd_size,
-+				    memory_map, map_size, desc_size, desc_ver);
-+
-+		/* Succeeding the first time is the expected case. */
-+		if (status == EFI_SUCCESS)
-+			break;
-+
-+		if (status == EFI_BUFFER_TOO_SMALL) {
-+			/*
-+			 * We need to allocate more space for the new
-+			 * device tree, so free existing buffer that is
-+			 * too small.  Also free memory map, as we will need
-+			 * to get new one that reflects the free/alloc we do
-+			 * on the device tree buffer.
-+			 */
-+			efi_free(sys_table, new_fdt_size, *new_fdt_addr);
-+			sys_table->boottime->free_pool(memory_map);
-+			new_fdt_size += EFI_PAGE_SIZE;
-+		} else {
-+			pr_efi_err(sys_table, "Unable to constuct new device tree.\n");
-+			goto fail_free_mmap;
-+		}
-+	}
-+
-+	/* Now we are ready to exit_boot_services.*/
-+	status = sys_table->boottime->exit_boot_services(handle, mmap_key);
-+
-+
-+	if (status == EFI_SUCCESS)
-+		return status;
-+
-+	pr_efi_err(sys_table, "Exit boot services failed.\n");
-+
-+fail_free_mmap:
-+	sys_table->boottime->free_pool(memory_map);
-+
-+fail_free_new_fdt:
-+	efi_free(sys_table, new_fdt_size, *new_fdt_addr);
-+
-+fail:
-+	return EFI_LOAD_ERROR;
-+}
-+
-+static void *get_fdt(efi_system_table_t *sys_table)
-+{
-+	efi_guid_t fdt_guid = DEVICE_TREE_GUID;
-+	efi_config_table_t *tables;
-+	void *fdt;
-+	int i;
-+
-+	tables = (efi_config_table_t *) sys_table->tables;
-+	fdt = NULL;
-+
-+	for (i = 0; i < sys_table->nr_tables; i++)
-+		if (efi_guidcmp(tables[i].guid, fdt_guid) == 0) {
-+			fdt = (void *) tables[i].table;
-+			break;
-+	 }
-+
-+	return fdt;
-+}
-diff --git a/include/linux/efi.h b/include/linux/efi.h
-index 4f52ac6..ae3e2b2 100644
---- a/include/linux/efi.h
-+++ b/include/linux/efi.h
-@@ -575,6 +575,9 @@ typedef efi_status_t efi_query_variable_store_t(u32 attributes, unsigned long si
- #define EFI_FILE_SYSTEM_GUID \
-     EFI_GUID(  0x964e5b22, 0x6459, 0x11d2, 0x8e, 0x39, 0x00, 0xa0, 0xc9, 0x69, 0x72, 0x3b )
- 
-+#define DEVICE_TREE_GUID \
-+    EFI_GUID(  0xb1b621d5, 0xf19c, 0x41a5, 0x83, 0x0b, 0xd9, 0x15, 0x2c, 0x69, 0xaa, 0xe0 )
-+
- typedef struct {
- 	efi_guid_t guid;
- 	u64 table;
--- 
-1.7.10.4
+I have  found some codes in the driver which use put_user() in loop. Can 
+we avoid the overhead of checking the same memory area( where put_user() 
+writes) again n again using __put_user() in side loop and checking 
+permission using access_ok before entering the loop?
 
+Below is one of the codes I found.
+File Name:sound/pci/hda/patch_hdmi.c
+
+Code
+-----------
+for (i = 0; i < ARRAY_SIZE(channel_allocations); i++, cap++) { //line 
+number 1928
+                         int chs_bytes = chs * 4;
+                         int type = 
+spec->ops.chmap_cea_alloc_validate_get_type(cap, chs);
+                         unsigned int tlv_chmap[8];
+
+                         if (type < 0)
+                                 continue;
+                         if (size < 8)
+                                 return -ENOMEM;
+                         if (put_user(type, dst) ||
+                             put_user(chs_bytes, dst + 1))
+                                 return -EFAULT;
+                         dst += 2;
+                         size -= 8;
+                         count += 8;
+                         if (size < chs_bytes)
+                                 return -ENOMEM;
+                         size -= chs_bytes;
+                         count += chs_bytes;
+                         spec->ops.cea_alloc_to_tlv_chmap(cap, 
+tlv_chmap, chs);
+                         if (copy_to_user(dst, tlv_chmap, chs_bytes))
+                                 return -EFAULT;
+                         dst += chs;
+                 }
+---------------------------
+Please revert with comment on whether I am correct or not. If yes, I'll 
+submit the patches for upgrading codes to skip the overhead of checking 
+memory area for permission.
+
+Regards,
+Kumar Gaurav
