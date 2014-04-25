@@ -1,103 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752823AbaDYQGQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:06:16 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:51911 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637AbaDYQGE (ORCPT
+	id S1752870AbaDYQG5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:06:57 -0400
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:65480 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752619AbaDYQGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:06:04 -0400
-Date: Fri, 25 Apr 2014 18:05:53 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Vincent Guittot <vincent.guittot@linaro.org>
-Cc: Dietmar Eggemann <dietmar.eggemann@arm.com>,
-        "mingo@kernel.org" <mingo@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "tony.luck@intel.com" <tony.luck@intel.com>,
-        "fenghua.yu@intel.com" <fenghua.yu@intel.com>,
-        "schwidefsky@de.ibm.com" <schwidefsky@de.ibm.com>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "preeti@linux.vnet.ibm.com" <preeti@linux.vnet.ibm.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>
-Subject: Re: [PATCH v4 5/5] sched: ARM: create a dedicated scheduler topology
- table
-Message-ID: <20140425160553.GW13658@twins.programming.kicks-ass.net>
-References: <1397209481-28542-1-git-send-email-vincent.guittot@linaro.org>
- <1397209481-28542-6-git-send-email-vincent.guittot@linaro.org>
- <5357A802.1030804@arm.com>
- <CAKfTPtDnw-OZZekdE3oNGS11m6dfpS4veMNZ_Bezs-Lm7zn6QQ@mail.gmail.com>
- <5357DBA5.1010106@arm.com>
- <CAKfTPtAOZqnP=sWeJuqFAqrGT8vLQZKj+tpqiwOTG37paXoGjg@mail.gmail.com>
- <53590835.9090803@arm.com>
- <CAKfTPtAq8PXS-n7A0W6ESe08m-6O3u84BcY3==+-0+63+uca9g@mail.gmail.com>
- <20140425160419.GL11096@twins.programming.kicks-ass.net>
+	Fri, 25 Apr 2014 12:06:52 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140425160419.GL11096@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <1398420888-5506-3-git-send-email-ch.naveen@samsung.com>
+References: <1398420888-5506-1-git-send-email-ch.naveen@samsung.com>
+	<1398420888-5506-3-git-send-email-ch.naveen@samsung.com>
+Date: Fri, 25 Apr 2014 09:06:51 -0700
+X-Google-Sender-Auth: PKDJ_JcttbMvW5VsZ7fM3zLR0yc
+Message-ID: <CAD=FV=UOBcC92xxvtuQuzD-1zxT-hgGWJWajOUjeagHVBHYENw@mail.gmail.com>
+Subject: Re: [PATCH 2/5] iio: exynos_adc: rearrange clock and regulator
+ enable/disable calls
+From: Doug Anderson <dianders@chromium.org>
+To: Naveen Krishna Chatradhi <ch.naveen@samsung.com>,
+        Jonathan Cameron <jic23@kernel.org>
+Cc: linux-iio <linux-iio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Naveen Krishna <naveenkrishna.ch@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, "cpgs ." <cpgs@samsung.com>,
+        Grant Grundler <grundler@chromium.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 06:04:19PM +0200, Peter Zijlstra wrote:
-> > The example above is consistent because CPU2 mask and CPU0 mask are
-> > fully exclusive
-> > 
-> > so
-> > CPU0: cpu_corepower_mask=0-1
-> > CPU2: cpu_corepower_mask=2
-> > are consistent
-> > 
-> > CPU0: cpu_corepower_mask=0-2
-> > CPU2: cpu_corepower_mask=0-2
-> > are also consistent
-> > 
-> > but
-> > 
-> > CPU0: cpu_corepower_mask=0-1
-> > CPU2: cpu_corepower_mask=0-2
-> > are not consistent
-> > 
-> > and your example uses the last configuration
-> > 
-> > To be more precise, the rule above applies on default SDT definition
-> > but the flag SD_OVERLAP enables such kind of overlap between group.
-> > Have you tried it ?
-> 
-> I've never tried degenerate stuff with SD_OVERLAP, it might horribly
-> explode -- its not actually meant to work.
-> 
-> The SD_OVERLAP comes from not fully connected NUMA topologies; suppose
-> something like:
-> 
->         0------1
->         |      |
->         |      |
->         2------3
-> 
-> or:
-> 
->  ( 10 20 20  0 )
->  ( 20 10  0 20 )
->  ( 20  0 10 20 )
->  (  0 20 20 10 )
+Naveen,
 
-d'0h: s/0/30/
+On Fri, Apr 25, 2014 at 3:14 AM, Naveen Krishna Chatradhi
+<ch.naveen@samsung.com> wrote:
+> From: Naveen Krishna Ch <ch.naveen@samsung.com>
+>
+> This patch maintains the following order in
+> probe(), remove(), resume() and suspend() calls
+>
+> regulator enable, clk prepare enable
+> ...
+> clk disable unprepare, regulator disable
+>
+> While at it,
+> 1. enable the regulator before the iio_device_register()
+> 2. handle the return values for enable/disable calls
+>
+> Change-Id: I764d9d60f72caa7ea6b0609db49a74115574f081
+> Signed-off-by: Naveen Krishna Ch <ch.naveen@samsung.com>
+> ---
+> This change fixes the comments given by Jonathan regarding the
+> order of clock and regulator enable/disable calls.
+> https://lkml.org/lkml/2014/4/23/644
+>
+>  drivers/iio/adc/exynos_adc.c |   34 ++++++++++++++++++++--------------
+>  1 file changed, 20 insertions(+), 14 deletions(-)
+>
+> diff --git a/drivers/iio/adc/exynos_adc.c b/drivers/iio/adc/exynos_adc.c
+> index affa93f..a2b8b1a 100644
+> --- a/drivers/iio/adc/exynos_adc.c
+> +++ b/drivers/iio/adc/exynos_adc.c
+> @@ -316,6 +316,14 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>                 goto err_irq;
+>         }
+>
+> +       ret = regulator_enable(info->vdd);
+> +       if (ret)
+> +               goto err_irq;
+> +
+> +       ret = clk_prepare_enable(info->clk);
+> +       if (ret)
+> +               goto err_disable_reg;
+> +
+>         info->version = exynos_adc_get_version(pdev);
+>
+>         platform_set_drvdata(pdev, indio_dev);
+> @@ -334,13 +342,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>
+>         ret = iio_device_register(indio_dev);
+>         if (ret)
+> -               goto err_irq;
+> -
+> -       ret = regulator_enable(info->vdd);
+> -       if (ret)
+> -               goto err_iio_dev;
+> -
+> -       clk_prepare_enable(info->clk);
+> +               goto err_disable_clk;
+>
+>         exynos_adc_hw_init(info);
+>
+> @@ -355,10 +357,11 @@ static int exynos_adc_probe(struct platform_device *pdev)
+>  err_of_populate:
+>         device_for_each_child(&indio_dev->dev, NULL,
+>                                 exynos_adc_remove_devices);
+> -       regulator_disable(info->vdd);
+> -       clk_disable_unprepare(info->clk);
+> -err_iio_dev:
+>         iio_device_unregister(indio_dev);
+> +err_disable_clk:
+> +       clk_disable_unprepare(info->clk);
+> +err_disable_reg:
+> +       regulator_disable(info->vdd);
+>  err_irq:
+>         free_irq(info->irq, info);
+>         return ret;
+> @@ -371,9 +374,10 @@ static int exynos_adc_remove(struct platform_device *pdev)
+>
+>         device_for_each_child(&indio_dev->dev, NULL,
+>                                 exynos_adc_remove_devices);
+> -       regulator_disable(info->vdd);
+>         clk_disable_unprepare(info->clk);
+> +       regulator_disable(info->vdd);
+>         writel(0, info->enable_reg);
+> +
 
-0 <-> 3 is 2 hops, too focused on the single hop case
+This function still looks wrong.  The order of things should generally
+match the error case of probe, which is the reverse of how things are
+initted.
 
-> Your domain level that models the single-hop/20 distance has overlapping
-> masks:
-> 
-> N0: 0-2
-> N1: 0,1,3
-> N2: 0,2,3
-> N3: 1-3
-> 
-> I've never tried to construct a NUMA topology that would be overlapping
-> and have redundant bits in.
+Specifically you shouldn't be doing "iio_device_unregister(indio_dev);" last.
+
+Technically it's also a very good idea to free the irq much earlier.
+...and in probe you should request it later.
+
+The request_irq should probably be right before the register function
+in probe and the free_irq should be right after unregister in remove.
+
+
+>         iio_device_unregister(indio_dev);
+>         free_irq(info->irq, info);
+>
+> @@ -398,8 +402,8 @@ static int exynos_adc_suspend(struct device *dev)
+>         }
+>
+>         clk_disable_unprepare(info->clk);
+> -       writel(0, info->enable_reg);
+>         regulator_disable(info->vdd);
+> +       writel(0, info->enable_reg);
+
+This change looks wrong to me.  I'd believe that the rule should
+always be that the regulator is enabled early and disabled late.
+
+
+>         return 0;
+>  }
+> @@ -410,12 +414,14 @@ static int exynos_adc_resume(struct device *dev)
+>         struct exynos_adc *info = iio_priv(indio_dev);
+>         int ret;
+>
+> +       writel(1, info->enable_reg);
+>         ret = regulator_enable(info->vdd);
+>         if (ret)
+>                 return ret;
+
+Same here.  Should enable the regulator first, I think.
