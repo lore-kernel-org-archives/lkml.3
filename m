@@ -1,100 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015AbaDYMqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 08:46:11 -0400
-Received: from mail-yk0-f180.google.com ([209.85.160.180]:62683 "EHLO
-	mail-yk0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaDYMqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 08:46:08 -0400
-Date: Fri, 25 Apr 2014 09:46:02 -0300
-From: Gustavo Padovan <gustavo@padovan.org>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: bluetooth 2014-04-25
-Message-ID: <20140425124602.GF7832@joana>
-Mail-Followup-To: Gustavo Padovan <gustavo@padovan.org>,
-	linville@tuxdriver.com, linux-wireless@vger.kernel.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1753609AbaDYMqs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 08:46:48 -0400
+Received: from mga09.intel.com ([134.134.136.24]:19594 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753524AbaDYMqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 08:46:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
+   d="scan'208";a="528280581"
+Message-ID: <535A5932.4030506@linux.intel.com>
+Date: Fri, 25 Apr 2014 20:46:42 +0800
+From: "Jin, Yao" <yao.jin@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Md/poaVZ8hnGTzuv"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mika Westerberg <mika.westerberg@linux.intel.com>
+CC: Adam Williamson <awilliam@redhat.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
+        mathias.nyman@intel.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        aubrey.li@intel.com
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
+ ASUS T100TA
+References: <1398007690.2674.0.camel@adam.happyassassin.net> <5354BA59.2000008@linux.intel.com> <53551D0F.40906@linux.intel.com> <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com> <1398230210.2704.8.camel@adam.happyassassin.net> <20140423083430.GV30677@intel.com> <20140423122344.GX30677@intel.com> <5359120E.2030007@linux.intel.com> <1398375234.2708.122.camel@adam.happyassassin.net> <535A0E6E.7000900@linux.intel.com> <20140425094038.GK30677@intel.com>
+In-Reply-To: <20140425094038.GK30677@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---Md/poaVZ8hnGTzuv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi John,
+On 2014/4/25 17:40, Mika Westerberg wrote:
+> [+Aubrey]
+> 
+> On Fri, Apr 25, 2014 at 03:27:42PM +0800, Jin, Yao wrote:
+>>
+>>
+>> On 2014/4/25 5:33, Adam Williamson wrote:
+>>> On Thu, 2014-04-24 at 21:30 +0800, Jin, Yao wrote:
+>>>
+>>>>> Jin, do you have any idea what is going on?
+>>>>>
+>>>>
+>>>> Maybe neither the patch (http://dougvj.net/baytrail_gpio_quirk_v3.patch)
+>>>> nor my patch breaks the touch screen.
+>>>>
+>>>> I have tried the clean 3.15-rc2 with following patch which just adds
+>>>> back the ACPIID "INT33FC", but the touch screen still doesn't work (To
+>>>> avoid the i915 crash issue, I use with the boot option "nomodeset" in test).
+>>>>
+>>>> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+>>>> index 69e29f4..d79c6d7 100644
+>>>> --- a/drivers/acpi/acpi_lpss.c
+>>>> +++ b/drivers/acpi/acpi_lpss.c
+>>>> @@ -180,6 +180,7 @@ static const struct acpi_device_id
+>>>> acpi_lpss_device_ids[] = {
+>>>>         { "80860F14", (unsigned long)&byt_sdio_dev_desc },
+>>>>         { "80860F41", (unsigned long)&byt_i2c_dev_desc },
+>>>>         { "INT33B2", },
+>>>> +       { "INT33FC", },
+>>>>
+>>>>         { "INT3430", (unsigned long)&lpt_dev_desc },
+>>>>         { "INT3431", (unsigned long)&lpt_dev_desc },
+>>>> diff --git a/drivers/pinctrl/pinctrl-baytrail.c
+>>>> b/drivers/pinctrl/pinctrl-baytrail.c
+>>>> index 6e8301f..447f1dc 100644
+>>>> --- a/drivers/pinctrl/pinctrl-baytrail.c
+>>>> +++ b/drivers/pinctrl/pinctrl-baytrail.c
+>>>> @@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
+>>>>
+>>>>  static const struct acpi_device_id byt_gpio_acpi_match[] = {
+>>>>         { "INT33B2", 0 },
+>>>> +       { "INT33FC", 0 },
+>>>>         { }
+>>>>  };
+>>>>  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
+>>>>
+>>>> Since the clean 3.15-rc2 doesn't contain "INT33FC", so the baytrail gpio
+>>>> doesn't actually go into effect.
+>>>
+>>> Well, I just ran another test too. I built a kernel (3.15rc2) with both
+>>> v3 of Doug's SDIO device enumeration patch -
+>>> http://dougvj.net/baytrail_gpio_quirk_v3.patch - and the new patch for
+>>> the IRQ allocation issue by Thomas Gleixner,
+>>> https://patchwork.kernel.org/patch/4051581/ . That kernel gives me a
+>>> working touchscreen. Note that
+>>> http://dougvj.net/baytrail_gpio_quirk_v3.patch includes both the blocks
+>>> you mention (i.e. it adds INT33FC in both places).
+>>>
+>>> So, it really seems like for me at least, it's the combination of Doug's
+>>> patch and your approach to fixing the IRQ allocation issue that breaks
+>>> the touchscreen. Thomas' approach, even combined with Doug's patch,
+>>> seems to work fine.
+>>>
+>>
+>> I'm trying the clean upstream 3.15-rc2 with the patch by Thomas Gleixner
+>> (https://patchwork.kernel.org/patch/4051581/) and the patch as following
+>> which only adds INT33FC, the touch screen doesn't work. I didn't add
+>> Doug's SDIO device enumeration patch in this test.
+>>
+>> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+>> index 69e29f4..d79c6d7 100644
+>> --- a/drivers/acpi/acpi_lpss.c
+>> +++ b/drivers/acpi/acpi_lpss.c
+>> @@ -180,6 +180,7 @@ static const struct acpi_device_id
+>> acpi_lpss_device_ids[] = {
+>>         { "80860F14", (unsigned long)&byt_sdio_dev_desc },
+>>         { "80860F41", (unsigned long)&byt_i2c_dev_desc },
+>>         { "INT33B2", },
+>> +       { "INT33FC", },
+>>
+>>         { "INT3430", (unsigned long)&lpt_dev_desc },
+>>         { "INT3431", (unsigned long)&lpt_dev_desc },
+>> diff --git a/drivers/pinctrl/pinctrl-baytrail.c
+>> b/drivers/pinctrl/pinctrl-baytrail.c
+>> index 6e8301f..447f1dc 100644
+>> --- a/drivers/pinctrl/pinctrl-baytrail.c
+>> +++ b/drivers/pinctrl/pinctrl-baytrail.c
+>> @@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
+>>
+>>  static const struct acpi_device_id byt_gpio_acpi_match[] = {
+>>         { "INT33B2", 0 },
+>> +       { "INT33FC", 0 },
+>>         { }
+>>  };
+>>  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
+>>
+>> It's still not clear to me why the touch screen doesn't work. As above
+>> test, my patch is not added in.
+> 
+> With patch from Thomas and below patch, I got working touchscreen. Note
+> that you need to disable runtime PM from SDHCI (or from some other LPSS
+> driver) so that the LPSS stays functional. Once all devices are powered
+> off, the block doesn't wake up anymore. Aubrey is investigating that.
+> 
+> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> index 69e29f409d4c..d79c6d7f598e 100644
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -180,6 +180,7 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+>  	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
+>  	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
+>  	{ "INT33B2", },
+> +	{ "INT33FC", },
+>  
+>  	{ "INT3430", (unsigned long)&lpt_dev_desc },
+>  	{ "INT3431", (unsigned long)&lpt_dev_desc },
+> diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
+> index ebb3f392b589..c5d4185380b1 100644
+> --- a/drivers/mmc/host/sdhci-acpi.c
+> +++ b/drivers/mmc/host/sdhci-acpi.c
+> @@ -130,8 +130,7 @@ static const struct sdhci_acpi_slot sdhci_acpi_slot_int_sdio = {
+>  };
+>  
+>  static const struct sdhci_acpi_slot sdhci_acpi_slot_int_sd = {
+> -	.flags   = SDHCI_ACPI_SD_CD | SDHCI_ACPI_SD_CD_OVERRIDE_LEVEL |
+> -		   SDHCI_ACPI_RUNTIME_PM,
+> +	.flags   = SDHCI_ACPI_SD_CD | SDHCI_ACPI_SD_CD_OVERRIDE_LEVEL,
+>  	.quirks2 = SDHCI_QUIRK2_CARD_ON_NEEDS_BUS_ON,
+>  };
+>  
+> diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
+> index 6e8301f77187..7c65c9dab215 100644
+> --- a/drivers/pinctrl/pinctrl-baytrail.c
+> +++ b/drivers/pinctrl/pinctrl-baytrail.c
+> @@ -527,12 +527,6 @@ static int byt_gpio_probe(struct platform_device *pdev)
+>  	gc->can_sleep = false;
+>  	gc->dev = dev;
+>  
+> -	ret = gpiochip_add(gc);
+> -	if (ret) {
+> -		dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
+> -		return ret;
+> -	}
+> -
+>  	/* set up interrupts  */
+>  	irq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+>  	if (irq_rc && irq_rc->start) {
+> @@ -550,6 +544,12 @@ static int byt_gpio_probe(struct platform_device *pdev)
+>  		irq_set_chained_handler(hwirq, byt_gpio_irq_handler);
+>  	}
+>  
+> +	ret = gpiochip_add(gc);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
+> +		return ret;
+> +	}
+> +
+>  	pm_runtime_enable(dev);
+>  
+>  	return 0;
+> @@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
+>  
+>  static const struct acpi_device_id byt_gpio_acpi_match[] = {
+>  	{ "INT33B2", 0 },
+> +	{ "INT33FC", 0 },
+>  	{ }
+>  };
+>  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
+> 
 
-Some fixes for 3.15. There is a revert for the intel driver, a new device i=
-d,
-and two important SSP fixes from Johan. This one is rebased on wireless/mas=
-ter.
-
-Please pull or let me know of any concerns you have. Thanks!
-=09
-	Gustavo
-
----
-The following changes since commit ffa216bb5eecfce0f01b0b2a95d5c320dde90005:
-
-  brcmfmac: Fix brcmf_chip_ai_coredisable not applying reset bits to BCMA_I=
-OCTL (2014-04-24 21:46:22 -0400)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth.git for=
--upstream
-
-for you to fetch changes up to 1fb4e09a7e780b915dbd172592ae7e2a4c071065:
-
-  Bluetooth: Add support for Lite-on [04ca:3007] (2014-04-25 09:47:16 +0300)
-
-----------------------------------------------------------------
-Johan Hedberg (2):
-      Bluetooth: Fix triggering BR/EDR L2CAP Connect too early
-      Bluetooth: Fix redundant encryption request for reauthentication
-
-Marcel Holtmann (1):
-      Revert "Bluetooth: Enable autosuspend for Intel Bluetooth device"
-
-Mohammed Habibulla (1):
-      Bluetooth: Add support for Lite-on [04ca:3007]
-
- drivers/bluetooth/ath3k.c | 2 ++
- drivers/bluetooth/btusb.c | 5 ++---
- net/bluetooth/hci_conn.c  | 9 ++++++---
- net/bluetooth/hci_event.c | 6 ++++++
- 4 files changed, 16 insertions(+), 6 deletions(-)
-
-
---Md/poaVZ8hnGTzuv
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJTWlkKAAoJEPs3PUX4s20oaP8P/0L4mTwU2Ek/GSV3MGv+sZx+
-8jeW319sWQYW9jo1CqNOqbgvuSecgnaptHInuz5AlHnjHycRlB4o3vRWgeqHhbRf
-1v/zB5iyXjinvd7r32d5GdDem7OUs46LWhAo4Qv65RW6XaoRR8iE/DbL2uHXF7gk
-fmknTntK8QHKjVwZmpbo14FnahCDLvxff0fMM7gkuEZntYFmj8LbEoNjZMU8bwgD
-86AWhCIfijzKUhkXNYaiVLPd9xzk8rApH8ziJaYfocGuO9o4/yexLr2Gqi5e7XyI
-u6gqYXBg8y6LeA3MlF7O5Vb1w5f4zmzfnz6c3js+qRq1nKrSteKYzINwKXE52zVd
-EbmqnOxbUThCG0Z2N/aIp7kBprit3IoW2OlT6lOI6CdgmQAUsOjGd21SjNHIPvTq
-ZjcdhsDdekrM7KrGq5q94WdmnfidFTa6j7ZwqRkUsR8bAY6do5uYlY+DSBrkJrTH
-VmNnGm72zXnlYdmWFBP1NEvQYx/+EEuoEfJnmRu+jG/0v3WReLhHBq1/TqPGDCdq
-YxDzgK+rjyEBeVOB2h9BUpJYwp+++1BLfG2X6gj6SFlsab8PC+YS6HD+JD7AgXHH
-yJXbx/lZeClHeby6UtOcg8Zt2fFvxWoywijkiozDTWLe3v3NRngMaDy+ufeHVfNh
-4Ms5NZ5mL4320Gand74C
-=PzFE
------END PGP SIGNATURE-----
-
---Md/poaVZ8hnGTzuv--
+Yes, I just tried. With the HSUART runtime PM being disabled, the touch
+screen works.
