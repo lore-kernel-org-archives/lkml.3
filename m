@@ -1,157 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754071AbaDYNUQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:20:16 -0400
-Received: from relay1.mentorg.com ([192.94.38.131]:34585 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753189AbaDYNUC (ORCPT
+	id S1754082AbaDYNV0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:21:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40514 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753205AbaDYNOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:20:02 -0400
-Message-ID: <535A60F2.7000003@mentor.com>
-Date: Fri, 25 Apr 2014 21:19:46 +0800
-From: Chung-Lin Tang <chunglin_tang@mentor.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.7; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 25 Apr 2014 09:14:34 -0400
+Date: Fri, 25 Apr 2014 06:14:23 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-820bc81f4cdaac09a8f25040d3a20d86f3da292b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1398327843-31845-7-git-send-email-namhyung@kernel.org>
+References: <1398327843-31845-7-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf tools: Account entry stats when it'
+ s added to the output tree
+Git-Commit-ID: 820bc81f4cdaac09a8f25040d3a20d86f3da292b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: "Pinski, Andrew" <Andrew.Pinski@caviumnetworks.com>,
-        Chung-Lin Tang <cltang@codesourcery.com>
-CC: Catalin Marinas <catalin.marinas@arm.com>, Ley Foon Tan <lftan@altera.com>,
-        Arnd Bergmann <arnd@arndb.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Linux-Arch <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        Andrew Pinski <apinski@cavium.com>
-Subject: Re: [PATCH 00/28] nios2 Linux kernel port
-References: <1397824031-4892-1-git-send-email-lftan@altera.com> <5354AD36.5090809@zytor.com> <CAFiDJ5861HE4AXtio-8uNJppWE2oaPt9_OKyGV=Myb_3vPrOVA@mail.gmail.com> <16597012.pEkDc99HDN@wuerfel> <CAFiDJ5_dUpVTSeC36AfNKVN7BOa9GQ5vwSEWricm=8Sam9mR2A@mail.gmail.com> <5357FF8E.9010809@codesourcery.com> <E780DB23-B6A3-427B-8F33-71378088A3F5@caviumnetworks.com> <5358AE96.9010006@codesourcery.com> <5358D17D.1040609@codesourcery.com> <20140424152819.GI8521@arm.com>,<535959DF.6050009@codesourcery.com> <3AD1421B-E5FC-41F3-AE33-29655052DA4B@caviumnetworks.com>,<5359FB48.1020007@codesourcery.com> <9F7B4786-D935-47E3-9AB0-258E2A6EB98F@caviumnetworks.com>
-In-Reply-To: <9F7B4786-D935-47E3-9AB0-258E2A6EB98F@caviumnetworks.com>
-Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 25 Apr 2014 13:19:55.0683 (UTC) FILETIME=[0CB24730:01CF6089]
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/4/25 下午4:37, Pinski, Andrew wrote:
-> 
-> 
->> On Apr 24, 2014, at 11:06 PM, "Chung-Lin Tang" <cltang@codesourcery.com> wrote:
->>
->>> On 2014/4/25 02:42 AM, Pinski, Andrew wrote:
->>>
->>>
->>>>> On Apr 24, 2014, at 11:37 AM, "Chung-Lin Tang" <cltang@codesourcery.com> wrote:
->>>>>
->>>>>> On 2014/4/24 11:28 PM, Catalin Marinas wrote:
->>>>>>> On Thu, Apr 24, 2014 at 09:55:25AM +0100, Chung-Lin Tang wrote:
->>>>>>>> On 2014/4/24 02:26 PM, Chung-Lin Tang wrote:
->>>>>>>> On 2014/4/24 上午 02:15, Pinski, Andrew wrote:
->>>>>>>>
->>>>>>>>>> On Apr 23, 2014, at 10:59 AM, "Chung-Lin Tang" <cltang@codesourcery.com> wrote:
->>>>>>>>>>
->>>>>>>>>>>> On 2014/4/22 07:20 PM, Ley Foon Tan wrote:
->>>>>>>>>>>> On Tue, Apr 22, 2014 at 6:56 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>>>>>>>>>>>>>>> On Tuesday 22 April 2014 18:37:11 Ley Foon Tan wrote:
->>>>>>>>>>>>>>>>>>>> Hi Arnd and Peter Anvin,
->>>>>>>>>>>>>>>>>>>>
->>>>>>>>>>>>>>>>>>>> Other than 64-bit time_t, clock_t and suseconds_t, can you confirm
->>>>>>>>>>>>>>>>>>>> that we don't need to have 64 bit off_t? See detail in link below.
->>>>>>>>>>>>>>>>>>>> I can submit the patches for 64-bit time changes
->>>>>>>>>>>>>>>>>>>> (include/asm-generic/posix_types.h and other archs) if everyone is
->>>>>>>>>>>>>>>>>>>> agreed on this.
->>>>>>>>>>>>>>>>
->>>>>>>>>>>>>>>> Yes.
->>>>>>>>>>>> Okay, will doing that.
->>>>>>>>>>
->>>>>>>>>> I believe that arm64 ILP32 will also be affected. What is the status of
->>>>>>>>>> this configuration? Has the glibc/kernel ABI been finalized?
->>>>>>>> Not yet.  I am still working out the signal handling part. But we
->>>>>>>> already agreed on 64bit time_t, clock_t, and suseconds_t.  And we
->>>>>>>> agreed to a 64bit offset_t too. 
->>>>>>>>
->>>>>>>> On a related note suseconds in the timespec in posix is defined to
->>>>>>>> be long. So it would nice if the kernel ignores the upper 32bits so
->>>>>>>> we (glibc developers) can fix this for new targets including x32
->>>>>>>> and arm64/ilp32.
->>>>>>>
->>>>>>> Hmm, but that means for purely 32-bit architectures like nios2, which
->>>>>>> unlike x86_64 or arm64, never has a 64-bit mode, suseconds_t as a 64-bit
->>>>>>> type in the kernel is simply wasted.
->>>>>>
->>>>>> The more I think of this, the more I feel that suseconds_t should jsut
->>>>>> be 'long', not strictly 64-bitified. An ILP32 sub-mode in a 64-bit
->>>>>> kernel should be using compat_* code paths, something like a
->>>>>> COMPAT_USE_32BIT_SUSECONDS case.
->>>>>
->>>>> ILP32 mode should use LP64 syscalls as much as possible and that's the
->>>>> aim with arm64 as well (of course, we still have a few that wouldn't be
->>>>> possible and we route them via compat).
->>>>>
->>>>> But here if time_t is 64-bit while susecconds_t is 32-bit, the compat
->>>>> code wouldn't help.
->>>>
->>>> Why not? You can define the arm64 'struct compat_timeval' with
->>>> suseconds_t as s32, and add the 32<-->64 case in the
->>>> compat_get/put_timeval path, triggered when the process is ILP32 (test
->>>> wrapped in the above hypothetical COMPAT_USE_32BIT_SUSECONDS macro).
->>>> Similar to how x32 does COMPAT_USE_64BIT_TIME.
->>>
->>> We would three timeval then. One for aarch32, one for lp64 and one for ilp32. We really don't want three. Two is already one too many in my mind after developing the ilp32 syscall abi. 
->>>
->>> Thanks,
->>> Andrew
->>
->> Okay I now see you're already doing that for 32-bit ARM.
->>
->> Still, you would probably just need to have an arm64-ILP32 specific case
->> to be careful about the last padding word upon kernel entry/exit.
->> (accommodating the difference in sizeof(long))  Penalizing all
->> architectures does not seem like the best solution.
-> 
-> Considering the alignment of long long would be 64bits, the struct does not change sizes if suseconds_t is 32bits or 64bits. 
-> 
->>
->> Having suseconds_t as a strictly 64-bit C type in the kernel, while
->> defined as <= long in user-space may cause other problems.
->>
->> I'll try to explain a probable situation for Nios II. I'm not sure about
->> other soft-cores, but nios2 is sort of uncommon in that the maximum
->> alignment is 4-bytes (32-bits), even for doubles/long-longs.
-> 
-> Yes does that include even if users of aligned?  If so that seems broken.  Also yes nios ii is unstandard when it comes to alignment here. 
+Commit-ID:  820bc81f4cdaac09a8f25040d3a20d86f3da292b
+Gitweb:     http://git.kernel.org/tip/820bc81f4cdaac09a8f25040d3a20d86f3da292b
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Tue, 22 Apr 2014 11:44:21 +0900
+Committer:  Jiri Olsa <jolsa@kernel.org>
+CommitDate: Thu, 24 Apr 2014 16:32:15 +0200
 
-You mean using '__attribute__((aligned(8)))'? Sure of course that
-enlarges the alignment as expected, but sprinkling that over glibc, or
-getting it into the main glibc bits/time.h header is probably not going
-to happen...
+perf tools: Account entry stats when it's added to the output tree
 
-Thanks,
-Chung-Lin
+Currently, accounting each sample is done in multiple places - once
+when adding them to the input tree, other when adding them to the
+output tree.  It's not only confusing but also can cause a subtle
+problem since concurrent processing like in perf top might see the
+updated stats before adding entries into the output tree - like seeing
+more (blank) lines at the end and/or slight inaccurate percentage.
 
->>
->> So if time_t is 64-bits (which makes sense), then struct timeval, which
->> is time_t+suseconds_t in userspace is 12-bytes/aligned-4 (unlike many
->> archs where a 64-bit time_t will expand the size to 16-bytes, due to
->> align-8)
-> 
-> Unlike most other targets where the struct would 16bits no matter what. 
-> 
-> Thanks,
-> Andrew
-> 
-> 
->>
->> If the kernel suseconds_t is forced to be 64-bits, then nios2 will have
->> a 16-byte kernel timeval vs. 12-byte userspace timeval situation. Just
->> this will require us to do something using compat_*, or weird hacks in
->> glibc, which is unfair. Nios II has no "other-mode". We are just
->> strictly ILP32, everywhere.
->>
->> Of course, we can probably still at the end just use a Nios II specific
->> posix_types.h header to override things, but I'm just stating this as a
->> matter of which are the most reasonable default settings in the generic
->> headers. Making pure ILP32 archs diverge from POSIX standards by default
->> does not seem to be right.
->>
->> Thanks,
->> Chung-Lin
->>
+To fix this, only account the entries when it's moved into the output
+tree so that they cannot be seen prematurely.  There're some
+exceptional cases here and there - they should be addressed separately
+with comments.
 
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1398327843-31845-7-git-send-email-namhyung@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/builtin-annotate.c |  3 +--
+ tools/perf/builtin-diff.c     | 13 +++++++++----
+ tools/perf/builtin-report.c   | 24 ++++++++++--------------
+ tools/perf/util/hist.c        |  1 -
+ 4 files changed, 20 insertions(+), 21 deletions(-)
+
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 0da603b..d30d2c2 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -46,7 +46,7 @@ struct perf_annotate {
+ };
+ 
+ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+-				  struct perf_sample *sample,
++				  struct perf_sample *sample __maybe_unused,
+ 				  struct addr_location *al,
+ 				  struct perf_annotate *ann)
+ {
+@@ -70,7 +70,6 @@ static int perf_evsel__add_sample(struct perf_evsel *evsel,
+ 		return -ENOMEM;
+ 
+ 	ret = hist_entry__inc_addr_samples(he, evsel->idx, al->addr);
+-	evsel->hists.stats.total_period += sample->period;
+ 	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ 	return ret;
+ }
+diff --git a/tools/perf/builtin-diff.c b/tools/perf/builtin-diff.c
+index 52d91ac..f3b10dc 100644
+--- a/tools/perf/builtin-diff.c
++++ b/tools/perf/builtin-diff.c
+@@ -341,11 +341,16 @@ static int diff__process_sample_event(struct perf_tool *tool __maybe_unused,
+ 		return -1;
+ 	}
+ 
+-	if (al.filtered == 0) {
+-		evsel->hists.stats.total_non_filtered_period += sample->period;
+-		evsel->hists.nr_non_filtered_entries++;
+-	}
++	/*
++	 * The total_period is updated here before going to the output
++	 * tree since normally only the baseline hists will call
++	 * hists__output_resort() and precompute needs the total
++	 * period in order to sort entries by percentage delta.
++	 */
+ 	evsel->hists.stats.total_period += sample->period;
++	if (!al.filtered)
++		evsel->hists.stats.total_non_filtered_period += sample->period;
++
+ 	return 0;
+ }
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index aed5203..89c9528 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -85,6 +85,16 @@ static void report__inc_stats(struct report *rep, struct hist_entry *he)
+ 	 */
+ 	if (he->stat.nr_events == 1)
+ 		rep->nr_entries++;
++
++	/*
++	 * Only counts number of samples at this stage as it's more
++	 * natural to do it here and non-sample events are also
++	 * counted in perf_session_deliver_event().  The dump_trace
++	 * requires this info is ready before going to the output tree.
++	 */
++	hists__inc_nr_events(he->hists, PERF_RECORD_SAMPLE);
++	if (!he->filtered)
++		he->hists->stats.nr_non_filtered_samples++;
+ }
+ 
+ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *al,
+@@ -135,10 +145,6 @@ static int report__add_mem_hist_entry(struct report *rep, struct addr_location *
+ 
+ 	report__inc_stats(rep, he);
+ 
+-	evsel->hists.stats.total_period += cost;
+-	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+-	if (!he->filtered)
+-		evsel->hists.stats.nr_non_filtered_samples++;
+ 	err = hist_entry__append_callchain(he, sample);
+ out:
+ 	return err;
+@@ -189,13 +195,7 @@ static int report__add_branch_hist_entry(struct report *rep, struct addr_locatio
+ 				if (err)
+ 					goto out;
+ 			}
+-
+ 			report__inc_stats(rep, he);
+-
+-			evsel->hists.stats.total_period += 1;
+-			hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+-			if (!he->filtered)
+-				evsel->hists.stats.nr_non_filtered_samples++;
+ 		} else
+ 			goto out;
+ 	}
+@@ -230,10 +230,6 @@ static int report__add_hist_entry(struct report *rep, struct perf_evsel *evsel,
+ 
+ 	report__inc_stats(rep, he);
+ 
+-	evsel->hists.stats.total_period += sample->period;
+-	if (!he->filtered)
+-		evsel->hists.stats.nr_non_filtered_samples++;
+-	hists__inc_nr_events(&evsel->hists, PERF_RECORD_SAMPLE);
+ out:
+ 	return err;
+ }
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 8d5cfcc..6d0d2d7 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -382,7 +382,6 @@ static struct hist_entry *add_hist_entry(struct hists *hists,
+ 	if (!he)
+ 		return NULL;
+ 
+-	hists->nr_entries++;
+ 	rb_link_node(&he->rb_node_in, parent, p);
+ 	rb_insert_color(&he->rb_node_in, hists->entries_in);
+ out:
