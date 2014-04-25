@@ -1,79 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571AbaDYQLZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:11:25 -0400
-Received: from mga09.intel.com ([134.134.136.24]:43551 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752151AbaDYQLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:11:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
-   d="scan'208";a="519795274"
-From: Mathias Nyman <mathias.nyman@linux.intel.com>
-To: <gregkh@linuxfoundation.org>
-Cc: <linux-usb@vger.kernel.org>, <sarah.a.sharp@linux.intel.com>,
-        <linux-kernel@vger.kernel.org>,
-        David Cohen <david.a.cohen@linux.intel.com>, stable@vger.kernel.org,
-        Mathias Nyman <mathias.nyman@linux.intel.com>
-Subject: [PATCH v2 4/4] usb/xhci: fix compilation warning when !CONFIG_PCI && !CONFIG_PM
-Date: Fri, 25 Apr 2014 19:20:16 +0300
-Message-Id: <1398442816-32538-5-git-send-email-mathias.nyman@linux.intel.com>
-X-Mailer: git-send-email 1.8.3.2
-In-Reply-To: <1398442816-32538-1-git-send-email-mathias.nyman@linux.intel.com>
-References: <1398442816-32538-1-git-send-email-mathias.nyman@linux.intel.com>
+	id S1753635AbaDYQL5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:11:57 -0400
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:45251 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753610AbaDYQLw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 12:11:52 -0400
+Date: Fri, 25 Apr 2014 17:11:38 +0100
+From: Mark Brown <broonie@kernel.org>
+To: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+Cc: lgirdwood@gmail.com, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Message-ID: <20140425161138.GR12304@sirena.org.uk>
+References: <1398441341-19436-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Na2NVb1+pUrRV9Hf"
+Content-Disposition: inline
+In-Reply-To: <1398441341-19436-1-git-send-email-ckeepax@opensource.wolfsonmicro.com>
+X-Cookie: You will be successful in your work.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH 1/2] regulator: arizona-micsupp: Fix build errors with
+ CONFIG_OF not defined
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Cohen <david.a.cohen@linux.intel.com>
 
-When CONFIG_PCI and CONFIG_PM are not selected, xhci.c gets this
-warning:
-drivers/usb/host/xhci.c:409:13: warning: ‘xhci_msix_sync_irqs’ defined
-but not used [-Wunused-function]
+--Na2NVb1+pUrRV9Hf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Instead of creating nested #ifdefs, this patch fixes it by defining the
-xHCI PCI stubs as inline.
+On Fri, Apr 25, 2014 at 04:55:40PM +0100, Charles Keepax wrote:
 
-This warning has been in since 3.2 kernel and was
-caused by commit 421aa841a134f6a743111cf44d0c6d3b45e3cf8c
-"usb/xhci: hide MSI code behind PCI bars", but wasn't noticed
-until 3.13 when a configuration with these options was tried
+> Some of the OF handling functions do not have empty alternatives defined
+> if CONFIG_OF is not defined. This patch ifdefs out the offending code.
 
-Signed-off-by: David Cohen <david.a.cohen@linux.intel.com>
-Cc: stable@vger.kernel.org # 3.2
-Signed-off-by: Mathias Nyman <mathias.nyman@linux.intel.com>
----
- drivers/usb/host/xhci.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Which functions and why is it not better to provide the stubs?
 
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 988ed5f..3008369 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -408,16 +408,16 @@ static int xhci_try_enable_msi(struct usb_hcd *hcd)
- 
- #else
- 
--static int xhci_try_enable_msi(struct usb_hcd *hcd)
-+static inline int xhci_try_enable_msi(struct usb_hcd *hcd)
- {
- 	return 0;
- }
- 
--static void xhci_cleanup_msix(struct xhci_hcd *xhci)
-+static inline void xhci_cleanup_msix(struct xhci_hcd *xhci)
- {
- }
- 
--static void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
-+static inline void xhci_msix_sync_irqs(struct xhci_hcd *xhci)
- {
- }
- 
--- 
-1.8.3.2
+--Na2NVb1+pUrRV9Hf
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.22 (GNU/Linux)
+
+iQIcBAEBAgAGBQJTWok3AAoJELSic+t+oim94iQP/0c4gBiJCuPVsCUxqrh7bgSV
+q08Hwy2kJLhpq65y8pWyA4xGVdkjQvLXFVKR+Yd2vnsdkvFE9ZMsPs7KReotYjz2
+5xCKTN1BaAd0xhvx6SahmVscHIKvkrFfkgSqvZvD2/GUilbM6fr936Nov2rVmN5I
+EGa49eupyCag0/6Qhhpznq+GzFpaoCGJrbUBXjMIuLHa1QjK5b5dma7b9pZRs482
+BEil6vc/EdUUo8KfdmkiVcOQ8o7JtVq3ke5064bK6OwCrk5EYg1AAbvl+e5kyi7P
+cGurbuxdSLxl7qjeKDStKLK21PkCX835PZgvEtwhwU5xDqN9VJpTkAA5LBAmzBZs
+uWj/ZtzKc0ilxmPu1EVJWqIOmuKCsInEB3+Kdk233hIUdIbnjOCrguvyWyt8A9W/
+xvgZGBJB4QEdeHjPWBqSCiotOaA7ARV3QZi93M8GgIPjMRh66dt1eMLXWr43KLDS
+RQJJL6bgNuoWNml7bp3k+m4ufmRtcRcTi40QqbS2AUwljFAZcD4LjXVM19Aq+EFj
+gjgeslgjUkcQ8DY280+Zl+N1q0S9AxXWIxJzVFdLYx55Q/Yh2FSch8W8fBL26OE+
+/Tx1uRmWneoOatxCw5OxURsNKwiXmt1L+0PVvZZcNa8piTBlI9q9ut0DXm8aNDNK
+sCox9lhW5by18QKy8W9s
+=nwog
+-----END PGP SIGNATURE-----
+
+--Na2NVb1+pUrRV9Hf--
