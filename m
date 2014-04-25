@@ -1,119 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbaDYIBW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 04:01:22 -0400
-Received: from gloria.sntech.de ([95.129.55.99]:40541 "EHLO gloria.sntech.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783AbaDYIBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 04:01:20 -0400
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>, netdev@vger.kernel.org,
-        Max Schwarz <max.schwarz@online.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 1/2] arc_emac: fix probe error path
-Date: Fri, 25 Apr 2014 10:03:29 +0200
-Message-ID: <1712306.TSJMmGq3uZ@phil>
-User-Agent: KMail/4.11.5 (Linux/3.13-1-amd64; KDE/4.11.3; x86_64; ; )
+	id S1752559AbaDYIBq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 04:01:46 -0400
+Received: from mail-ee0-f47.google.com ([74.125.83.47]:50454 "EHLO
+	mail-ee0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541AbaDYIBn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 04:01:43 -0400
+Date: Fri, 25 Apr 2014 10:01:37 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Oren Twaig <oren@scalemp.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        Shai Fultheim <shai@scalemp.com>
+Subject: Re: [PATCH v2] X86: Hook apic vector allocation domain only when
+ interrupt routing are set to ignore
+Message-ID: <20140425080137.GC19588@gmail.com>
+References: <1398376326-3055-1-git-send-email-oren@scalemp.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1398376326-3055-1-git-send-email-oren@scalemp.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The probe function at the moment only frees the netdev but does not disconnect
-the phy or removes the mdio bus it registered.
 
-Signed-off-by: Heiko Stuebner <heiko@sntech.de>
----
-changes since v1:
-- fix duplicate netif_api_del found by Max Schwarz
+* Oren Twaig <oren@scalemp.com> wrote:
 
- drivers/net/ethernet/arc/emac_main.c | 23 ++++++++++++++---------
- 1 file changed, 14 insertions(+), 9 deletions(-)
+> vSMP Foundation provides locality based interrupt routing which needed
+> vector_allocation_domain to allow all online cpus can handle all possible
+> vectors. 
+> 
+> Enforcing Interrupt Routing Comply (IRC) mode requires us to unplug this hook as
+> otherwise the IOAPIC, MSI and MSIX destination selectors to always select the
+> lowest online cpu as the destination. I.e affinity of HW interrupts cannot be
+> controled by kernel and/or userspace code.
+> 
+> The purpose of the patch is to fix the code to set override vector allocation
+> domain only when IRC is set to ignore to allow the kernel and userspace to
+> effectively control the destination of the HW interrupts.
+> 
+> Signed-off-by: Oren Twaig <oren@scalemp.com>
+> Acked-by: Shai Fultheim <shai@scalemp.com>
 
-diff --git a/drivers/net/ethernet/arc/emac_main.c b/drivers/net/ethernet/arc/emac_main.c
-index 9f45782..9747dda 100644
---- a/drivers/net/ethernet/arc/emac_main.c
-+++ b/drivers/net/ethernet/arc/emac_main.c
-@@ -683,7 +683,7 @@ static int arc_emac_probe(struct platform_device *pdev)
- 	priv->regs = devm_ioremap_resource(&pdev->dev, &res_regs);
- 	if (IS_ERR(priv->regs)) {
- 		err = PTR_ERR(priv->regs);
--		goto out;
-+		goto out_netdev;
- 	}
- 	dev_dbg(&pdev->dev, "Registers base address is 0x%p\n", priv->regs);
- 
-@@ -693,7 +693,7 @@ static int arc_emac_probe(struct platform_device *pdev)
- 	if (!(id == 0x0005fd02 || id == 0x0007fd02)) {
- 		dev_err(&pdev->dev, "ARC EMAC not detected, id=0x%x\n", id);
- 		err = -ENODEV;
--		goto out;
-+		goto out_netdev;
- 	}
- 	dev_info(&pdev->dev, "ARC EMAC detected with id: 0x%x\n", id);
- 
-@@ -708,7 +708,7 @@ static int arc_emac_probe(struct platform_device *pdev)
- 			       ndev->name, ndev);
- 	if (err) {
- 		dev_err(&pdev->dev, "could not allocate IRQ\n");
--		goto out;
-+		goto out_netdev;
- 	}
- 
- 	/* Get MAC address from device tree */
-@@ -729,7 +729,7 @@ static int arc_emac_probe(struct platform_device *pdev)
- 	if (!priv->rxbd) {
- 		dev_err(&pdev->dev, "failed to allocate data buffers\n");
- 		err = -ENOMEM;
--		goto out;
-+		goto out_netdev;
- 	}
- 
- 	priv->txbd = priv->rxbd + RX_BD_NUM;
-@@ -741,7 +741,7 @@ static int arc_emac_probe(struct platform_device *pdev)
- 	err = arc_mdio_probe(pdev, priv);
- 	if (err) {
- 		dev_err(&pdev->dev, "failed to probe MII bus\n");
--		goto out;
-+		goto out_netdev;
- 	}
- 
- 	priv->phy_dev = of_phy_connect(ndev, phy_node, arc_emac_adjust_link, 0,
-@@ -749,7 +749,7 @@ static int arc_emac_probe(struct platform_device *pdev)
- 	if (!priv->phy_dev) {
- 		dev_err(&pdev->dev, "of_phy_connect() failed\n");
- 		err = -ENODEV;
--		goto out;
-+		goto out_mdio;
- 	}
- 
- 	dev_info(&pdev->dev, "connected to %s phy with id 0x%x\n",
-@@ -759,14 +759,19 @@ static int arc_emac_probe(struct platform_device *pdev)
- 
- 	err = register_netdev(ndev);
- 	if (err) {
--		netif_napi_del(&priv->napi);
- 		dev_err(&pdev->dev, "failed to register network device\n");
--		goto out;
-+		goto out_netif_api;
- 	}
- 
- 	return 0;
- 
--out:
-+out_netif_api:
-+	netif_napi_del(&priv->napi);
-+	phy_disconnect(priv->phy_dev);
-+	priv->phy_dev = NULL;
-+out_mdio:
-+	arc_mdio_remove(priv);
-+out_netdev:
- 	free_netdev(ndev);
- 	return err;
- }
--- 
-1.9.0
+So what was the behavior before the change - certain IRQs did not get 
+routed, they just ended up on CPU0 or on some other undesirable CPU? 
+Or was IRQ distribution random? It's not clear from the changelog.
 
+Thanks,
 
+	Ingo
