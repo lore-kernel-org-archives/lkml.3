@@ -1,307 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752785AbaDYWlf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:41:35 -0400
-Received: from mga11.intel.com ([192.55.52.93]:37561 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837AbaDYWhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752020AbaDYWhp (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 25 Apr 2014 18:37:45 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53912 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750837AbaDYWhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 18:37:43 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,929,1389772800"; 
-   d="scan'208";a="527577019"
-Subject: [PATCH 2/8] x86: mm: rip out complicated, out-of-date, buggy TLB flushing
+   d="scan'208";a="528603839"
+Subject: [PATCH 0/8] [v4] x86: rework tlb range flushing code
 To: linux-kernel@vger.kernel.org
 Cc: linux-mm@kvack.org, x86@kernel.org, Dave Hansen <dave@sr71.net>
 From: Dave Hansen <dave@sr71.net>
-Date: Fri, 25 Apr 2014 15:37:44 -0700
-References: <20140425223742.0A27E42E@viggo.jf.intel.com>
-In-Reply-To: <20140425223742.0A27E42E@viggo.jf.intel.com>
-Message-Id: <20140425223744.C277D8FE@viggo.jf.intel.com>
+Date: Fri, 25 Apr 2014 15:37:42 -0700
+Message-Id: <20140425223742.0A27E42E@viggo.jf.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Changes from v3:
+ * Include the patch I was using to gather detailed statistics
+   about the length of the ranged TLB flushes
+ * Fix some documentation typos
+ * Add a patch to rework the remote tlb flush code to plumb the
+   tracepoints in easier, and add missing tracepoints
+ * use __print_symbolic() for the human-readable tracepoint 
+   descriptions
+ * change an int to bool in patch 1
+ * Specifically call out that we removed itlb vs. dtlb logic
 
-From: Dave Hansen <dave.hansen@linux.intel.com>
+Changes from v2:
+ * Added a brief comment above the ceiling tunable
+ * Updated the documentation to mention large pages and say
+   "individual flush" instead of invlpg in most cases.
 
-I think the flush_tlb_mm_range() code that tries to tune the
-flush sizes based on the CPU needs to get ripped out for
-several reasons:
+I guess the x86 tree is probably the right place to queue this
+up.
 
-1. It is obviously buggy.  It uses mm->total_vm to judge the
-   task's footprint in the TLB.  It should certainly be using
-   some measure of RSS, *NOT* ->total_vm since only resident
-   memory can populate the TLB.
-2. Haswell, and several other CPUs are missing from the
-   intel_tlb_flushall_shift_set() function.  Thus, it has been
-   demonstrated to bitrot quickly in practice.
-3. It is plain wrong in my vm:
-	[    0.037444] Last level iTLB entries: 4KB 0, 2MB 0, 4MB 0
-	[    0.037444] Last level dTLB entries: 4KB 0, 2MB 0, 4MB 0
-	[    0.037444] tlb_flushall_shift: 6
-   Which leads to it to never use invlpg.
-4. The assumptions about TLB refill costs are wrong:
-	http://lkml.kernel.org/r/1337782555-8088-3-git-send-email-alex.shi@intel.com
-    (more on this in later patches)
-5. I can not reproduce the original data: https://lkml.org/lkml/2012/5/17/59
-   I believe the sample times were too short.  Running the
-   benchmark in a loop yields times that vary quite a bit.
+I've run this through a variety of systems in the LKP harness,
+as well as running it on my desktop for a few days.  I'm yet to
+see an to see if any perfmance regressions (or gains) show up.
 
-Note that this leaves us with a static ceiling of 1 page.  This
-is a conservative, dumb setting, and will be revised in a later
-patch.
+Without the last (instrumentation/debugging) patch:
 
-This also removes the code which attempts to predict whether we
-are flushing data or instructions.  We expect instruction flushes
-to be relatively rare and not worth tuning for explicitly.
+ arch/x86/include/asm/mmu_context.h |    6 ++
+ arch/x86/include/asm/processor.h   |    1
+ arch/x86/kernel/cpu/amd.c          |    7 --
+ arch/x86/kernel/cpu/common.c       |   13 ----
+ arch/x86/kernel/cpu/intel.c        |   26 ---------
+ arch/x86/mm/tlb.c                  |  106 ++++++++++++++++++-------------------
+ include/linux/mm_types.h           |    8 ++
+ 7 files changed, 68 insertions(+), 99 deletions(-)
+[davehans@viggo linux.git]$ 
 
-Signed-off-by: Dave Hansen <dave.hansen@linux.intel.com>
-Acked-by: Rik van Riel <riel@redhat.com>
-Acked-by: Mel Gorman <mgorman@suse.de>
----
+--
 
- b/arch/x86/include/asm/processor.h |    1 
- b/arch/x86/kernel/cpu/amd.c        |    7 --
- b/arch/x86/kernel/cpu/common.c     |   13 -----
- b/arch/x86/kernel/cpu/intel.c      |   26 -----------
- b/arch/x86/mm/tlb.c                |   87 ++++---------------------------------
- 5 files changed, 13 insertions(+), 121 deletions(-)
+I originally went to look at this becuase I realized that newer
+CPUs were not present in the intel_tlb_flushall_shift_set() code.
 
-diff -puN arch/x86/include/asm/processor.h~x8x-mm-rip-out-complicated-tlb-flushing arch/x86/include/asm/processor.h
---- a/arch/x86/include/asm/processor.h~x8x-mm-rip-out-complicated-tlb-flushing	2014-04-25 15:33:12.526032931 -0700
-+++ b/arch/x86/include/asm/processor.h	2014-04-25 15:33:12.536033383 -0700
-@@ -72,7 +72,6 @@ extern u16 __read_mostly tlb_lld_4k[NR_I
- extern u16 __read_mostly tlb_lld_2m[NR_INFO];
- extern u16 __read_mostly tlb_lld_4m[NR_INFO];
- extern u16 __read_mostly tlb_lld_1g[NR_INFO];
--extern s8  __read_mostly tlb_flushall_shift;
- 
- /*
-  *  CPU type and hardware bug flags. Kept separately for each CPU.
-diff -puN arch/x86/kernel/cpu/amd.c~x8x-mm-rip-out-complicated-tlb-flushing arch/x86/kernel/cpu/amd.c
---- a/arch/x86/kernel/cpu/amd.c~x8x-mm-rip-out-complicated-tlb-flushing	2014-04-25 15:33:12.527032976 -0700
-+++ b/arch/x86/kernel/cpu/amd.c	2014-04-25 15:33:12.536033383 -0700
-@@ -741,11 +741,6 @@ static unsigned int amd_size_cache(struc
- }
- #endif
- 
--static void cpu_set_tlb_flushall_shift(struct cpuinfo_x86 *c)
--{
--	tlb_flushall_shift = 6;
--}
--
- static void cpu_detect_tlb_amd(struct cpuinfo_x86 *c)
- {
- 	u32 ebx, eax, ecx, edx;
-@@ -793,8 +788,6 @@ static void cpu_detect_tlb_amd(struct cp
- 		tlb_lli_2m[ENTRIES] = eax & mask;
- 
- 	tlb_lli_4m[ENTRIES] = tlb_lli_2m[ENTRIES] >> 1;
--
--	cpu_set_tlb_flushall_shift(c);
- }
- 
- static const struct cpu_dev amd_cpu_dev = {
-diff -puN arch/x86/kernel/cpu/common.c~x8x-mm-rip-out-complicated-tlb-flushing arch/x86/kernel/cpu/common.c
---- a/arch/x86/kernel/cpu/common.c~x8x-mm-rip-out-complicated-tlb-flushing	2014-04-25 15:33:12.529033068 -0700
-+++ b/arch/x86/kernel/cpu/common.c	2014-04-25 15:33:12.537033428 -0700
-@@ -479,26 +479,17 @@ u16 __read_mostly tlb_lld_2m[NR_INFO];
- u16 __read_mostly tlb_lld_4m[NR_INFO];
- u16 __read_mostly tlb_lld_1g[NR_INFO];
- 
--/*
-- * tlb_flushall_shift shows the balance point in replacing cr3 write
-- * with multiple 'invlpg'. It will do this replacement when
-- *   flush_tlb_lines <= active_lines/2^tlb_flushall_shift.
-- * If tlb_flushall_shift is -1, means the replacement will be disabled.
-- */
--s8  __read_mostly tlb_flushall_shift = -1;
--
- void cpu_detect_tlb(struct cpuinfo_x86 *c)
- {
- 	if (this_cpu->c_detect_tlb)
- 		this_cpu->c_detect_tlb(c);
- 
- 	printk(KERN_INFO "Last level iTLB entries: 4KB %d, 2MB %d, 4MB %d\n"
--		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n"
--		"tlb_flushall_shift: %d\n",
-+		"Last level dTLB entries: 4KB %d, 2MB %d, 4MB %d, 1GB %d\n",
- 		tlb_lli_4k[ENTRIES], tlb_lli_2m[ENTRIES],
- 		tlb_lli_4m[ENTRIES], tlb_lld_4k[ENTRIES],
- 		tlb_lld_2m[ENTRIES], tlb_lld_4m[ENTRIES],
--		tlb_lld_1g[ENTRIES], tlb_flushall_shift);
-+		tlb_lld_1g[ENTRIES]);
- }
- 
- void detect_ht(struct cpuinfo_x86 *c)
-diff -puN arch/x86/kernel/cpu/intel.c~x8x-mm-rip-out-complicated-tlb-flushing arch/x86/kernel/cpu/intel.c
---- a/arch/x86/kernel/cpu/intel.c~x8x-mm-rip-out-complicated-tlb-flushing	2014-04-25 15:33:12.531033158 -0700
-+++ b/arch/x86/kernel/cpu/intel.c	2014-04-25 15:33:12.537033428 -0700
-@@ -634,31 +634,6 @@ static void intel_tlb_lookup(const unsig
- 	}
- }
- 
--static void intel_tlb_flushall_shift_set(struct cpuinfo_x86 *c)
--{
--	switch ((c->x86 << 8) + c->x86_model) {
--	case 0x60f: /* original 65 nm celeron/pentium/core2/xeon, "Merom"/"Conroe" */
--	case 0x616: /* single-core 65 nm celeron/core2solo "Merom-L"/"Conroe-L" */
--	case 0x617: /* current 45 nm celeron/core2/xeon "Penryn"/"Wolfdale" */
--	case 0x61d: /* six-core 45 nm xeon "Dunnington" */
--		tlb_flushall_shift = -1;
--		break;
--	case 0x63a: /* Ivybridge */
--		tlb_flushall_shift = 2;
--		break;
--	case 0x61a: /* 45 nm nehalem, "Bloomfield" */
--	case 0x61e: /* 45 nm nehalem, "Lynnfield" */
--	case 0x625: /* 32 nm nehalem, "Clarkdale" */
--	case 0x62c: /* 32 nm nehalem, "Gulftown" */
--	case 0x62e: /* 45 nm nehalem-ex, "Beckton" */
--	case 0x62f: /* 32 nm Xeon E7 */
--	case 0x62a: /* SandyBridge */
--	case 0x62d: /* SandyBridge, "Romely-EP" */
--	default:
--		tlb_flushall_shift = 6;
--	}
--}
--
- static void intel_detect_tlb(struct cpuinfo_x86 *c)
- {
- 	int i, j, n;
-@@ -683,7 +658,6 @@ static void intel_detect_tlb(struct cpui
- 		for (j = 1 ; j < 16 ; j++)
- 			intel_tlb_lookup(desc[j]);
- 	}
--	intel_tlb_flushall_shift_set(c);
- }
- 
- static const struct cpu_dev intel_cpu_dev = {
-diff -puN arch/x86/mm/tlb.c~x8x-mm-rip-out-complicated-tlb-flushing arch/x86/mm/tlb.c
---- a/arch/x86/mm/tlb.c~x8x-mm-rip-out-complicated-tlb-flushing	2014-04-25 15:33:12.532033203 -0700
-+++ b/arch/x86/mm/tlb.c	2014-04-25 15:33:12.538033473 -0700
-@@ -158,13 +158,14 @@ void flush_tlb_current_task(void)
- 	preempt_enable();
- }
- 
-+/* in units of pages */
-+unsigned long tlb_single_page_flush_ceiling = 1;
-+
- void flush_tlb_mm_range(struct mm_struct *mm, unsigned long start,
- 				unsigned long end, unsigned long vmflag)
- {
--	bool need_flush_others_all = true;
-+	int need_flush_others_all = 1;
- 	unsigned long addr;
--	unsigned act_entries, tlb_entries = 0;
--	unsigned long nr_base_pages;
- 
- 	preempt_disable();
- 	if (current->active_mm != mm)
-@@ -175,29 +176,16 @@ void flush_tlb_mm_range(struct mm_struct
- 		goto out;
- 	}
- 
--	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1
--					|| vmflag & VM_HUGETLB) {
-+	if (end == TLB_FLUSH_ALL || vmflag & VM_HUGETLB) {
- 		local_flush_tlb();
- 		goto out;
- 	}
- 
--	/* In modern CPU, last level tlb used for both data/ins */
--	if (vmflag & VM_EXEC)
--		tlb_entries = tlb_lli_4k[ENTRIES];
--	else
--		tlb_entries = tlb_lld_4k[ENTRIES];
--
--	/* Assume all of TLB entries was occupied by this task */
--	act_entries = tlb_entries >> tlb_flushall_shift;
--	act_entries = mm->total_vm > act_entries ? act_entries : mm->total_vm;
--	nr_base_pages = (end - start) >> PAGE_SHIFT;
--
--	/* tlb_flushall_shift is on balance point, details in commit log */
--	if (nr_base_pages > act_entries) {
-+	if ((end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
- 		count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ALL);
- 		local_flush_tlb();
- 	} else {
--		need_flush_others_all = false;
-+		need_flush_others_all = 0;
- 		/* flush range by one by one 'invlpg' */
- 		for (addr = start; addr < end;	addr += PAGE_SIZE) {
- 			count_vm_tlb_event(NR_TLB_LOCAL_FLUSH_ONE);
-@@ -259,68 +247,15 @@ static void do_kernel_range_flush(void *
- 
- void flush_tlb_kernel_range(unsigned long start, unsigned long end)
- {
--	unsigned act_entries;
--	struct flush_tlb_info info;
--
--	/* In modern CPU, last level tlb used for both data/ins */
--	act_entries = tlb_lld_4k[ENTRIES];
- 
- 	/* Balance as user space task's flush, a bit conservative */
--	if (end == TLB_FLUSH_ALL || tlb_flushall_shift == -1 ||
--		(end - start) >> PAGE_SHIFT > act_entries >> tlb_flushall_shift)
--
-+	if (end == TLB_FLUSH_ALL ||
-+	    (end - start) > tlb_single_page_flush_ceiling * PAGE_SIZE) {
- 		on_each_cpu(do_flush_tlb_all, NULL, 1);
--	else {
-+	} else {
-+		struct flush_tlb_info info;
- 		info.flush_start = start;
- 		info.flush_end = end;
- 		on_each_cpu(do_kernel_range_flush, &info, 1);
- 	}
- }
--
--#ifdef CONFIG_DEBUG_TLBFLUSH
--static ssize_t tlbflush_read_file(struct file *file, char __user *user_buf,
--			     size_t count, loff_t *ppos)
--{
--	char buf[32];
--	unsigned int len;
--
--	len = sprintf(buf, "%hd\n", tlb_flushall_shift);
--	return simple_read_from_buffer(user_buf, count, ppos, buf, len);
--}
--
--static ssize_t tlbflush_write_file(struct file *file,
--		 const char __user *user_buf, size_t count, loff_t *ppos)
--{
--	char buf[32];
--	ssize_t len;
--	s8 shift;
--
--	len = min(count, sizeof(buf) - 1);
--	if (copy_from_user(buf, user_buf, len))
--		return -EFAULT;
--
--	buf[len] = '\0';
--	if (kstrtos8(buf, 0, &shift))
--		return -EINVAL;
--
--	if (shift < -1 || shift >= BITS_PER_LONG)
--		return -EINVAL;
--
--	tlb_flushall_shift = shift;
--	return count;
--}
--
--static const struct file_operations fops_tlbflush = {
--	.read = tlbflush_read_file,
--	.write = tlbflush_write_file,
--	.llseek = default_llseek,
--};
--
--static int __init create_tlb_flushall_shift(void)
--{
--	debugfs_create_file("tlb_flushall_shift", S_IRUSR | S_IWUSR,
--			    arch_debugfs_dir, NULL, &fops_tlbflush);
--	return 0;
--}
--late_initcall(create_tlb_flushall_shift);
--#endif
-_
+I went to try to figure out where to stick newer CPUs (do we
+consider them more like SandyBridge or IvyBridge), and was not
+able to repeat the original experiments.
+
+Instead, this set does:
+ 1. Rework the code a bit to ready it for tracepoints
+ 2. Add tracepoints
+ 3. Add a new tunable and set it to a sane value
