@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126AbaDYQtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:49:11 -0400
-Received: from shards.monkeyblade.net ([149.20.54.216]:44803 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063AbaDYQtI (ORCPT
+	id S1752315AbaDYQy7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:54:59 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59236 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751297AbaDYQy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:49:08 -0400
-Date: Fri, 25 Apr 2014 12:49:03 -0400 (EDT)
-Message-Id: <20140425.124903.145066741692796378.davem@davemloft.net>
-To: wangyijing@huawei.com
-Cc: bhelgaas@google.com, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, tony.luck@intel.com,
-        linux-ia64@vger.kernel.org, sparclinux@vger.kernel.org,
-        tglx@linutronix.de, x86@kernel.org, benh@kernel.crashing.org
-Subject: Re: [PATCH 07/13] sparc/PCI: Use new pci_is_bridge() to simplify
- code
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1398417515-8740-8-git-send-email-wangyijing@huawei.com>
-References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
-	<1398417515-8740-8-git-send-email-wangyijing@huawei.com>
-X-Mailer: Mew version 6.5 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 25 Apr 2014 12:54:58 -0400
+Date: Fri, 25 Apr 2014 17:54:52 +0100
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: "Pallala, Ramakrishna" <ramakrishna.pallala@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: how to include already compiled object files to kernel
+Message-ID: <20140425175452.4e49b5f4@alan.etchedpixels.co.uk>
+In-Reply-To: <D854C92F57B1B347B57E531E78D05EAD574BFA6D@BGSMSX104.gar.corp.intel.com>
+References: <D854C92F57B1B347B57E531E78D05EAD574BFA6D@BGSMSX104.gar.corp.intel.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Fri, 25 Apr 2014 09:49:08 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Yijing Wang <wangyijing@huawei.com>
-Date: Fri, 25 Apr 2014 17:18:29 +0800
+On Fri, 25 Apr 2014 16:24:20 +0000
+"Pallala, Ramakrishna" <ramakrishna.pallala@intel.com> wrote:
 
-> Now we can use new pci_is_bridge() helper function
-> to simplify code.
+> HI All,
 > 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> I have received few kernel library .o (object files) from third party and I am planning to include in our kernel tree. As the library contains some proprietary algorithms  the sources are not shared.
+> 
+> How can I include this library .o files to my kernel and if this kernel is release to customers will there be any license issues? Third party says the sources are under GPL.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Your legal will be happy to assist explaining this to you.
+
+Alan
