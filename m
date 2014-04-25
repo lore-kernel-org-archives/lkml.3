@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754497AbaDYOSz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:18:55 -0400
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:65461 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754117AbaDYOSu (ORCPT
+	id S1754520AbaDYOTF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:19:05 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47679 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754477AbaDYOSy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:18:50 -0400
-Message-ID: <535A6EC7.10305@kernel.dk>
-Date: Fri, 25 Apr 2014 08:18:47 -0600
-From: Jens Axboe <axboe@kernel.dk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 0/1] random vs blk-mq
-References: <20140425073610.GA2143@infradead.org>
-In-Reply-To: <20140425073610.GA2143@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 25 Apr 2014 10:18:54 -0400
+Date: Fri, 25 Apr 2014 16:18:49 +0200
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+To: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Mathias Nyman <mathias.nyman@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
+        Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
+        devicetree@vger.kernel.org, Nadav Haklai <nadavh@marvell.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v2 03/18] usb: host: xhci-plat: Add support for the
+ Armada 38x
+Message-ID: <20140425161849.5616821e@skate>
+In-Reply-To: <1398434836-18908-4-git-send-email-gregory.clement@free-electrons.com>
+References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
+	<1398434836-18908-4-git-send-email-gregory.clement@free-electrons.com>
+Organization: Free Electrons
+X-Mailer: Claws Mail 3.9.1 (GTK+ 2.24.20; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2014 01:36 AM, Christoph Hellwig wrote:
-> A tester found out that we need add_disk_randomness for my scsi-mq
-> branch.  The patch applied exports add_disk_randomness so that modular
-> scsi still works with a driver that either uses the low-level I/O
-> completion routines for the old block layer, or blk-mq, and I'd love
-> to get this in through Jens' tree which has all the other block work
-> scsi-mq requires.
-> 
-> But this also brings up an interesting question:  blk-mq currently
-> does not set QUEUE_FLAG_ADD_RANDOM in the default queue flags, so
-> simply converting a driver to blk-mq will mean it stops contributing
-> to the random pool.  Do we need a more fine grained way to control
-> this, especially for SCSI?
+Dear Gregory CLEMENT,
 
-Or, we could just fix the horribly slow pool mix and have it always be
-on if it's "free", or almost free. Perhaps just default to on for
-rotating devices, that'd lessen the impact.
+On Fri, 25 Apr 2014 16:07:01 +0200, Gregory CLEMENT wrote:
 
+> +#define USB3_MAX_WINDOWS	4
+> +#define USB3_WIN_CTRL(w)	(0x0 + ((w) * 8))
+> +#define USB3_WIN_BASE(w)	(0x4 + ((w) * 8))
+> +
+> +static void __init mv_usb3_conf_mbus_windows(void __iomem *base,
+> +			const struct mbus_dram_target_info *dram)
+
+That's a nitpick, but the name of this function looks like it was
+copy/pasted from the Marvell LSP, and isn't very consistent with the
+other function name. What about:
+
+	xhci_mvebu_mbus_config()
+
+instead, or something like that?
+
+> +int xhci_mvebu_mbus_init_quirk(struct platform_device *pdev)
+
+I believe this should give you a warning about section mismatch: you
+have a non-init function calling an __init function, no?
+
+Thomas
 -- 
-Jens Axboe
-
+Thomas Petazzoni, CTO, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
