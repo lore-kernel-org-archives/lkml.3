@@ -1,90 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751269AbaDYVFs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 17:05:48 -0400
-Received: from mail-ee0-f54.google.com ([74.125.83.54]:50588 "EHLO
-	mail-ee0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbaDYVFp (ORCPT
+	id S1751461AbaDYVF6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 17:05:58 -0400
+Received: from mail-pb0-f45.google.com ([209.85.160.45]:52195 "EHLO
+	mail-pb0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751300AbaDYVFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 17:05:45 -0400
-Message-ID: <535ACE25.5020503@gmail.com>
-Date: Fri, 25 Apr 2014 23:05:41 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
+	Fri, 25 Apr 2014 17:05:52 -0400
+Message-ID: <535ACE2D.9000408@linaro.org>
+Date: Fri, 25 Apr 2014 14:05:49 -0700
+From: John Stultz <john.stultz@linaro.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-CC: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
-        chow.kim@samsung.com, yg1004.jang@samsung.com,
-        vikas.sajjan@samsung.com, s.nawrocki@samsung.com,
-        b.zolnierkie@samsung.com
-Subject: Re: [PATCH v2 01/10] ARM: EXYNOS: Make exynos machine_ops as static
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-2-git-send-email-pankaj.dubey@samsung.com>
-In-Reply-To: <1398429166-5539-2-git-send-email-pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Miroslav Lichvar <mlichvar@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: Re: [PATCH 0/3] timekeeping: Improved NOHZ frequency steering
+References: <1398380677-8684-1-git-send-email-john.stultz@linaro.org> <20140425140421.GA7933@localhost>
+In-Reply-To: <20140425140421.GA7933@localhost>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pankaj,
+On 04/25/2014 07:04 AM, Miroslav Lichvar wrote:
+> On Thu, Apr 24, 2014 at 04:04:34PM -0700, John Stultz wrote:
+>> Continuing the sporadic work on improving the timekeeping
+>> frequency steering logic when NOHZ is enabled, I've made a number
+>> of changes to my re-implementation of Miroslav's patch (most
+>> recently posted here: https://lkml.org/lkml/2014/2/12/401 ),
+>> and I'm getting much closer results in the simulator.
+> Thanks, in my initial testing it seems to be working well. The results
+> from the simulator are much better than with the previous patch.
+>
+>> Compared with Miroslav's patch, this avoids doing any extra
+>> divisions, and instead approximates the correction
+>> logarithmically.
+> Hm, doesn't that basically make the code a software implementation of
+> division? It seems it needs about 4-8 iterations to get to the final
+> result.
+>
+> I didn't measure it, but I think with this change it now may be close
+> or possibly even slower than my patch. The extra division and
+> multiplication in my patch are used only when the tick length changes
+> (normally once per second), otherwise the update is very cheap.
 
-On 25.04.2014 14:32, Pankaj Dubey wrote:
-> As machine function ops are used only in this file let's make
-> them static.
->
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->   arch/arm/mach-exynos/exynos.c |    6 +++---
->   1 file changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-> index b32a907..2388ee4 100644
-> --- a/arch/arm/mach-exynos/exynos.c
-> +++ b/arch/arm/mach-exynos/exynos.c
-> @@ -198,7 +198,7 @@ static struct map_desc exynos5_iodesc[] __initdata = {
->   	},
->   };
->
-> -void exynos_restart(enum reboot_mode mode, const char *cmd)
-> +static void exynos_restart(enum reboot_mode mode, const char *cmd)
->   {
->   	struct device_node *np;
->   	u32 val = 0x1;
-> @@ -235,7 +235,7 @@ void __init exynos_cpufreq_init(void)
->   	platform_device_register_simple("exynos-cpufreq", -1, NULL, 0);
->   }
->
-> -void __init exynos_init_late(void)
-> +static void __init exynos_init_late(void)
->   {
->   	if (of_machine_is_compatible("samsung,exynos5440"))
->   		/* to be supported later */
-> @@ -296,7 +296,7 @@ static void __init exynos_map_io(void)
->   		iotable_init(exynos5250_iodesc, ARRAY_SIZE(exynos5250_iodesc));
->   }
->
-> -void __init exynos_init_io(void)
-> +static void __init exynos_init_io(void)
->   {
->   	debug_ll_io_init();
->
->
+This point is quite true, though I'm really not convinced the last patch
+in the series is realistically needed. It does help the code get close
+to your implementation in comparisons w/ the simulator but I haven't had
+the chance to sort out what the real world impact is likely to be.
 
-This patch seems to be irrelevant to the rest of this series. Anyway, 
-the changes itself are fine, except that I can see more functions that 
-could be made static as well:
-  - exynos_cpuidle_init(),
-  - exynos_cpufreq_init().
+That said, you're points about just setting the freq rather then trying
+to converge towards it to eliminate the second layer of correction
+oscillation is starting to resonate more with me. Thus I may very well
+switch to the division, but if so I also want to get the manipulations
+to the supporting accounting variables similarly documented as the
+scaled manipulation currently provides.
 
-In fact, they both could be probably eliminated, as they are just 
-oneliners doing things that could be done in exynos_dt_machine_init() 
-directly.
 
-So, if you are doing this kind of cleanup, you could do this as well and 
-probably also replace platform_device + platform_device_register() with 
-platform_device_register_simple() for cpuidle, to reduce line count and 
-make it consistent with cpufreq.
+>
+>> Miroslav's patch:
+>> -----------------
+>> $ ./test1.sh 
+>> 		freq10          freq100         dev             max
+>> nohz on	0.00601         0.00028         74.0            279.4
+>> nohz off	0.05867         0.00204         0.2             0.6
+>> This patchset:
+>> --------------
+>> $ ./test1.sh 
+>> 		freq10          freq100         dev             max
+>> nohz on	0.00748         0.00076         110.8           476.4
+>> nohz off	0.07173         0.03590         0.6             2.1
+> This looks pretty good to me. It's interesting that the performance
+> with nohz off got worse, but when I modify the test to use more points
+> I can see it does converge to the correct frequency and probably it's
+> not a big problem.
+>
+> It seems it still doesn't always switch mult only between the two
+> closest values, which explains the slightly worse dev and max values.
+Huh. I don't think I saw that in my testing. I'll look into it again.
 
-Best regards,
-Tomasz
+I suspect the extra error comes from the occasional underflow handling
+(which you avoid w/ the second_overflow_skip stuff which would help but
+feels a little clunky to me - but I'm still thinking it over).
+
+thanks
+-john
