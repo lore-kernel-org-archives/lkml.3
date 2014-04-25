@@ -1,100 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbaDYMP6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 08:15:58 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:39628 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752788AbaDYMPF (ORCPT
+	id S1753779AbaDYMRv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 08:17:51 -0400
+Received: from mail-wi0-f170.google.com ([209.85.212.170]:44901 "EHLO
+	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752AbaDYMRm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 08:15:05 -0400
-X-AuditID: cbfee68d-b7f4e6d000004845-e2-535a51c8ed01
-From: Pankaj Dubey <pankaj.dubey@samsung.com>
-To: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Cc: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
-        chow.kim@samsung.com, yg1004.jang@samsung.com,
-        vikas.sajjan@samsung.com, s.nawrocki@samsung.com,
-        b.zolnierkie@samsung.com
-Subject: [PATCH v2 05/10] ARM: EXYNOS: Remove regs-pmu.h header dependency from
- pm_domain
-Date: Fri, 25 Apr 2014 21:32:41 +0900
-Message-id: <1398429166-5539-6-git-send-email-pankaj.dubey@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com>
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com>
- <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphkeLIzCtJLcpLzFFi42I5/e+Zse6JwKhgg9YGZYuNM9azWiybdJfN
-	onfBVTaLTY+vsVpc3jWHzWLG+X1MFrcv81ocftPOarF+xmsWi5vPtjNZ7GhZzeLA7dHS3MPm
-	sXlJvUffllWMHp83yQWwRHHZpKTmZJalFunbJXBlvDyzmq3gNnfFt99nmBsYP3N2MXJySAiY
-	SHxcsZgZwhaTuHBvPVsXIxeHkMAyRol1V8+wwhQdOdfMBGILCSxilFi2qByiqI1J4mX3HbAE
-	m4CuxJP3c8EmiQhkS1xpvM8MUsQscIRR4vabY2BFwgLREqdX3WIEsVkEVCV2PNjIBmLzCrhL
-	7OhZBbSNA2ibgsScSTYgYU4BD4kTyz+yQyxrZZQ4//s2C4gjIbCNXWLOiStsEIMEJL5NPsQC
-	0SwrsekA1DuSEgdX3GCZwCi8gJFhFaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZIDPTuYLx9
-	wPoQYzLQuInMUqLJ+cAYyiuJNzQ2M7IwNTE1NjK3NCNNWEmcN+lhUpCQQHpiSWp2ampBalF8
-	UWlOavEhRiYOTqkGRtawd7yzuKsVxDdyV3D8vXc1VY374XeVBY53OKpypMPX1ISbR7p6c/Z2
-	9US42TkEqqSmcMyr7Lm65EBi4hvxBU8Xz1/F1f3ifme1j5H//qzmRfcZlNh1RYyvSIq9lP1s
-	d++roZJo7h3m6glrRPgvfpyXbWjQZBRU/+3yovVBx2dzfJlVlDpbiaU4I9FQi7moOBEAEnLa
-	w5cCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrIIsWRmVeSWpSXmKPExsVy+t9jAd0TgVHBBisOyVlsnLGe1WLZpLts
-	Fr0LrrJZbHp8jdXi8q45bBYzzu9jsrh9mdfi8Jt2Vov1M16zWNx8tp3JYkfLahYHbo+W5h42
-	j81L6j36tqxi9Pi8SS6AJaqB0SYjNTEltUghNS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEv
-	MTfVVsnFJ0DXLTMH6CglhbLEnFKgUEBicbGSvh2mCaEhbroWMI0Rur4hQXA9RgZoIGEdY8bL
-	M6vZCm5zV3z7fYa5gfEzZxcjJ4eEgInEkXPNTBC2mMSFe+vZQGwhgUWMEssWlXcxcgHZbUwS
-	L7vvgBWxCehKPHk/lxnEFhHIlrjSeJ8ZpIhZ4AijxO03x8CKhAWiJU6vusUIYrMIqErseLAR
-	bCqvgLvEjp5VrF2MHEDbFCTmTLIBCXMKeEicWP6RHWJZK6PE+d+3WSYw8i5gZFjFKJpakFxQ
-	nJSea6RXnJhbXJqXrpecn7uJERxhz6R3MK5qsDjEKMDBqMTDO0E2MliINbGsuDL3EKMEB7OS
-	CO8Hv6hgId6UxMqq1KL8+KLSnNTiQ4zJQFdNZJYSTc4HRn9eSbyhsYmZkaWRmYWRibk5acJK
-	4rwHW60DhQTSE0tSs1NTC1KLYLYwcXBKNTDyewoG/VXdNKOhobTXxNFZNNMgPfuMKY+mtK0G
-	g8/Ta3I7nU4//uyVynBO+u/bZdyVGw3dMpcFTF9tLiWp8mj614bw+l95RivatWzdC173ibz6
-	/H0TQ+39eJOaZ9tiNaRdo798btvz5emG5h7mhT/UGCynr0y+//vFrmcKP7gXRX75UPxWtEuJ
-	pTgj0VCLuag4EQCGHG189AIAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Fri, 25 Apr 2014 08:17:42 -0400
+Message-ID: <535A5263.6090104@linaro.org>
+Date: Fri, 25 Apr 2014 14:17:39 +0200
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Amit Kucheria <amit.kucheria@linaro.org>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
+References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org> <535911DC.9050109@linaro.org> <CAP245DXFRfARtEfj70XD8D8OiAT_1i_5G2zao+y0DT0Lg_YFJA@mail.gmail.com> <2713863.BLQTYQm2Oa@vostro.rjw.lan>
+In-Reply-To: <2713863.BLQTYQm2Oa@vostro.rjw.lan>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Young-Gun Jang <yg1004.jang@samsung.com>
+On 04/25/2014 01:46 PM, Rafael J. Wysocki wrote:
+> On Friday, April 25, 2014 04:24:49 PM Amit Kucheria wrote:
+>> On Thu, Apr 24, 2014 at 7:00 PM, Daniel Lezcano
+>> <daniel.lezcano@linaro.org> wrote:
+>>>
+>>> On 04/24/2014 03:13 PM, Amit Kucheria wrote:
+>>>>
+>>>> On Thu, Apr 24, 2014 at 5:54 PM, Daniel Lezcano
+>>>> <daniel.lezcano@linaro.org <mailto:daniel.lezcano@linaro.org>> wrote:
+>>>>
+>>>>      This patch adds a sysctl schedule balance option to choose against:
+>>>>
+>>>>        * auto        (0)
+>>>>        * performance (1)
+>>>>        * power       (2)
+>>>>
+>>>>      It relies on the recently added notifier to monitor the power supply
+>>>>      changes.
+>>>>      If the scheduler balance option is set to 'auto', then when the
+>>>>      system switches
+>>>>      to battery, the balance option change to 'power' and when it goes
+>>>>      back to AC, it
+>>>>      switches to 'performance'.
+>>>>
+>>>>      The default value is 'auto'.
+>>>>
+>>>>      If the kernel is compiled without the CONFIG_POWER_SUPPLY option,
+>>>>      then any call
+>>>>      to the 'auto' option will fail and the scheduler will use the
+>>>>      'performance'
+>>>>      option as default.
+>>>>
+>>>>      Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org
+>>>>      <mailto:daniel.lezcano@linaro.org>>
+>>>>
+>>>>      ---
+>>>>        include/linux/sched/sysctl.h |   14 +++++++
+>>>>        kernel/sched/fair.c          |   92
+>>>>      +++++++++++++++++++++++++++++++++++++++++-
+>>>>        kernel/sysctl.c              |   11 +++++
+>>>>        3 files changed, 115 insertions(+), 2 deletions(-)
+>>>>
+>>>>      diff --git a/include/linux/sched/sysctl.h b/include/linux/sched/sysctl.h
+>>>>      index 8045a55..f8507bf 100644
+>>>>      --- a/include/linux/sched/sysctl.h
+>>>>      +++ b/include/linux/sched/sysctl.h
+>>>>      @@ -44,6 +44,20 @@ enum sched_tunable_scaling {
+>>>>        };
+>>>>        extern enum sched_tunable_scaling sysctl_sched_tunable_scaling;
+>>>>
+>>>>      +#ifdef CONFIG_SMP
+>>>>      +enum sched_balance_option {
+>>>>
+>>>>
+>>>> What do you think of s/option/bias/g ?
+>>>>
+>>>> It is essentially biasing the scheduler towards performance or power
+>>>
+>>>
+>>> Yes, could be more adequate.
+>>>
+>>>
+>>>>      +       SCHED_BALANCE_OPTION_PERFORMANCE,
+>>>>      +       SCHED_BALANCE_OPTION_POWER,
+>>>>      +       SCHED_BALANCE_OPTION_AUTO,
+>>>>      +       SCHED_BALANCE_OPTION_END,
+>>>>      +};
+>>>>
+>>>>
+>>>>      +extern enum sched_balance_option sysctl_sched_balance_option;
+>>>>      +
+>>>>      +int sched_proc_balance_option_handler(struct ctl_table *table, int
+>>>>      write,
+>>>>      +               void __user *buffer, size_t *length,
+>>>>      +               loff_t *ppos);
+>>>>      +#endif
+>>>>      +
+>>>>        extern unsigned int sysctl_numa_balancing_scan_delay;
+>>>>        extern unsigned int sysctl_numa_balancing_scan_period_min;
+>>>>        extern unsigned int sysctl_numa_balancing_scan_period_max;
+>>>>      diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+>>>>      index 7570dd9..7b8e93d 100644
+>>>>      --- a/kernel/sched/fair.c
+>>>>      +++ b/kernel/sched/fair.c
+>>>>      @@ -29,7 +29,7 @@
+>>>>        #include <linux/mempolicy.h>
+>>>>        #include <linux/migrate.h>
+>>>>        #include <linux/task_work.h>
+>>>>      -
+>>>>      +#include <linux/power_supply.h>
+>>>>        #include <trace/events/sched.h>
+>>>>
+>>>>        #include "sched.h"
+>>>>      @@ -61,6 +61,24 @@ unsigned int normalized_sysctl_sched_latency =
+>>>>      6000000ULL;
+>>>>        enum sched_tunable_scaling sysctl_sched_tunable_scaling
+>>>>               = SCHED_TUNABLESCALING_LOG;
+>>>>
+>>>>      +#ifdef CONFIG_SMP
+>>>>      +/*
+>>>>      + * Scheduler balancing policy:
+>>>>      + *
+>>>>      + * Options are:
+>>>>      + * SCHED_BALANCE_OPTION_PERFORMANCE - full performance
+>>>>      + * SCHED_BALANCE_OPTION_POWER - power saving aggressive
+>>>>      + * SCHED_BALANCE_OPTION_AUTO - switches to 'performance' when plugged
+>>>>      + *                             on or 'power' on battery
+>>>>      + */
+>>>>      +enum sched_balance_option sysctl_sched_balance_option
+>>>>      +       = SCHED_BALANCE_OPTION_AUTO;
+>>>>      +
+>>>>      +static int sched_current_balance_option
+>>>>      +       = SCHED_BALANCE_OPTION_PERFORMANCE;
+>>>>      +
+>>>>      +#endif
+>>>>      +
+>>>>        /*
+>>>>         * Minimal preemption granularity for CPU-bound tasks:
+>>>>         * (default: 0.75 msec * (1 + ilog(ncpus)), units: nanoseconds)
+>>>>      @@ -555,6 +573,76 @@ static struct sched_entity
+>>>>      *__pick_next_entity(struct sched_entity *se)
+>>>>               return rb_entry(next, struct sched_entity, run_node);
+>>>>        }
+>>>>
+>>>>      +#ifdef CONFIG_SMP
+>>>>      +static int sched_balance_option_update(void)
+>>>>      +{
+>>>>      +       int ret;
+>>>>      +
+>>>>      +       /*
+>>>>      +        * Copy the current balance option
+>>>>      +        */
+>>>>      +       if (sysctl_sched_balance_option != SCHED_BALANCE_OPTION_AUTO) {
+>>>>      +               sched_current_balance_option =
+>>>>      sysctl_sched_balance_option;
+>>>>      +               return 0;
+>>>>      +       }
+>>>>      +
+>>>>      +       /*
+>>>>      +        * This call may fail if the kernel is not compiled with
+>>>>      +        * the POWER_SUPPLY option.
+>>>>      +        */
+>>>>      +       ret = power_supply_is_system_supplied();
+>>>>      +       if (ret < 0) {
+>>>>      +               sysctl_sched_balance_option =
+>>>>      sched_current_balance_option;
+>>>>      +               return ret;
+>>>>      +       }
+>>>>      +
+>>>>      +       /*
+>>>>      +        * When in 'auto' mode, switch to 'performance if the system
+>>>>      +        * is plugged on the wall, to 'power' if we are on battery
+>>>>      +        */
+>>>>      +       sched_current_balance_option = ret ?
+>>>>      +               SCHED_BALANCE_OPTION_PERFORMANCE :
+>>>>      +               SCHED_BALANCE_OPTION_POWER;
+>>>>      +
+>>>>      +       return 0;
+>>>>      +}
+>>>>      +
+>>>>
+>>>>
+>>>> I understand that this is only meant to kick off discussions and other
+>>>> criteria besides power being plugged in to bias the scheduler
+>>>> performance could be added later. But does it make sense to hardcode the
+>>>> power supply assumption into the scheduler?
+>>>>
+>>>> Can't we instead make sched_balance_option_update() a function pointer
+>>>> (with a default implementation that you've provided) that provide
+>>>> platforms the ability to override that with their own implementation?
+>>>
+>>>
+>>> I agree if that really hurts, it could be placed somewhere else, for example in a new file:
+>>>          kernel/sched/energy.c
+>>>
+>>> But concerning the callback, I don't see the point to create a specific platform ops for that as the current code is generic. Do you have any use case in mind ?
+>>>
+>>
+>> I had a offline conversation with Daniel about this since there are
+>> other triggers - thermal constraints and game-like apps being examples
+>> - that might want to override the system policy. He intended
+>> "performance" mode to mean the existing code paths and "power" mode to
+>> mean *additional* new heuristics for energy-efficiency. The power
+>> supply assumption is just the first one of those heuristics.
+>
+> Well, so now the question is whether or not we relly want to always
+> go to the "power" (or "energy efficiency" if you will) mode if the system
+> is on battery.  That arguably may not be a good thing even for energy
+> efficiency depending on how exactly the modes are defined.
+>
+> So in my opinion it's too early to add things like that at this point.
 
-Current "pm_domain.c" file uses "S5P_INT_LOCAL_PWR_EN" definition from
-"regs-pmu.h" and hence needs to include this header file. As there is
-no other user of "S5P_INT_LOCAL_PWR_EN" definition other than pm_domain,
-to remove "regs-pmu.h" header file dependency from "pm_domain.c"  it's
-better we define this definition in "pm_domain.c" file itself and thus it
-will help in removing header file inclusion from "pm_domain.c".
+Ok, the point to solve is to have the old code path (performance) and 
+the new code path (power) to be selectable from userspace.
 
-Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
----
- arch/arm/mach-exynos/pm_domains.c |    2 +-
- arch/arm/mach-exynos/regs-pmu.h   |    1 -
- 2 files changed, 1 insertion(+), 2 deletions(-)
+It is acceptable to keep the power/performance option for now without 
+the power supply thing ? And we address the policy to switch from one 
+mode to another mode with another option later ?
 
-diff --git a/arch/arm/mach-exynos/pm_domains.c b/arch/arm/mach-exynos/pm_domains.c
-index fe6570e..f676b0a 100644
---- a/arch/arm/mach-exynos/pm_domains.c
-+++ b/arch/arm/mach-exynos/pm_domains.c
-@@ -22,7 +22,7 @@
- #include <linux/of_platform.h>
- #include <linux/sched.h>
- 
--#include "regs-pmu.h"
-+#define S5P_INT_LOCAL_PWR_EN 0x7
- 
- /*
-  * Exynos specific wrapper around the generic power domain
-diff --git a/arch/arm/mach-exynos/regs-pmu.h b/arch/arm/mach-exynos/regs-pmu.h
-index 4ee706d..bfebe84 100644
---- a/arch/arm/mach-exynos/regs-pmu.h
-+++ b/arch/arm/mach-exynos/regs-pmu.h
-@@ -116,7 +116,6 @@
- #define S5P_PAD_RET_EBIB_OPTION			S5P_PMUREG(0x31A8)
- 
- #define S5P_CORE_LOCAL_PWR_EN			0x3
--#define S5P_INT_LOCAL_PWR_EN			0x7
- 
- #define S5P_CHECK_SLEEP				0x00000BAD
- 
+
+>> In that case, "performance" should be the default so we don't change
+>> existing system behavior. And perhaps we want to keep these energy
+>> heuristics in a separate file, at least until we've gotten them right.
+>>
+>> While we're at it, can we attempt to replace power with energy since
+>> that is what we're trying to save in most cases?
+>
+> That would be a good thing IMO.
+
+
 -- 
-1.7.10.4
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
