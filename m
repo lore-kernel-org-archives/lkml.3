@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901AbaDYJ1P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:27:15 -0400
-Received: from szxga03-in.huawei.com ([119.145.14.66]:45823 "EHLO
+	id S1753080AbaDYJ1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:27:52 -0400
+Received: from szxga03-in.huawei.com ([119.145.14.66]:45819 "EHLO
 	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378AbaDYJTo (ORCPT
+	with ESMTP id S1752322AbaDYJTn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:19:44 -0400
+	Fri, 25 Apr 2014 05:19:43 -0400
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
@@ -15,9 +15,9 @@ CC: <linuxppc-dev@lists.ozlabs.org>, <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>, <x86@kernel.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Yijing Wang <wangyijing@huawei.com>
-Subject: [PATCH 04/13] x86/PCI: Use new pci_is_bridge() to simplify code
-Date: Fri, 25 Apr 2014 17:18:26 +0800
-Message-ID: <1398417515-8740-5-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 08/13] PCI, rpaphp: Use new pci_is_bridge() to simplify code
+Date: Fri, 25 Apr 2014 17:18:30 +0800
+Message-ID: <1398417515-8740-9-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.11.msysgit.1
 In-Reply-To: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
 References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
@@ -34,24 +34,23 @@ to simplify code.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- arch/x86/pci/fixup.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/pci/hotplug/rpadlpar_core.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-index 94ae9ae..e5f000c 100644
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -337,9 +337,7 @@ static void pci_fixup_video(struct pci_dev *pdev)
- 		 * type BRIDGE, or CARDBUS. Host to PCI controllers use
- 		 * PCI header type NORMAL.
- 		 */
--		if (bridge
--		    && ((bridge->hdr_type == PCI_HEADER_TYPE_BRIDGE)
--		       || (bridge->hdr_type == PCI_HEADER_TYPE_CARDBUS))) {
-+		if (bridge && (pci_is_bridge(bridge))) {
- 			pci_read_config_word(bridge, PCI_BRIDGE_CONTROL,
- 						&config);
- 			if (!(config & PCI_BRIDGE_CTL_VGA))
+diff --git a/drivers/pci/hotplug/rpadlpar_core.c b/drivers/pci/hotplug/rpadlpar_core.c
+index 4fcdeed..7660232 100644
+--- a/drivers/pci/hotplug/rpadlpar_core.c
++++ b/drivers/pci/hotplug/rpadlpar_core.c
+@@ -157,8 +157,7 @@ static void dlpar_pci_add_bus(struct device_node *dn)
+ 	}
+ 
+ 	/* Scan below the new bridge */
+-	if (dev->hdr_type == PCI_HEADER_TYPE_BRIDGE ||
+-	    dev->hdr_type == PCI_HEADER_TYPE_CARDBUS)
++	if (pci_is_bridge(dev))
+ 		of_scan_pci_bridge(dev);
+ 
+ 	/* Map IO space for child bus, which may or may not succeed */
 -- 
 1.7.1
 
