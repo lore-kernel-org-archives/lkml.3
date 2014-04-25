@@ -1,110 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329AbaDYNyU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:54:20 -0400
-Received: from mail-ee0-f49.google.com ([74.125.83.49]:54423 "EHLO
-	mail-ee0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028AbaDYNyS (ORCPT
+	id S1753632AbaDYNyh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:54:37 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42501 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753438AbaDYNye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:54:18 -0400
-Date: Fri, 25 Apr 2014 15:54:13 +0200
-From: Robert Richter <rric@kernel.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jean Pihet <jean.pihet@linaro.org>, Borislav Petkov <bp@alien8.de>,
-        Ingo Molnar <mingo@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@ZenIV.linux.org.uk>
-Subject: Re: [PATCH 04/16] perf, mmap: Factor out perf_get_fd()
-Message-ID: <20140425135413.GE32718@rric.localhost>
-References: <1396883078-25320-1-git-send-email-jean.pihet@linaro.org>
- <1396883078-25320-5-git-send-email-jean.pihet@linaro.org>
- <20140422142759.GM11182@twins.programming.kicks-ass.net>
+	Fri, 25 Apr 2014 09:54:34 -0400
+Date: Fri, 25 Apr 2014 09:54:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+cc: Tejun Heo <tj@kernel.org>, Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-usb@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <rafael.j.wysocki@intel.com>
+Subject: Re: [PATCH] USB: serial: fix sysfs-attribute removal deadlock
+In-Reply-To: <1398392134.2805.149.camel@ThinkPad-T5421.cn.ibm.com>
+Message-ID: <Pine.LNX.4.44L0.1404250953090.1140-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140422142759.GM11182@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.04.14 16:27:59, Peter Zijlstra wrote:
-> On Mon, Apr 07, 2014 at 05:04:26PM +0200, Jean Pihet wrote:
-> > From: Robert Richter <robert.richter@linaro.org>
-> > 
-> > This new function creates a new fd for an event. We need this later to
-> > get a fd from a persistent event.
-> > 
-> > Signed-off-by: Robert Richter <robert.richter@linaro.org>
-> > Signed-off-by: Robert Richter <rric@kernel.org>
-> > Signed-off-by: Jean Pihet <jean.pihet@linaro.org>
-> > ---
-> >  kernel/events/core.c     | 14 ++++++++------
-> >  kernel/events/internal.h |  1 +
-> >  2 files changed, 9 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index 22ec8f0..9857475 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -4206,6 +4206,11 @@ static const struct file_operations perf_fops = {
-> >  	.fasync			= perf_fasync,
-> >  };
-> >  
-> > +int perf_get_fd(struct perf_event *event, int f_flags)
-> > +{
-> > +	return anon_inode_getfd("[perf_event]", &perf_fops, event, f_flags);
-> > +}
-> > +
-> >  /*
-> >   * Perf event wakeup
-> >   *
-> > @@ -7028,7 +7033,6 @@ SYSCALL_DEFINE5(perf_event_open,
-> >  	struct perf_event *event, *sibling;
-> >  	struct perf_event_attr attr;
-> >  	struct perf_event_context *ctx;
-> > -	struct file *event_file = NULL;
-> >  	struct fd group = {NULL, 0};
-> >  	struct task_struct *task = NULL;
-> >  	struct pmu *pmu;
-> > @@ -7189,10 +7193,9 @@ SYSCALL_DEFINE5(perf_event_open,
-> >  			goto err_context;
-> >  	}
-> >  
-> > -	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event,
-> > -					f_flags);
-> > -	if (IS_ERR(event_file)) {
-> > -		err = PTR_ERR(event_file);
-> > +	event_fd = perf_get_fd(event, f_flags);
-> > +	if (event_fd < 0) {
-> > +		err = event_fd;
-> >  		goto err_context;
-> >  	}
-> >  
-> > @@ -7257,7 +7260,6 @@ SYSCALL_DEFINE5(perf_event_open,
-> >  	 * perf_group_detach().
-> >  	 */
-> >  	fdput(group);
-> > -	fd_install(event_fd, event_file);
-> >  	return event_fd;
-> >  
-> >  err_context:
+On Fri, 25 Apr 2014, Li Zhong wrote:
+
+> > I don't get why try_module_get() matters here.  We can't call into
+> > ->store if the object at hand is already destroyed and the underlying
+> > module can't go away if the target device is still alive.
+> > try_module_get() doesn't actually protect the object.  Why does that
+> > matter?  This is self removal, right?  Can you please take a look at
+> > kernfs_remove_self()?
 > 
-> ISTR there being a good reason we only install the FD at the very last
-> moment. Of course I cannot quite recall it :/
+> This is about one process writing something to driver attributes, and
+> one process trying to unload this driver. 
 > 
-> I suspect it had something to do with not being able to fudge the state
-> while its being set-up or somesuch.
+> I think try_module_get() could detect whether the driver is being
+> unloaded, and if not, prevent it from being unloaded, so it could
+> protect the object here by not allow the driver to be unloaded.
 
-I guess its this patch from Al you referring to:
+That isn't how try_module_get() works.  If the module is being 
+unloaded, try_module_get() simply fails.  It does not prevent the 
+module from being unloaded -- that's why its name begins with "try".
 
- ea635c6 Fix racy use of anon_inode_getfd() in perf_event.c
+Alan Stern
 
-I think we do not introduce it back due to:
-
- a6fa941 perf_event: Switch to internal refcount, fix race with close()
-
-which removes the user of event_file.
-
--Robert
