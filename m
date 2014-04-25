@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434AbaDYCMj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 22:12:39 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:33988 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750844AbaDYCMh (ORCPT
+	id S1751529AbaDYCPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 22:15:44 -0400
+Received: from e06smtp14.uk.ibm.com ([195.75.94.110]:54890 "EHLO
+	e06smtp14.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787AbaDYCPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 22:12:37 -0400
-Message-ID: <1398391948.7767.182.camel@deadeye.wl.decadent.org.uk>
-Subject: Re: [PATCH 3.11 052/182] [SCSI] fix our current target reap
- infrastructure
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Luis Henriques <luis.henriques@canonical.com>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com,
-        James Bottomley <JBottomley@Parallels.com>
-Date: Fri, 25 Apr 2014 03:12:28 +0100
-In-Reply-To: <1398329507-5911-53-git-send-email-luis.henriques@canonical.com>
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-	 <1398329507-5911-53-git-send-email-luis.henriques@canonical.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-lABK9Lk0+hkX6P89T6hD"
-X-Mailer: Evolution 3.8.5-2+b3 
+	Thu, 24 Apr 2014 22:15:43 -0400
+Message-ID: <1398392134.2805.149.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: Re: [PATCH] USB: serial: fix sysfs-attribute removal deadlock
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Johan Hovold <jhovold@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Alan Stern <stern@rowland.harvard.edu>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com
+Date: Fri, 25 Apr 2014 10:15:34 +0800
+In-Reply-To: <20140424143517.GC14460@htj.dyndns.org>
+References: <1398245539-1618-1-git-send-email-jhovold@gmail.com>
+	 <20140423141908.GA4781@htj.dyndns.org>
+	 <1398328155.2805.100.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140424143517.GC14460@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
 Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 192.168.4.249
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042502-1948-0000-0000-0000089323B1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2014-04-24 at 10:35 -0400, Tejun Heo wrote:
+> On Thu, Apr 24, 2014 at 04:29:15PM +0800, Li Zhong wrote:
+> > On Wed, 2014-04-23 at 10:19 -0400, Tejun Heo wrote:
+> > > cc'ing Li Zhong who's working on a simliar issue in the following
+> > > thread and quoting whole body.
+> > > 
+> > >   http://thread.gmane.org/gmane.linux.kernel/1680706
+> > > 
+> > > Li, this is another variation of the same problem.  Maybe this can be
+> > > covered by your work too?
+> > 
+> > It seems to me that it is about write something to driver attribute, and
+> > driver unloading. If so, maybe it's not easy to reuse the help functions
+> > created for device attribute, and device removing.
+> > 
+> > But I guess the idea to break the active protection could still be
+> > applied here:
+> > 
+> > Maybe we could try_module_get() here (like the other option suggested by
+> > Johan?), and break active protection if we could get the module,
+> > something like below? 
+> 
+> I don't get why try_module_get() matters here.  We can't call into
+> ->store if the object at hand is already destroyed and the underlying
+> module can't go away if the target device is still alive.
+> try_module_get() doesn't actually protect the object.  Why does that
+> matter?  This is self removal, right?  Can you please take a look at
+> kernfs_remove_self()?
 
---=-lABK9Lk0+hkX6P89T6hD
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This is about one process writing something to driver attributes, and
+one process trying to unload this driver. 
 
-On Thu, 2014-04-24 at 09:49 +0100, Luis Henriques wrote:
-> 3.11.10.9 -stable review patch.  If anyone has any objections, please let=
- me know.
->=20
-> ------------------
->=20
-> From: James Bottomley <JBottomley@Parallels.com>
->=20
-> commit e63ed0d7a98014fdfc2cfeb3f6dada313dcabb59 upstream.
->=20
-> This patch eliminates the reap_ref and replaces it with a proper kref.
-> On last put of this kref, the target is removed from visibility in
-> sysfs.  The final call to scsi_target_reap() for the device is done from
-> __scsi_remove_device() and only if the device was made visible.  This
-> ensures that the target disappears as soon as the last device is gone
-> rather than waiting until final release of the device (which is often
-> too long).
->=20
-> Reviewed-by: Alan Stern <stern@rowland.harvard.edu>
-> Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-[...]
+I think try_module_get() could detect whether the driver is being
+unloaded, and if not, prevent it from being unloaded, so it could
+protect the object here by not allow the driver to be unloaded.
 
-This and the next patch were commented "delay backport by 2 months for
-field testing".
+And if the driver is being unloaded, we could abort the write operation
+directly. 
 
-Ben.
+Thanks, Zhong
 
---=20
-Ben Hutchings
-Beware of programmers who carry screwdrivers. - Leonard Brandwein
+> 
+> Thanks.
+> 
 
---=-lABK9Lk0+hkX6P89T6hD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIVAwUAU1nEjOe/yOyVhhEJAQqGhBAApN1j79bhNgLZb+jIXezthszAp2MkQRsz
-PYF5Vi/rDm4c+K/Khto3nox08WJban6mp4Fwy24KVX469ID6krXU41176Pms+E2H
-nvN1Y6ys0Vi1oEZ80H9XNvxaTeCaFueOUSy3esEvdmakqTCx7IfryHaF0vKmOURg
-zbMMgasS7qZphfrSB0mHZA6MdXkEjGtf5oF/Ze0YLNiXr5gosN8oHkHHxccfZeom
-w005PzCevoLavmNItELztdv51oJI6H8d6BP4hjB9SfcXNqB4FtAoh4Gg3/Udr+Xj
-M6CIJGYF/Nxhycn2ZJ3ia0osrBjCs+RYtGLvV8xBzz5QUp3ihbUPdbqA9xJAbwT2
-2OG3yuzyTURjlrWo3gcQXOf1ah8Nr/SkSu9YBfMtkp4hnJ/Y5ixq5cXqnP5WHXwm
-bgLWMOAVo5j+I/vFErJt/uBl33PckaDjixkT4OvooCvMU47B00njUN6cmch88wKx
-kyeV/F5qwYbBiWsGyOgDIU+3RwUnuF4G8h9GxgUzf6Q92OjlEoy2YUAf67wcTkWy
-Qjtol+IiIFHCR/vx4e9LTSphooyXfxfHUVVVBNyfix6S4qyOmBNWjOm3LKMFUSIS
-it0XeEpOsG4v4xx5p0529DFlCQuFj5dl63j2cr5TFllVNWMlwH+PjwwCn9VrW98l
-q+FlRTRcDUQ=
-=9cUu
------END PGP SIGNATURE-----
-
---=-lABK9Lk0+hkX6P89T6hD--
