@@ -1,43 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753973AbaDYSnl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 14:43:41 -0400
-Received: from bombadil.infradead.org ([198.137.202.9]:38689 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706AbaDYSnk (ORCPT
+	id S1752819AbaDYSrA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 14:47:00 -0400
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:20276 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751255AbaDYSq6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 14:43:40 -0400
-Date: Fri, 25 Apr 2014 20:43:27 +0200
-From: Peter Zijlstra <peterz@infradead.org>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Amit Kucheria <amit.kucheria@linaro.org>, Ingo Molnar <mingo@elte.hu>,
-        Lists linaro-kernel <linaro-kernel@lists.linaro.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] sched: idle: Add sched balance option
-Message-ID: <20140425184327.GH26782@laptop.programming.kicks-ass.net>
-References: <1398342291-16322-1-git-send-email-daniel.lezcano@linaro.org>
- <535911DC.9050109@linaro.org>
- <CAP245DXFRfARtEfj70XD8D8OiAT_1i_5G2zao+y0DT0Lg_YFJA@mail.gmail.com>
- <2713863.BLQTYQm2Oa@vostro.rjw.lan>
- <20140425132055.GC11096@twins.programming.kicks-ass.net>
- <535A94E3.5080004@linaro.org>
+	Fri, 25 Apr 2014 14:46:58 -0400
+Date: Fri, 25 Apr 2014 14:46:56 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Bharath Ravi <rbharath@google.com>
+Cc: Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        David Sharp <dhsharp@google.com>, Laurent Chavey <chavey@google.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] tracing: Replace usage of trace_flags with new
+ accessors.
+Message-ID: <20140425144656.5fc07e54@gandalf.local.home>
+In-Reply-To: <1395684826-22931-2-git-send-email-rbharath@google.com>
+References: <1395684826-22931-1-git-send-email-rbharath@google.com>
+	<1395684826-22931-2-git-send-email-rbharath@google.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535A94E3.5080004@linaro.org>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-RR-Connecting-IP: 107.14.168.130:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 07:01:23PM +0200, Daniel Lezcano wrote:
-> As the sysctl is some kind of ABI, I would like to make sure we reach a
-> consensus and discuss a bit about that.
+On Mon, 24 Mar 2014 11:13:44 -0700
+Bharath Ravi <rbharath@google.com> wrote:
 
-We could make it a sysfs file, like /sys/power/state, which when read
-provides the words it takes.
+> The trace_flags global variable stores various trace options that are
+> shared across all ftrace instances. This patch adds accessors function
+> for trace_flags - a getter and a setter - and replaces usages of
+> trace_flags with these.
+> 
+> This is in preparation for replacing the global trace_flags with
+> instance specific (local) trace_flags, allowing each instance to set
+> trace_flags independently.
+> 
+> Signed-off-by: Bharath Ravi <rbharath@google.com>
+> ---
+>  kernel/trace/blktrace.c              |  3 +-
+>  kernel/trace/ftrace.c                |  4 +--
+>  kernel/trace/trace.c                 | 64 ++++++++++++++++++++++--------------
+>  kernel/trace/trace.h                 |  2 ++
+>  kernel/trace/trace_events.c          |  2 +-
+>  kernel/trace/trace_functions_graph.c | 10 +++---
+>  kernel/trace/trace_irqsoff.c         |  4 +--
+>  kernel/trace/trace_kdb.c             |  6 ++--
+>  kernel/trace/trace_output.c          |  8 ++---
+>  kernel/trace/trace_printk.c          |  8 ++---
+>  kernel/trace/trace_sched_wakeup.c    |  3 +-
+>  kernel/trace/trace_syscalls.c        |  2 +-
+>  12 files changed, 68 insertions(+), 48 deletions(-)
+> 
+> diff --git a/kernel/trace/blktrace.c b/kernel/trace/blktrace.c
+> index b418cb0..dd5112a 100644
+> --- a/kernel/trace/blktrace.c
+> +++ b/kernel/trace/blktrace.c
+> @@ -1368,7 +1368,7 @@ static enum print_line_t print_one_line(struct trace_iterator *iter,
+>  
+>  	t	   = te_blk_io_trace(iter->ent);
+>  	what	   = t->action & ((1 << BLK_TC_SHIFT) - 1);
+> -	long_act   = !!(trace_flags & TRACE_ITER_VERBOSE);
+> +	long_act   = !!(global_trace_flags() & TRACE_ITER_VERBOSE);
 
-That is more flexible than a numeric sysctl for which we have to keep an
-enumeration.
+Instead of having a global_trace_flags() function, use the trace_array
+that each tracer has. For here:
+
+	tr->trace_flags;
+
+As if you look at my for-next branch, several tracers can now be called
+by instance not just by the top directory.
+
+-- Steve
+
+
+>  	log_action = classic ? &blk_log_action_classic : &blk_log_action;
+>  
+>  	if (t->action == BLK_TN_MESSAGE) {
+> @@ -1429,6 +1429,7 @@ static enum print_line_t blk_tracer_print_line(struct trace_iterator *iter)
+>  
+>  static int blk_tracer_set_flag(u32 old_flags, u32 bit, int set)
+>  {
+> +	unsigned long trace_flags = global_trace_flags();
+>  	/* don't output context-info for blk_classic output */
+>  	if (bit == TRACE_BLK_OPT_CLASSIC) {
+>  		if (set)
