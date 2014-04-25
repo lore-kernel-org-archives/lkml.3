@@ -1,99 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751924AbaDYVdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 17:33:39 -0400
-Received: from mail-ve0-f182.google.com ([209.85.128.182]:35404 "EHLO
-	mail-ve0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710AbaDYVdg (ORCPT
+	id S1752048AbaDYVeS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 17:34:18 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60211 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837AbaDYVeQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 17:33:36 -0400
+	Fri, 25 Apr 2014 17:34:16 -0400
+Date: Fri, 25 Apr 2014 22:34:14 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Kumar Gaurav <kumargauravgupta3@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Dan Carpenter <dan.carpenter@oracle.com>,
+        Greg KH <gregkh@linuxfoundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: Clarification needed on use of put_user inside a loop
+Message-ID: <20140425213414.GC18016@ZenIV.linux.org.uk>
+References: <535A88D5.3030008@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1398451211-19693-1-git-send-email-tim.kryger@linaro.org>
-References: <1398451211-19693-1-git-send-email-tim.kryger@linaro.org>
-Date: Fri, 25 Apr 2014 14:33:35 -0700
-X-Google-Sender-Auth: ebsSoKMccxEaU8sfQaOUAGgsIis
-Message-ID: <CAL1qeaFFpVNRBqmS4j1Vx1-NKX3VjJuDrVNYTsT91nB_bQ7HJA@mail.gmail.com>
-Subject: Re: [PATCH RESEND] mmc: core: Improve support for deferred regulators
-From: Andrew Bresticker <abrestic@chromium.org>
-To: Tim Kryger <tim.kryger@linaro.org>
-Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Mike Looijmans <mike.looijmans@topic.nl>,
-        Linux MMC List <linux-mmc@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <535A88D5.3030008@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tim,
+On Fri, Apr 25, 2014 at 09:39:57PM +0530, Kumar Gaurav wrote:
 
-> It is important that callers of mmc_regulator_get_supply know if either
-> vmmc or vqmmc are present but not yet available.  To support this need,
-> modify this function to return zero except when either of the regulator
-> get operations fail with -EPROBE_DEFER.  Current callers don't check the
-> return value and may continue to use IS_ERR on the vmmc/vqmmc values to
-> determine if those regulators are available.  Furthermore, since all of
-> these callers are capable of dealing with absent regulators, switch over
-> to use the non-optional variety of the regulator get call.
->
-> Signed-off-by: Tim Kryger <tim.kryger@linaro.org>
-> ---
->  drivers/mmc/core/core.c |   27 +++++++++++++++++----------
->  1 file changed, 17 insertions(+), 10 deletions(-)
->
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index acbc3f2..095eef0 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1313,21 +1313,28 @@ EXPORT_SYMBOL_GPL(mmc_regulator_set_ocr);
->  int mmc_regulator_get_supply(struct mmc_host *mmc)
->  {
->         struct device *dev = mmc_dev(mmc);
-> -       struct regulator *supply;
->         int ret;
->
-> -       supply = devm_regulator_get(dev, "vmmc");
-> -       mmc->supply.vmmc = supply;
-> +       mmc->supply.vmmc = devm_regulator_get_optional(dev, "vmmc");
->         mmc->supply.vqmmc = devm_regulator_get_optional(dev, "vqmmc");
->
-> -       if (IS_ERR(supply))
-> -               return PTR_ERR(supply);
-> +       if (IS_ERR(mmc->supply.vmmc)) {
-> +               if (PTR_ERR(mmc->supply.vmmc) == -EPROBE_DEFER)
-> +                       return -EPROBE_DEFER;
-> +               dev_info(dev, "No vmmc regulator found\n");
-> +       } else {
-> +               ret = mmc_regulator_get_ocrmask(mmc->supply.vmmc);
-> +               if (ret > 0)
-> +                       mmc->ocr_avail = ret;
-> +               else
-> +                       dev_warn(dev, "Failed getting OCR mask: %d\n", ret);
-> +       }
+> I have  found some codes in the driver which use put_user() in loop.
+> Can we avoid the overhead of checking the same memory area( where
+> put_user() writes) again n again using __put_user() in side loop and
+> checking permission using access_ok before entering the loop?
 
-I think we also need to handle the case where supply is NULL, i.e.
-!CONFIG_REGULATOR.  The SDHCI driver, for example, calls
-regulator_is_supported_voltage() which will always return false on
-NULL regulators.  Perhaps we should set the supplies to
-ERR_PTR(-ENODEV) in that case?
+>                         if (put_user(type, dst) ||
+>                             put_user(chs_bytes, dst + 1))
+>                                 return -EFAULT;
+>                         dst += 2;
+			  ^^^^^^^^^
+Note that increment.  It's *not* "the same memory area" next time
+around.  Sure, you can check the whole range once before the loop
+and switch the stuff inside to __put_user()/__copy_to_user(), but
+it's not guaranteed to buy you any speedup.
 
-Thanks,
-Andrew
-
->
-> -       ret = mmc_regulator_get_ocrmask(supply);
-> -       if (ret > 0)
-> -               mmc->ocr_avail = ret;
-> -       else
-> -               dev_warn(mmc_dev(mmc), "Failed getting OCR mask: %d\n", ret);
-> +       if (IS_ERR(mmc->supply.vqmmc)) {
-> +               if (PTR_ERR(mmc->supply.vqmmc) == -EPROBE_DEFER)
-> +                       return -EPROBE_DEFER;
-> +               dev_info(dev, "No vqmmc regulator found\n");
-> +       }
->
->         return 0;
->  }
-> --
-> 1.7.9.5
->
+BTW, you might be a bit confused about the work done by access_ok() - e.g.
+on an architectures with separate kernel and userland MMU contexts it might
+very well be a no-op (always return true).  It's *not* checking if user has
+permissions of some sort.
