@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbaDYIXx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 04:23:53 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:40141 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751443AbaDYIXh (ORCPT
+	id S1752670AbaDYIWX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 04:22:23 -0400
+Received: from mail-ee0-f42.google.com ([74.125.83.42]:56046 "EHLO
+	mail-ee0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596AbaDYIVB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 04:23:37 -0400
-Message-ID: <535A1B5B.9000705@linux.vnet.ibm.com>
-Date: Fri, 25 Apr 2014 13:52:51 +0530
-From: "Srivatsa S. Bhat" <srivatsa.bhat@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:15.0) Gecko/20120828 Thunderbird/15.0
+	Fri, 25 Apr 2014 04:21:01 -0400
+Date: Fri, 25 Apr 2014 10:20:56 +0200
+From: Ingo Molnar <mingo@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH -tip v9 25/26] kprobes: Introduce kprobe cache to reduce
+ cache misshits
+Message-ID: <20140425082056.GB24829@gmail.com>
+References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp>
+ <20140417081931.26341.47154.stgit@ltc230.yrl.intra.hitachi.co.jp>
+ <20140424090134.GC7768@gmail.com>
+ <5358F7A3.1000108@hitachi.com>
 MIME-Version: 1.0
-To: Viresh Kumar <viresh.kumar@linaro.org>
-CC: rjw@rjwysocki.net, mroos@linux.ee, linaro-kernel@lists.linaro.org,
-        cpufreq@vger.kernel.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cpufreq: Set CPUFREQ_ASYNC_NOTIFICATION for drivers handling
- notification
-References: <c6c53fee017018869c7524a487688edf902c1413.1398412138.git.viresh.kumar@linaro.org>
-In-Reply-To: <c6c53fee017018869c7524a487688edf902c1413.1398412138.git.viresh.kumar@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 14042508-2674-0000-0000-00000DF57024
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <5358F7A3.1000108@hitachi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25/2014 01:22 PM, Viresh Kumar wrote:
-> CPUFREQ_ASYNC_NOTIFICATION was initially designed for drivers which don't want
-> core to send notifications for them as they wouldn't finish frequency
-> transitions in ->target_index().
->
 
-And let's keep it that way. Overloading ASYNC_NOTIFICATION with other meanings
-is a bad idea.
- 
-> But there were other kinds of drivers as well who don't have straight forward
-> implementations of ->target_index() routines and wanted to handle notifications
-> themselves.
+* Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+> > So I don't think this should be a Kconfig entry, just enable it 
+> > unconditionally. That will further simplify the code.
 > 
+> Hmm, it consumes some amount of memory (36KB/core) just for the case 
+> of several thousand of kprobes. On enterprise servers and desktop 
+> it's OK, no problem. But I think, some embedded systems with small 
+> resources will not want that. [...]
 
-Looking at longhaul, powernow-k6 and powernow-k7, I think we can safely remove
-the extra notifications from them and let them depend on the cpufreq core's set
-of notifications. The patchset I posted just now uses that design.
+They'll just disable kprobes in general.
 
-Regards,
-Srivatsa S. Bhat
+Really, at this point complexity is our main concern.
 
+Thanks,
+
+	Ingo
