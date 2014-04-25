@@ -1,88 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752591AbaDYLCS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 07:02:18 -0400
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:41130 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415AbaDYLCP (ORCPT
+	id S1752550AbaDYLE4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 07:04:56 -0400
+Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:35934 "EHLO
+	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750897AbaDYLEw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 07:02:15 -0400
+	Fri, 25 Apr 2014 07:04:52 -0400
+From: Roman Gushchin <klamm@yandex-team.ru>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@redhat.com" <mingo@redhat.com>,
+        "tkhai@yandex.ru" <tkhai@yandex.ru>
+In-Reply-To: <20140424185858.GB26782@laptop.programming.kicks-ass.net>
+References: <36851398363372@webcorp2g.yandex-team.ru> <20140424185858.GB26782@laptop.programming.kicks-ass.net>
+Subject: Re: Real-time scheduling policies and hyper-threading
 MIME-Version: 1.0
-In-Reply-To: <20140425092607.GH26890@mwanda>
-References: <20140425070459.GA9155@devel>
-	<20140425092607.GH26890@mwanda>
-Date: Fri, 25 Apr 2014 20:02:14 +0900
-Message-ID: <CAHb8M2Ay22vh-zuGgKhjr0DCJ-ajVPiPmYDRu159HF9N0CDEpg@mail.gmail.com>
-Subject: Re: [PATCH] staging: dgap: implement error handling in dgap_tty_register()
-From: DaeSeok Youn <daeseok.youn@gmail.com>
-To: Dan Carpenter <dan.carpenter@oracle.com>
-Cc: Mark Hounschell <markh@compro.net>, Lidza Louina <lidza.louina@gmail.com>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        devel <devel@driverdev.osuosl.org>,
-        driverdev-devel@linuxdriverproject.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <17051398423889@webcorp2e.yandex-team.ru>
+X-Mailer: Yamail [ http://yandex.ru ] 5.0
+Date: Fri, 25 Apr 2014 15:04:49 +0400
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=koi8-r
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Dan.
-
-2014-04-25 18:26 GMT+09:00 Dan Carpenter <dan.carpenter@oracle.com>:
-> Mark, maybe you should add yourself to the MAINTAINERS entry for this
-> driver?
+24.04.2014, 22:59, "Peter Zijlstra" <peterz@infradead.org>:
+> On Thu, Apr 24, 2014 at 10:16:12PM +0400, Roman Gushchin wrote:
 >
-> On Fri, Apr 25, 2014 at 04:04:59PM +0900, Daeseok Youn wrote:
->> @@ -1263,7 +1277,8 @@ static int dgap_tty_register(struct board_t *brd)
->>               /* Register tty devices */
->>               rc = tty_register_driver(brd->SerialDriver);
->>               if (rc < 0)
->> -                     return rc;
->> +                     goto free_print_ttys;
->> +
->>               brd->dgap_Major_Serial_Registered = TRUE;
->>               dgap_BoardsByMajor[brd->SerialDriver->major] = brd;
->>               brd->dgap_Serial_Major = brd->SerialDriver->major;
->> @@ -1273,13 +1288,29 @@ static int dgap_tty_register(struct board_t *brd)
->>               /* Register Transparent Print devices */
->>               rc = tty_register_driver(brd->PrintDriver);
->>               if (rc < 0)
->> -                     return rc;
->> +                     goto unregister_serial_drv;
->> +
->>               brd->dgap_Major_TransparentPrint_Registered = TRUE;
->>               dgap_BoardsByMajor[brd->PrintDriver->major] = brd;
->>               brd->dgap_TransparentPrint_Major = brd->PrintDriver->major;
->>       }
->>
->>       return rc;
->> +
->> +unregister_serial_drv:
->> +     tty_unregister_driver(brd->SerialDriver);
+>> šAre there any known solutions of this problem except disabling
+>> šhyper-threading and frequency scaling at all?
 >
-> We only register the ->SerialDriver if someone else hasn't registered it
-> first?  So this should be:
+> This is what we generally tell people to do; disable HT in the BIOS,
+> offline the siblings or similar approaches.
+
+It's a good, but expensive approach, if you have many machines.
+
+
+> Similarly we typically tell people to keep each rt workload to a single
+> NUMA node, and in case the workload really is bigger and must cross into
+> multiple, use memory interleave where possible.
 >
->         if (we_were_the_ones_who_registered_the_serial_driver)
->                 tty_unregister_driver(brd->SerialDriver);
+>> šAre there any common plans to enhance the load balancing algorithm in
+>> šthe rt-scheduler?
 >
-> I haven't followed looked at this.  Who else is registering the serial
-> driver?  You have looked at this, what do you think?  Or Mark.
+> Nope; at best the topology driven placement is going to be a heuristic,
+> and the last thing you want for your realtime tasks is (non deterministic)
+> placement heuristics.
+>
+> You, and only you, know your workload and can devise a correct placement
+> policy. We have cpusets and cpu affinity available to carve up your
+> system for this.
 
-I think brd struct is from dgap_Board array as global static variable
-when this function is
-called. So brd->dgap_Major_Serial_Registered is always "false".
-If dgap_NumBoards is less than MAXBOARDS, brd->SerialDriver should be
-registered.
+The problem here is that _all_ userspace tasks should care about cpu placement.
+In reality, there is always a number of monitoring/administration/system tasks,
+which execution increases latencies. Use of nice/SCHED_BATCH/... doesn't solve
+the problem, because of hyper-threading.
 
-I'm not sure..
+Of course, it's possible to divide cpus statically via cpusets/partitioning,
+but it's also not cheap in terms of overall performance utilization.
 
-Thanks.
+
+> That said, there might be something we could do for soft(er) realtime,
+> but I don't think there's been much (if any) research on this.
+>
+>> šDoes anyone use rt-scheduler for runtime-like cpu-bound tasks?
+>
+> So in general cpu bound tasks in the RT classes (FIFO/RR/DEADLINE) are
+> bad and can make the system go funny.
+>
+> For general system health it is important that various system tasks
+> (kthreads usually) can run. Many of these kthreads run at !rt prios, and
+> by having cpu bound tasks in rt prios they don't get to run.
+
+I also had expected a number of problems here, but actually we caught only
+a tricky race in timers code ( https://lkml.org/lkml/2014/3/17/323 ).
+We haven't noticed any such problems on several hundreds of machines
+working in runtime production for few weeks.
+
+Probably, it's important, that CPU load in our case is never 100% for a period 
+longer than few hundreds milliseconds.
+
+
+Many thanks for you comments!
 
 Regards,
-Daeseok Youn.
-
->
-> regards,
-> dan carpenter
->
+Roman
