@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbaDYJI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:08:28 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:37007 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752150AbaDYJIU (ORCPT
+	id S1752897AbaDYJIq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:08:46 -0400
+Received: from mailout1.samsung.com ([203.254.224.24]:13336 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752860AbaDYJI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:08:20 -0400
-X-AuditID: cbfee691-b7f3e6d000002ce8-bc-535a26027375
+	Fri, 25 Apr 2014 05:08:26 -0400
+X-AuditID: cbfee68d-b7f4e6d000004845-02-535a26036a04
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com, kyungmin.park@samsung.com
 Cc: rafael.j.wysocki@intel.com, nm@ti.com, cw00.choi@samsung.com,
         jkosina@suse.cz, labbe.montjoie@gmail.com, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Sachin Kamat <sachin.kamat@linaro.org>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Wei Yongjun <yongjun_wei@trendmicro.com.cn>,
+        Manish Badarkhe <badarkhe.manish@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>,
         linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
-Subject: [PATCH 4/5] devfreq: exynos4: Use devm_devfreq_* function using device
+Subject: [PATCH 5/5] devfreq: exynos5: Use devm_devfreq_* function using device
  resource management
-Date: Fri, 25 Apr 2014 18:08:13 +0900
-Message-id: <1398416894-6782-5-git-send-email-cw00.choi@samsung.com>
+Date: Fri, 25 Apr 2014 18:08:14 +0900
+Message-id: <1398416894-6782-6-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.0
 In-reply-to: <1398416894-6782-1-git-send-email-cw00.choi@samsung.com>
 References: <1398416894-6782-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrOIsWRmVeSWpSXmKPExsWyRsSkRJdZLSrY4PUvZouNM9azWlz/8pzV
-	YvecxSwWvQuuslmcbXrDbrF+wUI2i02Pr7FaXN41h83ic+8RRosZ5/cxWdxuXMFm8ebHWSaL
-	xyveslvsXNfJ7sDnsXPWXXaPxXteMnlsXlLv0bdlFaPHmQVH2D2O39jO5LH03lFGj8+b5AI4
-	orhsUlJzMstSi/TtErgyzm6/zlywTqji9KzsBsZz/F2MnBwSAiYSKy42s0HYYhIX7q0Hsrk4
-	hASWMko0vD7NBFP0c9MrFojEIkaJb+c7GSGcJiaJeVv2sYNUsQloSex/cQNslIiAucSupT/B
-	RjEL/GWSmDHtMViRsECqxOutr1i7GDk4WARUJVbtqAUJ8wq4SMyc/4gFYpucxIc9j8DKOQVc
-	Jdp/vmUFsYWAahofv2IHmSkh8JJdYuOh82AJFgEBiW+TD7GAzJQQkJXYdIAZYo6kxMEVN1gm
-	MAovYGRYxSiaWpBcUJyUXmSqV5yYW1yal66XnJ+7iREYSaf/PZu4g/H+AetDjMlA4yYyS4km
-	5wMjMa8k3tDYzMjC1MTU2Mjc0ow0YSVx3vRHSUFCAumJJanZqakFqUXxRaU5qcWHGJk4OKUa
-	GNWefeKb8/bPVB2NO+q3HvB9dfl7Ke94XihH0NRAIV1L24cfkjZJ/91zLNJp55MpvJtrGB5O
-	qEiO+unFMGve+d3an6T/8T9mY2vVemD5aVvF3O1vNW99DttxitGP1ejJtO12k8rUPhfyiFfO
-	ZGEs1VvG5bz3i/PZP3yVIvW3c26UFfEWcF3Zz6LEUpyRaKjFXFScCACCqdJAugIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphleLIzCtJLcpLzFFi42I5/e+xgC6TWlSwwcTPlhYbZ6xntbj+5Tmr
-	xe45i1ksehdcZbM42/SG3WL9goVsFpseX2O1uLxrDpvF594jjBYzzu9jsrjduILN4s2Ps0wW
-	j1e8ZbfYua6T3YHPY+esu+wei/e8ZPLYvKTeo2/LKkaPMwuOsHscv7GdyWPpvaOMHp83yQVw
-	RDUw2mSkJqakFimk5iXnp2TmpdsqeQfHO8ebmhkY6hpaWpgrKeQl5qbaKrn4BOi6ZeYAHa6k
-	UJaYUwoUCkgsLlbSt8M0ITTETdcCpjFC1zckCK7HyAANJKxhzDi7/TpzwTqhitOzshsYz/F3
-	MXJySAiYSPzc9IoFwhaTuHBvPVsXIxeHkMAiRolv5zsZIZwmJol5W/axg1SxCWhJ7H9xgw3E
-	FhEwl9i19CdYB7PAXyaJGdMegxUJC6RKvN76irWLkYODRUBVYtWOWpAwr4CLxMz5j6C2yUl8
-	2PMIrJxTwFWi/edbVhBbCKim8fEr9gmMvAsYGVYxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525i
-	BMfpM6kdjCsbLA4xCnAwKvHwflCLDBZiTSwrrsw9xCjBwawkwjtDIipYiDclsbIqtSg/vqg0
-	J7X4EGMy0FETmaVEk/OBKSSvJN7Q2MTMyNLI3NDCyNicNGElcd4DrdaBQgLpiSWp2ampBalF
-	MFuYODilGhgPZS1kyjTZNYvv8rzKxTbFfLfzuE4tcf3bZHbfKZ5JozjZab+o1W3R3DUnK/gd
-	ud/Yy1n1dT97M0GgzjJZcuLHZHd11lehDzf5XN/Z3yN/037SF7dbBlseZMyPPa103KNmvlkc
-	l2/on54/H/4/mhgbMDHP9PmP/n2bT4d5M0VVTmU6ZlAac1GJpTgj0VCLuag4EQALH0h4FwMA	AA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrAIsWRmVeSWpSXmKPExsWyRsSkRJdZLSrY4PMJQ4vHaxYzWWycsZ7V
+	Yt7Et+wW1788Z7XYPWcxi0XvgqtsFmeb3rBbrF+wkM1i0+NrrBaXd81hs/jce4TRYsb5fUwW
+	txtXsFm8+XGWyeLxCqDek396GR0EPHbOusvusXjPSyaPO9f2sHlsXlLv0bdlFaPHmQVH2D2O
+	39jO5PF5k1wARxSXTUpqTmZZapG+XQJXxr1ZT5kLTolUbG7rYWpg3CHYxcjBISFgItFzvb6L
+	kRPIFJO4cG89G4gtJLCUUeLpEXGIuInEkbf/GLsYuYDiixglji35wgThNDFJdJ1oYwepYhPQ
+	ktj/4gZYt4iAucSupT/BbGaBy8wSj/fogtjCAqkS/759YgaxWQRUJXY8OsUIYvMKuEhsfdvN
+	ArFNTuLDnkdgMzkFXCXaf75lhbjIRaLx8St2kMUSAl/ZJWbNfc8IMUhA4tvkQywQ38hKbDrA
+	DDFHUuLgihssExiFFzAyrGIUTS1ILihOSi8y1CtOzC0uzUvXS87P3cQIjK3T/5717mC8fcD6
+	EGMy0LiJzFKiyfnA2MwriTc0NjOyMDUxNTYytzQjTVhJnDfpYVKQkEB6YklqdmpqQWpRfFFp
+	TmrxIUYmDk6pBsYgzT0nTvsKRJ7+ePeciVtnGnufiY3JAXWJyzePKC0/t6O2bmKuXr9xy/yK
+	n5VejxgrvhUusA6XdJCvWBfu2vshyj+GV1b+08t5DJo6mms3rz/F2b7qUtCZQ50cQcW7fj11
+	5aide+uLZEixh1nnk19TJqziu/jwV/ucrwc5z9tGpce6Ky1W01NiKc5INNRiLipOBAB2EPdf
+	wwIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupnleLIzCtJLcpLzFFi42I5/e+xgC6zWlSwwb712haP1yxmstg4Yz2r
+	xbyJb9ktrn95zmqxe85iFoveBVfZLM42vWG3WL9gIZvFpsfXWC0u75rDZvG59wijxYzz+5gs
+	bjeuYLN48+Msk8XjFUC9J//0MjoIeOycdZfdY/Gel0wed67tYfPYvKTeo2/LKkaPMwuOsHsc
+	v7GdyePzJrkAjqgGRpuM1MSU1CKF1Lzk/JTMvHRbJe/geOd4UzMDQ11DSwtzJYW8xNxUWyUX
+	nwBdt8wcoBeUFMoSc0qBQgGJxcVK+naYJoSGuOlawDRG6PqGBMH1GBmggYQ1jBn3Zj1lLjgl
+	UrG5rYepgXGHYBcjJ4eEgInEkbf/GCFsMYkL99azdTFycQgJLGKUOLbkCxOE08Qk0XWijR2k
+	ik1AS2L/ixtsILaIgLnErqU/wWxmgcvMEo/36ILYwgKpEv++fWIGsVkEVCV2PDoFtoFXwEVi
+	69tuFohtchIf9jwCm8kp4CrR/vMtK4gtBFTT+PgV+wRG3gWMDKsYRVMLkguKk9JzDfWKE3OL
+	S/PS9ZLzczcxgqP3mdQOxpUNFocYBTgYlXh4P6hFBguxJpYVV+YeYpTgYFYS4Z0hERUsxJuS
+	WFmVWpQfX1Sak1p8iDEZ6KqJzFKiyfnAxJJXEm9obGJmZGlkbmhhZGxOmrCSOO+BVutAIYH0
+	xJLU7NTUgtQimC1MHJxSDYwHueKDq3lFp8/J8BafZlfhHH9NjentksZTCs21u/6dNZk9L6j/
+	77IJybMjDiz+ZMRyX1/FLiR8htO2x1nnFxvqip+aXDRLewa//o/te7MvnbfXEvTV/+Lz+NXi
+	vxGs+dzmTJaZP/yuv+C/+ZHn0zm30+nrhSb4x5sub3mmw2mmoR1403jugZlKLMUZiYZazEXF
+	iQDY7C07IgMAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -61,65 +65,75 @@ to control automatically the resource of devfreq.
 
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: Sachin Kamat <sachin.kamat@linaro.org>
 Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+Cc: Manish Badarkhe <badarkhe.manish@gmail.com>
+Cc: Abhilash Kesavan <a.kesavan@samsung.com>
 Cc: linux-arm-kernel@lists.infradead.org
 Cc: linux-samsung-soc@vger.kernel.org
 ---
- drivers/devfreq/exynos/exynos4_bus.c | 19 ++++---------------
- 1 file changed, 4 insertions(+), 15 deletions(-)
+ drivers/devfreq/exynos/exynos5_bus.c | 23 ++++++++---------------
+ 1 file changed, 8 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/devfreq/exynos/exynos4_bus.c b/drivers/devfreq/exynos/exynos4_bus.c
-index d257f1f..bebb0a4 100644
---- a/drivers/devfreq/exynos/exynos4_bus.c
-+++ b/drivers/devfreq/exynos/exynos4_bus.c
-@@ -979,7 +979,7 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
+diff --git a/drivers/devfreq/exynos/exynos5_bus.c b/drivers/devfreq/exynos/exynos5_bus.c
+index ab54a69..1f622f8 100644
+--- a/drivers/devfreq/exynos/exynos5_bus.c
++++ b/drivers/devfreq/exynos/exynos5_bus.c
+@@ -165,11 +165,6 @@ static int exynos5_int_get_dev_status(struct device *dev,
+ }
+ static void exynos5_int_exit(struct device *dev)
+ {
+-	struct platform_device *pdev = container_of(dev, struct platform_device,
+-						    dev);
+-	struct busfreq_data_int *data = platform_get_drvdata(pdev);
+-
+-	devfreq_unregister_opp_notifier(dev, data->devfreq);
+ }
  
- 	platform_set_drvdata(pdev, data);
+ static struct devfreq_dev_profile exynos5_devfreq_int_profile = {
+@@ -343,30 +338,29 @@ static int exynos5_busfreq_int_probe(struct platform_device *pdev)
  
--	data->devfreq = devfreq_add_device(dev, &exynos4_devfreq_profile,
-+	data->devfreq = devm_devfreq_add_device(dev, &exynos4_devfreq_profile,
- 					   "simple_ondemand", NULL);
- 	if (IS_ERR(data->devfreq))
- 		return PTR_ERR(data->devfreq);
-@@ -991,27 +991,20 @@ static int exynos4_busfreq_probe(struct platform_device *pdev)
  	busfreq_mon_reset(ppmu_data);
  
- 	/* Register opp_notifier for Exynos4 busfreq */
--	err = devfreq_register_opp_notifier(dev, data->devfreq);
-+	err = devm_devfreq_register_opp_notifier(dev, data->devfreq);
- 	if (err < 0) {
- 		dev_err(dev, "Failed to register opp notifier\n");
--		goto err_notifier_opp;
+-	data->devfreq = devfreq_add_device(dev, &exynos5_devfreq_int_profile,
++	data->devfreq = devm_devfreq_add_device(dev, &exynos5_devfreq_int_profile,
+ 					   "simple_ondemand", NULL);
+-
+ 	if (IS_ERR(data->devfreq)) {
+ 		err = PTR_ERR(data->devfreq);
+-		goto err_devfreq_add;
 +		return err;
  	}
  
- 	/* Register pm_notifier for Exynos4 busfreq */
+-	devfreq_register_opp_notifier(dev, data->devfreq);
++	err = devm_devfreq_register_opp_notifier(dev, data->devfreq);
++	if (err < 0) {
++		dev_err(dev, "Failed to register opp notifier\n");
++		return err;
++	}
+ 
  	err = register_pm_notifier(&data->pm_notifier);
  	if (err) {
  		dev_err(dev, "Failed to setup pm notifier\n");
--		goto err_notifier_pm;
+-		goto err_devfreq_add;
 +		return err;
  	}
  
+ 	/* TODO: Add a new QOS class for int/mif bus */
+ 	pm_qos_add_request(&data->int_req, PM_QOS_NETWORK_THROUGHPUT, -1);
+ 
  	return 0;
 -
--err_notifier_pm:
--	devfreq_unregister_opp_notifier(dev, data->devfreq);
--err_notifier_opp:
+-err_devfreq_add:
 -	devfreq_remove_device(data->devfreq);
--
 -	return err;
  }
  
- static int exynos4_busfreq_remove(struct platform_device *pdev)
-@@ -1020,10 +1013,6 @@ static int exynos4_busfreq_remove(struct platform_device *pdev)
+ static int exynos5_busfreq_int_remove(struct platform_device *pdev)
+@@ -375,7 +369,6 @@ static int exynos5_busfreq_int_remove(struct platform_device *pdev)
  
- 	/* Unregister all of notifier chain */
+ 	pm_qos_remove_request(&data->int_req);
  	unregister_pm_notifier(&data->pm_notifier);
--	devfreq_unregister_opp_notifier(data->dev, data->devfreq);
--
--	/* Remove devfreq instance */
 -	devfreq_remove_device(data->devfreq);
  
  	return 0;
