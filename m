@@ -1,134 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760AbaDYWwk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 18:52:40 -0400
-Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:49761 "EHLO
-	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751600AbaDYWwi (ORCPT
+	id S1752818AbaDYWxD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 18:53:03 -0400
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:56240 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710AbaDYWw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 18:52:38 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AtMVAOHmWlNXQASl/2dsb2JhbABZgwarVJlwAgKBEhd0glMTHCMYgQIkE4hFAcpfhVqIf4RAAQOOdooOAZJcgzM7
-Date: Sat, 26 Apr 2014 00:54:24 +0200
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: jack <jack@suse.cz>, hch <hch@infradead.org>,
-        Viro <viro@zeniv.linux.org.uk>, tytso <tytso@mit.edu>,
-        akpm <akpm@linux-foundation.org>
-Subject: [PATCH V2 1/2] FS: Add generic data flush to fsync
-Message-Id: <20140426005424.9268324f9911e60a0e20cb59@skynet.be>
-X-Mailer: Sylpheed 3.3.0 (GTK+ 2.24.10; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Apr 2014 18:52:57 -0400
+From: Kevin Hilman <khilman@linaro.org>
+To: Tarek Dakhran <t.dakhran@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Rob Landley <rob@landley.net>,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
+        Tomasz Figa <t.figa@samsung.com>,
+        Mike Turquette <mturquette@linaro.org>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>,
+        Thomas Abraham <thomas.abraham@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Heiko Stuebner <heiko@sntech.de>,
+        Romain Naour <romain.naour@openwide.fr>,
+        Chander Kashyap <chander.kashyap@linaro.org>,
+        devicetree@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, Tarek Dakhran <t.dakhran@gmail.com>
+Subject: Re: [PATCH v8 1/3] ARM: EXYNOS: Add support for EXYNOS5410 SoC
+References: <1397459860-21869-1-git-send-email-t.dakhran@samsung.com>
+	<1397459860-21869-2-git-send-email-t.dakhran@samsung.com>
+Date: Fri, 25 Apr 2014 15:52:54 -0700
+In-Reply-To: <1397459860-21869-2-git-send-email-t.dakhran@samsung.com> (Tarek
+	Dakhran's message of "Mon, 14 Apr 2014 11:17:38 +0400")
+Message-ID: <7hwqedf2d5.fsf@paris.lan>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch issues a flush in generic_file_fsync.
-(Modern filesystems already do it)
+Tarek Dakhran <t.dakhran@samsung.com> writes:
 
--Behaviour can be reversed using /sys/devices/.../cache_type
--Filesystems can also call __generic_file_fsync with bool flush false
+> EXYNOS5410 is SoC in Samsung's Exynos5 SoC series.
+> Add initial support for this SoC.
+>
+> Signed-off-by: Tarek Dakhran <t.dakhran@samsung.com>
+> Signed-off-by: Vyacheslav Tyrtov <v.tyrtov@samsung.com>
+> Reviewed-by: Tomasz Figa <t.figa@samsung.com>
 
-Suggested-by: Jan Kara <jack@suse.cz>
-Suggested-by: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: "Theodore Ts'o" <tytso@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/libfs.c         | 36 +++++++++++++++++++++++++++++++++---
- include/linux/fs.h |  1 +
- 2 files changed, 34 insertions(+), 3 deletions(-)
+[...]
 
-diff --git a/fs/libfs.c b/fs/libfs.c
-index a184424..7d4711d 100644
---- a/fs/libfs.c
-+++ b/fs/libfs.c
-@@ -3,6 +3,7 @@
-  *	Library for filesystems writers.
-  */
- 
-+#include <linux/blkdev.h>
- #include <linux/export.h>
- #include <linux/pagemap.h>
- #include <linux/slab.h>
-@@ -923,16 +924,20 @@ struct dentry *generic_fh_to_parent(struct super_block *sb, struct fid *fid,
- EXPORT_SYMBOL_GPL(generic_fh_to_parent);
- 
- /**
-- * generic_file_fsync - generic fsync implementation for simple filesystems
-+ * __generic_file_fsync - generic fsync implementation for simple filesystems
-+ *
-  * @file:	file to synchronize
-+ * @start:	start offset in bytes
-+ * @end:	end offset in bytes (inclusive)
-  * @datasync:	only synchronize essential metadata if true
-+ * @flush:	bool to issue the flush
-  *
-  * This is a generic implementation of the fsync method for simple
-  * filesystems which track all non-inode metadata in the buffers list
-  * hanging off the address_space structure.
-  */
--int generic_file_fsync(struct file *file, loff_t start, loff_t end,
--		       int datasync)
-+int __generic_file_fsync(struct file *file, loff_t start, loff_t end,
-+				 int datasync, bool flush)
- {
- 	struct inode *inode = file->f_mapping->host;
- 	int err;
-@@ -952,10 +957,35 @@ int generic_file_fsync(struct file *file, loff_t start, loff_t end,
- 	err = sync_inode_metadata(inode, 1);
- 	if (ret == 0)
- 		ret = err;
-+	if (flush == true) {
-+		err = blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL,
-+					 NULL);
-+		if (ret == 0)
-+			ret = err;
-+	}
-+
- out:
- 	mutex_unlock(&inode->i_mutex);
- 	return ret;
- }
-+EXPORT_SYMBOL(__generic_file_fsync);
-+
-+/**
-+ * generic_file_fsync - generic fsync implementation for simple filesystems
-+ * @file:	file to synchronize
-+ * @start:	start offset in bytes
-+ * @end:	end offset in bytes (inclusive)
-+ * @datasync:	only synchronize essential metadata if true
-+ *
-+ * Calls __generic_file_fsync with flush = true
-+ */
-+
-+int generic_file_fsync(struct file *file, loff_t start, loff_t end,
-+		       int datasync)
-+{
-+	return  __generic_file_fsync(file, start, end, datasync, true);
-+
-+}
- EXPORT_SYMBOL(generic_file_fsync);
- 
- /**
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 7a9c5bc..ecd6adea 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2590,6 +2590,7 @@ extern ssize_t simple_read_from_buffer(void __user *to, size_t count,
- extern ssize_t simple_write_to_buffer(void *to, size_t available, loff_t *ppos,
- 		const void __user *from, size_t count);
- 
-+extern int __generic_file_fsync(struct file *, loff_t, loff_t, int, bool);
- extern int generic_file_fsync(struct file *, loff_t, loff_t, int);
- 
- extern int generic_check_addressable(unsigned, u64);
--- 
-1.8.4.5
+> diff --git a/arch/arm/mach-exynos/hotplug.c b/arch/arm/mach-exynos/hotplug.c
+> index 5eead53..83ae5fb 100644
+> --- a/arch/arm/mach-exynos/hotplug.c
+> +++ b/arch/arm/mach-exynos/hotplug.c
+> @@ -95,8 +95,8 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
+>  	for (;;) {
+>  
+>  		/* make cpu1 to be turned off at next WFI command */
+> -		if (cpu == 1)
+> -			__raw_writel(0, S5P_ARM_CORE1_CONFIGURATION);
+> +		if (cpu > 0)
+> +			__raw_writel(0, S5P_ARM_CORE_CONFIGURATION(cpu));
 
+This looks like a fix that's probably not specific to the 5410 and maybe
+deserves it's own patch?
+
+[...]
+
+> @@ -107,14 +111,14 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
+>  	 */
+>  	write_pen_release(phys_cpu);
+>  
+> -	if (!(__raw_readl(S5P_ARM_CORE1_STATUS) & S5P_CORE_LOCAL_PWR_EN)) {
+> +	if (!(__raw_readl(S5P_ARM_CORE_STATUS(cpu)) & S5P_CORE_LOCAL_PWR_EN)) {
+>  		__raw_writel(S5P_CORE_LOCAL_PWR_EN,
+> -			     S5P_ARM_CORE1_CONFIGURATION);
+> +			     S5P_ARM_CORE_CONFIGURATION(cpu));
+>  
+>  		timeout = 10;
+>  
+>  		/* wait max 10 ms until cpu1 is on */
+> -		while ((__raw_readl(S5P_ARM_CORE1_STATUS)
+> +		while ((__raw_readl(S5P_ARM_CORE_STATUS(cpu))
+>  			& S5P_CORE_LOCAL_PWR_EN) != S5P_CORE_LOCAL_PWR_EN) {
+>  			if (timeout-- == 0)
+>  				break;
+
+...and this hunk too?
+
+Kevin
