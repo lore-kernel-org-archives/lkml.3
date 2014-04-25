@@ -1,80 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665AbaDYXA1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 19:00:27 -0400
-Received: from mail-pd0-f177.google.com ([209.85.192.177]:48995 "EHLO
-	mail-pd0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752062AbaDYXAX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 19:00:23 -0400
-Content-Type: text/plain; charset="utf-8"
+	id S1753056AbaDYXDc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 19:03:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48402 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751764AbaDYXDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 19:03:20 -0400
+From: Joel Fernandes <joelf@ti.com>
+To: Tony Lindgren <tony@atomide.com>, Benoit Cousson <bcousson@baylibre.com>,
+        Linux OMAP List <linux-omap@vger.kernel.org>,
+        Linux ARM Kernel List <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Joel Fernandes <joelf@ti.com>
+Subject: [PATCH 00/10] ARM: OMAP: dts and HWMOD entries for crypto modules
+Date: Fri, 25 Apr 2014 18:02:38 -0500
+Message-ID: <1398466968-29506-1-git-send-email-joelf@ti.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Alex Elder <elder@linaro.org>, mporter@linaro.org, bcm@fixthebug.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1398114703-32410-1-git-send-email-elder@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-References: <1398114703-32410-1-git-send-email-elder@linaro.org>
-Message-ID: <20140425230019.7224.94561@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v4 RESEND 0/7] clk: bcm281xx: updates
-Date: Fri, 25 Apr 2014 16:00:19 -0700
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Alex Elder (2014-04-21 14:11:36)
-> This series includes updates for the bcm281xx clock code.  It is
-> dependent on the following patch, which has been taken into the
-> clk-fixes tree:
->     clk: bcm281xx: don't use unnamed structs or unions
->     https://lkml.org/lkml/2014/4/7/322
+Hi Tony, Benoit,
 
-Thanks for the resend. I've taken these into clk-next.
+Here are some dts/hwmod  patches for crypto on OMAP4 and DRA7, couple of them
+are resends and some are sent for first time now that clock nodes are available
+in dts.
 
-Regards,
-Mike
+If there's no other feedback, I would like these queued for v3.16. Thanks.
 
-> 
-> There are three groups of patches:
->     - Some straightforward code cleanups
->     - Changing CCU and clock definitions so they're almost
->       completely initialized statically (i.e., not at run-time)
->     - Add two small features
-> 
-> Initially this series included support for "prerequisite clocks"
-> but that has been removed so it can be discussed independently.
-> 
-> The patches in this series--based on the current linus/master branch
-> plus the patch mentioned above--are available here:
->     http://git.linaro.org/landing-teams/working/broadcom/kernel.git
->     Branch review/bcm-clk-next-v4
-> 
->                                         -Alex
-> 
-> History:
->   - v4: Rebased on current linus/master and reworked to account
->         for the no-longer-unnamed union and struct members.
->   - v3: Dropped prerequisite clock support so resolving how
->         best to handle that can be resolved separately.  As
->         a result, bus clock support is no longer included.
->   - v2: Removed one unrelated patch from the series.
-> 
-> Alex Elder (7):
->   clk: bcm281xx: warn if ccu_wait_bit() fails
->   clk: bcm281xx: use init_data.name for clock name
->   clk: bcm281xx: change some symbol names
->   clk: bcm281xx: initialize CCU structures statically
->   clk: bcm281xx: define CCU clock data statically
->   clk: bcm281xx: add clock policy support
->   clk: bcm281xx: add clock hysteresis support
-> 
->  drivers/clk/bcm/clk-bcm281xx.c   | 243 +++++++++++++++++----------------------
->  drivers/clk/bcm/clk-kona-setup.c | 229 ++++++++++++++++++++++++++----------
->  drivers/clk/bcm/clk-kona.c       | 212 ++++++++++++++++++++++++++++++++--
->  drivers/clk/bcm/clk-kona.h       | 160 +++++++++++++++++++++-----
->  4 files changed, 611 insertions(+), 233 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
+Patches 1,2 and 3 are dts, the rest are hwmod entries. The patches are rebased
+on v3.15-rc2. and can pulled from the Git repo below:
+https://github.com/joelagnel/linux-kernel.git (branch v3.16/prep-dts)
+
+Joel Fernandes (9):
+  ARM: OMAP: hwmod: Add SYSC offsets for AES IP
+  ARM: DRA7xx: hwmod: Add hwmod data for DES IP
+  ARM: DRA7xx: hwmod: Add hwmod data for AES IP
+  ARM: DRA7xx: Add hwmod entries for RNG module
+  ARM: OMAP4: hwmod: Add hwmod data for AES IP
+  ARM: OMAP4: hwmod: add hwmod data for DES IP
+  ARM: dts: DRA7: Add DT node for DES IP
+  ARM: dts: DRA7: Add DT node for AES IP
+  ARM: dts: OMAP4: Add clock nodes for AES/DES nodes
+
+Lokesh Vutla (1):
+  ARM: dts: OMAP4: clk: Add clk node for DES IP
+
+ arch/arm/boot/dts/dra7.dtsi                  |   22 +++++
+ arch/arm/boot/dts/omap4.dtsi                 |    4 +
+ arch/arm/boot/dts/omap44xx-clocks.dtsi       |    8 ++
+ arch/arm/mach-omap2/omap_hwmod.h             |   11 +++
+ arch/arm/mach-omap2/omap_hwmod_44xx_data.c   |   78 ++++++++++++++++++
+ arch/arm/mach-omap2/omap_hwmod_7xx_data.c    |  113 ++++++++++++++++++++++++++
+ arch/arm/mach-omap2/omap_hwmod_common_data.c |   10 +++
+ drivers/clk/ti/clk-44xx.c                    |    1 +
+ 8 files changed, 247 insertions(+)
+
+-- 
+1.7.9.5
+
