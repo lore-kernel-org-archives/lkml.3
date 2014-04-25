@@ -1,66 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689AbaDYQTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:19:41 -0400
-Received: from forward-corp1e.mail.yandex.net ([77.88.60.199]:49567 "EHLO
-	forward-corp1e.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752131AbaDYQTf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:19:35 -0400
-From: Roman Gushchin <klamm@yandex-team.ru>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, "mingo@redhat.com" <mingo@redhat.com>,
-        "tkhai@yandex.ru" <tkhai@yandex.ru>
-In-Reply-To: <20140425151116.GJ11096@twins.programming.kicks-ass.net>
-References: <36851398363372@webcorp2g.yandex-team.ru>
-	 <20140424185858.GB26782@laptop.programming.kicks-ass.net>
-	 <17051398423889@webcorp2e.yandex-team.ru>
-	 <20140425131620.GB11096@twins.programming.kicks-ass.net>
-	 <34791398438136@webcorp2g.yandex-team.ru> <20140425151116.GJ11096@twins.programming.kicks-ass.net>
-Subject: Re: Real-time scheduling policies and hyper-threading
+	id S1753891AbaDYQTc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:19:32 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:60241 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131AbaDYQT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 12:19:28 -0400
+Date: Fri, 25 Apr 2014 11:19:12 -0500
+From: Felipe Balbi <balbi@ti.com>
+To: George Cherian <george.cherian@ti.com>,
+        Benoit Cousson <bcousson@baylibre.org>
+CC: <linux-kernel@vger.kernel.org>, <linux-doc@vger.kernel.org>,
+        <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <balbi@ti.com>, <rogerq@ti.com>, <kishon@ti.com>, <rob@landley.net>,
+        <galak@codeaurora.org>, <ijc+devicetree@hellion.org.uk>,
+        <mark.rutland@arm.com>, <pawel.moll@arm.com>, <robh+dt@kernel.org>,
+        <tony@atomide.com>, <anatol.pomozov@gmail.com>,
+        <bcousson@baylibre.com>
+Subject: Re: [PATCH v5 0/5] Add USB nodes for am43xx epos and gp evm
+Message-ID: <20140425161912.GY29632@saruman.home>
+Reply-To: <balbi@ti.com>
+References: <1395223803-4714-1-git-send-email-george.cherian@ti.com>
 MIME-Version: 1.0
-Message-Id: <7611398442772@webcorp1g.yandex-team.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Fri, 25 Apr 2014 20:19:32 +0400
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="bIBSTgLWjO5xMb20"
+Content-Disposition: inline
+In-Reply-To: <1395223803-4714-1-git-send-email-george.cherian@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-25.04.2014, 19:11, "Peter Zijlstra" <peterz@infradead.org>:
-> On Fri, Apr 25, 2014 at 07:02:16PM +0400, Roman Gushchin wrote:
->
->> šHm. What I really want (and try to implement), is
->> š"work as if ht is disabled if there are free physical cores, start using ht siblings otherwise".
->
-> At which point I have to ask, what about the rest of the topology?
+--bIBSTgLWjO5xMb20
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-My prototype works as follows: all physical cores on every numa node 
-are linked into circular list. When I have to select a cpu, I traverse the list 
-and search for a free core. If there is one, I select them. Otherwise, I jump to the
-other node and search there too. It's better to save symmetry here: when I start
-with local core number 3, it's reasonable to start with remote core number 3 too.
-Also, there is a "node balancing" logic, that causes me to start searching 
-with remote node, if a big imbalance is detected. It helps to work good under
-small load (<8 requests). When there are no free cores, I use the similar logic
-to find a free thread.
+On Wed, Mar 19, 2014 at 03:39:58PM +0530, George Cherian wrote:
+> The patch series adds USB dt nodes for am43xx epos and gp evm
+> Boot tested with linux-next + Tony's omap-for-v3.15/dt
+>=20
+> Changes from v1 -> v2
+> 	* Reorder "doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue"
+> 	* Address v1 coments on "ARM: dts: AM4372: Add USB nodes" =20
+>=20
+> Changes from v2 -> v3
+> 	* Removed unwanted dwc3_1 and dwc3_2 nodes from am437x-gp-evm.dts=20
+> 	  and am43x-epos-evm.dts=20
+>=20
+> Changes from v3 -> v4
+> 	* Refreshed on top of Tony's omap-for-v3.15/dt tree
+> 	* Added usb_phy0_always_on_clk32k and usb_phy1_always_on_clk32k Patch 2
+> 	* Used the above clocks in Patch 3=20
+> 	* Patch 4 and 5 edited the unwanted portions of commit log
+>=20
+> Changes from v4 -> v5
+> 	* Address Roger's comment for the clock data
+>=20
+> George Cherian (5):
+>   doc: Add "ti,am437x-dwc3" comaptible for dwc3 glue
+>   ARM: dts: am43xx clock data
+>   ARM: dts: AM4372: Add USB nodes
+>   ARM: dts: am437x-gp-evm: Enable USB
+>   ARM: dts: am43x-epos-evm: Enable USB
+>=20
+>  Documentation/devicetree/bindings/usb/omap-usb.txt |  4 +-
+>  arch/arm/boot/dts/am4372.dtsi                      | 94 ++++++++++++++++=
+++++++
+>  arch/arm/boot/dts/am437x-gp-evm.dts                | 18 +++++
+>  arch/arm/boot/dts/am43x-epos-evm.dts               | 18 +++++
+>  arch/arm/boot/dts/am43xx-clocks.dtsi               | 32 ++++++++
+>  5 files changed, 165 insertions(+), 1 deletion(-)
 
-Now I'm trying to make this algorithm more general and scalable. It will be
-great to use the current O(1) cpupri approach on each cpu topology level somehow,
-but I have no complete solution yet.
+Is this applied anywhere yet ? Benoit, are you taking this for v3.16
+merge window ?
 
-> Also, how is a task to know if its the 16th or 17th and thus should
-> expect worse latency?
+--=20
+balbi
 
-No way.
+--bIBSTgLWjO5xMb20
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
->> šIt's a 32-thread processor with 16 physical cores.
->
-> No NUMA? I'm not aware of single node systems with 16 cores.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-Of course, 2 physical processors with 8 cores each :)
-Sorry.
+iQIcBAEBAgAGBQJTWosAAAoJEIaOsuA1yqREm/8P/j/e8Yb+w2xBkrvYyUkVedqb
+nMk37PSLIakrEYGvx28YajiJKcegNaUFMBZjNRrzP/abgDt3KIhgyEVt8jEHm4y3
+yfJuse9ytTgtyPaBXedFMrQlslRz+AHJQY1OeJu1oZvNzs74PHLkuhaizDhEnprG
+YZguqQIsia2qKy9VATzkL/0tk7xH4AyeKgzUmEPIgrTkVg5qvCh67GwDc78Wa2if
+hCfERUg7ZuzI6uzMgt/YURn8AjFlDLjC7MzKopNiD1WFYsqzoruD/vFodFjn0gx8
+GIA9rZXPjEp12WQb80LfFlkIyFd84oBlN8c0RbaRDwFDAupfMHcWbs/E3uHzztId
+GbmAlOI7mRKDA7NIKljf8P79XfS/ruUuhkgh10cnVA07Ar82yIIlJwmI1elgai6o
+qJZMeTVzxXeWw9M+qRZsulogPwymGw7KqofJDr5prdogoMeZUMNbSwrWwVlcDrlt
+C8BR/s51j0Mx0YzoMNaFE7gh6EFOZE45I1zjMxG9RBq6riyR1Cb1WeyVv4maVUx6
+2jr0cZaZAa5MDHMEzlhW4bRzGI8zQHKd02vK0JTXbs53i4i2vzqqE1ifKT1HaLEz
+i5CchwS4pro1kSr2Nf8OON6za4tCgvRRR3ZlPNjYKEctMDawseqATNSguNRKFcs9
+oP1pku9UZeL2Fr9uCtML
+=n8Fs
+-----END PGP SIGNATURE-----
 
-Thanks,
-Roman
+--bIBSTgLWjO5xMb20--
