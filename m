@@ -1,19 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbaDYRQa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:16:30 -0400
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:33411 "EHLO
+	id S1753458AbaDYRRB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:17:01 -0400
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:34442 "EHLO
 	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751320AbaDYRQ1 (ORCPT
+	with ESMTP id S1752575AbaDYRQv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:16:27 -0400
-Subject: [PATCH 0/4] x86/PCI HPET bugfix and other cleanups
+	Fri, 25 Apr 2014 13:16:51 -0400
+Subject: [PATCH 3/4] x86/PCI: Move pcibios_assign_resources() annotation to
+ definition
 To: linux-pci@vger.kernel.org
 From: Bjorn Helgaas <bhelgaas@google.com>
 Cc: David Airlie <airlied@linux.ie>, Bodo Eggert <7eggert@gmx.de>,
         x86@kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 25 Apr 2014 11:16:23 -0600
-Message-ID: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
+Date: Fri, 25 Apr 2014 11:16:47 -0600
+Message-ID: <20140425171647.312.98481.stgit@bhelgaas-glaptop.roam.corp.google.com>
+In-Reply-To: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
+References: <20140425171144.312.9601.stgit@bhelgaas-glaptop.roam.corp.google.com>
 User-Agent: StGit/0.16
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -22,27 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The first two are intended as a bugfix for a very old regression:
-https://bugzilla.kernel.org/show_bug.cgi?id=68591 "pci=nocrs required to
-boot Asrock M3A UCC".  Without "pci=nocrs", the system hangs during boot
-when the PCI core moves the HPET.  Unfortunately I do not have testing
-results from the reporter (ping, Bodo :)).
+Move the pcibios_assign_resources() fs_initcall annotation next to the
+function definition.  No functional change.
 
-The third and fourth are minor cleanups, no functional change intended
-except for the format of some AGP printks.
-
-I intend these for v3.16.
-
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
 ---
+ arch/x86/pci/i386.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Bjorn Helgaas (4):
-      x86/PCI: Don't try to move IORESOURCE_PCI_FIXED resources
-      x86/PCI: Mark HPET BAR as IORESOURCE_PCI_FIXED
-      x86/PCI: Move pcibios_assign_resources() annotation to definition
-      x86/gart: Tidy messages and add bridge device info
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index 6db58d68feb5..a19ed92e74e4 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -361,6 +361,12 @@ static int __init pcibios_assign_resources(void)
+ 	return 0;
+ }
+ 
++/**
++ * called in fs_initcall (one below subsys_initcall),
++ * give a chance for motherboard reserve resources
++ */
++fs_initcall(pcibios_assign_resources);
++
+ void pcibios_resource_survey_bus(struct pci_bus *bus)
+ {
+ 	dev_printk(KERN_DEBUG, &bus->dev, "Allocating resources\n");
+@@ -397,12 +403,6 @@ void __init pcibios_resource_survey(void)
+ 	ioapic_insert_resources();
+ }
+ 
+-/**
+- * called in fs_initcall (one below subsys_initcall),
+- * give a chance for motherboard reserve resources
+- */
+-fs_initcall(pcibios_assign_resources);
+-
+ static const struct vm_operations_struct pci_mmap_ops = {
+ 	.access = generic_access_phys,
+ };
 
-
- arch/x86/kernel/aperture_64.c |   20 ++++++++++++--------
- arch/x86/pci/fixup.c          |   12 ++++++++++++
- arch/x86/pci/i386.c           |   27 ++++++++++++++++-----------
- 3 files changed, 40 insertions(+), 19 deletions(-)
