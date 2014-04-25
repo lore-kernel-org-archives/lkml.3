@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982AbaDYOHh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:07:37 -0400
-Received: from top.free-electrons.com ([176.31.233.9]:47209 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751750AbaDYOHc (ORCPT
+	id S1754497AbaDYOSz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:18:55 -0400
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:65461 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754117AbaDYOSu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:07:32 -0400
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-To: Mathias Nyman <mathias.nyman@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
-        Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
-Subject: [PATCH v2 01/18] usb: host: xhci-plat: Sort the headers in alphabetic order
-Date: Fri, 25 Apr 2014 16:06:59 +0200
-Message-Id: <1398434836-18908-2-git-send-email-gregory.clement@free-electrons.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
-References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
+	Fri, 25 Apr 2014 10:18:50 -0400
+Message-ID: <535A6EC7.10305@kernel.dk>
+Date: Fri, 25 Apr 2014 08:18:47 -0600
+From: Jens Axboe <axboe@kernel.dk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+MIME-Version: 1.0
+To: Christoph Hellwig <hch@infradead.org>, "Theodore Ts'o" <tytso@mit.edu>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH 0/1] random vs blk-mq
+References: <20140425073610.GA2143@infradead.org>
+In-Reply-To: <20140425073610.GA2143@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorting the headers in alphabetic order will help to reduce the conflict
-when adding new headers later.
+On 04/25/2014 01:36 AM, Christoph Hellwig wrote:
+> A tester found out that we need add_disk_randomness for my scsi-mq
+> branch.  The patch applied exports add_disk_randomness so that modular
+> scsi still works with a driver that either uses the low-level I/O
+> completion routines for the old block layer, or blk-mq, and I'd love
+> to get this in through Jens' tree which has all the other block work
+> scsi-mq requires.
+> 
+> But this also brings up an interesting question:  blk-mq currently
+> does not set QUEUE_FLAG_ADD_RANDOM in the default queue flags, so
+> simply converting a driver to blk-mq will mean it stops contributing
+> to the random pool.  Do we need a more fine grained way to control
+> this, especially for SCSI?
 
-Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
----
- drivers/usb/host/xhci-plat.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Or, we could just fix the horribly slow pool mix and have it always be
+on if it's "free", or almost free. Perhaps just default to on for
+rotating devices, that'd lessen the impact.
 
-diff --git a/drivers/usb/host/xhci-plat.c b/drivers/usb/host/xhci-plat.c
-index 151901ce1ba9..f5351af4b2c5 100644
---- a/drivers/usb/host/xhci-plat.c
-+++ b/drivers/usb/host/xhci-plat.c
-@@ -11,11 +11,11 @@
-  * version 2 as published by the Free Software Foundation.
-  */
- 
--#include <linux/platform_device.h>
-+#include <linux/dma-mapping.h>
- #include <linux/module.h>
--#include <linux/slab.h>
- #include <linux/of.h>
--#include <linux/dma-mapping.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
- 
- #include "xhci.h"
- 
 -- 
-1.8.1.2
+Jens Axboe
 
