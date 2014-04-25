@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306AbaDYJod (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:44:33 -0400
-Received: from mx0.aculab.com ([213.249.233.131]:54272 "HELO mx0.aculab.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753249AbaDYJoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:44:24 -0400
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'Yijing Wang'" <wangyijing@huawei.com>,
-        Bjorn Helgaas <bhelgaas@google.com>
-CC: Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: RE: [PATCH 00/13] Refactor pci_is_brdige() to simplify code
-Thread-Topic: [PATCH 00/13] Refactor pci_is_brdige() to simplify code
-Thread-Index: AQHPYGiv0jVusWLreUyzlUfzy7AoB5siE9MQ
-Date: Fri, 25 Apr 2014 09:42:45 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D0F6FEEB0@AcuExch.aculab.com>
-References: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
-In-Reply-To: <1398417515-8740-1-git-send-email-wangyijing@huawei.com>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	id S1752890AbaDYJnm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:43:42 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:38941 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719AbaDYJng (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 05:43:36 -0400
+Message-ID: <535A2E41.40005@hitachi.com>
+Date: Fri, 25 Apr 2014 18:43:29 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Steven Rostedt <rostedt@goodmis.org>, fche@redhat.com,
+        mingo@redhat.com, systemtap@sourceware.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Re: [PATCH -tip v9 25/26] kprobes: Introduce kprobe cache
+ to reduce cache misshits
+References: <20140417081636.26341.87858.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140417081931.26341.47154.stgit@ltc230.yrl.intra.hitachi.co.jp> <20140424090134.GC7768@gmail.com> <5358F7A3.1000108@hitachi.com> <20140425082056.GB24829@gmail.com>
+In-Reply-To: <20140425082056.GB24829@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3P9ijTl004987
 
-From: Yijing Wang
-> This patchset rename the current pci_is_bridge() to pci_has_subordinate(),
-> and introduce a new pci_is_bridge() which determine pci bridge by check
-> dev->hdr_type. The new one is more accurate. PCIe Spec define the pci
-> device is a bridge by the dev->hdr_type = 0x01 || 0x02.
+(2014/04/25 17:20), Ingo Molnar wrote:
+> 
+> * Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+> 
+>>> So I don't think this should be a Kconfig entry, just enable it 
+>>> unconditionally. That will further simplify the code.
+>>
+>> Hmm, it consumes some amount of memory (36KB/core) just for the case 
+>> of several thousand of kprobes. On enterprise servers and desktop 
+>> it's OK, no problem. But I think, some embedded systems with small 
+>> resources will not want that. [...]
+> 
+> They'll just disable kprobes in general.
 
-That is a dangerous rename and is likely to cause difficult to
-identify bugs in any code you've missed.
+No, I'd like to provide kprobes (and dynamic events) to them (including
+me) for debugging and dynamic monitoring, instead of modifying code for
+adding events on their kernel. To solve some specific issues, specific
+events (not generic events) are required. Making local patches to add
+such events is an option, but it increases maintenance cost for rebasing.
+It is better to pay cost to maintain this kconfig on upstream as the
+maintainer for me instead of paying such ugly local cost. :(
 
-	David
+Anyway, this option is not easy for beginners, I think it should be
+defined with "if EXPERT" option and make it enabled by default.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+> Really, at this point complexity is our main concern.
+
+Agreed about complexity issue. However, even if we remove the Kconfig,
+we can just save 6 lines of the code, and one #ifdef block.
+Can that really solve the complexity problem?
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
