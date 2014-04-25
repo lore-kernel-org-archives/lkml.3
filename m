@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751898AbaDYBwc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 21:52:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62481 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751465AbaDYBw1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 21:52:27 -0400
-Date: Fri, 25 Apr 2014 09:53:54 +0800
-From: Dave Young <dyoung@redhat.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: matt.fleming@intel.com, hpa@zytor.com, akpm@linux-foundation.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ignore ,keep for efi earlyprintk
-Message-ID: <20140425015354.GA3224@darkstar.nay.redhat.com>
-References: <20140424093658.GA7158@dhcp-16-198.nay.redhat.com>
- <20140424104540.GA5834@gmail.com>
-MIME-Version: 1.0
+	id S1751866AbaDYBvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 21:51:21 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:46951 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823AbaDYBvR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 24 Apr 2014 21:51:17 -0400
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20140424104540.GA5834@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Mime-Version: 1.0 (Mac OS X Mail 7.2 \(1874\))
+Subject: Re: pull request: bluetooth 2014-04-24
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20140425014446.GC3410@tuxdriver.com>
+Date: Thu, 24 Apr 2014 18:51:13 -0700
+Cc: "Gustavo F. Padovan" <gustavo@padovan.org>,
+        "linux-wireless@vger.kernel.org Wireless" 
+	<linux-wireless@vger.kernel.org>,
+        BlueZ development <linux-bluetooth@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <C9BCBE06-78C4-41C6-9B70-BFB2C6AFDF7A@holtmann.org>
+References: <20140424145329.GD7832@joana> <20140425014446.GC3410@tuxdriver.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+X-Mailer: Apple Mail (2.1874)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/24/14 at 12:45pm, Ingo Molnar wrote:
-> 
-> * Dave Young <dyoung@redhat.com> wrote:
-> 
-> > earlyprint=efi,keep results a kernel hang after "Freeing unused kernel memory"
-> 
-> That's a bug.
-> 
-> > 
-> > Actually efi earlyprintk is using __init functions such as early_ioremap etc.
-> > Thus efi earlyconsole can not be kept.
-> > 
-> > So just ignore it and give out a warning to user.
-> 
-> So, bugs should be fixed, not worked around.
-> 
-> earlyprintk=,keep is really useful for the occasional difficult low 
-> level bug in the printk code or similar, because earlyprintk is a 
-> completely separate code path from printk().
+Hi John,
 
-I thought that earlyprintk is just for debugging before real console is available.
-But it does help debugging printk as you said.
+> This tag has a lot of stuff in it not in the wireless tree.
+> Please only send me pull requests that only include patches related
+> to Bluetooth.
+> 
+>> Some fixes for 3.15. There is a revert for the intel driver, a new device id,
+>> and two important SSP fixes from Johan.
+>> Also we've noticed that your wireless.git tree is not up to date, so this pull
+>> was rebased on top of net.git. If you pull from this you'll will be pulling
+>> net/master from yesterday as well.
 
-Will think about how to fix it.
+as Gustavo explained, this is against net.git since wireless.git has not yet been rebased.
 
-Thanks
-Dave
+Regards
+
+Marcel
+
