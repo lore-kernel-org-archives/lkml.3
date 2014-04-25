@@ -1,68 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309AbaDYJ36 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:29:58 -0400
-Received: from mail-ob0-f174.google.com ([209.85.214.174]:49143 "EHLO
-	mail-ob0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753257AbaDYJ3u (ORCPT
+	id S1753380AbaDYJb3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:31:29 -0400
+Received: from fw-tnat.austin.arm.com ([217.140.110.23]:24920 "EHLO
+	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751502AbaDYJbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:29:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <CAD6h2NQ4XdpE+HnTVpuSE4jW3-5_UqJmEJJcAkpD3xxqJKy3aA@mail.gmail.com>
-References: <1398130543-19454-1-git-send-email-haojian.zhuang@linaro.org>
-	<CACRpkdbzoPNEEJ6UbisqHOiRwuxEb6XSrDL=MiUmDPgyY=rVuw@mail.gmail.com>
-	<CAD6h2NQ4XdpE+HnTVpuSE4jW3-5_UqJmEJJcAkpD3xxqJKy3aA@mail.gmail.com>
-Date: Fri, 25 Apr 2014 11:29:49 +0200
-Message-ID: <CACRpkdb5bRK6n_-Rpr1WDG5H_C9WDVuLT+sop2_9hR8TW4N3fg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] gpio: pl061: get gpio base from alias id
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Haojian Zhuang <haojian.zhuang@linaro.org>
-Cc: Grant Likely <grant.likely@linaro.org>, Xu Wei <xuwei5@hisilicon.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Baruch Siach <baruch@tkos.co.il>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 25 Apr 2014 05:31:22 -0400
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
+Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH 5/7] rtc-cmos: implement driver private locking
+Date: Fri, 25 Apr 2014 10:31:13 +0100
+Message-Id: <1398418275-9671-6-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 1.8.3.4
+In-Reply-To: <1398418275-9671-1-git-send-email-marc.zyngier@arm.com>
+References: <1398418275-9671-1-git-send-email-marc.zyngier@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 2:27 AM, Haojian Zhuang
-<haojian.zhuang@linaro.org> wrote:
+A number of architecture happen to share a lock between the rtc-cmos
+driver and the core architectural code for good reasons (or at least,
+reasons that matter to the architecture).
 
-> Go it. But the gpio sysfs interface is using the gpio name with an
-> internal number. It'll make developer confusion since it's different
-> from datasheet
-> or schematics. Is there any plan to remove the confusion?
+Other architectures don't do that, but still have to define a lock
+that is only used by the RTC driver. How annoying!
 
-First I am as always very suspicious about the sysfs interface
-since it is often used for madness like reimplementing
-leds-gpio.c, gpio_keys.c, extcon-gpio.c, gpio-regulator.c
-spi-gpio.c, w1-gpio.c or gpio_wdt.c in userspace for no
-good reason when the kernel should handle it.
+Implement a set of driver private locking primitives, and expose
+a config option allowing the architecture to select it if it doesn't
+require to share the lock with the RTC driver.
 
-Yet there are exceptions where it's actually warranted.
+Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+---
+ drivers/rtc/Kconfig       |  3 +++
+ drivers/rtc/rtc-cmos.c    | 16 ++++++++++++++++
+ include/asm-generic/rtc.h |  5 +++++
+ 3 files changed, 24 insertions(+)
 
-There is a possibility to set a label on the gpio line,
-so this should be used.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 10974f7..12bc27d 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -684,6 +684,9 @@ config RTC_DRV_CMOS_MMIO_STRICT
+ 	select RTC_DRV_CMOS_MMIO
+ 	bool
+ 
++config RTC_DRV_CMOS_PRIV_LOCK
++	bool
++
+ config RTC_DRV_ALPHA
+ 	bool "Alpha PC-style CMOS"
+ 	depends on ALPHA
+diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
+index e2d1338..eb5d05c 100644
+--- a/drivers/rtc/rtc-cmos.c
++++ b/drivers/rtc/rtc-cmos.c
+@@ -107,6 +107,22 @@ static inline void rtc_cmos_set_base(void __iomem *base)
+ static void rtc_cmos_set_base(void __iomem *base) {}
+ #endif
+ 
++#ifdef CONFIG_RTC_DRV_CMOS_PRIV_LOCK
++static DEFINE_SPINLOCK(rtc_private_lock);
++
++static unsigned long rtc_cmos_lock(void)
++{
++	unsigned long flags;
++	spin_lock_irqsave(&rtc_private_lock, flags);
++	return flags;
++}
++
++static void rtc_cmos_unlock(unsigned long flags)
++{
++	spin_unlock_irqrestore(&rtc_private_lock, flags);
++}
++#endif
++
+ /* The RTC_INTR register may have e.g. RTC_PF set even if RTC_PIE is clear;
+  * always mask it against the irq enable bits in RTC_CONTROL.  Bit values
+  * are the same: PF==PIE, AF=AIE, UF=UIE; so RTC_IRQMASK works with both.
+diff --git a/include/asm-generic/rtc.h b/include/asm-generic/rtc.h
+index 236693b..1d21408 100644
+--- a/include/asm-generic/rtc.h
++++ b/include/asm-generic/rtc.h
+@@ -43,6 +43,10 @@ static inline void do_cmos_write(u8 val, u8 reg)
+ }
+ #endif
+ 
++#ifdef CONFIG_RTC_DRV_CMOS_PRIV_LOCK
++static unsigned long rtc_cmos_lock(void);
++static void rtc_cmos_unlock(unsigned long flags);
++#else
+ static inline unsigned long rtc_cmos_lock(void)
+ {
+ 	unsigned long flags;
+@@ -54,6 +58,7 @@ static inline void rtc_cmos_unlock(unsigned long flags)
+ {
+ 	spin_unlock_irqrestore(&rtc_lock, flags);
+ }
++#endif
+ 
+ /*
+  * Returns true if a clock update is in progress
+-- 
+1.8.3.4
 
-C.f.
-commit 781f6d710d4482eab05cfaad50060a0ea8c0e4e0
-"gpio: generic: Add label to platform data"
-
-Something like this is needed in this and other drivers
-needing to label its GPIO lines. It's much like how we name
-all pins in a pin controller really.
-
-I don't exactly know how we should achieve the same
-for labels to offsets in any given gpio_chip using
-some generic device tree labels for example, but I
-imagine it could be implemented in a generic fashion?
-
-Describing the names of gpio lines should be quite
-obvious hardware description suitable for the device
-tree.
-
-Yours,
-Linus Walleij
