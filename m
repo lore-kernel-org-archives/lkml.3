@@ -1,183 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753353AbaDYJb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 05:31:27 -0400
-Received: from fw-tnat.austin.arm.com ([217.140.110.23]:24903 "EHLO
-	collaborate-mta1.arm.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751075AbaDYJbV (ORCPT
+	id S1753081AbaDYJc0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 05:32:26 -0400
+Received: from mail-oa0-f49.google.com ([209.85.219.49]:54475 "EHLO
+	mail-oa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528AbaDYJcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 05:31:21 -0400
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: linux-kernel@vger.kernel.org, rtc-linux@googlegroups.com
-Cc: Russell King <linux@arm.linux.org.uk>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: [PATCH 3/7] rtc-cmos: allow MMIO to be used when initialized from FDT
-Date: Fri, 25 Apr 2014 10:31:11 +0100
-Message-Id: <1398418275-9671-4-git-send-email-marc.zyngier@arm.com>
-X-Mailer: git-send-email 1.8.3.4
-In-Reply-To: <1398418275-9671-1-git-send-email-marc.zyngier@arm.com>
-References: <1398418275-9671-1-git-send-email-marc.zyngier@arm.com>
+	Fri, 25 Apr 2014 05:32:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <1398375234.2708.122.camel@adam.happyassassin.net>
+References: <1397649959-29762-1-git-send-email-yao.jin@linux.intel.com>
+	<CAN+gG=E7jbpQxxVuhmY5E2msgdMhLLjMd=Kxn9JO57eCN+5nCQ@mail.gmail.com>
+	<5353A1F6.60602@linux.intel.com>
+	<5353B8A4.1080900@linux.intel.com>
+	<1398007690.2674.0.camel@adam.happyassassin.net>
+	<5354BA59.2000008@linux.intel.com>
+	<53551D0F.40906@linux.intel.com>
+	<CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com>
+	<1398230210.2704.8.camel@adam.happyassassin.net>
+	<20140423083430.GV30677@intel.com>
+	<20140423122344.GX30677@intel.com>
+	<5359120E.2030007@linux.intel.com>
+	<1398375234.2708.122.camel@adam.happyassassin.net>
+Date: Fri, 25 Apr 2014 11:32:17 +0200
+Message-ID: <CACRpkdasjd2HGR199_aqhemAnJD5z6--=Rr=tSoJX_hJ6-ukFA@mail.gmail.com>
+Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on ASUS T100TA
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Adam Williamson <awilliam@redhat.com>
+Cc: "Jin, Yao" <yao.jin@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
+        Alan Cox <alan@linux.intel.com>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, rtc-cmos mandates the use of an I/O port. If the
-resource obtained from the device tree is instead a memory mapped
-range, the probing will fail.
+On Thu, Apr 24, 2014 at 11:33 PM, Adam Williamson <awilliam@redhat.com> wrote:
 
-Let the cmos_of_init function try to ioremap the range obtained
-from FDT. Should this fail, fallback to the normal I/O port.
+> Well, I just ran another test too. I built a kernel (3.15rc2) with both
+> v3 of Doug's SDIO device enumeration patch -
+> http://dougvj.net/baytrail_gpio_quirk_v3.patch - and the new patch for
+> the IRQ allocation issue by Thomas Gleixner,
+> https://patchwork.kernel.org/patch/4051581/ . That kernel gives me a
+> working touchscreen. Note that
+> http://dougvj.net/baytrail_gpio_quirk_v3.patch includes both the blocks
+> you mention (i.e. it adds INT33FC in both places).
+>
+> So, it really seems like for me at least, it's the combination of Doug's
+> patch and your approach to fixing the IRQ allocation issue that breaks
+> the touchscreen. Thomas' approach, even combined with Doug's patch,
+> seems to work fine.
 
-Tested on KVM/ARM with kvmtools as the backend for RTC emulation.
+Please make sure to provide a Tested-by: tag to Thomas so he
+knows this is merge material.
 
-Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
----
- drivers/rtc/Kconfig       |  3 +++
- drivers/rtc/rtc-cmos.c    | 67 ++++++++++++++++++++++++++++++++++++++++++-----
- include/asm-generic/rtc.h |  5 ++++
- 3 files changed, 68 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 2e565f8..7e88866 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -677,6 +677,9 @@ config RTC_DRV_CMOS
- 	  This driver can also be built as a module. If so, the module
- 	  will be called rtc-cmos.
- 
-+config RTC_DRV_CMOS_MMIO
-+	bool
-+
- config RTC_DRV_ALPHA
- 	bool "Alpha PC-style CMOS"
- 	depends on ALPHA
-diff --git a/drivers/rtc/rtc-cmos.c b/drivers/rtc/rtc-cmos.c
-index be2dd17..d535e72 100644
---- a/drivers/rtc/rtc-cmos.c
-+++ b/drivers/rtc/rtc-cmos.c
-@@ -37,6 +37,7 @@
- #include <linux/log2.h>
- #include <linux/pm.h>
- #include <linux/of.h>
-+#include <linux/of_address.h>
- #include <linux/of_platform.h>
- #include <linux/dmi.h>
- 
-@@ -66,6 +67,41 @@ struct cmos_rtc {
- 
- static const char driver_name[] = "rtc_cmos";
- 
-+#ifdef CONFIG_RTC_DRV_CMOS_MMIO
-+static void __iomem *rtc_cmos_base;
-+
-+static u8 do_cmos_read(u8 reg)
-+{
-+	u8 val;
-+
-+	if (rtc_cmos_base) {
-+		writeb(reg, rtc_cmos_base);
-+		val = readb(rtc_cmos_base + 1);
-+	} else {
-+		val = CMOS_READ(reg);
-+	}
-+
-+	return val;
-+}
-+
-+static void do_cmos_write(u8 val, u8 reg)
-+{
-+	if (rtc_cmos_base) {
-+		writeb(reg, rtc_cmos_base);
-+		writeb(val, rtc_cmos_base + 1);
-+	} else {
-+		CMOS_WRITE(val, reg);
-+	}
-+}
-+
-+static inline void rtc_cmos_set_base(void __iomem *base)
-+{
-+	rtc_cmos_base = base;
-+}
-+#else
-+static void rtc_cmos_set_base(void __iomem *base) {}
-+#endif
-+
- /* The RTC_INTR register may have e.g. RTC_PF set even if RTC_PIE is clear;
-  * always mask it against the irq enable bits in RTC_CONTROL.  Bit values
-  * are the same: PF==PIE, AF=AIE, UF=UIE; so RTC_IRQMASK works with both.
-@@ -663,13 +699,23 @@ cmos_do_probe(struct device *dev, struct resource *ports, int rtc_irq)
- 		return -ENODEV;
- 
- 	/* Claim I/O ports ASAP, minimizing conflict with legacy driver.
--	 *
--	 * REVISIT non-x86 systems may instead use memory space resources
--	 * (needing ioremap etc), not i/o space resources like this ...
-+	 * MMIO gets requested the same way, not that it matters much.
- 	 */
--	ports = request_region(ports->start,
--			resource_size(ports),
--			driver_name);
-+	switch(resource_type(ports)) {
-+	case IORESOURCE_IO:
-+		ports = request_region(ports->start,
-+				       resource_size(ports),
-+				       driver_name);
-+		break;
-+	case IORESOURCE_MEM:
-+		ports = request_mem_region(ports->start,
-+					   resource_size(ports),
-+					   driver_name);
-+		break;
-+	default:		/* Martian I/O??? */
-+		ports = NULL;
-+	}
-+
- 	if (!ports) {
- 		dev_dbg(dev, "i/o registers already in use\n");
- 		return -EBUSY;
-@@ -1160,10 +1206,17 @@ static inline void cmos_of_init(struct platform_device *pdev) {}
- 
- static int __init cmos_platform_probe(struct platform_device *pdev)
- {
-+	struct resource *ports;
-+
- 	cmos_of_init(pdev);
-+
-+	ports = platform_get_resource(pdev, IORESOURCE_IO, 0);
-+	if (!ports)
-+		ports = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+
- 	cmos_wake_setup(&pdev->dev);
- 	return cmos_do_probe(&pdev->dev,
--			platform_get_resource(pdev, IORESOURCE_IO, 0),
-+			ports,
- 			platform_get_irq(pdev, 0));
- }
- 
-diff --git a/include/asm-generic/rtc.h b/include/asm-generic/rtc.h
-index 1ad3e78..236693b 100644
---- a/include/asm-generic/rtc.h
-+++ b/include/asm-generic/rtc.h
-@@ -28,6 +28,10 @@
- #define RTC_24H 0x02		/* 24 hour mode - else hours bit 7 means pm */
- #define RTC_DST_EN 0x01	        /* auto switch DST - works f. USA only */
- 
-+#ifdef CONFIG_RTC_DRV_CMOS_MMIO
-+static u8 do_cmos_read(u8 reg);
-+static void do_cmos_write(u8 val, u8 reg);
-+#else
- static inline u8 do_cmos_read(u8 reg)
- {
- 	return CMOS_READ(reg);
-@@ -37,6 +41,7 @@ static inline void do_cmos_write(u8 val, u8 reg)
- {
- 	CMOS_WRITE(val, reg);
- }
-+#endif
- 
- static inline unsigned long rtc_cmos_lock(void)
- {
--- 
-1.8.3.4
-
+Yours,
+Linus Walleij
