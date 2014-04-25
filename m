@@ -1,207 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609AbaDYMqs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 08:46:48 -0400
-Received: from mga09.intel.com ([134.134.136.24]:19594 "EHLO mga09.intel.com"
+	id S1753724AbaDYMrR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 08:47:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:18400 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753524AbaDYMqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 08:46:47 -0400
+	id S1753673AbaDYMrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 08:47:15 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
-   d="scan'208";a="528280581"
-Message-ID: <535A5932.4030506@linux.intel.com>
-Date: Fri, 25 Apr 2014 20:46:42 +0800
-From: "Jin, Yao" <yao.jin@linux.intel.com>
+   d="scan'208";a="519693160"
+Message-ID: <535A594F.2010604@intel.com>
+Date: Fri, 25 Apr 2014 14:47:11 +0200
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Organization: Intel Technology Poland Sp. z o. o., KRS 101882, ul. Slowackiego
+ 173, 80-298 Gdansk
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-To: Mika Westerberg <mika.westerberg@linux.intel.com>
-CC: Adam Williamson <awilliam@redhat.com>,
-        Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>, alan@linux.intel.com,
-        mathias.nyman@intel.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        aubrey.li@intel.com
-Subject: Re: [PATCH] pinctrl-baytrail: fix for irq descriptor conflict on
- ASUS T100TA
-References: <1398007690.2674.0.camel@adam.happyassassin.net> <5354BA59.2000008@linux.intel.com> <53551D0F.40906@linux.intel.com> <CAN+gG=H2X9cUWMixCQakiWz45AOpDAJyEULB0Z9d2jyxy9hUNA@mail.gmail.com> <1398230210.2704.8.camel@adam.happyassassin.net> <20140423083430.GV30677@intel.com> <20140423122344.GX30677@intel.com> <5359120E.2030007@linux.intel.com> <1398375234.2708.122.camel@adam.happyassassin.net> <535A0E6E.7000900@linux.intel.com> <20140425094038.GK30677@intel.com>
-In-Reply-To: <20140425094038.GK30677@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Li Zhong <zhong@linux.vnet.ibm.com>
+CC: Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        gregkh@linuxfoundation.org, toshi.kani@hp.com
+Subject: Re: [RFC PATCH v5 2/2] Use kernfs_break_active_protection() for device
+ online store callbacks
+References: <1397612500.13188.83.camel@ThinkPad-T5421.cn.ibm.com>	 <20140416151749.GE1257@htj.dyndns.org>	 <1397717444.4034.15.camel@ThinkPad-T5421>	 <20140417151728.GK15326@htj.dyndns.org>	 <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>	 <1398072230.2755.43.camel@ThinkPad-T5421.cn.ibm.com>	 <20140421224606.GE22730@htj.dyndns.org>	 <1398137679.2805.28.camel@ThinkPad-T5421.cn.ibm.com>	 <20140422204455.GB3615@mtj.dyndns.org> <5356EB6D.3010102@intel.com>	 <20140423142346.GB4781@htj.dyndns.org> <5357E651.2040400@intel.com>	 <1398329996.2805.110.camel@ThinkPad-T5421.cn.ibm.com>	 <5358E12C.2050800@intel.com> <1398390415.2805.129.camel@ThinkPad-T5421.cn.ibm.com>
+In-Reply-To: <1398390415.2805.129.camel@ThinkPad-T5421.cn.ibm.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 4/25/2014 3:46 AM, Li Zhong wrote:
+> On Thu, 2014-04-24 at 12:02 +0200, Rafael J. Wysocki wrote:
+>> On 4/24/2014 10:59 AM, Li Zhong wrote:
+>>> On Wed, 2014-04-23 at 18:12 +0200, Rafael J. Wysocki wrote:
+>>>> On 4/23/2014 4:23 PM, Tejun Heo wrote:
+>>>>> Hello, Rafael.
+>>>> Hi,
+>>>>
+>>>>> On Wed, Apr 23, 2014 at 12:21:33AM +0200, Rafael J. Wysocki wrote:
+>>>>>> Can you please elaborate a bit?
+>>>>> Because it can get involved in larger locking dependency issues by
+>>>>> joining dependency graphs of two otherwise largely disjoint
+>>>>> subsystems.  It has potential to create possible deadlocks which don't
+>>>>> need to exist.
+>>>> Well, I do my best not to add unnecessary locks if that's what you mean.
+>>>>
+>>>>>> It is there to protect hotplug operations involving multiple devices
+>>>>>> (in different subsystems) from racing with each other.  Why exactly
+>>>>>> is it bad?
+>>>>> But why would different subsystems, say cpu and memory, use the same
+>>>>> lock?  Wouldn't those subsystems already have proper locking inside
+>>>>> their own subsystems?
+>>>> That locking is not sufficient.
+>>>>
+>>>>> Why add this additional global lock across multiple subsystems?
+>>>> That basically is because of how eject works when it is triggered via ACPI.
+>>>>
+>>>> It is signaled for a device at the top of a subtree.  It may be a
+>>>> container of some sort and the eject involves everything below that
+>>>> device in the ACPI namespace.  That may involve multiple subsystem
+>>>> (CPUs, memory, PCI host bridge, etc.).
+>>>>
+>>>> We do that in two steps, offline (which can fail) and eject proper
+>>>> (which can't fail and makes all of the involved devices go away). All
+>>>> that has to be done in one go with respect to the sysfs-triggered
+>>>> offline/online and that's why the lock is there.
+>>> Thank you for the education. It's more clear to me now why we need this
+>>> lock.
+>>>
+>>> I still have some small questions about when this lock is needed:
+>>>
+>>> I could understand sysfs-triggered online is not acceptable when
+>>> removing devices in multiple subsystems. But maybe concurrent offline
+>>> and remove(with proper per subsystem locks) seems not harmful?
+>>>
+>>> And if we just want to remove some devices in a specific subsystem, e.g.
+>>> like writing /cpu/release, if it just wants to offline and remove some
+>>> cpus, then maybe we don't require the device_hotplug_lock to be taken?
+>> No and no.
+>>
+>> If the offline phase fails for any device in the subtree, we roll back
+>> the operation
+>> and online devices that have already been offlined by it.  Also the ACPI
+>> hot-addition
+>> needs to acquire device_hotplug_lock so that it doesn't race with ejects
+>> and so
+>> that lock needs to be taken by sysfs-triggered offline too.
+> I can understand that hot-addition needs the device_hotplug lock, but
+> still not very clear about the offline.
+>
+> I guess your are describing following scenario:
+>
+> user A: (trying remove cpu 1 and memory 1-10)
+>
+> lock_device_hotplug
+> offline cpu with cpu locks          -- successful
+> offline memories with memory locks  -- failed, e.g. for memory8
+> online cpu and memory with their locks
+> unlock_device_hotplug
 
+What about if all is successful and CPU1 is gone before 
+device_hotplug_lock is released?
 
-On 2014/4/25 17:40, Mika Westerberg wrote:
-> [+Aubrey]
-> 
-> On Fri, Apr 25, 2014 at 03:27:42PM +0800, Jin, Yao wrote:
->>
->>
->> On 2014/4/25 5:33, Adam Williamson wrote:
->>> On Thu, 2014-04-24 at 21:30 +0800, Jin, Yao wrote:
->>>
->>>>> Jin, do you have any idea what is going on?
->>>>>
->>>>
->>>> Maybe neither the patch (http://dougvj.net/baytrail_gpio_quirk_v3.patch)
->>>> nor my patch breaks the touch screen.
->>>>
->>>> I have tried the clean 3.15-rc2 with following patch which just adds
->>>> back the ACPIID "INT33FC", but the touch screen still doesn't work (To
->>>> avoid the i915 crash issue, I use with the boot option "nomodeset" in test).
->>>>
->>>> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
->>>> index 69e29f4..d79c6d7 100644
->>>> --- a/drivers/acpi/acpi_lpss.c
->>>> +++ b/drivers/acpi/acpi_lpss.c
->>>> @@ -180,6 +180,7 @@ static const struct acpi_device_id
->>>> acpi_lpss_device_ids[] = {
->>>>         { "80860F14", (unsigned long)&byt_sdio_dev_desc },
->>>>         { "80860F41", (unsigned long)&byt_i2c_dev_desc },
->>>>         { "INT33B2", },
->>>> +       { "INT33FC", },
->>>>
->>>>         { "INT3430", (unsigned long)&lpt_dev_desc },
->>>>         { "INT3431", (unsigned long)&lpt_dev_desc },
->>>> diff --git a/drivers/pinctrl/pinctrl-baytrail.c
->>>> b/drivers/pinctrl/pinctrl-baytrail.c
->>>> index 6e8301f..447f1dc 100644
->>>> --- a/drivers/pinctrl/pinctrl-baytrail.c
->>>> +++ b/drivers/pinctrl/pinctrl-baytrail.c
->>>> @@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
->>>>
->>>>  static const struct acpi_device_id byt_gpio_acpi_match[] = {
->>>>         { "INT33B2", 0 },
->>>> +       { "INT33FC", 0 },
->>>>         { }
->>>>  };
->>>>  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
->>>>
->>>> Since the clean 3.15-rc2 doesn't contain "INT33FC", so the baytrail gpio
->>>> doesn't actually go into effect.
->>>
->>> Well, I just ran another test too. I built a kernel (3.15rc2) with both
->>> v3 of Doug's SDIO device enumeration patch -
->>> http://dougvj.net/baytrail_gpio_quirk_v3.patch - and the new patch for
->>> the IRQ allocation issue by Thomas Gleixner,
->>> https://patchwork.kernel.org/patch/4051581/ . That kernel gives me a
->>> working touchscreen. Note that
->>> http://dougvj.net/baytrail_gpio_quirk_v3.patch includes both the blocks
->>> you mention (i.e. it adds INT33FC in both places).
->>>
->>> So, it really seems like for me at least, it's the combination of Doug's
->>> patch and your approach to fixing the IRQ allocation issue that breaks
->>> the touchscreen. Thomas' approach, even combined with Doug's patch,
->>> seems to work fine.
->>>
->>
->> I'm trying the clean upstream 3.15-rc2 with the patch by Thomas Gleixner
->> (https://patchwork.kernel.org/patch/4051581/) and the patch as following
->> which only adds INT33FC, the touch screen doesn't work. I didn't add
->> Doug's SDIO device enumeration patch in this test.
->>
->> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
->> index 69e29f4..d79c6d7 100644
->> --- a/drivers/acpi/acpi_lpss.c
->> +++ b/drivers/acpi/acpi_lpss.c
->> @@ -180,6 +180,7 @@ static const struct acpi_device_id
->> acpi_lpss_device_ids[] = {
->>         { "80860F14", (unsigned long)&byt_sdio_dev_desc },
->>         { "80860F41", (unsigned long)&byt_i2c_dev_desc },
->>         { "INT33B2", },
->> +       { "INT33FC", },
->>
->>         { "INT3430", (unsigned long)&lpt_dev_desc },
->>         { "INT3431", (unsigned long)&lpt_dev_desc },
->> diff --git a/drivers/pinctrl/pinctrl-baytrail.c
->> b/drivers/pinctrl/pinctrl-baytrail.c
->> index 6e8301f..447f1dc 100644
->> --- a/drivers/pinctrl/pinctrl-baytrail.c
->> +++ b/drivers/pinctrl/pinctrl-baytrail.c
->> @@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
->>
->>  static const struct acpi_device_id byt_gpio_acpi_match[] = {
->>         { "INT33B2", 0 },
->> +       { "INT33FC", 0 },
->>         { }
->>  };
->>  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
->>
->> It's still not clear to me why the touch screen doesn't work. As above
->> test, my patch is not added in.
-> 
-> With patch from Thomas and below patch, I got working touchscreen. Note
-> that you need to disable runtime PM from SDHCI (or from some other LPSS
-> driver) so that the LPSS stays functional. Once all devices are powered
-> off, the block doesn't wake up anymore. Aubrey is investigating that.
-> 
-> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
-> index 69e29f409d4c..d79c6d7f598e 100644
-> --- a/drivers/acpi/acpi_lpss.c
-> +++ b/drivers/acpi/acpi_lpss.c
-> @@ -180,6 +180,7 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
->  	{ "80860F14", (unsigned long)&byt_sdio_dev_desc },
->  	{ "80860F41", (unsigned long)&byt_i2c_dev_desc },
->  	{ "INT33B2", },
-> +	{ "INT33FC", },
->  
->  	{ "INT3430", (unsigned long)&lpt_dev_desc },
->  	{ "INT3431", (unsigned long)&lpt_dev_desc },
-> diff --git a/drivers/mmc/host/sdhci-acpi.c b/drivers/mmc/host/sdhci-acpi.c
-> index ebb3f392b589..c5d4185380b1 100644
-> --- a/drivers/mmc/host/sdhci-acpi.c
-> +++ b/drivers/mmc/host/sdhci-acpi.c
-> @@ -130,8 +130,7 @@ static const struct sdhci_acpi_slot sdhci_acpi_slot_int_sdio = {
->  };
->  
->  static const struct sdhci_acpi_slot sdhci_acpi_slot_int_sd = {
-> -	.flags   = SDHCI_ACPI_SD_CD | SDHCI_ACPI_SD_CD_OVERRIDE_LEVEL |
-> -		   SDHCI_ACPI_RUNTIME_PM,
-> +	.flags   = SDHCI_ACPI_SD_CD | SDHCI_ACPI_SD_CD_OVERRIDE_LEVEL,
->  	.quirks2 = SDHCI_QUIRK2_CARD_ON_NEEDS_BUS_ON,
->  };
->  
-> diff --git a/drivers/pinctrl/pinctrl-baytrail.c b/drivers/pinctrl/pinctrl-baytrail.c
-> index 6e8301f77187..7c65c9dab215 100644
-> --- a/drivers/pinctrl/pinctrl-baytrail.c
-> +++ b/drivers/pinctrl/pinctrl-baytrail.c
-> @@ -527,12 +527,6 @@ static int byt_gpio_probe(struct platform_device *pdev)
->  	gc->can_sleep = false;
->  	gc->dev = dev;
->  
-> -	ret = gpiochip_add(gc);
-> -	if (ret) {
-> -		dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
-> -		return ret;
-> -	}
-> -
->  	/* set up interrupts  */
->  	irq_rc = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
->  	if (irq_rc && irq_rc->start) {
-> @@ -550,6 +544,12 @@ static int byt_gpio_probe(struct platform_device *pdev)
->  		irq_set_chained_handler(hwirq, byt_gpio_irq_handler);
->  	}
->  
-> +	ret = gpiochip_add(gc);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "failed adding byt-gpio chip\n");
-> +		return ret;
-> +	}
-> +
->  	pm_runtime_enable(dev);
->  
->  	return 0;
-> @@ -572,6 +572,7 @@ static const struct dev_pm_ops byt_gpio_pm_ops = {
->  
->  static const struct acpi_device_id byt_gpio_acpi_match[] = {
->  	{ "INT33B2", 0 },
-> +	{ "INT33FC", 0 },
->  	{ }
->  };
->  MODULE_DEVICE_TABLE(acpi, byt_gpio_acpi_match);
-> 
+> user B: (trying offline cpu 1)
+>
+> offline cpu with cpu locks
+>
+> But I don't see any problem for user B not taking the device_hotplug
+> lock. The result may be different for user B to take or not take the
+> lock. But I think it could be seen as concurrent online/offline for cpu1
+> under cpu hotplug locks, which just depends on which is executed last?
+>
+> Or did I miss something here?
 
-Yes, I just tried. With the HSUART runtime PM being disabled, the touch
-screen works.
+Yes, you could do offline in parallel with user A without taking 
+device_hotplug_lock, but the result may be surprising to user B then.
+
+With device _hotplug_lock user B will always see CPU1 off line (or gone) 
+after his offline in this scenario, while without taking the lock user B 
+may sometimes see CPU1 on line after his offline.  I don't think that's 
+a good thing.
+
+Rafael
+
