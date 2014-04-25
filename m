@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbaDYOFh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:05:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13375 "EHLO mx1.redhat.com"
+	id S1753721AbaDYOGV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:06:21 -0400
+Received: from mga02.intel.com ([134.134.136.20]:8699 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752636AbaDYOFf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:05:35 -0400
-Date: Fri, 25 Apr 2014 10:04:59 -0400
-From: Rik van Riel <riel@redhat.com>
-To: Randy Dunlap <rdunlap@infradead.org>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>, linux-next@vger.kernel.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        umgwanakikbuti@gmail.com
-Subject: Re: mmotm 2014-04-24-13-07 uploaded
-Message-ID: <20140425100459.7824f676@annuminas.surriel.com>
-In-Reply-To: <535992DD.3060808@infradead.org>
-References: <20140424200837.727695A407C@corp2gmr1-2.hot.corp.google.com>
-	<535992DD.3060808@infradead.org>
-Organization: Red Hat, Inc.
+	id S1751184AbaDYOGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 10:06:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
+   d="scan'208";a="528322254"
+Message-ID: <535A6BD7.4090709@intel.com>
+Date: Fri, 25 Apr 2014 22:06:15 +0800
+From: "Yan, Zheng" <zheng.z.yan@intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH v2 4/4] perf/x86/uncore: modularize Intel uncore driver
+References: <1395295426-12391-1-git-send-email-zheng.z.yan@intel.com> <20140418105354.GA29167@gmail.com> <53548008.3040504@intel.com> <20140422113545.GA14950@gmail.com> <CABPqkBTHv3U6L4fKOvsFcaWR8HcOEaqGGxRMRn-+O68a0BLCuA@mail.gmail.com> <20140424081408.GA7709@gmail.com> <5358E6A2.3020505@intel.com> <CABPqkBRihMr=+X_Gb5dSYfForTpGA6XZGfTHOA3PZNAHTJDPkg@mail.gmail.com> <20140424112715.GQ11096@twins.programming.kicks-ass.net> <535A6070.90803@intel.com> <20140425135549.GF11096@twins.programming.kicks-ass.net>
+In-Reply-To: <20140425135549.GF11096@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 24 Apr 2014 15:40:29 -0700
-Randy Dunlap <rdunlap@infradead.org> wrote:
-
-
-> uml on x86_64 defconfig:
+On 04/25/2014 09:55 PM, Peter Zijlstra wrote:
+> On Fri, Apr 25, 2014 at 09:17:36PM +0800, Yan, Zheng wrote:
+>> On 04/24/2014 07:27 PM, Peter Zijlstra wrote:
+>>> On Thu, Apr 24, 2014 at 12:36:01PM +0200, Stephane Eranian wrote:
+>>>>> Most of hardware specific codes in the Intel uncore driver are for
+>>>>> SandyBridge/IvyBridge/Haswell. Uncore subsystem in these CPUs are
+>>>>> similar. One module per CPU type means we have to duplicate lots of
+>>>>> code. I don't think it's a good idea.
+>>>>>
+>>>> Then, at least split nhm_ex from the rest. It is very big.
+>>>
+>>> Aren't the EX parts in general far more complex and different from the
+>>> EP parts? Or will the SNB/IVB/HSW-EX parts also be similar again? (this
+>>> would be a good thing).
+>>
+>> SNB/IVB/HSW-EX are almost identical to SNB/IVB/HSW-EP.
 > 
-> drivers/built-in.o: In function `__handle_sysrq':
-> drivers/tty/sysrq.c:514: undefined reference to `rcu_sysrq_start'
-> drivers/tty/sysrq.c:558: undefined reference to `rcu_sysrq_end'
+> Ah, good, sanity prevails!
+> 
+>> NHM/WSM-EX are complete different from SNB/IVB/HSW-EX
+> 
+> Yeah, NHM/WSM-EX are different from pretty much anything.
+> 
+> Where do NHM/WSM-EP fall? I know they're radically different to the EX
+> parts but are they similar again to the SNB/IVB/HSW EP parts?
+> 
 
-Randy, does the patch below fix it?
+the uncore driver does not support NHM/WSM-EP (I don't know the module numbers for NHM/WSM-EP, maybe I'm wrong)
 
-Mike, this patch should also address your concerns.
+> If not we'd have 3 groups:
+> 
+> NHM/WSM-EP
+> NHM/WSM-EX
+> SNB/IVB/HSW
+> 
 
-Andrew, this can be a -fix patch for the sysctl-rcu patch,
-assuming it fixes things :)
+I think we'd have:
 
-Signed-off-by: Rik van Riel <riel@redhat.com
----
- drivers/tty/sysrq.c | 1 +
- kernel/rcu/update.c | 3 ++-
- 2 files changed, 3 insertions(+), 1 deletion(-)
+NHM/WSM-EX
+SNB/IVB/HSW-EP
+Desktop version of NHM/SNB/IVB/HSW
 
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index dd53af9..0867433 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -46,6 +46,7 @@
- #include <linux/jiffies.h>
- #include <linux/syscalls.h>
- #include <linux/of.h>
-+#include <linux/rcupdate.h>
- 
- #include <asm/ptrace.h>
- #include <asm/irq_regs.h>
-diff --git a/kernel/rcu/update.c b/kernel/rcu/update.c
-index 2ac3289..d22309c 100644
---- a/kernel/rcu/update.c
-+++ b/kernel/rcu/update.c
-@@ -322,7 +322,8 @@ int rcu_jiffies_till_stall_check(void)
- 
- void rcu_sysrq_start(void)
- {
--	rcu_cpu_stall_suppress = 2;
-+	if (!rcu_cpu_stall_suppress)
-+		rcu_cpu_stall_suppress = 2;
- }
- 
- void rcu_sysrq_end(void)
+Regards
+Yan, Zheng
+
 
