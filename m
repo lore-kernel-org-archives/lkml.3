@@ -1,95 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935AbaDYRc5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 13:32:57 -0400
-Received: from mail.kernel.org ([198.145.19.201]:56776 "EHLO mail.kernel.org"
+	id S1753992AbaDYReQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 13:34:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:57771 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751539AbaDYRcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 13:32:54 -0400
-Date: Fri, 25 Apr 2014 19:32:47 +0200
-From: Sebastian Reichel <sre@kernel.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Shubhrajyoti Datta <omaplinuxkernel@gmail.com>,
-        Carlos Chinea <cch.devel@gmail.com>, Tony Lindgren <tony@atomide.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>, Kumar Gala <galak@codeaurora.org>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>,
-        =?utf-8?B?0JjQstCw0LnQu9C+INCU0LjQvNC40YLRgNC+0LI=?= 
-	<freemangordon@abv.bg>,
-        Joni Lapilainen <joni.lapilainen@gmail.com>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>
-Subject: Re: [PATCHv3 05/14] HSI: Add channel resource support to HSI clients
-Message-ID: <20140425173247.GA22721@earth.universe>
-References: <1396053110-21639-1-git-send-email-sre@kernel.org>
- <1396053110-21639-6-git-send-email-sre@kernel.org>
- <20140419191126.GE5148@amd.pavel.ucw.cz>
+	id S1752057AbaDYReO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 13:34:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,928,1389772800"; 
+   d="scan'208";a="499831523"
+Date: Fri, 25 Apr 2014 10:32:06 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Mathias Nyman <mathias.nyman@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/4] xhci: fixes for 3.15-rc usb-linus
+Message-ID: <20140425173206.GA19900@xanatos>
+References: <1398442816-32538-1-git-send-email-mathias.nyman@linux.intel.com>
+ <20140425163505.GA8382@kroah.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="6c2NcOVqGQ03X4Wi"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20140419191126.GE5148@amd.pavel.ucw.cz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20140425163505.GA8382@kroah.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Apr 25, 2014 at 09:35:05AM -0700, Greg KH wrote:
+> On Fri, Apr 25, 2014 at 07:20:12PM +0300, Mathias Nyman wrote:
+> > Hi Greg                                                                                                
+> >                                                                                                        
+> > Second try at this xhci fixes series for 3.15-rc usb-linus.                                                         
+> > Most of them are very small fixes that didn't make                                                     
+> > it to 3.14, sitting and waiting for 3.15-rc1 to come out.                                              
+> >                                                                                                        
+> > Only the "Prefer endpoint context.." patch  by Julius has a bit more content.                          
+> >                                                                                                        
+> > These patches are picked together with Sarah, they are tested on top of                                
+> > 3.15-rc1, and apply on your current usb-linus branch                                                   
+> 
+> Much better, all now applied.
+> 
+> What's with all that trailing whitespace in your email text?
 
---6c2NcOVqGQ03X4Wi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+I use the following lines in my .vimrc to highlight trailing whitespace:
 
-On Sat, Apr 19, 2014 at 09:11:26PM +0200, Pavel Machek wrote:
-> Hi!
->=20
-> > Make HSI channel ids platform data, which can be provided
-> > by platform data.
-> >
->=20
-> >  static void hsi_client_release(struct device *dev)
-> >  {
-> > -	kfree(to_hsi_client(dev));
-> > +	struct hsi_client *cl =3D to_hsi_client(dev);
-> > +
-> > +	if (cl->tx_cfg.channels)
-> > +		kfree(cl->tx_cfg.channels);
-> > +	if (cl->rx_cfg.channels && cl->rx_cfg.channels !=3D cl->tx_cfg.channe=
-ls)
-> > +		kfree(cl->rx_cfg.channels);
-> > +
-> > +	kfree(cl);
->=20
-> Can cl->rx_cfg.channels =3D=3D cl->tx_cfg.channels happen? That seems
-> like quite a hack :-(.
+hi link localWhitespaceError Error
+au Syntax * syn match localWhitespaceError /\(\zs\%#\|\s\)\+$/ display
+au Syntax * syn match localWhitespaceError / \+\ze\t/ display
 
-Yes it could happen. I have updated this for PATCHv4 (so that it can
-no longer happen).
+I also have a macro to add stable tags and which commit IDs introduced
+the issue the bug fixes:
 
--- Sebastian
+iab backporthis
+\<CR>Fixes: commitID ("commitDescription")
+\<CR>Cc: stable@vger.kernel.org # kernelVersion
 
---6c2NcOVqGQ03X4Wi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Then when I'm amending someone's commit to add my Signed-off-by line, I
+type backporthis, and vim expands it to the longer version.  (I've
+deliberately misspelled it here, so it doesn't get expanded.) Sometimes
+it takes a couple of round of `git blame` to figure out when the bug was
+introduced.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJTWpw/AAoJENju1/PIO/qaxVkP/0CXhPFJ+8E9LhSZubCzLzxu
-4J+2sW1a9WEDlOwdO+8CUtms7sBsAmWqMjc/WbUH8cV7ItiBrIgKaUOIZFWQKHkm
-wJW57BOciOf9+Fm3bj5/+BVesJUPF17uYX2RpJwE/yvRixtLVA6ls3MaHZSNo1E8
-5WrkuyxEPIyti8je5RK9i/g72rAcFUZ+/6VmBr8H8DBqN2WX+C02BXaZeM1vTfAw
-RgaVlOszn/9PVO6LrY0FgLywxny8UECnJl6oEvtDas9EJzJ8bdmdFm6CptIvLtsI
-eoRibCW4uxNvUwJIlcnm/qSI4dVH/qtZZMNY1G4en3mqvE1uwqxycVRVefoBRGBM
-7zI4TbViFPpQOyhBRqzGZxkuu3BvZHB4sD0VnHcxRk1w4S2fxv+x+SvJLt36/PZO
-aIfUSI+e8q0hqNf6HU5a1mUP5bDs7n+ysTRLprotdTbahamdmEsB36cPT0oC9ypt
-gdo10k9pBy8WIEBSonKeeMmRU93KrphNq59rKZ8vjd0ubaHnu3AOvXcANUpYrnIZ
-5GEc37ITlsu1Pk9mnz4HP/1zVR2zMP0lmKshQ7oba+Rx4RydI4y8BKUFwGdM4/1T
-qhZzz9jEiaqHkSqihq7SOVsKy/5paMcRYsxp1CQuFXg2LbI1CwFrq4HJxYWBXomb
-z38L07/gFnggjwYQHgYe
-=Cf+p
------END PGP SIGNATURE-----
-
---6c2NcOVqGQ03X4Wi--
+Sarah Sharp
