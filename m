@@ -1,95 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753004AbaDYSX0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 14:23:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9469 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752723AbaDYSXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 14:23:23 -0400
-Date: Fri, 25 Apr 2014 20:23:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Dmitry Kasatkin <d.kasatkin@samsung.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: linux-security-module <linux-security-module@vger.kernel.org>,
-        john.johansen@canonical.com, Mimi Zohar <zohar@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>, viro@ZenIV.linux.org.uk,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        kernel-team@lists.ubuntu.com
-Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
-Message-ID: <20140425182310.GA9128@redhat.com>
-References: <535A5C78.1070901@samsung.com> <535A75C1.3050901@samsung.com>
+	id S1753995AbaDYSY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 14:24:29 -0400
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:65323 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753692AbaDYSY0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 14:24:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <535A75C1.3050901@samsung.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1398447618.26477952@f179.i.mail.ru>
+References: <1398387367-4047-1-git-send-email-jon@ringle.org>
+	<20140425172640.GA27841@kroah.com>
+	<1398447618.26477952@f179.i.mail.ru>
+Date: Fri, 25 Apr 2014 14:24:23 -0400
+X-Google-Sender-Auth: 786iYkwPrmm4vytycZHV4O9yQhg
+Message-ID: <CAMwGMjz+=rvYBVPpkC9f1bpW46_1srmokH8-PzDS+2Z2OqCOtQ@mail.gmail.com>
+Subject: Re: [PATCH v7 1/2] serial: sc16is7xx
+From: Jon Ringle <jon@ringle.org>
+To: Alexander Shiyan <shc_work@mail.ru>
+Cc: Greg KH <gregkh@linuxfoundation.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jon Ringle <jringle@gridpoint.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/25, Dmitry Kasatkin wrote:
+On Fri, Apr 25, 2014 at 1:40 PM, Alexander Shiyan <shc_work@mail.ru> wrote:
+> Fri, 25 Apr 2014 10:26:40 -0700 от Greg KH <gregkh@linuxfoundation.org>:
+>> On Thu, Apr 24, 2014 at 08:56:06PM -0400, jon@ringle.org wrote:
+>> > From: Jon Ringle <jringle@gridpoint.com>
+>> >
+>> > The SC16IS7xx is a slave I2C-bus/SPI interface to a single-channel
+>> > high performance UART. The SC16IS7xx's internal register set is
+>> > backward-compatible with the widely used and widely popular 16C450.
+>> >
+>> > The SC16IS7xx also provides additional advanced features such as
+>> > auto hardware and software flow control, automatic RS-485 support, and
+>> > software reset.
+>> >
+>> > Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+>> > ---
+>> >  drivers/tty/serial/Kconfig       |    9 +
+>> >  drivers/tty/serial/Makefile      |    1 +
+>> >  drivers/tty/serial/sc16is7xx.c   | 1279 ++++++++++++++++++++++++++++++++++++++
+>> >  include/uapi/linux/serial_core.h |    3 +
+>> >  4 files changed, 1292 insertions(+)
+>> >  create mode 100644 drivers/tty/serial/sc16is7xx.c
+>>
+>> I get a few build warnings with this patch applied:
+>>
+>> drivers/tty/serial/sc16is7xx.c:1059:12: warning: ‘sc16is7xx_probe’ defined but not used [-Wunused-function]
+>>  static int sc16is7xx_probe(struct device *dev,
+>>             ^
+>> drivers/tty/serial/sc16is7xx.c:1175:12: warning: ‘sc16is7xx_remove’ defined but not used [-Wunused-function]
+>>  static int sc16is7xx_remove(struct device *dev)
+>>             ^
+>> drivers/tty/serial/sc16is7xx.c:1214:29: warning: ‘regcfg’ defined but not used [-Wunused-variable]
+>>  static struct regmap_config regcfg = {
+>>                              ^
+>>
+>> Can you send a follow-on patch to fix them?
 >
-> On 25/04/14 16:00, Dmitry Kasatkin wrote:
-> > Hello,
-> >
-> > I discovered a kernel panic on system running Ubuntu when IMA is enabled.
-> > It happens on reboot.
-> >
-> > ----------------------
-> > [  106.750100] NSPROXY is NULL: error.log (/var/log/mysql/error.log)
-> > [  106.750167] BUG: unable to handle kernel NULL pointer dereference at
-> > 0000000000000018
-> > [  106.750221] IP: [<ffffffff811ec7da>] our_mnt+0x1a/0x30
-...
-> > [  106.751149] Call Trace:
-> > [  106.751172]  [<ffffffff813434eb>] ? aa_path_name+0x2ab/0x430
-> > [  106.751199]  [<ffffffff8101b9b9>] ? sched_clock+0x9/0x10
-> > [  106.751225]  [<ffffffff8134a68d>] aa_path_perm+0x7d/0x170
-> > [  106.751250]  [<ffffffff8101b945>] ? native_sched_clock+0x15/0x80
-> > [  106.751276]  [<ffffffff8134aa73>] aa_file_perm+0x33/0x40
-> > [  106.751301]  [<ffffffff81348c5e>] common_file_perm+0x8e/0xb0
-> > [  106.751327]  [<ffffffff81348d78>] apparmor_file_permission+0x18/0x20
-> > [  106.751355]  [<ffffffff8130c853>] security_file_permission+0x23/0xa0
-> > [  106.751382]  [<ffffffff811c77a2>] rw_verify_area+0x52/0xe0
-> > [  106.751407]  [<ffffffff811c789d>] vfs_read+0x6d/0x170
-> > [  106.751432]  [<ffffffff811cda31>] kernel_read+0x41/0x60
-> > [  106.751457]  [<ffffffff8134fd45>] ima_calc_file_hash+0x225/0x280
-> > [  106.751483]  [<ffffffff8134fb52>] ? ima_calc_file_hash+0x32/0x280
-> > [  106.751509]  [<ffffffff8135022d>] ima_collect_measurement+0x9d/0x160
-> > [  106.751536]  [<ffffffff810b552d>] ? trace_hardirqs_on+0xd/0x10
-> > [  106.751562]  [<ffffffff8134f07c>] ? ima_file_free+0x6c/0xd0
-> > [  106.751587]  [<ffffffff81352824>] ima_update_xattr+0x34/0x60
-> > [  106.751612]  [<ffffffff8134f0d0>] ima_file_free+0xc0/0xd0
-> > [  106.751637]  [<ffffffff811c9635>] __fput+0xd5/0x300
+> Seems this just should contain: "depends on I2C" in the Kconfig.
 
-fantastic ;)
+I can add "depends on I2C" in Kconfig for now, but I'm just wondering
+how would this be dealt with when sometime in the future this driver
+supports either I2C or SPI? Can the "depends on" be conditional
+somehow?
 
-> > [  106.751662]  [<ffffffff811c98ae>] ____fput+0xe/0x10
-> > [  106.751687]  [<ffffffff81086774>] task_work_run+0xc4/0xe0
-> > [  106.751712]  [<ffffffff81066fad>] do_exit+0x2bd/0xa90
-> > [  106.751738]  [<ffffffff8173c958>] ? retint_swapgs+0x13/0x1b
-> > [  106.751763]  [<ffffffff8106780c>] do_group_exit+0x4c/0xc0
-...
-> It seems the problem is the order of functions in do_exit
->
-> do_exit()
-> {
->     ...
->     exit_task_namespaces(tsk);
->     exit_task_work(tsk);
-
-Yes.
-
-Eric, this makes me think again that we should do exit_task_namespaces()
-after exit_task_work(). We already discussed this before, but this looks
-like another indication this change makes sense.
-
-The problem with fput() from free_nsproxy() was hopefully also fixed by
-e7b2c4069252. The main motivation for "move" was "outside of exit_notify".
-Even if we fix the paths above task_work_add() can have another user which
-wants ->nsproxy.
-
-What do you think?
-
-Oleg.
-
+Jon
