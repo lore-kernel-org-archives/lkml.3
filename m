@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbaDYBsx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 21:48:53 -0400
-Received: from mail.linuxfoundation.org ([140.211.169.12]:41391 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751696AbaDYBsv (ORCPT
+	id S1751815AbaDYBvQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 21:51:16 -0400
+Received: from smtprelay0051.hostedemail.com ([216.40.44.51]:59347 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750820AbaDYBvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 21:48:51 -0400
-Date: Thu, 24 Apr 2014 18:49:25 -0700
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.14 00/33] 3.14.2-stable review
-Message-ID: <20140425014925.GB27190@kroah.com>
-References: <20140424214449.423169713@linuxfoundation.org>
- <5359AA9E.6040605@roeck-us.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <5359AA9E.6040605@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Thu, 24 Apr 2014 21:51:13 -0400
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:800:960:966:973:988:989:1260:1345:1359:1534:1539:1566:1711:1714:1730:1747:1777:1792:2196:2199:2393:2559:2562:3138:3139:3140:3141:3142:3865:3867:4321:4385:5007:6261:9040:10004:10026:10848:11026:11657:11658:11914:12043:12296:12517:12519:12555:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: trade05_61ac9bc31e208
+X-Filterd-Recvd-Size: 1584
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Shahed Shaikh <shahed.shaikh@qlogic.com>,
+        Jitendra Kalsaria <jitendra.kalsaria@qlogic.com>,
+        Ron Mercer <ron.mercer@qlogic.com>, linux-driver@qlogic.com,
+        netdev@vger.kernel.org
+Subject: [PATCH 1/5] qlge: Convert /n to \n
+Date: Thu, 24 Apr 2014 18:50:59 -0700
+Message-Id: <0cfcf37f20b78a2bc3cde9f56aa27ca53a802184.1398390579.git.joe@perches.com>
+X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+In-Reply-To: <cover.1398390579.git.joe@perches.com>
+References: <cover.1398390579.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Apr 24, 2014 at 05:21:50PM -0700, Guenter Roeck wrote:
-> On 04/24/2014 02:48 PM, Greg Kroah-Hartman wrote:
-> > This is the start of the stable review cycle for the 3.14.2 release.
-> > There are 33 patches in this series, all will be posted as a response
-> > to this one.  If anyone has any issues with these being applied, please
-> > let me know.
-> >
-> > Responses should be made by Sat Apr 26 21:44:12 UTC 2014.
-> > Anything received after that time might be too late.
-> >
-> 
-> Build results:
-> 	total: 126 pass: 121 skipped: 4 fail: 1
-> 
-> Qemu tests all passed. Results are expected.
-> For reference, the failing build is powerpc:allmodconfig, which is failing upstream as well.
-> 
-> Details are available at http://server.roeck-us.net:8010/builders.
-> 
-> Note that the series has 34 patches for me, not 33.
+Use a newline character appropriately.
 
-Same here, I removed one a few days ago, did you miss that?
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/net/ethernet/qlogic/qlge/qlge_main.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-greg k-h
+diff --git a/drivers/net/ethernet/qlogic/qlge/qlge_main.c b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+index 0a1d76a..6e36fe1 100644
+--- a/drivers/net/ethernet/qlogic/qlge/qlge_main.c
++++ b/drivers/net/ethernet/qlogic/qlge/qlge_main.c
+@@ -3595,7 +3595,7 @@ static int ql_request_irq(struct ql_adapter *qdev)
+ 	}
+ 	return status;
+ err_irq:
+-	netif_err(qdev, ifup, qdev->ndev, "Failed to get the interrupts!!!/n");
++	netif_err(qdev, ifup, qdev->ndev, "Failed to get the interrupts!!!\n");
+ 	ql_free_irq(qdev);
+ 	return status;
+ }
+-- 
+1.8.1.2.459.gbcd45b4.dirty
+
