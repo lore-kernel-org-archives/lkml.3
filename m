@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754242AbaDYQec (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:34:32 -0400
-Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:45212
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753234AbaDYQe0 convert rfc822-to-8bit (ORCPT
+	id S1752062AbaDYQfp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:35:45 -0400
+Received: from mail-we0-f172.google.com ([74.125.82.172]:42924 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752826AbaDYQJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:34:26 -0400
-From: Guenter Roeck <groeck@juniper.net>
-To: Bjorn Helgaas <bhelgaas@google.com>, Rajat Jain <rajatxjain@gmail.com>
-CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rajat Jain <rajatjain@juniper.net>
-Subject: RE: [PATCH] pci/pciehp: Allow polling/irq mode to be decided on a
- per-port basis
-Thread-Topic: [PATCH] pci/pciehp: Allow polling/irq mode to be decided on a
- per-port basis
-Thread-Index: AQHPTTw64Av0pi5eWUyOx5zeRBePnZshbocAgAE8dVA=
-Date: Fri, 25 Apr 2014 16:34:23 +0000
-Message-ID: <e760e15b4f404c6cb3252480a7d8a78a@CO1PR05MB523.namprd05.prod.outlook.com>
-References: <5339FF99.2050200@gmail.com> <20140424213106.GI29593@google.com>
-In-Reply-To: <20140424213106.GI29593@google.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [66.129.239.10]
-x-forefront-prvs: 0192E812EC
-x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377454003)(13464003)(51704005)(24454002)(199002)(189002)(66066001)(50986999)(74502001)(99396002)(54356999)(76482001)(33646001)(46102001)(76176999)(87936001)(19580405001)(74316001)(83322001)(4396001)(85852003)(79102001)(83072002)(76576001)(77982001)(99286001)(86362001)(74662001)(81542001)(19580395003)(20776003)(92566001)(2656002)(80022001)(31966008)(81342001)(80976001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB670;H:CO1PR05MB523.namprd05.prod.outlook.com;FPR:E0BCF216.A9F8C519.B1F391B3.88F8C979.202EF;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: juniper.net
+	Fri, 25 Apr 2014 12:09:59 -0400
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: linux-kernel@vger.kernel.org, linux-efi@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Cc: matt.fleming@intel.com, catalin.marinas@arm.com, msalter@redhat.com,
+        grant.likely@linaro.org, roy.franz@linaro.org,
+        ard.biesheuvel@linaro.org, mark.rutland@arm.com,
+        linux-doc@vger.kernel.org
+Subject: [PATCH v2 01/10] lib: add fdt_empty_tree.c
+Date: Fri, 25 Apr 2014 17:09:05 +0100
+Message-Id: <1398442154-19974-2-git-send-email-leif.lindholm@linaro.org>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
+References: <1398442154-19974-1-git-send-email-leif.lindholm@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Mark Salter <msalter@redhat.com>
 
+CONFIG_LIBFDT support does not include fdt_empty_tree.c which is
+needed by arm64 EFI stub. Add it to libfdt_files.
 
-> -----Original Message-----
-> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
-> Sent: Thursday, April 24, 2014 2:31 PM
-> To: Rajat Jain
-> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; Rajat
-> Jain; Guenter Roeck
-> Subject: Re: [PATCH] pci/pciehp: Allow polling/irq mode to be decided
-> on a per-port basis
-> 
-> On Mon, Mar 31, 2014 at 04:51:53PM -0700, Rajat Jain wrote:
-> > Today, there is a global pciehp_poll_mode module parameter using
-> which
-> > either _all_ the hot-pluggable ports are to use polling, or _all_ the
-> > ports are to use interrupts.
-> >
-> > In a system where a certain port has IRQ issues, today the only
-> option
-> > is to use the parameter that converts ALL the ports to use polling
-> mode.
-> > This is not good, and hence this patch intruduces a bit field that
-> can
-> > be set using a PCI quirk that indicates that polling should always be
-> > used for this particular PCIe port. The remaining ports can still
-> > hoose to continue to operate in whatever mode they wish to.
-> >
-> > Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
-> > Signed-off-by: Rajat Jain <rajatjain@juniper.net>
-> > Signed-off-by: Guenter Roeck <groeck@juniper.net>
-> 
-> I'm willing to merge this, but I'd prefer to merge it along with a
-> quirk that actually sets dev->hotplug_polling.  Otherwise it's dead
-> code and I'll have no way to tell whether we need to keep it.
-> 
-Bjorn,
+Signed-off-by: Mark Salter <msalter@redhat.com>
+Signed-off-by: Leif Lindholm <leif.lindholm@linaro.org>
+---
+ lib/Makefile         |    3 ++-
+ lib/fdt_empty_tree.c |    2 ++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+ create mode 100644 lib/fdt_empty_tree.c
 
-what would be the proper location for such a quirk ? 
-We use it to help simulating hotplug support on an IDT PES12NT3.
-The code is a bit more invasive than just the quirk itself,
-since it also needs to touch link and slot status registers,
-so quirks.c doesn't seem appropriate.
-
-drivers/pci/pes12nt3.c, maybe, with a separate configuration
-option ? Or in the hotplug directory ?
-
-Guenter
+diff --git a/lib/Makefile b/lib/Makefile
+index 0cd7b68..74a32dc 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -148,7 +148,8 @@ obj-$(CONFIG_GENERIC_NET_UTILS) += net_utils.o
+ 
+ obj-$(CONFIG_STMP_DEVICE) += stmp_device.o
+ 
+-libfdt_files = fdt.o fdt_ro.o fdt_wip.o fdt_rw.o fdt_sw.o fdt_strerror.o
++libfdt_files = fdt.o fdt_ro.o fdt_wip.o fdt_rw.o fdt_sw.o fdt_strerror.o \
++	       fdt_empty_tree.o
+ $(foreach file, $(libfdt_files), \
+ 	$(eval CFLAGS_$(file) = -I$(src)/../scripts/dtc/libfdt))
+ lib-$(CONFIG_LIBFDT) += $(libfdt_files)
+diff --git a/lib/fdt_empty_tree.c b/lib/fdt_empty_tree.c
+new file mode 100644
+index 0000000..5d30c58
+--- /dev/null
++++ b/lib/fdt_empty_tree.c
+@@ -0,0 +1,2 @@
++#include <linux/libfdt_env.h>
++#include "../scripts/dtc/libfdt/fdt_empty_tree.c"
+-- 
+1.7.10.4
 
