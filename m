@@ -1,111 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754199AbaDYQeU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 12:34:20 -0400
-Received: from mail-we0-f177.google.com ([74.125.82.177]:49606 "EHLO
-	mail-we0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbaDYQ3t (ORCPT
+	id S1754242AbaDYQec (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 12:34:32 -0400
+Received: from mail-by2lp0235.outbound.protection.outlook.com ([207.46.163.235]:45212
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753234AbaDYQe0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 12:29:49 -0400
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: kgdb-bugreport@lists.sourceforge.net,
-        Jason Wessel <jason.wessel@windriver.com>
-Cc: patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Daniel Thompson <daniel.thompson@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, John Stultz <john.stultz@linaro.org>,
-        Anton Vorontsov <anton.vorontsov@linaro.org>,
-        Colin Cross <ccross@android.com>, kernel-team@android.com
-Subject: [RFC v3 1/9] sysrq: Implement __handle_sysrq_nolock to avoid recursive locking in kdb
-Date: Fri, 25 Apr 2014 17:29:22 +0100
-Message-Id: <1398443370-12668-2-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.0
-In-Reply-To: <1398443370-12668-1-git-send-email-daniel.thompson@linaro.org>
-References: <1396453440-16445-1-git-send-email-daniel.thompson@linaro.org>
- <1398443370-12668-1-git-send-email-daniel.thompson@linaro.org>
+	Fri, 25 Apr 2014 12:34:26 -0400
+From: Guenter Roeck <groeck@juniper.net>
+To: Bjorn Helgaas <bhelgaas@google.com>, Rajat Jain <rajatxjain@gmail.com>
+CC: "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rajat Jain <rajatjain@juniper.net>
+Subject: RE: [PATCH] pci/pciehp: Allow polling/irq mode to be decided on a
+ per-port basis
+Thread-Topic: [PATCH] pci/pciehp: Allow polling/irq mode to be decided on a
+ per-port basis
+Thread-Index: AQHPTTw64Av0pi5eWUyOx5zeRBePnZshbocAgAE8dVA=
+Date: Fri, 25 Apr 2014 16:34:23 +0000
+Message-ID: <e760e15b4f404c6cb3252480a7d8a78a@CO1PR05MB523.namprd05.prod.outlook.com>
+References: <5339FF99.2050200@gmail.com> <20140424213106.GI29593@google.com>
+In-Reply-To: <20140424213106.GI29593@google.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [66.129.239.10]
+x-forefront-prvs: 0192E812EC
+x-forefront-antispam-report: SFV:NSPM;SFS:(10009001)(6009001)(428001)(377454003)(13464003)(51704005)(24454002)(199002)(189002)(66066001)(50986999)(74502001)(99396002)(54356999)(76482001)(33646001)(46102001)(76176999)(87936001)(19580405001)(74316001)(83322001)(4396001)(85852003)(79102001)(83072002)(76576001)(77982001)(99286001)(86362001)(74662001)(81542001)(19580395003)(20776003)(92566001)(2656002)(80022001)(31966008)(81342001)(80976001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:DM2PR05MB670;H:CO1PR05MB523.namprd05.prod.outlook.com;FPR:E0BCF216.A9F8C519.B1F391B3.88F8C979.202EF;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-OriginatorOrg: juniper.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If kdb is triggered using SysRq-g then any use of the sr command results
-in the SysRq key table lock being recursively acquired, killing the debug
-session. That patch resolves the problem by introducing a _nolock
-alternative for __handle_sysrq.
 
-Strictly speaking this approach risks racing on the key table when kdb is
-triggered by something other than SysRq-g however in that case any other
-CPU involved should release the spin lock before kgdb parks the slave
-CPUs.
 
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
- drivers/tty/sysrq.c         | 11 ++++++++---
- include/linux/sysrq.h       |  1 +
- kernel/debug/kdb/kdb_main.c |  2 +-
- 3 files changed, 10 insertions(+), 4 deletions(-)
+> -----Original Message-----
+> From: Bjorn Helgaas [mailto:bhelgaas@google.com]
+> Sent: Thursday, April 24, 2014 2:31 PM
+> To: Rajat Jain
+> Cc: linux-pci@vger.kernel.org; linux-kernel@vger.kernel.org; Rajat
+> Jain; Guenter Roeck
+> Subject: Re: [PATCH] pci/pciehp: Allow polling/irq mode to be decided
+> on a per-port basis
+> 
+> On Mon, Mar 31, 2014 at 04:51:53PM -0700, Rajat Jain wrote:
+> > Today, there is a global pciehp_poll_mode module parameter using
+> which
+> > either _all_ the hot-pluggable ports are to use polling, or _all_ the
+> > ports are to use interrupts.
+> >
+> > In a system where a certain port has IRQ issues, today the only
+> option
+> > is to use the parameter that converts ALL the ports to use polling
+> mode.
+> > This is not good, and hence this patch intruduces a bit field that
+> can
+> > be set using a PCI quirk that indicates that polling should always be
+> > used for this particular PCIe port. The remaining ports can still
+> > hoose to continue to operate in whatever mode they wish to.
+> >
+> > Signed-off-by: Rajat Jain <rajatxjain@gmail.com>
+> > Signed-off-by: Rajat Jain <rajatjain@juniper.net>
+> > Signed-off-by: Guenter Roeck <groeck@juniper.net>
+> 
+> I'm willing to merge this, but I'd prefer to merge it along with a
+> quirk that actually sets dev->hotplug_polling.  Otherwise it's dead
+> code and I'll have no way to tell whether we need to keep it.
+> 
+Bjorn,
 
-diff --git a/drivers/tty/sysrq.c b/drivers/tty/sysrq.c
-index ce396ec..7b47b2d 100644
---- a/drivers/tty/sysrq.c
-+++ b/drivers/tty/sysrq.c
-@@ -505,14 +505,12 @@ static void __sysrq_put_key_op(int key, struct sysrq_key_op *op_p)
-                 sysrq_key_table[i] = op_p;
- }
- 
--void __handle_sysrq(int key, bool check_mask)
-+void __handle_sysrq_nolock(int key, bool check_mask)
- {
- 	struct sysrq_key_op *op_p;
- 	int orig_log_level;
- 	int i;
--	unsigned long flags;
- 
--	spin_lock_irqsave(&sysrq_key_table_lock, flags);
- 	/*
- 	 * Raise the apparent loglevel to maximum so that the sysrq header
- 	 * is shown to provide the user with positive feedback.  We do not
-@@ -554,6 +552,13 @@ void __handle_sysrq(int key, bool check_mask)
- 		printk("\n");
- 		console_loglevel = orig_log_level;
- 	}
-+}
-+
-+void __handle_sysrq(int key, bool check_mask)
-+{
-+	unsigned long flags;
-+	spin_lock_irqsave(&sysrq_key_table_lock, flags);
-+	__handle_sysrq_nolock(key, check_mask);
- 	spin_unlock_irqrestore(&sysrq_key_table_lock, flags);
- }
- 
-diff --git a/include/linux/sysrq.h b/include/linux/sysrq.h
-index 387fa7d..1d51d64 100644
---- a/include/linux/sysrq.h
-+++ b/include/linux/sysrq.h
-@@ -44,6 +44,7 @@ struct sysrq_key_op {
- 
- void handle_sysrq(int key);
- void __handle_sysrq(int key, bool check_mask);
-+void __handle_sysrq_nolock(int key, bool check_mask);
- int register_sysrq_key(int key, struct sysrq_key_op *op);
- int unregister_sysrq_key(int key, struct sysrq_key_op *op);
- struct sysrq_key_op *__sysrq_get_key_op(int key);
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index 0b097c8..f39f926 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -1924,7 +1924,7 @@ static int kdb_sr(int argc, const char **argv)
- 	if (argc != 1)
- 		return KDB_ARGCOUNT;
- 	kdb_trap_printk++;
--	__handle_sysrq(*argv[1], false);
-+	__handle_sysrq_nolock(*argv[1], false);
- 	kdb_trap_printk--;
- 
- 	return 0;
--- 
-1.9.0
+what would be the proper location for such a quirk ? 
+We use it to help simulating hotplug support on an IDT PES12NT3.
+The code is a bit more invasive than just the quirk itself,
+since it also needs to touch link and slot status registers,
+so quirks.c doesn't seem appropriate.
+
+drivers/pci/pes12nt3.c, maybe, with a separate configuration
+option ? Or in the hotplug directory ?
+
+Guenter
 
