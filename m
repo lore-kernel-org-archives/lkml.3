@@ -1,100 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbaDYNoD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:44:03 -0400
-Received: from mail-ve0-f177.google.com ([209.85.128.177]:59250 "EHLO
-	mail-ve0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751891AbaDYNoA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:44:00 -0400
-MIME-Version: 1.0
-In-Reply-To: <1398432541.4724.243.camel@iivanov-dev>
-References: <1398429171-8566-1-git-send-email-iivanov@mm-sol.com>
-	<CAL_JsqJMs1ULgLMAia6ojz+i3b=7W6hxyqSTMATo96i0cS2n0g@mail.gmail.com>
-	<1398432541.4724.243.camel@iivanov-dev>
-Date: Fri, 25 Apr 2014 08:43:59 -0500
-Message-ID: <CAL_Jsq+biEgbb7MmDuMsZ-bjocX0u=vvgZQHb6D696eGWDF7WA@mail.gmail.com>
-Subject: Re: [RFC PATCH] mfd: pm8x41: Naive function devices registration
-From: Rob Herring <robherring2@gmail.com>
-To: "Ivan T. Ivanov" <iivanov@mm-sol.com>
-Cc: Courtney Cavin <courtney.cavin@sonymobile.com>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	id S1754039AbaDYNod (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:44:33 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46601 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751891AbaDYNo0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 09:44:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,927,1389772800"; 
+   d="scan'208";a="519724886"
+Message-ID: <1398433454.11914.268.camel@smile.fi.intel.com>
+Subject: Re: [PATCH 2/2] ACPI / LPSS: Support for fractional divider clock
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Mike Turquette <mturquette@linaro.org>, Len Brown <lenb@kernel.org>,
+        Mika Westerberg <mika.westerberg@intel.com>,
+        Loic Poulain <loic.poulain@intel.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 25 Apr 2014 16:44:14 +0300
+In-Reply-To: <1398428541-912-3-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1398428541-912-1-git-send-email-heikki.krogerus@linux.intel.com>
+	 <1398428541-912-3-git-send-email-heikki.krogerus@linux.intel.com>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.8.5-2+b3 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 8:29 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
-> On Fri, 2014-04-25 at 08:00 -0500, Rob Herring wrote:
->> On Fri, Apr 25, 2014 at 7:32 AM, Ivan T. Ivanov <iivanov@mm-sol.com> wrote:
->> > From: "Ivan T. Ivanov" <iivanov@mm-sol.com>
->> >
->> > Currently functions that exist in both the controller at the
->> > same address offset can not be specified with the same names.
->> >
->> > Adding Unique Slave ID device address to prefix function
->> > device names fixes this.
->> >
->> > Function devices are SPMI devices, so register them on
->> > SPMI bus.
->> >
->> > Signed-off-by: Ivan T. Ivanov <iivanov@mm-sol.com>
->> > ---
->> >  drivers/mfd/pm8x41.c | 61 ++++++++++++++++++++++++++++++++++++++++++++++++----
->>
->> No, this should be fixed in the core, not the driver.
->
-> I think that at core level they are no issues.
+On Fri, 2014-04-25 at 15:22 +0300, Heikki Krogerus wrote:
+> The dividers are available for UART and SPI on both
+> Lynxpoint and Baytrail. With SPI, handling the dividers is
+> optional, but in case of UART they should be adjusted
+> according to the requested baud rate.
+> 
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> ---
+>  drivers/acpi/acpi_lpss.c | 37 ++++++++++++++++++++++++++++++-------
+>  1 file changed, 30 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+> index 69e29f4..508ac9f 100644
+> --- a/drivers/acpi/acpi_lpss.c
+> +++ b/drivers/acpi/acpi_lpss.c
+> @@ -58,6 +58,7 @@ struct lpss_device_desc {
+>  	unsigned int prv_offset;
+>  	size_t prv_size_override;
+>  	bool clk_gate;
+> +	bool clk_divider;
+>  	struct lpss_shared_clock *shared_clock;
+>  	void (*setup)(struct lpss_private_data *pdata);
+>  };
+> @@ -119,16 +120,11 @@ static struct lpss_device_desc byt_pwm_dev_desc = {
+>  	.shared_clock = &pwm_clock,
+>  };
+>  
+> -static struct lpss_shared_clock uart_clock = {
+> -	.name = "uart_clk",
+> -	.rate = 44236800,
+> -};
+> -
+>  static struct lpss_device_desc byt_uart_dev_desc = {
+>  	.clk_required = true,
+>  	.prv_offset = 0x800,
+>  	.clk_gate = true,
+> -	.shared_clock = &uart_clock,
+> +	.clk_divider = true,
+>  	.setup = lpss_uart_setup,
+>  };
+>  
+> @@ -246,8 +242,35 @@ static int register_device_clock(struct acpi_device *adev,
+>  		parent = shared_clock->name;
+>  	}
+>  
+> +	if (dev_desc->clk_divider) {
+> +		char *name = kzalloc(strlen(dev_name(&adev->dev)) + 8,
+> +				     GFP_KERNEL);
+> +		if (!name)
+> +			return -ENOMEM;
+> +		strcpy(name, "div_clk-");
+> +		strcat(name, dev_name(&adev->dev));
 
-By core, I mean the device naming conventions used by the DT platform
-device code. There is a problem and it should be handled.
+Just kasprintf() instead of a few LOCs?
 
-As I mentioned in the other thread, either we should not use the
-address on non-translatable addresses like this or append the parent
-address.
+> +
+> +		clk = clk_register_fractional_divider(NULL, name, parent, 0,
+> +					pdata->mmio_base + dev_desc->prv_offset,
+> +					1, 15, 16, 15, 0, NULL);
+> +		parent = name;
+> +
+> +		name = kzalloc(strlen(dev_name(&adev->dev)) + 11, GFP_KERNEL);
+> +		if (!name)
+> +			return -ENOMEM;
+> +		strcpy(name, "clk_update-");
+> +		strcat(name, dev_name(&adev->dev));
 
-> There is no name clashes with "top level" devices.
->
-> spmi@...{
->         ...
->         child@0 {
->                 compatible = "qcom,pm8941";
->                 reg = <0x0 SPMI_USID>;
->
->                 #address-cells = <1>;
->                 #size-cells = <0>;
->
->                 revid@100 {
->                         compatible = "qcom,qpnp-revid";
->                         reg = <0x100>;
->                 };
->         };
->
->         child@4 {
->                 compatible = "qcom,pm8841";
->                 reg = <0x4 SPMI_USID>;
->
->                 #address-cells = <1>;
->                 #size-cells = <0>;
->
->                 revid@100 {
->                         compatible = "qcom,qpnp-revid";
->                         reg = <0x100>;
->                 };
->         };
-> };
->
-> I don't have experience with SPMI devices, but it looks
-> like address partitioning is specific to this "PMIC"
-> controllers.
->
-> Regards,
-> Ivan
->
->>
->> Rob
->
->
+Ditto.
+
+> +
+> +		clk = clk_register_gate(NULL, name, parent,
+> +					CLK_SET_RATE_PARENT | CLK_SET_RATE_GATE,
+> +					pdata->mmio_base + dev_desc->prv_offset,
+> +					31, 0, NULL);
+> +		parent = name;
+> +	}
+> +
+>  	if (dev_desc->clk_gate) {
+> -		clk = clk_register_gate(NULL, dev_name(&adev->dev), parent, 0,
+> +		clk = clk_register_gate(NULL, dev_name(&adev->dev), parent,
+> +					CLK_SET_RATE_PARENT,
+>  					pdata->mmio_base + dev_desc->prv_offset,
+>  					0, 0, NULL);
+>  		pdata->clk = clk;
+
+
+-- 
+Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Intel Finland Oy
+
