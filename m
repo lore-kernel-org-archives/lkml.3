@@ -1,68 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856AbaDYNPx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 09:15:53 -0400
-Received: from mail-ee0-f43.google.com ([74.125.83.43]:58537 "EHLO
-	mail-ee0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753761AbaDYNPa (ORCPT
+	id S1753817AbaDYNPv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 09:15:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40568 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717AbaDYNPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 09:15:30 -0400
-Date: Fri, 25 Apr 2014 15:15:25 +0200
-From: Ingo Molnar <mingo@kernel.org>
-To: "Chen, Gong" <gong.chen@linux.intel.com>
-Cc: Borislav Petkov <bp@alien8.de>, Owen Kibel <qmewlo@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Josh Boyer <jwboyer@fedoraproject.org>,
-        "Luck, Tony" <tony.luck@intel.com>,
-        Peter Zijlstra <peterz@infradead.org>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "atodorov@redhat.com" <atodorov@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>
-Subject: Re: [tip:x86/urgent] x86/mce: Fix CMCI preemption bugs
-Message-ID: <20140425131525.GA27668@gmail.com>
-References: <CA+5PVA7i=RrGUk_7zz1yU5gseWpvr+a=4dfkg=n9cNc53S7nPA@mail.gmail.com>
- <20140417192330.GE4321@pd.tnic>
- <CA+55aFyz62W7CD9=9p9OxKuFs9Rck_p93E_40CqLat1HvDdf0Q@mail.gmail.com>
- <20140417194241.GF4321@pd.tnic>
- <20140417205807.GA27852@pd.tnic>
- <CAK7FoDt6tnknX7cioe7=2svVksyAyLUtoZX_oprzJNxoHZEpdw@mail.gmail.com>
- <20140417213012.GC27852@pd.tnic>
- <20140417222028.GD27852@pd.tnic>
- <20140418080716.GA14280@gmail.com>
- <20140425084723.GA7455@gchen.bj.intel.com>
+	Fri, 25 Apr 2014 09:15:35 -0400
+Date: Fri, 25 Apr 2014 06:15:24 -0700
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-c3b789527b236873557f53740ceac47747e0e1cb@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
+        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
+Reply-To: mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        jolsa@kernel.org, tglx@linutronix.de, namhyung@kernel.org
+In-Reply-To: <1398327843-31845-12-git-send-email-namhyung@kernel.org>
+References: <1398327843-31845-12-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf hists/tui: Count callchain rows separately
+Git-Commit-ID: c3b789527b236873557f53740ceac47747e0e1cb
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20140425084723.GA7455@gchen.bj.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  c3b789527b236873557f53740ceac47747e0e1cb
+Gitweb:     http://git.kernel.org/tip/c3b789527b236873557f53740ceac47747e0e1cb
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Tue, 22 Apr 2014 15:56:17 +0900
+Committer:  Jiri Olsa <jolsa@kernel.org>
+CommitDate: Thu, 24 Apr 2014 16:34:27 +0200
 
-* Chen, Gong <gong.chen@linux.intel.com> wrote:
+perf hists/tui: Count callchain rows separately
 
-> On Fri, Apr 18, 2014 at 10:07:16AM +0200, Ingo Molnar wrote:
-> > Okay, so AFAICS the fix in x86/urgent isn't wrong functionally, it's 
-> > just that the changelog incorrectly claims the raw-spinlock use is a 
-> > bug causing a problem here.
-> > 
-> > Still that raw spinlock is bogus and might be hiding other problems, 
-> > so we can keep the x86/urgent change (ea431643d6c3) as-is and I'll get 
-> > it to Linus later today ...
-> > 
-> > Thanks,
-> > 
-> > 	Ingo
-> Hi, Ingo
-> 
-> We ever had a patch(59d958d2c7) to make spinlock -> raw_spinlock.
-> Would you please explain it a little more why you revert it?
+When TUI hist browser expands/collapses callchains it accounted number
+of callchain nodes into total entries to show.  However this code
+ignores filtering so that it can make the cursor go to out of screen.
 
-It was years ago and I forgot about that. Should be redone I guess.
+Thanks to Jiri Olsa for pointing out a bug (and a fix) in the code.
 
-Thanks,
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Link: http://lkml.kernel.org/r/1398327843-31845-12-git-send-email-namhyung@kernel.org
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+---
+ tools/perf/ui/browsers/hists.c | 63 ++++++++++++++++++++++++++++--------------
+ 1 file changed, 43 insertions(+), 20 deletions(-)
 
-	Ingo
+diff --git a/tools/perf/ui/browsers/hists.c b/tools/perf/ui/browsers/hists.c
+index 886eee0..b0861e3 100644
+--- a/tools/perf/ui/browsers/hists.c
++++ b/tools/perf/ui/browsers/hists.c
+@@ -27,6 +27,7 @@ struct hist_browser {
+ 	bool		     show_dso;
+ 	float		     min_pcnt;
+ 	u64		     nr_non_filtered_entries;
++	u64		     nr_callchain_rows;
+ };
+ 
+ extern void hist_browser__init_hpp(void);
+@@ -35,11 +36,27 @@ static int hists__browser_title(struct hists *hists, char *bf, size_t size,
+ 				const char *ev_name);
+ static void hist_browser__update_nr_entries(struct hist_browser *hb);
+ 
++static struct rb_node *hists__filter_entries(struct rb_node *nd,
++					     struct hists *hists,
++					     float min_pcnt);
++
+ static bool hist_browser__has_filter(struct hist_browser *hb)
+ {
+ 	return hists__has_filter(hb->hists) || hb->min_pcnt;
+ }
+ 
++static u32 hist_browser__nr_entries(struct hist_browser *hb)
++{
++	u32 nr_entries;
++
++	if (hist_browser__has_filter(hb))
++		nr_entries = hb->nr_non_filtered_entries;
++	else
++		nr_entries = hb->hists->nr_entries;
++
++	return nr_entries + hb->nr_callchain_rows;
++}
++
+ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
+ {
+ 	/* 3 == +/- toggle symbol before actual hist_entry rendering */
+@@ -49,8 +66,14 @@ static void hist_browser__refresh_dimensions(struct hist_browser *browser)
+ 
+ static void hist_browser__reset(struct hist_browser *browser)
+ {
++	/*
++	 * The hists__remove_entry_filter() already folds non-filtered
++	 * entries so we can assume it has 0 callchain rows.
++	 */
++	browser->nr_callchain_rows = 0;
++
+ 	hist_browser__update_nr_entries(browser);
+-	browser->b.nr_entries = browser->nr_non_filtered_entries;
++	browser->b.nr_entries = hist_browser__nr_entries(browser);
+ 	hist_browser__refresh_dimensions(browser);
+ 	ui_browser__reset_index(&browser->b);
+ }
+@@ -205,14 +228,16 @@ static bool hist_browser__toggle_fold(struct hist_browser *browser)
+ 		struct hist_entry *he = browser->he_selection;
+ 
+ 		hist_entry__init_have_children(he);
+-		browser->hists->nr_entries -= he->nr_rows;
++		browser->b.nr_entries -= he->nr_rows;
++		browser->nr_callchain_rows -= he->nr_rows;
+ 
+ 		if (he->ms.unfolded)
+ 			he->nr_rows = callchain__count_rows(&he->sorted_chain);
+ 		else
+ 			he->nr_rows = 0;
+-		browser->hists->nr_entries += he->nr_rows;
+-		browser->b.nr_entries = browser->hists->nr_entries;
++
++		browser->b.nr_entries += he->nr_rows;
++		browser->nr_callchain_rows += he->nr_rows;
+ 
+ 		return true;
+ 	}
+@@ -287,23 +312,27 @@ static void hist_entry__set_folding(struct hist_entry *he, bool unfold)
+ 		he->nr_rows = 0;
+ }
+ 
+-static void hists__set_folding(struct hists *hists, bool unfold)
++static void
++__hist_browser__set_folding(struct hist_browser *browser, bool unfold)
+ {
+ 	struct rb_node *nd;
++	struct hists *hists = browser->hists;
+ 
+-	hists->nr_entries = 0;
+-
+-	for (nd = rb_first(&hists->entries); nd; nd = rb_next(nd)) {
++	for (nd = rb_first(&hists->entries);
++	     (nd = hists__filter_entries(nd, hists, browser->min_pcnt)) != NULL;
++	     nd = rb_next(nd)) {
+ 		struct hist_entry *he = rb_entry(nd, struct hist_entry, rb_node);
+ 		hist_entry__set_folding(he, unfold);
+-		hists->nr_entries += 1 + he->nr_rows;
++		browser->nr_callchain_rows += he->nr_rows;
+ 	}
+ }
+ 
+ static void hist_browser__set_folding(struct hist_browser *browser, bool unfold)
+ {
+-	hists__set_folding(browser->hists, unfold);
+-	browser->b.nr_entries = browser->hists->nr_entries;
++	browser->nr_callchain_rows = 0;
++	__hist_browser__set_folding(browser, unfold);
++
++	browser->b.nr_entries = hist_browser__nr_entries(browser);
+ 	/* Go to the start, we may be way after valid entries after a collapse */
+ 	ui_browser__reset_index(&browser->b);
+ }
+@@ -325,10 +354,7 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 	int delay_secs = hbt ? hbt->refresh : 0;
+ 
+ 	browser->b.entries = &browser->hists->entries;
+-	if (hist_browser__has_filter(browser))
+-		browser->b.nr_entries = browser->nr_non_filtered_entries;
+-	else
+-		browser->b.nr_entries = browser->hists->nr_entries;
++	browser->b.nr_entries = hist_browser__nr_entries(browser);
+ 
+ 	hist_browser__refresh_dimensions(browser);
+ 	hists__browser_title(browser->hists, title, sizeof(title), ev_name);
+@@ -345,13 +371,10 @@ static int hist_browser__run(struct hist_browser *browser, const char *ev_name,
+ 			u64 nr_entries;
+ 			hbt->timer(hbt->arg);
+ 
+-			if (hist_browser__has_filter(browser)) {
++			if (hist_browser__has_filter(browser))
+ 				hist_browser__update_nr_entries(browser);
+-				nr_entries = browser->nr_non_filtered_entries;
+-			} else {
+-				nr_entries = browser->hists->nr_entries;
+-			}
+ 
++			nr_entries = hist_browser__nr_entries(browser);
+ 			ui_browser__update_nr_entries(&browser->b, nr_entries);
+ 
+ 			if (browser->hists->stats.nr_lost_warned !=
