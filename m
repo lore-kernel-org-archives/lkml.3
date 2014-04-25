@@ -1,91 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbaDYKNv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 06:13:51 -0400
-Received: from youngberry.canonical.com ([91.189.89.112]:53860 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752545AbaDYKNp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 06:13:45 -0400
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com,
-        James Bottomley <JBottomley@Parallels.com>
-Subject: Re: [PATCH 3.11 052/182] [SCSI] fix our current target reap infrastructure
-References: <1398329507-5911-1-git-send-email-luis.henriques@canonical.com>
-	<1398329507-5911-53-git-send-email-luis.henriques@canonical.com>
-	<1398391948.7767.182.camel@deadeye.wl.decadent.org.uk>
-Date: Fri, 25 Apr 2014 11:13:29 +0100
-In-Reply-To: <1398391948.7767.182.camel@deadeye.wl.decadent.org.uk> (Ben
-	Hutchings's message of "Fri, 25 Apr 2014 03:12:28 +0100")
-Message-ID: <87a9b9d8dy.fsf@canonical.com>
+	id S1752699AbaDYKOa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 06:14:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752636AbaDYKOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 25 Apr 2014 06:14:22 -0400
+Message-ID: <535A356E.8000205@redhat.com>
+Date: Fri, 25 Apr 2014 12:14:06 +0200
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+To: Kefeng Wang <kefeng.wang@linaro.org>, Tejun Heo <tj@kernel.org>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+CC: wangkefeng.wang@huawei.com, xuwei5@hisilicon.com
+Subject: Re: [PATCH v6 0/3] ahci: add support for hisilicon sata
+References: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org>
+In-Reply-To: <1398416351-30567-1-git-send-email-kefeng.wang@linaro.org>
+X-Enigmail-Version: 1.6
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-Ben Hutchings <ben@decadent.org.uk> writes:
+On 04/25/2014 10:59 AM, Kefeng Wang wrote:
+> change in v6:
+> 1) type of host_flags changed from unsigned int to unsigned long,
+>    fix the building warning and error. 
+> 
+> channge in v5:
+> 1) drop AHCI_HFLAGS(...) from ahci_xgene.c and do use host_flags
+>    in ahci_platform_init_host, it's my carelessness.
+> 
+> changes in v4:
+> 1) add a dynamic host_flags parameter in ahci_platform_init_host
+>    to make it more flexible, modify some driver to use new
+>    way to pass host flags, suggested by Hans
+> 
+> changes in v3:
+> 1) move NO_FBS chunk after YES_FBS, Tejun's suggestion
+> 2) use ata_port_info pointer to avoid struct ata_port_info
+>    on the stack twice
+> 
+> changes in v2:
+> 1) make code more concise according to Hans's advice
+> 
+> Kefeng Wang (3):
+>   ata: ahci: append new hflag AHCI_HFLAG_NO_FBS
+>   libahci_platform: add host_flags parameter in
+>     ahci_platform_init_host()
+>   ahci: add support for Hisilicon sata
 
-> On Thu, 2014-04-24 at 09:49 +0100, Luis Henriques wrote:
->> 3.11.10.9 -stable review patch.  If anyone has any objections, please le=
-t me know.
->>=20
->> ------------------
->>=20
->> From: James Bottomley <JBottomley@Parallels.com>
->>=20
->> commit e63ed0d7a98014fdfc2cfeb3f6dada313dcabb59 upstream.
->>=20
->> This patch eliminates the reap_ref and replaces it with a proper kref.
->> On last put of this kref, the target is removed from visibility in
->> sysfs.  The final call to scsi_target_reap() for the device is done from
->> __scsi_remove_device() and only if the device was made visible.  This
->> ensures that the target disappears as soon as the last device is gone
->> rather than waiting until final release of the device (which is often
->> too long).
->>=20
->> Reviewed-by: Alan Stern <stern@rowland.harvard.edu>
->> Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
->> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
->> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
-> [...]
->
-> This and the next patch were commented "delay backport by 2 months for
-> field testing".
->
-> Ben.
+Thanks, looks good:
 
-Thanks Ben.  I'll drop both patches from the 3.11 queue.
+Reviewed-by: Hans de Goede <hdegoede@redhat.com>
 
-Cheers,
-=2D-=20
-Lu=C3=ADs
+Regards,
 
---=-=-=
-Content-Type: application/pgp-signature; name="signature.asc"
+Hans
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
 
-iQIcBAEBAgAGBQJTWjVKAAoJENt0rrj9ziT8Zb0P/0pJGHq4MzdJVib0PnUQL3JN
-LomTs7mFHkwxHU7aCOR1gi2kth/Mfcjy+30xlAUvy1Whcjm1JAH3F/BxZITzB8sS
-NfIyYPF8ZIpb0yIbR99gQZNK18ygTc7d6gr9blh3sGaoVHSr8sObNs1ltMZMJgaV
-BA7N7HOLgIw8Hgv6BMsHipXJBFImMQ+D5G1fWNd7ztOssh4gzfSAW5bS8I1qxEv5
-FSlUeRSZnPngLYAHguLO+qFYCWQ9NLfrlwSwoUZB149eqrVQ8oRHf4H+bW4j94MI
-41gvl+bi1n1RkxsYVZJH+8ymxGD+R5sfpWDsUHscfyyI4ycEHVklBVES4qDp+90s
-vOfOJTW6d0QDk2YKhMsGhnz/4diCQO1pBEXzucfX/lF/FkPkn4TK2Rz9pClOqCvr
-XrdL9A1dBElWFN7iKhkQpr2T+r1tH7ZToyRaTX93cEQ3FRmYGuLPPjKJFAUuHXUv
-jYMcx11ZiMk6jBTbfvBJbzZZypIm1J9fKhg5kWy6CdDb4aEobn7rOxiR/NUsDQiH
-Xvd6YPp8kYompMTh7qMS0hrFyGHQ9zNtirbyS2ivMTPYJ3ifOlYVsr6zGmcbvx8k
-1DDpkw+as3sh6P6up/zjzXBg6dFyqKk9+uHQe1OINGD4eqHJbGyppD6fvwg2df4D
-9LM/sW6Q9K5YNtTGIlLS
-=pu68
------END PGP SIGNATURE-----
---=-=-=--
+> 
+>  .../devicetree/bindings/ata/ahci-platform.txt      |    3 ++-
+>  drivers/ata/ahci.h                                 |    1 +
+>  drivers/ata/ahci_da850.c                           |    3 ++-
+>  drivers/ata/ahci_imx.c                             |    3 ++-
+>  drivers/ata/ahci_platform.c                        |    9 ++++++++-
+>  drivers/ata/ahci_st.c                              |    2 +-
+>  drivers/ata/ahci_sunxi.c                           |    9 ++++++---
+>  drivers/ata/ahci_xgene.c                           |    7 +++++--
+>  drivers/ata/libahci.c                              |    5 +++++
+>  drivers/ata/libahci_platform.c                     |    5 ++++-
+>  include/linux/ahci_platform.h                      |    1 +
+>  11 files changed, 37 insertions(+), 11 deletions(-)
+> 
