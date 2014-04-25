@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478AbaDYUiz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 16:38:55 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:42419 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730AbaDYUix (ORCPT
+	id S1754750AbaDYUk2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 16:40:28 -0400
+Received: from fallback3.mail.ru ([94.100.176.58]:49804 "EHLO
+	fallback3.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753676AbaDYUk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 16:38:53 -0400
-Message-ID: <535AC7D2.7030603@infradead.org>
-Date: Fri, 25 Apr 2014 13:38:42 -0700
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.3.0
-MIME-Version: 1.0
-To: Masanari Iida <standby24x7@gmail.com>, wim@iguana.be,
-        linux-watchdog@vger.kernel.org, thomas.mingarelli@hp.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] doc: watchdog: Add an usage note on hpwdt with hp-asrd
-References: <1398423149-5028-1-git-send-email-standby24x7@gmail.com>
-In-Reply-To: <1398423149-5028-1-git-send-email-standby24x7@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 25 Apr 2014 16:40:26 -0400
+From: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+To: =?UTF-8?B?R3JlZyBLSA==?= <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        =?UTF-8?B?Sm9uIFJpbmdsZQ==?= <jringle@gridpoint.com>, jon@ringle.org
+Subject: =?UTF-8?B?UmU6IFtQQVRDSCAxLzJdIHNlcmlhbDogc2MxNmlzN3h4OiBkZXBlbmQgb24g?=
+ =?UTF-8?B?STJD?=
+Mime-Version: 1.0
+X-Mailer: Mail.Ru Mailer 1.0
+X-Originating-IP: [5.18.98.0]
+Date: Sat, 26 Apr 2014 00:39:59 +0400
+Reply-To: =?UTF-8?B?QWxleGFuZGVyIFNoaXlhbg==?= <shc_work@mail.ru>
+X-Priority: 3 (Normal)
+Message-ID: <1398458399.164274248@f343.i.mail.ru>
+Content-Type: text/plain; charset=utf-8
+X-Mras: Ok
+X-Spam: undefined
+In-Reply-To: <20140425203528.GA15154@kroah.com>
+References: <1398455590-4374-1-git-send-email-jon@ringle.org>
+ <1398457576.792048107@f368.i.mail.ru>
+ <20140425203528.GA15154@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id s3PKebWO010343
 
-On 04/25/14 03:52, Masanari Iida wrote:
-> An agent software called hp-asrd from Hewlett Packard
-> updates same iLO watchdog timer as hpwdt does update.
-> So they can not be uses simultaneously.
-> Add this usage note in hpwdt.txt.
+Fri, 25 Apr 2014 13:35:28 -0700 Ğ¾Ñ‚ Greg KH <gregkh@linuxfoundation.org>:
+> On Sat, Apr 26, 2014 at 12:26:16AM +0400, Alexander Shiyan wrote:
+> > Fri, 25 Apr 2014 13:23:15 -0700 Ğ¾Ñ‚ Greg KH <gregkh@linuxfoundation.org>:
+> > > On Fri, Apr 25, 2014 at 03:53:09PM -0400, jon@ringle.org wrote:
+> > > > From: Jon Ringle <jringle@gridpoint.com>
+> > > > 
+> > > > Signed-off-by: Jon Ringle <jringle@gridpoint.com>
+> > > > ---
+> > > >  drivers/tty/serial/Kconfig | 1 +
+> > > >  1 file changed, 1 insertion(+)
+> > > > 
+> > > > diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+> > > > index c3e2b32..64c5659 100644
+> > > > --- a/drivers/tty/serial/Kconfig
+> > > > +++ b/drivers/tty/serial/Kconfig
+> > > > @@ -1180,6 +1180,7 @@ config SERIAL_SCCNXP_CONSOLE
+> > > >  
+> > > >  config SERIAL_SC16IS7XX
+> > > >  	tristate "SC16IS7xx serial support"
+> > > > +	depends on I2C
+> > > >  	select SERIAL_CORE
+> > > >  	select REGMAP_I2C if I2C
+> > > >  	help
+> > > > -- 
+> > > > 1.8.5.4
+> > > 
+> > > Better, but I still have the build warnings :(
+> > 
+> > I hope not same as before?
 > 
-> Signed-off-by: Masanari Iida <standby24x7@gmail.com>
-> ---
->  Documentation/watchdog/hpwdt.txt | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/Documentation/watchdog/hpwdt.txt b/Documentation/watchdog/hpwdt.txt
-> index 9488078..719c38d 100644
-> --- a/Documentation/watchdog/hpwdt.txt
-> +++ b/Documentation/watchdog/hpwdt.txt
-> @@ -89,7 +89,8 @@ Last reviewed: 06/02/2009
->  
->  	Hypertransport/CSI Error       31h
->  
-> -
-> +hpwdt can not work as expected if hp-asrd is running simultaneously.
+> Exactly the same.
 
-         cannot                                                       ,
+Hmm...
 
-> +Because both hpwdt and hp-asrd update same iLO watchdog timer.
+In the source:
+#ifdef CONFIG_REGMAP_I2C
+Should be of course #ifdef CONFIG_I2C
+But this should not provide such warnings...
 
-   because                        update the same
+---
 
->  
->   -- Tom Mingarelli
->      (thomas.mingarelli@hp.com)
-> 
-
-
--- 
-~Randy
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
