@@ -1,47 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaDYBvN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 24 Apr 2014 21:51:13 -0400
-Received: from smtprelay0216.hostedemail.com ([216.40.44.216]:42915 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750820AbaDYBvK (ORCPT
+	id S1751602AbaDYB4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 24 Apr 2014 21:56:20 -0400
+Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:50146 "EHLO
+	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836AbaDYB4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 24 Apr 2014 21:51:10 -0400
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::,RULES_HIT:41:355:379:541:960:973:988:989:1260:1345:1534:1539:1568:1711:1714:1730:1747:1777:1792:2393:2559:2562:3138:3139:3140:3141:3142:3867:4605:5007:6261:6642:10004:10026:10848:11026:11657:11658:11914:12043:12517:12519:12679:13311:13357,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: bun05_612e8f4b7d904
-X-Filterd-Recvd-Size: 1441
-From: Joe Perches <joe@perches.com>
-To: linux-kernel@vger.kernel.org
-Cc: netdev@vger.kernel.org, linux-wireless@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-usb@vger.kernel.org,
-        alsa-devel@alsa-project.org
-Subject: [PATCH 0/5] treewide: Convert logging message misuses of /n to \n
-Date: Thu, 24 Apr 2014 18:50:58 -0700
-Message-Id: <cover.1398390579.git.joe@perches.com>
-X-Mailer: git-send-email 1.8.1.2.459.gbcd45b4.dirty
+	Thu, 24 Apr 2014 21:56:18 -0400
+Message-ID: <1398390970.2805.136.camel@ThinkPad-T5421.cn.ibm.com>
+Subject: Re: [RFC PATCH v5 1/2] Use lock_device_hotplug() in
+ cpu_probe_store() and cpu_release_store()
+From: Li Zhong <zhong@linux.vnet.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, gregkh@linuxfoundation.org,
+        rafael.j.wysocki@intel.com, toshi.kani@hp.com
+Date: Fri, 25 Apr 2014 09:56:10 +0800
+In-Reply-To: <20140424143208.GB14460@htj.dyndns.org>
+References: <20140416151749.GE1257@htj.dyndns.org>
+	 <1397717444.4034.15.camel@ThinkPad-T5421>
+	 <20140417151728.GK15326@htj.dyndns.org>
+	 <1398072059.2755.41.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140421223804.GD22730@htj.dyndns.org>
+	 <1398133777.2805.7.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140422204006.GA3615@mtj.dyndns.org>
+	 <1398218426.2805.42.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140423143940.GD4781@htj.dyndns.org>
+	 <1398328643.2805.102.camel@ThinkPad-T5421.cn.ibm.com>
+	 <20140424143208.GB14460@htj.dyndns.org>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3-0ubuntu6 
+Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 14042501-5024-0000-0000-00000997F8B5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Joe Perches (5):
-  qlge: Convert /n to \n
-  iwlegacy: Convert /n to \n
-  staging: rtl<foo>: Convert /n to \n
-  appledisplay: Convert /n to \n
-  sound: tlv320aic31xx: Convert /n to \n
+On Thu, 2014-04-24 at 10:32 -0400, Tejun Heo wrote:
+> Hello,
+> 
+> On Thu, Apr 24, 2014 at 04:37:23PM +0800, Li Zhong wrote:
+> > On Wed, 2014-04-23 at 10:39 -0400, Tejun Heo wrote:
+> > After thinking it harder, I still couldn't see ABBA here ... 
+> > 
+> > the active protection taken here is for "probe/release" which will not
+> > be waited for removing something like "online" under cpu#? Or my
+> > assumption that s_active for different files are different locks are
+> > completely wrong? Or I missed something else? 
+> 
+> I'm probably confused about the locking.  I was thinking a scenario
+> like the following.
+> 
+> A. CPU on/offline
+> 
+>    grabs s_active protection of online node
+>    grabs cpu subsys mutex
+>    perform on/offline
+>    releases cpu subsys mutex
+>    releases s_active protection of online node
 
- drivers/net/ethernet/qlogic/qlge/qlge_main.c  | 2 +-
- drivers/net/wireless/iwlegacy/3945.c          | 2 +-
- drivers/net/wireless/iwlegacy/4965-mac.c      | 2 +-
- drivers/staging/rtl8188eu/hal/usb_ops_linux.c | 2 +-
- drivers/staging/rtl8188eu/os_dep/usb_intf.c   | 2 +-
- drivers/staging/rtl8723au/hal/usb_ops_linux.c | 4 ++--
- drivers/staging/rtl8723au/os_dep/usb_intf.c   | 2 +-
- drivers/usb/misc/appledisplay.c               | 2 +-
- sound/soc/codecs/tlv320aic31xx.c              | 2 +-
- 9 files changed, 10 insertions(+), 10 deletions(-)
+so the chain here is s_active(online) -> cpu_subsys_mutex
 
--- 
-1.8.1.2.459.gbcd45b4.dirty
+> 
+> B. CPU release
+> 
+>    grabs s_active protection of release node
+>    grabs cpu subsys mutex
+>    performs removal of the CPU
+>    removes the online node
+>    releases cpu subsys mutex
+>    releases s_active protection of release node
+
+and the chain here is s_active(release) -> cpu_subsys_mutex ->
+s_active(online)
+
+> 
+> A nests cpu subsys mutex under s_active of the online node.  B nests
+> s_active of the online node under the cpu subsys mutex.  What am I
+> missing?
+
+>From the above two chain, I think the problem is cpu_subsys_mutex and
+s_active(online), which is the deadlock we are trying to solve in patch
+#2. I seems to me s_active(release) here doesn't have lock issues? 
+
+Thanks, Zhong
+
+> 
+> Thanks.
+> 
+
 
