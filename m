@@ -1,72 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595AbaDYOVy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 10:21:54 -0400
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:50829 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753812AbaDYOVw (ORCPT
+	id S1753870AbaDYOHe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 10:07:34 -0400
+Received: from top.free-electrons.com ([176.31.233.9]:47195 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750840AbaDYOHb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 10:21:52 -0400
-Date: Fri, 25 Apr 2014 15:20:49 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Cc: Mathias Nyman <mathias.nyman@intel.com>,
+	Fri, 25 Apr 2014 10:07:31 -0400
+From: Gregory CLEMENT <gregory.clement@free-electrons.com>
+To: Mathias Nyman <mathias.nyman@intel.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         Felipe Balbi <balbi@ti.com>, linux-usb@vger.kernel.org,
         linux-kernel@vger.kernel.org, Jason Cooper <jason@lakedaemon.net>,
         Andrew Lunn <andrew@lunn.ch>,
         Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Lior Amsalem <alior@marvell.com>, Tawfik Bayouk <tawfik@marvell.com>,
-        devicetree@vger.kernel.org, Nadav Haklai <nadavh@marvell.com>,
-        Rob Herring <robh+dt@kernel.org>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>
+Cc: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
         Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 02/18] usb: host: xhci-plat: Add clocks support
-Message-ID: <20140425142049.GR26756@n2100.arm.linux.org.uk>
-References: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com> <1398434836-18908-3-git-send-email-gregory.clement@free-electrons.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1398434836-18908-3-git-send-email-gregory.clement@free-electrons.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+        Rob Herring <robh+dt@kernel.org>, devicetree@vger.kernel.org
+Subject: [PATCH v2 00/18] USB support for Armada 38x and Armada 375
+Date: Fri, 25 Apr 2014 16:06:58 +0200
+Message-Id: <1398434836-18908-1-git-send-email-gregory.clement@free-electrons.com>
+X-Mailer: git-send-email 1.8.1.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Apr 25, 2014 at 04:07:00PM +0200, Gregory CLEMENT wrote:
-> +#if defined(CONFIG_HAVE_CLK)
-> +static int try_enable_clk(struct platform_device *pdev)
-> +{
-> +	struct clk *clk = devm_clk_get(&pdev->dev, NULL);
-> +
-> +	/* Not all platforms have a clk so it is not an error if the clock
-> +	   does not exists. */
-> +	if (!IS_ERR(clk))
-> +		if (clk_prepare_enable(clk))
-> +			return  -ENODEV;
-> +	return 0;
-> +}
-> +
-> +static int try_disable_clk(struct platform_device *pdev)
-> +{
-> +	struct clk *clk = devm_clk_get(&pdev->dev, NULL);
-> +
-> +	/* Not all platforms have a clk so it is not an error if the clock
-> +	   does not exists. */
-> +	if (!IS_ERR(clk))
-> +		clk_disable_unprepare(clk);
-> +
-> +	return 0;
-> +}
+Hello,
 
-OMG.
+This patch set adds the USB support for the Armada 38x Armada
+375. These SoCs use an xHCI but still need specific initialization,
+mainly to setup the windows memory on the mbus. They also use the same
+controller that the other mvebu SoC for EHCI.
 
-You do realise that clk_get() ref-counts against the module which
-provided the clock, so this is akin to an explicit leaking module
-ref-counts.
+Since the 1st version this patch set add xHCI support for Armada 375
+but also EHCI support for Armada 375 and Armada 38x. For EHCI it was
+mainly a matter of updating the device tree.
+
+The first patch is just a small clean-up
+
+The second patch extend the xhci-plat driver to allow to use the
+clocks if they are available.
+
+The third patch add support the Armada 38x by introducing a quirk to
+setup the memory windows on the mbus for Armada 38x.
+
+Then the forth patch update the binding documentation.
+
+The 10th patch add support for the Armada 375 using what have been
+done for Armada 38x
+
+The 11th  patch update the binding documentation with Armada 375 binding.
+
+This patches 1 to 4 and 10 to 11 should go through the xhci subsystem.
+
+The rest of the series is more platform specific and should go through
+the mvebu tree, except the patch 9 that should be taken directly by
+the arm-soc maintainer.
+
+Thanks,
+
+Gregory CLEMENT (18):
+  usb: host: xhci-plat: Sort the headers in alphabetic order
+  usb: host: xhci-plat: Add clocks support
+  usb: host: xhci-plat: Add support for the Armada 38x
+  xhci-platform: Add a new controller using xhci: Armada 38x
+  ARM: mvebu: Add Device Tree description of xHCI hosts on Armada 38x
+  ARM: mvebu: Add Device Tree description of EHCI hosts on Armada 38x
+  ARM: mvebu: Add USB3 support for Armada 38x
+  ARM: configs: Add usb_xhci_mvebu to mvebu_v7_defconfig
+  ARM: configs: Add usb_xhci_mvebu to multi_v7_defconfig
+  usb: host: xhci-plat: Add support for the Armada 375
+  xhci-platform: Add a new controller using xhci: Armada 375
+  ARM: mvebu: Add Device Tree description of USB cluster controller on
+    Armada 375
+  dt: binding: Armada 375 USB cluster
+  ARM: mvebu: Add support for USB cluster on the Armada 375 SoC
+  ARM: mvebu: Add USB3 support for Armada 375
+  ARM: mvebu: add USB3 controller Device Tree details for Armada 375
+  ARM: mvebu: dts: Enable USB3 in Armada 375 DB
+  ARM: mvebu: Add Device Tree description of EHCI hosts on Armada 375
+
+ .../bindings/arm/armada-375-usb-cluster.txt        | 17 ++++
+ Documentation/devicetree/bindings/usb/usb-xhci.txt |  4 +-
+ arch/arm/boot/dts/armada-375-db.dts                | 10 ++-
+ arch/arm/boot/dts/armada-375.dtsi                  | 41 +++++++++
+ arch/arm/boot/dts/armada-385-db.dts                | 12 +++
+ arch/arm/boot/dts/armada-385-rd.dts                |  4 +
+ arch/arm/boot/dts/armada-38x.dtsi                  | 25 ++++++
+ arch/arm/configs/multi_v7_defconfig                |  1 +
+ arch/arm/configs/mvebu_v7_defconfig                |  1 +
+ arch/arm/mach-mvebu/Kconfig                        |  2 +
+ arch/arm/mach-mvebu/Makefile                       |  2 +-
+ arch/arm/mach-mvebu/usb-cluster.c                  | 96 ++++++++++++++++++++++
+ drivers/usb/host/Kconfig                           |  7 ++
+ drivers/usb/host/Makefile                          |  1 +
+ drivers/usb/host/xhci-mvebu.c                      | 71 ++++++++++++++++
+ drivers/usb/host/xhci-mvebu.h                      | 22 +++++
+ drivers/usb/host/xhci-plat.c                       | 67 +++++++++++++--
+ 17 files changed, 374 insertions(+), 9 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/armada-375-usb-cluster.txt
+ create mode 100644 arch/arm/mach-mvebu/usb-cluster.c
+ create mode 100644 drivers/usb/host/xhci-mvebu.c
+ create mode 100644 drivers/usb/host/xhci-mvebu.h
 
 -- 
-FTTC broadband for 0.8mile line: now at 9.7Mbps down 460kbps up... slowly
-improving, and getting towards what was expected from it.
+1.8.1.2
+
