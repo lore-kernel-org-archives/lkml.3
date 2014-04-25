@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784AbaDYH5w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 03:57:52 -0400
-Received: from mail-pa0-f46.google.com ([209.85.220.46]:36651 "EHLO
-	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751376AbaDYH5s (ORCPT
+	id S1752403AbaDYH6a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 03:58:30 -0400
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:55536 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752105AbaDYH61 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 03:57:48 -0400
-Message-ID: <535A156F.6060004@linaro.org>
-Date: Fri, 25 Apr 2014 13:27:35 +0530
-From: Tushar Behera <tushar.behera@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+	Fri, 25 Apr 2014 03:58:27 -0400
+X-Original-SENDERIP: 10.177.220.181
+X-Original-MAILFROM: namhyung@gmail.com
+From: Namhyung Kim <namhyung@kernel.org>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Namhyung Kim <namhyung.kim@lge.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCHSET 00/17] perf report: Add -F option for specifying output fields (v4)
+References: <1397617554-26319-1-git-send-email-namhyung@kernel.org>
+	<20140422211647.GO8488@redhat.com> <87lhuwr2pk.fsf@sejong.aot.lge.com>
+	<20140423125828.GL5328@redhat.com> <1398346899.1681.18.camel@leonhard>
+	<20140424210015.GJ8488@redhat.com>
+Date: Fri, 25 Apr 2014 16:58:25 +0900
+In-Reply-To: <20140424210015.GJ8488@redhat.com> (Don Zickus's message of "Thu,
+	24 Apr 2014 17:00:15 -0400")
+Message-ID: <87d2g5rgbi.fsf@sejong.aot.lge.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.1 (gnu/linux)
 MIME-Version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Vivek Gautam <gautam.vivek@samsung.com>
-CC: linux-usb@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-doc@vger.kernel.org, kishon@ti.com,
-        gregkh@linuxfoundation.org, balbi@ti.com, kgene.kim@samsung.com,
-        t.figa@samsung.com, k.debski@samsung.com, jg1.han@samsung.com
-Subject: Re: [PATCH V4 1/5] phy: Add new Exynos5 USB 3.0 PHY driver
-References: <1396967803-28868-1-git-send-email-gautam.vivek@samsung.com> <1396967803-28868-2-git-send-email-gautam.vivek@samsung.com> <534BF28E.7040906@samsung.com>
-In-Reply-To: <534BF28E.7040906@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/14/2014 08:07 PM, Sylwester Nawrocki wrote:
-> On 08/04/14 16:36, Vivek Gautam wrote:
->> diff --git a/Documentation/devicetree/bindings/phy/samsung-phy.txt b/Documentation/devicetree/bindings/phy/samsung-phy.txt
->> index 28f9edb..6d99ba9 100644
->> --- a/Documentation/devicetree/bindings/phy/samsung-phy.txt
->> +++ b/Documentation/devicetree/bindings/phy/samsung-phy.txt
->> @@ -74,3 +74,45 @@ phy-consumer@12340000 {
->>  
->>  Refer to DT bindings documentation of particular PHY consumer devices for more
->>  information about required PHYs and the way of specification.
->> +
->> +Samsung Exynos5 SoC series USB DRD PHY controller
->> +--------------------------------------------------
->> +
->> +Required properties:
->> +- compatible : Should be set to one of the following supported values:
->> +	- "samsung,exynos5250-usbdrd-phy" - for exynos5250 SoC,
->> +	- "samsung,exynos5420-usbdrd-phy" - for exynos5420 SoC.
->> +- reg : Register offset and length of USB DRD PHY register set;
->> +- clocks: Clock IDs array as required by the controller
->> +- clock-names: names of clocks correseponding to IDs in the clock property;
->> +	       Required clocks:
->> +	- phy: main PHY clock (same as USB DRD controller i.e. DWC3 IP clock),
->> +	       used for register access.
->> +	- ref: PHY's reference clock (usually crystal clock), associated by
->> +	       phy name, used to determine bit values for clock settings
->> +	       register.
->> +	Additional clock required for Exynos5420:
->> +	- usb30_sclk_100m: Additional special clock used for PHY operation
->> +			   depicted as 'sclk_usbphy30' in CMU of Exynos5420.
->> +- samsung,syscon-phandle: phandle for syscon interface, which is used to
->> +			  control pmu registers for power isolation.
-> 
-> Why to append "-phandle" to the property's name ? If this is for PMU
-> perhaps make it more explicit and name it: samsung,pmu-syscon or
-> samsung,pmureg ?
-> 
+Hi Don,
 
-There are already a couple of nodes (watchdog and sata) using
-samsung,syscon-phandle. IMHO, we should keep only property string for
-syscon node. Either we keep syscon-phandle here or change sata/watchdog
-driver to use the modified property name.
+On Thu, 24 Apr 2014 17:00:15 -0400, Don Zickus wrote:
+> On Thu, Apr 24, 2014 at 10:41:39PM +0900, Namhyung Kim wrote:
+>> Hmm.. it seems that it's exactly sorted by the data symbol addresses, so
+>> I don't see any problem here.  What did you expect?  If you want to see
+>> those symbol_daddr,pid pair to be sorted by overhead, you can use the
+>> one of -F or -s option only.
+>
+> Good question.  I guess I was hoping to see things sorted by overhead, but
+> as you said removing all the -F options gives me that.  I have been
+> distracted with other fires this week, I lost focus at what I was trying
+> to accomplish.
+>
+> Let me figure that out again and try to come up with a more clear email
+> explaining what I was looking for (for myself at least :-) ).
+>
+> Sorry for the distraction.
 
--- 
-Tushar Behera
+No need to sorry and thank you for testing and feedbacks :)
+
+Thanks,
+Namhyung
