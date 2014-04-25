@@ -1,210 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761AbaDYVnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 25 Apr 2014 17:43:49 -0400
-Received: from mail-ee0-f41.google.com ([74.125.83.41]:63817 "EHLO
-	mail-ee0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750802AbaDYVnr (ORCPT
+	id S1751600AbaDYVoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 25 Apr 2014 17:44:21 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:41553 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750928AbaDYVoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 25 Apr 2014 17:43:47 -0400
-Message-ID: <535AD70F.20608@gmail.com>
-Date: Fri, 25 Apr 2014 23:43:43 +0200
-From: Tomasz Figa <tomasz.figa@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.4.0
+	Fri, 25 Apr 2014 17:44:18 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Dmitry Kasatkin <dmitry.kasatkin@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Dmitry Kasatkin <d.kasatkin@samsung.com>,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        John Johansen <john.johansen@canonical.com>,
+        Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        kernel-team <kernel-team@lists.ubuntu.com>
+References: <535A5C78.1070901@samsung.com> <535A75C1.3050901@samsung.com>
+	<20140425182310.GA9128@redhat.com>
+	<87sip15iy5.fsf@x220.int.ebiederm.org>
+	<20140425192543.GA11908@redhat.com>
+	<878uqt42q7.fsf@x220.int.ebiederm.org>
+	<20140425200156.GA13727@redhat.com>
+	<CACE9dm9gs64C9JfSYKboUOwT_uXC7Ha1kuXsMWOE-0isQuzfmg@mail.gmail.com>
+	<874n1h16le.fsf@x220.int.ebiederm.org>
+	<20140425212128.GB18016@ZenIV.linux.org.uk>
+Date: Fri, 25 Apr 2014 14:43:42 -0700
+In-Reply-To: <20140425212128.GB18016@ZenIV.linux.org.uk> (Al Viro's message of
+	"Fri, 25 Apr 2014 22:21:28 +0100")
+Message-ID: <87ppk5w0dt.fsf@x220.int.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Pankaj Dubey <pankaj.dubey@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-CC: kgene.kim@samsung.com, linux@arm.linux.org.uk, t.figa@samsung.com,
-        chow.kim@samsung.com, yg1004.jang@samsung.com,
-        vikas.sajjan@samsung.com, s.nawrocki@samsung.com,
-        b.zolnierkie@samsung.com
-Subject: Re: [PATCH v2 06/10] ARM: EXYNOS: Add support for mapping PMU base
- address via DT
-References: <1396425058-4012-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-1-git-send-email-pankaj.dubey@samsung.com> <1398429166-5539-7-git-send-email-pankaj.dubey@samsung.com>
-In-Reply-To: <1398429166-5539-7-git-send-email-pankaj.dubey@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-XM-AID: U2FsdGVkX1+MXA0i0YtkTBT4/zCBJDci3505nrBWcUA=
+X-SA-Exim-Connect-IP: 98.234.51.111
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -0.0 BAYES_40 BODY: Bayes spam probability is 20 to 40%
+	*      [score: 0.2886]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  1.0 T_XMDrugObfuBody_08 obfuscated drug references
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Al Viro <viro@ZenIV.linux.org.uk>
+X-Spam-Relay-Country: 
+Subject: Re: Kernel panic at Ubuntu: IMA + Apparmor
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Wed, 14 Nov 2012 13:58:17 -0700)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Al Viro <viro@ZenIV.linux.org.uk> writes:
 
-On 25.04.2014 14:32, Pankaj Dubey wrote:
-> From: Young-Gun Jang <yg1004.jang@samsung.com>
+> On Fri, Apr 25, 2014 at 01:45:17PM -0700, Eric W. Biederman wrote:
 >
-> Add support for mapping Samsung Power Management Unit (PMU) base address
-> from device tree. Code will use existing samsung pmu binding information.
-> This patch also adds two helper functions as "get_exynos_pmuregmap" and
-> "get_exynos_pmuaddr".
-> "get_exynos_pmuregmap" returns a regmap based PMU register handle where as
-> "get_exynos_pmuaddr" returns ioremap virtual address.
+>> IMA-appraisal is fundamentally broken because I can take a mandatory
+>> file lock and prevent IMA-apprasial.
+>> 
+>> Using kernel_read is what allows this.
+>> 
+>> > Isn't it a clear motivating case???
+>> 
+>> kernel_read is not appropriate for IMA use.  The rest of this is just
+>> the messenger.
+>> 
+>> IMA needs to use a cousin of kernel_read that operates at a lower level
+>> than vfs_read.  A function that all of the permission checks and the
+>> fsnotify work.
 >
-> Signed-off-by: Young-Gun Jang <yg1004.jang@samsung.com>
-> Signed-off-by: Pankaj Dubey <pankaj.dubey@samsung.com>
-> ---
->   arch/arm/mach-exynos/Kconfig  |    2 ++
->   arch/arm/mach-exynos/common.h |    3 ++
->   arch/arm/mach-exynos/exynos.c |   78 +++++++++++++++++++++++++++++++++++++++++
->   3 files changed, 83 insertions(+)
+> It's worse than that, actually ;-/  IMA hooks in __fput() have interesting
+> interplay with revoke-related stuff as well.  Another very messy thing in
+> the same area is that it actually does ->read() from under ->i_mutex, leading
+> to all kinds of interesting locking issues...
 >
-> diff --git a/arch/arm/mach-exynos/Kconfig b/arch/arm/mach-exynos/Kconfig
-> index fc8bf18..2f60c90 100644
-> --- a/arch/arm/mach-exynos/Kconfig
-> +++ b/arch/arm/mach-exynos/Kconfig
-> @@ -26,6 +26,7 @@ config ARCH_EXYNOS4
->   	select PINCTRL
->   	select PM_GENERIC_DOMAINS if PM_RUNTIME
->   	select S5P_DEV_MFC
-> +	select MFD_SYSCON
->   	help
->   	  Samsung EXYNOS4 SoCs based systems
+> I doubt that your "let's open-code vfs_read() guts" would be a good idea;
+> if nothing else, it might make more sense to make rw_verify_area() skip
+> the mandlock and security theatre when called in such situation.
 >
-> @@ -36,6 +37,7 @@ config ARCH_EXYNOS5
->   	select HAVE_ARM_SCU if SMP
->   	select HAVE_SMP
->   	select PINCTRL
-> +	select MFD_SYSCON
->   	help
->   	  Samsung EXYNOS5 (Cortex-A15) SoC based systems
->
-> diff --git a/arch/arm/mach-exynos/common.h b/arch/arm/mach-exynos/common.h
-> index 31c5964..ecfd0fc 100644
-> --- a/arch/arm/mach-exynos/common.h
-> +++ b/arch/arm/mach-exynos/common.h
-> @@ -57,4 +57,7 @@ struct exynos_pmu_conf {
->
->   extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
->
-> +extern struct regmap *get_exynos_pmuregmap(void);
-> +extern void __iomem *get_exynos_pmuaddr(void);
+> What a mess... ;-/
 
-Do you really need these functions? Couldn't all the drivers using PMU 
-simply call syscon_regmap_lookup_by_phandle() or of_iomap() directly?
+Agreed.
 
-> +
->   #endif /* __ARCH_ARM_MACH_EXYNOS_COMMON_H */
-> diff --git a/arch/arm/mach-exynos/exynos.c b/arch/arm/mach-exynos/exynos.c
-> index d6f405f..68f60e1 100644
-> --- a/arch/arm/mach-exynos/exynos.c
-> +++ b/arch/arm/mach-exynos/exynos.c
-> @@ -19,6 +19,7 @@
->   #include <linux/of_platform.h>
->   #include <linux/platform_device.h>
->   #include <linux/pm_domain.h>
-> +#include <linux/mfd/syscon.h>
->
->   #include <asm/cacheflush.h>
->   #include <asm/hardware/cache-l2x0.h>
-> @@ -36,6 +37,9 @@
->   #define L2_AUX_VAL 0x7C470001
->   #define L2_AUX_MASK 0xC200ffff
->
-> +static struct regmap *exynos_pmu_regmap;
-> +static void __iomem *exynos_pmu_base;
-> +
->   static struct map_desc exynos4_iodesc[] __initdata = {
->   	{
->   		.virtual	= (unsigned long)S3C_VA_SYS,
-> @@ -269,6 +273,46 @@ static int __init exynos_fdt_map_chipid(unsigned long node, const char *uname,
->   	return 1;
->   }
->
-> +static const struct of_device_id exynos_dt_pmu_match[] = {
-> +	{ .compatible = "samsung,exynos4210-pmu" },
-> +	{ .compatible = "samsung,exynos4212-pmu" },
-> +	{ .compatible = "samsung,exynos4412-pmu" },
-> +	{ .compatible = "samsung,exynos5250-pmu" },
-> +	{},
-> +};
-> +
-> +static int __init exynos_fdt_map_pmu(unsigned long node,
-> +		const char *uname, int depth, void *data)
-> +{
-> +	struct map_desc iodesc;
-> +	__be32 *reg;
-> +	unsigned long len;
-> +	phys_addr_t phys_addr;
-> +	const struct of_device_id *matches = exynos_dt_pmu_match;
-> +
-> +	for (; matches->compatible[0]; matches++) {
-> +		if (!of_flat_dt_is_compatible(node, matches->compatible))
-> +			continue;
-> +		reg = of_get_flat_dt_prop(node, "reg", &len);
-> +		if (reg == NULL || len != (sizeof(unsigned long) * 2))
-> +			return 0;
-> +
-> +		phys_addr = be32_to_cpu(reg[0]);
-> +		iodesc.pfn = __phys_to_pfn(phys_addr);
-> +		iodesc.length = be32_to_cpu(reg[1]) - 1;
-> +		iodesc.virtual = (unsigned long)S5P_VA_PMU;
-> +		iodesc.type = MT_DEVICE;
-> +		iotable_init(&iodesc, 1);
-> +
-> +		exynos_pmu_base = ioremap(phys_addr, be32_to_cpu(reg[1]));
-> +		if (WARN_ON(!exynos_pmu_base))
-> +			return -EFAULT;
-> +		return 1;
-> +	}
-> +
-> +	return 0;
-> +}
+All I really meant is that vfs_read does too much, so it probably needs
+to be refactored for this case.  But fsnotify_read, add_rchar, and
+inc_syscr all seem inappropriate.  
 
-Is such early mapping really needed? Couldn't the code using PMU be 
-deferred to the stage that memory management is available and then 
-of_iomap() used directly?
+So I think we might be able to get away with something like this:
 
-> +
->   /*
->    * exynos_map_io
->    *
-> @@ -302,6 +346,7 @@ static void __init exynos_init_io(void)
->   	debug_ll_io_init();
->
->   	of_scan_flat_dt(exynos_fdt_map_chipid, NULL);
-> +	of_scan_flat_dt(exynos_fdt_map_pmu, NULL);
->
->   	/* detect cpu id and rev. */
->   	s5p_init_cpu(S5P_VA_CHIPID);
-> @@ -336,6 +381,38 @@ static int __init exynos4_l2x0_cache_init(void)
->   }
->   early_initcall(exynos4_l2x0_cache_init);
->
-> +
-> +inline struct regmap *get_exynos_pmuregmap()
-> +{
-> +	return exynos_pmu_regmap;
-> +}
-> +
-> +inline void __iomem *get_exynos_pmuaddr()
-> +{
-> +	return exynos_pmu_base;
-> +}
+ssize_t __vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
+{
+	ssize_t ret;
 
-Hmm, non-static inline inside a C file? Probably should be either static 
-inline or non-static non-inline. (Assuming that both are really needed, 
-as I pointed in the comments above.)
+	if (!(file->f_mode & FMODE_READ))
+		return -EBADF;
+	if (!file->f_op->read && !file->f_op->aio_read)
+		return -EINVAL;
+	if (unlikely(!access_ok(VERIFY_WRITE, buf, count)))
+		return -EFAULT;
 
-> +
-> +
-> +void __init exynos_map_pmu(void)
-> +{
-> +	struct device_node *np = NULL;
-> +
-> +	early_syscon_init();
-> +
-> +	np = of_find_matching_node(NULL, exynos_dt_pmu_match);
-> +
-> +	if (!np) {
-> +		pr_err("Failed to find PMU node\n");
-> +		return;
-> +	} else {
-> +		exynos_pmu_regmap = syscon_early_regmap_lookup_by_phandle(np,
-> +				"samsung,syscon-phandle");
+	if (ret >= 0) {
+		count = ret;
+		if (file->f_op->read)
+			ret = file->f_op->read(file, buf, count, pos);
+		else
+			ret = do_sync_read(file, buf, count, pos);
+	}
 
-Do you need this regmap really here? I believe it should be the code 
-using PMU registers which calls this function directly to retrieve a 
-handle to the syscon.
+	return ret;
+}
 
-Best regards,
-Tomasz
+
+How much of the rest we do really would seem to depend on how valuable
+the sanity checks are.
+
+This area of code keeps evolving enough that I don't see how we could
+possibly avoid going through helper functions to figure out which file
+ops we want to use this week.
+
+Eric
